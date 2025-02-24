@@ -622,6 +622,14 @@ public class SerializationTests
 
         yield return
         [
+            new DependencyNotFound("some source"),
+            """
+            {"data":{"error-type":"dependency_not_found","error-details":{"source":"some source"}}}
+            """
+        ];
+
+        yield return
+        [
             new JobRepoNotFound("some message"),
             """
             {"data":{"error-type":"job_repo_not_found","error-details":{"message":"some message"}}}

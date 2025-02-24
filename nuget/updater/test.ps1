@@ -19,6 +19,14 @@ function Test-GlobalJsonVersions([string] $testDirectory, [string[]] $directorie
     Write-Host "OK"
 }
 
+function Test-RequiredTargetingPacks([string] $testDirectory, [string[]] $expectedTargetingPacks) {
+    Write-Host "Test-RequiredTargetingPacks in $testDirectory ... " -NoNewLine
+    $testDirectoryFull = "$PSScriptRoot/test-data/$testDirectory"
+    $actualTargetingPacks = Get-RequiredTargetingPacks -sdkInstallDir $testDirectoryFull
+    Assert-ArraysEqual -expected $expectedTargetingPacks -actual $actualTargetingPacks
+    Write-Host "OK"
+}
+
 try {
     Test-GlobalJsonVersions `
         -testDirectory "global-json-discovery-root-no-file" `
@@ -67,6 +75,10 @@ try {
         -directories @("/dir-that-does-not-exist") `
         -installedSdks @("8.0.404", "9.0.101") `
         -expectedSdksToInstall @()
+
+    Test-RequiredTargetingPacks `
+        -testDirectory "targeting-packs" `
+        -expectedTargetingPacks @("Some.Targeting.Pack.Ref/1.0.1", "Some.Other.Targeting.Pack.Ref/1.0.2", "Some.Targeting.Pack.Ref/4.0.1", "Some.Other.Targeting.Pack.Ref/4.0.2")
 }
 catch {
     Write-Host $_

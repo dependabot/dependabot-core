@@ -93,3 +93,44 @@ function Install-Sdks([string]$jobFilePath, [string]$repoContentsPath, [string]$
     # report the final set
     dotnet --list-sdks
 }
+
+function Get-RequiredTargetingPacks([string]$sdkInstallDir) {
+    $targetingPacksToInstall = @()
+    $sdkDirs = Get-ChildItem -Path "$sdkInstallDir/sdk" -Directory
+    foreach ($sdkDir in $sdkDirs) {
+        $versionsPropsFile = "$sdkDir/Microsoft.NETCoreSdk.BundledVersions.props"
+        $knownFrameworkReferences = Select-Xml -Path $versionsPropsFile -XPath "/Project/ItemGroup/KnownFrameworkReference"
+        foreach ($frameworkRef in $knownFrameworkReferences) {
+            $targetingPackName = $frameworkRef.Node.TargetingPackName
+            $targetingPackVersion = $frameworkRef.Node.TargetingPackVersion
+            $requiredTargetingPackName = "$targetingPackName/$targetingPackVersion"
+            $requiredTargetingPackDirectory = Join-Path $sdkInstallDir "packs/$requiredTargetingPackName"
+            if (Test-Path -Path $requiredTargetingPackDirectory) {
+                continue
+            }
+
+            if (-not ($requiredTargetingPackName -in $targetingPacksToInstall)) {
+                $targetingPacksToInstall += $requiredTargetingPackName
+            }
+        }
+    }
+
+    return ,$targetingPacksToInstall
+}
+
+function Install-TargetingPacks([string]$sdkInstallDir, [string[]]$targetingPacks) {
+    foreach ($targetingPack in $targetingPacks) {
+        $parts = $targetingPack -Split "/"
+        $packName = $parts[0]
+        $packVersion = $parts[1]
+        $targetingPackUrl = "https://www.nuget.org/api/v2/package/$packName/$packVersion"
+        $destinationDirectory = "$sdkInstallDir/packs/$packName/$packVersion"
+        $archiveName = "$destinationDirectory/$packName.$packVersion.zip"
+        New-Item $destinationDirectory -ItemType Directory -Force | Out-Null
+        Write-Host "Downloading targeting pack [$packName/$packVersion]"
+        Invoke-WebRequest -Uri $targetingPackUrl -OutFile $archiveName
+        Write-Host "Extracting targeting pack [$packName/$packVersion] to $destinationDirectory"
+        Expand-Archive -Path $archiveName -DestinationPath $destinationDirectory -Force
+        Remove-Item -Path $archiveName
+    }
+}
