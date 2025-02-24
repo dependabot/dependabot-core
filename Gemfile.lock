@@ -159,6 +159,12 @@ PATH
     dependabot-terraform (0.299.0)
       dependabot-common (= 0.299.0)
 
+PATH
+  remote: uv
+  specs:
+    dependabot-uv (0.298.0)
+      dependabot-common (= 0.298.0)
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -414,6 +420,7 @@ DEPENDENCIES
   dependabot-silent!
   dependabot-swift!
   dependabot-terraform!
+  dependabot-uv!
   gpgme (~> 2.0)
   rake (~> 13)
   rspec-its (~> 1.3)
