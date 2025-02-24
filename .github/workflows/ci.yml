@@ -38,6 +38,7 @@ jobs:
           - { path: devcontainers, name: devcontainers, ecosystem: devcontainers }
           - { path: terraform, name: terraform, ecosystem: terraform }
           - { path: bun, name: bun, ecosystem: bun }
+          - { path: uv, name: uv, ecosystem: uv }
 
     steps:
       - name: Checkout code

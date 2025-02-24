@@ -65,3 +65,6 @@ swift:
 terraform:
   - *common
   - 'terraform/**'
+uv:
+  - *common
+  - 'uv/**'
