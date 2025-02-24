@@ -2072,6 +2072,184 @@ public class RunWorkerTests
         );
     }
 
+    [Fact]
+    public async Task PackageListedInSecurityAdvisoriesSectionIsNotVulnerable()
+    {
+        await RunAsync(
+            job: new()
+            {
+                Source = new()
+                {
+                    Provider = "github",
+                    Repo = "test/repo",
+                },
+                SecurityUpdatesOnly = true,
+                SecurityAdvisories = [
+                    new()
+                    {
+                        DependencyName = "Package.Is.Not.Vulnerable",
+                        AffectedVersions = [Requirement.Parse("< 1.0.0")]
+                    }
+                ]
+            },
+            files: [
+                ("project.csproj", "contents irrelevant")
+            ],
+            discoveryWorker: new TestDiscoveryWorker(_input =>
+            {
+                return Task.FromResult(new WorkspaceDiscoveryResult()
+                {
+                    Path = "",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "project.csproj",
+                            Dependencies = [
+                                new("Package.Is.Not.Vulnerable", "1.0.1", DependencyType.PackageReference)
+                            ],
+                            ImportedFiles = [],
+                            AdditionalFiles = [],
+                        }
+                    ]
+                });
+            }),
+            analyzeWorker: new TestAnalyzeWorker(_input => throw new NotImplementedException("test shouldn't get this far")),
+            updaterWorker: new TestUpdaterWorker(_input => throw new NotImplementedException("test shouldn't get this far")),
+            expectedResult: new()
+            {
+                Base64DependencyFiles = [
+                    new()
+                    {
+                        Directory = "/",
+                        Name = "project.csproj",
+                        Content = Convert.ToBase64String(Encoding.UTF8.GetBytes("contents irrelevant"))
+                    }
+                ],
+                BaseCommitSha = "TEST-COMMIT-SHA",
+            },
+            expectedApiMessages: [
+                new UpdatedDependencyList()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "Package.Is.Not.Vulnerable",
+                            Version = "1.0.1",
+                            Requirements = [
+                                new()
+                                {
+                                    Requirement = "1.0.1",
+                                    File = "/project.csproj",
+                                    Groups = ["dependencies"],
+                                }
+                            ]
+                        }
+                    ],
+                    DependencyFiles = ["/project.csproj"]
+                },
+                new IncrementMetric()
+                {
+                    Metric = "updater.started",
+                    Tags = new()
+                    {
+                        ["operation"] = "create_security_pr"
+                    }
+                },
+                new SecurityUpdateNotNeeded("Package.Is.Not.Vulnerable"),
+                new MarkAsProcessed("TEST-COMMIT-SHA"),
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task PackageListedInSecurityAdvisoriesSectionIsNotPresent()
+    {
+        await RunAsync(
+            job: new()
+            {
+                Source = new()
+                {
+                    Provider = "github",
+                    Repo = "test/repo",
+                },
+                SecurityUpdatesOnly = true,
+                SecurityAdvisories = [
+                    new()
+                    {
+                        DependencyName = "Package.Is.Not.Vulnerable",
+                        AffectedVersions = [Requirement.Parse("< 1.0.0")]
+                    }
+                ]
+            },
+            files: [
+                ("project.csproj", "contents irrelevant")
+            ],
+            discoveryWorker: new TestDiscoveryWorker(_input =>
+            {
+                return Task.FromResult(new WorkspaceDiscoveryResult()
+                {
+                    Path = "",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "project.csproj",
+                            Dependencies = [
+                                new("Unrelated.Package", "0.1.0", DependencyType.PackageReference)
+                            ],
+                            ImportedFiles = [],
+                            AdditionalFiles = [],
+                        }
+                    ]
+                });
+            }),
+            analyzeWorker: new TestAnalyzeWorker(_input => throw new NotImplementedException("test shouldn't get this far")),
+            updaterWorker: new TestUpdaterWorker(_input => throw new NotImplementedException("test shouldn't get this far")),
+            expectedResult: new()
+            {
+                Base64DependencyFiles = [
+                    new()
+                    {
+                        Directory = "/",
+                        Name = "project.csproj",
+                        Content = Convert.ToBase64String(Encoding.UTF8.GetBytes("contents irrelevant"))
+                    }
+                ],
+                BaseCommitSha = "TEST-COMMIT-SHA",
+            },
+            expectedApiMessages: [
+                new UpdatedDependencyList()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "Unrelated.Package",
+                            Version = "0.1.0",
+                            Requirements = [
+                                new()
+                                {
+                                    Requirement = "0.1.0",
+                                    File = "/project.csproj",
+                                    Groups = ["dependencies"],
+                                }
+                            ]
+                        }
+                    ],
+                    DependencyFiles = ["/project.csproj"]
+                },
+                new IncrementMetric()
+                {
+                    Metric = "updater.started",
+                    Tags = new()
+                    {
+                        ["operation"] = "create_security_pr"
+                    }
+                },
+                new SecurityUpdateNotNeeded("Package.Is.Not.Vulnerable"),
+                new MarkAsProcessed("TEST-COMMIT-SHA"),
+            ]
+        );
+    }
+
     private static async Task RunAsync(Job job, TestFile[] files, IDiscoveryWorker? discoveryWorker, IAnalyzeWorker? analyzeWorker, IUpdaterWorker? updaterWorker, RunResult expectedResult, object[] expectedApiMessages, MockNuGetPackage[]? packages = null, ExperimentsManager? experimentsManager = null, string? repoContentsPath = null)
     {
         // arrange
