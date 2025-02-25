@@ -4,12 +4,11 @@
 require "spec_helper"
 require "dependabot/package/package_language"
 require "dependabot/version"
-require "dependabot/bundler/requirement"
 
 RSpec.describe Dependabot::Package::PackageLanguage do
   let(:name) { "ruby" }
   let(:version) { Dependabot::Version.new("2.7.6") }
-  let(:requirement) { Dependabot::Bundler::Requirement.new(">=2.5") }
+  let(:requirement) { TestRequirement.new(">=2.5") }
 
   describe "#initialize" do
     it "creates a PackageLanguage object with all attributes" do

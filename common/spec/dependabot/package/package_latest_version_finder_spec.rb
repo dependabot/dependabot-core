@@ -6,7 +6,6 @@ require "dependabot/credential"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/package/package_latest_version_finder"
-require "dependabot/bundler/version"
 
 # Define the stubbed PackageLatestVersionFinder outside the RSpec block
 class StubPackageLatestVersionFinder < Dependabot::Package::PackageLatestVersionFinder
@@ -29,7 +28,7 @@ class StubPackageLatestVersionFinder < Dependabot::Package::PackageLatestVersion
       dependency: dependency, # ✅ Fix: Pass dependency
       releases: @versions.map do |version|
         Dependabot::Package::PackageRelease.new(
-          version: Dependabot::Bundler::Version.new(version)
+          version: Dependabot::Version.new(version)
         )
       end
     )

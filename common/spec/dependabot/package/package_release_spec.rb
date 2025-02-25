@@ -5,7 +5,6 @@ require "spec_helper"
 require "dependabot/package/package_release"
 require "dependabot/package/package_language"
 require "dependabot/version"
-require "dependabot/bundler/requirement"
 
 RSpec.describe Dependabot::Package::PackageRelease do
   let(:version) { Dependabot::Version.new("2.0.0") }
@@ -14,7 +13,7 @@ RSpec.describe Dependabot::Package::PackageRelease do
     Dependabot::Package::PackageLanguage.new(
       name: "ruby",
       version: Dependabot::Version.new("2.7.6"),
-      requirement: Dependabot::Bundler::Requirement.new(">=2.5")
+      requirement: TestRequirement.new(">=2.5")
     )
   end
 
@@ -41,7 +40,7 @@ RSpec.describe Dependabot::Package::PackageRelease do
       expect(release.language).to eq(language)
       expect(release.language.name).to eq("ruby")
       expect(release.language.version).to eq(Dependabot::Version.new("2.7.6"))
-      expect(release.language.requirement).to eq(Dependabot::Bundler::Requirement.new(">=2.5"))
+      expect(release.language.requirement).to eq(TestRequirement.new(">=2.5"))
     end
 
     it "creates a PackageRelease object with only required attributes" do
