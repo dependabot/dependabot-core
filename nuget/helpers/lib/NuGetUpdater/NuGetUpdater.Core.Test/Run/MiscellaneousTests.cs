@@ -58,7 +58,7 @@ public class MiscellaneousTests
     public void GetUpdateOperations(WorkspaceDiscoveryResult discovery, (string ProjectPath, string DependencyName)[] expectedUpdateOperations)
     {
         var updateOperations = RunWorker.GetUpdateOperations(discovery).ToArray();
-        var actualUpdateOperations = updateOperations.Select(uo => (uo.ProjectPath, uo.Dependency.Name)).ToArray();
+        var actualUpdateOperations = updateOperations.Select(uo => (uo.FilePath, uo.Dependency.Name)).ToArray();
         Assert.Equal(expectedUpdateOperations, actualUpdateOperations);
     }
 
@@ -93,6 +93,34 @@ public class MiscellaneousTests
                 ("/src/Library.csproj", "Package.C"),
                 ("/src/Common.csproj", "Package.D"),
             },
+        ];
+
+        yield return
+        [
+            new WorkspaceDiscoveryResult()
+            {
+                Path = "",
+                Projects = [],
+                GlobalJson = new()
+                {
+                    FilePath = "global.json",
+                    Dependencies = [
+                        new("Some.MSBuild.Sdk", "1.0.0", DependencyType.MSBuildSdk)
+                    ]
+                },
+                DotNetToolsJson = new()
+                {
+                    FilePath = ".config/dotnet-tools.json",
+                    Dependencies = [
+                        new("some-tool", "2.0.0", DependencyType.DotNetTool)
+                    ]
+                }
+            },
+            new (string, string)[]
+            {
+                ("/.config/dotnet-tools.json", "some-tool"),
+                ("/global.json", "Some.MSBuild.Sdk"),
+            }
         ];
     }
 
