@@ -1545,6 +1545,14 @@ public class MSBuildHelperTests : TestBase
         yield return
         [
             // output
+            """error : Could not resolve SDK "missing-sdk".""",
+            // expectedError
+            new DependencyNotFound("missing-sdk"),
+        ];
+
+        yield return
+        [
+            // output
             "Unable to resolve dependencies. 'Some.Package 1.2.3' is not compatible with",
             // expectedError
             new UpdateNotPossible(["Some.Package.1.2.3"]),

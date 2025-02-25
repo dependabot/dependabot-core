@@ -2250,6 +2250,213 @@ public class RunWorkerTests
         );
     }
 
+    [Fact]
+    public async Task NonProjectFilesAreIncludedInPullRequest()
+    {
+        await RunAsync(
+            job: new()
+            {
+                Source = new()
+                {
+                    Provider = "github",
+                    Repo = "test/repo",
+                },
+            },
+            files: [
+                (".config/dotnet-tools.json", "dotnet-tools.json content old"),
+                ("global.json", "global.json content old")
+            ],
+            discoveryWorker: new TestDiscoveryWorker(input =>
+            {
+                return Task.FromResult(new WorkspaceDiscoveryResult()
+                {
+                    Path = "",
+                    Projects = [],
+                    DotNetToolsJson = new()
+                    {
+                        FilePath = ".config/dotnet-tools.json",
+                        Dependencies = [
+                            new("some-tool", "2.0.0", DependencyType.DotNetTool),
+                        ]
+                    },
+                    GlobalJson = new()
+                    {
+                        FilePath = "global.json",
+                        Dependencies = [
+                            new("Some.MSBuild.Sdk", "1.0.0", DependencyType.MSBuildSdk),
+                        ],
+                    },
+                });
+            }),
+            analyzeWorker: new TestAnalyzeWorker(input =>
+            {
+                var (_repoRoot, _discoveryResult, dependencyInfo) = input;
+                var result = dependencyInfo.Name switch
+                {
+                    "some-tool" => new AnalysisResult() { CanUpdate = true, UpdatedVersion = "2.0.1", UpdatedDependencies = [new("some-tool", "2.0.1", DependencyType.DotNetTool)] },
+                    "Some.MSBuild.Sdk" => new AnalysisResult() { CanUpdate = true, UpdatedVersion = "1.0.1", UpdatedDependencies = [new("Some.MSBuild.Sdk", "1.0.1", DependencyType.MSBuildSdk)] },
+                    _ => throw new NotImplementedException("unreachable")
+                };
+                return Task.FromResult(result);
+            }),
+            updaterWorker: new TestUpdaterWorker(async input =>
+            {
+                var (repoRoot, filePath, dependencyName, _previousVersion, _newVersion, _isTransitive) = input;
+                var dependencyFilePath = Path.Join(repoRoot, filePath);
+                var updatedContent = dependencyName switch
+                {
+                    "some-tool" => "dotnet-tools.json content UPDATED",
+                    "Some.MSBuild.Sdk" => "global.json content UPDATED",
+                    _ => throw new NotImplementedException("unreachable")
+                };
+                await File.WriteAllTextAsync(dependencyFilePath, updatedContent);
+                return new UpdateOperationResult();
+            }),
+            expectedResult: new()
+            {
+                Base64DependencyFiles = [
+                    new()
+                    {
+                        Directory = "/.config",
+                        Name = "dotnet-tools.json",
+                        Content = Convert.ToBase64String(Encoding.UTF8.GetBytes("dotnet-tools.json content old"))
+                    },
+                    new()
+                    {
+                        Directory = "/",
+                        Name = "global.json",
+                        Content = Convert.ToBase64String(Encoding.UTF8.GetBytes("global.json content old"))
+                    },
+                ],
+                BaseCommitSha = "TEST-COMMIT-SHA",
+            },
+            expectedApiMessages: [
+                new UpdatedDependencyList()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "some-tool",
+                            Version = "2.0.0",
+                            Requirements = [
+                                new()
+                                {
+                                    Requirement = "2.0.0",
+                                    File = "/.config/dotnet-tools.json",
+                                    Groups = ["dependencies"],
+                                }
+                            ]
+                        },
+                        new()
+                        {
+                            Name = "Some.MSBuild.Sdk",
+                            Version = "1.0.0",
+                            Requirements = [
+                                new()
+                                {
+                                    Requirement = "1.0.0",
+                                    File = "/global.json",
+                                    Groups = ["dependencies"],
+                                }
+                            ]
+                        },
+                    ],
+                    DependencyFiles = ["/.config/dotnet-tools.json", "/global.json"]
+                },
+                new IncrementMetric()
+                {
+                    Metric = "updater.started",
+                    Tags = new()
+                    {
+                        ["operation"] = "group_update_all_versions"
+                    }
+                },
+                new CreatePullRequest()
+                {
+                    Dependencies =
+                    [
+                        new ReportedDependency()
+                        {
+                            Name = "some-tool",
+                            Version = "2.0.1",
+                            Requirements =
+                            [
+                                new ReportedRequirement()
+                                {
+                                    Requirement = "2.0.1",
+                                    File = "/.config/dotnet-tools.json",
+                                    Groups = ["dependencies"],
+                                    Source = new()
+                                    {
+                                        SourceUrl = null,
+                                    }
+                                }
+                            ],
+                            PreviousVersion = "2.0.0",
+                            PreviousRequirements =
+                            [
+                                new ReportedRequirement()
+                                {
+                                    Requirement = "2.0.0",
+                                    File = "/.config/dotnet-tools.json",
+                                    Groups = ["dependencies"],
+                                }
+                            ],
+                        },
+                        new ReportedDependency()
+                        {
+                            Name = "Some.MSBuild.Sdk",
+                            Version = "1.0.1",
+                            Requirements =
+                            [
+                                new ReportedRequirement()
+                                {
+                                    Requirement = "1.0.1",
+                                    File = "/global.json",
+                                    Groups = ["dependencies"],
+                                    Source = new()
+                                    {
+                                        SourceUrl = null,
+                                    }
+                                }
+                            ],
+                            PreviousVersion = "1.0.0",
+                            PreviousRequirements =
+                            [
+                                new ReportedRequirement()
+                                {
+                                    Requirement = "1.0.0",
+                                    File = "/global.json",
+                                    Groups = ["dependencies"],
+                                }
+                            ],
+                        },
+                    ],
+                    UpdatedDependencyFiles =
+                    [
+                        new DependencyFile()
+                        {
+                            Name = "dotnet-tools.json",
+                            Directory = "/.config",
+                            Content = "dotnet-tools.json content UPDATED",
+                        },
+                        new DependencyFile()
+                        {
+                            Name = "global.json",
+                            Directory = "/",
+                            Content = "global.json content UPDATED",
+                        },
+                    ],
+                    BaseCommitSha = "TEST-COMMIT-SHA",
+                    CommitMessage = "TODO: message",
+                    PrTitle = "TODO: title",
+                    PrBody = "TODO: body",
+                },
+                new MarkAsProcessed("TEST-COMMIT-SHA"),
+            ]
+        );
+    }
+
     private static async Task RunAsync(Job job, TestFile[] files, IDiscoveryWorker? discoveryWorker, IAnalyzeWorker? analyzeWorker, IUpdaterWorker? updaterWorker, RunResult expectedResult, object[] expectedApiMessages, MockNuGetPackage[]? packages = null, ExperimentsManager? experimentsManager = null, string? repoContentsPath = null)
     {
         // arrange
