@@ -2,33 +2,32 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/python/package/package_details"
-require "dependabot/python/package/package_release"
+require "dependabot/package/package_details"
 require "dependabot/dependency"
 require "dependabot/version"
 
-RSpec.describe Dependabot::Python::Package::PackageDetails do
+RSpec.describe Dependabot::Package::PackageDetails do
   let(:dependency) do
-    Dependabot::Dependency.new(name: "requests", version: "2.26.0", requirements: [], package_manager: "pip")
+    Dependabot::Dependency.new(name: "rails", version: "6.1.4", requirements: [], package_manager: "bundler")
   end
   let(:release1) do
-    Dependabot::Python::Package::PackageRelease.new(
-      version: Dependabot::Version.new("2.26.0"),
+    Dependabot::Package::PackageRelease.new(
+      version: Dependabot::Version.new("6.1.4"),
       released_at: Time.parse("2023-01-01T12:00:00Z"),
       yanked: false,
       downloads: 1000,
-      url: "https://example.com/requests-2.26.0.tar.gz",
-      package_type: "sdist"
+      url: "https://rubygems.org/gems/rails-6.1.4.gem",
+      package_type: "gem"
     )
   end
   let(:release2) do
-    Dependabot::Python::Package::PackageRelease.new(
-      version: Dependabot::Version.new("2.25.0"),
+    Dependabot::Package::PackageRelease.new(
+      version: Dependabot::Version.new("6.0.3"),
       released_at: Time.parse("2022-01-01T12:00:00Z"),
       yanked: false,
       downloads: 500,
-      url: "https://example.com/requests-2.25.0.tar.gz",
-      package_type: "sdist"
+      url: "https://rubygems.org/gems/rails-6.0.3.gem",
+      package_type: "gem"
     )
   end
 
@@ -61,8 +60,10 @@ RSpec.describe Dependabot::Python::Package::PackageDetails do
     it "returns releases sorted in descending order" do
       details = described_class.new(dependency: dependency, releases: [release2, release1])
 
-      expect(details.releases.map(&:version)).to eq([Dependabot::Version.new("2.26.0"),
-                                                     Dependabot::Version.new("2.25.0")])
+      expect(details.releases.map(&:version)).to eq([
+        Dependabot::Version.new("6.1.4"),
+        Dependabot::Version.new("6.0.3")
+      ])
     end
   end
 end
