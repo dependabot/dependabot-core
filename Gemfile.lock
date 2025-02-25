@@ -58,6 +58,7 @@ PATH
   specs:
     dependabot-docker_compose (0.298.0)
       dependabot-common (= 0.298.0)
+      dependabot-docker (= 0.298.0)
 
 PATH
   remote: docker

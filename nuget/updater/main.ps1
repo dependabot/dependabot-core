@@ -14,7 +14,7 @@ $operationExitCode = 0
 
 function Get-Files {
     $job = Get-Job -jobFilePath $env:DEPENDABOT_JOB_PATH
-    Write-Host "Job: $($job | ConvertTo-Json)"
+    Write-Host "Job: $($job | ConvertTo-Json -Depth 99)"
     & $updaterTool clone `
         --job-path $env:DEPENDABOT_JOB_PATH `
         --repo-contents-path $env:DEPENDABOT_REPO_CONTENTS_PATH `

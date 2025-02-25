@@ -7,8 +7,8 @@ require "dependabot/errors"
 
 module Dependabot
   module Python
-    class UpdateChecker
-      class IndexFinder
+    module Package
+      class PackageRegistryFinder
         PYPI_BASE_URL = "https://pypi.org/simple/"
         ENVIRONMENT_VARIABLE_REGEX = /\$\{.+\}/
 
@@ -18,7 +18,7 @@ module Dependabot
           @dependency       = dependency
         end
 
-        def index_urls
+        def registry_urls
           extra_index_urls =
             config_variable_index_urls[:extra] +
             pipfile_index_urls[:extra] +
@@ -158,7 +158,7 @@ module Dependabot
         end
 
         def clean_check_and_remove_environment_variables(url)
-          url = url.strip.gsub(%r{/*$}, "") + "/"
+          url = url.strip.sub(%r{/+$}, "") + "/"
 
           return authed_base_url(url) unless url.match?(ENVIRONMENT_VARIABLE_REGEX)
 

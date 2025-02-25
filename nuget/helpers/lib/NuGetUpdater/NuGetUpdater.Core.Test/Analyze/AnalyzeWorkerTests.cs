@@ -1301,6 +1301,56 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
     }
 
     [Fact]
+    public async Task NuGetSourceDoesNotExist()
+    {
+        // this test simulates a `NuGet.Config` that points to an internal-only domain that dependabot doesn't have access to
+        await TestAnalyzeAsync(
+            extraFiles: [
+                ("NuGet.Config", """
+                    <configuration>
+                      <packageSources>
+                        <clear />
+                        <add key="feed_that_does_not_exist" value="https://this-domain-does-not-exist/nuget/v2" />
+                      </packageSources>
+                    </configuration>
+                    """)
+            ],
+            discovery: new()
+            {
+                Path = "/",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "./project.csproj",
+                        TargetFrameworks = ["net9.0"],
+                        Dependencies = [
+                            new("Some.Package", "1.0.0", DependencyType.PackageReference),
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
+                    }
+                ]
+            },
+            dependencyInfo: new()
+            {
+                Name = "Some.Package",
+                Version = "1.0.0",
+                IgnoredVersions = [],
+                IsVulnerable = false,
+                Vulnerabilities = [],
+            },
+            expectedResult: new()
+            {
+                CanUpdate = false,
+                UpdatedVersion = "1.0.0",
+                VersionComesFromMultiDependencyProperty = false,
+                UpdatedDependencies = [],
+            }
+        );
+    }
+
+    [Fact]
     public void DeserializeDependencyInfo_UnsupportedIgnoredVersionsAreIgnored()
     {
         // arrange
