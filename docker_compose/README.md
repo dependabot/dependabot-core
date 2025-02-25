@@ -17,6 +17,10 @@ Docker support for [`dependabot-core`][core-repo].
 
 [core-repo]: https://github.com/dependabot/dependabot-core
 
+### Docker image
+
+The `dependabot-docker_compose` image builds on top of the base Docker updater image, adding the necessary dependencies to support Docker Compose updates.
+
 ### Supported tag schemas
 
 Dependabot supports updates for Docker Compose tags that use semver versioning, dates, and build numbers.
