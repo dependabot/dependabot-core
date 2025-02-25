@@ -36,6 +36,9 @@ module Dependabot
       sig { returns(T::Array[SecurityAdvisory]) }
       attr_reader :security_advisories
 
+      sig { returns(T::Hash[Symbol, T.untyped]) }
+      attr_reader :options
+
       sig do
         params(
           dependency: Dependabot::Dependency,
@@ -43,7 +46,8 @@ module Dependabot
           credentials: T::Array[Dependabot::Credential],
           ignored_versions: T::Array[String],
           security_advisories: T::Array[Dependabot::SecurityAdvisory],
-          raise_on_ignored: T::Boolean
+          raise_on_ignored: T::Boolean,
+          options: T::Hash[Symbol, T.untyped]
         ).void
       end
       def initialize(
@@ -52,7 +56,8 @@ module Dependabot
         credentials:,
         ignored_versions:,
         security_advisories:,
-        raise_on_ignored: false
+        raise_on_ignored: false,
+        options: {}
       )
         @dependency          = dependency
         @dependency_files    = dependency_files
@@ -60,6 +65,8 @@ module Dependabot
         @ignored_versions    = ignored_versions
         @security_advisories = security_advisories
         @raise_on_ignored    = raise_on_ignored
+        # It can be used by sub classes to pass options to the registry client
+        @options             = options
 
         @latest_version = T.let(nil, T.nilable(Dependabot::Version))
         @latest_version_with_no_unlock = T.let(nil, T.nilable(Dependabot::Version))
