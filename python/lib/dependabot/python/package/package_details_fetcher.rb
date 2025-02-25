@@ -9,8 +9,8 @@ require "nokogiri"
 require "sorbet-runtime"
 require "dependabot/registry_client"
 require "dependabot/python/name_normaliser"
-require "dependabot/python/package/package_release"
-require "dependabot/python/package/package_details"
+require "dependabot/package/package_release"
+require "dependabot/package/package_details"
 require "dependabot/python/package/package_registry_finder"
 
 # Stores metadata for a package, including all its available versions
@@ -63,7 +63,7 @@ module Dependabot
         sig { returns(T::Array[T.untyped]) }
         attr_reader :credentials
 
-        sig { returns(Dependabot::Python::Package::PackageDetails) }
+        sig { returns(Dependabot::Package::PackageDetails) }
         def fetch
           package_releases = registry_urls
                              .select { |index_url| validate_index(index_url) } # Ensure only valid URLs
@@ -77,7 +77,7 @@ module Dependabot
               raise DependencyFileNotResolvable, "Invalid URL: #{sanitized_url(index_url)}"
           end
 
-          Dependabot::Python::Package::PackageDetails.new(
+          Dependabot::Package::PackageDetails.new(
             dependency: dependency,
             releases: package_releases.reverse.uniq(&:version)
           )
@@ -87,7 +87,7 @@ module Dependabot
 
         sig do
           params(index_url: String)
-            .returns(T.nilable(T::Array[Dependabot::Python::Package::PackageRelease]))
+            .returns(T.nilable(T::Array[Dependabot::Package::PackageRelease]))
         end
         def fetch_from_registry(index_url)
           if Dependabot::Experiments.enabled?(:enable_cooldown_for_python)
@@ -149,7 +149,7 @@ module Dependabot
         # }
         sig do
           params(index_url: String)
-            .returns(T.nilable(T::Array[Dependabot::Python::Package::PackageRelease]))
+            .returns(T.nilable(T::Array[Dependabot::Package::PackageRelease]))
         end
         def fetch_from_json_registry(index_url)
           json_url = index_url.sub(%r{/simple/?$}i, "/pypi/")
@@ -200,7 +200,7 @@ module Dependabot
         # - JSON API: https://pypi.org/pypi/requests/json
         #
         # More details: https://www.python.org/dev/peps/pep-0503/
-        sig { params(index_url: String).returns(T::Array[Dependabot::Python::Package::PackageRelease]) }
+        sig { params(index_url: String).returns(T::Array[Dependabot::Package::PackageRelease]) }
         def fetch_from_html_registry(index_url)
           Dependabot.logger.info(
             "Fetching release information from html registry at #{sanitized_url(index_url)} for #{dependency.name}"
@@ -270,7 +270,7 @@ module Dependabot
           params(
             releases_json: T::Hash[String, T::Array[T::Hash[String, T.untyped]]]
           )
-            .returns(T::Array[Dependabot::Python::Package::PackageRelease])
+            .returns(T::Array[Dependabot::Package::PackageRelease])
         end
         def format_version_releases(releases_json)
           releases_json.each_with_object([]) do |(version, release_data_array), versions|
@@ -291,7 +291,7 @@ module Dependabot
             version: String,
             release_data: T::Hash[String, T.untyped]
           )
-            .returns(T.nilable(Dependabot::Python::Package::PackageRelease))
+            .returns(T.nilable(Dependabot::Package::PackageRelease))
         end
         def format_version_release(version, release_data)
           upload_time = release_data["upload_time"]
@@ -306,7 +306,7 @@ module Dependabot
             requires_python: release_data["requires_python"]
           )
 
-          release = Dependabot::Python::Package::PackageRelease.new(
+          release = Dependabot::Package::PackageRelease.new(
             version: Dependabot::Python::Version.new(version),
             released_at: released_at,
             yanked: yanked,
@@ -324,7 +324,7 @@ module Dependabot
             python_version: T.nilable(String),
             requires_python: T.nilable(String)
           )
-            .returns(T.nilable(Dependabot::Python::Package::PackageLanguage))
+            .returns(T.nilable(Dependabot::Package::PackageLanguage))
         end
         def package_language(python_version:, requires_python:)
           # Extract language name and version
@@ -336,7 +336,7 @@ module Dependabot
           return nil unless language_version || language_requirement
 
           # Return a Language object with all details
-          Dependabot::Python::Package::PackageLanguage.new(
+          Dependabot::Package::PackageLanguage.new(
             name: language_name,
             version: language_version,
             requirement: language_requirement
