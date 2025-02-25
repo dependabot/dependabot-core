@@ -2,9 +2,7 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
-require "dependabot/docker_compose/version"
 require "dependabot/ecosystem"
-require "dependabot/docker_compose/requirement"
 
 module Dependabot
   module DockerCompose

@@ -3,13 +3,17 @@
 
 # These all need to be required so the various classes can be registered in a
 # lookup table of package manager names to concrete classes.
+
+require "dependabot/docker"
+
 require "dependabot/docker_compose/file_fetcher"
 require "dependabot/docker_compose/file_parser"
-require "dependabot/docker_compose/update_checker"
 require "dependabot/docker_compose/file_updater"
-require "dependabot/docker_compose/metadata_finder"
-require "dependabot/docker_compose/requirement"
-require "dependabot/docker_compose/version"
+
+Dependabot::Utils.register_version_class("docker_compose", Dependabot::Docker::Version)
+Dependabot::UpdateCheckers.register("docker_compose", Dependabot::Docker::UpdateChecker)
+Dependabot::Utils.register_requirement_class("docker_compose", Dependabot::Docker::Requirement)
+Dependabot::MetadataFinders.register("docker_compose", Dependabot::Docker::MetadataFinder)
 
 require "dependabot/pull_request_creator/labeler"
 Dependabot::PullRequestCreator::Labeler
