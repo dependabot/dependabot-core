@@ -1412,6 +1412,29 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       it { is_expected.to eq("v1.7.2") }
     end
+
+    context "when versions at afegeg specificities look equal" do
+      let(:dependency_name) { "owasp/modsecurity-crs" }
+      let(:version) { "3.3-apache-202209221209" }
+      let(:tags_fixture_name) { "owasp.json" }
+      let(:repo_url) { "https://registry.hub.docker.com/v2/owasp/modsecurity-crs/" }
+
+      before do
+        tags_url = repo_url + "/tags/list"
+        stub_request(:get, tags_url)
+          .and_return(status: 200, body: registry_tags)
+
+        new_headers =
+          fixture("docker", "registry_manifest_headers", "generic.json")
+        stub_request(:head, repo_url + "manifests/4.11-apache-202502070602")
+          .and_return(status: 200, body: "", headers: JSON.parse(new_headers))
+        stub_request(:head, repo_url + "manifests/4-apache-202502070602")
+          .and_return(status: 200, body: "", headers: JSON.parse(new_headers))
+
+      end
+
+      it { is_expected.to eq("4-apache-202502070602") }
+    end
   end
 
   describe "#latest_resolvable_version" do
