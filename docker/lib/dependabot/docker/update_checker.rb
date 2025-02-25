@@ -379,7 +379,7 @@ module Dependabot
 
       # Defaults from https://github.com/deitch/docker_registry2/blob/bfde04144f0b7fd63c156a1aca83efe19ee78ffd/lib/registry/registry.rb#L26-L27
       DEFAULT_DOCKER_OPEN_TIMEOUT_IN_SECONDS = 2
-      DEFAULT_DOCKER_READ_TIMEOUT_IN_SECONDS = 5
+      DEFAULT_DOCKER_READ_TIMEOUT_IN_SECONDS = 60
 
       sig { returns(DockerRegistry2::Registry) }
       def docker_registry_client
