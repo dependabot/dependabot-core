@@ -65,7 +65,6 @@ module Dependabot
         @latest_version_with_no_unlock = T.let(nil, T.nilable(Dependabot::Version))
         @lowest_security_fix_version = T.let(nil, T.nilable(Dependabot::Version))
         @package_details = T.let(nil, T.nilable(Dependabot::Package::PackageDetails))
-        @index_urls = T.let(nil, T.nilable(T::Array[String]))
       end
 
       sig do
