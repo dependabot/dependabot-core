@@ -42,7 +42,7 @@ RSpec.describe Dependabot::Python::Package::PackageDetailsFetcher do
 
   let(:expected_releases) do
     [
-      Dependabot::Python::Package::PackageRelease.new(
+      Dependabot::Package::PackageRelease.new(
         version: Dependabot::Python::Version.new("2.32.3"),
         released_at: nil,
         yanked: false,
@@ -50,13 +50,13 @@ RSpec.describe Dependabot::Python::Package::PackageDetailsFetcher do
         downloads: -1,
         url: "https://files.pythonhosted.org/packages/f9/9b/335f9764261e915ed497fcdeb11df5dfd6f7bf257d4a6a2a686d80da4d54/requests-2.32.3-py3-none-any.whl",
         package_type: nil,
-        language: Dependabot::Python::Package::PackageLanguage.new(
+        language: Dependabot::Package::PackageLanguage.new(
           name: "python",
           version: nil,
           requirement: Dependabot::Python::Requirement.new([">=3.8"])
         )
       ),
-      Dependabot::Python::Package::PackageRelease.new(
+      Dependabot::Package::PackageRelease.new(
         version: Dependabot::Python::Version.new("2.27.0"),
         released_at: nil,
         yanked: false,
@@ -64,7 +64,7 @@ RSpec.describe Dependabot::Python::Package::PackageDetailsFetcher do
         downloads: -1,
         url: "https://files.pythonhosted.org/packages/47/01/f420e7add78110940639a958e5af0e3f8e07a8a8b62049bac55ee117aa91/requests-2.27.0-py2.py3-none-any.whl",
         package_type: nil,
-        language: Dependabot::Python::Package::PackageLanguage.new(
+        language: Dependabot::Package::PackageLanguage.new(
           name: "python",
           version: nil,
           requirement: Dependabot::Python::Requirement.new([">=2.7", "!=3.0.*", "!=3.1.*", "!=3.2.*", "!=3.3.*",

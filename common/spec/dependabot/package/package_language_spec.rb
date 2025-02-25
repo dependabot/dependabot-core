@@ -2,20 +2,20 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/python/package/package_language"
+require "dependabot/package/package_language"
 require "dependabot/version"
-require "dependabot/python/requirement"
+require "dependabot/bundler/requirement"
 
-RSpec.describe Dependabot::Python::Package::PackageLanguage do
-  let(:name) { "python" }
-  let(:version) { Dependabot::Version.new("3.8") }
-  let(:requirement) { Dependabot::Python::Requirement.new(">=3.6") }
+RSpec.describe Dependabot::Package::PackageLanguage do
+  let(:name) { "ruby" }
+  let(:version) { Dependabot::Version.new("2.7.6") }
+  let(:requirement) { Dependabot::Bundler::Requirement.new(">=2.5") }
 
   describe "#initialize" do
     it "creates a PackageLanguage object with all attributes" do
       language = described_class.new(name: name, version: version, requirement: requirement)
 
-      expect(language.name).to eq("python")
+      expect(language.name).to eq("ruby")
       expect(language.version).to eq(version)
       expect(language.requirement).to eq(requirement)
     end
@@ -23,7 +23,7 @@ RSpec.describe Dependabot::Python::Package::PackageLanguage do
     it "creates a PackageLanguage object with only name" do
       language = described_class.new(name: name)
 
-      expect(language.name).to eq("python")
+      expect(language.name).to eq("ruby")
       expect(language.version).to be_nil
       expect(language.requirement).to be_nil
     end

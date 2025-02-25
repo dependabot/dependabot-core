@@ -2,19 +2,19 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/python/package/package_release"
-require "dependabot/python/package/package_language"
+require "dependabot/package/package_release"
+require "dependabot/package/package_language"
 require "dependabot/version"
-require "dependabot/python/requirement"
+require "dependabot/bundler/requirement"
 
-RSpec.describe Dependabot::Python::Package::PackageRelease do
+RSpec.describe Dependabot::Package::PackageRelease do
   let(:version) { Dependabot::Version.new("2.0.0") }
   let(:released_at) { Time.parse("2023-01-01T12:00:00Z") }
   let(:language) do
-    Dependabot::Python::Package::PackageLanguage.new(
-      name: "python",
-      version: Dependabot::Version.new("3.8"),
-      requirement: Dependabot::Python::Requirement.new(">=3.6")
+    Dependabot::Package::PackageLanguage.new(
+      name: "ruby",
+      version: Dependabot::Version.new("2.7.6"),
+      requirement: Dependabot::Bundler::Requirement.new(">=2.5")
     )
   end
 
@@ -26,8 +26,8 @@ RSpec.describe Dependabot::Python::Package::PackageRelease do
         yanked: true,
         yanked_reason: "Security issue",
         downloads: 5000,
-        url: "https://example.com/package-2.0.0.tar.gz",
-        package_type: "sdist",
+        url: "https://example.com/package-2.0.0.gem",
+        package_type: "gem",
         language: language
       )
 
@@ -36,12 +36,12 @@ RSpec.describe Dependabot::Python::Package::PackageRelease do
       expect(release.yanked).to be true
       expect(release.yanked_reason).to eq("Security issue")
       expect(release.downloads).to eq(5000)
-      expect(release.url).to eq("https://example.com/package-2.0.0.tar.gz")
-      expect(release.package_type).to eq("sdist")
+      expect(release.url).to eq("https://example.com/package-2.0.0.gem")
+      expect(release.package_type).to eq("gem")
       expect(release.language).to eq(language)
-      expect(release.language.name).to eq("python")
-      expect(release.language.version).to eq(Dependabot::Version.new("3.8"))
-      expect(release.language.requirement).to eq(Dependabot::Python::Requirement.new(">=3.6"))
+      expect(release.language.name).to eq("ruby")
+      expect(release.language.version).to eq(Dependabot::Version.new("2.7.6"))
+      expect(release.language.requirement).to eq(Dependabot::Bundler::Requirement.new(">=2.5"))
     end
 
     it "creates a PackageRelease object with only required attributes" do

@@ -211,3 +211,13 @@ TestRequirement = Class.new(Dependabot::Requirement) do
     super(requirements)
   end
 end
+
+# Helper for generating PackageDetails mock objects
+module PackageDetailsMock
+  def self.generate(name:, versions:)
+    Dependabot::Package::PackageDetails.new(
+      name: name,
+      releases: versions.map { |v| { version: v } }
+    )
+  end
+end
