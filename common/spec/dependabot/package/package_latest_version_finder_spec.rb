@@ -62,7 +62,7 @@ RSpec.describe Dependabot::Package::PackageLatestVersionFinder do
       name: dependency_name,
       version: dependency_version,
       requirements: dependency_requirements,
-      package_manager: "bundler"
+      package_manager: "dummy"
     )
   end
   let(:dependency_name) { "rails" }
@@ -106,7 +106,7 @@ RSpec.describe Dependabot::Package::PackageLatestVersionFinder do
         name: dependency_name,
         version: version,
         requirements: requirements,
-        package_manager: "bundler"
+        package_manager: "dummy"
       )
     end
     let(:requirements) do
@@ -150,7 +150,7 @@ RSpec.describe Dependabot::Package::PackageLatestVersionFinder do
       [
         Dependabot::SecurityAdvisory.new(
           dependency_name: dependency_name,
-          package_manager: "bundler",
+          package_manager: "dummy",
           vulnerable_versions: ["<= 6.0.1"]
         )
       ]
