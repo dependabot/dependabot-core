@@ -106,7 +106,7 @@ RSpec.describe Dependabot::Package::PackageLatestVersionFinder do
       let(:available_versions) { ["7.0.0", "6.1.4", "6.0.2", "6.0.0", "7.1.0-beta"] }
 
       it "ignores prerelease versions" do
-        expect(subject).to eq(Gem::Version.new("7.0.0"))
+        expect(latest_version).to eq(Gem::Version.new("7.0.0"))
       end
 
       context "when prereleases are allowed" do
@@ -115,7 +115,7 @@ RSpec.describe Dependabot::Package::PackageLatestVersionFinder do
         end
 
         it "selects the highest prerelease version" do
-          expect(subject).to eq(Gem::Version.new("7.1.0-beta"))
+          expect(latest_version).to eq(Gem::Version.new("7.1.0-beta"))
         end
       end
     end
