@@ -29,7 +29,6 @@ RSpec.describe Dependabot::DockerCompose::FileFetcher do
   end
 
   before do
-    allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_beta_ecosystems).and_return(true)
     allow(file_fetcher_instance).to receive(:commit).and_return("sha")
   end
 

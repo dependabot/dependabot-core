@@ -29,10 +29,6 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
   end
   let(:files) { [composefile] }
 
-  before do
-    allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_beta_ecosystems).and_return(true)
-  end
-
   it_behaves_like "a dependency file parser"
 
   describe "parse" do
