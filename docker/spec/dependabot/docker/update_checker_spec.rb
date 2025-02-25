@@ -1430,7 +1430,6 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
           .and_return(status: 200, body: "", headers: JSON.parse(new_headers))
         stub_request(:head, repo_url + "manifests/4-apache-202502070602")
           .and_return(status: 200, body: "", headers: JSON.parse(new_headers))
-
       end
 
       it { is_expected.to eq("4-apache-202502070602") }
