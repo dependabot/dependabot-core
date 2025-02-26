@@ -185,25 +185,18 @@ module Dependabot
 
       sig { params(tags: T::Array[Dependabot::Docker::Tag]).returns(T::Array[String]) }
       def identify_common_components(tags)
-        tag_parts = []
-
-        tags.each do |tag|
+        tag_parts = tags.map do |tag|
           # replace version parts with VERSION
           processed_tag = tag.name.gsub(/\d+\.\d+\.\d+_\d+/, "VERSION")
 
           parts = processed_tag.split(%r{[-\./]})
-          tag_parts.concat(parts.reject(&:empty?))
+          parts.reject(&:empty?)
         end
 
-        part_counts = {}
-        tag_parts.each do |part|
-          part_counts[part] ||= 0
-          part_counts[part] += 1
-        end
+        part_counts = tag_parts.flatten.tally
 
-        part_counts.select do |part, count|
-          count > 1 &&
-            part.length > 1 &&
+        part_counts.select do |part|
+          part.length > 1 &&
             part != "VERSION" &&
             !version_related_pattern?(part)
         end.keys
@@ -227,13 +220,7 @@ module Dependabot
 
       sig { params(tag_name: String, common_components: T::Array[String]).returns(T::Array[String]) }
       def extract_tag_components(tag_name, common_components)
-        components = []
-
-        common_components.each do |component|
-          components << component if tag_name.match?(/\b#{Regexp.escape(component)}\b/)
-        end
-
-        components
+        common_components.select { |component| tag_name.match?(/\b#{Regexp.escape(component)}\b/) }
       end
 
       sig { params(tag_components: T::Array[String], original_components: T::Array[String]).returns(T::Boolean) }
