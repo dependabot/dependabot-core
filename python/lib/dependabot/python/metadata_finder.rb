@@ -113,7 +113,7 @@ module Dependabot
       end
       # rubocop:enable Metrics/PerceivedComplexity
 
-      sig { returns(T.nilable(Excon::Response)) }
+      sig { returns(T.untyped) }
       def homepage_body
         homepage_url = pypi_listing.dig("info", "home_page")
 
