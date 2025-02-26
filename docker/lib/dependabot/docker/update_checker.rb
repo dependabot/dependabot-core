@@ -167,6 +167,10 @@ module Dependabot
 
       sig { params(original_tag: Dependabot::Docker::Tag).returns(T::Array[Dependabot::Docker::Tag]) }
       def comparable_tags_from_registry(original_tag)
+        unless Experiments.enabled?(:docker_tag_component_comparison)
+          return tags_from_registry.select { |tag| tag.comparable_to?(original_tag) }
+        end
+
         common_components = identify_common_components(tags_from_registry)
         original_components = extract_tag_components(original_tag.name, common_components)
         Dependabot.logger.info("Original tag components: #{original_components.join(',')}")
