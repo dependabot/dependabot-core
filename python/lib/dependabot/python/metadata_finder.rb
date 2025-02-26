@@ -47,7 +47,7 @@ module Dependabot
       end
 
       # rubocop:disable Metrics/PerceivedComplexity
-      sig { returns(T.nilable(String)) }
+      sig { returns(T.nilable(Dependabot::Source)) }
       def source_from_description
         potential_source_urls = []
         desc = pypi_listing.dig("info", "description")
@@ -83,12 +83,12 @@ module Dependabot
       # rubocop:enable Metrics/PerceivedComplexity
 
       # rubocop:disable Metrics/PerceivedComplexity
-      sig { returns(T.nilable(String)) }
+      sig { returns(T.nilable(Dependabot::Source)) }
       def source_from_homepage
         return unless homepage_body
 
         potential_source_urls = []
-        T.must(homepage_body).scan(Source::SOURCE_REGEX) do
+        homepage_body.scan(Source::SOURCE_REGEX) do
           potential_source_urls << Regexp.last_match.to_s
         end
 
@@ -113,7 +113,7 @@ module Dependabot
       end
       # rubocop:enable Metrics/PerceivedComplexity
 
-      sig { returns(T.nilable(String)) }
+      sig { returns(T.untyped) }
       def homepage_body
         homepage_url = pypi_listing.dig("info", "home_page")
 
