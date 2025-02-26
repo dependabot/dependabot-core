@@ -1439,7 +1439,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         end
 
         it "selects tags with matching components and ignores tags with different components" do
-          is_expected.to eq("4-apache-202502070602")
+          expect(subject).to eq("4-apache-202502070602")
         end
 
         context "with multiple components to match" do
