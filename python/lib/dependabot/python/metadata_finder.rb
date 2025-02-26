@@ -16,7 +16,7 @@ module Dependabot
       extend T::Sig
       MAIN_PYPI_URL = "https://pypi.org/pypi"
 
-      sig { returns(T.nilable(String)) }
+      sig { returns(T.untyped) }
       def homepage_url
         pypi_listing.dig("info", "home_page") ||
           pypi_listing.dig("info", "project_urls", "Homepage") ||
@@ -88,7 +88,7 @@ module Dependabot
         return unless homepage_body
 
         potential_source_urls = []
-        homepage_body.scan(Source::SOURCE_REGEX) do
+        T.must(homepage_body).scan(Source::SOURCE_REGEX) do
           potential_source_urls << Regexp.last_match.to_s
         end
 
@@ -113,7 +113,7 @@ module Dependabot
       end
       # rubocop:enable Metrics/PerceivedComplexity
 
-      sig { returns(T.untyped) }
+      sig { returns(T.nilable(Excon::Response)) }
       def homepage_body
         homepage_url = pypi_listing.dig("info", "home_page")
 
@@ -176,7 +176,7 @@ module Dependabot
         end
       end
 
-      sig { returns(T::Array[String]) }
+      sig { returns(T.untyped) }
       def possible_listing_urls
         credential_urls =
           credentials
