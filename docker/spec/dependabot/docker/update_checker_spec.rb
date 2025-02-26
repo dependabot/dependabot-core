@@ -1438,9 +1438,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
           allow(Dependabot::Experiments).to receive(:enabled?).with(:docker_tag_component_comparison).and_return(true)
         end
 
-        it "selects tags with matching components and ignores tags with different components" do
-          expect(subject).to eq("4-apache-202502070602")
-        end
+        it { is_expected.to eq("4-apache-202502070602") }
 
         context "with multiple components to match" do
           let(:version) { "3.3-nginx-alpine-202209221209" }
