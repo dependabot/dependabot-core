@@ -320,7 +320,7 @@ GEM
     parallel_tests (4.7.1)
       parallel
     parseconfig (1.0.8)
-    parser (3.3.6.0)
+    parser (3.3.7.1)
       ast (~> 2.4.1)
       racc
     psych (5.1.2)
@@ -339,7 +339,7 @@ GEM
       http-cookie (>= 1.0.2, < 2.0)
       mime-types (>= 1.16, < 4.0)
       netrc (~> 0.8)
-    rexml (3.3.9)
+    rexml (3.4.1)
     rspec (3.13.0)
       rspec-core (~> 3.13.0)
       rspec-expectations (~> 3.13.0)
@@ -486,4 +486,4 @@ DEPENDENCIES
   zeitwerk (~> 2.7)
 
 BUNDLED WITH
-   2.6.3
+   2.6.5
