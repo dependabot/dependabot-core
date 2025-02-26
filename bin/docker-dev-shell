@@ -109,6 +109,23 @@ if [ "$#" -gt "1" ]; then
   CONTAINER_ARGS=("${@:2}")
 fi
 
+SSH_MOUNT_ARGS=()
+# Detect if running on Mac with Docker Desktop or Rancher Desktop
+if [[ -n "$SSH_AUTH_SOCK" ]] && [[ "$OSTYPE" == "darwin"* ]] && \
+  { [ -e "/run/host-services/ssh-auth.sock" ] || [ -d "/Applications/Docker.app" ] || [ -d "/Applications/Rancher Desktop.app" ]; }; then
+    # Mac with Docker/Rancher Desktop configuration
+    SSH_MOUNT_ARGS+=("-v")
+    SSH_MOUNT_ARGS+=("/run/host-services/ssh-auth.sock:/run/host-services/ssh-auth.sock")
+    SSH_MOUNT_ARGS+=("-e")
+    SSH_MOUNT_ARGS+=("SSH_AUTH_SOCK=/run/host-services/ssh-auth.sock")
+elif [[ -n "$SSH_AUTH_SOCK" ]]; then
+    # Standard Linux configuration with SSH_AUTH_SOCK non-empty
+    SSH_MOUNT_ARGS+=("-v")
+    SSH_MOUNT_ARGS+=("$SSH_AUTH_SOCK:/tmp/ssh-auth.sock")
+    SSH_MOUNT_ARGS+=("-e")
+    SSH_MOUNT_ARGS+=("SSH_AUTH_SOCK=/tmp/ssh-auth.sock")
+fi
+
 echo "$(tput setaf 2)=> running docker development shell$(tput sgr0)"
 CODE_DIR="/home/dependabot"
 touch .core-bash_history
@@ -251,6 +268,7 @@ docker run --rm -ti \
   -v "$(pwd)/updater/Gemfile:$CODE_DIR/dependabot-updater/Gemfile" \
   -v "$(pwd)/updater/lib:$CODE_DIR/dependabot-updater/lib" \
   -v "$(pwd)/updater/spec:$CODE_DIR/dependabot-updater/spec" \
+  "${SSH_MOUNT_ARGS[@]}" \
   --name "$CONTAINER_NAME" \
   --env "LOCAL_GITHUB_ACCESS_TOKEN=$LOCAL_GITHUB_ACCESS_TOKEN" \
   --env "DEPENDABOT_TEST_ACCESS_TOKEN" \
