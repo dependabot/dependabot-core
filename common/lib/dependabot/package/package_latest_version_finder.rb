@@ -36,6 +36,9 @@ module Dependabot
       sig { returns(T::Array[SecurityAdvisory]) }
       attr_reader :security_advisories
 
+      sig { returns(T.nilable(CooldownOptions)) }
+      attr_reader :cooldown_options
+
       sig { returns(T::Hash[Symbol, T.untyped]) }
       attr_reader :options
 
@@ -46,6 +49,7 @@ module Dependabot
           credentials: T::Array[Dependabot::Credential],
           ignored_versions: T::Array[String],
           security_advisories: T::Array[Dependabot::SecurityAdvisory],
+          cooldown_options: T.nilable(CooldownOptions),
           raise_on_ignored: T::Boolean,
           options: T::Hash[Symbol, T.untyped]
         ).void
@@ -56,6 +60,7 @@ module Dependabot
         credentials:,
         ignored_versions:,
         security_advisories:,
+        cooldown_options: nil,
         raise_on_ignored: false,
         options: {}
       )
@@ -64,6 +69,7 @@ module Dependabot
         @credentials         = credentials
         @ignored_versions    = ignored_versions
         @security_advisories = security_advisories
+        @cooldown_options = cooldown_options
         @raise_on_ignored    = raise_on_ignored
         # It can be used by sub classes to pass options to the registry client
         @options             = options
@@ -119,6 +125,7 @@ module Dependabot
         return unless version_hashes
 
         version_hashes = filter_yanked_versions(version_hashes)
+        version_hashes = filter_by_cooldown(version_hashes)
         versions = filter_unsupported_versions(version_hashes, language_version)
         versions = filter_prerelease_versions(versions)
         versions = filter_ignored_versions(versions)
@@ -135,6 +142,7 @@ module Dependabot
         return unless version_hashes
 
         version_hashes = filter_yanked_versions(version_hashes)
+        version_hashes = filter_by_cooldown(version_hashes)
         versions = filter_unsupported_versions(version_hashes, language_version)
         versions = filter_prerelease_versions(versions)
         versions = filter_ignored_versions(versions)
@@ -152,6 +160,7 @@ module Dependabot
         return unless version_hashes
 
         version_hashes = filter_yanked_versions(version_hashes)
+        version_hashes = filter_by_cooldown(version_hashes)
         versions = filter_unsupported_versions(version_hashes, language_version)
         # versions = filter_prerelease_versions(versions)
         versions = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(
@@ -172,6 +181,29 @@ module Dependabot
         filtered = releases.reject(&:yanked?)
         if releases.count > filtered.count
           Dependabot.logger.info("Filtered out #{releases.count - filtered.count} yanked versions")
+        end
+        filtered
+      end
+
+      sig do
+        params(releases: T::Array[Dependabot::Package::PackageRelease])
+          .returns(T::Array[Dependabot::Package::PackageRelease])
+      end
+      def filter_by_cooldown(releases)
+        return releases unless cooldown_enabled?
+        return releases unless cooldown_options
+
+        current_version = dependency.version ? version_class.new(dependency.version) : nil
+
+        filtered = releases.reject do |release|
+          next false unless release.released_at
+
+          days = cooldown_days_for(current_version, release.version)
+          (Time.now.to_i - release.released_at.to_i) < (days * 24 * 60 * 60)
+        end
+
+        if releases.count > filtered.count
+          Dependabot.logger.info("Filtered out #{releases.count - filtered.count} versions due to cooldown")
         end
         filtered
       end
@@ -256,6 +288,44 @@ module Dependabot
         versions_array
           .select { |v| reqs.all? { |r| r.any? { |o| o.satisfied_by?(v) } } }
       end
+
+      # rubocop:disable Metrics/PerceivedComplexity
+      sig { returns(T::Boolean) }
+      def cooldown_enabled?
+        false
+      end
+
+      sig do
+        params(
+          current_version: T.nilable(Dependabot::Version),
+          new_version: Dependabot::Version
+        ).returns(Integer)
+      end
+      def cooldown_days_for(current_version, new_version)
+        cooldown = @cooldown_options
+        return 0 if cooldown.nil?
+        # If cooldown is not enabled, then no delay is applied.
+        return 0 if !cooldown_enabled? || @cooldown_options.nil?
+        # if dependency is excluded, then no delay is applied.
+        return 0 if @cooldown_options.excluded?(dependency.name)
+        # If the `include` list is empty or dependency is in the list return true
+        # otherwise return false.
+        return 0 unless @cooldown_options.included?(dependency.name)
+        # If there's no previous version, apply default cooldown.
+        return cooldown.default_days if current_version.nil?
+
+        # Compare versions to determine cooldown days.
+        if new_version.major > current_version.major # major change
+          cooldown.major_days
+        elsif new_version.minor > current_version.minor
+          cooldown.minor_days
+        elsif new_version.patch > current_version.patch
+          cooldown.patch_days
+        else
+          cooldown.default_days
+        end
+      end
+      # rubocop:enable Metrics/PerceivedComplexity
 
       sig { returns(T::Boolean) }
       def wants_prerelease?

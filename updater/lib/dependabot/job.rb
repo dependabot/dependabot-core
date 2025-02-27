@@ -49,6 +49,7 @@ module Dependabot
       vendor_dependencies
       dependency_groups
       dependency_group_to_refresh
+      cooldown
       repo_private
     ).freeze, T::Array[Symbol])
 
@@ -99,6 +100,9 @@ module Dependabot
 
     sig { returns(T.nilable(String)) }
     attr_reader :dependency_group_to_refresh
+
+    sig { returns(T.nilable(Dependabot::Package::CooldownOptions)) }
+    attr_reader :cooldown
 
     sig do
       params(job_id: String, job_definition: T::Hash[String, T.untyped],
@@ -166,6 +170,8 @@ module Dependabot
       @update_subdependencies         = T.let(attributes.fetch(:update_subdependencies), T::Boolean)
       @updating_a_pull_request        = T.let(attributes.fetch(:updating_a_pull_request), T::Boolean)
       @vendor_dependencies            = T.let(attributes.fetch(:vendor_dependencies, false), T::Boolean)
+      @cooldown = T.let(build_cooldown(attributes.fetch(:cooldown, nil)),
+                        T.nilable(Dependabot::Package::CooldownOptions))
       # TODO: Make this hash required
       #
       # We will need to do a pass updating the CLI and smoke tests before this is possible,
@@ -440,6 +446,22 @@ module Dependabot
         commit: T.let(source_details["commit"], T.nilable(String)),
         hostname: T.let(source_details["hostname"], T.nilable(String)),
         api_endpoint: T.let(source_details["api-endpoint"], T.nilable(String))
+      )
+    end
+
+    sig do
+      params(cooldown: T.nilable(T::Hash[String, T.untyped])).returns(T.nilable(Dependabot::Package::CooldownOptions))
+    end
+    def build_cooldown(cooldown)
+      return nil unless cooldown
+
+      Dependabot::Package::CooldownOptions.new(
+        default_days: cooldown["default-days"] || 0,
+        major_days: cooldown["major-days"] || 0,
+        minor_days: cooldown["minor-days"] || 0,
+        patch_days: cooldown["patch-days"] || 0,
+        include: cooldown["include"] || [],
+        exclude: cooldown["exclude"] || []
       )
     end
 

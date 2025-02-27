@@ -73,5 +73,27 @@ module Dependabot
     def lowest_prerelease_suffix
       "a"
     end
+
+    sig { returns(Integer) }
+    def major
+      version_parts[0] || 0
+    end
+
+    sig { returns(Integer) }
+    def minor
+      version_parts[1] || 0
+    end
+
+    sig { returns(Integer) }
+    def patch
+      version_parts[2] || 0
+    end
+
+    private
+
+    sig { returns(T::Array[T.nilable(Integer)]) }
+    def version_parts
+      to_semver.split(".").map { |part| part[/\d+/]&.to_i }
+    end
   end
 end
