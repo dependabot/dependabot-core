@@ -64,7 +64,7 @@ RSpec.describe Dependabot::Uv::UpdateChecker::LatestVersionFinder do
       name: dependency_name,
       version: dependency_version,
       requirements: dependency_requirements,
-      package_manager: "pip"
+      package_manager: "uv"
     )
   end
   let(:dependency_name) { "luigi" }
@@ -590,7 +590,7 @@ RSpec.describe Dependabot::Uv::UpdateChecker::LatestVersionFinder do
         name: dependency_name,
         version: version,
         requirements: requirements,
-        package_manager: "pip"
+        package_manager: "uv"
       )
     end
     let(:requirements) do
@@ -698,7 +698,7 @@ RSpec.describe Dependabot::Uv::UpdateChecker::LatestVersionFinder do
       [
         Dependabot::SecurityAdvisory.new(
           dependency_name: dependency_name,
-          package_manager: "pip",
+          package_manager: "uv",
           vulnerable_versions: ["<= 2.1.0"]
         )
       ]

@@ -63,7 +63,7 @@ RSpec.describe Dependabot::Uv::UpdateChecker::IndexFinder do
         groups: ["dependencies"],
         source: nil
       }],
-      package_manager: "pip"
+      package_manager: "uv"
     )
   end
 
@@ -307,7 +307,7 @@ RSpec.describe Dependabot::Uv::UpdateChecker::IndexFinder do
               groups: ["dependencies"],
               source: "custom"
             }],
-            package_manager: "pip"
+            package_manager: "uv"
           )
         end
 

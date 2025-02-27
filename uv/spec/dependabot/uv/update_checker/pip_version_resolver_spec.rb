@@ -11,8 +11,6 @@ RSpec.describe Dependabot::Uv::UpdateChecker::PipVersionResolver do
     stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
   end
 
-  let(:pypi_url) { "https://pypi.org/simple/luigi/" }
-  let(:pypi_response) { fixture("pypi", "pypi_simple_response.html") }
   let(:resolver) do
     described_class.new(
       dependency: dependency,
@@ -54,7 +52,7 @@ RSpec.describe Dependabot::Uv::UpdateChecker::PipVersionResolver do
       name: dependency_name,
       version: dependency_version,
       requirements: dependency_requirements,
-      package_manager: "pip"
+      package_manager: "uv"
     )
   end
   let(:dependency_name) { "django" }
@@ -116,7 +114,7 @@ RSpec.describe Dependabot::Uv::UpdateChecker::PipVersionResolver do
       [
         Dependabot::SecurityAdvisory.new(
           dependency_name: dependency_name,
-          package_manager: "pip",
+          package_manager: "uv",
           vulnerable_versions: ["<= 2.1.0"]
         )
       ]

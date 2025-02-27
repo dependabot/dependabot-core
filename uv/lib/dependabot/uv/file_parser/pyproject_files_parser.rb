@@ -108,7 +108,7 @@ module Dependabot
                   source: nil,
                   groups: [dep["requirement_type"]].compact
                 }],
-                package_manager: "pip"
+                package_manager: "uv"
               )
           end
 
@@ -133,7 +133,7 @@ module Dependabot
               name: normalise(name),
               version: version_from_lockfile(name),
               requirements: requirements,
-              package_manager: "pip"
+              package_manager: "uv"
             )
           end
           dependencies
@@ -217,7 +217,7 @@ module Dependabot
                 name: name,
                 version: details.fetch("version"),
                 requirements: [],
-                package_manager: "pip",
+                package_manager: "uv",
                 subdependency_metadata: [{
                   production: production_dependency_names.include?(name)
                 }]

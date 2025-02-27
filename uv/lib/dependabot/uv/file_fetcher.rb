@@ -29,20 +29,12 @@ module Dependabot
         # If there is a directory of requirements return true
         return true if filenames.include?("requirements")
 
-        # If this repo is using a Pipfile return true
-        return true if filenames.include?("Pipfile")
-
         # If this repo is using pyproject.toml return true
-        return true if filenames.include?("pyproject.toml")
-
-        return true if filenames.include?("setup.py")
-
-        filenames.include?("setup.cfg")
+        filenames.include?("pyproject.toml")
       end
 
       def self.required_files_message
-        "Repo must contain a requirements.txt, setup.py, setup.cfg, pyproject.toml, " \
-          "or a Pipfile."
+        "Repo must contain a requirements.txt, requirements.in, or pyproject.toml" \
       end
 
       def ecosystem_versions
@@ -72,16 +64,12 @@ module Dependabot
       def fetch_files
         fetched_files = []
 
-        fetched_files += pipenv_files
         fetched_files += pyproject_files
 
         fetched_files += requirements_in_files
         fetched_files += requirement_files if requirements_txt_files.any?
 
-        fetched_files << setup_file if setup_file
-        fetched_files << setup_cfg_file if setup_cfg_file
         fetched_files += project_files
-        fetched_files << pip_conf if pip_conf
         fetched_files << python_version_file if python_version_file
 
         uniq_files(fetched_files)
@@ -95,12 +83,8 @@ module Dependabot
                       .reject { |f| uniq_files.map(&:name).include?(f.name) }
       end
 
-      def pipenv_files
-        [pipfile, pipfile_lock].compact
-      end
-
       def pyproject_files
-        [pyproject, poetry_lock, pdm_lock].compact
+        [pyproject].compact
       end
 
       def requirement_files
@@ -109,24 +93,6 @@ module Dependabot
           *child_requirement_txt_files,
           *constraints_files
         ]
-      end
-
-      def setup_file
-        return @setup_file if defined?(@setup_file)
-
-        @setup_file = fetch_file_if_present("setup.py")
-      end
-
-      def setup_cfg_file
-        return @setup_cfg_file if defined?(@setup_cfg_file)
-
-        @setup_cfg_file = fetch_file_if_present("setup.cfg")
-      end
-
-      def pip_conf
-        return @pip_conf if defined?(@pip_conf)
-
-        @pip_conf = fetch_support_file("pip.conf")
       end
 
       def python_version_file
@@ -144,34 +110,10 @@ module Dependabot
           &.tap { |f| f.name = ".python-version" }
       end
 
-      def pipfile
-        return @pipfile if defined?(@pipfile)
-
-        @pipfile = fetch_file_if_present("Pipfile")
-      end
-
-      def pipfile_lock
-        return @pipfile_lock if defined?(@pipfile_lock)
-
-        @pipfile_lock = fetch_file_if_present("Pipfile.lock")
-      end
-
       def pyproject
         return @pyproject if defined?(@pyproject)
 
         @pyproject = fetch_file_if_present("pyproject.toml")
-      end
-
-      def poetry_lock
-        return @poetry_lock if defined?(@poetry_lock)
-
-        @poetry_lock = fetch_file_if_present("poetry.lock")
-      end
-
-      def pdm_lock
-        return @pdm_lock if defined?(@pdm_lock)
-
-        @pdm_lock = fetch_file_if_present("pdm.lock")
       end
 
       def requirements_txt_files
@@ -181,14 +123,6 @@ module Dependabot
       def requirements_in_files
         req_txt_and_in_files.select { |f| f.name.end_with?(".in") } +
           child_requirement_in_files
-      end
-
-      def parsed_pipfile
-        raise "No Pipfile" unless pipfile
-
-        @parsed_pipfile ||= TomlRB.parse(pipfile.content)
-      rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
-        raise Dependabot::DependencyFileNotParseable, pipfile.path
       end
 
       def parsed_pyproject
@@ -300,18 +234,8 @@ module Dependabot
         path_dependencies.each do |dep|
           path = dep[:path]
           project_files += fetch_project_file(path)
-        rescue Dependabot::DependencyFileNotFound => e
-          unfetchable_deps << if sdist_or_wheel?(path)
-                                e.file_path&.gsub(%r{^/}, "")
-                              else
-                                "\"#{dep[:name]}\" at #{cleanpath(File.join(directory, dep[:file]))}"
-                              end
-        end
-
-        poetry_path_dependencies.each do |path|
-          project_files += fetch_project_file(path)
-        rescue Dependabot::DependencyFileNotFound => e
-          unfetchable_deps << e.file_path&.gsub(%r{^/}, "")
+        rescue Dependabot::DependencyFileNotFound
+          unfetchable_deps << "\"#{dep[:name]}\" at #{cleanpath(File.join(directory, dep[:file]))}"
         end
 
         raise Dependabot::PathDependenciesNotReachable, unfetchable_deps if unfetchable_deps.any?
@@ -322,46 +246,20 @@ module Dependabot
       def fetch_project_file(path)
         project_files = []
 
-        path = cleanpath(File.join(path, "setup.py")) unless sdist_or_wheel?(path)
+        path = cleanpath(File.join(path, "pyproject.toml")) unless sdist_or_wheel?(path)
 
-        return [] if path == "setup.py" && setup_file
+        return [] if path == "pyproject.toml" && pyproject
 
-        project_files <<
-          begin
-            fetch_file_from_host(
-              path,
-              fetch_submodules: true
-            ).tap { |f| f.support_file = true }
-          rescue Dependabot::DependencyFileNotFound
-            # For projects with pyproject.toml attempt to fetch a pyproject.toml
-            # at the given path instead of a setup.py.
-            fetch_file_from_host(
-              path.gsub("setup.py", "pyproject.toml"),
-              fetch_submodules: true
-            ).tap { |f| f.support_file = true }
-          end
+        project_files << fetch_file_from_host(
+          path,
+          fetch_submodules: true
+        ).tap { |f| f.support_file = true }
 
-        return project_files unless path.end_with?(".py")
-
-        project_files + cfg_files_for_setup_py(path)
+        project_files
       end
 
       def sdist_or_wheel?(path)
         path.end_with?(".tar.gz", ".whl", ".zip")
-      end
-
-      def cfg_files_for_setup_py(path)
-        cfg_path = path.gsub(/\.py$/, ".cfg")
-
-        begin
-          [
-            fetch_file_from_host(cfg_path, fetch_submodules: true)
-              .tap { |f| f.support_file = true }
-          ]
-        rescue Dependabot::DependencyFileNotFound
-          # Ignore lack of a setup.cfg
-          []
-        end
       end
 
       def requirements_file?(file)
@@ -377,9 +275,10 @@ module Dependabot
       end
 
       def path_dependencies
-        requirement_txt_path_dependencies +
-          requirement_in_path_dependencies +
-          pipfile_path_dependencies
+        [
+          *requirement_txt_path_dependencies,
+          *requirement_in_path_dependencies
+        ]
       end
 
       def requirement_txt_path_dependencies
@@ -413,40 +312,6 @@ module Dependabot
                   end
 
         uneditable_reqs + editable_reqs
-      end
-
-      def pipfile_path_dependencies
-        return [] unless pipfile
-
-        deps = []
-        DEPENDENCY_TYPES.each do |dep_type|
-          next unless parsed_pipfile[dep_type]
-
-          parsed_pipfile[dep_type].each do |_, req|
-            next unless req.is_a?(Hash) && req["path"]
-
-            deps << { name: req["path"], path: req["path"], file: pipfile.name }
-          end
-        end
-
-        deps
-      end
-
-      def poetry_path_dependencies
-        return [] unless pyproject
-
-        paths = []
-        Dependabot::Uv::FileParser::PyprojectFilesParser::POETRY_DEPENDENCY_TYPES.each do |dep_type|
-          next unless parsed_pyproject.dig("tool", "poetry", dep_type)
-
-          parsed_pyproject.dig("tool", "poetry", dep_type).each do |_, req|
-            next unless req.is_a?(Hash) && req["path"]
-
-            paths << req["path"]
-          end
-        end
-
-        paths
       end
 
       def cleanpath(path)

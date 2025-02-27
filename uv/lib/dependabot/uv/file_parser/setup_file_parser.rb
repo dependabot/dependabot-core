@@ -50,7 +50,7 @@ module Dependabot
                   source: nil,
                   groups: [dep["requirement_type"]]
                 }],
-                package_manager: "pip"
+                package_manager: "uv"
               )
           end
           dependencies

@@ -9,7 +9,6 @@ require "dependabot/uv/file_parser"
 require "dependabot/uv/file_parser/python_requirement_parser"
 require "dependabot/uv/update_checker"
 require "dependabot/uv/file_updater/requirement_replacer"
-require "dependabot/uv/file_updater/setup_file_sanitizer"
 require "dependabot/uv/version"
 require "dependabot/shared_helpers"
 require "dependabot/uv/language_version_manager"
@@ -32,6 +31,7 @@ module Dependabot
         PYTHON_PACKAGE_NAME_REGEX = /[A-Za-z0-9_\-]+/
         RESOLUTION_IMPOSSIBLE_ERROR = "ResolutionImpossible"
         ERROR_REGEX = /(?<=ERROR\:\W).*$/
+        UV_UNRESOLVABLE_REGEX = / × No solution found when resolving dependencies:[\s\S]*$/
 
         attr_reader :dependency
         attr_reader :dependency_files
@@ -135,29 +135,15 @@ module Dependabot
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/PerceivedComplexity
         def handle_pip_compile_errors(message)
-          if message.include?(RESOLUTION_IMPOSSIBLE_ERROR)
-            check_original_requirements_resolvable
-            # If the original requirements are resolvable but we get an
-            # incompatibility error after unlocking then it's likely to be
-            # due to problems with pip-compile's cascading resolution
-            return nil
+          if message.include?("No solution found when resolving dependencies")
+            raise DependencyFileNotResolvable, message.scan(UV_UNRESOLVABLE_REGEX).last
           end
 
-          if message.include?("UnsupportedConstraint")
-            # If there's an unsupported constraint, check if it existed
-            # previously (and raise if it did)
-            check_original_requirements_resolvable
-          end
+          check_original_requirements_resolvable if message.include?(RESOLUTION_IMPOSSIBLE_ERROR)
 
-          if (message.include?('Command "python setup.py egg_info') ||
-              message.include?(
-                "exit status 1: python setup.py egg_info"
-              )) &&
-             check_original_requirements_resolvable
-            # The latest version of the dependency we're updating is borked
-            # (because it has an unevaluatable setup.py). Skip the update.
-            return
-          end
+          # If there's an unsupported constraint, check if it existed
+          # previously (and raise if it did)
+          check_original_requirements_resolvable if message.include?("UnsupportedConstraint")
 
           if message.include?(RESOLUTION_IMPOSSIBLE_ERROR) &&
              !message.match?(/#{Regexp.quote(dependency.name)}/i)
@@ -232,6 +218,8 @@ module Dependabot
 
         def run_command(command, env: python_env, fingerprint:)
           SharedHelpers.run_shell_command(command, env: env, fingerprint: fingerprint, stderr_to_stdout: true)
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          handle_pip_compile_errors(e.message)
         end
 
         def pip_compile_options_fingerprint(options)
@@ -282,7 +270,7 @@ module Dependabot
           run_command(command, fingerprint: fingerprint)
         end
 
-        def uv_pip_compile_options_from_compiled_file(requirements_file) # TODO: Consolidate with PipCompileFileUpdater
+        def uv_pip_compile_options_from_compiled_file(requirements_file)
           options = []
 
           options << "--no-emit-index-url" unless requirements_file.content.include?("index-url http")
@@ -299,7 +287,7 @@ module Dependabot
             options << "--emit-build-options"
           end
 
-          if (resolver = FileUpdater::PipCompileFileUpdater::RESOLVER_REGEX.match(requirements_file.content))
+          if (resolver = FileUpdater::CompileFileUpdater::RESOLVER_REGEX.match(requirements_file.content))
             options << "--resolver=#{resolver}"
           end
 
@@ -338,40 +326,12 @@ module Dependabot
 
           # Overwrite the .python-version with updated content
           File.write(".python-version", language_version_manager.python_major_minor)
-
-          setup_files.each do |file|
-            path = file.name
-            FileUtils.mkdir_p(Pathname.new(path).dirname)
-            File.write(path, sanitized_setup_file_content(file))
-          end
-
-          setup_cfg_files.each do |file|
-            path = file.name
-            FileUtils.mkdir_p(Pathname.new(path).dirname)
-            File.write(path, "[metadata]\nname = sanitized-package\n")
-          end
         end
 
         def write_original_manifest_files
           pip_compile_files.each do |file|
             FileUtils.mkdir_p(Pathname.new(file.name).dirname)
             File.write(file.name, file.content)
-          end
-        end
-
-        def sanitized_setup_file_content(file)
-          @sanitized_setup_file_content ||= {}
-          return @sanitized_setup_file_content[file.name] if @sanitized_setup_file_content[file.name]
-
-          @sanitized_setup_file_content[file.name] =
-            Uv::FileUpdater::SetupFileSanitizer
-            .new(setup_file: file, setup_cfg: setup_cfg(file))
-            .sanitized_content
-        end
-
-        def setup_cfg(file)
-          dependency_files.find do |f|
-            f.name == file.name.sub(/\.py$/, ".cfg")
           end
         end
 

@@ -129,7 +129,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::PyprojectPreparer do
           Dependabot::Dependency.new(
             name: "geopy",
             version: "1.14.0",
-            package_manager: "pip",
+            package_manager: "uv",
             requirements: []
           )
         ]

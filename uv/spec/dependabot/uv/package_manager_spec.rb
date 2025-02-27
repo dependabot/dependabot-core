@@ -5,17 +5,17 @@ require "dependabot/uv/package_manager"
 require "dependabot/ecosystem"
 require "spec_helper"
 
-RSpec.describe Dependabot::Uv::PipCompilePackageManager do
-  let(:package_manager) { described_class.new("2024.0.1") }
+RSpec.describe Dependabot::Uv::PackageManager do
+  let(:package_manager) { described_class.new("0.6.2") }
 
   describe "#initialize" do
     context "when version is a String" do
       it "sets the version correctly" do
-        expect(package_manager.version).to eq("2024.0.1")
+        expect(package_manager.version).to eq("0.6.2")
       end
 
       it "sets the name correctly" do
-        expect(package_manager.name).to eq("pip-compile")
+        expect(package_manager.name).to eq("uv")
       end
     end
 
