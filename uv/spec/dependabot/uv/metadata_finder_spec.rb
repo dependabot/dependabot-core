@@ -32,7 +32,7 @@ RSpec.describe Dependabot::Uv::MetadataFinder do
         groups: [],
         source: nil
       }],
-      package_manager: "pip"
+      package_manager: "uv"
     )
   end
 

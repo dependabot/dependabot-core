@@ -17,8 +17,6 @@ require "dependabot/update_checkers/base"
 module Dependabot
   module Uv
     class UpdateChecker < Dependabot::UpdateCheckers::Base
-      require_relative "update_checker/poetry_version_resolver"
-      require_relative "update_checker/pipenv_version_resolver"
       require_relative "update_checker/pip_compile_version_resolver"
       require_relative "update_checker/pip_version_resolver"
       require_relative "update_checker/requirements_updater"
@@ -76,7 +74,7 @@ module Dependabot
           requirements: requirements,
           latest_resolvable_version: preferred_resolvable_version&.to_s,
           update_strategy: requirements_update_strategy,
-          has_lockfile: !(pipfile_lock || poetry_lock).nil?
+          has_lockfile: requirements_text_file?
         ).updated_requirements
       end
 
@@ -119,8 +117,6 @@ module Dependabot
 
         case resolver_type
         when :pip_compile then pip_compile_version_resolver
-        when :pipenv then pipenv_version_resolver
-        when :poetry then poetry_version_resolver
         when :requirements then pip_version_resolver
         else raise "Unexpected resolver type #{resolver_type}"
         end
@@ -136,8 +132,7 @@ module Dependabot
 
         # Otherwise, this is a top-level dependency, and we can figure out
         # which resolver to use based on the filename of its requirements
-        return :pipenv if updating_pipfile?
-        return pyproject_resolver if updating_pyproject?
+        return :requirements if updating_pyproject?
         return :pip_compile if updating_in_file?
 
         if dependency.version && !exact_requirement?(reqs)
@@ -148,17 +143,9 @@ module Dependabot
       end
 
       def subdependency_resolver
-        return :pipenv if pipfile_lock
-        return :poetry if poetry_lock
         return :pip_compile if pip_compile_files.any?
 
         raise "Claimed to be a sub-dependency, but no lockfile exists!"
-      end
-
-      def pyproject_resolver
-        return :poetry if poetry_based?
-
-        :requirements
       end
 
       def exact_requirement?(reqs)
@@ -168,17 +155,9 @@ module Dependabot
         reqs.any? { |r| Uv::Requirement.new(r).exact? }
       end
 
-      def pipenv_version_resolver
-        @pipenv_version_resolver ||= PipenvVersionResolver.new(**resolver_args)
-      end
-
       def pip_compile_version_resolver
         @pip_compile_version_resolver ||=
           PipCompileVersionResolver.new(**resolver_args)
-      end
-
-      def poetry_version_resolver
-        @poetry_version_resolver ||= PoetryVersionResolver.new(**resolver_args)
       end
 
       def pip_version_resolver
@@ -259,10 +238,6 @@ module Dependabot
         )
       end
 
-      def poetry_based?
-        updating_pyproject? && !poetry_details.nil?
-      end
-
       def library?
         return false unless updating_pyproject?
 
@@ -284,16 +259,16 @@ module Dependabot
         false
       end
 
-      def updating_pipfile?
-        requirement_files.any?("Pipfile")
-      end
-
       def updating_pyproject?
         requirement_files.any?("pyproject.toml")
       end
 
       def updating_in_file?
         requirement_files.any? { |f| f.end_with?(".in") }
+      end
+
+      def requirements_text_file?
+        requirement_files.any? { |f| f.end_with?("requirements.txt") }
       end
 
       def updating_requirements_file?
@@ -312,28 +287,12 @@ module Dependabot
         NameNormaliser.normalise(name)
       end
 
-      def pipfile
-        dependency_files.find { |f| f.name == "Pipfile" }
-      end
-
-      def pipfile_lock
-        dependency_files.find { |f| f.name == "Pipfile.lock" }
-      end
-
       def pyproject
         dependency_files.find { |f| f.name == "pyproject.toml" }
       end
 
-      def poetry_lock
-        dependency_files.find { |f| f.name == "poetry.lock" }
-      end
-
       def library_details
-        @library_details ||= poetry_details || standard_details || build_system_details
-      end
-
-      def poetry_details
-        @poetry_details ||= toml_content.dig("tool", "poetry")
+        @library_details ||= standard_details || build_system_details
       end
 
       def standard_details

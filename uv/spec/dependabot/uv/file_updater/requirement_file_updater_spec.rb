@@ -4,7 +4,7 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/uv/file_updater/pipfile_file_updater"
+require "dependabot/uv/file_updater"
 require "dependabot/shared_helpers"
 
 RSpec.describe Dependabot::Uv::FileUpdater::RequirementFileUpdater do
@@ -39,7 +39,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::RequirementFileUpdater do
         groups: [],
         source: nil
       }],
-      package_manager: "pip"
+      package_manager: "uv"
     )
   end
   let(:previous_requirement_string) { "==2.6.1" }
@@ -57,7 +57,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::RequirementFileUpdater do
     subject(:updated_files) { updater.updated_dependency_files }
 
     it "returns DependencyFile objects" do
-      updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
+      expect(updated_files).to all(be_a(Dependabot::DependencyFile))
     end
 
     its(:length) { is_expected.to eq(1) }
@@ -110,7 +110,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::RequirementFileUpdater do
               groups: [],
               source: nil
             }],
-            package_manager: "pip"
+            package_manager: "uv"
           )
         end
 
@@ -179,7 +179,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::RequirementFileUpdater do
               groups: [],
               source: nil
             }],
-            package_manager: "pip"
+            package_manager: "uv"
           )
         end
 
@@ -206,7 +206,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::RequirementFileUpdater do
               groups: [],
               source: nil
             }],
-            package_manager: "pip"
+            package_manager: "uv"
           )
         end
 
@@ -297,7 +297,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::RequirementFileUpdater do
                 groups: [],
                 source: nil
               }],
-              package_manager: "pip"
+              package_manager: "uv"
             )
           end
 
@@ -328,7 +328,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::RequirementFileUpdater do
                   groups: [],
                   source: nil
                 }],
-                package_manager: "pip"
+                package_manager: "uv"
               )
             end
 
@@ -373,7 +373,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::RequirementFileUpdater do
               groups: [],
               source: nil
             }],
-            package_manager: "pip"
+            package_manager: "uv"
           )
         end
 
@@ -419,7 +419,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::RequirementFileUpdater do
             groups: [],
             source: nil
           }],
-          package_manager: "pip"
+          package_manager: "uv"
         )
       end
 
@@ -443,7 +443,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::RequirementFileUpdater do
               groups: [],
               source: nil
             }],
-            package_manager: "pip"
+            package_manager: "uv"
           )
         end
 
@@ -467,7 +467,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::RequirementFileUpdater do
               groups: [],
               source: nil
             }],
-            package_manager: "pip"
+            package_manager: "uv"
           )
         end
 
@@ -491,7 +491,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::RequirementFileUpdater do
               groups: [],
               source: nil
             }],
-            package_manager: "pip"
+            package_manager: "uv"
           )
         end
 
@@ -527,7 +527,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::RequirementFileUpdater do
             groups: [],
             source: nil
           }],
-          package_manager: "pip"
+          package_manager: "uv"
         )
       end
 
@@ -551,7 +551,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::RequirementFileUpdater do
               groups: [],
               source: nil
             }],
-            package_manager: "pip"
+            package_manager: "uv"
           )
         end
 
@@ -575,7 +575,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::RequirementFileUpdater do
               groups: [],
               source: nil
             }],
-            package_manager: "pip"
+            package_manager: "uv"
           )
         end
 
@@ -599,7 +599,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::RequirementFileUpdater do
               groups: [],
               source: nil
             }],
-            package_manager: "pip"
+            package_manager: "uv"
           )
         end
 
@@ -642,7 +642,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::RequirementFileUpdater do
               source: nil
             }
           ],
-          package_manager: "pip"
+          package_manager: "uv"
         )
       end
 

@@ -72,7 +72,7 @@ module Dependabot
                     source: nil,
                     groups: [group]
                   }],
-                  package_manager: "pip",
+                  package_manager: "uv",
                   metadata: { original_name: dep_name }
                 )
             end
@@ -105,7 +105,7 @@ module Dependabot
                   name: dep_name,
                   version: version&.gsub(/^===?/, ""),
                   requirements: [],
-                  package_manager: "pip",
+                  package_manager: "uv",
                   subdependency_metadata: [{ production: key != "develop" }]
                 )
             end

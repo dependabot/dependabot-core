@@ -32,14 +32,16 @@ RSpec.describe Dependabot::Uv::FileParser::PyprojectFilesParser do
           .to raise_error do |error|
             expect(error.class)
               .to eq(Dependabot::DependencyFileNotParseable)
+            # rubocop:disable Style/RedundantStringEscape
             expect(error.message)
               .to eq <<~ERROR.strip
-                /pyproject.toml is missing the following sections:
+                \/pyproject.toml is missing the following sections:
                   * tool.poetry.name
                   * tool.poetry.version
                   * tool.poetry.description
                   * tool.poetry.authors
               ERROR
+            # rubocop:enable Style/RedundantStringEscape
           end
       end
     end
@@ -369,14 +371,6 @@ RSpec.describe Dependabot::Uv::FileParser::PyprojectFilesParser do
       its(:length) { is_expected.to eq(5) }
     end
 
-    context "with optional dependencies only" do
-      subject(:dependencies) { parser.dependency_set.dependencies }
-
-      let(:pyproject_fixture_name) { "optional_dependencies_only.toml" }
-
-      its(:length) { is_expected.to be > 0 }
-    end
-
     describe "parse standard python files" do
       subject(:dependencies) { parser.dependency_set.dependencies }
 
@@ -405,14 +399,6 @@ RSpec.describe Dependabot::Uv::FileParser::PyprojectFilesParser do
         # optional dependencies exists
 
         its(:length) { is_expected.to eq(0) }
-      end
-
-      context "with optional dependencies only" do
-        subject(:dependencies) { parser.dependency_set.dependencies }
-
-        let(:pyproject_fixture_name) { "pyproject_1_0_0_optional_deps.toml" }
-
-        its(:length) { is_expected.to be > 0 }
       end
     end
   end

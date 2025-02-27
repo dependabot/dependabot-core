@@ -6,5 +6,5 @@ require "dependabot/uv"
 require_common_spec "shared_examples_for_autoloading"
 
 RSpec.describe Dependabot::Uv do
-  it_behaves_like "it registers the required classes", "pip"
+  it_behaves_like "it registers the required classes", "uv"
 end
