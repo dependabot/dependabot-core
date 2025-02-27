@@ -162,8 +162,7 @@ module Dependabot
 
       sig { returns(String) }
       def repo_type
-        type = parsed_elm_json.fetch("type")
-        T.must(type.is_a?(String) ? type : nil)
+        parsed_elm_json.fetch("type")
       end
 
       sig { override.void }
@@ -186,12 +185,9 @@ module Dependabot
         req.requirements.first.last
       end
 
-      sig { returns(T::Hash[String, T.any(String, T::Hash[String, T.any(String, T::Hash[String, String])])]) }
+      sig { returns(T.untyped) }
       def parsed_elm_json
-        @parsed_elm_json ||= T.let(JSON.parse(T.must(T.must(elm_json).content)),
-                                   T.nilable(T::Hash[String,
-                                                     T.any(String,
-                                                           T::Hash[String, T.any(String, T::Hash[String, String])])]))
+        @parsed_elm_json ||= T.let(JSON.parse(T.must(T.must(elm_json).content)), T.untyped)
       rescue JSON::ParserError
         raise Dependabot::DependencyFileNotParseable, elm_json&.path || MANIFEST_FILE
       end
