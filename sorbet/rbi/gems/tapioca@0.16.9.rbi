@@ -218,7 +218,7 @@ class RBI::TypedParam < ::T::Struct
   const :type, ::String
 
   class << self
-    # source://sorbet-runtime/0.5.11630/lib/types/struct.rb#13
+    # source://sorbet-runtime/0.5.11805/lib/types/struct.rb#13
     def inherited(s); end
   end
 end
@@ -556,11 +556,11 @@ class Tapioca::Commands::AbstractDsl < ::Tapioca::Commands::CommandWithoutTracke
   sig { returns(T::Array[::String]) }
   def all_requested_constants; end
 
-  # source://tapioca//lib/tapioca/commands/abstract_dsl.rb#304
+  # source://tapioca//lib/tapioca/commands/abstract_dsl.rb#306
   sig { params(cause: ::Symbol, files: T::Array[::String]).returns(::String) }
   def build_error_for_files(cause, files); end
 
-  # source://tapioca//lib/tapioca/commands/abstract_dsl.rb#228
+  # source://tapioca//lib/tapioca/commands/abstract_dsl.rb#230
   sig do
     params(
       constant_name: ::String,
@@ -571,31 +571,31 @@ class Tapioca::Commands::AbstractDsl < ::Tapioca::Commands::CommandWithoutTracke
   end
   def compile_dsl_rbi(constant_name, rbi, outpath: T.unsafe(nil), quiet: T.unsafe(nil)); end
 
-  # source://tapioca//lib/tapioca/commands/abstract_dsl.rb#163
+  # source://tapioca//lib/tapioca/commands/abstract_dsl.rb#165
   sig { params(constant_names: T::Array[::String], ignore_missing: T::Boolean).returns(T::Array[::Module]) }
   def constantize(constant_names, ignore_missing: T.unsafe(nil)); end
 
-  # source://tapioca//lib/tapioca/commands/abstract_dsl.rb#188
+  # source://tapioca//lib/tapioca/commands/abstract_dsl.rb#190
   sig { params(compiler_names: T::Array[::String]).returns(T::Array[T.class_of(Tapioca::Dsl::Compiler)]) }
   def constantize_compilers(compiler_names); end
 
-  # source://tapioca//lib/tapioca/commands/abstract_dsl.rb#364
+  # source://tapioca//lib/tapioca/commands/abstract_dsl.rb#366
   sig { returns(T::Array[::String]) }
   def constants_from_requested_paths; end
 
-  # source://tapioca//lib/tapioca/commands/abstract_dsl.rb#131
+  # source://tapioca//lib/tapioca/commands/abstract_dsl.rb#133
   sig { returns(::Tapioca::Dsl::Pipeline) }
   def create_pipeline; end
 
-  # source://tapioca//lib/tapioca/commands/abstract_dsl.rb#267
+  # source://tapioca//lib/tapioca/commands/abstract_dsl.rb#269
   sig { params(constant_name: ::String).returns(::Pathname) }
   def dsl_rbi_filename(constant_name); end
 
-  # source://tapioca//lib/tapioca/commands/abstract_dsl.rb#149
+  # source://tapioca//lib/tapioca/commands/abstract_dsl.rb#151
   sig { params(requested_constants: T::Array[::String], path: ::Pathname).returns(T::Set[::Pathname]) }
   def existing_rbi_filenames(requested_constants, path: T.unsafe(nil)); end
 
-  # source://tapioca//lib/tapioca/commands/abstract_dsl.rb#359
+  # source://tapioca//lib/tapioca/commands/abstract_dsl.rb#361
   sig { params(constant: ::String).returns(::String) }
   def generate_command_for(constant); end
 
@@ -607,7 +607,7 @@ class Tapioca::Commands::AbstractDsl < ::Tapioca::Commands::CommandWithoutTracke
   sig { void }
   def load_application; end
 
-  # source://tapioca//lib/tapioca/commands/abstract_dsl.rb#246
+  # source://tapioca//lib/tapioca/commands/abstract_dsl.rb#248
   sig { params(dir: ::Pathname).void }
   def perform_dsl_verification(dir); end
 
@@ -615,31 +615,31 @@ class Tapioca::Commands::AbstractDsl < ::Tapioca::Commands::CommandWithoutTracke
   sig { returns(::Tapioca::Dsl::Pipeline) }
   def pipeline; end
 
-  # source://tapioca//lib/tapioca/commands/abstract_dsl.rb#255
+  # source://tapioca//lib/tapioca/commands/abstract_dsl.rb#257
   sig { params(files: T::Set[::Pathname]).void }
   def purge_stale_dsl_rbi_files(files); end
 
-  # source://tapioca//lib/tapioca/commands/abstract_dsl.rb#354
+  # source://tapioca//lib/tapioca/commands/abstract_dsl.rb#356
   sig { params(constant: ::String).returns(::String) }
   def rbi_filename_for(constant); end
 
-  # source://tapioca//lib/tapioca/commands/abstract_dsl.rb#335
+  # source://tapioca//lib/tapioca/commands/abstract_dsl.rb#337
   sig { params(path: ::Pathname).returns(T::Array[::Pathname]) }
   def rbi_files_in(path); end
 
-  # source://tapioca//lib/tapioca/commands/abstract_dsl.rb#313
+  # source://tapioca//lib/tapioca/commands/abstract_dsl.rb#315
   sig { params(diff: T::Hash[::String, ::Symbol], command: ::Symbol).void }
   def report_diff_and_exit_if_out_of_date(diff, command); end
 
-  # source://tapioca//lib/tapioca/commands/abstract_dsl.rb#208
+  # source://tapioca//lib/tapioca/commands/abstract_dsl.rb#210
   sig { params(name: ::String).returns(T.nilable(T.class_of(Tapioca::Dsl::Compiler))) }
   def resolve(name); end
 
-  # source://tapioca//lib/tapioca/commands/abstract_dsl.rb#342
+  # source://tapioca//lib/tapioca/commands/abstract_dsl.rb#344
   sig { params(class_name: ::String).returns(::String) }
   def underscore(class_name); end
 
-  # source://tapioca//lib/tapioca/commands/abstract_dsl.rb#272
+  # source://tapioca//lib/tapioca/commands/abstract_dsl.rb#274
   sig { params(tmp_dir: ::Pathname).returns(T::Hash[::String, ::Symbol]) }
   def verify_dsl_rbi(tmp_dir:); end
 end
@@ -1143,7 +1143,7 @@ class Tapioca::ConfigHelper::ConfigError < ::T::Struct
   const :message_parts, T::Array[::Tapioca::ConfigHelper::ConfigErrorMessagePart]
 
   class << self
-    # source://sorbet-runtime/0.5.11630/lib/types/struct.rb#13
+    # source://sorbet-runtime/0.5.11805/lib/types/struct.rb#13
     def inherited(s); end
   end
 end
@@ -1154,7 +1154,7 @@ class Tapioca::ConfigHelper::ConfigErrorMessagePart < ::T::Struct
   const :colors, T::Array[::Symbol]
 
   class << self
-    # source://sorbet-runtime/0.5.11630/lib/types/struct.rb#13
+    # source://sorbet-runtime/0.5.11805/lib/types/struct.rb#13
     def inherited(s); end
   end
 end
@@ -2228,7 +2228,7 @@ class Tapioca::GemInfo < ::T::Struct
     sig { params(spec: ::Bundler::LazySpecification).returns(::Tapioca::GemInfo) }
     def from_spec(spec); end
 
-    # source://sorbet-runtime/0.5.11630/lib/types/struct.rb#13
+    # source://sorbet-runtime/0.5.11805/lib/types/struct.rb#13
     def inherited(s); end
   end
 end
@@ -2407,7 +2407,7 @@ module Tapioca::Loaders; end
 
 # source://tapioca//lib/tapioca/loaders/dsl.rb#6
 class Tapioca::Loaders::Dsl < ::Tapioca::Loaders::Loader
-  # source://tapioca//lib/tapioca/loaders/dsl.rb#60
+  # source://tapioca//lib/tapioca/loaders/dsl.rb#74
   sig do
     params(
       tapioca_path: ::String,
@@ -2418,40 +2418,49 @@ class Tapioca::Loaders::Dsl < ::Tapioca::Loaders::Loader
   end
   def initialize(tapioca_path:, eager_load: T.unsafe(nil), app_root: T.unsafe(nil), halt_upon_load_error: T.unsafe(nil)); end
 
-  # source://tapioca//lib/tapioca/loaders/dsl.rb#43
+  # source://tapioca//lib/tapioca/loaders/dsl.rb#36
   sig { override.void }
   def load; end
 
-  # source://tapioca//lib/tapioca/loaders/dsl.rb#50
+  # source://tapioca//lib/tapioca/loaders/dsl.rb#43
   sig { void }
   def load_dsl_extensions_and_compilers; end
 
+  # source://tapioca//lib/tapioca/loaders/dsl.rb#49
+  sig { void }
+  def reload_custom_compilers; end
+
   protected
 
-  # source://tapioca//lib/tapioca/loaders/dsl.rb#110
+  # source://tapioca//lib/tapioca/loaders/dsl.rb#120
   sig { void }
   def load_application; end
 
-  # source://tapioca//lib/tapioca/loaders/dsl.rb#85
+  # source://tapioca//lib/tapioca/loaders/dsl.rb#100
   sig { void }
   def load_dsl_compilers; end
 
-  # source://tapioca//lib/tapioca/loaders/dsl.rb#70
+  # source://tapioca//lib/tapioca/loaders/dsl.rb#85
   sig { void }
   def load_dsl_extensions; end
 
+  private
+
+  # source://tapioca//lib/tapioca/loaders/dsl.rb#136
+  sig { void }
+  def load_custom_dsl_compilers; end
+
   class << self
-    # source://tapioca//lib/tapioca/loaders/dsl.rb#21
+    # source://tapioca//lib/tapioca/loaders/dsl.rb#20
     sig do
       params(
         tapioca_path: ::String,
         eager_load: T::Boolean,
         app_root: ::String,
-        halt_upon_load_error: T::Boolean,
-        lsp_addon: T::Boolean
+        halt_upon_load_error: T::Boolean
       ).void
     end
-    def load_application(tapioca_path:, eager_load: T.unsafe(nil), app_root: T.unsafe(nil), halt_upon_load_error: T.unsafe(nil), lsp_addon: T.unsafe(nil)); end
+    def load_application(tapioca_path:, eager_load: T.unsafe(nil), app_root: T.unsafe(nil), halt_upon_load_error: T.unsafe(nil)); end
   end
 end
 
@@ -3382,6 +3391,58 @@ Tapioca::SorbetHelper::SORBET_PAYLOAD_URL = T.let(T.unsafe(nil), String)
 # source://tapioca//lib/tapioca/helpers/sorbet_helper.rb#22
 Tapioca::SorbetHelper::SPOOM_CONTEXT = T.let(T.unsafe(nil), Spoom::Context)
 
+# source://tapioca//lib/tapioca/helpers/source_uri.rb#7
+class Tapioca::SourceURI < ::URI::File
+  # source://tapioca//lib/tapioca/helpers/source_uri.rb#72
+  sig { params(v: T.nilable(::String)).returns(T::Boolean) }
+  def check_host(v); end
+
+  # source://tapioca//lib/tapioca/helpers/source_uri.rb#55
+  sig { returns(T.nilable(::String)) }
+  def gem_name; end
+
+  # source://tapioca//lib/tapioca/helpers/source_uri.rb#29
+  sig { returns(T.nilable(::String)) }
+  def gem_version; end
+
+  # source://tapioca//lib/tapioca/helpers/source_uri.rb#60
+  sig { returns(T.nilable(::String)) }
+  def line_number; end
+
+  # source://tapioca//lib/tapioca/helpers/source_uri.rb#65
+  sig { params(v: T.nilable(::String)).void }
+  def set_path(v); end
+
+  # source://tapioca//lib/tapioca/helpers/source_uri.rb#84
+  sig { returns(::String) }
+  def to_s; end
+
+  class << self
+    # source://tapioca//lib/tapioca/helpers/source_uri.rb#42
+    sig do
+      params(
+        gem_name: ::String,
+        gem_version: T.nilable(::String),
+        path: ::String,
+        line_number: T.nilable(::String)
+      ).returns(T.attached_class)
+    end
+    def build(gem_name:, gem_version:, path:, line_number:); end
+  end
+end
+
+# source://tapioca//lib/tapioca/helpers/source_uri.rb#10
+Tapioca::SourceURI::COMPONENT = T.let(T.unsafe(nil), Array)
+
+# `uri` for Ruby 3.4 switched the default parser from RFC2396 to RFC3986. The new parser emits a deprecation
+# warning on a few methods and delegates them to RFC2396, namely `extract`/`make_regexp`/`escape`/`unescape`.
+# On earlier versions of the uri gem, the RFC2396_PARSER constant doesn't exist, so it needs some special
+# handling to select a parser that doesn't emit deprecations. While it was backported to Ruby 3.1, users may
+# have the uri gem in their own bundle and thus not use a compatible version.
+#
+# source://tapioca//lib/tapioca/helpers/source_uri.rb#26
+Tapioca::SourceURI::PARSER = T.let(T.unsafe(nil), URI::RFC2396_Parser)
+
 # source://tapioca//lib/tapioca/static/symbol_table_parser.rb#5
 module Tapioca::Static; end
 
@@ -3557,55 +3618,3 @@ end
 
 # source://tapioca//lib/tapioca/version.rb#5
 Tapioca::VERSION = T.let(T.unsafe(nil), String)
-
-# source://tapioca//lib/tapioca/helpers/source_uri.rb#7
-class URI::Source < ::URI::File
-  # source://tapioca//lib/tapioca/helpers/source_uri.rb#72
-  sig { params(v: T.nilable(::String)).returns(T::Boolean) }
-  def check_host(v); end
-
-  # source://tapioca//lib/tapioca/helpers/source_uri.rb#55
-  sig { returns(T.nilable(::String)) }
-  def gem_name; end
-
-  # source://tapioca//lib/tapioca/helpers/source_uri.rb#29
-  sig { returns(T.nilable(::String)) }
-  def gem_version; end
-
-  # source://tapioca//lib/tapioca/helpers/source_uri.rb#60
-  sig { returns(T.nilable(::String)) }
-  def line_number; end
-
-  # source://tapioca//lib/tapioca/helpers/source_uri.rb#65
-  sig { params(v: T.nilable(::String)).void }
-  def set_path(v); end
-
-  # source://tapioca//lib/tapioca/helpers/source_uri.rb#84
-  sig { returns(::String) }
-  def to_s; end
-
-  class << self
-    # source://tapioca//lib/tapioca/helpers/source_uri.rb#42
-    sig do
-      params(
-        gem_name: ::String,
-        gem_version: T.nilable(::String),
-        path: ::String,
-        line_number: T.nilable(::String)
-      ).returns(::URI::Source)
-    end
-    def build(gem_name:, gem_version:, path:, line_number:); end
-  end
-end
-
-# source://tapioca//lib/tapioca/helpers/source_uri.rb#10
-URI::Source::COMPONENT = T.let(T.unsafe(nil), Array)
-
-# `uri` for Ruby 3.4 switched the default parser from RFC2396 to RFC3986. The new parser emits a deprecation
-# warning on a few methods and delegates them to RFC2396, namely `extract`/`make_regexp`/`escape`/`unescape`.
-# On earlier versions of the uri gem, the RFC2396_PARSER constant doesn't exist, so it needs some special
-# handling to select a parser that doesn't emit deprecations. While it was backported to Ruby 3.1, users may
-# have the uri gem in their own bundle and thus not use a compatible version.
-#
-# source://tapioca//lib/tapioca/helpers/source_uri.rb#26
-URI::Source::PARSER = T.let(T.unsafe(nil), URI::RFC2396_Parser)
