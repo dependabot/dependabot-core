@@ -9,6 +9,7 @@ require "dependabot/devcontainers/version"
 require "dependabot/devcontainers/language"
 require "dependabot/devcontainers/package_manager"
 require "dependabot/devcontainers/file_parser/feature_dependency_parser"
+require "dependabot/devcontainers/file_parser/image_dependency_parser"
 
 module Dependabot
   module Devcontainers
@@ -23,6 +24,9 @@ module Dependabot
 
         config_dependency_files.each do |config_dependency_file|
           parse_features(config_dependency_file).each do |dep|
+            dependency_set << dep
+          end
+          parse_images(config_dependency_file).each do |dep|
             dependency_set << dep
           end
         end
@@ -53,6 +57,15 @@ module Dependabot
       sig { params(config_dependency_file: Dependabot::DependencyFile).returns(T::Array[Dependabot::Dependency]) }
       def parse_features(config_dependency_file)
         FeatureDependencyParser.new(
+          config_dependency_file: config_dependency_file,
+          repo_contents_path: repo_contents_path,
+          credentials: credentials
+        ).parse
+      end
+
+      sig { params(config_dependency_file: Dependabot::DependencyFile).returns(T::Array[Dependabot::Dependency]) }
+      def parse_images(config_dependency_file)
+        ImageDependencyParser.new(
           config_dependency_file: config_dependency_file,
           repo_contents_path: repo_contents_path,
           credentials: credentials
