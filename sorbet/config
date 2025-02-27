@@ -30,4 +30,5 @@
 --ignore=swift/spec/
 --ignore=terraform/spec/
 --ignore=updater/spec/
+--ignore=uv/spec/
 --ignore=.git

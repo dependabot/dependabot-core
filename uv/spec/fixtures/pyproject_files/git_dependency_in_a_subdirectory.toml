@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "dependabot-service"
+# probably not relevat for now; versions are taken from tags
+version = "1.37.2"
+description = ""
+authors = []
+readme = "README.md"
+# probably not relevant for now
+packages = []
+
+
+[tool.poetry.dependencies]
+python = "^3.10.12"
+# git+https://github.com/sysradium/dependabot-subdir-lib.git@v0.0.1#egg=dependabot-subdir-lib&subdirectory=python
+dependabot_subdir_lib = {git = "https://github.com/sysradium/dependabot-subdir-lib.git", rev = "v0.0.1", subdirectory = "python"}

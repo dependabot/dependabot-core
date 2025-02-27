@@ -1,0 +1,18 @@
+{
+  "name": "setup.py",
+  "path": "setup.py",
+  "sha": "8d9a77a86256c11409622fd16d799d9718f1ff62",
+  "size": 29,
+  "url": "https://api.github.com/repos/gocardless/bump/contents/setup.py?ref=master",
+  "html_url": "https://github.com/gocardless/bump/blob/master/setup.py",
+  "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/8d9a77a86256c11409622fd16d799d9718f1ff62",
+  "download_url": "https://raw.githubusercontent.com/gocardless/bump/master/setup.py?token=ABMwe8vXxd4DBCEsxz3jMusk5sr_fFsoks5WJWE-wA%3D%3D",
+  "type": "file",
+  "content": "ZnJvbSBzZXR1cHRvb2xzIGltcG9ydCBzZXR1cCwgZmluZF9wYWNrYWdlcwoK\nc2V0dXAobmFtZT0ncHl0aG9uLXBhY2thZ2UnLAogICAgICB2ZXJzaW9uPScw\nLjAnLAogICAgICBkZXNjcmlwdGlvbj0nRXhhbXBsZSBzZXR1cC5weScsCiAg\nICAgIHVybD0naHR0b3M6Ly9naXRodWIuY29tL2V4YW1wbGUvcHl0aG9uLXBh\nY2thZ2UnLAogICAgICBhdXRob3I9J0RlcGVuZGFib3QnLAogICAgICBzY3Jp\ncHRzPVtdLAogICAgICBwYWNrYWdlcz1maW5kX3BhY2thZ2VzKCksCiAgICAg\nIHNldHVwX3JlcXVpcmVzPVsKICAgICAgICAgICdudW1weT09MS4xMS4wJywK\nICAgICAgICAgICdweXRlc3QtcnVubmVyJywKICAgICAgXSwKICAgICAgaW5z\ndGFsbF9yZXF1aXJlcz1bCiAgICAgICAgICAnYm90bzM9PTEuMy4xJywKICAg\nICAgICAgICdmbGFrZTg9PTIuNS40JywKICAgICAgICAgICdnb2NhcmRsZXNz\nX3Bybz09MC4yLjMnLAogICAgICAgICAgJ251bXB5PT0xLjExLjAnLAogICAg\nICAgICAgJ3BhbmRhcz09MC4xOS4yJywKICAgICAgICAgICdwZXA4PT0xLjcu\nMCcsCiAgICAgICAgICAncHN5Y29wZzI9PTIuNi4xJywKICAgICAgICAgICdy\nYXZlbj09NS4zMi4wJywKICAgICAgICAgICdyZXF1ZXN0cz09Mi4xMi40JywK\nICAgICAgICAgICdzY2lweT09MC4xOC4xJywKICAgICAgICAgICdzY2lraXQt\nbGVhcm49PTAuMTguMScsCiAgICAgIF0sCiAgICAgIHRlc3RzX3JlcXVpcmU9\nWwogICAgICAgICAgJ3B5dGVzdD09Mi45LjEnLAogICAgICAgICAgJ3Jlc3Bv\nbnNlcz09MC41LjEnLAogICAgICBdCiAgICAgICkK\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/gocardless/bump/contents/setup.py?ref=master",
+    "git": "https://api.github.com/repos/gocardless/bump/git/blobs/8d9a77a86256c11409622fd16d799d9718f1ff62",
+    "html": "https://github.com/gocardless/bump/blob/master/setup.py"
+  }
+}

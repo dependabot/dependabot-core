@@ -1,0 +1,52 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ballcone"
+authors = [{name = "Dmitry Ustalov"}]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Topic :: Database",
+    "Topic :: Internet :: Log Analysis",
+    "Topic :: Internet :: WWW/HTTP",
+    "Typing :: Typed",
+]
+license = {text = "MIT"}
+description = "Ballcone is a fast and lightweight server-side Web analytics solution."
+keywords = ["Web analytics", "log analysis", "columnar storage", "syslog", "nginx"]
+urls = {Homepage = "https://github.com/dustalov/ballcone"}
+requires-python = "~=3.9"
+dependencies = []
+dynamic = ["version"]
+
+[project.readme]
+file = "README.md"
+content-type = "text/markdown"
+
+[project.scripts]
+ballcone = "ballcone.__main__:main"
+
+[tool.setuptools]
+zip-safe = true
+
+[tool.setuptools.packages.find]
+include = ["ballcone*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.html", "*.js"]
+
+[tool.setuptools.dynamic]
+version = {attr = "ballcone.__version__"}
+
+[tool.mypy]
+ignore_missing_imports = true
+allow_untyped_calls = true
+allow_untyped_decorators = true
+warn_unused_ignores = false
+strict = true

@@ -1,0 +1,18 @@
+{
+  "name": "Pipfile",
+  "path": "Pipfile",
+  "sha": "11fc8c6d445a2302417c65b86fb771243a3a90b7",
+  "size": 541,
+  "url": "https://api.github.com/repos/mozilla/mozillians-tests/contents/Pipfile?ref=master",
+  "html_url": "https://github.com/mozilla/mozillians-tests/blob/master/Pipfile",
+  "git_url": "https://api.github.com/repos/mozilla/mozillians-tests/git/blobs/11fc8c6d445a2302417c65b86fb771243a3a90b7",
+  "download_url": "https://raw.githubusercontent.com/mozilla/mozillians-tests/master/Pipfile",
+  "type": "file",
+  "content": "W1tzb3VyY2VdXQoKdXJsID0gImh0dHBzOi8vcHlwaS5vcmcvc2ltcGxlIgp2\nZXJpZnlfc3NsID0gdHJ1ZQpuYW1lID0gInB5cGkiCgoKW2Rldi1wYWNrYWdl\nc10KCgoKW3BhY2thZ2VzXQoKQmVhdXRpZnVsU291cCA9ICI9PTMuMi4xIgpm\nbGFrZTggPSAiPT0zLjYuMCIKZmxha2U4LWlzb3J0ID0gIj09Mi41Igptb3ps\nb2cgPSAiPT0zLjkiClB5UE9NID0gIj09Mi4yLjAiCnB5dGVzdCA9ICI9PTMu\nMTAuMSIKcHl0ZXN0LW1ldGFkYXRhID0gIj09MS43LjAiCnB5dGVzdC1zZWxl\nbml1bSA9ICI9PTEuMTQuMCIKcHl0ZXN0LXZhcmlhYmxlcyA9ICI9PTEuNy4x\nIgpweXRlc3QteGRpc3QgPSAiPT0xLjI0LjEiCnJlcXVlc3RzID0gIj09Mi4y\nMC4xIgpweW90cCA9ICI9PTIuMi43IgoKCltwYWNrYWdlcy5jb25maWdwYXJz\nZXJdCgp2ZXJzaW9uID0gIj09My41LjAiCm1hcmtlcnMgPSAicHl0aG9uX3Zl\ncnNpb24gPCAnMy41JyIKCgpbcGFja2FnZXMuZW51bTM0XQoKdmVyc2lvbiA9\nICI9PTEuMS42IgptYXJrZXJzID0gInB5dGhvbl92ZXJzaW9uIDwgJzMuNCci\nCg==\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/mozilla/mozillians-tests/contents/Pipfile?ref=master",
+    "git": "https://api.github.com/repos/mozilla/mozillians-tests/git/blobs/11fc8c6d445a2302417c65b86fb771243a3a90b7",
+    "html": "https://github.com/mozilla/mozillians-tests/blob/master/Pipfile"
+  }
+}

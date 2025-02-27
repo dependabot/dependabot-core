@@ -78,6 +78,7 @@ jobs:
           - { name: devcontainers, ecosystem: devcontainers }
           - { name: terraform, ecosystem: terraform }
           - { name: bun, ecosystem: bun }
+          - { name: uv, ecosystem: uv }
     permissions:
       contents: read
       id-token: write

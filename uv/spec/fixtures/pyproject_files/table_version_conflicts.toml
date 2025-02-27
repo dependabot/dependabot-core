@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "pendulum"
+version = "2.0.0"
+homepage = "https://github.com/roghu/py3_projects"
+license = "MIT"
+readme = "README.md"
+authors = ["Dependabot <support@dependabot.com>"]
+description = "Python datetimes made easy"
+
+[tool.isort]
+combine_star = true
+indent = "    "
+length_sort = false
+line_length = 79
+multi_line_output = 3
+
+[tool.poetry.dev-dependencies.isort]
+extras = [ "pyproject",]
+version = "^5.4"
+
+[tool.poetry.dev-dependencies.pytest]
+extras = [ "pyproject",]
+version = "^5.4"

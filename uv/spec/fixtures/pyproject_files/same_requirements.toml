@@ -1,0 +1,14 @@
+[tool.poetry]
+name = "dependabot-poetry-bug"
+version = "0.1.0"
+description = ""
+authors = []
+
+[tool.poetry.dependencies]
+python = "^3.9"
+rq = "^1.13.0"
+dramatiq = "^1.13.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
