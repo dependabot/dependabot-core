@@ -1,6 +1,9 @@
+using System;
 using System.Collections.Immutable;
+using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Xml.Linq;
 
 using Microsoft.Build.Construction;
 using Microsoft.Build.Definition;
@@ -201,6 +204,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
                 switch (extension)
                 {
                     case ".sln":
+                    case ".slnx":
                     case ".proj":
                     case ".csproj":
                     case ".fsproj":
@@ -230,6 +234,30 @@ public partial class DiscoveryWorker : IDiscoveryWorker
                     foreach (ProjectInSolution project in solution.ProjectsInOrder)
                     {
                         filesToExpand.Push(project.AbsolutePath);
+                    }
+                }
+                else if (extension == ".slnx")
+                {
+                    var projects = XElement
+                        .Load(candidateEntryPoint)
+                        .Descendants("Project")
+                        .Select(static x => x.Attribute("Path"))
+                        .Where(static x => x is not null)
+                        .Select(static x => (string)x!)
+                        .Where(static x =>
+                            x.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase) ||
+                            x.EndsWith(".fsproj", StringComparison.OrdinalIgnoreCase) ||
+                            x.EndsWith(".vbproj", StringComparison.OrdinalIgnoreCase));
+
+                    foreach (var project in projects)
+                    {
+                        // keep this project and check for references
+                        expandedProjects.Add(project);
+                        IEnumerable<string> referencedProjects = ExpandItemGroupFilesFromProject(project, "ProjectReference");
+                        foreach (string referencedProject in referencedProjects)
+                        {
+                            filesToExpand.Push(referencedProject);
+                        }
                     }
                 }
                 else if (extension == ".proj")
