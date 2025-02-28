@@ -607,11 +607,18 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
       stub_request(:get, File.join(url, "yarn.lock?ref=sha"))
         .with(headers: { "Authorization" => "token token" })
         .to_return(status: 404)
+      stub_request(:get, File.join(url, "package.json?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture_to_response("projects/npm8/simple", "package.json"),
+          headers: json_header
+        )
       stub_request(:get, File.join(url, "package-lock.json?ref=sha"))
         .with(headers: { "Authorization" => "token token" })
         .to_return(
           status: 200,
-          body: fixture("github", "package_lock_content.json"),
+          body: fixture_to_response("projects/npm8/simple", "package-lock.json"),
           headers: json_header
         )
     end
@@ -623,7 +630,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
 
     it "parses the npm lockfile" do
       expect(file_fetcher_instance.ecosystem_versions).to eq(
-        { package_managers: { "npm" => 6 } }
+        { package_managers: { "npm" => 8 } }
       )
     end
   end
@@ -648,7 +655,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         .with(headers: { "Authorization" => "token token" })
         .to_return(
           status: 200,
-          body: fixture("github", "package_lock_content.json"),
+          body: fixture_to_response("projects/npm8/simple", "package-lock.json"),
           headers: json_header
         )
     end
@@ -660,7 +667,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
 
     it "parses the package manager version" do
       expect(file_fetcher_instance.ecosystem_versions).to eq(
-        { package_managers: { "npm" => 6, "yarn" => 1 } }
+        { package_managers: { "npm" => 8, "yarn" => 1 } }
       )
     end
   end
