@@ -68,8 +68,7 @@ module Dependabot
 
         # Failing that, look for a source where the full dependency name is
         # mentioned when the link is followed
-        @source_from_description = T.let(nil, T.nilable(Source))
-        @source_from_description =
+        @source_from_description ||= T.let(
           potential_source_urls.find do |url|
             full_url = Source.from_url(url)&.url
             next unless full_url
@@ -78,7 +77,8 @@ module Dependabot
             next unless response.status == 200
 
             response.body.include?(normalised_dependency_name)
-          end
+          end, T.nilable(String)
+        )
       end
       # rubocop:enable Metrics/PerceivedComplexity
 
@@ -99,8 +99,7 @@ module Dependabot
 
         return match_url if match_url
 
-        @source_from_homepage = T.let(nil, T.nilable(Source))
-        @source_from_homepage =
+        @source_from_homepage ||= T.let(
           potential_source_urls.find do |url|
             full_url = Source.from_url(url)&.url
             next unless full_url
@@ -109,7 +108,8 @@ module Dependabot
             next unless response.status == 200
 
             response.body.include?(normalised_dependency_name)
-          end
+          end, T.nilable(String)
+        )
       end
       # rubocop:enable Metrics/PerceivedComplexity
 
@@ -123,7 +123,7 @@ module Dependabot
           "pypi.python.org"
         ].include?(URI(homepage_url).host)
 
-        @homepage_response = T.let(
+        @homepage_response ||= T.let(
           begin
             Dependabot::RegistryClient.get(url: homepage_url)
           rescue Excon::Error::Timeout, Excon::Error::Socket,
@@ -134,12 +134,11 @@ module Dependabot
 
         return unless @homepage_response&.status == 200
 
-        T.must(@homepage_response).body
+        @homepage_response&.body
       end
 
       sig { returns(T::Hash[String, T.untyped]) }
       def pypi_listing
-        @pypi_listing = T.let(nil, T.untyped)
         return @pypi_listing unless @pypi_listing.nil?
         return @pypi_listing = {} if dependency.version&.include?("+")
 
@@ -147,8 +146,8 @@ module Dependabot
           response = fetch_authed_url(url)
           next unless response.status == 200
 
-          @pypi_listing = JSON.parse(response.body)
-          return @pypi_listing
+          @pypi_listing = T.let(JSON.parse(response.body), T.nilable(T::Hash[String, T.untyped]))
+          return T.must(@pypi_listing)
         rescue JSON::ParserError
           next
         rescue Excon::Error::Timeout
@@ -176,7 +175,7 @@ module Dependabot
         end
       end
 
-      sig { returns(T::Array[T.untyped]) }
+      sig { returns(T::Array[String]) }
       def possible_listing_urls
         credential_urls =
           credentials
