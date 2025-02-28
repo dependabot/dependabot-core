@@ -244,6 +244,12 @@ docker run --rm -ti \
   -v "$(pwd)/terraform/lib:$CODE_DIR/terraform/lib" \
   -v "$(pwd)/terraform/script:$CODE_DIR/terraform/script" \
   -v "$(pwd)/terraform/spec:$CODE_DIR/terraform/spec" \
+  -v "$(pwd)/uv/.rubocop.yml:$CODE_DIR/uv/.rubocop.yml" \
+  -v "$(pwd)/uv/dependabot-uv.gemspec:$CODE_DIR/uv/dependabot-uv.gemspec" \
+  -v "$(pwd)/uv/helpers:$CODE_DIR/uv/helpers" \
+  -v "$(pwd)/uv/lib:$CODE_DIR/uv/lib" \
+  -v "$(pwd)/uv/script:$CODE_DIR/uv/script" \
+  -v "$(pwd)/uv/spec:$CODE_DIR/uv/spec" \
   -v "$(pwd)/tmp:/$CODE_DIR/tmp" \
   -v "$(pwd)/updater/.rubocop.yml:$CODE_DIR/dependabot-updater/.rubocop.yml" \
   -v "$(pwd)/updater/bin:$CODE_DIR/dependabot-updater/bin" \
