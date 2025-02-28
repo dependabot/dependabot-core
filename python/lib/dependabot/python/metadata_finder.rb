@@ -16,6 +16,18 @@ module Dependabot
       extend T::Sig
       MAIN_PYPI_URL = "https://pypi.org/pypi"
 
+      sig do
+        params(
+          dependency: Dependabot::Dependency,
+          credentials: T::Array[Dependabot::Credential]
+        )
+          .void
+      end
+      def initialize(dependency:, credentials:)
+        super
+        @pypi_listing = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
+      end
+
       sig { returns(T.nilable(String)) }
       def homepage_url
         pypi_listing.dig("info", "home_page") ||
@@ -85,10 +97,11 @@ module Dependabot
       # rubocop:disable Metrics/PerceivedComplexity
       sig { returns(T.nilable(String)) }
       def source_from_homepage
-        return unless homepage_body
+        homepage_body_local = homepage_body
+        return unless homepage_body_local
 
         potential_source_urls = []
-        T.must(homepage_body).scan(Source::SOURCE_REGEX) do
+        homepage_body_local.scan(Source::SOURCE_REGEX) do
           potential_source_urls << Regexp.last_match.to_s
         end
 
@@ -146,8 +159,8 @@ module Dependabot
           response = fetch_authed_url(url)
           next unless response.status == 200
 
-          @pypi_listing = T.let(JSON.parse(response.body), T.nilable(T::Hash[String, T.untyped]))
-          return T.must(@pypi_listing)
+          @pypi_listing = JSON.parse(response.body)
+          return @pypi_listing
         rescue JSON::ParserError
           next
         rescue Excon::Error::Timeout
