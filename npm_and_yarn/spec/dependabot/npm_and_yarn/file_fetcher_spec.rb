@@ -2196,6 +2196,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
           body: fixture_to_response("projects/generic/package_manager_with_ver_with_engine_info_yarn", "package.json"),
           headers: json_header
         )
+      stub_request(:get, File.join(url, "package-lock.json?ref=sha"))
+        .to_return(
+          status: 200,
+          body: fixture_to_response("projects/npm8/simple", "package-lock.json"),
+          headers: json_header
+        )
     end
 
     it "fetches package.json fine and yarn version is picked from packageManager and not engines" do
@@ -2218,6 +2224,14 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
           body: fixture_to_response("projects/generic/package_manager_with_ver_with_engine_info_pnpm", "package.json"),
           headers: json_header
         )
+      stub_request(:get, File.join(url, "package.json?ref=sha"))
+        .to_return(
+          status: 200,
+          body: fixture_to_response("projects/npm8/simple", "package-lock.json"),
+          # body: fixture_to_response("projects/generic/package_manager_with_ver_with_no_engine_info_pnpm",
+          #                           "package.json"),
+          headers: json_header
+        )
     end
 
     it "fetches package.json fine and pnpm version is picked from packageManager and not engines" do
@@ -2237,8 +2251,18 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
       stub_request(:get, File.join(url, "package.json?ref=sha"))
         .to_return(
           status: 200,
-          body: fixture_to_response("projects/generic/package_manager_with_ver_with_no_engine_info_pnpm",
-                                    "package.json"),
+          body: fixture_to_response("projects/npm8/simple", "package-lock.json"),
+          # body: fixture_to_response("projects/generic/package_manager_with_ver_with_no_engine_info_pnpm",
+          #                           "package.json"),
+          headers: json_header
+        )
+
+      stub_request(:get, File.join(url, "package.json?ref=sha"))
+        .to_return(
+          status: 200,
+          body: fixture_to_response("projects/npm8/simple", "package-lock.json"),
+          # body: fixture_to_response("projects/generic/package_manager_with_ver_with_no_engine_info_pnpm",
+          #                           "package.json"),
           headers: json_header
         )
     end
@@ -2264,6 +2288,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
                                     "package.json"),
           headers: json_header
         )
+
+      stub_request(:get, File.join(url, "package-lock.json?ref=sha"))
+        .to_return(
+          status: 200,
+          body: fixture_to_response("projects/npm8/simple", "package-lock.json"),
+          headers: json_header
+        )
     end
 
     it "fetches package.json fine and yarn version is picked from packageManager" do
@@ -2285,6 +2316,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
           status: 200,
           body: fixture_to_response("projects/generic/package_manager_with_ver_and_nonrelevant_engine_info_pnpm",
                                     "package.json"),
+          headers: json_header
+        )
+
+      stub_request(:get, File.join(url, "package-lock.json?ref=sha"))
+        .to_return(
+          status: 200,
+          body: fixture_to_response("projects/npm8/simple", "package-lock.json"),
           headers: json_header
         )
     end
@@ -2310,6 +2348,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
                                     "package.json"),
           headers: json_header
         )
+
+      stub_request(:get, File.join(url, "package-lock.json?ref=sha"))
+        .to_return(
+          status: 200,
+          body: fixture_to_response("projects/npm8/simple", "package-lock.json"),
+          headers: json_header
+        )
     end
 
     it "fetches package.json fine and yarn version is picked from packageManager and not engines" do
@@ -2333,6 +2378,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
                                     "package.json"),
           headers: json_header
         )
+      stub_request(:get, File.join(url, "package-lock.json?ref=sha"))
+        .to_return(
+          status: 200,
+          body: fixture_to_response("projects/npm8/simple", "package-lock.json"),
+          headers: json_header
+        )
     end
 
     it "fetches package.json fine and yarn version is picked from engines" do
@@ -2354,6 +2405,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
           status: 200,
           body: fixture_to_response("projects/generic/with_package_manager_and_pnpm_npm_engine_info",
                                     "package.json"),
+          headers: json_header
+        )
+
+      stub_request(:get, File.join(url, "package-lock.json?ref=sha"))
+        .to_return(
+          status: 200,
+          body: fixture_to_response("projects/npm8/simple", "package-lock.json"),
           headers: json_header
         )
     end
