@@ -16,7 +16,7 @@ module Dependabot
       extend T::Sig
       MAIN_PYPI_URL = "https://pypi.org/pypi"
 
-      sig { returns(T.untyped) }
+      sig { returns(T.nilable(String)) }
       def homepage_url
         pypi_listing.dig("info", "home_page") ||
           pypi_listing.dig("info", "project_urls", "Homepage") ||
@@ -47,7 +47,7 @@ module Dependabot
       end
 
       # rubocop:disable Metrics/PerceivedComplexity
-      sig { returns(T.nilable(Dependabot::Source)) }
+      sig { returns(T.nilable(String)) }
       def source_from_description
         potential_source_urls = []
         desc = pypi_listing.dig("info", "description")
@@ -83,7 +83,7 @@ module Dependabot
       # rubocop:enable Metrics/PerceivedComplexity
 
       # rubocop:disable Metrics/PerceivedComplexity
-      sig { returns(T.nilable(Dependabot::Source)) }
+      sig { returns(T.nilable(String)) }
       def source_from_homepage
         return unless homepage_body
 
@@ -113,7 +113,7 @@ module Dependabot
       end
       # rubocop:enable Metrics/PerceivedComplexity
 
-      sig { returns(T.untyped) }
+      sig { returns(T.nilable(String)) }
       def homepage_body
         homepage_url = pypi_listing.dig("info", "home_page")
 
@@ -123,14 +123,14 @@ module Dependabot
           "pypi.python.org"
         ].include?(URI(homepage_url).host)
 
-        @homepage_response = T.let(nil, T.nilable(Excon::Response))
-        @homepage_response =
+        @homepage_response = T.let(
           begin
             Dependabot::RegistryClient.get(url: homepage_url)
           rescue Excon::Error::Timeout, Excon::Error::Socket,
                  Excon::Error::TooManyRedirects, ArgumentError
             nil
-          end
+          end, T.nilable(Excon::Response)
+        )
 
         return unless @homepage_response&.status == 200
 
@@ -139,7 +139,7 @@ module Dependabot
 
       sig { returns(T::Hash[String, T.untyped]) }
       def pypi_listing
-        @pypi_listing = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
+        @pypi_listing = T.let(nil, T.untyped)
         return @pypi_listing unless @pypi_listing.nil?
         return @pypi_listing = {} if dependency.version&.include?("+")
 
@@ -176,7 +176,7 @@ module Dependabot
         end
       end
 
-      sig { returns(T.untyped) }
+      sig { returns(T::Array[T.untyped]) }
       def possible_listing_urls
         credential_urls =
           credentials
