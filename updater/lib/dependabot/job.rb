@@ -25,7 +25,7 @@ require "dependabot/package/release_cooldown_options"
 # This class should eventually be promoted to common/lib and augmented to
 # validate job description files.
 module Dependabot
-  class Job
+  class Job # rubocop:disable Metrics/ClassLength
     extend T::Sig
 
     TOP_LEVEL_DEPENDENCY_TYPES = T.let(%w(direct production development).freeze, T::Array[String])
@@ -135,15 +135,19 @@ module Dependabot
     # NOTE: "attributes" are fetched and injected at run time from
     # dependabot-api using the UpdateJobPrivateSerializer
     sig { params(attributes: T.untyped).void }
-    def initialize(attributes) # rubocop:disable Metrics/AbcSize
+    def initialize(attributes) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
       @id                             = T.let(attributes.fetch(:id), String)
       @allowed_updates                = T.let(attributes.fetch(:allowed_updates), T::Array[T.untyped])
-      @commit_message_options         = T.let(attributes.fetch(:commit_message_options, {}),
-                                              T.nilable(T::Hash[T.untyped, T.untyped]))
-      @credentials                    = T.let(attributes.fetch(:credentials, []).map do |data|
-                                                Dependabot::Credential.new(data)
-                                              end,
-                                              T::Array[Dependabot::Credential])
+      @commit_message_options         = T.let(
+        attributes.fetch(:commit_message_options, {}),
+        T.nilable(T::Hash[T.untyped, T.untyped])
+      )
+      @credentials = T.let(
+        attributes.fetch(:credentials, []).map do |data|
+          Dependabot::Credential.new(data)
+        end,
+        T::Array[Dependabot::Credential]
+      )
       @dependencies                   = T.let(attributes.fetch(:dependencies), T.nilable(T::Array[T.untyped]))
       @existing_pull_requests         = T.let(PullRequest.create_from_job_definition(attributes), T::Array[PullRequest])
       # TODO: Make this hash required
@@ -151,18 +155,24 @@ module Dependabot
       # We will need to do a pass updating the CLI and smoke tests before this is possible,
       # so let's consider it optional for now. If we get a nil value, let's force it to be
       # an array.
-      @existing_group_pull_requests   =  T.let(attributes.fetch(:existing_group_pull_requests, []) || [],
-                                               T::Array[T::Hash[String, T.untyped]])
-      @experiments                    =  T.let(attributes.fetch(:experiments, {}),
-                                               T.nilable(T::Hash[T.untyped, T.untyped]))
+      @existing_group_pull_requests = T.let(
+        attributes.fetch(:existing_group_pull_requests, []) || [],
+        T::Array[T::Hash[String, T.untyped]]
+      )
+      @experiments = T.let(
+        attributes.fetch(:experiments, {}),
+        T.nilable(T::Hash[T.untyped, T.untyped])
+      )
       @ignore_conditions              =  T.let(attributes.fetch(:ignore_conditions), T::Array[T.untyped])
       @package_manager                =  T.let(attributes.fetch(:package_manager), String)
       @reject_external_code           =  T.let(attributes.fetch(:reject_external_code, false), T::Boolean)
       @repo_contents_path             =  T.let(attributes.fetch(:repo_contents_path, nil), T.nilable(String))
 
-      @requirements_update_strategy   = T.let(build_update_strategy(
-                                                **attributes.slice(:requirements_update_strategy, :lockfile_only)
-                                              ), T.nilable(Dependabot::RequirementsUpdateStrategy))
+      @requirements_update_strategy   = T.let(
+        build_update_strategy(
+          **attributes.slice(:requirements_update_strategy, :lockfile_only)
+        ), T.nilable(Dependabot::RequirementsUpdateStrategy)
+      )
 
       @security_advisories            = T.let(attributes.fetch(:security_advisories), T::Array[T.untyped])
       @security_updates_only          = T.let(attributes.fetch(:security_updates_only), T::Boolean)
@@ -171,8 +181,10 @@ module Dependabot
       @update_subdependencies         = T.let(attributes.fetch(:update_subdependencies), T::Boolean)
       @updating_a_pull_request        = T.let(attributes.fetch(:updating_a_pull_request), T::Boolean)
       @vendor_dependencies            = T.let(attributes.fetch(:vendor_dependencies, false), T::Boolean)
-      @cooldown = T.let(build_cooldown(attributes.fetch(:cooldown, nil)),
-                        T.nilable(Dependabot::Package::ReleaseCooldownOptions))
+      @cooldown = T.let(
+        build_cooldown(attributes.fetch(:cooldown, nil)),
+        T.nilable(Dependabot::Package::ReleaseCooldownOptions)
+      )
       # TODO: Make this hash required
       #
       # We will need to do a pass updating the CLI and smoke tests before this is possible,
