@@ -12,7 +12,7 @@ require "dependabot/experiments"
 require "dependabot/requirements_update_strategy"
 require "dependabot/source"
 require "dependabot/pull_request"
-require "dependabot/package/release_cooldown_options""
+require "dependabot/package/release_cooldown_options"
 
 # Describes a single Dependabot workload within the GitHub-integrated Service
 #
