@@ -902,6 +902,7 @@ module Dependabot
   end
 
   class PhpVersionMismatchError < DependabotError
+    sig { params(message: T.nilable(T.any(String, MatchData))).void }
     def initialize(message)
       super("PHP version mismatch: #{message}")
     end
