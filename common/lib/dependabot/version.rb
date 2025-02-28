@@ -74,26 +74,17 @@ module Dependabot
       "a"
     end
 
-    sig { returns(Integer) }
-    def major
-      version_parts[0] || 0
-    end
+    sig { returns(T.nilable([Integer, Integer, Integer])) }
+    def semver_parts
+      # Extracts only the numeric major.minor.patch part of the version, ensuring it starts with a number
+      match = to_semver.match(/^\d+(?:\.\d+)?(?:\.\d+)?(?=[^\d]|$)/)
+      return nil unless match
 
-    sig { returns(Integer) }
-    def minor
-      version_parts[1] || 0
-    end
+      first_match = match[0]
+      return nil unless first_match
 
-    sig { returns(Integer) }
-    def patch
-      version_parts[2] || 0
-    end
-
-    private
-
-    sig { returns(T::Array[T.nilable(Integer)]) }
-    def version_parts
-      to_semver.split(".").map { |part| part[/\d+/]&.to_i }
+      major, minor, patch = first_match.split(".").map(&:to_i)
+      [major || 0, minor || 0, patch || 0]
     end
   end
 end

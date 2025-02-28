@@ -290,12 +290,12 @@ module Dependabot
           .select { |v| reqs.all? { |r| r.any? { |o| o.satisfied_by?(v) } } }
       end
 
-      # rubocop:disable Metrics/PerceivedComplexity
       sig { returns(T::Boolean) }
       def cooldown_enabled?
         false
       end
 
+      # rubocop:disable Metrics/PerceivedComplexity
       sig do
         params(
           current_version: T.nilable(Dependabot::Version),
@@ -305,26 +305,27 @@ module Dependabot
       def cooldown_days_for(current_version, new_version)
         cooldown = @cooldown_options
         return 0 if cooldown.nil?
-        # If cooldown is not enabled, then no delay is applied.
-        return 0 if !cooldown_enabled? || @cooldown_options.nil?
-        # if dependency is excluded, then no delay is applied.
-        return 0 if @cooldown_options.excluded?(dependency.name)
-        # If the `include` list is empty or dependency is in the list return true
-        # otherwise return false.
-        return 0 unless @cooldown_options.included?(dependency.name)
-        # If there's no previous version, apply default cooldown.
+        return 0 unless cooldown_enabled?
+        return 0 if cooldown.excluded?(dependency.name)
+        return 0 unless cooldown.included?(dependency.name)
         return cooldown.default_days if current_version.nil?
 
-        # Compare versions to determine cooldown days.
-        if new_version.major > current_version.major # major change
-          cooldown.major_days
-        elsif new_version.minor > current_version.minor
-          cooldown.minor_days
-        elsif new_version.patch > current_version.patch
-          cooldown.patch_days
-        else
-          cooldown.default_days
-        end
+        current_version_semver = current_version.semver_parts
+        new_version_semver = new_version.semver_parts
+
+        # If semver_parts is nil for either, return default cooldown
+        return cooldown.default_days if current_version_semver.nil? || new_version_semver.nil?
+
+        # Ensure values are always integers
+        current_major, current_minor, current_patch = current_version_semver
+        new_major, new_minor, new_patch = new_version_semver
+
+        # Determine cooldown based on version difference
+        return cooldown.major_days if new_major > current_major
+        return cooldown.minor_days if new_minor > current_minor
+        return cooldown.patch_days if new_patch > current_patch
+
+        cooldown.default_days
       end
       # rubocop:enable Metrics/PerceivedComplexity
 
