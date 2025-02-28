@@ -7,6 +7,7 @@ require "sorbet-runtime"
 require "dependabot/requirements_update_strategy"
 require "dependabot/security_advisory"
 require "dependabot/utils"
+require "dependabot/package/package_cooldown_options"
 
 module Dependabot
   module UpdateCheckers
