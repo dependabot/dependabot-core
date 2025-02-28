@@ -1,0 +1,12 @@
+-i https://pypi.org/simple
+aiohttp==1.0.5
+async-timeout==3.0.0; python_version >= '3.5.3'
+certifi==2018.1.8
+chardet==3.0.4
+discord.py==0.16.1
+idna==2.5
+multidict==4.4.0; python_version >= '3.4.1'
+python-decouple==3.1
+requests==2.18.0
+urllib3==1.21.1
+websockets==3.4

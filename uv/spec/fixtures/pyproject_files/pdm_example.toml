@@ -1,0 +1,31 @@
+[project]
+name = "demo"
+version = "0.1.0"
+description = "Fixture project from https://github.com/pdm-project/tox-pdm"
+authors = [
+    {name = "Frost Ming", email = "mianghong@gmail.com"},
+]
+dependencies = [
+    "requests~=2.25",
+]
+requires-python = ">=3.6"
+dynamic = ["classifiers"]
+license = {text = "MIT"}
+
+[project.urls]
+homepage = ""
+
+
+[project.optional-dependencies]
+lint = [
+    "flake8~=3.8",
+]
+[build-system]
+requires = ["pdm-pep517"]
+build-backend = "pdm.pep517.api"
+
+[tool]
+[tool.pdm]
+[tool.pdm.scripts]
+lint = "flake8 demo.py"
+lint-shell = {shell = "flake8 demo.py"}
