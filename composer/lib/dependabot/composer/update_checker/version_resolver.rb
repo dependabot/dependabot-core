@@ -259,6 +259,12 @@ module Dependabot
             raise PrivateSourceAuthenticationFailure, "nova.laravel.com"
           end
 
+          # To handle the case where the PHP version (configured in composer.json) is not supported
+          # Your requirements could not be resolved to an installable set of packages.
+          #   Problem 1
+          #     - Root composer.json requires league/csv >= 9.7, == 9.22.0 -> satisfiable by league/csv[9.22.0].
+          raise PhpVersionMismatchError, error.message if error.message.include?("your php version")
+
           dependency_url = Helpers.dependency_url_from_git_clone_error(error.message)
           if dependency_url
             raise Dependabot::GitDependenciesNotReachable, dependency_url

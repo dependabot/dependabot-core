@@ -150,6 +150,23 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       end
     end
 
+    context "with an application using a ^ PHP constraint and encountering a PhpVersionMismatchError" do
+      context "when the minimum version is invalid" do
+        let(:project_name) { "php_specified_min_invalid_without_lockfile_handle_error" }
+        let(:dependency_name) { "phpdocumentor/reflection-docblock" }
+        let(:dependency_version) { "2.0.4" }
+        let(:string_req) { "2.0.4" }
+        let(:latest_allowable_version) { Gem::Version.new("3.2.2") }
+
+        it "raises a Dependabot::PhpVersionMismatchError error" do
+          expect { resolver.latest_resolvable_version }
+            .to raise_error(Dependabot::PhpVersionMismatchError) do |error|
+            expect(error.message).to include("PHP version mismatch: Your requirements could not be resolved")
+          end
+        end
+      end
+    end
+
     context "when updating a subdependency that's not required anymore" do
       let(:project_name) { "subdependency_no_longer_required" }
       let(:requirements) { [] }

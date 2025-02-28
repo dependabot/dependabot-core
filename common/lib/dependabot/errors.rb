@@ -114,9 +114,12 @@ module Dependabot
         "error-type": "illformed_requirement",
         "error-detail": { message: error.message }
       }
+    when Dependabot::PhpVersionMismatchError
+      {
+        "error-type": "php_version_mismatch_error",
+        "error-detail": { message: error.message }
+      }
     when *Octokit::RATE_LIMITED_ERRORS
-      # If we get a rate-limited error we let dependabot-api handle the
-      # retry by re-enqueing the update job after the reset
       {
         "error-type": "octokit_rate_limited",
         "error-detail": {
@@ -202,6 +205,11 @@ module Dependabot
       # and responsibility for fixing it is on them, not us. As a result we
       # quietly log these as errors
       { "error-type": "server_error" }
+    when Dependabot::PhpVersionMismatchError
+      {
+        "error-type": "php_version_mismatch_error",
+        "error-detail": { message: error.message }
+      }
     end
   end
 
@@ -362,9 +370,12 @@ module Dependabot
         "error-type": "git_token_auth_error",
         "error-detail": { message: error.message }
       }
+    when Dependabot::PhpVersionMismatchError
+      {
+        "error-type": "php_version_mismatch_error",
+        "error-detail": { message: error.message }
+      }
     when *Octokit::RATE_LIMITED_ERRORS
-      # If we get a rate-limited error we let dependabot-api handle the
-      # retry by re-enqueing the update job after the reset
       {
         "error-type": "octokit_rate_limited",
         "error-detail": {
@@ -887,6 +898,12 @@ module Dependabot
     sig { params(message: T.any(T.nilable(String), MatchData)).void }
     def initialize(message = nil)
       super("network_unsafe_http", message)
+    end
+  end
+
+  class PhpVersionMismatchError < DependabotError
+    def initialize(message)
+      super("PHP version mismatch: #{message}")
     end
   end
 end
