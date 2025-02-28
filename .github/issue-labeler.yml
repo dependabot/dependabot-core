@@ -47,7 +47,10 @@
     - '(dart|pub)'
 
 "L: python":
-    - '(python|pip|poetry)'
+    - '(python|pip|poetry|uv)'
+
+"L: python:uv":
+    - '(uv)'
 
 "L: terraform":
     - '(terraform)'

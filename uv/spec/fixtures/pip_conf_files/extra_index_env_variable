@@ -1,0 +1,2 @@
+[global]
+extra-index-url = https://pypi.weasyldev.com/${SECURE_NAME}/source/+simple
