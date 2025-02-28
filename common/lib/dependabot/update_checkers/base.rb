@@ -41,7 +41,7 @@ module Dependabot
       sig { returns(T.nilable(Dependabot::DependencyGroup)) }
       attr_reader :dependency_group
 
-      sig { returns(T.nilable(Dependabot::Package::CooldownOptions)) }
+      sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
       attr_reader :update_cooldown
 
       sig { returns(T::Hash[Symbol, T.untyped]) }
@@ -58,7 +58,7 @@ module Dependabot
           security_advisories: T::Array[Dependabot::SecurityAdvisory],
           requirements_update_strategy: T.nilable(Dependabot::RequirementsUpdateStrategy),
           dependency_group: T.nilable(Dependabot::DependencyGroup),
-          update_cooldown: T.nilable(Dependabot::Package::CooldownOptions),
+          update_cooldown: T.nilable(Dependabot::Package::ReleaseCooldownOptions),
           options: T::Hash[Symbol, T.untyped]
         )
           .void

@@ -5,7 +5,7 @@ require "sorbet-runtime"
 
 module Dependabot
   module Package
-    class CooldownOptions
+    class ReleaseCooldownOptions
       extend T::Sig
 
       sig do

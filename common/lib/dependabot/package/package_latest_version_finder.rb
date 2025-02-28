@@ -12,6 +12,7 @@ require "dependabot/update_checkers/version_filters"
 require "dependabot/registry_client"
 require "dependabot/bundler"
 require "dependabot/package/package_details"
+require "dependabot/package/release_cooldown_options"
 
 module Dependabot
   module Package
@@ -24,10 +25,10 @@ module Dependabot
       sig { returns(Dependabot::Dependency) }
       attr_reader :dependency
 
-      sig { returns(T::Array[T.untyped]) }
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       attr_reader :dependency_files
 
-      sig { returns(T::Array[T.untyped]) }
+      sig { returns(T::Array[Dependabot::Credential]) }
       attr_reader :credentials
 
       sig { returns(T::Array[String]) }
@@ -36,7 +37,7 @@ module Dependabot
       sig { returns(T::Array[SecurityAdvisory]) }
       attr_reader :security_advisories
 
-      sig { returns(T.nilable(CooldownOptions)) }
+      sig { returns(T.nilable(ReleaseCooldownOptions)) }
       attr_reader :cooldown_options
 
       sig { returns(T::Hash[Symbol, T.untyped]) }
@@ -49,7 +50,7 @@ module Dependabot
           credentials: T::Array[Dependabot::Credential],
           ignored_versions: T::Array[String],
           security_advisories: T::Array[Dependabot::SecurityAdvisory],
-          cooldown_options: T.nilable(CooldownOptions),
+          cooldown_options: T.nilable(ReleaseCooldownOptions),
           raise_on_ignored: T::Boolean,
           options: T::Hash[Symbol, T.untyped]
         ).void

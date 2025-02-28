@@ -101,7 +101,7 @@ module Dependabot
     sig { returns(T.nilable(String)) }
     attr_reader :dependency_group_to_refresh
 
-    sig { returns(T.nilable(Dependabot::Package::CooldownOptions)) }
+    sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
     attr_reader :cooldown
 
     sig do
@@ -171,7 +171,7 @@ module Dependabot
       @updating_a_pull_request        = T.let(attributes.fetch(:updating_a_pull_request), T::Boolean)
       @vendor_dependencies            = T.let(attributes.fetch(:vendor_dependencies, false), T::Boolean)
       @cooldown = T.let(build_cooldown(attributes.fetch(:cooldown, nil)),
-                        T.nilable(Dependabot::Package::CooldownOptions))
+                        T.nilable(Dependabot::Package::ReleaseCooldownOptions))
       # TODO: Make this hash required
       #
       # We will need to do a pass updating the CLI and smoke tests before this is possible,
@@ -450,12 +450,13 @@ module Dependabot
     end
 
     sig do
-      params(cooldown: T.nilable(T::Hash[String, T.untyped])).returns(T.nilable(Dependabot::Package::CooldownOptions))
+      params(cooldown: T.nilable(T::Hash[String,
+                                         T.untyped])).returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions))
     end
     def build_cooldown(cooldown)
       return nil unless cooldown
 
-      Dependabot::Package::CooldownOptions.new(
+      Dependabot::Package::ReleaseCooldownOptions.new(
         default_days: cooldown["default-days"] || 0,
         major_days: cooldown["major-days"] || 0,
         minor_days: cooldown["minor-days"] || 0,
