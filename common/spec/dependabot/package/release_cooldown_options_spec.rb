@@ -66,17 +66,56 @@ RSpec.describe Dependabot::Package::ReleaseCooldownOptions do
   end
 
   describe "#included?" do
-    it "returns true if the dependency is in the include list" do
-      expect(release_cooldown_options.included?("package-a")).to be true
+    context "when include is set to ['*']" do
+      let(:include_list) { ["*"] }
+
+      it "returns true if the dependency is not in the exclude list" do
+        expect(release_cooldown_options.included?("package-a")).to be true
+      end
+
+      it "returns false if the dependency is in the exclude list" do
+        expect(release_cooldown_options.included?("package-b")).to be true
+      end
     end
 
-    it "returns true if the include list is empty" do
-      allow(release_cooldown_options).to receive(:include).and_return([])
-      expect(release_cooldown_options.included?("package-x")).to be true
+    context "when include is use a pattern" do
+      let(:include_list) { ["package-*"] }
+
+      it "returns true if the dependency is not in the exclude list" do
+        expect(release_cooldown_options.included?("package-a")).to be true
+      end
+
+      it "returns false if the dependency is in the exclude list" do
+        expect(release_cooldown_options.included?("package-b")).to be true
+      end
+
+      it "returns false if the dependency does not match the pattern" do
+        expect(release_cooldown_options.included?("different-package")).to be false
+      end
     end
 
-    it "returns true if the dependency matches a wildcard pattern" do
-      expect(release_cooldown_options.included?("random-package")) .to be true
+    context "when the include list is not empty" do
+      let(:include_list) { ["package-a"] }
+
+      it "returns true if the dependency is in the include list" do
+        expect(release_cooldown_options.included?("package-a")).to be true
+      end
+
+      it "returns false if the dependency is not in the include list" do
+        expect(release_cooldown_options.included?("package-b")).to be false
+      end
+    end
+
+    context "when the include list is empty" do
+      let(:include_list) { [] }
+
+      it "returns true if the dependency is not in the exclude list" do
+        expect(release_cooldown_options.included?("package-a")).to be true
+      end
+
+      it "returns false if the dependency is in the exclude list" do
+        expect(release_cooldown_options.included?("package-b")).to be true
+      end
     end
   end
 
