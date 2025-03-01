@@ -295,7 +295,6 @@ module Dependabot
         false
       end
 
-      # rubocop:disable Metrics/PerceivedComplexity
       sig do
         params(
           current_version: T.nilable(Dependabot::Version),
@@ -306,7 +305,6 @@ module Dependabot
         cooldown = @cooldown_options
         return 0 if cooldown.nil?
         return 0 unless cooldown_enabled?
-        return 0 if cooldown.excluded?(dependency.name)
         return 0 unless cooldown.included?(dependency.name)
         return cooldown.default_days if current_version.nil?
 
@@ -327,8 +325,6 @@ module Dependabot
 
         cooldown.default_days
       end
-      # rubocop:enable Metrics/PerceivedComplexity
-
       sig { returns(T::Boolean) }
       def wants_prerelease?
         return version_class.new(dependency.version).prerelease? if dependency.version

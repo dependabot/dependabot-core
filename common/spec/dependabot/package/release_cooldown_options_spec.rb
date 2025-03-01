@@ -66,66 +66,182 @@ RSpec.describe Dependabot::Package::ReleaseCooldownOptions do
   end
 
   describe "#included?" do
-    context "when include is set to ['*']" do
-      let(:include_list) { ["*"] }
+    [nil, [], ["*"]].each do |include_item|
+      context "when include list is set to #{include_item.inspect}" do
+        let(:include_list) { include_item }
 
-      it "returns true if the dependency is not in the exclude list" do
-        expect(release_cooldown_options.included?("package-a")).to be true
-      end
+        [nil, []].each do |exclude_item| # rubocop:disable Performance/CollectionLiteralInLoop
+          context "when exclude list is set to #{exclude_item.inspect}" do
+            let(:exclude_list) { exclude_item }
 
-      it "returns false if the dependency is in the exclude list" do
-        expect(release_cooldown_options.included?("package-b")).to be true
+            it "returns true for any dependency" do
+              expect(release_cooldown_options.included?("package-a")).to be true
+              expect(release_cooldown_options.included?("package-b")).to be true
+              expect(release_cooldown_options.included?("random-package")).to be true
+            end
+          end
+        end
+
+        context "when exclude list is set to ['*']" do
+          let(:exclude_list) { ["*"] }
+
+          it "returns always false for all dependencies" do
+            expect(release_cooldown_options.included?("package-a")).to be false
+            expect(release_cooldown_options.included?("package-b")).to be false
+            expect(release_cooldown_options.included?("random-package")).to be false
+          end
+        end
+
+        context "when exclude list is set to ['package-*']" do
+          let(:exclude_list) { ["package-*"] }
+
+          it "returns true for dependencies not matching exclude pattern" do
+            expect(release_cooldown_options.included?("another-package-a")).to be true
+          end
+
+          it "returns false for dependencies matching exclude pattern" do
+            expect(release_cooldown_options.included?("package-b")).to be false
+            expect(release_cooldown_options.included?("package-c")).to be false
+          end
+        end
+
+        context "when exclude list is set to ['package-a']" do
+          let(:exclude_list) { ["package-a"] } # Excludes only "package-a"
+
+          it "returns false for dependencies explicitly in the exclude list" do
+            expect(release_cooldown_options.included?("package-a")).to be false
+          end
+
+          it "returns true for dependencies not in the exclude list" do
+            expect(release_cooldown_options.included?("another-package")).to be true
+          end
+
+          it "returns true for dependencies with similar names" do
+            expect(release_cooldown_options.included?("package-ab")).to be true
+          end
+        end
       end
     end
 
-    context "when include is use a pattern" do
+    context "when include list is set to ['package-*']" do
       let(:include_list) { ["package-*"] }
 
-      it "returns true if the dependency is not in the exclude list" do
-        expect(release_cooldown_options.included?("package-a")).to be true
+      [nil, []].each do |exclude_item|
+        context "when exclude list is set to #{exclude_item.inspect}" do
+          let(:exclude_list) { exclude_item }
+
+          it "returns true only if package starts with 'package-'" do
+            expect(release_cooldown_options.included?("package-a")).to be true
+            expect(release_cooldown_options.included?("package-b")).to be true
+          end
+
+          it "returns false for dependencies not starting with 'package-'" do
+            expect(release_cooldown_options.included?("package")).to be false
+            expect(release_cooldown_options.included?("another-package")).to be false
+          end
+        end
       end
 
-      it "returns false if the dependency is in the exclude list" do
-        expect(release_cooldown_options.included?("package-b")).to be true
+      context "when exclude list is set to ['*']" do
+        let(:exclude_list) { ["*"] }
+
+        it "returns always false for all dependencies" do
+          expect(release_cooldown_options.included?("package")).to be false
+          expect(release_cooldown_options.included?("package-a")).to be false
+          expect(release_cooldown_options.included?("random-package")).to be false
+        end
       end
 
-      it "returns false if the dependency does not match the pattern" do
-        expect(release_cooldown_options.included?("different-package")).to be false
+      context "when exclude list is set to ['package-ex*']" do
+        let(:exclude_list) { ["another-*"] }
+
+        it "returns true for dependencies not matching exclude pattern" do
+          expect(release_cooldown_options.included?("package-")).to be true
+          expect(release_cooldown_options.included?("package-test")).to be true
+        end
+
+        it "returns false for dependencies matching exclude pattern" do
+          expect(release_cooldown_options.included?("another-ex")).to be false
+          expect(release_cooldown_options.included?("another-exclude")).to be false
+        end
+      end
+
+      context "when exclude list is set to ['package-a']" do
+        let(:exclude_list) { ["package-a"] } # Excludes only "package-a"
+
+        it "returns true for dependencies not in the exclude list" do
+          expect(release_cooldown_options.included?("package-b")).to be true
+        end
+
+        it "returns false for dependencies explicitly in the exclude list" do
+          expect(release_cooldown_options.included?("package-a")).to be false
+        end
       end
     end
 
-    context "when the include list is not empty" do
-      let(:include_list) { ["package-a"] }
+    context "when include list is set to ['package-a']" do
+      let(:include_list) { %w(package-a package-b) }
 
-      it "returns true if the dependency is in the include list" do
-        expect(release_cooldown_options.included?("package-a")).to be true
+      [nil, []].each do |exclude_item|
+        context "when exclude list is set to #{exclude_item.inspect}" do
+          let(:exclude_list) { exclude_item }
+
+          it "returns true only if package is in include list" do
+            expect(release_cooldown_options.included?("package-a")).to be true
+            expect(release_cooldown_options.included?("package-b")).to be true
+          end
+
+          it "returns false for dependencies not in include list" do
+            expect(release_cooldown_options.included?("package")).to be false
+            expect(release_cooldown_options.included?("another-package")).to be false
+          end
+        end
       end
 
-      it "returns false if the dependency is not in the include list" do
-        expect(release_cooldown_options.included?("package-b")).to be false
-      end
-    end
+      context "when exclude list is set to ['*']" do
+        let(:exclude_list) { ["*"] }
 
-    context "when the include list is empty" do
-      let(:include_list) { [] }
-
-      it "returns true if the dependency is not in the exclude list" do
-        expect(release_cooldown_options.included?("package-a")).to be true
+        it "returns always false for all dependencies" do
+          expect(release_cooldown_options.included?("package")).to be false
+          expect(release_cooldown_options.included?("package-a")).to be false
+          expect(release_cooldown_options.included?("random-package")).to be false
+        end
       end
 
-      it "returns false if the dependency is in the exclude list" do
-        expect(release_cooldown_options.included?("package-b")).to be true
+      context "when exclude list is set to ['package-ex*']" do
+        let(:exclude_list) { ["another-*"] }
+
+        it "returns true only if package is in include list and not matching exclude pattern" do
+          expect(release_cooldown_options.included?("package-a")).to be true
+          expect(release_cooldown_options.included?("package-b")).to be true
+        end
+
+        it "returns false for dependencies not in include list" do
+          expect(release_cooldown_options.included?("package")).to be false
+          expect(release_cooldown_options.included?("another-package")).to be false
+        end
+
+        it "returns false if dependency is matching exclude pattern" do
+          expect(release_cooldown_options.included?("package-ex")).to be false
+          expect(release_cooldown_options.included?("package-exclude")).to be false
+        end
       end
-    end
-  end
 
-  describe "#excluded?" do
-    it "returns true if the dependency is in the exclude list" do
-      expect(release_cooldown_options.excluded?("package-b")).to be true
-    end
+      context "when exclude list is set to ['package-a']" do
+        let(:exclude_list) { ["package-a"] } # Excludes only "package-a"
 
-    it "returns false if the dependency is not in the exclude list" do
-      expect(release_cooldown_options.excluded?("package-c")).to be false
+        it "returns true if dependency is in include list and not in exclude list" do
+          expect(release_cooldown_options.included?("package-b")).to be true
+        end
+
+        it "returns false if dependency is in include list and in exclude list" do
+          expect(release_cooldown_options.included?("package-a")).to be false
+        end
+
+        it "returns false if dependency is not in include list" do
+          expect(release_cooldown_options.included?("package")).to be false
+        end
+      end
     end
   end
 end
