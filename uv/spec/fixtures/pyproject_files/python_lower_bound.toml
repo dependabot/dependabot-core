@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "dependabot-poetry-auto-update-bug"
+version = "0.1.0"
+description = ""
+authors = ["firelight flagboy <firelight.flagboy@gmail.com>"]
+readme = "README.md"
+packages = [{include = "dependabot_poetry_auto_update_bug"}]
+
+[tool.poetry.dependencies]
+python = ">=3.9.10,<3.10"
+
+a-dependency = {path = "a-dependency"}
+
+[tool.poetry.group.dev.dependencies]
+black = "22.6.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
