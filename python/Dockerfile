@@ -4,7 +4,6 @@ ARG PY_3_13=3.13.2
 ARG PY_3_12=3.12.9
 ARG PY_3_11=3.11.11
 ARG PY_3_10=3.10.16
-ARG PY_3_9=3.9.21
 ARG PYENV_VERSION=v2.5.2
 
 FROM ghcr.io/dependabot/dependabot-updater-core AS python-core
@@ -12,7 +11,6 @@ ARG PY_3_13
 ARG PY_3_12
 ARG PY_3_11
 ARG PY_3_10
-ARG PY_3_9
 ARG PYENV_VERSION
 USER root
 

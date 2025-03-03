@@ -15,7 +15,6 @@ module Dependabot
         3.12.9
         3.11.11
         3.10.16
-        3.9.21
       ).freeze
 
       sig { params(python_requirement_parser: T.untyped).void }
