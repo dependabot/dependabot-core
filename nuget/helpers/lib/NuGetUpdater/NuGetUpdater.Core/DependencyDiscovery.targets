@@ -1,4 +1,9 @@
 <Project>
+  <PropertyGroup>
+    <!-- Dependency discovery requires a non-zero value for $(TargetPlatformVersion) -->
+    <_DefaultTargetPlatformVersion>1.0</_DefaultTargetPlatformVersion>
+  </PropertyGroup>
+
   <Import Project="DependencyDiscovery.props" />
 
   <Target Name="_DiscoverDependencies" DependsOnTargets="ResolveAssemblyReferences;GenerateBuildDependencyFile;ResolvePackageAssets">

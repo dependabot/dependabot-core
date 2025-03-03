@@ -479,6 +479,51 @@ public class SdkProjectDiscoveryTests : DiscoveryWorkerTestBase
         );
     }
 
+    [Fact]
+    public async Task DependenciesCanBeDiscoveredWithWindowsSpecificTfm()
+    {
+        await TestDiscoverAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Dependency", "1.2.3", "netstandard2.0"),
+            ],
+            startingDirectory: "src",
+            projectPath: "src/library.csproj",
+            files:
+            [
+                ("src/library.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net9.0-windows</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Dependency" Version="1.2.3" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            expectedProjects:
+            [
+                new()
+                {
+                    FilePath = "library.csproj",
+                    Dependencies =
+                    [
+                        new("Some.Dependency", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net9.0-windows"], IsDirect: true),
+                    ],
+                    ImportedFiles = [],
+                    Properties =
+                    [
+                        new("TargetFramework", "net9.0-windows", "src/library.csproj"),
+                    ],
+                    TargetFrameworks = ["net9.0-windows"],
+                    ReferencedProjectPaths = [],
+                    AdditionalFiles = [],
+                },
+            ]
+        );
+    }
+
     private static async Task TestDiscoverAsync(string startingDirectory, string projectPath, TestFile[] files, ImmutableArray<ExpectedSdkProjectDiscoveryResult> expectedProjects, MockNuGetPackage[]? packages = null)
     {
         using var testDirectory = await TemporaryDirectory.CreateWithContentsAsync(files);

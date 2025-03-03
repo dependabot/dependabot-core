@@ -1,8 +1,16 @@
 <Project>
   <!-- The following properties enable target framework and dependency discovery when OS-specific workloads are required -->
   <PropertyGroup>
+    <!--
+
+    $(TargetPlatformVersion) should default to '0.0' as per https://github.com/dotnet/sdk/blob/v9.0.100/src/Tasks/Microsoft.NET.Build.Tasks/targets/Microsoft.NET.TargetFrameworkInference.targets#L69
+
+    HOWEVER, this will need to be set differently (e.g., '1.0') to do dependency discovery
+
+    -->
+    <_DefaultTargetPlatformVersion Condition="'$(_DefaultTargetPlatformVersion)' == ''">0.0</_DefaultTargetPlatformVersion>
     <DesignTimeBuild>true</DesignTimeBuild>
     <EnableWindowsTargeting Condition="$(TargetFramework.Contains('-windows'))">true</EnableWindowsTargeting>
-    <TargetPlatformVersion Condition="$(TargetPlatformVersion) == '' AND $(TargetFramework.Contains('-'))">1.0</TargetPlatformVersion>
+    <TargetPlatformVersion Condition="$(TargetPlatformVersion) == '' AND $(TargetFramework.Contains('-'))">$(_DefaultTargetPlatformVersion)</TargetPlatformVersion>
   </PropertyGroup>
 </Project>
