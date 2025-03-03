@@ -370,7 +370,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
     context "when the feature flag :enable_corepack_for_npm_and_yarn is enabled" do
       before do
         allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_corepack_for_npm_and_yarn).and_return(true)
-        allow(Dependabot::Experiments).to receive(:enabled?).with(:npm_v6_deprecation_warning).and_return(true)
+        allow(Dependabot::Experiments).to receive(:enabled?).with(:npm_fallback_version_above_v6).and_return(true)
       end
 
       it "returns true if lockfileVersion is 3 or higher" do
@@ -393,17 +393,11 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
     context "when the feature flag :enable_corepack_for_npm_and_yarn is disabled" do
       before do
         allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_corepack_for_npm_and_yarn).and_return(false)
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:npm_v6_deprecation_warning)
-          .and_return(true)
       end
 
       context "when :npm_fallback_version_above_v6 is enabled" do
         before do
           allow(Dependabot::Experiments).to receive(:enabled?).with(:npm_fallback_version_above_v6).and_return(true)
-          allow(Dependabot::Experiments).to receive(:enabled?)
-            .with(:npm_v6_deprecation_warning)
-            .and_return(true)
         end
 
         it "returns true if lockfileVersion is 2 or higher" do
