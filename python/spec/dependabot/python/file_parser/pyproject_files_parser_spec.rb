@@ -154,7 +154,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
       end
 
       describe "a development sub-dependency" do
-        subject(:dep) { dependencies.find { |d| d.name == "atomicwrites" } }
+        subject(:dep) { dependencies.find { |d| d.name == "click" } }
 
         its(:subdependency_metadata) do
           is_expected.to eq([{ production: false }])
