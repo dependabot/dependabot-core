@@ -1064,7 +1064,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
       it "returns the correct package manager" do
         expect(package_manager.name).to eq "terraform"
         expect(package_manager.requirement).to be_nil
-        expect(package_manager.version.to_s).to eq "1.10.5"
+        expect(package_manager.version.to_s).to eq "1.11.0"
       end
     end
   end
