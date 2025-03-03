@@ -47,6 +47,7 @@ RSpec.describe Dependabot::Nuget::NuGetConfigCredentialHelpers do
               <?xml version="1.0" encoding="utf-8"?>
               <configuration>
                 <packageSources>
+                  <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
                   <add key="nuget_source_1" value="https://private.nuget.example.com/index.json" />
                   <add key="nuget_source_2" value="https://public.nuget.example.com/index.json" />
                 </packageSources>

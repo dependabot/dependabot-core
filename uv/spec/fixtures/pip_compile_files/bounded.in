@@ -1,0 +1,5 @@
+flaky
+pytest
+pytest-xdist
+mock
+Attrs<=17.4.0

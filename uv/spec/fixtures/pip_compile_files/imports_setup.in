@@ -1,0 +1,7 @@
+-e .
+
+flaky
+pytest
+pytest-xdist
+mock
+Attrs

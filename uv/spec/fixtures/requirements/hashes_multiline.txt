@@ -1,0 +1,3 @@
+pytest==3.2.3 \
+    --hash=sha256:81a25f36a97da3313e1125fce9e7bbbba565bc7fec3c5beb14c262ddab238ac1 \
+    --hash=sha256:27fa6617efc2869d3e969a3e75ec060375bfb28831ade8b5cdd68da3a741dc3c

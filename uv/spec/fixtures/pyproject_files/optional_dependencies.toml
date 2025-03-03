@@ -1,0 +1,21 @@
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "pkgtest"
+authors = [{name = "Sample", email = "sample.project@example.org"}]
+license = {file = "LICENSE"}
+classifiers = ["License :: OSI Approved :: MIT License"]
+dynamic = ["version", "description"]
+dependencies = [
+   "ansys-templates==0.3.0",
+]
+
+[project.optional-dependencies]
+socks = [ 'PySocks >= 1.5.6, != 1.5.7, < 2' ]
+tests = [
+  'ddt >= 1.2.2, < 2',
+  'pytest < 6',
+  'mock >= 1.0.1, < 4; python_version < "3.4"',
+]

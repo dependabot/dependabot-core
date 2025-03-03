@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "streamlit-server-state"
+version = "0.17.1"
+description = ""
+authors = ["Yuichiro Tachibana (Tsuchiya) <t.yic.yt@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/whitphx/streamlit-server-state"
+
+[tool.poetry.dependencies]
+packaging = ">=20.0"
+streamlit = "^1.12.2"
+
+[tool.poetry.dev-dependencies]
+black = "^20.8b1"
+isort = "^5.12.0"
+flake8 = "^4.0.1"
+mypy = "^1.6"
+pytest = "^7.4.2"
+streamlit = ">=0.65.0"
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

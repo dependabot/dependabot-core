@@ -1,0 +1,18 @@
+{
+  "name": "Pipfile",
+  "path": "Pipfile",
+  "sha": "11fc8c6d445a2302417c65b86fb771243a3a90b7",
+  "size": 541,
+  "url": "https://api.github.com/repos/mozilla/mozillians-tests/contents/Pipfile?ref=master",
+  "html_url": "https://github.com/mozilla/mozillians-tests/blob/master/Pipfile",
+  "git_url": "https://api.github.com/repos/mozilla/mozillians-tests/git/blobs/11fc8c6d445a2302417c65b86fb771243a3a90b7",
+  "download_url": "https://raw.githubusercontent.com/mozilla/mozillians-tests/master/Pipfile",
+  "type": "file",
+  "content": "W1tzb3VyY2VdXQp1cmwgPSAiaHR0cHM6Ly9weXBpLnB5dGhvbi5vcmcvc2lt\ncGxlIgp2ZXJpZnlfc3NsID0gdHJ1ZQoKW3BhY2thZ2VzXQpweXRlc3QgPSAi\nKiIKCltwYWNrYWdlc10KcmVxdWVzdHMgPSAiKiIK\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/mozilla/mozillians-tests/contents/Pipfile?ref=master",
+    "git": "https://api.github.com/repos/mozilla/mozillians-tests/git/blobs/11fc8c6d445a2302417c65b86fb771243a3a90b7",
+    "html": "https://github.com/mozilla/mozillians-tests/blob/master/Pipfile"
+  }
+}

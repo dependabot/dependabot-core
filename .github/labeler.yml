@@ -72,6 +72,10 @@
 - changed-files:
   - any-glob-to-any-file: python/**
 
+"L: python:uv":
+- changed-files:
+  - any-glob-to-any-file: uv/**
+
 "L: terraform":
 - changed-files:
   - any-glob-to-any-file: terraform/**

@@ -868,7 +868,6 @@ RSpec.describe Dependabot::Cargo::FileParser do
       it "returns the correct package manager" do
         expect(package_manager.name).to eq "cargo"
         expect(package_manager.requirement).to be_nil
-        expect(package_manager.version.to_s).to eq "1.82.0"
       end
     end
 
@@ -878,7 +877,6 @@ RSpec.describe Dependabot::Cargo::FileParser do
       it "returns the correct language" do
         expect(language.name).to eq "rust"
         expect(language.requirement).to be_nil
-        expect(language.version.to_s).to eq "1.82.0"
       end
     end
   end

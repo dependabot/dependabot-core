@@ -1,0 +1,2 @@
+psycopg2[foo, bar]==2.6.1
+luigi[foobar]==2.2.0

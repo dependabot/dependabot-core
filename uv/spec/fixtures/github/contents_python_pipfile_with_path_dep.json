@@ -1,0 +1,18 @@
+{
+  "name": "Pipfile",
+  "path": "Pipfile",
+  "sha": "3e0fd729eb97bacb2c8abeaa1ef30e01101159a5",
+  "size": 423,
+  "url": "https://api.github.com/repos/requests/requests/contents/Pipfile?ref=master",
+  "html_url": "https://github.com/requests/requests/blob/master/Pipfile",
+  "git_url": "https://api.github.com/repos/requests/requests/git/blobs/3e0fd729eb97bacb2c8abeaa1ef30e01101159a5",
+  "download_url": "https://raw.githubusercontent.com/requests/requests/master/Pipfile",
+  "type": "file",
+  "content": "W1tzb3VyY2VdXQp1cmwgPSAiaHR0cHM6Ly9weXBpLm9yZy9zaW1wbGUiCnZl\ncmlmeV9zc2wgPSB0cnVlCm5hbWUgPSAicHlwaSIKCltwYWNrYWdlc10KbWtk\nb2NzID0gIioiCmp1cHl0ZXItY2xpZW50ID0gIioiCm5iY29udmVydCA9ICIq\nIgpuYmNvbnZlcnQtdXRpbHMgPSAiKiIKcHlnbWVudHMgPSAiKiIKcHltZG93\nbi1leHRlbnNpb25zID0gIioiCnRhYnVsYXRlID0gIioiCnBhbmRhcyA9ICIq\nIgpta2RvY3MtbWF0ZXJpYWwgPSAiKiIKaXB5a2VybmVsID0gIioiCmN5dGhv\nbiA9ICIqIiAjIFJlcXVpcmVkIHVudGlsIHB5cHJvaiBwcm92aWRlIGEgd2hl\nZWwgZm9yIDMuNwpweXByb2ogPSB7ZWRpdGFibGUgPSB0cnVlLCBnaXQgPSAi\naHR0cHM6Ly9naXRodWIuY29tL2pzd2hpdC9weXByb2ouZ2l0In0gIyBSZXF1\naXJlZCB1bnRpbCBweXByb2ogcHJvdmlkZSBhIHdoZWVsIGZvciAzLjcKZ2Vv\ncGFuZGFzID0gIioiCm51bXB5ZG9jID0gIioiCmJsYWNrID0gIj09MTguOWIw\nIgpjbGljayA9ICIqIgoiZDM2MDllYSIgPSB7ZWRpdGFibGUgPSB0cnVlLCBw\nYXRoID0gIi4vLi4vZmxvd21hY2hpbmUifQpkZXNjYXJ0ZXMgPSAiKiIKc2Vh\nYm9ybiA9ICIqIgoiM2ZmNDA0YSIgPSB7ZWRpdGFibGUgPSB0cnVlLCBwYXRo\nID0gIi4vLi4vZmxvd2NsaWVudCJ9Cm1rdGhlYXBpZG9jcyA9ICIqIgpta25v\ndGVib29rcyA9ICIqIgpmbGFzay1qd3QtZXh0ZW5kZWQgPSAiKiIKcXVhcnQg\nPSAiKiIKcHl0aG9uLWRvdGVudiA9ICIqIgoKW2Rldi1wYWNrYWdlc10KClty\nZXF1aXJlc10KcHl0aG9uX3ZlcnNpb24gPSAiMy43IgoKW3NjcmlwdHNdCmJ1\naWxkID0gImJhc2ggYnVpbGQuc2giCnNlcnZlID0gImJhc2ggYnVpbGQuc2gg\nc2VydmUgLS1kaXJ0eXJlbG9hZCIKZGVwbG95ID0gImJhc2ggYnVpbGQuc2gg\nZ2gtZGVwbG95Igo=\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/requests/requests/contents/Pipfile?ref=master",
+    "git": "https://api.github.com/repos/requests/requests/git/blobs/3e0fd729eb97bacb2c8abeaa1ef30e01101159a5",
+    "html": "https://github.com/requests/requests/blob/master/Pipfile"
+  }
+}
