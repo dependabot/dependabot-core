@@ -38,6 +38,7 @@ jobs:
           # `updater/Gemfile.lock`, which in prod will silently change the
           # version of bundler used by the bundler native helper.
           working-directory: updater
+          # bundler-cache: true # not needed since we don't `bundle install` anything
 
       - name: Bump the version
         # Cron runs with no inputs, so version_type will default to 'minor'
