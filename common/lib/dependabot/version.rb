@@ -73,5 +73,18 @@ module Dependabot
     def lowest_prerelease_suffix
       "a"
     end
+
+    sig { returns(T.nilable([Integer, Integer, Integer])) }
+    def semver_parts
+      # Extracts only the numeric major.minor.patch part of the version, ensuring it starts with a number
+      match = to_semver.match(/^\d+(?:\.\d+)?(?:\.\d+)?(?=[^\d]|$)/)
+      return nil unless match
+
+      first_match = match[0]
+      return nil unless first_match
+
+      major, minor, patch = first_match.split(".").map(&:to_i)
+      [major || 0, minor || 0, patch || 0]
+    end
   end
 end
