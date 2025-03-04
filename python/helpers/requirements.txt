@@ -6,7 +6,7 @@ pipenv==2024.4.1
 plette==2.1.0
 poetry==2.1.1
 # TODO: Replace 3p package `tomli` with 3.11's new stdlib `tomllib` once we drop support for Python 3.10.
-tomli==2.0.1
+tomli==2.2.1
 
 # Some dependencies will only install if Cython is present
 Cython==3.0.10
