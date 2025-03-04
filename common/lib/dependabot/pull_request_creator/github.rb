@@ -325,6 +325,10 @@ module Dependabot
           file_trees,
           base_tree: base_commit
         )
+      rescue Octokit::UnprocessableEntity => e
+        raise unless e.message.include?("Must supply a valid tree.mode")
+
+        raise T.must($!), "Must supply a valid tree.mode, got #{file.inspect}", $!&.backtrace
       end
 
       sig { params(commit: T.untyped).returns(T.untyped) }
