@@ -606,6 +606,18 @@ public class MSBuildHelperTests : TestBase
             new[] { "net8.0-windows7.0" }
         ];
 
+        yield return
+        [
+            """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>net9.0-windows</TargetFramework>
+              </PropertyGroup>
+            </Project>
+            """,
+            new[] { "net9.0-windows" }
+        ];
+
         // legacy projects
         yield return
         [
