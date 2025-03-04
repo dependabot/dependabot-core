@@ -290,33 +290,43 @@ module Dependabot
         options
       end
 
+      sig { params(file: T.untyped).returns(T::Hash[Symbol, T.untyped]) }
+      def submodule_tree_node(file)
+        {
+          path: file.path.sub(%r{^/}, ""),
+          mode: Dependabot::DependencyFile::Mode::SUBMODULE,
+          type: "commit",
+          sha: file.content
+        }
+      end
+
+      sig { params(file: T.untyped).returns(T::Hash[Symbol, T.untyped]) }
+      def file_tree_node(file)
+        content = if file.operation == Dependabot::DependencyFile::Operation::DELETE
+                    { sha: nil }
+                  elsif file.binary?
+                    sha = T.unsafe(github_client_for_source).create_blob(
+                      source.repo, file.content, "base64"
+                    )
+                    { sha: sha }
+                  else
+                    { content: file.content }
+                  end
+
+        {
+          path: file.realpath,
+          mode: file.mode || Dependabot::DependencyFile::Mode::FILE,
+          type: "blob"
+        }.merge(content)
+      end
+
       sig { returns(T.untyped) }
       def create_tree
         file_trees = files.map do |file|
           if file.type == "submodule"
-            {
-              path: file.path.sub(%r{^/}, ""),
-              mode: Dependabot::DependencyFile::Mode::SUBMODULE,
-              type: "commit",
-              sha: file.content
-            }
+            submodule_tree_node(file)
           else
-            content = if file.operation == Dependabot::DependencyFile::Operation::DELETE
-                        { sha: nil }
-                      elsif file.binary?
-                        sha = T.unsafe(github_client_for_source).create_blob(
-                          source.repo, file.content, "base64"
-                        )
-                        { sha: sha }
-                      else
-                        { content: file.content }
-                      end
-
-            {
-              path: file.realpath,
-              mode: file.mode || Dependabot::DependencyFile::Mode::FILE,
-              type: "blob"
-            }.merge(content)
+            file_tree_node(file)
           end
         end
 
