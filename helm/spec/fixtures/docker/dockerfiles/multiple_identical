@@ -1,0 +1,21 @@
+FROM node:10-alpine AS BUILD
+
+RUN apk add --no-cache git
+
+WORKDIR /application
+
+COPY package.json yarn.lock ./
+
+RUN yarn
+
+COPY . .
+
+FROM node:10-alpine
+
+ENV NODE_PATH=/dependabot/node_modules
+
+COPY --from=BUILD /application/ /dependabot/
+
+WORKDIR /application
+
+ENTRYPOINT ["/dependabot/node_modules/.bin/dependabot"]
