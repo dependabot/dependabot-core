@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "open3"
@@ -28,6 +28,9 @@ module Dependabot
         def initialize(dependency:, dependency_files:)
           @dependency = dependency
           @dependency_files = dependency_files
+
+          @install_metadata = T.let(nil, T.nilable(T::Hash[String, Dependabot::Elm::Version]))
+          @original_dependency_details ||= T.let(nil, T.nilable(T::Array[Dependabot::Dependency]))
         end
 
         sig { params(unlock_requirement: Symbol).returns(T.nilable(Dependabot::Elm::Version)) }
@@ -113,22 +116,26 @@ module Dependabot
 
         sig { returns(T::Hash[String, Dependabot::Elm::Version]) }
         def install_metadata
-          @install_metadata ||=
-            SharedHelpers.in_a_temporary_directory do
-              write_temporary_dependency_files
+          @install_metadata ||= parse_install_metadata
+        end
 
-              # Elm package install outputs a preview of the actions to be
-              # performed. We can use this preview to calculate whether it
-              # would do anything funny
-              dependency_name = Shellwords.escape(dependency.name)
-              command = "yes n | elm19 install #{dependency_name}"
-              response = run_shell_command(command)
+        sig { returns(T.any(T::Hash[String, Dependabot::Elm::Version], T.noreturn)) }
+        def parse_install_metadata
+          SharedHelpers.in_a_temporary_directory do
+            write_temporary_dependency_files
 
-              CliParser.decode_install_preview(response)
-            rescue SharedHelpers::HelperSubprocessFailed => e
-              # 5) We bump our dep but elm blows up
-              handle_elm_errors(e)
-            end
+            # Elm package install outputs a preview of the actions to be
+            # performed. We can use this preview to calculate whether it
+            # would do anything funny
+            dependency_name = Shellwords.escape(dependency.name)
+            command = "yes n | elm19 install #{dependency_name}"
+            response = run_shell_command(command)
+
+            CliParser.decode_install_preview(response)
+          rescue SharedHelpers::HelperSubprocessFailed => e
+            # 5) We bump our dep but elm blows up
+            handle_elm_errors(e)
+          end
         end
 
         sig { params(command: String).returns(::String) }
@@ -151,7 +158,7 @@ module Dependabot
           )
         end
 
-        sig { params(error: Dependabot::DependabotError).void }
+        sig { params(error: Dependabot::DependabotError).returns(T.noreturn) }
         def handle_elm_errors(error)
           if error.message.include?("OLD DEPENDENCIES") ||
              error.message.include?("BAD JSON")
