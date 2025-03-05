@@ -13,6 +13,14 @@ RUN apt-get update \
     libicu-dev=70.1-2 \
  && rm -rf /var/lib/apt/lists/*
 
+ # install libssl 1.1 for older .NET SDKs that might require it
+ARG LIBSSL_URL_AMD64=http://security.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.24_amd64.deb
+ARG LIBSSL_URL_ARM64=http://ports.ubuntu.com/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.24_arm64.deb
+RUN URL=$([ $TARGETARCH = "arm64" ] && echo ${LIBSSL_URL_ARM64} || echo ${LIBSSL_URL_AMD64}) \
+ && curl --location --output /tmp/libssl.deb ${URL} \
+ && dpkg -i /tmp/libssl.deb \
+ && rm /tmp/libssl.deb
+
 ARG POWERSHELL_VERSION=7.4.5
 RUN ARCH=$([ $TARGETARCH = "arm64" ] && echo "arm64" || echo "x64") \
  && POWERSHELL_VERSION_MAJOR=$(echo $POWERSHELL_VERSION | cut -d. -f1) \
