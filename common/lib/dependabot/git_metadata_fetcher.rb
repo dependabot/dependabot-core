@@ -3,6 +3,7 @@
 
 require "excon"
 require "open3"
+require "ostruct"
 require "sorbet-runtime"
 
 require "dependabot/errors"
