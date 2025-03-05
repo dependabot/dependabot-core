@@ -3,6 +3,7 @@
 
 # These all need to be required so the various classes can be registered in a
 # lookup table of package manager names to concrete classes.
+# fake comment to trigger CI within the `cargo` ecosystem
 require "dependabot/cargo/file_fetcher"
 require "dependabot/cargo/file_parser"
 require "dependabot/cargo/update_checker"
