@@ -712,6 +712,30 @@ RSpec.describe Dependabot::Uv::FileParser do
       end
     end
 
+    context "with a pyproject file only" do
+      let(:files) { [pyproject] }
+      let(:pyproject) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: fixture("pyproject_files", "pyproject_1_0_0.toml")
+        )
+      end
+
+      its(:length) { is_expected.to eq(1) }
+    end
+
+    context "with a pyproject.toml file with no dependencies" do
+      let(:files) { [pyproject] }
+      let(:pyproject) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: fixture("pyproject_files", "pyproject_1_0_0_nodeps.toml")
+        )
+      end
+
+      its(:length) { is_expected.to eq(0) }
+    end
+
     context "with a pyproject.toml in poetry format and a lock file" do
       let(:files) { [pyproject, poetry_lock] }
       let(:pyproject) do
@@ -845,14 +869,6 @@ RSpec.describe Dependabot::Uv::FileParser do
             )
           end
         end
-      end
-    end
-
-    context "with reject_external_code" do
-      let(:reject_external_code) { true }
-
-      it "raises UnexpectedExternalCode" do
-        expect { dependencies }.to raise_error(Dependabot::UnexpectedExternalCode)
       end
     end
   end

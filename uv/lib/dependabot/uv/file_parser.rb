@@ -11,7 +11,7 @@ require "dependabot/errors"
 require "dependabot/uv/language"
 require "dependabot/uv/native_helpers"
 require "dependabot/uv/name_normaliser"
-require "dependabot/uv/pip_compile_file_matcher"
+require "dependabot/uv/requirements_file_matcher"
 require "dependabot/uv/language_version_manager"
 require "dependabot/uv/package_manager"
 
@@ -19,9 +19,7 @@ module Dependabot
   module Uv
     class FileParser < Dependabot::FileParsers::Base
       extend T::Sig
-      require_relative "file_parser/pipfile_files_parser"
       require_relative "file_parser/pyproject_files_parser"
-      require_relative "file_parser/setup_file_parser"
       require_relative "file_parser/python_requirement_parser"
 
       DEPENDENCY_GROUP_KEYS = T.let([
@@ -40,15 +38,12 @@ module Dependabot
       ).freeze
 
       # we use this placeholder version in case we are not able to detect any
-      # PIP version from shell, we are ensuring that the actual update is not blocked
+      # uv version from shell, we are ensuring that the actual update is not blocked
       # in any way if any metric collection exception start happening
       UNDETECTED_PACKAGE_MANAGER_VERSION = "0.0"
 
-      sig { override.returns(T::Array[Dependabot::Dependency]) }
+      sig { override.returns(T::Array[Dependency]) }
       def parse
-        # TODO: setup.py from external dependencies is evaluated. Provide guards before removing this.
-        raise Dependabot::UnexpectedExternalCode if @reject_external_code
-
         dependency_set = DependencySet.new
 
         dependency_set += pyproject_file_dependencies if pyproject
@@ -71,56 +66,49 @@ module Dependabot
 
       private
 
-      sig { returns(Dependabot::Uv::LanguageVersionManager) }
+      sig { returns(LanguageVersionManager) }
       def language_version_manager
         @language_version_manager ||= T.let(LanguageVersionManager.new(python_requirement_parser:
                                         python_requirement_parser), T.nilable(LanguageVersionManager))
       end
 
-      sig { returns(Dependabot::Uv::FileParser::PythonRequirementParser) }
+      sig { returns(FileParser::PythonRequirementParser) }
       def python_requirement_parser
-        @python_requirement_parser ||= T.let(FileParser::PythonRequirementParser.new(dependency_files:
-                                         dependency_files), T.nilable(FileParser::PythonRequirementParser))
+        @python_requirement_parser ||= T.let(PythonRequirementParser.new(dependency_files:
+                                         dependency_files), T.nilable(PythonRequirementParser))
       end
 
       sig { returns(Ecosystem::VersionManager) }
       def package_manager
-        if Dependabot::Experiments.enabled?(:enable_file_parser_python_local)
+        if Experiments.enabled?(:enable_file_parser_python_local)
           Dependabot.logger.info("Detected package manager : #{detected_package_manager.name}")
         end
 
-        @package_manager ||= T.let(detected_package_manager, T.nilable(Dependabot::Ecosystem::VersionManager))
+        @package_manager ||= T.let(detected_package_manager, T.nilable(Ecosystem::VersionManager))
       end
 
       sig { returns(Ecosystem::VersionManager) }
       def detected_package_manager
-        setup_python_environment if Dependabot::Experiments.enabled?(:enable_file_parser_python_local)
+        setup_python_environment if Experiments.enabled?(:enable_file_parser_python_local)
 
-        PackageManager.new(T.must(detect_pipcompile_version))
+        PackageManager.new(T.must(detect_uv_version))
       end
 
-      # Detects the version of pip-compile. If the version cannot be detected, it returns nil
       sig { returns(T.nilable(String)) }
-      def detect_pipcompile_version
-        if pipcompile_in_file
-          package_manager = PackageManager::NAME
+      def detect_uv_version
+        version = uv_version.to_s.split("version ").last&.split(")")&.first
 
-          version = package_manager_version(package_manager)
-                    .to_s.split("version ").last&.split(")")&.first
+        log_if_version_malformed("uv", version)
 
-          log_if_version_malformed(package_manager, version)
-
-          # makes sure we have correct version format returned
-          version if version&.match?(/^\d+(?:\.\d+)*$/)
-        end
+        version if version&.match?(/^\d+(?:\.\d+)*$/)
       rescue StandardError
         nil
       end
 
-      sig { params(package_manager: String).returns(T.any(String, T.untyped)) }
-      def package_manager_version(package_manager)
-        version_info = SharedHelpers.run_shell_command("pyenv exec #{package_manager} --version")
-        Dependabot.logger.info("Package manager #{package_manager}, Info : #{version_info}")
+      sig { returns(T.any(String, T.untyped)) }
+      def uv_version
+        version_info = SharedHelpers.run_shell_command("pyenv exec uv --version")
+        Dependabot.logger.info("Package manager uv, Info : #{version_info}")
 
         version_info.match(/\d+(?:\.\d+)*/)&.to_s
       rescue StandardError => e
@@ -128,7 +116,6 @@ module Dependabot
         nil
       end
 
-      # setup python local setup on file parser stage
       sig { returns(T.nilable(String)) }
       def setup_python_environment
         language_version_manager.install_required_python
@@ -141,7 +128,6 @@ module Dependabot
 
       sig { params(package_manager: String, version: String).returns(T::Boolean) }
       def log_if_version_malformed(package_manager, version)
-        # logs warning if malformed version is found
         if version.match?(/^\d+(?:\.\d+)*$/)
           true
         else
@@ -152,7 +138,7 @@ module Dependabot
 
       sig { returns(String) }
       def python_raw_version
-        if Dependabot::Experiments.enabled?(:enable_file_parser_python_local)
+        if Experiments.enabled?(:enable_file_parser_python_local)
           Dependabot.logger.info("Detected python version: #{language_version_manager.python_version}")
           Dependabot.logger.info("Detected python major minor version: #{language_version_manager.python_major_minor}")
         end
@@ -173,15 +159,9 @@ module Dependabot
         )
       end
 
-      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      sig { returns(T::Array[DependencyFile]) }
       def requirement_files
         dependency_files.select { |f| f.name.end_with?(".txt", ".in") }
-      end
-
-      sig { returns(DependencySet) }
-      def pipenv_dependencies
-        @pipenv_dependencies ||= T.let(PipfileFilesParser.new(dependency_files:
-                                    dependency_files).dependency_set, T.nilable(DependencySet))
       end
 
       sig { returns(DependencySet) }
@@ -194,8 +174,6 @@ module Dependabot
       def requirement_dependencies
         dependencies = DependencySet.new
         parsed_requirement_files.each do |dep|
-          # If a requirement has a `<`, `<=` or '==' marker then updating it is
-          # probably blocked. Ignore it.
           next if blocking_marker?(dep)
 
           name = dep["name"]
@@ -204,7 +182,7 @@ module Dependabot
           original_file = get_original_file(file)
 
           requirements =
-            if original_file && pip_compile_file_matcher.lockfile_for_pip_compile_file?(original_file) then []
+            if original_file && requirements_in_file_matcher.compiled_file?(original_file) then []
             else
               [{
                 requirement: dep["requirement"],
@@ -214,7 +192,7 @@ module Dependabot
               }]
             end
 
-          # PyYAML < 6.0 will cause `pip-compile` to fail due to incompatibility with Cython 3. Workaround it.
+          # PyYAML < 6.0 will cause `pip-compile` to fail due to incompatibility with Cython 3. Workaround it. PR #8189
           SharedHelpers.run_shell_command("pyenv exec pip install cython<3.0") if old_pyyaml?(name, version)
 
           dependencies <<
@@ -268,7 +246,6 @@ module Dependabot
       def marker_satisfied?(marker, python_version)
         conditions = marker.split(/\s+(and|or)\s+/)
 
-        # Explicitly define the type of result as T::Boolean
         result = T.let(evaluate_condition(conditions.shift, python_version), T::Boolean)
 
         until conditions.empty?
@@ -295,24 +272,18 @@ module Dependabot
 
         case operator
         when "<"
-          Dependabot::Uv::Version.new(python_version) < Dependabot::Uv::Version.new(version)
+          Version.new(python_version) < Version.new(version)
         when "<="
-          Dependabot::Uv::Version.new(python_version) <= Dependabot::Uv::Version.new(version)
+          Version.new(python_version) <= Version.new(version)
         when ">"
-          Dependabot::Uv::Version.new(python_version) > Dependabot::Uv::Version.new(version)
+          Version.new(python_version) > Version.new(version)
         when ">="
-          Dependabot::Uv::Version.new(python_version) >= Dependabot::Uv::Version.new(version)
+          Version.new(python_version) >= Version.new(version)
         when "=="
-          Dependabot::Uv::Version.new(python_version) == Dependabot::Uv::Version.new(version)
+          Version.new(python_version) == Version.new(version)
         else
           false
         end
-      end
-
-      sig { returns(DependencySet) }
-      def setup_file_dependencies
-        @setup_file_dependencies ||= T.let(SetupFileParser.new(dependency_files: dependency_files)
-                                    .dependency_set, T.nilable(DependencySet))
       end
 
       sig { returns(T.untyped) }
@@ -333,7 +304,7 @@ module Dependabot
         evaluation_errors = REQUIREMENT_FILE_EVALUATION_ERRORS
         raise unless e.message.start_with?(*evaluation_errors)
 
-        raise Dependabot::DependencyFileNotEvaluatable, e.message
+        raise DependencyFileNotEvaluatable, e.message
       end
 
       sig { params(requirements: T.untyped).returns(T.untyped) }
@@ -341,18 +312,13 @@ module Dependabot
         requirements.each do |dep|
           next unless dep["requirement"]
 
-          Uv::Requirement.new(dep["requirement"].split(","))
+          Requirement.new(dep["requirement"].split(","))
         rescue Gem::Requirement::BadRequirementError => e
-          raise Dependabot::DependencyFileNotEvaluatable, e.message
+          raise DependencyFileNotEvaluatable, e.message
         end
       end
 
-      sig { returns(T::Boolean) }
-      def pipcompile_in_file
-        requirement_files.any? { |f| f.name.end_with?(PackageManager::MANIFEST_FILENAME) }
-      end
-
-      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      sig { returns(T::Array[DependencyFile]) }
       def write_temporary_dependency_files
         dependency_files
           .reject { |f| f.name == ".python-version" }
@@ -382,53 +348,25 @@ module Dependabot
       def check_required_files
         filenames = dependency_files.map(&:name)
         return if filenames.any? { |name| name.end_with?(".txt", ".in") }
-        return if pipfile
         return if pyproject
-        return if setup_file
-        return if setup_cfg_file
 
         raise "Missing required files!"
       end
 
-      sig { returns(T.nilable(Dependabot::DependencyFile)) }
-      def pipfile
-        @pipfile ||= T.let(get_original_file("Pipfile"), T.nilable(Dependabot::DependencyFile))
-      end
-
-      sig { returns(T.nilable(Dependabot::DependencyFile)) }
-      def pipfile_lock
-        @pipfile_lock ||= T.let(get_original_file("Pipfile.lock"), T.nilable(Dependabot::DependencyFile))
-      end
-
-      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      sig { returns(T.nilable(DependencyFile)) }
       def pyproject
-        @pyproject ||= T.let(get_original_file("pyproject.toml"), T.nilable(Dependabot::DependencyFile))
+        @pyproject ||= T.let(get_original_file("pyproject.toml"), T.nilable(DependencyFile))
       end
 
-      sig { returns(T.nilable(Dependabot::DependencyFile)) }
-      def poetry_lock
-        @poetry_lock ||= T.let(get_original_file("poetry.lock"), T.nilable(Dependabot::DependencyFile))
+      sig { returns(T::Array[Requirement]) }
+      def requirements_in_files
+        @requirements_in_files ||= T.let(dependency_files.select { |f| f.name.end_with?(".in") }, T.untyped)
       end
 
-      sig { returns(T.nilable(Dependabot::DependencyFile)) }
-      def setup_file
-        @setup_file ||= T.let(get_original_file("setup.py"), T.nilable(Dependabot::DependencyFile))
-      end
-
-      sig { returns(T.nilable(Dependabot::DependencyFile)) }
-      def setup_cfg_file
-        @setup_cfg_file ||= T.let(get_original_file("setup.cfg"), T.nilable(Dependabot::DependencyFile))
-      end
-
-      sig { returns(T::Array[Dependabot::Uv::Requirement]) }
-      def pip_compile_files
-        @pip_compile_files ||= T.let(dependency_files.select { |f| f.name.end_with?(".in") }, T.untyped)
-      end
-
-      sig { returns(Dependabot::Uv::PipCompileFileMatcher) }
-      def pip_compile_file_matcher
-        @pip_compile_file_matcher ||= T.let(PipCompileFileMatcher.new(pip_compile_files),
-                                            T.nilable(Dependabot::Uv::PipCompileFileMatcher))
+      sig { returns(RequiremenstFileMatcher) }
+      def requirements_in_file_matcher
+        @requirements_in_file_matcher ||= T.let(RequiremenstFileMatcher.new(requirements_in_files),
+                                                T.nilable(RequiremenstFileMatcher))
       end
     end
   end
