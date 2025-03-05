@@ -1262,5 +1262,13 @@ RSpec.describe Dependabot::Docker::FileParser do
         end
       end
     end
+
+    context "with images with unparseable versions" do
+      let(:helmfile_fixture_name) { "multi-image-with-bad-version.yaml" }
+
+      it "omits the images with unparseable version numbers" do
+        expect(dependencies.map(&:version)).to eq(["some-name_123"])
+      end
+    end
   end
 end
