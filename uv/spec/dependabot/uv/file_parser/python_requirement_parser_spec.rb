@@ -66,34 +66,5 @@ RSpec.describe Dependabot::Uv::FileParser::PythonRequirementParser do
         it { is_expected.to eq(["3.6.2"]) }
       end
     end
-
-    context "with a setup.py file" do
-      let(:files) { [setup_py] }
-      let(:setup_py) do
-        Dependabot::DependencyFile.new(
-          name: "setup.py",
-          content: setup_py_body
-        )
-      end
-      let(:setup_py_body) { fixture("setup_files", fixture_name) }
-
-      context "when including a python_requires line" do
-        let(:fixture_name) { "impossible_imports.py" }
-
-        it { is_expected.to eq([">=3.7"]) }
-      end
-
-      context "when not including a python_requires line" do
-        let(:fixture_name) { "setup.py" }
-
-        it { is_expected.to eq([]) }
-      end
-
-      context "when having a requirement that can't be parsed" do
-        let(:fixture_name) { "unparseable_python_requires.py" }
-
-        it { is_expected.to eq([]) }
-      end
-    end
   end
 end

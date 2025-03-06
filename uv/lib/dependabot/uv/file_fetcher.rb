@@ -7,7 +7,7 @@ require "sorbet-runtime"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 require "dependabot/uv/language_version_manager"
-require "dependabot/uv/pip_compile_file_matcher"
+require "dependabot/uv/requirements_file_matcher"
 require "dependabot/uv/requirement_parser"
 require "dependabot/uv/file_parser/pyproject_files_parser"
 require "dependabot/uv/file_parser/python_requirement_parser"
@@ -295,7 +295,7 @@ module Dependabot
 
       def parse_requirement_path_dependencies(req_file)
         # If this is a pip-compile lockfile, rely on whatever path dependencies we found in the main manifest
-        return [] if pip_compile_file_matcher.lockfile_for_pip_compile_file?(req_file)
+        return [] if requirements_in_file_matcher.compiled_file?(req_file)
 
         uneditable_reqs =
           req_file.content
@@ -318,8 +318,8 @@ module Dependabot
         Pathname.new(path).cleanpath.to_path
       end
 
-      def pip_compile_file_matcher
-        @pip_compile_file_matcher ||= PipCompileFileMatcher.new(requirements_in_files)
+      def requirements_in_file_matcher
+        @requirements_in_file_matcher ||= RequiremenstFileMatcher.new(requirements_in_files)
       end
     end
   end

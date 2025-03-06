@@ -3,16 +3,16 @@
 
 module Dependabot
   module Uv
-    class PipCompileFileMatcher
+    class RequiremenstFileMatcher
       extend T::Sig
 
-      sig { params(requirements_in_files: T::Array[Dependabot::Uv::Requirement]).void }
+      sig { params(requirements_in_files: T::Array[Requirement]).void }
       def initialize(requirements_in_files)
         @requirements_in_files = requirements_in_files
       end
 
-      sig { params(file: Dependabot::DependencyFile).returns(T::Boolean) }
-      def lockfile_for_pip_compile_file?(file)
+      sig { params(file: DependencyFile).returns(T::Boolean) }
+      def compiled_file?(file)
         return false unless requirements_in_files.any?
 
         name = file.name
@@ -26,7 +26,7 @@ module Dependabot
 
       private
 
-      sig { returns(T::Array[Dependabot::Uv::Requirement]) }
+      sig { returns(T::Array[Requirement]) }
       attr_reader :requirements_in_files
 
       sig { params(filename: T.any(String, Symbol)).returns(String) }
