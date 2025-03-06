@@ -48,13 +48,7 @@ module Dependabot
       # Otherwise, we are going to use old versionining npm 6
       sig { params(lockfile: T.nilable(DependencyFile)).returns(Integer) }
       def self.npm_version_numeric(lockfile)
-        return npm_version_numeric_latest(lockfile) if Dependabot::Experiments.enabled?(:npm_v6_deprecation_warning)
-
-        fallback_version_npm8 = Dependabot::Experiments.enabled?(:npm_fallback_version_above_v6)
-
-        return npm_version_numeric_npm8_or_higher(lockfile) if fallback_version_npm8
-
-        npm_version_numeric_npm6_or_higher(lockfile)
+        npm_version_numeric_latest(lockfile)
       end
 
       sig { params(lockfile: T.nilable(DependencyFile)).returns(Integer) }
@@ -183,10 +177,6 @@ module Dependabot
       sig { params(package_lock: T.nilable(DependencyFile)).returns(T::Boolean) }
       def self.npm8?(package_lock)
         return true unless package_lock&.content
-
-        if Dependabot::Experiments.enabled?(:npm_v6_deprecation_warning)
-          return npm_version_numeric_latest(package_lock) >= NPM_V8
-        end
 
         npm_version_numeric(package_lock) == NPM_V8
       end
