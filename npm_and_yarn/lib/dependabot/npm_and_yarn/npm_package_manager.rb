@@ -45,20 +45,6 @@ module Dependabot
           requirement: requirement
         )
       end
-
-      sig { override.returns(T::Boolean) }
-      def deprecated?
-        return false unless Dependabot::Experiments.enabled?(:npm_v6_deprecation_warning)
-
-        super
-      end
-
-      sig { override.returns(T::Boolean) }
-      def unsupported?
-        return false unless Dependabot::Experiments.enabled?(:npm_v6_unsupported_error)
-
-        super
-      end
     end
   end
 end
