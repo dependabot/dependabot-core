@@ -599,7 +599,7 @@ RSpec.describe Dependabot::SharedHelpers do
     end
 
     let(:credentials) { [] }
-    let(:git_config_path) { File.expand_path(".gitconfig", tmp) }
+    let(:git_config_path) { File.expand_path("XXXXXXXXXXXXXXXX.gitconfig", tmp) }
     let(:configured_git_config) { with_git_configured { `cat #{git_config_path}` } }
     let(:configured_git_credentials) { with_git_configured { `cat #{Dir.pwd}/git.store` } }
 
@@ -610,9 +610,6 @@ RSpec.describe Dependabot::SharedHelpers do
     before do
       allow(SecureRandom).to receive(:hex).and_return("XXXXXXXXXXXXXXXX")
     end
-    let(:git_config_path) { File.expand_path("XXXXXXXXXXXXXXXX.gitconfig", tmp) }
-    let(:configured_git_config) { with_git_configured { `cat #{git_config_path}` } }
-    let(:configured_git_credentials) { with_git_configured { `cat #{Dir.pwd}/git.store` } }
 
     context "when the global .gitconfig has a safe directory" do
       before do
