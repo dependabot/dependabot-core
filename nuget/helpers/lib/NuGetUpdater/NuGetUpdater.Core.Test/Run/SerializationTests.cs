@@ -417,11 +417,11 @@ public class SerializationTests
             """;
         var jobWrapper = RunWorker.Deserialize(jsonWrapperJson)!;
         Assert.Single(jobWrapper.Job.ExistingPullRequests);
-        Assert.Single(jobWrapper.Job.ExistingPullRequests[0]);
-        Assert.Equal("Some.Package", jobWrapper.Job.ExistingPullRequests[0][0].DependencyName);
-        Assert.Equal(NuGetVersion.Parse("1.2.3"), jobWrapper.Job.ExistingPullRequests[0][0].DependencyVersion);
-        Assert.False(jobWrapper.Job.ExistingPullRequests[0][0].DependencyRemoved);
-        Assert.Null(jobWrapper.Job.ExistingPullRequests[0][0].Directory);
+        Assert.Single(jobWrapper.Job.ExistingPullRequests[0].Dependencies);
+        Assert.Equal("Some.Package", jobWrapper.Job.ExistingPullRequests[0].Dependencies[0].DependencyName);
+        Assert.Equal(NuGetVersion.Parse("1.2.3"), jobWrapper.Job.ExistingPullRequests[0].Dependencies[0].DependencyVersion);
+        Assert.False(jobWrapper.Job.ExistingPullRequests[0].Dependencies[0].DependencyRemoved);
+        Assert.Null(jobWrapper.Job.ExistingPullRequests[0].Dependencies[0].Directory);
     }
 
     [Fact]
