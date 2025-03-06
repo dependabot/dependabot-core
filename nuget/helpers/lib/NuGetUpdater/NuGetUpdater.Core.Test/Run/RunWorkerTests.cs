@@ -3,6 +3,8 @@ using System.Text;
 using System.Text.Json;
 using System.Xml.Linq;
 
+using NuGet.Versioning;
+
 using NuGetUpdater.Core.Analyze;
 using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Run;
@@ -2452,6 +2454,114 @@ public class RunWorkerTests
                     PrTitle = "TODO: title",
                     PrBody = "TODO: body",
                 },
+                new MarkAsProcessed("TEST-COMMIT-SHA"),
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task PullRequestAlreadyExistsForLatestVersion()
+    {
+        await RunAsync(
+            job: new()
+            {
+                Source = new()
+                {
+                    Provider = "github",
+                    Repo = "test/repo",
+                },
+                Dependencies = [
+                    "Some.Package"
+                ],
+                ExistingPullRequests = [
+                    new PullRequest()
+                    {
+                        Dependencies = [new() { DependencyName = "Some.Package", DependencyVersion = NuGetVersion.Parse("1.2.0") }]
+                    }
+                ],
+                SecurityAdvisories = [
+                    new Advisory() { DependencyName = "Some.Package", AffectedVersions = [Requirement.Parse("= 1.1.0")] }
+                ],
+                SecurityUpdatesOnly = true,
+                UpdatingAPullRequest = false
+            },
+            files: [
+                ("project.csproj", "contents irrelevant")
+            ],
+            discoveryWorker: new TestDiscoveryWorker(_input =>
+            {
+                return Task.FromResult(new WorkspaceDiscoveryResult()
+                {
+                    Path = "",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "project.csproj",
+                            Dependencies = [
+                                new("Some.Package", "1.1.0", DependencyType.PackageReference)
+                            ],
+                            ImportedFiles = [],
+                            AdditionalFiles = [],
+                        }
+                    ]
+                });
+            }),
+            analyzeWorker: new TestAnalyzeWorker(_input =>
+            {
+                return Task.FromResult(new AnalysisResult()
+                {
+                    CanUpdate = true,
+                    UpdatedVersion = "1.2.0",
+                    UpdatedDependencies = [
+                        new("Some.Package", "1.2.0", DependencyType.PackageReference)
+                    ]
+                });
+            }),
+            updaterWorker: new TestUpdaterWorker(input =>
+            {
+                throw new NotImplementedException("test should never get here");
+            }),
+            expectedResult: new()
+            {
+                Base64DependencyFiles = [
+                    new()
+                    {
+                        Directory = "/",
+                        Name = "project.csproj",
+                        Content = Convert.ToBase64String(Encoding.UTF8.GetBytes("contents irrelevant"))
+                    }
+                ],
+                BaseCommitSha = "TEST-COMMIT-SHA",
+            },
+            expectedApiMessages: [
+                new UpdatedDependencyList()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "Some.Package",
+                            Version = "1.1.0",
+                            Requirements = [
+                                new()
+                                {
+                                    Requirement = "1.1.0",
+                                    File = "/project.csproj",
+                                    Groups = ["dependencies"],
+                                }
+                            ]
+                        }
+                    ],
+                    DependencyFiles = ["/project.csproj"]
+                },
+                new IncrementMetric()
+                {
+                    Metric = "updater.started",
+                    Tags = new()
+                    {
+                        ["operation"] = "create_security_pr"
+                    }
+                },
+                new PullRequestExistsForLatestVersion("Some.Package", "1.2.0"),
                 new MarkAsProcessed("TEST-COMMIT-SHA"),
             ]
         );
