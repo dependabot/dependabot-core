@@ -23,7 +23,7 @@ module Dependabot
           @dependency_files = dependency_files
         end
 
-        sig { returns(T::Array[String]) }
+        sig { returns(T.untyped) }
         def user_specified_requirements
           [
             pipfile_python_requirement,
@@ -37,7 +37,7 @@ module Dependabot
 
         # TODO: Add better Python version detection using dependency versions
         # (e.g., Django 2.x implies Python 3)
-        sig { returns(T::Array[String]) }
+        sig { returns(T.untyped) }
         def imputed_requirements
           requirement_files.flat_map do |file|
             T.must(file.content).lines
@@ -50,7 +50,11 @@ module Dependabot
 
         private
 
-        sig { returns(T.untyped) }
+        # Parses the Pipfile content to extract the Python version requirement.
+        #
+        # @return [String, nil] the Python version requirement if specified in the Pipfile,
+        #   or nil if the requirement is not present or does not start with a digit.
+        sig { returns(T.nilable(String)) }
         def pipfile_python_requirement
           return unless pipfile
 
@@ -123,7 +127,7 @@ module Dependabot
           file_version
         end
 
-        sig { returns(T.nilable(String)) }
+        sig { returns(T.untyped) }
         def setup_file_requirement
           return unless setup_file
 
@@ -149,8 +153,7 @@ module Dependabot
 
         sig { returns(T.nilable(PipCompileFileMatcher)) }
         def pip_compile_file_matcher
-          requirements = pip_compile_files.map { |file| Dependabot::Python::Requirement.new(file.content) }
-          @pip_compile_file_matcher = T.let(PipCompileFileMatcher.new(requirements),
+          @pip_compile_file_matcher = T.let(PipCompileFileMatcher.new(pip_compile_files),
                                             T.nilable(PipCompileFileMatcher))
         end
 
@@ -159,7 +162,7 @@ module Dependabot
           Dependabot::Python::Requirement
         end
 
-        sig { params(req_string: T.any(T::Class[T.anything], String)).returns(T::Boolean) }
+        sig { params(req_string: T.untyped).returns(T::Boolean) }
         def valid_requirement?(req_string)
           requirement_class.new(req_string)
           true
@@ -202,7 +205,7 @@ module Dependabot
           dependency_files.select { |f| f.name.end_with?(".txt") }
         end
 
-        sig { returns(T::Array[Dependabot::DependencyFile]) }
+        sig { returns(T.untyped) }
         def pip_compile_files
           dependency_files.select { |f| f.name.end_with?(".in") }
         end
