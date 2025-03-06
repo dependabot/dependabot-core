@@ -8,59 +8,59 @@ RSpec.describe Dependabot::Package::ReleaseCooldownOptions do
   subject(:release_cooldown_options) do
     described_class.new(
       default_days: default_days,
-      major_days: major_days,
-      minor_days: minor_days,
-      patch_days: patch_days,
+      semver_major_days: semver_major_days,
+      semver_minor_days: semver_minor_days,
+      semver_patch_days: semver_patch_days,
       include: include_list,
       exclude: exclude_list
     )
   end
 
   let(:default_days) { 7 }
-  let(:major_days) { 10 }
-  let(:minor_days) { 5 }
-  let(:patch_days) { 2 }
+  let(:semver_major_days) { 10 }
+  let(:semver_minor_days) { 5 }
+  let(:semver_patch_days) { 2 }
   let(:include_list) { ["*", "package-a"] }
   let(:exclude_list) { ["package-b"] }
 
-  describe "#major_days" do
-    it "returns major_days when set" do
-      expect(release_cooldown_options.major_days).to eq(10)
+  describe "#semver_major_days" do
+    it "returns semver_major_days when set" do
+      expect(release_cooldown_options.semver_major_days).to eq(10)
     end
 
-    context "when major_days is zero" do
-      let(:major_days) { 0 }
+    context "when semver_major_days is zero" do
+      let(:semver_major_days) { 0 }
 
       it "falls back to default_days" do
-        expect(release_cooldown_options.major_days).to eq(7)
+        expect(release_cooldown_options.semver_major_days).to eq(7)
       end
     end
   end
 
-  describe "#minor_days" do
-    it "returns minor_days when set" do
-      expect(release_cooldown_options.minor_days).to eq(5)
+  describe "#semver_minor_days" do
+    it "returns semver_minor_days when set" do
+      expect(release_cooldown_options.semver_minor_days).to eq(5)
     end
 
-    context "when minor_days is zero" do
-      let(:minor_days) { 0 }
+    context "when semver_minor_days is zero" do
+      let(:semver_minor_days) { 0 }
 
       it "falls back to default_days" do
-        expect(release_cooldown_options.minor_days).to eq(7)
+        expect(release_cooldown_options.semver_minor_days).to eq(7)
       end
     end
   end
 
-  describe "#patch_days" do
-    it "returns patch_days when set" do
-      expect(release_cooldown_options.patch_days).to eq(2)
+  describe "#semver_patch_days" do
+    it "returns semver_patch_days when set" do
+      expect(release_cooldown_options.semver_patch_days).to eq(2)
     end
 
-    context "when patch_days is zero" do
-      let(:patch_days) { 0 }
+    context "when semver_patch_days is zero" do
+      let(:semver_patch_days) { 0 }
 
       it "falls back to default_days" do
-        expect(release_cooldown_options.patch_days).to eq(7)
+        expect(release_cooldown_options.semver_patch_days).to eq(7)
       end
     end
   end
