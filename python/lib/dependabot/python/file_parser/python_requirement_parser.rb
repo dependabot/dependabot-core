@@ -23,7 +23,7 @@ module Dependabot
           @dependency_files = dependency_files
         end
 
-        sig { returns(T.untyped) }
+        sig { returns(T::Array[String]) }
         def user_specified_requirements
           [
             pipfile_python_requirement,
@@ -37,7 +37,7 @@ module Dependabot
 
         # TODO: Add better Python version detection using dependency versions
         # (e.g., Django 2.x implies Python 3)
-        sig { returns(T.untyped) }
+        sig { returns(T::Array[String]) }
         def imputed_requirements
           requirement_files.flat_map do |file|
             T.must(file.content).lines
@@ -127,7 +127,7 @@ module Dependabot
           file_version
         end
 
-        sig { returns(T.untyped) }
+        sig { returns(T.nilable(String)) }
         def setup_file_requirement
           return unless setup_file
 
