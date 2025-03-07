@@ -26,14 +26,14 @@ ArgResults parseArgs(List<String> args) {
     )
     ..addOption('flutter-releases-url',
         help:
-            'The url to retrieve the list of available flutter releases from.')
+            'The URL to retrieve the list of available Flutter releases from.')
     ..addFlag('help', help: 'Display the usage message.');
   final results;
   try {
     results = argParser.parse(args);
     if (results['help'] as bool) {
       stdout.writeln(
-          'Infers the newest available flutter sdk to use for a package.');
+          'Infers the newest available Flutter SDK to use for a package.');
       stdout.writeln(argParser.usage);
       exit(0);
     }
@@ -69,13 +69,13 @@ Future<void> main(List<String> args) async {
     final pubspec = loadYaml(File(pubspecPath).readAsStringSync(),
         sourceUrl: Uri.file(pubspecPath));
 
-    final bestFlutterRelease =
-        inferBestFlutterRelease(parseSdkConstraints(pubspec), flutterReleases);
+    final bestFlutterRelease = inferBestFlutterRelease(
+        parseSdkConstraints(pubspec), flutterReleases);
+
     if (bestFlutterRelease == null) {
-      fail(
-        'No flutter release matching sdk constraints.',
-      );
+      fail('No Flutter release matching SDK constraints after cooldown filter.');
     }
+
     stdout.writeln(JsonEncoder.withIndent('  ').convert({
       'flutter': bestFlutterRelease.flutterVersion.toString(),
       'dart': bestFlutterRelease.dartVersion.toString(),
@@ -95,7 +95,7 @@ Future<void> main(List<String> args) async {
 String get flutterReleasesUrl =>
     'https://storage.googleapis.com/flutter_infra_release/releases/releases_linux.json';
 
-// Retrieves all released versions of Flutter.
+// Retrieves all released versions of Flutter, applying a 30-day cooldown filter when possible.
 Future<List<FlutterRelease>> retrieveFlutterReleases(String url) async {
   final response = await client.get(Uri.parse(url));
   final decoded = jsonDecode(response.body);
@@ -103,25 +103,45 @@ Future<List<FlutterRelease>> retrieveFlutterReleases(String url) async {
   final releases = decoded['releases'];
   if (releases is! List)
     throw FormatException('Bad response - releases should be a list.');
+
   final result = <FlutterRelease>[];
+  final now = DateTime.now().toUtc();
+  final cooldownDays = Duration(days: 30);
+
   for (final release in releases) {
     final channel = {
       'beta': Channel.beta,
       'stable': Channel.stable,
       'dev': Channel.dev
     }[release['channel']];
-    if (channel == null) throw FormatException('Release with bad channel');
+    if (channel == null) continue;
+
     final dartVersion = release['dart_sdk_version'];
-    // Some releases don't have an associated dart version, ignore.
     if (dartVersion is! String) continue;
+
     final flutterVersion = release['version'];
-    if (flutterVersion is! String) throw FormatException('Not a string');
+    if (flutterVersion is! String) continue;
+
+    // Try to parse the release date, but don't fail if it's missing or invalid
+    DateTime? releaseDate;
+    try {
+      releaseDate = DateTime.parse(release['release_date']);
+    } catch (_) {
+      releaseDate = null; // Assume cooldown doesn't apply if we can't parse
+    }
+
+    // Apply cooldown only if the date is valid
+    if (releaseDate != null && now.difference(releaseDate) < cooldownDays) {
+      continue; // Skip versions released within the last 30 days
+    }
+
     result.add(FlutterRelease(
       flutterVersion: Version.parse(flutterVersion),
       dartVersion: Version.parse(dartVersion.split(' ').first),
       channel: channel,
     ));
   }
+
   return result
       // Sort releases by channel and version.
       .sorted((a, b) {
@@ -135,7 +155,7 @@ Future<List<FlutterRelease>> retrieveFlutterReleases(String url) async {
 }
 
 /// The "best" Flutter release for a given set of constraints is the first one
-/// in [flutterReleases] that matches both the flutter and dart constraint.
+/// in [flutterReleases] that matches both the Flutter and Dart constraint.
 FlutterRelease? inferBestFlutterRelease(
     Map<String, VersionConstraint> sdkConstraints,
     List<FlutterRelease> flutterReleases) {
