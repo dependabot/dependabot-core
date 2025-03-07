@@ -96,10 +96,14 @@ module Dependabot
       # support_file flag instead)
       @type = type
 
-      begin
-        @mode = T.let(File.stat(realpath).mode.to_s(8), T.nilable(String))
-      rescue StandardError
+      if mode
         @mode = mode
+      elsif @type == "submodule"
+        @mode = "160000"
+      elsif @type == "symlink"
+        @mode = "120000"
+      else
+        @mode = "100644"
       end
 
       return unless (type == "symlink") ^ symlink_target
