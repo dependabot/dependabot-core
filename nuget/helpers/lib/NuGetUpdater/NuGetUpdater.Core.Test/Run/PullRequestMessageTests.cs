@@ -18,8 +18,8 @@ public class PullRequestMessageTests
         actualMessage = actualMessage switch
         {
             // this isn't the place to verify the generated text
-            CreatePullRequest create => create with { CommitMessage = "test commit message", PrTitle = "test pr title", PrBody = "test pr body" },
-            UpdatePullRequest update => update with { CommitMessage = "test commit message", PrTitle = "test pr title", PrBody = "test pr body" },
+            CreatePullRequest create => create with { CommitMessage = RunWorkerTests.TestPullRequestCommitMessage, PrTitle = RunWorkerTests.TestPullRequestTitle, PrBody = RunWorkerTests.TestPullRequestBody },
+            UpdatePullRequest update => update with { CommitMessage = RunWorkerTests.TestPullRequestCommitMessage, PrTitle = RunWorkerTests.TestPullRequestTitle, PrBody = RunWorkerTests.TestPullRequestBody },
             _ => actualMessage,
         };
         Assert.Equal(expectedMessage.GetType(), actualMessage.GetType());
@@ -68,9 +68,9 @@ public class PullRequestMessageTests
                 Dependencies = [new ReportedDependency() { Name = "Some.Dependency", Version = "1.0.1", Requirements = [] }],
                 UpdatedDependencyFiles = [new DependencyFile() { Directory = "/src/", Name = "project.csproj", Content = "project contents irrelevant" } ],
                 BaseCommitSha = "TEST-COMMIT-SHA",
-                CommitMessage = "test commit message",
-                PrTitle = "test pr title",
-                PrBody = "test pr body",
+                CommitMessage = RunWorkerTests.TestPullRequestCommitMessage,
+                PrTitle = RunWorkerTests.TestPullRequestTitle,
+                PrBody = RunWorkerTests.TestPullRequestBody,
             }
         ];
 
@@ -190,9 +190,9 @@ public class PullRequestMessageTests
                 DependencyNames = ["Some.Dependency"],
                 UpdatedDependencyFiles = [new DependencyFile() { Directory = "/src/", Name = "project.csproj", Content = "project contents irrelevant" } ],
                 BaseCommitSha = "TEST-COMMIT-SHA",
-                CommitMessage = "test commit message",
-                PrTitle = "test pr title",
-                PrBody = "test pr body",
+                CommitMessage = RunWorkerTests.TestPullRequestCommitMessage,
+                PrTitle = RunWorkerTests.TestPullRequestTitle,
+                PrBody = RunWorkerTests.TestPullRequestBody,
             }
         ];
 
@@ -243,9 +243,9 @@ public class PullRequestMessageTests
                 DependencyNames = ["Some.Dependency"],
                 UpdatedDependencyFiles = [new DependencyFile() { Directory = "/src/", Name = "project.csproj", Content = "project contents irrelevant" } ],
                 BaseCommitSha = "TEST-COMMIT-SHA",
-                CommitMessage = "test commit message",
-                PrTitle = "test pr title",
-                PrBody = "test pr body",
+                CommitMessage = RunWorkerTests.TestPullRequestCommitMessage,
+                PrTitle = RunWorkerTests.TestPullRequestTitle,
+                PrBody = RunWorkerTests.TestPullRequestBody,
             }
         ];
     }
