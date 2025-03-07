@@ -84,6 +84,7 @@ module Dependabot
       @vendored_file = vendored_file
       @content_encoding = content_encoding
       @operation = operation
+      @mode = mode
 
       # Make deleted override the operation. Deleted is kept when operation
       # was introduced to keep compatibility with downstream dependants.
@@ -95,16 +96,6 @@ module Dependabot
       # New use cases should be avoided if at all possible (and use the
       # support_file flag instead)
       @type = type
-
-      if mode
-        @mode = mode
-      elsif @type == "submodule"
-        @mode = "160000"
-      elsif @type == "symlink"
-        @mode = "120000"
-      else
-        @mode = "100644"
-      end
 
       return unless (type == "symlink") ^ symlink_target
 
