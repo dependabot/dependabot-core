@@ -1,9 +1,7 @@
 using System.Collections.Immutable;
-using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Text.RegularExpressions;
 
 using Microsoft.Extensions.FileSystemGlobbing;
 
@@ -31,7 +29,7 @@ public class RunWorker
     {
         PropertyNamingPolicy = JsonNamingPolicy.KebabCaseLower,
         WriteIndented = true,
-        Converters = { new JsonStringEnumConverter(), new RequirementConverter(), new VersionConverter() },
+        Converters = { new JsonStringEnumConverter(), new PullRequestConverter(), new RequirementConverter(), new VersionConverter() },
     };
 
     public RunWorker(string jobId, IApiHandler apiHandler, IDiscoveryWorker discoverWorker, IAnalyzeWorker analyzeWorker, IUpdaterWorker updateWorker, ILogger logger)
@@ -160,39 +158,61 @@ public class RunWorker
         }
 
         // do update
-        var updateOperations = GetUpdateOperations(discoveryResult).ToArray();
-        var allowedUpdateOperations = updateOperations.Where(u => IsUpdateAllowed(job, u.Dependency)).ToArray();
-
-        // requested update isn't listed => SecurityUpdateNotNeeded
-        var expectedSecurityUpdateDependencyNames = job.SecurityAdvisories
+        var existingPullRequests = job.GetAllExistingPullRequests();
+        var unhandledPullRequestDependenciesSet = existingPullRequests
+            .Select(pr => pr.Item2.Select(d => d.DependencyName).ToHashSet(StringComparer.OrdinalIgnoreCase))
+            .ToHashSet();
+        var remainingSecurityIssues = job.SecurityAdvisories
             .Select(s => s.DependencyName)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
-        var actualUpdateDependencyNames = allowedUpdateOperations
-            .Select(u => u.Dependency.Name)
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
-        var expectedDependencyUpdateMissingInActual = expectedSecurityUpdateDependencyNames
-            .Except(actualUpdateDependencyNames, StringComparer.OrdinalIgnoreCase)
-            .OrderBy(d => d, StringComparer.OrdinalIgnoreCase)
-            .ToArray();
+        var updateOperations = GetUpdateOperations(discoveryResult).ToArray();
 
-        foreach (var missingSecurityUpdate in expectedDependencyUpdateMissingInActual)
-        {
-            await _apiHandler.RecordUpdateJobError(new SecurityUpdateNotNeeded(missingSecurityUpdate));
-        }
-
-        foreach (var updateOperation in allowedUpdateOperations)
+        foreach (var updateOperation in updateOperations)
         {
             var dependency = updateOperation.Dependency;
-            _logger.Info($"Updating [{dependency.Name}] in [{updateOperation.FilePath}]");
+            var (isAllowed, message) = UpdatePermittedAndMessage(job, updateOperation.Dependency);
+            if (message is SecurityUpdateNotNeeded sec)
+            {
+                // flag this update operation as having been handled
+                remainingSecurityIssues.RemoveWhere(r => r.Equals(dependency.Name, StringComparison.OrdinalIgnoreCase));
+
+                // we only want to send this message if we're in the only update operation for this dependency, otherwise it's ambiguous
+                var updateOperationsWithSameName = updateOperations.Where(u => u.Dependency.Name.Equals(dependency.Name, StringComparison.OrdinalIgnoreCase))
+                    .ToArray();
+                if (updateOperationsWithSameName.Length > 1)
+                {
+                    // suppress the message
+                    message = null;
+                }
+            }
+
+            await SendApiMessage(message);
+            if (!isAllowed)
+            {
+                continue;
+            }
+
+            _logger.Info($"Updating [{dependency.Name}] in [{updateOperation.ProjectPath}]");
 
             var dependencyInfo = GetDependencyInfo(job, dependency);
             var analysisResult = await _analyzeWorker.RunAsync(repoContentsPath.FullName, discoveryResult, dependencyInfo);
             // TODO: log analysisResult
             if (analysisResult.CanUpdate)
             {
+                if (!job.UpdatingAPullRequest)
+                {
+                    var existingPullRequest = job.GetExistingPullRequestForDependency(analysisResult.UpdatedDependencies.First(d => d.Name.Equals(dependency.Name, StringComparison.OrdinalIgnoreCase)));
+                    if (existingPullRequest is not null)
+                    {
+                        await SendApiMessage(new PullRequestExistsForLatestVersion(dependency.Name, analysisResult.UpdatedVersion));
+                        unhandledPullRequestDependenciesSet.RemoveWhere(handled => handled.Count == 1 && handled.Contains(dependency.Name));
+                        continue;
+                    }
+                }
+
                 // TODO: this is inefficient, but not likely causing a bottleneck
                 var previousDependency = discoveredUpdatedDependencies.Dependencies
-                    .Single(d => d.Name == dependency.Name && d.Requirements.Single().File == updateOperation.FilePath);
+                    .Single(d => d.Name == dependency.Name && d.Requirements.Single().File == updateOperation.ProjectPath);
                 var updatedDependency = new ReportedDependency()
                 {
                     Name = dependency.Name,
@@ -201,7 +221,7 @@ public class RunWorker
                     [
                         new ReportedRequirement()
                         {
-                            File = updateOperation.FilePath,
+                            File = updateOperation.ProjectPath,
                             Requirement = analysisResult.UpdatedVersion,
                             Groups = previousDependency.Requirements.Single().Groups,
                             Source = new RequirementSource()
@@ -214,7 +234,7 @@ public class RunWorker
                     PreviousRequirements = previousDependency.Requirements,
                 };
 
-                var updateResult = await _updaterWorker.RunAsync(repoContentsPath.FullName, updateOperation.FilePath, dependency.Name, dependency.Version!, analysisResult.UpdatedVersion, isTransitive: dependency.IsTransitive);
+                var updateResult = await _updaterWorker.RunAsync(repoContentsPath.FullName, updateOperation.ProjectPath, dependency.Name, dependency.Version!, analysisResult.UpdatedVersion, isTransitive: dependency.IsTransitive);
                 // TODO: need to report if anything was actually updated
                 if (updateResult.Error is null)
                 {
@@ -262,27 +282,39 @@ public class RunWorker
             await AddUpdatedFileIfDifferentAsync(discoveryResult.Path, nonProjectFile);
         }
 
-        if (updatedDependencyFiles.Count > 0)
+        var updatedDependencyFileList = updatedDependencyFiles
+            .OrderBy(kvp => kvp.Key)
+            .Select(kvp => kvp.Value)
+            .ToArray();
+
+        var resultMessage = GetPullRequestApiMessage(job, updatedDependencyFileList, actualUpdatedDependencies.ToArray(), baseCommitSha);
+        switch (resultMessage)
         {
-            var updatedDependencyFileList = updatedDependencyFiles
-                .OrderBy(kvp => kvp.Key)
-                .Select(kvp => kvp.Value)
-                .ToArray();
-            var createPullRequest = new CreatePullRequest()
-            {
-                Dependencies = actualUpdatedDependencies.ToArray(),
-                UpdatedDependencyFiles = updatedDependencyFileList,
-                BaseCommitSha = baseCommitSha,
-                CommitMessage = "TODO: message",
-                PrTitle = "TODO: title",
-                PrBody = "TODO: body",
-            };
-            await _apiHandler.CreatePullRequest(createPullRequest);
-            // TODO: log updated dependencies to console
+            case ClosePullRequest close:
+                var closePrDependencies = close.DependencyNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
+                remainingSecurityIssues.RemoveWhere(closePrDependencies.Contains);
+                if (!unhandledPullRequestDependenciesSet.Remove(closePrDependencies))
+                {
+                    // this PR was handled earlier, we don't want to now close it; suppress the message
+                    resultMessage = null;
+                }
+                break;
+            case CreatePullRequest create:
+                var createPrDependencies = create.Dependencies.Select(d => d.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                remainingSecurityIssues.RemoveWhere(createPrDependencies.Contains);
+                break;
+            case UpdatePullRequest update:
+                var updatePrDependencies = update.DependencyNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
+                remainingSecurityIssues.RemoveWhere(updatePrDependencies.Contains);
+                break;
         }
-        else
+
+        await SendApiMessage(resultMessage);
+
+        // for each security advisory that _didn't_ result in a pr, report it
+        foreach (var depName in remainingSecurityIssues)
         {
-            // TODO: log or throw if nothing was updated, but was expected to be
+            await SendApiMessage(new SecurityUpdateNotNeeded(depName));
         }
 
         var result = new RunResult()
@@ -302,7 +334,104 @@ public class RunWorker
         return result;
     }
 
-    internal static IEnumerable<(string FilePath, Dependency Dependency)> GetUpdateOperations(WorkspaceDiscoveryResult discovery)
+    private async Task SendApiMessage(MessageBase? message)
+    {
+        switch (message)
+        {
+            case null:
+                break;
+            case JobErrorBase error:
+                await _apiHandler.RecordUpdateJobError(error);
+                break;
+            case CreatePullRequest create:
+                await _apiHandler.CreatePullRequest(create);
+                break;
+            case ClosePullRequest close:
+                await _apiHandler.ClosePullRequest(close);
+                break;
+            case UpdatePullRequest update:
+                await _apiHandler.UpdatePullRequest(update);
+                break;
+            default:
+                throw new NotSupportedException($"unsupported api message: {message.GetType().Name}");
+        }
+    }
+
+    internal static MessageBase? GetPullRequestApiMessage(Job job, DependencyFile[] updatedFiles, ReportedDependency[] updatedDependencies, string baseCommitSha)
+    {
+        updatedDependencies = updatedDependencies.OrderBy(d => d.Name, StringComparer.OrdinalIgnoreCase).ToArray();
+        var updatedDependenciesSet = updatedDependencies.Select(d => d.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        // all pull request dependencies with optional group name
+        var existingPullRequests = job.GetAllExistingPullRequests();
+        var existingPullRequest = existingPullRequests.FirstOrDefault(pr => pr.Item2.Select(d => d.DependencyName).All(updatedDependenciesSet.Contains));
+        if (existingPullRequest is null && updatedFiles.Length == 0)
+        {
+            // it's possible that we were asked to update a specific package, but it's no longer there; in that case find _that_ specific PR
+            var requestedUpdates = (job.Dependencies ?? []).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            existingPullRequest = existingPullRequests.FirstOrDefault(pr => pr.Item2.Select(d => d.DependencyName).All(requestedUpdates.Contains));
+        }
+
+        var expectedSecurityUpdateDependencyNames = job.SecurityAdvisories.Select(sa => sa.DependencyName).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var isExpectedSecurityUpdate = updatedDependenciesSet.All(expectedSecurityUpdateDependencyNames.Contains);
+
+        if (existingPullRequest is { })
+        {
+            if (job.UpdatingAPullRequest)
+            {
+                return new UpdatePullRequest()
+                {
+                    DependencyGroup = existingPullRequest.Item1,
+                    DependencyNames = updatedDependencies.Select(d => d.Name).ToImmutableArray(),
+                    UpdatedDependencyFiles = updatedFiles,
+                    BaseCommitSha = baseCommitSha,
+                    CommitMessage = "TODO: message",
+                    PrTitle = "TODO: title",
+                    PrBody = "TODO: body",
+                };
+            }
+            else
+            {
+                if (updatedDependenciesSet.Count == 0)
+                {
+                    // nothing found, close current
+                    return new ClosePullRequest()
+                    {
+                        DependencyNames = [.. existingPullRequest.Item2.Select(d => d.DependencyName)],
+                        Reason = "dependency_removed",
+                    };
+                }
+                else
+                {
+                    // found but no longer required
+                    return new ClosePullRequest()
+                    {
+                        DependencyNames = [.. updatedDependenciesSet],
+                        Reason = "up_to_date",
+                    };
+                }
+            }
+        }
+        else
+        {
+            if (updatedDependencies.Any())
+            {
+                return new CreatePullRequest()
+                {
+                    Dependencies = updatedDependencies,
+                    UpdatedDependencyFiles = updatedFiles,
+                    BaseCommitSha = baseCommitSha,
+                    CommitMessage = "TODO: message",
+                    PrTitle = "TODO: title",
+                    PrBody = "TODO: body",
+                };
+            }
+        }
+
+        return null;
+    }
+
+    internal static IEnumerable<(string ProjectPath, Dependency Dependency)> GetUpdateOperations(WorkspaceDiscoveryResult discovery)
     {
         // discovery is grouped by project/file then dependency, but we want to pivot and return a list of update operations sorted by dependency name then file path
 
@@ -364,25 +493,26 @@ public class RunWorker
         return increment;
     }
 
-    internal static bool IsUpdateAllowed(Job job, Dependency dependency)
+    internal static (bool, MessageBase?) UpdatePermittedAndMessage(Job job, Dependency dependency)
     {
         if (dependency.Name.Equals("Microsoft.NET.Sdk", StringComparison.OrdinalIgnoreCase))
         {
             // this can't be updated
             // TODO: pull this out of discovery?
-            return false;
+            return (false, null);
         }
 
         if (dependency.Version is null)
         {
             // if we don't know the version, there's nothing we can do
             // TODO: pull this out of discovery?
-            return false;
+            return (false, null);
         }
 
         var version = NuGetVersion.Parse(dependency.Version);
         var dependencyInfo = GetDependencyInfo(job, dependency);
         var isVulnerable = dependencyInfo.Vulnerabilities.Any(v => v.IsVulnerable(version));
+        MessageBase? message = null;
         var allowed = job.AllowedUpdates.Any(allowedUpdate =>
         {
             // check name restriction, if any
@@ -400,7 +530,33 @@ public class RunWorker
             var isSecurityUpdate = allowedUpdate.UpdateType == UpdateType.Security || job.SecurityUpdatesOnly;
             if (isSecurityUpdate)
             {
-                // only update if it's vulnerable
+                if (isVulnerable)
+                {
+                    // try to match to existing PR
+                    var dependencyVersion = NuGetVersion.Parse(dependency.Version);
+                    var existingPullRequests = job.GetAllExistingPullRequests()
+                        .Where(pr => pr.Item2.Any(d => d.DependencyName.Equals(dependency.Name, StringComparison.OrdinalIgnoreCase) && d.DependencyVersion >= dependencyVersion))
+                        .ToArray();
+                    if (existingPullRequests.Length > 0)
+                    {
+                        var existingPrVersion = existingPullRequests[0].Item2.First(d => d.DependencyName.Equals(dependency.Name, StringComparison.OrdinalIgnoreCase)).DependencyVersion;
+                        message = new PullRequestExistsForLatestVersion(dependency.Name, existingPrVersion.ToString());
+                        return false;
+                    }
+                }
+                else
+                {
+                    // not vulnerable => no longer needed
+                    var specificJobDependencies = job.SecurityAdvisories
+                        .Select(a => a.DependencyName)
+                        .Concat(job.Dependencies ?? [])
+                        .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                    if (specificJobDependencies.Contains(dependency.Name))
+                    {
+                        message = new SecurityUpdateNotNeeded(dependency.Name);
+                    }
+                }
+
                 return isVulnerable;
             }
             else
@@ -417,7 +573,7 @@ public class RunWorker
             }
         });
 
-        return allowed;
+        return (allowed, message);
     }
 
     internal static ImmutableArray<Requirement> GetIgnoredRequirementsForDependency(Job job, string dependencyName)
