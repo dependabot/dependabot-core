@@ -52,9 +52,15 @@ module Dependabot
     end
 
     class Mode
+      EXECUTABLE = "100755"
       FILE = "100644"
+      TREE = "040000"
       SUBMODULE = "160000"
+      SYMLINK = "120000"
     end
+
+    # See https://github.com/git/git/blob/a36e024e989f4d35f35987a60e3af8022cac3420/object.h#L144-L153
+    VALID_MODES = [Mode::FILE, Mode::EXECUTABLE, Mode::TREE, Mode::SUBMODULE, Mode::SYMLINK].freeze
 
     sig do
       params(
@@ -85,6 +91,9 @@ module Dependabot
       @content_encoding = content_encoding
       @operation = operation
       @mode = mode
+      if mode && !VALID_MODES.include?(mode)
+        raise ArgumentError, "Invalid Git mode: #{mode}"
+      end
 
       # Make deleted override the operation. Deleted is kept when operation
       # was introduced to keep compatibility with downstream dependants.
@@ -114,8 +123,8 @@ module Dependabot
         "content_encoding" => content_encoding,
         "deleted" => deleted,
         "operation" => operation,
-        "mode" => mode
       }
+      details["mode"] = mode if mode
 
       details["symlink_target"] = symlink_target if symlink_target
       details

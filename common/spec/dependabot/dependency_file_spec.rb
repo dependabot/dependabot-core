@@ -12,6 +12,10 @@ RSpec.describe Dependabot::DependencyFile do
 
   let(:file) { described_class.new(name: "Gemfile", content: "a") }
 
+  it "raises ArgumentError if an invalid mode is provided" do
+    expect { described_class.new(name: "somefile", content: "a", mode: "40755") }.to raise_error(ArgumentError)
+  end
+
   describe "#path" do
     subject { file.path }
 
@@ -80,6 +84,30 @@ RSpec.describe Dependabot::DependencyFile do
   describe "#to_h" do
     subject(:file_hash) { file.to_h }
 
+    context "when mode is specified directly" do
+      let(:file) do
+        described_class.new(
+          name: "my_script",
+          content: "a",
+          mode: "100755"
+        )
+      end
+
+      it "returns the correct array" do
+        expect(file_hash).to eq(
+         "name" => "my_script",
+         "content" => "a",
+         "directory" => "/",
+         "type" => "file",
+         "mode" => "100755",
+         "support_file" => false,
+         "content_encoding" => "utf-8",
+         "deleted" => false,
+         "operation" => Dependabot::DependencyFile::Operation::UPDATE
+        )
+      end
+    end
+
     context "with a non-symlink" do
       it "returns the correct array" do
         expect(file_hash).to eq(
@@ -87,7 +115,6 @@ RSpec.describe Dependabot::DependencyFile do
           "content" => "a",
           "directory" => "/",
           "type" => "file",
-          "mode" => "100644",
           "support_file" => false,
           "content_encoding" => "utf-8",
           "deleted" => false,
@@ -117,7 +144,6 @@ RSpec.describe Dependabot::DependencyFile do
           "name" => "Gemfile",
           "content" => "a",
           "directory" => "/",
-          "mode" => nil,
           "type" => "symlink",
           "support_file" => false,
           "symlink_target" => "nested/Gemfile",
@@ -148,7 +174,6 @@ RSpec.describe Dependabot::DependencyFile do
           "name" => "Gemfile",
           "content" => "a",
           "directory" => "/",
-          "mode" => "100644",
           "type" => "file",
           "support_file" => false,
           "content_encoding" => "utf-8",
@@ -178,7 +203,6 @@ RSpec.describe Dependabot::DependencyFile do
           "name" => "Gemfile",
           "content" => "a",
           "directory" => "/",
-          "mode" => "100644",
           "type" => "file",
           "support_file" => false,
           "content_encoding" => "utf-8",
@@ -208,7 +232,6 @@ RSpec.describe Dependabot::DependencyFile do
           "name" => "Gemfile",
           "content" => "a",
           "directory" => "/",
-          "mode" => "100644",
           "type" => "file",
           "support_file" => false,
           "content_encoding" => "utf-8",
@@ -238,7 +261,6 @@ RSpec.describe Dependabot::DependencyFile do
           "name" => "Gemfile",
           "content" => "a",
           "directory" => "/",
-          "mode" => "100644",
           "type" => "file",
           "support_file" => false,
           "content_encoding" => "utf-8",
@@ -269,7 +291,6 @@ RSpec.describe Dependabot::DependencyFile do
           "name" => "Gemfile",
           "content" => "a",
           "directory" => "/",
-          "mode" => "100644",
           "type" => "file",
           "support_file" => false,
           "content_encoding" => "utf-8",
