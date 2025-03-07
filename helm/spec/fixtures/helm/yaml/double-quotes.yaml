@@ -1,0 +1,4 @@
+image:
+  repository: "nginx"
+  tag: "1.14.2"
+  registry: "registry.example.com"

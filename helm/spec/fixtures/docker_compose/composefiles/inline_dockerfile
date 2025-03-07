@@ -1,0 +1,8 @@
+version: '3'
+services:
+  db:
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM mariadb:10.11.2-jammy
+        RUN echo 'Hello'

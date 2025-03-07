@@ -1,0 +1,6 @@
+version: '2'
+services:
+  os:
+    image: ubuntu:17.04
+  interpreter:
+    image: python:3.6.3
