@@ -60,7 +60,8 @@ module Dependabot
     end
 
     # See https://github.com/git/git/blob/a36e024e989f4d35f35987a60e3af8022cac3420/object.h#L144-L153
-    VALID_MODES = [Mode::FILE, Mode::EXECUTABLE, Mode::TREE, Mode::SUBMODULE, Mode::SYMLINK].freeze
+    VALID_MODES = T.let([Mode::FILE, Mode::EXECUTABLE, Mode::TREE, Mode::SUBMODULE, Mode::SYMLINK].freeze,
+                        T::Array[String])
 
     sig do
       params(
@@ -91,9 +92,7 @@ module Dependabot
       @content_encoding = content_encoding
       @operation = operation
       @mode = mode
-      if mode && !VALID_MODES.include?(mode)
-        raise ArgumentError, "Invalid Git mode: #{mode}"
-      end
+      raise ArgumentError, "Invalid Git mode: #{mode}" if mode && !VALID_MODES.include?(mode)
 
       # Make deleted override the operation. Deleted is kept when operation
       # was introduced to keep compatibility with downstream dependants.
@@ -122,7 +121,7 @@ module Dependabot
         "support_file" => support_file,
         "content_encoding" => content_encoding,
         "deleted" => deleted,
-        "operation" => operation,
+        "operation" => operation
       }
       details["mode"] = mode if mode
 

@@ -95,15 +95,15 @@ RSpec.describe Dependabot::DependencyFile do
 
       it "returns the correct array" do
         expect(file_hash).to eq(
-         "name" => "my_script",
-         "content" => "a",
-         "directory" => "/",
-         "type" => "file",
-         "mode" => "100755",
-         "support_file" => false,
-         "content_encoding" => "utf-8",
-         "deleted" => false,
-         "operation" => Dependabot::DependencyFile::Operation::UPDATE
+          "name" => "my_script",
+          "content" => "a",
+          "directory" => "/",
+          "type" => "file",
+          "mode" => "100755",
+          "support_file" => false,
+          "content_encoding" => "utf-8",
+          "deleted" => false,
+          "operation" => Dependabot::DependencyFile::Operation::UPDATE
         )
       end
     end
