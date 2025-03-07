@@ -871,5 +871,47 @@ RSpec.describe Dependabot::Uv::FileParser do
         end
       end
     end
+
+    context "with a uv.lock file" do
+      let(:files) { [pyproject, uv_lock] }
+      let(:pyproject) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: fixture("pyproject_files", "uv_simple.toml")
+        )
+      end
+      let(:uv_lock) do
+        Dependabot::DependencyFile.new(
+          name: "uv.lock",
+          content: fixture("uv_locks", "simple.lock")
+        )
+      end
+
+      its(:length) { is_expected.to eq(36) }
+
+      describe "top level dependencies" do
+        subject(:dependencies) { parser.parse.select(&:top_level?) }
+
+        its(:length) { is_expected.to eq(15) }
+
+        describe "the first dependency" do
+          subject(:dependency) { dependencies.first }
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("geopy")
+            expect(dependency.version).to eq("1.14.0")
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: "^1.13",
+                file: "pyproject.toml",
+                groups: ["dependencies"],
+                source: nil
+              }]
+            )
+          end
+        end
+      end
+    end
   end
 end
