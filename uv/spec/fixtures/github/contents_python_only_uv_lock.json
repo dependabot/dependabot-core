@@ -1,0 +1,18 @@
+[
+  {
+    "name": "uv.lock",
+    "path": "uv.lock",
+    "sha": "6151867da4110d9429715625bd42e1cad47d7cb3",
+    "size": 22412,
+    "url": "https://api.github.com/repos/dsp-testing/dependabot-uv/contents/uv.lock?ref=main",
+    "html_url": "https://github.com/dsp-testing/dependabot-uv/blob/main/uv.lock",
+    "git_url": "https://api.github.com/repos/dsp-testing/dependabot-uv/git/blobs/6151867da4110d9429715625bd42e1cad47d7cb3",
+    "download_url": "https://raw.githubusercontent.com/dsp-testing/dependabot-uv/main/uv.lock",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/dsp-testing/dependabot-uv/contents/uv.lock?ref=main",
+      "git": "https://api.github.com/repos/dsp-testing/dependabot-uv/git/blobs/6151867da4110d9429715625bd42e1cad47d7cb3",
+      "html": "https://github.com/dsp-testing/dependabot-uv/blob/main/uv.lock"
+    }
+  }
+]
