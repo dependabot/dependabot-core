@@ -162,7 +162,7 @@ module Dependabot
           Dependabot::Python::Requirement
         end
 
-        sig { params(req_string: T.untyped).returns(T::Boolean) }
+        sig { params(req_string: String).returns(T::Boolean) }
         def valid_requirement?(req_string)
           requirement_class.new(req_string)
           true
