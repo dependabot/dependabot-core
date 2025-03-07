@@ -19,104 +19,124 @@ module Dependabot
           @lockfile = lockfile
         end
 
-        # For hosted Dependabot token will be nil since the credentials aren't present.
-        # This is for those running Dependabot themselves and for dry-run.
-        def add_auth_env_vars(credentials)
-          TomlRB.parse(@pyproject_content).dig("tool", "poetry", "source")&.each do |source|
-            cred = credentials&.find { |c| c["index-url"] == source["url"] }
-            next unless cred
+        def freeze_top_level_dependencies_except(dependencies_to_update)
+          return @pyproject_content unless lockfile
 
-            token = cred.fetch("token", nil)
-            next unless token && token.count(":") == 1
+          pyproject_object = TomlRB.parse(@pyproject_content)
+          deps_to_update_names = dependencies_to_update.map(&:name)
 
-            arr = token.split(":")
-            # https://python-poetry.org/docs/configuration/#using-environment-variables
-            name = source["name"]&.upcase&.gsub(/\W/, "_")
-            ENV["POETRY_HTTP_BASIC_#{name}_USERNAME"] = arr[0]
-            ENV["POETRY_HTTP_BASIC_#{name}_PASSWORD"] = arr[1]
+          if pyproject_object["project"]&.key?("dependencies")
+            locked_deps = parsed_lockfile_dependencies || {}
+
+            pyproject_object["project"]["dependencies"] =
+              pyproject_object["project"]["dependencies"].map do |dep_string|
+                freeze_dependency(dep_string, deps_to_update_names, locked_deps)
+              end
           end
+
+          TomlRB.dump(pyproject_object)
         end
 
-        def update_python_requirement(requirement)
+        def update_python_requirement(python_version)
+          return @pyproject_content unless python_version
+
           pyproject_object = TomlRB.parse(@pyproject_content)
-          if (python_specification = pyproject_object.dig("tool", "poetry", "dependencies", "python"))
-            python_req = Uv::Requirement.new(python_specification)
-            unless python_req.satisfied_by?(requirement)
-              pyproject_object["tool"]["poetry"]["dependencies"]["python"] = "~#{requirement}"
-            end
+
+          if pyproject_object["project"]&.key?("requires-python")
+            pyproject_object["project"]["requires-python"] = ">=#{python_version}"
           end
+
           TomlRB.dump(pyproject_object)
+        end
+
+        def add_auth_env_vars(credentials)
+          return unless credentials
+
+          credentials.each do |credential|
+            next unless credential["type"] == "python_index"
+
+            token = credential["token"]
+            index_url = credential["index-url"]
+
+            next unless token && index_url
+
+            # Set environment variables for uv auth
+            ENV["UV_INDEX_URL_TOKEN_#{sanitize_env_name(index_url)}"] = token
+
+            # Also set pip-style credentials for compatibility
+            ENV["PIP_INDEX_URL"] ||= "https://#{token}@#{index_url.gsub(%r{^https?://}, '')}"
+          end
         end
 
         def sanitize
-          # {{ name }} syntax not allowed
-          pyproject_content
-            .gsub(/\{\{.*?\}\}/, "something")
-            .gsub('#{', "{")
+          # No special sanitization needed for UV files at this point
+          @pyproject_content
         end
-
-        # rubocop:disable Metrics/PerceivedComplexity
-        # rubocop:disable Metrics/AbcSize
-        def freeze_top_level_dependencies_except(dependencies)
-          return pyproject_content unless lockfile
-
-          pyproject_object = TomlRB.parse(pyproject_content)
-          poetry_object = pyproject_object["tool"]["poetry"]
-          excluded_names = dependencies.map(&:name) + ["python"]
-
-          Dependabot::Uv::FileParser::PyprojectFilesParser::POETRY_DEPENDENCY_TYPES.each do |key|
-            next unless poetry_object[key]
-
-            source_types = %w(directory file url)
-            poetry_object.fetch(key).each do |dep_name, _|
-              next if excluded_names.include?(normalise(dep_name))
-
-              locked_details = locked_details(dep_name)
-
-              next unless (locked_version = locked_details&.fetch("version"))
-
-              next if source_types.include?(locked_details&.dig("source", "type"))
-
-              if locked_details&.dig("source", "type") == "git"
-                poetry_object[key][dep_name] = {
-                  "git" => locked_details&.dig("source", "url"),
-                  "rev" => locked_details&.dig("source", "reference")
-                }
-                subdirectory = locked_details&.dig("source", "subdirectory")
-                poetry_object[key][dep_name]["subdirectory"] = subdirectory if subdirectory
-              elsif poetry_object[key][dep_name].is_a?(Hash)
-                poetry_object[key][dep_name]["version"] = locked_version
-              elsif poetry_object[key][dep_name].is_a?(Array)
-                # if it has multiple-constraints, locking to a single version is
-                # going to result in a bad lockfile, ignore
-                next
-              else
-                poetry_object[key][dep_name] = locked_version
-              end
-            end
-          end
-
-          TomlRB.dump(pyproject_object)
-        end
-        # rubocop:enable Metrics/AbcSize
-        # rubocop:enable Metrics/PerceivedComplexity
 
         private
 
-        attr_reader :pyproject_content
         attr_reader :lockfile
 
-        def locked_details(dep_name)
-          parsed_lockfile.fetch("package")
-                         .find { |d| d["name"] == normalise(dep_name) }
-        end
-
-        def normalise(name)
-          NameNormaliser.normalise(name)
-        end
-
         def parsed_lockfile
-          @parsed_lockfile ||= TomlRB.parse(lockfile.content)
+          @parsed_lockfile ||= lockfile ? parse_lockfile(lockfile.content) : {}
+        end
+
+        def parse_lockfile(content)
+          TomlRB.parse(content)
+        rescue TomlRB::ParseError
+          {} # Return empty hash if parsing fails
+        end
+
+        def parsed_lockfile_dependencies
+          return {} unless lockfile
+
+          deps = {}
+          parsed = parsed_lockfile
+
+          # Handle UV lock format (version 1)
+          if parsed["version"] == 1 && parsed["package"].is_a?(Array)
+            parsed["package"].each do |pkg|
+              next unless pkg["name"] && pkg["version"]
+
+              deps[pkg["name"]] = { "version" => pkg["version"] }
+            end
+          # Handle traditional Poetry-style lock format
+          elsif parsed["dependencies"]
+            deps = parsed["dependencies"]
+          end
+
+          deps
+        end
+
+        def locked_version_for_dep(locked_deps, dep_name)
+          locked_deps.each do |name, details|
+            next unless Uv::FileParser.normalize_dependency_name(name) == dep_name
+            return details["version"] if details.is_a?(Hash) && details["version"]
+          end
+          nil
+        end
+
+        def sanitize_env_name(url)
+          url.gsub(%r{^https?://}, "").gsub(/[^a-zA-Z0-9]/, "_").upcase
+        end
+
+        def freeze_dependency(dep_string, deps_to_update_names, locked_deps)
+          package_name = dep_string.split(/[=>~<\[]/).first.strip
+          normalized_name = Uv::FileParser.normalize_dependency_name(package_name)
+
+          return dep_string if deps_to_update_names.include?(normalized_name)
+
+          version = locked_version_for_dep(locked_deps, normalized_name)
+          return dep_string unless version
+
+          if dep_string.include?("=") || dep_string.include?(">") ||
+             dep_string.include?("<") || dep_string.include?("~")
+            # Replace version constraint with exact version
+            dep_string.sub(/[=>~<\[].*$/, "==#{version}")
+          else
+            # Simple dependency, just append version
+            "#{dep_string}==#{version}"
+          end
         end
       end
     end
