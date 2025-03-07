@@ -2601,6 +2601,7 @@ public class RunWorkerTests
             .Select(m =>
                 m.Object switch
                 {
+                    // this isn't the place to verify the generated text
                     CreatePullRequest create => (m.Type, create with { CommitMessage = TestPullRequestCommitMessage, PrTitle = TestPullRequestTitle, PrBody = TestPullRequestBody }),
                     UpdatePullRequest update => (m.Type, update with { CommitMessage = TestPullRequestCommitMessage, PrTitle = TestPullRequestTitle, PrBody = TestPullRequestBody }),
                     _ => m,
