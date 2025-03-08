@@ -10,7 +10,7 @@ module Dependabot
     class FileParser < Dependabot::Shared::SharedFileParser
       extend T::Sig
 
-      ENV_VAR = /\${[^}]+}/
+      ENV_VAR = /\${(?<variable_name>[^}:]+)(?:\:-(?<default_value>[^}]+))?}/
       DIGEST = /(?<digest>[0-9a-f]{64})/
       IMAGE_REGEX = %r{^(#{REGISTRY}/)?#{IMAGE}#{TAG}?(?:@sha256:#{DIGEST})?#{NAME}?}x
 
@@ -65,9 +65,16 @@ module Dependabot
         return nil unless service
 
         if service["image"]
-          return nil if service["image"].match?(/^\${[^}]+}$/)
+          image = service["image"]
 
-          match = IMAGE_REGEX.match(service["image"])
+          if image.match?(/^#{ENV_VAR}/)
+            default_value = ENV_VAR.match(image)&.named_captures&.fetch("default_value")
+            return nil unless default_value
+
+            image = default_value
+          end
+
+          match = IMAGE_REGEX.match(image)
           return match&.named_captures
         elsif service["build"].is_a?(Hash) && service["build"]["dockerfile_inline"]
           return nil if service["build"]["dockerfile_inline"].match?(/^FROM\s+\${[^}]+}$/)
