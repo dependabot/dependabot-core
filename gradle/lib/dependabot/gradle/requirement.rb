@@ -16,6 +16,8 @@ module Dependabot
       quoted = OPS.keys.map { |k| Regexp.quote k }.join("|")
       PATTERN_RAW = T.let("\\s*(#{quoted})?\\s*(#{Gradle::Version::VERSION_PATTERN})\\s*".freeze, String)
       PATTERN = /\A#{PATTERN_RAW}\z/
+      # Like PATTERN, but the leading operator is required
+      RUBY_STYLE_PATTERN = /\A\s*(#{quoted})\s*(#{Gradle::Version::VERSION_PATTERN})\s*\z/
 
       sig { override.params(obj: T.any(Gem::Version, String)).returns([String, Gem::Version]) }
       def self.parse(obj)
@@ -76,13 +78,16 @@ module Dependabot
           raise "Can't convert multiple Java reqs to a single Ruby one"
         end
 
-        # NOTE: Support ruby-style version requirements that are created from
-        # PR ignore conditions
         version_reqs = req_string.split(",").map(&:strip)
-        if req_string.include?(",") && !version_reqs.all? { |s| PATTERN.match?(s) }
-          convert_java_range_to_ruby_range(req_string) if req_string.include?(",")
-        else
-          version_reqs.map { |r| convert_java_equals_req_to_ruby(r) }
+        if version_reqs.length > 1 && !version_reqs.all? { |s| PATTERN.match?(s) }
+          return convert_java_range_to_ruby_range(req_string)
+        end
+
+        version_reqs.map do |r|
+          # if an operator is already provided, use it
+          next r if r.match?(RUBY_STYLE_PATTERN)
+
+          convert_java_equals_req_to_ruby(r)
         end
       end
 
