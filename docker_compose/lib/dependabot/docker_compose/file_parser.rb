@@ -65,17 +65,7 @@ module Dependabot
         return nil unless service
 
         if service["image"]
-          image = service["image"]
-
-          if image.match?(/^#{ENV_VAR}/)
-            default_value = ENV_VAR.match(image)&.named_captures&.fetch("default_value")
-            return nil unless default_value
-
-            image = default_value
-          end
-
-          match = IMAGE_REGEX.match(image)
-          return match&.named_captures
+          return service_image(service["image"])
         elsif service["build"].is_a?(Hash) && service["build"]["dockerfile_inline"]
           return nil if service["build"]["dockerfile_inline"].match?(/^FROM\s+\${[^}]+}$/)
 
@@ -84,6 +74,20 @@ module Dependabot
         end
 
         nil
+      end
+
+      sig { params(image: String).returns(T.nilable(T::Hash[String, T.nilable(String)])) }
+      def service_image(image)
+        docker_image = image
+
+        if image.match?(/^#{ENV_VAR}/o)
+          default_value = ENV_VAR.match(image)&.named_captures&.fetch("default_value")
+          return unless default_value
+
+          docker_image = default_value
+        end
+
+        IMAGE_REGEX.match(docker_image)&.named_captures
       end
 
       sig { params(parsed_image: T::Hash[String, T.nilable(String)]).returns(T.nilable(String)) }
