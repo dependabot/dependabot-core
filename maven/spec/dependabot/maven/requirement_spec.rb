@@ -113,6 +113,12 @@ RSpec.describe Dependabot::Maven::Requirement do
       let(:requirement_string) { "~> 4.2.5, >= 4.2.5.1" }
 
       it { is_expected.to eq(described_class.new("~> 4.2.5", ">= 4.2.5.1")) }
+
+      context "with dynamic version requirements" do
+        let(:requirement_string) { "~> 4.2.5+1.0.1, >= 4.2.5.1+1." }
+
+        it { is_expected.to eq(described_class.new("~> 4.2.5+1.0.1, >= 4.2.5.1+1.")) }
+      end
     end
   end
 
