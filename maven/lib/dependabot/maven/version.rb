@@ -24,7 +24,7 @@ module Dependabot
       VERSION_PATTERN =
         "[0-9a-zA-Z]+" \
         '(?>\.[0-9a-zA-Z]*)*' \
-        '([_\-\+][0-9A-Za-z_-]*(\.[0-9A-Za-z_-]*)*)?'
+        '([_\-\+.][0-9A-Za-z]*)*'
 
       sig { returns(Dependabot::Maven::TokenBucket) }
       attr_accessor :token_bucket
