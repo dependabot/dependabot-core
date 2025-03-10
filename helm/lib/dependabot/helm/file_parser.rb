@@ -10,18 +10,12 @@ module Dependabot
     class FileParser < Dependabot::Shared::SharedFileParser
       extend T::Sig
 
-      # Use the regex patterns from SharedFileParser for image parsing
-      # Define Helm-specific patterns
-      CHART_NAME = /[a-zA-Z0-9-_.]+/
-      CHART_VERSION = /[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9-.]+)?/
-      REPO_URL = %r{(?:https?://|oci://|file://)[^\s'"]+}
-
       sig { returns(Ecosystem) }
       def ecosystem
         @ecosystem ||= T.let(
           Ecosystem.new(
             name: ECOSYSTEM,
-            package_manager: PackageManager.new
+            package_manager: HelmPackageManager.new
           ),
           T.nilable(Ecosystem)
         )
@@ -30,11 +24,7 @@ module Dependabot
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
         dependency_set = DependencySet.new
-
-        # Parse Chart.yaml files (Helm v3)
         parse_chart_yaml_files(dependency_set)
-
-        # Parse values.yaml files for container image references
         parse_values_yaml_files(dependency_set)
 
         dependency_set.dependencies
@@ -42,78 +32,80 @@ module Dependabot
 
       private
 
+      sig do
+        params(yaml: T::Hash[T.untyped, T.untyped], chart_file: Dependabot::DependencyFile,
+               dependency_set: DependencySet).void
+      end
+      def parse_dependencies(yaml, chart_file, dependency_set)
+        yaml["dependencies"].each do |dep|
+          next unless dep.is_a?(Hash) && dep["name"] && dep["version"] && dep["repository"]
+
+          parsed_line = {
+            "image" => dep["name"],
+            "tag" => dep["version"],
+            "registry" => nil,
+            "digest" => nil
+          }
+
+          dependency = build_dependency(chart_file, parsed_line, dep["version"])
+
+          T.must(dependency.requirements.first)[:source] = {
+            type: "helm_repo",
+            url: dep["repository"]
+          }
+
+          dependency_set << dependency
+        end
+      end
+
+      sig do
+        params(yaml: T::Hash[T.untyped, T.untyped], chart_file: Dependabot::DependencyFile,
+               dependency_set: DependencySet).void
+      end
+      def parse_app_version(yaml, chart_file, dependency_set)
+        return unless yaml["appVersion"] && yaml["name"]
+
+        version = yaml["appVersion"].to_s.delete_prefix("\"").delete_suffix("\"")
+
+        parsed_line = {
+          "image" => "#{yaml['name']}-app",
+          "tag" => version,
+          "registry" => nil,
+          "digest" => nil
+        }
+
+        dependency = build_dependency(chart_file, parsed_line, version)
+        T.must(dependency.requirements.first)[:groups] = ["appVersion"]
+
+        dependency_set << dependency
+      end
+
       sig { params(dependency_set: DependencySet).void }
       def parse_chart_yaml_files(dependency_set)
         helm_chart_files.each do |chart_file|
           yaml = YAML.safe_load(T.must(chart_file.content), aliases: true)
           next unless yaml.is_a?(Hash)
 
-          # Process chart dependencies (Helm v3 style)
-          if yaml["dependencies"].is_a?(Array)
-            yaml["dependencies"].each do |dep|
-              next unless dep.is_a?(Hash) && dep["name"] && dep["version"] && dep["repository"]
-
-              # Create a parsed_line hash in the format expected by build_dependency
-              parsed_line = {
-                "image" => dep["name"],
-                "tag" => dep["version"],
-                "registry" => nil,
-                "digest" => nil
-              }
-
-              dependency = build_dependency(chart_file, parsed_line, dep["version"])
-
-              # Update source with Helm-specific information
-              dependency.requirements.first[:source] = {
-                type: "helm_repo",
-                url: dep["repository"]
-              }
-
-              dependency_set << dependency
-            end
-          end
-
-          # Process appVersion as a dependency
-          if yaml["appVersion"] && yaml["name"]
-            version = yaml["appVersion"].to_s.delete_prefix("\"").delete_suffix("\"")
-
-            # Create a parsed_line hash in the format expected by build_dependency
-            parsed_line = {
-              "image" => "#{yaml["name"]}-app",
-              "tag" => version,
-              "registry" => nil,
-              "digest" => nil
-            }
-
-            dependency = build_dependency(chart_file, parsed_line, version)
-
-            # Update with appVersion group
-            dependency.requirements.first[:groups] = ["appVersion"]
-
-            dependency_set << dependency
-          end
+          parse_dependencies(yaml, chart_file, dependency_set) if yaml["dependencies"].is_a?(Array)
+          parse_app_version(yaml, chart_file, dependency_set)
         end
       end
-
       sig { params(dependency_set: DependencySet).void }
       def parse_values_yaml_files(dependency_set)
         helm_values_files.each do |values_file|
           yaml = YAML.safe_load(T.must(values_file.content), aliases: true)
           next unless yaml.is_a?(Hash)
 
-          # Process container image references
           find_images_in_hash(yaml).each do |image_details|
-            parsed_line = extract_image_details(image_details[:image])
+            parsed_line = extract_image_details(T.must(image_details[:image]))
             next unless parsed_line
 
             version = version_from(parsed_line)
             next unless version
 
-            # Use the shared build_dependency method for creating dependencies
             dependency = build_dependency(values_file, parsed_line, version)
-
-            # Update the source with path information for nested values
-            dependency.requirements.first[:source] = dependency.requirements.first[:source].merge(path: image_details[:path])
+            T.must(dependency.requirements.first)[:source] =
+              T.must(dependency.requirements.first)[:source].merge(path: image_details[:path])
 
             dependency_set << dependency
           end
@@ -122,14 +114,12 @@ module Dependabot
 
       sig { params(image_string: String).returns(T.nilable(T::Hash[String, T.nilable(String)])) }
       def extract_image_details(image_string)
-        # Skip if the string contains environment variables
         return nil if image_string.match?(/\${[^}]+}/)
 
-        # Try to match the image string against our patterns
-        registry_match = image_string.match(%r{^(#{REGISTRY}/)?})
-        image_match = image_string.match(%r{#{IMAGE}})
-        tag_match = image_string.match(%r{#{TAG}})
-        digest_match = image_string.match(%r{#{DIGEST}})
+        registry_match = image_string.match(%r{^(#{REGISTRY}/)?}o)
+        image_match = image_string.match(/#{IMAGE}/o)
+        tag_match = image_string.match(/#{TAG}/o)
+        digest_match = image_string.match(/#{DIGEST}/o)
 
         return nil unless image_match
 
@@ -141,31 +131,54 @@ module Dependabot
         }
       end
 
-      sig { params(hash: T::Hash[T.untyped, T.untyped]).returns(T::Array[T::Hash[Symbol, String]]) }
+      sig do
+        params(key: String, value: String, hash: T::Hash[T.untyped, T.untyped],
+               current_path: T::Array[String]).returns(T::Array[T::Hash[Symbol, String]])
+      end
+      def handle_string_value(key, value, hash, current_path)
+        images = []
+        if key == "repository" && hash["tag"].is_a?(String)
+          images << { path: current_path.join("."), image: "#{value}:#{hash['tag']}" }
+        elsif key == "image" && value.include?(":")
+          images << { path: current_path.join("."), image: value }
+        end
+        images
+      end
+
+      sig do
+        params(value: T::Hash[T.untyped, T.untyped],
+               current_path: T::Array[String]).returns(T::Array[T::Hash[Symbol, String]])
+      end
+      def handle_hash_value(value, current_path)
+        find_images_in_hash(value, current_path)
+      end
+
+      sig do
+        params(value: T::Array[T.untyped], current_path: T::Array[String]).returns(T::Array[T::Hash[Symbol, String]])
+      end
+      def handle_array_value(value, current_path)
+        images = []
+        value.each_with_index do |item, index|
+          images.concat(find_images_in_hash(item, current_path + [index.to_s])) if item.is_a?(Hash)
+        end
+        images
+      end
+
+      sig do
+        params(hash: T::Hash[T.untyped, T.untyped], path: T::Array[String]).returns(T::Array[T::Hash[Symbol, String]])
+      end
       def find_images_in_hash(hash, path = [])
         images = []
 
         hash.each do |key, value|
-          current_path = path + [key]
+          current_path = path + [key.to_s]
 
           if value.is_a?(String) && (key.to_s == "image" || key.to_s == "repository")
-            if key.to_s == "repository" && hash["tag"].is_a?(String)
-              # Handle repository + tag structure
-              images << { path: current_path.join("."), image: "#{value}:#{hash["tag"]}" }
-            elsif key.to_s == "image" && value.include?(":")
-              # Handle direct image reference
-              images << { path: current_path.join("."), image: value }
-            end
+            images.concat(handle_string_value(key.to_s, value, hash, current_path))
           elsif value.is_a?(Hash)
-            # Recursively search nested hashes
-            images.concat(find_images_in_hash(value, current_path))
+            images.concat(handle_hash_value(value, current_path))
           elsif value.is_a?(Array)
-            # Search through array items if they're hashes
-            value.each_with_index do |item, index|
-              if item.is_a?(Hash)
-                images.concat(find_images_in_hash(item, current_path + [index.to_s]))
-              end
-            end
+            images.concat(handle_array_value(value, current_path))
           end
         end
 
@@ -174,12 +187,12 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def helm_chart_files
-        dependency_files.select { |file| file.name.end_with?("Chart.yaml") || file.name.end_with?("chart.yml") }
+        dependency_files.select { |file| file.name.end_with?("Chart.yaml", "chart.yml") }
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def helm_values_files
-        dependency_files.select { |file| file.name.end_with?("values.yaml") || file.name.end_with?("values.yml") }
+        dependency_files.select { |file| file.name.end_with?("values.yaml", "values.yml") }
       end
 
       sig { override.returns(String) }
@@ -195,6 +208,7 @@ module Dependabot
       sig { override.void }
       def check_required_files
         return if dependency_files.any?
+
         raise "No #{file_type} files!"
       end
     end
