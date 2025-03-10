@@ -205,9 +205,9 @@ module Dependabot
           dependency_files.select { |f| f.name.end_with?(".txt") }
         end
 
-        sig { returns(T.untyped) }
+        sig { returns(T::Array[DependencyFile]) }
         def pip_compile_files
-          dependency_files.select { |f| f.name.end_with?(".in") }
+          @pip_compile_files ||= T.let(dependency_files.select { |f| f.name.end_with?(".in") }, T.untyped)
         end
       end
     end
