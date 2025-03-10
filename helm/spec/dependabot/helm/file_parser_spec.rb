@@ -8,7 +8,7 @@ require "dependabot/docker_compose/file_parser"
 
 require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
-RSpec.describe Dependabot::DockerCompose::FileParser do
+RSpec.describe Dependabot::Helm::FileParser do
   let(:source) do
     Dependabot::Source.new(
       provider: "github",

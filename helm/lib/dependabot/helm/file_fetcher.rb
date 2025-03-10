@@ -50,7 +50,7 @@ module Dependabot
 
       sig { override.returns(String) }
       def default_file_name
-        "charts.yaml"
+        "Charts.yaml"
       end
 
       sig { override.returns(String) }

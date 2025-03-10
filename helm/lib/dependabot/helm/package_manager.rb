@@ -12,7 +12,7 @@ module Dependabot
 
     DEPRECATED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
 
-    class DockerPackageManager < Dependabot::Ecosystem::VersionManager
+    class HelmPackageManager < Dependabot::Ecosystem::VersionManager
       extend T::Sig
 
       NAME = "helm"

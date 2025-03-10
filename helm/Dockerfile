@@ -1,5 +1,5 @@
 FROM ghcr.io/dependabot/dependabot-updater-docker
 USER dependabot
 
-COPY --chown=dependabot:dependabot docker_compose $DEPENDABOT_HOME/helm
+COPY --chown=dependabot:dependabot helm $DEPENDABOT_HOME/helm
 
