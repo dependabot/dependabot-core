@@ -27,8 +27,8 @@ Gem::Specification.new do |spec|
   spec.require_path = "lib"
   spec.files        = Dir["lib/**/*"]
 
+  spec.add_dependency "dependabot-common", Dependabot::VERSION
   spec.add_dependency "dependabot-docker", Dependabot::VERSION
-  spec.add_dependency "dependabot-helm", Dependabot::VERSION
 
   common_gemspec.development_dependencies.each do |dep|
     spec.add_development_dependency dep.name, *dep.requirement.as_list
