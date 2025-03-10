@@ -1,0 +1,10 @@
+{
+    "name": "openjdk",
+    "tags": [
+        "21-ea-32",
+        "22-ea-7",
+        "22-ea-7-windowsservercore-1809",
+        "22-ea-jdk-nanoserver-1809",
+        "22-ea-9-windowsservercore-1809"
+    ]
+}

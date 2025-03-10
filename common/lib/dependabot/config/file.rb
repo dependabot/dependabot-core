@@ -73,6 +73,7 @@ module Dependabot
         "gradle" => "gradle",
         "maven" => "maven",
         "mix" => "hex",
+        "helm" => "helm",
         "nuget" => "nuget",
         "npm" => "npm_and_yarn",
         "pip" => "pip",
