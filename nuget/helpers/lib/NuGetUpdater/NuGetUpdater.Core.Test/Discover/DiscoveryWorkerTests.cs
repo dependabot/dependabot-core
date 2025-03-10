@@ -710,6 +710,127 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
     }
 
     [Fact]
+    public async Task TestRepo_DirectDiscovery_Slnx()
+    {
+        var solutionPath = "solution.slnx";
+        await TestDiscoveryAsync(
+            experimentsManager: new ExperimentsManager() { UseDirectDiscovery = true },
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net7.0"),
+            ],
+            workspacePath: "",
+            files: new[]
+            {
+                ("src/project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFrameworks>net7.0;net8.0</TargetFrameworks>
+                      </PropertyGroup>
+
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Directory.Build.props", "<Project />"),
+                ("Directory.Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                        <SomePackageVersion>9.0.1</SomePackageVersion>
+                      </PropertyGroup>
+
+                      <ItemGroup>
+                        <PackageVersion Include="Some.Package" Version="$(SomePackageVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                (solutionPath, """
+                    <Solution>
+                      <Folder Name="/src/">
+                        <Project Path="src/project.csproj" />
+                      </Folder>
+                    </Solution>
+                    """),
+                ("global.json", """
+                    {
+                      "sdk": {
+                        "version": "6.0.405",
+                        "rollForward": "latestPatch"
+                      },
+                      "msbuild-sdks": {
+                        "My.Custom.Sdk": "5.0.0",
+                        "My.Other.Sdk": "1.0.0-beta"
+                      }
+                    }
+                    """),
+                (".config/dotnet-tools.json", """
+                    {
+                      "version": 1,
+                      "isRoot": true,
+                      "tools": {
+                        "microsoft.botsay": {
+                          "version": "1.0.0",
+                          "commands": [
+                            "botsay"
+                          ]
+                        },
+                        "dotnetsay": {
+                          "version": "2.1.3",
+                          "commands": [
+                            "dotnetsay"
+                          ]
+                        }
+                      }
+                    }
+                    """),
+            },
+            expectedResult: new()
+            {
+                Path = "",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "src/project.csproj",
+                        TargetFrameworks = ["net7.0", "net8.0"],
+                        Dependencies = [
+                            new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net7.0"], IsDirect: true),
+                            new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
+                        ],
+                        Properties = [
+                            new("TargetFrameworks", "net7.0;net8.0", "src/project.csproj")
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [
+                            "../Directory.Build.props",
+                            "../Directory.Packages.props",
+                        ],
+                        AdditionalFiles = [],
+                    }
+                ],
+                GlobalJson = new()
+                {
+                    FilePath = "global.json",
+                    Dependencies = [
+                        new("Microsoft.NET.Sdk", "6.0.405", DependencyType.MSBuildSdk),
+                        new("My.Custom.Sdk", "5.0.0", DependencyType.MSBuildSdk),
+                        new("My.Other.Sdk", "1.0.0-beta", DependencyType.MSBuildSdk),
+                    ]
+                },
+                DotNetToolsJson = new()
+                {
+                    FilePath = ".config/dotnet-tools.json",
+                    Dependencies = [
+                        new("microsoft.botsay", "1.0.0", DependencyType.DotNetTool),
+                        new("dotnetsay", "2.1.3", DependencyType.DotNetTool),
+                    ]
+                }
+            }
+        );
+    }
+
+    [Fact]
     public async Task TestRepo_SolutionFileCasingMismatchIsResolved()
     {
         var solutionPath = "solution.sln";
