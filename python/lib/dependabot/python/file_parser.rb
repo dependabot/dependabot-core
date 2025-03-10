@@ -489,7 +489,7 @@ module Dependabot
         @setup_cfg_file ||= T.let(get_original_file("setup.cfg"), T.nilable(Dependabot::DependencyFile))
       end
 
-      sig { returns(T::Array[Dependabot::Python::Requirement]) }
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def pip_compile_files
         @pip_compile_files ||= T.let(dependency_files.select { |f| f.name.end_with?(".in") }, T.untyped)
       end
