@@ -6,7 +6,7 @@ module Dependabot
     class PipCompileFileMatcher
       extend T::Sig
 
-      sig { params(requirements_in_files: T::Array[Dependabot::Python::Requirement]).void }
+      sig { params(requirements_in_files: T::Array[DependencyFile]).void }
       def initialize(requirements_in_files)
         @requirements_in_files = requirements_in_files
       end
@@ -26,7 +26,7 @@ module Dependabot
 
       private
 
-      sig { returns(T::Array[Dependabot::Python::Requirement]) }
+      sig { returns(T::Array[DependencyFile]) }
       attr_reader :requirements_in_files
 
       sig { params(filename: T.any(String, Symbol)).returns(String) }
