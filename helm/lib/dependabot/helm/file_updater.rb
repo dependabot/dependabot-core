@@ -134,28 +134,37 @@ module Dependabot
         content.gsub(image_pattern, "#{indent_pattern}image: #{new_image}")
       end
 
+      sig { params(content: String, path_parts: T::Array[String]).returns(String) }
+      def update_tag_in_content(content, path_parts)
+        parent_path = T.must(path_parts[0...-1]).join(".")
+        old_tag = T.must(dependency).previous_version
+        new_tag = T.must(dependency).version
+        update_tag(content, parent_path, T.must(old_tag), T.must(new_tag))
+      end
+
+      sig { params(content: String, path: String, req: T::Hash[Symbol, T.untyped]).returns(String) }
+      def update_image_in_content(content, path, req)
+        old_image = build_old_image_string(req)
+        new_image = build_new_image_string(req)
+        update_image(content, path, old_image, new_image)
+      end
+
       sig { params(file: Dependabot::DependencyFile).returns(T.nilable(String)) }
       def updated_values_yaml_content(file)
         content = file.content
+        req = T.must(dependency).requirements.find { |r| r[:file] == file.name }
 
-        if update_container_image?(file)
-          req = T.must(dependency).requirements.find { |r| r[:file] == file.name }
+        if update_container_image?(file) && req&.dig(:source, :path)
+          path = req.dig(:source, :path).to_s
+          path_parts = path.split(".")
 
-          if req&.dig(:source, :path)
-            path = req.dig(:source, :path).to_s
-            path_parts = path.split(".")
-
-            if path_parts.last == "tag"
-              parent_path = path_parts[0...-1].join(".")
-              old_tag = T.must(dependency).previous_version
-              new_tag = T.must(dependency).version
-              content = update_tag(T.must(content), parent_path, T.must(old_tag), T.must(new_tag))
-            elsif path_parts.last == "image"
-              old_image = build_old_image_string(req)
-              new_image = build_new_image_string(req)
-              content = update_image(T.must(content), path, old_image, new_image)
-            end
-          end
+          content = if path_parts.last == "tag"
+                      update_tag_in_content(T.must(content), path_parts)
+                    elsif path_parts.last == "image"
+                      update_image_in_content(T.must(content), path, req)
+                    else
+                      content
+                    end
         end
 
         raise "Expected content to change!" if content == file.content
@@ -221,7 +230,4 @@ module Dependabot
   end
 end
 
-Dependabot::FileUpdaters.register(
-  "helm",
-  Dependabot::Helm::FileUpdater
-)
+Dependabot::FileUpdaters.register("helm", Dependabot::Helm::FileUpdater)

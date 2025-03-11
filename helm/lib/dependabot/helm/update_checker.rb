@@ -56,8 +56,8 @@ module Dependabot
         false
       end
 
-      sig { params(_requirements_to_unlock: T.nilable(Symbol)).returns(T::Boolean) }
-      def version_can_update?(_requirements_to_unlock)
+      sig { params(requirements_to_unlock: T.nilable(Symbol)).returns(T::Boolean) }
+      def version_can_update?(requirements_to_unlock:) # rubocop:disable Lint/UnusedMethodArgument
         return false unless latest_version
 
         version_class.new(latest_version.to_s) > version_class.new(dependency.version)
