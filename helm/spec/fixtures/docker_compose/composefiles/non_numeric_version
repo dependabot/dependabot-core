@@ -1,5 +1,0 @@
-version: '2'
-services:
-  hello_world:
-    image: ubuntu:artful
-    command: [/bin/echo, 'Hello world']
