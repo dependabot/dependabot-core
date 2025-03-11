@@ -3649,6 +3649,7 @@ public partial class UpdateWorkerTests
                       <PropertyGroup>
                         <TargetFramework>net9.0</TargetFramework>
                         <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+                        <MSBuildTreatWarningsAsErrors>true</MSBuildTreatWarningsAsErrors>
                       </PropertyGroup>
                       <ItemGroup>
                         <PackageReference Include="Package1" />
@@ -3683,6 +3684,7 @@ public partial class UpdateWorkerTests
                       <PropertyGroup>
                         <TargetFramework>net9.0</TargetFramework>
                         <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+                        <MSBuildTreatWarningsAsErrors>true</MSBuildTreatWarningsAsErrors>
                       </PropertyGroup>
                       <ItemGroup>
                         <PackageReference Include="Package1" />

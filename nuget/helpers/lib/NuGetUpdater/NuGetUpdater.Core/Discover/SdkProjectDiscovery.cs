@@ -110,6 +110,7 @@ internal static class SdkProjectDiscovery
                         $"/p:CustomAfterMicrosoftCommonCrossTargetingTargets={dependencyDiscoveryTargetsPath}",
                         $"/p:CustomAfterMicrosoftCommonTargets={dependencyDiscoveryTargetsPath}",
                         "/p:TreatWarningsAsErrors=false", // if using CPM and a project also sets TreatWarningsAsErrors to true, this can cause discovery to fail; explicitly don't allow that
+                        "/p:MSBuildTreatWarningsAsErrors=false",
                         $"/bl:{binLogPath}"
                     };
                     var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(args, startingProjectDirectory, experimentsManager);

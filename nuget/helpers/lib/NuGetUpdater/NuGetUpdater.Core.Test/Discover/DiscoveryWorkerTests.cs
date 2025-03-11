@@ -1464,6 +1464,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                       <PropertyGroup>
                         <TargetFramework>net9.0</TargetFramework>
                         <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+                        <MSBuildTreatWarningsAsErrors>true</MSBuildTreatWarningsAsErrors>
                       </PropertyGroup>
                       <ItemGroup>
                         <PackageReference Include="Package1" />
@@ -1496,6 +1497,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                             new("Package2", "2.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"], IsDirect: true),
                         ],
                         Properties = [
+                            new("MSBuildTreatWarningsAsErrors", "false", "src/project.csproj"), // this was specifically overridden by discovery
                             new("TargetFramework", "net9.0", "src/project.csproj"),
                             new("TreatWarningsAsErrors", "false", "src/project.csproj"), // this was specifically overridden by discovery
                         ],
