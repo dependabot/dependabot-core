@@ -112,6 +112,13 @@ PATH
       dependabot-docker (= 0.300.0)
 
 PATH
+  remote: helm
+  specs:
+    dependabot-helm (0.299.1)
+      dependabot-common (= 0.299.1)
+      dependabot-docker (= 0.299.1)
+
+PATH
   remote: hex
   specs:
     dependabot-hex (0.301.0)
