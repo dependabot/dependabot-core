@@ -9,13 +9,13 @@
  * Outputs:
  *  - successful completion, or an error if there are peer dependency warnings
  */
-const path = require("path");
-const { Add } = require("@dependabot/yarn-lib/lib/cli/commands/add");
-const Config = require("@dependabot/yarn-lib/lib/config").default;
-const { BufferReporter } = require("@dependabot/yarn-lib/lib/reporters");
-const Lockfile = require("@dependabot/yarn-lib/lib/lockfile").default;
-const { isString } = require("./helpers");
-const fetcher = require("@dependabot/yarn-lib/lib/package-fetcher.js");
+import path from "node:path";
+import { Add } from "@dependabot/yarn-lib/lib/cli/commands/add";
+import ReportersLib from "@dependabot/yarn-lib/lib/reporters";
+import ConfigLib from "@dependabot/yarn-lib/lib/config";
+import LockfileLib from "@dependabot/yarn-lib/lib/lockfile";
+import { isString } from "./helpers";
+import fetcher from "@dependabot/yarn-lib/lib/package-fetcher.js";
 
 // Check peer dependencies without downloading node_modules or updating
 // package/lockfiles
@@ -70,7 +70,7 @@ function installArgsWithVersion(depName, desiredVersion, requirements) {
   }
 }
 
-async function checkPeerDependencies(
+export default async function checkPeerDependencies(
   directory,
   depName,
   desiredVersion,
@@ -95,8 +95,8 @@ async function checkPeerDepsForReq(
     dev: devRequirement(requirement),
     optional: optionalRequirement(requirement),
   };
-  const reporter = new BufferReporter();
-  const config = new Config(reporter);
+  const reporter = new ReportersLib.BufferReporter();
+  const config = new ConfigLib.default(reporter);
 
   await config.init({
     cwd: path.join(directory, path.dirname(requirement.file)),
@@ -105,7 +105,7 @@ async function checkPeerDepsForReq(
     extraneousYarnrcFiles: [".yarnrc"],
   });
 
-  const lockfile = await Lockfile.fromDirectory(directory, reporter);
+  const lockfile = await LockfileLib.default.fromDirectory(directory, reporter);
 
   // Returns dep name and version for yarn add, example: ["react@16.6.0"]
   let args = installArgsWithVersion(depName, desiredVersion, requirement);
@@ -128,5 +128,3 @@ async function checkPeerDepsForReq(
     throw new Error(peerDependencyWarnings.join("\n"));
   }
 }
-
-module.exports = { checkPeerDependencies };
