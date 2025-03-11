@@ -3632,5 +3632,78 @@ public partial class UpdateWorkerTests
                     """
             );
         }
+
+        [Fact]
+        public async Task CentralPackageManagementStillWorksWithMultipleFeedsListedInConfig()
+        {
+            using var http1 = TestHttpServer.CreateTestNuGetFeed(
+                MockNuGetPackage.CreateSimplePackage("Package1", "1.0.0", "net9.0"),
+                MockNuGetPackage.CreateSimplePackage("Package1", "1.0.1", "net9.0"));
+            using var http2 = TestHttpServer.CreateTestNuGetFeed(MockNuGetPackage.CreateSimplePackage("Package2", "2.0.0", "net9.0"));
+            await TestUpdate("Package1", "1.0.0", "1.0.1",
+                useSolution: false,
+                experimentsManager: new ExperimentsManager() { UseDirectDiscovery = true },
+                packages: [],
+                projectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net9.0</TargetFramework>
+                        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Package1" />
+                        <PackageReference Include="Package2" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                additionalFiles: [
+                    ("Directory.Packages.props", """
+                        <Project>
+                          <PropertyGroup>
+                            <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageVersion Include="Package1" Version="1.0.0" />
+                            <PackageVersion Include="Package2" Version="2.0.0" />
+                          </ItemGroup>
+                        </Project>
+                        """),
+                    ("NuGet.Config", $"""
+                        <configuration>
+                          <packageSources>
+                            <!-- explicitly _not_ calling "clear" because we also want the upstream sources in addition to these two remote sources -->
+                            <add key="source_1" value="{http1.GetPackageFeedIndex()}" allowInsecureConnections="true" />
+                            <add key="source_2" value="{http2.GetPackageFeedIndex()}" allowInsecureConnections="true" />
+                          </packageSources>
+                        </configuration>
+                        """)
+                ],
+                expectedProjectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net9.0</TargetFramework>
+                        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Package1" />
+                        <PackageReference Include="Package2" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                additionalFilesExpected: [
+                    ("Directory.Packages.props", """
+                        <Project>
+                          <PropertyGroup>
+                            <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageVersion Include="Package1" Version="1.0.1" />
+                            <PackageVersion Include="Package2" Version="2.0.0" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                ]
+            );
+        }
     }
 }

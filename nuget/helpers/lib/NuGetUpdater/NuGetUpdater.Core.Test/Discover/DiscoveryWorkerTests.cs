@@ -1,5 +1,4 @@
 using System.Collections.Immutable;
-using System.Runtime.InteropServices;
 using System.Text.Json;
 
 using NuGetUpdater.Core.Discover;
@@ -1428,6 +1427,80 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         ],
                         ReferencedProjectPaths = [],
                         ImportedFiles = [],
+                        AdditionalFiles = [],
+                    }
+                ]
+            }
+        );
+    }
+
+    [Fact]
+    public async Task CentralPackageManagementStillWorksWithMultipleFeedsListedInConfig()
+    {
+        // If a repo doesn't contain a `NuGet.Config` file and `dependabot.yml` specifies a package source, a user-
+        // local `NuGet.Config` file is created before the updater is run that enumerates the specified feeds as well
+        // as `api.nuget.org`.  If a given project is using Central Package Management a warning NU1507 will be
+        // generated because of the multiple feeds listed.  If that project _also_ specifies $(TreatWarningsAsErrors)
+        // as true, this will cause dependency discovery to "fail".  To simulate this, multiple remote NuGet sources
+        // need to be listed in the `NuGet.Config` file in this test.
+        using var http1 = TestHttpServer.CreateTestNuGetFeed(MockNuGetPackage.CreateSimplePackage("Package1", "1.0.0", "net9.0"));
+        using var http2 = TestHttpServer.CreateTestNuGetFeed(MockNuGetPackage.CreateSimplePackage("Package2", "2.0.0", "net9.0"));
+        await TestDiscoveryAsync(
+            packages: [],
+            experimentsManager: new ExperimentsManager() { UseDirectDiscovery = true },
+            workspacePath: "/src",
+            files: [
+                ("src/NuGet.Config", $"""
+                    <configuration>
+                      <packageSources>
+                        <!-- explicitly _not_ calling "clear" because we also want the upstream sources in addition to these two remote sources -->
+                        <add key="source_1" value="{http1.GetPackageFeedIndex()}" allowInsecureConnections="true" />
+                        <add key="source_2" value="{http2.GetPackageFeedIndex()}" allowInsecureConnections="true" />
+                      </packageSources>
+                    </configuration>
+                    """),
+                ("src/project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net9.0</TargetFramework>
+                        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Package1" />
+                        <PackageReference Include="Package2" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("src/Directory.Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageVersion Include="Package1" Version="1.0.0" />
+                        <PackageVersion Include="Package2" Version="2.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            expectedResult: new()
+            {
+                Path = "src",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "project.csproj",
+                        TargetFrameworks = ["net9.0"],
+                        Dependencies = [
+                            new("Package1", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"], IsDirect: true),
+                            new("Package2", "2.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"], IsDirect: true),
+                        ],
+                        Properties = [
+                            new("TargetFramework", "net9.0", "src/project.csproj"),
+                            new("TreatWarningsAsErrors", "false", "src/project.csproj"), // this was specifically overridden by discovery
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = ["Directory.Packages.props"],
                         AdditionalFiles = [],
                     }
                 ]
