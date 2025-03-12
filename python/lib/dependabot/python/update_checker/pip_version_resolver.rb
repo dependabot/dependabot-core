@@ -11,12 +11,13 @@ module Dependabot
     class UpdateChecker
       class PipVersionResolver
         def initialize(dependency:, dependency_files:, credentials:,
-                       ignored_versions:, raise_on_ignored: false,
+                       ignored_versions:, update_cooldown: nil, raise_on_ignored: false,
                        security_advisories:)
           @dependency          = dependency
           @dependency_files    = dependency_files
           @credentials         = credentials
           @ignored_versions    = ignored_versions
+          @update_cooldown = update_cooldown
           @raise_on_ignored    = raise_on_ignored
           @security_advisories = security_advisories
         end
@@ -50,8 +51,10 @@ module Dependabot
             credentials: credentials,
             ignored_versions: ignored_versions,
             raise_on_ignored: @raise_on_ignored,
+            cooldown_options: @update_cooldown,
             security_advisories: security_advisories
           )
+          @latest_version_finder
         end
 
         def python_requirement_parser

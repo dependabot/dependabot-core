@@ -32,6 +32,11 @@ module Dependabot
             credentials: credentials
           ).fetch
         end
+
+        sig { override.returns(T::Boolean) }
+        def cooldown_enabled?
+          Dependabot::Experiments.enabled?(:enable_cooldown_for_python)
+        end
       end
     end
   end

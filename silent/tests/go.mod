@@ -1,6 +1,6 @@
 module github.com/dependabot/dependabot-core/example
 
-go 1.21.6
+go 1.22
 
 require (
 	golang.org/x/tools v0.14.0 // indirect

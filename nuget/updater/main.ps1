@@ -21,7 +21,10 @@ function Get-Files {
         --api-url $env:DEPENDABOT_API_URL `
         --job-id $env:DEPENDABOT_JOB_ID
     $script:operationExitCode = $LASTEXITCODE
-    Repair-FileCasing
+    if ($script:operationExitCode -eq 0) {
+        # this only makes sense if the native clone operation succeeded
+        Repair-FileCasing
+    }
 }
 
 function Update-Files {

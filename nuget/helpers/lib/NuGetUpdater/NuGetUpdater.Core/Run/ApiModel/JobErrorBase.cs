@@ -7,7 +7,7 @@ using NuGetUpdater.Core.Analyze;
 
 namespace NuGetUpdater.Core.Run.ApiModel;
 
-public abstract record JobErrorBase
+public abstract record JobErrorBase : MessageBase
 {
     public JobErrorBase(string type)
     {
