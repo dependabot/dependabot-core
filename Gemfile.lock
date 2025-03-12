@@ -39,7 +39,7 @@ PATH
       psych (~> 5.0)
       sorbet-runtime (~> 0.5.11577)
       stackprof (~> 0.2.16)
-      toml-rb (>= 1.1.2, < 4.0)
+      toml-rb (>= 1.1.2)
 
 PATH
   remote: composer
@@ -369,7 +369,7 @@ GEM
     terminal-table (3.0.2)
       unicode-display_width (>= 1.1.1, < 3)
     thor (1.3.2)
-    toml-rb (3.0.1)
+    toml-rb (4.0.0)
       citrus (~> 3.0, > 3.0)
       racc (~> 1.7)
     turbo_tests (2.2.0)
