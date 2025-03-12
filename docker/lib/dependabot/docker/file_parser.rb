@@ -53,7 +53,6 @@ module Dependabot
         end
 
         manifest_files.each do |file|
-          check_manifest_file_encoding(file)
           dependency_set += workfile_file_dependencies(file)
         end
 
@@ -81,15 +80,6 @@ module Dependabot
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def manifest_files
         dependency_files.select { |f| f.type == "file" && f.name.match?(YAML_REGEXP) }
-      end
-
-      sig { params(file: Dependabot::DependencyFile).void }
-      def check_manifest_file_encoding(file)
-        return unless file.content&.start_with?("\uFEFF")
-
-        file_path = Pathname.new(file.directory).join(file.name).cleanpath.to_path
-        msg = "The file appears to have been saved with a byte order mark (BOM). This will prevent proper parsing."
-        raise Dependabot::DependencyFileNotParseable.new(file_path, msg)
       end
 
       sig { params(file: Dependabot::DependencyFile).returns(DependencySet) }

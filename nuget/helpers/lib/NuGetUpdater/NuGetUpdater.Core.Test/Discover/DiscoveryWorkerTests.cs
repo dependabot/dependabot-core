@@ -1381,4 +1381,57 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             }
         );
     }
+
+    // If the "Restore" target is invoked and $(RestoreUseStaticGraphEvaluation) is set to true, NuGet can throw
+    // a NullReferenceException.
+    // https://github.com/NuGet/Home/issues/11761#issuecomment-1105218996
+    [Fact]
+    public async Task NullReferenceExceptionFromNuGetRestoreIsWorkedAround()
+    {
+        await TestDiscoveryAsync(
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.2.3", "net8.0"),
+            ],
+            experimentsManager: new ExperimentsManager() { UseDirectDiscovery = true },
+            workspacePath: "",
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                        <RestoreUseStaticGraphEvaluation>true</RestoreUseStaticGraphEvaluation>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.2.3" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                // a pattern seen in the wild; always run restore
+                ("Directory.Build.rsp", """
+                    /Restore
+                    """)
+            ],
+            expectedResult: new()
+            {
+                Path = "",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "project.csproj",
+                        TargetFrameworks = ["net8.0"],
+                        Dependencies = [
+                            new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true)
+                        ],
+                        Properties = [
+                            new("RestoreUseStaticGraphEvaluation", "true", "project.csproj"),
+                            new("TargetFramework", "net8.0", "project.csproj"),
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
+                    }
+                ]
+            }
+        );
+    }
 }

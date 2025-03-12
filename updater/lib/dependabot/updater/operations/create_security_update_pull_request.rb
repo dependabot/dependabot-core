@@ -238,6 +238,7 @@ module Dependabot
             security_advisories: job.security_advisories_for(dependency),
             raise_on_ignored: true, # always true for security updates
             requirements_update_strategy: job.requirements_update_strategy,
+            # update_cooldown: job.cooldown, Currently not supported for security updates
             options: job.experiments
           )
         end

@@ -78,7 +78,6 @@ RSpec.describe Dependabot::Updater do
               "content" => fixture("bundler/updated/Gemfile"),
               "directory" => "/",
               "type" => "file",
-              "mode" => "100644",
               "support_file" => false,
               "content_encoding" => "utf-8",
               "deleted" => false,
@@ -89,7 +88,6 @@ RSpec.describe Dependabot::Updater do
               "content" => fixture("bundler/updated/Gemfile.lock"),
               "directory" => "/",
               "type" => "file",
-              "mode" => "100644",
               "support_file" => false,
               "content_encoding" => "utf-8",
               "deleted" => false,
@@ -435,6 +433,7 @@ RSpec.describe Dependabot::Updater do
           security_advisories: anything,
           raise_on_ignored: anything,
           requirements_update_strategy: anything,
+          update_cooldown: nil,
           options: anything
         ).once
       end
@@ -544,6 +543,7 @@ RSpec.describe Dependabot::Updater do
             security_advisories: anything,
             raise_on_ignored: false,
             requirements_update_strategy: anything,
+            update_cooldown: nil,
             options: anything
           )
         end
@@ -575,6 +575,7 @@ RSpec.describe Dependabot::Updater do
             security_advisories: anything,
             raise_on_ignored: true,
             requirements_update_strategy: anything,
+            update_cooldown: nil,
             options: anything
           )
         end
@@ -606,6 +607,7 @@ RSpec.describe Dependabot::Updater do
             security_advisories: anything,
             raise_on_ignored: true,
             requirements_update_strategy: anything,
+            update_cooldown: nil,
             options: anything
           )
         end
@@ -866,7 +868,8 @@ RSpec.describe Dependabot::Updater do
             options: anything,
             security_advisories: anything,
             raise_on_ignored: true,
-            requirements_update_strategy: anything
+            requirements_update_strategy: anything,
+            update_cooldown: nil
           ).twice.ordered
           # this is the "peer checker" instantiation
           expect(Dependabot::Bundler::UpdateChecker).to have_received(:new).with(
@@ -878,7 +881,8 @@ RSpec.describe Dependabot::Updater do
             options: anything,
             security_advisories: anything,
             raise_on_ignored: false,
-            requirements_update_strategy: anything
+            requirements_update_strategy: anything,
+            update_cooldown: nil
           ).ordered
         end
       end
@@ -2476,6 +2480,7 @@ RSpec.describe Dependabot::Updater do
           security_advisories: anything,
           raise_on_ignored: anything,
           requirements_update_strategy: anything,
+          update_cooldown: nil,
           options: { large_hadron_collider: true }
         ).twice
       end
@@ -2514,7 +2519,6 @@ RSpec.describe Dependabot::Updater do
                   "content" => fixture("bundler2/updated/Gemfile"),
                   "directory" => "/",
                   "type" => "file",
-                  "mode" => "100644",
                   "support_file" => false,
                   "content_encoding" => "utf-8",
                   "deleted" => false,
@@ -2525,7 +2529,6 @@ RSpec.describe Dependabot::Updater do
                   "content" => fixture("bundler2/updated/Gemfile.lock"),
                   "directory" => "/",
                   "type" => "file",
-                  "mode" => "100644",
                   "support_file" => false,
                   "content_encoding" => "utf-8",
                   "deleted" => false,
@@ -2705,7 +2708,6 @@ RSpec.describe Dependabot::Updater do
               "content" => fixture("bundler/updated/Gemfile"),
               "directory" => "/",
               "type" => "file",
-              "mode" => "100644",
               "support_file" => false,
               "content_encoding" => "utf-8",
               "deleted" => false,
@@ -2716,7 +2718,6 @@ RSpec.describe Dependabot::Updater do
               "content" => fixture("bundler/updated/Gemfile.lock"),
               "directory" => "/",
               "type" => "file",
-              "mode" => "100644",
               "support_file" => false,
               "content_encoding" => "utf-8",
               "deleted" => false,
@@ -2811,7 +2812,7 @@ RSpec.describe Dependabot::Updater do
   def build_job(requested_dependencies: nil, allowed_updates: default_allowed_updates, existing_pull_requests: [],
                 existing_group_pull_requests: [], ignore_conditions: [], security_advisories: [], experiments: {},
                 updating_a_pull_request: false, security_updates_only: false, dependency_groups: [],
-                lockfile_only: false, repo_contents_path: nil)
+                lockfile_only: false, repo_contents_path: nil, update_cooldown: nil)
     Dependabot::Job.new(
       id: "1",
       token: "token",
@@ -2855,7 +2856,8 @@ RSpec.describe Dependabot::Updater do
       },
       security_updates_only: security_updates_only,
       repo_contents_path: repo_contents_path,
-      dependency_groups: dependency_groups
+      dependency_groups: dependency_groups,
+      update_cooldown: update_cooldown
     )
   end
   # rubocop:enable Metrics/MethodLength
