@@ -897,7 +897,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
 
         context "when cooldown applies to patch updates" do
           let(:cooldown_options) do
-            Dependabot::Package::ReleaseCooldownOptions.new(patch_days: 2)
+            Dependabot::Package::ReleaseCooldownOptions.new(semver_patch_days: 2)
           end
 
           it { is_expected.to eq(Gem::Version.new("3.6.0")) }
@@ -905,7 +905,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
 
         context "when cooldown applies to minor updates" do
           let(:cooldown_options) do
-            Dependabot::Package::ReleaseCooldownOptions.new(minor_days: 5)
+            Dependabot::Package::ReleaseCooldownOptions.new(semver_minor_days: 5)
           end
 
           it { is_expected.to eq(Gem::Version.new("3.6.0")) }
@@ -913,7 +913,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
 
         context "when cooldown applies to major updates" do
           let(:cooldown_options) do
-            Dependabot::Package::ReleaseCooldownOptions.new(major_days: 10)
+            Dependabot::Package::ReleaseCooldownOptions.new(semver_major_days: 10)
           end
 
           it { is_expected.to eq(Gem::Version.new("3.5.2")) }

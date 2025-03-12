@@ -118,12 +118,12 @@ RSpec.describe Dependabot::Maven::Requirement do
         let(:requirement_string) { "~> 4.2.5+1.0.1, >= 4.2.5.1+1." }
 
         it { is_expected.to eq(described_class.new("~> 4.2.5+1.0.1, >= 4.2.5.1+1.")) }
+      end
 
-        context "with additional semantic versioning" do
-          let(:requirement_string) { ">= 25-ea+5.a0" }
+      context "with additional semantic versioning" do
+        let(:requirement_string) { ">= 25-ea+5.a0" }
 
-          its(:to_s) { is_expected.to eq(described_class.new(">= 25-ea+5.a0").to_s) }
-        end
+        its(:to_s) { is_expected.to eq(described_class.new(">= 25-ea+5.a0").to_s) }
       end
     end
   end

@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace NuGetUpdater.Core.Run.ApiModel;
 
-public sealed record UpdatePullRequest
+public sealed record UpdatePullRequest : MessageBase
 {
     [JsonPropertyName("base-commit-sha")]
     public required string BaseCommitSha { get; init; }
