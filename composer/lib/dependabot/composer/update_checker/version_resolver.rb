@@ -260,10 +260,13 @@ module Dependabot
           end
 
           # To handle the case where the PHP version (configured in composer.json) is not supported
-          # Your requirements could not be resolved to an installable set of packages.
-          #   Problem 1
-          #     - Root composer.json requires league/csv >= 9.7, == 9.22.0 -> satisfiable by league/csv[9.22.0].
-          raise PhpVersionMismatchError, error.message if error.message.include?("your php version")
+          # league/csv 9.21.0 requires php ^8.1.2 -> your php version 8.1
+          if error.message.include?("your php version")
+            tool_name = "PHP"
+            detected_version = error.message.match(/your php version \((\d+\.\d+\.\d+)/)[1]
+            supported_versions = error.message.match(/require php (\^[\d\.]+)/)[1]
+            raise ToolVersionNotSupported.new(tool_name, detected_version, supported_versions)
+          end
 
           dependency_url = Helpers.dependency_url_from_git_clone_error(error.message)
           if dependency_url

@@ -150,7 +150,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       end
     end
 
-    context "with an application using a ^ PHP constraint and encountering a PhpVersionMismatchError" do
+    context "with an application using a ^ PHP constraint and encountering a ToolVersionNotSupported" do
       context "when the minimum version is invalid" do
         let(:project_name) { "php_specified_min_invalid_without_lockfile_handle_error" }
         let(:dependency_name) { "phpdocumentor/reflection-docblock" }
@@ -160,8 +160,10 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
 
         it "raises a Dependabot::PhpVersionMismatchError error" do
           expect { resolver.latest_resolvable_version }
-            .to raise_error(Dependabot::PhpVersionMismatchError) do |error|
-            expect(error.message).to include("PHP version mismatch: Your requirements could not be resolved")
+            .to raise_error(Dependabot::ToolVersionNotSupported) do |error|
+            expect(error.tool_name).to eq("PHP")
+            expect(error.detected_version).to eq("5.2.0")
+            expect(error.supported_versions).to eq("^7.1.3")
           end
         end
       end
