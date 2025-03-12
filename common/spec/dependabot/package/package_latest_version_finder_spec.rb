@@ -212,9 +212,9 @@ RSpec.describe Dependabot::Package::PackageLatestVersionFinder do
   let(:cooldown_options) do
     Dependabot::Package::ReleaseCooldownOptions.new(
       default_days: 7,
-      major_days: 10,
-      minor_days: 5,
-      patch_days: 2
+      semver_major_days: 10,
+      semver_minor_days: 5,
+      semver_patch_days: 2
     )
   end
 

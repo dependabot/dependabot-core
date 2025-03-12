@@ -3,6 +3,8 @@ using System.Text;
 using System.Text.Json;
 using System.Xml.Linq;
 
+using NuGet.Versioning;
+
 using NuGetUpdater.Core.Analyze;
 using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Run;
@@ -20,6 +22,10 @@ using TestFile = (string Path, string Content);
 
 public class RunWorkerTests
 {
+    public const string TestPullRequestCommitMessage = "test-pull-request-commit-message";
+    public const string TestPullRequestTitle = "test-pull-request-title";
+    public const string TestPullRequestBody = "test-pull-request-body";
+
     [Theory]
     [InlineData(EOLType.CR)]
     [InlineData(EOLType.LF)]
@@ -208,9 +214,9 @@ public class RunWorkerTests
                         },
                     ],
                     BaseCommitSha = "TEST-COMMIT-SHA",
-                    CommitMessage = "TODO: message",
-                    PrTitle = "TODO: title",
-                    PrBody = "TODO: body",
+                    CommitMessage = TestPullRequestCommitMessage,
+                    PrTitle = TestPullRequestTitle,
+                    PrBody = TestPullRequestBody,
                 },
                 new MarkAsProcessed("TEST-COMMIT-SHA")
             ]
@@ -460,9 +466,9 @@ public class RunWorkerTests
 
                     ],
                     BaseCommitSha = "TEST-COMMIT-SHA",
-                    CommitMessage = "TODO: message",
-                    PrTitle = "TODO: title",
-                    PrBody = "TODO: body",
+                    CommitMessage = TestPullRequestCommitMessage,
+                    PrTitle = TestPullRequestTitle,
+                    PrBody = TestPullRequestBody,
                 },
                 new MarkAsProcessed("TEST-COMMIT-SHA")
             ]
@@ -854,9 +860,9 @@ public class RunWorkerTests
                         },
                     ],
                     BaseCommitSha = "TEST-COMMIT-SHA",
-                    CommitMessage = "TODO: message",
-                    PrTitle = "TODO: title",
-                    PrBody = "TODO: body",
+                    CommitMessage = TestPullRequestCommitMessage,
+                    PrTitle = TestPullRequestTitle,
+                    PrBody = TestPullRequestBody,
                 },
                 new MarkAsProcessed("TEST-COMMIT-SHA")
             ]
@@ -1414,9 +1420,9 @@ public class RunWorkerTests
                         },
                     ],
                     BaseCommitSha = "TEST-COMMIT-SHA",
-                    CommitMessage = "TODO: message",
-                    PrTitle = "TODO: title",
-                    PrBody = "TODO: body",
+                    CommitMessage = TestPullRequestCommitMessage,
+                    PrTitle = TestPullRequestTitle,
+                    PrBody = TestPullRequestBody,
                 },
                 new MarkAsProcessed("TEST-COMMIT-SHA")
             ]
@@ -1722,9 +1728,9 @@ public class RunWorkerTests
                         }
                     ],
                     BaseCommitSha = "TEST-COMMIT-SHA",
-                    CommitMessage = "TODO: message",
-                    PrTitle = "TODO: title",
-                    PrBody = "TODO: body",
+                    CommitMessage = TestPullRequestCommitMessage,
+                    PrTitle = TestPullRequestTitle,
+                    PrBody = TestPullRequestBody,
                 },
                 new MarkAsProcessed("TEST-COMMIT-SHA")
             ]
@@ -2063,9 +2069,9 @@ public class RunWorkerTests
                         }
                     ],
                     BaseCommitSha = "TEST-COMMIT-SHA",
-                    CommitMessage = "TODO: message",
-                    PrTitle = "TODO: title",
-                    PrBody = "TODO: body"
+                    CommitMessage = TestPullRequestCommitMessage,
+                    PrTitle = TestPullRequestTitle,
+                    PrBody = TestPullRequestBody
                 },
                 new MarkAsProcessed("TEST-COMMIT-SHA")
             ]
@@ -2448,10 +2454,118 @@ public class RunWorkerTests
                         },
                     ],
                     BaseCommitSha = "TEST-COMMIT-SHA",
-                    CommitMessage = "TODO: message",
-                    PrTitle = "TODO: title",
-                    PrBody = "TODO: body",
+                    CommitMessage = TestPullRequestCommitMessage,
+                    PrTitle = TestPullRequestTitle,
+                    PrBody = TestPullRequestBody,
                 },
+                new MarkAsProcessed("TEST-COMMIT-SHA"),
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task PullRequestAlreadyExistsForLatestVersion()
+    {
+        await RunAsync(
+            job: new()
+            {
+                Source = new()
+                {
+                    Provider = "github",
+                    Repo = "test/repo",
+                },
+                Dependencies = [
+                    "Some.Package"
+                ],
+                ExistingPullRequests = [
+                    new PullRequest()
+                    {
+                        Dependencies = [new() { DependencyName = "Some.Package", DependencyVersion = NuGetVersion.Parse("1.2.0") }]
+                    }
+                ],
+                SecurityAdvisories = [
+                    new Advisory() { DependencyName = "Some.Package", AffectedVersions = [Requirement.Parse("= 1.1.0")] }
+                ],
+                SecurityUpdatesOnly = true,
+                UpdatingAPullRequest = false
+            },
+            files: [
+                ("project.csproj", "contents irrelevant")
+            ],
+            discoveryWorker: new TestDiscoveryWorker(_input =>
+            {
+                return Task.FromResult(new WorkspaceDiscoveryResult()
+                {
+                    Path = "",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "project.csproj",
+                            Dependencies = [
+                                new("Some.Package", "1.1.0", DependencyType.PackageReference)
+                            ],
+                            ImportedFiles = [],
+                            AdditionalFiles = [],
+                        }
+                    ]
+                });
+            }),
+            analyzeWorker: new TestAnalyzeWorker(_input =>
+            {
+                return Task.FromResult(new AnalysisResult()
+                {
+                    CanUpdate = true,
+                    UpdatedVersion = "1.2.0",
+                    UpdatedDependencies = [
+                        new("Some.Package", "1.2.0", DependencyType.PackageReference)
+                    ]
+                });
+            }),
+            updaterWorker: new TestUpdaterWorker(input =>
+            {
+                throw new NotImplementedException("test should never get here");
+            }),
+            expectedResult: new()
+            {
+                Base64DependencyFiles = [
+                    new()
+                    {
+                        Directory = "/",
+                        Name = "project.csproj",
+                        Content = Convert.ToBase64String(Encoding.UTF8.GetBytes("contents irrelevant"))
+                    }
+                ],
+                BaseCommitSha = "TEST-COMMIT-SHA",
+            },
+            expectedApiMessages: [
+                new UpdatedDependencyList()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "Some.Package",
+                            Version = "1.1.0",
+                            Requirements = [
+                                new()
+                                {
+                                    Requirement = "1.1.0",
+                                    File = "/project.csproj",
+                                    Groups = ["dependencies"],
+                                }
+                            ]
+                        }
+                    ],
+                    DependencyFiles = ["/project.csproj"]
+                },
+                new IncrementMetric()
+                {
+                    Metric = "updater.started",
+                    Tags = new()
+                    {
+                        ["operation"] = "create_security_pr"
+                    }
+                },
+                new PullRequestExistsForLatestVersion("Some.Package", "1.2.0"),
                 new MarkAsProcessed("TEST-COMMIT-SHA"),
             ]
         );
@@ -2483,7 +2597,16 @@ public class RunWorkerTests
         var worker = new RunWorker(jobId, testApiHandler, discoveryWorker, analyzeWorker, updaterWorker, logger);
         var repoContentsPathDirectoryInfo = new DirectoryInfo(tempDirectory.DirectoryPath);
         var actualResult = await worker.RunAsync(job, repoContentsPathDirectoryInfo, "TEST-COMMIT-SHA");
-        var actualApiMessages = testApiHandler.ReceivedMessages.ToArray();
+        var actualApiMessages = testApiHandler.ReceivedMessages
+            .Select(m =>
+                m.Object switch
+                {
+                    // this isn't the place to verify the generated text
+                    CreatePullRequest create => (m.Type, create with { CommitMessage = TestPullRequestCommitMessage, PrTitle = TestPullRequestTitle, PrBody = TestPullRequestBody }),
+                    UpdatePullRequest update => (m.Type, update with { CommitMessage = TestPullRequestCommitMessage, PrTitle = TestPullRequestTitle, PrBody = TestPullRequestBody }),
+                    _ => m,
+                }
+            ).ToArray();
 
         // assert
         var actualRunResultJson = JsonSerializer.Serialize(actualResult);

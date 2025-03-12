@@ -28,6 +28,7 @@ internal static class DiscoverCommand
 
         command.SetHandler(async (jobId, jobPath, repoRoot, workspace, outputPath) =>
         {
+            MSBuildHelper.RegisterMSBuild(repoRoot.FullName, repoRoot.FullName);
             var (experimentsManager, error) = await ExperimentsManager.FromJobFileAsync(jobId, jobPath.FullName);
             if (error is not null)
             {

@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 
 using NuGet.Credentials;
+using NuGet.Versioning;
 
 namespace NuGetUpdater.Core.Run.ApiModel;
 
@@ -16,7 +17,7 @@ public sealed record Job
     public ImmutableArray<DependencyGroup> DependencyGroups { get; init; } = [];
     public ImmutableArray<string>? Dependencies { get; init; } = null;
     public string? DependencyGroupToRefresh { get; init; } = null;
-    public ImmutableArray<ImmutableArray<PullRequest>> ExistingPullRequests { get; init; } = [];
+    public ImmutableArray<PullRequest> ExistingPullRequests { get; init; } = [];
     public ImmutableArray<GroupPullRequest> ExistingGroupPullRequests { get; init; } = [];
     public Dictionary<string, object>? Experiments { get; init; } = null;
     public Condition[] IgnoreConditions { get; init; } = [];
@@ -53,6 +54,40 @@ public sealed record Job
         {
             yield return "/";
         }
+    }
+
+    public ImmutableArray<Tuple<string?, ImmutableArray<PullRequestDependency>>> GetAllExistingPullRequests()
+    {
+        var existingPullRequests = ExistingGroupPullRequests
+            .Select(pr => Tuple.Create((string?)pr.DependencyGroupName, pr.Dependencies))
+            .Concat(
+                ExistingPullRequests
+                .Select(pr => Tuple.Create((string?)null, pr.Dependencies)))
+            .ToImmutableArray();
+        return existingPullRequests;
+    }
+
+    public Tuple<string?, ImmutableArray<PullRequestDependency>>? GetExistingPullRequestForDependency(Dependency dependency)
+    {
+        if (dependency.Version is null)
+        {
+            return null;
+        }
+
+        var dependencyVersion = NuGetVersion.Parse(dependency.Version);
+        var existingPullRequests = GetAllExistingPullRequests();
+        var existingPullRequest = existingPullRequests.FirstOrDefault(pr =>
+        {
+            if (pr.Item2.Length == 1 &&
+                pr.Item2[0].DependencyName.Equals(dependency.Name, StringComparison.OrdinalIgnoreCase) &&
+                pr.Item2[0].DependencyVersion == dependencyVersion)
+            {
+                return true;
+            }
+
+            return false;
+        });
+        return existingPullRequest;
     }
 }
 

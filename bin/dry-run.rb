@@ -145,7 +145,8 @@ $options = {
   security_updates_only: false,
   vendor_dependencies: false,
   ignore_conditions: [],
-  pull_request: false
+  pull_request: false,
+  cooldown: nil
 }
 
 unless ENV["LOCAL_GITHUB_ACCESS_TOKEN"].to_s.strip.empty?
@@ -196,6 +197,10 @@ unless ENV["IGNORE_CONDITIONS"].to_s.strip.empty?
   # For example:
   # [{"dependency-name":"ruby","version-requirement":">= 3.a, < 4"}]
   $options[:ignore_conditions] = JSON.parse(ENV.fetch("IGNORE_CONDITIONS", nil))
+end
+
+if ENV.key?("COOLDOWN") && !ENV["COOLDOWN"].to_s.strip.empty?
+  $options[:cooldown] = JSON.parse(ENV.fetch("COOLDOWN", "{}"))
 end
 
 # rubocop:disable Metrics/BlockLength
@@ -285,6 +290,13 @@ option_parse = OptionParser.new do |opts|
 
   opts.on("--enable-beta-ecosystems", "Enable beta ecosystems") do |_value|
     Dependabot::Experiments.register(:enable_beta_ecosystems, true)
+  end
+
+  opts.on("--cooldown", "Cooldown configuration as a JSON object") do |value|
+    $options[:cooldown] = JSON.parse(value)
+  rescue JSON::ParserError
+    puts "Invalid JSON format for cooldown parameter. Please provide a valid JSON string."
+    exit 1
   end
 end
 # rubocop:enable Metrics/BlockLength
