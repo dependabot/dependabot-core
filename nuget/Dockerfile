@@ -13,13 +13,21 @@ RUN apt-get update \
     libicu-dev=70.1-2 \
  && rm -rf /var/lib/apt/lists/*
 
- # install libssl 1.1 for older .NET SDKs that might require it
-ARG LIBSSL_URL_AMD64=http://security.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.24_amd64.deb
-ARG LIBSSL_URL_ARM64=http://ports.ubuntu.com/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.24_arm64.deb
-RUN URL=$([ $TARGETARCH = "arm64" ] && echo ${LIBSSL_URL_ARM64} || echo ${LIBSSL_URL_AMD64}) \
- && curl --location --output /tmp/libssl.deb ${URL} \
- && dpkg -i /tmp/libssl.deb \
- && rm /tmp/libssl.deb
+# install libssl 1.0 for .NET 2.0
+ARG LIBSSL10_URL_AMD64=http://security.ubuntu.com/ubuntu/pool/main/o/openssl1.0/libssl1.0.0_1.0.2n-1ubuntu5.13_amd64.deb
+ARG LIBSSL10_URL_ARM64=http://ports.ubuntu.com/pool/main/o/openssl1.0/libssl1.0.0_1.0.2n-1ubuntu5.13_arm64.deb
+RUN URL=$([ $TARGETARCH = "arm64" ] && echo ${LIBSSL10_URL_ARM64} || echo ${LIBSSL10_URL_AMD64}) \
+ && curl --location --output /tmp/libssl-1.0.deb ${URL} \
+ && dpkg -i /tmp/libssl-1.0.deb \
+ && rm /tmp/libssl-1.0.deb
+
+# install libssl 1.1 for .NET 3.0 through 5.0
+ARG LIBSSL11_URL_AMD64=http://security.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.24_amd64.deb
+ARG LIBSSL11_URL_ARM64=http://ports.ubuntu.com/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.24_arm64.deb
+RUN URL=$([ $TARGETARCH = "arm64" ] && echo ${LIBSSL11_URL_ARM64} || echo ${LIBSSL11_URL_AMD64}) \
+ && curl --location --output /tmp/libssl-1.1.deb ${URL} \
+ && dpkg -i /tmp/libssl-1.1.deb \
+ && rm /tmp/libssl-1.1.deb
 
 ARG POWERSHELL_VERSION=7.4.5
 RUN ARCH=$([ $TARGETARCH = "arm64" ] && echo "arm64" || echo "x64") \
