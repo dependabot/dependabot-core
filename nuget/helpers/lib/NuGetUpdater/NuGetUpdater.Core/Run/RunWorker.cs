@@ -385,9 +385,9 @@ public class RunWorker
                     DependencyNames = updatedDependencies.Select(d => d.Name).ToImmutableArray(),
                     UpdatedDependencyFiles = updatedFiles,
                     BaseCommitSha = baseCommitSha,
-                    CommitMessage = "TODO: message",
-                    PrTitle = "TODO: title",
-                    PrBody = "TODO: body",
+                    CommitMessage = PullRequestTextGenerator.GetPullRequestCommitMessage(job, updatedDependencies, updatedFiles, existingPullRequest.Item1),
+                    PrTitle = PullRequestTextGenerator.GetPullRequestTitle(job, updatedDependencies, updatedFiles, existingPullRequest.Item1),
+                    PrBody = PullRequestTextGenerator.GetPullRequestBody(job, updatedDependencies, updatedFiles, existingPullRequest.Item1),
                 };
             }
             else
@@ -421,9 +421,9 @@ public class RunWorker
                     Dependencies = updatedDependencies,
                     UpdatedDependencyFiles = updatedFiles,
                     BaseCommitSha = baseCommitSha,
-                    CommitMessage = "TODO: message",
-                    PrTitle = "TODO: title",
-                    PrBody = "TODO: body",
+                    CommitMessage = PullRequestTextGenerator.GetPullRequestCommitMessage(job, updatedDependencies, updatedFiles),
+                    PrTitle = PullRequestTextGenerator.GetPullRequestTitle(job, updatedDependencies, updatedFiles),
+                    PrBody = PullRequestTextGenerator.GetPullRequestBody(job, updatedDependencies, updatedFiles),
                 };
             }
         }
