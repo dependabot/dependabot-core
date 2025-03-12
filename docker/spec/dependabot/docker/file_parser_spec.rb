@@ -1142,16 +1142,6 @@ RSpec.describe Dependabot::Docker::FileParser do
         end
       end
     end
-
-    context "with an invalid yaml file" do
-      let(:podfile_fixture_name) { "with_bom.yaml" }
-
-      it "throws when the yaml starts with a byte order mark" do
-        expect do
-          _unused = dependencies
-        end.to raise_error(Dependabot::DependencyFileNotParseable)
-      end
-    end
   end
 
   describe "YAML parse" do
@@ -1260,6 +1250,14 @@ RSpec.describe Dependabot::Docker::FileParser do
           expect(dependency.version).to eq("18.04")
           expect(dependency.requirements).to eq(expected_requirements)
         end
+      end
+    end
+
+    context "with images with unparseable versions" do
+      let(:helmfile_fixture_name) { "multi-image-with-bad-version.yaml" }
+
+      it "omits the images with unparseable version numbers" do
+        expect(dependencies.map(&:version)).to eq(["some-name_123"])
       end
     end
   end

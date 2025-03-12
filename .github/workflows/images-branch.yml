@@ -61,6 +61,7 @@ jobs:
           - { name: cargo, ecosystem: cargo }
           - { name: composer, ecosystem: composer }
           - { name: docker, ecosystem: docker }
+          - { name: docker_compose, ecosystem: docker-compose }
           - { name: dotnet_sdk, ecosystem: dotnet-sdk }
           - { name: elm, ecosystem: elm }
           - { name: git_submodules, ecosystem: gitsubmodule }
@@ -77,6 +78,7 @@ jobs:
           - { name: devcontainers, ecosystem: devcontainers }
           - { name: terraform, ecosystem: terraform }
           - { name: bun, ecosystem: bun }
+          - { name: uv, ecosystem: uv }
     permissions:
       contents: read
       id-token: write

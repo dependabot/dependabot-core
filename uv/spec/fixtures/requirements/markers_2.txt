@@ -1,0 +1,2 @@
+cryptography<2.7; platform_machine != "x86_64"
+cryptography==2.7; platform_machine == "x86_64"

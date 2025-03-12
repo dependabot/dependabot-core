@@ -36,6 +36,8 @@ GEMSPECS = %w(
   devcontainers/dependabot-devcontainers.gemspec
   dotnet_sdk/dependabot-dotnet_sdk.gemspec
   bun/dependabot-bun.gemspec
+  docker_compose/dependabot-docker_compose.gemspec
+  uv/dependabot-uv.gemspec
 ).freeze
 
 def run_command(command)
@@ -125,12 +127,8 @@ def guard_tag_match
 end
 
 def rubygems_release_exists?(name, version)
-  uri = URI.parse("https://rubygems.org/api/v1/versions/#{name}.json")
+  uri = URI.parse("https://rubygems.org/api/v2/rubygems/#{name}/versions/#{version}.json")
   response = Net::HTTP.get_response(uri)
-  return false if response.code != "200"
-
-  body = JSON.parse(response.body)
-  existing_versions = body.map { |b| b["number"] }
-  existing_versions.include?(version)
+  response.code == "200"
 end
 # rubocop:enable Metrics/BlockLength

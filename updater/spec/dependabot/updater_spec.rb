@@ -78,7 +78,6 @@ RSpec.describe Dependabot::Updater do
               "content" => fixture("bundler/updated/Gemfile"),
               "directory" => "/",
               "type" => "file",
-              "mode" => "100644",
               "support_file" => false,
               "content_encoding" => "utf-8",
               "deleted" => false,
@@ -89,7 +88,6 @@ RSpec.describe Dependabot::Updater do
               "content" => fixture("bundler/updated/Gemfile.lock"),
               "directory" => "/",
               "type" => "file",
-              "mode" => "100644",
               "support_file" => false,
               "content_encoding" => "utf-8",
               "deleted" => false,
@@ -363,6 +361,65 @@ RSpec.describe Dependabot::Updater do
           updater.run
         end
       end
+
+      context "when the update is not possible because the version is required via a transitive dependency" do
+        it "does not create pull request" do
+          exp_msg = "dummy-pkg-c@1.2.0 requires dummy-pkg-b@1.1.0 via a transitive dependency on dummy-pkg-a@1.2.0"
+          conflict = [{ "explanation" => exp_msg,
+                        "name" => "dummy-pkg-a",
+                        "version" => "1.1.0",
+                        "requirement" => "1.2.0" }]
+          checker = stub_update_checker(vulnerable?: true, conflicting_dependencies: conflict)
+
+          job = build_job(
+            requested_dependencies: ["dummy-pkg-b"],
+            security_advisories: [
+              {
+                "dependency-name" => "dummy-pkg-b",
+                "affected-versions" => ["1.1.0"]
+              }
+            ],
+            security_updates_only: true
+          )
+          service = build_service
+          updater = build_updater(service: service, job: job)
+
+          expect(checker).to receive(:lowest_resolvable_security_fix_version)
+            .and_return("1.1.0")
+          expect(checker).to receive(:lowest_security_fix_version)
+            .and_return(Dependabot::Bundler::Version.new("1.2.0"))
+
+          expect(service).not_to receive(:create_pull_request)
+          expect(service).to receive(:record_update_job_error).with(
+            {
+              error_type: "transitive_update_not_possible",
+              error_details: {
+                "dependency-name": "dummy-pkg-b",
+                "latest-resolvable-version": "1.1.0",
+                "lowest-non-vulnerable-version": "1.2.0",
+                "conflicting-dependencies": [
+                  {
+                    "explanation" =>
+                      "dummy-pkg-c@1.2.0 requires dummy-pkg-b@1.1.0 via a transitive dependency on dummy-pkg-a@1.2.0",
+                    "name" => "dummy-pkg-a",
+                    "version" => "1.1.0",
+                    "requirement" => "1.2.0"
+                  }
+                ]
+              }
+            }
+          )
+          expect(Dependabot.logger)
+            .to receive(:info).with(
+              "The latest possible version that can be installed is " \
+              "1.1.0 because of the following conflicting dependency:\n" \
+              "\n" \
+              "  dummy-pkg-c@1.2.0 requires dummy-pkg-b@1.1.0 via a transitive dependency on dummy-pkg-a@1.2.0"
+            )
+
+          updater.run
+        end
+      end
     end
 
     context "when ignore conditions are set" do
@@ -376,6 +433,7 @@ RSpec.describe Dependabot::Updater do
           security_advisories: anything,
           raise_on_ignored: anything,
           requirements_update_strategy: anything,
+          update_cooldown: nil,
           options: anything
         ).once
       end
@@ -485,6 +543,7 @@ RSpec.describe Dependabot::Updater do
             security_advisories: anything,
             raise_on_ignored: false,
             requirements_update_strategy: anything,
+            update_cooldown: nil,
             options: anything
           )
         end
@@ -516,6 +575,7 @@ RSpec.describe Dependabot::Updater do
             security_advisories: anything,
             raise_on_ignored: true,
             requirements_update_strategy: anything,
+            update_cooldown: nil,
             options: anything
           )
         end
@@ -547,6 +607,7 @@ RSpec.describe Dependabot::Updater do
             security_advisories: anything,
             raise_on_ignored: true,
             requirements_update_strategy: anything,
+            update_cooldown: nil,
             options: anything
           )
         end
@@ -807,7 +868,8 @@ RSpec.describe Dependabot::Updater do
             options: anything,
             security_advisories: anything,
             raise_on_ignored: true,
-            requirements_update_strategy: anything
+            requirements_update_strategy: anything,
+            update_cooldown: nil
           ).twice.ordered
           # this is the "peer checker" instantiation
           expect(Dependabot::Bundler::UpdateChecker).to have_received(:new).with(
@@ -819,7 +881,8 @@ RSpec.describe Dependabot::Updater do
             options: anything,
             security_advisories: anything,
             raise_on_ignored: false,
-            requirements_update_strategy: anything
+            requirements_update_strategy: anything,
+            update_cooldown: nil
           ).ordered
         end
       end
@@ -883,7 +946,8 @@ RSpec.describe Dependabot::Updater do
 
     context "when a security update PR exists for the resolved version" do
       it "creates an update job error and short-circuits" do
-        checker = stub_update_checker(latest_version: Gem::Version.new("1.3.0"), vulnerable?: true)
+        checker = stub_update_checker(latest_version: Gem::Version.new("1.3.0"),
+                                      vulnerable?: true, conflicting_dependencies: [])
 
         job = build_job(
           requested_dependencies: ["dummy-pkg-b"],
@@ -1003,6 +1067,7 @@ RSpec.describe Dependabot::Updater do
           stub_update_checker(
             latest_version: Gem::Version.new("1.3.0"),
             vulnerable?: true,
+            conflicting_dependencies: [],
             updated_dependencies: [
               Dependabot::Dependency.new(
                 name: "dummy-pkg-b",
@@ -1309,9 +1374,38 @@ RSpec.describe Dependabot::Updater do
       end
 
       context "when the job is to create a security PR" do
-        context "when the dependency is vulnerable" do
+        context "when the dependency is vulnerable and there is no conflicting dependencies" do
           it "creates the pull request" do
-            stub_update_checker(vulnerable?: true)
+            stub_update_checker(vulnerable?: true, conflicting_dependencies: [])
+
+            job = build_job(
+              requested_dependencies: ["dummy-pkg-b"],
+              security_advisories: [
+                {
+                  "dependency-name" => "dummy-pkg-b",
+                  "affected-versions" => ["1.1.0"]
+                }
+              ],
+              security_updates_only: true,
+              updating_a_pull_request: false
+            )
+            service = build_service
+            updater = build_updater(service: service, job: job)
+
+            expect(service).to receive(:create_pull_request)
+
+            updater.run
+          end
+        end
+
+        context "when the dependency is vulnerable and there is a conflicting dependencies" do
+          it "creates the pull request" do
+            conflict = [{ "explanation" => "dummy-pkg-a@10.0.0 requires dummy-pkg-b@1.1.0",
+                          "name" => "dummy-pkg-a",
+                          "version" => "10.0.0",
+                          "requirement" => "1.1.0" }]
+            stub_update_checker(vulnerable?: true,
+                                conflicting_dependencies: conflict)
 
             job = build_job(
               requested_dependencies: ["dummy-pkg-b"],
@@ -1437,7 +1531,7 @@ RSpec.describe Dependabot::Updater do
 
         context "when the dependency name case doesn't match what's parsed" do
           it "still updates dependencies on the specified list" do
-            stub_update_checker(vulnerable?: true)
+            stub_update_checker(vulnerable?: true, conflicting_dependencies: [])
 
             job = build_job(
               requested_dependencies: ["Dummy-pkg-b"],
@@ -2386,6 +2480,7 @@ RSpec.describe Dependabot::Updater do
           security_advisories: anything,
           raise_on_ignored: anything,
           requirements_update_strategy: anything,
+          update_cooldown: nil,
           options: { large_hadron_collider: true }
         ).twice
       end
@@ -2424,7 +2519,6 @@ RSpec.describe Dependabot::Updater do
                   "content" => fixture("bundler2/updated/Gemfile"),
                   "directory" => "/",
                   "type" => "file",
-                  "mode" => "100644",
                   "support_file" => false,
                   "content_encoding" => "utf-8",
                   "deleted" => false,
@@ -2435,7 +2529,6 @@ RSpec.describe Dependabot::Updater do
                   "content" => fixture("bundler2/updated/Gemfile.lock"),
                   "directory" => "/",
                   "type" => "file",
-                  "mode" => "100644",
                   "support_file" => false,
                   "content_encoding" => "utf-8",
                   "deleted" => false,
@@ -2615,7 +2708,6 @@ RSpec.describe Dependabot::Updater do
               "content" => fixture("bundler/updated/Gemfile"),
               "directory" => "/",
               "type" => "file",
-              "mode" => "100644",
               "support_file" => false,
               "content_encoding" => "utf-8",
               "deleted" => false,
@@ -2626,7 +2718,6 @@ RSpec.describe Dependabot::Updater do
               "content" => fixture("bundler/updated/Gemfile.lock"),
               "directory" => "/",
               "type" => "file",
-              "mode" => "100644",
               "support_file" => false,
               "content_encoding" => "utf-8",
               "deleted" => false,
@@ -2721,7 +2812,7 @@ RSpec.describe Dependabot::Updater do
   def build_job(requested_dependencies: nil, allowed_updates: default_allowed_updates, existing_pull_requests: [],
                 existing_group_pull_requests: [], ignore_conditions: [], security_advisories: [], experiments: {},
                 updating_a_pull_request: false, security_updates_only: false, dependency_groups: [],
-                lockfile_only: false, repo_contents_path: nil)
+                lockfile_only: false, repo_contents_path: nil, update_cooldown: nil)
     Dependabot::Job.new(
       id: "1",
       token: "token",
@@ -2765,7 +2856,8 @@ RSpec.describe Dependabot::Updater do
       },
       security_updates_only: security_updates_only,
       repo_contents_path: repo_contents_path,
-      dependency_groups: dependency_groups
+      dependency_groups: dependency_groups,
+      update_cooldown: update_cooldown
     )
   end
   # rubocop:enable Metrics/MethodLength

@@ -72,6 +72,8 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
           discovery_json_content = discovery_content_hash.to_json
           File.write(discovery_json_path, discovery_json_content)
         end
+      allow(Dependabot::Nuget::NativeHelpers)
+        .to receive(:normalize_file_names)
       # stub call to `fetch_file_from_host` because it expects an empty directory and other things that make the test
       # more difficult than it needs to be
       allow(file_fetcher_instance)

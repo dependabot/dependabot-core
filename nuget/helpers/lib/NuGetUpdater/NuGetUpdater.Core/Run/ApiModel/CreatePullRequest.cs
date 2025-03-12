@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace NuGetUpdater.Core.Run.ApiModel;
 
-public sealed record CreatePullRequest
+public sealed record CreatePullRequest : MessageBase
 {
     public required ReportedDependency[] Dependencies { get; init; }
     [JsonPropertyName("updated-dependency-files")]

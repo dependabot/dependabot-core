@@ -86,10 +86,76 @@ function Install-Sdks([string]$jobFilePath, [string]$repoContentsPath, [string]$
 
     $sdksToInstall = Get-SdkVersionsToInstall -repoRoot $rootDir -updateDirectories $candidateDirectories -installedSdks $installedSdks
     foreach ($sdkVersion in $sdksToInstall) {
-        Write-Host "Installing SDK $sdkVersion"
-        & $dotnetInstallScriptPath --version $sdkVersion --install-dir $dotnetInstallDir
+        $versionParts = $sdkVersion.Split(".")
+        if ($versionParts.Length -eq 3 -and $versionParts[2] -eq "0") {
+            $channelVersion = "$($versionParts[0]).$($versionParts[1])"
+            Write-Host "Installing SDK from channel $channelVersion"
+            & $dotnetInstallScriptPath --channel $channelVersion --install-dir $dotnetInstallDir
+        }
+        else {
+            Write-Host "Installing SDK $sdkVersion"
+            & $dotnetInstallScriptPath --version $sdkVersion --install-dir $dotnetInstallDir
+        }
     }
 
     # report the final set
     dotnet --list-sdks
+}
+
+function Get-RequiredTargetingPacks([string]$sdkInstallDir) {
+    $targetingPacksToInstall = @()
+    $sdkDirs = Get-ChildItem -Path "$sdkInstallDir/sdk" -Directory
+    foreach ($sdkDir in $sdkDirs) {
+        $versionsPropsFile = "$sdkDir/Microsoft.NETCoreSdk.BundledVersions.props"
+        $knownFrameworkReferences = Select-Xml -Path $versionsPropsFile -XPath "/Project/ItemGroup/KnownFrameworkReference"
+        foreach ($frameworkRef in $knownFrameworkReferences) {
+            $targetingPackName = $frameworkRef.Node.TargetingPackName
+            $targetingPackVersion = $frameworkRef.Node.TargetingPackVersion
+            $requiredTargetingPackName = "$targetingPackName/$targetingPackVersion"
+            $requiredTargetingPackDirectory = Join-Path $sdkInstallDir "packs/$requiredTargetingPackName"
+            if (Test-Path -Path $requiredTargetingPackDirectory) {
+                continue
+            }
+
+            if (-not ($requiredTargetingPackName -in $targetingPacksToInstall)) {
+                $targetingPacksToInstall += $requiredTargetingPackName
+            }
+        }
+    }
+
+    return ,$targetingPacksToInstall
+}
+
+function Install-TargetingPacks([string]$sdkInstallDir, [string[]]$targetingPacks) {
+    foreach ($targetingPack in $targetingPacks) {
+        $parts = $targetingPack -Split "/"
+        $packName = $parts[0]
+        $packVersion = $parts[1]
+        $targetingPackUrl = "https://www.nuget.org/api/v2/package/$packName/$packVersion"
+        $destinationDirectory = "$sdkInstallDir/packs/$packName/$packVersion"
+        $archiveName = "$destinationDirectory/$packName.$packVersion.zip"
+        New-Item $destinationDirectory -ItemType Directory -Force | Out-Null
+        Write-Host "Downloading targeting pack [$packName/$packVersion]"
+        Invoke-WebRequest -Uri $targetingPackUrl -OutFile $archiveName
+        Write-Host "Extracting targeting pack [$packName/$packVersion] to $destinationDirectory"
+        Expand-Archive -Path $archiveName -DestinationPath $destinationDirectory -Force
+        Remove-Item -Path $archiveName
+    }
+}
+
+function Repair-FileCasingForName([string]$fileName) {
+    # Get-ChildItem is case-insensitive
+    $discoveredFiles = Get-ChildItem $env:DEPENDABOT_REPO_CONTENTS_PATH -r -inc $fileName
+    foreach ($file in $discoveredFiles) {
+        # `-cne` = Case-sensitive Not Equal
+        if ($file.Name -cne $fileName) {
+            $newName = "$($file.Directory)/$fileName"
+            Write-Host "Renaming '$file' to '$newName'"
+            Rename-Item -Path $file -NewName $newName
+        }
+    }
+}
+
+function Repair-FileCasing() {
+    Repair-FileCasingForName -fileName "NuGet.Config"
 }

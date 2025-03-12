@@ -2632,7 +2632,7 @@ public partial class UpdateWorkerTests
                     """,
                 expectedResult: new()
                 {
-                    Error = new UpdateNotPossible(["Unrelated.Package.1.0.0"]),
+                    Error = new DependencyNotFound("Unrelated.Package.1.0.0"),
                 }
             );
         }

@@ -101,7 +101,7 @@ internal static class SdkProjectDiscovery
                 {
                     // the built-in target `GenerateBuildDependencyFile` forces resolution of all NuGet packages, but doesn't invoke a full build
                     var dependencyDiscoveryTargetsPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, "DependencyDiscovery.targets");
-                    var args = new string[]
+                    var args = new List<string>()
                     {
                         "build",
                         startingProjectPath,
@@ -109,9 +109,21 @@ internal static class SdkProjectDiscovery
                         $"/p:TargetFramework={tfm}",
                         $"/p:CustomAfterMicrosoftCommonCrossTargetingTargets={dependencyDiscoveryTargetsPath}",
                         $"/p:CustomAfterMicrosoftCommonTargets={dependencyDiscoveryTargetsPath}",
+                        "/p:TreatWarningsAsErrors=false", // if using CPM and a project also sets TreatWarningsAsErrors to true, this can cause discovery to fail; explicitly don't allow that
+                        "/p:MSBuildTreatWarningsAsErrors=false",
                         $"/bl:{binLogPath}"
                     };
                     var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(args, startingProjectDirectory, experimentsManager);
+                    if (exitCode != 0 && stdOut.Contains("error : Object reference not set to an instance of an object."))
+                    {
+                        // https://github.com/NuGet/Home/issues/11761#issuecomment-1105218996
+                        // Due to a bug in NuGet, there can be a null reference exception thrown and adding this command line argument will work around it,
+                        // but this argument can't always be added; it can cause problems in other instances, so we're taking the approach of not using it
+                        // unless we have to.
+                        args.Add("/RestoreProperty:__Unused__=__Unused__");
+                        (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(args, startingProjectDirectory, experimentsManager);
+                    }
+
                     return (exitCode, stdOut, stdErr);
                 }, logger, retainMSBuildSdks: true);
                 MSBuildHelper.ThrowOnError(stdOut);

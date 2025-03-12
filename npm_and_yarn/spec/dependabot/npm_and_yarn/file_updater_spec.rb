@@ -71,8 +71,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_shared_helpers_command_timeout).and_return(true)
     allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:npm_v6_deprecation_warning).and_return(true)
-    allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:avoid_duplicate_updates_package_json).and_return(false)
   end
 
@@ -3049,7 +3047,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
               "package.json",
               "yarn.lock"
             )
-          expect(updated_files.find { |updated_file| updated_file.name == ".pnp.cjs" }.mode).to eq("100755")
         end
       end
 

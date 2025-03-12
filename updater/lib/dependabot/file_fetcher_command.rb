@@ -77,9 +77,15 @@ module Dependabot
       # Use the provided directory or fallback to job.source.directory if directory is nil.
       directory_to_use = directory || job.source.directory
 
+      job_definition = Environment.job_definition
+      job_credentials_metadata = job_definition.fetch("job", {}).fetch("credentials-metadata", [])
+
+      # prefer credentials directly from the root of the file (will contain secrets) but if not specified, fall back to
+      # the job's credentials-metadata that has no secrets
+      credentials = job_definition.fetch("credentials", job_credentials_metadata)
       args = {
         source: job.source.clone.tap { |s| s.directory = directory_to_use },
-        credentials: Environment.job_definition.fetch("credentials", []),
+        credentials: credentials,
         options: job.experiments
       }
       args[:repo_contents_path] = Environment.repo_contents_path if job.clone? || already_cloned?

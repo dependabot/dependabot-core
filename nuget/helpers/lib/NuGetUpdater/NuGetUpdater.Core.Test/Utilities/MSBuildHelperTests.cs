@@ -606,6 +606,18 @@ public class MSBuildHelperTests : TestBase
             new[] { "net8.0-windows7.0" }
         ];
 
+        yield return
+        [
+            """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>net9.0-windows</TargetFramework>
+              </PropertyGroup>
+            </Project>
+            """,
+            new[] { "net9.0-windows" }
+        ];
+
         // legacy projects
         yield return
         [
@@ -1521,9 +1533,33 @@ public class MSBuildHelperTests : TestBase
         yield return
         [
             // output
-            "Package 'Some.Package' is not found on source",
+            "Package 'Some.Package' is not found on source 'some-source'.",
             // expectedError
-            new UpdateNotPossible(["Some.Package"]),
+            new DependencyNotFound("Some.Package"),
+        ];
+
+        yield return
+        [
+            // output
+            "error NU1101: Unable to find package Some.Package. No packages exist with this id in source(s): some-source",
+            // expectedError
+            new DependencyNotFound("Some.Package"),
+        ];
+
+        yield return
+        [
+            // output
+            "Unable to find package Some.Package with version (= 1.2.3)",
+            // expectedError
+            new DependencyNotFound("Some.Package"),
+        ];
+
+        yield return
+        [
+            // output
+            """error : Could not resolve SDK "missing-sdk".""",
+            // expectedError
+            new DependencyNotFound("missing-sdk"),
         ];
 
         yield return

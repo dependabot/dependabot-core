@@ -7,7 +7,7 @@
   "engines": {
     "node": "^18.12.1",
     "yarn": "1.2.3",
-    "npm": "2.3.2"
+    "npm": "11.0.0"
   },
   "private": true,
   "packageManager": "pnpm@9.5.0"

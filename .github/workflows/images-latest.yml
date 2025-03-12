@@ -34,10 +34,12 @@ jobs:
       fail-fast: false
       matrix:
         suite:
+          - { name: bun, ecosystem: bun }
           - { name: bundler, ecosystem: bundler }
           - { name: cargo, ecosystem: cargo }
           - { name: composer, ecosystem: composer }
           - { name: docker, ecosystem: docker }
+          - { name: docker_compose, ecosystem: docker-compose }
           - { name: dotnet_sdk, ecosystem: dotnet-sdk }
           - { name: elm, ecosystem: elm }
           - { name: git_submodules, ecosystem: gitsubmodule }
@@ -53,6 +55,7 @@ jobs:
           - { name: swift, ecosystem: swift }
           - { name: devcontainers, ecosystem: devcontainers }
           - { name: terraform, ecosystem: terraform }
+          - { name: uv, ecosystem: uv }
     env:
       COMMIT_SHA: ${{ github.sha }}
       NAME: ${{ matrix.suite.name }}

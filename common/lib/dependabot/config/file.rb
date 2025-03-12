@@ -64,6 +64,7 @@ module Dependabot
         "composer" => "composer",
         "devcontainer" => "devcontainers",
         "docker" => "docker",
+        "docker-compose" => "docker_compose",
         "dotnet-sdk" => "dotnet_sdk",
         "elm" => "elm",
         "github-actions" => "github_actions",
@@ -77,7 +78,8 @@ module Dependabot
         "pip" => "pip",
         "pub" => "pub",
         "swift" => "swift",
-        "terraform" => "terraform"
+        "terraform" => "terraform",
+        "uv" => "uv"
       }.freeze, T::Hash[String, String])
 
       sig { params(cfg: T.nilable(T::Hash[Symbol, T.untyped])).returns(T::Array[IgnoreCondition]) }

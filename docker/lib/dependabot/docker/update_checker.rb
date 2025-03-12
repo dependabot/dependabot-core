@@ -11,7 +11,7 @@ require "dependabot/docker/tag"
 require "dependabot/docker/file_parser"
 require "dependabot/docker/version"
 require "dependabot/docker/requirement"
-require "dependabot/docker/utils/credentials_finder"
+require "dependabot/shared/utils/credentials_finder"
 
 module Dependabot
   module Docker
@@ -167,7 +167,65 @@ module Dependabot
 
       sig { params(original_tag: Dependabot::Docker::Tag).returns(T::Array[Dependabot::Docker::Tag]) }
       def comparable_tags_from_registry(original_tag)
+        unless Experiments.enabled?(:docker_tag_component_comparison)
+          return tags_from_registry.select { |tag| tag.comparable_to?(original_tag) }
+        end
+
+        common_components = identify_common_components(tags_from_registry)
+        original_components = extract_tag_components(original_tag.name, common_components)
+        Dependabot.logger.info("Original tag components: #{original_components.join(',')}")
+
         tags_from_registry.select { |tag| tag.comparable_to?(original_tag) }
+        tags_from_registry.select do |tag|
+          tag.comparable_to?(original_tag) &&
+            (original_components.empty? ||
+              compatible_components?(extract_tag_components(tag.name, common_components), original_components))
+        end
+      end
+
+      sig { params(tags: T::Array[Dependabot::Docker::Tag]).returns(T::Array[String]) }
+      def identify_common_components(tags)
+        tag_parts = tags.map do |tag|
+          # replace version parts with VERSION
+          processed_tag = tag.name.gsub(/\d+\.\d+\.\d+_\d+/, "VERSION")
+
+          parts = processed_tag.split(%r{[-\./]})
+          parts.reject(&:empty?)
+        end
+
+        part_counts = tag_parts.flatten.tally
+
+        part_counts.select do |part|
+          part.length > 1 &&
+            part != "VERSION" &&
+            !version_related_pattern?(part)
+        end.keys
+      end
+
+      sig { params(part: String).returns(T::Boolean) }
+      def version_related_pattern?(part)
+        patterns = {
+          number: /^\d+$/,
+          semver: /^\d+\.\d+$/,
+          v_prefix: /^v\d+/,
+          version_marker: /^(rc|jre)$/,
+          prerelease: /^(?=.*\d)(?=.*[a-z])[a-z\d]+$/i,
+          sha: /^g[0-9a-f]{5,}$/,
+          timestamp: /^\d{8,14}$/,
+          underscore_parts: /\d+_\d+/
+        }
+
+        patterns.values.any? { |pattern| part.match?(pattern) }
+      end
+
+      sig { params(tag_name: String, common_components: T::Array[String]).returns(T::Array[String]) }
+      def extract_tag_components(tag_name, common_components)
+        common_components.select { |component| tag_name.match?(/\b#{Regexp.escape(component)}\b/) }
+      end
+
+      sig { params(tag_components: T::Array[String], original_components: T::Array[String]).returns(T::Boolean) }
+      def compatible_components?(tag_components, original_components)
+        tag_components.sort == original_components.sort
       end
 
       sig do
@@ -361,11 +419,11 @@ module Dependabot
         credentials_finder.credentials_for_registry(registry_hostname)
       end
 
-      sig { returns(Dependabot::Docker::Utils::CredentialsFinder) }
+      sig { returns(Dependabot::Shared::Utils::CredentialsFinder) }
       def credentials_finder
         @credentials_finder ||= T.let(
-          Utils::CredentialsFinder.new(credentials),
-          T.nilable(Dependabot::Docker::Utils::CredentialsFinder)
+          Dependabot::Shared::Utils::CredentialsFinder.new(credentials),
+          T.nilable(Dependabot::Shared::Utils::CredentialsFinder)
         )
       end
 
@@ -379,7 +437,7 @@ module Dependabot
 
       # Defaults from https://github.com/deitch/docker_registry2/blob/bfde04144f0b7fd63c156a1aca83efe19ee78ffd/lib/registry/registry.rb#L26-L27
       DEFAULT_DOCKER_OPEN_TIMEOUT_IN_SECONDS = 2
-      DEFAULT_DOCKER_READ_TIMEOUT_IN_SECONDS = 5
+      DEFAULT_DOCKER_READ_TIMEOUT_IN_SECONDS = 60
 
       sig { returns(DockerRegistry2::Registry) }
       def docker_registry_client

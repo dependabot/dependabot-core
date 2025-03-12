@@ -13,6 +13,9 @@
 "L: docker":
     - '(docker|kubernetes)'
 
+"L: docker:compose":
+    - '(docker_compose)'
+
 "L: elm":
     - '(elm)'
 
@@ -44,7 +47,10 @@
     - '(dart|pub)'
 
 "L: python":
-    - '(python|pip|poetry)'
+    - '(python|pip|poetry|uv)'
+
+"L: python:uv":
+    - '(uv)'
 
 "L: terraform":
     - '(terraform)'

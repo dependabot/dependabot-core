@@ -30,6 +30,7 @@ Sentry.init do |config|
     terraform|
     elm|
     docker|
+    docker_compose|
     dotnet_sdk|
     git_submodules|
     github_actions|
@@ -45,6 +46,7 @@ Sentry.init do |config|
     pub|
     silent|
     swift|
+    uv|
     devcontainers
   )}x
 
@@ -61,6 +63,7 @@ require "dependabot/python"
 require "dependabot/terraform"
 require "dependabot/elm"
 require "dependabot/docker"
+require "dependabot/docker_compose"
 require "dependabot/dotnet_sdk"
 require "dependabot/git_submodules"
 require "dependabot/github_actions"
@@ -78,3 +81,4 @@ require "dependabot/silent"
 require "dependabot/swift"
 require "dependabot/devcontainers"
 require "dependabot/bun"
+require "dependabot/uv"

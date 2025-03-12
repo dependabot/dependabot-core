@@ -3,6 +3,8 @@ using System.Text;
 using System.Text.Json;
 using System.Xml.Linq;
 
+using NuGet.Versioning;
+
 using NuGetUpdater.Core.Analyze;
 using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Run;
@@ -14,12 +16,21 @@ using Xunit;
 
 namespace NuGetUpdater.Core.Test.Run;
 
+using static NuGetUpdater.Core.Utilities.EOLHandling;
+
 using TestFile = (string Path, string Content);
 
 public class RunWorkerTests
 {
-    [Fact]
-    public async Task UpdateSinglePackageProducedExpectedAPIMessages()
+    public const string TestPullRequestCommitMessage = "test-pull-request-commit-message";
+    public const string TestPullRequestTitle = "test-pull-request-title";
+    public const string TestPullRequestBody = "test-pull-request-body";
+
+    [Theory]
+    [InlineData(EOLType.CR)]
+    [InlineData(EOLType.LF)]
+    [InlineData(EOLType.CRLF)]
+    public async Task UpdateSinglePackageProducedExpectedAPIMessages(EOLType EOL)
     {
         await RunAsync(
             packages: [],
@@ -43,7 +54,7 @@ public class RunWorkerTests
                         <PackageReference Include="Some.Package" Version="1.0.0" />
                       </ItemGroup>
                     </Project>
-                    """)
+                    """.SetEOL(EOL))
             ],
             discoveryWorker: new TestDiscoveryWorker(_input =>
             {
@@ -94,7 +105,7 @@ public class RunWorkerTests
                         <PackageReference Include="Some.Package" Version="1.0.1" />
                       </ItemGroup>
                     </Project>
-                    """);
+                    """.SetEOL(EOL));
                 return new UpdateOperationResult();
             }),
             expectedResult: new RunResult()
@@ -114,7 +125,7 @@ public class RunWorkerTests
                                 <PackageReference Include="Some.Package" Version="1.0.0" />
                               </ItemGroup>
                             </Project>
-                            """))
+                            """.SetEOL(EOL)))
                     }
                 ],
                 BaseCommitSha = "TEST-COMMIT-SHA",
@@ -199,24 +210,27 @@ public class RunWorkerTests
                                     <PackageReference Include="Some.Package" Version="1.0.1" />
                                   </ItemGroup>
                                 </Project>
-                                """,
+                                """.SetEOL(EOL),
                         },
                     ],
                     BaseCommitSha = "TEST-COMMIT-SHA",
-                    CommitMessage = "TODO: message",
-                    PrTitle = "TODO: title",
-                    PrBody = "TODO: body",
+                    CommitMessage = TestPullRequestCommitMessage,
+                    PrTitle = TestPullRequestTitle,
+                    PrBody = TestPullRequestBody,
                 },
                 new MarkAsProcessed("TEST-COMMIT-SHA")
             ]
         );
     }
 
-    [Fact]
-    public async Task UpdateHandlesSemicolonsInPackageReference()
+    [Theory]
+    [InlineData(EOLType.CR)]
+    [InlineData(EOLType.LF)]
+    [InlineData(EOLType.CRLF)]
+    public async Task UpdateHandlesSemicolonsInPackageReference(EOLType EOL)
     {
-        var repoMetadata = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package" />""");
-        var repoMetadata2 = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package2" />""");
+        var repoMetadata = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package" />""".SetEOL(EOL));
+        var repoMetadata2 = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package2" />""".SetEOL(EOL));
         await RunAsync(
             packages:
             [
@@ -246,7 +260,7 @@ public class RunWorkerTests
                         <PackageReference Include="Some.Package;Some.Package2" Version="1.0.0" />
                       </ItemGroup>
                     </Project>
-                    """)
+                    """.SetEOL(EOL))
             ],
             discoveryWorker: new TestDiscoveryWorker(_input =>
             {
@@ -299,7 +313,7 @@ public class RunWorkerTests
                         <PackageReference Include="Some.Package;Some.Package2" Version="1.0.1" />
                       </ItemGroup>
                     </Project>
-                    """);
+                    """.SetEOL(EOL));
                 return new UpdateOperationResult();
             }),
             expectedResult: new RunResult()
@@ -319,7 +333,7 @@ public class RunWorkerTests
                                 <PackageReference Include="Some.Package;Some.Package2" Version="1.0.0" />
                               </ItemGroup>
                             </Project>
-                            """))
+                            """.SetEOL(EOL)))
                     }
                 ],
                 BaseCommitSha = "TEST-COMMIT-SHA",
@@ -447,22 +461,25 @@ public class RunWorkerTests
                                     <PackageReference Include="Some.Package;Some.Package2" Version="1.0.1" />
                                   </ItemGroup>
                                 </Project>
-                                """,
+                                """.SetEOL(EOL),
                         }
 
                     ],
                     BaseCommitSha = "TEST-COMMIT-SHA",
-                    CommitMessage = "TODO: message",
-                    PrTitle = "TODO: title",
-                    PrBody = "TODO: body",
+                    CommitMessage = TestPullRequestCommitMessage,
+                    PrTitle = TestPullRequestTitle,
+                    PrBody = TestPullRequestBody,
                 },
                 new MarkAsProcessed("TEST-COMMIT-SHA")
             ]
         );
     }
 
-    [Fact]
-    public async Task PrivateSourceAuthenticationFailureIsForwaredToApiHandler()
+    [Theory]
+    [InlineData(EOLType.CR)]
+    [InlineData(EOLType.LF)]
+    [InlineData(EOLType.CRLF)]
+    public async Task PrivateSourceAuthenticationFailureIsForwaredToApiHandler(EOLType EOL)
     {
         await RunAsync(
             packages:
@@ -486,7 +503,7 @@ public class RunWorkerTests
                         <add key="private_feed" value="http://example.com/nuget/index.json" allowInsecureConnections="true" />
                       </packageSources>
                     </configuration>
-                    """),
+                    """.SetEOL(EOL)),
                 ("project.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
@@ -496,7 +513,7 @@ public class RunWorkerTests
                         <PackageReference Include="Some.Package" Version="1.0.0" />
                       </ItemGroup>
                     </Project>
-                    """)
+                    """.SetEOL(EOL))
             ],
             discoveryWorker: new TestDiscoveryWorker((_input) =>
             {
@@ -517,11 +534,14 @@ public class RunWorkerTests
         );
     }
 
-    [Fact]
-    public async Task UpdateHandlesPackagesConfigFiles()
+    [Theory]
+    [InlineData(EOLType.CR)]
+    [InlineData(EOLType.LF)]
+    [InlineData(EOLType.CRLF)]
+    public async Task UpdateHandlesPackagesConfigFiles(EOLType EOL)
     {
-        var repoMetadata = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package" />""");
-        var repoMetadata2 = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package2" />""");
+        var repoMetadata = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package" />""".SetEOL(EOL));
+        var repoMetadata2 = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package2" />""".SetEOL(EOL));
         await RunAsync(
             packages:
             [
@@ -551,13 +571,13 @@ public class RunWorkerTests
                         <PackageReference Include="Some.Package" Version="1.0.0" />
                       </ItemGroup>
                     </Project>
-                    """),
+                    """.SetEOL(EOL)),
                 ("some-dir/packages.config", """
                     <?xml version="1.0" encoding="utf-8"?>
                     <packages>
                       <package id="Some.Package2" version="2.0.0" targetFramework="net8.0" />
                     </packages>
-                    """),
+                    """.SetEOL(EOL)),
             ],
             discoveryWorker: new TestDiscoveryWorker(_input =>
             {
@@ -630,7 +650,7 @@ public class RunWorkerTests
                                 <PackageReference Include="Some.Package" Version="1.0.1" />
                               </ItemGroup>
                              </Project>
-                            """);
+                            """.SetEOL(EOL));
                         break;
                     case "Some.Package2":
                         await File.WriteAllTextAsync(projectPath, """
@@ -648,14 +668,14 @@ public class RunWorkerTests
                                 </Reference>
                               </ItemGroup>
                             </Project>
-                            """);
+                            """.SetEOL(EOL));
                         var packagesConfigPath = Path.Join(Path.GetDirectoryName(projectPath)!, "packages.config");
                         await File.WriteAllTextAsync(packagesConfigPath, """
                             <?xml version="1.0" encoding="utf-8"?>
                             <packages>
                               <package id="Some.Package2" version="2.0.1" targetFramework="net8.0" />
                             </packages>
-                            """);
+                            """.SetEOL(EOL));
                         break;
                     default:
                         throw new NotSupportedException();
@@ -676,7 +696,7 @@ public class RunWorkerTests
                             <packages>
                               <package id="Some.Package2" version="2.0.0" targetFramework="net8.0" />
                             </packages>
-                            """))
+                            """.SetEOL(EOL)))
                     },
                     new DependencyFile()
                     {
@@ -691,7 +711,7 @@ public class RunWorkerTests
                                 <PackageReference Include="Some.Package" Version="1.0.0" />
                               </ItemGroup>
                             </Project>
-                            """))
+                            """.SetEOL(EOL)))
                     },
                 ],
                 BaseCommitSha = "TEST-COMMIT-SHA",
@@ -815,7 +835,7 @@ public class RunWorkerTests
                                 <packages>
                                   <package id="Some.Package2" version="2.0.1" targetFramework="net8.0" />
                                 </packages>
-                                """,
+                                """.SetEOL(EOL),
                         },
                         new DependencyFile()
                         {
@@ -836,24 +856,27 @@ public class RunWorkerTests
                                     </Reference>
                                   </ItemGroup>
                                 </Project>
-                                """,
+                                """.SetEOL(EOL),
                         },
                     ],
                     BaseCommitSha = "TEST-COMMIT-SHA",
-                    CommitMessage = "TODO: message",
-                    PrTitle = "TODO: title",
-                    PrBody = "TODO: body",
+                    CommitMessage = TestPullRequestCommitMessage,
+                    PrTitle = TestPullRequestTitle,
+                    PrBody = TestPullRequestBody,
                 },
                 new MarkAsProcessed("TEST-COMMIT-SHA")
             ]
         );
     }
 
-    [Fact]
-    public async Task UpdateHandlesPackagesConfigFromReferencedCsprojFiles()
+    [Theory]
+    [InlineData(EOLType.CR)]
+    [InlineData(EOLType.LF)]
+    [InlineData(EOLType.CRLF)]
+    public async Task UpdateHandlesPackagesConfigFromReferencedCsprojFiles(EOLType EOL)
     {
-        var repoMetadata = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package" />""");
-        var repoMetadata2 = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package2" />""");
+        var repoMetadata = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package" />""".SetEOL(EOL));
+        var repoMetadata2 = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package2" />""".SetEOL(EOL));
         await RunAsync(
             packages:
             [
@@ -886,13 +909,13 @@ public class RunWorkerTests
                         <ProjectReference Include="../ProjectB/ProjectB.csproj" />
                       </ItemGroup>
                     </Project>
-                    """),
+                    """.SetEOL(EOL)),
                 ("some-dir/ProjectA/packages.config", """
                     <?xml version="1.0" encoding="utf-8"?>
                     <packages>
                       <package id="Some.Package2" version="2.0.0" targetFramework="net8.0" />
                     </packages>
-                    """),
+                    """.SetEOL(EOL)),
                 ("some-dir/ProjectB/ProjectB.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
@@ -902,13 +925,13 @@ public class RunWorkerTests
                         <PackageReference Include="Some.Package" Version="1.0.0" />
                       </ItemGroup>
                     </Project>
-                    """),
+                    """.SetEOL(EOL)),
                 ("some-dir/ProjectB/packages.config", """
                     <?xml version="1.0" encoding="utf-8"?>
                     <packages>
                       <package id="Some.Package2" version="2.0.0" targetFramework="net8.0" />
                     </packages>
-                    """),
+                    """.SetEOL(EOL)),
             ],
             discoveryWorker: new TestDiscoveryWorker(_input =>
             {
@@ -999,7 +1022,7 @@ public class RunWorkerTests
                                 <ProjectReference Include="../ProjectB/ProjectB.csproj" />
                               </ItemGroup>
                             </Project>
-                            """);
+                            """.SetEOL(EOL));
                         break;
                     case ("ProjectA.csproj", "Some.Package2"):
                         await File.WriteAllTextAsync(projectPath, """
@@ -1020,13 +1043,13 @@ public class RunWorkerTests
                                 </Reference>
                               </ItemGroup>
                             </Project>
-                            """);
+                            """.SetEOL(EOL));
                         await File.WriteAllTextAsync(packagesConfigPath, """
                             <?xml version="1.0" encoding="utf-8"?>
                             <packages>
                               <package id="Some.Package2" version="2.0.1" targetFramework="net8.0" />
                             </packages>
-                            """);
+                            """.SetEOL(EOL));
                         break;
                     case ("ProjectB.csproj", "Some.Package"):
                         await File.WriteAllTextAsync(projectPath, """
@@ -1038,7 +1061,7 @@ public class RunWorkerTests
                                 <PackageReference Include="Some.Package" Version="1.0.1" />
                               </ItemGroup>
                             </Project>
-                            """);
+                            """.SetEOL(EOL));
                         break;
                     case ("ProjectB.csproj", "Some.Package2"):
                         await File.WriteAllTextAsync(projectPath, """
@@ -1056,13 +1079,13 @@ public class RunWorkerTests
                                 </Reference>
                               </ItemGroup>
                             </Project>
-                            """);
+                            """.SetEOL(EOL));
                         await File.WriteAllTextAsync(packagesConfigPath, """
                             <?xml version="1.0" encoding="utf-8"?>
                             <packages>
                               <package id="Some.Package2" version="2.0.1" targetFramework="net8.0" />
                             </packages>
-                            """);
+                            """.SetEOL(EOL));
                         break;
                     default:
                         throw new NotSupportedException();
@@ -1083,7 +1106,7 @@ public class RunWorkerTests
                             <packages>
                               <package id="Some.Package2" version="2.0.0" targetFramework="net8.0" />
                             </packages>
-                            """))
+                            """.SetEOL(EOL)))
                     },
                     new DependencyFile()
                     {
@@ -1101,7 +1124,7 @@ public class RunWorkerTests
                                 <ProjectReference Include="../ProjectB/ProjectB.csproj" />
                               </ItemGroup>
                             </Project>
-                            """))
+                            """.SetEOL(EOL)))
                     },
                     new DependencyFile()
                     {
@@ -1112,7 +1135,7 @@ public class RunWorkerTests
                             <packages>
                               <package id="Some.Package2" version="2.0.0" targetFramework="net8.0" />
                             </packages>
-                            """))
+                            """.SetEOL(EOL)))
                     },
                     new DependencyFile()
                     {
@@ -1127,7 +1150,7 @@ public class RunWorkerTests
                                 <PackageReference Include="Some.Package" Version="1.0.0" />
                               </ItemGroup>
                             </Project>
-                            """))
+                            """.SetEOL(EOL)))
                     },
                 ],
                 BaseCommitSha = "TEST-COMMIT-SHA",
@@ -1337,7 +1360,7 @@ public class RunWorkerTests
                                 <packages>
                                   <package id="Some.Package2" version="2.0.1" targetFramework="net8.0" />
                                 </packages>
-                                """,
+                                """.SetEOL(EOL),
                         },
                         new DependencyFile()
                         {
@@ -1361,7 +1384,7 @@ public class RunWorkerTests
                                     </Reference>
                                   </ItemGroup>
                                 </Project>
-                                """,
+                                """.SetEOL(EOL),
                         },
                         new DependencyFile()
                         {
@@ -1372,7 +1395,7 @@ public class RunWorkerTests
                                 <packages>
                                   <package id="Some.Package2" version="2.0.1" targetFramework="net8.0" />
                                 </packages>
-                                """,
+                                """.SetEOL(EOL),
                         },
                         new DependencyFile()
                         {
@@ -1393,21 +1416,24 @@ public class RunWorkerTests
                                     </Reference>
                                   </ItemGroup>
                                 </Project>
-                                """,
+                                """.SetEOL(EOL),
                         },
                     ],
                     BaseCommitSha = "TEST-COMMIT-SHA",
-                    CommitMessage = "TODO: message",
-                    PrTitle = "TODO: title",
-                    PrBody = "TODO: body",
+                    CommitMessage = TestPullRequestCommitMessage,
+                    PrTitle = TestPullRequestTitle,
+                    PrBody = TestPullRequestBody,
                 },
                 new MarkAsProcessed("TEST-COMMIT-SHA")
             ]
         );
     }
 
-    [Fact]
-    public async Task UpdatedFilesAreOnlyReportedOnce()
+    [Theory]
+    [InlineData(EOLType.CR)]
+    [InlineData(EOLType.LF)]
+    [InlineData(EOLType.CRLF)]
+    public async Task UpdatedFilesAreOnlyReportedOnce(EOLType EOL)
     {
         await RunAsync(
             job: new()
@@ -1434,14 +1460,14 @@ public class RunWorkerTests
                         <ProjectFile Include="project2/project2.csproj" />
                       </ItemGroup>
                     </Project>
-                    """),
+                    """.SetEOL(EOL)),
                 ("Directory.Build.props", """
                     <Project>
                       <PropertyGroup>
                         <SomePackageVersion>1.0.0</SomePackageVersion>
                       </PropertyGroup>
                     </Project>
-                    """),
+                    """.SetEOL(EOL)),
                 ("project1/project1.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
@@ -1451,7 +1477,7 @@ public class RunWorkerTests
                         <PackageReference Include="Some.Package" Version="$(SomePackageVersion)" />
                       </ItemGroup>
                     </Project>
-                    """),
+                    """.SetEOL(EOL)),
                 ("project2/project2.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
@@ -1461,7 +1487,7 @@ public class RunWorkerTests
                         <PackageReference Include="Some.Package" Version="$(SomePackageVersion)" />
                       </ItemGroup>
                     </Project>
-                    """)
+                    """.SetEOL(EOL))
             ],
             discoveryWorker: new TestDiscoveryWorker(_input =>
             {
@@ -1526,7 +1552,7 @@ public class RunWorkerTests
                         <SomePackageVersion>1.1.0</SomePackageVersion>
                       </PropertyGroup>
                     </Project>
-                    """);
+                    """.SetEOL(EOL));
                 return new UpdateOperationResult();
             }),
             expectedResult: new RunResult()
@@ -1543,7 +1569,7 @@ public class RunWorkerTests
                                 <SomePackageVersion>1.0.0</SomePackageVersion>
                               </PropertyGroup>
                             </Project>
-                            """))
+                            """.SetEOL(EOL)))
                     },
                     new DependencyFile()
                     {
@@ -1558,7 +1584,7 @@ public class RunWorkerTests
                                 <PackageReference Include="Some.Package" Version="$(SomePackageVersion)" />
                               </ItemGroup>
                             </Project>
-                            """))
+                            """.SetEOL(EOL)))
                     },
                     new DependencyFile()
                     {
@@ -1573,7 +1599,7 @@ public class RunWorkerTests
                                 <PackageReference Include="Some.Package" Version="$(SomePackageVersion)" />
                               </ItemGroup>
                             </Project>
-                            """))
+                            """.SetEOL(EOL)))
                     },
                 ],
                 BaseCommitSha = "TEST-COMMIT-SHA",
@@ -1698,21 +1724,24 @@ public class RunWorkerTests
                                     <SomePackageVersion>1.1.0</SomePackageVersion>
                                   </PropertyGroup>
                                 </Project>
-                                """,
+                                """.SetEOL(EOL),
                         }
                     ],
                     BaseCommitSha = "TEST-COMMIT-SHA",
-                    CommitMessage = "TODO: message",
-                    PrTitle = "TODO: title",
-                    PrBody = "TODO: body",
+                    CommitMessage = TestPullRequestCommitMessage,
+                    PrTitle = TestPullRequestTitle,
+                    PrBody = TestPullRequestBody,
                 },
                 new MarkAsProcessed("TEST-COMMIT-SHA")
             ]
         );
     }
 
-    [Fact]
-    public async Task UpdatePackageWithDifferentVersionsInDifferentDirectories()
+    [Theory]
+    [InlineData(EOLType.CR)]
+    [InlineData(EOLType.LF)]
+    [InlineData(EOLType.CRLF)]
+    public async Task UpdatePackageWithDifferentVersionsInDifferentDirectories(EOLType EOL)
     {
         // this test passes `null` for discovery, analyze, and update workers to fully test the desired behavior
 
@@ -1754,7 +1783,7 @@ public class RunWorkerTests
                         <ProjectFile Include="library3\library3.csproj" />
                       </ItemGroup>
                     </Project>
-                    """),
+                    """.SetEOL(EOL)),
                 ("Directory.Build.props", "<Project />"),
                 ("Directory.Build.targets", "<Project />"),
                 ("Directory.Packages.props", """
@@ -1763,7 +1792,7 @@ public class RunWorkerTests
                         <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
                       </PropertyGroup>
                     </Project>
-                    """),
+                    """.SetEOL(EOL)),
                 ("library1/library1.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
@@ -1773,7 +1802,7 @@ public class RunWorkerTests
                         <PackageReference Include="Some.Package" Version="2.0.0" />
                       </ItemGroup>
                     </Project>
-                    """),
+                    """.SetEOL(EOL)),
                 ("library2/library2.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
@@ -1783,7 +1812,7 @@ public class RunWorkerTests
                         <PackageReference Include="Some.Package" Version="1.0.0" />
                       </ItemGroup>
                     </Project>
-                    """),
+                    """.SetEOL(EOL)),
                 ("library3/library3.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
@@ -1793,7 +1822,7 @@ public class RunWorkerTests
                         <PackageReference Include="Package.With.Transitive.Dependency" Version="0.1.0" />
                       </ItemGroup>
                     </Project>
-                    """),
+                    """.SetEOL(EOL)),
             ],
             discoveryWorker: null,
             analyzeWorker: null,
@@ -1824,7 +1853,7 @@ public class RunWorkerTests
                                 <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
                               </PropertyGroup>
                             </Project>
-                            """))
+                            """.SetEOL(EOL)))
                     },
                     new DependencyFile()
                     {
@@ -1839,7 +1868,7 @@ public class RunWorkerTests
                                 <PackageReference Include="Some.Package" Version="2.0.0" />
                               </ItemGroup>
                             </Project>
-                            """))
+                            """.SetEOL(EOL)))
                     },
                     new DependencyFile()
                     {
@@ -1854,7 +1883,7 @@ public class RunWorkerTests
                                 <PackageReference Include="Some.Package" Version="1.0.0" />
                               </ItemGroup>
                             </Project>
-                            """))
+                            """.SetEOL(EOL)))
                     },
                     new DependencyFile()
                     {
@@ -1869,7 +1898,7 @@ public class RunWorkerTests
                                 <PackageReference Include="Package.With.Transitive.Dependency" Version="0.1.0" />
                               </ItemGroup>
                             </Project>
-                            """))
+                            """.SetEOL(EOL)))
                     }
                 ],
                 BaseCommitSha = "TEST-COMMIT-SHA",
@@ -2020,7 +2049,7 @@ public class RunWorkerTests
                                     <PackageReference Include="Some.Package" Version="2.0.0" />
                                   </ItemGroup>
                                 </Project>
-                                """
+                                """.SetEOL(EOL)
                         },
                         new()
                         {
@@ -2036,15 +2065,508 @@ public class RunWorkerTests
                                     <PackageReference Include="Some.Package" Version="2.0.0" />
                                   </ItemGroup>
                                 </Project>
-                                """
+                                """.SetEOL(EOL)
                         }
                     ],
                     BaseCommitSha = "TEST-COMMIT-SHA",
-                    CommitMessage = "TODO: message",
-                    PrTitle = "TODO: title",
-                    PrBody = "TODO: body"
+                    CommitMessage = TestPullRequestCommitMessage,
+                    PrTitle = TestPullRequestTitle,
+                    PrBody = TestPullRequestBody
                 },
                 new MarkAsProcessed("TEST-COMMIT-SHA")
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task PackageListedInSecurityAdvisoriesSectionIsNotVulnerable()
+    {
+        await RunAsync(
+            job: new()
+            {
+                Source = new()
+                {
+                    Provider = "github",
+                    Repo = "test/repo",
+                },
+                SecurityUpdatesOnly = true,
+                SecurityAdvisories = [
+                    new()
+                    {
+                        DependencyName = "Package.Is.Not.Vulnerable",
+                        AffectedVersions = [Requirement.Parse("< 1.0.0")]
+                    }
+                ]
+            },
+            files: [
+                ("project.csproj", "contents irrelevant")
+            ],
+            discoveryWorker: new TestDiscoveryWorker(_input =>
+            {
+                return Task.FromResult(new WorkspaceDiscoveryResult()
+                {
+                    Path = "",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "project.csproj",
+                            Dependencies = [
+                                new("Package.Is.Not.Vulnerable", "1.0.1", DependencyType.PackageReference)
+                            ],
+                            ImportedFiles = [],
+                            AdditionalFiles = [],
+                        }
+                    ]
+                });
+            }),
+            analyzeWorker: new TestAnalyzeWorker(_input => throw new NotImplementedException("test shouldn't get this far")),
+            updaterWorker: new TestUpdaterWorker(_input => throw new NotImplementedException("test shouldn't get this far")),
+            expectedResult: new()
+            {
+                Base64DependencyFiles = [
+                    new()
+                    {
+                        Directory = "/",
+                        Name = "project.csproj",
+                        Content = Convert.ToBase64String(Encoding.UTF8.GetBytes("contents irrelevant"))
+                    }
+                ],
+                BaseCommitSha = "TEST-COMMIT-SHA",
+            },
+            expectedApiMessages: [
+                new UpdatedDependencyList()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "Package.Is.Not.Vulnerable",
+                            Version = "1.0.1",
+                            Requirements = [
+                                new()
+                                {
+                                    Requirement = "1.0.1",
+                                    File = "/project.csproj",
+                                    Groups = ["dependencies"],
+                                }
+                            ]
+                        }
+                    ],
+                    DependencyFiles = ["/project.csproj"]
+                },
+                new IncrementMetric()
+                {
+                    Metric = "updater.started",
+                    Tags = new()
+                    {
+                        ["operation"] = "create_security_pr"
+                    }
+                },
+                new SecurityUpdateNotNeeded("Package.Is.Not.Vulnerable"),
+                new MarkAsProcessed("TEST-COMMIT-SHA"),
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task PackageListedInSecurityAdvisoriesSectionIsNotPresent()
+    {
+        await RunAsync(
+            job: new()
+            {
+                Source = new()
+                {
+                    Provider = "github",
+                    Repo = "test/repo",
+                },
+                SecurityUpdatesOnly = true,
+                SecurityAdvisories = [
+                    new()
+                    {
+                        DependencyName = "Package.Is.Not.Vulnerable",
+                        AffectedVersions = [Requirement.Parse("< 1.0.0")]
+                    }
+                ]
+            },
+            files: [
+                ("project.csproj", "contents irrelevant")
+            ],
+            discoveryWorker: new TestDiscoveryWorker(_input =>
+            {
+                return Task.FromResult(new WorkspaceDiscoveryResult()
+                {
+                    Path = "",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "project.csproj",
+                            Dependencies = [
+                                new("Unrelated.Package", "0.1.0", DependencyType.PackageReference)
+                            ],
+                            ImportedFiles = [],
+                            AdditionalFiles = [],
+                        }
+                    ]
+                });
+            }),
+            analyzeWorker: new TestAnalyzeWorker(_input => throw new NotImplementedException("test shouldn't get this far")),
+            updaterWorker: new TestUpdaterWorker(_input => throw new NotImplementedException("test shouldn't get this far")),
+            expectedResult: new()
+            {
+                Base64DependencyFiles = [
+                    new()
+                    {
+                        Directory = "/",
+                        Name = "project.csproj",
+                        Content = Convert.ToBase64String(Encoding.UTF8.GetBytes("contents irrelevant"))
+                    }
+                ],
+                BaseCommitSha = "TEST-COMMIT-SHA",
+            },
+            expectedApiMessages: [
+                new UpdatedDependencyList()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "Unrelated.Package",
+                            Version = "0.1.0",
+                            Requirements = [
+                                new()
+                                {
+                                    Requirement = "0.1.0",
+                                    File = "/project.csproj",
+                                    Groups = ["dependencies"],
+                                }
+                            ]
+                        }
+                    ],
+                    DependencyFiles = ["/project.csproj"]
+                },
+                new IncrementMetric()
+                {
+                    Metric = "updater.started",
+                    Tags = new()
+                    {
+                        ["operation"] = "create_security_pr"
+                    }
+                },
+                new SecurityUpdateNotNeeded("Package.Is.Not.Vulnerable"),
+                new MarkAsProcessed("TEST-COMMIT-SHA"),
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task NonProjectFilesAreIncludedInPullRequest()
+    {
+        await RunAsync(
+            job: new()
+            {
+                Source = new()
+                {
+                    Provider = "github",
+                    Repo = "test/repo",
+                },
+            },
+            files: [
+                (".config/dotnet-tools.json", "dotnet-tools.json content old"),
+                ("global.json", "global.json content old")
+            ],
+            discoveryWorker: new TestDiscoveryWorker(input =>
+            {
+                return Task.FromResult(new WorkspaceDiscoveryResult()
+                {
+                    Path = "",
+                    Projects = [],
+                    DotNetToolsJson = new()
+                    {
+                        FilePath = ".config/dotnet-tools.json",
+                        Dependencies = [
+                            new("some-tool", "2.0.0", DependencyType.DotNetTool),
+                        ]
+                    },
+                    GlobalJson = new()
+                    {
+                        FilePath = "global.json",
+                        Dependencies = [
+                            new("Some.MSBuild.Sdk", "1.0.0", DependencyType.MSBuildSdk),
+                        ],
+                    },
+                });
+            }),
+            analyzeWorker: new TestAnalyzeWorker(input =>
+            {
+                var (_repoRoot, _discoveryResult, dependencyInfo) = input;
+                var result = dependencyInfo.Name switch
+                {
+                    "some-tool" => new AnalysisResult() { CanUpdate = true, UpdatedVersion = "2.0.1", UpdatedDependencies = [new("some-tool", "2.0.1", DependencyType.DotNetTool)] },
+                    "Some.MSBuild.Sdk" => new AnalysisResult() { CanUpdate = true, UpdatedVersion = "1.0.1", UpdatedDependencies = [new("Some.MSBuild.Sdk", "1.0.1", DependencyType.MSBuildSdk)] },
+                    _ => throw new NotImplementedException("unreachable")
+                };
+                return Task.FromResult(result);
+            }),
+            updaterWorker: new TestUpdaterWorker(async input =>
+            {
+                var (repoRoot, filePath, dependencyName, _previousVersion, _newVersion, _isTransitive) = input;
+                var dependencyFilePath = Path.Join(repoRoot, filePath);
+                var updatedContent = dependencyName switch
+                {
+                    "some-tool" => "dotnet-tools.json content UPDATED",
+                    "Some.MSBuild.Sdk" => "global.json content UPDATED",
+                    _ => throw new NotImplementedException("unreachable")
+                };
+                await File.WriteAllTextAsync(dependencyFilePath, updatedContent);
+                return new UpdateOperationResult();
+            }),
+            expectedResult: new()
+            {
+                Base64DependencyFiles = [
+                    new()
+                    {
+                        Directory = "/.config",
+                        Name = "dotnet-tools.json",
+                        Content = Convert.ToBase64String(Encoding.UTF8.GetBytes("dotnet-tools.json content old"))
+                    },
+                    new()
+                    {
+                        Directory = "/",
+                        Name = "global.json",
+                        Content = Convert.ToBase64String(Encoding.UTF8.GetBytes("global.json content old"))
+                    },
+                ],
+                BaseCommitSha = "TEST-COMMIT-SHA",
+            },
+            expectedApiMessages: [
+                new UpdatedDependencyList()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "some-tool",
+                            Version = "2.0.0",
+                            Requirements = [
+                                new()
+                                {
+                                    Requirement = "2.0.0",
+                                    File = "/.config/dotnet-tools.json",
+                                    Groups = ["dependencies"],
+                                }
+                            ]
+                        },
+                        new()
+                        {
+                            Name = "Some.MSBuild.Sdk",
+                            Version = "1.0.0",
+                            Requirements = [
+                                new()
+                                {
+                                    Requirement = "1.0.0",
+                                    File = "/global.json",
+                                    Groups = ["dependencies"],
+                                }
+                            ]
+                        },
+                    ],
+                    DependencyFiles = ["/.config/dotnet-tools.json", "/global.json"]
+                },
+                new IncrementMetric()
+                {
+                    Metric = "updater.started",
+                    Tags = new()
+                    {
+                        ["operation"] = "group_update_all_versions"
+                    }
+                },
+                new CreatePullRequest()
+                {
+                    Dependencies =
+                    [
+                        new ReportedDependency()
+                        {
+                            Name = "some-tool",
+                            Version = "2.0.1",
+                            Requirements =
+                            [
+                                new ReportedRequirement()
+                                {
+                                    Requirement = "2.0.1",
+                                    File = "/.config/dotnet-tools.json",
+                                    Groups = ["dependencies"],
+                                    Source = new()
+                                    {
+                                        SourceUrl = null,
+                                    }
+                                }
+                            ],
+                            PreviousVersion = "2.0.0",
+                            PreviousRequirements =
+                            [
+                                new ReportedRequirement()
+                                {
+                                    Requirement = "2.0.0",
+                                    File = "/.config/dotnet-tools.json",
+                                    Groups = ["dependencies"],
+                                }
+                            ],
+                        },
+                        new ReportedDependency()
+                        {
+                            Name = "Some.MSBuild.Sdk",
+                            Version = "1.0.1",
+                            Requirements =
+                            [
+                                new ReportedRequirement()
+                                {
+                                    Requirement = "1.0.1",
+                                    File = "/global.json",
+                                    Groups = ["dependencies"],
+                                    Source = new()
+                                    {
+                                        SourceUrl = null,
+                                    }
+                                }
+                            ],
+                            PreviousVersion = "1.0.0",
+                            PreviousRequirements =
+                            [
+                                new ReportedRequirement()
+                                {
+                                    Requirement = "1.0.0",
+                                    File = "/global.json",
+                                    Groups = ["dependencies"],
+                                }
+                            ],
+                        },
+                    ],
+                    UpdatedDependencyFiles =
+                    [
+                        new DependencyFile()
+                        {
+                            Name = "dotnet-tools.json",
+                            Directory = "/.config",
+                            Content = "dotnet-tools.json content UPDATED",
+                        },
+                        new DependencyFile()
+                        {
+                            Name = "global.json",
+                            Directory = "/",
+                            Content = "global.json content UPDATED",
+                        },
+                    ],
+                    BaseCommitSha = "TEST-COMMIT-SHA",
+                    CommitMessage = TestPullRequestCommitMessage,
+                    PrTitle = TestPullRequestTitle,
+                    PrBody = TestPullRequestBody,
+                },
+                new MarkAsProcessed("TEST-COMMIT-SHA"),
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task PullRequestAlreadyExistsForLatestVersion()
+    {
+        await RunAsync(
+            job: new()
+            {
+                Source = new()
+                {
+                    Provider = "github",
+                    Repo = "test/repo",
+                },
+                Dependencies = [
+                    "Some.Package"
+                ],
+                ExistingPullRequests = [
+                    new PullRequest()
+                    {
+                        Dependencies = [new() { DependencyName = "Some.Package", DependencyVersion = NuGetVersion.Parse("1.2.0") }]
+                    }
+                ],
+                SecurityAdvisories = [
+                    new Advisory() { DependencyName = "Some.Package", AffectedVersions = [Requirement.Parse("= 1.1.0")] }
+                ],
+                SecurityUpdatesOnly = true,
+                UpdatingAPullRequest = false
+            },
+            files: [
+                ("project.csproj", "contents irrelevant")
+            ],
+            discoveryWorker: new TestDiscoveryWorker(_input =>
+            {
+                return Task.FromResult(new WorkspaceDiscoveryResult()
+                {
+                    Path = "",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "project.csproj",
+                            Dependencies = [
+                                new("Some.Package", "1.1.0", DependencyType.PackageReference)
+                            ],
+                            ImportedFiles = [],
+                            AdditionalFiles = [],
+                        }
+                    ]
+                });
+            }),
+            analyzeWorker: new TestAnalyzeWorker(_input =>
+            {
+                return Task.FromResult(new AnalysisResult()
+                {
+                    CanUpdate = true,
+                    UpdatedVersion = "1.2.0",
+                    UpdatedDependencies = [
+                        new("Some.Package", "1.2.0", DependencyType.PackageReference)
+                    ]
+                });
+            }),
+            updaterWorker: new TestUpdaterWorker(input =>
+            {
+                throw new NotImplementedException("test should never get here");
+            }),
+            expectedResult: new()
+            {
+                Base64DependencyFiles = [
+                    new()
+                    {
+                        Directory = "/",
+                        Name = "project.csproj",
+                        Content = Convert.ToBase64String(Encoding.UTF8.GetBytes("contents irrelevant"))
+                    }
+                ],
+                BaseCommitSha = "TEST-COMMIT-SHA",
+            },
+            expectedApiMessages: [
+                new UpdatedDependencyList()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "Some.Package",
+                            Version = "1.1.0",
+                            Requirements = [
+                                new()
+                                {
+                                    Requirement = "1.1.0",
+                                    File = "/project.csproj",
+                                    Groups = ["dependencies"],
+                                }
+                            ]
+                        }
+                    ],
+                    DependencyFiles = ["/project.csproj"]
+                },
+                new IncrementMetric()
+                {
+                    Metric = "updater.started",
+                    Tags = new()
+                    {
+                        ["operation"] = "create_security_pr"
+                    }
+                },
+                new PullRequestExistsForLatestVersion("Some.Package", "1.2.0"),
+                new MarkAsProcessed("TEST-COMMIT-SHA"),
             ]
         );
     }
@@ -2075,7 +2597,16 @@ public class RunWorkerTests
         var worker = new RunWorker(jobId, testApiHandler, discoveryWorker, analyzeWorker, updaterWorker, logger);
         var repoContentsPathDirectoryInfo = new DirectoryInfo(tempDirectory.DirectoryPath);
         var actualResult = await worker.RunAsync(job, repoContentsPathDirectoryInfo, "TEST-COMMIT-SHA");
-        var actualApiMessages = testApiHandler.ReceivedMessages.ToArray();
+        var actualApiMessages = testApiHandler.ReceivedMessages
+            .Select(m =>
+                m.Object switch
+                {
+                    // this isn't the place to verify the generated text
+                    CreatePullRequest create => (m.Type, create with { CommitMessage = TestPullRequestCommitMessage, PrTitle = TestPullRequestTitle, PrBody = TestPullRequestBody }),
+                    UpdatePullRequest update => (m.Type, update with { CommitMessage = TestPullRequestCommitMessage, PrTitle = TestPullRequestTitle, PrBody = TestPullRequestBody }),
+                    _ => m,
+                }
+            ).ToArray();
 
         // assert
         var actualRunResultJson = JsonSerializer.Serialize(actualResult);

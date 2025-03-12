@@ -207,7 +207,11 @@ module Dependabot
           # updating versions because there are some edge cases where it's OK to fail
           # (such as generated files not available yet to us).
           _, stderr, status = Open3.capture3(environment, command)
-          Dependabot.logger.info "Failed to `go mod tidy`: #{stderr}" unless status.success?
+          if status.success?
+            Dependabot.logger.info "`go mod tidy` succeeded"
+          else
+            Dependabot.logger.info "Failed to `go mod tidy`: #{stderr}"
+          end
         end
 
         sig { void }

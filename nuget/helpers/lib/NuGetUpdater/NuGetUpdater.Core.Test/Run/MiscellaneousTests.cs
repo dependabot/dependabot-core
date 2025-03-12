@@ -94,6 +94,34 @@ public class MiscellaneousTests
                 ("/src/Common.csproj", "Package.D"),
             },
         ];
+
+        yield return
+        [
+            new WorkspaceDiscoveryResult()
+            {
+                Path = "",
+                Projects = [],
+                GlobalJson = new()
+                {
+                    FilePath = "global.json",
+                    Dependencies = [
+                        new("Some.MSBuild.Sdk", "1.0.0", DependencyType.MSBuildSdk)
+                    ]
+                },
+                DotNetToolsJson = new()
+                {
+                    FilePath = ".config/dotnet-tools.json",
+                    Dependencies = [
+                        new("some-tool", "2.0.0", DependencyType.DotNetTool)
+                    ]
+                }
+            },
+            new (string, string)[]
+            {
+                ("/.config/dotnet-tools.json", "some-tool"),
+                ("/global.json", "Some.MSBuild.Sdk"),
+            }
+        ];
     }
 
     public static IEnumerable<object?[]> RequirementsFromIgnoredVersionsData()
