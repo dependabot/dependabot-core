@@ -5,5 +5,10 @@
         "phalcon/devtools": "~3.2",
         "longman/telegram-bot": "*",
         "james-heinrich/getid3": "^1.9"
+    },
+    "config": {
+      "platform": {
+        "php": "8.2.27"
+      }
     }
 }
