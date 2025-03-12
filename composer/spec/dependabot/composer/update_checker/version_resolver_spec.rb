@@ -158,12 +158,12 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
         let(:string_req) { "2.0.4" }
         let(:latest_allowable_version) { Gem::Version.new("3.2.2") }
 
-        it "raises a Dependabot::PhpVersionMismatchError error" do
+        it "raises a Dependabot::ToolVersionNotSupported error" do
           expect { resolver.latest_resolvable_version }
             .to raise_error(Dependabot::ToolVersionNotSupported) do |error|
             expect(error.tool_name).to eq("PHP")
             expect(error.detected_version).to eq("5.2.0")
-            expect(error.supported_versions).to eq("^7.1.3")
+            expect(error.supported_versions).to eq(">=5.5")
           end
         end
       end
