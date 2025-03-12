@@ -43,41 +43,19 @@ module Dependabot
           parsed_line = {
             "image" => dep["name"],
             "tag" => dep["version"],
-            "registry" => nil,
+            "registry" => dep["repository"],
             "digest" => nil
           }
 
           dependency = build_dependency(chart_file, parsed_line, dep["version"])
-
-          T.must(dependency.requirements.first)[:source] = {
-            type: "helm_repo",
-            url: dep["repository"]
-          }
+          dependency.requirements.map! do |req|
+            req[:metadata] = {} unless req[:metadata]
+            req[:metadata][:type] = :helm_chart
+            req
+          end
 
           dependency_set << dependency
         end
-      end
-
-      sig do
-        params(yaml: T::Hash[T.untyped, T.untyped], chart_file: Dependabot::DependencyFile,
-               dependency_set: DependencySet).void
-      end
-      def parse_app_version(yaml, chart_file, dependency_set)
-        return unless yaml["appVersion"] && yaml["name"]
-
-        version = yaml["appVersion"].to_s.delete_prefix("\"").delete_suffix("\"")
-
-        parsed_line = {
-          "image" => "#{yaml['name']}-app",
-          "tag" => version,
-          "registry" => nil,
-          "digest" => nil
-        }
-
-        dependency = build_dependency(chart_file, parsed_line, version)
-        T.must(dependency.requirements.first)[:groups] = ["appVersion"]
-
-        dependency_set << dependency
       end
 
       sig { params(dependency_set: DependencySet).void }
@@ -87,9 +65,9 @@ module Dependabot
           next unless yaml.is_a?(Hash)
 
           parse_dependencies(yaml, chart_file, dependency_set) if yaml["dependencies"].is_a?(Array)
-          parse_app_version(yaml, chart_file, dependency_set)
         end
       end
+
       sig { params(dependency_set: DependencySet).void }
       def parse_values_yaml_files(dependency_set)
         helm_values_files.each do |values_file|

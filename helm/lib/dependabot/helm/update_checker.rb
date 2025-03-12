@@ -36,16 +36,14 @@ module Dependabot
         return dependency.requirements unless latest_version
 
         dependency.requirements.map do |req|
-          updated_source = req.fetch(:source).dup
+          updated_metadata = req.fetch(:metadata).dup
           updated_req = req.dup
-
-          if req[:groups]&.include?("appVersion")
-            updated_source[:tag] = latest_version.to_s if updated_source[:tag]
-          elsif updated_source.key?(:type) && updated_source[:type] == "helm_repo"
+          if updated_metadata.key?(:type) && updated_metadata[:type] == :helm_chart
             updated_req[:requirement] = latest_version.to_s
+            updated_req[:source][:tag] = latest_version.to_s
           end
 
-          updated_req.merge(source: updated_source)
+          updated_req
         end
       end
 
@@ -79,9 +77,8 @@ module Dependabot
       def dependency_type
         req = dependency.requirements.first
 
-        return :app_version if T.must(req)[:groups]&.include?("appVersion")
         return :image_reference if T.must(req)[:groups]&.include?("image")
-        return :chart_dependency if T.must(req).dig(:source, :type) == "helm_repo"
+        return :chart_dependency if T.must(req).dig(:metadata, :type) == :helm_chart
 
         :unknown
       end
@@ -117,7 +114,7 @@ module Dependabot
 
       sig { returns(T.nilable(Gem::Version)) }
       def fetch_latest_chart_version
-        source_url = dependency.requirements.first&.dig(:source, :url)
+        source_url = dependency.requirements.first&.dig(:source, :registry)
         return nil unless source_url
 
         repo_url = source_url.to_s.strip.chomp("/")

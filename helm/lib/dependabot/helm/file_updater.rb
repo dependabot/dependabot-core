@@ -71,25 +71,9 @@ module Dependabot
         params(content: String, yaml_obj: T::Hash[T.untyped, T.untyped],
                file: Dependabot::DependencyFile).returns(String)
       end
-      def update_app_version(content, yaml_obj, file)
-        if update_app_version?(file) && yaml_obj["appVersion"]["appVersion"]
-          old_version = yaml_obj["appVersion"].to_s
-          new_version = T.must(dependency).version
-          content = content.gsub(
-            /appVersion:\s+["']?#{Regexp.escape(old_version)}["']?/,
-            "appVersion: #{new_version}"
-          )
-        end
-        content
-      end
-
-      sig do
-        params(content: String, yaml_obj: T::Hash[T.untyped, T.untyped],
-               file: Dependabot::DependencyFile).returns(String)
-      end
       def update_chart_dependencies(content, yaml_obj, file)
-        if update_chart_dependency?(file) && yaml_obj["dependencies"].is_a?(Array)
-          yaml_obj["dependencies"].each_with_index do |dep, _|
+        if update_chart_dependency?(file)
+          yaml_obj["dependencies"].each do |dep|
             next unless dep["name"] == T.must(dependency).name
 
             old_version = dep["version"].to_s
@@ -112,7 +96,6 @@ module Dependabot
         content = file.content
         yaml_obj = YAML.safe_load(T.must(content))
 
-        content = update_app_version(T.must(content), yaml_obj, file)
         content = update_chart_dependencies(content, yaml_obj, file)
 
         raise "Expected content to change!" if content == file.content
@@ -210,15 +193,9 @@ module Dependabot
       end
 
       sig { params(file: Dependabot::DependencyFile).returns(T::Boolean) }
-      def update_app_version?(file)
-        reqs = T.must(dependency).requirements.select { |r| r[:file] == file.name }
-        reqs.any? { |r| r[:groups]&.include?("appVersion") }
-      end
-
-      sig { params(file: Dependabot::DependencyFile).returns(T::Boolean) }
       def update_chart_dependency?(file)
         reqs = T.must(dependency).requirements.select { |r| r[:file] == file.name }
-        reqs.any? { |r| r[:source]&.dig(:type) == "helm_repo" }
+        reqs.any? { |r| r[:metadata]&.dig(:type) == :helm_chart }
       end
 
       sig { params(file: Dependabot::DependencyFile).returns(T::Boolean) }

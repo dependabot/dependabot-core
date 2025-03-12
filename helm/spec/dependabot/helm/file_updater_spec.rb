@@ -12,31 +12,33 @@ require_common_spec "file_updaters/shared_examples_for_file_updaters"
 RSpec.describe Dependabot::Helm::FileUpdater do
   let(:dependency) do
     Dependabot::Dependency.new(
-      name: "ubuntu",
-      version: "17.10",
-      previous_version: "17.04",
+      name: "redis",
+      version: "20.11.3",
+      previous_version: "17.11.3",
       requirements: [{
-        requirement: nil,
+        requirement: "20.11.3",
         groups: [],
-        file: "docker-compose.yml",
-        source: { tag: "17.10" }
+        metadata: { type: :helm_chart },
+        file: "Chart.yaml",
+        source: { registry: "https://charts.bitnami.com/bitnami", tag: "20.11.3" }
       }],
       previous_requirements: [{
-        requirement: nil,
+        requirement: "17.11.3",
         groups: [],
-        file: "docker-compose.yml",
-        source: { tag: "17.04" }
+        metadata: { type: :helm_chart },
+        file: "Chart.yaml",
+        source: { registry: "https://charts.bitnami.com/bitnami", tag: "17.11.3" }
       }],
-      package_manager: "docker_compose"
+      package_manager: "helm"
     )
   end
-  let(:dockerfile_body) do
-    fixture("docker_compose", "composefiles", "multiple")
+  let(:helmfile_body) do
+    fixture("helm", "v3", "single.yaml")
   end
   let(:dockerfile) do
     Dependabot::DependencyFile.new(
-      content: dockerfile_body,
-      name: "docker-compose.yml"
+      content: helmfile_body,
+      name: "Chart.yaml"
     )
   end
   let(:credentials) do
@@ -65,529 +67,111 @@ RSpec.describe Dependabot::Helm::FileUpdater do
 
     its(:length) { is_expected.to eq(1) }
 
-    describe "the updated docker-compose.yml" do
-      subject(:updated_dockerfile) do
-        updated_files.find { |f| f.name == "docker-compose.yml" }
+    describe "the updated Chart.yaml" do
+      subject(:updated_helmfile) do
+        updated_files.find { |f| f.name == "Chart.yaml" }
       end
 
       let(:yaml_content) do
-        YAML.safe_load updated_dockerfile.content
+        YAML.safe_load updated_helmfile.content
       end
 
-      its(:content) { is_expected.to include "image: ubuntu:17.10\n" }
-      its(:content) { is_expected.to include "image: python:3.6.3\n" }
+      its(:content) { is_expected.to include "- name: redis\n    version: 20.11.3" }
 
       it "contains the expected YAML content" do
         expect(yaml_content).to eq(
-          "version" => "2",
-          "services" => {
-            "interpreter" => { "image" => "python:3.6.3" },
-            "os" => { "image" => "ubuntu:17.10" }
+          {
+            "apiVersion" => "v2",
+            "name" => "example-service",
+            "version" => "0.1.0",
+            "dependencies" => [{
+              "name" => "redis",
+              "version" => "20.11.3",
+              "repository" => "https://charts.bitnami.com/bitnami"
+            }]
           }
         )
       end
     end
 
     context "when multiple identical lines need to be updated" do
-      let(:dockerfile_body) do
-        fixture("docker_compose", "composefiles", "multiple_identical")
+      let(:helmfile_body) do
+        fixture("helm", "v3", "basic.yaml")
       end
       let(:dependency) do
         Dependabot::Dependency.new(
-          name: "node",
-          version: "10.9-alpine",
-          previous_version: "10-alpine",
+          name: "mongodb",
+          version: "19.10.2",
+          previous_version: "13.9.1",
           requirements: [{
-            requirement: nil,
+            requirement: "19.10.2",
             groups: [],
-            file: "docker-compose.yml",
-            source: { tag: "10.9-alpine" }
+            metadata: { type: :helm_chart },
+            file: "Chart.yaml",
+            source: { registry: "https://charts.bitnami.com/bitnami", tag: "19.10.2" }
           }],
           previous_requirements: [{
-            requirement: nil,
+            requirement: "13.9.1",
             groups: [],
-            file: "docker-compose.yml",
-            source: { tag: "10-alpine" }
+            metadata: { type: :helm_chart },
+            file: "Chart.yaml",
+            source: { registry: "https://charts.bitnami.com/bitnami", tag: "13.9.1" }
           }],
-          package_manager: "docker_compose"
+          package_manager: "helm"
         )
       end
 
-      describe "the updated docker-compose.yml" do
-        subject(:updated_dockerfile) do
-          updated_files.find { |f| f.name == "docker-compose.yml" }
+      describe "the updated Chart.yaml" do
+        subject(:updated_helmfile) do
+          updated_files.find { |f| f.name == "Chart.yaml" }
         end
 
-        its(:content) { is_expected.to include "image: node:10.9-alpine\n" }
-        its(:content) { is_expected.to include "node-2:" }
-      end
-    end
-
-    context "when the dependency has a namespace" do
-      let(:dockerfile_body) do
-        fixture("docker_compose", "composefiles", "namespace")
-      end
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "my-fork/ubuntu",
-          version: "17.10",
-          previous_version: "17.04",
-          requirements: [{
-            requirement: nil,
-            groups: [],
-            file: "docker-compose.yml",
-            source: { tag: "17.10" }
-          }],
-          previous_requirements: [{
-            requirement: nil,
-            groups: [],
-            file: "docker-compose.yml",
-            source: { tag: "17.04" }
-          }],
-          package_manager: "docker_compose"
-        )
-      end
-
-      its(:length) { is_expected.to eq(1) }
-
-      describe "the updated docker-compose.yml" do
-        subject(:updated_dockerfile) do
-          updated_files.find { |f| f.name == "docker-compose.yml" }
-        end
-
-        its(:content) { is_expected.to include "image: my-fork/ubuntu:17.10\n" }
-
-        its(:content) do
-          is_expected.to include "command: [/bin/echo, 'Hello world']"
-        end
-      end
-    end
-
-    context "when the dependency is in a dockerfile_inline" do
-      let(:dockerfile_body) do
-        fixture("docker_compose", "composefiles", "inline_dockerfile")
-      end
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "mariadb",
-          version: "11.11.2-jammy",
-          previous_version: "10.11.2-jammy",
-          requirements: [{
-            requirement: nil,
-            groups: [],
-            file: "docker-compose.yml",
-            source: { tag: "11.11.2-jammy" }
-          }],
-          previous_requirements: [{
-            requirement: nil,
-            groups: [],
-            file: "docker-compose.yml",
-            source: { tag: "10.11.2-jammy" }
-          }],
-          package_manager: "docker_compose"
-        )
-      end
-
-      its(:length) { is_expected.to eq(1) }
-
-      describe "the updated docker-compose.yml" do
-        subject(:updated_dockerfile) do
-          updated_files.find { |f| f.name == "docker-compose.yml" }
-        end
-
-        its(:content) { is_expected.to include "FROM mariadb:11.11.2-jammy" }
-
-        its(:content) do
-          is_expected.to include "RUN echo 'Hello'"
-        end
+        its(:content) { is_expected.to include "- name: redis\n    version: 17.11.3" }
+        its(:content) { is_expected.to include "- name: mongodb\n    version: 19.10.2" }
       end
     end
 
     context "when the dependency is from a private registry" do
-      let(:dockerfile_body) do
-        fixture("docker_compose", "composefiles", "private_tag")
+      let(:helmfile_body) do
+        fixture("helm", "v3", "private_reg.yaml")
       end
       let(:dependency) do
         Dependabot::Dependency.new(
-          name: "myreg/ubuntu",
-          version: "17.10",
-          previous_version: "17.04",
+          name: "myreg/redis",
+          version: "20.11.3",
+          previous_version: "17.11.3",
           requirements: [{
             requirement: nil,
             groups: [],
-            file: "docker-compose.yml",
+            metadata: { type: :helm_chart },
+            file: "Chart.yaml",
             source: {
               registry: "registry-host.io:5000",
-              tag: "17.10"
+              tag: "20.11.3"
             }
           }],
           previous_requirements: [{
             requirement: nil,
             groups: [],
-            file: "docker-compose.yml",
+            metadata: { type: :helm_chart },
+            file: "Chart.yaml",
             source: {
               registry: "registry-host.io:5000",
-              tag: "17.04"
+              tag: "17.11.3"
             }
           }],
-          package_manager: "docker_compose"
+          package_manager: "helm"
         )
       end
 
       its(:length) { is_expected.to eq(1) }
 
-      describe "the updated docker-compose.yml" do
-        subject(:updated_dockerfile) do
-          updated_files.find { |f| f.name == "docker-compose.yml" }
+      describe "the updated Chart.yaml" do
+        subject(:updated_helmfile) do
+          updated_files.find { |f| f.name == "Chart.yaml" }
         end
 
-        its(:content) do
-          is_expected
-            .to include("image: registry-host.io:5000/myreg/ubuntu:17.10\n")
-        end
-
-        its(:content) do
-          is_expected.to include "command: [/bin/echo, 'Hello world']"
-        end
-      end
-    end
-
-    context "when the dependency is docker-compose.yml using the v1 API" do
-      let(:dockerfile_body) do
-        fixture("docker_compose", "composefiles", "v1_tag")
-      end
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "myreg/ubuntu",
-          version: "17.10",
-          previous_version: "17.04",
-          requirements: [{
-            requirement: nil,
-            groups: [],
-            file: "docker-compose.yml",
-            source: { tag: "17.10" }
-          }],
-          previous_requirements: [{
-            requirement: nil,
-            groups: [],
-            file: "docker-compose.yml",
-            source: { tag: "17.04" }
-          }],
-          package_manager: "docker_compose"
-        )
-      end
-
-      its(:length) { is_expected.to eq(1) }
-
-      describe "the updated docker-compose.yml" do
-        subject(:updated_dockerfile) do
-          updated_files.find { |f| f.name == "docker-compose.yml" }
-        end
-
-        its(:content) do
-          is_expected
-            .to include("image: docker.io/myreg/ubuntu:17.10\n")
-        end
-
-        its(:content) do
-          is_expected.to include "command: [/bin/echo, 'Hello world']"
-        end
-      end
-    end
-
-    context "when the dependency has a digest" do
-      let(:dockerfile_body) do
-        fixture("docker_compose", "composefiles", "digest")
-      end
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "ubuntu",
-          version: "17.10",
-          previous_version: "12.04.5",
-          requirements: [{
-            requirement: nil,
-            groups: [],
-            file: "docker-compose.yml",
-            source: {
-              digest: "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
-                      "ca97eba880ebf600d68608"
-            }
-          }],
-          previous_requirements: [{
-            requirement: nil,
-            groups: [],
-            file: "docker-compose.yml",
-            source: {
-              digest: "18305429afa14ea462f810146ba44d4363ae76e4c8" \
-                      "dfc38288cf73aa07485005"
-            }
-          }],
-          package_manager: "docker_compose"
-        )
-      end
-
-      its(:length) { is_expected.to eq(1) }
-
-      describe "the updated docker-compose.yml" do
-        subject(:updated_dockerfile) do
-          updated_files.find { |f| f.name == "docker-compose.yml" }
-        end
-
-        its(:content) do
-          is_expected.to include "image: ubuntu@sha256:3ea1ca1aa"
-        end
-
-        its(:content) do
-          is_expected.to include "command: [/bin/echo, 'Hello world']"
-        end
-
-        context "when the dockerfile has a tag as well as a digest" do
-          let(:dependency) do
-            Dependabot::Dependency.new(
-              name: "ubuntu",
-              version: "17.10",
-              previous_version: "12.04.5",
-              requirements: [{
-                requirement: nil,
-                groups: [],
-                file: "docker-compose.yml",
-                source: {
-                  digest: "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
-                          "ca97eba880ebf600d68608",
-                  tag: "17.10"
-                }
-              }],
-              previous_requirements: [{
-                requirement: nil,
-                groups: [],
-                file: "docker-compose.yml",
-                source: {
-                  digest: "18305429afa14ea462f810146ba44d4363ae76e4c8" \
-                          "dfc38288cf73aa07485005",
-                  tag: "12.04.5"
-                }
-              }],
-              package_manager: "docker_compose"
-            )
-          end
-
-          let(:dockerfile_body) do
-            fixture("docker_compose", "composefiles", "digest_and_tag")
-          end
-
-          its(:content) do
-            is_expected.to include "image: ubuntu:17.10@sha256:3ea1ca1aa"
-          end
-        end
-      end
-
-      context "when the dependency has a private registry" do
-        let(:dockerfile_body) do
-          fixture("docker_compose", "composefiles", "private_digest")
-        end
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "myreg/ubuntu",
-            version: "17.10",
-            previous_version: "17.10",
-            requirements: [{
-              requirement: nil,
-              groups: [],
-              file: "docker-compose.yml",
-              source: {
-                registry: "registry-host.io:5000",
-                digest: "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
-                        "ca97eba880ebf600d68608"
-              }
-            }],
-            previous_requirements: [{
-              requirement: nil,
-              groups: [],
-              file: "docker-compose.yml",
-              source: {
-                registry: "registry-host.io:5000",
-                digest: "18305429afa14ea462f810146ba44d4363ae76e4c8" \
-                        "dfc38288cf73aa07485005"
-              }
-            }],
-            package_manager: "docker_compose"
-          )
-        end
-
-        its(:length) { is_expected.to eq(1) }
-
-        describe "the updated docker-compose.yml" do
-          subject(:updated_dockerfile) do
-            updated_files.find { |f| f.name == "docker-compose.yml" }
-          end
-
-          its(:content) do
-            is_expected.to include("image: registry-host.io:5000/" \
-                                   "myreg/ubuntu@sha256:3ea1ca1aa")
-          end
-
-          its(:content) do
-            is_expected.to include "command: [/bin/echo, 'Hello world']"
-          end
-        end
-      end
-    end
-
-    context "when multiple dockerfiles to be updated" do
-      let(:files) { [dockerfile, dockefile2] }
-      let(:dockefile2) do
-        Dependabot::DependencyFile.new(
-          name: "custom-name",
-          content: dockerfile_body2
-        )
-      end
-      let(:dockerfile_body) do
-        fixture("docker_compose", "composefiles", "digest")
-      end
-      let(:dockerfile_body2) do
-        fixture("docker_compose", "composefiles", "digest_and_tag")
-      end
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "ubuntu",
-          version: "17.10",
-          previous_version: "12.04.5",
-          requirements: [{
-            requirement: nil,
-            groups: [],
-            file: "docker-compose.yml",
-            source: {
-              digest: "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
-                      "ca97eba880ebf600d68608"
-            }
-          }, {
-            requirement: nil,
-            groups: [],
-            file: "custom-name",
-            source: {
-              digest: "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
-                      "ca97eba880ebf600d68608",
-              tag: "17.10"
-            }
-          }],
-          previous_requirements: [{
-            requirement: nil,
-            groups: [],
-            file: "docker-compose.yml",
-            source: {
-              digest: "18305429afa14ea462f810146ba44d4363ae76e4c8" \
-                      "dfc38288cf73aa07485005"
-            }
-          }, {
-            requirement: nil,
-            groups: [],
-            file: "custom-name",
-            source: {
-              digest: "18305429afa14ea462f810146ba44d4363ae76e4c8" \
-                      "dfc38288cf73aa07485005",
-              tag: "12.04.5"
-            }
-          }],
-          package_manager: "docker_compose"
-        )
-      end
-
-      describe "the updated docker-compose.yml" do
-        subject { updated_files.find { |f| f.name == "docker-compose.yml" } }
-
-        its(:content) do
-          is_expected.to include "image: ubuntu@sha256:3ea1ca1aa"
-        end
-      end
-
-      describe "the updated custom-name file" do
-        subject { updated_files.find { |f| f.name == "custom-name" } }
-
-        its(:content) do
-          is_expected.to include "image: ubuntu:17.10@sha256:3ea1ca1aa"
-        end
-      end
-
-      context "when only one needs updating" do
-        let(:dockerfile_body) do
-          fixture("docker_compose", "composefiles", "bare")
-        end
-
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "ubuntu",
-            version: "17.10",
-            previous_version: "12.04.5",
-            requirements: [{
-              requirement: nil,
-              groups: [],
-              file: "custom-name",
-              source: {
-                digest: "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
-                        "ca97eba880ebf600d68608",
-                tag: "17.10"
-              }
-            }],
-            previous_requirements: [{
-              requirement: nil,
-              groups: [],
-              file: "custom-name",
-              source: {
-                digest: "18305429afa14ea462f810146ba44d4363ae76e4c8" \
-                        "dfc38288cf73aa07485005",
-                tag: "12.04.5"
-              }
-            }],
-            package_manager: "docker_compose"
-          )
-        end
-
-        describe "the updated custom-name file" do
-          subject { updated_files.find { |f| f.name == "custom-name" } }
-
-          its(:content) do
-            is_expected.to include "image: ubuntu:17.10@sha256:3ea1ca1aa"
-          end
-        end
-      end
-
-      context "when the image is quoted" do
-        let(:dockerfile_body) do
-          fixture("docker_compose", "composefiles", "tag_quoted")
-        end
-
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "elastic/elasticsearch",
-            version: "8.17.2",
-            previous_version: "8.16.4",
-            requirements: [{
-              requirement: nil,
-              groups: [],
-              file: "docker-compose.yml",
-              source: {
-                tag: "8.17.2"
-              }
-            }],
-            previous_requirements: [{
-              requirement: nil,
-              groups: [],
-              file: "docker-compose.yml",
-              source: {
-                tag: "8.16.4"
-              }
-            }],
-            package_manager: "docker_compose"
-          )
-        end
-
-        describe "the updated custom-name file" do
-          subject { updated_files.find { |f| f.name == "docker-compose.yml" } }
-
-          its(:content) do
-            is_expected.to include "image: \"elastic/elasticsearch:8.17.2\""
-          end
-        end
+        its(:content) { is_expected.to include "- name: myreg/redis\n    version: 20.11.3" }
       end
     end
   end
