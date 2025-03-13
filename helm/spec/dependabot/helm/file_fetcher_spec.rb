@@ -8,11 +8,11 @@ require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 RSpec.describe Dependabot::Helm::FileFetcher do
   let(:credentials) do
     [{
-       "type" => "git_source",
-       "host" => "github.com",
-       "username" => "x-access-token",
-       "password" => "token"
-     }]
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
   end
   let(:url) { github_url + "repos/gocardless/bump/contents/" }
   let(:github_url) { "https://api.github.com/" }

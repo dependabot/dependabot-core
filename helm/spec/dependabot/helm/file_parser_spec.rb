@@ -43,9 +43,9 @@ RSpec.describe Dependabot::Helm::FileParser do
         [{
           requirement: nil,
           groups: [],
-          metadata: {type: :helm_chart},
+          metadata: { type: :helm_chart },
           file: "Chart.yaml",
-          source: {registry: "https://charts.bitnami.com/bitnami", tag: "17.11.3"}
+          source: { registry: "https://charts.bitnami.com/bitnami", tag: "17.11.3" }
         }]
       end
 
@@ -75,9 +75,9 @@ RSpec.describe Dependabot::Helm::FileParser do
           [{
             requirement: nil,
             groups: [],
-            metadata: {type: :helm_chart},
+            metadata: { type: :helm_chart },
             file: "Chart.yaml",
-            source: {registry: "https://charts.bitnami.com/bitnami", tag: "17.11.3"}
+            source: { registry: "https://charts.bitnami.com/bitnami", tag: "17.11.3" }
           }]
         end
 
@@ -96,9 +96,9 @@ RSpec.describe Dependabot::Helm::FileParser do
           [{
             requirement: nil,
             groups: [],
-            metadata: {type: :helm_chart},
+            metadata: { type: :helm_chart },
             file: "Chart.yaml",
-            source: {registry: "https://charts.bitnami.com/bitnami", tag: "13.9.1"}
+            source: { registry: "https://charts.bitnami.com/bitnami", tag: "13.9.1" }
           }]
         end
 
@@ -121,9 +121,9 @@ RSpec.describe Dependabot::Helm::FileParser do
           [{
             requirement: nil,
             groups: [],
-            metadata: {type: :helm_chart},
+            metadata: { type: :helm_chart },
             file: "Chart.yaml",
-            source: {registry: "https://charts.bitnami.com/bitnami", tag: "17.11.3-dev"}
+            source: { registry: "https://charts.bitnami.com/bitnami", tag: "17.11.3-dev" }
           }]
         end
 

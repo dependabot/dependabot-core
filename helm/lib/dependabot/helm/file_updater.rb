@@ -96,7 +96,7 @@ module Dependabot
         content = file.content
         yaml_obj = YAML.safe_load(T.must(content))
 
-        content = update_chart_dependencies(content, yaml_obj, file)
+        content = update_chart_dependencies(T.must(content), yaml_obj, file)
 
         raise "Expected content to change!" if content == file.content
 

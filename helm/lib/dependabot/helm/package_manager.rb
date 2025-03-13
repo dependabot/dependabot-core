@@ -3,7 +3,7 @@
 
 require "sorbet-runtime"
 require "dependabot/ecosystem"
-require 'dependabot/docker/version'
+require "dependabot/docker/version"
 
 module Dependabot
   module Helm
