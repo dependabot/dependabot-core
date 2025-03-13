@@ -10,6 +10,9 @@ module Dependabot
     class FileParser < Dependabot::Shared::SharedFileParser
       extend T::Sig
 
+      CHART_YAML = /.*chart\.ya?ml$/i
+      VALUES_YAML = /.*values\.ya?ml$/i
+
       sig { returns(Ecosystem) }
       def ecosystem
         @ecosystem ||= T.let(
@@ -124,14 +127,6 @@ module Dependabot
       end
 
       sig do
-        params(value: T::Hash[T.untyped, T.untyped],
-               current_path: T::Array[String]).returns(T::Array[T::Hash[Symbol, String]])
-      end
-      def handle_hash_value(value, current_path)
-        find_images_in_hash(value, current_path)
-      end
-
-      sig do
         params(value: T::Array[T.untyped], current_path: T::Array[String]).returns(T::Array[T::Hash[Symbol, String]])
       end
       def handle_array_value(value, current_path)
@@ -154,9 +149,9 @@ module Dependabot
           if value.is_a?(String) && (key.to_s == "image" || key.to_s == "repository")
             images.concat(handle_string_value(key.to_s, value, hash, current_path))
           elsif value.is_a?(Hash)
-            images.concat(handle_hash_value(value, current_path))
+            images.concat(find_images_in_hash(value, current_path))
           elsif value.is_a?(Array)
-            images.concat(handle_array_value(value, current_path))
+            images.concat(find_images_in_hash(value, current_path))
           end
         end
 
@@ -165,12 +160,12 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def helm_chart_files
-        dependency_files.select { |file| file.name.end_with?("Chart.yaml", "chart.yml") }
+        dependency_files.select { |file| file.name.match(CHART_YAML) }
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def helm_values_files
-        dependency_files.select { |file| file.name.end_with?("values.yaml", "values.yml") }
+        dependency_files.select { |file| file.name.match(VALUES_YAML) }
       end
 
       sig { override.returns(String) }
