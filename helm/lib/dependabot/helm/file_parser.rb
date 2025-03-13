@@ -137,7 +137,6 @@ module Dependabot
         images
       end
 
-
       sig { params(hash: T.untyped, path: T.untyped).returns(T::Array[T.untyped]) }
       def find_images_in_hash(hash, path = [])
         images = []
