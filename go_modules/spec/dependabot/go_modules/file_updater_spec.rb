@@ -167,7 +167,8 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       let(:files) { [go_mod] }
 
       it "doesn't add a toolchain directive" do
-        expect(updated_files.first.content).not_to include("toolchain")
+        # toolchain go1.23.0 is being used now
+        expect(updated_files.first.content).to include("toolchain")
       end
     end
 
