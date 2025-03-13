@@ -20,7 +20,7 @@ Gem::Specification.new do |spec|
   }
 
   spec.version = Dependabot::VERSION
-  spec.required_ruby_version = ">= 3.1.0"
+  spec.required_ruby_version = ">= 3.4.2"
   spec.required_rubygems_version = ">= 3.3.7"
 
   spec.require_path = "lib"
@@ -31,15 +31,16 @@ Gem::Specification.new do |spec|
   spec.add_dependency "bundler", ">= 1.16", "< 3.0.0"
   spec.add_dependency "commonmarker", ">= 0.20.1", "< 0.24.0"
   spec.add_dependency "docker_registry2", "~> 1.18.2"
-  spec.add_dependency "excon", "~> 0.109"
+  spec.add_dependency "excon", "~> 1.2"
   spec.add_dependency "faraday", "2.7.11"
   spec.add_dependency "faraday-retry", "2.2.0"
   spec.add_dependency "gitlab", "5.0.0"
-  spec.add_dependency "json", "< 2.7"
+  spec.add_dependency "json", "~> 2.9"
   spec.add_dependency "nokogiri", "~> 1.8"
   spec.add_dependency "octokit", ">= 4.6", "< 8.0"
   spec.add_dependency "opentelemetry-api", "~> 1.4"
   spec.add_dependency "opentelemetry-metrics-api", "~> 0.1"
+  spec.add_dependency "ostruct", "~> 0.6"
   spec.add_dependency "parser", ">= 2.5", "< 4.0"
   spec.add_dependency "psych", "~> 5.0"
   spec.add_dependency "sorbet-runtime", "~> 0.5.11577"

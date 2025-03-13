@@ -2,7 +2,6 @@
 # frozen_string_literal: true
 
 require "tmpdir"
-require "set"
 require "sorbet-runtime"
 
 require "dependabot/requirement"
