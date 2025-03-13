@@ -319,9 +319,9 @@ module Dependabot
         new_major, new_minor, new_patch = new_version_semver
 
         # Determine cooldown based on version difference
-        return cooldown.major_days if new_major > current_major
-        return cooldown.minor_days if new_minor > current_minor
-        return cooldown.patch_days if new_patch > current_patch
+        return cooldown.semver_major_days if new_major > current_major
+        return cooldown.semver_minor_days if new_minor > current_minor
+        return cooldown.semver_patch_days if new_patch > current_patch
 
         cooldown.default_days
       end

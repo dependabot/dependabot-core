@@ -13,6 +13,7 @@ module Dependabot
       extend T::Sig
 
       require_relative "file_updater/compile_file_updater"
+      require_relative "file_updater/lock_file_updater"
       require_relative "file_updater/requirement_file_updater"
 
       sig { override.returns(T::Array[Regexp]) }
@@ -20,13 +21,15 @@ module Dependabot
         [
           /^.*\.txt$/,               # Match any .txt files (e.g., requirements.txt) at any level
           /^.*\.in$/,                # Match any .in files at any level
-          /^.*pyproject\.toml$/      # Match pyproject.toml at any level
+          /^.*pyproject\.toml$/,     # Match pyproject.toml at any level
+          /^.*uv\.lock$/             # Match uv.lock at any level
         ]
       end
 
       sig { override.returns(T::Array[DependencyFile]) }
       def updated_dependency_files
         updated_files = updated_pip_compile_based_files
+        updated_files += updated_uv_lock_files
 
         if updated_files.none? ||
            updated_files.sort_by(&:name) == dependency_files.sort_by(&:name)
@@ -58,6 +61,16 @@ module Dependabot
       sig { returns(T::Array[DependencyFile]) }
       def updated_requirement_based_files
         RequirementFileUpdater.new(
+          dependencies: dependencies,
+          dependency_files: dependency_files,
+          credentials: credentials,
+          index_urls: pip_compile_index_urls
+        ).updated_dependency_files
+      end
+
+      sig { returns(T::Array[DependencyFile]) }
+      def updated_uv_lock_files
+        LockFileUpdater.new(
           dependencies: dependencies,
           dependency_files: dependency_files,
           credentials: credentials,

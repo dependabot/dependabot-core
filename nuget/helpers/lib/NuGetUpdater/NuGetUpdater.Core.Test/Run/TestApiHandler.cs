@@ -33,6 +33,12 @@ internal class TestApiHandler : IApiHandler
         return Task.CompletedTask;
     }
 
+    public Task ClosePullRequest(ClosePullRequest closePullRequest)
+    {
+        _receivedMessages.Add((closePullRequest.GetType(), closePullRequest));
+        return Task.CompletedTask;
+    }
+
     public Task UpdatePullRequest(UpdatePullRequest updatePullRequest)
     {
         _receivedMessages.Add((updatePullRequest.GetType(), updatePullRequest));

@@ -52,6 +52,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
   let(:dependency_files) { [requirements_file] }
   let(:requirements_update_strategy) { nil }
   let(:security_advisories) { [] }
+  let(:cooldown_options) { nil }
   let(:raise_on_ignored) { false }
   let(:ignored_versions) { [] }
   let(:credentials) do
@@ -68,6 +69,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
       dependency_files: dependency_files,
       credentials: credentials,
       ignored_versions: ignored_versions,
+      update_cooldown: cooldown_options,
       raise_on_ignored: raise_on_ignored,
       security_advisories: security_advisories,
       requirements_update_strategy: requirements_update_strategy
@@ -75,9 +77,19 @@ RSpec.describe Dependabot::Python::UpdateChecker do
   end
   let(:pypi_response) { fixture("pypi", "pypi_simple_response.html") }
   let(:pypi_url) { "https://pypi.org/simple/luigi/" }
+  let(:enable_cooldown_for_python) { false }
 
   before do
     stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_file_parser_python_local)
+      .and_return(false)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_cooldown_for_python)
+      .and_return(true)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_shared_helpers_command_timeout)
+      .and_return(true)
   end
 
   it_behaves_like "an update checker"
@@ -154,6 +166,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
           dependency_files: dependency_files,
           credentials: credentials,
           ignored_versions: ignored_versions,
+          cooldown_options: cooldown_options,
           raise_on_ignored: raise_on_ignored,
           security_advisories: security_advisories
         ).and_call_original
@@ -514,6 +527,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
             dependency_files: dependency_files,
             credentials: credentials,
             ignored_versions: ignored_versions,
+            cooldown_options: cooldown_options,
             raise_on_ignored: raise_on_ignored,
             security_advisories: security_advisories
           ).and_call_original
@@ -842,6 +856,77 @@ RSpec.describe Dependabot::Python::UpdateChecker do
       let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
 
       it { is_expected.to be(false) }
+    end
+  end
+
+  describe "with cooldown options" do
+    let(:pypi_url) { "https://pypi.org/pypi/luigi/json" }
+    let(:pypi_response) { fixture("pypi", "pypi_response_luigi.json") }
+
+    before do
+      # Move `stub_request` inside `before` block
+      stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
+
+      # Package Name: luigi
+      # Current version: 2.0.0
+      # Release Versions:
+      # ...
+      # 2.0.0 => Date: 2015-10-23, Yanked: false
+      # 2.0.1 => Date: 2015-12-05, Yanked: false
+      # ...
+      # 3.3.0 => Date: 2023-05-04, Yanked: false
+      # 3.4.0 => Date: 2023-10-05, Yanked: false
+      # 3.5.0 => Date: 2024-01-15, Yanked: false
+      # 3.5.1 => Date: 2024-05-20, Yanked: false
+      # 3.5.2 => Date: 2024-09-04, Yanked: false
+      # 3.6.0 => Date: 2024-12-06, Yanked: false
+      allow(Time).to receive(:now).and_return(Time.parse("2024-12-08"))
+    end
+
+    describe "#latest_resolvable_version" do
+      subject(:latest_resolvable_version) { checker.latest_resolvable_version }
+
+      context "with a requirement file" do
+        let(:dependency_files) { [requirements_file] }
+
+        context "when cooldown is not set" do
+          let(:cooldown_options) { nil }
+
+          it { is_expected.to eq(Gem::Version.new("3.6.0")) }
+        end
+
+        context "when cooldown applies to patch updates" do
+          let(:cooldown_options) do
+            Dependabot::Package::ReleaseCooldownOptions.new(semver_patch_days: 2)
+          end
+
+          it { is_expected.to eq(Gem::Version.new("3.6.0")) }
+        end
+
+        context "when cooldown applies to minor updates" do
+          let(:cooldown_options) do
+            Dependabot::Package::ReleaseCooldownOptions.new(semver_minor_days: 5)
+          end
+
+          it { is_expected.to eq(Gem::Version.new("3.6.0")) }
+        end
+
+        context "when cooldown applies to major updates" do
+          let(:cooldown_options) do
+            Dependabot::Package::ReleaseCooldownOptions.new(semver_major_days: 10)
+          end
+
+          it { is_expected.to eq(Gem::Version.new("3.5.2")) }
+        end
+
+        context "when cooldown applies to all updates" do
+          let(:cooldown_options) do
+            Dependabot::Package::ReleaseCooldownOptions.new(default_days: 10)
+          end
+
+          it { is_expected.to eq(Gem::Version.new("3.5.2")) }
+        end
+      end
     end
   end
 end

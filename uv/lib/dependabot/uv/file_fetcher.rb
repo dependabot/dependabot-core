@@ -7,7 +7,7 @@ require "sorbet-runtime"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 require "dependabot/uv/language_version_manager"
-require "dependabot/uv/pip_compile_file_matcher"
+require "dependabot/uv/requirements_file_matcher"
 require "dependabot/uv/requirement_parser"
 require "dependabot/uv/file_parser/pyproject_files_parser"
 require "dependabot/uv/file_parser/python_requirement_parser"
@@ -22,19 +22,24 @@ module Dependabot
       CHILD_REQUIREMENT_REGEX = /^-r\s?(?<path>.*\.(?:txt|in))/
       CONSTRAINT_REGEX = /^-c\s?(?<path>.*\.(?:txt|in))/
       DEPENDENCY_TYPES = %w(packages dev-packages).freeze
+      REQUIREMENT_FILE_PATTERNS = {
+        extensions: [".txt", ".in"],
+        filenames: ["uv.lock"]
+      }.freeze
+      MAX_FILE_SIZE = 500_000
 
       def self.required_files_in?(filenames)
-        return true if filenames.any? { |name| name.end_with?(".txt", ".in") }
+        return true if filenames.any? { |name| name.end_with?(*REQUIREMENT_FILE_PATTERNS[:extensions]) }
 
         # If there is a directory of requirements return true
         return true if filenames.include?("requirements")
 
-        # If this repo is using pyproject.toml return true
+        # If this repo is using pyproject.toml return true (uv.lock files require a pyproject.toml)
         filenames.include?("pyproject.toml")
       end
 
       def self.required_files_message
-        "Repo must contain a requirements.txt, requirements.in, or pyproject.toml" \
+        "Repo must contain a requirements.txt, uv.lock, requirements.in, or pyproject.toml" \
       end
 
       def ecosystem_versions
@@ -69,6 +74,7 @@ module Dependabot
         fetched_files += requirements_in_files
         fetched_files += requirement_files if requirements_txt_files.any?
 
+        fetched_files += uv_lock_files
         fetched_files += project_files
         fetched_files << python_version_file if python_version_file
 
@@ -125,6 +131,11 @@ module Dependabot
           child_requirement_in_files
       end
 
+      def uv_lock_files
+        req_txt_and_in_files.select { |f| f.name.end_with?("uv.lock") } +
+          child_uv_lock_files
+      end
+
       def parsed_pyproject
         raise "No pyproject.toml" unless pyproject
 
@@ -137,18 +148,8 @@ module Dependabot
         return @req_txt_and_in_files if @req_txt_and_in_files
 
         @req_txt_and_in_files = []
-
-        repo_contents
-          .select { |f| f.type == "file" }
-          .select { |f| f.name.end_with?(".txt", ".in") }
-          .reject { |f| f.size > 500_000 }
-          .map { |f| fetch_file_from_host(f.name) }
-          .select { |f| requirements_file?(f) }
-          .each { |f| @req_txt_and_in_files << f }
-
-        repo_contents
-          .select { |f| f.type == "dir" }
-          .each { |f| @req_txt_and_in_files += req_files_for_dir(f) }
+        @req_txt_and_in_files += fetch_requirement_files_from_path
+        @req_txt_and_in_files += fetch_requirement_files_from_dirs
 
         @req_txt_and_in_files
       end
@@ -158,12 +159,7 @@ module Dependabot
         relative_reqs_dir =
           requirements_dir.path.gsub(%r{^/?#{Regexp.escape(dir)}/?}, "")
 
-        repo_contents(dir: relative_reqs_dir)
-          .select { |f| f.type == "file" }
-          .select { |f| f.name.end_with?(".txt", ".in") }
-          .reject { |f| f.size > 500_000 }
-          .map { |f| fetch_file_from_host("#{relative_reqs_dir}/#{f.name}") }
-          .select { |f| requirements_file?(f) }
+        fetch_requirement_files_from_path(relative_reqs_dir)
       end
 
       def child_requirement_txt_files
@@ -172,6 +168,10 @@ module Dependabot
 
       def child_requirement_in_files
         child_requirement_files.select { |f| f.name.end_with?(".in") }
+      end
+
+      def child_uv_lock_files
+        child_requirement_files.select { |f| f.name.end_with?("uv.lock") }
       end
 
       def child_requirement_files
@@ -295,7 +295,7 @@ module Dependabot
 
       def parse_requirement_path_dependencies(req_file)
         # If this is a pip-compile lockfile, rely on whatever path dependencies we found in the main manifest
-        return [] if pip_compile_file_matcher.lockfile_for_pip_compile_file?(req_file)
+        return [] if requirements_in_file_matcher.compiled_file?(req_file)
 
         uneditable_reqs =
           req_file.content
@@ -318,8 +318,38 @@ module Dependabot
         Pathname.new(path).cleanpath.to_path
       end
 
-      def pip_compile_file_matcher
-        @pip_compile_file_matcher ||= PipCompileFileMatcher.new(requirements_in_files)
+      def requirements_in_file_matcher
+        @requirements_in_file_matcher ||= RequiremenstFileMatcher.new(requirements_in_files)
+      end
+
+      def fetch_requirement_files_from_path(path = nil)
+        contents = path ? repo_contents(dir: path) : repo_contents
+        filter_requirement_files(contents, base_path: path)
+      end
+
+      def fetch_requirement_files_from_dirs
+        repo_contents
+          .select { |f| f.type == "dir" }
+          .flat_map { |dir| req_files_for_dir(dir) }
+      end
+
+      def filter_requirement_files(contents, base_path: nil)
+        contents
+          .select { |f| f.type == "file" }
+          .select { |f| file_matches_requirement_pattern?(f.name) }
+          .reject { |f| f.size > MAX_FILE_SIZE }
+          .map { |f| fetch_file_with_path(f.name, base_path) }
+          .select { |f| REQUIREMENT_FILE_PATTERNS[:filenames].include?(f.name) || requirements_file?(f) }
+      end
+
+      def file_matches_requirement_pattern?(filename)
+        REQUIREMENT_FILE_PATTERNS[:extensions].any? { |ext| filename.end_with?(ext) } ||
+          REQUIREMENT_FILE_PATTERNS[:filenames].any?(filename)
+      end
+
+      def fetch_file_with_path(filename, base_path)
+        path = base_path ? File.join(base_path, filename) : filename
+        fetch_file_from_host(path)
       end
     end
   end

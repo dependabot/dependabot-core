@@ -58,7 +58,7 @@ public class MiscellaneousTests
     public void GetUpdateOperations(WorkspaceDiscoveryResult discovery, (string ProjectPath, string DependencyName)[] expectedUpdateOperations)
     {
         var updateOperations = RunWorker.GetUpdateOperations(discovery).ToArray();
-        var actualUpdateOperations = updateOperations.Select(uo => (uo.FilePath, uo.Dependency.Name)).ToArray();
+        var actualUpdateOperations = updateOperations.Select(uo => (uo.ProjectPath, uo.Dependency.Name)).ToArray();
         Assert.Equal(expectedUpdateOperations, actualUpdateOperations);
     }
 

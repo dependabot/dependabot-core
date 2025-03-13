@@ -67,32 +67,32 @@ RSpec.describe Dependabot::Uv::FileParser::PythonRequirementParser do
       end
     end
 
-    context "with a setup.py file" do
-      let(:files) { [setup_py] }
-      let(:setup_py) do
-        Dependabot::DependencyFile.new(
-          name: "setup.py",
-          content: setup_py_body
-        )
-      end
-      let(:setup_py_body) { fixture("setup_files", fixture_name) }
+    context "with a pyproject.toml file" do
+      context "with a dependency-groups array containing objects and strings" do
+        let(:files) { [pyproject_file] }
+        let(:pyproject_file) do
+          Dependabot::DependencyFile.new(
+            name: "pyproject.toml",
+            content: pyproject_body
+          )
+        end
+        let(:pyproject_body) do
+          <<~PYPROJECT
+            [project]
+            name = "spam-eggs"
+            version = "2020.0.0"
+            requires-python = ">=3.8"
+            [dependency-groups]
+            dev = [
+                {"include-group" = "docs"},
+                {"include-group" = "testing"},
+                {"include-group" = "typing"},
+                "deptry>=0.15.0",
+            ]
+          PYPROJECT
+        end
 
-      context "when including a python_requires line" do
-        let(:fixture_name) { "impossible_imports.py" }
-
-        it { is_expected.to eq([">=3.7"]) }
-      end
-
-      context "when not including a python_requires line" do
-        let(:fixture_name) { "setup.py" }
-
-        it { is_expected.to eq([]) }
-      end
-
-      context "when having a requirement that can't be parsed" do
-        let(:fixture_name) { "unparseable_python_requires.py" }
-
-        it { is_expected.to eq([]) }
+        it { is_expected.to eq([">=3.8"]) }
       end
     end
   end

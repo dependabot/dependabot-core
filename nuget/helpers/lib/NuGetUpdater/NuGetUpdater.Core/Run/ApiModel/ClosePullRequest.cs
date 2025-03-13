@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace NuGetUpdater.Core.Run.ApiModel;
 
-public sealed record ClosePullRequest
+public sealed record ClosePullRequest : MessageBase
 {
     [JsonPropertyName("dependency-names")]
     public required ImmutableArray<string> DependencyNames { get; init; }
