@@ -104,7 +104,9 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
     end
 
     context "when the lockfile doesn't change" do
-      let(:updated_lockfile_content) { lockfile_content }
+      before do
+        allow(updater).to receive(:updated_lockfile_content).and_return(lockfile_content)
+      end
 
       it "raises an error" do
         expect { updated_files }.to raise_error("Expected lockfile to change!")
@@ -136,6 +138,79 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
         expect(Dependabot::Uv::FileUpdater::PyprojectPreparer).to receive(:new)
         updated_files
       end
+    end
+
+    context "with TOML parsing" do
+      let(:lockfile_content) { fixture("uv_locks", "simple.lock") }
+
+      let(:modified_lockfile_content) do
+        content = lockfile_content.dup
+        content.sub!(
+          'requires-python = ">=3.9"',
+          'requires-python = ">=3.8"'
+        )
+        content.sub!(
+          'name = "requests"\nversion = "2.32.3"',
+          'name = "requests"\nversion = "2.23.0"'
+        )
+        content
+      end
+
+      before do
+        allow(updater).to receive(:updated_lockfile_content_for).and_return(modified_lockfile_content)
+      end
+
+      it "preserves the original requires-python value" do
+        updated_lock = updated_files.find { |f| f.name == "uv.lock" }
+        expect(updated_lock.content).to include('requires-python = ">=3.9"')
+        expect(updated_lock.content).to include('version = "2.23.0"')
+        expect(updated_lock.content).not_to include('version = "2.32.3"')
+      end
+    end
+  end
+
+  describe "#declaration_regex" do
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "redis",
+        version: "4.6.0",
+        requirements: [{
+          file: "pyproject.toml",
+          requirement: "~=4.6.0",
+          groups: [],
+          source: nil
+        }],
+        previous_requirements: [{
+          file: "pyproject.toml",
+          requirement: "~=4.5.4",
+          groups: [],
+          source: nil
+        }],
+        previous_version: "4.5.4",
+        package_manager: "uv"
+      )
+    end
+
+    let(:old_req) { dependency.previous_requirements.first }
+
+    it "correctly handles tilde requirements" do
+      regex = updater.send(:declaration_regex, dependency, old_req)
+      expect { "some text" =~ regex }.not_to raise_error
+    end
+
+    it "matches tilde requirements in pyproject.toml" do
+      content = <<~TOML
+        [project]
+        name = "myproject"
+        dependencies = [
+            "redis~=4.5.4",
+        ]
+      TOML
+
+      regex = updater.send(:declaration_regex, dependency, old_req)
+      match = content.match(regex)
+      expect(match).to be_a(MatchData)
+      expect(match[:declaration]).to eq("redis~=4.5.4")
     end
   end
 end
