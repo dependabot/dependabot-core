@@ -30,6 +30,13 @@ RSpec.describe Dependabot::Service do
     api_client
   end
 
+  let(:enable_enhanced_error_details_for_updater) { false }
+
+  before do
+    Dependabot::Experiments.register(:enable_enhanced_error_details_for_updater,
+                                     enable_enhanced_error_details_for_updater)
+  end
+
   shared_context "with a created pr" do
     let(:source) do
       instance_double(Dependabot::Source, provider: "github", repo: "dependabot/dependabot-core", directory: "/")
@@ -306,7 +313,7 @@ RSpec.describe Dependabot::Service do
     end
 
     context "when enable_enhanced_error_details_for_updater is enabled" do
-      Dependabot::Experiments.register(:enable_enhanced_error_details_for_updater, true)
+      let(:enable_enhanced_error_details_for_updater) { true }
 
       it "memoizes a shorthand summary of the error" do
         expect(service.errors).to eql([["epoch_error", {
@@ -610,7 +617,7 @@ RSpec.describe Dependabot::Service do
       end
 
       context "when enable_enhanced_error_details_for_updater is enabled" do
-        Dependabot::Experiments.register(:enable_enhanced_error_details_for_updater, true)
+        let(:enable_enhanced_error_details_for_updater) { true }
 
         it "includes an error summary" do
           expect(service.summary)
@@ -639,7 +646,7 @@ RSpec.describe Dependabot::Service do
       end
 
       context "when enable_enhanced_error_details_for_updater is enabled" do
-        Dependabot::Experiments.register(:enable_enhanced_error_details_for_updater, true)
+        let(:enable_enhanced_error_details_for_updater) { true }
 
         it "includes an error summary" do
           expect(service.summary)
