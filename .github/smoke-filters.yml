@@ -68,3 +68,6 @@ terraform:
 uv:
   - *common
   - 'uv/**'
+helm:
+  - *common
+  - 'helm/**'

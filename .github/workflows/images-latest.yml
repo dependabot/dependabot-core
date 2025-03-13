@@ -46,6 +46,7 @@ jobs:
           - { name: github_actions, ecosystem: github-actions }
           - { name: go_modules, ecosystem: gomod }
           - { name: gradle, ecosystem: gradle }
+          - { name: helm, ecosystem: helm }
           - { name: hex, ecosystem: mix }
           - { name: maven, ecosystem: maven }
           - { name: npm_and_yarn, ecosystem: npm }
