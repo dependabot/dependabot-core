@@ -306,9 +306,7 @@ RSpec.describe Dependabot::Service do
     end
 
     context "when enable_enhanced_error_details_for_updater is enabled" do
-      before do
-        Dependabot::Experiments.register(:enable_enhanced_error_details_for_updater, true)
-      end
+      Dependabot::Experiments.register(:enable_enhanced_error_details_for_updater, true)
 
       it "memoizes a shorthand summary of the error" do
         expect(service.errors).to eql([["epoch_error", {
@@ -612,9 +610,7 @@ RSpec.describe Dependabot::Service do
       end
 
       context "when enable_enhanced_error_details_for_updater is enabled" do
-        before do
-          Dependabot::Experiments.register(:enable_enhanced_error_details_for_updater, true)
-        end
+        Dependabot::Experiments.register(:enable_enhanced_error_details_for_updater, true)
 
         it "includes an error summary" do
           expect(service.summary)
@@ -643,9 +639,7 @@ RSpec.describe Dependabot::Service do
       end
 
       context "when enable_enhanced_error_details_for_updater is enabled" do
-        before do
-          Dependabot::Experiments.register(:enable_enhanced_error_details_for_updater, true)
-        end
+        Dependabot::Experiments.register(:enable_enhanced_error_details_for_updater, true)
 
         it "includes an error summary" do
           expect(service.summary)

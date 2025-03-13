@@ -78,11 +78,11 @@ module Dependabot
              dependency: T.nilable(Dependabot::Dependency)).void
     end
     def record_update_job_error(error_type:, error_details:, dependency: nil)
-      if Dependabot::Experiments.enabled?(:enable_enhanced_error_details_for_updater)
-        errors << [error_type.to_s, error_details, dependency]
-      else
-        errors << [error_type.to_s, dependency]
-      end
+      errors << if Dependabot::Experiments.enabled?(:enable_enhanced_error_details_for_updater)
+                  [error_type.to_s, error_details, dependency]
+                else
+                  [error_type.to_s, dependency]
+                end
       client.record_update_job_error(error_type: error_type, error_details: error_details)
     end
 
@@ -242,7 +242,6 @@ module Dependabot
           t.rows = job_error_types
         end
       end
-
     end
 
     # Example output:
@@ -256,18 +255,23 @@ module Dependabot
     # +---------------------+-------------------------------+
     sig { returns(T.nilable(Terminal::Table)) }
     def dependency_error_summary
-      dependency_errors = errors.filter_map do |error_type, error_details, dependency|
-        [dependency.name, error_type, error_details] unless dependency.nil?
-      end
-      return if dependency_errors.none?
-
       if Dependabot::Experiments.enabled?(:enable_enhanced_error_details_for_updater)
+        dependency_errors = errors.filter_map do |error_type, error_details, dependency|
+          [dependency.name, error_type, error_details] unless dependency.nil?
+        end
+        return if dependency_errors.none?
+
         T.unsafe(Terminal::Table).new do |t|
           t.title = "Dependencies failed to update"
           t.headings = ["Dependency", "Error Type", "Error Details"]
           t.rows = dependency_errors
         end
       else
+        dependency_errors = errors.filter_map do |error_type, dependency|
+          [dependency.name, error_type] unless dependency.nil?
+        end
+        return if dependency_errors.none?
+
         T.unsafe(Terminal::Table).new do |t|
           t.title = "Dependencies failed to update"
           t.rows = dependency_errors.map do |dependency, error_type, _|
