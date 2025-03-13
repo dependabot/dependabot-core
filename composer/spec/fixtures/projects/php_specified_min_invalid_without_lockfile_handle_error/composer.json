@@ -3,10 +3,5 @@
       "php": "^5.2.0",
       "phpdocumentor/reflection-docblock": "2.0.4",
       "illuminate/support": "^5.2.0"
-  },
-  "config": {
-    "platform": {
-      "php": "5.8.36"
-    }
   }
 }
