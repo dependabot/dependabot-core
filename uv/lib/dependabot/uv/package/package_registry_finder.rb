@@ -7,8 +7,9 @@ require "dependabot/errors"
 
 module Dependabot
   module Uv
-    class UpdateChecker
-      class IndexFinder
+    module Package
+      class PackageRegistryFinder
+        extend T::Sig
         PYPI_BASE_URL = "https://pypi.org/simple/"
         ENVIRONMENT_VARIABLE_REGEX = /\$\{.+\}/
 
@@ -18,7 +19,8 @@ module Dependabot
           @dependency       = dependency
         end
 
-        def index_urls
+        sig { returns(T::Array[String]) }
+        def registry_urls
           extra_index_urls =
             config_variable_index_urls[:extra] +
             pipfile_index_urls[:extra] +
@@ -140,7 +142,7 @@ module Dependabot
         end
 
         def config_variable_index_urls
-          urls = { main: nil, extra: [] }
+          urls = { main: T.let(nil, T.nilable(String)), extra: [] }
 
           index_url_creds = credentials
                             .select { |cred| cred["type"] == "python_index" }
@@ -158,7 +160,7 @@ module Dependabot
         end
 
         def clean_check_and_remove_environment_variables(url)
-          url = url.strip.gsub(%r{/*$}, "") + "/"
+          url = url.strip.sub(%r{/+$}, "") + "/"
 
           return authed_base_url(url) unless url.match?(ENVIRONMENT_VARIABLE_REGEX)
 
@@ -190,7 +192,11 @@ module Dependabot
           cred = credential_for(base_url)
           return base_url unless cred
 
-          AuthedUrlBuilder.authed_url(credential: cred).gsub(%r{/*$}, "") + "/"
+          builder = AuthedUrlBuilder.authed_url(credential: cred)
+
+          return base_url unless builder
+
+          builder.gsub(%r{/*$}, "") + "/"
         end
 
         def credential_for(url)
