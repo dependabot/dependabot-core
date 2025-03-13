@@ -302,7 +302,7 @@ RSpec.describe Dependabot::Service do
     end
 
     it "memoizes a shorthand summary of the error" do
-      expect(service.errors).to eql([["epoch_error",{
+      expect(service.errors).to eql([["epoch_error", {
         message: "What is fortran doing here?!"
       }, nil]])
     end

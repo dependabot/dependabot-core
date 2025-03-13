@@ -216,12 +216,13 @@ module Dependabot
     # +--------------------+---------+
     sig { returns(T.nilable(Terminal::Table)) }
     def job_errors_summary
-      job_errors = errors.filter_map { |error_type, error_details, dependency| [error_type, error_details] if dependency.nil? }
+      job_errors = errors.filter_map { |error_type, error_details, dependency| [error_type, error_details]
+        if dependency.nil? }
       return if job_errors.none?
 
       T.unsafe(Terminal::Table).new do |t|
         t.title = "Errors"
-        t.headings = ["Type", "Details"]
+        t.headings = %w(Type Details)
         t.rows = job_errors
       end
     end
@@ -244,7 +245,7 @@ module Dependabot
 
       T.unsafe(Terminal::Table).new do |t|
         t.title = "Dependencies failed to update"
-        t.headings = ["Dependency", "Error Type", "Error Details"]
+        t.headings = %w(Dependency Error\ Type Error\ Details)
         t.rows = dependency_errors
       end
     end
