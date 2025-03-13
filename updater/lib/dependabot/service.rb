@@ -78,7 +78,7 @@ module Dependabot
              dependency: T.nilable(Dependabot::Dependency)).void
     end
     def record_update_job_error(error_type:, error_details:, dependency: nil)
-      errors << [error_type.to_s, dependency]
+      errors << [error_type.to_s, error_details, dependency]
       client.record_update_job_error(error_type: error_type, error_details: error_details)
     end
 
@@ -178,7 +178,7 @@ module Dependabot
         "Results:",
         pull_request_summary,
         error_summary,
-        job_error_type_summary,
+        job_errors_summary,
         dependency_error_summary
       ].compact.join("\n")
     end
@@ -207,38 +207,44 @@ module Dependabot
 
     # Example output:
     #
-    # +--------------------+
-    # |    Errors          |
-    # +--------------------+
-    # | job_repo_not_found |
-    # +--------------------+
+    # +------------------------------+
+    # |             Errors           |
+    # +--------------------+---------+
+    # | Type               | Details |
+    # +--------------------+---------+
+    # | job_repo_not_found | {}      |
+    # +--------------------+---------+
     sig { returns(T.nilable(Terminal::Table)) }
-    def job_error_type_summary
-      job_error_types = errors.filter_map { |error_type, dependency| [error_type] if dependency.nil? }
-      return if job_error_types.none?
+    def job_errors_summary
+      job_errors = errors.filter_map { |error_type, error_details, dependency| [error_type, error_details] if dependency.nil? }
+      return if job_errors.none?
 
       T.unsafe(Terminal::Table).new do |t|
         t.title = "Errors"
-        t.rows = job_error_types
+        t.headings = ["Type", "Details"]
+        t.rows = job_errors
       end
     end
 
     # Example output:
     #
-    # +-------------------------------------+
-    # |    Dependencies failed to update    |
-    # +---------------------+---------------+
-    # | best_dependency_yay | unknown_error |
-    # +---------------------+---------------+
+    # +-----------------------------------------------------+
+    # |           Dependencies failed to update             |
+    # +---------------------+-------------------------------+
+    # | Dependency          | Error Type    | Error Details |
+    # +---------------------+-------------------------------+
+    # | best_dependency_yay | unknown_error | {}            |
+    # +---------------------+-------------------------------+
     sig { returns(T.nilable(Terminal::Table)) }
     def dependency_error_summary
-      dependency_errors = errors.filter_map do |error_type, dependency|
-        [dependency.name, error_type] unless dependency.nil?
+      dependency_errors = errors.filter_map do |error_type, error_details, dependency|
+        [dependency.name, error_type, error_details] unless dependency.nil?
       end
       return if dependency_errors.none?
 
       T.unsafe(Terminal::Table).new do |t|
         t.title = "Dependencies failed to update"
+        t.headings = ["Dependency", "Error Type", "Error Details"]
         t.rows = dependency_errors
       end
     end
