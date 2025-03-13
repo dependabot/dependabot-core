@@ -78,7 +78,11 @@ module Dependabot
              dependency: T.nilable(Dependabot::Dependency)).void
     end
     def record_update_job_error(error_type:, error_details:, dependency: nil)
-      errors << [error_type.to_s, error_details, dependency]
+      if Dependabot::Experiments.enabled?(:enable_enhanced_error_details_for_updater)
+        errors << [error_type.to_s, error_details, dependency]
+      else
+        errors << [error_type.to_s, dependency]
+      end
       client.record_update_job_error(error_type: error_type, error_details: error_details)
     end
 
@@ -216,16 +220,29 @@ module Dependabot
     # +--------------------+---------+
     sig { returns(T.nilable(Terminal::Table)) }
     def job_errors_summary
-      job_errors =errors.filter_map do |error_type, error_details, dependency|
-        [error_type, error_details] if dependency.nil?
-      end
-      return if job_errors.none?
+      if Dependabot::Experiments.enabled?(:enable_enhanced_error_details_for_updater)
+        job_errors = errors.filter_map do |error_type, error_details, dependency|
+          [error_type, error_details] if dependency.nil?
+        end
+        return if job_errors.none?
 
-      T.unsafe(Terminal::Table).new do |t|
-        t.title = "Errors"
-        t.headings = %w(Type Details)
-        t.rows = job_errors
+        T.unsafe(Terminal::Table).new do |t|
+          t.title = "Errors"
+          t.headings = %w(Type Details)
+          t.rows = job_errors
+        end
+      else
+        job_error_types = errors.filter_map do |error_type, dependency|
+          [error_type] if dependency.nil?
+        end
+        return if job_error_types.none?
+
+        T.unsafe(Terminal::Table).new do |t|
+          t.title = "Errors"
+          t.rows = job_error_types
+        end
       end
+
     end
 
     # Example output:
@@ -244,10 +261,19 @@ module Dependabot
       end
       return if dependency_errors.none?
 
-      T.unsafe(Terminal::Table).new do |t|
-        t.title = "Dependencies failed to update"
-        t.headings = ["Dependency", "Error Type", "Error Details"]
-        t.rows = dependency_errors
+      if Dependabot::Experiments.enabled?(:enable_enhanced_error_details_for_updater)
+        T.unsafe(Terminal::Table).new do |t|
+          t.title = "Dependencies failed to update"
+          t.headings = ["Dependency", "Error Type", "Error Details"]
+          t.rows = dependency_errors
+        end
+      else
+        T.unsafe(Terminal::Table).new do |t|
+          t.title = "Dependencies failed to update"
+          t.rows = dependency_errors.map do |dependency, error_type, _|
+            [dependency, error_type]
+          end
+        end
       end
     end
 

@@ -302,9 +302,19 @@ RSpec.describe Dependabot::Service do
     end
 
     it "memoizes a shorthand summary of the error" do
-      expect(service.errors).to eql([["epoch_error", {
-        message: "What is fortran doing here?!"
-      }, nil]])
+      expect(service.errors).to eql([["epoch_error", nil]])
+    end
+
+    context "when enable_enhanced_error_details_for_updater is enabled" do
+      before do
+        Dependabot::Experiments.register(:enable_enhanced_error_details_for_updater, true)
+      end
+
+      it "memoizes a shorthand summary of the error" do
+        expect(service.errors).to eql([["epoch_error", {
+          message: "What is fortran doing here?!"
+        }, nil]])
+      end
     end
   end
 
@@ -599,10 +609,21 @@ RSpec.describe Dependabot::Service do
       it "includes an error summary" do
         expect(service.summary)
           .to include("epoch_error")
-        expect(service.summary)
-          .to include("Type")
-        expect(service.summary)
-          .to include("Details")
+      end
+
+      context "when enable_enhanced_error_details_for_updater is enabled" do
+        before do
+          Dependabot::Experiments.register(:enable_enhanced_error_details_for_updater, true)
+        end
+
+        it "includes an error summary" do
+          expect(service.summary)
+            .to include("epoch_error")
+          expect(service.summary)
+            .to include("Type")
+          expect(service.summary)
+            .to include("Details")
+        end
       end
     end
 
@@ -619,12 +640,25 @@ RSpec.describe Dependabot::Service do
           .to include("unknown_error")
         expect(service.summary)
           .to include("dependabot-cobol")
-        expect(service.summary)
-          .to include("Dependency")
-        expect(service.summary)
-          .to include("Error Type")
-        expect(service.summary)
-          .to include("Error Details")
+      end
+
+      context "when enable_enhanced_error_details_for_updater is enabled" do
+        before do
+          Dependabot::Experiments.register(:enable_enhanced_error_details_for_updater, true)
+        end
+
+        it "includes an error summary" do
+          expect(service.summary)
+            .to include("unknown_error")
+          expect(service.summary)
+            .to include("dependabot-cobol")
+          expect(service.summary)
+            .to include("Dependency")
+          expect(service.summary)
+            .to include("Error Type")
+          expect(service.summary)
+            .to include("Error Details")
+        end
       end
     end
 
