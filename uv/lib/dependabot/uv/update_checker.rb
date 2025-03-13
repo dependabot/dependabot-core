@@ -170,6 +170,7 @@ module Dependabot
           credentials: credentials,
           ignored_versions: ignored_versions,
           raise_on_ignored: @raise_on_ignored,
+          update_cooldown: @update_cooldown,
           security_advisories: security_advisories
         )
       end
@@ -241,6 +242,7 @@ module Dependabot
           credentials: credentials,
           ignored_versions: ignored_versions,
           raise_on_ignored: @raise_on_ignored,
+          cooldown_options: @update_cooldown,
           security_advisories: security_advisories
         )
       end
