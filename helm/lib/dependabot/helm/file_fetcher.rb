@@ -11,7 +11,7 @@ module Dependabot
       sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
         fetched_files = []
-        fetched_files += correctly_encoded_helm_files
+        fetched_files += correctly_encoded_helm_files if allow_beta_ecosystems?
 
         return fetched_files if fetched_files.any?
 

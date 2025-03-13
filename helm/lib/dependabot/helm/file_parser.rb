@@ -78,7 +78,7 @@ module Dependabot
           next unless yaml.is_a?(Hash)
 
           find_images_in_hash(yaml).each do |image_details|
-            parsed_line = extract_image_details(T.must(image_details[:image]))
+            parsed_line = extract_image_details(image_details[:image])
             next unless parsed_line
 
             version = version_from(parsed_line)
@@ -137,9 +137,8 @@ module Dependabot
         images
       end
 
-      sig do
-        params(hash: T::Hash[T.untyped, T.untyped], path: T::Array[String]).returns(T::Array[T::Hash[Symbol, String]])
-      end
+
+      sig { params(hash: T.untyped, path: T.untyped).returns(T::Array[T.untyped]) }
       def find_images_in_hash(hash, path = [])
         images = []
 
