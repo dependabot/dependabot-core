@@ -1,4 +1,4 @@
-## `dependabot-docker_compose`
+## `dependabot-helm`
 
 Docker support for [`dependabot-core`][core-repo].
 
@@ -7,12 +7,12 @@ Docker support for [`dependabot-core`][core-repo].
 1. Start a development shell
 
   ```
-  $ bin/docker-dev-shell docker_compose
+  $ bin/docker-dev-shell helm
   ```
 
 2. Run tests
    ```
-   [dependabot-core-dev] ~ $ cd docker_compose && rspec
+   [dependabot-core-dev] ~ $ cd helm && rspec
    ```
 
 [core-repo]: https://github.com/dependabot/dependabot-core
@@ -21,7 +21,7 @@ Docker support for [`dependabot-core`][core-repo].
 
 Dependabot supports updates for Docker Compose tags that use semver versioning, dates, and build numbers.
 The Docker Compose tag class is located at:
-https://github.com/dependabot/dependabot-core/blob/main/docker_compose/lib/dependabot/docker_compose/tag.rb
+https://github.com/dependabot/dependabot-core/blob/main/helm/lib/dependabot/helm/tag.rb
 
 #### Semver
 
