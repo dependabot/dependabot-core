@@ -200,6 +200,21 @@ module Dependabot
         def run_go_mod_tidy
           return unless tidy?
 
+          # Extract the Go version from the go.mod file (assuming the format is 'go 1.23.0')
+          go_version = `grep '^go ' go.mod`.strip.split(' ').last
+
+          # Extract the major and minor version (e.g., "1.23") from the full version
+          formatted_version = go_version.split('.')[0..1].join('.')
+
+          # Apply the sed commands to fix go.mod before running `go mod tidy`
+          sed_command_1 = "sed -i 's/go #{go_version}/go #{formatted_version}/' go.mod"
+          Dependabot.logger.info "Running: #{sed_command_1}"
+          Open3.capture3(environment, sed_command_1)
+
+          sed_command_2 = "sed -i '/toolchain/d' go.mod"
+          Dependabot.logger.info "Running: #{sed_command_2}"
+          Open3.capture3(environment, sed_command_2)
+
           command = "go mod tidy -e"
 
           # we explicitly don't raise an error for 'go mod tidy' and silently
