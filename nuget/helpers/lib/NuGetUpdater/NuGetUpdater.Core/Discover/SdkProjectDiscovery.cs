@@ -318,17 +318,10 @@ internal static class SdkProjectDiscovery
             // to do this we create a temporary project with all of the top-level project elements, resolve _again_, then rebuild the proper result
             packagesPerProject = await RebuildPackagesPerProject(
                 repoRootPath,
-                workspacePath,
                 startingProjectPath,
                 tfms,
                 packagesPerProject,
                 explicitPackageVersionsPerProject,
-                packagesReplacedBySdkPerProject,
-                topLevelPackagesPerProject,
-                resolvedProperties,
-                referencedProjects,
-                importedFiles,
-                additionalFiles,
                 experimentsManager,
                 logger
             );
@@ -458,17 +451,10 @@ internal static class SdkProjectDiscovery
 
     private static async Task<Dictionary<string, Dictionary<string, Dictionary<string, string>>>> RebuildPackagesPerProject(
         string repoRootPath,
-        string workspacePath,
         string projectPath,
         ImmutableArray<string> targetFrameworks,
         Dictionary<string, Dictionary<string, Dictionary<string, string>>> packagesPerProject,
         Dictionary<string, Dictionary<string, Dictionary<string, string>>> explicitPackageVersionsPerProject,
-        Dictionary<string, Dictionary<string, Dictionary<string, string>>> packagesReplacedBySdkPerProject,
-        Dictionary<string, Dictionary<string, HashSet<string>>> topLevelPackagesPerProject,
-        Dictionary<string, Dictionary<string, string>> resolvedProperties,
-        Dictionary<string, HashSet<string>> referencedProjects,
-        Dictionary<string, HashSet<string>> importedFiles,
-        Dictionary<string, HashSet<string>> additionalFiles,
         ExperimentsManager experimentsManager,
         ILogger logger
     )
