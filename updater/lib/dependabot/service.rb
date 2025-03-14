@@ -274,9 +274,7 @@ module Dependabot
 
         T.unsafe(Terminal::Table).new do |t|
           t.title = "Dependencies failed to update"
-          t.rows = dependency_errors.map do |dependency, error_type, _|
-            [dependency, error_type]
-          end
+          t.rows = dependency_errors
         end
       end
     end
