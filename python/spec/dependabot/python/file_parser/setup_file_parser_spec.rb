@@ -119,6 +119,7 @@ RSpec.describe Dependabot::Python::FileParser::SetupFileParser do
       context "with an illformed_requirement" do
         let(:setup_file_fixture_name) { "illformed_req.py" }
 
+        # New pip version is not identifying illformed py
         its(:length) { is_expected.to eq(0) }
       end
 
