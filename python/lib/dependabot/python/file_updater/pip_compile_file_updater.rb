@@ -206,8 +206,11 @@ module Dependabot
 
         sig do
           params(
-            cmd: String, fingerprint: String, env: T.nilable(T::Hash[String, String]),
-            allow_unsafe_shell_command: T::Boolean).returns(String)
+            cmd: String,
+            fingerprint: String,
+            env: T.nilable(T::Hash[String, String]),
+            allow_unsafe_shell_command: T::Boolean)
+            .returns(String)
         end
         def run_command(cmd, fingerprint:, env: python_env, allow_unsafe_shell_command: false)
           SharedHelpers.run_shell_command(
@@ -483,7 +486,7 @@ module Dependabot
           current_separator =
             T.must(requirement_string.match(/#{hash_regex}((?<separator>\s*\\?\s*?)#{hash_regex})*/)).named_captures.fetch("separator")
 
-          # rubocop(Layout/LineLength): Line is too long. [125/120]
+          # rubocop:disable Layout/LineLength
           default_separator =
             T.must(T.must(requirement_string
             .match(RequirementParser::HASH)).pre_match.match(/(?<separator>\s*\\?\s*?)\z/)).named_captures.fetch("separator")
