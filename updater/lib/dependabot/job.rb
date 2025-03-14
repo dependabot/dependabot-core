@@ -471,9 +471,9 @@ module Dependabot
 
       Dependabot::Package::ReleaseCooldownOptions.new(
         default_days: cooldown["default-days"] || 0,
-        major_days: cooldown["major-days"] || 0,
-        minor_days: cooldown["minor-days"] || 0,
-        patch_days: cooldown["patch-days"] || 0,
+        semver_major_days: cooldown["semver-major-days"] || 0,
+        semver_minor_days: cooldown["semver-minor-days"] || 0,
+        semver_patch_days: cooldown["semver-patch-days"] || 0,
         include: cooldown["include"] || [],
         exclude: cooldown["exclude"] || []
       )

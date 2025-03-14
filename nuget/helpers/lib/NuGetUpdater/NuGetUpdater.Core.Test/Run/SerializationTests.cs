@@ -417,11 +417,11 @@ public class SerializationTests
             """;
         var jobWrapper = RunWorker.Deserialize(jsonWrapperJson)!;
         Assert.Single(jobWrapper.Job.ExistingPullRequests);
-        Assert.Single(jobWrapper.Job.ExistingPullRequests[0]);
-        Assert.Equal("Some.Package", jobWrapper.Job.ExistingPullRequests[0][0].DependencyName);
-        Assert.Equal(NuGetVersion.Parse("1.2.3"), jobWrapper.Job.ExistingPullRequests[0][0].DependencyVersion);
-        Assert.False(jobWrapper.Job.ExistingPullRequests[0][0].DependencyRemoved);
-        Assert.Null(jobWrapper.Job.ExistingPullRequests[0][0].Directory);
+        Assert.Single(jobWrapper.Job.ExistingPullRequests[0].Dependencies);
+        Assert.Equal("Some.Package", jobWrapper.Job.ExistingPullRequests[0].Dependencies[0].DependencyName);
+        Assert.Equal(NuGetVersion.Parse("1.2.3"), jobWrapper.Job.ExistingPullRequests[0].Dependencies[0].DependencyVersion);
+        Assert.False(jobWrapper.Job.ExistingPullRequests[0].Dependencies[0].DependencyRemoved);
+        Assert.Null(jobWrapper.Job.ExistingPullRequests[0].Dependencies[0].Directory);
     }
 
     [Fact]
@@ -517,10 +517,15 @@ public class SerializationTests
         Assert.Null(jobWrapper.Job.SecurityAdvisories[0].PatchedVersions);
     }
 
-    [Fact]
-    public void DeserializeCommitOptions()
+    [Theory]
+    [InlineData("true", true)] // bool
+    [InlineData("false", false)]
+    [InlineData("\"true\"", true)] // stringified bool
+    [InlineData("\"false\"", false)]
+    [InlineData("null", false)]
+    public void DeserializeCommitOptions(string includeScopeJsonValue, bool expectedIncludeScopeValue)
     {
-        var jsonWrapperJson = """
+        var jsonWrapperJson = $$"""
             {
                 "job": {
                     "source": {
@@ -530,7 +535,7 @@ public class SerializationTests
                     "commit-message-options": {
                         "prefix": "[SECURITY] ",
                         "prefix-development": null,
-                        "include-scope": true
+                        "include-scope": {{includeScopeJsonValue}}
                     }
                 }
             }
@@ -538,7 +543,7 @@ public class SerializationTests
         var jobWrapper = RunWorker.Deserialize(jsonWrapperJson)!;
         Assert.Equal("[SECURITY] ", jobWrapper.Job.CommitMessageOptions!.Prefix);
         Assert.Null(jobWrapper.Job.CommitMessageOptions!.PrefixDevelopment);
-        Assert.True(jobWrapper.Job.CommitMessageOptions!.IncludeScope);
+        Assert.Equal(expectedIncludeScopeValue, jobWrapper.Job.CommitMessageOptions!.IncludeScope);
     }
 
     [Fact]

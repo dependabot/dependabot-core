@@ -599,12 +599,16 @@ RSpec.describe Dependabot::SharedHelpers do
     end
 
     let(:credentials) { [] }
-    let(:git_config_path) { File.expand_path(".gitconfig", tmp) }
+    let(:git_config_path) { File.expand_path("XXXXXXXXXXXXXXXX.gitconfig", tmp) }
     let(:configured_git_config) { with_git_configured { `cat #{git_config_path}` } }
     let(:configured_git_credentials) { with_git_configured { `cat #{Dir.pwd}/git.store` } }
 
     def with_git_configured(&block)
       Dependabot::SharedHelpers.with_git_configured(credentials: credentials, &block)
+    end
+
+    before do
+      allow(SecureRandom).to receive(:hex).and_return("XXXXXXXXXXXXXXXX")
     end
 
     context "when the global .gitconfig has a safe directory" do
@@ -749,10 +753,10 @@ RSpec.describe Dependabot::SharedHelpers do
     context "when the host has run out of disk space" do
       before do
         allow(File).to receive(:open)
-          .with(described_class::GIT_CONFIG_GLOBAL_PATH, anything)
+          .with(git_config_path, anything)
           .and_raise(Errno::ENOSPC)
         allow(FileUtils).to receive(:rm_f)
-          .with(described_class::GIT_CONFIG_GLOBAL_PATH)
+          .with(git_config_path)
       end
 
       specify { expect { configured_git_config }.to raise_error(Dependabot::OutOfDisk) }
