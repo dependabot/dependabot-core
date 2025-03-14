@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Xml;
+using System.Xml.Linq;
 
 using Microsoft.Build.Construction;
 using Microsoft.Build.Definition;
@@ -29,6 +30,8 @@ internal static partial class MSBuildHelper
     public static string MSBuildPath { get; private set; } = string.Empty;
 
     public static bool IsMSBuildRegistered => MSBuildPath.Length > 0;
+
+    public static string GetFileFromRuntimeDirectory(string fileName) => Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, fileName);
 
     public static void RegisterMSBuild(string currentDirectory, string rootDirectory)
     {
@@ -663,7 +666,7 @@ internal static partial class MSBuildHelper
         }
     }
 
-    internal static async Task<string> CreateTempProjectAsync(
+    internal static Task<string> CreateTempProjectAsync(
         DirectoryInfo tempDir,
         string repoRoot,
         string projectPath,
@@ -671,7 +674,29 @@ internal static partial class MSBuildHelper
         IReadOnlyCollection<Dependency> packages,
         ExperimentsManager experimentsManager,
         ILogger logger,
-        bool usePackageDownload = false)
+        bool usePackageDownload = false
+    ) => CreateTempProjectAsync(tempDir, repoRoot, projectPath, new XElement("TargetFramework", targetFramework), packages, experimentsManager, logger, usePackageDownload);
+
+    internal static Task<string> CreateTempProjectAsync(
+        DirectoryInfo tempDir,
+        string repoRoot,
+        string projectPath,
+        ImmutableArray<string> targetFrameworks,
+        IReadOnlyCollection<Dependency> packages,
+        ExperimentsManager experimentsManager,
+        ILogger logger,
+        bool usePackageDownload = false
+    ) => CreateTempProjectAsync(tempDir, repoRoot, projectPath, new XElement("TargetFrameworks", string.Join(";", targetFrameworks)), packages, experimentsManager, logger, usePackageDownload);
+
+    private static async Task<string> CreateTempProjectAsync(
+        DirectoryInfo tempDir,
+        string repoRoot,
+        string projectPath,
+        XElement targetFrameworkElement,
+        IReadOnlyCollection<Dependency> packages,
+        ExperimentsManager experimentsManager,
+        ILogger logger,
+        bool usePackageDownload)
     {
         var projectDirectory = Path.GetDirectoryName(projectPath);
         projectDirectory ??= repoRoot;
@@ -725,13 +750,9 @@ internal static partial class MSBuildHelper
         var projectContents = $"""
             <Project Sdk="Microsoft.NET.Sdk">
               <PropertyGroup>
-                <TargetFramework>{targetFramework}</TargetFramework>
-                <GenerateDependencyFile>true</GenerateDependencyFile>
-                <RunAnalyzers>false</RunAnalyzers>
-                <NuGetInteractive>false</NuGetInteractive>
-                <DesignTimeBuild>true</DesignTimeBuild>
-                <TargetPlatformVersion Condition=" $(TargetFramework.Contains('-')) ">1.0</TargetPlatformVersion>
+                {targetFrameworkElement}
               </PropertyGroup>
+              <Import Project="{GetFileFromRuntimeDirectory("DependencyDiscovery.targets")}" />
               <ItemGroup>
                 {packageReferences}
               </ItemGroup>
@@ -763,8 +784,6 @@ internal static partial class MSBuildHelper
             """
             <Project>
               <PropertyGroup>
-                <!-- For Windows-specific apps -->
-                <EnableWindowsTargeting>true</EnableWindowsTargeting>
                 <!-- Really ensure CPM is disabled -->
                 <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
               </PropertyGroup>
