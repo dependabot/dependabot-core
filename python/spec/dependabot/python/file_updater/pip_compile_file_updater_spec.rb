@@ -531,10 +531,10 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
       let(:dependency_version) { "5.2.7" }
       let(:dependency_previous_version) { "5.2.6" }
 
-      it "adds pycurl as dependency" do
+      it "adds vine as dependency" do
         expect(updated_files.count).to eq(1)
         expect(updated_files.first.content).to include("--resolver=backtracking")
-        expect(updated_files.first.content).to include("pycurl")
+        expect(updated_files.first.content).to include("vine")
       end
     end
 
