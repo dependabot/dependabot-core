@@ -100,7 +100,10 @@ module Dependabot
 
       # Clones the flutter repo into /tmp/flutter if needed
       def ensure_flutter_repo
-        return if File.directory?("/tmp/flutter/.git")
+        if File.directory?("/tmp/flutter/.git")
+          Dependabot.logger.info "Flutter repo already exists at /tmp/flutter."
+          return
+        end
 
         Dependabot.logger.info "Cloning the flutter repo https://github.com/flutter/flutter."
         # Make a flutter checkout
@@ -112,35 +115,49 @@ module Dependabot
           "https://github.com/flutter/flutter",
           chdir: "/tmp/"
         )
-        raise Dependabot::DependabotError, "Cloning Flutter failed: #{stderr}" unless status.success?
+
+        if status.success?
+          Dependabot.logger.info "Flutter repo cloned successfully."
+        else
+          Dependabot.logger.error "Cloning Flutter failed: #{stderr}"
+          raise Dependabot::DependabotError, "Cloning Flutter failed: #{stderr}"
+        end
       end
 
       # Will ensure that /tmp/flutter contains the flutter repo checked out at `ref`.
       def check_out_flutter_ref(ref)
         ensure_flutter_repo
-        Dependabot.logger.info "Checking out Flutter version #{ref}"
+        Dependabot.logger.info "Checking out Flutter version: #{ref}"
         # Ensure we have the right version (by tag)
         _, stderr, status = Open3.capture3(
           {},
           "git",
           "fetch",
           "origin",
+          "--force",
           ref,
           chdir: "/tmp/flutter"
         )
-        raise Dependabot::DependabotError, "Fetching Flutter version #{ref} failed: #{stderr}" unless status.success?
+        unless status.success?
+          Dependabot.logger.error "Fetching Flutter version failed: #{stderr}"
+          raise Dependabot::DependabotError, "Fetching Flutter version #{ref} failed: #{stderr}"
+        end
 
         # Check out the right version in git.
         _, stderr, status = Open3.capture3(
           {},
           "git",
           "checkout",
+          "--force",
           ref,
           chdir: "/tmp/flutter"
         )
-        return if status.success?
-
-        raise Dependabot::DependabotError, "Checking out flutter #{ref} failed: #{stderr}"
+        if status.success?
+          Dependabot.logger.info "Successfully checked out Flutter version: #{ref}"
+        else
+          Dependabot.logger.error "Checking out Flutter version failed: #{stderr}"
+          raise Dependabot::DependabotError, "Checking out Flutter #{ref} failed: #{stderr}"
+        end
       end
 
       ## Detects the right flutter release to use for the pubspec.yaml.
@@ -218,6 +235,8 @@ module Dependabot
 
       def run_dependency_services(command, stdin_data: nil)
         SharedHelpers.in_a_temporary_directory do |temp_dir|
+          Dependabot.logger.info "Running dependency_services in temporary directory: #{temp_dir}"
+
           dependency_files.each do |f|
             in_path_name = File.join(temp_dir, f.directory, f.name)
             FileUtils.mkdir_p File.dirname(in_path_name)
@@ -244,7 +263,12 @@ module Dependabot
               stdin_data: stdin_data,
               chdir: command_dir
             )
-            raise_error(stderr) unless status.success?
+
+            unless status.success?
+              Dependabot.logger.error "Error executing dependency_services: #{stderr}"
+              raise_error(stderr)
+            end
+
             return stdout unless block_given?
 
             yield command_dir
