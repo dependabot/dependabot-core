@@ -475,6 +475,7 @@ module Dependabot
           hash_regex = RequirementParser::HASH
           return unless requirement_string.match?(hash_regex)
 
+          # rubocop:disable Layout/LineLength
           current_separator =
             T.must(requirement_string.match(/#{hash_regex}((?<separator>\s*\\?\s*?)#{hash_regex})*/)).named_captures.fetch("separator")
 
