@@ -86,6 +86,10 @@ module Dependabot
                 headers: auth_header_for(details["token"])
               )
               response.status < 400 && JSON.parse(response.body)
+              if response.status >= 400
+                raise DependencyFileNotResolvable,
+                      "Response status from the `#{details["registry"]}` registry: #{response.status}"
+              end
             rescue Excon::Error::Timeout,
                    Excon::Error::Socket,
                    JSON::ParserError
