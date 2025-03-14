@@ -478,6 +478,7 @@ module Dependabot
           current_separator =
             T.must(requirement_string.match(/#{hash_regex}((?<separator>\s*\\?\s*?)#{hash_regex})*/)).named_captures.fetch("separator")
 
+          # rubocop(Layout/LineLength): Line is too long. [125/120]
           default_separator =
             T.must(T.must(requirement_string
             .match(RequirementParser::HASH)).pre_match.match(/(?<separator>\s*\\?\s*?)\z/)).named_captures.fetch("separator")
