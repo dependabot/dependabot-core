@@ -325,7 +325,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
 
                 _processedProjectPaths.Add(actualProjectPath);
 
-                using (new WebApplicationTargetsConditionPatcher(actualProjectPath))
+                using (new SpecialImportsConditionPatcher(actualProjectPath))
                 {
                     var relativeProjectPath = Path.GetRelativePath(workspacePath, actualProjectPath).NormalizePathToUnix();
                     var packagesConfigResult = await PackagesConfigDiscovery.Discover(repoRootPath, workspacePath, actualProjectPath, _experimentsManager, _logger);
