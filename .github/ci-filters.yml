@@ -75,3 +75,6 @@ terraform:
 uv:
   - *shared
   - 'uv/**'
+helm:
+  - *shared
+  - 'helm/**'
