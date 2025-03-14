@@ -119,8 +119,15 @@ RSpec.describe Dependabot::Python::FileParser::SetupFileParser do
       context "with an illformed_requirement" do
         let(:setup_file_fixture_name) { "illformed_req.py" }
 
-        # New pip version is not raising an error for illformed python file
-        its(:length) { is_expected.to eq(0) }
+        it "raises a helpful error" do
+          expect { parser.dependency_set }
+            .to raise_error do |error|
+              expect(error.class)
+                .to eq(Dependabot::DependencyFileNotEvaluatable)
+              expect(error.message)
+                .to eq('Illformed requirement ["==2.6.1raven==5.32.0"]')
+            end
+        end
       end
 
       context "with an `open` statement" do
@@ -254,11 +261,11 @@ RSpec.describe Dependabot::Python::FileParser::SetupFileParser do
         it "raises a helpful error" do
           expect { parser.dependency_set }
             .to raise_error do |error|
-            expect(error.class)
-              .to eq(Dependabot::DependencyFileNotEvaluatable)
-            expect(error.message)
-              .to include("InstallationError(\"Invalid requirement: 'psycopg2==2.6.1raven == 5.32.0':")
-          end
+              expect(error.class)
+                .to eq(Dependabot::DependencyFileNotEvaluatable)
+              expect(error.message)
+                .to include("InstallationError(\"Invalid requirement: 'psycopg2==2.6.1raven == 5.32.0'\")")
+            end
         end
       end
 

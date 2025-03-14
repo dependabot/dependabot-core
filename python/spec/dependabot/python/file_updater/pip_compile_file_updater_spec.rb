@@ -500,7 +500,6 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
       let(:dependency_previous_requirements) { [] }
 
       it "raises an error indicating the dependencies are not resolvable", :slow do
-        skip "Skipping due to timeout issues"
         expect { updated_files }.to raise_error(Dependabot::DependencyFileNotResolvable) do |err|
           expect(err.message).to include(
             "There are incompatible versions in the resolved dependencies:\n  pyyaml==6.0.1"
@@ -532,10 +531,10 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
       let(:dependency_version) { "5.2.7" }
       let(:dependency_previous_version) { "5.2.6" }
 
-      it "adds python-dateutil as dependency" do
+      it "adds pycurl as dependency" do
         expect(updated_files.count).to eq(1)
         expect(updated_files.first.content).to include("--resolver=backtracking")
-        expect(updated_files.first.content).to include("python-dateutil")
+        expect(updated_files.first.content).to include("pycurl")
       end
     end
 
@@ -546,10 +545,10 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
       let(:dependency_version) { "5.2.7" }
       let(:dependency_previous_version) { "5.2.6" }
 
-      it "do not include python-dateutil" do
+      it "do not include pycurl" do
         expect(updated_files.count).to eq(1)
         expect(updated_files.first.content).to include("--resolver=legacy")
-        expect(updated_files.first.content).not_to include("python-dateutil")
+        expect(updated_files.first.content).not_to include("pycurl")
       end
     end
   end
