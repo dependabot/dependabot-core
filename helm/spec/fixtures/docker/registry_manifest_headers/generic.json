@@ -1,0 +1,11 @@
+{
+  "content_length": "1357",
+  "content_type": "application/vnd.docker.distribution.manifest.v2+json",
+  "date": "Thu, 12 Oct 2017 07:19:25 GMT",
+  "docker_content_digest":
+    "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86ca97eba880ebf600d68608",
+  "docker_distribution_api_version": "registry/2.0",
+  "etag":
+    "\"sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86ca97eba880ebf600d68608\"",
+  "strict_transport_security": "max-age=31536000"
+}

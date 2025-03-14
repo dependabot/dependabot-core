@@ -38,6 +38,7 @@ Sentry.init do |config|
     nuget|
     gradle|
     maven|
+    helm|
     hex|
     cargo|
     go_modules|
@@ -72,6 +73,7 @@ require "dependabot/nuget"
 require "dependabot/gradle"
 require "dependabot/maven"
 require "dependabot/hex"
+require "dependabot/helm"
 require "dependabot/cargo"
 require "dependabot/go_modules"
 require "dependabot/npm_and_yarn"

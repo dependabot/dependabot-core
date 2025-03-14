@@ -1,0 +1,8 @@
+# Chart.yaml - Main chart definition
+apiVersion: v2
+name: example-service
+version: 0.1.0
+dependencies:
+  - name: myreg/redis
+    version: 17.11.3
+    repository: https://registry-host.io:5000
