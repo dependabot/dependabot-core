@@ -171,5 +171,59 @@ public partial class DiscoveryWorkerTests
                 }
             );
         }
+
+        [Fact]
+        public async Task DirectDiscoveryWorksEvenWithTargetsImportsOnlyProvidedByVisualStudio()
+        {
+            await TestDiscoveryAsync(
+                workspacePath: "",
+                experimentsManager: new ExperimentsManager() { UseDirectDiscovery = true },
+                packages: [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net48"),
+                ],
+                files: [
+                    ("project.csproj", """
+                        <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                          <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                          <PropertyGroup>
+                            <OutputType>Library</OutputType>
+                            <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <None Include="packages.config" />
+                          </ItemGroup>
+                          <Import Project="$(VSToolsPath)\SomeSubPath\WebApplications\Microsoft.WebApplication.targets" />
+                          <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                        </Project>
+                        """),
+                    ("packages.config", """
+                        <?xml version="1.0" encoding="utf-8"?>
+                        <packages>
+                          <package id="Some.Package" version="1.0.0" targetFramework="net48" />
+                        </packages>
+                        """)
+                ],
+                expectedResult: new()
+                {
+                    Path = "",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "project.csproj",
+                            Properties = [],
+                            TargetFrameworks = ["net48"],
+                            Dependencies = [
+                                new("Some.Package", "1.0.0", DependencyType.PackagesConfig, TargetFrameworks: ["net48"]),
+                            ],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [],
+                            AdditionalFiles = [
+                                "packages.config"
+                            ],
+                        }
+                    ]
+                }
+            );
+        }
     }
 }
