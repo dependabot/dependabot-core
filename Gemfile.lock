@@ -105,6 +105,13 @@ PATH
       dependabot-maven (= 0.301.0)
 
 PATH
+  remote: helm
+  specs:
+    dependabot-helm (0.301.0)
+      dependabot-common (= 0.301.0)
+      dependabot-docker (= 0.301.0)
+
+PATH
   remote: hex
   specs:
     dependabot-hex (0.301.0)
@@ -411,6 +418,7 @@ DEPENDENCIES
   dependabot-github_actions!
   dependabot-go_modules!
   dependabot-gradle!
+  dependabot-helm!
   dependabot-hex!
   dependabot-maven!
   dependabot-npm_and_yarn!
