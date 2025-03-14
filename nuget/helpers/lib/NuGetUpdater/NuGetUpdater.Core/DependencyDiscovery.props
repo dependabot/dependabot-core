@@ -10,6 +10,9 @@
     -->
     <_DefaultTargetPlatformVersion Condition="'$(_DefaultTargetPlatformVersion)' == ''">0.0</_DefaultTargetPlatformVersion>
     <DesignTimeBuild>true</DesignTimeBuild>
+    <GenerateDependencyFile>true</GenerateDependencyFile>
+    <NuGetInteractive>false</NuGetInteractive>
+    <RunAnalyzers>false</RunAnalyzers>
     <EnableWindowsTargeting Condition="$(TargetFramework.Contains('-windows'))">true</EnableWindowsTargeting>
     <TargetPlatformVersion Condition="$(TargetPlatformVersion) == '' AND $(TargetFramework.Contains('-'))">$(_DefaultTargetPlatformVersion)</TargetPlatformVersion>
   </PropertyGroup>
