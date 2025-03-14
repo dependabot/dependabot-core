@@ -3707,5 +3707,43 @@ public partial class UpdateWorkerTests
                 ]
             );
         }
+
+        [Fact]
+        public async Task LegacyProjectWithPackageReferencesCanUpdate()
+        {
+            await TestUpdateForProject("Some.Dependency", "1.0.0", "1.0.1",
+                experimentsManager: new ExperimentsManager() { UseDirectDiscovery = true },
+                packages: [
+                    MockNuGetPackage.CreateSimplePackage("Some.Dependency", "1.0.0", "net48"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Dependency", "1.0.1", "net48"),
+                ],
+                projectContents: """
+                    <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                      <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                      <PropertyGroup>
+                        <OutputType>Library</OutputType>
+                        <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Dependency" Version="1.0.0" />
+                      </ItemGroup>
+                      <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                    </Project>
+                    """,
+                expectedProjectContents: """
+                    <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                      <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                      <PropertyGroup>
+                        <OutputType>Library</OutputType>
+                        <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Dependency" Version="1.0.1" />
+                      </ItemGroup>
+                      <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                    </Project>
+                    """
+            );
+        }
     }
 }
