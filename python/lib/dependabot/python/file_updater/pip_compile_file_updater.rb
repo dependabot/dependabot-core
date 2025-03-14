@@ -204,7 +204,11 @@ module Dependabot
           ).updated_dependency_files
         end
 
-        sig { params(cmd: String, fingerprint: String, env: T.nilable(T::Hash[String, String]), allow_unsafe_shell_command: T::Boolean).returns(String) }
+        sig do
+          params(
+            cmd: String, fingerprint: String, env: T.nilable(T::Hash[String, String]),
+            allow_unsafe_shell_command: T::Boolean).returns(String)
+        end
         def run_command(cmd, fingerprint:, env: python_env, allow_unsafe_shell_command: false)
           SharedHelpers.run_shell_command(
             cmd,
