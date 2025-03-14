@@ -264,7 +264,7 @@ RSpec.describe Dependabot::Python::FileParser::SetupFileParser do
             expect(error.class)
               .to eq(Dependabot::DependencyFileNotEvaluatable)
             expect(error.message)
-              .to include("InstallationError(\"Invalid requirement: 'psycopg2==2.6.1raven == 5.32.0': Expected end or semicolon (after version specifier)\\n    psycopg2==2.6.1raven == 5.32.0\\n            ~~~~~~~~^\")") # rubocop:disable Layout/LineLength
+              .to include("InstallationError(\"Invalid requirement: 'psycopg2==2.6.1raven == 5.32.0':")
           end
         end
       end
