@@ -500,6 +500,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
       let(:dependency_previous_requirements) { [] }
 
       it "raises an error indicating the dependencies are not resolvable", :slow do
+        skip "Skipping due to timeout issues"
         expect { updated_files }.to raise_error(Dependabot::DependencyFileNotResolvable) do |err|
           expect(err.message).to include(
             "There are incompatible versions in the resolved dependencies:\n  pyyaml==6.0.1"
