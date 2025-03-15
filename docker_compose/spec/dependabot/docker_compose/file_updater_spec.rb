@@ -590,5 +590,19 @@ RSpec.describe Dependabot::DockerCompose::FileUpdater do
         end
       end
     end
+
+    context "when dependency is default value of variable" do
+      let(:dockerfile_body) do
+        fixture("docker_compose", "composefiles", "variable")
+      end
+
+      describe "the updated docker-compose.yml" do
+        subject(:updated_dockerfile) do
+          updated_files.find { |f| f.name == "docker-compose.yml" }
+        end
+
+        its(:content) { is_expected.to include "image: ${UBUNTU_IMAGE:-ubuntu:17.10}\n" }
+      end
+    end
   end
 end

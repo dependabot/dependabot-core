@@ -583,5 +583,25 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
         end
       end
     end
+
+    context "with default value in variable" do
+      let(:dependency) { parser.parse.first }
+
+      let(:composefile) do
+        Dependabot::DependencyFile.new(
+          name: "docker-compose.yml",
+          content: <<~YAML
+            services:
+              api:
+                image: ${UBUNTU_IMAGE:-ubuntu:17.04}
+          YAML
+        )
+      end
+
+      it "returns dependency defined as default value" do
+        expect(dependency.name).to eq("ubuntu")
+        expect(dependency.version).to eq("17.04")
+      end
+    end
   end
 end
