@@ -1,29 +1,32 @@
 FROM docker.io/library/golang:1.24.1-bookworm AS go
 
+# Use the Dependabot Updater Core image
 FROM ghcr.io/dependabot/dependabot-updater-core
 ARG TARGETARCH
 
 USER root
 
+# Copy Go binaries from the Go base image to the final image
 COPY --from=go /usr/local/go /opt/go
 
+# Update the PATH to include Go binaries
 ENV PATH=/opt/go/bin:$PATH
 
+# Set the native helpers path for Dependabot
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
 
+# Copy the helper files for building the Go modules
 COPY go_modules/helpers /opt/go_modules/helpers
 RUN bash /opt/go_modules/helpers/build
 
 USER dependabot
+# Copy the modules, common, and updater files
 COPY --chown=dependabot:dependabot go_modules $DEPENDABOT_HOME/go_modules
 COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
 
-# See https://go.dev/doc/toolchain#select
-# By specifying go1.20.10, we use 1.20.10 for any go.mod with go directive <= 1.20.
-# In the file_parser, GOTOOLCHAIN=local+auto is set otherwise, which uses the latest version above
-# or downloads the correct version if it's later than the version installed.
-ENV GOTOOLCHAIN="go1.20.10"
-# This pre-installs go 1.20 so that each job doesn't have to do it.
+# Set the Go toolchain to the correct version (go1.24.x, fix the toolchain version format)
+ENV GOTOOLCHAIN="go1.24.1"
+# This pre-installs Go 1.24 so that each job doesn't have to download it.
 RUN go version
 ENV GO_LEGACY=$GOTOOLCHAIN
