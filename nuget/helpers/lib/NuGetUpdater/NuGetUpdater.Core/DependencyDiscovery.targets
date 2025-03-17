@@ -1,7 +1,8 @@
 <Project>
   <PropertyGroup>
-    <!-- Dependency discovery requires a non-zero value for $(TargetPlatformVersion) -->
+    <!-- Dependency discovery requires a custom value for $(TargetPlatformVersion).  Minimum version of unspecified Windows targeting is 7.0. -->
     <_DefaultTargetPlatformVersion>1.0</_DefaultTargetPlatformVersion>
+    <_DefaultTargetPlatformVersion Condition="$(TargetFramework.ToLowerInvariant().EndsWith('-windows'))">7.0</_DefaultTargetPlatformVersion>
     <_DiscoverDependenciesDependsOn>ResolveAssemblyReferences</_DiscoverDependenciesDependsOn>
 
     <!-- only SDK-style projects set `$(NETCoreSdkVersion)`; legacy projects don't have it -->
