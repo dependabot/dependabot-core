@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+
 using Microsoft.Language.Xml;
 
 namespace NuGetUpdater.Core.Updater
@@ -6,11 +8,11 @@ namespace NuGetUpdater.Core.Updater
     {
         public Func<string> GetContent { get; }
         public Action<string> SetContent { get; }
-        public Func<XmlDocumentSyntax, XmlNodeSyntax?> NodeFinder { get; }
-        public Func<XmlNodeSyntax, XmlNodeSyntax> PreProcessor { get; }
-        public Func<XmlNodeSyntax, XmlNodeSyntax> PostProcessor { get; }
+        public Func<XmlDocumentSyntax, IEnumerable<XmlNodeSyntax>> NodeFinder { get; }
+        public Func<int, XmlNodeSyntax, XmlNodeSyntax> PreProcessor { get; }
+        public Func<int, XmlNodeSyntax, XmlNodeSyntax> PostProcessor { get; }
 
-        public XmlFilePreAndPostProcessor(Func<string> getContent, Action<string> setContent, Func<XmlDocumentSyntax, XmlNodeSyntax?> nodeFinder, Func<XmlNodeSyntax, XmlNodeSyntax> preProcessor, Func<XmlNodeSyntax, XmlNodeSyntax> postProcessor)
+        public XmlFilePreAndPostProcessor(Func<string> getContent, Action<string> setContent, Func<XmlDocumentSyntax, IEnumerable<XmlNodeSyntax>> nodeFinder, Func<int, XmlNodeSyntax, XmlNodeSyntax> preProcessor, Func<int, XmlNodeSyntax, XmlNodeSyntax> postProcessor)
         {
             GetContent = getContent;
             SetContent = setContent;
@@ -29,7 +31,7 @@ namespace NuGetUpdater.Core.Updater
 
         private void PostProcess() => RunProcessor(PostProcessor);
 
-        private void RunProcessor(Func<XmlNodeSyntax, XmlNodeSyntax> processor)
+        private void RunProcessor(Func<int, XmlNodeSyntax, XmlNodeSyntax> processor)
         {
             var content = GetContent();
             var xml = Parser.ParseText(content);
@@ -38,15 +40,28 @@ namespace NuGetUpdater.Core.Updater
                 return;
             }
 
-            var node = NodeFinder(xml);
-            if (node is null)
+            var offset = 0;
+            var nodes = NodeFinder(xml).ToImmutableArray();
+            for (int i = 0; i < nodes.Length; i++)
             {
-                return;
+                // modify the node...
+                var node = nodes[i];
+                var replacementElement = processor(i, node);
+
+                // ...however, the XML structure we're using is immutable and calling `.ReplaceNode()` below will fail because the nodes are no longer equal
+                // find the equivalent node by offset, accounting for any changes in length
+                var candidateEquivalentNodes = xml.DescendantNodes().OfType<XmlNodeSyntax>().ToArray();
+                var equivalentNode = candidateEquivalentNodes.First(n => n.Start == node.Start + offset);
+
+                // do the actual replacement
+                xml = xml.ReplaceNode(equivalentNode, replacementElement);
+
+                // update our offset
+                var thisNodeOffset = replacementElement.ToFullString().Length - node.ToFullString().Length;
+                offset += thisNodeOffset;
             }
 
-            var replacementElement = processor(node);
-            var replacementXml = xml.ReplaceNode(node, replacementElement);
-            var replacementString = replacementXml.ToFullString();
+            var replacementString = xml.ToFullString();
             SetContent(replacementString);
         }
     }
