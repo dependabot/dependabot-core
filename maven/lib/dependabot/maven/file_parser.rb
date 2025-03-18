@@ -125,7 +125,7 @@ module Dependabot
         dependency_set
       end
 
-      sig { params(target: Dependabot::DependencyFile).returns(DependencySet) }
+      sig { params(target: Dependabot::DependencyFile).returns(T.any(DependencySet, NilClass)) }
       def targetfile_dependencies(target)
         dependency_set = DependencySet.new
 
@@ -140,7 +140,7 @@ module Dependabot
           errors << e
         end
 
-        raise T.must(errors.first) if errors.any? && dependency_set.dependencies.none?
+        raise errors.first.to_s if errors.any? && dependency_set.dependencies.none?
 
         dependency_set
       end
@@ -390,8 +390,10 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def targetfiles
-        @targetfiles ||=
-          dependency_files.select { |f| f.name.end_with?(".target") }
+        @targetfiles ||= T.let(
+          dependency_files.select { |f| f.name.end_with?(".target") },
+          T.nilable(T::Array[Dependabot::DependencyFile])
+        )
       end
 
       sig { returns(T::Array[String]) }
