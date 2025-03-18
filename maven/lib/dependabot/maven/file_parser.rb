@@ -26,12 +26,14 @@ module Dependabot
       # - Any dependencies (incl. those in dependencyManagement or plugins)
       # - Any plugins (incl. those in pluginManagement)
       # - Any extensions
+      # - Any eclipse-target with a location of type Maven
       DEPENDENCY_SELECTOR = "project > parent, " \
                             "dependencies > dependency, " \
                             "extensions > extension, " \
                             "annotationProcessorPaths > path"
       PLUGIN_SELECTOR     = "plugins > plugin"
       EXTENSION_SELECTOR  = "extensions > extension"
+      TARGET_SELECTOR = "target > locations > location[type='Maven'] > dependencies > dependency"
       PLUGIN_ARTIFACT_ITEMS_SELECTOR = "plugins > plugin > executions > execution > " \
                                        "configuration > artifactItems > artifactItem"
 
@@ -43,6 +45,7 @@ module Dependabot
         dependency_set = DependencySet.new
         pomfiles.each { |pom| dependency_set += pomfile_dependencies(pom) }
         extensionfiles.each { |extension| dependency_set += extensionfile_dependencies(extension) }
+        targetfiles.each { |target| dependency_set += targetfile_dependencies(target) }
         dependency_set.dependencies
       end
 
@@ -97,7 +100,7 @@ module Dependabot
           errors << e
         end
 
-        raise T.must(errors.first) if errors.any? && dependency_set.dependencies.none?
+        raise T.must(errors.first) if errors.any? && dependency_set.dependencies.empty?
 
         dependency_set
       end
@@ -112,6 +115,26 @@ module Dependabot
 
         doc.css(EXTENSION_SELECTOR).each do |dependency_node|
           dep = dependency_from_dependency_node(extension, dependency_node)
+          dependency_set << dep if dep
+        rescue DependencyFileNotEvaluatable => e
+          errors << e
+        end
+
+        raise T.must(errors.first) if errors.any? && dependency_set.dependencies.none?
+
+        dependency_set
+      end
+
+      sig { params(target: Dependabot::DependencyFile).returns(DependencySet) }
+      def targetfile_dependencies(target)
+        dependency_set = DependencySet.new
+
+        errors = []
+        doc = Nokogiri::XML(target.content)
+        doc.remove_namespaces!
+
+        doc.css(TARGET_SELECTOR).each do |dependency_node|
+          dep = dependency_from_dependency_node(target, dependency_node)
           dependency_set << dep if dep
         rescue DependencyFileNotEvaluatable => e
           errors << e
@@ -363,6 +386,12 @@ module Dependabot
           dependency_files.select { |f| f.name.end_with?("extensions.xml") },
           T.nilable(T::Array[Dependabot::DependencyFile])
         )
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def targetfiles
+        @targetfiles ||=
+          dependency_files.select { |f| f.name.end_with?(".target") }
       end
 
       sig { returns(T::Array[String]) }
