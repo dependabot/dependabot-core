@@ -10,3 +10,8 @@ item2:
   image:
     repository: some.repository
     tag: 3.2025.123.4567-123abc-20250305t1309
+
+item3:
+  image:
+    repository: some.repository
+    tag: ""
