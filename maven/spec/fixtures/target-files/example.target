@@ -2,7 +2,7 @@
 <?pde version="3.8"?>
 <target name="example">
 	<locations>
-		<location path="/tmp/dummy/" type="Directory"/>
+		<location path="/tmp/" type="Directory"/>
 		<location includeDependencyDepth="none" includeSource="true" label="An old version of commons-io" missingManifest="error" type="Maven">
 			<dependencies>
 				<dependency>
