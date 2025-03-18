@@ -229,11 +229,6 @@ module Dependabot
         # TODO: Support Docker sources
         return unless git_dependency?
 
-        if vulnerable? &&
-           (new_tag = lowest_security_fix_version_tag)
-          return new_tag.fetch(:tag)
-        end
-
         source_git_commit_checker = git_commit_checker_for(source)
 
         # Return the git tag if updating a pinned version
