@@ -32,6 +32,15 @@ module Dependabot
 
       sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
       def preferred_resolvable_version
+        # If this dependency is vulnerable, prefer trying to update to the
+        # lowest_resolvable_security_fix_version. Otherwise update all the way
+        # to the latest_resolvable_version.
+        if vulnerable? && lowest_resolvable_security_fix_version > latest_resolvable_version
+          return lowest_resolvable_security_fix_version
+        end
+
+        latest_resolvable_version
+      rescue NotImplementedError
         latest_resolvable_version
       end
 
@@ -233,6 +242,12 @@ module Dependabot
       def updated_ref(source)
         # TODO: Support Docker sources
         return unless git_dependency?
+
+        if vulnerable? &&
+           lowest_security_fix_version_tag[:version] > latest_version_tag[:version] &&
+           (new_tag = lowest_security_fix_version_tag)
+          return new_tag.fetch(:tag)
+        end
 
         source_git_commit_checker = git_commit_checker_for(source)
 
