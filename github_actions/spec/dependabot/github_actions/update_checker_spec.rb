@@ -1221,7 +1221,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       it { is_expected.to eq(expected_requirements) }
     end
 
-    context "when current dependency version is vulnerable then #preferred_resolvable_version" do
+    context "when #preferred_resolvable_version is invoked" do
       subject(:preferred_version) { update_checker.preferred_resolvable_version }
 
       let(:update_checker) do
@@ -1237,12 +1237,12 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       let(:dependency) { instance_double(Dependabot::Dependency, version: "1.0.0") }
 
       before do
-        allow(update_checker).to receive(:vulnerable?).and_return(vulnerable)
-        allow(update_checker).to receive(:lowest_resolvable_security_fix_version).and_return(lowest_fix_version)
-        allow(update_checker).to receive(:latest_resolvable_version).and_return(latest_version)
+        allow(update_checker).to receive_messages(vulnerable?: vulnerable,
+                                                  lowest_resolvable_security_fix_version: lowest_fix_version,
+                                                  latest_resolvable_version: latest_version)
       end
 
-      context "when the dependency is vulnerable and lower security fix version > latest version" do
+      context "when the lowest security fix version is greater than the latest version" do
         let(:vulnerable) { true }
         let(:lowest_fix_version) { Gem::Version.new("2.0.0") }
         let(:latest_version) { Gem::Version.new("1.5.0") }
@@ -1252,7 +1252,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         end
       end
 
-      context "when the dependency is vulnerable and lower security fix version < latest version" do
+      context "when the lowest security fix version is less than the latest version" do
         let(:vulnerable) { true }
         let(:lowest_fix_version) { Gem::Version.new("1.5.0") }
         let(:latest_version) { Gem::Version.new("2.0.0") }
@@ -1272,7 +1272,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         end
       end
 
-      context "when the dependency is not vulnerable, lower security fix version is not available" do
+      context "when when the lowest security fix version is not available" do
         let(:vulnerable) { false }
         let(:lowest_fix_version) { nil }
         let(:latest_version) { Gem::Version.new("1.5.0") }
@@ -1281,7 +1281,6 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
           expect(preferred_version).to eq(latest_version)
         end
       end
-
     end
   end
 end
