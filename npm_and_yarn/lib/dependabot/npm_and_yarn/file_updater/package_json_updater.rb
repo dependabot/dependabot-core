@@ -42,6 +42,7 @@ module Dependabot
         attr_reader :dependencies
 
         # rubocop:disable Metrics/PerceivedComplexity
+        # rubocop:disable Metrics/AbcSize
 
         sig { returns(T.nilable(String)) }
         def updated_package_json_content
@@ -91,12 +92,28 @@ module Dependabot
                 dependency: dep,
                 old_req: old_req
               )
+
+              # fixes issue with requirements not matching the latest resolavable version
+              Experiments.register(:update_samever_requirements, true)
+              next unless Experiments.enabled?(:update_samever_requirements) && (old_req == new_req)
+
+              content = update_version_for_requirement_mismatch(
+                package_json_content: content,
+                new_req: new_req,
+                dependency: dep,
+                old_req: old_req
+              )
+            end
+
+            if Experiments.enabled?(:update_samever_requirements)
+              Dependabot.logger.info("package.json contents: #{content}")
             end
 
             content
           end
         end
         # rubocop:enable Metrics/PerceivedComplexity
+        # rubocop:enable Metrics/AbcSize
         sig do
           params(
             dependency: Dependabot::Dependency,
@@ -165,6 +182,59 @@ module Dependabot
             original_line,
             replacement_line
           )
+        end
+
+        sig do
+          params(
+            package_json_content: String,
+            new_req: T::Hash[Symbol, T.untyped],
+            dependency: Dependabot::Dependency,
+            old_req: T.nilable(T::Hash[Symbol, T.untyped])
+          )
+            .returns(String)
+        end
+        def update_version_for_requirement_mismatch(package_json_content:, new_req:, dependency:, old_req:)
+          parsed_json_content = JSON.parse(package_json_content)
+          requirement_json = parsed_json_content
+          content = package_json_content
+
+          groups = new_req.fetch(:groups)
+
+          old_version = T.must(old_req)[:requirement]
+          new_version = if old_version&.match?(/\A\D/)
+                          "#{old_version[0]}#{dependency.version}"
+                        else
+                          new_req[:requirement]
+                        end
+
+          dependency_update = requirement_json.fetch(*groups).select do |dep, _|
+            dep == dependency.name
+          end
+
+          dependency_update.each do |_, _version|
+            original_line = declaration_line(
+              dependency_name: dependency.name,
+              dependency_req: { requirement: old_version },
+              content: content
+            )
+
+            replacement_line = replacement_declaration_line(
+              original_line: original_line,
+              old_req: { requirement: old_version },
+              new_req: { requirement: new_version }
+            )
+
+            Dependabot.logger.warn("Found outdated requirement '#{old_version}' for #{dependency.name}, " \
+                                   "updating with new version '#{new_version}'")
+
+            content = update_package_json_sections(
+              groups,
+              package_json_content,
+              original_line,
+              replacement_line
+            )
+          end
+          content
         end
 
         # For full details on how Yarn resolutions work, see
