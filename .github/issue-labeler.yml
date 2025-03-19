@@ -29,7 +29,7 @@
     - '(go|gomod)'
 
 "L: javascript":
-    - '(javascript|npm|pnpm|yarn|bun)'
+    - '(javascript|npm|pnpm|yarn)'
 
 "L: java:gradle":
     - '(gradle)'
