@@ -143,7 +143,10 @@ module Dependabot
         repo = img_hash.fetch("repository", nil)
         return [] unless repo
 
-        tag_details = T.must(tag_value.to_s.match(TAG_WITH_DIGEST)).named_captures
+        match = tag_value.to_s.match(TAG_WITH_DIGEST)
+        return [] unless match
+
+        tag_details = match.named_captures
         tag = tag_details["tag"]
         return [repo] unless tag
 
