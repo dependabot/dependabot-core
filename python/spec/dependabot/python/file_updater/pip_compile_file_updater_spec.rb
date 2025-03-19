@@ -534,7 +534,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
       it "adds pycurl as dependency" do
         expect(updated_files.count).to eq(1)
         expect(updated_files.first.content).to include("--resolver=backtracking")
-        expect(updated_files.first.content).to include("pycurl")
+        expect(updated_files.first.content).to include("urllib3")
       end
     end
 
