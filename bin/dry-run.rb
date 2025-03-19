@@ -242,8 +242,13 @@ option_parse = OptionParser.new do |opts|
   opts_req_desc = "Options: lockfile_only, auto, widen_ranges, bump_versions or " \
                   "bump_versions_if_necessary"
   opts.on("--requirements-update-strategy STRATEGY", opts_req_desc) do |value|
-    value = nil if value == "auto"
-    $options[:requirements_update_strategy] = value
+    if value == "auto"
+      $options[:requirements_update_strategy] = nil
+    else
+      strategy = Dependabot::RequirementsUpdateStrategy.values.find { |v| v.serialize == value } or
+        raise OptionParser::InvalidArgument, "Invalid requirements update strategy: #{value}. #{opts_req_desc}"
+      $options[:requirements_update_strategy] = strategy
+    end
   end
 
   opts.on("--commit COMMIT", "Commit to fetch dependency files from") do |value|
