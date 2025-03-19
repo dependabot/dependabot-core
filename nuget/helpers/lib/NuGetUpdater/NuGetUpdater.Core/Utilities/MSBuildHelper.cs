@@ -674,8 +674,9 @@ internal static partial class MSBuildHelper
         IReadOnlyCollection<Dependency> packages,
         ExperimentsManager experimentsManager,
         ILogger logger,
-        bool usePackageDownload = false
-    ) => CreateTempProjectAsync(tempDir, repoRoot, projectPath, new XElement("TargetFramework", targetFramework), packages, experimentsManager, logger, usePackageDownload);
+        bool usePackageDownload = false,
+        bool importDependencyTargets = true
+    ) => CreateTempProjectAsync(tempDir, repoRoot, projectPath, new XElement("TargetFramework", targetFramework), packages, experimentsManager, logger, usePackageDownload, importDependencyTargets);
 
     internal static Task<string> CreateTempProjectAsync(
         DirectoryInfo tempDir,
@@ -685,8 +686,9 @@ internal static partial class MSBuildHelper
         IReadOnlyCollection<Dependency> packages,
         ExperimentsManager experimentsManager,
         ILogger logger,
-        bool usePackageDownload = false
-    ) => CreateTempProjectAsync(tempDir, repoRoot, projectPath, new XElement("TargetFrameworks", string.Join(";", targetFrameworks)), packages, experimentsManager, logger, usePackageDownload);
+        bool usePackageDownload = false,
+        bool importDependencyTargets = true
+    ) => CreateTempProjectAsync(tempDir, repoRoot, projectPath, new XElement("TargetFrameworks", string.Join(";", targetFrameworks)), packages, experimentsManager, logger, usePackageDownload, importDependencyTargets);
 
     private static async Task<string> CreateTempProjectAsync(
         DirectoryInfo tempDir,
@@ -696,7 +698,8 @@ internal static partial class MSBuildHelper
         IReadOnlyCollection<Dependency> packages,
         ExperimentsManager experimentsManager,
         ILogger logger,
-        bool usePackageDownload)
+        bool usePackageDownload,
+        bool importDependencyTargets)
     {
         var projectDirectory = Path.GetDirectoryName(projectPath);
         projectDirectory ??= repoRoot;
@@ -747,12 +750,16 @@ internal static partial class MSBuildHelper
                 // If all PackageReferences for a package are update-only mark it as such, otherwise it can cause package incoherence errors which do not exist in the repo.
                 .Select(p => $"<{(usePackageDownload ? "PackageDownload" : "PackageReference")} {(p.IsUpdate ? "Update" : "Include")}=\"{p.Name}\" Version=\"[{p.Version}]\" />"));
 
+        var dependencyTargetsImport = importDependencyTargets
+            ? $"""<Import Project="{GetFileFromRuntimeDirectory("DependencyDiscovery.targets")}" />"""
+            : string.Empty;
+
         var projectContents = $"""
             <Project Sdk="Microsoft.NET.Sdk">
               <PropertyGroup>
                 {targetFrameworkElement}
               </PropertyGroup>
-              <Import Project="{GetFileFromRuntimeDirectory("DependencyDiscovery.targets")}" />
+              {dependencyTargetsImport}
               <ItemGroup>
                 {packageReferences}
               </ItemGroup>
@@ -886,7 +893,7 @@ internal static partial class MSBuildHelper
         try
         {
             var topLevelPackagesNames = packages.Select(p => p.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
-            var tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages, experimentsManager, logger);
+            var tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages, experimentsManager, logger, importDependencyTargets: !experimentsManager.UseDirectDiscovery);
 
             Dependency[] allDependencies;
             if (experimentsManager.UseDirectDiscovery)
