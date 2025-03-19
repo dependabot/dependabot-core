@@ -1133,5 +1133,39 @@ RSpec.describe Dependabot::Nuget::FileParser do
         end
       end
     end
+
+    context "with a project file that has no dependencies" do
+      before do
+        intercept_native_tools(
+          discovery_content_hash: {
+            Path: "",
+            IsSuccess: true,
+            Projects: [{
+              FilePath: "my.csproj",
+              Dependencies: [],
+              IsSuccess: true,
+              Properties: [{
+                Name: "TargetFramework",
+                Value: "net9.0",
+                SourceFilePath: "my.csproj"
+              }],
+              TargetFrameworks: ["net9.0"],
+              ReferencedProjectPaths: [],
+              ImportedFiles: [],
+              AdditionalFiles: []
+            }],
+            GlobalJson: nil,
+            DotNetToolsJson: nil
+          }
+        )
+      end
+
+      it "is returns an empty set of dependencies" do
+        run_parser_test do |parser|
+          dependencies = parser.parse
+          expect(dependencies).to be_empty
+        end
+      end
+    end
   end
 end
