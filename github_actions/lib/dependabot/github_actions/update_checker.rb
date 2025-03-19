@@ -30,6 +30,11 @@ module Dependabot
         latest_version
       end
 
+      sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
+      def preferred_resolvable_version
+        latest_resolvable_version
+      end
+
       sig { override.returns(T.nilable(T.any(String, Dependabot::Version))) }
       def latest_resolvable_version_with_no_unlock
         # No concept of "unlocking" for GitHub Actions (since no lockfile)

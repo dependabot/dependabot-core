@@ -125,6 +125,11 @@ module Dependabot
 
       sig { overridable.returns(T.nilable(T.any(String, Gem::Version))) }
       def preferred_resolvable_version
+        # If this dependency is vulnerable, prefer trying to update to the
+        # lowest_resolvable_security_fix_version. Otherwise update all the way
+        # to the latest_resolvable_version.
+        return lowest_resolvable_security_fix_version if vulnerable?
+
         latest_resolvable_version
       rescue NotImplementedError
         latest_resolvable_version
