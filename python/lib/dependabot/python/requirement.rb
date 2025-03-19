@@ -164,13 +164,26 @@ module Dependabot
 
         return ["=== #{cleaned_version}"] if arbitrary_equality
 
-        case cleaned_version
-        when /^\d+\.\d+\.\*$/
-          major, minor = cleaned_version.split(".")[0, 2]
-          "~> #{major}.#{minor}.0.dev"
-        when /^\d+\.\*$/
-          major = cleaned_version.split(".")[0]
-          [">= #{major}.0.0.dev", "< #{major.to_i + 1}.0.0"]
+        # Handle versions wildcarded with .*, e.g. 1.0.*
+        if cleaned_version.include?(".*")
+          # Remove all characters after the first .*, and the .*
+          cleaned_version = cleaned_version.split(".*").first
+          version = Python::Version.new(cleaned_version)
+          # Get the release segment parts [major, minor, patch]
+          version_parts = version.release_segment
+
+          if version_parts.length == 1
+            major = T.must(version_parts[0])
+            [">= #{major}.0.0.dev", "< #{major + 1}.0.0"]
+          elsif version_parts.length == 2
+            major, minor = version_parts
+            "~> #{major}.#{minor}.0.dev"
+          elsif version_parts.length == 3
+            major, minor, patch = version_parts
+            "~> #{major}.#{minor}.#{patch}.dev"
+          else
+            "= #{cleaned_version}"
+          end
         else
           "= #{cleaned_version}"
         end
