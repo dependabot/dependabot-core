@@ -1264,20 +1264,11 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
       context "when the dependency is not vulnerable" do
         let(:vulnerable) { false }
+        # it is not vulnerable, the lowest fix version is not relevant
         let(:lowest_fix_version) { nil }
         let(:latest_version) { Gem::Version.new("1.5.0") }
 
         it "returns the latest resolvable version" do
-          expect(preferred_version).to eq(latest_version)
-        end
-      end
-
-      context "when when the lowest security fix version is not available" do
-        let(:vulnerable) { false }
-        let(:lowest_fix_version) { nil }
-        let(:latest_version) { Gem::Version.new("1.5.0") }
-
-        it "rescues the error and returns the latest resolvable version" do
           expect(preferred_version).to eq(latest_version)
         end
       end
