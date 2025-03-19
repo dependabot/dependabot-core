@@ -230,7 +230,7 @@ module Dependabot
         return unless git_dependency?
 
         if vulnerable? &&
-           lowest_security_fix_version_tag[:version] > latest_version_tag[:version] &&
+           T.must(lowest_security_fix_version_tag)[:version] > T.must(latest_version_tag)[:version] &&
            (new_tag = lowest_security_fix_version_tag)
           return new_tag.fetch(:tag)
         end
