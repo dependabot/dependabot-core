@@ -531,10 +531,10 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
       let(:dependency_version) { "5.2.7" }
       let(:dependency_previous_version) { "5.2.6" }
 
-      it "adds urllib3 as dependency" do
+      it "adds boto3 as dependency" do
         expect(updated_files.count).to eq(1)
         expect(updated_files.first.content).to include("--resolver=backtracking")
-        expect(updated_files.first.content).to include("urllib3")
+        expect(updated_files.first.content).to include("boto3")
       end
     end
 
@@ -545,10 +545,10 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
       let(:dependency_version) { "5.2.7" }
       let(:dependency_previous_version) { "5.2.6" }
 
-      it "do not include urllib3" do
+      it "do not include boto3" do
         expect(updated_files.count).to eq(1)
         expect(updated_files.first.content).to include("--resolver=legacy")
-        expect(updated_files.first.content).not_to include("urllib3")
+        expect(updated_files.first.content).not_to include("boto3")
       end
     end
   end
