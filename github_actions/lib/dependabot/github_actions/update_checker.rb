@@ -37,8 +37,6 @@ module Dependabot
         end
 
         latest_resolvable_version
-      rescue NotImplementedError
-        latest_resolvable_version
       end
 
       sig { override.returns(T.nilable(T.any(String, Dependabot::Version))) }

@@ -836,8 +836,19 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         context "when possible to keep precision" do
           let(:upload_pack_fixture) { "github-workflows-with-v3" }
 
+          before do
+            allow(checker).to receive(:latest_version_tag).and_return(
+              {
+                tag: "v4",
+                version: Gem::Version.new("4.0.0"),
+                commit_sha: "8f8565809ced10b87b819e5be6f2b7681cb206e8",
+                tag_sha: "8f8565809ced10b87b819e5be6f2b7681cb206e8"
+              }
+            )
+          end
+
           it "bumps to the lowest fixed version that keeps precision" do
-            expect(updated_requirements.first[:source][:ref]).to eq("v3")
+            expect(updated_requirements.first[:source][:ref]).to eq("v4")
           end
         end
 
@@ -1208,6 +1219,69 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       end
 
       it { is_expected.to eq(expected_requirements) }
+    end
+
+    context "when current dependency version is vulnerable then #preferred_resolvable_version" do
+      subject(:preferred_version) { update_checker.preferred_resolvable_version }
+
+      let(:update_checker) do
+        described_class.new(
+          dependency: dependency,
+          dependency_files: [], # Provide an empty array or mock files as needed
+          credentials: [],
+          ignored_versions: [],
+          raise_on_ignored: false
+        )
+      end
+
+      let(:dependency) { instance_double(Dependabot::Dependency, version: "1.0.0") }
+
+      before do
+        allow(update_checker).to receive(:vulnerable?).and_return(vulnerable)
+        allow(update_checker).to receive(:lowest_resolvable_security_fix_version).and_return(lowest_fix_version)
+        allow(update_checker).to receive(:latest_resolvable_version).and_return(latest_version)
+      end
+
+      context "when the dependency is vulnerable and lower security fix version > latest version" do
+        let(:vulnerable) { true }
+        let(:lowest_fix_version) { Gem::Version.new("2.0.0") }
+        let(:latest_version) { Gem::Version.new("1.5.0") }
+
+        it "returns the lowest resolvable security fix version" do
+          expect(preferred_version).to eq(lowest_fix_version)
+        end
+      end
+
+      context "when the dependency is vulnerable and lower security fix version < latest version" do
+        let(:vulnerable) { true }
+        let(:lowest_fix_version) { Gem::Version.new("1.5.0") }
+        let(:latest_version) { Gem::Version.new("2.0.0") }
+
+        it "returns the lowest resolvable security fix version" do
+          expect(preferred_version).to eq(latest_version)
+        end
+      end
+
+      context "when the dependency is not vulnerable" do
+        let(:vulnerable) { false }
+        let(:lowest_fix_version) { nil }
+        let(:latest_version) { Gem::Version.new("1.5.0") }
+
+        it "returns the latest resolvable version" do
+          expect(preferred_version).to eq(latest_version)
+        end
+      end
+
+      context "when the dependency is not vulnerable, lower security fix version is not available" do
+        let(:vulnerable) { false }
+        let(:lowest_fix_version) { nil }
+        let(:latest_version) { Gem::Version.new("1.5.0") }
+
+        it "rescues the error and returns the latest resolvable version" do
+          expect(preferred_version).to eq(latest_version)
+        end
+      end
+
     end
   end
 end
