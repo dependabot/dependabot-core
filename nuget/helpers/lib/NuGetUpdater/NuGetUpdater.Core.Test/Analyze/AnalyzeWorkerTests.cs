@@ -534,6 +534,60 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
     }
 
     [Fact]
+    public async Task WindowsSpecificProjectAndWindowsSpecificDependency()
+    {
+        await TestAnalyzeAsync(
+            experimentsManager: new ExperimentsManager() { UseDirectDiscovery = true },
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net6.0-windows7.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.1", "net6.0-windows7.0"),
+            ],
+            discovery: new()
+            {
+                Path = "/",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "./project.csproj",
+                        TargetFrameworks = ["net9.0-windows"],
+                        Dependencies = [
+                            new("Some.Package", "1.0.0", DependencyType.PackageReference),
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
+                    },
+                ],
+            },
+            dependencyInfo: new()
+            {
+                Name = "Some.Package",
+                Version = "1.0.0",
+                IgnoredVersions = [],
+                IsVulnerable = false,
+                Vulnerabilities = [
+                    new()
+                    {
+                        DependencyName = "Some.Package",
+                        PackageManager = "nuget",
+                        VulnerableVersions = [],
+                        SafeVersions = []
+                    }
+                ],
+            },
+            expectedResult: new()
+            {
+                UpdatedVersion = "1.0.1",
+                CanUpdate = true,
+                VersionComesFromMultiDependencyProperty = false,
+                UpdatedDependencies = [
+                    new("Some.Package", "1.0.1", DependencyType.PackageReference, TargetFrameworks: ["net9.0-windows"], IsDirect: true),
+                ],
+            }
+        );
+    }
+
+    [Fact]
     public async Task VersionFinderCanHandle404FromPackageSource_V2()
     {
         static (int, byte[]) TestHttpHandler1(string uriString)
