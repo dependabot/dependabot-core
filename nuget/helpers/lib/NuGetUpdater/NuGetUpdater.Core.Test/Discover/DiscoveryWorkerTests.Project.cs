@@ -1117,6 +1117,50 @@ public partial class DiscoveryWorkerTests
         }
 
         [Fact]
+        public async Task WindowsSpecificProjectAndWindowsSpecificDependency()
+        {
+            await TestDiscoveryAsync(
+                experimentsManager: new ExperimentsManager() { UseDirectDiscovery = true },
+                packages: [
+                    MockNuGetPackage.CreateSimplePackage("Some.Os.Package", "1.2.3", "net6.0-windows7.0")
+                ],
+                workspacePath: "",
+                files: [
+                    ("project.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFramework>net9.0-windows</TargetFramework>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="Some.Os.Package" Version="1.2.3" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                ],
+                expectedResult: new()
+                {
+                    Path = "",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "project.csproj",
+                            Dependencies = [
+                                new("Some.Os.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net9.0-windows"], IsDirect: true)
+                            ],
+                            Properties = [
+                                new("TargetFramework", "net9.0-windows", "project.csproj")
+                            ],
+                            TargetFrameworks = ["net9.0-windows"],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [],
+                            AdditionalFiles = []
+                        }
+                    ]
+                }
+            );
+        }
+
+        [Fact]
         public async Task DiscoveryWithTargetPlaformVersion_DirectDiscovery()
         {
             await TestDiscoveryAsync(
