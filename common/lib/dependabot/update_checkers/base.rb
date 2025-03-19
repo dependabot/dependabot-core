@@ -128,7 +128,9 @@ module Dependabot
         # If this dependency is vulnerable, prefer trying to update to the
         # lowest_resolvable_security_fix_version. Otherwise update all the way
         # to the latest_resolvable_version.
-        return lowest_resolvable_security_fix_version if vulnerable?
+        if vulnerable? && lowest_resolvable_security_fix_version > latest_resolvable_version
+          return lowest_resolvable_security_fix_version
+        end
 
         latest_resolvable_version
       rescue NotImplementedError
