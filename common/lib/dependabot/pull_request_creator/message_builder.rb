@@ -790,7 +790,8 @@ module Dependabot
 
       sig { params(dependency: Dependabot::Dependency).returns(T.nilable(String)) }
       def changelog_url(dependency)
-        metadata_finder(dependency).changelog_url
+        metadata = metadata_finder(dependency)
+        metadata.changelog_url if metadata.changelog_text
       end
 
       sig { params(dependency: Dependabot::Dependency).returns(T.nilable(String)) }
