@@ -72,6 +72,8 @@ namespace NuGetGallery.Frameworks
 
         public static readonly NuGetFramework Net60Windows7 = new NuGetFramework(FrameworkIdentifiers.NetCoreApp, Version6, "windows", Version7);
         public static readonly NuGetFramework Net70Windows7 = new NuGetFramework(FrameworkIdentifiers.NetCoreApp, Version7, "windows", Version7);
+        public static readonly NuGetFramework Net80Windows7 = new NuGetFramework(FrameworkIdentifiers.NetCoreApp, Version8, "windows", Version7);
+        public static readonly NuGetFramework Net90Windows7 = new NuGetFramework(FrameworkIdentifiers.NetCoreApp, Version9, "windows", Version7);
 
         public static readonly IReadOnlyList<NuGetFramework> AllSupportedNuGetFrameworks;
 
@@ -83,10 +85,10 @@ namespace NuGetGallery.Frameworks
                 Native,
                 Net11, Net2, Net35, Net4, Net403, Net45, Net451, Net452, Net46, Net461, Net462, Net463, Net47, Net471, Net472, Net48, Net481,
                 Net50, Net50Windows,
-                Net60, Net60Android, Net60Ios, Net60MacCatalyst, Net60MacOs, Net60TvOs, Net60Windows,
-                Net70, Net70Android, Net70Ios, Net70MacCatalyst, Net70MacOs, Net70TvOs, Net70Windows,
-                Net80, Net80Android, Net80Ios, Net80MacCatalyst, Net80MacOs, Net80TvOs, Net80Windows,
-                Net90, Net90Android, Net90Ios, Net90MacCatalyst, Net90MacOs, Net90TvOs, Net90Windows,
+                Net60, Net60Android, Net60Ios, Net60MacCatalyst, Net60MacOs, Net60TvOs, Net60Windows, Net60Windows7,
+                Net70, Net70Android, Net70Ios, Net70MacCatalyst, Net70MacOs, Net70TvOs, Net70Windows, Net70Windows7,
+                Net80, Net80Android, Net80Ios, Net80MacCatalyst, Net80MacOs, Net80TvOs, Net80Windows, Net80Windows7,
+                Net90, Net90Android, Net90Ios, Net90MacCatalyst, Net90MacOs, Net90TvOs, Net90Windows, Net90Windows7,
                 NetCore, NetCore45, NetCore451,
                 NetCoreApp10, NetCoreApp11, NetCoreApp20, NetCoreApp21, NetCoreApp22, NetCoreApp30, NetCoreApp31,
                 NetMf,

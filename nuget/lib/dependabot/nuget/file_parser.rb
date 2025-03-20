@@ -41,13 +41,6 @@ module Dependabot
       sig { returns(T.nilable(T::Array[String])) }
       def content_json
         @content_json ||= T.let(begin
-          directory = source&.directory || "/"
-          discovery_json_reader = DiscoveryJsonReader.run_discovery_in_directory(
-            repo_contents_path: T.must(repo_contents_path),
-            directory: directory,
-            credentials: credentials
-          )
-
           discovery_json_reader.workspace_discovery&.projects&.map do |framework|
             T.let(framework.instance_variable_get(:@target_frameworks), T::Array[String]).compact.join(",")
           end
@@ -56,33 +49,43 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::Dependency]) }
       def dependencies
-        @dependencies ||= T.let(begin
-          NativeHelpers.install_dotnet_sdks
-          directory = source&.directory || "/"
-          discovery_json_reader = DiscoveryJsonReader.run_discovery_in_directory(
-            repo_contents_path: T.must(repo_contents_path),
-            directory: directory,
-            credentials: credentials
-          )
-          discovery_json_reader.dependency_set.dependencies
-        end, T.nilable(T::Array[Dependabot::Dependency]))
+        NativeHelpers.install_dotnet_sdks
+        @dependencies ||= T.let(discovery_json_reader.dependency_set.dependencies,
+                                T.nilable(T::Array[Dependabot::Dependency]))
       end
 
+      # rubocop:disable Metrics/PerceivedComplexity
       sig { override.void }
       def check_required_files
         requirement_files = dependencies.flat_map do |dep|
           dep.requirements.map { |r| T.let(r.fetch(:file), String) }
         end.uniq
 
-        project_files = requirement_files.select { |f| File.basename(f).match?(/\.(cs|vb|fs)proj$/) }
+        proj_pattern = /\.(cs|vb|fs)proj$/
+        found_files = discovery_json_reader.dependency_file_paths.select { |f| File.basename(f).match?(proj_pattern) }
+        project_files = requirement_files.select { |f| File.basename(f).match?(proj_pattern) }
         global_json_file = requirement_files.select { |f| File.basename(f) == "global.json" }
         dotnet_tools_json_file = requirement_files.select { |f| File.basename(f) == "dotnet-tools.json" }
-        return if project_files.any? || global_json_file.any? || dotnet_tools_json_file.any?
+        has_files = found_files.any? || project_files.any? || global_json_file.any? || dotnet_tools_json_file.any?
+        return if has_files
 
         raise Dependabot::DependencyFileNotFound.new(
           "*.(cs|vb|fs)proj",
           "No project file."
         )
+      end
+      # rubocop:enable Metrics/PerceivedComplexity
+
+      sig { returns(DiscoveryJsonReader) }
+      def discovery_json_reader
+        @discovery_json_reader ||= T.let(begin
+          directory = source&.directory || "/"
+          DiscoveryJsonReader.run_discovery_in_directory(
+            repo_contents_path: T.must(repo_contents_path),
+            directory: directory,
+            credentials: credentials
+          )
+        end, T.nilable(DiscoveryJsonReader))
       end
 
       sig { returns(T.nilable(Ecosystem::VersionManager)) }

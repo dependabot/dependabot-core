@@ -11,28 +11,43 @@ module Dependabot
 
     class Language < Dependabot::Ecosystem::VersionManager
       extend T::Sig
-      # These versions should match the versions specified at the top of `python/Dockerfile`
-      PYTHON_3_13 = "3.13"
-      PYTHON_3_12 = "3.12"
-      PYTHON_3_11 = "3.11"
-      PYTHON_3_10 = "3.10"
-      PYTHON_3_9  = "3.9"
-      PYTHON_3_8  = "3.8"
+      # This list must match the versions specified at the top of `python/Dockerfile`
+      # ARG PY_3_13=3.13.2
+      PRE_INSTALLED_PYTHON_VERSIONS_RAW = %w(
+        3.13.2
+        3.12.9
+        3.11.11
+        3.10.16
+        3.9.21
+      ).freeze
 
-      DEPRECATED_VERSIONS = T.let([Version.new(PYTHON_3_8)].freeze, T::Array[Dependabot::Version])
+      PRE_INSTALLED_PYTHON_VERSIONS = T.let(PRE_INSTALLED_PYTHON_VERSIONS_RAW.map do |v|
+        Version.new(v)
+      end.sort, T::Array[Dependabot::Python::Version])
 
-      # Keep versions in ascending order
-      SUPPORTED_VERSIONS = T.let([
-        Version.new(PYTHON_3_9),
-        Version.new(PYTHON_3_10),
-        Version.new(PYTHON_3_11),
-        Version.new(PYTHON_3_12),
-        Version.new(PYTHON_3_13)
-      ].freeze, T::Array[Dependabot::Version])
+      PRE_INSTALLED_VERSIONS_MAP = T.let(
+        PRE_INSTALLED_PYTHON_VERSIONS.to_h do |v|
+          [Dependabot::Python::Version.new(T.must(v.segments[0..1]).join(".")), v]
+        end,
+        T::Hash[Dependabot::Python::Version, Dependabot::Python::Version]
+      )
+
+      PRE_INSTALLED_HIGHEST_VERSION = T.let(T.must(PRE_INSTALLED_PYTHON_VERSIONS.max), Dependabot::Python::Version)
+
+      SUPPORTED_VERSIONS = T.let(
+        PRE_INSTALLED_PYTHON_VERSIONS.map do |v|
+          Dependabot::Python::Version.new(T.must(v.segments[0..1]&.join(".")))
+        end,
+        T::Array[Dependabot::Python::Version]
+      )
+
+      NON_SUPPORTED_HIGHEST_VERSION = "3.8"
+
+      DEPRECATED_VERSIONS = T.let([Version.new(NON_SUPPORTED_HIGHEST_VERSION)].freeze, T::Array[Dependabot::Version])
 
       sig do
         params(
-          detected_version: String,
+          detected_version: T.nilable(String),
           raw_version: T.nilable(String),
           requirement: T.nilable(Requirement)
         ).void
@@ -40,7 +55,7 @@ module Dependabot
       def initialize(detected_version:, raw_version: nil, requirement: nil)
         super(
           name: LANGUAGE,
-          detected_version: major_minor_version(detected_version),
+          detected_version: detected_version ? major_minor_version(detected_version) : nil,
           version: raw_version ? Version.new(raw_version) : nil,
           deprecated_versions: DEPRECATED_VERSIONS,
           supported_versions: SUPPORTED_VERSIONS,
@@ -48,25 +63,12 @@ module Dependabot
        )
       end
 
-      sig { override.returns(T::Boolean) }
-      def deprecated?
-        return false unless detected_version
-        return false if unsupported?
-
-        deprecated_versions.include?(detected_version)
-      end
-
-      sig { override.returns(T::Boolean) }
-      def unsupported?
-        return false unless detected_version
-
-        supported_versions.all? { |supported| supported > detected_version }
-      end
-
       private
 
-      sig { params(version: String).returns(Dependabot::Python::Version) }
+      sig { params(version: String).returns(T.nilable(Dependabot::Python::Version)) }
       def major_minor_version(version)
+        return nil if version.empty?
+
         major_minor = T.let(T.must(Version.new(version).segments[0..1]&.join(".")), String)
 
         Version.new(major_minor)

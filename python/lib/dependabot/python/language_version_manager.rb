@@ -9,14 +9,6 @@ module Dependabot
   module Python
     class LanguageVersionManager
       extend T::Sig
-      # This list must match the versions specified at the top of `python/Dockerfile`
-      PRE_INSTALLED_PYTHON_VERSIONS = %w(
-        3.13.2
-        3.12.9
-        3.11.11
-        3.10.16
-        3.9.21
-      ).freeze
 
       sig { params(python_requirement_parser: T.untyped).void }
       def initialize(python_requirement_parser:)
@@ -62,7 +54,34 @@ module Dependabot
             user_specified_python_version
           end
         else
-          python_version_matching_imputed_requirements || PRE_INSTALLED_PYTHON_VERSIONS.first
+          python_version_matching_imputed_requirements || Language::PRE_INSTALLED_HIGHEST_VERSION.to_s
+        end
+      end
+
+      sig { params(requirement_string: T.nilable(String)).returns(T.nilable(String)) }
+      def normalize_python_exact_version(requirement_string)
+        return requirement_string if requirement_string.nil? || requirement_string.strip.empty?
+
+        requirement_string = requirement_string.strip
+
+        # If the requirement already has a wildcard, return nil
+        return nil if requirement_string == "*"
+
+        # If the requirement is not an exact version such as not X.Y.Z, =X.Y.Z, ==X.Y.Z, ===X.Y.Z
+        # then return the requirement as is
+        return requirement_string unless requirement_string.match?(/^=?={0,2}\s*\d+\.\d+(\.\d+)?(-[a-z0-9.-]+)?$/i)
+
+        parts = requirement_string.gsub(/^=+/, "").split(".")
+
+        case parts.length
+        when 1 # Only major version (X)
+          ">= #{parts[0]}.0.0 < #{parts[0].to_i + 1}.0.0" # Ensure only major version range
+        when 2 # Major.Minor (X.Y)
+          ">= #{parts[0]}.#{parts[1]}.0 < #{parts[0].to_i}.#{parts[1].to_i + 1}.0" # Ensure only minor version range
+        when 3 # Major.Minor.Patch (X.Y.Z)
+          ">= #{parts[0]}.#{parts[1]}.0 < #{parts[0].to_i}.#{parts[1].to_i + 1}.0" # Convert to >= X.Y.0
+        else
+          requirement_string
         end
       end
 
@@ -72,15 +91,22 @@ module Dependabot
 
         # If the requirement string isn't already a range (eg ">3.10"), coerce it to "major.minor.*".
         # The patch version is ignored because a non-matching patch version is unlikely to affect resolution.
-        requirement_string = requirement_string.gsub(/\.\d+$/, ".*") if requirement_string.start_with?(/\d/)
+        requirement_string = requirement_string.gsub(/\.\d+$/, ".*") if /^\d/.match?(requirement_string)
+
+        requirement_string = normalize_python_exact_version(requirement_string)
+
+        if requirement_string.nil? || requirement_string.strip.empty?
+          return Language::PRE_INSTALLED_HIGHEST_VERSION.to_s
+        end
 
         # Try to match one of our pre-installed Python versions
         requirement = T.must(Python::Requirement.requirements_array(requirement_string).first)
-        version = PRE_INSTALLED_PYTHON_VERSIONS.find { |v| requirement.satisfied_by?(Python::Version.new(v)) }
-        return version if version
 
-        # Otherwise we have to raise
-        supported_versions = PRE_INSTALLED_PYTHON_VERSIONS.map { |x| x.gsub(/\.\d+$/, ".*") }.join(", ")
+        version = Language::PRE_INSTALLED_PYTHON_VERSIONS.find { |v| requirement.satisfied_by?(v) }
+        return version.to_s if version
+
+        # Otherwise we have to raise an error
+        supported_versions = Language::SUPPORTED_VERSIONS.map { |v| "#{v}.*" }.join(", ")
         raise ToolVersionNotSupported.new("Python", python_requirement_string, supported_versions)
       end
 
@@ -100,14 +126,13 @@ module Dependabot
 
       sig { params(requirements: T.untyped).returns(T.nilable(String)) }
       def python_version_matching(requirements)
-        PRE_INSTALLED_PYTHON_VERSIONS.find do |version_string|
-          version = Python::Version.new(version_string)
+        Language::PRE_INSTALLED_PYTHON_VERSIONS.find do |version|
           requirements.all? do |req|
             next req.any? { |r| r.satisfied_by?(version) } if req.is_a?(Array)
 
             req.satisfied_by?(version)
           end
-        end
+        end.to_s
       end
     end
   end

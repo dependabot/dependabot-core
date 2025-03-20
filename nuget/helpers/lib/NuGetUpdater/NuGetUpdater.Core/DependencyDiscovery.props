@@ -14,6 +14,6 @@
     <NuGetInteractive>false</NuGetInteractive>
     <RunAnalyzers>false</RunAnalyzers>
     <EnableWindowsTargeting Condition="$(TargetFramework.Contains('-windows'))">true</EnableWindowsTargeting>
-    <TargetPlatformVersion Condition="$(TargetPlatformVersion) == '' AND $(TargetFramework.Contains('-'))">$(_DefaultTargetPlatformVersion)</TargetPlatformVersion>
+    <TargetPlatformVersion Condition="$(TargetFramework.Contains('-')) AND '$(TargetPlatformVersion)' == ''">$(_DefaultTargetPlatformVersion)</TargetPlatformVersion>
   </PropertyGroup>
 </Project>
