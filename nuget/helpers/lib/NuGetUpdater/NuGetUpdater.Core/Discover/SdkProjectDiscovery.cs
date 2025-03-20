@@ -108,6 +108,7 @@ internal static class SdkProjectDiscovery
                 var (exitCode, stdOut, stdErr) = await MSBuildHelper.HandleGlobalJsonAsync(startingProjectDirectory, repoRootPath, experimentsManager, async () =>
                 {
                     // the built-in target `GenerateBuildDependencyFile` forces resolution of all NuGet packages, but doesn't invoke a full build
+                    var dependencyDiscoveryTargetingPacksPropsPath = MSBuildHelper.GetFileFromRuntimeDirectory("DependencyDiscoveryTargetingPacks.props");
                     var dependencyDiscoveryTargetsPath = MSBuildHelper.GetFileFromRuntimeDirectory("DependencyDiscovery.targets");
                     var args = new List<string>()
                     {
@@ -115,6 +116,7 @@ internal static class SdkProjectDiscovery
                         startingProjectPath,
                         "/t:_DiscoverDependencies",
                         $"/p:TargetFramework={tfm}",
+                        $"/p:CustomBeforeMicrosoftCommonProps={dependencyDiscoveryTargetingPacksPropsPath}",
                         $"/p:CustomAfterMicrosoftCommonCrossTargetingTargets={dependencyDiscoveryTargetsPath}",
                         $"/p:CustomAfterMicrosoftCommonTargets={dependencyDiscoveryTargetsPath}",
                         "/p:TreatWarningsAsErrors=false", // if using CPM and a project also sets TreatWarningsAsErrors to true, this can cause discovery to fail; explicitly don't allow that
