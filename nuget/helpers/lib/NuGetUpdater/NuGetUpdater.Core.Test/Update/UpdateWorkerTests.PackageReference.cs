@@ -3745,5 +3745,40 @@ public partial class UpdateWorkerTests
                     """
             );
         }
+
+        [Fact]
+        public async Task UpdateDependencyWhenUnrelatedDependencyHasWildcardVersion()
+        {
+            await TestUpdateForProject("Some.Package", "1.0.0", "1.0.1",
+                experimentsManager: new ExperimentsManager() { UseDirectDiscovery = true },
+                packages: [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net9.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.1", "net9.0"),
+                    MockNuGetPackage.CreateSimplePackage("Unrelated.Package", "2.1.0", "net9.0"),
+                ],
+                projectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net9.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.0.0" />
+                        <PackageReference Include="Unrelated.Package" Version="2.*" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                expectedProjectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net9.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.0.1" />
+                        <PackageReference Include="Unrelated.Package" Version="2.*" />
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
+        }
     }
 }
