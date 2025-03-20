@@ -152,7 +152,6 @@ module Dependabot
               content = updated_pyproject_content
               content = sanitize(content)
               content = freeze_other_dependencies(content)
-              content = update_python_requirement(content)
               content
             end
         end
@@ -161,12 +160,6 @@ module Dependabot
           PyprojectPreparer
             .new(pyproject_content: pyproject_content, lockfile: lockfile)
             .freeze_top_level_dependencies_except(dependencies)
-        end
-
-        def update_python_requirement(pyproject_content)
-          PyprojectPreparer
-            .new(pyproject_content: pyproject_content)
-            .update_python_requirement(language_version_manager.python_version)
         end
 
         def sanitize(pyproject_content)
