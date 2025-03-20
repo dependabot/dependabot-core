@@ -514,7 +514,7 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
           content: <<~YAML
             services:
               api:
-                image: ubuntu:${TAG_VERSION}
+                image: ubuntu${TAG_VERSION}
               db:
                 image: postgres:12.3
               cache:
