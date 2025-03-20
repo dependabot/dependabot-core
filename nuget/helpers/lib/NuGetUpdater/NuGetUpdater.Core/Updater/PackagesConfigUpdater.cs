@@ -86,7 +86,7 @@ internal static partial class PackagesConfigUpdater
             }
         }
 
-        using (new WebApplicationTargetsConditionPatcher(projectPath))
+        using (new SpecialImportsConditionPatcher(projectPath))
         {
             RunNugetUpdate(updateArgs, restoreArgs, projectDirectory ?? packagesDirectory, logger);
         }

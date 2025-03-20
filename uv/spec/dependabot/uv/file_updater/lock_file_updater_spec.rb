@@ -141,30 +141,31 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
     end
 
     context "with TOML parsing" do
-      let(:lockfile_content) { fixture("uv_locks", "simple.lock") }
+      let(:lockfile_content) { fixture("uv_locks", "minimal.lock") }
+      let(:updated_lockfile_content) { fixture("uv_locks", "minimal_updated.lock") }
 
+      # Simulate a change to the python version in the updated lockfile
       let(:modified_lockfile_content) do
-        content = lockfile_content.dup
-        content.sub!(
-          'requires-python = ">=3.9"',
-          'requires-python = ">=3.8"'
-        )
-        content.sub!(
-          'name = "requests"\nversion = "2.32.3"',
-          'name = "requests"\nversion = "2.23.0"'
-        )
-        content
+        content = updated_lockfile_content.dup
+        content.sub('requires-python = ">=3.9"', 'requires-python = ">=3.8"')
       end
 
       before do
         allow(updater).to receive(:updated_lockfile_content_for).and_return(modified_lockfile_content)
       end
 
-      it "preserves the original requires-python value" do
+      it "preserves the original requires-python value and updates the package section" do
         updated_lock = updated_files.find { |f| f.name == "uv.lock" }
         expect(updated_lock.content).to include('requires-python = ">=3.9"')
-        expect(updated_lock.content).to include('version = "2.23.0"')
-        expect(updated_lock.content).not_to include('version = "2.32.3"')
+        expect(updated_lock.content).to include('name = "requests"')
+        expect(updated_lock.content).to include('version = "2.32.3"')
+        expect(updated_lock.content).to include("requests-2.32.3.tar.gz")
+        expect(updated_lock.content).to include("requests-2.32.3-py3-none-any.whl")
+
+        expect(updated_lock.content).not_to include('requires-python = ">=3.8"')
+        expect(updated_lock.content).not_to include('version = "2.31.0"')
+        expect(updated_lock.content).not_to include("requests-2.31.0.tar.gz")
+        expect(updated_lock.content).not_to include("requests-2.31.0-py3-none-any.whl")
       end
     end
   end
