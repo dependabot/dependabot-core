@@ -304,127 +304,126 @@ public partial class DiscoveryWorker : IDiscoveryWorker
 
     private async Task<ImmutableArray<ProjectDiscoveryResult>> RunForProjectPathsAsync(string repoRootPath, string workspacePath, IEnumerable<string> projectPaths)
     {
+        var normalizedProjectPaths = projectPaths.SelectMany(p => PathHelper.ResolveCaseInsensitivePathsInsideRepoRoot(p, repoRootPath) ?? []).Distinct().ToImmutableArray();
+        var disposables = normalizedProjectPaths.Select(p => new SpecialImportsConditionPatcher(p)).ToImmutableArray();
         var results = new Dictionary<string, ProjectDiscoveryResult>(StringComparer.Ordinal);
-        foreach (var projectPath in projectPaths)
+
+        try
         {
-            // If there is some MSBuild logic that needs to run to fully resolve the path skip the project
-            // Ensure file existence is checked case-insensitively
-            var actualProjectPaths = PathHelper.ResolveCaseInsensitivePathsInsideRepoRoot(projectPath, repoRootPath);
-
-            if (actualProjectPaths == null)
+            foreach (var projectPath in normalizedProjectPaths)
             {
-                continue;
-            }
-
-            foreach (var actualProjectPath in actualProjectPaths)
-            {
-                if (_processedProjectPaths.Contains(actualProjectPath))
+                if (_processedProjectPaths.Contains(projectPath))
                 {
                     continue;
                 }
 
-                _processedProjectPaths.Add(actualProjectPath);
+                _processedProjectPaths.Add(projectPath);
 
-                using (new SpecialImportsConditionPatcher(actualProjectPath))
+                var relativeProjectPath = Path.GetRelativePath(workspacePath, projectPath).NormalizePathToUnix();
+                var packagesConfigResult = await PackagesConfigDiscovery.Discover(repoRootPath, workspacePath, projectPath, _experimentsManager, _logger);
+                var projectResults = await SdkProjectDiscovery.DiscoverAsync(repoRootPath, workspacePath, projectPath, _experimentsManager, _logger);
+
+                // Determine if there were unrestored MSBuildSdks
+                var msbuildSdks = projectResults.SelectMany(p => p.Dependencies.Where(d => d.Type == DependencyType.MSBuildSdk)).ToImmutableArray();
+                if (msbuildSdks.Length > 0)
                 {
-                    var relativeProjectPath = Path.GetRelativePath(workspacePath, actualProjectPath).NormalizePathToUnix();
-                    var packagesConfigResult = await PackagesConfigDiscovery.Discover(repoRootPath, workspacePath, actualProjectPath, _experimentsManager, _logger);
-                    var projectResults = await SdkProjectDiscovery.DiscoverAsync(repoRootPath, workspacePath, actualProjectPath, _experimentsManager, _logger);
-
-                    // Determine if there were unrestored MSBuildSdks
-                    var msbuildSdks = projectResults.SelectMany(p => p.Dependencies.Where(d => d.Type == DependencyType.MSBuildSdk)).ToImmutableArray();
-                    if (msbuildSdks.Length > 0)
+                    // If new SDKs were restored, then we need to rerun SdkProjectDiscovery.
+                    if (await TryRestoreMSBuildSdksAsync(repoRootPath, workspacePath, msbuildSdks, _logger))
                     {
-                        // If new SDKs were restored, then we need to rerun SdkProjectDiscovery.
-                        if (await TryRestoreMSBuildSdksAsync(repoRootPath, workspacePath, msbuildSdks, _logger))
-                        {
-                            projectResults = await SdkProjectDiscovery.DiscoverAsync(repoRootPath, workspacePath, actualProjectPath, _experimentsManager, _logger);
-                        }
-                    }
-
-                    foreach (var projectResult in projectResults)
-                    {
-                        if (results.ContainsKey(projectResult.FilePath))
-                        {
-                            continue;
-                        }
-
-                        // If we had packages.config dependencies, merge them with the project dependencies
-                        if (projectResult.FilePath == relativeProjectPath && packagesConfigResult is not null)
-                        {
-                            var packagesConfigDependencies = packagesConfigResult.Dependencies
-                                .Select(d => d with { TargetFrameworks = projectResult.TargetFrameworks })
-                                .ToImmutableArray();
-
-                            results[projectResult.FilePath] = projectResult with
-                            {
-                                Dependencies = [.. projectResult.Dependencies, .. packagesConfigDependencies],
-                            };
-                        }
-                        else
-                        {
-                            results[projectResult.FilePath] = projectResult;
-                        }
-                    }
-
-                    if (packagesConfigResult is not null)
-                    {
-                        // we might have to merge this dependency with some others
-                        if (results.TryGetValue(relativeProjectPath, out var existingProjectDiscovery))
-                        {
-                            // merge SDK and packages.config results
-                            var mergedDependencies = existingProjectDiscovery.Dependencies.Concat(packagesConfigResult.Dependencies)
-                                .DistinctBy(d => d.Name, StringComparer.OrdinalIgnoreCase)
-                                .OrderBy(d => d.Name)
-                                .ToImmutableArray();
-                            var mergedTargetFrameworks = existingProjectDiscovery.TargetFrameworks.Concat(packagesConfigResult.TargetFrameworks)
-                                .Select(t =>
-                                {
-                                    try
-                                    {
-                                        var tfm = NuGetFramework.Parse(t);
-                                        return tfm.GetShortFolderName();
-                                    }
-                                    catch
-                                    {
-                                        return string.Empty;
-                                    }
-                                })
-                                .Where(tfm => !string.IsNullOrEmpty(tfm))
-                                .Distinct()
-                                .OrderBy(tfm => tfm)
-                                .ToImmutableArray();
-                            var mergedProperties = existingProjectDiscovery.Properties; // packages.config discovery doesn't produce properties
-                            var mergedImportedFiles = existingProjectDiscovery.ImportedFiles; // packages.config discovery doesn't produce imported files
-                            var mergedAdditionalFiles = existingProjectDiscovery.AdditionalFiles.Concat(packagesConfigResult.AdditionalFiles)
-                                .Distinct(StringComparer.OrdinalIgnoreCase)
-                                .OrderBy(f => f)
-                                .ToImmutableArray();
-                            var mergedResult = new ProjectDiscoveryResult()
-                            {
-                                FilePath = existingProjectDiscovery.FilePath,
-                                Dependencies = mergedDependencies,
-                                TargetFrameworks = mergedTargetFrameworks,
-                                Properties = mergedProperties,
-                                ImportedFiles = mergedImportedFiles,
-                                AdditionalFiles = mergedAdditionalFiles,
-                            };
-                            results[relativeProjectPath] = mergedResult;
-                        }
-                        else
-                        {
-                            // add packages.config results
-                            results[relativeProjectPath] = new ProjectDiscoveryResult()
-                            {
-                                FilePath = relativeProjectPath,
-                                Dependencies = packagesConfigResult.Dependencies,
-                                TargetFrameworks = packagesConfigResult.TargetFrameworks,
-                                ImportedFiles = [], // no imported files resolved for packages.config scenarios
-                                AdditionalFiles = packagesConfigResult.AdditionalFiles,
-                            };
-                        }
+                        projectResults = await SdkProjectDiscovery.DiscoverAsync(repoRootPath, workspacePath, projectPath, _experimentsManager, _logger);
                     }
                 }
+
+                foreach (var projectResult in projectResults)
+                {
+                    if (results.ContainsKey(projectResult.FilePath))
+                    {
+                        continue;
+                    }
+
+                    // If we had packages.config dependencies, merge them with the project dependencies
+                    if (projectResult.FilePath == relativeProjectPath && packagesConfigResult is not null)
+                    {
+                        var packagesConfigDependencies = packagesConfigResult.Dependencies
+                            .Select(d => d with { TargetFrameworks = projectResult.TargetFrameworks })
+                            .ToImmutableArray();
+
+                        results[projectResult.FilePath] = projectResult with
+                        {
+                            Dependencies = [.. projectResult.Dependencies, .. packagesConfigDependencies],
+                        };
+                    }
+                    else
+                    {
+                        results[projectResult.FilePath] = projectResult;
+                    }
+                }
+
+                if (packagesConfigResult is not null)
+                {
+                    // we might have to merge this dependency with some others
+                    if (results.TryGetValue(relativeProjectPath, out var existingProjectDiscovery))
+                    {
+                        // merge SDK and packages.config results
+                        var mergedDependencies = existingProjectDiscovery.Dependencies.Concat(packagesConfigResult.Dependencies)
+                            .DistinctBy(d => d.Name, StringComparer.OrdinalIgnoreCase)
+                            .OrderBy(d => d.Name)
+                            .ToImmutableArray();
+                        var mergedTargetFrameworks = existingProjectDiscovery.TargetFrameworks.Concat(packagesConfigResult.TargetFrameworks)
+                            .Select(t =>
+                            {
+                                try
+                                {
+                                    var tfm = NuGetFramework.Parse(t);
+                                    return tfm.GetShortFolderName();
+                                }
+                                catch
+                                {
+                                    return string.Empty;
+                                }
+                            })
+                            .Where(tfm => !string.IsNullOrEmpty(tfm))
+                            .Distinct()
+                            .OrderBy(tfm => tfm)
+                            .ToImmutableArray();
+                        var mergedProperties = existingProjectDiscovery.Properties; // packages.config discovery doesn't produce properties
+                        var mergedImportedFiles = existingProjectDiscovery.ImportedFiles; // packages.config discovery doesn't produce imported files
+                        var mergedAdditionalFiles = existingProjectDiscovery.AdditionalFiles.Concat(packagesConfigResult.AdditionalFiles)
+                            .Distinct(StringComparer.OrdinalIgnoreCase)
+                            .OrderBy(f => f)
+                            .ToImmutableArray();
+                        var mergedResult = new ProjectDiscoveryResult()
+                        {
+                            FilePath = existingProjectDiscovery.FilePath,
+                            Dependencies = mergedDependencies,
+                            TargetFrameworks = mergedTargetFrameworks,
+                            Properties = mergedProperties,
+                            ImportedFiles = mergedImportedFiles,
+                            AdditionalFiles = mergedAdditionalFiles,
+                        };
+                        results[relativeProjectPath] = mergedResult;
+                    }
+                    else
+                    {
+                        // add packages.config results
+                        results[relativeProjectPath] = new ProjectDiscoveryResult()
+                        {
+                            FilePath = relativeProjectPath,
+                            Dependencies = packagesConfigResult.Dependencies,
+                            TargetFrameworks = packagesConfigResult.TargetFrameworks,
+                            ImportedFiles = [], // no imported files resolved for packages.config scenarios
+                            AdditionalFiles = packagesConfigResult.AdditionalFiles,
+                        };
+                    }
+                }
+            }
+        }
+        finally
+        {
+            foreach (var disposable in disposables)
+            {
+                // restore the original project file
+                disposable.Dispose();
             }
         }
 

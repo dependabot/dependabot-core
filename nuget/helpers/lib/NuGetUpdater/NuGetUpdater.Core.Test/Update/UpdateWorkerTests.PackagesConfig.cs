@@ -1965,6 +1965,9 @@ public partial class UpdateWorkerTests
                       <ItemGroup>
                         <Compile Include="Properties\AssemblyInfo.cs" />
                       </ItemGroup>
+                      <ItemGroup>
+                        <ProjectReference Include="other-project\other-project.csproj" />
+                      </ItemGroup>
                       <PropertyGroup>
                         <!-- some project files set this property which makes the Microsoft.WebApplication.targets import a few lines down always fail -->
                         <VSToolsPath Condition="'$(VSToolsPath)' == ''">C:\some\path\that\does\not\exist</VSToolsPath>
@@ -1985,6 +1988,20 @@ public partial class UpdateWorkerTests
                       <package id="Some.Package" version="7.0.1" targetFramework="net45" />
                     </packages>
                     """,
+                additionalFiles:
+                [
+                    ("other-project/other-project.csproj", """
+                        <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                          <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                          <PropertyGroup>
+                            <OutputType>Library</OutputType>
+                            <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+                          </PropertyGroup>
+                          <Import Project="$(VSToolsPath)\SomeSubPath\WebApplications\Microsoft.WebApplication.targets" />
+                          <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                        </Project>
+                        """)
+                ],
                 expectedProjectContents: """
                     <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
                       <PropertyGroup>
@@ -2045,6 +2062,9 @@ public partial class UpdateWorkerTests
                       </ItemGroup>
                       <ItemGroup>
                         <Compile Include="Properties\AssemblyInfo.cs" />
+                      </ItemGroup>
+                      <ItemGroup>
+                        <ProjectReference Include="other-project\other-project.csproj" />
                       </ItemGroup>
                       <PropertyGroup>
                         <!-- some project files set this property which makes the Microsoft.WebApplication.targets import a few lines down always fail -->
