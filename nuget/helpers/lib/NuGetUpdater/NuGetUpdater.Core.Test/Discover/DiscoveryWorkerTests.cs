@@ -735,7 +735,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                 (solutionPath, """
                     <Solution>
                       <Folder Name="/src/">
-                        <Project Path="src/project.csproj" />
+                        <Project Path="src\project.csproj" />
                       </Folder>
                     </Solution>
                     """)
