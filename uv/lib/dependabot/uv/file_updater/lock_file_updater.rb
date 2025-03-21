@@ -19,6 +19,8 @@ module Dependabot
       class LockFileUpdater
         require_relative "pyproject_preparer"
 
+        REQUIRED_FILES = %w(pyproject.toml uv.lock).freeze # At least one of these files should be present
+
         attr_reader :dependencies
         attr_reader :dependency_files
         attr_reader :credentials
@@ -43,6 +45,8 @@ module Dependabot
         end
 
         def fetch_updated_dependency_files
+          return [] unless create_or_update_lock_file?
+
           updated_files = []
 
           if file_changed?(pyproject)
@@ -185,13 +189,14 @@ module Dependabot
 
         def run_update_command
           # Use pyenv exec to ensure we're using the correct Python environment
-          command = "pyenv exec python -m uv lock --upgrade-package #{dependency.name}"
-          fingerprint = "pyenv exec python -m uv lock --upgrade-package <dependency_name>"
+          command = "pyenv exec uv lock --upgrade-package #{dependency.name}"
+          fingerprint = "pyenv exec uv lock --upgrade-package <dependency_name>"
 
           run_command(command, fingerprint:)
         end
 
         def run_command(command, fingerprint: nil)
+          Dependabot.logger.info("Running command: #{command}")
           SharedHelpers.run_shell_command(command, fingerprint: fingerprint)
         end
 
@@ -217,7 +222,7 @@ module Dependabot
             # Set the local Python version
             python_version = language_version_manager.python_version
             Dependabot.logger.info("Setting Python version to #{python_version}")
-            SharedHelpers.run_shell_command("pyenv local #{language_version_manager.python_major_minor}")
+            SharedHelpers.run_shell_command("pyenv local #{python_version}")
 
             # We don't need to install uv as it should be available in the Docker environment
             Dependabot.logger.info("Using pre-installed uv package")
@@ -307,6 +312,10 @@ module Dependabot
 
         def uv_lock
           dependency_files.find { |f| f.name == "uv.lock" }
+        end
+
+        def create_or_update_lock_file?
+          dependency.requirements.select { _1[:file].end_with?(*REQUIRED_FILES) }.any?
         end
       end
     end
