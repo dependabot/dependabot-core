@@ -3,7 +3,7 @@
 
 require "spec_helper"
 require "dependabot/credential"
-require "dependabot/package/update_checker/registry_finder"
+require "dependabot/python/package/registry_finder"
 
 RSpec.describe Dependabot::NpmAndYarn::Package::RegistryFinder do
   subject(:finder) do
