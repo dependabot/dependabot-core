@@ -3,9 +3,9 @@
 
 require "spec_helper"
 require "dependabot/credential"
-require "dependabot/npm_and_yarn/update_checker/registry_finder"
+require "dependabot/package/update_checker/registry_finder"
 
-RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
+RSpec.describe Dependabot::NpmAndYarn::Package::RegistryFinder do
   subject(:finder) do
     described_class.new(
       dependency: dependency,

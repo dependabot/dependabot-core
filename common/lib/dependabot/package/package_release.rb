@@ -16,6 +16,7 @@ module Dependabot
         params(
           version: Dependabot::Version,
           released_at: T.nilable(Time),
+          latest: T::Boolean,
           yanked: T::Boolean,
           yanked_reason: T.nilable(String),
           downloads: T.nilable(Integer),
@@ -28,6 +29,7 @@ module Dependabot
       def initialize(
         version:,
         released_at: nil,
+        latest: false,
         yanked: false,
         yanked_reason: nil,
         downloads: nil,
@@ -37,6 +39,7 @@ module Dependabot
       )
         @version = T.let(version, Dependabot::Version)
         @released_at = T.let(released_at, T.nilable(Time))
+        @latest = T.let(latest, T::Boolean)
         @yanked = T.let(yanked, T::Boolean)
         @yanked_reason = T.let(yanked_reason, T.nilable(String))
         @downloads = T.let(downloads, T.nilable(Integer))
@@ -50,6 +53,9 @@ module Dependabot
 
       sig { returns(T.nilable(Time)) }
       attr_reader :released_at
+
+      sig { returns(T::Boolean) }
+      attr_reader :latest
 
       sig { returns(T::Boolean) }
       attr_reader :yanked

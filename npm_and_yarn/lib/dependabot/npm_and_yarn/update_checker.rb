@@ -427,8 +427,12 @@ module Dependabot
 
       def original_source(updated_dependency)
         sources =
-          updated_dependency.requirements.map { |r| r.fetch(:source) }.uniq.compact
-                            .sort_by { |source| RegistryFinder.central_registry?(source[:url]) ? 1 : 0 }
+          updated_dependency
+          .requirements.map { |r| r.fetch(:source) }
+          .uniq.compact
+          .sort_by do |source|
+            Package::RegistryFinder.central_registry?(source[:url]) ? 1 : 0
+          end
 
         sources.first
       end
