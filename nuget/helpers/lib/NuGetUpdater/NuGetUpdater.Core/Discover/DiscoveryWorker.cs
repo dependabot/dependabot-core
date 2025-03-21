@@ -240,11 +240,12 @@ public partial class DiscoveryWorker : IDiscoveryWorker
                     }
 
                     SolutionModel solution = await serializer.OpenAsync(candidateEntryPoint, CancellationToken.None);
+                    string solutionPath = Path.GetDirectoryName(candidateEntryPoint) ?? string.Empty;
 
                     foreach (SolutionProjectModel project in solution.SolutionProjects)
                     {
-                        string absolutePath = Path.GetFullPath(project.FilePath);
-                        filesToExpand.Push(absolutePath);
+                        string projectPath = Path.Combine(solutionPath, project.FilePath);
+                        filesToExpand.Push(projectPath);
                     }
                 }
                 else if (extension == ".proj")
