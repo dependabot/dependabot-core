@@ -6,6 +6,7 @@ require "excon"
 require "time"
 require "dependabot/package/package_release"
 require "dependabot/package/package_details"
+require "dependabot/npm_and_yarn/package/registry_finder"
 
 module Dependabot
   module NpmAndYarn
