@@ -2,11 +2,11 @@ using System.Collections.Immutable;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
+using Microsoft.Build.Construction;
 using Microsoft.Build.Definition;
 using Microsoft.Build.Evaluation;
 using Microsoft.Build.Exceptions;
 
-using Microsoft.VisualStudio.SolutionPersistence;
 using Microsoft.VisualStudio.SolutionPersistence.Model;
 using Microsoft.VisualStudio.SolutionPersistence.Serializer;
 
@@ -229,17 +229,17 @@ public partial class DiscoveryWorker : IDiscoveryWorker
             if (seenProjects.Add(candidateEntryPoint))
             {
                 string extension = Path.GetExtension(candidateEntryPoint).ToLowerInvariant();
-                if (extension is ".sln" or ".slnx")
+                if (extension == ".sln")
                 {
-                    ISolutionSerializer? serializer = SolutionSerializers.GetSerializerByMoniker(candidateEntryPoint);
-
-                    // Unexpected given we check extension support in FindEntryPoints
-                    if (serializer is null)
+                    SolutionFile solution = SolutionFile.Parse(candidateEntryPoint);
+                    foreach (ProjectInSolution project in solution.ProjectsInOrder)
                     {
-                        throw new NotSupportedException($"Unable to find a serializer for solution file [{candidateEntryPoint}].");
+                        filesToExpand.Push(project.AbsolutePath);
                     }
-
-                    SolutionModel solution = await serializer.OpenAsync(candidateEntryPoint, CancellationToken.None);
+                }
+                else if (extension == ".slnx")
+                {
+                    SolutionModel solution = await SolutionSerializers.SlnXml.OpenAsync(candidateEntryPoint, CancellationToken.None);
                     string solutionPath = Path.GetDirectoryName(candidateEntryPoint) ?? string.Empty;
 
                     foreach (SolutionProjectModel project in solution.SolutionProjects)
