@@ -728,7 +728,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                       </PropertyGroup>
 
                       <ItemGroup>
-                        <PackageReference Include="Some.Package" />
+                        <PackageReference Include="Some.Package" Version="9.0.1" />
                       </ItemGroup>
                     </Project>
                     """),
