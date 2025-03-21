@@ -2,10 +2,13 @@ using System.Collections.Immutable;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-using Microsoft.Build.Construction;
 using Microsoft.Build.Definition;
 using Microsoft.Build.Evaluation;
 using Microsoft.Build.Exceptions;
+
+using Microsoft.VisualStudio.SolutionPersistence;
+using Microsoft.VisualStudio.SolutionPersistence.Model;
+using Microsoft.VisualStudio.SolutionPersistence.Serializer;
 
 using NuGet.Frameworks;
 
@@ -167,7 +170,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
         ImmutableArray<string> projects;
         try
         {
-            projects = ExpandEntryPointsIntoProjects(entryPoints);
+            projects = await ExpandEntryPointsIntoProjectsAsync(entryPoints);
         }
         catch (InvalidProjectFileException e)
         {
@@ -202,6 +205,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
                 switch (extension)
                 {
                     case ".sln":
+                    case ".slnx":
                     case ".proj":
                     case ".csproj":
                     case ".fsproj":
@@ -214,7 +218,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
             .ToImmutableArray();
     }
 
-    private static ImmutableArray<string> ExpandEntryPointsIntoProjects(IEnumerable<string> entryPoints)
+    private async static Task<ImmutableArray<string>> ExpandEntryPointsIntoProjectsAsync(IEnumerable<string> entryPoints)
     {
         HashSet<string> expandedProjects = new();
         HashSet<string> seenProjects = new();
@@ -225,12 +229,22 @@ public partial class DiscoveryWorker : IDiscoveryWorker
             if (seenProjects.Add(candidateEntryPoint))
             {
                 string extension = Path.GetExtension(candidateEntryPoint).ToLowerInvariant();
-                if (extension == ".sln")
+                if (extension is ".sln" or ".slnx")
                 {
-                    SolutionFile solution = SolutionFile.Parse(candidateEntryPoint);
-                    foreach (ProjectInSolution project in solution.ProjectsInOrder)
+                    ISolutionSerializer? serializer = SolutionSerializers.GetSerializerByMoniker(candidateEntryPoint);
+
+                    // Unexpected given we check extension support in FindEntryPoints
+                    if (serializer is null)
                     {
-                        filesToExpand.Push(project.AbsolutePath);
+                        throw new NotSupportedException($"Unable to find a serializer for solution file [{candidateEntryPoint}].");
+                    }
+
+                    SolutionModel solution = await serializer.OpenAsync(candidateEntryPoint, CancellationToken.None);
+
+                    foreach (SolutionProjectModel project in solution.SolutionProjects)
+                    {
+                        string absolutePath = Path.GetFullPath(project.FilePath);
+                        filesToExpand.Push(absolutePath);
                     }
                 }
                 else if (extension == ".proj")

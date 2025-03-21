@@ -25,6 +25,7 @@
     <PackageReference Include="Microsoft.Build.Locator" />
     <PackageReference Include="MSBuild.StructuredLogger" />
     <PackageReference Include="NuGet.Core" Aliases="CoreV2" />
+    <PackageReference Include="Microsoft.VisualStudio.SolutionPersistence" />
   </ItemGroup>
 
   <ItemGroup>
