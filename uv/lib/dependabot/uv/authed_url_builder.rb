@@ -1,9 +1,14 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
+
+require "sorbet-runtime"
 
 module Dependabot
   module Uv
     class AuthedUrlBuilder
+      extend T::Sig
+
+      sig { params(credential: T::Hash[String, String]).returns(String) }
       def self.authed_url(credential:)
         token = credential.fetch("token", nil)
         url = credential.fetch("index-url", nil)
