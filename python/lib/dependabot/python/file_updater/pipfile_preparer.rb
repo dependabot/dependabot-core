@@ -19,7 +19,7 @@ module Dependabot
           @pipfile_content = pipfile_content
         end
 
-        sig { params(credentials: T::Array[T::Hash[String, T.untyped]]).returns(String) }
+        sig { params(credentials: T::Array[Dependabot::Credential]).returns(String) }
         def replace_sources(credentials)
           pipfile_object = TomlRB.parse(pipfile_content)
 
@@ -75,7 +75,7 @@ module Dependabot
 
         sig do
           params(source: T::Hash[String, T.untyped],
-                 credentials: T::Array[T::Hash[String, T.untyped]]).returns(T.nilable(T::Hash[String, T.untyped]))
+                 credentials: T::Array[Dependabot::Credential]).returns(T.nilable(T::Hash[String, T.untyped]))
         end
         def sub_auth_url(source, credentials)
           if source["url"].include?("${")
@@ -83,7 +83,7 @@ module Dependabot
 
             source_cred = credentials
                           .select { |cred| cred["type"] == "python_index" && cred["index-url"] }
-                          .find { |c| c["index-url"].sub(/\${.*}@/, "") == base_url }
+                          .find { |c| T.must(c["index-url"]).sub(/\${.*}@/, "") == base_url }
 
             return nil if source_cred.nil?
 
@@ -93,7 +93,7 @@ module Dependabot
           source
         end
 
-        sig { params(credentials: T::Array[T::Hash[String, T.untyped]]).returns(T::Array[T::Hash[String, T.untyped]]) }
+        sig { params(credentials: T::Array[Dependabot::Credential]).returns(T::Array[T::Hash[String, T.untyped]]) }
         def config_variable_sources(credentials)
           @config_variable_sources = T.let([], T.nilable(T::Array[T::Hash[String, T.untyped]]))
           @config_variable_sources =
