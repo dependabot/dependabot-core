@@ -4,7 +4,7 @@
 require "excon"
 require "dependabot/npm_and_yarn/update_checker"
 require "dependabot/update_checkers/version_filters"
-require "dependabot/npm_and_yarn/update_checker/registry_finder"
+require "dependabot/npm_and_yarn/package/registry_finder"
 require "dependabot/npm_and_yarn/version"
 require "dependabot/npm_and_yarn/requirement"
 require "dependabot/shared_helpers"
@@ -411,7 +411,7 @@ module Dependabot
         end
 
         def registry_finder
-          @registry_finder ||= RegistryFinder.new(
+          @registry_finder ||= Package::RegistryFinder.new(
             dependency: dependency,
             credentials: credentials,
             npmrc_file: npmrc_file,

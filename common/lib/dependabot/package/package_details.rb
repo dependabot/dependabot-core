@@ -15,15 +15,17 @@ module Dependabot
       sig do
         params(
           dependency: Dependabot::Dependency,
-          releases: T::Array[Dependabot::Package::PackageRelease]
+          releases: T::Array[Dependabot::Package::PackageRelease],
+          dist_tags: T.nilable(T::Hash[String, String])
         ).void
       end
-      def initialize(dependency:, releases: [])
+      def initialize(dependency:, releases: [], dist_tags: nil)
         @dependency = T.let(dependency, Dependabot::Dependency)
         @releases = T.let(
           releases.sort_by(&:version).reverse,
           T::Array[Dependabot::Package::PackageRelease]
         )
+        @dist_tags = T.let(dist_tags, T.nilable(T::Hash[String, String]))
       end
 
       sig { returns(Dependabot::Dependency) }

@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 require "dependabot/npm_and_yarn/helpers"
-require "dependabot/npm_and_yarn/update_checker/registry_finder"
+require "dependabot/npm_and_yarn/package/registry_finder"
 require "dependabot/npm_and_yarn/registry_parser"
 require "dependabot/shared_helpers"
 
@@ -309,7 +309,7 @@ module Dependabot
                         .find { |dep| dep.name == package_name }
           raise DependencyNotFound, package_name unless missing_dep
 
-          reg = NpmAndYarn::UpdateChecker::RegistryFinder.new(
+          reg = Package::RegistryFinder.new(
             dependency: missing_dep,
             credentials: credentials,
             npmrc_file: npmrc_file

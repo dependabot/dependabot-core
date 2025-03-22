@@ -110,7 +110,7 @@ module Dependabot
         def yarnrc_specifies_private_reg?
           return false unless yarnrc_file
 
-          regex = UpdateChecker::RegistryFinder::YARN_GLOBAL_REGISTRY_REGEX
+          regex = Package::RegistryFinder::YARN_GLOBAL_REGISTRY_REGEX
           yarnrc_global_registry =
             yarnrc_file.content
                        .lines.find { |line| line.match?(regex) }
@@ -120,7 +120,7 @@ module Dependabot
 
           return false unless yarnrc_global_registry
 
-          UpdateChecker::RegistryFinder::CENTRAL_REGISTRIES.none? do |r|
+          Package::RegistryFinder::CENTRAL_REGISTRIES.none? do |r|
             r.include?(T.must(URI(yarnrc_global_registry).host))
           end
         end
