@@ -57,6 +57,8 @@ module Dependabot
       # rubocop:disable Metrics/PerceivedComplexity
       sig { override.void }
       def check_required_files
+        return if dependencies.empty?
+
         requirement_files = dependencies.flat_map do |dep|
           dep.requirements.map { |r| T.let(r.fetch(:file), String) }
         end.uniq

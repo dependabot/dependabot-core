@@ -179,6 +179,40 @@ RSpec.describe Dependabot::Nuget::FileParser do
           }])
         end
       end
+
+      context "with no dependencies" do
+        before do
+          intercept_native_tools(
+            discovery_content_hash: {
+              Path: "",
+              IsSuccess: true,
+              Projects: [{
+                FilePath: "my.csproj",
+                Dependencies: [],
+                IsSuccess: true,
+                Properties: [{
+                  Name: "TargetFrameworks",
+                  Value: "net462",
+                  SourceFilePath: "my.csproj"
+                }],
+                TargetFrameworks: ["net462"],
+                ReferencedProjectPaths: [],
+                ImportedFiles: [],
+                AdditionalFiles: []
+              }],
+              GlobalJson: nil,
+              DotNetToolsJson: nil
+            }
+          )
+        end
+
+        it "is returns the expected set of dependencies" do
+          run_parser_test do |parser|
+            dependencies = parser.parse
+            expect(dependencies.length).to eq(0)
+          end
+        end
+      end
     end
 
     context "with a csproj and a vbproj" do
