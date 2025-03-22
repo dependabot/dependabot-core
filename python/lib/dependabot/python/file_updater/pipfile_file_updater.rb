@@ -212,7 +212,7 @@ module Dependabot
                 write_temporary_dependency_files(prepared_pipfile_content)
                 install_required_python
 
-                pipenv_runner.run_upgrade("==#{T.must(dependency).version}")
+                T.must(pipenv_runner).run_upgrade("==#{T.must(dependency).version}")
 
                 result = { lockfile: File.read("Pipfile.lock") }
                 result[:lockfile] = post_process_lockfile(result[:lockfile])
@@ -263,7 +263,7 @@ module Dependabot
         end
 
         def run_pipenv_command(command)
-          pipenv_runner.run(command)
+          T.must(pipenv_runner).run(command)
         end
 
         def write_temporary_dependency_files(pipfile_content)
