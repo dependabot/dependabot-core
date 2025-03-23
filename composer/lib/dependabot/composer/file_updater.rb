@@ -62,13 +62,14 @@ module Dependabot
 
       sig { returns(String) }
       def updated_lockfile_content
-        @updated_lockfile_content = T.let(@updated_lockfile_content, T.nilable(String))
-        @updated_lockfile_content ||=
+        @updated_lockfile_content ||= T.let(
           LockfileUpdater.new(
             dependencies: dependencies,
             dependency_files: dependency_files,
             credentials: credentials
-          ).updated_lockfile_content
+          ).updated_lockfile_content,
+          T.nilable(String)
+        )
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
