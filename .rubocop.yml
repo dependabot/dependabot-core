@@ -344,8 +344,10 @@ Sorbet/TrueSigil:
   Exclude:
     - "**/spec/**/*"
 Sorbet/StrictSigil:
+  Enabled: true
   Exclude:
     - "**/spec/**/*"
+    - "bin/**/*"
 Sorbet/StrongSigil:
   Exclude:
     - "**/spec/**/*"
