@@ -18,6 +18,27 @@ RUN cd /tmp \
   && mv regctl-${TARGETARCH} /opt/bin/regctl \
   && chmod o+rx /opt/bin/regctl
 
+# Add Helm installation
+ARG HELM_VERSION=3.17.2
+# Checksums for Helm
+# curl -sL https://get.helm.sh/helm-v${HELM_VERSION}-linux-amd64.tar.gz | sha256sum
+ARG HELM_AMD64_CHECKSUM=90c28792a1eb5fb0b50028e39ebf826531ebfcf73f599050dbd79bab2f277241
+# curl -sL https://get.helm.sh/helm-v${HELM_VERSION}-linux-arm64.tar.gz | sha256sum
+ARG HELM_ARM64_CHECKSUM=0b13ec8580dd5498b5a2d7cb34146e098049f59500a266db1bb98f59649eb90a
+
+ENV PATH=/opt/bin:$PATH
+RUN cd /tmp \
+  && curl -sSf -o regctl-${TARGETARCH} -L https://github.com/regclient/regclient/releases/download/v${REGCTL_VERSION}/regctl-linux-${TARGETARCH} \
+  && printf "$REGCTL_AMD64_CHECKSUM regctl-amd64\n$REGCTL_ARM64_CHECKSUM regctl-arm64\n" | sha256sum -c --ignore-missing - \
+  && mkdir -p /opt/bin \
+  && mv regctl-${TARGETARCH} /opt/bin/regctl \
+  && chmod o+rx /opt/bin/regctl \
+  # Install Helm
+  && curl -sSf -L https://get.helm.sh/helm-v${HELM_VERSION}-linux-${TARGETARCH}.tar.gz | tar xz \
+  && mv linux-${TARGETARCH}/helm /opt/bin/helm \
+  && chmod o+rx /opt/bin/helm \
+  && rm -rf linux-${TARGETARCH}
+
 USER dependabot
 
 COPY --chown=dependabot:dependabot helm $DEPENDABOT_HOME/helm

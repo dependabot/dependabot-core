@@ -8,8 +8,11 @@ require "dependabot/errors"
 require "dependabot/docker/version"
 require "dependabot/docker/requirement"
 require "dependabot/shared/utils/credentials_finder"
+require "dependabot/shared_helpers"
 require "excon"
 require "yaml"
+require "json"
+require "dependabot/helm/helpers"
 
 module Dependabot
   module Helm
@@ -38,10 +41,7 @@ module Dependabot
         dependency.requirements.map do |req|
           updated_metadata = req.fetch(:metadata).dup
           updated_req = req.dup
-          if updated_metadata.key?(:type) && updated_metadata[:type] == :helm_chart
-            updated_req[:requirement] = latest_version.to_s
-            updated_req[:source][:tag] = latest_version.to_s
-          end
+          updated_req[:requirement] = latest_version.to_s if updated_metadata.key?(:type)
 
           updated_req
         end
@@ -77,10 +77,100 @@ module Dependabot
       def dependency_type
         req = dependency.requirements.first
 
-        return :image_reference if T.must(req)[:groups]&.include?("image")
+        return :image_reference if T.must(req).dig(:metadata, :type) == :docker_image
         return :chart_dependency if T.must(req).dig(:metadata, :type) == :helm_chart
 
         :unknown
+      end
+
+      sig do
+        params(chart_name: String, repo_name: T.nilable(String),
+               repo_url: T.nilable(String)).returns(T.nilable(T::Array[T::Hash[String, T.untyped]]))
+      end
+      def fetch_chart_releases(chart_name, repo_name = nil, repo_url = nil)
+        Dependabot.logger.info("Fetching releases for Helm chart: #{chart_name}")
+
+        if repo_name && repo_url
+          begin
+            Helpers.add_repo(repo_name, repo_url)
+            Helpers.update_repo
+          rescue StandardError => e
+            Dependabot.logger.error("Error adding/updating Helm repository: #{e.message}")
+          end
+        end
+
+        begin
+          search_command = repo_name ? "#{repo_name}/#{chart_name}" : chart_name
+          Dependabot.logger.info("Searching for: #{search_command}")
+
+          json_output = Helpers.search_releases(search_command)
+          return nil if json_output.nil? || json_output.empty?
+
+          releases = JSON.parse(json_output)
+          Dependabot.logger.info("Found #{releases.length} releases for #{chart_name}")
+          releases
+        rescue StandardError => e
+          Dependabot.logger.error("Error fetching chart releases: #{e.message}")
+          nil
+        end
+      end
+
+      sig { returns(T.nilable(Gem::Version)) }
+      def fetch_latest_chart_version
+        chart_name = dependency.name
+        source = dependency.requirements.first&.dig(:source)
+        repo_url = source&.dig(:registry)
+        repo_name = extract_repo_name(repo_url)
+
+        Dependabot.logger.info("Attempting to search for #{chart_name} using helm CLI")
+        releases = fetch_chart_releases(chart_name, repo_name, repo_url)
+
+        if releases && !releases.empty?
+          valid_releases = releases.reject do |release|
+            version_class.new(release["version"]) <= version_class.new(dependency.version) ||
+              ignore_requirements.any? { |r| r.satisfied_by?(version_class.new(release["version"])) }
+          end
+
+          if valid_releases.any?
+            highest_release = valid_releases.max_by { |release| version_class.new(release["version"]) }
+            Dependabot.logger.info("Found latest version #{highest_release['version']} for #{chart_name} using helm search")
+            return version_class.new(highest_release["version"])
+          end
+        end
+
+        Dependabot.logger.info("Falling back to index.yaml search for #{chart_name}")
+        return nil unless repo_url
+
+        repo_url_trimmed = repo_url.to_s.strip.chomp("/")
+        index_url = "#{repo_url_trimmed}/index.yaml"
+
+        index = fetch_helm_chart_index(index_url)
+        return nil unless index && index["entries"] && index["entries"][chart_name]
+
+        all_versions = index["entries"][chart_name].map { |entry| entry["version"] }
+        Dependabot.logger.info("Found #{all_versions.length} versions for #{chart_name} in index.yaml")
+
+        valid_versions = filter_valid_versions(all_versions)
+        Dependabot.logger.info("After filtering, found #{valid_versions.length} valid versions for #{chart_name}")
+
+        return nil if valid_versions.empty?
+
+        highest_version = valid_versions.map { |v| version_class.new(v) }.max
+        Dependabot.logger.info("Highest valid version for #{chart_name} is #{highest_version}")
+
+        highest_version
+      end
+
+      sig { params(repo_url: T.nilable(String)).returns(T.nilable(String)) }
+      def extract_repo_name(repo_url)
+        return nil unless repo_url
+
+        name = repo_url.gsub(%r{^https?://}, "")
+        name = name.chomp("/")
+        name = name.gsub(/[^a-zA-Z0-9-]/, "-")
+        name = "repo-#{name}" unless name.match?(/^[a-zA-Z0-9]/)
+
+        name
       end
 
       sig { params(index_url: String).returns(T.nilable(T::Hash[T.untyped, T.untyped])) }
@@ -113,32 +203,6 @@ module Dependabot
       end
 
       sig { returns(T.nilable(Gem::Version)) }
-      def fetch_latest_chart_version
-        source_url = dependency.requirements.first&.dig(:source, :registry)
-        return nil unless source_url
-
-        repo_url = source_url.to_s.strip.chomp("/")
-        chart_name = dependency.name
-        index_url = "#{repo_url}/index.yaml"
-
-        index = fetch_helm_chart_index(index_url)
-        return nil unless index && index["entries"] && index["entries"][chart_name]
-
-        all_versions = index["entries"][chart_name].map { |entry| entry["version"] }
-        Dependabot.logger.info("Found #{all_versions.length} versions for #{chart_name}")
-
-        valid_versions = filter_valid_versions(all_versions)
-        Dependabot.logger.info("After filtering, found #{valid_versions.length} valid versions for #{chart_name}")
-
-        return nil if valid_versions.empty?
-
-        highest_version = valid_versions.map { |v| version_class.new(v) }.max
-        Dependabot.logger.info("Highest valid version for #{chart_name} is #{highest_version}")
-
-        highest_version
-      end
-
-      sig { returns(T.nilable(String)) }
       def fetch_latest_image_version
         docker_dependency = build_docker_dependency
 
@@ -153,12 +217,11 @@ module Dependabot
           raise_on_ignored: raise_on_ignored
         )
 
-        latest = docker_checker.latest_version
-        latest_version_str = latest&.to_s
+        latest_version = docker_checker.latest_version
 
-        Dependabot.logger.info("Docker UpdateChecker found latest version: #{latest_version_str || 'none'}")
+        Dependabot.logger.info("Docker UpdateChecker found latest version: #{latest_version || 'none'}")
 
-        latest_version_str
+        version_class.new(latest_version)
       end
 
       sig { returns(Dependabot::Dependency) }
@@ -175,7 +238,7 @@ module Dependabot
           end
         end
 
-        registry = source[:registry] || "docker.io"
+        registry = source[:registry] || nil
 
         Dependency.new(
           name: name,

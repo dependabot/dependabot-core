@@ -11,7 +11,9 @@ module Dependabot
       extend T::Sig
 
       CHART_YAML = /.*chart\.ya?ml$/i
+      CHART_LOCK = /.*chart\.lock$/i
       VALUES_YAML = /.*values\.ya?ml$/i
+      DEFAULT_REPOSITORY = "https://charts.helm.sh/stable"
 
       sig { returns(Ecosystem) }
       def ecosystem
@@ -41,24 +43,36 @@ module Dependabot
       end
       def parse_dependencies(yaml, chart_file, dependency_set)
         yaml["dependencies"].each do |dep|
-          next unless dep.is_a?(Hash) && dep["name"] && dep["version"] && dep["repository"]
+          next unless dep.is_a?(Hash) && dep["name"] && dep["version"]
 
           parsed_line = {
             "image" => dep["name"],
             "tag" => dep["version"],
-            "registry" => dep["repository"],
+            "registry" => repository_from_registry(dep["repository"]),
             "digest" => nil
           }
 
           dependency = build_dependency(chart_file, parsed_line, dep["version"])
-          dependency.requirements.map! do |req|
-            req[:metadata] = {} unless req[:metadata]
-            req[:metadata][:type] = :helm_chart
-            req
-          end
+          add_dependency_type_to_dependency(dependency, :helm_chart)
 
           dependency_set << dependency
         end
+      end
+
+      sig { params(dependency: Dependabot::Dependency, type: Symbol).void }
+      def add_dependency_type_to_dependency(dependency, type)
+        dependency.requirements.map! do |req|
+          req[:metadata] = {} unless req[:metadata]
+          req[:metadata][:type] = type
+          req
+        end
+      end
+
+      sig { params(repository: T.nilable(String)).returns(String) }
+      def repository_from_registry(repository)
+        return DEFAULT_REPOSITORY if repository.nil?
+
+        repository
       end
 
       sig { params(dependency_set: DependencySet).void }
@@ -84,9 +98,9 @@ module Dependabot
             version = version_from(parsed_line)
             next unless version
 
+
             dependency = build_dependency(values_file, parsed_line, version)
-            T.must(dependency.requirements.first)[:source] =
-              T.must(dependency.requirements.first)[:source].merge(path: image_details[:path])
+            add_dependency_type_to_dependency(dependency, :docker_image)
 
             dependency_set << dependency
           end
