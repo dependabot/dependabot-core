@@ -276,15 +276,14 @@ module Dependabot
         sig { void }
         def add_auth_env_vars
           Python::FileUpdater::PyprojectPreparer
-            .new(pyproject_content: T.must(pyproject).content)
+            .new(pyproject_content: T.must(T.must(pyproject).content))
             .add_auth_env_vars(credentials)
         end
 
         sig do
           params(
             pyproject_content: T.untyped
-          ).returns(T.nilable(T.any(T::Hash[String, T.untyped],
-                    String, T::Array[T::Hash[String, T.untyped]])))
+          ).returns(T.nilable(T.any(T::Hash[String, T.untyped], String, T::Array[T::Hash[String, T.untyped]])))
         end
         def pyproject_hash_for(pyproject_content)
           SharedHelpers.in_a_temporary_directory do |dir|
