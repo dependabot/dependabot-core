@@ -97,7 +97,7 @@ module Dependabot
           end
         end
 
-        sig { params(dep: T.untyped).returns(Regexp) }
+        sig { params(dep: Dependency).returns(Regexp) }
         def declaration_regex(dep)
           escaped_name = Regexp.escape(dep.name).gsub("\\-", "[-_.]")
           /(?:^|["'])#{escaped_name}["']?\s*=.*$/i
@@ -112,7 +112,7 @@ module Dependabot
           /mx
         end
 
-        sig { params(dependency: Dependabot::Dependency).returns(T.untyped) }
+        sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
         def requirement_changed?(dependency)
           changed_requirements =
             dependency.requirements - T.must(dependency.previous_requirements)

@@ -84,7 +84,7 @@ module Dependabot
 
           if T.must(pipfile).content != updated_pipfile_content
             updated_files <<
-              updated_file(file: T.must(pipfile), content: updated_pipfile_content)
+              updated_file(file: T.must(pipfile), content: T.must(updated_pipfile_content))
           end
 
           if lockfile
@@ -98,12 +98,12 @@ module Dependabot
           updated_files
         end
 
-        sig { returns(String) }
+        sig { returns(T.nilable(String)) }
         def updated_pipfile_content
           @updated_pipfile_content ||=
             PipfileManifestUpdater.new(
               dependencies: dependencies,
-              manifest: pipfile
+              manifest: T.must(pipfile)
             ).updated_manifest_content
         end
 
@@ -174,9 +174,9 @@ module Dependabot
         sig { returns(String) }
         def prepared_pipfile_content
           content = updated_pipfile_content
-          content = add_private_sources(content)
+          content = add_private_sources(content.to_s)
           content = update_python_requirement(content)
-          content = update_ssl_requirement(content, updated_pipfile_content)
+          content = update_ssl_requirement(content, updated_pipfile_content.to_s)
 
           content
         end
@@ -230,7 +230,7 @@ module Dependabot
 
         sig { params(updated_lockfile_content: String).returns(String) }
         def post_process_lockfile(updated_lockfile_content)
-          pipfile_hash = pipfile_hash_for(updated_pipfile_content)
+          pipfile_hash = pipfile_hash_for(updated_pipfile_content.to_s)
           original_reqs = T.must(parsed_lockfile["_meta"])["requires"]
           original_source = T.must(parsed_lockfile["_meta"])["sources"]
 
