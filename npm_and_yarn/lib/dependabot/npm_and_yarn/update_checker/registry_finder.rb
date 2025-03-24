@@ -1,7 +1,9 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "excon"
+require "sorbet-runtime"
+
 require "dependabot/npm_and_yarn/update_checker"
 require "dependabot/registry_client"
 
@@ -9,6 +11,8 @@ module Dependabot
   module NpmAndYarn
     class UpdateChecker
       class RegistryFinder
+        extend T::Sig
+
         CENTRAL_REGISTRIES = %w(
           https://registry.npmjs.org
           http://registry.npmjs.org
@@ -21,6 +25,16 @@ module Dependabot
         NPM_SCOPED_REGISTRY_REGEX = /^(?<scope>@[^:]+)\s*:registry\s*=\s*['"]?(?<registry>.*?)['"]?$/
         YARN_SCOPED_REGISTRY_REGEX = /['"](?<scope>@[^:]+):registry['"]\s((['"](?<registry>.*)['"])|(?<registry>.*))/
 
+        sig do
+          params(
+            dependency: T.nilable(Dependabot::Dependency),
+            credentials: T::Array[Dependabot::Credential],
+            npmrc_file: T.nilable(Dependabot::DependencyFile),
+            yarnrc_file: T.nilable(Dependabot::DependencyFile),
+            yarnrc_yml_file: T.nilable(Dependabot::DependencyFile)
+          )
+            .void
+        end
         def initialize(dependency:, credentials:, npmrc_file: nil,
                        yarnrc_file: nil, yarnrc_yml_file: nil)
           @dependency = dependency
@@ -30,56 +44,76 @@ module Dependabot
           @yarnrc_yml_file = yarnrc_yml_file
         end
 
+        sig { returns(String) }
         def registry
-          @registry ||= locked_registry || configured_registry || first_registry_with_dependency_details
+          @registry ||= T.let(
+            locked_registry || configured_registry || first_registry_with_dependency_details,
+            T.nilable(String)
+          )
         end
 
+        sig { returns(T::Hash[String, String]) }
         def auth_headers
           auth_header_for(auth_token)
         end
 
+        sig { returns(String) }
         def dependency_url
           "#{registry_url}/#{escaped_dependency_name}"
         end
 
+        sig { params(version: String).returns(String) }
         def tarball_url(version)
           version_without_build_metadata = version.to_s.gsub(/\+.*/, "")
 
           # Dependency name needs to be unescaped since tarball URLs don't always work with escaped slashes
-          "#{registry_url}/#{dependency.name}/-/#{scopeless_name}-#{version_without_build_metadata}.tgz"
+          "#{registry_url}/#{T.must(dependency).name}/-/#{scopeless_name}-#{version_without_build_metadata}.tgz"
         end
 
+        sig { params(registry: String).returns(T::Boolean) }
         def self.central_registry?(registry)
           CENTRAL_REGISTRIES.any? do |r|
             r.include?(registry)
           end
         end
 
+        sig { params(dependency_name: String).returns(String) }
         def registry_from_rc(dependency_name)
           explicit_registry_from_rc(dependency_name) || global_registry
         end
 
         private
 
+        sig { returns(T.nilable(Dependabot::Dependency)) }
         attr_reader :dependency
+
+        sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
+
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
         attr_reader :npmrc_file
+
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
         attr_reader :yarnrc_file
+
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
         attr_reader :yarnrc_yml_file
 
+        sig { params(dependency_name: String).returns(T.nilable(String)) }
         def explicit_registry_from_rc(dependency_name)
           if dependency_name.start_with?("@") && dependency_name.include?("/")
-            scope = dependency_name.split("/").first
+            scope = T.must(dependency_name.split("/").first)
             scoped_registry(scope) || configured_global_registry
           else
             configured_global_registry
           end
         end
 
+        sig { returns(String) }
         def first_registry_with_dependency_details
-          @first_registry_with_dependency_details ||=
+          @first_registry_with_dependency_details ||= T.let(
             known_registries.find do |details|
-              url = "#{details['registry'].gsub(%r{/+$}, '')}/#{escaped_dependency_name}"
+              url = "#{details['registry']&.gsub(%r{/+$}, '')}/#{escaped_dependency_name}"
               url = "https://#{url}" unless url.start_with?("http")
               response = Dependabot::RegistryClient.get(
                 url: url,
@@ -92,11 +126,14 @@ module Dependabot
               nil
             rescue URI::InvalidURIError => e
               raise DependencyFileNotResolvable, e.message
-            end&.fetch("registry")
+            end&.fetch("registry"),
+            T.nilable(String)
+          )
 
           @first_registry_with_dependency_details ||= global_registry.sub(%r{/+$}, "").sub(%r{^.*?//}, "")
         end
 
+        sig { returns(String) }
         def registry_url
           url =
             if registry.start_with?("http")
@@ -104,7 +141,7 @@ module Dependabot
             else
               protocol =
                 if registry_source_url
-                  registry_source_url.split("://").first
+                  T.must(registry_source_url).split("://").first
                 else
                   "https"
                 end
@@ -115,6 +152,7 @@ module Dependabot
           url.gsub(%r{/+$}, "")
         end
 
+        sig { params(token: T.nilable(String)).returns(T::Hash[String, String]) }
         def auth_header_for(token)
           return {} unless token
 
@@ -129,36 +167,40 @@ module Dependabot
           end
         end
 
+        sig { returns(T.nilable(String)) }
         def auth_token
           known_registries
             .find { |cred| cred["registry"] == registry }
             &.fetch("token", nil)
         end
 
+        sig { returns(T.nilable(String)) }
         def locked_registry
           return unless registry_source_url
 
           lockfile_registry =
-            registry_source_url
-            .gsub("https://", "")
-            .gsub("http://", "")
+            T.must(registry_source_url)
+             .gsub("https://", "")
+             .gsub("http://", "")
           detailed_registry =
             known_registries
-            .find { |h| h["registry"].include?(lockfile_registry) }
+            .find { |h| h["registry"]&.include?(lockfile_registry) }
             &.fetch("registry")
 
           detailed_registry || lockfile_registry
         end
 
+        sig { returns(T.nilable(String)) }
         def configured_registry
-          configured_registry_url = explicit_registry_from_rc(dependency.name)
+          configured_registry_url = explicit_registry_from_rc(T.must(dependency).name)
           return unless configured_registry_url
 
           normalize_configured_registry(configured_registry_url)
         end
 
+        sig { returns(T::Array[Dependabot::Credential]) }
         def known_registries
-          @known_registries ||=
+          @known_registries ||= T.let(
             begin
               registries = []
               registries += credentials
@@ -168,14 +210,17 @@ module Dependabot
               registries += yarnrc_registries
 
               unique_registries(registries)
-            end
+            end,
+            T.nilable(T::Array[Dependabot::Credential])
+          )
         end
 
+        sig { returns(T::Array[Dependabot::Credential]) }
         def npmrc_registries
           return [] unless npmrc_file
 
           registries = []
-          npmrc_file.content.scan(NPM_AUTH_TOKEN_REGEX) do
+          npmrc_file&.content&.scan(NPM_AUTH_TOKEN_REGEX) do
             next if Regexp.last_match&.[](:registry)&.include?("${")
 
             registry = T.must(Regexp.last_match)[:registry]
@@ -191,12 +236,14 @@ module Dependabot
           registries += npmrc_global_registries
         end
 
+        sig { returns(T::Array[Dependabot::Credential]) }
         def yarnrc_registries
           return [] unless yarnrc_file
 
           yarnrc_global_registries
         end
 
+        sig { params(registries: T::Array[Dependabot::Credential]).returns(T::Array[Dependabot::Credential]) }
         def unique_registries(registries)
           registries.uniq.reject do |registry|
             next if registry["token"]
@@ -208,13 +255,16 @@ module Dependabot
           end
         end
 
+        sig { returns(String) }
         def global_registry
-          return @global_registry if defined? @global_registry
-
-          @global_registry ||= configured_global_registry || "https://registry.npmjs.org"
+          @global_registry ||= T.let(
+            configured_global_registry || "https://registry.npmjs.org",
+            T.nilable(String)
+          )
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
+        sig { returns(T.nilable(String)) }
         def configured_global_registry
           return @configured_global_registry if defined? @configured_global_registry
 
@@ -223,45 +273,52 @@ module Dependabot
           return @configured_global_registry if @configured_global_registry
 
           if parsed_yarnrc_yml&.key?("npmRegistryServer")
-            return @configured_global_registry = parsed_yarnrc_yml["npmRegistryServer"]
+            return @configured_global_registry = T.must(parsed_yarnrc_yml)["npmRegistryServer"]
           end
 
           replaces_base = credentials.find { |cred| cred["type"] == "npm_registry" && cred.replaces_base? }
           if replaces_base
             registry = replaces_base["registry"]
-            registry = "https://#{registry}" unless registry.start_with?("http")
+            registry = "https://#{registry}" unless registry&.start_with?("http")
             return @configured_global_registry = registry
           end
 
-          @configured_global_registry = nil
+          @configured_global_registry = T.let(nil, T.nilable(String))
         end
         # rubocop:enable Metrics/PerceivedComplexity
 
+        sig { returns(T::Array[Dependabot::Credential]) }
         def npmrc_global_registries
           global_rc_registries(npmrc_file, syntax: NPM_GLOBAL_REGISTRY_REGEX)
         end
 
+        sig { returns(T::Array[Dependabot::Credential]) }
         def yarnrc_global_registries
           global_rc_registries(yarnrc_file, syntax: YARN_GLOBAL_REGISTRY_REGEX)
         end
 
+        sig { params(scope: String).returns(T.nilable(String)) }
         def scoped_registry(scope)
           scoped_rc_registry = scoped_rc_registry(npmrc_file, syntax: NPM_SCOPED_REGISTRY_REGEX, scope: scope) ||
                                scoped_rc_registry(yarnrc_file, syntax: YARN_SCOPED_REGISTRY_REGEX, scope: scope)
           return scoped_rc_registry if scoped_rc_registry
 
           if parsed_yarnrc_yml
-            yarn_berry_registry = parsed_yarnrc_yml.dig("npmScopes", scope.delete_prefix("@"), "npmRegistryServer")
+            yarn_berry_registry = T.must(parsed_yarnrc_yml)
+                                   .dig("npmScopes", scope.delete_prefix("@"), "npmRegistryServer")
             return yarn_berry_registry if yarn_berry_registry
           end
 
           nil
         end
 
+        sig do
+          params(file: T.nilable(Dependabot::DependencyFile), syntax: Regexp).returns(T::Array[Dependabot::Credential])
+        end
         def global_rc_registries(file, syntax:)
           registries = []
 
-          file.content.scan(syntax) do
+          file&.content&.scan(syntax) do
             next if Regexp.last_match&.[](:registry)&.include?("${")
 
             url = T.must(T.must(Regexp.last_match)[:registry]).strip
@@ -277,6 +334,14 @@ module Dependabot
           registries
         end
 
+        sig do
+          params(
+            file: T.nilable(Dependabot::DependencyFile),
+            syntax: Regexp,
+            scope: String
+          )
+            .returns(T.nilable(String))
+        end
         def scoped_rc_registry(file, syntax:, scope:)
           file&.content.to_s.scan(syntax) do
             next if Regexp.last_match&.[](:registry)&.include?("${") || Regexp.last_match&.[](:scope) != scope
@@ -288,29 +353,37 @@ module Dependabot
         end
 
         # npm registries expect slashes to be escaped
+        sig { returns(String) }
         def escaped_dependency_name
-          dependency.name.gsub("/", "%2F")
+          T.must(dependency).name.gsub("/", "%2F")
         end
 
+        sig { returns(T.nilable(String)) }
         def scopeless_name
-          dependency.name.split("/").last
+          T.must(dependency).name.split("/").last
         end
 
+        sig { returns(T.nilable(String)) }
         def registry_source_url
-          sources = dependency.requirements
-                              .map { |r| r.fetch(:source) }.uniq.compact
-                              .sort_by { |source| self.class.central_registry?(source[:url]) ? 1 : 0 }
+          sources = T.must(dependency).requirements
+                     .map { |r| r.fetch(:source) }.uniq.compact
+                     .sort_by { |source| self.class.central_registry?(source[:url]) ? 1 : 0 }
 
           sources.find { |s| s[:type] == "registry" }&.fetch(:url)
         end
 
+        sig { returns(T.nilable(T::Hash[String, T.untyped])) }
         def parsed_yarnrc_yml
           return unless yarnrc_yml_file
           return @parsed_yarnrc_yml if defined? @parsed_yarnrc_yml
 
-          @parsed_yarnrc_yml = YAML.safe_load(yarnrc_yml_file.content)
+          @parsed_yarnrc_yml = T.let(
+            YAML.safe_load(T.must(yarnrc_yml_file&.content)),
+            T.nilable(T::Hash[String, T.untyped])
+          )
         end
 
+        sig { params(url: String).returns(String) }
         def normalize_configured_registry(url)
           url.sub(%r{/+$}, "")
              .sub(%r{^.*?//}, "")
