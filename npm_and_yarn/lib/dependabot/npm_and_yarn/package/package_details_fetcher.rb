@@ -301,7 +301,6 @@ module Dependabot
           dependency_files.find { |f| f.name.end_with?(".yarnrc.yml") }
         end
 
-        # TODO: Remove need for me
         sig { returns(T::Boolean) }
         def git_dependency?
           # ignored_version/raise_on_ignored are irrelevant.
