@@ -34,6 +34,7 @@ module Dependabot
         sig { returns(T.nilable(String)) }
         attr_reader :repo_contents_path
 
+        # rubocop:disable Metrics/AbcSize
         sig do
           params(
             dependencies: T::Array[Dependabot::Dependency],
@@ -63,6 +64,8 @@ module Dependabot
           @sanitized_setup_file_content = T.let({}, T.untyped)
           @python_requirement_parser = T.let(nil, T.nilable(FileParser::PythonRequirementParser))
         end
+
+        # rubocop:enable Metrics/AbcSize
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         def updated_dependency_files
