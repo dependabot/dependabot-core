@@ -47,18 +47,9 @@ module Dependabot
         sig { returns(T.nilable(Dependabot::Package::PackageDetails)) }
         def fetch
           package_data = fetch_npm_details
-          unless package_data
-            return Dependabot::Package::PackageDetails.new(
-              dependency: @dependency,
-              releases: [], dist_tags:
-              dist_tags
-            )
-          end
-
-          releases = parse_versions(package_data)
           Dependabot::Package::PackageDetails.new(
             dependency: @dependency,
-            releases: releases,
+            releases: package_data ? parse_versions(package_data) : [],
             dist_tags: dist_tags
           )
         end
