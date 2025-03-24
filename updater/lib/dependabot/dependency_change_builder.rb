@@ -145,9 +145,12 @@ module Dependabot
 
     sig { params(dependencies: T::Array[Dependabot::Dependency]).returns(Dependabot::FileUpdaters::Base) }
     def file_updater_for(dependencies)
+      if dependencies.all? { |dep| dep.package_manager == "pub" }
+        filtered_files = dependency_files.reject { |file| file.support_file }
+      end
       Dependabot::FileUpdaters.for_package_manager(job.package_manager).new(
         dependencies: dependencies,
-        dependency_files: dependency_files,
+        dependency_files: filtered_files,
         repo_contents_path: job.repo_contents_path,
         credentials: job.credentials,
         options: job.experiments
