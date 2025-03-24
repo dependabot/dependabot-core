@@ -90,7 +90,7 @@ module Dependabot
       sig { returns(String) }
       attr_reader :error_class
 
-      sig { returns(T::Hash[Symbol, String]) }
+      sig { returns(T::Hash[Symbol, T.untyped]) }
       attr_reader :error_context
 
       sig { returns(T.nilable(T::Array[String])) }
