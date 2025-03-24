@@ -170,6 +170,47 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
     end
   end
 
+  describe "with a requirements.txt or requirements.in file only" do
+    let(:dependencies) do
+      [
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: "2.23.0",
+          requirements: [{
+            file: "requirements.txt",
+            requirement: "==2.23.0",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "requirements.txt",
+            requirement: ">=2.31.0",
+            groups: [],
+            source: nil
+          }],
+          previous_version: "2.32.3",
+          package_manager: "uv"
+        )
+      ]
+    end
+    let(:dependency_files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: fixture("requirements/uv_pip_compile_requests.txt")
+        ),
+        Dependabot::DependencyFile.new(
+          name: "requirements.in",
+          content: fixture("pip_compile_files/requests.in")
+        )
+      ]
+    end
+
+    it "ignores the requirements file" do
+      expect(updater.updated_dependency_files).to be_empty
+    end
+  end
+
   describe "#declaration_regex" do
     let(:dependency) do
       Dependabot::Dependency.new(
