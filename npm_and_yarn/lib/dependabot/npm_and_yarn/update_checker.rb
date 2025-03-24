@@ -167,7 +167,7 @@ module Dependabot
             requirements: dependency.requirements,
             updated_source: updated_source,
             latest_resolvable_version: resolvable_version,
-            update_strategy: requirements_update_strategy
+            update_strategy: T.must(requirements_update_strategy)
           ).updated_requirements
       end
 
@@ -326,7 +326,7 @@ module Dependabot
             requirements: original_dep.requirements,
             updated_source: original_dep == dependency ? updated_source : original_source(original_dep),
             latest_resolvable_version: version,
-            update_strategy: requirements_update_strategy
+            update_strategy: T.must(requirements_update_strategy)
           ).updated_requirements,
           previous_version: previous_version,
           previous_requirements: original_dep.requirements,
@@ -516,7 +516,7 @@ module Dependabot
 
         @library =
           LibraryDetector.new(
-            package_json_file: package_json,
+            package_json_file: T.must(package_json),
             credentials: credentials,
             dependency_files: dependency_files
           ).library?

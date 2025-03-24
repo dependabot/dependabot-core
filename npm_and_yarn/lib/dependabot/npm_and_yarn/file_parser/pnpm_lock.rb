@@ -1,42 +1,61 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
+require "sorbet-runtime"
+
 require "dependabot/errors"
+require "dependabot/dependency"
+require "dependabot/file_parsers/base"
+require "dependabot/npm_and_yarn/native_helpers"
+require "dependabot/shared_helpers"
 
 module Dependabot
   module NpmAndYarn
     class FileParser < Dependabot::FileParsers::Base
       class PnpmLock
+        extend T::Sig
+
+        sig { params(dependency_file: Dependabot::DependencyFile).void }
         def initialize(dependency_file)
           @dependency_file = dependency_file
         end
 
+        sig { returns(T::Array[T::Hash[String, T.untyped]]) }
         def parsed
-          @parsed ||= SharedHelpers.in_a_temporary_directory do
-            File.write("pnpm-lock.yaml", @dependency_file.content)
+          @parsed ||= T.let(
+            T.cast(
+              SharedHelpers.in_a_temporary_directory do
+                File.write("pnpm-lock.yaml", @dependency_file.content)
 
-            SharedHelpers.run_helper_subprocess(
-              command: NativeHelpers.helper_path,
-              function: "pnpm:parseLockfile",
-              args: [Dir.pwd]
-            )
-          rescue SharedHelpers::HelperSubprocessFailed
-            raise Dependabot::DependencyFileNotParseable, @dependency_file.path
-          end
+                SharedHelpers.run_helper_subprocess(
+                  command: NativeHelpers.helper_path,
+                  function: "pnpm:parseLockfile",
+                  args: [Dir.pwd]
+                )
+              rescue SharedHelpers::HelperSubprocessFailed
+                raise Dependabot::DependencyFileNotParseable, @dependency_file.path
+              end,
+              T::Array[T::Hash[String, T.untyped]]
+            ),
+            T.nilable(T::Array[T::Hash[String, T.untyped]])
+          )
         end
 
+        # rubocop:disable Metrics/MethodLength
+        # rubocop:disable Metrics/AbcSize
+        sig { returns(Dependabot::FileParsers::Base::DependencySet) }
         def dependencies
           dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
           # Separate dependencies into two categories: with specifiers and without specifiers.
-          dependencies_with_specifiers = [] # Main dependencies with specifiers.
-          dependencies_without_specifiers = [] # Subdependencies without specifiers.
+          dependencies_with_specifiers = T.let([], T::Array[T::Hash[Symbol, T.untyped]])
+          dependencies_without_specifiers = T.let([], T::Array[T::Hash[Symbol, T.untyped]])
 
           parsed.each do |details|
             next if details["aliased"]
 
-            name = details["name"]
-            version = details["version"]
+            name = T.cast(details["name"], String)
+            version = T.cast(details["version"], String)
 
             dependency_args = {
               name: name,
@@ -58,16 +77,38 @@ module Dependabot
 
           # Add prioritized dependencies to the dependency set.
           dependencies_with_specifiers.each do |dependency_args|
-            dependency_set << Dependency.new(**dependency_args)
+            dependency_set << Dependency.new(
+              name: dependency_args[:name],
+              version: dependency_args[:version],
+              package_manager: dependency_args[:package_manager],
+              requirements: dependency_args[:requirements],
+              subdependency_metadata: dependency_args[:subdependency_metadata]
+            )
           end
 
           dependencies_without_specifiers.each do |dependency_args|
-            dependency_set << Dependency.new(**dependency_args)
+            dependency_set << Dependency.new(
+              name: dependency_args[:name],
+              version: dependency_args[:version],
+              package_manager: dependency_args[:package_manager],
+              requirements: dependency_args[:requirements],
+              subdependency_metadata: dependency_args[:subdependency_metadata]
+            )
           end
 
           dependency_set
         end
+        # rubocop:enable Metrics/AbcSize
+        # rubocop:enable Metrics/MethodLength
 
+        sig do
+          params(
+            dependency_name: String,
+            requirement: T.nilable(String),
+            _manifest_name: T.nilable(String)
+          )
+            .returns(T.nilable(T::Hash[String, T.untyped]))
+        end
         def details(dependency_name, requirement, _manifest_name)
           details_candidates = parsed.select { |info| info["name"] == dependency_name }
 
