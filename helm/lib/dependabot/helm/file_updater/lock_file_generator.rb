@@ -17,7 +17,7 @@ module Dependabot
             dependencies: T::Array[Dependabot::Dependency],
             dependency_files: T::Array[Dependabot::DependencyFile],
             repo_contents_path: String,
-            credentials: T::Array[Dependabot::Credential],
+            credentials: T::Array[Dependabot::Credential]
           ).void
         end
         def initialize(dependencies:, dependency_files:, repo_contents_path:, credentials:)
@@ -45,14 +45,6 @@ module Dependabot
         attr_reader :dependency_files
         attr_reader :repo_contents_path
         attr_reader :credentials
-
-        def run_chart_update_packages
-          dependency_updates = dependencies.map do |d|
-            "#{d.name}@#{d.version}"
-          end.join(" ")
-
-          Helpers.update_dependency(dependency_updates)
-        end
 
         def base_dir
           dependency_files.first.directory

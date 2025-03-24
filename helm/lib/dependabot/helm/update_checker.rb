@@ -49,6 +49,61 @@ module Dependabot
 
       private
 
+      sig do
+        params(chart_name: String, repo_name: T.nilable(String),
+               repo_url: T.nilable(String)).returns(T.nilable(Gem::Version))
+      end
+      def fetch_releases_with_helm_cli(chart_name, repo_name, repo_url)
+        Dependabot.logger.info("Attempting to search for #{chart_name} using helm CLI")
+        releases = fetch_chart_releases(chart_name, repo_name, repo_url)
+
+        return nil unless releases && !releases.empty?
+
+        valid_releases = filter_valid_releases(releases)
+        return nil if valid_releases.empty?
+
+        highest_release = valid_releases.max_by { |release| version_class.new(release["version"]) }
+        Dependabot.logger.info("Found latest version #{highest_release['version']} for #{chart_name} using helm search")
+        version_class.new(highest_release["version"])
+      end
+
+      sig { params(chart_name: String, repo_url: T.nilable(String)).returns(T.nilable(Gem::Version)) }
+      def fetch_releases_from_index(chart_name, repo_url)
+        Dependabot.logger.info("Falling back to index.yaml search for #{chart_name}")
+        return nil unless repo_url
+
+        index_url = build_index_url(repo_url)
+        index = fetch_helm_chart_index(index_url)
+        return nil unless index && index["entries"] && index["entries"][chart_name]
+
+        all_versions = index["entries"][chart_name].map { |entry| entry["version"] }
+        Dependabot.logger.info("Found #{all_versions.length} versions for #{chart_name} in index.yaml")
+
+        valid_versions = filter_valid_versions(all_versions)
+        Dependabot.logger.info("After filtering, found #{valid_versions.length} valid versions for #{chart_name}")
+
+        return nil if valid_versions.empty?
+
+        highest_version = valid_versions.map { |v| version_class.new(v) }.max
+        Dependabot.logger.info("Highest valid version for #{chart_name} is #{highest_version}")
+
+        highest_version
+      end
+
+      sig { params(releases: T::Array[T::Hash[String, T.untyped]]).returns(T::Array[T::Hash[String, T.untyped]]) }
+      def filter_valid_releases(releases)
+        releases.reject do |release|
+          version_class.new(release["version"]) <= version_class.new(dependency.version) ||
+            ignore_requirements.any? { |r| r.satisfied_by?(version_class.new(release["version"])) }
+        end
+      end
+
+      sig { params(repo_url: String).returns(String) }
+      def build_index_url(repo_url)
+        repo_url_trimmed = repo_url.to_s.strip.chomp("/")
+        "#{repo_url_trimmed}/index.yaml"
+      end
+
       sig { override.returns(T::Boolean) }
       def latest_version_resolvable_with_full_unlock?
         false
@@ -122,43 +177,10 @@ module Dependabot
         repo_url = source&.dig(:registry)
         repo_name = extract_repo_name(repo_url)
 
-        Dependabot.logger.info("Attempting to search for #{chart_name} using helm CLI")
-        releases = fetch_chart_releases(chart_name, repo_name, repo_url)
+        releases = fetch_releases_with_helm_cli(chart_name, repo_name, repo_url)
+        return releases if releases
 
-        if releases && !releases.empty?
-          valid_releases = releases.reject do |release|
-            version_class.new(release["version"]) <= version_class.new(dependency.version) ||
-              ignore_requirements.any? { |r| r.satisfied_by?(version_class.new(release["version"])) }
-          end
-
-          if valid_releases.any?
-            highest_release = valid_releases.max_by { |release| version_class.new(release["version"]) }
-            Dependabot.logger.info("Found latest version #{highest_release['version']} for #{chart_name} using helm search")
-            return version_class.new(highest_release["version"])
-          end
-        end
-
-        Dependabot.logger.info("Falling back to index.yaml search for #{chart_name}")
-        return nil unless repo_url
-
-        repo_url_trimmed = repo_url.to_s.strip.chomp("/")
-        index_url = "#{repo_url_trimmed}/index.yaml"
-
-        index = fetch_helm_chart_index(index_url)
-        return nil unless index && index["entries"] && index["entries"][chart_name]
-
-        all_versions = index["entries"][chart_name].map { |entry| entry["version"] }
-        Dependabot.logger.info("Found #{all_versions.length} versions for #{chart_name} in index.yaml")
-
-        valid_versions = filter_valid_versions(all_versions)
-        Dependabot.logger.info("After filtering, found #{valid_versions.length} valid versions for #{chart_name}")
-
-        return nil if valid_versions.empty?
-
-        highest_version = valid_versions.map { |v| version_class.new(v) }.max
-        Dependabot.logger.info("Highest valid version for #{chart_name} is #{highest_version}")
-
-        highest_version
+        fetch_releases_from_index(chart_name, repo_url)
       end
 
       sig { params(repo_url: T.nilable(String)).returns(T.nilable(String)) }

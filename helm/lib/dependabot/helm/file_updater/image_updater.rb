@@ -79,7 +79,7 @@ module Dependabot
           content
         end
 
-        sig { params(key: String, value_node:  Psych::Nodes::Node, content: T::Array[String]).returns(T::Array[String]) }
+        sig { params(key: String, value_node: Psych::Nodes::Node, content: T::Array[String]).returns(T::Array[String]) }
         def process_image_key(key, value_node, content)
           return content unless key == "image" && value_node.is_a?(Psych::Nodes::Mapping)
 
