@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 require "dependabot/npm_and_yarn/helpers"
-require "dependabot/npm_and_yarn/update_checker/registry_finder"
+require "dependabot/npm_and_yarn/package/registry_finder"
 require "dependabot/npm_and_yarn/registry_parser"
 require "dependabot/shared_helpers"
 
