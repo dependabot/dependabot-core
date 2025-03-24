@@ -150,7 +150,7 @@ module Dependabot
 
       # Filter files only if all dependencies use the "pub" package manager
       if dependencies.all? { |dep| dep.package_manager == "pub" }
-        filtered_files = dependency_files.reject { |file| file.support_file }
+        filtered_files = dependency_files.reject(&:support_file)
       end
 
       Dependabot::FileUpdaters.for_package_manager(job.package_manager).new(
