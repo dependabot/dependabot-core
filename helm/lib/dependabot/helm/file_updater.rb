@@ -51,13 +51,13 @@ module Dependabot
           next unless requirement_changed?(file, T.must(dependency))
 
           if file.name.match?(CHART_YAML_REGEXP)
-            updated_content = T.must(chart_updater.updated_chart_yaml_content(file))
+            updated_content = chart_updater.updated_chart_yaml_content(file)
             updated_files << updated_file(
               file: file,
-              content: updated_content
+              content: T.must(updated_content)
             )
 
-            updated_files.concat(update_chart_locks(updated_content)) if chart_locks
+            updated_files.concat(update_chart_locks(T.must(updated_content))) if chart_locks
           elsif file.name.match?(VALUES_YAML_REGEXP)
             updated_files << updated_file(
               file: file,
@@ -84,23 +84,26 @@ module Dependabot
         end
       end
 
+      sig { returns(LockFileGenerator) }
       def lockfile_updater
-        @lockfile_updater ||= T.must(
-          LockFileGenerator.new(
-            dependencies: dependencies,
-            dependency_files: dependency_files,
-            repo_contents_path: repo_contents_path,
-            credentials: credentials
-          )
-        )
+        @lockfile_updater ||= T.let(LockFileGenerator.new(
+                                      dependencies: dependencies,
+                                      dependency_files: dependency_files,
+                                      repo_contents_path: T.must(repo_contents_path),
+                                      credentials: credentials
+                                    ), T.nilable(Dependabot::Helm::FileUpdater::LockFileGenerator))
       end
 
+      sig { returns(UpdateImages) }
       def image_updater
-        @image_updater ||= T.must(UpdateImages.new(dependency: dependency, dependency_files: dependency_files))
+        @image_updater ||= T.let(UpdateImages.new(dependency: T.must(dependency), dependency_files: dependency_files),
+                                 T.nilable(Dependabot::Helm::FileUpdater::UpdateImages))
       end
 
+      sig { returns(ChartUpdater) }
       def chart_updater
-        @chart_updater ||= T.must(ChartUpdater.new(dependency: dependency))
+        @chart_updater ||= T.let(ChartUpdater.new(dependency: T.must(dependency)),
+                                 T.nilable(Dependabot::Helm::FileUpdater::ChartUpdater))
       end
 
       sig { params(chart_lock: Dependabot::DependencyFile, updated_content: String).returns(String) }

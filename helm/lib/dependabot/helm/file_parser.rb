@@ -98,7 +98,6 @@ module Dependabot
             version = version_from(parsed_line)
             next unless version
 
-
             dependency = build_dependency(values_file, parsed_line, version)
             add_dependency_type_to_dependency(dependency, :docker_image)
 

@@ -19,24 +19,26 @@ module Dependabot
 
         sig { params(file_name: String).returns(T.nilable(String)) }
         def updated_values_yaml_content(file_name)
-          content = @dependency_files.find { |f| f.name.match?(file_name) }.content
-          yaml_stream = YAML.parse_stream(content)
+          content = T.must(@dependency_files.find { |f| f.name.match?(file_name) }).content
+          yaml_stream = YAML.parse_stream(T.must(content))
 
-          update_image_tags_recursive(yaml_stream, content)
+          update_image_tags_recursive(yaml_stream, T.must(content))
         end
 
         private
 
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
+        sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
 
         sig { params(yaml_stream: Psych::Nodes::Stream, content: String).returns(String) }
         def update_image_tags_recursive(yaml_stream, content)
-          updated_content = content.dup
+          updated_content = content.dup.split("\n")
 
           yaml_stream.children.each do |document|
             document.children.each do |root_node|
-              updated_content = find_and_update_images(root_node, updated_content.split("\n"))
+              updated_content = find_and_update_images(root_node, updated_content)
             end
           end
 
@@ -83,9 +85,9 @@ module Dependabot
         def process_image_key(key, value_node, content)
           return content unless key == "image" && value_node.is_a?(Psych::Nodes::Mapping)
 
-          dependency_name = T.must(dependency).name
-          dependency_version = T.must(dependency).version
-          dependency_requirements = T.must(dependency).requirements
+          dependency_name = dependency.name
+          dependency_version = T.must(dependency.version)
+          dependency_requirements = dependency.requirements
 
           has_dependency = value_node.children.any? { |n| n.value == dependency_name }
           return content unless has_dependency
@@ -97,7 +99,7 @@ module Dependabot
             next unless version_scalar
 
             line = version_scalar.start_line
-            content[line] = content[line].gsub(req[:source][:tag], dependency_version)
+            content[line] = T.must(content[line]).gsub(req[:source][:tag], dependency_version)
           end
 
           content

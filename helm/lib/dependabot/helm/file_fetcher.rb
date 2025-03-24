@@ -35,6 +35,7 @@ module Dependabot
           .map { |f| fetch_file_from_host(f.name) }, T.nilable(T::Array[DependencyFile]))
       end
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def chart_locks
         @chart_locks ||=
           T.let(repo_contents(raise_errors: false)

@@ -14,7 +14,7 @@ module Dependabot
 
         sig do
           params(
-            dependency: Dependabot::Dependency,
+            dependency: Dependabot::Dependency
           ).void
         end
         def initialize(dependency:)
@@ -35,6 +35,7 @@ module Dependabot
 
         private
 
+        sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
 
         sig do
@@ -44,13 +45,13 @@ module Dependabot
         def update_chart_dependencies(content, yaml_obj, file)
           if update_chart_dependency?(file)
             yaml_obj["dependencies"].each do |dep|
-              next unless dep["name"] == T.must(dependency).name
+              next unless dep["name"] == dependency.name
 
               old_version = dep["version"].to_s
-              new_version = T.must(dependency).version
+              new_version = dependency.version
 
               pattern = /
-              (\s+-\sname:\s#{Regexp.escape(T.must(dependency).name)}.*?\n\s+version:\s)
+              (\s+-\sname:\s#{Regexp.escape(dependency.name)}.*?\n\s+version:\s)
               ["']?#{Regexp.escape(old_version)}["']?
             /mx
               content = content.gsub(pattern) do |match|
@@ -63,7 +64,7 @@ module Dependabot
 
         sig { params(file: Dependabot::DependencyFile).returns(T::Boolean) }
         def update_chart_dependency?(file)
-          reqs = T.must(dependency).requirements.select { |r| r[:file] == file.name }
+          reqs = dependency.requirements.select { |r| r[:file] == file.name }
           reqs.any? { |r| r[:metadata]&.dig(:type) == :helm_chart }
         end
       end

@@ -41,13 +41,18 @@ module Dependabot
 
         private
 
+        sig { returns(T::Array[Dependabot::Dependency]) }
         attr_reader :dependencies
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
+        sig { returns(String) }
         attr_reader :repo_contents_path
+        sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
 
+        sig { returns(String) }
         def base_dir
-          dependency_files.first.directory
+          T.must(dependency_files.first).directory
         end
       end
     end

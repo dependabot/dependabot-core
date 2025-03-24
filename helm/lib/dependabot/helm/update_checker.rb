@@ -63,8 +63,10 @@ module Dependabot
         return nil if valid_releases.empty?
 
         highest_release = valid_releases.max_by { |release| version_class.new(release["version"]) }
-        Dependabot.logger.info("Found latest version #{highest_release['version']} for #{chart_name} using helm search")
-        version_class.new(highest_release["version"])
+        Dependabot.logger.info(
+          "Found latest version #{T.must(highest_release)['version']} for #{chart_name} using helm search"
+        )
+        version_class.new(T.must(highest_release)["version"])
       end
 
       sig { params(chart_name: String, repo_url: T.nilable(String)).returns(T.nilable(Gem::Version)) }
@@ -159,7 +161,7 @@ module Dependabot
           Dependabot.logger.info("Searching for: #{search_command}")
 
           json_output = Helpers.search_releases(search_command)
-          return nil if json_output.nil? || json_output.empty?
+          return nil if json_output.empty?
 
           releases = JSON.parse(json_output)
           Dependabot.logger.info("Found #{releases.length} releases for #{chart_name}")
