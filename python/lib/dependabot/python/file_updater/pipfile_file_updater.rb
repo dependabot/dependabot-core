@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "open3"
@@ -34,7 +34,6 @@ module Dependabot
         sig { returns(T.nilable(String)) }
         attr_reader :repo_contents_path
 
-
         sig do
           params(
             dependencies: T::Array[Dependabot::Dependency],
@@ -63,7 +62,6 @@ module Dependabot
           @language_version_manager = T.let(nil, T.nilable(LanguageVersionManager))
           @sanitized_setup_file_content = T.let({}, T.untyped)
           @python_requirement_parser = T.let(nil, T.nilable(FileParser::PythonRequirementParser))
-
         end
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
@@ -86,14 +84,14 @@ module Dependabot
 
           if T.must(pipfile).content != updated_pipfile_content
             updated_files <<
-              updated_file(file: pipfile, content: updated_pipfile_content)
+              updated_file(file: T.must(pipfile), content: updated_pipfile_content)
           end
 
           if lockfile
             raise "Expected Pipfile.lock to change!" if T.must(lockfile).content == updated_lockfile_content
 
             updated_files <<
-              updated_file(file: lockfile, content: updated_lockfile_content)
+              updated_file(file: T.must(lockfile), content: updated_lockfile_content)
           end
 
           updated_files += updated_generated_requirements_files
@@ -230,6 +228,7 @@ module Dependabot
             end
         end
 
+        sig { params(updated_lockfile_content: String).returns(String) }
         def post_process_lockfile(updated_lockfile_content)
           pipfile_hash = pipfile_hash_for(updated_pipfile_content)
           original_reqs = T.must(parsed_lockfile["_meta"])["requires"]
@@ -246,6 +245,7 @@ module Dependabot
               .gsub(/\}\z/, "}\n")
         end
 
+        sig { returns(Integer) }
         def generate_updated_requirements_files
           req_content = run_pipenv_command(
             "pyenv exec pipenv requirements"
@@ -258,14 +258,17 @@ module Dependabot
           File.write("dev-req.txt", dev_req_content)
         end
 
+        sig { params(command: String).returns(String) }
         def run_command(command)
           SharedHelpers.run_shell_command(command)
         end
 
+        sig { params(command: String).returns(String) }
         def run_pipenv_command(command)
           T.must(pipenv_runner).run(command)
         end
 
+        sig { params(pipfile_content: Object).returns(Integer) }
         def write_temporary_dependency_files(pipfile_content)
           dependency_files.each do |file|
             path = file.name
@@ -292,6 +295,7 @@ module Dependabot
           File.write("Pipfile", pipfile_content)
         end
 
+        sig { returns(T.nilable(String)) }
         def install_required_python
           # Initialize a git repo to appease pip-tools
           begin
@@ -303,6 +307,7 @@ module Dependabot
           language_version_manager.install_required_python
         end
 
+        sig { params(file: Dependabot::DependencyFile).returns(String) }
         def sanitized_setup_file_content(file)
           @sanitized_setup_file_content ||= {}
           return @sanitized_setup_file_content[file.name] if @sanitized_setup_file_content[file.name]
@@ -313,12 +318,21 @@ module Dependabot
             .sanitized_content
         end
 
+        sig { params(file: Dependabot::DependencyFile).returns(T.nilable(Dependabot::DependencyFile)) }
         def setup_cfg(file)
           dependency_files.find do |f|
             f.name == file.name.sub(/\.py$/, ".cfg")
           end
         end
 
+        sig do
+          params(
+            pipfile_content: String
+          ).returns(
+            T.nilable(T.any(T::Hash[String, T.untyped], String,
+                            T::Array[T::Hash[String, T.untyped]]))
+          )
+        end
         def pipfile_hash_for(pipfile_content)
           SharedHelpers.in_a_temporary_directory do |dir|
             File.write(File.join(dir, "Pipfile"), pipfile_content)
@@ -330,12 +344,14 @@ module Dependabot
           end
         end
 
+        sig { params(file: Dependabot::DependencyFile, content: String).returns(Dependabot::DependencyFile) }
         def updated_file(file:, content:)
           updated_file = file.dup
           updated_file.content = content
           updated_file
         end
 
+        sig { returns(FileParser::PythonRequirementParser) }
         def python_requirement_parser
           @python_requirement_parser ||=
             FileParser::PythonRequirementParser.new(
