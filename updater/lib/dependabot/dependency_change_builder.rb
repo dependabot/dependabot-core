@@ -145,13 +145,8 @@ module Dependabot
 
     sig { params(dependencies: T::Array[Dependabot::Dependency]).returns(Dependabot::FileUpdaters::Base) }
     def file_updater_for(dependencies)
-      # Initialize filtered_files with all dependency files by default
-      filtered_files = dependency_files
-
-      # Filter files only if all dependencies use the "pub" package manager
-      if dependencies.all? { |dep| dep.package_manager == "pub" }
-        filtered_files = dependency_files.reject(&:support_file)
-      end
+      # Filter out any support files, as they don't need to be updated
+      filtered_files = dependency_files.reject(&:support_file)
 
       Dependabot::FileUpdaters.for_package_manager(job.package_manager).new(
         dependencies: dependencies,

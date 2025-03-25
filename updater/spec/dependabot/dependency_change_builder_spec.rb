@@ -32,12 +32,26 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
       Dependabot::DependencyFile.new(
         name: "Gemfile",
         content: fixture("bundler/original/Gemfile"),
-        directory: "/"
+        directory: "/",
+        support_file: false
       ),
       Dependabot::DependencyFile.new(
         name: "Gemfile.lock",
         content: fixture("bundler/original/Gemfile.lock"),
-        directory: "/"
+        directory: "/",
+        support_file: false
+      ),
+      Dependabot::DependencyFile.new(
+        name: "sub_dep",
+        content: fixture("bundler/original/sub_dep"),
+        directory: "/",
+        support_file: true
+      ),
+      Dependabot::DependencyFile.new(
+        name: "sub_dep.lock",
+        content: fixture("bundler/original/sub_dep.lock"),
+        directory: "/",
+        support_file: true
       )
     ]
   end
