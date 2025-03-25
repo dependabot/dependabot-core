@@ -91,7 +91,7 @@ module Dependabot
           end
 
           if lockfile
-            raise "Expected Pipfile.lock to change!" if T.must(lockfile).content == updated_lockfile_content
+            raise "Expected Pipfile.lock to change!" if lockfile&.content == updated_lockfile_content
 
             updated_files <<
               updated_file(file: T.must(lockfile), content: updated_lockfile_content)
@@ -137,7 +137,7 @@ module Dependabot
           # generated using `pipenv requirements`
           requirements_files.select do |req_file|
             deps = []
-            T.must(req_file.content).scan(regex) { deps << Regexp.last_match }
+            req_file.content&.scan(regex) { deps << Regexp.last_match }
             deps = deps.map { |m| m[:name] }
             deps.sort == pipfile_lock_deps
           end
@@ -213,7 +213,7 @@ module Dependabot
                 write_temporary_dependency_files(prepared_pipfile_content)
                 install_required_python
 
-                T.must(pipenv_runner).run_upgrade("==#{T.must(dependency).version}")
+                pipenv_runner&.run_upgrade("==#{dependency&.version}")
 
                 result = { lockfile: File.read("Pipfile.lock") }
                 result[:lockfile] = post_process_lockfile(result[:lockfile])
@@ -383,9 +383,9 @@ module Dependabot
             )
         end
 
-        sig { returns(T::Hash[String, T::Hash[T.untyped, T.untyped]]) }
+        sig { returns(T::Hash[String, T::Hash[String, T.untyped]]) }
         def parsed_lockfile
-          @parsed_lockfile ||= JSON.parse(T.must(T.must(lockfile).content))
+          @parsed_lockfile ||= JSON.parse(T.must(lockfile&.content))
         end
 
         sig { returns(T.nilable(Dependabot::DependencyFile)) }

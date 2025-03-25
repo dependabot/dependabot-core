@@ -55,7 +55,7 @@ module Dependabot
 
         sig { returns(T::Array[DependencyFile]) }
         def fetch_updated_dependency_files
-          previous_requirements = T.must(dependency).previous_requirements || []
+          previous_requirements = dependency&.previous_requirements || []
           reqs = T.must(dependency).requirements.zip(previous_requirements)
 
           reqs.filter_map do |(new_req, old_req)|
@@ -64,9 +64,9 @@ module Dependabot
             file = get_original_file(new_req.fetch(:file)).dup
             updated_content =
               updated_requirement_or_setup_file_content(new_req, T.must(old_req))
-            next if updated_content == T.must(file).content
+            next if updated_content == file&.content
 
-            T.must(file).content = updated_content
+            file&.content = updated_content
             file
           end
         end
@@ -78,10 +78,10 @@ module Dependabot
 
           RequirementReplacer.new(
             content: original_file.content,
-            dependency_name: T.must(dependency).name,
+            dependency_name: dependency&.name,
             old_requirement: old_req.fetch(:requirement),
             new_requirement: new_req.fetch(:requirement),
-            new_hash_version: T.must(dependency).version,
+            new_hash_version: dependency&.version,
             index_urls: @index_urls
           ).updated_content
         end

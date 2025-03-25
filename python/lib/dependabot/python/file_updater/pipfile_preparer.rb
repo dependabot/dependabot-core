@@ -68,18 +68,18 @@ module Dependabot
         sig { returns(String) }
         attr_reader :pipfile_content
 
-        sig { returns(T::Array[T::Hash[String, T.untyped]]) }
+        sig { returns(T::Array[T::Hash[String, String]]) }
         def pipfile_sources
           @pipfile_sources ||= T.let(TomlRB.parse(pipfile_content).fetch("source", []),
-                                     T.nilable(T::Array[T::Hash[String, T.untyped]]))
+                                     T.nilable(T::Array[T::Hash[String, String]]))
         end
 
         sig do
-          params(source: T::Hash[String, T.untyped],
-                 credentials: T::Array[Dependabot::Credential]).returns(T.nilable(T::Hash[String, T.untyped]))
+          params(source: T::Hash[String, String],
+                 credentials: T::Array[Dependabot::Credential]).returns(T.nilable(T::Hash[String, String]))
         end
         def sub_auth_url(source, credentials)
-          if source["url"].include?("${")
+          if source["url"]&.include?("${")
             base_url = source["url"].sub(/\${.*}@/, "")
 
             source_cred = credentials
@@ -94,9 +94,9 @@ module Dependabot
           source
         end
 
-        sig { params(credentials: T::Array[Dependabot::Credential]).returns(T::Array[T::Hash[String, T.untyped]]) }
+        sig { params(credentials: T::Array[Dependabot::Credential]).returns(T::Array[T::Hash[String, String]]) }
         def config_variable_sources(credentials)
-          @config_variable_sources = T.let([], T.nilable(T::Array[T::Hash[String, T.untyped]]))
+          @config_variable_sources = T.let([], T.nilable(T::Array[T::Hash[String, String]]))
           @config_variable_sources =
             credentials.select { |cred| cred["type"] == "python_index" }.map.with_index do |c, i|
               {

@@ -1,6 +1,7 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "sorbet-runtime"
 require "toml-rb"
 require "open3"
 require "dependabot/dependency"
@@ -69,7 +70,7 @@ module Dependabot
         def fetch_updated_dependency_files
           updated_files = []
 
-          if file_changed?(pyproject)
+          if file_changed?(T.must(pyproject))
             updated_files <<
               updated_file(
                 file: T.must(pyproject),
@@ -77,7 +78,7 @@ module Dependabot
               )
           end
 
-          raise "Expected lockfile to change!" if lockfile && T.must(lockfile).content == updated_lockfile_content
+          raise "Expected lockfile to change!" if lockfile && lockfile&.content == updated_lockfile_content
 
           if lockfile
             updated_files <<
@@ -95,7 +96,7 @@ module Dependabot
           updated_content = content.dup
 
           dependency.requirements.zip(T.must(dependency.previous_requirements)).each do |new_r, old_r|
-            next unless new_r[:file] == T.must(pyproject).name && T.must(old_r)[:file] == T.must(pyproject).name
+            next unless new_r[:file] == pyproject&.name && T.must(old_r)[:file] == pyproject&.name
 
             updated_content = replace_dep(dependency, T.must(updated_content), new_r, T.must(old_r))
           end
@@ -145,7 +146,7 @@ module Dependabot
 
               tmp_hash =
                 TomlRB.parse(new_lockfile)["metadata"]["content-hash"]
-              correct_hash = pyproject_hash_for(updated_pyproject_content)
+              correct_hash = pyproject_hash_for(updated_pyproject_content.to_s)
 
               new_lockfile.gsub(tmp_hash, T.must(correct_hash).to_s)
             end
@@ -177,7 +178,7 @@ module Dependabot
           poetry_object = pyproject_object.fetch("tool").fetch("poetry")
 
           dependencies.each do |dep|
-            if dep.requirements.find { |r| r[:file] == T.must(pyproject).name }
+            if dep.requirements.find { |r| r[:file] == pyproject&.name }
               lock_declaration_to_new_version!(poetry_object, dep)
             else
               create_declaration_at_new_version!(poetry_object, dep)
@@ -194,7 +195,7 @@ module Dependabot
             .update_python_requirement(language_version_manager.python_version)
         end
 
-        sig { params(poetry_object: T.untyped, dep: T.untyped).returns(T::Array[String]) }
+        sig { params(poetry_object: T::Hash[String, T.untyped], dep: Dependabot::Dependency).returns(T::Array[String]) }
         def lock_declaration_to_new_version!(poetry_object, dep)
           Dependabot::Python::FileParser::PyprojectFilesParser::POETRY_DEPENDENCY_TYPES.each do |type|
             names = poetry_object[type]&.keys || []
@@ -209,7 +210,7 @@ module Dependabot
           end
         end
 
-        sig { params(poetry_object: T.untyped, dep: Dependabot::Dependency).void }
+        sig { params(poetry_object: T::Hash[String, T.untyped], dep: Dependabot::Dependency).void }
         def create_declaration_at_new_version!(poetry_object, dep)
           subdep_type = dep.production? ? "dependencies" : "dev-dependencies"
 
@@ -276,14 +277,18 @@ module Dependabot
         sig { void }
         def add_auth_env_vars
           Python::FileUpdater::PyprojectPreparer
-            .new(pyproject_content: T.must(T.must(pyproject).content))
+            .new(pyproject_content: T.must(pyproject&.content))
             .add_auth_env_vars(credentials)
         end
 
         sig do
           params(
-            pyproject_content: T.untyped
-          ).returns(T.nilable(T.any(T::Hash[String, T.untyped], String, T::Array[T::Hash[String, T.untyped]])))
+            pyproject_content: String
+          ).returns(T.nilable(T.any(
+                                T::Hash[String, T.untyped],
+                                String,
+                                T::Array[T::Hash[String, T.untyped]]
+                              )))
         end
         def pyproject_hash_for(pyproject_content)
           SharedHelpers.in_a_temporary_directory do |dir|
@@ -317,7 +322,7 @@ module Dependabot
           Regexp.escape(dep.name).gsub("\\-", "[-_.]")
         end
 
-        sig { params(file: T.untyped).returns(T::Boolean) }
+        sig { params(file: Dependabot::DependencyFile).returns(T::Boolean) }
         def file_changed?(file)
           dependencies.any? { |dep| requirement_changed?(file, dep) }
         end

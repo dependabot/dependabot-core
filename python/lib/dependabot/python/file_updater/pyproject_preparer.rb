@@ -64,7 +64,6 @@ module Dependabot
 
         # rubocop:disable Metrics/PerceivedComplexity
         # rubocop:disable Metrics/AbcSize
-        # sig { params(dependencies: T::Array[Dependabot::Dependency]).returns(String) }
         sig { params(dependencies: T::Array[Dependabot::Dependency]).returns(String) }
         def freeze_top_level_dependencies_except(dependencies)
           return pyproject_content unless lockfile
