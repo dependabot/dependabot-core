@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 require "toml-rb"
-
+require "sorbet-runtime"
 require "dependabot/dependency"
 require "dependabot/python/file_parser"
 require "dependabot/python/file_updater"

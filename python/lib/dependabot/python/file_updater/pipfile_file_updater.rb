@@ -10,6 +10,7 @@ require "dependabot/python/language_version_manager"
 require "dependabot/shared_helpers"
 require "dependabot/python/native_helpers"
 require "dependabot/python/pipenv_runner"
+require "sorbet-runtime"
 
 module Dependabot
   module Python

@@ -5,6 +5,7 @@ require "dependabot/uv/requirement_parser"
 require "dependabot/uv/file_updater"
 require "dependabot/shared_helpers"
 require "dependabot/uv/native_helpers"
+require "sorbet-runtime"
 
 module Dependabot
   module Uv

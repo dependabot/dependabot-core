@@ -7,6 +7,7 @@ require "dependabot/dependency"
 require "dependabot/python/file_parser"
 require "dependabot/python/file_updater"
 require "dependabot/python/authed_url_builder"
+require "sorbet-runtime"
 
 module Dependabot
   module Python
