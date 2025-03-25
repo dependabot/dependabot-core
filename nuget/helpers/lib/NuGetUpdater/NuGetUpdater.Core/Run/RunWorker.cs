@@ -10,6 +10,7 @@ using NuGet.Versioning;
 using NuGetUpdater.Core.Analyze;
 using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Run.ApiModel;
+using NuGetUpdater.Core.Updater;
 using NuGetUpdater.Core.Utilities;
 
 using static NuGetUpdater.Core.Utilities.EOLHandling;
@@ -158,6 +159,7 @@ public class RunWorker
         }
 
         // do update
+        var updateOperationsPerformed = new List<UpdateOperationBase>();
         var existingPullRequests = job.GetAllExistingPullRequests();
         var unhandledPullRequestDependenciesSet = existingPullRequests
             .Select(pr => pr.Item2.Select(d => d.DependencyName).ToHashSet(StringComparer.OrdinalIgnoreCase))
@@ -240,6 +242,8 @@ public class RunWorker
                 {
                     actualUpdatedDependencies.Add(updatedDependency);
                 }
+
+                updateOperationsPerformed.AddRange(updateResult.UpdateOperations);
             }
         }
 
@@ -316,6 +320,10 @@ public class RunWorker
         {
             await SendApiMessage(new SecurityUpdateNotNeeded(depName));
         }
+
+        var normalizedUpdateOperationsPerformed = UpdateOperationBase.NormalizeUpdateOperationCollection(repoContentsPath.FullName, updateOperationsPerformed);
+        var report = UpdateOperationBase.GenerateUpdateOperationReport(normalizedUpdateOperationsPerformed);
+        _logger.Info(report);
 
         var result = new RunResult()
         {

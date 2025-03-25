@@ -18,6 +18,7 @@ public partial class UpdateWorkerTests
             var result = new UpdateOperationResult()
             {
                 Error = new PrivateSourceAuthenticationFailure(["<some package feed>"]),
+                UpdateOperations = [],
             };
             var resultFilePath = Path.Combine(temporaryDirectory.DirectoryPath, "update-result.json");
             await UpdaterWorker.WriteResultFile(result, resultFilePath, new TestLogger());

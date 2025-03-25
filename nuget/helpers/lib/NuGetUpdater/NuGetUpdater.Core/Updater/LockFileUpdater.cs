@@ -1,3 +1,5 @@
+using NuGetUpdater.Core.Updater;
+
 namespace NuGetUpdater.Core;
 
 internal static class LockFileUpdater
