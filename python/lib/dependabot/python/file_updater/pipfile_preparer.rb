@@ -80,7 +80,7 @@ module Dependabot
         end
         def sub_auth_url(source, credentials)
           if source["url"]&.include?("${")
-            base_url = source["url"].sub(/\${.*}@/, "")
+            base_url = source["url"]&.sub(/\${.*}@/, "")
 
             source_cred = credentials
                           .select { |cred| cred["type"] == "python_index" && cred["index-url"] }
