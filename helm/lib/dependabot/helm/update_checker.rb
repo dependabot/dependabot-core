@@ -49,6 +49,11 @@ module Dependabot
 
       private
 
+      sig { override.returns(T::Array[Dependabot::Dependency]) }
+      def updated_dependencies_after_full_unlock
+        raise NotImplementedError
+      end
+
       sig do
         params(chart_name: String, repo_name: T.nilable(String),
                repo_url: T.nilable(String)).returns(T.nilable(Gem::Version))
@@ -121,9 +126,9 @@ module Dependabot
       sig { returns(T.nilable(T.any(String, Gem::Version))) }
       def fetch_latest_version
         case dependency_type
-        when :chart_dependency
+        when :helm_chart
           fetch_latest_chart_version
-        when :image_reference
+        when :docker_image
           fetch_latest_image_version
         else
           Gem::Version.new(dependency.version)
@@ -133,11 +138,9 @@ module Dependabot
       sig { returns(Symbol) }
       def dependency_type
         req = dependency.requirements.first
+        type = T.must(req).dig(:metadata, :type)
 
-        return :image_reference if T.must(req).dig(:metadata, :type) == :docker_image
-        return :chart_dependency if T.must(req).dig(:metadata, :type) == :helm_chart
-
-        :unknown
+        type || :unknown
       end
 
       sig do

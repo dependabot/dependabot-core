@@ -3,6 +3,8 @@
 
 require "sorbet-runtime"
 require "dependabot/shared_helpers"
+require "dependabot/dependency"
+require "dependabot/shared/shared_file_updater"
 require "fileutils"
 require "tmpdir"
 
@@ -43,7 +45,7 @@ module Dependabot
                  file: Dependabot::DependencyFile).returns(String)
         end
         def update_chart_dependencies(content, yaml_obj, file)
-          if update_chart_dependency?(file)
+          if update_chart_dependency?(file) && yaml_obj["dependencies"]
             yaml_obj["dependencies"].each do |dep|
               next unless dep["name"] == dependency.name
 
@@ -51,7 +53,8 @@ module Dependabot
               new_version = dependency.version
 
               pattern = /
-              (\s+-\sname:\s#{Regexp.escape(dependency.name)}.*?\n\s+version:\s)
+              (\s+-\s+name:\s+#{Regexp.escape(dependency.name)}.*?\n\s+)
+              (version:\s+)
               ["']?#{Regexp.escape(old_version)}["']?
             /mx
               content = content.gsub(pattern) do |match|

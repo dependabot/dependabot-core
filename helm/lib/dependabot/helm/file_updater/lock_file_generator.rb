@@ -3,6 +3,9 @@
 
 require "sorbet-runtime"
 require "dependabot/shared_helpers"
+require "dependabot/dependency"
+require "dependabot/shared/shared_file_updater"
+require "dependabot/helm/helpers"
 require "fileutils"
 require "tmpdir"
 

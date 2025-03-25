@@ -2,12 +2,14 @@
 # frozen_string_literal: true
 
 require "dependabot/shared/shared_file_updater"
+require "dependabot/dependency"
+require "dependabot/dependency_file"
 require "yaml"
 
 module Dependabot
   module Helm
     class FileUpdater < Dependabot::Shared::SharedFileUpdater
-      class UpdateImages
+      class ImageUpdater
         extend T::Sig
         extend T::Helpers
 
@@ -19,7 +21,10 @@ module Dependabot
 
         sig { params(file_name: String).returns(T.nilable(String)) }
         def updated_values_yaml_content(file_name)
-          content = T.must(@dependency_files.find { |f| f.name.match?(file_name) }).content
+          value_file = dependency_files.find { |f| f.name.match?(file_name) }
+          raise "Expected a values.yaml file to exist!" if value_file.nil?
+
+          content = value_file.content
           yaml_stream = YAML.parse_stream(T.must(content))
 
           update_image_tags_recursive(yaml_stream, T.must(content))
@@ -42,7 +47,11 @@ module Dependabot
             end
           end
 
-          updated_content.join("\n")
+          updated_content = updated_content.join("\n")
+
+          raise "Expected content to change!" if content == updated_content
+
+          updated_content
         end
 
         sig { params(node: Psych::Nodes::Node, content: T::Array[String]).returns(T::Array[String]) }

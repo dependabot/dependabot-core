@@ -94,10 +94,10 @@ module Dependabot
                                     ), T.nilable(Dependabot::Helm::FileUpdater::LockFileGenerator))
       end
 
-      sig { returns(UpdateImages) }
+      sig { returns(ImageUpdater) }
       def image_updater
-        @image_updater ||= T.let(UpdateImages.new(dependency: T.must(dependency), dependency_files: dependency_files),
-                                 T.nilable(Dependabot::Helm::FileUpdater::UpdateImages))
+        @image_updater ||= T.let(ImageUpdater.new(dependency: T.must(dependency), dependency_files: dependency_files),
+                                 T.nilable(Dependabot::Helm::FileUpdater::ImageUpdater))
       end
 
       sig { returns(ChartUpdater) }
