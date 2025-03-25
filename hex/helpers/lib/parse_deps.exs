@@ -109,7 +109,7 @@ defmodule Parser do
     %{
       type: "git",
       url: repo_url,
-      branch: opts[:branch] || "master",
+      branch: opts[:branch],
       ref: ref
     }
   end
