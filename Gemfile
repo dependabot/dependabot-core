@@ -29,8 +29,8 @@ gem "dependabot-terraform", path: "terraform"
 gem "dependabot-uv", path: "uv"
 
 # Sorbet
-gem "sorbet", "0.5.11630", group: :development
-gem "tapioca", "0.16.6", require: false, group: :development
+gem "sorbet", "0.5.11952", group: :development
+gem "tapioca", "0.16.11", require: false, group: :development
 
 gem "zeitwerk", "~> 2.7"
 

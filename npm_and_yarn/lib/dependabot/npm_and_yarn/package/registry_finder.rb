@@ -7,8 +7,10 @@ require "dependabot/registry_client"
 
 module Dependabot
   module NpmAndYarn
-    class UpdateChecker
+    module Package
       class RegistryFinder
+        extend T::Sig
+
         CENTRAL_REGISTRIES = %w(
           https://registry.npmjs.org
           http://registry.npmjs.org
