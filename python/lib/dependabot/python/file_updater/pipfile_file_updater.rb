@@ -59,7 +59,7 @@ module Dependabot
           @requirements_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
           @updated_dependency_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
           @updated_pipfile_content = T.let(nil, T.nilable(String))
-          @parsed_lockfile = T.let(nil, T.nilable(T::Hash[String, T::Hash[T.untyped, T.untyped]]))
+          @parsed_lockfile = T.let(nil, T.nilable(T::Hash[String, T::Hash[String, Object]]))
           @pipenv_runner = T.let(nil, T.nilable(PipenvRunner))
           @language_version_manager = T.let(nil, T.nilable(LanguageVersionManager))
           @sanitized_setup_file_content = T.let({}, T.untyped)
@@ -70,8 +70,7 @@ module Dependabot
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         def updated_dependency_files
-          @updated_dependency_files ||= T.let(fetch_updated_dependency_files,
-                                              T.nilable(T::Array[Dependabot::DependencyFile]))
+          @updated_dependency_files ||= fetch_updated_dependency_files
         end
 
         private
@@ -86,7 +85,7 @@ module Dependabot
         def fetch_updated_dependency_files
           updated_files = []
 
-          if T.must(pipfile).content != updated_pipfile_content
+          if pipfile&.content != updated_pipfile_content
             updated_files <<
               updated_file(file: T.must(pipfile), content: T.must(updated_pipfile_content))
           end
@@ -333,8 +332,11 @@ module Dependabot
           params(
             pipfile_content: String
           ).returns(
-            T.nilable(T.any(T::Hash[String, T.untyped], String,
-                            T::Array[T::Hash[String, T.untyped]]))
+            T.nilable(
+              T.any(T::Hash[String, T.untyped],
+                    String,
+                    T::Array[T::Hash[String, T.untyped]])
+            )
           )
         end
         def pipfile_hash_for(pipfile_content)
