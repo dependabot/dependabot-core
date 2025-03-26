@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -17,6 +17,7 @@ module Dependabot
 
       include Dependabot::Pub::Helpers
 
+      sig { override.returns(T.nilable(T.any(String, Dependabot::Version))) }
       def latest_version
         version = version_unless_ignored(current_report["latest"], current_version: dependency.version)
         raise AllVersionsIgnored if version.nil? && @raise_on_ignored
@@ -24,6 +25,7 @@ module Dependabot
         version
       end
 
+      sig { override.returns(T.nilable(T.any(String, Dependabot::Version))) }
       def latest_resolvable_version_with_no_unlock
         # Version we can get if we're not allowed to change pubspec.yaml, but we
         # allow changes in the pubspec.lock file.
@@ -33,6 +35,7 @@ module Dependabot
         version_unless_ignored(entry["version"])
       end
 
+      sig { override.returns(T.nilable(T.any(String, Dependabot::Version))) }
       def latest_resolvable_version
         # Latest version we can get if we're allowed to unlock the current
         # package in pubspec.yaml
@@ -42,27 +45,31 @@ module Dependabot
         version_unless_ignored(entry["version"])
       end
 
+      sig { override.returns(T.nilable(Dependabot::Version)) }
       def lowest_resolvable_security_fix_version
         raise "Dependency not vulnerable!" unless vulnerable?
 
         lowest_security_fix_version
       end
 
+      sig { override.returns(T.nilable(Dependabot::Version)) }
       def lowest_security_fix_version
         # Don't attempt to do security updates for git dependencies.
-        return nil if git_revision? dependency.version
+        return nil if git_revision? T.must(dependency.version)
         # If the current version is not vulnerable, we stay on it.
-        return version_unless_ignored dependency.version unless vulnerable?
+        return T.cast(version_unless_ignored(T.must(dependency.version)), Dependabot::Version) unless vulnerable?
 
         e = dependency_services_smallest_update
         return nil if e.nil?
 
         upgrade = e.find { |u| u["name"] == dependency.name }
 
-        version = upgrade["version"]
-        version_unless_ignored(version)
+        version = T.must(upgrade)["version"]
+        T.cast(version_unless_ignored(version), Dependabot::Version)
       end
 
+      # rubocop:disable Metrics/PerceivedComplexity
+      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
       def updated_requirements
         # Requirements that need to be changed, if obtain:
         # latest_resolvable_version or lowest_security_fix_version
@@ -71,25 +78,28 @@ module Dependabot
 
                   # Ideally we would like to do any upgrade that migrates away from the vulnerability
                   # but this method can only return a single requirement udate.
-                  breaking_changes = updates.filter { |d| d["previousConstraint"] != d["constraintBumpedIfNeeded"] }
+                  breaking_changes = updates&.filter { |d| d["previousConstraint"] != d["constraintBumpedIfNeeded"] }
 
                   # This security update would require unlocking other packages, which is not currently supported.
                   # Because of that, return original requirements, so that no requirements are actually updated and
                   # the error bubbles up as security_update_not_possible to the user.
-                  return dependency.requirements if breaking_changes.size > 1
+                  return dependency.requirements if breaking_changes&.size&. > 1
 
-                  updates.find { |u| u["name"] == dependency.name }
+                  updates&.find { |u| u["name"] == dependency.name }
                 else
                   current_report["singleBreaking"].find { |d| d["name"] == dependency.name }
                 end
-        return unless entry
+        return [] unless entry
 
-        parse_updated_dependency(entry, requirements_update_strategy: resolved_requirements_update_strategy)
+        parse_updated_dependency(entry, resolved_requirements_update_strategy)
           .requirements
       end
+      # rubocop:enable Metrics/PerceivedComplexity
 
       private
 
+      # rubocop:disable Metrics/AbcSize
+      sig { returns(T.nilable(T::Array[T::Hash[String, T.untyped]])) }
       def dependency_services_smallest_update
         return @smallest_update if @smallest_update
 
@@ -119,8 +129,12 @@ module Dependabot
             ]
         }
         report = JSON.parse(run_dependency_services("report", stdin_data: JSON.generate(input)))["dependencies"]
-        @smallest_update = report.find { |d| d["name"] == dependency.name }["smallestUpdate"]
+        @smallest_update = T.let(
+          report.find { |d| d["name"] == dependency.name }["smallestUpdate"],
+          T.nilable(T::Array[T::Hash[String, T.untyped]])
+        )
       end
+      # rubocop:enable Metrics/AbcSize
 
       # Returns unparsed_version if it looks like a git-revision.
       #
@@ -131,6 +145,13 @@ module Dependabot
       # * If current_version is non-nil and the parsed version is the same it
       #   will be returned.
       # * Otherwise returns nil
+      sig do
+        params(
+          unparsed_version: String,
+          current_version: T.nilable(String)
+        )
+          .returns(T.nilable(T.any(String, Dependabot::Version)))
+      end
       def version_unless_ignored(unparsed_version, current_version: nil)
         if git_revision?(unparsed_version)
           unparsed_version
@@ -146,6 +167,7 @@ module Dependabot
         end
       end
 
+      sig { params(version_string: String).returns(T::Boolean) }
       def git_revision?(version_string)
         version_string.match?(/^[0-9a-f]{6,}$/)
       end
@@ -161,6 +183,7 @@ module Dependabot
           latest_version == entry["version"]
       end
 
+      sig { override.returns(T::Array[Dependabot::Dependency]) }
       def updated_dependencies_after_full_unlock
         report_section = if vulnerable?
                            dependency_services_smallest_update
@@ -172,22 +195,32 @@ module Dependabot
           d["kind"] == "transitive"
         end
         direct_deps.map do |d|
-          parse_updated_dependency(d, requirements_update_strategy: resolved_requirements_update_strategy)
+          parse_updated_dependency(d, resolved_requirements_update_strategy)
         end
       end
 
+      sig { returns(T::Array[T::Hash[String, T.untyped]]) }
       def report
-        @report ||= dependency_services_report
+        @report ||= T.let(
+          dependency_services_report,
+          T.nilable(T::Array[T::Hash[String, T.untyped]])
+        )
       end
 
+      sig { returns(T::Hash[String, T.untyped]) }
       def current_report
-        report.find { |d| d["name"] == dependency.name }
+        T.must(report.find { |d| d["name"] == dependency.name })
       end
 
+      sig { returns(Dependabot::RequirementsUpdateStrategy) }
       def resolved_requirements_update_strategy
-        @resolved_requirements_update_strategy ||= resolve_requirements_update_strategy
+        @resolved_requirements_update_strategy ||= T.let(
+          resolve_requirements_update_strategy,
+          T.nilable(Dependabot::RequirementsUpdateStrategy)
+        )
       end
 
+      sig { returns(Dependabot::RequirementsUpdateStrategy) }
       def resolve_requirements_update_strategy
         raise "Unexpected requirements_update_strategy #{requirements_update_strategy}" unless
           [nil, RequirementsUpdateStrategy::WidenRanges, RequirementsUpdateStrategy::BumpVersions,
@@ -210,7 +243,7 @@ module Dependabot
             RequirementsUpdateStrategy::WidenRanges
           end
         else
-          requirements_update_strategy
+          T.must(requirements_update_strategy)
         end
       end
     end
