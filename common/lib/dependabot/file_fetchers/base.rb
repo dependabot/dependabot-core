@@ -879,7 +879,7 @@ module Dependabot
           path = T.must(info.last)
 
           # Exclude the symlink named 'flutter' by checking if it's a symlink
-          if path == 'flutter' && type == '160000'
+          if path == "flutter" && type == "160000"
             FileUtils.rm_rf(File.join(directory, dir_path, path))
             next
           end
