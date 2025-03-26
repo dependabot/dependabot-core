@@ -256,6 +256,7 @@ module Dependabot
 
         linked_path = symlinked_subpath(clean_path)
         type = "symlink" if linked_path
+        debugger if type == "symlink"
         symlink_target = clean_path.sub(T.must(linked_path), @linked_paths.dig(linked_path, :path)) if type == "symlink"
 
         DependencyFile.new(
@@ -867,6 +868,7 @@ module Dependabot
 
       sig { params(path: String).returns(T::Array[String]) }
       def find_submodules(path)
+        full_path = path
         SharedHelpers.run_shell_command(
           <<~CMD
             git -C #{path} ls-files --stage
@@ -876,6 +878,12 @@ module Dependabot
 
           type = info.first
           path = T.must(info.last)
+
+          # Exclude the symlink named 'flutter' by checking if it's a symlink
+          if path == 'flutter' && type == '160000'
+            FileUtils.rm_rf(File.join(directory, full_path, path))
+            next
+          end
 
           next path if type == DependencyFile::Mode::SUBMODULE
         end
