@@ -1,7 +1,8 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "excon"
+require "sorbet-runtime"
 require "time"
 
 require "dependabot/metadata_finders"
@@ -13,19 +14,23 @@ require "dependabot/bun/version"
 module Dependabot
   module Bun
     class MetadataFinder < Dependabot::MetadataFinders::Base
+      extend T::Sig
+
+      sig { override.returns(T.nilable(String)) }
       def homepage_url
         # Attempt to use version_listing first, as fetching the entire listing
         # array can be slow (if it's large)
         return latest_version_listing["homepage"] if latest_version_listing["homepage"]
 
-        listing = all_version_listings.find { |_, l| l["homepage"] }
-        listing&.last&.fetch("homepage", nil) || super
+        listing = all_version_listings.find { |l| l["homepage"] }
+        listing&.fetch("homepage", nil) || super
       end
 
+      sig { override.returns(T.nilable(String)) }
       def maintainer_changes
         return unless npm_releaser
         return unless npm_listing.dig("time", dependency.version)
-        return if previous_releasers.include?(npm_releaser)
+        return if previous_releasers&.include?(npm_releaser)
 
         "This version was pushed to npm by " \
           "[#{npm_releaser}](https://www.npmjs.com/~#{npm_releaser}), a new " \
@@ -34,10 +39,11 @@ module Dependabot
 
       private
 
+      sig { override.returns(T.nilable(Dependabot::Source)) }
       def look_up_source
         return find_source_from_registry if new_source.nil?
 
-        source_type = new_source[:type] || new_source.fetch("type")
+        source_type = new_source&.[](:type) || new_source&.fetch("type")
 
         case source_type
         when "git" then find_source_from_git_url
@@ -46,12 +52,14 @@ module Dependabot
         end
       end
 
+      sig { returns(T.nilable(String)) }
       def npm_releaser
         all_version_listings
-          .find { |v, _| v == dependency.version }
-          &.last&.fetch("_npmUser", nil)&.fetch("name", nil)
+          .find { |v| v["version"] == dependency.version }
+          &.dig("_npmUser", "name")
       end
 
+      sig { returns(T.nilable(T::Array[String])) }
       def previous_releasers
         times = npm_listing.fetch("time")
 
@@ -65,9 +73,10 @@ module Dependabot
 
         all_version_listings
           .reject { |v, _| Time.parse(times[v]) > cutoff }
-          .filter_map { |_, d| d.fetch("_npmUser", nil)&.fetch("name", nil) }
+          .filter_map { |d| d.fetch("_npmUser", nil)&.fetch("name", nil) }
       end
 
+      sig { returns(T.nilable(Source)) }
       def find_source_from_registry
         # Attempt to use version_listing first, as fetching the entire listing
         # array can be slow (if it's large)
@@ -81,7 +90,7 @@ module Dependabot
         return potential_sources.first if potential_sources.any?
 
         potential_sources =
-          all_version_listings.flat_map do |_, listing|
+          all_version_listings.flat_map do |listing|
             [
               get_source(listing["repository"]),
               get_source(listing["homepage"]),
@@ -92,6 +101,7 @@ module Dependabot
         potential_sources.first
       end
 
+      sig { returns(T.nilable(T::Hash[T.any(String, Symbol), String])) }
       def new_source
         sources = dependency.requirements
                             .map { |r| r.fetch(:source) }.uniq.compact
@@ -100,6 +110,7 @@ module Dependabot
         sources.first
       end
 
+      sig { params(details: T.any(String, T::Hash[String, String])).returns(T.nilable(Source)) }
       def get_source(details)
         potential_url = get_url(details)
         return unless potential_url
@@ -111,6 +122,7 @@ module Dependabot
         potential_source
       end
 
+      sig { params(details: T.any(String, T::Hash[String, String])).returns(T.nilable(String)) }
       def get_url(details)
         url =
           case details
@@ -122,6 +134,7 @@ module Dependabot
         "https://github.com/" + url
       end
 
+      sig { params(details: T.any(String, T::Hash[String, String])).returns(T.nilable(String)) }
       def get_directory(details)
         # Only return a directory if it is explicitly specified
         return unless details.is_a?(Hash)
@@ -129,22 +142,32 @@ module Dependabot
         details.fetch("directory", nil)
       end
 
+      sig { returns(T.nilable(Source)) }
       def find_source_from_git_url
-        url = new_source[:url] || new_source.fetch("url")
+        url = new_source&.[](:url) || new_source&.fetch("url")
         Source.from_url(url)
       end
 
+      sig { returns(T::Hash[String, T.untyped]) }
       def latest_version_listing
-        return @latest_version_listing if defined?(@latest_version_listing)
+        return @latest_version_listing unless @latest_version_listing.nil?
 
-        response = Dependabot::RegistryClient.get(url: "#{dependency_url}/latest", headers: registry_auth_headers)
-        return @latest_version_listing = JSON.parse(response.body) if response.status == 200
+        response = Dependabot::RegistryClient.get(url: "#{dependency_url}/latest",
+                                                  headers: registry_auth_headers)
+        return @latest_version_listing = {} if response.status >= 500
 
-        @latest_version_listing = {}
+        begin
+          @latest_version_listing = JSON.parse(response.body)
+        rescue JSON::ParserError
+          raise unless non_standard_registry?
+
+          @latest_version_listing = {}
+        end
       rescue JSON::ParserError, Excon::Error::Timeout
-        @latest_version_listing = {}
+        @latest_version_listing = T.let({}, T.nilable(T::Hash[String, T.untyped]))
       end
 
+      sig { returns(T::Array[T::Hash[String, T.untyped]]) }
       def all_version_listings
         return [] if npm_listing["versions"].nil?
 
@@ -154,6 +177,7 @@ module Dependabot
           .reverse
       end
 
+      sig { returns(T::Hash[String, T.untyped]) }
       def npm_listing
         return @npm_listing unless @npm_listing.nil?
 
@@ -168,14 +192,15 @@ module Dependabot
           @npm_listing = {}
         end
       rescue Excon::Error::Timeout
-        @npm_listing = {}
+        @npm_listing = T.let({}, T.nilable(T::Hash[String, T.untyped]))
       end
 
+      sig { returns(String) }
       def dependency_url
         registry_url =
           if new_source.nil? then "https://registry.npmjs.org"
           else
-            new_source.fetch(:url)
+            new_source&.fetch(:url)
           end
 
         # NPM registries expect slashes to be escaped
@@ -183,19 +208,22 @@ module Dependabot
         "#{registry_url}/#{escaped_dependency_name}"
       end
 
+      sig { returns(T::Hash[String, String]) }
       def registry_auth_headers
         return {} unless auth_token
 
         { "Authorization" => "Bearer #{auth_token}" }
       end
 
+      sig { returns(String) }
       def dependency_registry
         if new_source.nil? then "registry.npmjs.org"
         else
-          new_source.fetch(:url).gsub("https://", "").gsub("http://", "")
+          T.must(new_source).fetch(:url).gsub("https://", "").gsub("http://", "")
         end
       end
 
+      sig { returns(T.nilable(String)) }
       def auth_token
         credentials
           .select { |cred| cred["type"] == "npm_registry" }
@@ -203,6 +231,7 @@ module Dependabot
           &.fetch("token", nil)
       end
 
+      sig { returns(T::Boolean) }
       def non_standard_registry?
         dependency_registry != "registry.npmjs.org"
       end
