@@ -7,11 +7,15 @@ module Dependabot
   module Helm
     class FileFetcher < Dependabot::Shared::SharedFileFetcher
       FILENAME_REGEX = /.*\.ya?ml$/i
+      CHART_LOCK_REGEXP = /Chart\.lock/i
 
       sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
+        return [] unless allow_beta_ecosystems?
+
         fetched_files = []
-        fetched_files += correctly_encoded_helm_files if allow_beta_ecosystems?
+        fetched_files += correctly_encoded_helm_files
+        fetched_files += chart_locks
 
         return fetched_files if fetched_files.any?
 
@@ -28,6 +32,14 @@ module Dependabot
         @helm_files ||=
           T.let(repo_contents(raise_errors: false)
           .select { |f| f.type == "file" && f.name.match?(FILENAME_REGEX) }
+          .map { |f| fetch_file_from_host(f.name) }, T.nilable(T::Array[DependencyFile]))
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def chart_locks
+        @chart_locks ||=
+          T.let(repo_contents(raise_errors: false)
+          .select { |f| f.type == "file" && f.name.match?(CHART_LOCK_REGEXP) }
           .map { |f| fetch_file_from_host(f.name) }, T.nilable(T::Array[DependencyFile]))
       end
 
