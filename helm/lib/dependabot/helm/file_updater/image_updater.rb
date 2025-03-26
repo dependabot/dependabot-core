@@ -67,9 +67,7 @@ module Dependabot
 
         sig { params(node: Psych::Nodes::Node, content: T::Array[String]).returns(T::Array[String]) }
         def process_mapping_node(node, content)
-          0.step(node.children.length - 1, 2) do |i|
-            key_node = node.children[i]
-            value_node = node.children[i + 1]
+          node.children.each_slice(2) do |key_node, value_node|
             next unless key_node.is_a?(Psych::Nodes::Scalar)
 
             key = key_node.value
@@ -84,10 +82,9 @@ module Dependabot
 
         sig { params(node: Psych::Nodes::Node, content: T::Array[String]).returns(T::Array[String]) }
         def process_sequence_node(node, content)
-          node.children.each do |child|
-            content = find_and_update_images(child, content)
+          node.children.reduce(content) do |updated_content, child|
+            find_and_update_images(child, updated_content)
           end
-          content
         end
 
         sig { params(key: String, value_node: Psych::Nodes::Node, content: T::Array[String]).returns(T::Array[String]) }
