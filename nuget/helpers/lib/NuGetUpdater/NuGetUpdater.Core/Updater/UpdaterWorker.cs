@@ -20,7 +20,7 @@ public class UpdaterWorker : IUpdaterWorker
     internal static readonly JsonSerializerOptions SerializerOptions = new()
     {
         WriteIndented = true,
-        Converters = { new JsonStringEnumConverter() },
+        Converters = { new JsonStringEnumConverter(), new VersionConverter() },
     };
 
     public UpdaterWorker(string jobId, ExperimentsManager experimentsManager, ILogger logger)
@@ -118,11 +118,17 @@ public class UpdaterWorker : IUpdaterWorker
         return result;
     }
 
+    internal static string Serialize(UpdateOperationResult result)
+    {
+        var resultJson = JsonSerializer.Serialize(result, SerializerOptions);
+        return resultJson;
+    }
+
     internal static async Task WriteResultFile(UpdateOperationResult result, string resultOutputPath, ILogger logger)
     {
         logger.Info($"  Writing update result to [{resultOutputPath}].");
 
-        var resultJson = JsonSerializer.Serialize(result, SerializerOptions);
+        var resultJson = Serialize(result);
         await File.WriteAllTextAsync(resultOutputPath, resultJson);
     }
 

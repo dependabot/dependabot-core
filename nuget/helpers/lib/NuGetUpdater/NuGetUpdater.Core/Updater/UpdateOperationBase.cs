@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization;
 
 using NuGet.Versioning;
 
@@ -8,8 +9,12 @@ using NuGetUpdater.Core.Utilities;
 
 namespace NuGetUpdater.Core.Updater;
 
+[JsonDerivedType(typeof(DirectUpdate))]
+[JsonDerivedType(typeof(PinnedUpdate))]
+[JsonDerivedType(typeof(ParentUpdate))]
 public abstract record UpdateOperationBase
 {
+    public abstract string Type { get; }
     public required string DependencyName { get; init; }
     public required NuGetVersion NewVersion { get; init; }
     public required ImmutableArray<string> UpdatedFiles { get; init; }
@@ -106,18 +111,21 @@ public abstract record UpdateOperationBase
 
 public record DirectUpdate : UpdateOperationBase
 {
+    public override string Type => nameof(DirectUpdate);
     public override string GetReport() => $"Updated {DependencyName} to {NewVersion} in {string.Join("", UpdatedFiles)}";
     public sealed override string ToString() => GetString();
 }
 
 public record PinnedUpdate : UpdateOperationBase
 {
+    public override string Type => nameof(PinnedUpdate);
     public override string GetReport() => $"Pinned {DependencyName} at {NewVersion} in {string.Join("", UpdatedFiles)}";
     public sealed override string ToString() => GetString();
 }
 
 public record ParentUpdate : UpdateOperationBase, IEquatable<UpdateOperationBase>
 {
+    public override string Type => nameof(ParentUpdate);
     public required string ParentDependencyName { get; init; }
     public required NuGetVersion ParentNewVersion { get; init; }
 

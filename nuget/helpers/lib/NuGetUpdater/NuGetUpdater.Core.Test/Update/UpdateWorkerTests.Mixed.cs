@@ -1,5 +1,7 @@
 using System.Text.Json;
 
+using NuGet.Versioning;
+
 using NuGetUpdater.Core.Run.ApiModel;
 using NuGetUpdater.Core.Updater;
 
@@ -12,17 +14,14 @@ public partial class UpdateWorkerTests
     public class Mixed : UpdateWorkerTestBase
     {
         [Fact]
-        public async Task ResultFileHasCorrectShapeForAuthenticationFailure()
+        public void ResultFileHasCorrectShapeForAuthenticationFailure()
         {
-            using var temporaryDirectory = await TemporaryDirectory.CreateWithContentsAsync([]);
             var result = new UpdateOperationResult()
             {
                 Error = new PrivateSourceAuthenticationFailure(["<some package feed>"]),
                 UpdateOperations = [],
             };
-            var resultFilePath = Path.Combine(temporaryDirectory.DirectoryPath, "update-result.json");
-            await UpdaterWorker.WriteResultFile(result, resultFilePath, new TestLogger());
-            var resultContent = await File.ReadAllTextAsync(resultFilePath);
+            var resultContent = UpdaterWorker.Serialize(result);
 
             // raw result file should look like this:
             // {
@@ -43,6 +42,72 @@ public partial class UpdateWorkerTests
 
             Assert.Equal("private_source_authentication_failure", errorType.GetString());
             Assert.Equal("(<some package feed>)", source.GetString());
+        }
+
+        [Fact]
+        public void ResultFileListsUpdateOperations()
+        {
+            var result = new UpdateOperationResult()
+            {
+                Error = null,
+                UpdateOperations = [
+                    new DirectUpdate()
+                    {
+                        DependencyName = "Package.A",
+                        NewVersion = NuGetVersion.Parse("1.0.0"),
+                        UpdatedFiles = ["a.txt"]
+                    },
+                    new PinnedUpdate()
+                    {
+                        DependencyName = "Package.B",
+                        NewVersion = NuGetVersion.Parse("2.0.0"),
+                        UpdatedFiles = ["b.txt"]
+                    },
+                    new ParentUpdate()
+                    {
+                        DependencyName = "Package.C",
+                        NewVersion = NuGetVersion.Parse("3.0.0"),
+                        UpdatedFiles = ["c.txt"],
+                        ParentDependencyName = "Package.D",
+                        ParentNewVersion = NuGetVersion.Parse("4.0.0"),
+                    }
+                ]
+            };
+            var actualJson = UpdaterWorker.Serialize(result).Replace("\r", "");
+            var expectedJson = """
+                {
+                  "UpdateOperations": [
+                    {
+                      "Type": "DirectUpdate",
+                      "DependencyName": "Package.A",
+                      "NewVersion": "1.0.0",
+                      "UpdatedFiles": [
+                        "a.txt"
+                      ]
+                    },
+                    {
+                      "Type": "PinnedUpdate",
+                      "DependencyName": "Package.B",
+                      "NewVersion": "2.0.0",
+                      "UpdatedFiles": [
+                        "b.txt"
+                      ]
+                    },
+                    {
+                      "Type": "ParentUpdate",
+                      "ParentDependencyName": "Package.D",
+                      "ParentNewVersion": "4.0.0",
+                      "DependencyName": "Package.C",
+                      "NewVersion": "3.0.0",
+                      "UpdatedFiles": [
+                        "c.txt"
+                      ]
+                    }
+                  ],
+                  "Error": null
+                }
+                """.Replace("\r", "");
+            Assert.Equal(expectedJson, actualJson);
         }
 
         [Fact]
