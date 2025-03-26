@@ -93,7 +93,7 @@ module Dependabot
       private
 
       def convert_python_constraint_to_ruby_constraint(req_string)
-        return nil if req_string.nil?
+        return nil if req_string.nil? || req_string.strip.empty?
         return nil if req_string == "*"
 
         req_string = req_string.gsub("~=", "~>")
@@ -101,6 +101,8 @@ module Dependabot
 
         if req_string.match?(/~[^>]/) then convert_tilde_req(req_string)
         elsif req_string.start_with?("^") then convert_caret_req(req_string)
+        elsif req_string.match?(/^=?={0,2}\s*\d+\.\d+(\.\d+)?(-[a-z0-9.-]+)?(\.\*)?$/i)
+          convert_exact(req_string)
         elsif req_string.include?(".*") then convert_wildcard(req_string)
         else
           req_string
@@ -154,6 +156,37 @@ module Dependabot
                   .gsub(/\*(?!$)/, "0")
                   .gsub(/\*$/, "0.dev")
                   .tap { |s| exact_op ? s.gsub!(/^(?<!!)=*/, "~>") : s }
+      end
+
+      def convert_exact(req_string)
+        arbitrary_equality = req_string.start_with?("===")
+        cleaned_version = req_string.gsub(/^=+/, "").strip
+
+        return ["=== #{cleaned_version}"] if arbitrary_equality
+
+        # Handle versions wildcarded with .*, e.g. 1.0.*
+        if cleaned_version.include?(".*")
+          # Remove all characters after the first .*, and the .*
+          cleaned_version = cleaned_version.split(".*").first
+          version = Python::Version.new(cleaned_version)
+          # Get the release segment parts [major, minor, patch]
+          version_parts = version.release_segment
+
+          if version_parts.length == 1
+            major = T.must(version_parts[0])
+            [">= #{major}.0.0.dev", "< #{major + 1}.0.0"]
+          elsif version_parts.length == 2
+            major, minor = version_parts
+            "~> #{major}.#{minor}.0.dev"
+          elsif version_parts.length == 3
+            major, minor, patch = version_parts
+            "~> #{major}.#{minor}.#{patch}.dev"
+          else
+            "= #{cleaned_version}"
+          end
+        else
+          "= #{cleaned_version}"
+        end
       end
     end
   end

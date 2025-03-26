@@ -16,6 +16,7 @@ gem "dependabot-github_actions", path: "github_actions"
 gem "dependabot-git_submodules", path: "git_submodules"
 gem "dependabot-go_modules", path: "go_modules"
 gem "dependabot-gradle", path: "gradle"
+gem "dependabot-helm", path: "helm"
 gem "dependabot-hex", path: "hex"
 gem "dependabot-maven", path: "maven"
 gem "dependabot-npm_and_yarn", path: "npm_and_yarn"
@@ -28,8 +29,8 @@ gem "dependabot-terraform", path: "terraform"
 gem "dependabot-uv", path: "uv"
 
 # Sorbet
-gem "sorbet", "0.5.11630", group: :development
-gem "tapioca", "0.16.6", require: false, group: :development
+gem "sorbet", "0.5.11952", group: :development
+gem "tapioca", "0.16.11", require: false, group: :development
 
 gem "zeitwerk", "~> 2.7"
 

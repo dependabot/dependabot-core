@@ -21,6 +21,7 @@ module Dependabot
       require_relative "update_checker/pip_version_resolver"
       require_relative "update_checker/requirements_updater"
       require_relative "update_checker/latest_version_finder"
+      require_relative "update_checker/lock_file_resolver"
 
       MAIN_PYPI_INDEXES = %w(
         https://pypi.python.org/simple/
@@ -118,6 +119,7 @@ module Dependabot
         case resolver_type
         when :pip_compile then pip_compile_version_resolver
         when :requirements then pip_version_resolver
+        when :lock_file then lock_file_resolver
         else raise "Unexpected resolver type #{resolver_type}"
         end
       end
@@ -134,6 +136,7 @@ module Dependabot
         # which resolver to use based on the filename of its requirements
         return :requirements if updating_pyproject?
         return :pip_compile if updating_in_file?
+        return :lock_file if updating_uv_lock?
 
         if dependency.version && !exact_requirement?(reqs)
           subdependency_resolver
@@ -167,8 +170,13 @@ module Dependabot
           credentials: credentials,
           ignored_versions: ignored_versions,
           raise_on_ignored: @raise_on_ignored,
+          update_cooldown: @update_cooldown,
           security_advisories: security_advisories
         )
+      end
+
+      def lock_file_resolver
+        @lock_file_resolver ||= LockFileResolver.new(**resolver_args)
       end
 
       def resolver_args
@@ -187,7 +195,7 @@ module Dependabot
         requirement = reqs.find do |r|
           file = r[:file]
 
-          file == "Pipfile" || file == "pyproject.toml" || file.end_with?(".in") || file.end_with?(".txt")
+          file == "uv.lock" || file == "pyproject.toml" || file.end_with?(".in") || file.end_with?(".txt")
         end
 
         requirement&.fetch(:requirement)
@@ -234,6 +242,7 @@ module Dependabot
           credentials: credentials,
           ignored_versions: ignored_versions,
           raise_on_ignored: @raise_on_ignored,
+          cooldown_options: @update_cooldown,
           security_advisories: security_advisories
         )
       end
@@ -265,6 +274,10 @@ module Dependabot
 
       def updating_in_file?
         requirement_files.any? { |f| f.end_with?(".in") }
+      end
+
+      def updating_uv_lock?
+        requirement_files.any?("uv.lock")
       end
 
       def requirements_text_file?

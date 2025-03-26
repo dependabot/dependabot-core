@@ -171,5 +171,73 @@ public partial class DiscoveryWorkerTests
                 }
             );
         }
+
+        [Fact]
+        public async Task DirectDiscoveryWorksEvenWithTargetsImportsOnlyProvidedByVisualStudio()
+        {
+            await TestDiscoveryAsync(
+                workspacePath: "project1/",
+                experimentsManager: new ExperimentsManager() { UseDirectDiscovery = true },
+                packages: [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net48"),
+                ],
+                files: [
+                    ("project1/project1.csproj", """
+                        <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                          <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                          <PropertyGroup>
+                            <OutputType>Library</OutputType>
+                            <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <None Include="packages.config" />
+                          </ItemGroup>
+                          <ItemGroup>
+                            <ProjectReference Include="..\project2\project2.csproj" />
+                          </ItemGroup>
+                          <Import Project="$(VSToolsPath)\SomeSubPath\WebApplications\Microsoft.WebApplication.targets" />
+                          <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                        </Project>
+                        """),
+                    ("project1/packages.config", """
+                        <?xml version="1.0" encoding="utf-8"?>
+                        <packages>
+                          <package id="Some.Package" version="1.0.0" targetFramework="net48" />
+                        </packages>
+                        """),
+                    ("project2/project2.csproj", """
+                        <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                          <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                          <PropertyGroup>
+                            <OutputType>Library</OutputType>
+                            <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+                          </PropertyGroup>
+                          <Import Project="$(VSToolsPath)\SomeSubPath\WebApplications\Microsoft.WebApplication.targets" />
+                          <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                        </Project>
+                        """)
+                ],
+                expectedResult: new()
+                {
+                    Path = "project1/",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "project1.csproj",
+                            Properties = [],
+                            TargetFrameworks = ["net48"],
+                            Dependencies = [
+                                new("Some.Package", "1.0.0", DependencyType.PackagesConfig, TargetFrameworks: ["net48"]),
+                            ],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [],
+                            AdditionalFiles = [
+                                "packages.config"
+                            ],
+                        }
+                    ]
+                }
+            );
+        }
     }
 }

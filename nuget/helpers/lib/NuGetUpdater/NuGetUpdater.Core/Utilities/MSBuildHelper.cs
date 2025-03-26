@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Xml;
+using System.Xml.Linq;
 
 using Microsoft.Build.Construction;
 using Microsoft.Build.Definition;
@@ -29,6 +30,8 @@ internal static partial class MSBuildHelper
     public static string MSBuildPath { get; private set; } = string.Empty;
 
     public static bool IsMSBuildRegistered => MSBuildPath.Length > 0;
+
+    public static string GetFileFromRuntimeDirectory(string fileName) => Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, fileName);
 
     public static void RegisterMSBuild(string currentDirectory, string rootDirectory)
     {
@@ -663,7 +666,7 @@ internal static partial class MSBuildHelper
         }
     }
 
-    internal static async Task<string> CreateTempProjectAsync(
+    internal static Task<string> CreateTempProjectAsync(
         DirectoryInfo tempDir,
         string repoRoot,
         string projectPath,
@@ -671,7 +674,32 @@ internal static partial class MSBuildHelper
         IReadOnlyCollection<Dependency> packages,
         ExperimentsManager experimentsManager,
         ILogger logger,
-        bool usePackageDownload = false)
+        bool usePackageDownload = false,
+        bool importDependencyTargets = true
+    ) => CreateTempProjectAsync(tempDir, repoRoot, projectPath, new XElement("TargetFramework", targetFramework), packages, experimentsManager, logger, usePackageDownload, importDependencyTargets);
+
+    internal static Task<string> CreateTempProjectAsync(
+        DirectoryInfo tempDir,
+        string repoRoot,
+        string projectPath,
+        ImmutableArray<string> targetFrameworks,
+        IReadOnlyCollection<Dependency> packages,
+        ExperimentsManager experimentsManager,
+        ILogger logger,
+        bool usePackageDownload = false,
+        bool importDependencyTargets = true
+    ) => CreateTempProjectAsync(tempDir, repoRoot, projectPath, new XElement("TargetFrameworks", string.Join(";", targetFrameworks)), packages, experimentsManager, logger, usePackageDownload, importDependencyTargets);
+
+    private static async Task<string> CreateTempProjectAsync(
+        DirectoryInfo tempDir,
+        string repoRoot,
+        string projectPath,
+        XElement targetFrameworkElement,
+        IReadOnlyCollection<Dependency> packages,
+        ExperimentsManager experimentsManager,
+        ILogger logger,
+        bool usePackageDownload,
+        bool importDependencyTargets)
     {
         var projectDirectory = Path.GetDirectoryName(projectPath);
         projectDirectory ??= repoRoot;
@@ -720,18 +748,18 @@ internal static partial class MSBuildHelper
                 // empty `Version` attributes will cause the temporary project to not build
                 .Where(p => (p.EvaluationResult is null || p.EvaluationResult.ResultType == EvaluationResultType.Success) && !string.IsNullOrWhiteSpace(p.Version))
                 // If all PackageReferences for a package are update-only mark it as such, otherwise it can cause package incoherence errors which do not exist in the repo.
-                .Select(p => $"<{(usePackageDownload ? "PackageDownload" : "PackageReference")} {(p.IsUpdate ? "Update" : "Include")}=\"{p.Name}\" Version=\"[{p.Version}]\" />"));
+                .Select(p => $"<{(usePackageDownload ? "PackageDownload" : "PackageReference")} {(p.IsUpdate ? "Update" : "Include")}=\"{p.Name}\" Version=\"{(p.Version!.Contains("*") ? p.Version : $"[{p.Version}]")}\" />"));
+
+        var dependencyTargetsImport = importDependencyTargets
+            ? $"""<Import Project="{GetFileFromRuntimeDirectory("DependencyDiscovery.targets")}" />"""
+            : string.Empty;
 
         var projectContents = $"""
             <Project Sdk="Microsoft.NET.Sdk">
               <PropertyGroup>
-                <TargetFramework>{targetFramework}</TargetFramework>
-                <GenerateDependencyFile>true</GenerateDependencyFile>
-                <RunAnalyzers>false</RunAnalyzers>
-                <NuGetInteractive>false</NuGetInteractive>
-                <DesignTimeBuild>true</DesignTimeBuild>
-                <TargetPlatformVersion Condition=" $(TargetFramework.Contains('-')) ">1.0</TargetPlatformVersion>
+                {targetFrameworkElement}
               </PropertyGroup>
+              {dependencyTargetsImport}
               <ItemGroup>
                 {packageReferences}
               </ItemGroup>
@@ -763,8 +791,6 @@ internal static partial class MSBuildHelper
             """
             <Project>
               <PropertyGroup>
-                <!-- For Windows-specific apps -->
-                <EnableWindowsTargeting>true</EnableWindowsTargeting>
                 <!-- Really ensure CPM is disabled -->
                 <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
               </PropertyGroup>
@@ -867,7 +893,7 @@ internal static partial class MSBuildHelper
         try
         {
             var topLevelPackagesNames = packages.Select(p => p.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
-            var tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages, experimentsManager, logger);
+            var tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages, experimentsManager, logger, importDependencyTargets: !experimentsManager.UseDirectDiscovery);
 
             Dependency[] allDependencies;
             if (experimentsManager.UseDirectDiscovery)

@@ -1,0 +1,5 @@
+apiVersion: v2
+name: example-app
+version: 1.0.0
+description: Example Helm chart
+type: application

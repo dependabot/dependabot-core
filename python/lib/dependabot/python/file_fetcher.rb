@@ -53,7 +53,7 @@ module Dependabot
         # the user-specified range of versions, not the version Dependabot chose to run.
         python_requirement_parser = FileParser::PythonRequirementParser.new(dependency_files: files)
         language_version_manager = LanguageVersionManager.new(python_requirement_parser: python_requirement_parser)
-        Dependabot.logger.info("Dependabot is using Python version '#{language_version_manager.python_major_minor}'.")
+        Dependabot.logger.info("Dependabot is using Python version '#{language_version_manager.python_version}'.")
         {
           languages: {
             python: {

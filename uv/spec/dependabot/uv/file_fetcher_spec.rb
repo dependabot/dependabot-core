@@ -233,6 +233,56 @@ RSpec.describe Dependabot::Uv::FileFetcher do
       end
     end
 
+    context "with only a uv.lock" do
+      let(:repo_contents) do
+        fixture("github", "contents_python_only_uv_lock.json")
+      end
+
+      before do
+        stub_request(:get, url + "uv.lock?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_python_uv_lock.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "raises a Dependabot::DependencyFileNotFound error" do
+        expect { file_fetcher_instance.files }
+          .to raise_error(Dependabot::DependencyFileNotFound)
+      end
+    end
+
+    context "with a uv.lock file and a pyproject.toml" do
+      let(:repo_contents) do
+        fixture("github", "contents_python_uv_lock_and_pyproject.json")
+      end
+
+      before do
+        stub_request(:get, url + "uv.lock?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_python_uv_lock.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "pyproject.toml?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_python_pyproject.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "fetches the pyproject.toml" do
+        expect(file_fetcher_instance.files.count).to eq(2)
+        expect(file_fetcher_instance.files.map(&:name))
+          .to match_array(%w(pyproject.toml uv.lock))
+      end
+    end
+
     context "with requirements.txt, requirements.in, or pyproject.toml" do
       let(:repo_contents) { "[]" }
 

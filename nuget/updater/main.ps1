@@ -15,13 +15,24 @@ $operationExitCode = 0
 function Get-Files {
     $job = Get-Job -jobFilePath $env:DEPENDABOT_JOB_PATH
     Write-Host "Job: $($job | ConvertTo-Json -Depth 99)"
-    & $updaterTool clone `
-        --job-path $env:DEPENDABOT_JOB_PATH `
-        --repo-contents-path $env:DEPENDABOT_REPO_CONTENTS_PATH `
-        --api-url $env:DEPENDABOT_API_URL `
-        --job-id $env:DEPENDABOT_JOB_ID
-    $script:operationExitCode = $LASTEXITCODE
-    Repair-FileCasing
+    if (Test-Path (Join-Path $env:DEPENDABOT_REPO_CONTENTS_PATH ".git")) {
+        # this can happen if the CLI specified the `--local` option
+        Write-Host "Git repository already exists, skipping clone."
+        $script:operationExitCode = 0
+    }
+    else {
+        & $updaterTool clone `
+            --job-path $env:DEPENDABOT_JOB_PATH `
+            --repo-contents-path $env:DEPENDABOT_REPO_CONTENTS_PATH `
+            --api-url $env:DEPENDABOT_API_URL `
+            --job-id $env:DEPENDABOT_JOB_ID
+        $script:operationExitCode = $LASTEXITCODE
+    }
+
+    if ($script:operationExitCode -eq 0) {
+        # this only makes sense if the native clone operation succeeded
+        Repair-FileCasing
+    }
 }
 
 function Update-Files {

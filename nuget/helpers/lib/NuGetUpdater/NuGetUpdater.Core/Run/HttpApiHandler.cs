@@ -45,6 +45,11 @@ public class HttpApiHandler : IApiHandler
         await PostAsJson("create_pull_request", createPullRequest);
     }
 
+    public async Task ClosePullRequest(ClosePullRequest closePullRequest)
+    {
+        await PostAsJson("close_pull_request", closePullRequest);
+    }
+
     public async Task UpdatePullRequest(UpdatePullRequest updatePullRequest)
     {
         await PostAsJson("update_pull_request", updatePullRequest);

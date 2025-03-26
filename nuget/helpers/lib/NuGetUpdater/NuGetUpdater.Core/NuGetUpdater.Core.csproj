@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <None Include="DependencyDiscovery.props" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="DependencyDiscoveryTargetingPacks.props" CopyToOutputDirectory="PreserveNewest" />
     <None Include="DependencyDiscovery.targets" CopyToOutputDirectory="PreserveNewest" />
     <None Include="TargetFrameworkReporter.targets" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

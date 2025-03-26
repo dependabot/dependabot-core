@@ -10,6 +10,7 @@ using Microsoft.Build.Exceptions;
 using NuGet.Frameworks;
 
 using NuGetUpdater.Core.Run.ApiModel;
+using NuGetUpdater.Core.Updater;
 using NuGetUpdater.Core.Utilities;
 
 namespace NuGetUpdater.Core.Discover;
@@ -303,30 +304,24 @@ public partial class DiscoveryWorker : IDiscoveryWorker
 
     private async Task<ImmutableArray<ProjectDiscoveryResult>> RunForProjectPathsAsync(string repoRootPath, string workspacePath, IEnumerable<string> projectPaths)
     {
+        var normalizedProjectPaths = projectPaths.SelectMany(p => PathHelper.ResolveCaseInsensitivePathsInsideRepoRoot(p, repoRootPath) ?? []).Distinct().ToImmutableArray();
+        var disposables = normalizedProjectPaths.Select(p => new SpecialImportsConditionPatcher(p)).ToImmutableArray();
         var results = new Dictionary<string, ProjectDiscoveryResult>(StringComparer.Ordinal);
-        foreach (var projectPath in projectPaths)
+
+        try
         {
-            // If there is some MSBuild logic that needs to run to fully resolve the path skip the project
-            // Ensure file existence is checked case-insensitively
-            var actualProjectPaths = PathHelper.ResolveCaseInsensitivePathsInsideRepoRoot(projectPath, repoRootPath);
-
-            if (actualProjectPaths == null)
+            foreach (var projectPath in normalizedProjectPaths)
             {
-                continue;
-            }
-
-            foreach (var actualProjectPath in actualProjectPaths)
-            {
-                if (_processedProjectPaths.Contains(actualProjectPath))
+                if (_processedProjectPaths.Contains(projectPath))
                 {
                     continue;
                 }
 
-                _processedProjectPaths.Add(actualProjectPath);
+                _processedProjectPaths.Add(projectPath);
 
-                var relativeProjectPath = Path.GetRelativePath(workspacePath, actualProjectPath).NormalizePathToUnix();
-                var packagesConfigResult = await PackagesConfigDiscovery.Discover(repoRootPath, workspacePath, actualProjectPath, _experimentsManager, _logger);
-                var projectResults = await SdkProjectDiscovery.DiscoverAsync(repoRootPath, workspacePath, actualProjectPath, _experimentsManager, _logger);
+                var relativeProjectPath = Path.GetRelativePath(workspacePath, projectPath).NormalizePathToUnix();
+                var packagesConfigResult = await PackagesConfigDiscovery.Discover(repoRootPath, workspacePath, projectPath, _experimentsManager, _logger);
+                var projectResults = await SdkProjectDiscovery.DiscoverAsync(repoRootPath, workspacePath, projectPath, _experimentsManager, _logger);
 
                 // Determine if there were unrestored MSBuildSdks
                 var msbuildSdks = projectResults.SelectMany(p => p.Dependencies.Where(d => d.Type == DependencyType.MSBuildSdk)).ToImmutableArray();
@@ -335,7 +330,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
                     // If new SDKs were restored, then we need to rerun SdkProjectDiscovery.
                     if (await TryRestoreMSBuildSdksAsync(repoRootPath, workspacePath, msbuildSdks, _logger))
                     {
-                        projectResults = await SdkProjectDiscovery.DiscoverAsync(repoRootPath, workspacePath, actualProjectPath, _experimentsManager, _logger);
+                        projectResults = await SdkProjectDiscovery.DiscoverAsync(repoRootPath, workspacePath, projectPath, _experimentsManager, _logger);
                     }
                 }
 
@@ -421,6 +416,14 @@ public partial class DiscoveryWorker : IDiscoveryWorker
                         };
                     }
                 }
+            }
+        }
+        finally
+        {
+            foreach (var disposable in disposables)
+            {
+                // restore the original project file
+                disposable.Dispose();
             }
         }
 
