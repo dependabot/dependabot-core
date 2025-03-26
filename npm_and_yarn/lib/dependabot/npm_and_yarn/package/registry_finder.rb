@@ -51,12 +51,12 @@ module Dependabot
           @parsed_yarnrc_yml = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
         end
 
-        sig { returns(T.nilable(String)) }
+        sig { returns(String) }
         def registry
           return @registry if @registry
 
           @registry = locked_registry || configured_registry || first_registry_with_dependency_details
-          @registry
+          T.must(@registry)
         end
 
         sig { returns(T::Hash[String, String]) }
@@ -140,7 +140,7 @@ module Dependabot
         sig { returns(T.nilable(String)) }
         def registry_url
           url =
-            if registry&.start_with?("http")
+            if registry.start_with?("http")
               registry
             else
               protocol =
@@ -153,7 +153,7 @@ module Dependabot
               "#{protocol}://#{registry}"
             end
 
-          url&.gsub(%r{/+$}, "")
+          url.gsub(%r{/+$}, "")
         end
 
         sig { params(token: T.nilable(String)).returns(T::Hash[String, String]) }
