@@ -11,11 +11,11 @@ module Dependabot
 
       sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
+        return [] unless allow_beta_ecosystems?
+
         fetched_files = []
-        if allow_beta_ecosystems?
-          fetched_files += correctly_encoded_helm_files
-          fetched_files += chart_locks
-        end
+        fetched_files += correctly_encoded_helm_files
+        fetched_files += chart_locks
 
         return fetched_files if fetched_files.any?
 
