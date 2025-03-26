@@ -146,7 +146,7 @@ module Dependabot
     sig { params(dependencies: T::Array[Dependabot::Dependency]).returns(Dependabot::FileUpdaters::Base) }
     def file_updater_for(dependencies)
       # Filter out any support files, as they don't need to be updated
-      filtered_files = dependency_files&.reject(&:support_file) || []
+      filtered_files = dependency_files.reject(&:support_file)
 
       Dependabot::FileUpdaters.for_package_manager(job.package_manager).new(
         dependencies: dependencies,
