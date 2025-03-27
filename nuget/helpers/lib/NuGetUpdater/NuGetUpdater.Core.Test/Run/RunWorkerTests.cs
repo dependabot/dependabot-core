@@ -106,7 +106,10 @@ public class RunWorkerTests
                       </ItemGroup>
                     </Project>
                     """.SetEOL(EOL));
-                return new UpdateOperationResult();
+                return new UpdateOperationResult()
+                {
+                    UpdateOperations = [],
+                };
             }),
             expectedResult: new RunResult()
             {
@@ -314,7 +317,10 @@ public class RunWorkerTests
                       </ItemGroup>
                     </Project>
                     """.SetEOL(EOL));
-                return new UpdateOperationResult();
+                return new UpdateOperationResult()
+                {
+                    UpdateOperations = [],
+                };
             }),
             expectedResult: new RunResult()
             {
@@ -681,7 +687,10 @@ public class RunWorkerTests
                         throw new NotSupportedException();
                 }
 
-                return new UpdateOperationResult();
+                return new UpdateOperationResult()
+                {
+                    UpdateOperations = [],
+                };
             }),
             expectedResult: new RunResult()
             {
@@ -1091,7 +1100,10 @@ public class RunWorkerTests
                         throw new NotSupportedException();
                 }
 
-                return new UpdateOperationResult();
+                return new UpdateOperationResult()
+                {
+                    UpdateOperations = [],
+                };
             }),
             expectedResult: new RunResult()
             {
@@ -1553,7 +1565,10 @@ public class RunWorkerTests
                       </PropertyGroup>
                     </Project>
                     """.SetEOL(EOL));
-                return new UpdateOperationResult();
+                return new UpdateOperationResult()
+                {
+                    UpdateOperations = [],
+                };
             }),
             expectedResult: new RunResult()
             {
@@ -2316,7 +2331,10 @@ public class RunWorkerTests
                     _ => throw new NotImplementedException("unreachable")
                 };
                 await File.WriteAllTextAsync(dependencyFilePath, updatedContent);
-                return new UpdateOperationResult();
+                return new UpdateOperationResult()
+                {
+                    UpdateOperations = [],
+                };
             }),
             expectedResult: new()
             {

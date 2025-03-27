@@ -3,6 +3,7 @@ using System.Text.Json;
 using NuGetUpdater.Core.Run;
 using NuGetUpdater.Core.Run.ApiModel;
 using NuGetUpdater.Core.Test.Updater;
+using NuGetUpdater.Core.Test.Utilities;
 using NuGetUpdater.Core.Updater;
 
 using Xunit;
@@ -191,6 +192,10 @@ public abstract class UpdateWorkerTestBase : TestBase
         else
         {
             Assert.Null(actualResult.Error);
+            if (expectedResult is not null)
+            {
+                AssertEx.Equal(expectedResult.UpdateOperations, actualResult.UpdateOperations, UpdateOperationBaseComparer.Instance);
+            }
         }
     }
 

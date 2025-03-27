@@ -2446,6 +2446,7 @@ public partial class UpdateWorkerTests
                 expectedResult: new()
                 {
                     Error = new PrivateSourceAuthenticationFailure([$"{http.BaseUrl.TrimEnd('/')}/index.json"]),
+                    UpdateOperations = [],
                 }
             );
         }
@@ -2576,6 +2577,7 @@ public partial class UpdateWorkerTests
                 expectedResult: new()
                 {
                     ErrorRegex = "Response status code does not indicate success",
+                    UpdateOperations = [],
                 }
             );
         }
@@ -2653,6 +2655,7 @@ public partial class UpdateWorkerTests
                 expectedResult: new()
                 {
                     Error = new DependencyNotFound("Unrelated.Package.1.0.0"),
+                    UpdateOperations = [],
                 }
             );
         }
