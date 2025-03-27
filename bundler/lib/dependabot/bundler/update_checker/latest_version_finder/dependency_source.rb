@@ -4,12 +4,13 @@
 require "dependabot/registry_client"
 require "dependabot/bundler/native_helpers"
 require "dependabot/bundler/helpers"
+require "dependabot/bundler/update_checker/latest_version_finder"
 require "sorbet-runtime"
 
 module Dependabot
   module Bundler
     class UpdateChecker
-      class LatestVersionFinder
+      class LatestVersionFinder < Dependabot::Package::PackageLatestVersionFinder
         class DependencySource
           extend T::Sig
 
