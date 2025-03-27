@@ -102,7 +102,7 @@ module Dependabot
             dependency_group: T.nilable(Dependabot::DependencyGroup)
           ).void
         end
-        def initialize(
+        def initialize( # rubocop:disable Metrics/AbcSize
           dependency:, credentials:, dependency_files:,
           latest_allowable_version:, latest_version_finder:,
           repo_contents_path:, dependency_group: nil

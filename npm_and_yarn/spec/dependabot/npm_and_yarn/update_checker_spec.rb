@@ -773,7 +773,9 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         let(:target_version) { "2.0.2" }
 
         it "returns the lowest security fix version" do
-          allow(checker).to receive(:lowest_security_fix_version).and_return(Dependabot::NpmAndYarn::Version.new(target_version))
+          allow(checker).to receive(:lowest_security_fix_version).and_return(
+            Dependabot::NpmAndYarn::Version.new(target_version)
+          )
           expect(lowest_resolvable_security_fix_version).to eq(Dependabot::NpmAndYarn::Version.new(target_version))
         end
       end
