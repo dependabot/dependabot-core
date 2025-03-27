@@ -62,6 +62,9 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   # Variable to control the enabling feature flag for the corepack fix
   let(:enable_corepack_for_npm_and_yarn) { true }
 
+  # Variable to control the enabling feature flag for the cooldown
+  let(:enable_cooldown_for_npm_and_yarn) { false }
+
   before do
     stub_request(:get, registry_listing_url)
       .to_return(status: 200, body: registry_response)
@@ -73,6 +76,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       .with(:npm_fallback_version_above_v6).and_return(npm_fallback_version_above_v6_enabled)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_shared_helpers_command_timeout).and_return(true)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_cooldown_for_npm_and_yarn).and_return(enable_cooldown_for_npm_and_yarn)
   end
 
   after do
@@ -973,7 +978,9 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           latest_version_finder: described_class::LatestVersionFinder,
           latest_allowable_version: updated_version,
           repo_contents_path: nil,
-          dependency_group: nil
+          dependency_group: nil,
+          raise_on_ignored: false,
+          update_cooldown: nil
         ).and_return(dummy_version_resolver)
       expect(dummy_version_resolver)
         .to receive(:latest_resolvable_previous_version)
@@ -1382,7 +1389,9 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           latest_version_finder: described_class::LatestVersionFinder,
           latest_allowable_version: Dependabot::NpmAndYarn::Version.new("1.7.0"),
           repo_contents_path: nil,
-          dependency_group: nil
+          dependency_group: nil,
+          raise_on_ignored: false,
+          update_cooldown: nil
         ).and_return(dummy_version_resolver)
       expect(dummy_version_resolver)
         .to receive(:dependency_updates_from_full_unlock)

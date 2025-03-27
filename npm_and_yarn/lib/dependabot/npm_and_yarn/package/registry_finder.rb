@@ -89,6 +89,13 @@ module Dependabot
           explicit_registry_from_rc(dependency_name) || global_registry
         end
 
+        sig { returns(T::Boolean) }
+        def custom_registry?
+          return false if CENTRAL_REGISTRIES.include?(registry_url)
+
+          !(registry_url || "").match?(/registry\.npmjs\.(org|com)/)
+        end
+
         private
 
         sig { returns(T.nilable(Dependabot::Dependency)) }

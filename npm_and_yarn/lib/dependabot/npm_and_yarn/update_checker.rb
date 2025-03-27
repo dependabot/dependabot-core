@@ -51,7 +51,9 @@ module Dependabot
         @latest_version_for_git_dependency = T.let(nil, T.nilable(T.any(String, Gem::Version)))
         @latest_released_version = T.let(nil, T.nilable(Gem::Version))
         @latest_version_details = T.let(nil, T.nilable(T::Hash[Symbol, T.untyped]))
-        @latest_version_finder = T.let(nil, T.nilable(LatestVersionFinder))
+        @latest_version_finder = T.let(
+          nil, T.nilable(T.any(LatestVersionFinder, PackageLatestVersionFinder))
+        )
         @version_resolver = T.let(nil, T.nilable(VersionResolver))
         @subdependency_version_resolver = T.let(nil, T.nilable(SubdependencyVersionResolver))
         @library = T.let(nil, T.nilable(T::Boolean))
@@ -402,17 +404,34 @@ module Dependabot
           end
       end
 
-      sig { returns(LatestVersionFinder) }
+      sig { returns(T.any(LatestVersionFinder, PackageLatestVersionFinder)) }
       def latest_version_finder
         @latest_version_finder ||=
-          LatestVersionFinder.new(
-            dependency: dependency,
-            credentials: credentials,
-            dependency_files: dependency_files,
-            ignored_versions: ignored_versions,
-            raise_on_ignored: raise_on_ignored,
-            security_advisories: security_advisories
-          )
+          if enable_cooldown?
+            PackageLatestVersionFinder.new(
+              dependency: dependency,
+              credentials: credentials,
+              dependency_files: dependency_files,
+              ignored_versions: ignored_versions,
+              raise_on_ignored: raise_on_ignored,
+              security_advisories: security_advisories,
+              cooldown_options: @update_cooldown
+            )
+          else
+            LatestVersionFinder.new(
+              dependency: dependency,
+              credentials: credentials,
+              dependency_files: dependency_files,
+              ignored_versions: ignored_versions,
+              raise_on_ignored: raise_on_ignored,
+              security_advisories: security_advisories
+            )
+          end
+      end
+
+      sig { returns(T::Boolean) }
+      def enable_cooldown?
+        Dependabot::Experiments.enabled?(:enable_cooldown_for_npm_and_yarn)
       end
 
       sig { returns(VersionResolver) }
@@ -425,7 +444,9 @@ module Dependabot
             latest_allowable_version: latest_version,
             latest_version_finder: latest_version_finder,
             repo_contents_path: repo_contents_path,
-            dependency_group: dependency_group
+            dependency_group: dependency_group,
+            raise_on_ignored: raise_on_ignored,
+            update_cooldown: @update_cooldown
           )
       end
 

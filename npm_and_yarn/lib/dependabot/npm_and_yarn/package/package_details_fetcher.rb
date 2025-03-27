@@ -64,6 +64,11 @@ module Dependabot
           @npm_details ||= fetch_npm_details
         end
 
+        sig { returns(T::Boolean) }
+        def custom_registry?
+          registry_finder.custom_registry?
+        end
+
         private
 
         sig do
@@ -83,8 +88,6 @@ module Dependabot
             package_type = details.dig("repository", "type")
 
             deprecated = details["deprecated"]
-
-            puts "version: #{version}, #{latest_version}"
 
             Dependabot::Package::PackageRelease.new(
               version: Version.new(version),
