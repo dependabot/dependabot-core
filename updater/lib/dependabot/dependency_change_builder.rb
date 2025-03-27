@@ -70,6 +70,10 @@ module Dependabot
     sig { returns(Dependabot::DependencyChange) }
     def run
       updated_files = generate_dependency_files
+      # Filter out any support files, as they don't need to be updated (unless submodules)
+      if updated_dependencies.any? && updated_dependencies.first.package_manager != "submodules"
+        updated_files.reject!(&:support_file)
+      end
       raise DependabotError, "FileUpdater failed" unless updated_files.any?
 
       # Remove any unchanged dependencies from the updated list
@@ -140,9 +144,7 @@ module Dependabot
       # updated indirectly as a result of a parent dependency update and are
       # only included here to be included in the PR info.
       relevant_dependencies = updated_dependencies.reject(&:informational_only?)
-      updated_dependency_files = file_updater_for(relevant_dependencies).updated_dependency_files
-      # Filter out any support files, as they don't need to be updated
-      updated_dependency_files.reject(&:support_file)
+      file_updater_for(relevant_dependencies).updated_dependency_files
     end
 
     sig { params(dependencies: T::Array[Dependabot::Dependency]).returns(Dependabot::FileUpdaters::Base) }
