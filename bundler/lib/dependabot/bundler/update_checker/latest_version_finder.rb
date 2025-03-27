@@ -8,6 +8,7 @@ require "dependabot/update_checkers/version_filters"
 require "dependabot/bundler/requirement"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
+require "dependabot/package/package_latest_version_finder"
 require "dependabot/bundler/update_checker/latest_version_finder/" \
         "dependency_source"
 require "sorbet-runtime"
@@ -15,39 +16,30 @@ require "sorbet-runtime"
 module Dependabot
   module Bundler
     class UpdateChecker
-      class LatestVersionFinder
+      class LatestVersionFinder < Dependabot::Package::PackageLatestVersionFinder
         extend T::Sig
 
-        def initialize(dependency:, dependency_files:, repo_contents_path: nil,
-                       credentials:, ignored_versions:, raise_on_ignored: false,
-                       security_advisories:, options:)
-          @dependency          = dependency
-          @dependency_files    = dependency_files
-          @repo_contents_path  = repo_contents_path
-          @credentials         = credentials
-          @ignored_versions    = ignored_versions
-          @raise_on_ignored    = raise_on_ignored
-          @security_advisories = security_advisories
-          @options             = options
+        sig do
+          override.returns(T.nilable(Dependabot::Package::PackageDetails))
+        end
+        def package_details
+          @package_details ||= Package::PackageDetailsFetcher.new(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            credentials: credentials
+          ).fetch
         end
 
         def latest_version_details
           @latest_version_details ||= fetch_latest_version_details
         end
 
-        def lowest_security_fix_version
-          @lowest_security_fix_version ||= fetch_lowest_security_fix_version
+        sig { override.returns(T::Boolean) }
+        def cooldown_enabled?
+          Dependabot::Experiments.enabled?(:enable_cooldown_for_bundler)
         end
 
         private
-
-        attr_reader :dependency
-        attr_reader :dependency_files
-        attr_reader :repo_contents_path
-        attr_reader :credentials
-        attr_reader :ignored_versions
-        attr_reader :security_advisories
-        attr_reader :options
 
         def fetch_latest_version_details
           return dependency_source.latest_git_version_details if dependency_source.git?
@@ -59,7 +51,7 @@ module Dependabot
           relevant_versions.empty? ? nil : { version: relevant_versions.max }
         end
 
-        def fetch_lowest_security_fix_version
+        def fetch_lowest_security_fix_version(language_version: nil)
           return if dependency_source.git?
 
           relevant_versions = dependency_source.versions
@@ -70,39 +62,6 @@ module Dependabot
           relevant_versions = filter_lower_versions(relevant_versions)
 
           relevant_versions.min
-        end
-
-        sig { params(versions_array: T::Array[Gem::Version]).returns(T::Array[Gem::Version]) }
-        def filter_prerelease_versions(versions_array)
-          return versions_array if wants_prerelease?
-
-          filtered = versions_array.reject(&:prerelease?)
-          if versions_array.count > filtered.count
-            Dependabot.logger.info("Filtered out #{versions_array.count - filtered.count} pre-release versions")
-          end
-          filtered
-        end
-
-        sig { params(versions_array: T::Array[Gem::Version]).returns(T::Array[Gem::Version]) }
-        def filter_ignored_versions(versions_array)
-          filtered = versions_array
-                     .reject { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }
-          if @raise_on_ignored && filter_lower_versions(filtered).empty? && filter_lower_versions(versions_array).any?
-            raise AllVersionsIgnored
-          end
-
-          if versions_array.count > filtered.count
-            Dependabot.logger.info("Filtered out #{versions_array.count - filtered.count} ignored versions")
-          end
-
-          filtered
-        end
-
-        def filter_lower_versions(versions_array)
-          return versions_array unless dependency.numeric_version
-
-          versions_array
-            .select { |version| version > dependency.numeric_version }
         end
 
         def wants_prerelease?
@@ -126,10 +85,6 @@ module Dependabot
             credentials: credentials,
             options: options
           )
-        end
-
-        def ignore_requirements
-          ignored_versions.flat_map { |req| requirement_class.requirements_array(req) }
         end
 
         def requirement_class
