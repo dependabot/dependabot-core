@@ -36,12 +36,11 @@ module Dependabot
           @dependency_files = dependency_files
           @credentials = credentials
           @index_urls = index_urls
-          @updated_dependency_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
         end
 
-        sig { returns(T.nilable(T::Array[Dependabot::DependencyFile])) }
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
         def updated_dependency_files
-          @updated_dependency_files ||= fetch_updated_dependency_files
+          @updated_dependency_files ||= T.let(fetch_updated_dependency_files, T.nilable(T::Array[Dependabot::DependencyFile]))
         end
 
         private
@@ -52,11 +51,11 @@ module Dependabot
           dependencies.first
         end
 
-        sig { returns(T.nilable(T::Array[Dependabot::DependencyFile])) }
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
         def fetch_updated_dependency_files
-          reqs = dependency&.requirements&.zip(T.must(dependency).previous_requirements || [])
+          reqs = dependency&.requirements&.zip(T.must(dependency).previous_requirements || []) || []
 
-          reqs&.filter_map do |(new_req, old_req)|
+          reqs.filter_map do |(new_req, old_req)|
             next if new_req == old_req
 
             file = get_original_file(new_req.fetch(:file)).dup

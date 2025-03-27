@@ -197,11 +197,11 @@ module Dependabot
           args[:requirements] = new_reqs
           args[:previous_requirements] = old_reqs
 
-          T.must(RequirementFileUpdater.new(
+          RequirementFileUpdater.new(
             dependencies: [Dependency.new(**T.unsafe(args))],
             dependency_files: files,
             credentials: credentials
-          ).updated_dependency_files)
+          ).updated_dependency_files
         end
 
         sig do
