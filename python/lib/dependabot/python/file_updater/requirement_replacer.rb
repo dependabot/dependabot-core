@@ -20,7 +20,7 @@ module Dependabot
 
         sig do
           params(
-            content: String,
+            content: T.nilable(String),
             dependency_name: String,
             old_requirement: T.nilable(String),
             new_requirement: T.nilable(String),
@@ -38,10 +38,10 @@ module Dependabot
           @index_urls = index_urls
         end
 
-        sig { returns(String) }
+        sig { returns(T.nilable(String)) }
         def updated_content
           updated_content =
-            content.gsub(original_declaration_replacement_regex) do |mtch|
+            content&.gsub(original_declaration_replacement_regex) do |mtch|
               # If the "declaration" is setting an option (e.g., no-binary)
               # ignore it, since it isn't actually a declaration
               next mtch if Regexp.last_match&.pre_match&.match?(/--.*\z/)
@@ -56,7 +56,7 @@ module Dependabot
 
         private
 
-        sig { returns(String) }
+        sig { returns(T.nilable(String)) }
         attr_reader :content
 
         sig { returns(String) }
@@ -84,7 +84,8 @@ module Dependabot
 
           if add_space_after_operators?
             new_req_string =
-              new_req_string&.gsub(/(?<=\d)\s*(#{RequirementParser::COMPARISON})\s*(?=\d)/o, '\1 ')
+              new_req_string
+              &.gsub(/(?<=\d)\s*(#{RequirementParser::COMPARISON})\s*(?=\d)/o, '\1 ')
           end
 
           new_req_string.to_s
@@ -207,11 +208,11 @@ module Dependabot
           dec =
             if old_req.nil?
               regex = RequirementParser::INSTALL_REQ_WITHOUT_REQUIREMENT
-              content.scan(regex) { matches << Regexp.last_match }
+              content&.scan(regex) { matches << Regexp.last_match }
               matches.find { |m| normalise(m[:name]) == dependency_name }
             else
               regex = RequirementParser::INSTALL_REQ_WITH_REQUIREMENT
-              content.scan(regex) { matches << Regexp.last_match }
+              content&.scan(regex) { matches << Regexp.last_match }
               matches
                 .select { |m| normalise(m[:name]) == dependency_name }
                 .find { |m| requirements_match(m[:requirements], old_req) }
