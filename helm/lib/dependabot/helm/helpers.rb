@@ -18,17 +18,17 @@ module Dependabot
 
         Dependabot::SharedHelpers.run_shell_command(
           "helm search repo #{name} --versions --output=json",
-          fingerprint: "helm search repo <name> --versions --output=json"
+          fingerprint: "helm search repo #{name} --versions --output=json"
         ).strip
       end
 
-      sig { params(repo_name: String, repo_url: String).returns(String) }
-      def self.add_repo(repo_name, repo_url)
-        Dependabot.logger.info("Adding Helm repository: #{repo_name} (#{repo_url})")
+      sig { params(repo_name: String, repository_url: String).returns(String) }
+      def self.add_repo(repo_name, repository_url)
+        Dependabot.logger.info("Adding Helm repository: #{repo_name} (#{repository_url})")
 
         Dependabot::SharedHelpers.run_shell_command(
-          "helm repo add #{repo_name} #{repo_url}",
-          fingerprint: "helm repo add <repo_name> <repo_url>"
+          "helm repo add #{repo_name} #{repository_url}",
+          fingerprint: "helm repo add #{repo_name} #{repository_url}"
         )
       end
 
@@ -50,6 +50,21 @@ module Dependabot
           "helm dependency update",
           fingerprint: "helm dependency update"
         )
+      end
+
+      sig { params(username: String, password: String, repository_url: String).returns(String) }
+      def self.registry_login(username, password, repository_url)
+        Dependabot.logger.info("Logging into Helm registry \"#{repository_url}\"")
+
+        Dependabot::SharedHelpers.run_shell_command(
+          "helm registry login --username #{username} --password #{password} #{repository_url}",
+          fingerprint: "helm registry login --username #{username} --password #{password} #{repository_url}"
+        )
+      rescue StandardError => e
+        Dependabot.logger.error(
+          "Failed to authenticate for #{repository_url}: #{e.message}"
+        )
+        raise
       end
     end
   end
