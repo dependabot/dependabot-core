@@ -5,6 +5,7 @@ require "dependabot/python/requirement_parser"
 require "dependabot/python/file_updater"
 require "dependabot/shared_helpers"
 require "dependabot/python/native_helpers"
+require "sorbet-runtime"
 
 module Dependabot
   module Python
