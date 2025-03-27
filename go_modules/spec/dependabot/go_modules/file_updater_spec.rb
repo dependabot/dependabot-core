@@ -166,10 +166,8 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       let(:project_name) { "toolchain" }
       let(:files) { [go_mod] }
 
-      it "adds a toolchain directive when required by a dependency" do
-        # Since the go.mod file specifies 'go 1.20' but includes a dependency requiring 'go1.24.1',
-        # the toolchain directive should be added.
-        expect(updated_files.first.content).to include("toolchain")
+      it "doesn't add a toolchain directive" do
+        expect(updated_files.first.content).not_to include("toolchain")
       end
     end
 
