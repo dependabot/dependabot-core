@@ -62,6 +62,16 @@ public class MiscellaneousTests
         Assert.Equal(expectedUpdateOperations, actualUpdateOperations);
     }
 
+    [Theory]
+    [InlineData("/src/project.csproj", "/src/project.csproj")] // correct casing
+    [InlineData("/src/project.csproj", "/SRC/PROJECT.csproj")] // incorrect casing
+    public async Task EnsureCorrectFileCasing(string filePathOnDisk, string candidatePath)
+    {
+        using var tempDir = await TemporaryDirectory.CreateWithContentsAsync((filePathOnDisk, "contents unimportant"));
+        var actualRepoRelativePath = RunWorker.EnsureCorrectFileCasing(candidatePath, tempDir.DirectoryPath);
+        Assert.Equal(filePathOnDisk, actualRepoRelativePath);
+    }
+
     public static IEnumerable<object[]> GetUpdateOperationsData()
     {
         static ProjectDiscoveryResult GetProjectDiscovery(string filePath, params string[] dependencyNames)
