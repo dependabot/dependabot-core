@@ -1,6 +1,6 @@
 pip==24.0
 pip-tools==7.4.1
-flake8==7.1.0
+flake8==7.1.2
 hashin==1.0.3
 pipenv==2024.4.1
 plette==2.1.0
@@ -9,4 +9,4 @@ poetry==2.1.1
 tomli==2.0.1
 
 # Some dependencies will only install if Cython is present
-Cython==3.0.10
+Cython==3.0.12
