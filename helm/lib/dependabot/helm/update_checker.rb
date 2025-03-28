@@ -151,7 +151,7 @@ module Dependabot
         Dependabot.logger.info("Fetching releases for Helm chart: #{chart_name}")
 
         if repo_name && repo_url
-          authenticate_repository_source(repo_url)
+          authenticate_registry_source(repo_url)
           begin
             Helpers.add_repo(repo_name, repo_url)
             Helpers.update_repo
@@ -177,7 +177,7 @@ module Dependabot
       end
 
       sig { params(repo_url: T.nilable(String)).returns(T.nilable(String)) }
-      def authenticate_repository_source(repo_url)
+      def authenticate_registry_source(repo_url)
         return unless repo_url
 
         repo_creds = Shared::Utils::CredentialsFinder.new(@credentials, private_repository_type: "helm_repository")
