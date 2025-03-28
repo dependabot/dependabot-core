@@ -1,7 +1,7 @@
 FROM ghcr.io/dependabot/dependabot-updater-core
 
 # Check for updates at https://github.com/nodejs/corepack/releases
-ARG COREPACK_VERSION=0.31.0
+ARG COREPACK_VERSION=0.32.0
 
 # Check for updates at https://github.com/pnpm/pnpm/releases
 ARG PNPM_VERSION=9.15.5

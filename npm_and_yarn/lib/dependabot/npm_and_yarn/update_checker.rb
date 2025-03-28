@@ -342,7 +342,8 @@ module Dependabot
       def latest_resolvable_transitive_security_fix_version_with_no_unlock
         versions = T.let([], T::Array[Gem::Version])
 
-        versions.push(T.must(latest_released_version)) if latest_released_version
+        latest_released_ver = latest_released_version
+        versions.push(latest_released_ver) if latest_released_ver
 
         fix_possible = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(
           versions,
