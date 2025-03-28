@@ -124,9 +124,7 @@ module Dependabot
 
         # For transitive dependencies without conflicts, return the latest resolvable transitive
         # security fix version that does not require unlocking other dependencies.
-        unless dependency.top_level?
-          return Version.new(latest_resolvable_transitive_security_fix_version_with_no_unlock)
-        end
+        return latest_resolvable_transitive_security_fix_version_with_no_unlock unless dependency.top_level?
 
         # For top-level dependencies, return the lowest security fix version.
         # TODO: Consider checking resolvability here in the future.
@@ -338,7 +336,7 @@ module Dependabot
         )
       end
 
-      sig { returns(T.nilable(T.any(String, Gem::Version))) }
+      sig { returns(T.nilable(T.any(String, Gem::Version, T.untyped))) }
       def latest_resolvable_transitive_security_fix_version_with_no_unlock
         versions = T.let([], T::Array[Gem::Version])
 
