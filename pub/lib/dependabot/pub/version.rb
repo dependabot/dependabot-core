@@ -1,5 +1,7 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
+
+require "sorbet-runtime"
 
 require "dependabot/version"
 require "dependabot/utils"
@@ -22,12 +24,14 @@ module Dependabot
       VERSION_PATTERN = T.let(Gem::Version::VERSION_PATTERN + "(\\+[0-9a-zA-Z\\-.]+)?", String)
       ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/
 
-      sig { returns(String) }
+      sig { returns(T.nilable(String)) }
       attr_reader :build_info
 
       sig { override.params(version: VersionParameter).void }
       def initialize(version)
         @version_string = T.let(version.to_s, String)
+        @build_info = T.let(nil, T.nilable(String))
+
         version, @build_info = version.to_s.split("+") if version.to_s.include?("+")
 
         super(T.must(version))

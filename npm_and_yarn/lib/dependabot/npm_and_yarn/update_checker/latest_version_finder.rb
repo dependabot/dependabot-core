@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "excon"
@@ -14,20 +14,42 @@ require "sorbet-runtime"
 module Dependabot
   module NpmAndYarn
     class UpdateChecker
-      class LatestVersionFinder
+      class LatestVersionFinder # rubocop:disable Metrics/ClassLength
         extend T::Sig
 
-        def initialize(dependency:, credentials:, dependency_files:,
-                       ignored_versions:, security_advisories:,
-                       raise_on_ignored: false)
+        sig do
+          params(
+            dependency: Dependabot::Dependency,
+            dependency_files: T::Array[Dependabot::DependencyFile],
+            credentials: T::Array[Dependabot::Credential],
+            ignored_versions: T::Array[String],
+            security_advisories: T::Array[Dependabot::SecurityAdvisory],
+            raise_on_ignored: T::Boolean
+          ).void
+        end
+        def initialize(
+          dependency:,
+          dependency_files:,
+          credentials:,
+          ignored_versions:,
+          security_advisories:,
+          raise_on_ignored: false
+        )
           @dependency          = dependency
           @credentials         = credentials
           @dependency_files    = dependency_files
           @ignored_versions    = ignored_versions
           @raise_on_ignored    = raise_on_ignored
           @security_advisories = security_advisories
+
+          @possible_previous_versions_with_details = T.let(nil, T.nilable(T::Array[T::Array[T.untyped]]))
+          @yanked = T.let({}, T::Hash[Version, T.nilable(T::Boolean)])
+          @npm_details = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
+          @registry_finder = T.let(nil, T.nilable(Package::RegistryFinder))
+          @version_endpoint_working = T.let(nil, T.nilable(T::Boolean))
         end
 
+        sig { returns(T.nilable(Version)) }
         def latest_version_from_registry
           return unless valid_npm_details?
           return version_from_dist_tags if version_from_dist_tags
@@ -40,6 +62,7 @@ module Dependabot
           # our problem, so we quietly return `nil` here.
         end
 
+        sig { returns(T.nilable(Version)) }
         def latest_version_with_no_unlock
           return unless valid_npm_details?
           return version_from_dist_tags if specified_dist_tag_requirement?
@@ -52,6 +75,7 @@ module Dependabot
           # our problem, so we quietly return `nil` here.
         end
 
+        sig { returns(T.nilable(Version)) }
         def lowest_security_fix_version
           return unless valid_npm_details?
 
@@ -74,15 +98,23 @@ module Dependabot
           # our problem, so we quietly return `nil` here.
         end
 
-        def possible_previous_versions_with_details
-          @possible_previous_versions_with_details ||= npm_details.fetch("versions", {})
-                                                                  .transform_keys { |k| version_class.new(k) }
-                                                                  .reject do |v, _|
-                                                                    v.prerelease? && !related_to_current_pre?(v)
-                                                                  end
-                                                                  .sort_by(&:first).reverse
+        sig { returns(T::Array[T::Array[T.untyped]]) }
+        def possible_previous_versions_with_details # rubocop:disable Metrics/PerceivedComplexity
+          return @possible_previous_versions_with_details if @possible_previous_versions_with_details
+
+          @possible_previous_versions_with_details =
+            npm_details&.fetch("versions", {})
+                       &.transform_keys { |k| version_class.new(k) }
+                       &.reject do |v, _|
+              v.prerelease? && !related_to_current_pre?(v)
+            end&.sort_by(&:first)&.reverse
+          @possible_previous_versions_with_details
         end
 
+        sig do
+          params(filter_ignored: T::Boolean)
+            .returns(T::Array[T::Array[T.untyped]])
+        end
         def possible_versions_with_details(filter_ignored: true)
           versions = possible_previous_versions_with_details
                      .reject { |_, details| details["deprecated"] }
@@ -92,6 +124,10 @@ module Dependabot
           versions
         end
 
+        sig do
+          params(filter_ignored: T::Boolean)
+            .returns(T::Array[Version])
+        end
         def possible_versions(filter_ignored: true)
           possible_versions_with_details(filter_ignored: filter_ignored)
             .map(&:first)
@@ -99,12 +135,18 @@ module Dependabot
 
         private
 
+        sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
+        sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
+        sig { returns(T::Array[String]) }
         attr_reader :ignored_versions
+        sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
         attr_reader :security_advisories
 
+        sig { returns(T::Boolean) }
         def valid_npm_details?
           !npm_details&.fetch("dist-tags", nil).nil?
         end
@@ -145,8 +187,13 @@ module Dependabot
             .select { |version, _| version > dependency.numeric_version }
         end
 
+        sig { returns(T.nilable(Version)) }
         def version_from_dist_tags
-          dist_tags = npm_details["dist-tags"].keys
+          details = npm_details
+
+          return nil unless details
+
+          dist_tags = details["dist-tags"].keys
 
           # Check if a dist tag was specified as a requirement. If it was, and
           # it exists, use it.
@@ -156,22 +203,23 @@ module Dependabot
 
           if dist_tag_req
             tag_vers =
-              version_class.new(npm_details["dist-tags"][dist_tag_req])
+              version_class.new(details["dist-tags"][dist_tag_req])
             return tag_vers unless yanked?(tag_vers)
           end
 
           # Use the latest dist tag unless there's a reason not to
-          return nil unless npm_details["dist-tags"]["latest"]
+          return nil unless details["dist-tags"]["latest"]
 
-          latest = version_class.new(npm_details["dist-tags"]["latest"])
+          latest = version_class.new(details["dist-tags"]["latest"])
 
           wants_latest_dist_tag?(latest) ? latest : nil
         end
 
+        sig { params(version: Version).returns(T::Boolean) }
         def related_to_current_pre?(version)
           current_version = dependency.numeric_version
           if current_version&.prerelease? &&
-             current_version&.release == version.release
+             current_version.release == version.release
             return true
           end
 
@@ -188,6 +236,7 @@ module Dependabot
           end
         end
 
+        sig { returns(T::Boolean) }
         def specified_dist_tag_requirement?
           dependency.requirements.any? do |req|
             next false if req[:requirement].nil?
@@ -197,6 +246,7 @@ module Dependabot
           end
         end
 
+        sig { params(latest_version: Version).returns(T::Boolean) }
         def wants_latest_dist_tag?(latest_version)
           ver = latest_version
           return false if related_to_current_pre?(ver) ^ ver.prerelease?
@@ -208,12 +258,14 @@ module Dependabot
           true
         end
 
+        sig { params(version: Version).returns(T::Boolean) }
         def current_version_greater_than?(version)
           return false unless dependency.numeric_version
 
-          dependency.numeric_version > version
+          T.must(dependency.numeric_version) > version
         end
 
+        sig { params(version: Version).returns(T::Boolean) }
         def current_requirement_greater_than?(version)
           dependency.requirements.any? do |req|
             next false unless req[:requirement]
@@ -225,9 +277,9 @@ module Dependabot
           end
         end
 
+        sig { params(version: Version).returns(T::Boolean) }
         def yanked?(version)
-          @yanked ||= {}
-          return @yanked[version] if @yanked.key?(version)
+          return @yanked[version] || false if @yanked.key?(version)
 
           @yanked[version] =
             begin
@@ -257,12 +309,15 @@ module Dependabot
               # Give the benefit of the doubt if the registry is playing up
               false
             end
+
+          @yanked[version] || false
         end
 
+        sig { returns(T.nilable(T::Boolean)) }
         def version_endpoint_working?
           return true if dependency_registry == "registry.npmjs.org"
 
-          return @version_endpoint_working if defined?(@version_endpoint_working)
+          return @version_endpoint_working if @version_endpoint_working
 
           @version_endpoint_working =
             begin
@@ -274,16 +329,21 @@ module Dependabot
               # Give the benefit of the doubt if the registry is playing up
               true
             end
+          @version_endpoint_working
         end
 
+        sig { returns(T.nilable(T::Hash[String, T.untyped])) }
         def npm_details
-          return @npm_details if defined?(@npm_details)
+          return @npm_details if @npm_details
 
           @npm_details = fetch_npm_details
         end
 
+        sig { returns(T.nilable(T::Hash[String, T.untyped])) }
         def fetch_npm_details
           npm_response = fetch_npm_response
+
+          return nil unless npm_response
 
           check_npm_response(npm_response)
           JSON.parse(npm_response.body)
@@ -298,6 +358,7 @@ module Dependabot
           end
         end
 
+        sig { returns(T.nilable(Excon::Response)) }
         def fetch_npm_response
           response = Dependabot::RegistryClient.get(
             url: dependency_url,
@@ -307,7 +368,7 @@ module Dependabot
           return response unless registry_auth_headers["Authorization"]
 
           auth = registry_auth_headers["Authorization"]
-          return response unless auth.start_with?("Basic")
+          return response unless auth&.start_with?("Basic")
 
           decoded_token = Base64.decode64(auth.gsub("Basic ", ""))
           return unless decoded_token.include?(":")
@@ -324,6 +385,7 @@ module Dependabot
           raise DependencyFileNotResolvable, e.message
         end
 
+        sig { params(npm_response: Excon::Response).void }
         def check_npm_response(npm_response)
           return if git_dependency?
 
@@ -357,6 +419,7 @@ module Dependabot
           raise RegistryError.new(status, msg)
         end
 
+        sig { params(error: Exception).void }
         def raise_npm_details_error(error)
           raise if dependency_registry == "registry.npmjs.org"
           raise unless error.is_a?(Excon::Error::Timeout)
@@ -364,6 +427,7 @@ module Dependabot
           raise PrivateSourceTimedOut, dependency_registry
         end
 
+        sig { params(npm_response: Excon::Response).returns(T::Boolean) }
         def private_dependency_not_reachable?(npm_response)
           return true if npm_response.body.start_with?(/user ".*?" is not a /)
           return false unless [401, 402, 403, 404].include?(npm_response.status)
@@ -381,6 +445,7 @@ module Dependabot
           true
         end
 
+        sig { params(npm_response: Excon::Response).returns(T::Boolean) }
         def private_dependency_server_error?(npm_response)
           if [500, 501, 502, 503].include?(npm_response.status)
             Dependabot.logger.warn("#{dependency_registry} returned code #{npm_response.status} with " \
@@ -390,6 +455,7 @@ module Dependabot
           false
         end
 
+        sig { params(npm_response: Excon::Response).returns(T::Boolean) }
         def response_invalid_json?(npm_response)
           result = JSON.parse(npm_response.body)
           result.is_a?(Hash) || result.is_a?(Array)
@@ -398,53 +464,66 @@ module Dependabot
           true
         end
 
+        sig { returns(String) }
         def dependency_url
           registry_finder.dependency_url
         end
 
+        sig { returns(String) }
         def dependency_registry
           registry_finder.registry
         end
 
+        sig { returns(T::Hash[String, String]) }
         def registry_auth_headers
           registry_finder.auth_headers
         end
 
+        sig { returns(Package::RegistryFinder) }
         def registry_finder
-          @registry_finder ||= Package::RegistryFinder.new(
+          return @registry_finder if @registry_finder
+
+          @registry_finder = Package::RegistryFinder.new(
             dependency: dependency,
             credentials: credentials,
             npmrc_file: npmrc_file,
             yarnrc_file: yarnrc_file,
             yarnrc_yml_file: yarnrc_yml_file
           )
+          @registry_finder
         end
 
+        sig { returns(T::Array[Dependabot::Requirement]) }
         def ignore_requirements
           ignored_versions.flat_map { |req| requirement_class.requirements_array(req) }
         end
 
+        sig { returns(T.class_of(Version)) }
         def version_class
-          dependency.version_class
+          Dependabot::NpmAndYarn::Version
         end
 
+        sig { returns(T.class_of(Requirement)) }
         def requirement_class
-          dependency.requirement_class
+          Dependabot::NpmAndYarn::Requirement
         end
 
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def npmrc_file
           dependency_files.find { |f| f.name.end_with?(".npmrc") }
         end
 
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def yarnrc_file
           dependency_files.find { |f| f.name.end_with?(".yarnrc") }
         end
 
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def yarnrc_yml_file
           dependency_files.find { |f| f.name.end_with?(".yarnrc.yml") }
         end
 
-        # TODO: Remove need for me
+        sig { returns(T::Boolean) }
         def git_dependency?
           # ignored_version/raise_on_ignored are irrelevant.
           GitCommitChecker.new(

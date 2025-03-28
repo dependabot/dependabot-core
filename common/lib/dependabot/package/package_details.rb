@@ -33,6 +33,9 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::Package::PackageRelease]) }
       attr_reader :releases
+
+      sig { returns(T.nilable(T::Hash[String, String])) }
+      attr_reader :dist_tags
     end
   end
 end
