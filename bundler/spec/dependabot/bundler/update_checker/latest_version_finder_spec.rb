@@ -6,6 +6,7 @@ require "shared_contexts"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/bundler/update_checker/latest_version_finder"
+require "dependabot/package/package_latest_version_finder"
 
 RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
   let(:finder) do
@@ -61,21 +62,24 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         rubygems_response = fixture("ruby", "rubygems_response_versions.json")
         stub_request(:get, rubygems_url + "versions/business.json")
           .to_return(status: 200, body: rubygems_response)
+          .to_return(status: 200, body: rubygems_response)
       end
 
       its([:version]) { is_expected.to eq(Gem::Version.new("1.5.0")) }
 
-      it "only hits Rubygems once" do
+      it "hits Rubygems twice" do
         finder.latest_version_details
         finder.latest_version_details
         expect(WebMock)
-          .to have_requested(:get, rubygems_url + "versions/business.json").once
+          .to have_requested(:get, rubygems_url + "versions/business.json").twice
       end
 
       context "when the gem isn't on Rubygems" do
         before do
           stub_request(:get, rubygems_url + "versions/business.json")
             .to_return(status: 404, body: "This rubygem could not be found.")
+
+          allow_any_instance_of(described_class).to receive(:package_details).and_return(nil) # rubocop:disable RSpec/AnyInstance
         end
 
         it { is_expected.to be_nil }
