@@ -45,8 +45,9 @@ RSpec.describe Dependabot::Shared::Utils::CredentialsFinder do
     end
 
     context "with a helm registry" do
-      subject(:finder) { described_class.new(credentials, private_repository_type: "helm_registry") }
+      subject(:found_credentials) { finder.credentials_for_registry(registry) }
 
+      let(:finder) { described_class.new(credentials, private_repository_type: "helm_registry") }
       let(:registry) { "my.registry.com" }
       let(:credentials) do
         [Dependabot::Credential.new({
