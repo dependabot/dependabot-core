@@ -77,10 +77,22 @@ RSpec.describe Dependabot::NpmAndYarn::Package::RegistryFinder do
       end
     end
 
+    context "with a global npm registry containing spaces" do
+      let(:npmrc_file) { Dependabot::DependencyFile.new(name: ".npmrc", content: "registry=http://example.com/registry  with spaces") }
+
+      it { is_expected.to eq("http://example.com/registry%20with%20spaces") }
+    end
+
     context "with a global yarn registry" do
       let(:yarnrc_file) { Dependabot::DependencyFile.new(name: ".yarnrc", content: 'registry "http://example.com"') }
 
       it { is_expected.to eq("http://example.com") }
+    end
+
+    context "with a global yarn registry containing spaces" do
+      let(:yarnrc_file) { Dependabot::DependencyFile.new(name: ".yarnrc", content: 'registry "http://example.com/registry  with spaces"') }
+
+      it { is_expected.to eq("http://example.com/registry%20with%20spaces") }
     end
 
     context "with a global yarn registry not wrapped in quotes" do
@@ -95,6 +107,14 @@ RSpec.describe Dependabot::NpmAndYarn::Package::RegistryFinder do
       end
 
       it { is_expected.to eq("https://example.com") }
+    end
+
+    context "with a global yarn berry registry containing a space" do
+      let(:yarnrc_yml_file) do
+        Dependabot::DependencyFile.new(name: ".yarnrc.yml", content: 'npmRegistryServer: "https://example.com/registry  with spaces"')
+      end
+
+      it { is_expected.to eq("https://example.com/registry%20with%20spaces") }
     end
 
     context "with a scoped npm registry" do
@@ -512,6 +532,14 @@ RSpec.describe Dependabot::NpmAndYarn::Package::RegistryFinder do
       end
 
       it { is_expected.to eq("http://npm.mine.io/dependabot/etag") }
+    end
+
+    context "with a private registry source containing spaces" do
+      let(:source) do
+        { type: "registry", url: "http://npm.mine.io/dependabot  with spaces/" }
+      end
+
+      it { is_expected.to eq("http://npm.mine.io/dependabot%20with%20spaces/etag") }
     end
 
     context "when multiple js sources are provided" do
