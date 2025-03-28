@@ -142,8 +142,10 @@ module Dependabot
       relevant_dependencies = updated_dependencies.reject(&:informational_only?)
       # Exclude support files unless the package manager is submodules
       updated_files = file_updater_for(relevant_dependencies).updated_dependency_files
-      if updated_dependencies.any? && T.must(updated_dependencies.first).package_manager != "submodules"
+      if updated_files
         updated_files.reject!(&:support_file)
+      else
+        Dependabot.logger.warn("No updated dependency files found.")
       end
       updated_files
     end
