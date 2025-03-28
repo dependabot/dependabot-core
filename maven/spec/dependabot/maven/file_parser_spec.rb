@@ -118,6 +118,33 @@ RSpec.describe Dependabot::Maven::FileParser do
       end
     end
 
+    context "with target-file" do
+      let(:files) { [targetfile, pom] }
+      let(:targetfile) do
+        Dependabot::DependencyFile.new(name: "releng/myproject.target", content: targetfile_body)
+      end
+      let(:targetfile_body) { fixture("target-files", "example.target") }
+
+      describe "the sole dependency" do
+        subject(:dependency) { dependencies[3] }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("commons-io:commons-io")
+          expect(dependency.version).to eq("2.11.0")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "2.11.0",
+              file: "releng/myproject.target",
+              groups: [],
+              source: nil,
+              metadata: { packaging_type: "jar" }
+            }]
+          )
+        end
+      end
+    end
+
     context "with rogue whitespace" do
       let(:pom_body) { fixture("poms", "whitespace.xml") }
 

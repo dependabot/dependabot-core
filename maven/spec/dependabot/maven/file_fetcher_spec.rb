@@ -28,10 +28,38 @@ RSpec.describe Dependabot::Maven::FileFetcher do
     )
   end
 
+  let(:file_fetcher_instance) do # rubocop:disable RSpec/OverwritingSetup
+    described_class.new(source: source, credentials: credentials, repo_contents_path: nil)
+  end
+
   before do
     allow(file_fetcher_instance).to receive(:commit).and_return("sha")
 
     stub_request(:get, File.join(url, ".mvn?ref=sha"))
+      .with(headers: { "Authorization" => "token token" })
+      .to_return(
+        status: 404
+      )
+    allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+
+    stub_request(:get, File.join(url, ".mvn?ref=sha"))
+      .with(headers: { "Authorization" => "token token" })
+      .to_return(
+        status: 404
+      )
+    stub_request(:get, /.*\?ref=sha/)
+      .with(headers: { "Authorization" => "token token" })
+      .to_return(
+        status: 404
+      )
+    allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+
+    stub_request(:get, File.join(url, ".mvn?ref=sha"))
+      .with(headers: { "Authorization" => "token token" })
+      .to_return(
+        status: 404
+      )
+    stub_request(:get, /.*\?ref=sha/)
       .with(headers: { "Authorization" => "token token" })
       .to_return(
         status: 404
