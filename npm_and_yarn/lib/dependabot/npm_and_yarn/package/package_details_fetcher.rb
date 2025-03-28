@@ -33,6 +33,8 @@ module Dependabot
           @npm_details = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
           @dist_tags = T.let(nil, T.nilable(T::Hash[String, String]))
           @registry_finder = T.let(nil, T.nilable(Package::RegistryFinder))
+          @version_endpoint_working = T.let(nil, T.nilable(T::Boolean))
+          @yanked = T.let({}, T::Hash[Gem::Version, T.nilable(T::Boolean)])
         end
 
         sig { returns(Dependabot::Dependency) }
@@ -46,7 +48,7 @@ module Dependabot
 
         sig { returns(T.nilable(Dependabot::Package::PackageDetails)) }
         def fetch
-          package_data = fetch_npm_details
+          package_data = npm_details
           Dependabot::Package::PackageDetails.new(
             dependency: @dependency,
             releases: package_data ? parse_versions(package_data) : [],
@@ -69,7 +71,67 @@ module Dependabot
           registry_finder.custom_registry?
         end
 
+        sig { returns(String) }
+        def dependency_url
+          registry_finder.dependency_url
+        end
+
+        sig { params(version: Gem::Version).returns(T::Boolean) }
+        def yanked?(version)
+          return @yanked[version] || false if @yanked.key?(version)
+
+          @yanked[version] =
+            begin
+              if dependency_registry == "registry.npmjs.org"
+                status = Dependabot::RegistryClient.head(
+                  url: registry_finder.tarball_url(version),
+                  headers: registry_auth_headers
+                ).status
+              else
+                status = Dependabot::RegistryClient.get(
+                  url: dependency_url + "/#{version}",
+                  headers: registry_auth_headers
+                ).status
+
+                if status == 404
+                  # Some registries don't handle escaped package names properly
+                  status = Dependabot::RegistryClient.get(
+                    url: dependency_url.gsub("%2F", "/") + "/#{version}",
+                    headers: registry_auth_headers
+                  ).status
+                end
+              end
+
+              version_not_found = status == 404
+              version_not_found && version_endpoint_working?
+            rescue Excon::Error::Timeout, Excon::Error::Socket
+              # Give the benefit of the doubt if the registry is playing up
+              false
+            end
+
+          @yanked[version] || false
+        end
+
         private
+
+        sig { returns(T.nilable(T::Boolean)) }
+        def version_endpoint_working?
+          return true if dependency_registry == "registry.npmjs.org"
+
+          return @version_endpoint_working if @version_endpoint_working
+
+          @version_endpoint_working =
+            begin
+              Dependabot::RegistryClient.get(
+                url: dependency_url + "/latest",
+                headers: registry_auth_headers
+              ).status < 400
+            rescue Excon::Error::Timeout, Excon::Error::Socket
+              # Give the benefit of the doubt if the registry is playing up
+              true
+            end
+          @version_endpoint_working
+        end
 
         sig do
           params(
@@ -85,7 +147,7 @@ module Dependabot
           versions_data.filter_map do |version, details|
             next unless Dependabot::NpmAndYarn::Version.correct?(version)
 
-            package_type = details.dig("repository", "type")
+            package_type = infer_package_type(details)
 
             deprecated = details["deprecated"]
 
@@ -139,9 +201,11 @@ module Dependabot
           check_npm_response(npm_response) if npm_response
           JSON.parse(npm_response.body)
         rescue JSON::ParserError, Excon::Error::Timeout, Excon::Error::Socket, RegistryError => e
-          return nil if git_dependency?
-
-          raise_npm_details_error(e)
+          if git_dependency?
+            nil
+          else
+            raise_npm_details_error(e)
+          end
         end
 
         sig { returns(Excon::Response) }
@@ -182,6 +246,32 @@ module Dependabot
           )
         rescue URI::InvalidURIError => e
           raise DependencyFileNotResolvable, e.message
+        end
+
+        sig do
+          params(
+            details: T::Hash[String, T.untyped],
+            git_dependency: T::Boolean
+          )
+            .returns(String)
+        end
+        def infer_package_type(details, git_dependency: false)
+          repository = details["repository"]
+
+          return "git" if git_dependency
+
+          if repository.is_a?(String)
+            return "git" if repository.start_with?("git+")
+
+            return "npm"
+          end
+
+          if repository.is_a?(Hash)
+            type = repository["type"]
+            return "git" if type == "git"
+          end
+
+          "npm"
         end
 
         sig { params(npm_response: Excon::Response).void }
@@ -261,11 +351,6 @@ module Dependabot
           false
         rescue JSON::ParserError, TypeError
           true
-        end
-
-        sig { returns(String) }
-        def dependency_url
-          registry_finder.dependency_url
         end
 
         sig { returns(T::Hash[String, String]) }
