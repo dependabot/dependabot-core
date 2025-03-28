@@ -48,13 +48,18 @@ function Update-Files {
     $baseCommitSha = git rev-parse HEAD
     Pop-Location
 
-    & $updaterTool run `
-        --job-path $env:DEPENDABOT_JOB_PATH `
-        --repo-contents-path $env:DEPENDABOT_REPO_CONTENTS_PATH `
-        --api-url $env:DEPENDABOT_API_URL `
-        --job-id $env:DEPENDABOT_JOB_ID `
-        --output-path $env:DEPENDABOT_OUTPUT_PATH `
-        --base-commit-sha $baseCommitSha
+    $arguments = @()
+    $arguments += "--job-path `"$env:DEPENDABOT_JOB_PATH`""
+    $arguments += "--repo-contents-path `"$env:DEPENDABOT_REPO_CONTENTS_PATH`""
+    $arguments += "--api-url `"$env:DEPENDABOT_API_URL`""
+    $arguments += "--job-id `"$env:DEPENDABOT_JOB_ID`""
+    $arguments += "--output-path `"$env:DEPENDABOT_OUTPUT_PATH`""
+    $arguments += "--base-commit-sha `"$baseCommitSha`""
+    if ("$env:DEPENDABOT_CASE_INSENSITIVE_REPO_CONTENTS_PATH" -ne "") {
+        $arguments += "--case-insensitive-repo-contents-path `"$env:DEPENDABOT_CASE_INSENSITIVE_REPO_CONTENTS_PATH`""
+    }
+
+    Invoke-Expression -Command "$updaterTool run $arguments"
     $script:operationExitCode = $LASTEXITCODE
 }
 

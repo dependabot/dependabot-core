@@ -43,21 +43,21 @@ public class RunWorker
         _updaterWorker = updateWorker;
     }
 
-    public async Task RunAsync(FileInfo jobFilePath, DirectoryInfo repoContentsPath, string baseCommitSha, FileInfo outputFilePath)
+    public async Task RunAsync(FileInfo jobFilePath, DirectoryInfo repoContentsPath, DirectoryInfo? caseInsensitiveRepoContentsPath, string baseCommitSha, FileInfo outputFilePath)
     {
         var jobFileContent = await File.ReadAllTextAsync(jobFilePath.FullName);
         var jobWrapper = Deserialize(jobFileContent);
-        var result = await RunAsync(jobWrapper.Job, repoContentsPath, baseCommitSha);
+        var result = await RunAsync(jobWrapper.Job, repoContentsPath, caseInsensitiveRepoContentsPath, baseCommitSha);
         var resultJson = JsonSerializer.Serialize(result, SerializerOptions);
         await File.WriteAllTextAsync(outputFilePath.FullName, resultJson);
     }
 
-    public Task<RunResult> RunAsync(Job job, DirectoryInfo repoContentsPath, string baseCommitSha)
+    public Task<RunResult> RunAsync(Job job, DirectoryInfo repoContentsPath, DirectoryInfo? caseInsensitiveRepoContentsPath, string baseCommitSha)
     {
-        return RunWithErrorHandlingAsync(job, repoContentsPath, baseCommitSha);
+        return RunWithErrorHandlingAsync(job, repoContentsPath, caseInsensitiveRepoContentsPath, baseCommitSha);
     }
 
-    private async Task<RunResult> RunWithErrorHandlingAsync(Job job, DirectoryInfo repoContentsPath, string baseCommitSha)
+    private async Task<RunResult> RunWithErrorHandlingAsync(Job job, DirectoryInfo repoContentsPath, DirectoryInfo? caseInsensitiveRepoContentsPath, string baseCommitSha)
     {
         JobErrorBase? error = null;
         var currentDirectory = repoContentsPath.FullName; // used for error reporting below
@@ -77,7 +77,7 @@ public class RunWorker
             {
                 var localPath = PathHelper.JoinPath(repoContentsPath.FullName, directory);
                 currentDirectory = localPath;
-                var result = await RunForDirectory(job, repoContentsPath, directory, baseCommitSha, experimentsManager);
+                var result = await RunForDirectory(job, repoContentsPath, caseInsensitiveRepoContentsPath, directory, baseCommitSha, experimentsManager);
                 foreach (var dependencyFile in result.Base64DependencyFiles)
                 {
                     var uniqueKey = Path.GetFullPath(Path.Join(dependencyFile.Directory, dependencyFile.Name)).NormalizePathToUnix().EnsurePrefix("/");
@@ -106,8 +106,9 @@ public class RunWorker
         return runResult;
     }
 
-    private async Task<RunResult> RunForDirectory(Job job, DirectoryInfo repoContentsPath, string repoDirectory, string baseCommitSha, ExperimentsManager experimentsManager)
+    private async Task<RunResult> RunForDirectory(Job job, DirectoryInfo originalRepoContentsPath, DirectoryInfo? caseInsensitiveRepoContentsPath, string repoDirectory, string baseCommitSha, ExperimentsManager experimentsManager)
     {
+        var repoContentsPath = caseInsensitiveRepoContentsPath ?? originalRepoContentsPath;
         var discoveryResult = await _discoveryWorker.RunAsync(repoContentsPath.FullName, repoDirectory);
 
         _logger.Info("Discovery JSON content:");
@@ -116,7 +117,7 @@ public class RunWorker
         // TODO: report errors
 
         // report dependencies
-        var discoveredUpdatedDependencies = GetUpdatedDependencyListFromDiscovery(discoveryResult, repoContentsPath.FullName);
+        var discoveredUpdatedDependencies = GetUpdatedDependencyListFromDiscovery(discoveryResult, originalRepoContentsPath.FullName);
         await _apiHandler.UpdateDependencyList(discoveredUpdatedDependencies);
 
         var incrementMetric = GetIncrementMetric(job);
@@ -130,7 +131,7 @@ public class RunWorker
         // track original contents for later handling
         async Task TrackOriginalContentsAsync(string directory, string fileName)
         {
-            var repoFullPath = Path.Join(directory, fileName).FullyNormalizedRootedPath();
+            var repoFullPath = EnsureCorrectFileCasing(Path.Join(directory, fileName).FullyNormalizedRootedPath(), originalRepoContentsPath.FullName);
             var localFullPath = Path.Join(repoContentsPath.FullName, repoFullPath);
             var content = await File.ReadAllTextAsync(localFullPath);
             originalDependencyFileContents[repoFullPath] = content;
@@ -251,7 +252,7 @@ public class RunWorker
         var updatedDependencyFiles = new Dictionary<string, DependencyFile>();
         async Task AddUpdatedFileIfDifferentAsync(string directory, string fileName)
         {
-            var repoFullPath = Path.Join(directory, fileName).FullyNormalizedRootedPath();
+            var repoFullPath = EnsureCorrectFileCasing(Path.Join(directory, fileName).FullyNormalizedRootedPath(), originalRepoContentsPath.FullName);
             var localFullPath = Path.GetFullPath(Path.Join(repoContentsPath.FullName, repoFullPath));
             var originalContent = originalDependencyFileContents[repoFullPath];
             var updatedContent = await File.ReadAllTextAsync(localFullPath);
@@ -437,6 +438,19 @@ public class RunWorker
         }
 
         return null;
+    }
+
+    internal static string EnsureCorrectFileCasing(string repoRelativePath, string repoRoot)
+    {
+        var fullPath = Path.Join(repoRoot, repoRelativePath);
+        var resolvedName = PathHelper.ResolveCaseInsensitivePathsInsideRepoRoot(fullPath, repoRoot)?.FirstOrDefault();
+        if (resolvedName is null)
+        {
+            return repoRelativePath;
+        }
+
+        var relativeResolvedName = Path.GetRelativePath(repoRoot, resolvedName).FullyNormalizedRootedPath();
+        return relativeResolvedName;
     }
 
     internal static IEnumerable<(string ProjectPath, Dependency Dependency)> GetUpdateOperations(WorkspaceDiscoveryResult discovery)
@@ -627,7 +641,7 @@ public class RunWorker
         return dependencyInfo;
     }
 
-    internal static UpdatedDependencyList GetUpdatedDependencyListFromDiscovery(WorkspaceDiscoveryResult discoveryResult, string pathToContents)
+    internal static UpdatedDependencyList GetUpdatedDependencyListFromDiscovery(WorkspaceDiscoveryResult discoveryResult, string repoRoot)
     {
         string GetFullRepoPath(string path)
         {
@@ -712,6 +726,7 @@ public class RunWorker
         var dependencyFiles = discoveryResult.Projects
             .Select(p => GetFullRepoPath(p.FilePath))
             .Concat(auxiliaryFiles)
+            .Select(p => EnsureCorrectFileCasing(p, repoRoot))
             .Distinct()
             .OrderBy(p => p)
             .ToArray();

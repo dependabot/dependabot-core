@@ -1,10 +1,23 @@
 #!/bin/bash
 # shellcheck disable=all
 
-nuget_experiment_value=$(cat "$DEPENDABOT_JOB_PATH" | sed -En "s/-/_/pg" | jq '.job.experiments.nuget_native_updater')
-echo "NuGet native updater experiment value: $nuget_experiment_value"
+native_experiment_value=$(cat "$DEPENDABOT_JOB_PATH" | jq '.job.experiments | with_entries(.key |= sub("-";"_";"g")) .nuget_native_updater')
+case_insensitive_experiment_value=$(cat "$DEPENDABOT_JOB_PATH" | jq '.job.experiments | with_entries(.key |= sub("-";"_";"g")) .nuget_use_case_insensitive_filesystem')
+echo "NuGet native updater experiment value: $native_experiment_value"
+echo "NuGet case insensitive experiment value: $case_insensitive_experiment_value"
 
-if echo "$nuget_experiment_value" | grep -q 'true'; then
+if [[ "$1" == "update_files" && "$case_insensitive_experiment_value" == "true" ]]; then
+    export DEPENDABOT_CASE_INSENSITIVE_REPO_CONTENTS_PATH=~/dependabot-updater/nocase
+    SHARE_NAME=//localhost/dependabot-nocase
+    mkdir -p $DEPENDABOT_CASE_INSENSITIVE_REPO_CONTENTS_PATH
+    echo "$SHARE_NAME $DEPENDABOT_CASE_INSENSITIVE_REPO_CONTENTS_PATH cifs rw,user,noauto,nocase,password=,uid=1000 0 0" >> /etc/fstab
+    /usr/sbin/smbd -D
+    inotifywait -e create,moved_to -t 5 --include '/smbd\.pid$' -qq /run/samba
+    mount $SHARE_NAME
+    echo "Mounted repo at [$DEPENDABOT_CASE_INSENSITIVE_REPO_CONTENTS_PATH] as case insensitive"
+fi
+
+if [ "$native_experiment_value" == "true" ]; then
     pwsh "$DEPENDABOT_HOME/dependabot-updater/bin/main.ps1" $*
 else
     "$DEPENDABOT_HOME/dependabot-updater/bin/run-original" $*

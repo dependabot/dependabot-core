@@ -11,6 +11,9 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends \
     jq \
     libicu-dev=70.1-2 \
+    cifs-utils \
+    samba \
+    inotify-tools \
  && rm -rf /var/lib/apt/lists/*
 
 # install libssl 1.0 for .NET 2.0
@@ -29,6 +32,7 @@ RUN URL=$([ $TARGETARCH = "arm64" ] && echo ${LIBSSL11_URL_ARM64} || echo ${LIBS
  && dpkg -i /tmp/libssl-1.1.deb \
  && rm /tmp/libssl-1.1.deb
 
+ # install PowerShell
 ARG POWERSHELL_VERSION=7.4.5
 RUN ARCH=$([ $TARGETARCH = "arm64" ] && echo "arm64" || echo "x64") \
  && POWERSHELL_VERSION_MAJOR=$(echo $POWERSHELL_VERSION | cut -d. -f1) \
@@ -62,6 +66,10 @@ RUN curl --location --output "${DOTNET_INSTALL_SCRIPT_PATH}" "${DOTNET_SDK_INSTA
 ENV PATH="${PATH}:${DOTNET_INSTALL_DIR}"
 RUN dotnet --list-runtimes
 RUN dotnet --list-sdks
+
+# configure samba
+COPY nuget/smb.conf /etc/samba/smb.conf
+RUN chown -R dependabot:dependabot /var/cache/samba /var/lib/samba /var/log/samba /run/samba /etc/fstab
 
 # build tools
 USER dependabot
