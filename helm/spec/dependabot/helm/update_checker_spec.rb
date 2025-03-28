@@ -4,18 +4,12 @@
 require "spec_helper"
 require "dependabot/credential"
 require "dependabot/dependency"
-require "dependabot/helm/update_checker"
-require "dependabot/helm/helpers"
-require "dependabot/docker/version"
 require "dependabot/ecosystem"
 require "dependabot/config"
 require "dependabot/errors"
 require "dependabot/config/update_config"
-
+require "dependabot/helm"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
-
-Dependabot::Utils
-  .register_version_class("helm", Dependabot::Docker::Version)
 
 RSpec.describe Dependabot::Helm::UpdateChecker do
   let(:repo_fixture_name) { "redis.json" }
