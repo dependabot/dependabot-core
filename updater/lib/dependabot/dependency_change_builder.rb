@@ -140,7 +140,8 @@ module Dependabot
       # updated indirectly as a result of a parent dependency update and are
       # only included here to be included in the PR info.
       relevant_dependencies = updated_dependencies.reject(&:informational_only?)
-      file_updater_for(relevant_dependencies).updated_dependency_files
+      # Exclude support files since they are not manifests, just needed for supporting the update
+      file_updater_for(relevant_dependencies).updated_dependency_files.reject(&:support_file)
     end
 
     sig { params(dependencies: T::Array[Dependabot::Dependency]).returns(Dependabot::FileUpdaters::Base) }
