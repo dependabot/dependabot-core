@@ -140,7 +140,7 @@ module Dependabot
       # updated indirectly as a result of a parent dependency update and are
       # only included here to be included in the PR info.
       relevant_dependencies = updated_dependencies.reject(&:informational_only?)
-      # Exclude support files unless the package manager is submodules
+      # Exclude support files since they are not manifests, just needed for supporting the update
       file_updater_for(relevant_dependencies).updated_dependency_files.reject(&:support_file)
     end
 
