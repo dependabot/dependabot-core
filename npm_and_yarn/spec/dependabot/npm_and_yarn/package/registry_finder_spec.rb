@@ -65,6 +65,18 @@ RSpec.describe Dependabot::NpmAndYarn::Package::RegistryFinder do
       it { is_expected.to eq("http://example.com") }
     end
 
+    context "with no rc and with credentials containing spaces" do
+      let(:credentials) do
+        [Dependabot::Credential.new({
+          "type" => "npm_registry",
+          "registry" => "http://example.com/registry  with spaces",
+          "replaces-base" => true
+        })]
+      end
+
+      it { is_expected.to eq("http://example.com/registry%20with%20spaces") }
+    end
+
     context "with a global npm registry" do
       let(:npmrc_file) { Dependabot::DependencyFile.new(name: ".npmrc", content: "registry=http://example.com") }
 
@@ -111,7 +123,8 @@ RSpec.describe Dependabot::NpmAndYarn::Package::RegistryFinder do
 
     context "with a global yarn berry registry containing a space" do
       let(:yarnrc_yml_file) do
-        Dependabot::DependencyFile.new(name: ".yarnrc.yml", content: 'npmRegistryServer: "https://example.com/registry  with spaces"')
+        Dependabot::DependencyFile.new(name: ".yarnrc.yml",
+                                       content: 'npmRegistryServer: "https://example.com/registry  with spaces"')
       end
 
       it { is_expected.to eq("https://example.com/registry%20with%20spaces") }
@@ -128,6 +141,13 @@ RSpec.describe Dependabot::NpmAndYarn::Package::RegistryFinder do
 
         it { is_expected.to eq("https://registry.npmjs.org") }
       end
+    end
+
+    context "with a scoped npm registry containing spaces" do
+      let(:dependency_name) { "@dependabot/some_dep" }
+      let(:npmrc_file) { Dependabot::DependencyFile.new(name: ".npmrc", content: "@dependabot:registry=http://example.com/registry  with spaces") }
+
+      it { is_expected.to eq("http://example.com/registry%20with%20spaces") }
     end
 
     context "with both a scoped npm registry and a global one" do
@@ -155,6 +175,13 @@ RSpec.describe Dependabot::NpmAndYarn::Package::RegistryFinder do
       it { is_expected.to eq("http://example.com") }
     end
 
+    context "with a scoped yarn registry containing spaces" do
+      let(:dependency_name) { "@dependabot/some_dep" }
+      let(:yarnrc_file) { Dependabot::DependencyFile.new(name: ".yarnrc", content: '"@dependabot:registry" "http://example.com/registry  with spaces"') }
+
+      it { is_expected.to eq("http://example.com/registry%20with%20spaces") }
+    end
+
     context "with a scoped yarn registry not wrapped in quotes" do
       let(:dependency_name) { "@dependabot/some_dep" }
       let(:yarnrc_file) { Dependabot::DependencyFile.new(name: ".yarnrc", content: '"@dependabot:registry" http://example.com') }
@@ -174,6 +201,20 @@ RSpec.describe Dependabot::NpmAndYarn::Package::RegistryFinder do
       let(:yarnrc_yml_file) { Dependabot::DependencyFile.new(name: ".yarnrc", content: yarnrc_yml_content) }
 
       it { is_expected.to eq("https://example.com") }
+    end
+
+    context "with a scoped yarn berry registry containing spaces" do
+      let(:dependency_name) { "@dependabot/some_dep" }
+      let(:yarnrc_yml_content) do
+        <<~YARNRC
+          npmScopes:
+            dependabot:
+              npmRegistryServer: "https://example.com/registry  with spaces"
+        YARNRC
+      end
+      let(:yarnrc_yml_file) { Dependabot::DependencyFile.new(name: ".yarnrc", content: yarnrc_yml_content) }
+
+      it { is_expected.to eq("https://example.com/registry%20with%20spaces") }
     end
   end
 

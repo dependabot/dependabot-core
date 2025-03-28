@@ -214,7 +214,12 @@ module Dependabot
               registries = []
               registries += credentials
                             .select { |cred| cred["type"] == "npm_registry" && cred["registry"] }
-                            .tap { |arr| arr.each { |c| c["token"] ||= nil } }
+                            .tap do |arr|
+                              arr.each do |c|
+                                c["registry"] = prepare_registry_url(c["registry"])
+                                c["token"] ||= nil
+                              end
+                            end
               registries += npmrc_registries
               registries += yarnrc_registries
 
@@ -231,12 +236,12 @@ module Dependabot
           npmrc_file&.content&.scan(NPM_AUTH_TOKEN_REGEX) do
             next if Regexp.last_match&.[](:registry)&.include?("${")
 
-            registry = T.must(Regexp.last_match)[:registry]
+            registry = prepare_registry_url(T.must(Regexp.last_match)[:registry])
             token = T.must(Regexp.last_match)[:token]&.strip
 
             registries << {
               "type" => "npm_registry",
-              "registry" => registry&.gsub(/\s+/, "%20"),
+              "registry" => registry,
               "token" => token
             }
           end
@@ -284,14 +289,14 @@ module Dependabot
           return @configured_global_registry if @configured_global_registry
 
           if parsed_yarnrc_yml&.key?("npmRegistryServer")
-            return @configured_global_registry = T.must(parsed_yarnrc_yml)["npmRegistryServer"]
+            return @configured_global_registry = prepare_registry_url(T.must(parsed_yarnrc_yml)["npmRegistryServer"])
           end
 
           replaces_base = credentials.find { |cred| cred["type"] == "npm_registry" && cred.replaces_base? }
           if replaces_base
             registry = replaces_base["registry"]
             registry = "https://#{registry}" unless registry&.start_with?("http")
-            return @configured_global_registry = registry
+            return @configured_global_registry = prepare_registry_url(registry)
           end
 
           @configured_global_registry = nil
@@ -316,7 +321,7 @@ module Dependabot
 
           if parsed_yarnrc_yml
             yarn_berry_registry = parsed_yarnrc_yml&.dig("npmScopes", scope.delete_prefix("@"), "npmRegistryServer")
-            return yarn_berry_registry if yarn_berry_registry
+            return prepare_registry_url(yarn_berry_registry) if yarn_berry_registry
           end
 
           nil
@@ -334,7 +339,7 @@ module Dependabot
           file&.content&.scan(syntax) do
             next if Regexp.last_match&.[](:registry)&.include?("${")
 
-            url = T.must(T.must(Regexp.last_match)[:registry]).strip
+            url = prepare_registry_url(T.must(T.must(Regexp.last_match)[:registry]))
             registry = normalize_configured_registry(url)
             registries << {
               "type" => "npm_registry",
@@ -358,7 +363,7 @@ module Dependabot
           file&.content.to_s.scan(syntax) do
             next if Regexp.last_match&.[](:registry)&.include?("${") || Regexp.last_match&.[](:scope) != scope
 
-            return T.must(T.must(Regexp.last_match)[:registry]).strip
+            return prepare_registry_url(T.must(T.must(Regexp.last_match)[:registry]))
           end
 
           nil
@@ -381,7 +386,9 @@ module Dependabot
                               &.map { |r| r.fetch(:source) }&.uniq&.compact
                               &.sort_by { |source| self.class.central_registry?(source[:url]) ? 1 : 0 }
 
-          sources&.find { |s| s[:type] == "registry" }&.fetch(:url)
+          sources&.find { |s| s[:type] == "registry" }
+                 &.fetch(:url)
+                 &.then { |url| prepare_registry_url(url) }
         end
 
         sig { returns(T.nilable(T::Hash[String, T.untyped])) }
@@ -398,7 +405,12 @@ module Dependabot
         def normalize_configured_registry(url)
           url.sub(%r{/+$}, "")
              .sub(%r{^.*?//}, "")
-             .gsub(/\s+/, "%20")
+        end
+
+        sig { params(url: T.nilable(String)).returns(T.nilable(String)) }
+        def prepare_registry_url(url)
+          url&.strip
+             &.gsub(/\s+/, "%20")
         end
       end
     end
