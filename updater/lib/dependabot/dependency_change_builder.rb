@@ -141,13 +141,7 @@ module Dependabot
       # only included here to be included in the PR info.
       relevant_dependencies = updated_dependencies.reject(&:informational_only?)
       # Exclude support files unless the package manager is submodules
-      updated_files = file_updater_for(relevant_dependencies).updated_dependency_files
-      if updated_files.empty?
-        Dependabot.logger.warn("No updated dependency files found.")
-      else
-        updated_files.reject!(&:support_file)
-      end
-      updated_files
+      file_updater_for(relevant_dependencies).updated_dependency_files.reject(&:support_file)
     end
 
     sig { params(dependencies: T::Array[Dependabot::Dependency]).returns(Dependabot::FileUpdaters::Base) }
