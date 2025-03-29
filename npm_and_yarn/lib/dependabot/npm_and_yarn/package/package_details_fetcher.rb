@@ -25,7 +25,6 @@ module Dependabot
         RELEASE_VERSIONS_KEY = "versions"
         RELEASE_DIST_TAGS_KEY = "dist-tags"
         RELEASE_DIST_TAGS_LATEST_KEY = "latest"
-        RELEASE_DIST_TAG_DATETIME_KEY = "time"
         RELEASE_ENGINES_KEY = "engines"
         RELEASE_LANGUAGE_KEY = "node"
         RELEASE_DEPRECATION_KEY = "deprecated"
@@ -167,7 +166,7 @@ module Dependabot
           versions_data = fetch_value_from_hash(npm_data, RELEASE_VERSIONS_KEY)
 
           dist_tags = fetch_value_from_hash(npm_data, RELEASE_DIST_TAGS_KEY)
-          latest_version = fetch_value_from_hash(dist_tags, RELEASE_DIST_TAG_DATETIME_KEY)
+          latest_version = fetch_value_from_hash(dist_tags, RELEASE_DIST_TAGS_LATEST_KEY)
 
           versions_data.filter_map do |version, details|
             next unless Dependabot::NpmAndYarn::Version.correct?(version)
