@@ -162,8 +162,8 @@ module Dependabot
           ).returns(T::Array[Dependabot::Package::PackageRelease])
         end
         def parse_versions(npm_data)
-          time_data = fetch_value_from_hash(npm_data, RELEASE_TIME_KEY)
-          versions_data = fetch_value_from_hash(npm_data, RELEASE_VERSIONS_KEY)
+          time_data = fetch_value_from_hash(npm_data, RELEASE_TIME_KEY) || {}
+          versions_data = fetch_value_from_hash(npm_data, RELEASE_VERSIONS_KEY) || {}
 
           dist_tags = fetch_value_from_hash(npm_data, RELEASE_DIST_TAGS_KEY)
           latest_version = fetch_value_from_hash(dist_tags, RELEASE_DIST_TAGS_LATEST_KEY)
