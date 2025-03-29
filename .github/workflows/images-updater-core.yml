@@ -26,9 +26,13 @@ jobs:
 
       - name: Build dependabot-updater-core image
         run: script/build common
-      - name: Log in to GHCR
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Push latest image
         run: |
           docker push "$UPDATER_CORE_IMAGE:latest"
