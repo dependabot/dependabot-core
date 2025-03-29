@@ -31,7 +31,7 @@
     <PackageVersion Include="System.ComponentModel.Composition" Version="9.0.3" />
     <PackageVersion Include="System.Net.Http" Version="4.3.4" />
     <PackageVersion Include="System.Formats.Asn1" Version="8.0.1" />
-    <PackageVersion Include="System.Security.Cryptography.Pkcs" Version="9.0.0" />
+    <PackageVersion Include="System.Security.Cryptography.Pkcs" Version="9.0.3" />
     <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="9.0.0" />
     <PackageVersion Include="System.Text.Json" Version="9.0.3" />
     <PackageVersion Include="System.Text.RegularExpressions" Version="4.3.1" />
