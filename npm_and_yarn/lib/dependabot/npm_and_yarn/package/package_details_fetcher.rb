@@ -14,6 +14,30 @@ module Dependabot
       class PackageDetailsFetcher
         extend T::Sig
 
+        GLOBAL_REGISTRY = "registry.npmjs.org"
+        NPM_OFFICIAL_WEBSITE = "https://www.npmjs.com"
+
+        API_AUTHORIZATION_KEY = "Authorization"
+        API_AUTHORIZATION_VALUE_BASIC_PREFIX = "Basic"
+        API_RESPONSE_STATUS_SUCCESS_PREFIX = "2"
+
+        RELEASE_TIME_KEY = "time"
+        RELEASE_VERSIONS_KEY = "versions"
+        RELEASE_DIST_TAGS_KEY = "dist-tags"
+        RELEASE_DIST_TAGS_LATEST_KEY = "latest"
+        RELEASE_DIST_TAG_DATETIME_KEY = "time"
+        RELEASE_ENGINES_KEY = "engines"
+        RELEASE_LANGUAGE_KEY = "node"
+        RELEASE_DEPRECATION_KEY = "deprecated"
+        RELEASE_REPOSITORY_KEY = "repository"
+        RELEASE_PACKAGE_TYPE_KEY = "type"
+        RELEASE_PACKAGE_TYPE_GIT = "git"
+        RELEASE_PACKAGE_TYPE_NPM = "npm"
+
+        REGISTRY_FILE_NPMRC = ".npmrc"
+        REGISTRY_FILE_YARNRC = ".yarnrc"
+        REGISTRY_FILE_YARNRC_YML = ".yarnrc.yml"
+
         sig do
           params(
             dependency: Dependabot::Dependency,
@@ -82,7 +106,7 @@ module Dependabot
 
           @yanked[version] =
             begin
-              if dependency_registry == "registry.npmjs.org"
+              if dependency_registry == GLOBAL_REGISTRY
                 status = Dependabot::RegistryClient.head(
                   url: registry_finder.tarball_url(version),
                   headers: registry_auth_headers
@@ -116,14 +140,14 @@ module Dependabot
 
         sig { returns(T.nilable(T::Boolean)) }
         def version_endpoint_working?
-          return true if dependency_registry == "registry.npmjs.org"
+          return true if dependency_registry == GLOBAL_REGISTRY
 
           return @version_endpoint_working if @version_endpoint_working
 
           @version_endpoint_working =
             begin
               Dependabot::RegistryClient.get(
-                url: dependency_url + "/latest",
+                url: dependency_url + "/#{RELEASE_DIST_TAGS_LATEST_KEY}",
                 headers: registry_auth_headers
               ).status < 400
             rescue Excon::Error::Timeout, Excon::Error::Socket
@@ -139,17 +163,18 @@ module Dependabot
           ).returns(T::Array[Dependabot::Package::PackageRelease])
         end
         def parse_versions(npm_data)
-          time_data = npm_data["time"] || {}
-          versions_data = npm_data["versions"] || {}
+          time_data = fetch_value_from_hash(npm_data, RELEASE_TIME_KEY)
+          versions_data = fetch_value_from_hash(npm_data, RELEASE_VERSIONS_KEY)
 
-          latest_version = npm_data.dig("dist-tags", "latest")
+          dist_tags = fetch_value_from_hash(npm_data, RELEASE_DIST_TAGS_KEY)
+          latest_version = fetch_value_from_hash(dist_tags, RELEASE_DIST_TAG_DATETIME_KEY)
 
           versions_data.filter_map do |version, details|
             next unless Dependabot::NpmAndYarn::Version.correct?(version)
 
             package_type = infer_package_type(details)
 
-            deprecated = details["deprecated"]
+            deprecated = fetch_value_from_hash(details, RELEASE_DEPRECATION_KEY)
 
             Dependabot::Package::PackageRelease.new(
               version: Version.new(version),
@@ -175,13 +200,16 @@ module Dependabot
             .returns(T.nilable(Dependabot::Package::PackageLanguage))
         end
         def package_language(version_details)
-          node_requirement = version_details.dig("engines", "node")
+          # Fetch the engines hash from the version details
+          engines = version_details.is_a?(Hash) ? version_details[RELEASE_ENGINES_KEY] : nil
+          # Check if engines is a hash and fetch the node requirement
+          node_requirement = engines.is_a?(Hash) ? engines.fetch(RELEASE_LANGUAGE_KEY, nil) : nil
 
           return nil unless node_requirement
 
           if node_requirement
             Dependabot::Package::PackageLanguage.new(
-              name: "node",
+              name: RELEASE_LANGUAGE_KEY,
               version: nil,
               requirement: Requirement.new(node_requirement)
             )
@@ -192,7 +220,7 @@ module Dependabot
 
         sig { returns(T.nilable(T::Hash[String, String])) }
         def dist_tags
-          @dist_tags ||= npm_details&.fetch("dist-tags", nil)
+          @dist_tags ||= fetch_value_from_hash(npm_details, RELEASE_DIST_TAGS_KEY)
         end
 
         sig { returns(T.nilable(T::Hash[String, T.untyped])) }
@@ -216,19 +244,20 @@ module Dependabot
           )
 
           # If response is successful, return it
-          return response if response.status.to_s.start_with?("2")
+          return response if response.status.to_s.start_with?(API_RESPONSE_STATUS_SUCCESS_PREFIX)
 
           # If the registry is public (not explicitly private) and the request fails, return the response as is
-          return response if dependency_registry == "registry.npmjs.org"
+          return response if dependency_registry == GLOBAL_REGISTRY
 
           # If a private registry returns a 500 error, check authentication
           return response unless response.status == 500
-          return response unless registry_auth_headers["Authorization"]
 
-          auth = registry_auth_headers["Authorization"]
-          return response unless auth&.start_with?("Basic")
+          auth = fetch_value_from_hash(registry_auth_headers, API_AUTHORIZATION_KEY)
+          return response unless auth
 
-          decoded_token = Base64.decode64(auth.gsub("Basic ", "")).strip
+          return response unless auth&.start_with?(API_AUTHORIZATION_VALUE_BASIC_PREFIX)
+
+          decoded_token = Base64.decode64(auth.gsub("#{API_AUTHORIZATION_VALUE_BASIC_PREFIX} ", "")).strip
 
           # Ensure decoded token is not empty and contains a colon
           if decoded_token.empty? || !decoded_token.include?(":")
@@ -256,22 +285,19 @@ module Dependabot
             .returns(String)
         end
         def infer_package_type(details, git_dependency: false)
-          repository = details["repository"]
+          return RELEASE_PACKAGE_TYPE_GIT if git_dependency
 
-          return "git" if git_dependency
+          repository = fetch_value_from_hash(details, RELEASE_REPOSITORY_KEY)
 
-          if repository.is_a?(String)
-            return "git" if repository.start_with?("git+")
-
-            return "npm"
+          case repository
+          when String
+            return repository.start_with?("git+") ? RELEASE_PACKAGE_TYPE_GIT : RELEASE_PACKAGE_TYPE_NPM
+          when Hash
+            type = fetch_value_from_hash(repository, RELEASE_PACKAGE_TYPE_KEY)
+            return RELEASE_PACKAGE_TYPE_GIT if type == RELEASE_PACKAGE_TYPE_GIT
           end
 
-          if repository.is_a?(Hash)
-            type = repository["type"]
-            return "git" if type == "git"
-          end
-
-          "npm"
+          RELEASE_PACKAGE_TYPE_NPM
         end
 
         sig { params(npm_response: Excon::Response).void }
@@ -292,13 +318,13 @@ module Dependabot
           status = npm_response.status
 
           # handles issue when status 200 is returned from registry but with an invalid JSON object
-          if status.to_s.start_with?("2") && response_invalid_json?(npm_response)
+          if status.to_s.start_with?(API_RESPONSE_STATUS_SUCCESS_PREFIX) && response_invalid_json?(npm_response)
             msg = "Invalid JSON object returned from registry #{dependency_registry}."
             Dependabot.logger.warn("#{msg} Response body (truncated) : #{npm_response.body[0..500]}...")
             raise DependencyFileNotResolvable, msg
           end
 
-          return if status.to_s.start_with?("2")
+          return if status.to_s.start_with?(API_RESPONSE_STATUS_SUCCESS_PREFIX)
 
           # Ignore 404s from the registry for updates where a lockfile doesn't
           # need to be generated. The 404 won't cause problems later.
@@ -310,7 +336,7 @@ module Dependabot
 
         sig { params(error: StandardError).void }
         def raise_npm_details_error(error)
-          raise if dependency_registry == "registry.npmjs.org"
+          raise if dependency_registry == GLOBAL_REGISTRY
           raise unless error.is_a?(Excon::Error::Timeout)
 
           raise PrivateSourceTimedOut, dependency_registry
@@ -322,10 +348,10 @@ module Dependabot
           return false unless [401, 402, 403, 404].include?(npm_response.status)
 
           # Check whether this dependency is (likely to be) private
-          if dependency_registry == "registry.npmjs.org"
+          if dependency_registry == GLOBAL_REGISTRY
             return false unless dependency.name.start_with?("@")
 
-            web_response = Dependabot::RegistryClient.get(url: "https://www.npmjs.com/package/#{dependency.name}")
+            web_response = Dependabot::RegistryClient.get(url: "#{NPM_OFFICIAL_WEBSITE}/package/#{dependency.name}")
             # NOTE: returns 429 when the login page is rate limited
             return web_response.body.include?("Forgot password?") ||
                    web_response.status == 429
@@ -337,8 +363,10 @@ module Dependabot
         sig { params(npm_response: Excon::Response).returns(T::Boolean) }
         def private_dependency_server_error?(npm_response)
           if [500, 501, 502, 503].include?(npm_response.status)
-            Dependabot.logger.warn("#{dependency_registry} returned code #{npm_response.status} with " \
-                                   "body #{npm_response.body}.")
+            Dependabot.logger.warn(
+              "#{dependency_registry} returned code #{npm_response.status} " \
+              "with body #{npm_response.body}."
+            )
             return true
           end
           false
@@ -376,17 +404,17 @@ module Dependabot
 
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def npmrc_file
-          dependency_files.find { |f| f.name.end_with?(".npmrc") }
+          dependency_files.find { |f| f.name.end_with?(REGISTRY_FILE_NPMRC) }
         end
 
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def yarnrc_file
-          dependency_files.find { |f| f.name.end_with?(".yarnrc") }
+          dependency_files.find { |f| f.name.end_with?(REGISTRY_FILE_YARNRC) }
         end
 
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def yarnrc_yml_file
-          dependency_files.find { |f| f.name.end_with?(".yarnrc.yml") }
+          dependency_files.find { |f| f.name.end_with?(REGISTRY_FILE_YARNRC_YML) }
         end
 
         sig { returns(T::Boolean) }
@@ -396,6 +424,15 @@ module Dependabot
             dependency: dependency,
             credentials: credentials
           ).git_dependency?
+        end
+
+        # This function safely retrieves a value for a given key from a Hash.
+        # If the hash is valid and the key exists, it will return the value, otherwise nil.
+        sig { params(hash: T.untyped, key: T.untyped).returns(T.untyped) }
+        def fetch_value_from_hash(hash, key)
+          return nil unless hash.is_a?(Hash) # Return nil if the hash is not a Hash
+
+          hash.fetch(key, nil) # Fetch the value for the given key, defaulting to nil if not found
         end
       end
     end
