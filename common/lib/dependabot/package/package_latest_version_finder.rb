@@ -121,7 +121,7 @@ module Dependabot
         params(language_version: T.nilable(T.any(String, Version)))
           .returns(T.nilable(Dependabot::Version))
       end
-      def fetch_latest_version(language_version:)
+      def fetch_latest_version(language_version: nil)
         version_hashes = available_versions
         return unless version_hashes
 
@@ -130,8 +130,13 @@ module Dependabot
         versions = filter_unsupported_versions(version_hashes, language_version)
         versions = filter_prerelease_versions(versions)
         versions = filter_ignored_versions(versions)
-
+        versions = apply_post_fetch_latest_versions_filter(versions)
         versions.max
+      end
+
+      sig { params(versions: T::Array[Dependabot::Version]).returns(T::Array[Dependabot::Version]) }
+      def apply_post_fetch_latest_versions_filter(versions)
+        versions
       end
 
       sig do

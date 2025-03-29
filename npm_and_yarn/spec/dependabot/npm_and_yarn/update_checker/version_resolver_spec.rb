@@ -66,6 +66,9 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
   # Variable to control the enabling feature flag for the corepack fix
   let(:enable_corepack_for_npm_and_yarn) { true }
 
+  # Variable to control the enabling feature flag for the cooldown
+  let(:enable_cooldown_for_npm_and_yarn) { false }
+
   before do
     stub_request(:get, react_dom_registry_listing_url)
       .to_return(status: 200, body: react_dom_registry_response)
@@ -85,6 +88,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       .with(:enable_corepack_for_npm_and_yarn).and_return(enable_corepack_for_npm_and_yarn)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_shared_helpers_command_timeout).and_return(true)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_cooldown_for_npm_and_yarn).and_return(enable_cooldown_for_npm_and_yarn)
   end
 
   after do
