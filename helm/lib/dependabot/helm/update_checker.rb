@@ -151,6 +151,7 @@ module Dependabot
         Dependabot.logger.info("Fetching releases for Helm chart: #{chart_name}")
 
         if repo_name && repo_url
+          authenticate_registry_source(repo_url)
           begin
             Helpers.add_repo(repo_name, repo_url)
             Helpers.update_repo
@@ -173,6 +174,19 @@ module Dependabot
           Dependabot.logger.error("Error fetching chart releases: #{e.message}")
           nil
         end
+      end
+
+      sig { params(repo_url: T.nilable(String)).returns(T.nilable(String)) }
+      def authenticate_registry_source(repo_url)
+        return unless repo_url
+
+        repo_creds = Shared::Utils::CredentialsFinder.new(@credentials, private_repository_type: "helm_repository")
+                                                     .credentials_for_registry(repo_url)
+        return unless repo_creds
+
+        Helpers.registry_login(T.must(repo_creds["username"]), T.must(repo_creds["password"]), repo_url)
+      rescue StandardError
+        raise PrivateSourceAuthenticationFailure, repo_url
       end
 
       sig { returns(T.nilable(Gem::Version)) }

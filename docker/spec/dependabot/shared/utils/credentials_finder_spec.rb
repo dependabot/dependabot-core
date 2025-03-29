@@ -44,6 +44,23 @@ RSpec.describe Dependabot::Shared::Utils::CredentialsFinder do
       it { is_expected.to eq(credentials.first) }
     end
 
+    context "with a helm registry" do
+      subject(:found_credentials) { finder.credentials_for_registry(registry) }
+
+      let(:finder) { described_class.new(credentials, private_repository_type: "helm_registry") }
+      let(:registry) { "my.registry.com" }
+      let(:credentials) do
+        [Dependabot::Credential.new({
+          "type" => "helm_registry",
+          "registry" => "my.registry.com",
+          "username" => "grey",
+          "password" => "pa55word"
+        })]
+      end
+
+      it { is_expected.to eq(credentials.first) }
+    end
+
     context "with an AWS registry" do
       let(:registry) { "695729449481.dkr.ecr.eu-west-2.amazonaws.com" }
 
