@@ -153,7 +153,7 @@ module Dependabot
         versions = filter_prerelease_versions(versions)
         versions = filter_ignored_versions(versions)
         versions = filter_out_of_range_versions(versions)
-
+        versions = apply_post_fetch_latest_versions_filter(versions)
         versions.max
       end
 
