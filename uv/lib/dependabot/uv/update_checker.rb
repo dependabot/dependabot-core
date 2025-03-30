@@ -147,7 +147,7 @@ module Dependabot
 
       def subdependency_resolver
         return :pip_compile if pip_compile_files.any?
-        return :lock_file if dependency_files.any? { |f| f.name == "uv.lock" }
+        return :lock_file if uv_lock.any?
 
         raise "Claimed to be a sub-dependency, but no lockfile exists!"
       end
@@ -323,6 +323,10 @@ module Dependabot
 
       def pip_compile_files
         dependency_files.select { |f| f.name.end_with?(".in") }
+      end
+
+      def uv_lock
+        dependency_files.select { |f| f.name == "uv.lock" }
       end
     end
   end
