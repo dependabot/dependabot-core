@@ -127,10 +127,10 @@ module Dependabot
       def resolver_type
         reqs = requirements
 
-        # If there are no requirements then this is a sub-dependency. It
-        # must come from one of Pipenv, Poetry or pip-tools, and can't come
-        # from the first two unless they have a lockfile.
-        return subdependency_resolver if reqs.none?
+        # If there are no requirements and no lockfile then this is a sub-dependency.
+        # It must come from one of Pipenv, Poetry or pip-tools, 
+        # and can't come from the first two unless they have a lockfile.
+        return subdependency_resolver if reqs.none? && has_lockfile?
 
         # Otherwise, this is a top-level dependency, and we can figure out
         # which resolver to use based on the filename of its requirements
