@@ -63,6 +63,34 @@ module Dependabot
           @package_details
         end
 
+        sig do
+          returns(T.nilable(Dependabot::Version))
+        end
+        def latest_version_from_registry
+          fetch_latest_version(language_version: nil)
+        end
+
+        sig do
+          override.params(language_version: T.nilable(T.any(String, Dependabot::Version)))
+                  .returns(T.nilable(Dependabot::Version))
+        end
+        def latest_version_with_no_unlock(language_version: nil)
+          with_custom_registry_rescue do
+            return unless valid_npm_details?
+            return version_from_dist_tags if specified_dist_tag_requirement?
+
+            super
+          end
+        end
+
+        sig do
+          params(language_version: T.nilable(T.any(String, Dependabot::Version)))
+            .returns(T.nilable(Dependabot::Version))
+        end
+        def lowest_security_fix_version(language_version: nil)
+          fetch_lowest_security_fix_version(language_version: language_version)
+        end
+
         # This method is for latest_version_from_registry
         sig do
           params(language_version: T.nilable(T.any(String, Dependabot::Version)))
@@ -79,13 +107,6 @@ module Dependabot
 
             super
           end
-        end
-
-        sig do
-          returns(T.nilable(Dependabot::Version))
-        end
-        def latest_version_from_registry
-          fetch_latest_version(language_version: nil)
         end
 
         sig do
@@ -147,8 +168,9 @@ module Dependabot
         end
 
         sig do
-          override.params(language_version: T.nilable(T.any(String, Dependabot::Version)))
-                  .returns(T.nilable(Dependabot::Version))
+          override
+            .params(language_version: T.nilable(T.any(String, Dependabot::Version)))
+            .returns(T.nilable(Dependabot::Version))
         end
         def fetch_lowest_security_fix_version(language_version:) # rubocop:disable Lint/UnusedMethodArgument
           with_custom_registry_rescue do
@@ -161,40 +183,20 @@ module Dependabot
                 possible_versions(filter_ignored: false)
               end
 
-            secure_versions = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(
-              T.unsafe(secure_versions),
-              security_advisories
-            )
+            secure_versions = Dependabot::UpdateCheckers::VersionFilters
+                              .filter_vulnerable_versions(
+                                T.unsafe(secure_versions),
+                                security_advisories
+                              )
             secure_versions = filter_ignored_versions(secure_versions)
             secure_versions = filter_lower_versions(secure_versions)
 
             # Apply lazy filtering for yanked versions (min or max logic)
-            secure_versions = lazy_filter_yanked_versions_by_min_max(secure_versions, check_max: true)
+            secure_versions = lazy_filter_yanked_versions_by_min_max(secure_versions, check_max: false)
 
             # Return the lowest non-yanked version
             secure_versions.max
           end
-        end
-
-        sig do
-          override.params(language_version: T.nilable(T.any(String, Dependabot::Version)))
-                  .returns(T.nilable(Dependabot::Version))
-        end
-        def latest_version_with_no_unlock(language_version: nil)
-          with_custom_registry_rescue do
-            return unless valid_npm_details?
-            return version_from_dist_tags if specified_dist_tag_requirement?
-
-            super
-          end
-        end
-
-        sig do
-          params(language_version: T.nilable(T.any(String, Dependabot::Version)))
-            .returns(T.nilable(Dependabot::Version))
-        end
-        def lowest_security_fix_version(language_version: nil)
-          fetch_lowest_security_fix_version(language_version: language_version)
         end
 
         sig do
@@ -217,23 +219,51 @@ module Dependabot
 
         sig do
           params(filter_ignored: T::Boolean)
-            .returns(T::Array[Dependabot::Version])
+            .returns(T::Array[T::Array[T.untyped]])
         end
         def possible_versions_with_details(filter_ignored: true)
-          versions = possible_previous_releases_with_details
-                     .reject(&:yanked?).map(&:version).reverse
+          possible_releases(filter_ignored: filter_ignored).map { |r| [r.version, r.details] }
+        end
 
-          return filter_ignored_versions(versions) if filter_ignored
+        sig do
+          params(releases: T::Array[Dependabot::Package::PackageRelease])
+            .returns(T::Array[Dependabot::Package::PackageRelease])
+        end
+        def filter_releases(releases)
+          filtered = releases
+                     .reject do |release|
+                       ignore_requirements.any? { |r| r.satisfied_by?(release.version) }
+                     end
+          if @raise_on_ignored && filter_lower_releases(filtered).empty? && filter_lower_releases(releases).any?
+            raise Dependabot::AllVersionsIgnored
+          end
 
-          versions
+          if releases.count > filtered.count
+            Dependabot.logger.info("Filtered out #{releases.count - filtered.count} ignored versions")
+          end
+          filtered
+        end
+
+        sig do
+          params(releases: T::Array[Dependabot::Package::PackageRelease])
+            .returns(T::Array[Dependabot::Package::PackageRelease])
+        end
+        def filter_lower_releases(releases)
+          return releases unless dependency.numeric_version
+
+          releases
+            .select { |release| release.version > dependency.numeric_version }
         end
 
         sig do
           params(filter_ignored: T::Boolean)
-            .returns(T::Array[Dependabot::Version])
+            .returns(T::Array[Dependabot::Package::PackageRelease])
         end
-        def possible_versions_from_release(filter_ignored: true)
-          possible_versions_with_details(filter_ignored: filter_ignored)
+        def possible_releases(filter_ignored: true)
+          releases = possible_previous_releases.reject(&:yanked?)
+
+          releases = filter_releases(releases) if filter_ignored
+          releases
         end
 
         sig do
@@ -241,11 +271,11 @@ module Dependabot
             .returns(T::Array[Gem::Version])
         end
         def possible_versions(filter_ignored: true)
-          possible_versions_from_release(filter_ignored: filter_ignored)
+          possible_releases(filter_ignored: filter_ignored).map(&:version)
         end
 
         sig { returns(T::Array[Dependabot::Package::PackageRelease]) }
-        def possible_previous_releases_with_details
+        def possible_previous_releases
           (package_details&.releases || [])
             .reject do |r|
             r.version.prerelease? && !related_to_current_pre?(T.unsafe(r.version))
@@ -255,7 +285,7 @@ module Dependabot
 
         sig { returns(T::Array[[Dependabot::Version, T::Hash[String, T.nilable(String)]]]) }
         def possible_previous_versions_with_details
-          possible_previous_releases_with_details.map do |r|
+          possible_previous_releases.map do |r|
             [r.version, { "deprecated" => r.yanked? ? "yanked" : nil }]
           end
         end
@@ -468,8 +498,11 @@ module Dependabot
               possible_versions(filter_ignored: false)
             end
 
-          secure_versions = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(secure_versions,
-                                                                                                  security_advisories)
+          secure_versions = Dependabot::UpdateCheckers::VersionFilters
+                            .filter_vulnerable_versions(
+                              secure_versions,
+                              security_advisories
+                            )
           secure_versions = filter_ignored_versions(secure_versions)
           secure_versions = filter_lower_versions(secure_versions)
 
