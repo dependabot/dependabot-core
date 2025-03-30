@@ -183,11 +183,12 @@ module Dependabot
                 possible_versions(filter_ignored: false)
               end
 
-            secure_versions = Dependabot::UpdateCheckers::VersionFilters
-                              .filter_vulnerable_versions(
-                                T.unsafe(secure_versions),
-                                security_advisories
-                              )
+            secure_versions =
+              Dependabot::UpdateCheckers::VersionFilters
+              .filter_vulnerable_versions(
+                T.unsafe(secure_versions),
+                security_advisories
+              )
             secure_versions = filter_ignored_versions(secure_versions)
             secure_versions = filter_lower_versions(secure_versions)
 
@@ -230,11 +231,14 @@ module Dependabot
             .returns(T::Array[Dependabot::Package::PackageRelease])
         end
         def filter_releases(releases)
-          filtered = releases
-                     .reject do |release|
-                       ignore_requirements.any? { |r| r.satisfied_by?(release.version) }
-                     end
-          if @raise_on_ignored && filter_lower_releases(filtered).empty? && filter_lower_releases(releases).any?
+          filtered =
+            releases
+            .reject do |release|
+              ignore_requirements.any? { |r| r.satisfied_by?(release.version) }
+            end
+          if @raise_on_ignored &&
+             filter_lower_releases(filtered).empty? &&
+             filter_lower_releases(releases).any?
             raise Dependabot::AllVersionsIgnored
           end
 
@@ -251,8 +255,7 @@ module Dependabot
         def filter_lower_releases(releases)
           return releases unless dependency.numeric_version
 
-          releases
-            .select { |release| release.version > dependency.numeric_version }
+          releases.select { |release| release.version > dependency.numeric_version }
         end
 
         sig do
