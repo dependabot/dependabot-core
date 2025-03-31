@@ -87,7 +87,7 @@ module Dependabot
         super(requirements)
       end
 
-      sig { params(version: T.any(Gem::Version, Python::Version)).returns(T::Boolean) }
+      sig { params(version: T.any(Gem::Version, Python::Version, String)).returns(T::Boolean) }
       def satisfied_by?(version)
         version = Python::Version.new(version.to_s)
 
