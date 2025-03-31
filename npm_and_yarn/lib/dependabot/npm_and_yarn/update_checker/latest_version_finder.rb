@@ -265,7 +265,8 @@ module Dependabot
         def possible_releases(filter_ignored: true)
           releases = possible_previous_releases.reject(&:yanked?)
 
-          releases = filter_releases(releases) if filter_ignored
+          return filter_releases(releases) if filter_ignored
+
           releases
         end
 
