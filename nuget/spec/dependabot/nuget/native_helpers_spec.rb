@@ -250,7 +250,7 @@ RSpec.describe Dependabot::Nuget::NativeHelpers do
           Error: {
             "error-type": "private_source_bad_response",
             "error-details": {
-              message: "some-url"
+              source: "some-url"
             }
           }
         }.to_json
