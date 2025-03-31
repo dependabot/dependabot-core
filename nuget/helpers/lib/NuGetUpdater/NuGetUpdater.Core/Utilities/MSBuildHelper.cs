@@ -341,7 +341,7 @@ internal static partial class MSBuildHelper
         return false;
     }
 
-    internal static async Task<bool> DependenciesAreCoherentAsync(string repoRoot, string projectPath, string targetFramework, Dependency[] packages, ExperimentsManager experimentsManager, ILogger logger)
+    internal static async Task<bool> DependenciesAreCoherentAsync(string repoRoot, string projectPath, string targetFramework, ImmutableArray<Dependency> packages, ExperimentsManager experimentsManager, ILogger logger)
     {
         var tempDirectory = Directory.CreateTempSubdirectory("package-dependency-coherence_");
         try
@@ -359,7 +359,7 @@ internal static partial class MSBuildHelper
         }
     }
 
-    internal static async Task<Dependency[]?> ResolveDependencyConflicts(string repoRoot, string projectPath, string targetFramework, Dependency[] packages, Dependency[] update, ExperimentsManager experimentsManager, ILogger logger)
+    internal static async Task<ImmutableArray<Dependency>?> ResolveDependencyConflicts(string repoRoot, string projectPath, string targetFramework, ImmutableArray<Dependency> packages, ImmutableArray<Dependency> update, ExperimentsManager experimentsManager, ILogger logger)
     {
         var tempDirectory = Directory.CreateTempSubdirectory("package-dependency-coherence_");
         PackageManager packageManager = new PackageManager(repoRoot, projectPath);
@@ -477,7 +477,7 @@ internal static partial class MSBuildHelper
             .ToList();
 
             // Return as array
-            Dependency[] candidatePackagesArray = candidatePackages.ToArray();
+            var candidatePackagesArray = candidatePackages.ToImmutableArray();
 
             var targetFrameworks = new NuGetFramework[] { NuGetFramework.Parse(targetFramework) };
 
@@ -517,7 +517,7 @@ internal static partial class MSBuildHelper
         }
     }
 
-    internal static async Task<Dependency[]?> ResolveDependencyConflictsWithBruteForce(string repoRoot, string projectPath, string targetFramework, Dependency[] packages, ExperimentsManager experimentsManager, ILogger logger)
+    internal static async Task<ImmutableArray<Dependency>?> ResolveDependencyConflictsWithBruteForce(string repoRoot, string projectPath, string targetFramework, ImmutableArray<Dependency> packages, ExperimentsManager experimentsManager, ILogger logger)
     {
         var tempDirectory = Directory.CreateTempSubdirectory("package-dependency-coherence_");
         try
@@ -599,7 +599,7 @@ internal static partial class MSBuildHelper
             {
                 // rebuild candidate dependency list with the relevant versions
                 Dictionary<string, NuGetVersion> packageVersions = candidateSet.ToDictionary(candidateSet => candidateSet.PackageName, candidateSet => candidateSet.PackageVersion);
-                Dependency[] candidatePackages = packages.Select(p =>
+                var candidatePackages = packages.Select(p =>
                 {
                     if (packageVersions.TryGetValue(p.Name, out var version))
                     {
@@ -609,7 +609,7 @@ internal static partial class MSBuildHelper
 
                     // not the dependency we're looking for, use whatever it already was in this set
                     return p;
-                }).ToArray();
+                }).ToImmutableArray();
 
                 if (await DependenciesAreCoherentAsync(repoRoot, projectPath, targetFramework, candidatePackages, experimentsManager, logger))
                 {
@@ -880,7 +880,7 @@ internal static partial class MSBuildHelper
         return tfms;
     }
 
-    internal static async Task<Dependency[]> GetAllPackageDependenciesAsync(
+    internal static async Task<ImmutableArray<Dependency>> GetAllPackageDependenciesAsync(
         string repoRoot,
         string projectPath,
         string targetFramework,
@@ -895,14 +895,14 @@ internal static partial class MSBuildHelper
             var topLevelPackagesNames = packages.Select(p => p.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
             var tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages, experimentsManager, logger, importDependencyTargets: !experimentsManager.UseDirectDiscovery);
 
-            Dependency[] allDependencies;
+            ImmutableArray<Dependency> allDependencies;
             if (experimentsManager.UseDirectDiscovery)
             {
                 var projectDiscovery = await SdkProjectDiscovery.DiscoverAsync(repoRoot, tempDirectory.FullName, tempProjectPath, experimentsManager, logger);
                 allDependencies = projectDiscovery
                     .Where(p => p.FilePath == Path.GetFileName(tempProjectPath))
                     .FirstOrDefault()
-                    ?.Dependencies.ToArray() ?? [];
+                    ?.Dependencies.ToImmutableArray() ?? [];
             }
             else
             {
@@ -923,7 +923,7 @@ internal static partial class MSBuildHelper
                             var isTransitive = !topLevelPackagesNames.Contains(PackageName);
                             return new Dependency(PackageName, match.Groups["PackageVersion"].Value, DependencyType.Unknown, TargetFrameworks: tfms, IsTransitive: isTransitive);
                         })
-                        .ToArray();
+                        .ToImmutableArray();
                 }
                 else
                 {

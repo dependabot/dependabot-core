@@ -171,7 +171,7 @@ public class MSBuildHelperTests : TestBase
             new("Package.C", "3.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
             new("Package.D", "4.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
         ];
-        Dependency[] actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(
+        var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(
             temp.DirectoryPath,
             temp.DirectoryPath,
             "netstandard2.0",
@@ -424,7 +424,7 @@ public class MSBuildHelperTests : TestBase
             new("Package.B", "2.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
         ];
 
-        Dependency[] actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(
+        var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(
             temp.DirectoryPath,
             temp.DirectoryPath,
             "net8.0",
@@ -475,7 +475,7 @@ public class MSBuildHelperTests : TestBase
             {
                 new Dependency("Some.Package", "1.2.0", DependencyType.PackageReference),
                 new Dependency("Some.Other.Package", "1.0.0", DependencyType.PackageReference),
-            };
+            }.ToImmutableArray();
             var update = new[]
             {
                 new Dependency("Some.Other.Package", "1.2.0", DependencyType.PackageReference),
@@ -489,11 +489,11 @@ public class MSBuildHelperTests : TestBase
                 new TestLogger()
             );
             Assert.NotNull(resolvedDependencies);
-            Assert.Equal(2, resolvedDependencies.Length);
-            Assert.Equal("Some.Package", resolvedDependencies[0].Name);
-            Assert.Equal("1.2.0", resolvedDependencies[0].Version);
-            Assert.Equal("Some.Other.Package", resolvedDependencies[1].Name);
-            Assert.Equal("1.2.0", resolvedDependencies[1].Version);
+            Assert.Equal(2, resolvedDependencies.Value.Length);
+            Assert.Equal("Some.Package", resolvedDependencies.Value[0].Name);
+            Assert.Equal("1.2.0", resolvedDependencies.Value[0].Version);
+            Assert.Equal("Some.Other.Package", resolvedDependencies.Value[1].Name);
+            Assert.Equal("1.2.0", resolvedDependencies.Value[1].Version);
         }
         finally
         {
@@ -663,11 +663,11 @@ public class MSBuildHelperTests : TestBase
             new Dependency("CS-Script.Core", "1.3.1", DependencyType.PackageReference),
             new Dependency("Microsoft.CodeAnalysis.Common", "3.4.0", DependencyType.PackageReference),
             new Dependency("Microsoft.CodeAnalysis.Scripting.Common", "3.4.0", DependencyType.PackageReference),
-        };
+        }.ToImmutableArray();
         var update = new[]
         {
             new Dependency("CS-Script.Core", "2.0.0", DependencyType.PackageReference),
-        };
+        }.ToImmutableArray();
 
         var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(
             tempDirectory.DirectoryPath,
@@ -679,13 +679,13 @@ public class MSBuildHelperTests : TestBase
             new TestLogger()
         );
         Assert.NotNull(resolvedDependencies);
-        Assert.Equal(3, resolvedDependencies.Length);
-        Assert.Equal("CS-Script.Core", resolvedDependencies[0].Name);
-        Assert.Equal("2.0.0", resolvedDependencies[0].Version);
-        Assert.Equal("Microsoft.CodeAnalysis.Common", resolvedDependencies[1].Name);
-        Assert.Equal("3.6.0", resolvedDependencies[1].Version);
-        Assert.Equal("Microsoft.CodeAnalysis.Scripting.Common", resolvedDependencies[2].Name);
-        Assert.Equal("3.6.0", resolvedDependencies[2].Version);
+        Assert.Equal(3, resolvedDependencies.Value.Length);
+        Assert.Equal("CS-Script.Core", resolvedDependencies.Value[0].Name);
+        Assert.Equal("2.0.0", resolvedDependencies.Value[0].Version);
+        Assert.Equal("Microsoft.CodeAnalysis.Common", resolvedDependencies.Value[1].Name);
+        Assert.Equal("3.6.0", resolvedDependencies.Value[1].Version);
+        Assert.Equal("Microsoft.CodeAnalysis.Scripting.Common", resolvedDependencies.Value[2].Name);
+        Assert.Equal("3.6.0", resolvedDependencies.Value[2].Version);
     }
 
     // Updating a dependency (Microsoft.Bcl.AsyncInterfaces) of the root package (Azure.Core) will require the root package to also update, but since the dependency is not in the existing list, we do not include it
@@ -710,11 +710,11 @@ public class MSBuildHelperTests : TestBase
         var dependencies = new[]
         {
             new Dependency("Azure.Core", "1.21.0", DependencyType.PackageReference)
-        };
+        }.ToImmutableArray();
         var update = new[]
         {
             new Dependency("Microsoft.Bcl.AsyncInterfaces", "1.1.1", DependencyType.Unknown)
-        };
+        }.ToImmutableArray();
 
         var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(
             tempDirectory.DirectoryPath,
@@ -726,9 +726,9 @@ public class MSBuildHelperTests : TestBase
             new TestLogger()
         );
         Assert.NotNull(resolvedDependencies);
-        Assert.Single(resolvedDependencies);
-        Assert.Equal("Azure.Core", resolvedDependencies[0].Name);
-        Assert.Equal("1.22.0", resolvedDependencies[0].Version);
+        Assert.Single(resolvedDependencies.Value);
+        Assert.Equal("Azure.Core", resolvedDependencies.Value[0].Name);
+        Assert.Equal("1.22.0", resolvedDependencies.Value[0].Version);
     }
 
     // Adding a reference
@@ -755,11 +755,11 @@ public class MSBuildHelperTests : TestBase
         var dependencies = new[]
         {
             new Dependency("Newtonsoft.Json.Bson", "1.0.2", DependencyType.PackageReference)
-        };
+        }.ToImmutableArray();
         var update = new[]
         {
             new Dependency("Newtonsoft.Json", "13.0.1", DependencyType.Unknown)
-        };
+        }.ToImmutableArray();
 
         var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(
             tempDirectory.DirectoryPath,
@@ -771,11 +771,11 @@ public class MSBuildHelperTests : TestBase
             new TestLogger()
         );
         Assert.NotNull(resolvedDependencies);
-        Assert.Equal(2, resolvedDependencies.Length);
-        Assert.Equal("Newtonsoft.Json.Bson", resolvedDependencies[0].Name);
-        Assert.Equal("1.0.2", resolvedDependencies[0].Version);
-        Assert.Equal("Newtonsoft.Json", resolvedDependencies[1].Name);
-        Assert.Equal("13.0.1", resolvedDependencies[1].Version);
+        Assert.Equal(2, resolvedDependencies.Value.Length);
+        Assert.Equal("Newtonsoft.Json.Bson", resolvedDependencies.Value[0].Name);
+        Assert.Equal("1.0.2", resolvedDependencies.Value[0].Version);
+        Assert.Equal("Newtonsoft.Json", resolvedDependencies.Value[1].Name);
+        Assert.Equal("13.0.1", resolvedDependencies.Value[1].Version);
     }
 
     // Updating unreferenced dependency
@@ -807,11 +807,11 @@ public class MSBuildHelperTests : TestBase
             new Dependency("Microsoft.CodeAnalysis.Compilers", "4.9.2", DependencyType.PackageReference),
             new Dependency("Microsoft.CodeAnalysis.CSharp", "4.9.2", DependencyType.PackageReference),
             new Dependency("Microsoft.CodeAnalysis.VisualBasic", "4.9.2", DependencyType.PackageReference)
-        };
+        }.ToImmutableArray();
         var update = new[]
         {
             new Dependency("Microsoft.CodeAnalysis.Common", "4.10.0", DependencyType.PackageReference)
-        };
+        }.ToImmutableArray();
 
         var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(
             tempDirectory.DirectoryPath,
@@ -823,13 +823,13 @@ public class MSBuildHelperTests : TestBase
             new TestLogger()
         );
         Assert.NotNull(resolvedDependencies);
-        Assert.Equal(3, resolvedDependencies.Length);
-        Assert.Equal("Microsoft.CodeAnalysis.Compilers", resolvedDependencies[0].Name);
-        Assert.Equal("4.10.0", resolvedDependencies[0].Version);
-        Assert.Equal("Microsoft.CodeAnalysis.CSharp", resolvedDependencies[1].Name);
-        Assert.Equal("4.10.0", resolvedDependencies[1].Version);
-        Assert.Equal("Microsoft.CodeAnalysis.VisualBasic", resolvedDependencies[2].Name);
-        Assert.Equal("4.10.0", resolvedDependencies[2].Version);
+        Assert.Equal(3, resolvedDependencies.Value.Length);
+        Assert.Equal("Microsoft.CodeAnalysis.Compilers", resolvedDependencies.Value[0].Name);
+        Assert.Equal("4.10.0", resolvedDependencies.Value[0].Version);
+        Assert.Equal("Microsoft.CodeAnalysis.CSharp", resolvedDependencies.Value[1].Name);
+        Assert.Equal("4.10.0", resolvedDependencies.Value[1].Version);
+        Assert.Equal("Microsoft.CodeAnalysis.VisualBasic", resolvedDependencies.Value[2].Name);
+        Assert.Equal("4.10.0", resolvedDependencies.Value[2].Version);
     }
 
     // Updating referenced dependency
@@ -861,11 +861,11 @@ public class MSBuildHelperTests : TestBase
             new Dependency("Microsoft.CodeAnalysis.Common", "4.9.2", DependencyType.PackageReference),
             new Dependency("Microsoft.CodeAnalysis.CSharp", "4.9.2", DependencyType.PackageReference),
             new Dependency("Microsoft.CodeAnalysis.VisualBasic", "4.9.2", DependencyType.PackageReference)
-        };
+        }.ToImmutableArray();
         var update = new[]
         {
             new Dependency("Microsoft.CodeAnalysis.Common", "4.10.0", DependencyType.PackageReference)
-        };
+        }.ToImmutableArray();
 
         var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(
             tempDirectory.DirectoryPath,
@@ -877,15 +877,15 @@ public class MSBuildHelperTests : TestBase
             new TestLogger()
         );
         Assert.NotNull(resolvedDependencies);
-        Assert.Equal(4, resolvedDependencies.Length);
-        Assert.Equal("Microsoft.CodeAnalysis.Compilers", resolvedDependencies[0].Name);
-        Assert.Equal("4.10.0", resolvedDependencies[0].Version);
-        Assert.Equal("Microsoft.CodeAnalysis.Common", resolvedDependencies[1].Name);
-        Assert.Equal("4.10.0", resolvedDependencies[1].Version);
-        Assert.Equal("Microsoft.CodeAnalysis.CSharp", resolvedDependencies[2].Name);
-        Assert.Equal("4.10.0", resolvedDependencies[2].Version);
-        Assert.Equal("Microsoft.CodeAnalysis.VisualBasic", resolvedDependencies[3].Name);
-        Assert.Equal("4.10.0", resolvedDependencies[3].Version);
+        Assert.Equal(4, resolvedDependencies.Value.Length);
+        Assert.Equal("Microsoft.CodeAnalysis.Compilers", resolvedDependencies.Value[0].Name);
+        Assert.Equal("4.10.0", resolvedDependencies.Value[0].Version);
+        Assert.Equal("Microsoft.CodeAnalysis.Common", resolvedDependencies.Value[1].Name);
+        Assert.Equal("4.10.0", resolvedDependencies.Value[1].Version);
+        Assert.Equal("Microsoft.CodeAnalysis.CSharp", resolvedDependencies.Value[2].Name);
+        Assert.Equal("4.10.0", resolvedDependencies.Value[2].Version);
+        Assert.Equal("Microsoft.CodeAnalysis.VisualBasic", resolvedDependencies.Value[3].Name);
+        Assert.Equal("4.10.0", resolvedDependencies.Value[3].Version);
     }
 
     // A combination of the third and fourth test, to measure efficiency of updating separate families
@@ -918,12 +918,12 @@ public class MSBuildHelperTests : TestBase
             new Dependency("Microsoft.CodeAnalysis.CSharp", "4.9.2", DependencyType.PackageReference),
             new Dependency("Microsoft.CodeAnalysis.VisualBasic", "4.9.2", DependencyType.PackageReference),
             new Dependency("Newtonsoft.Json.Bson", "1.0.2", DependencyType.PackageReference)
-        };
+        }.ToImmutableArray();
         var update = new[]
         {
             new Dependency("Microsoft.CodeAnalysis.Common", "4.10.0", DependencyType.PackageReference),
             new Dependency("Newtonsoft.Json", "13.0.1", DependencyType.Unknown)
-        };
+        }.ToImmutableArray();
 
         var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(
             tempDirectory.DirectoryPath,
@@ -935,17 +935,17 @@ public class MSBuildHelperTests : TestBase
             new TestLogger()
         );
         Assert.NotNull(resolvedDependencies);
-        Assert.Equal(5, resolvedDependencies.Length);
-        Assert.Equal("Microsoft.CodeAnalysis.Compilers", resolvedDependencies[0].Name);
-        Assert.Equal("4.10.0", resolvedDependencies[0].Version);
-        Assert.Equal("Microsoft.CodeAnalysis.CSharp", resolvedDependencies[1].Name);
-        Assert.Equal("4.10.0", resolvedDependencies[1].Version);
-        Assert.Equal("Microsoft.CodeAnalysis.VisualBasic", resolvedDependencies[2].Name);
-        Assert.Equal("4.10.0", resolvedDependencies[2].Version);
-        Assert.Equal("Newtonsoft.Json.Bson", resolvedDependencies[3].Name);
-        Assert.Equal("1.0.2", resolvedDependencies[3].Version);
-        Assert.Equal("Newtonsoft.Json", resolvedDependencies[4].Name);
-        Assert.Equal("13.0.1", resolvedDependencies[4].Version);
+        Assert.Equal(5, resolvedDependencies.Value.Length);
+        Assert.Equal("Microsoft.CodeAnalysis.Compilers", resolvedDependencies.Value[0].Name);
+        Assert.Equal("4.10.0", resolvedDependencies.Value[0].Version);
+        Assert.Equal("Microsoft.CodeAnalysis.CSharp", resolvedDependencies.Value[1].Name);
+        Assert.Equal("4.10.0", resolvedDependencies.Value[1].Version);
+        Assert.Equal("Microsoft.CodeAnalysis.VisualBasic", resolvedDependencies.Value[2].Name);
+        Assert.Equal("4.10.0", resolvedDependencies.Value[2].Version);
+        Assert.Equal("Newtonsoft.Json.Bson", resolvedDependencies.Value[3].Name);
+        Assert.Equal("1.0.2", resolvedDependencies.Value[3].Version);
+        Assert.Equal("Newtonsoft.Json", resolvedDependencies.Value[4].Name);
+        Assert.Equal("13.0.1", resolvedDependencies.Value[4].Version);
     }
 
     // Two top level packages (Buildalyzer), (Microsoft.CodeAnalysis.CSharp.Scripting) that share a dependency (Microsoft.CodeAnalysis.Csharp)
@@ -995,11 +995,11 @@ public class MSBuildHelperTests : TestBase
             new Dependency("Microsoft.CodeAnalysis.CSharp.Scripting", "3.10.0", DependencyType.PackageReference),
             new Dependency("Microsoft.CodeAnalysis.CSharp", "3.10.0", DependencyType.PackageReference),
             new Dependency("Microsoft.CodeAnalysis.Common", "3.10.0", DependencyType.PackageReference),
-        };
+        }.ToImmutableArray();
         var update = new[]
         {
             new Dependency("Buildalyzer", "7.0.1", DependencyType.PackageReference),
-        };
+        }.ToImmutableArray();
 
         // act
         var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(
@@ -1021,7 +1021,7 @@ public class MSBuildHelperTests : TestBase
             "Microsoft.CodeAnalysis.Common/4.0.1"
         };
         Assert.NotNull(resolvedDependencies);
-        var actualDependencies = resolvedDependencies.Select(d => $"{d.Name}/{d.Version}").ToArray();
+        var actualDependencies = resolvedDependencies.Value.Select(d => $"{d.Name}/{d.Version}").ToArray();
         AssertEx.Equal(expectedDependencies, actualDependencies);
     }
 
@@ -1055,13 +1055,12 @@ public class MSBuildHelperTests : TestBase
             new Dependency("Microsoft.CodeAnalysis.CSharp.Scripting", "4.8.0", DependencyType.PackageReference),
             new Dependency("Microsoft.Bcl.AsyncInterfaces", "1.0.0", DependencyType.Unknown),
             new Dependency("Azure.Core", "1.21.0", DependencyType.PackageReference),
-
-        };
+        }.ToImmutableArray();
         var update = new[]
         {
             new Dependency("Microsoft.CodeAnalysis.Common", "4.10.0", DependencyType.PackageReference),
             new Dependency("Azure.Core", "1.22.0", DependencyType.PackageReference)
-        };
+        }.ToImmutableArray();
 
         var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(
             tempDirectory.DirectoryPath,
@@ -1073,15 +1072,15 @@ public class MSBuildHelperTests : TestBase
             new TestLogger()
         );
         Assert.NotNull(resolvedDependencies);
-        Assert.Equal(4, resolvedDependencies.Length);
-        Assert.Equal("System.Collections.Immutable", resolvedDependencies[0].Name);
-        Assert.Equal("8.0.0", resolvedDependencies[0].Version);
-        Assert.Equal("Microsoft.CodeAnalysis.CSharp.Scripting", resolvedDependencies[1].Name);
-        Assert.Equal("4.10.0", resolvedDependencies[1].Version);
-        Assert.Equal("Microsoft.Bcl.AsyncInterfaces", resolvedDependencies[2].Name);
-        Assert.Equal("1.1.1", resolvedDependencies[2].Version);
-        Assert.Equal("Azure.Core", resolvedDependencies[3].Name);
-        Assert.Equal("1.22.0", resolvedDependencies[3].Version);
+        Assert.Equal(4, resolvedDependencies.Value.Length);
+        Assert.Equal("System.Collections.Immutable", resolvedDependencies.Value[0].Name);
+        Assert.Equal("8.0.0", resolvedDependencies.Value[0].Version);
+        Assert.Equal("Microsoft.CodeAnalysis.CSharp.Scripting", resolvedDependencies.Value[1].Name);
+        Assert.Equal("4.10.0", resolvedDependencies.Value[1].Version);
+        Assert.Equal("Microsoft.Bcl.AsyncInterfaces", resolvedDependencies.Value[2].Name);
+        Assert.Equal("1.1.1", resolvedDependencies.Value[2].Version);
+        Assert.Equal("Azure.Core", resolvedDependencies.Value[3].Name);
+        Assert.Equal("1.22.0", resolvedDependencies.Value[3].Version);
     }
 
     // Similar to the last test, except Microsoft.CodeAnalysis.Common is in the existing list
@@ -1115,12 +1114,12 @@ public class MSBuildHelperTests : TestBase
             new Dependency("Microsoft.Bcl.AsyncInterfaces", "1.0.0", DependencyType.Unknown),
             new Dependency("Azure.Core", "1.21.0", DependencyType.PackageReference),
 
-        };
+        }.ToImmutableArray();
         var update = new[]
         {
             new Dependency("Microsoft.CodeAnalysis.Common", "4.10.0", DependencyType.PackageReference),
             new Dependency("Azure.Core", "1.22.0", DependencyType.PackageReference)
-        };
+        }.ToImmutableArray();
 
         var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(
             tempDirectory.DirectoryPath,
@@ -1132,17 +1131,17 @@ public class MSBuildHelperTests : TestBase
             new TestLogger()
         );
         Assert.NotNull(resolvedDependencies);
-        Assert.Equal(5, resolvedDependencies.Length);
-        Assert.Equal("System.Collections.Immutable", resolvedDependencies[0].Name);
-        Assert.Equal("8.0.0", resolvedDependencies[0].Version);
-        Assert.Equal("Microsoft.CodeAnalysis.CSharp.Scripting", resolvedDependencies[1].Name);
-        Assert.Equal("4.10.0", resolvedDependencies[1].Version);
-        Assert.Equal("Microsoft.CodeAnalysis.Common", resolvedDependencies[2].Name);
-        Assert.Equal("4.10.0", resolvedDependencies[2].Version);
-        Assert.Equal("Microsoft.Bcl.AsyncInterfaces", resolvedDependencies[3].Name);
-        Assert.Equal("1.1.1", resolvedDependencies[3].Version);
-        Assert.Equal("Azure.Core", resolvedDependencies[4].Name);
-        Assert.Equal("1.22.0", resolvedDependencies[4].Version);
+        Assert.Equal(5, resolvedDependencies.Value.Length);
+        Assert.Equal("System.Collections.Immutable", resolvedDependencies.Value[0].Name);
+        Assert.Equal("8.0.0", resolvedDependencies.Value[0].Version);
+        Assert.Equal("Microsoft.CodeAnalysis.CSharp.Scripting", resolvedDependencies.Value[1].Name);
+        Assert.Equal("4.10.0", resolvedDependencies.Value[1].Version);
+        Assert.Equal("Microsoft.CodeAnalysis.Common", resolvedDependencies.Value[2].Name);
+        Assert.Equal("4.10.0", resolvedDependencies.Value[2].Version);
+        Assert.Equal("Microsoft.Bcl.AsyncInterfaces", resolvedDependencies.Value[3].Name);
+        Assert.Equal("1.1.1", resolvedDependencies.Value[3].Version);
+        Assert.Equal("Azure.Core", resolvedDependencies.Value[4].Name);
+        Assert.Equal("1.22.0", resolvedDependencies.Value[4].Version);
     }
 
     // Out of scope test: AutoMapper.Extensions.Microsoft.DependencyInjection's versions are not yet compatible
@@ -1173,11 +1172,11 @@ public class MSBuildHelperTests : TestBase
             new Dependency("AutoMapper.Extensions.Microsoft.DependencyInjection", "12.0.1", DependencyType.PackageReference),
             new Dependency("AutoMapper", "12.0.1", DependencyType.PackageReference),
             new Dependency("AutoMapper.Collection", "9.0.0", DependencyType.PackageReference)
-        };
+        }.ToImmutableArray();
         var update = new[]
         {
             new Dependency("AutoMapper.Collection", "10.0.0", DependencyType.PackageReference)
-        };
+        }.ToImmutableArray();
 
         var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(
             tempDirectory.DirectoryPath,
@@ -1189,13 +1188,13 @@ public class MSBuildHelperTests : TestBase
             new TestLogger()
         );
         Assert.NotNull(resolvedDependencies);
-        Assert.Equal(3, resolvedDependencies.Length);
-        Assert.Equal("AutoMapper.Extensions.Microsoft.DependencyInjection", resolvedDependencies[0].Name);
-        Assert.Equal("12.0.1", resolvedDependencies[0].Version);
-        Assert.Equal("AutoMapper", resolvedDependencies[1].Name);
-        Assert.Equal("12.0.1", resolvedDependencies[1].Version);
-        Assert.Equal("AutoMapper.Collection", resolvedDependencies[2].Name);
-        Assert.Equal("9.0.0", resolvedDependencies[2].Version);
+        Assert.Equal(3, resolvedDependencies.Value.Length);
+        Assert.Equal("AutoMapper.Extensions.Microsoft.DependencyInjection", resolvedDependencies.Value[0].Name);
+        Assert.Equal("12.0.1", resolvedDependencies.Value[0].Version);
+        Assert.Equal("AutoMapper", resolvedDependencies.Value[1].Name);
+        Assert.Equal("12.0.1", resolvedDependencies.Value[1].Version);
+        Assert.Equal("AutoMapper.Collection", resolvedDependencies.Value[2].Name);
+        Assert.Equal("9.0.0", resolvedDependencies.Value[2].Version);
     }
 
     // Two dependencies (Microsoft.Extensions.Caching.Memory), (Microsoft.EntityFrameworkCore.Analyzers) used by the same parent (Microsoft.EntityFrameworkCore), updating one of the dependencies
@@ -1222,11 +1221,11 @@ public class MSBuildHelperTests : TestBase
         {
             new Dependency("Microsoft.EntityFrameworkCore", "7.0.11", DependencyType.PackageReference),
             new Dependency("Microsoft.EntityFrameworkCore.Analyzers", "7.0.11", DependencyType.PackageReference)
-        };
+        }.ToImmutableArray();
         var update = new[]
         {
             new Dependency("Microsoft.Extensions.Caching.Memory", "8.0.0", DependencyType.PackageReference)
-        };
+        }.ToImmutableArray();
 
         var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(
             tempDirectory.DirectoryPath,
@@ -1238,11 +1237,11 @@ public class MSBuildHelperTests : TestBase
             new TestLogger()
         );
         Assert.NotNull(resolvedDependencies);
-        Assert.Equal(2, resolvedDependencies.Length);
-        Assert.Equal("Microsoft.EntityFrameworkCore", resolvedDependencies[0].Name);
-        Assert.Equal("8.0.0", resolvedDependencies[0].Version);
-        Assert.Equal("Microsoft.EntityFrameworkCore.Analyzers", resolvedDependencies[1].Name);
-        Assert.Equal("8.0.0", resolvedDependencies[1].Version);
+        Assert.Equal(2, resolvedDependencies.Value.Length);
+        Assert.Equal("Microsoft.EntityFrameworkCore", resolvedDependencies.Value[0].Name);
+        Assert.Equal("8.0.0", resolvedDependencies.Value[0].Version);
+        Assert.Equal("Microsoft.EntityFrameworkCore.Analyzers", resolvedDependencies.Value[1].Name);
+        Assert.Equal("8.0.0", resolvedDependencies.Value[1].Version);
     }
 
     // Updating referenced package
@@ -1274,11 +1273,11 @@ public class MSBuildHelperTests : TestBase
             new Dependency("Microsoft.EntityFrameworkCore.Relational", "7.0.0", DependencyType.PackageReference),
             new Dependency("Microsoft.EntityFrameworkCore", "7.0.0", DependencyType.PackageReference),
             new Dependency("Microsoft.EntityFrameworkCore.Analyzers", "7.0.0", DependencyType.PackageReference)
-        };
+        }.ToImmutableArray();
         var update = new[]
         {
             new Dependency("Microsoft.EntityFrameworkCore.Analyzers", "8.0.0", DependencyType.PackageReference)
-        };
+        }.ToImmutableArray();
 
         var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(
             tempDirectory.DirectoryPath,
@@ -1290,15 +1289,15 @@ public class MSBuildHelperTests : TestBase
             new TestLogger()
         );
         Assert.NotNull(resolvedDependencies);
-        Assert.Equal(4, resolvedDependencies.Length);
-        Assert.Equal("Microsoft.EntityFrameworkCore.Design", resolvedDependencies[0].Name);
-        Assert.Equal("7.0.0", resolvedDependencies[0].Version);
-        Assert.Equal("Microsoft.EntityFrameworkCore.Relational", resolvedDependencies[1].Name);
-        Assert.Equal("7.0.0", resolvedDependencies[1].Version);
-        Assert.Equal("Microsoft.EntityFrameworkCore", resolvedDependencies[2].Name);
-        Assert.Equal("7.0.0", resolvedDependencies[2].Version);
-        Assert.Equal("Microsoft.EntityFrameworkCore.Analyzers", resolvedDependencies[3].Name);
-        Assert.Equal("8.0.0", resolvedDependencies[3].Version);
+        Assert.Equal(4, resolvedDependencies.Value.Length);
+        Assert.Equal("Microsoft.EntityFrameworkCore.Design", resolvedDependencies.Value[0].Name);
+        Assert.Equal("7.0.0", resolvedDependencies.Value[0].Version);
+        Assert.Equal("Microsoft.EntityFrameworkCore.Relational", resolvedDependencies.Value[1].Name);
+        Assert.Equal("7.0.0", resolvedDependencies.Value[1].Version);
+        Assert.Equal("Microsoft.EntityFrameworkCore", resolvedDependencies.Value[2].Name);
+        Assert.Equal("7.0.0", resolvedDependencies.Value[2].Version);
+        Assert.Equal("Microsoft.EntityFrameworkCore.Analyzers", resolvedDependencies.Value[3].Name);
+        Assert.Equal("8.0.0", resolvedDependencies.Value[3].Version);
     }
 
     // Updating unreferenced package
@@ -1328,11 +1327,11 @@ public class MSBuildHelperTests : TestBase
             new Dependency("Microsoft.EntityFrameworkCore.Design", "7.0.0", DependencyType.PackageReference),
             new Dependency("Microsoft.EntityFrameworkCore.Relational", "7.0.0", DependencyType.PackageReference),
             new Dependency("Microsoft.EntityFrameworkCore", "7.0.0", DependencyType.PackageReference),
-        };
+        }.ToImmutableArray();
         var update = new[]
         {
             new Dependency("Microsoft.EntityFrameworkCore.Analyzers", "8.0.0", DependencyType.PackageReference)
-        };
+        }.ToImmutableArray();
 
         var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(
             tempDirectory.DirectoryPath,
@@ -1344,13 +1343,13 @@ public class MSBuildHelperTests : TestBase
             new TestLogger()
         );
         Assert.NotNull(resolvedDependencies);
-        Assert.Equal(3, resolvedDependencies.Length);
-        Assert.Equal("Microsoft.EntityFrameworkCore.Design", resolvedDependencies[0].Name);
-        Assert.Equal("8.0.0", resolvedDependencies[0].Version);
-        Assert.Equal("Microsoft.EntityFrameworkCore.Relational", resolvedDependencies[1].Name);
-        Assert.Equal("8.0.0", resolvedDependencies[1].Version);
-        Assert.Equal("Microsoft.EntityFrameworkCore", resolvedDependencies[2].Name);
-        Assert.Equal("8.0.0", resolvedDependencies[2].Version);
+        Assert.Equal(3, resolvedDependencies.Value.Length);
+        Assert.Equal("Microsoft.EntityFrameworkCore.Design", resolvedDependencies.Value[0].Name);
+        Assert.Equal("8.0.0", resolvedDependencies.Value[0].Version);
+        Assert.Equal("Microsoft.EntityFrameworkCore.Relational", resolvedDependencies.Value[1].Name);
+        Assert.Equal("8.0.0", resolvedDependencies.Value[1].Version);
+        Assert.Equal("Microsoft.EntityFrameworkCore", resolvedDependencies.Value[2].Name);
+        Assert.Equal("8.0.0", resolvedDependencies.Value[2].Version);
     }
 
     // Updating a referenced transitive dependency
@@ -1382,11 +1381,11 @@ public class MSBuildHelperTests : TestBase
             new Dependency("Microsoft.CodeAnalysis.CSharp.Workspaces", "4.8.0", DependencyType.PackageReference),
             new Dependency("Microsoft.CodeAnalysis.CSharp", "4.8.0", DependencyType.PackageReference),
             new Dependency("Microsoft.CodeAnalysis.Common", "4.8.0", DependencyType.PackageReference),
-        };
+        }.ToImmutableArray();
         var update = new[]
         {
             new Dependency("System.Collections.Immutable", "8.0.0", DependencyType.PackageReference),
-        };
+        }.ToImmutableArray();
 
         var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(
             tempDirectory.DirectoryPath,
@@ -1398,15 +1397,15 @@ public class MSBuildHelperTests : TestBase
             new TestLogger()
         );
         Assert.NotNull(resolvedDependencies);
-        Assert.Equal(4, resolvedDependencies.Length);
-        Assert.Equal("System.Collections.Immutable", resolvedDependencies[0].Name);
-        Assert.Equal("8.0.0", resolvedDependencies[0].Version);
-        Assert.Equal("Microsoft.CodeAnalysis.CSharp.Workspaces", resolvedDependencies[1].Name);
-        Assert.Equal("4.8.0", resolvedDependencies[1].Version);
-        Assert.Equal("Microsoft.CodeAnalysis.CSharp", resolvedDependencies[2].Name);
-        Assert.Equal("4.8.0", resolvedDependencies[2].Version);
-        Assert.Equal("Microsoft.CodeAnalysis.Common", resolvedDependencies[3].Name);
-        Assert.Equal("4.8.0", resolvedDependencies[3].Version);
+        Assert.Equal(4, resolvedDependencies.Value.Length);
+        Assert.Equal("System.Collections.Immutable", resolvedDependencies.Value[0].Name);
+        Assert.Equal("8.0.0", resolvedDependencies.Value[0].Version);
+        Assert.Equal("Microsoft.CodeAnalysis.CSharp.Workspaces", resolvedDependencies.Value[1].Name);
+        Assert.Equal("4.8.0", resolvedDependencies.Value[1].Version);
+        Assert.Equal("Microsoft.CodeAnalysis.CSharp", resolvedDependencies.Value[2].Name);
+        Assert.Equal("4.8.0", resolvedDependencies.Value[2].Version);
+        Assert.Equal("Microsoft.CodeAnalysis.Common", resolvedDependencies.Value[3].Name);
+        Assert.Equal("4.8.0", resolvedDependencies.Value[3].Version);
     }
 
     // Similar to the last test, with the "grandchild" (System.Collections.Immutable) not in the existing list
@@ -1435,12 +1434,11 @@ public class MSBuildHelperTests : TestBase
             new Dependency("Microsoft.CodeAnalysis.CSharp.Workspaces", "4.8.0", DependencyType.PackageReference),
             new Dependency("Microsoft.CodeAnalysis.CSharp", "4.8.0", DependencyType.PackageReference),
             new Dependency("Microsoft.CodeAnalysis.Common", "4.8.0", DependencyType.PackageReference),
-
-        };
+        }.ToImmutableArray();
         var update = new[]
         {
             new Dependency("System.Collections.Immutable", "8.0.0", DependencyType.PackageReference),
-        };
+        }.ToImmutableArray();
 
         var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(
             tempDirectory.DirectoryPath,
@@ -1452,13 +1450,13 @@ public class MSBuildHelperTests : TestBase
             new TestLogger()
         );
         Assert.NotNull(resolvedDependencies);
-        Assert.Equal(3, resolvedDependencies.Length);
-        Assert.Equal("Microsoft.CodeAnalysis.CSharp.Workspaces", resolvedDependencies[0].Name);
-        Assert.Equal("4.9.2", resolvedDependencies[0].Version);
-        Assert.Equal("Microsoft.CodeAnalysis.CSharp", resolvedDependencies[1].Name);
-        Assert.Equal("4.9.2", resolvedDependencies[1].Version);
-        Assert.Equal("Microsoft.CodeAnalysis.Common", resolvedDependencies[2].Name);
-        Assert.Equal("4.9.2", resolvedDependencies[2].Version);
+        Assert.Equal(3, resolvedDependencies.Value.Length);
+        Assert.Equal("Microsoft.CodeAnalysis.CSharp.Workspaces", resolvedDependencies.Value[0].Name);
+        Assert.Equal("4.9.2", resolvedDependencies.Value[0].Version);
+        Assert.Equal("Microsoft.CodeAnalysis.CSharp", resolvedDependencies.Value[1].Name);
+        Assert.Equal("4.9.2", resolvedDependencies.Value[1].Version);
+        Assert.Equal("Microsoft.CodeAnalysis.Common", resolvedDependencies.Value[2].Name);
+        Assert.Equal("4.9.2", resolvedDependencies.Value[2].Version);
     }
     #endregion
 

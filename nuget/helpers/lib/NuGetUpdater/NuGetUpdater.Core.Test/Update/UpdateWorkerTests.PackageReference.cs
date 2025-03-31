@@ -2,6 +2,8 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 
+using NuGet.Versioning;
+
 using NuGetUpdater.Core.Run.ApiModel;
 using NuGetUpdater.Core.Updater;
 
@@ -50,7 +52,20 @@ public partial class UpdateWorkerTests
                         <PackageReference Include="Some.Package" Version="13.0.1" />
                       </ItemGroup>
                     </Project>
-                    """
+                    """,
+                expectedResult: new()
+                {
+                    UpdateOperations = [
+                        new DirectUpdate()
+                        {
+                            DependencyName = "Some.Package",
+                            NewVersion = NuGetVersion.Parse("13.0.1"),
+                            UpdatedFiles = [
+                                "/src/test-project.csproj"
+                            ]
+                        }
+                    ]
+                }
             );
         }
 
@@ -2636,7 +2651,18 @@ public partial class UpdateWorkerTests
                           </ItemGroup>
                         </Project>
                         """)
-                ]
+                ],
+                expectedResult: new()
+                {
+                    UpdateOperations = [
+                        new PinnedUpdate()
+                        {
+                            DependencyName = "Some.Transitive.Dependency",
+                            NewVersion = NuGetVersion.Parse("5.0.2"),
+                            UpdatedFiles = ["/src/Directory.Build.props", "/src/Directory.Packages.props", "/src/test-project.csproj"]
+                        }
+                    ]
+                }
             );
         }
 
@@ -3106,7 +3132,26 @@ public partial class UpdateWorkerTests
                         <PackageReference Include="Some.Package" Version="2.0.0" />
                       </ItemGroup>
                     </Project>
-                    """
+                    """,
+                expectedResult: new()
+                {
+                    UpdateOperations = [
+                        new DirectUpdate()
+                        {
+                            DependencyName = "Some.Package",
+                            NewVersion = NuGetVersion.Parse("2.0.0"),
+                            UpdatedFiles = ["/src/test-project.csproj"]
+                        },
+                        new ParentUpdate()
+                        {
+                            DependencyName = "Transitive.Package",
+                            NewVersion = NuGetVersion.Parse("8.0.0"),
+                            UpdatedFiles = ["/src/test-project.csproj"],
+                            ParentDependencyName = "Some.Package",
+                            ParentNewVersion = NuGetVersion.Parse("2.0.0")
+                        }
+                    ]
+                }
             );
         }
 
@@ -3202,6 +3247,9 @@ public partial class UpdateWorkerTests
                     </Project>
                     """,
                 expectedResult: new() // success
+                {
+                    UpdateOperations = []
+                }
             );
         }
 
@@ -3484,6 +3532,7 @@ public partial class UpdateWorkerTests
                 expectedResult: new()
                 {
                     Error = new PrivateSourceAuthenticationFailure([$"{http.BaseUrl.TrimEnd('/')}/index.json"]),
+                    UpdateOperations = [],
                 }
             );
         }

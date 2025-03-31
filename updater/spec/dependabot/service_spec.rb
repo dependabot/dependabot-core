@@ -626,6 +626,8 @@ RSpec.describe Dependabot::Service do
             .to include("Type")
           expect(service.summary)
             .to include("Details")
+          expect(service.summary)
+            .to include("\"message\": \"What is fortran doing here?!\"")
         end
       end
     end
@@ -659,6 +661,8 @@ RSpec.describe Dependabot::Service do
             .to include("Error Type")
           expect(service.summary)
             .to include("Error Details")
+          expect(service.summary)
+            .to include("\"message\": \"0001 Undefined error. Inform Technical Support\"")
         end
       end
     end

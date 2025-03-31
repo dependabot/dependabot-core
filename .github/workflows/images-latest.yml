@@ -79,8 +79,11 @@ jobs:
           docker tag "${UPDATER_IMAGE}${ECOSYSTEM}" "${UPDATER_IMAGE}${ECOSYSTEM}:latest"
           docker tag "${UPDATER_IMAGE}${ECOSYSTEM}" "${UPDATER_IMAGE}${ECOSYSTEM}:${{ needs.date-version.outputs.date }}"
 
-      - name: Log in to GHCR
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Push the images to GHCR
         run: |
