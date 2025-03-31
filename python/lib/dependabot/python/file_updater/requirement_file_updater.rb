@@ -41,7 +41,8 @@ module Dependabot
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         def updated_dependency_files
-          @updated_dependency_files ||= T.let(fetch_updated_dependency_files, T.nilable(T::Array[Dependabot::DependencyFile]))
+          @updated_dependency_files ||= T.let(fetch_updated_dependency_files,
+                                              T.nilable(T::Array[DependencyFile]))
         end
 
         private
@@ -54,7 +55,7 @@ module Dependabot
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         def fetch_updated_dependency_files
-          reqs = dependency&.requirements&.zip(T.must(dependency).previous_requirements || []) || []
+          reqs = dependency&.requirements&.zip(dependency&.previous_requirements || []) || []
 
           reqs.filter_map do |(new_req, old_req)|
             next if new_req == old_req
