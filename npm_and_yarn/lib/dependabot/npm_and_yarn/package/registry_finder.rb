@@ -339,7 +339,7 @@ module Dependabot
           file&.content&.scan(syntax) do
             next if Regexp.last_match&.[](:registry)&.include?("${")
 
-            url = prepare_registry_url(T.must(T.must(Regexp.last_match)[:registry]))
+            url = T.must(prepare_registry_url(T.must(T.must(Regexp.last_match)[:registry])))
             registry = normalize_configured_registry(url)
             registries << {
               "type" => "npm_registry",
