@@ -18,7 +18,7 @@ module Dependabot
 
         Dependabot::SharedHelpers.run_shell_command(
           "helm search repo #{name} --versions --output=json",
-          fingerprint: "helm search repo #{name} --versions --output=json"
+          fingerprint: "helm search repo <name> --versions --output=json"
         ).strip
       end
 
@@ -28,7 +28,7 @@ module Dependabot
 
         Dependabot::SharedHelpers.run_shell_command(
           "helm repo add #{repo_name} #{repository_url}",
-          fingerprint: "helm repo add #{repo_name} #{repository_url}"
+          fingerprint: "helm repo add <repo_name> <repository_url>"
         )
       end
 
@@ -58,7 +58,7 @@ module Dependabot
 
         Dependabot::SharedHelpers.run_shell_command(
           "helm registry login --username #{username} --password #{password} #{repository_url}",
-          fingerprint: "helm registry login --username #{username} --password #{password} #{repository_url}"
+          fingerprint: "helm registry login --username <username> --password <password> <repository_url>"
         )
       rescue StandardError => e
         Dependabot.logger.error(
