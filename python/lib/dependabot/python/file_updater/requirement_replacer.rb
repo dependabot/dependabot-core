@@ -84,8 +84,7 @@ module Dependabot
 
           if add_space_after_operators?
             new_req_string =
-              new_req_string
-              &.gsub(/(?<=\d)\s*(#{RequirementParser::COMPARISON})\s*(?=\d)/o, '\1 ')
+              T.must(new_req_string).gsub(/(?<=\d)\s*(#{RequirementParser::COMPARISON})\s*(?=\d)/o, '\1 ')
           end
 
           new_req_string.to_s
