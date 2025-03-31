@@ -244,6 +244,20 @@ RSpec.describe Dependabot::Nuget::NativeHelpers do
       it { is_expected.to be_a Dependabot::PrivateSourceAuthenticationFailure }
     end
 
+    context "when a feed rate limit is reached" do
+      let(:json) do
+        {
+          Error: {
+            "error-type": "private_source_bad_response",
+            "error-details": {
+              message: "some-url",
+            }
+          }
+        }.to_json
+      end
+      it { is_expected.to be_a Dependabot::PrivateSourceBadResponse }
+    end
+
     context "when an update is not possible" do
       let(:json) do
         {
