@@ -88,7 +88,7 @@ module Dependabot
 
             return nil if source_cred.nil?
 
-            source["url"] = AuthedUrlBuilder.authed_url(credential: source_cred)
+            source["url"] = T.must(AuthedUrlBuilder.authed_url(credential: source_cred))
           end
 
           source

@@ -132,15 +132,15 @@ module Dependabot
         ).updated_dependency_files
       end
 
-      sig { returns(T::Array[String]) }
+      sig { returns(T.nilable(T::Array[String])) }
       def pip_compile_index_urls
         if credentials.any?(&:replaces_base?)
-          credentials.select(&:replaces_base?).map { |cred| AuthedUrlBuilder.authed_url(credential: cred) }
+          credentials.select(&:replaces_base?).map { |cred| AuthedUrlBuilder.authed_url(credential: cred) }.compact
         else
           urls = credentials.map { |cred| AuthedUrlBuilder.authed_url(credential: cred) }
           # If there are no credentials that replace the base, we need to
           # ensure that the base URL is included in the list of extra-index-urls.
-          [nil, *urls]
+          [nil, *urls].compact
         end
       end
 

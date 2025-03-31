@@ -140,7 +140,7 @@ module Dependabot
         end
 
         def config_variable_index_urls
-          urls = { main: nil, extra: [] }
+          urls = { main: T.let(nil, T.nilable(String)), extra: [] }
 
           index_url_creds = credentials
                             .select { |cred| cred["type"] == "python_index" }
@@ -190,7 +190,7 @@ module Dependabot
           cred = credential_for(base_url)
           return base_url unless cred
 
-          AuthedUrlBuilder.authed_url(credential: cred).gsub(%r{/*$}, "") + "/"
+          T.must(AuthedUrlBuilder.authed_url(credential: cred)&.gsub(%r{/*$}, "")) + "/"
         end
 
         def credential_for(url)
