@@ -651,6 +651,14 @@ public class SerializationTests
 
         yield return
         [
+            new PrivateSourceBadResponse(["url1", "url2"]),
+            """
+            {"data":{"error-type":"private_source_bad_response","error-details":{"source":"(url1|url2)"}}}
+            """
+        ];
+
+        yield return
+        [
             new PullRequestExistsForLatestVersion("dep", "ver"),
             """
             {"data":{"error-type":"pull_request_exists_for_latest_version","error-details":{"dependency-name":"dep","dependency-version":"ver"}}}

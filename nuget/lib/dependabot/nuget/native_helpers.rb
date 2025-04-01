@@ -348,6 +348,8 @@ module Dependabot
           raise BadRequirementError, T.let(error_details.fetch("message"), String)
         when "private_source_authentication_failure"
           raise PrivateSourceAuthenticationFailure, T.let(error_details.fetch("source"), String)
+        when "private_source_bad_response"
+          raise PrivateSourceBadResponse, T.let(error_details.fetch("source"), String)
         when "update_not_possible"
           raise UpdateNotPossible, T.let(error_details.fetch("dependencies"), T::Array[String])
         when "unknown_error"
