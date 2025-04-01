@@ -968,6 +968,7 @@ internal static partial class MSBuildHelper
         ThrowOnMissingFile(output);
         ThrowOnMissingPackages(output);
         ThrowOnUpdateNotPossible(output);
+        ThrowOnRateLimitExceeded(output);
     }
 
     private static void ThrowOnUnauthenticatedFeed(string stdout)
@@ -982,6 +983,19 @@ internal static partial class MSBuildHelper
         if (unauthorizedMessageSnippets.Any(stdout.Contains))
         {
             throw new HttpRequestException(message: stdout, inner: null, statusCode: System.Net.HttpStatusCode.Unauthorized);
+        }
+    }
+
+    private static void ThrowOnRateLimitExceeded(string stdout)
+    {
+        var rateLimitMessageSnippets = new string[]
+        {
+            "Response status code does not indicate success: 429",
+            "429 (Too Many Requests)",
+        };
+        if (rateLimitMessageSnippets.Any(stdout.Contains))
+        {
+            throw new HttpRequestException(message: stdout, inner: null, statusCode: System.Net.HttpStatusCode.TooManyRequests);
         }
     }
 
