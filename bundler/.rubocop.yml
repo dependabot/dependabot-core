@@ -7,3 +7,6 @@ inherit_mode:
 Sorbet/TrueSigil:
   Exclude:
     - "helpers/**/monkey_patches/*.rb"
+
+Sorbet/StrictSigil:
+  Enabled: false
