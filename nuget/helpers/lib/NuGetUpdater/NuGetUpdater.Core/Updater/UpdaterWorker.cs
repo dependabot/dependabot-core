@@ -66,7 +66,7 @@ public class UpdaterWorker : IUpdaterWorker
 
     public async Task<UpdateOperationResult> RunAsync(string repoRootPath, string workspacePath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, bool isTransitive)
     {
-        MSBuildHelper.RegisterMSBuild(Environment.CurrentDirectory, repoRootPath);
+        MSBuildHelper.RegisterMSBuild(Environment.CurrentDirectory, repoRootPath, _logger);
 
         if (!Path.IsPathRooted(workspacePath) || !File.Exists(workspacePath))
         {

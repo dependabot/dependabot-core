@@ -33,7 +33,7 @@ internal static partial class MSBuildHelper
 
     public static string GetFileFromRuntimeDirectory(string fileName) => Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, fileName);
 
-    public static void RegisterMSBuild(string currentDirectory, string rootDirectory)
+    public static void RegisterMSBuild(string currentDirectory, string rootDirectory, ILogger logger)
     {
         // Ensure MSBuild types are registered before calling a method that loads the types
         if (!IsMSBuildRegistered)
@@ -45,7 +45,7 @@ internal static partial class MSBuildHelper
                 MSBuildPath = defaultInstance.MSBuildPath;
                 MSBuildLocator.RegisterInstance(defaultInstance);
                 return Task.FromResult(0);
-            }).Wait();
+            }, logger).Wait();
         }
     }
 
@@ -54,11 +54,10 @@ internal static partial class MSBuildHelper
         string rootDirectory,
         ExperimentsManager experimentsManager,
         Func<Task<T>> action,
-        ILogger? logger = null,
+        ILogger logger,
         bool retainMSBuildSdks = false
     )
     {
-        logger ??= new ConsoleLogger();
         if (experimentsManager.InstallDotnetSdks)
         {
             logger.Info($"{nameof(ExperimentsManager.InstallDotnetSdks)} == true; retaining `global.json` contents.");
@@ -820,7 +819,7 @@ internal static partial class MSBuildHelper
                 experimentsManager
             );
             return (exitCode, stdOut, stdErr);
-        });
+        }, logger);
         ThrowOnError(stdOut);
         if (exitCode != 0)
         {

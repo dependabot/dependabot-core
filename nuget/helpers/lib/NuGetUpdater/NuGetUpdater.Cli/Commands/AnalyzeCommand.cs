@@ -30,7 +30,7 @@ internal static class AnalyzeCommand
 
         command.SetHandler(async (jobId, jobPath, repoRoot, discoveryPath, dependencyPath, analysisDirectory) =>
         {
-            var logger = new ConsoleLogger();
+            var logger = new OpenTelemetryLogger();
             var (experimentsManager, _errorResult) = await ExperimentsManager.FromJobFileAsync(jobId, jobPath.FullName);
             var worker = new AnalyzeWorker(jobId, experimentsManager, logger);
             await worker.RunAsync(repoRoot.FullName, discoveryPath.FullName, dependencyPath.FullName, analysisDirectory.FullName);
