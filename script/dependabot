@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+touch .core-bash_history # allow bash history to persist across invocations
+
 dependabot \
   -v "$(pwd)"/.core-bash_history:/home/dependabot/.bash_history \
   -v "$(pwd)"/updater/bin:/home/dependabot/dependabot-updater/bin \
