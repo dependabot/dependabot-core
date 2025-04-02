@@ -207,8 +207,9 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
               it "has the right details" do
                 expect(dependency).to be_a(Dependabot::Dependency)
                 expect(dependency.name).to eq("myreg/ubuntu")
-                expect(dependency.version).to
-                eq("sha256:18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005")
+                expect(dependency.version).to eq(
+                  "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005"
+                )
                 expect(dependency.requirements).to eq(expected_requirements)
               end
             end
