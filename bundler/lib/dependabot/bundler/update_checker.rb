@@ -367,7 +367,6 @@ module Dependabot
             LatestVersionFinder.new(
               dependency: dependency,
               dependency_files: prepared_dependency_files,
-              repo_contents_path: repo_contents_path,
               credentials: credentials,
               ignored_versions: ignored_versions,
               raise_on_ignored: raise_on_ignored,

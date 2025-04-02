@@ -18,11 +18,19 @@ module Dependabot
       class PackageDetailsFetcher
         extend T::Sig
 
+        require_relative "../update_checker/shared_bundler_helpers"
+        include Dependabot::Bundler::UpdateChecker::SharedBundlerHelpers
+
         RELEASES_URL = "https://rubygems.org/api/v1/versions/%s.json"
         GEM_URL = "https://rubygems.org/gems/%s.gem"
         PACKAGE_TYPE = "gem"
         PACKAGE_LANGUAGE = "ruby"
         APPLICATION_JSON = "application/json"
+
+        RUBYGEMS = "rubygems"
+        PRIVATE_REGISTRY = "private"
+        GIT = "git"
+        OTHER = "other"
 
         sig do
           params(
@@ -35,6 +43,8 @@ module Dependabot
           @dependency = dependency
           @dependency_files = dependency_files
           @credentials = credentials
+
+          @source_type = T.let(nil, T.nilable(String))
         end
 
         sig { returns(Dependabot::Dependency) }
@@ -45,6 +55,21 @@ module Dependabot
 
         sig { returns(T::Array[T.untyped]) }
         attr_reader :credentials
+
+        sig { returns(Dependabot::Package::PackageDetails) }
+        def fetch
+          return rubygems_versions if dependency.name == "bundler"
+          return rubygems_versions unless gemfile
+
+          case source_type
+          when OTHER, GIT, PRIVATE_REGISTRY
+            package_details([])
+          else
+            rubygems_versions
+          end
+        end
+
+        private
 
         # Example JSON Response Format:
         # eg https://rubygems.org/api/v1/versions/dependabot-common.json
@@ -101,34 +126,22 @@ module Dependabot
         # ...
         # ]
         sig { returns(Dependabot::Package::PackageDetails) }
-        def fetch
+        def rubygems_versions
           response = registry_json_response_for_dependency
           raise unless response.status == 200
 
           package_releases = JSON.parse(response.body).map do |release|
-            Dependabot::Package::PackageRelease.new(
-              version: Dependabot::Bundler::Version.new(release["number"]),
+            package_release(
+              version: release["number"],
               released_at: Time.parse(release["created_at"]),
-              yanked: false,
-              yanked_reason: nil,
               downloads: release["downloads_count"],
               url: GEM_URL % "#{@dependency.name}-#{release['number']}",
-              package_type: PACKAGE_TYPE,
-              language: Dependabot::Package::PackageLanguage.new(
-                name: PACKAGE_LANGUAGE,
-                version: nil,
-                requirement: language_requirement(release["ruby_version"])
-              )
+              ruby_version: release["ruby_version"]
             )
           end
 
-          Dependabot::Package::PackageDetails.new(
-            dependency: dependency,
-            releases: package_releases.reverse.uniq(&:version)
-          )
+          package_details(package_releases)
         end
-
-        private
 
         sig { returns(Excon::Response) }
         def registry_json_response_for_dependency
@@ -142,6 +155,72 @@ module Dependabot
         sig { params(req_string: String).returns(Requirement) }
         def language_requirement(req_string)
           Requirement.new(req_string)
+        end
+
+        sig { returns(String) }
+        def source_type
+          @source_type ||= begin
+            return @source_type = RUBYGEMS unless gemfile
+
+            @source_type = in_a_native_bundler_context do |tmp_dir|
+              NativeHelpers.run_bundler_subprocess(
+                bundler_version: bundler_version,
+                function: "dependency_source_type",
+                options: {}, # options,
+                args: {
+                  dir: tmp_dir,
+                  gemfile_name: gemfile.name,
+                  dependency_name: dependency.name,
+                  credentials: credentials
+                }
+              )
+            end
+          end
+        end
+
+        sig { override.returns(String) }
+        def bundler_version
+          @bundler_version ||= T.let(Helpers.bundler_version(lockfile), T.nilable(String))
+        end
+
+        sig do
+          params(releases: T::Array[Dependabot::Package::PackageRelease])
+            .returns(Dependabot::Package::PackageDetails)
+        end
+        def package_details(releases)
+          @package_details ||= T.let(
+            Dependabot::Package::PackageDetails.new(
+              dependency: dependency,
+              releases: releases.reverse.uniq(&:version)
+            ), T.nilable(Dependabot::Package::PackageDetails)
+          )
+        end
+
+        sig do
+          params(
+            version: String,
+            released_at: Time,
+            downloads: Integer,
+            url: String,
+            ruby_version: String,
+            yanked: T::Boolean
+          ).returns(Dependabot::Package::PackageRelease)
+        end
+        def package_release(version:, released_at:, downloads:, url:, ruby_version:, yanked: false)
+          Dependabot::Package::PackageRelease.new(
+            version: Dependabot::Bundler::Version.new(version),
+            released_at: released_at,
+            yanked: yanked,
+            yanked_reason: nil,
+            downloads: downloads,
+            url: url,
+            package_type: PACKAGE_TYPE,
+            language: Dependabot::Package::PackageLanguage.new(
+              name: PACKAGE_LANGUAGE,
+              version: nil,
+              requirement: language_requirement(ruby_version)
+            )
+          )
         end
       end
     end
