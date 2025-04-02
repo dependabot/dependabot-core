@@ -1433,44 +1433,28 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
           .and_return(status: 200, body: "", headers: JSON.parse(new_headers))
       end
 
-      context "with feature flag" do
+      it { is_expected.to eq("4-apache-202502070602") }
+
+      context "with multiple components to match" do
+        let(:version) { "3.3-nginx-alpine-202209221209" }
+
         before do
-          allow(Dependabot::Experiments).to receive(:enabled?).with(:docker_tag_component_comparison).and_return(true)
-        end
-
-        it { is_expected.to eq("4-apache-202502070602") }
-
-        context "with multiple components to match" do
-          let(:version) { "3.3-nginx-alpine-202209221209" }
-
-          before do
-            stub_request(:head, repo_url + "manifests/4.11-nginx-alpine-202502070602")
-              .and_return(status: 200, body: "", headers: JSON.parse(new_headers))
-            stub_request(:head, repo_url + "manifests/4-nginx-alpine-202502070602")
-              .and_return(status: 200, body: "", headers: JSON.parse(new_headers))
-          end
-
-          it { is_expected.to eq("4-nginx-alpine-202502070602") }
-        end
-
-        context "when components are in a different order" do
-          before do
-            stub_request(:head, repo_url + "manifests/4-202502070602-apache")
-              .and_return(status: 200, body: "", headers: JSON.parse(new_headers))
-          end
-
-          it { is_expected.to eq("4-apache-202502070602") }
-        end
-      end
-
-      context "without feature flag" do
-        before do
+          stub_request(:head, repo_url + "manifests/4.11-nginx-alpine-202502070602")
+            .and_return(status: 200, body: "", headers: JSON.parse(new_headers))
           stub_request(:head, repo_url + "manifests/4-nginx-alpine-202502070602")
             .and_return(status: 200, body: "", headers: JSON.parse(new_headers))
-          allow(Dependabot::Experiments).to receive(:enabled?).with(:docker_tag_component_comparison).and_return(false)
         end
 
         it { is_expected.to eq("4-nginx-alpine-202502070602") }
+      end
+
+      context "when components are in a different order" do
+        before do
+          stub_request(:head, repo_url + "manifests/4-202502070602-apache")
+            .and_return(status: 200, body: "", headers: JSON.parse(new_headers))
+        end
+
+        it { is_expected.to eq("4-apache-202502070602") }
       end
     end
   end

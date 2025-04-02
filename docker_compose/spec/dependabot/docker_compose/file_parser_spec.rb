@@ -151,7 +151,7 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
               groups: [],
               file: "docker-compose.yml",
               source: {
-                digest: "18305429afa14ea462f810146ba44d4363ae76e4c8d" \
+                digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8d" \
                         "fc38288cf73aa07485005"
               }
             }]
@@ -160,7 +160,7 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
           it "has the right details" do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("ubuntu")
-            expect(dependency.version).to eq("18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005")
+            expect(dependency.version).to eq("sha256:18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005")
             expect(dependency.requirements).to eq(expected_requirements)
           end
         end
@@ -198,7 +198,7 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
                   file: "docker-compose.yml",
                   source: {
                     registry: "registry-host.io:5000",
-                    digest: "18305429afa14ea462f810146ba44d4363ae76" \
+                    digest: "sha256:18305429afa14ea462f810146ba44d4363ae76" \
                             "e4c8dfc38288cf73aa07485005"
                   }
                 }]
@@ -207,7 +207,9 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
               it "has the right details" do
                 expect(dependency).to be_a(Dependabot::Dependency)
                 expect(dependency.name).to eq("myreg/ubuntu")
-                expect(dependency.version).to eq("18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005")
+                expect(dependency.version).to eq(
+                  "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005"
+                )
                 expect(dependency.requirements).to eq(expected_requirements)
               end
             end

@@ -184,7 +184,8 @@ module Dependabot
               latest: latest_version.to_s == version,
               url: package_version_url(version),
               package_type: package_type,
-              language: package_language(details)
+              language: package_language(details),
+              details: details
             )
           end.sort_by(&:version).reverse
         end
