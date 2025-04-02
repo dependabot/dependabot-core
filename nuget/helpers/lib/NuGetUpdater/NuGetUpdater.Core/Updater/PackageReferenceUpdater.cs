@@ -399,7 +399,7 @@ internal static class PackageReferenceUpdater
     }
 
     /// <returns>The updated files.</returns>
-    private static async Task<IEnumerable<string>> UpdateTransitiveDependencyAsync(
+    internal static async Task<IEnumerable<string>> UpdateTransitiveDependencyAsync(
         string repoRootPath,
         string projectPath,
         string dependencyName,
@@ -419,6 +419,17 @@ internal static class PackageReferenceUpdater
         else
         {
             updatedFiles = await AddTransitiveDependencyAsync(repoRootPath, projectPath, dependencyName, newDependencyVersion, experimentsManager, logger);
+
+            // files directly modified on disk by an external tool need to be refreshed in-memory
+            foreach (var updatedFile in updatedFiles)
+            {
+                var matchingBuildFile = buildFiles.FirstOrDefault(bf => PathComparer.Instance.Compare(updatedFile, bf.Path) == 0);
+                if (matchingBuildFile is not null)
+                {
+                    var updatedContents = await File.ReadAllTextAsync(updatedFile);
+                    matchingBuildFile.Update(ProjectBuildFile.Parse(updatedContents));
+                }
+            }
         }
 
         return updatedFiles;
@@ -671,7 +682,7 @@ internal static class PackageReferenceUpdater
     }
 
     /// <returns>The updated files.</returns>
-    private static (UpdateResult, IEnumerable<UpdateOperationBase>) TryUpdateDependencyVersion(
+    internal static (UpdateResult, IEnumerable<UpdateOperationBase>) TryUpdateDependencyVersion(
         ImmutableArray<ProjectBuildFile> buildFiles,
         string dependencyName,
         string? previousDependencyVersion,
