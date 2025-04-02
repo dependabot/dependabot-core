@@ -10,7 +10,6 @@ require "dependabot/security_advisory"
 require "dependabot/dependency"
 require "dependabot/update_checkers/version_filters"
 require "dependabot/registry_client"
-require "dependabot/bundler"
 require "dependabot/package/package_details"
 require "dependabot/package/release_cooldown_options"
 
