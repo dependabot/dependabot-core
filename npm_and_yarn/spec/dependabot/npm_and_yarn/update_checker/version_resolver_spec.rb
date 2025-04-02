@@ -67,7 +67,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
   let(:enable_corepack_for_npm_and_yarn) { true }
 
   # Variable to control the enabling feature flag for the cooldown
-  let(:enable_cooldown_for_npm_and_yarn) { false }
+  let(:enable_cooldown_for_npm_and_yarn) { true }
 
   before do
     stub_request(:get, react_dom_registry_listing_url)
