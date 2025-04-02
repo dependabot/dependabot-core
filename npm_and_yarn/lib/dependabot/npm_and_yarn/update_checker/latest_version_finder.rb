@@ -326,12 +326,16 @@ module Dependabot
                                    .find { |r| dist_tags.include?(r[:requirement]) }
                                    &.fetch(:requirement)
 
+          releases = package_details&.releases
+
+          releases = filter_by_cooldown(releases) if releases
+
           if dist_tag_req
-            release = find_dist_tag_release(dist_tag_req, package_details&.releases)
+            release = find_dist_tag_release(dist_tag_req, releases)
             return release.version if release && !release.yanked?
           end
 
-          latest_release = find_dist_tag_release("latest", package_details&.releases)
+          latest_release = find_dist_tag_release("latest", releases)
 
           return nil unless latest_release
 
@@ -355,7 +359,7 @@ module Dependabot
 
           return nil unless dist_tag_version && !dist_tag_version.empty?
 
-          release = package_details&.releases&.find { |r| r.version == Version.new(dist_tag_version) }
+          release = releases.find { |r| r.version == Version.new(dist_tag_version) }
 
           release
         end
