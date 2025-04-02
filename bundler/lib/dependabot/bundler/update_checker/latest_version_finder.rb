@@ -11,6 +11,7 @@ require "dependabot/errors"
 require "dependabot/package/package_latest_version_finder"
 require "dependabot/bundler/update_checker/latest_version_finder/" \
         "dependency_source"
+require "dependabot/bundler/package/package_details_fetcher"
 require "sorbet-runtime"
 
 module Dependabot
@@ -19,9 +20,7 @@ module Dependabot
       class LatestVersionFinder < Dependabot::Package::PackageLatestVersionFinder
         extend T::Sig
 
-        sig do
-          override.returns(T.nilable(Dependabot::Package::PackageDetails))
-        end
+        sig { override.returns(T.nilable(Dependabot::Package::PackageDetails)) }
         def package_details
           @package_details ||= Package::PackageDetailsFetcher.new(
             dependency: dependency,
@@ -31,12 +30,29 @@ module Dependabot
         end
 
         def latest_version_details
-          @latest_version_details ||= fetch_latest_version_details
+          @latest_version_details ||= if cooldown_enabled?
+                                        latest_version = fetch_latest_version(language_version: nil)
+                                        latest_version ? { version: latest_version } : nil
+                                      else
+                                        fetch_latest_version_details
+                                      end
         end
 
         sig { override.returns(T::Boolean) }
         def cooldown_enabled?
           Dependabot::Experiments.enabled?(:enable_cooldown_for_bundler)
+        end
+
+        sig { override.returns(T.nilable(T::Array[Dependabot::Package::PackageRelease])) }
+        def available_versions
+          return nil if package_details&.releases.nil?
+
+          source_versions = dependency_source.versions
+          return [] if source_versions.empty?
+
+          T.must(package_details).releases.select do |release|
+            source_versions.any? { |v| v.to_s == release.version.to_s }
+          end
         end
 
         private
@@ -51,7 +67,7 @@ module Dependabot
           relevant_versions.empty? ? nil : { version: relevant_versions.max }
         end
 
-        def fetch_lowest_security_fix_version(language_version: nil)
+        def fetch_lowest_security_fix_version(*)
           return if dependency_source.git?
 
           relevant_versions = dependency_source.versions
@@ -64,8 +80,9 @@ module Dependabot
           relevant_versions.min
         end
 
+        sig { returns(T::Boolean) }
         def wants_prerelease?
-          @wants_prerelease ||=
+          @wants_prerelease ||= T.let(
             begin
               current_version = dependency.numeric_version
               if current_version&.prerelease?
@@ -75,25 +92,20 @@ module Dependabot
                   req[:requirement].match?(/[a-z]/i)
                 end
               end
-            end
-        end
-
-        def dependency_source
-          @dependency_source ||= DependencySource.new(
-            dependency: dependency,
-            dependency_files: dependency_files,
-            credentials: credentials,
-            options: options
+            end, T.nilable(T::Boolean)
           )
         end
 
-        def requirement_class
-          dependency.requirement_class
-        end
-
-        def gemfile
-          dependency_files.find { |f| f.name == "Gemfile" } ||
-            dependency_files.find { |f| f.name == "gems.rb" }
+        # sig { returns(DependencySource) }
+        def dependency_source
+          @dependency_source ||= T.let(
+            DependencySource.new(
+              dependency: dependency,
+              dependency_files: dependency_files,
+              credentials: credentials,
+              options: options
+            ), T.nilable(DependencySource)
+          )
         end
       end
     end
