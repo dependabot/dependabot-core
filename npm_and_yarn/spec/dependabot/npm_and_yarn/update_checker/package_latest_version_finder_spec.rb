@@ -11,6 +11,8 @@ require "dependabot/package/release_cooldown_options"
 require "dependabot/npm_and_yarn/version"
 require "dependabot/npm_and_yarn/package/package_details_fetcher"
 
+MAX_COOLDOWN_DAYS = 100 * 365
+
 RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::PackageLatestVersionFinder do
   let(:registry_base) { "https://registry.npmjs.org" }
   let(:version_finder) do
@@ -62,6 +64,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::PackageLatestVersionFinder
       .to_return(status: 200, body: registry_response)
     stub_request(:head, "#{registry_base}/#{dependency_name}/-/#{unscoped_dependency_name}-#{target_version}.tgz")
       .to_return(status: 200)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_cooldown_for_npm_and_yarn).and_return(true)
   end
 
   describe "#latest_version_from_registry" do
@@ -975,6 +979,31 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::PackageLatestVersionFinder
             expect(err.class).to eq(Dependabot::DependencyFileNotResolvable)
           end
       end
+    end
+
+    context "when cooldown is applied to dist tag version" do
+      let(:cooldown_options) do
+        Dependabot::Package::ReleaseCooldownOptions.new(
+          default_days: MAX_COOLDOWN_DAYS
+        )
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "etag",
+          version: "1.0.0",
+          requirements: [{
+            file: "package.json",
+            requirement: "stable",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "npm_and_yarn"
+        )
+      end
+      let(:target_version) { "1.5.1" }
+
+      it { is_expected.to be_nil }
     end
   end
 

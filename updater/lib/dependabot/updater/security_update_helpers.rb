@@ -69,7 +69,7 @@ module Dependabot
           (checker.lowest_resolvable_security_fix_version ||
            checker.dependency.version)&.to_s
         lowest_non_vulnerable_version =
-          checker.lowest_security_fix_version.to_s
+          checker.lowest_security_fix_version&.to_s
         conflicting_dependencies = checker.conflicting_dependencies
 
         Dependabot.logger.info(
