@@ -148,10 +148,10 @@ module Dependabot
 
       sig { params(lowest_non_vulnerable_version: T.nilable(String)).returns(String) }
       def earliest_fixed_version_message(lowest_non_vulnerable_version)
-        if lowest_non_vulnerable_version
+        if lowest_non_vulnerable_version && !lowest_non_vulnerable_version.empty?
           "The earliest fixed version is #{lowest_non_vulnerable_version}."
         else
-          "Dependabot could not find a non-vulnerable version"
+          "Dependabot could not find an allowed non-vulnerable version"
         end
       end
 
