@@ -8,12 +8,14 @@ internal sealed class ProjectBuildFile : XmlBuildFile
         => Parse(basePath, path, File.ReadAllText(path));
 
     public static ProjectBuildFile Parse(string basePath, string path, string xml)
-        => new(basePath, path, Parser.ParseText(xml));
+        => new(basePath, path, Parse(xml));
 
     public ProjectBuildFile(string basePath, string path, XmlDocumentSyntax contents)
         : base(basePath, path, contents)
     {
     }
+
+    public static XmlDocumentSyntax Parse(string contents) => Parser.ParseText(contents);
 
     public IXmlElementSyntax ProjectNode => Contents.RootSyntax;
 
