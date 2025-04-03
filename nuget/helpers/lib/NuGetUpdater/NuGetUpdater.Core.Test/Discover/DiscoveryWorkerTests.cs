@@ -1324,6 +1324,83 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
         );
     }
 
+    [Fact]
+    public async Task ReportsPrivateSourceBadResponseFailureOnServiceUnavailable()
+    {
+        static (int, string) TestHttpHandler(string uriString)
+        {
+            var uri = new Uri(uriString, UriKind.Absolute);
+            var baseUrl = $"{uri.Scheme}://{uri.Host}:{uri.Port}";
+            return uri.PathAndQuery switch
+            {
+                // initial request is good
+                "/index.json" => (200, $$"""
+                    {
+                        "version": "3.0.0",
+                        "resources": [
+                            {
+                                "@id": "{{baseUrl}}/download",
+                                "@type": "PackageBaseAddress/3.0.0"
+                            },
+                            {
+                                "@id": "{{baseUrl}}/query",
+                                "@type": "SearchQueryService"
+                            },
+                            {
+                                "@id": "{{baseUrl}}/registrations",
+                                "@type": "RegistrationsBaseUrl"
+                            }
+                        ]
+                    }
+                    """),
+                // all other requests are unauthorized
+                _ => (503, "{}"),
+            };
+        }
+        // override various nuget locations
+        using var tempDir = new TemporaryDirectory();
+        using var _ = new TemporaryEnvironment(
+        [
+            ("NUGET_PACKAGES", Path.Combine(tempDir.DirectoryPath, "NUGET_PACKAGES")),
+            ("NUGET_HTTP_CACHE_PATH", Path.Combine(tempDir.DirectoryPath, "NUGET_HTTP_CACHE_PATH")),
+            ("NUGET_SCRATCH", Path.Combine(tempDir.DirectoryPath, "NUGET_SCRATCH")),
+            ("NUGET_PLUGINS_CACHE_PATH", Path.Combine(tempDir.DirectoryPath, "NUGET_PLUGINS_CACHE_PATH")),
+        ]);
+        using var http = TestHttpServer.CreateTestStringServer(TestHttpHandler);
+        var experimentsManager = new ExperimentsManager() { UseDirectDiscovery = true };
+        await TestDiscoveryAsync(
+            experimentsManager: experimentsManager,
+            workspacePath: "",
+            files:
+            [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.2.3" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("NuGet.Config", $"""
+                    <configuration>
+                      <packageSources>
+                        <clear />
+                        <add key="private_feed" value="{http.BaseUrl.TrimEnd('/')}/index.json" allowInsecureConnections="true" />
+                      </packageSources>
+                    </configuration>
+                    """),
+            ],
+            expectedResult: new()
+            {
+                Error = new PrivateSourceBadResponse([$"{http.BaseUrl.TrimEnd('/')}/index.json"]),
+                Path = "",
+                Projects = [],
+            }
+        );
+    }
+
     [LinuxOnlyFact]
     public async Task DiscoverySucceedsWhenNoWindowsAppRefPackageCanBeFound()
     {
