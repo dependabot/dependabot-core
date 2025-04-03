@@ -26,7 +26,7 @@ module Dependabot
                        replacement_git_pin: nil, remove_git_source: false,
                        unlock_requirement: true,
                        latest_allowable_version: nil,
-                       cooldown_options: {},
+                       cooldown_options: nil,
                        options:)
           @dependency                  = dependency
           @unprepared_dependency_files = unprepared_dependency_files
@@ -189,6 +189,7 @@ module Dependabot
               ignored_versions: ignored_versions,
               raise_on_ignored: @raise_on_ignored,
               security_advisories: [],
+              cooldown_options: @cooldown_options,
               options: options
             ).latest_version_details
         end
