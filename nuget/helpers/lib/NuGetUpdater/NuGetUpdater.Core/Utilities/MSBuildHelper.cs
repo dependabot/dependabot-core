@@ -969,6 +969,7 @@ internal static partial class MSBuildHelper
         ThrowOnMissingPackages(output);
         ThrowOnUpdateNotPossible(output);
         ThrowOnRateLimitExceeded(output);
+        ThrowOnServiceUnavailable(output);
     }
 
     private static void ThrowOnUnauthenticatedFeed(string stdout)
@@ -996,6 +997,19 @@ internal static partial class MSBuildHelper
         if (rateLimitMessageSnippets.Any(stdout.Contains))
         {
             throw new HttpRequestException(message: stdout, inner: null, statusCode: System.Net.HttpStatusCode.TooManyRequests);
+        }
+    }
+
+    private static void ThrowOnServiceUnavailable(string stdout)
+    {
+        var serviceUnavailableMessageSnippets = new string[]
+        {
+            "503 (Service Unavailable)",
+            "Response status code does not indicate success: 503",
+        };
+        if (serviceUnavailableMessageSnippets.Any(stdout.Contains))
+        {
+            throw new HttpRequestException(message: stdout, inner: null, statusCode: System.Net.HttpStatusCode.ServiceUnavailable);
         }
     }
 
