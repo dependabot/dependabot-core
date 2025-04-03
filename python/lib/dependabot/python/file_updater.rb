@@ -135,7 +135,8 @@ module Dependabot
       sig { returns(T.nilable(T::Array[String])) }
       def pip_compile_index_urls
         if credentials.any?(&:replaces_base?)
-          credentials.select(&:replaces_base?).map { |cred| AuthedUrlBuilder.authed_url(credential: cred) }.compact
+          credentials.select(&:replaces_base?)
+                     .filter_map { |cred| AuthedUrlBuilder.authed_url(credential: cred) }.compact
         else
           urls = credentials.map { |cred| AuthedUrlBuilder.authed_url(credential: cred) }
           # If there are no credentials that replace the base, we need to

@@ -190,7 +190,7 @@ module Dependabot
           cred = credential_for(base_url)
           return base_url unless cred
 
-          T.must(AuthedUrlBuilder.authed_url(credential: cred)&.gsub(%r{/*$}, "")) + "/"
+          T.must(T.must(AuthedUrlBuilder.authed_url(credential: cred)).gsub(%r{/*$}, "")) + "/"
         end
 
         def credential_for(url)
