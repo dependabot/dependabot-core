@@ -44,7 +44,6 @@ namespace NuGetUpdater.Core
         {
             foreach (var logRecord in batch)
             {
-                // Write to console
                 Console.WriteLine(logRecord.Body ?? string.Empty);
             }
 
