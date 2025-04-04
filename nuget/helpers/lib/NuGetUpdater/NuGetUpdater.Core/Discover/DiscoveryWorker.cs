@@ -68,7 +68,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
 
     public async Task<WorkspaceDiscoveryResult> RunAsync(string repoRootPath, string workspacePath)
     {
-        MSBuildHelper.RegisterMSBuild(repoRootPath, workspacePath);
+        MSBuildHelper.RegisterMSBuild(repoRootPath, workspacePath, _logger);
 
         // the `workspacePath` variable is relative to a repository root, so a rooted path actually isn't rooted; the
         // easy way to deal with this is to just trim the leading "/" if it exists

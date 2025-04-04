@@ -21,12 +21,14 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
       }],
       unlock_requirement: unlock_requirement,
       latest_allowable_version: latest_allowable_version,
+      cooldown_options: cooldown_options,
       options: {}
     )
   end
   let(:ignored_versions) { [] }
   let(:latest_allowable_version) { nil }
   let(:unlock_requirement) { false }
+  let(:cooldown_options) { {} }
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -438,6 +440,51 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
               .to eq(Gem::Version.new("7.2.0"))
           end
         end
+      end
+    end
+
+    context "with cooldown options" do
+      let(:cooldown_options) do
+        Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7)
+      end
+      let(:expected_cooldown_options) do
+        Dependabot::Package::ReleaseCooldownOptions.new(
+          default_days: 7,
+          semver_major_days: 7,
+          semver_minor_days: 7,
+          semver_patch_days: 7,
+          include: [],
+          exclude: []
+        )
+      end
+
+      let(:dependency_files) { bundler_project_dependency_files("gemfile") }
+
+      before do
+        # Mock the LatestVersionFinder to verify it receives cooldown_options
+        latest_version_finder = instance_double(Dependabot::Bundler::UpdateChecker::LatestVersionFinder)
+        allow(latest_version_finder)
+          .to receive(:latest_version_details).and_return({ version: Gem::Version.new("1.5.0") })
+        allow(Dependabot::Bundler::UpdateChecker::LatestVersionFinder)
+          .to receive(:new).and_return(latest_version_finder)
+
+        # Mock the NativeHelper to ensure that we use the latest_version_details method
+        allow(Dependabot::Bundler::NativeHelpers).to receive(:run_bundler_subprocess).and_return("latest")
+      end
+
+      it "passes cooldown_options to LatestVersionFinder" do
+        latest_resolvable_version_details
+
+        expect(Dependabot::Bundler::UpdateChecker::LatestVersionFinder).to have_received(:new).with(
+          hash_including(cooldown_options: an_object_having_attributes(
+            default_days: expected_cooldown_options.default_days,
+            semver_major_days: expected_cooldown_options.semver_major_days,
+            semver_minor_days: expected_cooldown_options.semver_minor_days,
+            semver_patch_days: expected_cooldown_options.semver_patch_days,
+            include: expected_cooldown_options.include,
+            exclude: expected_cooldown_options.exclude
+          ))
+        )
       end
     end
   end

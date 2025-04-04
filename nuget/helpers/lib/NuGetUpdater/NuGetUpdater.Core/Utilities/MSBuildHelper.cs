@@ -33,7 +33,7 @@ internal static partial class MSBuildHelper
 
     public static string GetFileFromRuntimeDirectory(string fileName) => Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, fileName);
 
-    public static void RegisterMSBuild(string currentDirectory, string rootDirectory)
+    public static void RegisterMSBuild(string currentDirectory, string rootDirectory, ILogger logger)
     {
         // Ensure MSBuild types are registered before calling a method that loads the types
         if (!IsMSBuildRegistered)
@@ -45,7 +45,7 @@ internal static partial class MSBuildHelper
                 MSBuildPath = defaultInstance.MSBuildPath;
                 MSBuildLocator.RegisterInstance(defaultInstance);
                 return Task.FromResult(0);
-            }).Wait();
+            }, logger).Wait();
         }
     }
 
@@ -54,11 +54,10 @@ internal static partial class MSBuildHelper
         string rootDirectory,
         ExperimentsManager experimentsManager,
         Func<Task<T>> action,
-        ILogger? logger = null,
+        ILogger logger,
         bool retainMSBuildSdks = false
     )
     {
-        logger ??= new ConsoleLogger();
         if (experimentsManager.InstallDotnetSdks)
         {
             logger.Info($"{nameof(ExperimentsManager.InstallDotnetSdks)} == true; retaining `global.json` contents.");
@@ -820,7 +819,7 @@ internal static partial class MSBuildHelper
                 experimentsManager
             );
             return (exitCode, stdOut, stdErr);
-        });
+        }, logger);
         ThrowOnError(stdOut);
         if (exitCode != 0)
         {
@@ -969,6 +968,7 @@ internal static partial class MSBuildHelper
         ThrowOnMissingPackages(output);
         ThrowOnUpdateNotPossible(output);
         ThrowOnRateLimitExceeded(output);
+        ThrowOnServiceUnavailable(output);
     }
 
     private static void ThrowOnUnauthenticatedFeed(string stdout)
@@ -996,6 +996,19 @@ internal static partial class MSBuildHelper
         if (rateLimitMessageSnippets.Any(stdout.Contains))
         {
             throw new HttpRequestException(message: stdout, inner: null, statusCode: System.Net.HttpStatusCode.TooManyRequests);
+        }
+    }
+
+    private static void ThrowOnServiceUnavailable(string stdout)
+    {
+        var serviceUnavailableMessageSnippets = new string[]
+        {
+            "503 (Service Unavailable)",
+            "Response status code does not indicate success: 503",
+        };
+        if (serviceUnavailableMessageSnippets.Any(stdout.Contains))
+        {
+            throw new HttpRequestException(message: stdout, inner: null, statusCode: System.Net.HttpStatusCode.ServiceUnavailable);
         }
     }
 
@@ -1071,6 +1084,7 @@ internal static partial class MSBuildHelper
         TryGetGlobalJsonPath(repoRootPath, projectPath, out var globalJsonPath);
         var safeGlobalJsonName = $"{globalJsonPath}{Guid.NewGuid()}";
         HashSet<string> targetFrameworks = new(StringComparer.OrdinalIgnoreCase);
+        var repoRootDirectoryInfo = new DirectoryInfo(repoRootPath);
 
         try
         {
@@ -1099,12 +1113,23 @@ internal static partial class MSBuildHelper
             // load the project even if it imports a file that doesn't exist (e.g. a file that's generated at restore
             // or build time).
             using var projectCollection = new ProjectCollection(); // do this in a one-off instance and don't pollute the global collection
-            Project project = Project.FromFile(projectPath, new ProjectOptions
+            var project = Project.FromFile(projectPath, new ProjectOptions
             {
                 LoadSettings = ProjectLoadSettings.IgnoreMissingImports,
                 ProjectCollection = projectCollection,
             });
-            buildFileList.AddRange(project.Imports.Select(i => i.ImportedProject.FullPath.NormalizePathToUnix()));
+            var allImportedPaths = project.Imports.Select(i => i.ImportedProject.FullPath.NormalizePathToUnix()).ToArray();
+            var importedPathsInRepo = allImportedPaths.Where(p => PathHelper.IsFileUnderDirectory(repoRootDirectoryInfo, new FileInfo(p))).ToArray();
+            var projectDir = Path.GetDirectoryName(projectPath)!;
+            var intermediateDir = new DirectoryInfo(Path.Combine(projectDir, project.GetPropertyValue("BaseIntermediateOutputPath")));
+            var outputDir = new DirectoryInfo(Path.Combine(projectDir, project.GetPropertyValue("BaseOutputPath")));
+            var nonTransitivePathsInRepo = importedPathsInRepo.Where(p =>
+            {
+                var fi = new FileInfo(p);
+                return !PathHelper.IsFileUnderDirectory(intermediateDir, fi)
+                    && !PathHelper.IsFileUnderDirectory(outputDir, fi);
+            }).ToArray();
+            buildFileList.AddRange(nonTransitivePathsInRepo.Select(p => p.NormalizePathToUnix()));
 
             // use the MSBuild-evaluated value so we don't have to try to manually parse XML
             IEnumerable<ProjectProperty> targetFrameworkProperties = project.Properties.Where(p => p.Name.Equals("TargetFramework", StringComparison.OrdinalIgnoreCase)).ToList();
@@ -1153,11 +1178,7 @@ internal static partial class MSBuildHelper
             }
         }
 
-        var repoRootPathPrefix = repoRootPath.NormalizePathToUnix() + "/";
-        var buildFiles = buildFileList
-            .Where(f => f.StartsWith(repoRootPathPrefix, StringComparison.OrdinalIgnoreCase))
-            .Distinct();
-        var result = buildFiles
+        var result = buildFileList
             .Where(File.Exists)
             .Select(path => ProjectBuildFile.Open(repoRootPath, path))
             .ToImmutableArray();

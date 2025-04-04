@@ -135,6 +135,38 @@ RSpec.describe Dependabot::Helm::FileParser do
         end
       end
     end
+
+    describe "YAML.safe_load with permitted_classes" do
+      context "with Chart.yaml" do
+        subject(:dependency) { dependencies.first }
+
+        let(:helmfile_fixture_name) { "chart_permitted_classes.yaml" }
+
+        it "is able to parse yaml with date, time, and symbol" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("redis")
+          expect(dependency.version).to eq("17.11.3")
+        end
+      end
+
+      context "with values.yaml" do
+        subject(:dependency) { dependencies.first }
+
+        let(:helmfile_fixture_name) { "values_permitted_classes.yaml" }
+        let(:helmfile) do
+          Dependabot::DependencyFile.new(
+            name: "values.yaml",
+            content: helmfile_body
+          )
+        end
+
+        it "is able to parse yaml with date, time, and symbol" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("nginx")
+          expect(dependency.version).to eq("1.25.3")
+        end
+      end
+    end
   end
 
   describe "version_from with environment variables" do

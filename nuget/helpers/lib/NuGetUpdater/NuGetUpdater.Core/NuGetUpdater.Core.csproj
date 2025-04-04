@@ -23,9 +23,13 @@
     <PackageReference Include="GuiLabs.Language.Xml" />
     <PackageReference Include="DiffPlex" />
     <PackageReference Include="Microsoft.Build.Locator" />
+    <PackageReference Include="Microsoft.Extensions.Logging" />
     <PackageReference Include="MSBuild.StructuredLogger" />
     <PackageReference Include="NuGet.Core" Aliases="CoreV2" />
     <PackageReference Include="Microsoft.VisualStudio.SolutionPersistence" />
+    <PackageReference Include="OpenTelemetry" />
+    <PackageReference Include="OpenTelemetry.Exporter.Console" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
   </ItemGroup>
 
   <ItemGroup>

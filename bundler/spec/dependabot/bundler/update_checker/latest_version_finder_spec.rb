@@ -283,15 +283,13 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
           .to_return(status: 200, body: rubygems_response)
           .to_return(status: 200, body: rubygems_response)
 
+        allow(Dependabot::Bundler::NativeHelpers).to receive(:run_bundler_subprocess).and_return("rubygems")
+
         allow(Time).to receive(:now).and_return(Time.parse("2015-06-03T17:30:00.000Z"))
       end
 
       context "with latest version details" do
         subject(:result) { finder.latest_version_details }
-
-        before do
-          allow(Dependabot::Bundler::NativeHelpers).to receive(:run_bundler_subprocess).and_return("rubygems")
-        end
 
         it "fetches the latest version details" do
           expect(result).to be_a(Hash)
