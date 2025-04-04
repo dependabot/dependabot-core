@@ -2,15 +2,15 @@
 # frozen_string_literal: true
 
 require "excon"
+require "dependabot/errors"
+require "dependabot/shared_helpers"
+require "dependabot/package/package_latest_version_finder"
 require "dependabot/bun/update_checker"
 require "dependabot/update_checkers/version_filters"
 require "dependabot/bun/package/registry_finder"
 require "dependabot/bun/package/package_details_fetcher"
-require "dependabot/bun/package_latest_version_finder"
 require "dependabot/bun/version"
 require "dependabot/bun/requirement"
-require "dependabot/shared_helpers"
-require "dependabot/errors"
 require "sorbet-runtime"
 
 module Dependabot
