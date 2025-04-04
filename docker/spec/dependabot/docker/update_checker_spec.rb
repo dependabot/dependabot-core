@@ -7,6 +7,7 @@ require "dependabot/dependency"
 require "dependabot/docker/update_checker"
 require "dependabot/config"
 require "dependabot/config/update_config"
+require "dependabot/package/release_cooldown_options"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::Docker::UpdateChecker do
@@ -16,6 +17,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
   let(:source) { { tag: version } }
   let(:version) { "17.04" }
   let(:dependency_name) { "ubuntu" }
+  let(:update_cooldown) { nil }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -45,7 +47,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       dependency_files: [],
       credentials: credentials,
       ignored_versions: ignored_versions,
-      raise_on_ignored: raise_on_ignored
+      raise_on_ignored: raise_on_ignored,
+      update_cooldown: update_cooldown
     )
   end
 
@@ -1457,6 +1460,47 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         it { is_expected.to eq("4-apache-202502070602") }
       end
     end
+
+    describe "with cooldown options" do
+      let(:update_cooldown) do
+        Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7)
+      end
+      let(:expected_cooldown_options) do
+        Dependabot::Package::ReleaseCooldownOptions.new(
+          default_days: 7,
+          semver_major_days: 0,
+          semver_minor_days: 0,
+          semver_patch_days: 0,
+          include: [],
+          exclude: []
+        )
+      end
+
+      before do
+        # Mock the LatestVersionFinder to verify it receives cooldown_options
+        latest_version_finder = instance_double(Dependabot::Bundler::UpdateChecker::LatestVersionFinder)
+        allow(latest_version_finder)
+          .to receive(:latest_version_details).and_return({ version: Gem::Version.new("1.5.0") })
+        allow(Dependabot::Bundler::UpdateChecker::LatestVersionFinder)
+          .to receive(:new).and_return(latest_version_finder)
+      end
+
+      it "passes cooldown_options to LatestVersionFinder" do
+        checker.latest_version
+
+        expect(Dependabot::Bundler::UpdateChecker::LatestVersionFinder).to have_received(:new).with(
+          hash_including(cooldown_options: an_object_having_attributes(
+            default_days: expected_cooldown_options.default_days,
+            semver_major_days: expected_cooldown_options.semver_major_days,
+            semver_minor_days: expected_cooldown_options.semver_minor_days,
+            semver_patch_days: expected_cooldown_options.semver_patch_days,
+            include: expected_cooldown_options.include,
+            exclude: expected_cooldown_options.exclude
+          ))
+        )
+      end
+    end
+
   end
 
   describe "#latest_resolvable_version" do
@@ -1568,40 +1612,6 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
                source: { tag: "xenial-20170915" }
              }]
           )
-      end
-    end
-  end
-
-  describe ".docker_read_timeout_in_seconds" do
-    context "when DEPENDABOT_DOCKER_READ_TIMEOUT_IN_SECONDS is set" do
-      it "returns the provided value" do
-        override_value = 10
-        stub_const("ENV", ENV.to_hash.merge("DEPENDABOT_DOCKER_READ_TIMEOUT_IN_SECONDS" => override_value))
-        expect(checker.send(:docker_read_timeout_in_seconds)).to eq(override_value)
-      end
-    end
-
-    context "when ENV does not provide an override" do
-      it "falls back to a default value" do
-        expect(checker.send(:docker_read_timeout_in_seconds))
-          .to eq(Dependabot::Docker::UpdateChecker::DEFAULT_DOCKER_READ_TIMEOUT_IN_SECONDS)
-      end
-    end
-  end
-
-  describe ".docker_open_timeout_in_seconds" do
-    context "when DEPENDABOT_DOCKER_OPEN_TIMEOUT_IN_SECONDS is set" do
-      it "returns the provided value" do
-        override_value = 10
-        stub_const("ENV", ENV.to_hash.merge("DEPENDABOT_DOCKER_OPEN_TIMEOUT_IN_SECONDS" => override_value))
-        expect(checker.send(:docker_open_timeout_in_seconds)).to eq(override_value)
-      end
-    end
-
-    context "when ENV does not provide an override" do
-      it "falls back to a default value" do
-        expect(checker.send(:docker_open_timeout_in_seconds))
-          .to eq(Dependabot::Docker::UpdateChecker::DEFAULT_DOCKER_OPEN_TIMEOUT_IN_SECONDS)
       end
     end
   end

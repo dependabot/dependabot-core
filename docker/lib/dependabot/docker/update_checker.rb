@@ -135,6 +135,7 @@ module Dependabot
         candidate_tags = remove_prereleases(candidate_tags, version_tag)
         candidate_tags = filter_ignored(candidate_tags)
         candidate_tags = sort_tags(candidate_tags, version_tag)
+        candidate_tags = apply_cooldown(candidate_tags)
 
         latest_tag = candidate_tags.last
         return version_tag unless latest_tag
@@ -179,6 +180,26 @@ module Dependabot
         end
       end
 
+
+      sig do
+        params(candidate_tags: T::Array[Dependabot::Docker::Tag])
+          .returns(T::Array[Dependabot::Docker::Tag])
+      end
+      def apply_cooldown(candidate_tags)
+        return candidate_tags if should_skip_cooldown?
+
+        candidate_tags.reverse_each do |tag|
+          details = publication_detail(tag)
+
+          next if !details || !details.released_at
+
+          return [tag] unless cooldown_period?(details.released_at)
+
+          Dependabot.logger.info("Skipping tag #{tag.name} due to cooldown period")
+        end
+
+        []
+      end
       sig { params(tags: T::Array[Dependabot::Docker::Tag]).returns(T::Array[String]) }
       def identify_common_components(tags)
         tag_parts = tags.map do |tag|
@@ -521,6 +542,30 @@ module Dependabot
           Tag.new(T.must(dependency.version)),
           T.nilable(Dependabot::Docker::Tag)
         )
+      end
+
+      sig { returns(T::Boolean) }
+      def should_skip_cooldown?
+        @update_cooldown.nil? || !cooldown_enabled? || !@update_cooldown&.included?(dependency.name)
+      end
+
+      sig { returns(T::Boolean) }
+      def cooldown_enabled?
+        Dependabot::Experiments.enabled?(:enable_cooldown_for_docker)
+      end
+
+      sig do
+        returns(Integer)
+      end
+      def cooldown_days_for
+        cooldown = @update_cooldown
+
+        cooldown.default_days
+      end
+
+      def cooldown_period?(release_date)
+        days = cooldown_days_for
+        (Time.now.to_i - release_date.to_i) < (days * 24 * 60 * 60)
       end
     end
     # rubocop:enable Metrics/ClassLength
