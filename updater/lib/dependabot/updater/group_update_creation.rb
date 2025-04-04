@@ -58,17 +58,9 @@ module Dependabot
         # A list of notices that will be used in PR messages and/or sent to the dependabot github alerts.
         notices = dependency_snapshot.notices
 
+
         Dependabot.logger.info("Updating the #{job.source.directory} directory.")
         group.dependencies.each do |dependency|
-          # We still want to update a dependency if it's been updated in another manifest files,
-          # but we should skip it if it's been updated in _the same_ manifest file
-          if dependency_snapshot.handled_dependencies.include?(dependency.name)
-            Dependabot.logger.info(
-              "Skipping #{dependency.name} as it has already been handled by a previous group"
-            )
-            next
-          end
-
           # Get the current state of the dependency files for use in this iteration, filter by directory
           dependency_files = group_changes.current_dependency_files(job)
 
