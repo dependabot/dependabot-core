@@ -69,7 +69,7 @@ public class RunWorker
 
         try
         {
-            MSBuildHelper.RegisterMSBuild(repoContentsPath.FullName, repoContentsPath.FullName);
+            MSBuildHelper.RegisterMSBuild(repoContentsPath.FullName, repoContentsPath.FullName, _logger);
 
             var experimentsManager = ExperimentsManager.GetExperimentsManager(job.Experiments);
             var allDependencyFiles = new Dictionary<string, DependencyFile>();
