@@ -30,7 +30,7 @@ RSpec.describe Dependabot::Bun::UpdateChecker::PackageLatestVersionFinder do
   let(:ignored_versions) { [] }
   let(:raise_on_ignored) { false }
   let(:security_advisories) { [] }
-  let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
+  let(:dependency_files) { project_dependency_files("javascript/no_lockfile") }
   let(:credentials) do
     [Dependabot::Credential.new({
       "type" => "git_source",

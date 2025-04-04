@@ -35,7 +35,7 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
     })]
   end
   let(:options) { {} }
-  let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
+  let(:dependency_files) { project_dependency_files("javascript/no_lockfile") }
   let(:requirements_update_strategy) { nil }
   let(:security_advisories) { [] }
   let(:ignored_versions) { [] }
@@ -743,7 +743,7 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
     subject { checker.latest_resolvable_version_with_no_unlock }
 
     context "with a non-git dependency" do
-      let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
+      let(:dependency_files) { project_dependency_files("javascript/no_lockfile") }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "etag",
@@ -905,7 +905,7 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
       checker.latest_resolvable_previous_version(updated_version)
     end
 
-    let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
+    let(:dependency_files) { project_dependency_files("javascript/no_lockfile") }
     let(:updated_version) { Dependabot::Bun::Version.new("1.7.0") }
 
     it "delegates to VersionResolver" do
@@ -1307,7 +1307,7 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
   end
 
   describe "#updated_dependencies_after_full_unlock" do
-    let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
+    let(:dependency_files) { project_dependency_files("javascript/no_lockfile") }
     let(:dependency) do
       Dependabot::Dependency.new(
         name: "etag",

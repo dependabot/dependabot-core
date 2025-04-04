@@ -678,7 +678,7 @@ RSpec.describe Dependabot::Bun::UpdateChecker::VersionResolver do
     subject { resolver.latest_version_resolvable_with_full_unlock? }
 
     context "when updating a tightly coupled monorepo dep with npm 6" do
-      let(:project_name) { "npm6/no_lockfile" }
+      let(:project_name) { "javascript/no_lockfile" }
       let(:latest_allowable_version) { Gem::Version.new("2.5.21") }
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -930,7 +930,7 @@ RSpec.describe Dependabot::Bun::UpdateChecker::VersionResolver do
     subject { resolver.dependency_updates_from_full_unlock }
 
     context "with updating a tightly coupled monorepo dep with npm 6" do
-      let(:project_name) { "npm6/no_lockfile" }
+      let(:project_name) { "javascript/no_lockfile" }
       let(:latest_allowable_version) { Gem::Version.new("2.5.21") }
       let(:dependency) do
         Dependabot::Dependency.new(
