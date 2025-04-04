@@ -547,9 +547,33 @@ public class RunWorker
                         .ToArray();
                     if (existingPullRequests.Length > 0)
                     {
-                        var existingPrVersion = existingPullRequests[0].Item2.First(d => d.DependencyName.Equals(dependency.Name, StringComparison.OrdinalIgnoreCase)).DependencyVersion;
-                        message = new PullRequestExistsForLatestVersion(dependency.Name, existingPrVersion.ToString());
-                        return false;
+                        // found a matching pr...
+                        if (job.UpdatingAPullRequest)
+                        {
+                            // ...and we've been asked to update it
+                            return true;
+                        }
+                        else
+                        {
+                            // ...but no update requested => don't perform any update and report error
+                            var existingPrVersion = existingPullRequests[0].Item2.First(d => d.DependencyName.Equals(dependency.Name, StringComparison.OrdinalIgnoreCase)).DependencyVersion;
+                            message = new PullRequestExistsForLatestVersion(dependency.Name, existingPrVersion.ToString());
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        // no matching pr...
+                        if (job.UpdatingAPullRequest)
+                        {
+                            // ...but we've been asked to perform an update => no update possible, nothing to report
+                            return false;
+                        }
+                        else
+                        {
+                            // ...and no update specifically requested => create new
+                            return true;
+                        }
                     }
                 }
                 else
@@ -565,7 +589,7 @@ public class RunWorker
                     }
                 }
 
-                return isVulnerable;
+                return false;
             }
             else
             {
