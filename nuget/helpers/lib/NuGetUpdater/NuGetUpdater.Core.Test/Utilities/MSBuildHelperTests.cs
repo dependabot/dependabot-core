@@ -128,6 +128,50 @@ public class MSBuildHelperTests : TestBase
         }
     }
 
+    [Fact]
+    public async Task IntermediatePropsAndTargetsAreExcludedFromBuildFileDiscovery()
+    {
+        // arrange
+        var repoFiles = new[]
+        {
+            ("project.csproj", """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net9.0</TargetFramework>
+                  </PropertyGroup>
+                  <Import Project="SomeFile.props" />
+                  <ItemGroup>
+                    <PackageReference Include="Some.Package" Version="1.0.0" />
+                  </ItemGroup>
+                </Project>
+                """),
+            ("global.json", "{}"),
+            ("Directory.Build.props", "<Project />"),
+            ("Directory.Build.targets", "<Project />"),
+            ("SomeFile.props", "<Project />"),
+            // these simulate a direct discovery operation having previously been performed
+            ("obj/project.csproj.nuget.g.props", "<Project />"),
+            ("obj/project.csproj.nuget.g.targets", "<Project />"),
+        };
+        using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(repoFiles);
+        var fullProjectPath = Path.Combine(tempDir.DirectoryPath, "project.csproj");
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory([], tempDir.DirectoryPath);
+
+        // act
+        var (buildFiles, _tfms) = await MSBuildHelper.LoadBuildFilesAndTargetFrameworksAsync(tempDir.DirectoryPath, fullProjectPath);
+
+        // assert
+        var actualBuildFilePaths = buildFiles.Select(f => Path.GetRelativePath(tempDir.DirectoryPath, f.Path).NormalizePathToUnix()).ToArray();
+        var expectedBuildFilePaths = new[]
+        {
+            "project.csproj",
+            "Directory.Build.props",
+            "SomeFile.props",
+            "Directory.Build.targets",
+        };
+        AssertEx.Equal(expectedBuildFilePaths, actualBuildFilePaths);
+    }
+
     [Theory]
     [MemberData(nameof(GetTopLevelPackageDependencyInfosTestData))]
     public async Task TopLevelPackageDependenciesCanBeDetermined(TestFile[] buildFileContents, Dependency[] expectedTopLevelDependencies, MockNuGetPackage[] testPackages)
