@@ -56,12 +56,6 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
   let(:registry_listing_url) { "#{registry_base}/#{escaped_dependency_name}" }
   let(:registry_base) { "https://registry.npmjs.org" }
 
-  # Variable to control the npm fallback version feature flag
-  let(:npm_fallback_version_above_v6_enabled) { false }
-
-  # Variable to control the enabling feature flag for the corepack fix
-  let(:enable_corepack_for_npm_and_yarn) { true }
-
   # Variable to control the enabling feature flag for the cooldown
   let(:enable_cooldown_for_bun) { true }
 
@@ -70,10 +64,6 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
       .to_return(status: 200, body: registry_response)
     stub_request(:head, "#{registry_base}/#{dependency_name}/-/#{unscoped_dependency_name}-#{target_version}.tgz")
       .to_return(status: 200)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_corepack_for_npm_and_yarn).and_return(enable_corepack_for_npm_and_yarn)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:npm_fallback_version_above_v6).and_return(npm_fallback_version_above_v6_enabled)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_shared_helpers_command_timeout).and_return(true)
     allow(Dependabot::Experiments).to receive(:enabled?)
@@ -117,7 +107,7 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
           name: "foo",
           version: "2.0.0",
           requirements: [{
-            file: "package-lock.json",
+            file: "bun.lock",
             requirement: "^2.0.0",
             groups: ["dependencies"],
             source: { type: "registry", url: "https://registry.npmjs.org" }
@@ -164,7 +154,7 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
 
   describe "#up_to_date?" do
     context "with no lockfile" do
-      let(:dependency_files) { project_dependency_files("npm8/packages_name_outdated_no_lockfile") }
+      let(:dependency_files) { project_dependency_files("javascript/packages_name_outdated_no_lockfile") }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "etag",
@@ -185,7 +175,7 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
     end
 
     context "with a latest version requirement" do
-      let(:dependency_files) { project_dependency_files("npm8/latest_requirement") }
+      let(:dependency_files) { project_dependency_files("javascript/latest_requirement") }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "etag",
@@ -273,70 +263,6 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
         end
       end
 
-      context "when dealing with a locked transitive security update" do
-        let(:dependency_files) { project_dependency_files("npm8/locked_transitive_dependency") }
-        let(:dependency_name) { "@dependabot-fixtures/npm-transitive-dependency" }
-        let(:security_advisories) do
-          [
-            Dependabot::SecurityAdvisory.new(
-              dependency_name: dependency_name,
-              package_manager: "bun",
-              vulnerable_versions: ["< 1.0.1"]
-            )
-          ]
-        end
-        let(:dependency_version) { "1.0.0" }
-        let(:target_version) { "1.0.1" }
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: dependency_name,
-            version: dependency_version,
-            requirements: [],
-            package_manager: "bun"
-          )
-        end
-
-        it "can't update without unlocking" do
-          expect(can_update).to be(false)
-        end
-
-        it "allows full unlocking" do
-          expect(checker.can_update?(requirements_to_unlock: :all)).to be(true)
-        end
-      end
-
-      context "when a transitive dependency is able to update without unlocking its parent but is still vulnerable" do
-        let(:dependency_files) { project_dependency_files("npm8/transitive_dependency_locked_but_updateable") }
-        let(:dependency_name) { "@dependabot-fixtures/npm-transitive-dependency-with-more-versions" }
-
-        let(:security_advisories) do
-          [
-            Dependabot::SecurityAdvisory.new(
-              dependency_name: dependency_name,
-              package_manager: "bun",
-              vulnerable_versions: ["< 2.0.0"]
-            )
-          ]
-        end
-        let(:dependency_version) { "1.0.0" }
-        let(:target_version) { "2.0.0" }
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: dependency_name,
-            version: dependency_version,
-            requirements: [],
-            package_manager: "bun"
-          )
-        end
-
-        it "can't update without unlocking" do
-          expect(can_update).to be(false)
-        end
-
-        it "allows full unlocking" do
-          expect(checker.can_update?(requirements_to_unlock: :all)).to be(true)
-        end
-      end
     end
 
     context "when dealing with a scoped package name" do
@@ -369,7 +295,7 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
   describe "#latest_version" do
     subject(:latest_version) { checker.latest_version }
 
-    let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
+    let(:dependency_files) { project_dependency_files("javascript/no_lockfile") }
 
     it "delegates to (Package)LatestVersionFinder" do
       if Dependabot::Experiments.enabled?(:enable_cooldown_for_bun)
@@ -410,15 +336,9 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
           requirements: [
             {
               requirement: "^0.1.0",
-              file: "package-lock.json",
+              file: "bun.lock",
               groups: ["dependencies"],
               source: { type: "registry", url: "https://registry.npmjs.org" }
-            },
-            {
-              requirement: "^0.1.0",
-              file: "yarn.lock",
-              groups: ["dependencies"],
-              source: { type: "registry", url: "https://registry.yarnpkg.com" }
             }
           ]
         )
