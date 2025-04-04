@@ -689,7 +689,7 @@ module Dependabot
         def top_level_dependencies
           return @top_level_dependencies if @top_level_dependencies
 
-          @top_level_dependencies = NpmAndYarn::FileParser.new(
+          @top_level_dependencies = Bun::FileParser.new(
             dependency_files: dependency_files,
             source: nil,
             credentials: credentials
