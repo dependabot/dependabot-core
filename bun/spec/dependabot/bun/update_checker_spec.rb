@@ -262,7 +262,6 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
           it { is_expected.to be_falsey }
         end
       end
-
     end
 
     context "when dealing with a scoped package name" do
