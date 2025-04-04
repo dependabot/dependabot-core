@@ -1084,6 +1084,7 @@ internal static partial class MSBuildHelper
         TryGetGlobalJsonPath(repoRootPath, projectPath, out var globalJsonPath);
         var safeGlobalJsonName = $"{globalJsonPath}{Guid.NewGuid()}";
         HashSet<string> targetFrameworks = new(StringComparer.OrdinalIgnoreCase);
+        var repoRootDirectoryInfo = new DirectoryInfo(repoRootPath);
 
         try
         {
@@ -1112,12 +1113,23 @@ internal static partial class MSBuildHelper
             // load the project even if it imports a file that doesn't exist (e.g. a file that's generated at restore
             // or build time).
             using var projectCollection = new ProjectCollection(); // do this in a one-off instance and don't pollute the global collection
-            Project project = Project.FromFile(projectPath, new ProjectOptions
+            var project = Project.FromFile(projectPath, new ProjectOptions
             {
                 LoadSettings = ProjectLoadSettings.IgnoreMissingImports,
                 ProjectCollection = projectCollection,
             });
-            buildFileList.AddRange(project.Imports.Select(i => i.ImportedProject.FullPath.NormalizePathToUnix()));
+            var allImportedPaths = project.Imports.Select(i => i.ImportedProject.FullPath.NormalizePathToUnix()).ToArray();
+            var importedPathsInRepo = allImportedPaths.Where(p => PathHelper.IsFileUnderDirectory(repoRootDirectoryInfo, new FileInfo(p))).ToArray();
+            var projectDir = Path.GetDirectoryName(projectPath)!;
+            var intermediateDir = new DirectoryInfo(Path.Combine(projectDir, project.GetPropertyValue("BaseIntermediateOutputPath")));
+            var outputDir = new DirectoryInfo(Path.Combine(projectDir, project.GetPropertyValue("BaseOutputPath")));
+            var nonTransitivePathsInRepo = importedPathsInRepo.Where(p =>
+            {
+                var fi = new FileInfo(p);
+                return !PathHelper.IsFileUnderDirectory(intermediateDir, fi)
+                    && !PathHelper.IsFileUnderDirectory(outputDir, fi);
+            }).ToArray();
+            buildFileList.AddRange(nonTransitivePathsInRepo.Select(p => p.NormalizePathToUnix()));
 
             // use the MSBuild-evaluated value so we don't have to try to manually parse XML
             IEnumerable<ProjectProperty> targetFrameworkProperties = project.Properties.Where(p => p.Name.Equals("TargetFramework", StringComparison.OrdinalIgnoreCase)).ToList();
@@ -1166,11 +1178,7 @@ internal static partial class MSBuildHelper
             }
         }
 
-        var repoRootPathPrefix = repoRootPath.NormalizePathToUnix() + "/";
-        var buildFiles = buildFileList
-            .Where(f => f.StartsWith(repoRootPathPrefix, StringComparison.OrdinalIgnoreCase))
-            .Distinct();
-        var result = buildFiles
+        var result = buildFileList
             .Where(File.Exists)
             .Select(path => ProjectBuildFile.Open(repoRootPath, path))
             .ToImmutableArray();
