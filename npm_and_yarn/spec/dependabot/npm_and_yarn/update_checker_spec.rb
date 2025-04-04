@@ -62,6 +62,9 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   # Variable to control the enabling feature flag for the corepack fix
   let(:enable_corepack_for_npm_and_yarn) { true }
 
+  # Variable to control the enabling feature flag for the cooldown
+  let(:enable_cooldown_for_npm_and_yarn) { true }
+
   before do
     stub_request(:get, registry_listing_url)
       .to_return(status: 200, body: registry_response)
@@ -73,6 +76,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       .with(:npm_fallback_version_above_v6).and_return(npm_fallback_version_above_v6_enabled)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_shared_helpers_command_timeout).and_return(true)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_cooldown_for_npm_and_yarn).and_return(enable_cooldown_for_npm_and_yarn)
   end
 
   after do
@@ -366,15 +371,27 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
 
     let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
 
-    it "delegates to LatestVersionFinder" do
-      expect(described_class::LatestVersionFinder).to receive(:new).with(
-        dependency: dependency,
-        credentials: credentials,
-        dependency_files: dependency_files,
-        ignored_versions: ignored_versions,
-        raise_on_ignored: false,
-        security_advisories: security_advisories
-      ).and_call_original
+    it "delegates to (Package)LatestVersionFinder" do
+      if Dependabot::Experiments.enabled?(:enable_cooldown_for_npm_and_yarn)
+        expect(described_class::PackageLatestVersionFinder).to receive(:new).with(
+          dependency: dependency,
+          credentials: credentials,
+          dependency_files: dependency_files,
+          ignored_versions: ignored_versions,
+          raise_on_ignored: false,
+          security_advisories: security_advisories,
+          cooldown_options: nil
+        ).and_call_original
+      else
+        expect(described_class::LatestVersionFinder).to receive(:new).with(
+          dependency: dependency,
+          credentials: credentials,
+          dependency_files: dependency_files,
+          ignored_versions: ignored_versions,
+          raise_on_ignored: false,
+          security_advisories: security_advisories
+        ).and_call_original
+      end
 
       expect(checker.latest_version).to eq(Dependabot::NpmAndYarn::Version.new("1.7.0"))
     end
@@ -827,14 +844,26 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       let(:req_string) { "^1.0.0" }
 
       it "delegates to LatestVersionFinder" do
-        expect(described_class::LatestVersionFinder).to receive(:new).with(
-          dependency: dependency,
-          credentials: credentials,
-          dependency_files: dependency_files,
-          ignored_versions: ignored_versions,
-          raise_on_ignored: false,
-          security_advisories: security_advisories
-        ).and_call_original
+        if Dependabot::Experiments.enabled?(:enable_cooldown_for_npm_and_yarn)
+          expect(described_class::PackageLatestVersionFinder).to receive(:new).with(
+            dependency: dependency,
+            credentials: credentials,
+            dependency_files: dependency_files,
+            ignored_versions: ignored_versions,
+            raise_on_ignored: false,
+            security_advisories: security_advisories,
+            cooldown_options: nil
+          ).and_call_original
+        else
+          expect(described_class::LatestVersionFinder).to receive(:new).with(
+            dependency: dependency,
+            credentials: credentials,
+            dependency_files: dependency_files,
+            ignored_versions: ignored_versions,
+            raise_on_ignored: false,
+            security_advisories: security_advisories
+          ).and_call_original
+        end
 
         expect(checker.latest_resolvable_version_with_no_unlock)
           .to eq(Dependabot::NpmAndYarn::Version.new("1.7.0"))
@@ -964,16 +993,24 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       dummy_version_resolver =
         instance_double(described_class::VersionResolver)
 
+      latest_version_finder = if Dependabot::Experiments.enabled?(:enable_cooldown_for_npm_and_yarn)
+                                described_class::PackageLatestVersionFinder
+                              else
+                                described_class::LatestVersionFinder
+                              end
+
       expect(described_class::VersionResolver)
         .to receive(:new)
         .with(
           dependency: dependency,
           credentials: credentials,
           dependency_files: dependency_files,
-          latest_version_finder: described_class::LatestVersionFinder,
+          latest_version_finder: latest_version_finder,
           latest_allowable_version: updated_version,
           repo_contents_path: nil,
-          dependency_group: nil
+          dependency_group: nil,
+          raise_on_ignored: false,
+          update_cooldown: nil
         ).and_return(dummy_version_resolver)
       expect(dummy_version_resolver)
         .to receive(:latest_resolvable_previous_version)
@@ -1373,16 +1410,24 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       dummy_version_resolver =
         instance_double(described_class::VersionResolver)
 
+      latest_version_finder = if Dependabot::Experiments.enabled?(:enable_cooldown_for_npm_and_yarn)
+                                described_class::PackageLatestVersionFinder
+                              else
+                                described_class::LatestVersionFinder
+                              end
+
       expect(described_class::VersionResolver)
         .to receive(:new)
         .with(
           dependency: dependency,
           credentials: credentials,
           dependency_files: dependency_files,
-          latest_version_finder: described_class::LatestVersionFinder,
+          latest_version_finder: latest_version_finder,
           latest_allowable_version: Dependabot::NpmAndYarn::Version.new("1.7.0"),
           repo_contents_path: nil,
-          dependency_group: nil
+          dependency_group: nil,
+          raise_on_ignored: false,
+          update_cooldown: nil
         ).and_return(dummy_version_resolver)
       expect(dummy_version_resolver)
         .to receive(:dependency_updates_from_full_unlock)

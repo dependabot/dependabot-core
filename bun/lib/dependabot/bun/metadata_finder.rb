@@ -8,7 +8,7 @@ require "time"
 require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
 require "dependabot/registry_client"
-require "dependabot/bun/update_checker/registry_finder"
+require "dependabot/bun/package/registry_finder"
 require "dependabot/bun/version"
 
 module Dependabot
@@ -105,7 +105,7 @@ module Dependabot
       def new_source
         sources = dependency.requirements
                             .map { |r| r.fetch(:source) }.uniq.compact
-                            .sort_by { |source| UpdateChecker::RegistryFinder.central_registry?(source[:url]) ? 1 : 0 }
+                            .sort_by { |source| Package::RegistryFinder.central_registry?(source[:url]) ? 1 : 0 }
 
         sources.first
       end

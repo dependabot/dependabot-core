@@ -33,7 +33,13 @@ module Dependabot
 
       sig { params(parsed_line: T::Hash[String, T.nilable(String)]).returns(T.nilable(String)) }
       def version_from(parsed_line)
-        parsed_line.fetch("tag") || parsed_line.fetch("digest")
+        return nil unless parsed_line.fetch("tag") || parsed_line.fetch("digest")
+
+        if parsed_line.fetch("tag") && parsed_line.fetch("digest")
+          "#{parsed_line.fetch('tag')}@sha256:#{parsed_line.fetch('digest')}"
+        else
+          parsed_line.fetch("tag") || "sha256:#{parsed_line.fetch('digest')}"
+        end
       end
 
       sig { params(parsed_line: T::Hash[String, T.nilable(String)]).returns(T::Hash[String, T.nilable(String)]) }
@@ -42,7 +48,7 @@ module Dependabot
 
         source[:registry] = parsed_line.fetch("registry") if parsed_line.fetch("registry")
         source[:tag] = parsed_line.fetch("tag") if parsed_line.fetch("tag")
-        source[:digest] = parsed_line.fetch("digest") if parsed_line.fetch("digest")
+        source[:digest] = "sha256:#{parsed_line.fetch('digest')}" if parsed_line.fetch("digest")
 
         source
       end

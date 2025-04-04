@@ -10,7 +10,7 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base
       # Build a .npmrc file from the lockfile content, credentials, and any
       # committed .npmrc
-      # We should refactor this to use UpdateChecker::RegistryFinder
+      # We should refactor this to use Package::RegistryFinder
       class NpmrcBuilder
         extend T::Sig
 
@@ -121,7 +121,7 @@ module Dependabot
 
           if dependencies.any?
             @dependency_urls = dependencies.map do |dependency|
-              UpdateChecker::RegistryFinder.new(
+              Package::RegistryFinder.new(
                 dependency: dependency,
                 credentials: credentials,
                 npmrc_file: npmrc_file

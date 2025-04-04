@@ -94,32 +94,41 @@ module Dependabot
         sig do
           params(
             dependency: Dependabot::Dependency,
-            credentials: T::Array[Dependabot::Credential],
             dependency_files: T::Array[Dependabot::DependencyFile],
+            credentials: T::Array[Dependabot::Credential],
             latest_allowable_version: T.nilable(T.any(String, Gem::Version)),
-            latest_version_finder: LatestVersionFinder,
+            latest_version_finder: T.any(LatestVersionFinder, PackageLatestVersionFinder),
             repo_contents_path: T.nilable(String),
-            dependency_group: T.nilable(Dependabot::DependencyGroup)
+            dependency_group: T.nilable(Dependabot::DependencyGroup),
+            raise_on_ignored: T::Boolean,
+            update_cooldown: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
           ).void
         end
         def initialize( # rubocop:disable Metrics/AbcSize
-          dependency:, credentials:, dependency_files:,
+          dependency:, dependency_files:, credentials:,
           latest_allowable_version:, latest_version_finder:,
-          repo_contents_path:, dependency_group: nil
+          repo_contents_path:, dependency_group: nil,
+          raise_on_ignored: false, update_cooldown: nil
         )
           @dependency               = dependency
-          @credentials              = credentials
           @dependency_files         = dependency_files
+          @credentials              = credentials
           @latest_allowable_version = latest_allowable_version
           @dependency_group = dependency_group
 
-          @latest_version_finder = T.let({}, T::Hash[Dependabot::Dependency, LatestVersionFinder])
+          @latest_version_finder = T.let(
+            {},
+            T::Hash[Dependabot::Dependency, T.any(LatestVersionFinder, PackageLatestVersionFinder)
+          ]
+          )
           @latest_version_finder[dependency] = latest_version_finder
           @repo_contents_path = repo_contents_path
+          @raise_on_ignored = raise_on_ignored
+          @update_cooldown = update_cooldown
 
           @types_package = T.let(nil, T.nilable(Dependabot::Dependency))
           @original_package = T.let(nil, T.nilable(Dependabot::Dependency))
-          @latest_types_package_version = T.let(nil, T.nilable(Version))
+          @latest_types_package_version = T.let(nil, T.nilable(Dependabot::Version))
           @dependency_files_builder = T.let(nil, T.nilable(DependencyFilesBuilder))
           # @latest_resolvable_version = T.let(nil, T.nilable(T.any(String, Gem::Version)))
           @resolve_latest_previous_version = T.let({}, T::Hash[Dependabot::Dependency, T.nilable(String)])
@@ -204,27 +213,49 @@ module Dependabot
 
         sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
-        sig { returns(T::Array[Dependabot::Credential]) }
-        attr_reader :credentials
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
+        sig { returns(T::Array[Dependabot::Credential]) }
+        attr_reader :credentials
         sig { returns(T.nilable(T.any(String, Gem::Version))) }
         attr_reader :latest_allowable_version
         sig { returns(T.nilable(String)) }
         attr_reader :repo_contents_path
         sig { returns(T.nilable(Dependabot::DependencyGroup)) }
         attr_reader :dependency_group
+        sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
+        attr_reader :update_cooldown
+        sig { returns(T::Boolean) }
+        attr_reader :raise_on_ignored
 
-        sig { params(dep: Dependabot::Dependency) .returns(LatestVersionFinder) }
+        sig { params(dep: Dependabot::Dependency) .returns(T.any(LatestVersionFinder, PackageLatestVersionFinder)) }
         def latest_version_finder(dep)
           @latest_version_finder[dep] ||=
-            LatestVersionFinder.new(
-              dependency: dep,
-              credentials: credentials,
-              dependency_files: dependency_files,
-              ignored_versions: [],
-              security_advisories: []
-            )
+            if enable_cooldown?
+              PackageLatestVersionFinder.new(
+                dependency: dep,
+                dependency_files: dependency_files,
+                credentials: credentials,
+                cooldown_options: update_cooldown,
+                ignored_versions: [],
+                security_advisories: [],
+                raise_on_ignored: raise_on_ignored
+              )
+            else
+              LatestVersionFinder.new(
+                dependency: dep,
+                credentials: credentials,
+                dependency_files: dependency_files,
+                ignored_versions: [],
+                security_advisories: [],
+                raise_on_ignored: raise_on_ignored
+              )
+            end
+        end
+
+        sig { returns(T::Boolean) }
+        def enable_cooldown?
+          Dependabot::Experiments.enabled?(:enable_cooldown_for_npm_and_yarn)
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
@@ -337,7 +368,7 @@ module Dependabot
           @original_package
         end
 
-        sig { returns(T.nilable(Version)) }
+        sig { returns(T.nilable(Dependabot::Version)) }
         def latest_types_package_version
           types_pkg = types_package
           return unless types_pkg
@@ -358,7 +389,7 @@ module Dependabot
 
           latest_allowable_ver = latest_allowable_version
           return false unless latest_allowable_ver.is_a?(Version) && latest_allowable_ver.backwards_compatible_with?(
-            latest_types_version
+            T.unsafe(latest_types_version)
           )
 
           return false unless version_class.correct?(types_pkg.version)
@@ -543,8 +574,9 @@ module Dependabot
         def satisfying_versions
           latest_version_finder(dependency)
             .possible_versions_with_details
-            .select do |version, details|
-              next false unless satisfies_peer_reqs_on_dep?(version)
+            .select do |versions_with_details|
+              version, details = versions_with_details
+              next false unless satisfies_peer_reqs_on_dep?(T.unsafe(version))
               next true unless details["peerDependencies"]
               next true if version == version_for_dependency(dependency)
 
@@ -560,8 +592,11 @@ module Dependabot
               rescue Gem::Requirement::BadRequirementError
                 false
               end
+            end.map do |versions_with_details| # rubocop:disable Style/MultilineBlockChain
+              # Return just the version
+              version, = versions_with_details
+              version
             end
-            .map(&:first)
         end
 
         # rubocop:enable Metrics/PerceivedComplexity
@@ -582,11 +617,15 @@ module Dependabot
         end
 
         sig { params(dep: Dependabot::Dependency).returns(T.nilable(T.any(String, Gem::Version))) }
-        def latest_version_of_dep_with_satisfied_peer_reqs(dep)
-          latest_version_finder(dep)
+        def latest_version_of_dep_with_satisfied_peer_reqs(dep) # rubocop:disable Metrics/PerceivedComplexity
+          dependency_version = version_for_dependency(dep)
+          version_with_detail =
+            latest_version_finder(dep)
             .possible_versions_with_details
-            .find do |version, details|
-              next false unless version > version_for_dependency(dep)
+            .find do |version_details|
+              version, details = version_details
+
+              next false unless !dependency_version || version > dependency_version
               next true unless details["peerDependencies"]
 
               details["peerDependencies"].all? do |peer_dep_name, req|
@@ -601,7 +640,7 @@ module Dependabot
                 false
               end
             end
-            &.first
+          version_with_detail.is_a?(Array) ? version_with_detail.first : version_with_detail
         end
 
         sig { params(dep: Dependabot::Dependency).returns(T::Boolean) }

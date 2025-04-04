@@ -5,6 +5,8 @@ require "excon"
 require "dependabot/npm_and_yarn/update_checker"
 require "dependabot/update_checkers/version_filters"
 require "dependabot/npm_and_yarn/package/registry_finder"
+require "dependabot/npm_and_yarn/package/package_details_fetcher"
+require "dependabot/package/package_latest_version_finder"
 require "dependabot/npm_and_yarn/version"
 require "dependabot/npm_and_yarn/requirement"
 require "dependabot/shared_helpers"
@@ -14,6 +16,424 @@ require "sorbet-runtime"
 module Dependabot
   module NpmAndYarn
     class UpdateChecker
+      class PackageLatestVersionFinder < Dependabot::Package::PackageLatestVersionFinder
+        extend T::Sig
+
+        sig do
+          params(
+            dependency: Dependabot::Dependency,
+            dependency_files: T::Array[Dependabot::DependencyFile],
+            credentials: T::Array[Dependabot::Credential],
+            ignored_versions: T::Array[String],
+            security_advisories: T::Array[Dependabot::SecurityAdvisory],
+            raise_on_ignored: T::Boolean,
+            cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
+          ).void
+        end
+        def initialize(
+          dependency:,
+          dependency_files:,
+          credentials:,
+          ignored_versions:,
+          security_advisories:,
+          raise_on_ignored: false,
+          cooldown_options: nil
+        )
+          @package_fetcher = T.let(nil, T.nilable(Package::PackageDetailsFetcher))
+          super
+        end
+
+        sig { returns(Package::PackageDetailsFetcher) }
+        def package_fetcher
+          return @package_fetcher if @package_fetcher
+
+          @package_fetcher = Package::PackageDetailsFetcher.new(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            credentials: credentials
+          )
+          @package_fetcher
+        end
+
+        sig { override.returns(T.nilable(Dependabot::Package::PackageDetails)) }
+        def package_details
+          return @package_details if @package_details
+
+          @package_details = package_fetcher.fetch
+          @package_details
+        end
+
+        sig do
+          returns(T.nilable(Dependabot::Version))
+        end
+        def latest_version_from_registry
+          fetch_latest_version(language_version: nil)
+        end
+
+        sig do
+          override.params(language_version: T.nilable(T.any(String, Dependabot::Version)))
+                  .returns(T.nilable(Dependabot::Version))
+        end
+        def latest_version_with_no_unlock(language_version: nil)
+          with_custom_registry_rescue do
+            return unless valid_npm_details?
+            return version_from_dist_tags if specified_dist_tag_requirement?
+
+            super
+          end
+        end
+
+        sig do
+          params(language_version: T.nilable(T.any(String, Dependabot::Version)))
+            .returns(T.nilable(Dependabot::Version))
+        end
+        def lowest_security_fix_version(language_version: nil)
+          fetch_lowest_security_fix_version(language_version: language_version)
+        end
+
+        # This method is for latest_version_from_registry
+        sig do
+          params(language_version: T.nilable(T.any(String, Dependabot::Version)))
+            .returns(T.nilable(Dependabot::Version))
+        end
+        def fetch_latest_version(language_version: nil)
+          with_custom_registry_rescue do
+            return unless valid_npm_details?
+
+            tag_version = version_from_dist_tags
+            return tag_version if tag_version
+
+            return if specified_dist_tag_requirement?
+
+            super
+          end
+        end
+
+        sig do
+          override
+            .params(language_version: T.nilable(T.any(String, Dependabot::Version)))
+            .returns(T.nilable(Dependabot::Version))
+        end
+        def fetch_latest_version_with_no_unlock(language_version: nil)
+          with_custom_registry_rescue do
+            return unless valid_npm_details?
+            return version_from_dist_tags if specified_dist_tag_requirement?
+
+            super
+          end
+        end
+
+        sig { override.params(versions: T::Array[Dependabot::Version]).returns(T::Array[Dependabot::Version]) }
+        def apply_post_fetch_latest_versions_filter(versions)
+          original_count = versions.count
+          filtered_versions = lazy_filter_yanked_versions_by_min_max(versions, check_max: true)
+
+          # Log the filter if any versions were removed
+          if original_count > filtered_versions.count
+            Dependabot.logger.info(
+              "Filtered out #{original_count - filtered_versions.count} " \
+              "yanked (not found) versions after fetching latest versions"
+            )
+          end
+
+          filtered_versions
+        end
+
+        sig do
+          params(
+            versions: T::Array[Dependabot::Version],
+            check_max: T::Boolean
+          ).returns(T::Array[Dependabot::Version])
+        end
+        def lazy_filter_yanked_versions_by_min_max(versions, check_max: true)
+          # Sort the versions based on the check_max flag (max -> descending, min -> ascending)
+          sorted_versions = check_max ? versions.sort.reverse : versions.sort
+
+          filtered_versions = []
+
+          not_yanked = T.let(false, T::Boolean)
+
+          # Iterate through the sorted versions lazily, filtering out yanked versions
+          sorted_versions.each do |version|
+            next if !not_yanked && yanked_version?(version)
+
+            not_yanked = true
+
+            # Once we find a valid (non-yanked) version, add it to the filtered list
+            filtered_versions << version
+            break
+          end
+
+          filtered_versions
+        end
+
+        sig do
+          override
+            .params(language_version: T.nilable(T.any(String, Dependabot::Version)))
+            .returns(T.nilable(Dependabot::Version))
+        end
+        def fetch_lowest_security_fix_version(language_version:) # rubocop:disable Lint/UnusedMethodArgument
+          with_custom_registry_rescue do
+            return unless valid_npm_details?
+
+            secure_versions =
+              if specified_dist_tag_requirement?
+                [version_from_dist_tags].compact
+              else
+                possible_versions(filter_ignored: false)
+              end
+
+            secure_versions =
+              Dependabot::UpdateCheckers::VersionFilters
+              .filter_vulnerable_versions(
+                T.unsafe(secure_versions),
+                security_advisories
+              )
+            secure_versions = filter_ignored_versions(secure_versions)
+            secure_versions = filter_lower_versions(secure_versions)
+
+            # Apply lazy filtering for yanked versions (min or max logic)
+            secure_versions = lazy_filter_yanked_versions_by_min_max(secure_versions, check_max: false)
+
+            # Return the lowest non-yanked version
+            secure_versions.max
+          end
+        end
+
+        sig do
+          params(versions_array: T::Array[Dependabot::Version])
+            .returns(T::Array[Dependabot::Version])
+        end
+        def filter_prerelease_versions(versions_array)
+          filtered = versions_array.reject do |v|
+            v.prerelease? && !related_to_current_pre?(v)
+          end
+
+          if versions_array.count > filtered.count
+            Dependabot.logger.info(
+              "Filtered out #{versions_array.count - filtered.count} unrelated pre-release versions"
+            )
+          end
+
+          filtered
+        end
+
+        sig do
+          params(filter_ignored: T::Boolean)
+            .returns(T::Array[T::Array[T.untyped]])
+        end
+        def possible_versions_with_details(filter_ignored: true)
+          possible_releases(filter_ignored: filter_ignored).map { |r| [r.version, r.details] }
+        end
+
+        sig do
+          params(releases: T::Array[Dependabot::Package::PackageRelease])
+            .returns(T::Array[Dependabot::Package::PackageRelease])
+        end
+        def filter_releases(releases)
+          filtered =
+            releases
+            .reject do |release|
+              ignore_requirements.any? { |r| r.satisfied_by?(release.version) }
+            end
+          if @raise_on_ignored &&
+             filter_lower_releases(filtered).empty? &&
+             filter_lower_releases(releases).any?
+            raise Dependabot::AllVersionsIgnored
+          end
+
+          if releases.count > filtered.count
+            Dependabot.logger.info("Filtered out #{releases.count - filtered.count} ignored versions")
+          end
+          filtered
+        end
+
+        sig do
+          params(releases: T::Array[Dependabot::Package::PackageRelease])
+            .returns(T::Array[Dependabot::Package::PackageRelease])
+        end
+        def filter_lower_releases(releases)
+          return releases unless dependency.numeric_version
+
+          releases.select { |release| release.version > dependency.numeric_version }
+        end
+
+        sig do
+          params(filter_ignored: T::Boolean)
+            .returns(T::Array[Dependabot::Package::PackageRelease])
+        end
+        def possible_releases(filter_ignored: true)
+          releases = possible_previous_releases.reject(&:yanked?)
+
+          return filter_releases(releases) if filter_ignored
+
+          releases
+        end
+
+        sig do
+          params(filter_ignored: T::Boolean)
+            .returns(T::Array[Gem::Version])
+        end
+        def possible_versions(filter_ignored: true)
+          possible_releases(filter_ignored: filter_ignored).map(&:version)
+        end
+
+        sig { returns(T::Array[Dependabot::Package::PackageRelease]) }
+        def possible_previous_releases
+          (package_details&.releases || [])
+            .reject do |r|
+            r.version.prerelease? && !related_to_current_pre?(T.unsafe(r.version))
+          end
+            .sort_by(&:version).reverse
+        end
+
+        sig { returns(T::Array[[Dependabot::Version, T::Hash[String, T.nilable(String)]]]) }
+        def possible_previous_versions_with_details
+          possible_previous_releases.map do |r|
+            [r.version, { "deprecated" => r.yanked? ? "yanked" : nil }]
+          end
+        end
+
+        sig { override.returns(T::Boolean) }
+        def cooldown_enabled?
+          Dependabot::Experiments.enabled?(:enable_cooldown_for_npm_and_yarn)
+        end
+
+        private
+
+        sig { params(_block: T.untyped).returns(T.nilable(Dependabot::Version)) }
+        def with_custom_registry_rescue(&_block)
+          yield
+        rescue Excon::Error::Socket, Excon::Error::Timeout, RegistryError
+          raise unless package_fetcher.custom_registry?
+
+          # Custom registries can be flaky. We don't want to make that
+          # our problem, so quietly return `nil` here.
+          nil
+        end
+
+        sig { returns(T::Boolean) }
+        def valid_npm_details?
+          !!package_details&.releases&.any?
+        end
+
+        sig { returns(T.nilable(Dependabot::Version)) }
+        def version_from_dist_tags # rubocop:disable Metrics/PerceivedComplexity
+          dist_tags = package_details&.dist_tags
+          return nil unless dist_tags
+
+          dist_tag_req = dependency.requirements
+                                   .find { |r| dist_tags.include?(r[:requirement]) }
+                                   &.fetch(:requirement)
+
+          releases = package_details&.releases
+
+          releases = filter_by_cooldown(releases) if releases
+
+          if dist_tag_req
+            release = find_dist_tag_release(dist_tag_req, releases)
+            return release.version if release && !release.yanked?
+          end
+
+          latest_release = find_dist_tag_release("latest", releases)
+
+          return nil unless latest_release
+
+          return latest_release.version if wants_latest_dist_tag?(latest_release.version) && !latest_release.yanked?
+
+          nil
+        end
+
+        sig do
+          params(
+            dist_tag: T.nilable(String),
+            releases: T.nilable(T::Array[Dependabot::Package::PackageRelease])
+          )
+            .returns(T.nilable(Dependabot::Package::PackageRelease))
+        end
+        def find_dist_tag_release(dist_tag, releases)
+          dist_tags = package_details&.dist_tags
+          return nil unless releases && dist_tags && dist_tag
+
+          dist_tag_version = dist_tags[dist_tag]
+
+          return nil unless dist_tag_version && !dist_tag_version.empty?
+
+          release = releases.find { |r| r.version == Version.new(dist_tag_version) }
+
+          release
+        end
+
+        sig { returns(T::Boolean) }
+        def specified_dist_tag_requirement?
+          dependency.requirements.any? do |req|
+            next false if req[:requirement].nil?
+            next false unless req[:requirement].match?(/^[A-Za-z]/)
+
+            !req[:requirement].match?(/^v\d/i)
+          end
+        end
+
+        sig do
+          params(version: Dependabot::Version)
+            .returns(T::Boolean)
+        end
+        def wants_latest_dist_tag?(version)
+          return false if related_to_current_pre?(version) ^ version.prerelease?
+          return false if current_version_greater_than?(version)
+          return false if current_requirement_greater_than?(version)
+          return false if ignore_requirements.any? { |r| r.satisfied_by?(version) }
+          return false if yanked_version?(version)
+
+          true
+        end
+
+        sig { params(version: Dependabot::Version).returns(T::Boolean) }
+        def current_requirement_greater_than?(version)
+          dependency.requirements.any? do |req|
+            next false unless req[:requirement]
+
+            req_version = req[:requirement].sub(/^\^|~|>=?/, "")
+            next false unless version_class.correct?(req_version)
+
+            version_class.new(req_version) > version
+          end
+        end
+
+        sig { params(version: Dependabot::Version).returns(T::Boolean) }
+        def related_to_current_pre?(version)
+          current_version = dependency.numeric_version
+          if current_version&.prerelease? &&
+             current_version.release == version.release
+            return true
+          end
+
+          dependency.requirements.any? do |req|
+            next unless req[:requirement]&.match?(/\d-[A-Za-z]/)
+
+            NpmAndYarn::Requirement
+              .requirements_array(req.fetch(:requirement))
+              .any? do |r|
+                r.requirements.any? { |a| a.last.release == version.release }
+              end
+          rescue Gem::Requirement::BadRequirementError
+            false
+          end
+        end
+
+        sig { params(version: Dependabot::Version).returns(T::Boolean) }
+        def current_version_greater_than?(version)
+          return false unless dependency.numeric_version
+
+          T.must(dependency.numeric_version) > version
+        end
+
+        sig { params(version: Dependabot::Version).returns(T::Boolean) }
+        def yanked_version?(version)
+          package_fetcher.yanked?(version)
+        end
+      end
+
       class LatestVersionFinder # rubocop:disable Metrics/ClassLength
         extend T::Sig
 
@@ -86,8 +506,11 @@ module Dependabot
               possible_versions(filter_ignored: false)
             end
 
-          secure_versions = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(secure_versions,
-                                                                                                  security_advisories)
+          secure_versions = Dependabot::UpdateCheckers::VersionFilters
+                            .filter_vulnerable_versions(
+                              secure_versions,
+                              security_advisories
+                            )
           secure_versions = filter_ignored_versions(secure_versions)
           secure_versions = filter_lower_versions(secure_versions)
 
