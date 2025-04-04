@@ -45,18 +45,34 @@ public class HttpApiHandler : IApiHandler
         await PostAsJson("create_pull_request", createPullRequest);
     }
 
+    public async Task ClosePullRequest(ClosePullRequest closePullRequest)
+    {
+        await PostAsJson("close_pull_request", closePullRequest);
+    }
+
+    public async Task UpdatePullRequest(UpdatePullRequest updatePullRequest)
+    {
+        await PostAsJson("update_pull_request", updatePullRequest);
+    }
+
     public async Task MarkAsProcessed(MarkAsProcessed markAsProcessed)
     {
         await PostAsJson("mark_as_processed", markAsProcessed);
     }
 
-    private async Task PostAsJson(string endpoint, object body)
+    internal static string Serialize(object body)
     {
         var wrappedBody = new
         {
-            Data = body,
+            Data = body
         };
         var payload = JsonSerializer.Serialize(wrappedBody, SerializerOptions);
+        return payload;
+    }
+
+    private async Task PostAsJson(string endpoint, object body)
+    {
+        var payload = Serialize(body);
         var content = new StringContent(payload, Encoding.UTF8, "application/json");
         var response = await HttpClient.PostAsync($"{_apiUrl}/update_jobs/{_jobId}/{endpoint}", content);
         var _ = response.EnsureSuccessStatusCode();

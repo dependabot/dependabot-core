@@ -4,6 +4,7 @@
 require "sorbet-runtime"
 
 require "dependabot/errors"
+require "dependabot/github_actions/constants"
 require "dependabot/github_actions/requirement"
 require "dependabot/github_actions/version"
 require "dependabot/update_checkers"

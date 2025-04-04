@@ -32,10 +32,14 @@
 # - elm
 # - submodules
 # - docker
+# - docker_compose
 # - terraform
 # - pub
 # - swift
 # - devcontainers
+# - dotnet_sdk
+# - bun
+# - helm
 
 # rubocop:disable Style/GlobalVars
 
@@ -49,17 +53,21 @@ unless Etc.getpwuid(Process.uid).name == "dependabot" || ENV["ALLOW_DRY_RUN_STAN
   exit 1
 end
 
+$LOAD_PATH << "./bun/lib"
 $LOAD_PATH << "./bundler/lib"
 $LOAD_PATH << "./cargo/lib"
 $LOAD_PATH << "./common/lib"
 $LOAD_PATH << "./composer/lib"
 $LOAD_PATH << "./devcontainers/lib"
 $LOAD_PATH << "./docker/lib"
+$LOAD_PATH << "./docker_compose/lib"
+$LOAD_PATH << "./dotnet_sdk/lib"
 $LOAD_PATH << "./elm/lib"
 $LOAD_PATH << "./git_submodules/lib"
 $LOAD_PATH << "./github_actions/lib"
 $LOAD_PATH << "./go_modules/lib"
 $LOAD_PATH << "./gradle/lib"
+$LOAD_PATH << "./helm/lib"
 $LOAD_PATH << "./hex/lib"
 $LOAD_PATH << "./maven/lib"
 $LOAD_PATH << "./npm_and_yarn/lib"
@@ -68,6 +76,7 @@ $LOAD_PATH << "./python/lib"
 $LOAD_PATH << "./pub/lib"
 $LOAD_PATH << "./swift/lib"
 $LOAD_PATH << "./terraform/lib"
+$LOAD_PATH << "./uv/lib"
 
 updater_image_gemfile = File.expand_path("../dependabot-updater/Gemfile", __dir__)
 updater_repo_gemfile = File.expand_path("../updater/Gemfile", __dir__)
@@ -95,16 +104,20 @@ require "dependabot/pull_request_creator"
 require "dependabot/config/file_fetcher"
 require "dependabot/simple_instrumentor"
 
+require "dependabot/bun"
 require "dependabot/bundler"
 require "dependabot/cargo"
 require "dependabot/composer"
 require "dependabot/devcontainers"
 require "dependabot/docker"
+require "dependabot/docker_compose"
+require "dependabot/dotnet_sdk"
 require "dependabot/elm"
 require "dependabot/git_submodules"
 require "dependabot/github_actions"
 require "dependabot/go_modules"
 require "dependabot/gradle"
+require "dependabot/helm"
 require "dependabot/hex"
 require "dependabot/maven"
 require "dependabot/npm_and_yarn"
@@ -113,6 +126,7 @@ require "dependabot/python"
 require "dependabot/pub"
 require "dependabot/swift"
 require "dependabot/terraform"
+require "dependabot/uv"
 
 # GitHub credentials with write permission to the repo you want to update
 # (so that you can create a new branch, commit and pull request).
@@ -134,7 +148,8 @@ $options = {
   security_updates_only: false,
   vendor_dependencies: false,
   ignore_conditions: [],
-  pull_request: false
+  pull_request: false,
+  cooldown: nil
 }
 
 unless ENV["LOCAL_GITHUB_ACCESS_TOKEN"].to_s.strip.empty?
@@ -185,6 +200,10 @@ unless ENV["IGNORE_CONDITIONS"].to_s.strip.empty?
   # For example:
   # [{"dependency-name":"ruby","version-requirement":">= 3.a, < 4"}]
   $options[:ignore_conditions] = JSON.parse(ENV.fetch("IGNORE_CONDITIONS", nil))
+end
+
+if ENV.key?("COOLDOWN") && !ENV["COOLDOWN"].to_s.strip.empty?
+  $options[:cooldown] = JSON.parse(ENV.fetch("COOLDOWN", "{}"))
 end
 
 # rubocop:disable Metrics/BlockLength
@@ -270,6 +289,17 @@ option_parse = OptionParser.new do |opts|
   opts.on("--pull-request",
           "Output pull request information metadata: title, description") do
     $options[:pull_request] = true
+  end
+
+  opts.on("--enable-beta-ecosystems", "Enable beta ecosystems") do |_value|
+    Dependabot::Experiments.register(:enable_beta_ecosystems, true)
+  end
+
+  opts.on("--cooldown", "Cooldown configuration as a JSON object") do |value|
+    $options[:cooldown] = JSON.parse(value)
+  rescue JSON::ParserError
+    puts "Invalid JSON format for cooldown parameter. Please provide a valid JSON string."
+    exit 1
   end
 end
 # rubocop:enable Metrics/BlockLength

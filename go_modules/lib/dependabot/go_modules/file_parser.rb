@@ -12,6 +12,8 @@ require "dependabot/errors"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/go_modules/version"
+require "dependabot/go_modules/language"
+require "dependabot/go_modules/package_manager"
 
 module Dependabot
   module GoModules
@@ -31,7 +33,49 @@ module Dependabot
         dependency_set.dependencies
       end
 
+      sig { returns(Ecosystem) }
+      def ecosystem
+        @ecosystem ||= T.let(begin
+          set_gotoolchain_env
+          Ecosystem.new(
+            name: ECOSYSTEM,
+            package_manager: package_manager,
+            language: language
+          )
+        end, T.nilable(Dependabot::Ecosystem))
+      end
+
       private
+
+      sig { returns(Ecosystem::VersionManager) }
+      def package_manager
+        @package_manager ||= T.let(
+          PackageManager.new(T.must(go_toolchain_version)),
+          T.nilable(Dependabot::GoModules::PackageManager)
+        )
+      end
+
+      sig { returns(T.nilable(Ecosystem::VersionManager)) }
+      def language
+        @language ||= T.let(begin
+          Language.new(go_version)
+        end, T.nilable(Dependabot::GoModules::Language))
+      end
+
+      sig { returns(String) }
+      def go_version
+        @go_version ||= T.let(T.must(go_mod&.content&.match(/^go\s(\d+\.\d+(.\d+)*)/)&.captures&.first),
+                              T.nilable(String))
+      end
+
+      sig { returns(T.nilable(String)) }
+      def go_toolchain_version
+        @go_toolchain_version ||= T.let(begin
+          # Checks version based on the GOTOOLCHAIN in ENV
+          version = SharedHelpers.run_shell_command("go version")
+          version.match(/go\s*(\d+\.\d+(.\d+)*)/)&.captures&.first
+        end, T.nilable(String))
+      end
 
       # set GOTOOLCHAIN=local+auto if go version >= 1.21
       sig { void }

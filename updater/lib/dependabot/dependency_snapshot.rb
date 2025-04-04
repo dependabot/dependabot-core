@@ -67,9 +67,9 @@ module Dependabot
       T.must(@dependencies[@current_directory])
     end
 
-    sig { returns(T.nilable(Dependabot::PackageManagerBase)) }
-    def package_manager
-      @package_manager[@current_directory]
+    sig { returns(T.nilable(Dependabot::Ecosystem)) }
+    def ecosystem
+      @ecosystem[@current_directory]
     end
 
     sig { returns(T::Array[Dependabot::Notice]) }
@@ -119,25 +119,55 @@ module Dependabot
       @dependency_group_engine.find_group(name: T.must(job.dependency_group_to_refresh))
     end
 
-    sig { params(group: Dependabot::DependencyGroup).void }
-    def mark_group_handled(group)
+    # rubocop:disable Metrics/PerceivedComplexity
+    sig do
+      params(
+        group: Dependabot::DependencyGroup,
+        excluding_dependencies: T::Hash[String, T::Set[String]]
+      )
+        .void
+    end
+    def mark_group_handled(group, excluding_dependencies = {})
+      Dependabot.logger.info("Marking group '#{group.name}' as handled.")
+
       directories.each do |directory|
         @current_directory = directory
 
-        # add the existing dependencies in the group so individual updates don't try to update them
-        add_handled_dependencies(dependencies_in_existing_pr_for_group(group).filter_map { |d| d["dependency-name"] })
-        # also add dependencies that might be in the group, as a rebase would add them;
-        # this avoids individual PR creation that immediately is superseded by a group PR supersede
-        add_handled_dependencies(group.dependencies.map(&:name))
+        if Dependabot::Experiments.enabled?(:allow_refresh_for_existing_pr_dependencies)
+          # add the existing dependencies in the group so individual updates don't try to update them
+          dependencies_in_existing_prs = dependencies_in_existing_pr_for_group(group)
+
+          dependencies_in_existing_prs = dependencies_in_existing_prs.filter do |dep|
+            !dep["directory"] || dep["directory"] == directory
+          end
+
+          # also add dependencies that might be in the group, as a rebase would add them;
+          # this avoids individual PR creation that immediately is superseded by a group PR supersede
+          current_dependencies = group.dependencies.map(&:name).reject do |dep|
+            excluding_dependencies[directory]&.include?(dep)
+          end
+
+          add_handled_dependencies(current_dependencies.concat(dependencies_in_existing_prs.filter_map do |dep|
+            dep["dependency-name"]
+          end))
+        else
+          # add the existing dependencies in the group so individual updates don't try to update them
+          add_handled_dependencies(dependencies_in_existing_pr_for_group(group).filter_map { |d| d["dependency-name"] })
+          # also add dependencies that might be in the group, as a rebase would add them;
+          # this avoids individual PR creation that immediately is superseded by a group PR supersede
+          add_handled_dependencies(group.dependencies.map(&:name))
+        end
       end
     end
+    # rubocop:enable Metrics/PerceivedComplexity
 
     sig { params(dependency_names: T.any(String, T::Array[String])).void }
     def add_handled_dependencies(dependency_names)
       assert_current_directory_set!
-      set = @handled_dependencies[@current_directory] || Set.new
-      set += Array(dependency_names)
-      @handled_dependencies[@current_directory] = set
+      names = Array(dependency_names)
+      Dependabot.logger.info("Adding dependencies as handled: (#{names.join(', ')}).")
+      @handled_dependencies[@current_directory] ||= Set.new
+      @handled_dependencies[@current_directory]&.merge(names)
     end
 
     sig { returns(T::Set[String]) }
@@ -166,6 +196,17 @@ module Dependabot
       allowed_dependencies.reject { |dep| handled_dependencies.include?(dep.name) }
     end
 
+    sig { params(group: Dependabot::DependencyGroup).returns(T::Array[String]) }
+    def dependencies_in_existing_pr_for_group(group)
+      existing = job.existing_group_pull_requests.find do |pr|
+        pr["dependency-group-name"] == group.name
+      end&.fetch("dependencies", []) || []
+
+      existing.filter do |dep|
+        dep["dependency-name"]
+      end
+    end
+
     private
 
     sig do
@@ -181,7 +222,7 @@ module Dependabot
       @current_directory = T.let("", String)
 
       @dependencies = T.let({}, T::Hash[String, T::Array[Dependabot::Dependency]])
-      @package_manager = T.let({}, T::Hash[String, T.nilable(Dependabot::PackageManagerBase)])
+      @ecosystem = T.let({}, T::Hash[String, T.nilable(Dependabot::Ecosystem)])
       @notices = T.let({}, T::Hash[String, T::Array[Dependabot::Notice]])
 
       directories.each do |dir|
@@ -241,10 +282,14 @@ module Dependabot
         reject_external_code: job.reject_external_code?,
         options: job.experiments
       )
-      # Add 'package_manager' to the depedency_snapshopt to use it in operations'
-      package_manager = parser.package_manager
+      # Add 'ecosystem' to the dependency_snapshot to use it in operations
+      ecosystem = parser.ecosystem
+      # Raise an error if the package manager version is unsupported
+      ecosystem&.raise_if_unsupported!
+      # Raise an error if the language version is unsupported
+      ecosystem&.language&.raise_if_unsupported!
 
-      @package_manager[@current_directory] = package_manager
+      @ecosystem[@current_directory] = ecosystem
 
       # Log deprecation notices if the package manager is deprecated
       # and add them to the notices array
@@ -253,18 +298,21 @@ module Dependabot
       # add deprecation notices for the package manager
       add_deprecation_notice(
         notices: notices_for_current_directory,
-        package_manager: package_manager
+        version_manager: ecosystem&.package_manager
       )
+
+      if ecosystem&.language
+        # add deprecation notices for the language
+        add_deprecation_notice(
+          notices: notices_for_current_directory,
+          version_manager: ecosystem.language,
+          version_manager_type: :language
+        )
+      end
+
       @notices[@current_directory] = notices_for_current_directory
 
       parser
-    end
-
-    sig { params(group: Dependabot::DependencyGroup).returns(T::Array[T::Hash[String, String]]) }
-    def dependencies_in_existing_pr_for_group(group)
-      job.existing_group_pull_requests.find do |pr|
-        pr["dependency-group-name"] == group.name
-      end&.fetch("dependencies", []) || []
     end
 
     sig { void }

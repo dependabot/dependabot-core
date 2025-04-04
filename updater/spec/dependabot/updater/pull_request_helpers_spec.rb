@@ -3,7 +3,7 @@
 
 require "spec_helper"
 require "dependabot/updater"
-require "dependabot/package_manager"
+require "dependabot/ecosystem"
 require "dependabot/notices"
 require "dependabot/service"
 
@@ -26,28 +26,17 @@ RSpec.describe Dependabot::Updater::PullRequestHelpers do
   let(:service) { instance_double(Dependabot::Service) }
 
   let(:package_manager) do
-    Class.new(Dependabot::PackageManagerBase) do
-      def name
-        "bundler"
-      end
-
-      def version
-        Dependabot::Version.new("1")
-      end
-
-      def deprecated_versions
-        [Dependabot::Version.new("1")]
-      end
-
-      def supported_versions
-        [Dependabot::Version.new("2"), Dependabot::Version.new("3")]
-      end
+    Class.new(Dependabot::Ecosystem::VersionManager) do
+      super(
+        "bundler", # name
+        Dependabot::Version.new("1"), # version
+        [Dependabot::Version.new("1")], # deprecated_versions
+        [Dependabot::Version.new("2"), Dependabot::Version.new("3")] # supported_versions
+      )
     end.new
   end
 
   before do
-    allow(Dependabot::Experiments).to receive(:enabled?).with(:bundler_v1_unsupported_error).and_return(false)
-    allow(Dependabot::Experiments).to receive(:enabled?).with(:add_deprecation_warn_to_pr_message).and_return(true)
     allow(service).to receive(:record_update_job_warning)
   end
 

@@ -295,6 +295,32 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
       it { is_expected.to eq("0e8b8c801024c811d434660f8cf09809f9eb9540") }
     end
+
+    context "with a git repo" do
+      let(:repo_contents_path) { build_tmp_repo("simple", tmp_dir_path: Dir.tmpdir) }
+      let(:head_sha) { File.read(File.join(repo_contents_path, ".git", "refs", "heads", "master")).strip }
+
+      around do |example|
+        Dir.chdir(repo_contents_path) { example.run }
+        FileUtils.rm_rf(repo_contents_path)
+      end
+
+      it { is_expected.to eq(head_sha) }
+
+      context "with warnings from git rev-parse" do
+        before do
+          # Git no longer allows you to create a branch or symbolic ref named HEAD
+          # so we need to manually hack a HEAD ref file to ensure that no warnings
+          # are included in the output of git rev-parse
+          FileUtils.cp(
+            File.join(repo_contents_path, ".git", "refs", "heads", "master"),
+            File.join(repo_contents_path, ".git", "refs", "heads", "HEAD")
+          )
+        end
+
+        it { is_expected.to eq(head_sha) }
+      end
+    end
   end
 
   describe "#files" do

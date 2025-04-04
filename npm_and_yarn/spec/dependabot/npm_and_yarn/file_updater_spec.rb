@@ -57,8 +57,25 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     )
   end
 
+  # Variable to control the npm fallback version feature flag
+  let(:npm_fallback_version_above_v6_enabled) { true }
+  # Variable to control the enabling feature flag for the corepack fix
+  let(:enable_corepack_for_npm_and_yarn) { true }
+
   before do
     FileUtils.mkdir_p(tmp_path)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:npm_fallback_version_above_v6).and_return(npm_fallback_version_above_v6_enabled)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_corepack_for_npm_and_yarn).and_return(enable_corepack_for_npm_and_yarn)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_shared_helpers_command_timeout).and_return(true)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:avoid_duplicate_updates_package_json).and_return(false)
+  end
+
+  after do
+    Dependabot::Experiments.reset!
   end
 
   it_behaves_like "a dependency file updater"
@@ -78,6 +95,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           "npm-shrinkwrap.json",
           "yarn.lock",
           "pnpm-lock.yaml",
+          "pnpm-workspace.yaml",
           "subdirectory/package.json",
           "subdirectory/package-lock.json",
           "subdirectory/npm-shrinkwrap.json",
@@ -128,6 +146,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     end
 
     context "with both npm and yarn lockfiles" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
+
       let(:files) { project_dependency_files("npm6_and_yarn/simple") }
 
       it "updates the files" do
@@ -142,6 +162,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     end
 
     context "without a lockfile" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
+
       let(:files) { project_dependency_files("npm6/simple_manifest") }
 
       its(:length) { is_expected.to eq(1) }
@@ -154,6 +176,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     end
 
     context "with multiple dependencies" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
+
       let(:files) { project_dependency_files("npm6_and_yarn/multiple_updates") }
 
       let(:dependencies) do
@@ -282,6 +306,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
     context "with diverged lockfiles" do
       context "when updating a sub-dependency" do
+        let(:npm_fallback_version_above_v6_enabled) { false }
         let(:dependency_name) { "stringstream" }
         let(:requirements) { [] }
         let(:previous_requirements) { [] }
@@ -309,6 +334,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     end
 
     context "with a shrinkwrap" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
       let(:files) { project_dependency_files("npm4/shrinkwrap") }
 
       let(:updated_shrinkwrap) do
@@ -337,6 +363,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     end
 
     context "with a git dependency" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
       let(:dependency_name) { "is-number" }
       let(:requirements) do
         [{
@@ -397,6 +424,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         end
 
         context "when specified as a full URL" do
+          let(:npm_fallback_version_above_v6_enabled) { false }
+
           let(:files) { project_dependency_files("npm6_and_yarn/git_dependency") }
 
           it "only updates the lockfile" do
@@ -414,6 +443,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           end
 
           context "when the lockfile has an outdated source" do
+            let(:npm_fallback_version_above_v6_enabled) { false }
+
             let(:files) { project_dependency_files("npm6_and_yarn/git_dependency_outdated_source") }
 
             it "updates the lockfile" do
@@ -439,6 +470,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           end
 
           context "when the package lock is empty" do
+            let(:npm_fallback_version_above_v6_enabled) { false }
+
             let(:files) { project_dependency_files("npm6_and_yarn/git_dependency_empty_npm_lockfile") }
 
             it "updates the lockfile" do
@@ -454,6 +487,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           end
 
           context "when previously causing problems" do
+            let(:npm_fallback_version_above_v6_enabled) { false }
+
             let(:files) { project_dependency_files("npm6_and_yarn/git_dependency_git_url") }
 
             let(:dependency_name) { "slick-carousel" }
@@ -495,6 +530,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           end
 
           context "when using ssh" do
+            let(:npm_fallback_version_above_v6_enabled) { false }
+
             let(:files) { project_dependency_files("npm6_and_yarn/git_dependency_ssh") }
 
             it "only updates the lockfile" do
@@ -551,6 +588,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             end
 
             context "with an npm6 lockfile" do
+              let(:npm_fallback_version_above_v6_enabled) { false }
+
               let(:files) { project_dependency_files("npm6/git_dependency") }
 
               it "doesn't update the 'from' entry" do
@@ -569,6 +608,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           end
 
           context "when using a URL token" do
+            let(:npm_fallback_version_above_v6_enabled) { false }
+
             let(:files) { project_dependency_files("npm6_and_yarn/git_dependency_token") }
 
             it "only updates the lockfile" do
@@ -591,6 +632,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         end
 
         context "when using git host URL: gitlab" do
+          let(:npm_fallback_version_above_v6_enabled) { false }
           let(:dependency_name) { "babel-preset-php" }
           let(:version) { "5fbc24ccc37bd72052ce71ceae5b4934feb3ac19" }
           let(:previous_version) { "c5a7ba5e0ad98b8db1cb8ce105403dd4b768cced" }
@@ -639,6 +681,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         end
 
         context "when using git host URL: github" do
+          let(:npm_fallback_version_above_v6_enabled) { false }
           let(:files) { project_dependency_files("npm6_and_yarn/githost_dependency") }
 
           it "correctly update the lockfiles" do
@@ -657,6 +700,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       end
 
       context "with a requirement" do
+        let(:npm_fallback_version_above_v6_enabled) { false }
         let(:req) { "^4.0.0" }
         let(:git_pack_fixture_name) { "is-number" }
         let(:ref) { "master" }
@@ -741,6 +785,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       end
 
       context "with a reference" do
+        let(:npm_fallback_version_above_v6_enabled) { false }
         let(:req) { nil }
         let(:ref) { "4.0.0" }
         let(:old_req) { nil }
@@ -980,6 +1025,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     end
 
     context "with a path-based dependency" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
       let(:files) { project_dependency_files("npm6_and_yarn/path_dependency") }
 
       let(:dependency_name) { "lodash" }
@@ -1017,6 +1063,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     end
 
     context "with a lerna.json and both yarn and npm lockfiles" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
       let(:files) { project_dependency_files("npm6_and_yarn/lerna") }
 
       let(:dependency_name) { "etag" }
@@ -1081,6 +1128,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     end
 
     context "when updating a sub dependency with both yarn and npm lockfiles" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
       let(:files) { project_dependency_files("npm6_and_yarn/nested_sub_dependency_update") }
 
       let(:dependency_name) { "extend" }
@@ -1136,6 +1184,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       end
 
       context "when one lockfile version is out of range" do
+        let(:npm_fallback_version_above_v6_enabled) { false }
         let(:files) { project_dependency_files("npm6_and_yarn/nested_sub_dependency_update_npm_out_of_range") }
 
         it "updates out of range to latest resolvable version" do
@@ -1167,6 +1216,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     end
 
     context "when a wildcard is specified" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
       let(:files) { project_dependency_files("npm6_and_yarn/wildcard") }
 
       let(:version) { "0.2.0" }
@@ -1195,6 +1245,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     # npm specific tests #
     ######################
     describe "npm 6 specific" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
       let(:files) { project_dependency_files("npm6/simple") }
 
       context "when the package lock is empty" do
@@ -2996,7 +3047,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
               "package.json",
               "yarn.lock"
             )
-          expect(updated_files.find { |updated_file| updated_file.name == ".pnp.cjs" }.mode).to eq("100755")
         end
       end
 
@@ -3772,6 +3822,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         updated_files.find { |f| f.name == "pnpm-lock.yaml" }
       end
 
+      let(:updated_pnpm_workspace) do
+        updated_files.find { |f| f.name == "pnpm-workspace.yaml" }
+      end
+
       let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
       let(:files) { project_dependency_files(project_name) }
 
@@ -3961,7 +4015,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:previous_requirements) { [] }
 
         it "updates the version" do
-          expect(updated_pnpm_lock.content).to include("acorn@5.7.3:\n    resolution").once
+          expect(updated_pnpm_lock.content).to include("acorn@5.2.1:\n    resolution").once
         end
       end
 
@@ -4078,6 +4132,161 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
           expect(updated_pnpm_lock.content).to include("typescript@2.1.4:")
           expect(updated_pnpm_lock.content).to include("typescript@2.9.1:")
+        end
+      end
+
+      describe "pnpm catalog protocol" do
+        context "when individual dependency needs updating" do
+          let(:project_name) { "pnpm/catalog_monorepo" }
+          let(:dependency_name) { "prettier" }
+          let(:dependencies) do
+            [
+              create_dependency(
+                file: "pnpm-workspace.yaml",
+                name: "prettier",
+                version: "3.3.3",
+                required_version: "^3.4.2",
+                previous_required_version: "^3.3.3"
+              )
+            ]
+          end
+
+          it "updates the workspace" do
+            expect(updated_files.map(&:name)).to eq(%w(pnpm-workspace.yaml pnpm-lock.yaml))
+            expect(updated_pnpm_workspace.content).to include("prettier: ^3.4.2")
+            expect(updated_pnpm_lock.content).to include("specifier: ^3.4.2")
+            expect(updated_pnpm_lock.content).to include("prettier:\n      specifier: ^3.4.2\n      version: 3.4.2")
+          end
+        end
+
+        context "when updating multiple dependencies in catalogs" do
+          let(:project_name) { "pnpm/catalogs_all_examples" }
+          let(:dependencies) do
+            [
+              create_dependency(
+                file: "pnpm-workspace.yaml",
+                name: "react",
+                version: "18.2.0",
+                required_version: "^18.2.0",
+                previous_required_version: "^18.0.0"
+              ),
+              create_dependency(
+                file: "pnpm-workspace.yaml",
+                name: "react-dom",
+                version: "18.2.0",
+                required_version: "18.2.0",
+                previous_required_version: "18.0.0"
+              ),
+              create_dependency(
+                file: "pnpm-workspace.yaml",
+                name: "react",
+                version: "16.2.0",
+                required_version: "16.2.0",
+                previous_required_version: "16.0.0"
+              ),
+              create_dependency(
+                file: "pnpm-workspace.yaml",
+                name: "react-dom",
+                version: "16.2.0",
+                required_version: "16.2.0",
+                previous_required_version: "16.0.0"
+              ),
+              create_dependency(
+                file: "pnpm-workspace.yaml",
+                name: "react-icons",
+                version: "4.3.1",
+                required_version: "4.3.14",
+                previous_required_version: "4.3.1"
+              )
+            ]
+          end
+
+          it "updates the workspace file" do
+            expect(updated_pnpm_workspace.content).to include("react-icons: 4.3.14")
+            expect(updated_pnpm_workspace.content).to include("react: \"^18.2.0\"")
+            expect(updated_pnpm_workspace.content).to include("react-dom: '18.2.0'")
+            expect(updated_pnpm_workspace.content).to include("react: 16.2.0")
+            expect(updated_pnpm_workspace.content).to include("react-dom: ^16.2.0")
+          end
+        end
+
+        context "when updating multiple dependencies with valid yaml" do
+          let(:project_name) { "pnpm/catalogs_valid_yaml" }
+          let(:dependencies) do
+            [
+              create_dependency(
+                file: "pnpm-workspace.yaml",
+                name: "prettier",
+                version: "3.3.0",
+                required_version: "3.3.3",
+                previous_required_version: "3.3.0"
+              ),
+              create_dependency(
+                file: "pnpm-workspace.yaml",
+                name: "express",
+                version: "4.15.2",
+                required_version: "4.21.2",
+                previous_required_version: "4.15.2"
+              ),
+              create_dependency(
+                file: "pnpm-workspace.yaml",
+                name: "is-even",
+                version: "0.1.2",
+                required_version: "1.0.0",
+                previous_required_version: "0.1.2"
+              ),
+              create_dependency(
+                file: "pnpm-workspace.yaml",
+                name: "react",
+                version: "18.0.0",
+                required_version: "^18.2.3",
+                previous_required_version: "^18.0.0"
+              ),
+              create_dependency(
+                file: "pnpm-workspace.yaml",
+                name: "react-dom",
+                version: "18.0.0",
+                required_version: "^18.2.3",
+                previous_required_version: "^18.0.0"
+              )
+            ]
+          end
+
+          it "updates the workspace" do
+            expect(updated_files.map(&:name)).to eq(%w(pnpm-workspace.yaml))
+
+            expect(updated_pnpm_workspace.content).to include("prettier: \"3.3.3\"")
+            expect(updated_pnpm_workspace.content).to include("\"express\": 4.21.2")
+            expect(updated_pnpm_workspace.content).to include("is-even: '1.0.0'")
+            expect(updated_pnpm_workspace.content).to include("react: \"^18.2.3\"")
+            expect(updated_pnpm_workspace.content).to include("react-dom: '^18.2.3'")
+          end
+
+          context "when updating workspace catalog entries" do
+            let(:project_name) { "pnpm/catalog_prettier" }
+
+            let(:dependencies) do
+              [
+                create_dependency(
+                  file: "pnpm-workspace.yaml",
+                  name: "prettier",
+                  version: "3.3.0",
+                  required_version: "^3.3.3",
+                  previous_required_version: "^3.3.0"
+                )
+              ]
+            end
+
+            it "uses pnpm install for catalog updates" do
+              expect(Dependabot::NpmAndYarn::Helpers).not_to receive(:run_pnpm_command)
+                .with(/update.*--lockfile-only/)
+
+              expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+                .with("install --lockfile-only")
+
+              updated_files
+            end
+          end
         end
       end
     end

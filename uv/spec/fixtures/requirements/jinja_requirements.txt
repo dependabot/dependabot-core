@@ -1,0 +1,5 @@
+{%- if cookiecutter.foo == "y" %}
+psycopg2==2.6.1
+{%- endif %}
+gunicorn==20.0.2
+{{ cookiecutter.another_dependency }}

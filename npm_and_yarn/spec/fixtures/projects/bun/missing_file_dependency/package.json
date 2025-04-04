@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "this-does-not-exist": "file:./this-does-not-exist"
+  }
+}

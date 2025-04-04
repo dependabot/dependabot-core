@@ -32,12 +32,26 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
       Dependabot::DependencyFile.new(
         name: "Gemfile",
         content: fixture("bundler/original/Gemfile"),
-        directory: "/"
+        directory: "/",
+        support_file: false
       ),
       Dependabot::DependencyFile.new(
         name: "Gemfile.lock",
         content: fixture("bundler/original/Gemfile.lock"),
-        directory: "/"
+        directory: "/",
+        support_file: false
+      ),
+      Dependabot::DependencyFile.new(
+        name: "sub_dep",
+        content: fixture("bundler/original/sub_dep"),
+        directory: "/",
+        support_file: true
+      ),
+      Dependabot::DependencyFile.new(
+        name: "sub_dep.lock",
+        content: fixture("bundler/original/sub_dep.lock"),
+        directory: "/",
+        support_file: true
       )
     ]
   end
@@ -109,6 +123,22 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
 
         lockfile = dependency_change.updated_dependency_files.find { |file| file.name == "Gemfile.lock" }
         expect(lockfile.content).to eql(fixture("bundler/updated/Gemfile.lock"))
+      end
+
+      it "does not include support files in the updated files" do
+        allow_any_instance_of(Dependabot::Bundler::FileUpdater)
+          .to receive(:updated_dependency_files)
+          .and_return(dependency_files)
+
+        dependency_change = described_class.create_from(
+          job: job,
+          dependency_files: dependency_files,
+          updated_dependencies: updated_dependencies,
+          change_source: change_source
+        )
+
+        updated_file_names = dependency_change.updated_dependency_files.map(&:name)
+        expect(updated_file_names).not_to include("sub_dep", "sub_dep.lock")
       end
     end
 

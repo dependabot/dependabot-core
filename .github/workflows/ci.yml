@@ -15,17 +15,19 @@ jobs:
       fail-fast: false
       matrix:
         suite:
-          - { path: bundler, name: bundler1, ecosystem: bundler }
-          - { path: bundler, name: bundler2, ecosystem: bundler }
+          - { path: bundler, name: bundler, ecosystem: bundler }
           - { path: cargo, name: cargo, ecosystem: cargo }
           - { path: common, name: common, ecosystem: common}
           - { path: composer, name: composer, ecosystem: composer }
           - { path: docker, name: docker, ecosystem: docker }
+          - { path: docker_compose, name: docker_compose, ecosystem: docker-compose }
+          - { path: dotnet_sdk, name: dotnet_sdk, ecosystem: dotnet-sdk }
           - { path: elm, name: elm, ecosystem: elm }
           - { path: git_submodules, name: git_submodules, ecosystem: gitsubmodule }
           - { path: github_actions, name: github_actions, ecosystem: github-actions }
           - { path: go_modules, name: go_module, ecosystem: gomod }
           - { path: gradle, name: gradle, ecosystem: gradle }
+          - { path: helm, name: helm, ecosystem: helm }
           - { path: hex, name: hex, ecosystem: mix }
           - { path: maven, name: maven, ecosystem: maven }
           - { path: npm_and_yarn, name: npm_and_yarn, ecosystem: npm }
@@ -36,10 +38,12 @@ jobs:
           - { path: swift, name: swift, ecosystem: swift }
           - { path: devcontainers, name: devcontainers, ecosystem: devcontainers }
           - { path: terraform, name: terraform, ecosystem: terraform }
+          - { path: bun, name: bun, ecosystem: bun }
+          - { path: uv, name: uv, ecosystem: uv }
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           submodules: recursive
 
@@ -72,7 +76,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           submodules: recursive
       # using bundler as the test updater
@@ -89,8 +93,8 @@ jobs:
     env:
       BUNDLE_GEMFILE: updater/Gemfile
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
-      - uses: ruby/setup-ruby@161cd54b698f1fb3ea539faab2e036d409550e3c # v1.187.0
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: ruby/setup-ruby@922ebc4c5262cd14e07bb0e1db020984b6c064fe # v1.226.0
         with:
           bundler-cache: true
       - run: ./bin/lint
@@ -103,15 +107,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           submodules: recursive
+
       - name: Build ecosystem image
         run: script/build silent
+
       - name: Setup Go
-        uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
+        uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5.3.0
         with:
-          go-version: 1.22
+          go-version-file: 'silent/tests/go.mod'
+
       - name: Download Dependabot CLI
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -119,6 +126,7 @@ jobs:
           gh release download --repo dependabot/cli -p "*linux-amd64.tar.gz"
           tar xzvf *.tar.gz >/dev/null 2>&1
           ./dependabot --version
+
       - name: Run integration tests
         env:
           PATH: ${{ github.workspace }}:$PATH

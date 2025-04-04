@@ -11,6 +11,12 @@ require "dependabot/errors"
 
 module Dependabot
   module Composer
+    REQUIREMENT_SEPARATOR = /
+      (?<=\S|^)          # Positive lookbehind for a non-whitespace character or start of string
+      (?:[ \t,]*\|\|?[ \t]*) # Match optional whitespace, a pipe (|| or |), and optional whitespace
+      (?=\S|$)           # Positive lookahead for a non-whitespace character or end of string
+    /x
+
     class FileParser < Dependabot::FileParsers::Base
       require "dependabot/file_parsers/base/dependency_set"
 
@@ -35,12 +41,70 @@ module Dependabot
         dependency_set.dependencies
       end
 
-      sig { returns(PackageManagerBase) }
-      def package_manager
-        PackageManager.new(composer_version)
+      sig { returns(Ecosystem) }
+      def ecosystem
+        @ecosystem ||= T.let(
+          Ecosystem.new(
+            name: ECOSYSTEM,
+            package_manager: package_manager,
+            language: language
+          ),
+          T.nilable(Ecosystem)
+        )
       end
 
       private
+
+      sig { returns(Ecosystem::VersionManager) }
+      def package_manager
+        if composer_version == Helpers::V1
+          return PackageManager.new(
+            detected_version: composer_version
+          )
+        end
+        PackageManager.new(
+          detected_version: composer_version,
+          raw_version: env_versions[:composer]
+        )
+      end
+
+      sig { returns(T.nilable(Ecosystem::VersionManager)) }
+      def language
+        php_version = env_versions[:php]
+
+        return unless php_version
+
+        Language.new(
+          php_version,
+          requirement: php_requirement
+        )
+      end
+
+      sig { returns(T::Hash[Symbol, T.nilable(String)]) }
+      def env_versions
+        @env_versions ||= T.let(
+          Helpers.fetch_composer_and_php_versions,
+          T.nilable(T::Hash[Symbol, T.nilable(String)])
+        )
+      end
+
+      # Capture PHP requirement from the composer.json
+      sig { returns(T.nilable(Requirement)) }
+      def php_requirement
+        requirement_string = Helpers.php_constraint(parsed_composer_json)
+
+        return nil unless requirement_string
+
+        requirements = requirement_string
+                       .strip
+                       .split(REQUIREMENT_SEPARATOR)
+                       .map(&:strip)
+                       .reject(&:empty?)
+
+        return nil unless requirements.any?
+
+        Requirement.new(requirements)
+      end
 
       sig { returns(DependencySet) }
       def manifest_dependencies # rubocop:disable Metrics/PerceivedComplexity
@@ -54,6 +118,16 @@ module Dependabot
 
           parsed_composer_json[manifest].each do |name, req|
             next unless package?(name)
+
+            if Dependabot::Experiments.enabled?(:exclude_local_composer_packages)
+              local_package_prefix = ["dev-main", "dev-master", "@dev"]
+
+              # we avoid updating local packages, so we skip them adding to dependency list
+              if local_package_prefix.include?(req)
+                Dependabot.logger.info("Skipping #{name} with version #{req} as it cannot be updated.")
+                next
+              end
+            end
 
             if lockfile
               group = keys[:group]
@@ -84,7 +158,7 @@ module Dependabot
           version: dependency_version(name: name, type: group),
           requirements: [{
             requirement: req,
-            file: "composer.json",
+            file: PackageManager::MANIFEST_FILENAME,
             source: dependency_source(
               name: name,
               type: group,
@@ -92,7 +166,7 @@ module Dependabot
             ),
             groups: [group]
           }],
-          package_manager: "composer"
+          package_manager: PackageManager::NAME
         )
       end
 
@@ -130,7 +204,7 @@ module Dependabot
           name: name,
           version: version,
           requirements: [],
-          package_manager: "composer",
+          package_manager: PackageManager::NAME,
           subdependency_metadata: [{
             production: keys.fetch(:group) != "development"
           }]
@@ -151,7 +225,8 @@ module Dependabot
       end
 
       sig do
-        params(name: String, type: String, requirement: String).returns(T.nilable(T::Hash[Symbol, T.nilable(String)]))
+        params(name: String, type: String,
+               requirement: String).returns(T.nilable(T::Hash[Symbol, T.nilable(String)]))
       end
       def dependency_source(name:, type:, requirement:)
         return unless lockfile
@@ -212,7 +287,7 @@ module Dependabot
 
       sig { override.void }
       def check_required_files
-        raise "No composer.json!" unless get_original_file("composer.json")
+        raise "No #{PackageManager::MANIFEST_FILENAME}!" unless get_original_file(PackageManager::MANIFEST_FILENAME)
       end
 
       sig { returns(T.nilable(T::Hash[String, T.untyped])) }
@@ -232,7 +307,10 @@ module Dependabot
       def parsed_composer_json
         content = composer_json&.content
 
-        raise Dependabot::DependencyFileNotParseable, composer_json&.path || "" if content.nil? || content.strip.empty?
+        if content.nil? || content.strip.empty?
+          raise Dependabot::DependencyFileNotParseable,
+                composer_json&.path || ""
+        end
 
         @parsed_composer_json ||= T.let(JSON.parse(content), T.nilable(T::Hash[String, T.untyped]))
       rescue JSON::ParserError
@@ -241,17 +319,26 @@ module Dependabot
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def composer_json
-        @composer_json ||= T.let(get_original_file("composer.json"), T.nilable(Dependabot::DependencyFile))
+        @composer_json ||= T.let(
+          get_original_file(PackageManager::MANIFEST_FILENAME),
+          T.nilable(Dependabot::DependencyFile)
+        )
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def lockfile
-        @lockfile ||= T.let(get_original_file("composer.lock"), T.nilable(Dependabot::DependencyFile))
+        @lockfile ||= T.let(
+          get_original_file(PackageManager::LOCKFILE_FILENAME),
+          T.nilable(Dependabot::DependencyFile)
+        )
       end
 
       sig { returns(String) }
       def composer_version
-        @composer_version ||= T.let(Helpers.composer_version(parsed_composer_json, parsed_lockfile), T.nilable(String))
+        @composer_version ||= T.let(
+          Helpers.composer_version(parsed_composer_json, parsed_lockfile),
+          T.nilable(String)
+        )
       end
     end
   end

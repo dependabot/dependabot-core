@@ -25,6 +25,11 @@
     "ecosystem": "docker"
   },
   {
+    "core": "dotnet_sdk",
+    "test": "dotnet-sdk",
+    "ecosystem": "dotnet-sdk"
+  },
+  {
     "core": "elm",
     "test": "elm",
     "ecosystem": "elm"

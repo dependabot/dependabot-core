@@ -93,8 +93,10 @@ module Dependabot
         def check_and_create_pr_with_error_handling(dependency)
           check_and_create_pull_request(dependency)
         rescue URI::InvalidURIError => e
-          error_handler.handle_dependency_error(error: Dependabot::DependencyFileNotResolvable.new(e.message),
-                                                dependency: dependency)
+          error_handler.handle_dependency_error(
+            error: Dependabot::DependencyFileNotResolvable.new(e.message),
+            dependency: dependency
+          )
         rescue Dependabot::InconsistentRegistryResponse => e
           error_handler.log_dependency_error(
             dependency: dependency,
@@ -104,6 +106,8 @@ module Dependabot
           )
         rescue StandardError => e
           process_dependency_error(e, dependency)
+        ensure
+          service.record_ecosystem_meta(dependency_snapshot.ecosystem)
         end
 
         # rubocop:disable Metrics/AbcSize
@@ -172,9 +176,6 @@ module Dependabot
             notices: @notices
           )
 
-          # Raise an error if the package manager version is unsupported
-          dependency_snapshot.package_manager&.raise_if_unsupported!
-
           if dependency_change.updated_dependency_files.empty?
             raise "UpdateChecker found viable dependencies to be updated, but FileUpdater failed to update any files"
           end
@@ -215,6 +216,7 @@ module Dependabot
             security_advisories: job.security_advisories_for(dependency),
             raise_on_ignored: raise_on_ignored,
             requirements_update_strategy: job.requirements_update_strategy,
+            update_cooldown: job.cooldown,
             options: job.experiments
           )
         end

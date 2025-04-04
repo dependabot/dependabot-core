@@ -7,7 +7,7 @@ require "dependabot/npm_and_yarn"
 require "dependabot/npm_and_yarn/file_updater"
 require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/helpers"
-require "dependabot/npm_and_yarn/update_checker/registry_finder"
+require "dependabot/npm_and_yarn/package/registry_finder"
 require "dependabot/npm_and_yarn/native_helpers"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
@@ -429,7 +429,7 @@ module Dependabot
 
           error_handler.raise_resolvability_error(error_message, yarn_lock) unless missing_dep
 
-          reg = NpmAndYarn::UpdateChecker::RegistryFinder.new(
+          reg = Package::RegistryFinder.new(
             dependency: missing_dep,
             credentials: credentials,
             npmrc_file: npmrc_file,
@@ -437,7 +437,7 @@ module Dependabot
             yarnrc_yml_file: yarnrc_yml_file
           ).registry
 
-          return if UpdateChecker::RegistryFinder.central_registry?(reg) && !package_name.start_with?("@")
+          return if Package::RegistryFinder.central_registry?(reg) && !package_name.start_with?("@")
 
           raise PrivateSourceAuthenticationFailure, reg
         end
@@ -489,7 +489,7 @@ module Dependabot
         def yarnrc_specifies_private_reg?
           return false unless yarnrc_file
 
-          regex = UpdateChecker::RegistryFinder::YARN_GLOBAL_REGISTRY_REGEX
+          regex = Package::RegistryFinder::YARN_GLOBAL_REGISTRY_REGEX
           yarnrc_global_registry =
             yarnrc_file.content
                        .lines.find { |line| line.match?(regex) }
@@ -499,7 +499,7 @@ module Dependabot
 
           return false unless yarnrc_global_registry
 
-          UpdateChecker::RegistryFinder::CENTRAL_REGISTRIES.any? do |r|
+          Package::RegistryFinder::CENTRAL_REGISTRIES.any? do |r|
             r.include?(T.must(URI(yarnrc_global_registry).host))
           end
         end

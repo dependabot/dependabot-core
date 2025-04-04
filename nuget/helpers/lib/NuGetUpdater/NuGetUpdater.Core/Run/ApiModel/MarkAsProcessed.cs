@@ -4,6 +4,11 @@ namespace NuGetUpdater.Core.Run.ApiModel;
 
 public sealed record MarkAsProcessed
 {
+    public MarkAsProcessed(string baseCommitSha)
+    {
+        BaseCommitSha = baseCommitSha;
+    }
+
     [JsonPropertyName("base-commit-sha")]
-    public required string BaseCommitSha { get; init; }
+    public string BaseCommitSha { get; }
 }

@@ -2,5 +2,14 @@ namespace NuGetUpdater.Core.Run.ApiModel;
 
 public record DependencyFileNotFound : JobErrorBase
 {
-    public override string Type => "dependency_file_not_found";
+    public DependencyFileNotFound(string filePath, string? message = null)
+        : base("dependency_file_not_found")
+    {
+        if (message is not null)
+        {
+            Details["message"] = message;
+        }
+
+        Details["file-path"] = filePath.NormalizePathToUnix();
+    }
 }

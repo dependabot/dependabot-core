@@ -6,6 +6,7 @@ require "shared_contexts"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/bundler/update_checker/latest_version_finder"
+require "dependabot/package/package_latest_version_finder"
 
 RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
   let(:finder) do
@@ -21,6 +22,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         "username" => "x-access-token",
         "password" => "token"
       }],
+      cooldown_options: cooldown_options,
       options: {}
     )
   end
@@ -52,6 +54,20 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
   let(:requirement_string) { ">= 0" }
 
   let(:rubygems_url) { "https://rubygems.org/api/v1/" }
+
+  let(:cooldown_options) { nil }
+  let(:enable_cooldown_for_bundler) { false }
+
+  before do
+    allow(Dependabot::Experiments).to receive(:enabled?).and_call_original
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_cooldown_for_bundler)
+      .and_return(enable_cooldown_for_bundler)
+  end
+
+  after do
+    Dependabot::Experiments.reset!
+  end
 
   describe "#latest_version_details" do
     subject(:latest_version_details) { finder.latest_version_details }
@@ -257,6 +273,41 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
       end
     end
 
+    context "with cooldown enabled" do
+      let(:enable_cooldown_for_bundler) { true }
+      let(:cooldown_options) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 60) }
+
+      before do
+        rubygems_response = fixture("ruby", "rubygems_response_versions.json")
+        stub_request(:get, rubygems_url + "versions/business.json")
+          .to_return(status: 200, body: rubygems_response)
+          .to_return(status: 200, body: rubygems_response)
+
+        allow(Dependabot::Bundler::NativeHelpers).to receive(:run_bundler_subprocess).and_return("rubygems")
+
+        allow(Time).to receive(:now).and_return(Time.parse("2015-06-03T17:30:00.000Z"))
+      end
+
+      context "with latest version details" do
+        subject(:result) { finder.latest_version_details }
+
+        it "fetches the latest version details" do
+          expect(result).to be_a(Hash)
+          expect(result).not_to be_empty
+          expect(result[:version]).to eq(Gem::Version.new("1.4.0"))
+          expect(a_request(:get, rubygems_url + "versions/business.json")).to have_been_made.twice
+        end
+      end
+
+      context "with latest version" do
+        subject(:result) { finder.latest_version }
+
+        it "fetches the latest version" do
+          expect(result).to eq(Gem::Version.new("1.4.0"))
+        end
+      end
+    end
+
     context "with a private rubygems source" do
       let(:dependency_files) { bundler_project_dependency_files("specified_source") }
       let(:subprocess_error) do
@@ -309,75 +360,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         let(:ignored_versions) { [">= 1.9.0.a, < 2.0"] }
 
         its([:version]) { is_expected.to eq(Gem::Version.new("1.5.0")) }
-      end
-
-      context "when we don't have authentication details", :bundler_v1_only do
-        let(:error_message) do
-          <<~ERR
-            Authentication is required for repo.fury.io.
-            Please supply credentials for this source. You can do this by running:
-              bundle config repo.fury.io username:password
-          ERR
-        end
-
-        let(:error_class) do
-          "Bundler::Fetcher::AuthenticationRequiredError"
-        end
-
-        before do
-          allow(Dependabot::Bundler::NativeHelpers)
-            .to receive(:run_bundler_subprocess)
-            .with({
-              bundler_version: bundler_version,
-              function: "private_registry_versions",
-              options: anything,
-              args: anything
-            })
-            .and_raise(subprocess_error)
-        end
-
-        it "blows up with a useful error" do
-          error_class = Dependabot::PrivateSourceAuthenticationFailure
-          expect { finder.latest_version_details }
-            .to raise_error do |error|
-              expect(error).to be_a(error_class)
-              expect(error.source).to eq("repo.fury.io")
-            end
-        end
-      end
-
-      context "when we don't have authentication details", :bundler_v2_only do
-        let(:error_message) do
-          <<~ERR
-            Bad username or password for https://user:secret@repo.fury.io/greysteil/.
-            Please double-check your credentials and correct them.
-          ERR
-        end
-
-        let(:error_class) do
-          "Bundler::Fetcher::BadAuthenticationError"
-        end
-
-        before do
-          allow(Dependabot::Bundler::NativeHelpers)
-            .to receive(:run_bundler_subprocess)
-            .with({
-              bundler_version: bundler_version,
-              function: "private_registry_versions",
-              options: anything,
-              args: anything
-            })
-            .and_raise(subprocess_error)
-        end
-
-        it "blows up with a useful error" do
-          error_class = Dependabot::PrivateSourceAuthenticationFailure
-          expect { finder.latest_version_details }
-            .to raise_error do |error|
-              expect(error).to be_a(error_class)
-              expect(error.source).to eq("https://repo.fury.io/<redacted>")
-            end
-        end
       end
 
       context "when we have bad authentication details" do

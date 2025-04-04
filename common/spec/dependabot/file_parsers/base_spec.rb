@@ -46,25 +46,15 @@ RSpec.describe Dependabot::FileParsers::Base do
   let(:files) { [gemfile] }
 
   let(:concrete_package_manager_class) do
-    Class.new(Dependabot::PackageManagerBase) do
-      def name
-        "bundler"
-      end
-
-      def version
-        Dependabot::Version.new("1.0.0")
-      end
-
-      def deprecated_versions
-        [Dependabot::Version.new("1.0.0")]
-      end
-
-      def unsupported_versions
-        [Dependabot::Version.new("0.9.0")]
-      end
-
-      def supported_versions
-        [Dependabot::Version.new("1.1.0"), Dependabot::Version.new("2.0.0")]
+    Class.new(Dependabot::Ecosystem::VersionManager) do
+      def initialize
+        raw_version = "1.0.0"
+        super(
+          name: "bundler", # name
+          version: Dependabot::Version.new(raw_version), # version
+          deprecated_versions: [Dependabot::Version.new("1.0.0")], # deprecated_versions
+          supported_versions: [Dependabot::Version.new("1.1.0"), Dependabot::Version.new("2.0.0")] # supported_versions
+        )
       end
 
       def support_later_versions?
@@ -117,8 +107,8 @@ RSpec.describe Dependabot::FileParsers::Base do
     context "when called on a concrete class" do
       let(:package_manager_instance) { concrete_package_manager_class.new }
 
-      it "returns an instance of PackageManagerBase" do
-        expect(parser_instance.package_manager).to be_a(Dependabot::PackageManagerBase)
+      it "returns an instance of Ecosystem::VersionManager" do
+        expect(parser_instance.package_manager).to be_a(Dependabot::Ecosystem::VersionManager)
       end
 
       it "returns the correct package manager details" do
@@ -126,7 +116,6 @@ RSpec.describe Dependabot::FileParsers::Base do
         expect(pm.name).to eq("bundler")
         expect(pm.version).to eq(Dependabot::Version.new("1.0.0"))
         expect(pm.deprecated_versions).to eq([Dependabot::Version.new("1.0.0")])
-        expect(pm.unsupported_versions).to eq([Dependabot::Version.new("0.9.0")])
         expect(pm.supported_versions).to eq([Dependabot::Version.new("1.1.0"), Dependabot::Version.new("2.0.0")])
         expect(pm.support_later_versions?).to be true
       end

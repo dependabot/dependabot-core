@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 using NuGetUpdater.Core;
 using NuGetUpdater.Core.Discover;
@@ -17,12 +18,18 @@ public partial class EntryPointTests
 {
     public class Discover : DiscoveryWorkerTestBase
     {
-        [Fact]
-        public async Task PathWithSpaces()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task PathWithSpaces(bool useDirectDiscovery)
         {
             await RunAsync(path =>
                 [
                     "discover",
+                    "--job-id",
+                    "TEST-JOB-ID",
+                    "--job-path",
+                    Path.Combine(path, "job.json"),
                     "--repo-root",
                     path,
                     "--workspace",
@@ -30,11 +37,15 @@ public partial class EntryPointTests
                     "--output",
                     Path.Combine(path, DiscoveryWorker.DiscoveryResultFileName),
                 ],
-                packages: [],
+                experimentsManager: new ExperimentsManager() { UseDirectDiscovery = useDirectDiscovery },
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "1.2.3", "net8.0"),
+                ],
                 initialFiles:
                 [
                     ("path/to/some directory with spaces/project.csproj", """
-                        <Project Sdk="Microsoft.NETSdk">
+                        <Project Sdk="Microsoft.NET.Sdk">
                           <PropertyGroup>
                             <TargetFramework>net8.0</TargetFramework>
                           </PropertyGroup>
@@ -52,26 +63,33 @@ public partial class EntryPointTests
                         {
                             FilePath = "project.csproj",
                             TargetFrameworks = ["net8.0"],
-                            ReferencedProjectPaths = [],
-                            ExpectedDependencyCount = 2,
                             Dependencies = [
                                 new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
                             ],
                             Properties = [
                                 new("TargetFramework", "net8.0", "path/to/some directory with spaces/project.csproj"),
                             ],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [],
+                            AdditionalFiles = [],
                         }
                     ]
                 }
             );
         }
 
-        [Fact]
-        public async Task WithSolution()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task WithSolution(bool useDirectDiscovery)
         {
             await RunAsync(path =>
                 [
                     "discover",
+                    "--job-id",
+                    "TEST-JOB-ID",
+                    "--job-path",
+                    Path.Combine(path, "job.json"),
                     "--repo-root",
                     path,
                     "--workspace",
@@ -79,6 +97,7 @@ public partial class EntryPointTests
                     "--output",
                     Path.Combine(path, DiscoveryWorker.DiscoveryResultFileName),
                 ],
+                experimentsManager: new ExperimentsManager() { UseDirectDiscovery = useDirectDiscovery },
                 packages:
                 [
                     MockNuGetPackage.CreateSimplePackage("Some.Package", "7.0.1", "net45"),
@@ -141,13 +160,14 @@ public partial class EntryPointTests
                         {
                             FilePath = "path/to/my.csproj",
                             TargetFrameworks = ["net45"],
-                            ReferencedProjectPaths = [],
-                            ExpectedDependencyCount = 2,
                             Dependencies = [
                                 new("Some.Package", "7.0.1", DependencyType.PackagesConfig, TargetFrameworks: ["net45"]),
                             ],
-                            Properties = [
-                                new("TargetFrameworkVersion", "v4.5", "path/to/my.csproj"),
+                            Properties = [],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [],
+                            AdditionalFiles = [
+                                "packages.config"
                             ],
                         }
                     ]
@@ -155,12 +175,18 @@ public partial class EntryPointTests
             );
         }
 
-        [Fact]
-        public async Task WithProject()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task WithProject(bool useDirectDiscovery)
         {
             await RunAsync(path =>
                 [
                     "discover",
+                    "--job-id",
+                    "TEST-JOB-ID",
+                    "--job-path",
+                    Path.Combine(path, "job.json"),
                     "--repo-root",
                     path,
                     "--workspace",
@@ -168,6 +194,7 @@ public partial class EntryPointTests
                     "--output",
                     Path.Combine(path, DiscoveryWorker.DiscoveryResultFileName),
                 ],
+                experimentsManager: new ExperimentsManager() { UseDirectDiscovery = useDirectDiscovery },
                 packages:
                 [
                     MockNuGetPackage.CreateSimplePackage("Some.Package", "7.0.1", "net45"),
@@ -207,13 +234,14 @@ public partial class EntryPointTests
                         {
                             FilePath = "my.csproj",
                             TargetFrameworks = ["net45"],
-                            ReferencedProjectPaths = [],
-                            ExpectedDependencyCount = 2,
                             Dependencies = [
                                 new("Some.Package", "7.0.1", DependencyType.PackagesConfig, TargetFrameworks: ["net45"])
                             ],
-                            Properties = [
-                                new("TargetFrameworkVersion", "v4.5", "path/to/my.csproj"),
+                            Properties = [],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [],
+                            AdditionalFiles = [
+                                "packages.config"
                             ],
                         }
                     ]
@@ -221,13 +249,19 @@ public partial class EntryPointTests
             );
         }
 
-        [Fact]
-        public async Task WithDirectory()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task WithDirectory(bool useDirectDiscovery)
         {
             var workspacePath = "path/to/";
             await RunAsync(path =>
                 [
                     "discover",
+                    "--job-id",
+                    "TEST-JOB-ID",
+                    "--job-path",
+                    Path.Combine(path, "job.json"),
                     "--repo-root",
                     path,
                     "--workspace",
@@ -235,6 +269,7 @@ public partial class EntryPointTests
                     "--output",
                     Path.Combine(path, DiscoveryWorker.DiscoveryResultFileName),
                 ],
+                experimentsManager: new ExperimentsManager() { UseDirectDiscovery = useDirectDiscovery },
                 packages:
                 [
                     MockNuGetPackage.CreateSimplePackage("Some.Package", "7.0.1", "net45"),
@@ -274,13 +309,14 @@ public partial class EntryPointTests
                         {
                             FilePath = "my.csproj",
                             TargetFrameworks = ["net45"],
-                            ReferencedProjectPaths = [],
-                            ExpectedDependencyCount = 2,
                             Dependencies = [
                                 new("Some.Package", "7.0.1", DependencyType.PackagesConfig, TargetFrameworks: ["net45"])
                             ],
-                            Properties = [
-                                new("TargetFrameworkVersion", "v4.5", "path/to/my.csproj"),
+                            Properties = [],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [],
+                            AdditionalFiles = [
+                                "packages.config"
                             ],
                         }
                     ]
@@ -294,6 +330,10 @@ public partial class EntryPointTests
             await RunAsync(path =>
                 [
                     "discover",
+                    "--job-id",
+                    "TEST-JOB-ID",
+                    "--job-path",
+                    Path.Combine(path, "job.json"),
                     "--repo-root",
                     path,
                     "--workspace",
@@ -304,27 +344,33 @@ public partial class EntryPointTests
                 new[]
                 {
                     ("path/to/my.csproj", """
-                        <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                        <Project Sdk="Microsoft.NET.Sdk">
                           <PropertyGroup>
                             <TargetFramework>net8.0</TargetFramework>
+                            <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
                           </PropertyGroup>
                           <ItemGroup>
-                            <PackageReference Include="Newtonsoft.Json" Version="7.0.1" />
+                            <PackageReference Include="Package.A" Version="1.2.3" />
                           </ItemGroup>
-                          <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
                         </Project>
                         """),
                     ("path/Directory.Build.props", """
                         <Project>
-                            <ItemGroup Condition="'$(ManagePackageVersionsCentrally)' == 'true'">
-                              <GlobalPackageReference Include="System.Text.Json" Version="8.0.3" />
-                            </ItemGroup>
                             <ItemGroup Condition="'$(ManagePackageVersionsCentrally)' != 'true'">
-                              <PackageReference Include="System.Text.Json" Version="8.0.3" />
+                              <PackageReference Include="Package.B" Version="4.5.6" />
+                            </ItemGroup>
+                            <ItemGroup Condition="'$(ManagePackageVersionsCentrally)' == 'true'">
+                              <GlobalPackageReference Include="Package.B" Version="7.8.9" />
                             </ItemGroup>
                         </Project>
                         """)
                 },
+                experimentsManager: new ExperimentsManager() { UseDirectDiscovery = true },
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Package.A", "1.2.3", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Package.B", "4.5.6", "net8.0"),
+                ],
                 expectedResult: new()
                 {
                     Path = "path/to",
@@ -333,29 +379,101 @@ public partial class EntryPointTests
                         {
                             FilePath = "my.csproj",
                             TargetFrameworks = ["net8.0"],
-                            ReferencedProjectPaths = [],
                             ExpectedDependencyCount = 2,
                             Dependencies = [
-                                new("Newtonsoft.Json", "7.0.1", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
-                                // $(ManagePackageVersionsCentrally) evaluates false by default, we only get a PackageReference
-                                new("System.Text.Json", "8.0.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"])
+                                new("Package.A", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
+                                new("Package.B", "4.5.6", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
                             ],
                             Properties = [
+                                new("ManagePackageVersionsCentrally", "false", "path/to/my.csproj"),
                                 new("TargetFramework", "net8.0", "path/to/my.csproj"),
                             ],
-                        },
-                        new()
-                        {
-                            FilePath = "../Directory.Build.props",
                             ReferencedProjectPaths = [],
-                            ExpectedDependencyCount = 2,
-                            Dependencies = [
-                                new("System.Text.Json", "8.0.3", DependencyType.PackageReference, IsDirect: true),
-                                new("System.Text.Json", "8.0.3", DependencyType.GlobalPackageReference, IsDirect: true)
+                            ImportedFiles = [
+                                "../Directory.Build.props"
                             ],
-                            Properties = [],
+                            AdditionalFiles = [],
                         }
-                    ]
+                    ],
+                }
+            );
+        }
+
+        [Fact]
+        public async Task JobFileParseErrorIsReported_InvalidJson()
+        {
+            using var testDirectory = new TemporaryDirectory();
+            var jobFilePath = Path.Combine(testDirectory.DirectoryPath, "job.json");
+            var resultFilePath = Path.Combine(testDirectory.DirectoryPath, DiscoveryWorker.DiscoveryResultFileName);
+            await File.WriteAllTextAsync(jobFilePath, "not json");
+            await RunAsync(path =>
+                [
+                    "discover",
+                    "--job-id",
+                    "TEST-JOB-ID",
+                    "--job-path",
+                    jobFilePath,
+                    "--repo-root",
+                    path,
+                    "--workspace",
+                    "/",
+                    "--output",
+                    resultFilePath
+                ],
+                initialFiles: [],
+                expectedResult: new()
+                {
+                    Path = "/",
+                    Projects = [],
+                    ErrorRegex = "Error deserializing job file contents",
+                }
+            );
+        }
+
+        [Fact]
+        public async Task JobFileParseErrorIsReported_BadRequirement()
+        {
+            using var testDirectory = new TemporaryDirectory();
+            var jobFilePath = Path.Combine(testDirectory.DirectoryPath, "job.json");
+            var resultFilePath = Path.Combine(testDirectory.DirectoryPath, DiscoveryWorker.DiscoveryResultFileName);
+
+            // write a job file with a valid shape, but invalid requirement
+            await File.WriteAllTextAsync(jobFilePath, """
+                {
+                    "job": {
+                        "source": {
+                            "provider": "github",
+                            "repo": "test/repo"
+                        },
+                        "security-advisories": [
+                            {
+                                "dependency-name": "Some.Dependency",
+                                "affected-versions": ["not a valid requirement"]
+                            }
+                        ]
+                    }
+                }
+                """);
+            await RunAsync(path =>
+                [
+                    "discover",
+                    "--job-id",
+                    "TEST-JOB-ID",
+                    "--job-path",
+                    jobFilePath,
+                    "--repo-root",
+                    path,
+                    "--workspace",
+                    "/",
+                    "--output",
+                    resultFilePath
+                ],
+                initialFiles: [],
+                expectedResult: new()
+                {
+                    Path = "/",
+                    Projects = [],
+                    Error = new Core.Run.ApiModel.BadRequirement("not a valid requirement"),
                 }
             );
         }
@@ -364,8 +482,11 @@ public partial class EntryPointTests
             Func<string, string[]> getArgs,
             TestFile[] initialFiles,
             ExpectedWorkspaceDiscoveryResult expectedResult,
-            MockNuGetPackage[]? packages = null)
+            MockNuGetPackage[]? packages = null,
+            ExperimentsManager? experimentsManager = null
+        )
         {
+            experimentsManager ??= new ExperimentsManager();
             var actualResult = await RunDiscoveryAsync(initialFiles, async path =>
             {
                 var sb = new StringBuilder();
@@ -375,11 +496,29 @@ public partial class EntryPointTests
                 var originalErr = Console.Error;
                 Console.SetOut(writer);
                 Console.SetError(writer);
+                string? resultPath = null;
 
                 try
                 {
+                    await UpdateWorkerTestBase.MockJobFileInDirectory(path, experimentsManager);
                     await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(packages, path);
                     var args = getArgs(path);
+
+                    // manually pull out the experiments manager for the validate step below
+                    for (int i = 0; i < args.Length - 1; i++)
+                    {
+                        switch (args[i])
+                        {
+                            case "--job-path":
+                                var experimentsResult = await ExperimentsManager.FromJobFileAsync("TEST-JOB-ID", args[i + 1]);
+                                experimentsManager = experimentsResult.ExperimentsManager;
+                                break;
+                            case "--output":
+                                resultPath = args[i + 1];
+                                break;
+                        }
+                    }
+
                     var result = await Program.Main(args);
                     if (result != 0)
                     {
@@ -392,13 +531,40 @@ public partial class EntryPointTests
                     Console.SetError(originalErr);
                 }
 
-                var resultPath = Path.Join(path, DiscoveryWorker.DiscoveryResultFileName);
+                resultPath ??= Path.Join(path, DiscoveryWorker.DiscoveryResultFileName);
                 var resultJson = await File.ReadAllTextAsync(resultPath);
-                var resultObject = JsonSerializer.Deserialize<WorkspaceDiscoveryResult>(resultJson, DiscoveryWorker.SerializerOptions);
+                var serializerOptions = new JsonSerializerOptions()
+                {
+                    Converters = { new TestJobErrorBaseConverter() }
+                };
+                foreach (var converter in DiscoveryWorker.SerializerOptions.Converters)
+                {
+                    serializerOptions.Converters.Add(converter);
+                }
+                var resultObject = JsonSerializer.Deserialize<WorkspaceDiscoveryResult>(resultJson, serializerOptions);
                 return resultObject!;
             });
 
-            ValidateWorkspaceResult(expectedResult, actualResult);
+            ValidateWorkspaceResult(expectedResult, actualResult, experimentsManager);
+        }
+
+        private class TestJobErrorBaseConverter : JsonConverter<Core.Run.ApiModel.JobErrorBase>
+        {
+            public override Core.Run.ApiModel.JobErrorBase? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                var dict = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(ref reader, options)!;
+                return dict["error-type"].GetString() switch
+                {
+                    "illformed_requirement" => new Core.Run.ApiModel.BadRequirement(dict["error-details"].GetProperty("message").GetString()!),
+                    "unknown_error" => new Core.Run.ApiModel.UnknownError(new Exception("Error deserializing job file contents"), "TEST-JOB-ID"),
+                    _ => throw new NotImplementedException($"Unknown error type: {dict["error-type"]}"),
+                };
+            }
+
+            public override void Write(Utf8JsonWriter writer, Core.Run.ApiModel.JobErrorBase value, JsonSerializerOptions options)
+            {
+                throw new NotImplementedException();
+            }
         }
     }
 }

@@ -1,0 +1,7 @@
+foo:
+  image: nginx:1.14.2
+
+bar:
+  image:
+    repository: 'canonical/ubuntu'
+    tag: 18.04

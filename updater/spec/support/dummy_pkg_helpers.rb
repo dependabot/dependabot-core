@@ -1,7 +1,7 @@
 # typed: false
 # frozen_string_literal: true
 
-require "dependabot/package_manager"
+require "dependabot/ecosystem"
 require "dependabot/dependency_file"
 
 # This module provides some shortcuts for working with our two mock RubyGems packages:
@@ -63,21 +63,17 @@ module DummyPkgHelpers
     updated_bundler_files(fixture: fixture).map(&:to_h)
   end
 
-  # Stub PackageManagerBase
-  class StubPackageManager < Dependabot::PackageManagerBase
-    def initialize(name:, version:, deprecated_versions: [], unsupported_versions: [], supported_versions: [])
-      @name = name
-      @version = version
-      @deprecated_versions = deprecated_versions
-      @unsupported_versions = unsupported_versions
-      @supported_versions = supported_versions
+  # Stub Ecosystem::VersionManager
+  class StubPackageManager < Dependabot::Ecosystem::VersionManager
+    def initialize(name:, version:, deprecated_versions: [], supported_versions: [])
+      super(
+        name: name,
+        detected_version: Dependabot::Version.new(version),
+        version: Dependabot::Version.new(version),
+        deprecated_versions: deprecated_versions,
+        supported_versions: supported_versions
+      )
     end
-
-    attr_reader :name
-    attr_reader :version
-    attr_reader :deprecated_versions
-    attr_reader :unsupported_versions
-    attr_reader :supported_versions
 
     sig { override.returns(T::Boolean) }
     def deprecated?
@@ -89,10 +85,8 @@ module DummyPkgHelpers
 
     sig { override.returns(T::Boolean) }
     def unsupported?
-      # Check if the feature flag for Bundler v1 unsupported error is enabled.
-      return false unless name == "bundler" && Dependabot::Experiments.enabled?(:bundler_v1_unsupported_error)
-
-      version < supported_versions.first
+      # Check if the version is not supported
+      supported_versions.all? { |supported| supported > version }
     end
   end
 end

@@ -1,5 +1,7 @@
-# typed: true
+# typed: strong
 # frozen_string_literal: true
+
+require "sorbet-runtime"
 
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
@@ -9,12 +11,14 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base
       require_relative "file_updater/elm_json_updater"
 
+      sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
         [
           /^elm\.json$/
         ]
       end
 
+      sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
         updated_files = []
 
@@ -24,7 +28,7 @@ module Dependabot
           updated_files <<
             updated_file(
               file: file,
-              content: updated_elm_json_content(file)
+              content: T.must(updated_elm_json_content(file))
             )
         end
 
@@ -35,12 +39,14 @@ module Dependabot
 
       private
 
+      sig { override.void }
       def check_required_files
         return if elm_json_files.any?
 
-        raise "No elm.json"
+        raise "No #{MANIFEST_FILE}"
       end
 
+      sig { params(file: Dependabot::DependencyFile).returns(T.nilable(String)) }
       def updated_elm_json_content(file)
         ElmJsonUpdater.new(
           dependencies: dependencies,
@@ -48,8 +54,9 @@ module Dependabot
         ).updated_content
       end
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def elm_json_files
-        dependency_files.select { |f| f.name.end_with?("elm.json") }
+        dependency_files.select { |f| f.name.end_with?(MANIFEST_FILE) }
       end
     end
   end

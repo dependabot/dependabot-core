@@ -7,54 +7,55 @@ using NuGet.Frameworks;
 using NuGet.Versioning;
 
 using NuGetUpdater.Core.Discover;
+using NuGetUpdater.Core.Run.ApiModel;
 
 namespace NuGetUpdater.Core.Analyze;
 
 using MultiDependency = (string PropertyName, ImmutableArray<string> TargetFrameworks, ImmutableHashSet<string> DependencyNames);
 
-public partial class AnalyzeWorker
+public partial class AnalyzeWorker : IAnalyzeWorker
 {
     public const string AnalysisDirectoryName = "./.dependabot/analysis";
 
-    private readonly Logger _logger;
+    private readonly string _jobId;
+    private readonly ExperimentsManager _experimentsManager;
+    private readonly ILogger _logger;
 
     internal static readonly JsonSerializerOptions SerializerOptions = new()
     {
         WriteIndented = true,
-        Converters = { new JsonStringEnumConverter(), new RequirementConverter() },
+        Converters = { new JsonStringEnumConverter(), new RequirementArrayConverter() },
     };
 
-    public AnalyzeWorker(Logger logger)
+    public AnalyzeWorker(string jobId, ExperimentsManager experimentsManager, ILogger logger)
     {
+        _jobId = jobId;
+        _experimentsManager = experimentsManager;
         _logger = logger;
     }
 
     public async Task RunAsync(string repoRoot, string discoveryPath, string dependencyPath, string analysisDirectory)
     {
         var analysisResult = await RunWithErrorHandlingAsync(repoRoot, discoveryPath, dependencyPath);
-        var dependencyInfo = await DeserializeJsonFileAsync<DependencyInfo>(dependencyPath, nameof(DependencyInfo));
+        var dependencyInfo = await DeserializeDependencyInfoFileAsync(dependencyPath);
         await WriteResultsAsync(analysisDirectory, dependencyInfo.Name, analysisResult, _logger);
     }
 
     internal async Task<AnalysisResult> RunWithErrorHandlingAsync(string repoRoot, string discoveryPath, string dependencyPath)
     {
         AnalysisResult analysisResult;
-        var discovery = await DeserializeJsonFileAsync<WorkspaceDiscoveryResult>(discoveryPath, nameof(WorkspaceDiscoveryResult));
-        var dependencyInfo = await DeserializeJsonFileAsync<DependencyInfo>(dependencyPath, nameof(DependencyInfo));
+        var discovery = await DeserializeWorkspaceDiscoveryResultFileAsync(discoveryPath);
+        var dependencyInfo = await DeserializeDependencyInfoFileAsync(dependencyPath);
 
         try
         {
             analysisResult = await RunAsync(repoRoot, discovery, dependencyInfo);
         }
-        catch (HttpRequestException ex)
-        when (ex.StatusCode == HttpStatusCode.Unauthorized || ex.StatusCode == HttpStatusCode.Forbidden)
+        catch (Exception ex)
         {
-            var localPath = PathHelper.JoinPath(repoRoot, discovery.Path);
-            var nugetContext = new NuGetContext(localPath);
             analysisResult = new AnalysisResult
             {
-                ErrorType = ErrorType.AuthenticationFailure,
-                ErrorDetails = "(" + string.Join("|", nugetContext.PackageSources.Select(s => s.Source)) + ")",
+                Error = JobErrorBase.ErrorFromException(ex, _jobId, PathHelper.JoinPath(repoRoot, discovery.Path)),
                 UpdatedVersion = string.Empty,
                 CanUpdate = false,
                 UpdatedDependencies = [],
@@ -66,9 +67,11 @@ public partial class AnalyzeWorker
 
     public async Task<AnalysisResult> RunAsync(string repoRoot, WorkspaceDiscoveryResult discovery, DependencyInfo dependencyInfo)
     {
+        MSBuildHelper.RegisterMSBuild(repoRoot, repoRoot);
+
         var startingDirectory = PathHelper.JoinPath(repoRoot, discovery.Path);
 
-        _logger.Log($"Starting analysis of {dependencyInfo.Name}...");
+        _logger.Info($"Starting analysis of {dependencyInfo.Name}...");
 
         // We need to find all projects which have the given dependency. Even in cases that they
         // have it transitively may require that peer dependencies be updated in the project.
@@ -97,7 +100,7 @@ public partial class AnalyzeWorker
         AnalysisResult analysisResult;
         if (isUpdateNecessary)
         {
-            _logger.Log($"  Determining multi-dependency property.");
+            _logger.Info($"  Determining multi-dependency property.");
             var multiDependencies = DetermineMultiDependencyDetails(
                 discovery,
                 dependencyInfo.Name,
@@ -117,7 +120,7 @@ public partial class AnalyzeWorker
                     .ToImmutableArray()
                 : projectFrameworks;
 
-            _logger.Log($"  Finding updated version.");
+            _logger.Info($"  Finding updated version.");
             updatedVersion = await FindUpdatedVersionAsync(
                 startingDirectory,
                 dependencyInfo,
@@ -127,7 +130,7 @@ public partial class AnalyzeWorker
                 _logger,
                 CancellationToken.None);
 
-            _logger.Log($"  Finding updated peer dependencies.");
+            _logger.Info($"  Finding updated peer dependencies.");
             if (updatedVersion is null)
             {
                 updatedDependencies = [];
@@ -140,6 +143,7 @@ public partial class AnalyzeWorker
                     dependenciesToUpdate,
                     updatedVersion,
                     nugetContext,
+                    _experimentsManager,
                     _logger,
                     CancellationToken.None);
             }
@@ -173,7 +177,7 @@ public partial class AnalyzeWorker
             UpdatedDependencies = updatedDependencies,
         };
 
-        _logger.Log($"Analysis complete.");
+        _logger.Info($"Analysis complete.");
         return analysisResult;
     }
 
@@ -197,13 +201,28 @@ public partial class AnalyzeWorker
                 !d.IsTransitive));
     }
 
-    internal static async Task<T> DeserializeJsonFileAsync<T>(string path, string fileType)
+    private static Task<WorkspaceDiscoveryResult> DeserializeWorkspaceDiscoveryResultFileAsync(string path)
     {
-        var json = File.Exists(path)
-            ? await File.ReadAllTextAsync(path)
-            : throw new FileNotFoundException($"{fileType} file not found.", path);
+        return DeserializeJsonFileAsync(path, nameof(WorkspaceDiscoveryResult), json => JsonSerializer.Deserialize<WorkspaceDiscoveryResult>(json, SerializerOptions));
+    }
 
-        return JsonSerializer.Deserialize<T>(json, SerializerOptions)
+    private static Task<DependencyInfo> DeserializeDependencyInfoFileAsync(string path)
+    {
+        return DeserializeJsonFileAsync(path, nameof(DependencyInfo), DeserializeDependencyInfo);
+    }
+
+    internal static DependencyInfo? DeserializeDependencyInfo(string content)
+    {
+        return JsonSerializer.Deserialize<DependencyInfo>(content, SerializerOptions);
+    }
+
+    private static async Task<T> DeserializeJsonFileAsync<T>(string filePath, string fileType, Func<string, T?> deserializer)
+    {
+        var json = File.Exists(filePath)
+            ? await File.ReadAllTextAsync(filePath)
+            : throw new FileNotFoundException($"{fileType} file not found.", filePath);
+
+        return deserializer(json)
             ?? throw new InvalidOperationException($"{fileType} file is empty.");
     }
 
@@ -213,10 +232,11 @@ public partial class AnalyzeWorker
         ImmutableHashSet<string> packageIds,
         ImmutableArray<NuGetFramework> projectFrameworks,
         NuGetContext nugetContext,
-        Logger logger,
+        ILogger logger,
         CancellationToken cancellationToken)
     {
         var versionResult = await VersionFinder.GetVersionsAsync(
+            projectFrameworks,
             dependencyInfo,
             nugetContext,
             logger,
@@ -239,10 +259,11 @@ public partial class AnalyzeWorker
         NuGetVersion version,
         bool findLowestVersion,
         NuGetContext nugetContext,
-        Logger logger,
+        ILogger logger,
         CancellationToken cancellationToken)
     {
         var versionResult = await VersionFinder.GetVersionsAsync(
+            projectFrameworks,
             packageIds.First(),
             version,
             nugetContext,
@@ -267,7 +288,7 @@ public partial class AnalyzeWorker
         ImmutableArray<NuGetFramework> projectFrameworks,
         bool findLowestVersion,
         NuGetContext nugetContext,
-        Logger logger,
+        ILogger logger,
         CancellationToken cancellationToken)
     {
         var versions = versionResult.GetVersions();
@@ -299,7 +320,7 @@ public partial class AnalyzeWorker
         IEnumerable<NuGetVersion> orderedVersions,
         ImmutableArray<NuGetFramework> projectFrameworks,
         NuGetContext nugetContext,
-        Logger logger,
+        ILogger logger,
         CancellationToken cancellationToken)
     {
         if (NuGetVersion.TryParse(versionString, out var currentVersion))
@@ -350,7 +371,7 @@ public partial class AnalyzeWorker
         NuGetVersion currentVersion,
         ImmutableArray<NuGetFramework> projectFrameworks,
         NuGetContext nugetContext,
-        Logger logger,
+        ILogger logger,
         CancellationToken cancellationToken)
     {
         foreach (var packageId in packageIds)
@@ -376,7 +397,8 @@ public partial class AnalyzeWorker
         ImmutableHashSet<string> packageIds,
         NuGetVersion updatedVersion,
         NuGetContext nugetContext,
-        Logger logger,
+        ExperimentsManager experimentsManager,
+        ILogger logger,
         CancellationToken cancellationToken)
     {
         // We need to find all projects which have the given dependency. Even in cases that they
@@ -391,8 +413,9 @@ public partial class AnalyzeWorker
 
         var projectFrameworks = projectsWithDependency
             .SelectMany(p => p.TargetFrameworks)
-            .Distinct()
             .Select(NuGetFramework.Parse)
+            .Distinct()
+            .Select(f => f.GetShortFolderName())
             .ToImmutableArray();
 
         // When updating peer dependencies, we only need to consider top-level dependencies.
@@ -415,6 +438,7 @@ public partial class AnalyzeWorker
             packageIds,
             updatedVersion,
             nugetContext,
+            experimentsManager,
             logger,
             cancellationToken);
 
@@ -459,7 +483,7 @@ public partial class AnalyzeWorker
             }).ToImmutableArray();
     }
 
-    internal static async Task WriteResultsAsync(string analysisDirectory, string dependencyName, AnalysisResult result, Logger logger)
+    internal static async Task WriteResultsAsync(string analysisDirectory, string dependencyName, AnalysisResult result, ILogger logger)
     {
         if (!Directory.Exists(analysisDirectory))
         {
@@ -468,7 +492,7 @@ public partial class AnalyzeWorker
 
         var resultPath = Path.Combine(analysisDirectory, $"{dependencyName}.json");
 
-        logger.Log($"  Writing analysis result to [{resultPath}].");
+        logger.Info($"  Writing analysis result to [{resultPath}].");
 
         var resultJson = JsonSerializer.Serialize(result, SerializerOptions);
         await File.WriteAllTextAsync(path: resultPath, resultJson);

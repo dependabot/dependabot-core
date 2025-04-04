@@ -31,6 +31,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
   let(:directory) { "/" }
   let(:github_token) { "token" }
   let(:dependency_files) { bundler_project_dependency_files("gemfile") }
+  let(:update_cooldown) { nil }
   let(:credentials) do
     [{
       "type" => "git_source",
@@ -46,6 +47,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
       credentials: credentials,
       ignored_versions: ignored_versions,
       security_advisories: security_advisories,
+      update_cooldown: update_cooldown,
       requirements_update_strategy: requirements_update_strategy
     )
   end
@@ -363,6 +365,46 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
 
           it { is_expected.to be_nil }
         end
+      end
+    end
+
+    describe "with cooldown options" do
+      let(:update_cooldown) do
+        Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7)
+      end
+      let(:expected_cooldown_options) do
+        Dependabot::Package::ReleaseCooldownOptions.new(
+          default_days: 7,
+          semver_major_days: 7,
+          semver_minor_days: 7,
+          semver_patch_days: 7,
+          include: [],
+          exclude: []
+        )
+      end
+
+      before do
+        # Mock the LatestVersionFinder to verify it receives cooldown_options
+        latest_version_finder = instance_double(Dependabot::Bundler::UpdateChecker::LatestVersionFinder)
+        allow(latest_version_finder)
+          .to receive(:latest_version_details).and_return({ version: Gem::Version.new("1.5.0") })
+        allow(Dependabot::Bundler::UpdateChecker::LatestVersionFinder)
+          .to receive(:new).and_return(latest_version_finder)
+      end
+
+      it "passes cooldown_options to LatestVersionFinder" do
+        checker.latest_version
+
+        expect(Dependabot::Bundler::UpdateChecker::LatestVersionFinder).to have_received(:new).with(
+          hash_including(cooldown_options: an_object_having_attributes(
+            default_days: expected_cooldown_options.default_days,
+            semver_major_days: expected_cooldown_options.semver_major_days,
+            semver_minor_days: expected_cooldown_options.semver_minor_days,
+            semver_patch_days: expected_cooldown_options.semver_patch_days,
+            include: expected_cooldown_options.include,
+            exclude: expected_cooldown_options.exclude
+          ))
+        )
       end
     end
   end
@@ -1339,7 +1381,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             .to_return(status: 401)
         end
 
-        it "raises a helpful error", :bundler_v2_only do
+        it "raises a helpful error" do
           expect { checker.latest_resolvable_version }
             .to raise_error do |error|
               expect(error).to be_a(Dependabot::GitDependenciesNotReachable)
@@ -1383,11 +1425,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
       let(:dependency_name) { "guard-bundler" }
       let(:current_version) { "2.2.1" }
 
-      context "when using bundler v1", :bundler_v1_only do
-        it { is_expected.to eq(Gem::Version.new("2.2.1")) }
-      end
-
-      context "when using bundler v2", :bundler_v2_only do
+      context "when using bundler v2" do
         it { is_expected.to eq(Gem::Version.new("3.0.0")) }
       end
     end

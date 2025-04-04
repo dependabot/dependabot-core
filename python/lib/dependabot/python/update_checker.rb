@@ -113,6 +113,10 @@ module Dependabot
       end
 
       def resolver
+        if Dependabot::Experiments.enabled?(:enable_file_parser_python_local)
+          Dependabot.logger.info("Python package resolver : #{resolver_type}")
+        end
+
         case resolver_type
         when :pip_compile then pip_compile_version_resolver
         when :pipenv then pipenv_version_resolver
@@ -183,6 +187,7 @@ module Dependabot
           dependency_files: dependency_files,
           credentials: credentials,
           ignored_versions: ignored_versions,
+          update_cooldown: @update_cooldown,
           raise_on_ignored: @raise_on_ignored,
           security_advisories: security_advisories
         )
@@ -233,9 +238,9 @@ module Dependabot
           requirements.filter_map { |r| r[:requirement] }
                       .reject { |req_string| req_string.start_with?("<") }
                       .select { |req_string| req_string.match?(VERSION_REGEX) }
-                      .map { |req_string| req_string.match(VERSION_REGEX) }
-                      .select { |version| Gem::Version.correct?(version) }
-                      .max_by { |version| Gem::Version.new(version) }
+                      .map { |req_string| req_string.match(VERSION_REGEX).to_s }
+                      .select { |version| Python::Version.correct?(version) }
+                      .max_by { |version| Python::Version.new(version) }
 
         ">=#{version_for_requirement || 0}"
       end
@@ -251,6 +256,7 @@ module Dependabot
           credentials: credentials,
           ignored_versions: ignored_versions,
           raise_on_ignored: @raise_on_ignored,
+          cooldown_options: @update_cooldown,
           security_advisories: security_advisories
         )
       end
@@ -325,7 +331,7 @@ module Dependabot
       end
 
       def library_details
-        @library_details ||= poetry_details || standard_details
+        @library_details ||= poetry_details || standard_details || build_system_details
       end
 
       def poetry_details
@@ -334,6 +340,10 @@ module Dependabot
 
       def standard_details
         @standard_details ||= toml_content["project"]
+      end
+
+      def build_system_details
+        @build_system_details ||= toml_content["build-system"]
       end
 
       def toml_content

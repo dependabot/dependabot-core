@@ -456,6 +456,69 @@ RSpec.describe namespace::PoetryVersionResolver do
       end
     end
 
+    context "with private registry authentication 403 Client Error" do
+      let(:response) do
+        "Creating virtualenv reimbursement-coverage-api-fKdRenE--py3.12 in /home/dependabot/.cache/pypoetry/virtualenvs
+        Updating dependencies
+        Resolving dependencies...
+        403 Client Error:  for url: https://fp-pypi.sm00p.com/simple/"
+      end
+
+      it "raises a helpful error" do
+        expect { poetry_error_handler }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
+          expect(error.message)
+            .to include("https://fp-pypi.sm00p.com")
+        end
+      end
+    end
+
+    context "with private registry authentication 404 Client Error" do
+      let(:response) do
+        "NetworkConnectionError('404 Client Error: Not Found for url: https://raw.example.com/example/flow/" \
+          "constraints-$%7BAIRFLOW_VERSION%7D/constraints-3.10.txt'"
+      end
+
+      it "raises a helpful error" do
+        expect { poetry_error_handler }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
+          expect(error.message)
+            .to include("https://raw.example.com")
+        end
+      end
+    end
+
+    context "with private registry authentication 504 Server Error" do
+      let(:response) do
+        "Creating virtualenv alk-service-import-product-TbrdR40A-py3.8 in /home/dependabot/.cache/pypoetry/virtualenvs
+        Updating dependencies
+        Resolving dependencies...
+
+        504 Server Error:  for url: https://pypi.com:8443/packages/alk_ci-1.whl#sha256=f9"
+      end
+
+      it "raises a helpful error" do
+        expect { poetry_error_handler }.to raise_error(Dependabot::InconsistentRegistryResponse) do |error|
+          expect(error.message)
+            .to include("https://pypi.com")
+        end
+      end
+    end
+
+    context "with private index authentication HTTP error 404" do
+      let(:response) do
+        "HTTP error 404 while getting " \
+          "https://<redacted>.com/compute-cloud/8e1a9.zip" \
+          "Not Found for URL" \
+          " https://example.com/compute-cloud/[FILTERED_REPO]/archive/a5bf58e7a37be7503e1a79febf8b555b9d28e1a9.zip"
+      end
+
+      it "raises a helpful error" do
+        expect { poetry_error_handler }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
+          expect(error.message)
+            .to include("https://example.com")
+        end
+      end
+    end
+
     context "with dependency spec version not found in package index" do
       let(:response) do
         "Creating virtualenv pyiceberg-xBYdM_d2-py3.12 in /home/dependabot/.cache/pypoetry/virtualenvs
@@ -485,6 +548,106 @@ RSpec.describe namespace::PoetryVersionResolver do
           expect(error.message)
             .to include("scipy requires Python <3.13,>=3.9, so it will not be satisfied for")
         end
+      end
+    end
+
+    context "with a misconfigured pyproject.toml file" do
+      let(:response) do
+        "Creating virtualenv analysis-nlUUV3qa-py3.13 in pypoetry/virtualenvs
+        Updating dependencies
+        Resolving dependencies...
+        list index out of range"
+      end
+
+      it "raises a helpful error" do
+        expect { poetry_error_handler }.to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "with a timed out response error" do
+      let(:response) do
+        "HTTPSConnectionPool(host='nexus.nee.com', port=443): " \
+          "Max retries exceeded with url:  (Caused by ProxyError('Unable to connect to proxy'" \
+          ", RemoteDisconnected('Remote end closed connection without response')))"
+      end
+
+      it "raises a helpful error" do
+        expect { poetry_error_handler }.to raise_error(Dependabot::InconsistentRegistryResponse)
+      end
+    end
+
+    context "with a timed out response error" do
+      let(:response) do
+        "HTTPSConnectionPool(host='pypi.pymetrics.com', port=443): Read timed out. (read timeout=15)"
+      end
+
+      it "raises a helpful error" do
+        expect { poetry_error_handler }.to raise_error(Dependabot::InconsistentRegistryResponse)
+      end
+    end
+
+    context "with a 500 server error" do
+      let(:response) do
+        "500 Server Error: Internal Server Error for url: http://nexus.bvc.euc1.lan/repository/le/adup-utils/"
+      end
+
+      it "raises a helpful error" do
+        expect { poetry_error_handler }.to raise_error(Dependabot::InconsistentRegistryResponse)
+      end
+    end
+
+    context "with version solving failed error" do
+      let(:response) do
+        "Creating virtualenv mobileweb-h6LnalBm-py3.13 in /home/dependabot/.cache/pypoetry/virtualenvs" \
+          "Updating dependencies" \
+          "Resolving dependencies..." \
+          "Unable to determine package info for cryptography"
+      end
+
+      it "raises a helpful error" do
+        expect { poetry_error_handler }.to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "with a self dependency error" do
+      let(:response) do
+        "Creating virtualenv mobileweb-h6LnalBm-py3.13 in /home/dependabot/.cache/pypoetry/virtualenvs" \
+          "Updating dependencies" \
+          "Resolving dependencies..." \
+          "Package 'tensorflow-macos' is listed as a dependency of itself."
+      end
+
+      it "raises a helpful error" do
+        expect { poetry_error_handler }.to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "with a variation of incompatible constraints error" do
+      let(:response) do
+        "Creating virtualenv mobileweb-h6LnalBm-py3.13 in /home/dependabot/.cache/pypoetry/virtualenvs" \
+          "Updating dependencies" \
+          "Resolving dependencies..." \
+          "Incompatible constraints in requirements of reflector (0.1.0):" \
+          "types-setuptools (==75.8.0.20250210)" \
+          "types-setuptools (>=69.1.0.20240308,<70.0.0.0)" \
+      end
+
+      it "raises a helpful error" do
+        expect { poetry_error_handler }.to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "with a project is listed a dependency" do
+      let(:response) do
+        "Creating virtualenv kiota-serialization-multipart-GzD6BRdm-py3.13 in " \
+          "/home/dependabot/.cache/pypoetry/virtualenvs" \
+          "Updating dependencies" \
+          "Resolving dependencies..." \
+          "Path tmp/20250109-1637-dc4aky/json for kiota-serialization-json does not exist"
+      end
+
+      it "raises a helpful error" do
+        expect { poetry_error_handler }.to raise_error(Dependabot::DependencyFileNotResolvable)
       end
     end
   end

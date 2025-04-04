@@ -400,7 +400,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
         expect { latest_resolvable_version }
           .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             expect(error.message).to include(
-              "ERROR:pip.subprocessor:Getting requirements to build wheel exited with 1"
+              "ERROR:pip.subprocessor:python setup.py egg_info exited with 1"
             )
           end
       end

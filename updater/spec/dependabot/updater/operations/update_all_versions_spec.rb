@@ -12,7 +12,7 @@ require "dependabot/updater/error_handler"
 require "dependabot/updater/operations/update_all_versions"
 require "dependabot/dependency_change_builder"
 require "dependabot/environment"
-require "dependabot/package_manager"
+require "dependabot/ecosystem"
 require "dependabot/notices"
 require "dependabot/notices_helpers"
 
@@ -37,9 +37,10 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
     instance_double(
       Dependabot::Service,
       increment_metric: nil,
+      record_update_job_error: nil,
       create_pull_request: nil,
-      close_pull_request: nil,
-      record_update_job_warning: nil
+      record_update_job_warning: nil,
+      record_ecosystem_meta: nil
     )
   end
 
@@ -60,6 +61,13 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
     Dependabot::DependencySnapshot.create_from_job_definition(
       job: job,
       job_definition: job_definition_with_fetched_files
+    )
+  end
+
+  let(:ecosystem) do
+    Dependabot::Ecosystem.new(
+      name: "bundler",
+      package_manager: package_manager
     )
   end
 
@@ -151,16 +159,13 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
   end
 
   before do
-    allow(Dependabot::Experiments).to receive(:enabled?).with(:bundler_v1_unsupported_error).and_return(false)
-    allow(Dependabot::Experiments).to receive(:enabled?).with(:add_deprecation_warn_to_pr_message).and_return(true)
-
     allow(Dependabot::UpdateCheckers).to receive(
       :for_package_manager
     ).and_return(stub_update_checker_class)
     allow(Dependabot::DependencyChangeBuilder).to receive(
       :create_from
     ).and_return(stub_dependency_change)
-    allow(dependency_snapshot).to receive_messages(package_manager: package_manager, notices: [
+    allow(dependency_snapshot).to receive_messages(ecosystem: ecosystem, notices: [
       warning_deprecation_notice
     ])
   end

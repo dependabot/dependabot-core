@@ -37,11 +37,16 @@ module Dependabot
         #
         # As above, we can remove the responsibility for handling fatal/job halting
         # errors from Dependabot::Updater entirely.
-        Dependabot::Updater.new(
-          service: service,
-          job: job,
-          dependency_snapshot: dependency_snapshot
-        ).run
+        begin
+          Dependabot::Updater.new(
+            service: service,
+            job: job,
+            dependency_snapshot: dependency_snapshot
+          ).run
+        rescue Dependabot::DependencyFileNotParseable => e
+          handle_dependency_file_not_parseable_error(e)
+          return service.mark_job_as_processed(Environment.job_definition["base_commit_sha"])
+        end
 
         # Wait for all PRs to be created
         service.wait_for_calls_to_finish
@@ -67,7 +72,7 @@ module Dependabot
       Environment.job_definition["base_commit_sha"]
     end
 
-    # rubocop:disable Metrics/AbcSize, Layout/LineLength
+    # rubocop:disable Metrics/AbcSize, Layout/LineLength, Metrics/MethodLength
     def handle_parser_error(error)
       # This happens if the repo gets removed after a job gets kicked off.
       # The service will handle the removal without any prompt from the updater,
@@ -80,6 +85,16 @@ module Dependabot
         # Check if the error is a known "run halting" state we should handle
         if (error_type = Updater::ErrorHandler::RUN_HALTING_ERRORS[error.class])
           { "error-type": error_type }
+        elsif error.is_a?(ToolVersionNotSupported)
+          Dependabot.logger.error(error.message)
+          {
+            "error-type": "tool_version_not_supported",
+            "error-detail": {
+              "tool-name": error.tool_name,
+              "detected-version": error.detected_version,
+              "supported-versions": error.supported_versions
+            }
+          }
         else
           # If it isn't, then log all the details and let the application error
           # tracker know about it
@@ -118,6 +133,21 @@ module Dependabot
         error_details: error_details[:"error-detail"]
       )
     end
-    # rubocop:enable Metrics/AbcSize, Layout/LineLength
+    # rubocop:enable Metrics/AbcSize, Layout/LineLength, Metrics/MethodLength
+
+    def handle_dependency_file_not_parseable_error(error)
+      error_details = Dependabot.updater_error_details(error)
+
+      service.record_update_job_error(
+        error_type: T.must(error_details).fetch(:"error-type"),
+        error_details: T.must(error_details)[:"error-detail"]
+      )
+      return unless Experiments.enabled?(:record_update_job_unknown_error)
+
+      service.record_update_job_unknown_error(
+        error_type: T.must(error_details).fetch(:"error-type"),
+        error_details: T.must(error_details)[:"error-detail"]
+      )
+    end
   end
 end

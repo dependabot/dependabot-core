@@ -1,3 +1,4 @@
+using System.IO;
 using System.Text;
 
 using NuGetUpdater.Core;
@@ -18,6 +19,10 @@ public partial class EntryPointTests
             await Run(path =>
                 [
                     "update",
+                    "--job-id",
+                    "TEST-JOB-ID",
+                    "--job-path",
+                    Path.Combine(path, "job.json"),
                     "--repo-root",
                     path,
                     "--solution-or-project",
@@ -119,6 +124,10 @@ public partial class EntryPointTests
             await Run(path =>
                 [
                     "update",
+                    "--job-id",
+                    "TEST-JOB-ID",
+                    "--job-path",
+                    Path.Combine(path, "job.json"),
                     "--repo-root",
                     path,
                     "--solution-or-project",
@@ -128,8 +137,7 @@ public partial class EntryPointTests
                     "--new-version",
                     "13.0.1",
                     "--previous-version",
-                    "7.0.1",
-                    "--verbose"
+                    "7.0.1"
                 ],
                 packages:
                 [
@@ -198,6 +206,10 @@ public partial class EntryPointTests
             await Run(path =>
                 [
                     "update",
+                    "--job-id",
+                    "TEST-JOB-ID",
+                    "--job-path",
+                    Path.Combine(path, "job.json"),
                     "--repo-root",
                     path,
                     "--solution-or-project",
@@ -207,8 +219,7 @@ public partial class EntryPointTests
                     "--new-version",
                     "6.6.1",
                     "--previous-version",
-                    "6.1.0",
-                    "--verbose"
+                    "6.1.0"
                 ],
                 packages:
                 [
@@ -327,6 +338,7 @@ public partial class EntryPointTests
                 MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net8.0"),
             ];
             await MockNuGetPackagesInDirectory(testPackages, tempDir.DirectoryPath);
+            await MockJobFileInDirectory(tempDir.DirectoryPath);
 
             var globalJsonPath = Path.Join(tempDir.DirectoryPath, "global.json");
             var srcGlobalJsonPath = Path.Join(tempDir.DirectoryPath, "src", "global.json");
@@ -355,6 +367,10 @@ public partial class EntryPointTests
             IEnumerable<string> executableArgs = [
                 executableName,
                 "update",
+                "--job-id",
+                "TEST-JOB-ID",
+                "--job-path",
+                Path.Combine(tempDir.DirectoryPath, "job.json"),
                 "--repo-root",
                 tempDir.DirectoryPath,
                 "--solution-or-project",
@@ -364,8 +380,7 @@ public partial class EntryPointTests
                 "--new-version",
                 "13.0.1",
                 "--previous-version",
-                "7.0.1",
-                "--verbose"
+                "7.0.1"
             ];
 
             // verify base run
@@ -375,7 +390,7 @@ public partial class EntryPointTests
                 workingDirectory = Path.Join(workingDirectory, workingDirectoryPath);
             }
 
-            var (exitCode, output, error) = await ProcessEx.RunAsync("dotnet", executableArgs, workingDirectory: workingDirectory);
+            var (exitCode, output, error) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(executableArgs, workingDirectory, new ExperimentsManager() { InstallDotnetSdks = false });
             Assert.True(exitCode == 0, $"Error running update on unsupported SDK.\nSTDOUT:\n{output}\nSTDERR:\n{error}");
 
             // verify project update
@@ -405,6 +420,7 @@ public partial class EntryPointTests
 
                 try
                 {
+                    await MockJobFileInDirectory(path);
                     await MockNuGetPackagesInDirectory(packages, path);
 
                     var args = getArgs(path);

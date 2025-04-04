@@ -205,12 +205,6 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
 
     it { is_expected.to be >= Gem::Version.new("1.22.0") }
 
-    context "with a composer v1 lockfile" do
-      let(:project_name) { "v1/exact_version" }
-
-      it { is_expected.to be >= Gem::Version.new("1.22.0") }
-    end
-
     context "when the user is ignoring the latest version" do
       let(:ignored_versions) { [">= 1.22.0.a, < 4.0"] }
 
@@ -441,58 +435,6 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       end
 
       it { is_expected.to be_nil }
-    end
-
-    context "with a replaced direct dependency" do
-      let(:project_name) { "replaced_direct_dependency" }
-      let(:dependency_name) { "neos/flow" }
-      let(:dependency_version) { nil }
-      let(:requirements) do
-        [{
-          file: "composer.json",
-          requirement: "*",
-          groups: [],
-          source: nil
-        }]
-      end
-
-      it { is_expected.to be_nil }
-    end
-
-    context "with a PEAR dependency (composer v1)" do
-      let(:project_name) { "v1/pear" }
-      let(:dependency_name) { "pear-pear.horde.org/Horde_Date" }
-      let(:dependency_version) { "2.4.1" }
-      let(:requirements) do
-        [{
-          file: "composer.json",
-          requirement: "^2.4.0@stable",
-          groups: [],
-          source: nil
-        }]
-      end
-
-      # This unit test is testing that a dependency located on https://pear.horde.org is still correctly
-      # handled by composer. So ignore the fact that this package actually exists on packagist, and
-      # pretend it just 404's.
-      let(:packagist_response) { "404 not found, no packages here" }
-
-      before do
-        v2_metadata_url = "https://repo.packagist.org/p2/#{dependency_name.downcase}.json"
-        stub_request(:get, v2_metadata_url).to_return(status: 404, body: packagist_response)
-
-        # Also stub the v1 URL because the underlying `composer` `v1` doesn't know how to talk to the v2 metadata URL.
-        v1_metadata_url = "https://repo.packagist.org/p/#{dependency_name.downcase}.json"
-        # v1 url doesn't always return 404 for missing packages
-        stub_request(:get, v1_metadata_url).to_return(status: 200, body: '{"error":{"code":404,"message":"Not Found"}}')
-        allow(checker).to receive(:latest_version_from_registry)
-          .and_return(Gem::Version.new("2.4.1"))
-      end
-
-      it "is between 2.0.0 and 3.0.0" do
-        expect(latest_resolvable_version).to be < Gem::Version.new("3.0.0")
-        expect(latest_resolvable_version).to be > Gem::Version.new("2.0.0")
-      end
     end
 
     context "with a version conflict at the latest version" do
@@ -776,28 +718,6 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       end
 
       it { is_expected.to be_nil }
-    end
-
-    context "when a sub-dependency would block the update" do
-      let(:project_name) { "subdependency_update_required" }
-      let(:dependency_name) { "illuminate/support" }
-      let(:dependency_version) { "5.2.0" }
-      let(:requirements) do
-        [{
-          file: "composer.json",
-          requirement: "^5.2.0",
-          groups: ["runtime"],
-          source: nil
-        }]
-      end
-
-      before do
-        allow(checker).to receive(:latest_version_from_registry)
-          .and_return(Gem::Version.new("5.6.23"))
-      end
-
-      # 5.5.0 series and up require an update to illuminate/contracts
-      it { is_expected.to be >= Gem::Version.new("5.6.23") }
     end
 
     context "with an invalid composer.json file" do

@@ -1,0 +1,8 @@
+name: dependabot_testcase
+environment:
+  sdk: ^3.5.0
+dependencies:
+  _macros:
+    sdk: dart
+dev_dependencies:
+  lints: ^3.0.0

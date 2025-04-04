@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -27,9 +27,9 @@ module Dependabot
 
         require_relative "latest_version_finder"
 
-        TIGHTLY_COUPLED_MONOREPOS = {
+        TIGHTLY_COUPLED_MONOREPOS = T.let({
           "vue" => %w(vue vue-template-compiler)
-        }.freeze
+        }.freeze, T::Hash[String, T::Array[String]])
 
         # Error message returned by `yarn add` (for Yarn classic):
         # " > @reach/router@1.2.1" has incorrect peer dependency "react@15.x || 16.x || 16.4.0-alpha.0911da3"
@@ -91,19 +91,57 @@ module Dependabot
             npm\s(?:WARN|ERR!)\speer\s(?<required_dep>\S+@\S+(\s\S+)?)\sfrom\s(?<requiring_dep>\S+@\S+)
           /x
 
-        def initialize(dependency:, credentials:, dependency_files:,
-                       latest_allowable_version:, latest_version_finder:, repo_contents_path:, dependency_group: nil)
+        sig do
+          params(
+            dependency: Dependabot::Dependency,
+            dependency_files: T::Array[Dependabot::DependencyFile],
+            credentials: T::Array[Dependabot::Credential],
+            latest_allowable_version: T.nilable(T.any(String, Gem::Version)),
+            latest_version_finder: T.any(LatestVersionFinder, PackageLatestVersionFinder),
+            repo_contents_path: T.nilable(String),
+            dependency_group: T.nilable(Dependabot::DependencyGroup),
+            raise_on_ignored: T::Boolean,
+            update_cooldown: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
+          ).void
+        end
+        def initialize( # rubocop:disable Metrics/AbcSize
+          dependency:, dependency_files:, credentials:,
+          latest_allowable_version:, latest_version_finder:,
+          repo_contents_path:, dependency_group: nil,
+          raise_on_ignored: false, update_cooldown: nil
+        )
           @dependency               = dependency
-          @credentials              = credentials
           @dependency_files         = dependency_files
+          @credentials              = credentials
           @latest_allowable_version = latest_allowable_version
           @dependency_group = dependency_group
 
-          @latest_version_finder = {}
+          @latest_version_finder = T.let(
+            {},
+            T::Hash[Dependabot::Dependency, T.any(LatestVersionFinder, PackageLatestVersionFinder)
+          ]
+          )
           @latest_version_finder[dependency] = latest_version_finder
           @repo_contents_path = repo_contents_path
+          @raise_on_ignored = raise_on_ignored
+          @update_cooldown = update_cooldown
+
+          @types_package = T.let(nil, T.nilable(Dependabot::Dependency))
+          @original_package = T.let(nil, T.nilable(Dependabot::Dependency))
+          @latest_types_package_version = T.let(nil, T.nilable(Dependabot::Version))
+          @dependency_files_builder = T.let(nil, T.nilable(DependencyFilesBuilder))
+          # @latest_resolvable_version = T.let(nil, T.nilable(T.any(String, Gem::Version)))
+          @resolve_latest_previous_version = T.let({}, T::Hash[Dependabot::Dependency, T.nilable(String)])
+          @paths_requiring_update_check = T.let(nil, T.nilable(T::Array[String]))
+          @top_level_dependencies = T.let(nil, T.nilable(T::Array[Dependabot::Dependency]))
+          # @peer_dependency_errors_checked = T.let(false, T::Boolean)
+          @old_peer_dependency_errors = T.let(
+            nil, T.nilable(T::Array[T.any(T::Hash[String, T.nilable(String)], String)])
+          )
+          @peer_dependency_errors = T.let(nil, T.nilable(T::Array[T.any(T::Hash[String, T.nilable(String)], String)]))
         end
 
+        sig { returns(T.nilable(T.any(String, Gem::Version))) }
         def latest_resolvable_version
           return latest_allowable_version if git_dependency?(dependency)
           return if part_of_tightly_locked_monorepo?
@@ -115,17 +153,24 @@ module Dependabot
           satisfying_versions.first
         end
 
+        sig { returns(T::Boolean) }
         def latest_version_resolvable_with_full_unlock?
           return false if dependency_updates_from_full_unlock.nil?
 
           true
         end
 
+        sig do
+          params(
+            updated_version: T.nilable(T.any(String, Gem::Version))
+          ).returns(T.nilable(T.any(String, Gem::Version)))
+        end
         def latest_resolvable_previous_version(updated_version)
           resolve_latest_previous_version(dependency, updated_version)
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
+        sig { returns(T.nilable(T::Array[T::Hash[String, T.nilable(String)]])) }
         def dependency_updates_from_full_unlock
           return if git_dependency?(dependency)
           return updated_monorepo_dependencies if part_of_tightly_locked_monorepo?
@@ -168,28 +213,61 @@ module Dependabot
 
         sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
-        attr_reader :credentials
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
+        sig { returns(T::Array[Dependabot::Credential]) }
+        attr_reader :credentials
+        sig { returns(T.nilable(T.any(String, Gem::Version))) }
         attr_reader :latest_allowable_version
+        sig { returns(T.nilable(String)) }
         attr_reader :repo_contents_path
+        sig { returns(T.nilable(Dependabot::DependencyGroup)) }
         attr_reader :dependency_group
+        sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
+        attr_reader :update_cooldown
+        sig { returns(T::Boolean) }
+        attr_reader :raise_on_ignored
 
+        sig { params(dep: Dependabot::Dependency) .returns(T.any(LatestVersionFinder, PackageLatestVersionFinder)) }
         def latest_version_finder(dep)
           @latest_version_finder[dep] ||=
-            LatestVersionFinder.new(
-              dependency: dep,
-              credentials: credentials,
-              dependency_files: dependency_files,
-              ignored_versions: [],
-              security_advisories: []
-            )
+            if enable_cooldown?
+              PackageLatestVersionFinder.new(
+                dependency: dep,
+                dependency_files: dependency_files,
+                credentials: credentials,
+                cooldown_options: update_cooldown,
+                ignored_versions: [],
+                security_advisories: [],
+                raise_on_ignored: raise_on_ignored
+              )
+            else
+              LatestVersionFinder.new(
+                dependency: dep,
+                credentials: credentials,
+                dependency_files: dependency_files,
+                ignored_versions: [],
+                security_advisories: [],
+                raise_on_ignored: raise_on_ignored
+              )
+            end
+        end
+
+        sig { returns(T::Boolean) }
+        def enable_cooldown?
+          Dependabot::Experiments.enabled?(:enable_cooldown_for_npm_and_yarn)
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
+        sig do
+          params(
+            dep: Dependabot::Dependency,
+            updated_version: T.nilable(T.any(String, Gem::Version))
+          ).returns(T.nilable(String))
+        end
         def resolve_latest_previous_version(dep, updated_version)
           return dep.version if dep.version
 
-          @resolve_latest_previous_version ||= {}
           @resolve_latest_previous_version[dep] ||= begin
             relevant_versions = latest_version_finder(dependency)
                                 .possible_previous_versions_with_details
@@ -220,6 +298,7 @@ module Dependabot
         end
         # rubocop:enable Metrics/PerceivedComplexity
 
+        sig { returns(T::Boolean) }
         def part_of_tightly_locked_monorepo?
           monorepo_dep_names =
             TIGHTLY_COUPLED_MONOREPOS.values
@@ -233,6 +312,7 @@ module Dependabot
           deps_to_update.count > 1
         end
 
+        sig { returns(T::Array[T::Hash[String, T.nilable(String)]]) }
         def updated_monorepo_dependencies
           monorepo_dep_names =
             TIGHTLY_COUPLED_MONOREPOS.values
@@ -240,7 +320,7 @@ module Dependabot
 
           deps_to_update =
             top_level_dependencies
-            .select { |d| monorepo_dep_names.include?(d.name) }
+            .select { |d| monorepo_dep_names&.include?(d.name) }
 
           updates = []
           deps_to_update.each do |dep|
@@ -266,48 +346,71 @@ module Dependabot
           updates
         end
 
+        sig { returns(T.nilable(Dependabot::Dependency)) }
         def types_package
-          @types_package ||= begin
+          return @types_package if @types_package
+
+          @types_package = begin
             types_package_name = PackageName.new(dependency.name).types_package_name
             top_level_dependencies.find { |d| types_package_name.to_s == d.name } if types_package_name
           end
+          @types_package
         end
 
+        sig { returns(T.nilable(Dependabot::Dependency)) }
         def original_package
-          @original_package ||= begin
+          return @original_package if @original_package
+
+          @original_package = begin
             original_package_name = PackageName.new(dependency.name).library_name
             top_level_dependencies.find { |d| original_package_name.to_s == d.name } if original_package_name
           end
+          @original_package
         end
 
+        sig { returns(T.nilable(Dependabot::Version)) }
         def latest_types_package_version
-          @latest_types_package_version ||= latest_version_finder(types_package).latest_version_from_registry
+          types_pkg = types_package
+          return unless types_pkg
+
+          return @latest_types_package_version if @latest_types_package_version
+
+          @latest_types_package_version = latest_version_finder(types_pkg).latest_version_from_registry
+          @latest_types_package_version
         end
 
+        sig { returns(T::Boolean) }
         def types_update_available?
-          return false if types_package.nil?
+          types_pkg = types_package
+          return false unless types_pkg
 
-          return false if latest_types_package_version.nil?
+          latest_types_version = latest_types_package_version
+          return false unless latest_types_version
 
-          return false unless latest_allowable_version.backwards_compatible_with?(latest_types_package_version)
+          latest_allowable_ver = latest_allowable_version
+          return false unless latest_allowable_ver.is_a?(Version) && latest_allowable_ver.backwards_compatible_with?(
+            T.unsafe(latest_types_version)
+          )
 
-          return false unless version_class.correct?(types_package.version)
+          return false unless version_class.correct?(types_pkg.version)
 
-          current_types_package_version = version_class.new(types_package.version)
+          current_types_package_version = version_class.new(types_pkg.version)
 
-          return false unless current_types_package_version < latest_types_package_version
+          return false unless current_types_package_version < latest_types_version
 
           true
         end
 
+        sig { returns(T::Boolean) }
         def original_package_update_available?
-          return false if original_package.nil?
+          original_pack = original_package
+          return false unless original_pack
 
-          return false unless version_class.correct?(original_package.version)
+          return false unless version_class.correct?(original_pack.version)
 
-          original_package_version = version_class.new(original_package.version)
+          original_package_version = version_class.new(original_pack.version)
 
-          latest_version = latest_version_finder(original_package).latest_version_from_registry
+          latest_version = latest_version_finder(original_pack).latest_version_from_registry
 
           # If the latest version is within the scope of the current requirements,
           # latest_version will be nil. In such cases, there is no update available.
@@ -316,41 +419,45 @@ module Dependabot
           original_package_version < latest_version
         end
 
+        sig { returns(T::Array[T::Hash[String, T.nilable(String)]]) }
         def updated_types_dependencies
           [{
             dependency: types_package,
             version: latest_types_package_version,
             previous_version: resolve_latest_previous_version(
-              types_package, latest_types_package_version
+              T.must(types_package), T.cast(latest_types_package_version, Gem::Version)
             )
           }]
         end
 
+        sig { returns(T::Array[T.any(T::Hash[String, T.nilable(String)], String)]) }
         def peer_dependency_errors
-          return @peer_dependency_errors if @peer_dependency_errors_checked
+          return @peer_dependency_errors if @peer_dependency_errors
 
-          @peer_dependency_errors_checked = true
-
-          @peer_dependency_errors =
-            fetch_peer_dependency_errors(version: latest_allowable_version)
+          @peer_dependency_errors = fetch_peer_dependency_errors(version: latest_allowable_version)
+          @peer_dependency_errors
         end
 
+        sig { returns(T::Array[T.any(T::Hash[String, T.nilable(String)], String)]) }
         def old_peer_dependency_errors
-          return @old_peer_dependency_errors if @old_peer_dependency_errors_checked
-
-          @old_peer_dependency_errors_checked = true
+          return @old_peer_dependency_errors if @old_peer_dependency_errors
 
           version = version_for_dependency(dependency)
 
-          @old_peer_dependency_errors =
-            fetch_peer_dependency_errors(version: version)
+          @old_peer_dependency_errors = fetch_peer_dependency_errors(version: version)
+          @old_peer_dependency_errors
         end
 
+        sig do
+          params(
+            version: T.nilable(T.any(String, Gem::Version))
+          ).returns(T::Array[T.any(T::Hash[String, T.nilable(String)], String)])
+        end
         def fetch_peer_dependency_errors(version:)
           # TODO: Add all of the error handling that the FileUpdater does
           # here (since problematic repos will be resolved here before they're
           # seen by the FileUpdater)
-          base_dir = dependency_files.first.directory
+          base_dir = T.must(dependency_files.first).directory
           SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
             dependency_files_builder.write_temporary_dependency_files
 
@@ -402,29 +509,38 @@ module Dependabot
         end
         # rubocop:enable Metrics/AbcSize
 
+        sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
         def unmet_peer_dependencies
           peer_dependency_errors
             .map { |captures| error_details_from_captures(captures) }
         end
 
+        sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
         def old_unmet_peer_dependencies
           old_peer_dependency_errors
             .map { |captures| error_details_from_captures(captures) }
         end
 
+        sig do
+          params(captures: T.any(T::Hash[String, T.nilable(String)], String))
+            .returns(T::Hash[Symbol, T.nilable(String)])
+        end
         def error_details_from_captures(captures)
+          return {} unless captures.is_a?(Hash)
+
           required_dep_captures  = captures.fetch("required_dep")
           requiring_dep_captures = captures.fetch("requiring_dep")
           return {} unless required_dep_captures && requiring_dep_captures
 
           {
             requirement_name: required_dep_captures.sub(/@[^@]+$/, ""),
-            requirement_version: required_dep_captures.split("@").last.delete('"'),
+            requirement_version: required_dep_captures.split("@").last&.delete('"'),
             requiring_dep_name: requiring_dep_captures.sub(/@[^@]+$/, "")
           }
         end
 
-        def relevant_unmet_peer_dependencies
+        sig { returns(T::Array[T::Hash[Symbol, T.nilable(String)]]) }
+        def relevant_unmet_peer_dependencies # rubocop:disable Metrics/PerceivedComplexity
           relevant_unmet_peer_dependencies =
             unmet_peer_dependencies.select do |dep|
               dep[:requirement_name] == dependency.name ||
@@ -435,7 +551,7 @@ module Dependabot
             # Ignore unmet peer dependencies that are in the dependency group because
             # the update is also updating those dependencies.
             relevant_unmet_peer_dependencies.reject! do |dep|
-              dependency_group.dependencies.any? do |group_dep|
+              dependency_group&.dependencies&.any? do |group_dep|
                 dep[:requirement_name] == group_dep.name ||
                   dep[:requiring_dep_name] == group_dep.name
               end
@@ -454,11 +570,13 @@ module Dependabot
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
+        sig { returns(T::Array[T.any(String, Gem::Version)]) }
         def satisfying_versions
           latest_version_finder(dependency)
             .possible_versions_with_details
-            .select do |version, details|
-              next false unless satisfies_peer_reqs_on_dep?(version)
+            .select do |versions_with_details|
+              version, details = versions_with_details
+              next false unless satisfies_peer_reqs_on_dep?(T.unsafe(version))
               next true unless details["peerDependencies"]
               next true if version == version_for_dependency(dependency)
 
@@ -474,18 +592,22 @@ module Dependabot
               rescue Gem::Requirement::BadRequirementError
                 false
               end
+            end.map do |versions_with_details| # rubocop:disable Style/MultilineBlockChain
+              # Return just the version
+              version, = versions_with_details
+              version
             end
-            .map(&:first)
         end
 
         # rubocop:enable Metrics/PerceivedComplexity
 
+        sig { params(version: T.nilable(T.any(String, Gem::Version))).returns(T::Boolean) }
         def satisfies_peer_reqs_on_dep?(version)
           newly_broken_peer_reqs_on_dep.all? do |peer_req|
             req = peer_req.fetch(:requirement_version)
 
             # Git requirements can't be satisfied by a version
-            next false if req.include?("/")
+            next false if req&.include?("/")
 
             reqs = requirement_class.requirements_array(req)
             reqs.any? { |r| r.satisfied_by?(version) }
@@ -494,11 +616,16 @@ module Dependabot
           end
         end
 
-        def latest_version_of_dep_with_satisfied_peer_reqs(dep)
-          latest_version_finder(dep)
+        sig { params(dep: Dependabot::Dependency).returns(T.nilable(T.any(String, Gem::Version))) }
+        def latest_version_of_dep_with_satisfied_peer_reqs(dep) # rubocop:disable Metrics/PerceivedComplexity
+          dependency_version = version_for_dependency(dep)
+          version_with_detail =
+            latest_version_finder(dep)
             .possible_versions_with_details
-            .find do |version, details|
-              next false unless version > version_for_dependency(dep)
+            .find do |version_details|
+              version, details = version_details
+
+              next false unless !dependency_version || version > dependency_version
               next true unless details["peerDependencies"]
 
               details["peerDependencies"].all? do |peer_dep_name, req|
@@ -513,9 +640,10 @@ module Dependabot
                 false
               end
             end
-            &.first
+          version_with_detail.is_a?(Array) ? version_with_detail.first : version_with_detail
         end
 
+        sig { params(dep: Dependabot::Dependency).returns(T::Boolean) }
         def git_dependency?(dep)
           # ignored_version/raise_on_ignored are irrelevant.
           GitCommitChecker
@@ -523,22 +651,36 @@ module Dependabot
             .git_dependency?
         end
 
+        sig { returns(T::Array[T::Hash[Symbol, T.nilable(String)]]) }
         def newly_broken_peer_reqs_on_dep
           relevant_unmet_peer_dependencies
             .select { |dep| dep[:requirement_name] == dependency.name }
         end
 
+        sig { returns(T::Array[T::Hash[Symbol, T.nilable(String)]]) }
         def newly_broken_peer_reqs_from_dep
           relevant_unmet_peer_dependencies
             .select { |dep| dep[:requiring_dep_name] == dependency.name }
         end
 
+        sig do
+          params(
+            lockfiles: T::Array[Dependabot::DependencyFile],
+            path: String
+          ).returns(T::Array[Dependabot::DependencyFile])
+        end
         def lockfiles_for_path(lockfiles:, path:)
           lockfiles.select do |lockfile|
             File.dirname(lockfile.name) == File.dirname(path)
           end
         end
 
+        sig do
+          params(
+            path: String,
+            version: T.nilable(T.any(String, Gem::Version))
+          ).returns(T.nilable(T.any(T::Hash[String, T.untyped], String, T::Array[T::Hash[String, T.untyped]])))
+        end
         def run_checker(path:, version:)
           yarn_lockfiles = lockfiles_for_path(lockfiles: dependency_files_builder.yarn_locks, path: path)
           return run_yarn_checker(path: path, version: version, lockfile: yarn_lockfiles.first) if yarn_lockfiles.any?
@@ -549,23 +691,42 @@ module Dependabot
           npm_lockfiles = lockfiles_for_path(lockfiles: dependency_files_builder.package_locks, path: path)
           return run_npm_checker(path: path, version: version) if npm_lockfiles.any?
 
+          bun_lockfiles = lockfiles_for_path(lockfiles: dependency_files_builder.bun_locks, path: path)
+          return run_bun_checker(path: path, version: version) if bun_lockfiles.any?
+
           root_yarn_lock = dependency_files_builder.root_yarn_lock
           return run_yarn_checker(path: path, version: version, lockfile: root_yarn_lock) if root_yarn_lock
 
           root_pnpm_lock = dependency_files_builder.root_pnpm_lock
           return run_pnpm_checker(path: path, version: version) if root_pnpm_lock
 
+          root_bun_lock = dependency_files_builder.root_bun_lock
+          return run_bun_checker(path: path, version: version) if root_bun_lock
+
           run_npm_checker(path: path, version: version)
         rescue SharedHelpers::HelperSubprocessFailed => e
           handle_peer_dependency_errors(e.message)
         end
 
+        sig do
+          params(
+            path: String,
+            version: T.nilable(T.any(String, Gem::Version)),
+            lockfile: T.nilable(Dependabot::DependencyFile)
+          ).returns(T.untyped)
+        end
         def run_yarn_checker(path:, version:, lockfile:)
           return run_yarn_berry_checker(path: path, version: version) if Helpers.yarn_berry?(lockfile)
 
           run_yarn_classic_checker(path: path, version: version)
         end
 
+        sig do
+          params(
+            path: String,
+            version: T.nilable(T.any(String, Gem::Version))
+          ).returns(T.untyped)
+        end
         def run_pnpm_checker(path:, version:)
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
@@ -583,6 +744,29 @@ module Dependabot
           end
         end
 
+        sig do
+          params(
+            path: String,
+            version: T.nilable(T.any(String, Gem::Version))
+          ).returns(T.untyped)
+        end
+        def run_bun_checker(path:, version:)
+          SharedHelpers.with_git_configured(credentials: credentials) do
+            Dir.chdir(path) do
+              Helpers.run_bun_command(
+                "update #{dependency.name}@#{version} --save-text-lockfile",
+                fingerprint: "update <dependency_name>@<version> --save-text-lockfile"
+              )
+            end
+          end
+        end
+
+        sig do
+          params(
+            path: String,
+            version: T.nilable(T.any(String, Gem::Version))
+          ).returns(T.untyped)
+        end
         def run_yarn_berry_checker(path:, version:)
           # This method mimics calling a native helper in order to comply with the caller's expectations
           # Specifically we add the dependency at the specified updated version
@@ -604,6 +788,12 @@ module Dependabot
           end
         end
 
+        sig do
+          params(
+            path: String,
+            version: T.nilable(T.any(String, Gem::Version))
+          ).returns(T.nilable(T.any(T::Hash[String, T.untyped], String, T::Array[T::Hash[String, T.untyped]])))
+        end
         def run_yarn_classic_checker(path:, version:)
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
@@ -613,7 +803,7 @@ module Dependabot
                 args: [
                   Dir.pwd,
                   dependency.name,
-                  version,
+                  T.unsafe(version),
                   requirements_for_path(dependency.requirements, path)
                 ]
               )
@@ -621,6 +811,12 @@ module Dependabot
           end
         end
 
+        sig do
+          params(
+            path: String,
+            version: T.nilable(T.any(String, Gem::Version))
+          ).returns(T.nilable(T.any(T::Hash[String, T.untyped], String, T::Array[T::Hash[String, T.untyped]])))
+        end
         def run_npm_checker(path:, version:)
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
@@ -637,7 +833,7 @@ module Dependabot
                 args: [
                   Dir.pwd,
                   dependency.name,
-                  version,
+                  T.unsafe(version),
                   requirements_for_path(dependency.requirements, path),
                   top_level_dependencies.map(&:to_h)
                 ]
@@ -646,6 +842,11 @@ module Dependabot
           end
         end
 
+        sig do
+          params(
+            version: T.nilable(T.any(String, Gem::Version))
+          ).returns(T.nilable(T.any(T::Hash[String, T.untyped], String, T::Array[T::Hash[String, T.untyped]])))
+        end
         def run_npm8_checker(version:)
           cmd =
             "install #{version_install_arg(version: version)} --package-lock-only --dry-run=true --ignore-scripts"
@@ -658,6 +859,11 @@ module Dependabot
           raise if e.message.match?(NPM8_PEER_DEP_ERROR_REGEX)
         end
 
+        sig do
+          params(
+            version: T.nilable(T.any(String, Gem::Version))
+          ).returns(String)
+        end
         def version_install_arg(version:)
           git_source = dependency.requirements.find { |req| req[:source] && req[:source][:type] == "git" }
 
@@ -668,6 +874,12 @@ module Dependabot
           end
         end
 
+        sig do
+          params(
+            requirements: T::Array[T::Hash[Symbol, T.untyped]],
+            path: String
+          ).returns(T::Array[T::Hash[Symbol, T.untyped]])
+        end
         def requirements_for_path(requirements, path)
           return requirements if path.to_s == "."
 
@@ -681,31 +893,44 @@ module Dependabot
         # Top level dependencies are required in the peer dep checker
         # to fetch the manifests for all top level deps which may contain
         # "peerDependency" requirements
+        sig { returns(T::Array[Dependabot::Dependency]) }
         def top_level_dependencies
-          @top_level_dependencies ||= NpmAndYarn::FileParser.new(
+          return @top_level_dependencies if @top_level_dependencies
+
+          @top_level_dependencies = NpmAndYarn::FileParser.new(
             dependency_files: dependency_files,
             source: nil,
             credentials: credentials
           ).parse.select(&:top_level?)
+          @top_level_dependencies
         end
 
+        sig { returns(T::Array[String]) }
         def paths_requiring_update_check
-          @paths_requiring_update_check ||=
+          return @paths_requiring_update_check if @paths_requiring_update_check
+
+          @paths_requiring_update_check =
             DependencyFilesFilterer.new(
               dependency_files: dependency_files,
               updated_dependencies: [dependency]
             ).paths_requiring_update_check
+          @paths_requiring_update_check
         end
 
+        sig { returns(DependencyFilesBuilder) }
         def dependency_files_builder
-          @dependency_files_builder ||=
+          return @dependency_files_builder if @dependency_files_builder
+
+          @dependency_files_builder =
             DependencyFilesBuilder.new(
               dependency: dependency,
               dependency_files: dependency_files,
               credentials: credentials
             )
+          @dependency_files_builder
         end
 
+        sig { params(dep: Dependabot::Dependency).returns(T.nilable(T.any(String, Gem::Version))) }
         def version_for_dependency(dep)
           return version_class.new(dep.version) if dep.version && version_class.correct?(dep.version)
 
@@ -718,14 +943,17 @@ module Dependabot
              .max
         end
 
+        sig { returns(T.class_of(Dependabot::Version)) }
         def version_class
           dependency.version_class
         end
 
+        sig { returns(T.class_of(Dependabot::Requirement)) }
         def requirement_class
           dependency.requirement_class
         end
 
+        sig { returns(String) }
         def version_regex
           Dependabot::NpmAndYarn::Version::VERSION_PATTERN
         end

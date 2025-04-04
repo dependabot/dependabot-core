@@ -10,7 +10,7 @@ require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/file_updater"
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/native_helpers"
-require "dependabot/npm_and_yarn/update_checker/registry_finder"
+require "dependabot/npm_and_yarn/package/registry_finder"
 require "dependabot/shared_helpers"
 
 # rubocop:disable Metrics/ClassLength
@@ -669,7 +669,7 @@ module Dependabot
 
           raise_resolvability_error(error_message) unless missing_dep
 
-          reg = NpmAndYarn::UpdateChecker::RegistryFinder.new(
+          reg = Package::RegistryFinder.new(
             dependency: missing_dep,
             credentials: credentials,
             npmrc_file: dependency_files. find { |f| f.name.end_with?(".npmrc") },
@@ -677,7 +677,7 @@ module Dependabot
             yarnrc_yml_file: dependency_files.find { |f| f.name.end_with?(".yarnrc.yml") }
           ).registry
 
-          return if UpdateChecker::RegistryFinder.central_registry?(reg) && !package_name.start_with?("@")
+          return if Package::RegistryFinder.central_registry?(reg) && !package_name.start_with?("@")
 
           raise Dependabot::PrivateSourceAuthenticationFailure, reg
         end

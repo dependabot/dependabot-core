@@ -31,6 +31,25 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
     )
   end
 
+  # Variable to control the npm fallback version feature flag
+  let(:npm_fallback_version_above_v6_enabled) { true }
+
+  # Variable to control the enabling feature flag for the corepack fix
+  let(:enable_corepack_for_npm_and_yarn) { true }
+
+  before do
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:npm_fallback_version_above_v6).and_return(npm_fallback_version_above_v6_enabled)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_corepack_for_npm_and_yarn).and_return(enable_corepack_for_npm_and_yarn)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_shared_helpers_command_timeout).and_return(true)
+  end
+
+  after do
+    Dependabot::Experiments.reset!
+  end
+
   it_behaves_like "a dependency file parser"
 
   describe "parse" do
@@ -40,6 +59,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
       subject(:top_level_dependencies) { dependencies.select(&:top_level?) }
 
       context "with no lockfile" do
+        let(:npm_fallback_version_above_v6_enabled) { false }
+
         let(:files) { project_dependency_files("npm6/exact_version_requirements_no_lockfile") }
 
         its(:length) { is_expected.to eq(3) }
@@ -65,7 +86,15 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         its(:length) { is_expected.to eq(0) }
       end
 
+      context "with pnpm `catalog:` requirements and no lockfile" do
+        let(:files) { project_dependency_files("pnpm/workspace_requirements_catalog") }
+
+        its(:length) { is_expected.to eq(0) }
+      end
+
       context "with a package-lock.json" do
+        let(:npm_fallback_version_above_v6_enabled) { false }
+
         let(:files) { project_dependency_files("npm6/simple") }
 
         its(:length) { is_expected.to eq(2) }
@@ -92,6 +121,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         end
 
         context "with a blank requirement" do
+          let(:npm_fallback_version_above_v6_enabled) { false }
+
           let(:files) { project_dependency_files("npm6/blank_requirement") }
 
           describe "the first dependency" do
@@ -115,12 +146,16 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         end
 
         context "with an ignored hash requirement" do
+          let(:npm_fallback_version_above_v6_enabled) { false }
+
           let(:files) { project_dependency_files("npm6/hash_requirement") }
 
           its(:length) { is_expected.to eq(2) }
         end
 
         context "when containing an empty version string for a sub-dep" do
+          let(:npm_fallback_version_above_v6_enabled) { false }
+
           let(:files) { project_dependency_files("npm6/empty_version") }
 
           its(:length) { is_expected.to eq(2) }
@@ -129,12 +164,16 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         context "when containing a version requirement string" do
           subject { dependencies.find { |d| d.name == "etag" } }
 
+          let(:npm_fallback_version_above_v6_enabled) { false }
+
           let(:files) { project_dependency_files("npm6/invalid_version_requirement") }
 
           it { is_expected.to be_nil }
         end
 
         context "when containing URL versions (i.e., is from a bad version of npm)" do
+          let(:npm_fallback_version_above_v6_enabled) { false }
+
           let(:files) { project_dependency_files("npm6/url_versions") }
 
           its(:length) { is_expected.to eq(1) }
@@ -160,6 +199,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         end
 
         context "with only dev dependencies" do
+          let(:npm_fallback_version_above_v6_enabled) { false }
+
           let(:files) { project_dependency_files("npm6/only_dev_dependencies") }
 
           describe "the first dependency" do
@@ -183,6 +224,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         end
 
         context "when the dependency is specified as both dev and runtime" do
+          let(:npm_fallback_version_above_v6_enabled) { false }
+
           let(:files) { project_dependency_files("npm6/duplicate") }
 
           its(:length) { is_expected.to eq(1) }
@@ -213,6 +256,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         end
 
         context "with a private-source dependency" do
+          let(:npm_fallback_version_above_v6_enabled) { false }
+
           let(:files) { project_dependency_files("npm6/private_source") }
 
           its(:length) { is_expected.to eq(7) }
@@ -457,6 +502,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         end
 
         context "with an optional dependency" do
+          let(:npm_fallback_version_above_v6_enabled) { false }
+
           let(:files) { project_dependency_files("npm6/optional_dependencies") }
 
           its(:length) { is_expected.to eq(2) }
@@ -482,6 +529,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         end
 
         context "with a path-based dependency" do
+          let(:npm_fallback_version_above_v6_enabled) { false }
+
           let(:files) do
             project_dependency_files("npm6/path_dependency").tap do |files|
               file = files.find { |f| f.name == "deps/etag/package.json" }
@@ -496,6 +545,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         end
 
         context "with a git-url dependency" do
+          let(:npm_fallback_version_above_v6_enabled) { false }
+
           let(:files) { project_dependency_files("npm6/git_dependency") }
 
           its(:length) { is_expected.to eq(4) }
@@ -527,6 +578,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             end
 
             context "when the lockfile has a branch for the version" do
+              let(:npm_fallback_version_above_v6_enabled) { false }
+
               let(:files) { project_dependency_files("npm6/git_dependency_branch_version") }
 
               it "is excluded" do
@@ -538,6 +591,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         end
 
         context "with a github dependency" do
+          let(:npm_fallback_version_above_v6_enabled) { false }
+
           let(:files) { project_dependency_files("npm6/github_dependency") }
 
           its(:length) { is_expected.to eq(1) }
@@ -570,6 +625,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           end
 
           context "when specifying a semver requirement" do
+            let(:npm_fallback_version_above_v6_enabled) { false }
+
             let(:files) { project_dependency_files("npm6/github_dependency_semver") }
             let(:git_pack_fixture_name) { "is-number" }
 
@@ -638,6 +695,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           end
 
           context "when not specifying a reference" do
+            let(:npm_fallback_version_above_v6_enabled) { false }
+
             let(:files) { project_dependency_files("npm6/github_dependency_no_ref") }
 
             its(:length) { is_expected.to eq(1) }
@@ -671,6 +730,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           end
 
           context "when specifying with its shortname" do
+            let(:npm_fallback_version_above_v6_enabled) { false }
+
             let(:files) { project_dependency_files("npm6/github_shortname") }
 
             its(:length) { is_expected.to eq(1) }
@@ -705,6 +766,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         end
 
         context "with only a package.json" do
+          let(:npm_fallback_version_above_v6_enabled) { false }
+
           let(:project_name) { "npm6/simple" }
           let(:files) { project_dependency_files(project_name).select { |f| f.name == "package.json" } }
 
@@ -730,6 +793,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           end
 
           context "with a git dependency" do
+            let(:npm_fallback_version_above_v6_enabled) { false }
+
             let(:project_name) { "npm6/git_dependency" }
 
             its(:length) { is_expected.to eq(4) }
@@ -759,6 +824,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             end
 
             context "when the dependency also has a non-git source" do
+              let(:npm_fallback_version_above_v6_enabled) { false }
+
               let(:project_name) { "npm6/multiple_sources" }
 
               it "excludes the dependency" do
@@ -768,6 +835,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           end
 
           context "when it does flat resolution" do
+            let(:npm_fallback_version_above_v6_enabled) { false }
+
             let(:project_name) { "npm6/flat_resolution" }
 
             its(:length) { is_expected.to eq(0) }
@@ -794,7 +863,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                   requirement: "^0.0.1",
                   file: "package.json",
                   groups: ["dependencies"],
-                  source: { type: "registry", url: "https://registry.npmjs.org" }
+                  source: nil
                 }]
               )
             end
@@ -1119,6 +1188,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         end
 
         context "with a git dependency" do
+          let(:npm_fallback_version_above_v6_enabled) { false }
+
           let(:files) { project_dependency_files("npm6_and_yarn/git_dependency") }
 
           its(:length) { is_expected.to eq(4) }
@@ -1242,6 +1313,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             end
 
             context "when specified with https and a colon (supported by npm)" do
+              let(:npm_fallback_version_above_v6_enabled) { false }
+
               let(:files) { project_dependency_files("npm6/git_dependency_with_auth") }
 
               describe "the git dependency" do
@@ -1346,6 +1419,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         end
 
         context "with lerna.json" do
+          let(:npm_fallback_version_above_v6_enabled) { false }
+
           let(:files) { project_dependency_files("npm6_and_yarn/lerna") }
 
           its(:length) { is_expected.to eq(5) }
@@ -1464,6 +1539,78 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           end
         end
       end
+
+      context "with pnpm catalog protocol" do
+        let(:files) { project_dependency_files("pnpm/catalogs_all_examples") }
+
+        its(:length) { is_expected.to eq(6) }
+
+        it "parses the dependency" do
+          expect(top_level_dependencies.map(&:name)).to eq(%w(
+            react-icons
+            prettier
+            express
+            is-even
+            react
+            react-dom
+          ))
+        end
+
+        it "parses the dependency requirements" do
+          expected_dependencies = [
+            {
+              name: "react-icons",
+              version: "4.3.1",
+              requirements: [
+                { requirement: "4.3.1", file: "pnpm-workspace.yaml", groups: ["dependencies"], source: nil }
+              ]
+            },
+            {
+              name: "prettier",
+              version: "3.3.0",
+              requirements: [
+                { requirement: "3.3.0", file: "pnpm-workspace.yaml", groups: ["dependencies"], source: nil }
+              ]
+            },
+            {
+              name: "express",
+              version: "4.15.2",
+              requirements: [
+                { requirement: "4.15.2", file: "pnpm-workspace.yaml", groups: ["dependencies"], source: nil }
+              ]
+            },
+            {
+              name: "is-even",
+              version: "0.1.2",
+              requirements: [
+                { requirement: "0.1.2", file: "pnpm-workspace.yaml", groups: ["dependencies"], source: nil }
+              ]
+            },
+            {
+              name: "react",
+              version: "16.0.0",
+              requirements: [
+                { requirement: "^18.0.0", file: "pnpm-workspace.yaml", groups: ["dependencies"], source: nil },
+                { requirement: "16.0.0", file: "pnpm-workspace.yaml", groups: ["dependencies"], source: nil }
+              ]
+            },
+            {
+              name: "react-dom",
+              version: "18.0.0",
+              requirements: [
+                { requirement: "18.0.0", file: "pnpm-workspace.yaml", groups: ["dependencies"], source: nil },
+                { requirement: "^16.2.0", file: "pnpm-workspace.yaml", groups: ["dependencies"], source: nil }
+              ]
+            }
+          ]
+
+          expected_dependencies.each_with_index do |expected, index|
+            expect(dependencies[index].name).to eq(expected[:name])
+            expect(dependencies[index].version).to eq(expected[:version])
+            expect(dependencies[index].requirements).to eq(expected[:requirements])
+          end
+        end
+      end
     end
 
     describe "sub-dependencies" do
@@ -1482,6 +1629,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
       end
 
       context "with a package-lock.json" do
+        let(:npm_fallback_version_above_v6_enabled) { false }
+
         let(:files) { project_dependency_files("npm6/blank_requirement") }
 
         its(:length) { is_expected.to eq(22) }
@@ -1491,6 +1640,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
     context "with duplicate dependencies" do
       subject(:parsed_file) { parser.parse }
 
+      let(:npm_fallback_version_above_v6_enabled) { false }
       let(:files) { project_dependency_files("npm6_and_yarn/duplicate_dependency") }
 
       it "includes both registries" do

@@ -1,10 +1,12 @@
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Xml;
+using System.Xml.Linq;
 
 using Microsoft.Build.Construction;
 using Microsoft.Build.Definition;
@@ -13,12 +15,12 @@ using Microsoft.Build.Exceptions;
 using Microsoft.Build.Locator;
 using Microsoft.Extensions.FileSystemGlobbing;
 
-using NuGet;
 using NuGet.Configuration;
 using NuGet.Frameworks;
 using NuGet.Versioning;
 
 using NuGetUpdater.Core.Analyze;
+using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Utilities;
 
 namespace NuGetUpdater.Core;
@@ -29,28 +31,46 @@ internal static partial class MSBuildHelper
 
     public static bool IsMSBuildRegistered => MSBuildPath.Length > 0;
 
+    public static string GetFileFromRuntimeDirectory(string fileName) => Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, fileName);
+
     public static void RegisterMSBuild(string currentDirectory, string rootDirectory)
     {
         // Ensure MSBuild types are registered before calling a method that loads the types
         if (!IsMSBuildRegistered)
         {
-            SidelineGlobalJsonAsync(currentDirectory, rootDirectory, () =>
+            var experimentsManager = new ExperimentsManager() { InstallDotnetSdks = false }; // `global.json` definitely needs to be moved for this operation
+            HandleGlobalJsonAsync(currentDirectory, rootDirectory, experimentsManager, () =>
             {
                 var defaultInstance = MSBuildLocator.QueryVisualStudioInstances().First();
                 MSBuildPath = defaultInstance.MSBuildPath;
                 MSBuildLocator.RegisterInstance(defaultInstance);
-                return Task.CompletedTask;
+                return Task.FromResult(0);
             }).Wait();
         }
     }
 
-    public static async Task SidelineGlobalJsonAsync(string currentDirectory, string rootDirectory, Func<Task> action, bool retainMSBuildSdks = false)
+    public static async Task<T> HandleGlobalJsonAsync<T>(
+        string currentDirectory,
+        string rootDirectory,
+        ExperimentsManager experimentsManager,
+        Func<Task<T>> action,
+        ILogger? logger = null,
+        bool retainMSBuildSdks = false
+    )
     {
+        logger ??= new ConsoleLogger();
+        if (experimentsManager.InstallDotnetSdks)
+        {
+            logger.Info($"{nameof(ExperimentsManager.InstallDotnetSdks)} == true; retaining `global.json` contents.");
+            var result = await action();
+            return result;
+        }
+
         var candidateDirectories = PathHelper.GetAllDirectoriesToRoot(currentDirectory, rootDirectory);
         var globalJsonPaths = candidateDirectories.Select(d => Path.Combine(d, "global.json")).Where(File.Exists).Select(p => (p, p + Guid.NewGuid().ToString())).ToArray();
         foreach (var (globalJsonPath, tempGlobalJsonPath) in globalJsonPaths)
         {
-            Console.WriteLine($"Temporarily removing `global.json` from `{Path.GetDirectoryName(globalJsonPath)}`{(retainMSBuildSdks ? " and retaining MSBuild SDK declarations" : string.Empty)}.");
+            logger.Info($"Temporarily removing `global.json` from `{Path.GetDirectoryName(globalJsonPath)}`{(retainMSBuildSdks ? " and retaining MSBuild SDK declarations" : string.Empty)}.");
             File.Move(globalJsonPath, tempGlobalJsonPath);
             if (retainMSBuildSdks)
             {
@@ -72,13 +92,14 @@ internal static partial class MSBuildHelper
 
         try
         {
-            await action();
+            var result = await action();
+            return result;
         }
         finally
         {
             foreach (var (globalJsonpath, tempGlobalJsonPath) in globalJsonPaths)
             {
-                Console.WriteLine($"Restoring `global.json` to `{Path.GetDirectoryName(globalJsonpath)}`.");
+                logger.Info($"Restoring `global.json` to `{Path.GetDirectoryName(globalJsonpath)}`.");
                 File.Move(tempGlobalJsonPath, globalJsonpath, overwrite: retainMSBuildSdks);
             }
         }
@@ -260,7 +281,11 @@ internal static partial class MSBuildHelper
                 ? evaluationResult.EvaluatedValue.TrimStart('[', '(').TrimEnd(']', ')')
                 : evaluationResult.EvaluatedValue;
 
-            yield return new Dependency(name, packageVersion, dependencyType, EvaluationResult: evaluationResult, IsUpdate: isUpdate);
+            // If at this point we have a semicolon in the name then split it and yield multiple dependencies.
+            foreach (var splitName in name.Split(';', StringSplitOptions.RemoveEmptyEntries))
+            {
+                yield return new Dependency(splitName.Trim(), packageVersion, dependencyType, EvaluationResult: evaluationResult, IsUpdate: isUpdate);
+            }
         }
     }
 
@@ -316,13 +341,13 @@ internal static partial class MSBuildHelper
         return false;
     }
 
-    internal static async Task<bool> DependenciesAreCoherentAsync(string repoRoot, string projectPath, string targetFramework, Dependency[] packages, Logger logger)
+    internal static async Task<bool> DependenciesAreCoherentAsync(string repoRoot, string projectPath, string targetFramework, ImmutableArray<Dependency> packages, ExperimentsManager experimentsManager, ILogger logger)
     {
         var tempDirectory = Directory.CreateTempSubdirectory("package-dependency-coherence_");
         try
         {
-            var tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages);
-            var (exitCode, stdOut, stdErr) = await ProcessEx.RunAsync("dotnet", ["restore", tempProjectPath], workingDirectory: tempDirectory.FullName);
+            var tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages, experimentsManager, logger);
+            var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(["restore", tempProjectPath], tempDirectory.FullName, experimentsManager);
 
             // NU1608: Detected package version outside of dependency constraint
 
@@ -334,32 +359,15 @@ internal static partial class MSBuildHelper
         }
     }
 
-    internal static bool UseNewDependencySolver()
-    {
-        return Environment.GetEnvironmentVariable("UseNewNugetPackageResolver") == "true";
-    }
-
-    internal static async Task<Dependency[]?> ResolveDependencyConflicts(string repoRoot, string projectPath, string targetFramework, Dependency[] packages, Dependency[] update, Logger logger)
-    {
-        if (UseNewDependencySolver())
-        {
-            return await ResolveDependencyConflictsNew(repoRoot, projectPath, targetFramework, packages, update, logger);
-        }
-        else
-        {
-            return await ResolveDependencyConflictsOld(repoRoot, projectPath, targetFramework, packages, logger);
-        }
-    }
-
-    internal static async Task<Dependency[]?> ResolveDependencyConflictsNew(string repoRoot, string projectPath, string targetFramework, Dependency[] packages, Dependency[] update, Logger logger)
+    internal static async Task<ImmutableArray<Dependency>?> ResolveDependencyConflicts(string repoRoot, string projectPath, string targetFramework, ImmutableArray<Dependency> packages, ImmutableArray<Dependency> update, ExperimentsManager experimentsManager, ILogger logger)
     {
         var tempDirectory = Directory.CreateTempSubdirectory("package-dependency-coherence_");
         PackageManager packageManager = new PackageManager(repoRoot, projectPath);
 
         try
         {
-            string tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages);
-            var (exitCode, stdOut, stdErr) = await ProcessEx.RunAsync("dotnet", ["restore", tempProjectPath], workingDirectory: tempDirectory.FullName);
+            string tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages, experimentsManager, logger);
+            var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(["restore", tempProjectPath], tempDirectory.FullName, experimentsManager);
 
             // Add Dependency[] packages to List<PackageToUpdate> existingPackages
             List<PackageToUpdate> existingPackages = packages
@@ -409,15 +417,15 @@ internal static partial class MSBuildHelper
             if (added == true)
             {
                 // Add existing versions to existing list
-                packageManager.UpdateExistingPackagesWithNewVersions(existingDuplicate, packagesToUpdate);
+                packageManager.UpdateExistingPackagesWithNewVersions(existingDuplicate, packagesToUpdate, logger);
 
                 // Make relationships
-                await packageManager.PopulatePackageDependenciesAsync(existingDuplicate, targetFramework, Path.GetDirectoryName(projectPath));
+                await packageManager.PopulatePackageDependenciesAsync(existingDuplicate, targetFramework, Path.GetDirectoryName(projectPath), logger);
 
                 // Update all to new versions
                 foreach (var package in existingDuplicate)
                 {
-                    string updateResult = await packageManager.UpdateVersion(existingDuplicate, package, targetFramework, Path.GetDirectoryName(projectPath));
+                    string updateResult = await packageManager.UpdateVersion(existingDuplicate, package, targetFramework, Path.GetDirectoryName(projectPath), logger);
                 }
             }
 
@@ -425,15 +433,15 @@ internal static partial class MSBuildHelper
             else
             {
                 // Add existing versions to existing list
-                packageManager.UpdateExistingPackagesWithNewVersions(existingPackages, packagesToUpdate);
+                packageManager.UpdateExistingPackagesWithNewVersions(existingPackages, packagesToUpdate, logger);
 
                 // Make relationships
-                await packageManager.PopulatePackageDependenciesAsync(existingPackages, targetFramework, Path.GetDirectoryName(projectPath));
+                await packageManager.PopulatePackageDependenciesAsync(existingPackages, targetFramework, Path.GetDirectoryName(projectPath), logger);
 
                 // Update all to new versions
                 foreach (var package in existingPackages)
                 {
-                    string updateResult = await packageManager.UpdateVersion(existingPackages, package, targetFramework, Path.GetDirectoryName(projectPath));
+                    string updateResult = await packageManager.UpdateVersion(existingPackages, package, targetFramework, Path.GetDirectoryName(projectPath), logger);
                 }
             }
 
@@ -469,7 +477,7 @@ internal static partial class MSBuildHelper
             .ToList();
 
             // Return as array
-            Dependency[] candidatePackagesArray = candidatePackages.ToArray();
+            var candidatePackagesArray = candidatePackages.ToImmutableArray();
 
             var targetFrameworks = new NuGetFramework[] { NuGetFramework.Parse(targetFramework) };
 
@@ -509,13 +517,13 @@ internal static partial class MSBuildHelper
         }
     }
 
-    internal static async Task<Dependency[]?> ResolveDependencyConflictsOld(string repoRoot, string projectPath, string targetFramework, Dependency[] packages, Logger logger)
+    internal static async Task<ImmutableArray<Dependency>?> ResolveDependencyConflictsWithBruteForce(string repoRoot, string projectPath, string targetFramework, ImmutableArray<Dependency> packages, ExperimentsManager experimentsManager, ILogger logger)
     {
         var tempDirectory = Directory.CreateTempSubdirectory("package-dependency-coherence_");
         try
         {
-            var tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages);
-            var (exitCode, stdOut, stdErr) = await ProcessEx.RunAsync("dotnet", ["restore", tempProjectPath], workingDirectory: tempDirectory.FullName);
+            var tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages, experimentsManager, logger);
+            var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(["restore", tempProjectPath], tempDirectory.FullName, experimentsManager);
             ThrowOnUnauthenticatedFeed(stdOut);
 
             // simple cases first
@@ -540,6 +548,7 @@ internal static partial class MSBuildHelper
             foreach ((string PackageName, NuGetVersion packageVersion) in badPackagesAndVersions)
             {
                 // this command dumps a JSON object with all versions of the specified package from all package sources
+                // not using the `dotnet` execution method because we want to force the latest MSBuild and SDK to be used
                 (exitCode, stdOut, stdErr) = await ProcessEx.RunAsync("dotnet", ["package", "search", PackageName, "--exact-match", "--format", "json"], workingDirectory: tempDirectory.FullName);
                 if (exitCode != 0)
                 {
@@ -590,7 +599,7 @@ internal static partial class MSBuildHelper
             {
                 // rebuild candidate dependency list with the relevant versions
                 Dictionary<string, NuGetVersion> packageVersions = candidateSet.ToDictionary(candidateSet => candidateSet.PackageName, candidateSet => candidateSet.PackageVersion);
-                Dependency[] candidatePackages = packages.Select(p =>
+                var candidatePackages = packages.Select(p =>
                 {
                     if (packageVersions.TryGetValue(p.Name, out var version))
                     {
@@ -600,9 +609,9 @@ internal static partial class MSBuildHelper
 
                     // not the dependency we're looking for, use whatever it already was in this set
                     return p;
-                }).ToArray();
+                }).ToImmutableArray();
 
-                if (await DependenciesAreCoherentAsync(repoRoot, projectPath, targetFramework, candidatePackages, logger))
+                if (await DependenciesAreCoherentAsync(repoRoot, projectPath, targetFramework, candidatePackages, experimentsManager, logger))
                 {
                     // return as soon as we find a coherent set
                     return candidatePackages;
@@ -638,7 +647,7 @@ internal static partial class MSBuildHelper
         return projectRoot;
     }
 
-    private static IEnumerable<PackageSource>? LoadPackageSources(string nugetConfigPath)
+    private static IEnumerable<PackageSource>? LoadPackageSources(string nugetConfigPath, ILogger logger)
     {
         try
         {
@@ -649,25 +658,61 @@ internal static partial class MSBuildHelper
         }
         catch (NuGetConfigurationException ex)
         {
-            Console.WriteLine("Error while parsing NuGet.config");
-            Console.WriteLine(ex.Message);
+            logger.Warn("Error while parsing NuGet.config");
+            logger.Warn(ex.Message);
 
             // Nuget.config is invalid. Won't be able to do anything with specific sources.
             return null;
         }
     }
 
-    internal static async Task<string> CreateTempProjectAsync(
+    internal static Task<string> CreateTempProjectAsync(
         DirectoryInfo tempDir,
         string repoRoot,
         string projectPath,
         string targetFramework,
         IReadOnlyCollection<Dependency> packages,
-        bool usePackageDownload = false)
+        ExperimentsManager experimentsManager,
+        ILogger logger,
+        bool usePackageDownload = false,
+        bool importDependencyTargets = true
+    ) => CreateTempProjectAsync(tempDir, repoRoot, projectPath, new XElement("TargetFramework", targetFramework), packages, experimentsManager, logger, usePackageDownload, importDependencyTargets);
+
+    internal static Task<string> CreateTempProjectAsync(
+        DirectoryInfo tempDir,
+        string repoRoot,
+        string projectPath,
+        ImmutableArray<string> targetFrameworks,
+        IReadOnlyCollection<Dependency> packages,
+        ExperimentsManager experimentsManager,
+        ILogger logger,
+        bool usePackageDownload = false,
+        bool importDependencyTargets = true
+    ) => CreateTempProjectAsync(tempDir, repoRoot, projectPath, new XElement("TargetFrameworks", string.Join(";", targetFrameworks)), packages, experimentsManager, logger, usePackageDownload, importDependencyTargets);
+
+    private static async Task<string> CreateTempProjectAsync(
+        DirectoryInfo tempDir,
+        string repoRoot,
+        string projectPath,
+        XElement targetFrameworkElement,
+        IReadOnlyCollection<Dependency> packages,
+        ExperimentsManager experimentsManager,
+        ILogger logger,
+        bool usePackageDownload,
+        bool importDependencyTargets)
     {
         var projectDirectory = Path.GetDirectoryName(projectPath);
         projectDirectory ??= repoRoot;
-        var topLevelFiles = Directory.GetFiles(repoRoot);
+
+        if (experimentsManager.InstallDotnetSdks)
+        {
+            var globalJsonPath = PathHelper.GetFileInDirectoryOrParent(projectPath, repoRoot, "global.json", caseSensitive: true);
+            if (globalJsonPath is not null)
+            {
+                File.Copy(globalJsonPath, Path.Combine(tempDir.FullName, "global.json"));
+            }
+        }
+
         var nugetConfigPath = PathHelper.GetFileInDirectoryOrParent(projectPath, repoRoot, "NuGet.Config", caseSensitive: false);
         if (nugetConfigPath is not null)
         {
@@ -675,7 +720,7 @@ internal static partial class MSBuildHelper
             File.Copy(nugetConfigPath, Path.Combine(tempDir.FullName, "NuGet.Config"));
             var nugetConfigDir = Path.GetDirectoryName(nugetConfigPath);
 
-            var packageSources = LoadPackageSources(nugetConfigPath);
+            var packageSources = LoadPackageSources(nugetConfigPath, logger);
             if (packageSources is not null)
             {
                 // We need to copy local package sources from the NuGet.Config file to the temp directory
@@ -703,16 +748,18 @@ internal static partial class MSBuildHelper
                 // empty `Version` attributes will cause the temporary project to not build
                 .Where(p => (p.EvaluationResult is null || p.EvaluationResult.ResultType == EvaluationResultType.Success) && !string.IsNullOrWhiteSpace(p.Version))
                 // If all PackageReferences for a package are update-only mark it as such, otherwise it can cause package incoherence errors which do not exist in the repo.
-                .Select(p => $"<{(usePackageDownload ? "PackageDownload" : "PackageReference")} {(p.IsUpdate ? "Update" : "Include")}=\"{p.Name}\" Version=\"[{p.Version}]\" />"));
+                .Select(p => $"<{(usePackageDownload ? "PackageDownload" : "PackageReference")} {(p.IsUpdate ? "Update" : "Include")}=\"{p.Name}\" Version=\"{(p.Version!.Contains("*") ? p.Version : $"[{p.Version}]")}\" />"));
+
+        var dependencyTargetsImport = importDependencyTargets
+            ? $"""<Import Project="{GetFileFromRuntimeDirectory("DependencyDiscovery.targets")}" />"""
+            : string.Empty;
 
         var projectContents = $"""
             <Project Sdk="Microsoft.NET.Sdk">
               <PropertyGroup>
-                <TargetFramework>{targetFramework}</TargetFramework>
-                <GenerateDependencyFile>true</GenerateDependencyFile>
-                <RunAnalyzers>false</RunAnalyzers>
-                <NuGetInteractive>false</NuGetInteractive>
+                {targetFrameworkElement}
               </PropertyGroup>
+              {dependencyTargetsImport}
               <ItemGroup>
                 {packageReferences}
               </ItemGroup>
@@ -744,8 +791,6 @@ internal static partial class MSBuildHelper
             """
             <Project>
               <PropertyGroup>
-                <!-- For Windows-specific apps -->
-                <EnableWindowsTargeting>true</EnableWindowsTargeting>
                 <!-- Really ensure CPM is disabled -->
                 <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
               </PropertyGroup>
@@ -757,45 +802,137 @@ internal static partial class MSBuildHelper
         return tempProjectPath;
     }
 
-    internal static async Task<Dependency[]> GetAllPackageDependenciesAsync(
+    internal static async Task<ImmutableArray<string>> GetTargetFrameworkValuesFromProject(string repoRoot, string projectPath, ExperimentsManager experimentsManager, ILogger logger)
+    {
+        var projectDirectory = Path.GetDirectoryName(projectPath)!;
+        var (exitCode, stdOut, stdErr) = await HandleGlobalJsonAsync(projectDirectory, repoRoot, experimentsManager, async () =>
+        {
+            var targetsHelperPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, "TargetFrameworkReporter.targets");
+            var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(
+                [
+                    "msbuild",
+                    projectPath,
+                    "/t:ReportTargetFramework",
+                    $"/p:CustomAfterMicrosoftCommonCrossTargetingTargets={targetsHelperPath}",
+                    $"/p:CustomAfterMicrosoftCommonTargets={targetsHelperPath}",
+                ],
+                projectDirectory,
+                experimentsManager
+            );
+            return (exitCode, stdOut, stdErr);
+        });
+        ThrowOnError(stdOut);
+        if (exitCode != 0)
+        {
+            logger.Warn($"Error determining target frameworks.\nSTDOUT:\n{stdOut}\nSTDERR:\n{stdErr}");
+        }
+
+        // There are 2 possible return values:
+        //   1. For SDK-style projects with a single TFM and legacy projects the output will look like:
+        //      ProjectData::TargetFrameworkMoniker=.NETCoreApp,Version=8.0;ProjectData::TargetPlatformMoniker=Windows,Version=7.0
+        //   2. For SDK-style projects with multiple TFMs the output will look like:
+        //      ProjectData::TargetFrameworks=net8.0;net9.0
+        var listedTargetFrameworks = new List<ValueTuple<string, string>>();
+        var listedTfmMatch = Regex.Match(stdOut, "ProjectData::TargetFrameworks=(?<TargetFrameworks>.*)$", RegexOptions.Multiline);
+        if (listedTfmMatch.Success)
+        {
+            var value = listedTfmMatch.Groups["TargetFrameworks"].Value;
+            var foundTfms = value.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(tfm => ValueTuple.Create(tfm, string.Empty))
+                .ToArray();
+            listedTargetFrameworks.AddRange(foundTfms);
+        }
+
+        var individualTfmMatch = Regex.Match(stdOut, "ProjectData::TargetFrameworkMoniker=(?<TargetFrameworkMoniker>[^;]*);ProjectData::TargetPlatformMoniker=(?<TargetPlatformMoniker>.*)$", RegexOptions.Multiline);
+        if (individualTfmMatch.Success)
+        {
+            var tfm = individualTfmMatch.Groups["TargetFrameworkMoniker"].Value;
+            var tpm = individualTfmMatch.Groups["TargetPlatformMoniker"].Value;
+            listedTargetFrameworks.Add(ValueTuple.Create(tfm, tpm));
+        }
+
+        var tfms = listedTargetFrameworks.Select(tfpm =>
+            {
+                try
+                {
+                    // Item2 is an optional component that looks like: "Windows,Version=7.0"
+                    var framework = string.IsNullOrWhiteSpace(tfpm.Item2)
+                        ? NuGetFramework.Parse(tfpm.Item1)
+                        : NuGetFramework.ParseComponents(tfpm.Item1, tfpm.Item2);
+                    if (framework.Framework == "_")
+                    {
+                        // error/default value
+                        return null;
+                    }
+
+                    return framework;
+                }
+                catch
+                {
+                    return null;
+                }
+            })
+            .Where(tfm => tfm is not null)
+            .Select(tfm => tfm!.GetShortFolderName())
+            .OrderBy(tfm => tfm)
+            .ToImmutableArray();
+
+        return tfms;
+    }
+
+    internal static async Task<ImmutableArray<Dependency>> GetAllPackageDependenciesAsync(
         string repoRoot,
         string projectPath,
         string targetFramework,
         IReadOnlyCollection<Dependency> packages,
-        Logger? logger = null)
+        ExperimentsManager experimentsManager,
+        ILogger logger
+    )
     {
         var tempDirectory = Directory.CreateTempSubdirectory("package-dependency-resolution_");
         try
         {
             var topLevelPackagesNames = packages.Select(p => p.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
-            var tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages);
+            var tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages, experimentsManager, logger, importDependencyTargets: !experimentsManager.UseDirectDiscovery);
 
-            var (exitCode, stdout, stderr) = await ProcessEx.RunAsync("dotnet", ["build", tempProjectPath, "/t:_ReportDependencies"], workingDirectory: tempDirectory.FullName);
-            ThrowOnUnauthenticatedFeed(stdout);
-
-            if (exitCode == 0)
+            ImmutableArray<Dependency> allDependencies;
+            if (experimentsManager.UseDirectDiscovery)
             {
-                ImmutableArray<string> tfms = [targetFramework];
-                var lines = stdout.Split('\n').Select(line => line.Trim());
-                var pattern = PackagePattern();
-                var allDependencies = lines
-                    .Select(line => pattern.Match(line))
-                    .Where(match => match.Success)
-                    .Select(match =>
-                    {
-                        var PackageName = match.Groups["PackageName"].Value;
-                        var isTransitive = !topLevelPackagesNames.Contains(PackageName);
-                        return new Dependency(PackageName, match.Groups["PackageVersion"].Value, DependencyType.Unknown, TargetFrameworks: tfms, IsTransitive: isTransitive);
-                    })
-                    .ToArray();
-
-                return allDependencies;
+                var projectDiscovery = await SdkProjectDiscovery.DiscoverAsync(repoRoot, tempDirectory.FullName, tempProjectPath, experimentsManager, logger);
+                allDependencies = projectDiscovery
+                    .Where(p => p.FilePath == Path.GetFileName(tempProjectPath))
+                    .FirstOrDefault()
+                    ?.Dependencies.ToImmutableArray() ?? [];
             }
             else
             {
-                logger?.Log($"dotnet build in {nameof(GetAllPackageDependenciesAsync)} failed. STDOUT: {stdout} STDERR: {stderr}");
-                return [];
+                var (exitCode, stdout, stderr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(["build", tempProjectPath, "/t:_ReportDependencies"], tempDirectory.FullName, experimentsManager);
+                ThrowOnUnauthenticatedFeed(stdout);
+
+                if (exitCode == 0)
+                {
+                    ImmutableArray<string> tfms = [targetFramework];
+                    var lines = stdout.Split('\n').Select(line => line.Trim());
+                    var pattern = PackagePattern();
+                    allDependencies = lines
+                        .Select(line => pattern.Match(line))
+                        .Where(match => match.Success)
+                        .Select(match =>
+                        {
+                            var PackageName = match.Groups["PackageName"].Value;
+                            var isTransitive = !topLevelPackagesNames.Contains(PackageName);
+                            return new Dependency(PackageName, match.Groups["PackageVersion"].Value, DependencyType.Unknown, TargetFrameworks: tfms, IsTransitive: isTransitive);
+                        })
+                        .ToImmutableArray();
+                }
+                else
+                {
+                    logger?.Warn($"dotnet build in {nameof(GetAllPackageDependenciesAsync)} failed. STDOUT: {stdout} STDERR: {stderr}");
+                    allDependencies = [];
+                }
             }
+
+            return allDependencies;
         }
         finally
         {
@@ -809,13 +946,40 @@ internal static partial class MSBuildHelper
         }
     }
 
-    internal static void ThrowOnUnauthenticatedFeed(string stdout)
+    internal static string? GetMissingFile(string output)
+    {
+        var missingFilePatterns = new[]
+        {
+            new Regex(@"The imported project \""(?<FilePath>.*)\"" was not found"),
+            new Regex(@"The imported file \""(?<FilePath>.*)\"" does not exist"),
+        };
+        var match = missingFilePatterns.Select(p => p.Match(output)).Where(m => m.Success).FirstOrDefault();
+        if (match is not null)
+        {
+            return match.Groups["FilePath"].Value;
+        }
+
+        return null;
+    }
+
+    internal static void ThrowOnError(string output)
+    {
+        ThrowOnUnauthenticatedFeed(output);
+        ThrowOnMissingFile(output);
+        ThrowOnMissingPackages(output);
+        ThrowOnUpdateNotPossible(output);
+        ThrowOnRateLimitExceeded(output);
+        ThrowOnServiceUnavailable(output);
+    }
+
+    private static void ThrowOnUnauthenticatedFeed(string stdout)
     {
         var unauthorizedMessageSnippets = new string[]
         {
             "The plugin credential provider could not acquire credentials",
             "401 (Unauthorized)",
             "error NU1301: Unable to load the service index for source",
+            "Response status code does not indicate success: 403",
         };
         if (unauthorizedMessageSnippets.Any(stdout.Contains))
         {
@@ -823,24 +987,72 @@ internal static partial class MSBuildHelper
         }
     }
 
-    internal static void ThrowOnMissingFile(string output)
+    private static void ThrowOnRateLimitExceeded(string stdout)
     {
-        var missingFilePattern = new Regex(@"The imported project \""(?<FilePath>.*)\"" was not found");
-        var match = missingFilePattern.Match(output);
-        if (match.Success)
+        var rateLimitMessageSnippets = new string[]
         {
-            throw new MissingFileException(match.Groups["FilePath"].Value);
+            "Response status code does not indicate success: 429",
+            "429 (Too Many Requests)",
+        };
+        if (rateLimitMessageSnippets.Any(stdout.Contains))
+        {
+            throw new HttpRequestException(message: stdout, inner: null, statusCode: System.Net.HttpStatusCode.TooManyRequests);
         }
     }
 
-    internal static void ThrowOnMissingPackages(string output)
+    private static void ThrowOnServiceUnavailable(string stdout)
     {
-        var missingPackagesPattern = new Regex(@"Package '(?<PackageName>[^'].*)' is not found on source");
-        var matchCollection = missingPackagesPattern.Matches(output);
-        var missingPackages = matchCollection.Select(m => m.Groups["PackageName"].Value).Distinct().ToArray();
-        if (missingPackages.Length > 0)
+        var serviceUnavailableMessageSnippets = new string[]
         {
-            throw new UpdateNotPossibleException(missingPackages);
+            "503 (Service Unavailable)",
+            "Response status code does not indicate success: 503",
+        };
+        if (serviceUnavailableMessageSnippets.Any(stdout.Contains))
+        {
+            throw new HttpRequestException(message: stdout, inner: null, statusCode: System.Net.HttpStatusCode.ServiceUnavailable);
+        }
+    }
+
+    private static void ThrowOnMissingFile(string output)
+    {
+        var missingFile = GetMissingFile(output);
+        if (missingFile is not null)
+        {
+            throw new MissingFileException(missingFile);
+        }
+    }
+
+    private static void ThrowOnMissingPackages(string output)
+    {
+        var patterns = new[]
+        {
+            new Regex(@"Package '(?<PackageName>[^']*)' is not found on source '(?<PackageSource>[^$\r\n]*)'\."),
+            new Regex(@"Unable to find package (?<PackageName>[^ ]+)\. No packages exist with this id in source\(s\): (?<PackageSource>.*)$", RegexOptions.Multiline),
+            new Regex(@"Unable to find package (?<PackageName>[^ ]+) with version \((?<PackageVersion>[^)]+)\)"),
+            new Regex(@"Could not resolve SDK ""(?<PackageName>[^ ]+)""\."),
+        };
+        var matches = patterns.Select(p => p.Match(output)).Where(m => m.Success);
+        if (matches.Any())
+        {
+            var packages = matches.Select(m => m.Groups["PackageName"].Value).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+            throw new DependencyNotFoundException(packages);
+        }
+    }
+
+    private static void ThrowOnUpdateNotPossible(string output)
+    {
+        var patterns = new[]
+        {
+            new Regex(@"Unable to resolve dependencies\. '(?<PackageName>[^ ]+) (?<PackageVersion>[^']+)'"),
+            new Regex(@"Could not install package '(?<PackageName>[^ ]+) (?<PackageVersion>[^']+)'. You are trying to install this package"),
+            new Regex(@"Unable to find a version of '[^']+' that is compatible with '[^ ]+ [^ ]+ constraint: (?<PackageName>[^ ]+) \([^ ]+ (?<PackageVersion>[^)]+)\)'"),
+            new Regex(@"the following error\(s\) may be blocking the current package operation: '(?<PackageName>[^ ]+) (?<PackageVersion>[^ ]+) constraint:"),
+        };
+        var matches = patterns.Select(p => p.Match(output)).Where(m => m.Success);
+        if (matches.Any())
+        {
+            var packages = matches.Select(m => $"{m.Groups["PackageName"].Value}.{m.Groups["PackageVersion"].Value}").Distinct().ToArray();
+            throw new UpdateNotPossibleException(packages);
         }
     }
 

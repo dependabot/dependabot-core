@@ -114,12 +114,12 @@ module Dependabot
 
       sig { returns(T::Array[DependencyFile]) }
       def updated_pip_compile_based_files
-        PipCompileFileUpdater.new(
+        T.must(PipCompileFileUpdater.new(
           dependencies: dependencies,
           dependency_files: dependency_files,
           credentials: credentials,
           index_urls: pip_compile_index_urls
-        ).updated_dependency_files
+        ).updated_dependency_files)
       end
 
       sig { returns(T::Array[DependencyFile]) }

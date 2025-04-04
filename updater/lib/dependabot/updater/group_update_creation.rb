@@ -241,9 +241,6 @@ module Dependabot
           return []
         end
 
-        # Raise an error if the package manager version is unsupported
-        dependency_snapshot.package_manager&.raise_if_unsupported!
-
         checker.updated_dependencies(
           requirements_to_unlock: requirements_to_unlock
         )
@@ -296,6 +293,7 @@ module Dependabot
           raise_on_ignored: raise_on_ignored,
           requirements_update_strategy: job.requirements_update_strategy,
           dependency_group: dependency_group,
+          update_cooldown: job.cooldown,
           options: job.experiments
         )
       end

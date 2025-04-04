@@ -2,25 +2,34 @@ FROM ghcr.io/dependabot/dependabot-updater-core
 RUN apt-get update \
   && apt-get upgrade -y \
   && apt-get install -y --no-install-recommends \
-    gnupg2
+    gnupg2 sudo curl apt-transport-https
 
-# Install Erlang
-# Note: Currently we install from Ubuntu PPA to unblock upgrading to Ubuntu 22.04, but we'd be happy to accept a PR
-# switching to a more up to date PPA. See also:
-#  * https://github.com/esl/packages/issues/15
-#  * https://github.com/dependabot/dependabot-core/pull/7865
-#  * https://erlangforums.com/t/erlang-solutions-apt-package-for-otp-25/1552/1
-#  * https://erlangforums.com/t/the-eef-is-looking-for-volunteers-to-take-over-esls-build-packages/2238/1
-ARG ERLANG_MAJOR_VERSION=24
-ARG ERLANG_VERSION=1:${ERLANG_MAJOR_VERSION}.2.1+dfsg-1ubuntu0.1
+ARG ERLANG_MAJOR_VERSION=26
+
+# This is using https://www.rabbitmq.com/docs/install-debian#apt-launchpad-erlang to install erlang. Previously, esl-erlang was used, but it does not
+# contain arm architecture packages. The base `apt` erlang version should not be used--it is too old.
+
+# primary RabbitMQ signing key
+RUN curl -1sLf "https://github.com/rabbitmq/signing-keys/releases/download/3.0/rabbitmq-release-signing-key.asc" | sudo gpg --dearmor | sudo tee /usr/share/keyrings/com.github.rabbitmq.signing.gpg > /dev/null
+
+# Launchpad PPA signing key for apt
+RUN curl -1sLf "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xf77f1eda57ebb1cc" | sudo gpg --dearmor | sudo tee /usr/share/keyrings/net.launchpad.ppa.rabbitmq.erlang.gpg > /dev/null
+
+RUN echo "deb [signed-by=/usr/share/keyrings/net.launchpad.ppa.rabbitmq.erlang.gpg] https://ppa.launchpadcontent.net/rabbitmq/rabbitmq-erlang-${ERLANG_MAJOR_VERSION}/ubuntu jammy main" >> /etc/apt/sources.list
+RUN echo "deb-src [signed-by=/usr/share/keyrings/net.launchpad.ppa.rabbitmq.erlang.gpg] https://ppa.launchpadcontent.net/rabbitmq/rabbitmq-erlang-${ERLANG_MAJOR_VERSION}/ubuntu jammy main" >> /etc/apt/sources.list
+
+# The `erlang` package from rabbitmq includes large packages, like erlang-wx, that aren't needed for this.
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends \
-    erlang=${ERLANG_VERSION}
+  && apt-get install -y --no-install-recommends erlang-base \
+  erlang-asn1 erlang-crypto erlang-eldap erlang-ftp erlang-inets \
+  erlang-mnesia erlang-os-mon erlang-parsetools erlang-public-key \
+  erlang-runtime-tools erlang-snmp erlang-ssh erlang-ssl \
+  erlang-syntax-tools erlang-tftp erlang-tools erlang-xmerl
 
 # Install Elixir
 # https://github.com/elixir-lang/elixir/releases
-ARG ELIXIR_VERSION=v1.14.4
-ARG ELIXIR_CHECKSUM=b5705275d62ce3dae172d25d7ea567fffdabb45458abeb29c0189923b907367c
+ARG ELIXIR_VERSION=v1.18.1
+ARG ELIXIR_CHECKSUM=aae4625102ba7020887918d1c0ac7c8ad972b65fe8103476765cc6b00ab16b5f
 RUN curl -sSLfO https://github.com/elixir-lang/elixir/releases/download/${ELIXIR_VERSION}/elixir-otp-${ERLANG_MAJOR_VERSION}.zip \
   && echo "$ELIXIR_CHECKSUM  elixir-otp-${ERLANG_MAJOR_VERSION}.zip" | sha256sum -c - \
   && unzip -d /usr/local/elixir -x elixir-otp-${ERLANG_MAJOR_VERSION}.zip \

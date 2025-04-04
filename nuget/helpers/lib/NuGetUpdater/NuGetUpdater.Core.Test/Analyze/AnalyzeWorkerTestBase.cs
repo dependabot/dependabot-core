@@ -12,14 +12,16 @@ namespace NuGetUpdater.Core.Test.Analyze;
 
 using TestFile = (string Path, string Content);
 
-public class AnalyzeWorkerTestBase
+public class AnalyzeWorkerTestBase : TestBase
 {
     protected static async Task TestAnalyzeAsync(
         WorkspaceDiscoveryResult discovery,
         DependencyInfo dependencyInfo,
         ExpectedAnalysisResult expectedResult,
         MockNuGetPackage[]? packages = null,
-        TestFile[]? extraFiles = null)
+        TestFile[]? extraFiles = null,
+        ExperimentsManager? experimentsManager = null
+    )
     {
         var relativeDependencyPath = $"./dependabot/dependency/{dependencyInfo.Name}.json";
 
@@ -28,6 +30,7 @@ public class AnalyzeWorkerTestBase
             (relativeDependencyPath, JsonSerializer.Serialize(dependencyInfo, AnalyzeWorker.SerializerOptions)),
         ];
 
+        experimentsManager ??= new ExperimentsManager();
         var allFiles = files.Concat(extraFiles ?? []).ToArray();
         var actualResult = await RunAnalyzerAsync(dependencyInfo.Name, allFiles, async directoryPath =>
         {
@@ -36,7 +39,7 @@ public class AnalyzeWorkerTestBase
             var discoveryPath = Path.GetFullPath(DiscoveryWorker.DiscoveryResultFileName, directoryPath);
             var dependencyPath = Path.GetFullPath(relativeDependencyPath, directoryPath);
 
-            var worker = new AnalyzeWorker(new Logger(verbose: true));
+            var worker = new AnalyzeWorker("TEST-JOB-ID", experimentsManager, new TestLogger());
             var result = await worker.RunWithErrorHandlingAsync(directoryPath, discoveryPath, dependencyPath);
             return result;
         });
@@ -52,8 +55,7 @@ public class AnalyzeWorkerTestBase
         Assert.Equal(expectedResult.VersionComesFromMultiDependencyProperty, actualResult.VersionComesFromMultiDependencyProperty);
         ValidateDependencies(expectedResult.UpdatedDependencies, actualResult.UpdatedDependencies);
         Assert.Equal(expectedResult.ExpectedUpdatedDependenciesCount ?? expectedResult.UpdatedDependencies.Length, actualResult.UpdatedDependencies.Length);
-        Assert.Equal(expectedResult.ErrorType, actualResult.ErrorType);
-        Assert.Equal(expectedResult.ErrorDetails, actualResult.ErrorDetails);
+        ValidateResult(expectedResult, actualResult);
 
         return;
 
@@ -75,6 +77,18 @@ public class AnalyzeWorkerTestBase
                 Assert.Equal(expectedDependency.IsTransitive, actualDependency.IsTransitive);
                 Assert.Equal(expectedDependency.InfoUrl, actualDependency.InfoUrl);
             }
+        }
+    }
+
+    protected static void ValidateResult(ExpectedAnalysisResult? expectedResult, AnalysisResult actualResult)
+    {
+        if (expectedResult?.Error is not null)
+        {
+            ValidateError(expectedResult.Error, actualResult.Error);
+        }
+        else
+        {
+            Assert.Null(actualResult.Error);
         }
     }
 

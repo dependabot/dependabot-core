@@ -26,6 +26,7 @@ module Dependabot
                        replacement_git_pin: nil, remove_git_source: false,
                        unlock_requirement: true,
                        latest_allowable_version: nil,
+                       cooldown_options: nil,
                        options:)
           @dependency                  = dependency
           @unprepared_dependency_files = unprepared_dependency_files
@@ -37,6 +38,7 @@ module Dependabot
           @remove_git_source           = remove_git_source
           @unlock_requirement          = unlock_requirement
           @latest_allowable_version    = latest_allowable_version
+          @cooldown_options            = cooldown_options
           @options                     = options
 
           @latest_allowable_version_incompatible_with_ruby = false
@@ -183,11 +185,11 @@ module Dependabot
             LatestVersionFinder.new(
               dependency: dependency,
               dependency_files: dependency_files,
-              repo_contents_path: repo_contents_path,
               credentials: credentials,
               ignored_versions: ignored_versions,
               raise_on_ignored: @raise_on_ignored,
               security_advisories: [],
+              cooldown_options: @cooldown_options,
               options: options
             ).latest_version_details
         end

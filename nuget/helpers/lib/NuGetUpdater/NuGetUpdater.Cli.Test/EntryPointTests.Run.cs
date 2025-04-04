@@ -41,13 +41,6 @@ public partial class EntryPointTests
                 ],
                 job: new Job()
                 {
-                    PackageManager = "nuget",
-                    AllowedUpdates = [
-                        new()
-                        {
-                            UpdateType = "all"
-                        }
-                    ],
                     Source = new()
                     {
                         Provider = "github",
@@ -105,8 +98,7 @@ public partial class EntryPointTests
                 "--output-path",
                 Path.Combine(tempDirectory.DirectoryPath, "output.json"),
                 "--base-commit-sha",
-                "BASE-COMMIT-SHA",
-                "--verbose"
+                "BASE-COMMIT-SHA"
             };
 
             var output = new StringBuilder();

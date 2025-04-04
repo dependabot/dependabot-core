@@ -126,9 +126,9 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
     end
 
     context "with the oldest python version currently supported by Dependabot" do
-      let(:python_version) { "3.8.17" }
-      let(:pyproject_fixture_name) { "python_38.toml" }
-      let(:lockfile_fixture_name) { "python_38.lock" }
+      let(:python_version) { "3.9.21" }
+      let(:pyproject_fixture_name) { "python_39.toml" }
+      let(:lockfile_fixture_name) { "python_39.lock" }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "django",
@@ -727,6 +727,36 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
               build-backend = "poetry.core.masonry.api"
             TOML
           end
+        end
+      end
+
+      context "when the requirement has not changed" do
+        let(:pyproject_fixture_name) { "caret_version.toml" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: dependency_name,
+            version: "2.19.1",
+            previous_version: nil,
+            package_manager: "pip",
+            requirements: [{
+              requirement: "^2.19.1",
+              file: "pyproject.toml",
+              source: nil,
+              groups: ["dependencies"]
+            }],
+            previous_requirements: [{
+              requirement: ">=2.19.1",
+              file: "pyproject.toml",
+              source: nil,
+              groups: ["dependencies"]
+            }]
+          )
+        end
+
+        it "raises the correct error" do
+          expect do
+            updated_files.map(&:name)
+          end.to raise_error(Dependabot::DependencyFileContentNotChanged, "Content did not change!")
         end
       end
     end

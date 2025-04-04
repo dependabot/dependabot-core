@@ -190,17 +190,20 @@ module Dependabot
         op, version = requirement.requirements.first
         version = version.release if version.prerelease?
 
-        index_to_update =
-          version.segments.map.with_index { |seg, i| seg.zero? ? 0 : i }.max
-
-        new_segments = version.segments.map.with_index do |_, index|
-          if index < index_to_update
+        # When 'less than'/'<',
+        # increment the last available segment only so that the new version is within the constraint
+        if op == "<"
+          new_segments = version.segments.map.with_index do |_, index|
             version_to_be_permitted.segments[index]
-          elsif index == index_to_update
-            version_to_be_permitted.segments[index].to_i + 1
-          else
-            0
           end
+          new_segments[-1] += 1
+        # When 'less-than/equal'/'<=', use the new version as-is even when previously set as a non-semver version
+        # Terraform treats shortened versions the same as a version with any remaining segments as 0
+        # Example: '0.2' is treated as '0.2.0' | '1' is treated as '1.0.0'
+        elsif op == "<="
+          new_segments = version_to_be_permitted.segments
+        else
+          raise "Unexpected operation: #{op}"
         end
 
         requirement_class.new("#{op} #{new_segments.join('.')}")
