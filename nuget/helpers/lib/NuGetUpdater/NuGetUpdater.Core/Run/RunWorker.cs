@@ -291,7 +291,12 @@ public class RunWorker
             .Select(kvp => kvp.Value)
             .ToArray();
 
-        var resultMessage = GetPullRequestApiMessage(job, updatedDependencyFileList, actualUpdatedDependencies.ToArray(), baseCommitSha);
+        var normalizedUpdateOperationsPerformed = UpdateOperationBase.NormalizeUpdateOperationCollection(repoContentsPath.FullName, updateOperationsPerformed);
+        var report = UpdateOperationBase.GenerateUpdateOperationReport(normalizedUpdateOperationsPerformed);
+        _logger.Info(report);
+
+        var sortedUpdatedDependencies = actualUpdatedDependencies.OrderBy(d => d.Name, StringComparer.OrdinalIgnoreCase).ToArray();
+        var resultMessage = GetPullRequestApiMessage(job, updatedDependencyFileList, sortedUpdatedDependencies, normalizedUpdateOperationsPerformed, baseCommitSha);
         switch (resultMessage)
         {
             case ClosePullRequest close:
@@ -320,10 +325,6 @@ public class RunWorker
         {
             await SendApiMessage(new SecurityUpdateNotNeeded(depName));
         }
-
-        var normalizedUpdateOperationsPerformed = UpdateOperationBase.NormalizeUpdateOperationCollection(repoContentsPath.FullName, updateOperationsPerformed);
-        var report = UpdateOperationBase.GenerateUpdateOperationReport(normalizedUpdateOperationsPerformed);
-        _logger.Info(report);
 
         var result = new RunResult()
         {
@@ -365,10 +366,16 @@ public class RunWorker
         }
     }
 
-    internal static MessageBase? GetPullRequestApiMessage(Job job, DependencyFile[] updatedFiles, ReportedDependency[] updatedDependencies, string baseCommitSha)
+    internal static MessageBase? GetPullRequestApiMessage(
+        Job job,
+        DependencyFile[] updatedFiles,
+        ReportedDependency[] updatedDependencies,
+        ImmutableArray<UpdateOperationBase> updateOperationsPerformed,
+        string baseCommitSha
+    )
     {
-        updatedDependencies = updatedDependencies.OrderBy(d => d.Name, StringComparer.OrdinalIgnoreCase).ToArray();
-        var updatedDependenciesSet = updatedDependencies.Select(d => d.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var updatedDependencyNames = updateOperationsPerformed.Select(u => u.DependencyName).OrderBy(d => d, StringComparer.OrdinalIgnoreCase).ToArray();
+        var updatedDependenciesSet = updatedDependencyNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         // all pull request dependencies with optional group name
         var existingPullRequests = job.GetAllExistingPullRequests();
@@ -390,12 +397,12 @@ public class RunWorker
                 return new UpdatePullRequest()
                 {
                     DependencyGroup = existingPullRequest.Item1,
-                    DependencyNames = updatedDependencies.Select(d => d.Name).ToImmutableArray(),
+                    DependencyNames = [.. updatedDependencyNames],
                     UpdatedDependencyFiles = updatedFiles,
                     BaseCommitSha = baseCommitSha,
-                    CommitMessage = PullRequestTextGenerator.GetPullRequestCommitMessage(job, updatedDependencies, updatedFiles, existingPullRequest.Item1),
-                    PrTitle = PullRequestTextGenerator.GetPullRequestTitle(job, updatedDependencies, updatedFiles, existingPullRequest.Item1),
-                    PrBody = PullRequestTextGenerator.GetPullRequestBody(job, updatedDependencies, updatedFiles, existingPullRequest.Item1),
+                    CommitMessage = PullRequestTextGenerator.GetPullRequestCommitMessage(job, updateOperationsPerformed, existingPullRequest.Item1),
+                    PrTitle = PullRequestTextGenerator.GetPullRequestTitle(job, updateOperationsPerformed, existingPullRequest.Item1),
+                    PrBody = PullRequestTextGenerator.GetPullRequestBody(job, updateOperationsPerformed, existingPullRequest.Item1),
                 };
             }
             else
@@ -422,16 +429,16 @@ public class RunWorker
         }
         else
         {
-            if (updatedDependencies.Any())
+            if (updatedDependencyNames.Any())
             {
                 return new CreatePullRequest()
                 {
                     Dependencies = updatedDependencies,
                     UpdatedDependencyFiles = updatedFiles,
                     BaseCommitSha = baseCommitSha,
-                    CommitMessage = PullRequestTextGenerator.GetPullRequestCommitMessage(job, updatedDependencies, updatedFiles),
-                    PrTitle = PullRequestTextGenerator.GetPullRequestTitle(job, updatedDependencies, updatedFiles),
-                    PrBody = PullRequestTextGenerator.GetPullRequestBody(job, updatedDependencies, updatedFiles),
+                    CommitMessage = PullRequestTextGenerator.GetPullRequestCommitMessage(job, updateOperationsPerformed, dependencyGroupName: null),
+                    PrTitle = PullRequestTextGenerator.GetPullRequestTitle(job, updateOperationsPerformed, dependencyGroupName: null),
+                    PrBody = PullRequestTextGenerator.GetPullRequestBody(job, updateOperationsPerformed, dependencyGroupName: null),
                 };
             }
         }
