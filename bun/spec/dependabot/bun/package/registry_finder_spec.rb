@@ -193,7 +193,7 @@ RSpec.describe Dependabot::Bun::Package::RegistryFinder do
         let(:npmrc_file) do
           project_dependency_files(project_name).find { |f| f.name == ".npmrc" }
         end
-        let(:project_name) { "npm6/npmrc_auth_token_with_space" }
+        let(:project_name) { "bun/npmrc_auth_token_with_space" }
 
         before do
           body = fixture("gemfury_responses", "gemfury_response_etag.json")
