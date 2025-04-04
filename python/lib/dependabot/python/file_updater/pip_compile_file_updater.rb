@@ -12,6 +12,7 @@ require "dependabot/python/language_version_manager"
 require "dependabot/python/native_helpers"
 require "dependabot/python/name_normaliser"
 require "dependabot/python/authed_url_builder"
+require "sorbet-runtime"
 
 module Dependabot
   module Python
