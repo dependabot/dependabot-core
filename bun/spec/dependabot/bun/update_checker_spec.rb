@@ -5,12 +5,12 @@ require "spec_helper"
 
 require "dependabot/dependency_file"
 require "dependabot/dependency"
-require "dependabot/npm_and_yarn/metadata_finder"
-require "dependabot/npm_and_yarn/update_checker"
+require "dependabot/bun/metadata_finder"
+require "dependabot/bun/update_checker"
 require "dependabot/requirements_update_strategy"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
-RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
+RSpec.describe Dependabot::Bun::UpdateChecker do
   let(:dependency_version) { "1.0.0" }
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -19,7 +19,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       requirements: [
         { file: "package.json", requirement: "^1.0.0", groups: [], source: nil }
       ],
-      package_manager: "npm_and_yarn"
+      package_manager: "bun"
     )
   end
   let(:target_version) { "1.7.0" }
@@ -63,7 +63,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   let(:enable_corepack_for_npm_and_yarn) { true }
 
   # Variable to control the enabling feature flag for the cooldown
-  let(:enable_cooldown_for_npm_and_yarn) { true }
+  let(:enable_cooldown_for_bun) { true }
 
   before do
     stub_request(:get, registry_listing_url)
@@ -77,7 +77,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_shared_helpers_command_timeout).and_return(true)
     allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_cooldown_for_npm_and_yarn).and_return(enable_cooldown_for_npm_and_yarn)
+      .with(:enable_cooldown_for_bun).and_return(enable_cooldown_for_bun)
   end
 
   after do
@@ -93,7 +93,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           name: "foo",
           version: "1.0.0",
           requirements: (foo_v1.requirements + foo_v2.requirements).uniq,
-          package_manager: "npm_and_yarn",
+          package_manager: "bun",
           metadata: { all_versions: [foo_v1, foo_v2] }
         )
       end
@@ -108,7 +108,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             groups: nil,
             source: nil
           }],
-          package_manager: "npm_and_yarn"
+          package_manager: "bun"
         )
       end
 
@@ -122,7 +122,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             groups: ["dependencies"],
             source: { type: "registry", url: "https://registry.npmjs.org" }
           }],
-          package_manager: "npm_and_yarn"
+          package_manager: "bun"
         )
       end
 
@@ -131,7 +131,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           [
             Dependabot::SecurityAdvisory.new(
               dependency_name: "foo",
-              package_manager: "npm_and_yarn",
+              package_manager: "bun",
               vulnerable_versions: [">=2.0.0 <2.0.3"],
               safe_versions: [">=1.0.0 <2.0.0", ">=2.0.3"]
             )
@@ -148,7 +148,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           [
             Dependabot::SecurityAdvisory.new(
               dependency_name: "foo",
-              package_manager: "npm_and_yarn",
+              package_manager: "bun",
               vulnerable_versions: ["<1.0.0"],
               safe_versions: [">=1.0.0"]
             )
@@ -175,7 +175,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             groups: [],
             source: nil
           }],
-          package_manager: "npm_and_yarn"
+          package_manager: "bun"
         )
       end
 
@@ -193,7 +193,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           requirements: [
             { file: "package.json", requirement: "latest", groups: [], source: nil }
           ],
-          package_manager: "npm_and_yarn"
+          package_manager: "bun"
         )
       end
 
@@ -220,7 +220,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
               groups: [],
               source: nil
             }],
-            package_manager: "npm_and_yarn"
+            package_manager: "bun"
           )
         end
 
@@ -239,7 +239,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             groups: [],
             source: nil
           }],
-          package_manager: "npm_and_yarn"
+          package_manager: "bun"
         )
       end
 
@@ -256,7 +256,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
               groups: [],
               source: nil
             }],
-            package_manager: "npm_and_yarn"
+            package_manager: "bun"
           )
         end
 
@@ -280,7 +280,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           [
             Dependabot::SecurityAdvisory.new(
               dependency_name: dependency_name,
-              package_manager: "npm_and_yarn",
+              package_manager: "bun",
               vulnerable_versions: ["< 1.0.1"]
             )
           ]
@@ -292,7 +292,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             name: dependency_name,
             version: dependency_version,
             requirements: [],
-            package_manager: "npm_and_yarn"
+            package_manager: "bun"
           )
         end
 
@@ -313,7 +313,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           [
             Dependabot::SecurityAdvisory.new(
               dependency_name: dependency_name,
-              package_manager: "npm_and_yarn",
+              package_manager: "bun",
               vulnerable_versions: ["< 2.0.0"]
             )
           ]
@@ -325,7 +325,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             name: dependency_name,
             version: dependency_version,
             requirements: [],
-            package_manager: "npm_and_yarn"
+            package_manager: "bun"
           )
         end
 
@@ -351,7 +351,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             groups: [],
             source: nil
           }],
-          package_manager: "npm_and_yarn"
+          package_manager: "bun"
         )
       end
       let(:target_version) { "2.0.2" }
@@ -359,7 +359,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       before do
         allow_any_instance_of(described_class::VersionResolver)
           .to receive(:latest_resolvable_version)
-          .and_return(Dependabot::NpmAndYarn::Version.new("1.7.0"))
+          .and_return(Dependabot::Bun::Version.new("1.7.0"))
       end
 
       it { is_expected.to be_truthy }
@@ -372,7 +372,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
 
     it "delegates to (Package)LatestVersionFinder" do
-      if Dependabot::Experiments.enabled?(:enable_cooldown_for_npm_and_yarn)
+      if Dependabot::Experiments.enabled?(:enable_cooldown_for_bun)
         expect(described_class::PackageLatestVersionFinder).to receive(:new).with(
           dependency: dependency,
           credentials: credentials,
@@ -393,7 +393,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         ).and_call_original
       end
 
-      expect(checker.latest_version).to eq(Dependabot::NpmAndYarn::Version.new("1.7.0"))
+      expect(checker.latest_version).to eq(Dependabot::Bun::Version.new("1.7.0"))
     end
 
     it "only hits the registry once" do
@@ -406,7 +406,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         Dependabot::Dependency.new(
           name: "preact",
           version: "0.1.0",
-          package_manager: "npm_and_yarn",
+          package_manager: "bun",
           requirements: [
             {
               requirement: "^0.1.0",
@@ -448,7 +448,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
               ref: ref
             }
           }],
-          package_manager: "npm_and_yarn"
+          package_manager: "bun"
         )
       end
       let(:upload_pack_fixture) { "is-number" }
@@ -559,7 +559,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         let(:current_version) { "2.0.2" }
 
         it "fetches the latest version tag" do
-          expect(checker.latest_version).to eq(Dependabot::NpmAndYarn::Version.new("4.0.0"))
+          expect(checker.latest_version).to eq(Dependabot::Bun::Version.new("4.0.0"))
         end
 
         context "when there are no tags" do
@@ -578,7 +578,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
 
     it "finds the lowest available non-vulnerable version" do
       expect(checker.lowest_security_fix_version)
-        .to eq(Dependabot::NpmAndYarn::Version.new("1.0.1"))
+        .to eq(Dependabot::Bun::Version.new("1.0.1"))
     end
 
     context "with a security vulnerability" do
@@ -586,7 +586,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         [
           Dependabot::SecurityAdvisory.new(
             dependency_name: dependency_name,
-            package_manager: "npm_and_yarn",
+            package_manager: "bun",
             vulnerable_versions: ["<= 1.2.0"]
           )
         ]
@@ -595,7 +595,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       let(:target_version) { "1.2.1" }
 
       it "finds the lowest available non-vulnerable version" do
-        expect(lowest_security_fix).to eq(Dependabot::NpmAndYarn::Version.new("1.2.1"))
+        expect(lowest_security_fix).to eq(Dependabot::Bun::Version.new("1.2.1"))
       end
     end
 
@@ -623,7 +623,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   describe "#latest_resolvable_version" do
     subject { checker.latest_resolvable_version }
 
-    it { is_expected.to eq(Dependabot::NpmAndYarn::Version.new("1.7.0")) }
+    it { is_expected.to eq(Dependabot::Bun::Version.new("1.7.0")) }
 
     context "when dealing with a sub-dependency" do
       let(:dependency_name) { "@dependabot-fixtures/npm-transitive-dependency" }
@@ -634,7 +634,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           name: dependency_name,
           version: "1.0.0",
           requirements: [],
-          package_manager: "npm_and_yarn"
+          package_manager: "bun"
         )
       end
 
@@ -649,15 +649,15 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             credentials: credentials,
             dependency_files: dependency_files,
             ignored_versions: ignored_versions,
-            latest_allowable_version: Dependabot::NpmAndYarn::Version.new("1.0.1"),
+            latest_allowable_version: Dependabot::Bun::Version.new("1.0.1"),
             repo_contents_path: nil
           ).and_return(dummy_version_resolver)
         expect(dummy_version_resolver)
           .to receive(:latest_resolvable_version)
-          .and_return(Dependabot::NpmAndYarn::Version.new("1.0.0"))
+          .and_return(Dependabot::Bun::Version.new("1.0.0"))
 
         expect(checker.latest_resolvable_version)
-          .to eq(Dependabot::NpmAndYarn::Version.new("1.0.0"))
+          .to eq(Dependabot::Bun::Version.new("1.0.0"))
       end
     end
   end
@@ -665,7 +665,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   describe "#preferred_resolvable_version" do
     subject { checker.preferred_resolvable_version }
 
-    it { is_expected.to eq(Dependabot::NpmAndYarn::Version.new("1.7.0")) }
+    it { is_expected.to eq(Dependabot::Bun::Version.new("1.7.0")) }
 
     context "with a security vulnerability" do
       let(:dependency_version) { "1.1.0" }
@@ -673,14 +673,14 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         [
           Dependabot::SecurityAdvisory.new(
             dependency_name: "rails",
-            package_manager: "npm_and_yarn",
+            package_manager: "bun",
             vulnerable_versions: ["~1.1.0", "1.2.0", "1.3.0"]
           )
         ]
       end
       let(:target_version) { "1.2.1" }
 
-      it { is_expected.to eq(Dependabot::NpmAndYarn::Version.new("1.2.1")) }
+      it { is_expected.to eq(Dependabot::Bun::Version.new("1.2.1")) }
 
       context "when dealing with a sub-dependency" do
         let(:dependency_name) { "@dependabot-fixtures/npm-transitive-dependency" }
@@ -690,14 +690,14 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             name: dependency_name,
             version: "1.0.0",
             requirements: [],
-            package_manager: "npm_and_yarn"
+            package_manager: "bun"
           )
         end
         let(:security_advisories) do
           [
             Dependabot::SecurityAdvisory.new(
               dependency_name: "rails",
-              package_manager: "npm_and_yarn",
+              package_manager: "bun",
               vulnerable_versions: ["<= 1.0.0"]
             )
           ]
@@ -714,15 +714,15 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
               credentials: credentials,
               dependency_files: dependency_files,
               ignored_versions: ignored_versions,
-              latest_allowable_version: Dependabot::NpmAndYarn::Version.new("1.0.1"),
+              latest_allowable_version: Dependabot::Bun::Version.new("1.0.1"),
               repo_contents_path: nil
             ).and_return(dummy_version_resolver)
           expect(dummy_version_resolver)
             .to receive(:latest_resolvable_version)
-            .and_return(Dependabot::NpmAndYarn::Version.new("1.0.1"))
+            .and_return(Dependabot::Bun::Version.new("1.0.1"))
 
           expect(checker.preferred_resolvable_version)
-            .to eq(Dependabot::NpmAndYarn::Version.new("1.0.1"))
+            .to eq(Dependabot::Bun::Version.new("1.0.1"))
         end
       end
     end
@@ -739,7 +739,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         name: dependency_name,
         version: "1.0.0",
         requirements: [],
-        package_manager: "npm_and_yarn"
+        package_manager: "bun"
       )
     end
 
@@ -748,7 +748,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         [
           Dependabot::SecurityAdvisory.new(
             dependency_name: dependency_name,
-            package_manager: "npm_and_yarn",
+            package_manager: "bun",
             vulnerable_versions: ["<1.0.0"],
             safe_versions: [">=1.0.0 <2.0.0"]
           )
@@ -765,7 +765,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         [
           Dependabot::SecurityAdvisory.new(
             dependency_name: dependency_name,
-            package_manager: "npm_and_yarn",
+            package_manager: "bun",
             vulnerable_versions: ["<1.2.1"],
             safe_versions: [">=1.2.1 <2.0.0"]
           )
@@ -784,16 +784,16 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
               groups: [],
               source: nil
             }],
-            package_manager: "npm_and_yarn"
+            package_manager: "bun"
           )
         end
         let(:target_version) { "2.0.2" }
 
         it "returns the lowest security fix version" do
           allow(checker).to receive(:lowest_security_fix_version).and_return(
-            Dependabot::NpmAndYarn::Version.new(target_version)
+            Dependabot::Bun::Version.new(target_version)
           )
-          expect(lowest_resolvable_security_fix_version).to eq(Dependabot::NpmAndYarn::Version.new(target_version))
+          expect(lowest_resolvable_security_fix_version).to eq(Dependabot::Bun::Version.new(target_version))
         end
       end
 
@@ -812,8 +812,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           it "returns the latest resolvable transitive security fix version with no unlock" do
             allow(checker)
               .to receive(:latest_resolvable_transitive_security_fix_version_with_no_unlock)
-              .and_return(Dependabot::NpmAndYarn::Version.new(target_version))
-            expect(lowest_resolvable_security_fix_version).to eq(Dependabot::NpmAndYarn::Version.new(target_version))
+              .and_return(Dependabot::Bun::Version.new(target_version))
+            expect(lowest_resolvable_security_fix_version).to eq(Dependabot::Bun::Version.new(target_version))
           end
         end
       end
@@ -830,7 +830,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           name: "etag",
           version: "1.0.0",
           requirements: requirements,
-          package_manager: "npm_and_yarn"
+          package_manager: "bun"
         )
       end
       let(:requirements) do
@@ -844,7 +844,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       let(:req_string) { "^1.0.0" }
 
       it "delegates to LatestVersionFinder" do
-        if Dependabot::Experiments.enabled?(:enable_cooldown_for_npm_and_yarn)
+        if Dependabot::Experiments.enabled?(:enable_cooldown_for_bun)
           expect(described_class::PackageLatestVersionFinder).to receive(:new).with(
             dependency: dependency,
             credentials: credentials,
@@ -866,7 +866,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         end
 
         expect(checker.latest_resolvable_version_with_no_unlock)
-          .to eq(Dependabot::NpmAndYarn::Version.new("1.7.0"))
+          .to eq(Dependabot::Bun::Version.new("1.7.0"))
       end
     end
 
@@ -878,7 +878,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           name: dependency_name,
           version: "1.0.0",
           requirements: [],
-          package_manager: "npm_and_yarn"
+          package_manager: "bun"
         )
       end
 
@@ -893,15 +893,15 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             credentials: credentials,
             dependency_files: dependency_files,
             ignored_versions: ignored_versions,
-            latest_allowable_version: Dependabot::NpmAndYarn::Version.new("1.0.1"),
+            latest_allowable_version: Dependabot::Bun::Version.new("1.0.1"),
             repo_contents_path: nil
           ).and_return(dummy_version_resolver)
         expect(dummy_version_resolver)
           .to receive(:latest_resolvable_version)
-          .and_return(Dependabot::NpmAndYarn::Version.new("1.0.0"))
+          .and_return(Dependabot::Bun::Version.new("1.0.0"))
 
         expect(checker.latest_resolvable_version_with_no_unlock)
-          .to eq(Dependabot::NpmAndYarn::Version.new("1.0.0"))
+          .to eq(Dependabot::Bun::Version.new("1.0.0"))
       end
     end
 
@@ -921,7 +921,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
               ref: ref
             }
           }],
-          package_manager: "npm_and_yarn"
+          package_manager: "bun"
         )
       end
       let(:current_version) { "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8" }
@@ -974,7 +974,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
 
           it "return a numeric version" do
             expect(checker.latest_resolvable_version_with_no_unlock)
-              .to eq(Dependabot::NpmAndYarn::Version.new("2.0.2"))
+              .to eq(Dependabot::Bun::Version.new("2.0.2"))
           end
         end
       end
@@ -987,13 +987,13 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     end
 
     let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
-    let(:updated_version) { Dependabot::NpmAndYarn::Version.new("1.7.0") }
+    let(:updated_version) { Dependabot::Bun::Version.new("1.7.0") }
 
     it "delegates to VersionResolver" do
       dummy_version_resolver =
         instance_double(described_class::VersionResolver)
 
-      latest_version_finder = if Dependabot::Experiments.enabled?(:enable_cooldown_for_npm_and_yarn)
+      latest_version_finder = if Dependabot::Experiments.enabled?(:enable_cooldown_for_bun)
                                 described_class::PackageLatestVersionFinder
                               else
                                 described_class::LatestVersionFinder
@@ -1015,10 +1015,10 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       expect(dummy_version_resolver)
         .to receive(:latest_resolvable_previous_version)
         .with(updated_version)
-        .and_return(Dependabot::NpmAndYarn::Version.new("1.6.0"))
+        .and_return(Dependabot::Bun::Version.new("1.6.0"))
 
       expect(latest_resolvable_previous_version)
-        .to eq(Dependabot::NpmAndYarn::Version.new("1.6.0"))
+        .to eq(Dependabot::Bun::Version.new("1.6.0"))
     end
   end
 
@@ -1028,7 +1028,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         name: "etag",
         version: dependency_version,
         requirements: dependency_requirements,
-        package_manager: "npm_and_yarn"
+        package_manager: "bun"
       )
     end
     let(:dependency_requirements) do
@@ -1067,7 +1067,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         [
           Dependabot::SecurityAdvisory.new(
             dependency_name: "rails",
-            package_manager: "npm_and_yarn",
+            package_manager: "bun",
             vulnerable_versions: ["~1.1.0", "1.2.0", "1.3.0"]
           )
         ]
@@ -1163,7 +1163,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           name: "is-number",
           version: dependency_version,
           requirements: dependency_requirements,
-          package_manager: "npm_and_yarn"
+          package_manager: "bun"
         )
       end
       let(:dependency_version) { "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8" }
@@ -1296,7 +1296,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         Dependabot::Dependency.new(
           name: "react-dom",
           version: "15.2.0",
-          package_manager: "npm_and_yarn",
+          package_manager: "bun",
           requirements: dependency_requirements
         )
       end
@@ -1350,7 +1350,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
               }
             }
           ],
-          package_manager: "npm_and_yarn"
+          package_manager: "bun"
         )
       end
 
@@ -1394,7 +1394,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         name: "etag",
         version: dependency_version,
         requirements: dependency_requirements,
-        package_manager: "npm_and_yarn"
+        package_manager: "bun"
       )
     end
     let(:dependency_requirements) do
@@ -1410,7 +1410,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       dummy_version_resolver =
         instance_double(described_class::VersionResolver)
 
-      latest_version_finder = if Dependabot::Experiments.enabled?(:enable_cooldown_for_npm_and_yarn)
+      latest_version_finder = if Dependabot::Experiments.enabled?(:enable_cooldown_for_bun)
                                 described_class::PackageLatestVersionFinder
                               else
                                 described_class::LatestVersionFinder
@@ -1423,7 +1423,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           credentials: credentials,
           dependency_files: dependency_files,
           latest_version_finder: latest_version_finder,
-          latest_allowable_version: Dependabot::NpmAndYarn::Version.new("1.7.0"),
+          latest_allowable_version: Dependabot::Bun::Version.new("1.7.0"),
           repo_contents_path: nil,
           dependency_group: nil,
           raise_on_ignored: false,
@@ -1436,7 +1436,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             dependency: Dependabot::Dependency.new(
               name: "etag",
               version: nil,
-              package_manager: "npm_and_yarn",
+              package_manager: "bun",
               requirements: [{
                 file: "package.json",
                 requirement: "^1.6.0",
@@ -1444,7 +1444,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
                 source: nil
               }]
             ),
-            version: Dependabot::NpmAndYarn::Version.new("1.7.0"),
+            version: Dependabot::Bun::Version.new("1.7.0"),
             previous_version: nil
           }]
         )
@@ -1454,7 +1454,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           Dependabot::Dependency.new(
             name: "etag",
             version: "1.7.0",
-            package_manager: "npm_and_yarn",
+            package_manager: "bun",
             previous_version: nil,
             requirements: [{
               file: "package.json",
@@ -1495,7 +1495,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         [
           Dependabot::SecurityAdvisory.new(
             dependency_name: "lodash",
-            package_manager: "npm_and_yarn",
+            package_manager: "bun",
             vulnerable_versions: ["< 4.17.21"]
           )
         ]
@@ -1514,7 +1514,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
               url: "https://registry.npmjs.org"
             }
           }],
-          package_manager: "npm_and_yarn"
+          package_manager: "bun"
         )
       end
 
@@ -1542,7 +1542,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         [
           Dependabot::SecurityAdvisory.new(
             dependency_name: "@dependabot-fixtures/npm-transitive-dependency",
-            package_manager: "npm_and_yarn",
+            package_manager: "bun",
             vulnerable_versions: ["< 1.0.1"]
           )
         ]
@@ -1553,7 +1553,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           name: "@dependabot-fixtures/npm-transitive-dependency",
           version: dependency_version,
           requirements: [],
-          package_manager: "npm_and_yarn"
+          package_manager: "bun"
         )
       end
 
@@ -1563,7 +1563,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             Dependabot::Dependency.new(
               name: "@dependabot-fixtures/npm-transitive-dependency",
               version: "1.0.1",
-              package_manager: "npm_and_yarn",
+              package_manager: "bun",
               previous_version: "1.0.0",
               requirements: [],
               previous_requirements: [],
@@ -1572,7 +1572,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             Dependabot::Dependency.new(
               name: "@dependabot-fixtures/npm-parent-dependency",
               version: "2.0.2",
-              package_manager: "npm_and_yarn",
+              package_manager: "bun",
               previous_version: "2.0.0",
               requirements: [{
                 file: "package.json",
@@ -1604,7 +1604,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           expect(checker.send(:updated_dependencies_after_full_unlock)).to eq_including_metadata([
             Dependabot::Dependency.new(
               name: "@dependabot-fixtures/npm-transitive-dependency",
-              package_manager: "npm_and_yarn",
+              package_manager: "bun",
               previous_requirements: [],
               previous_version: "1.0.0",
               requirements: [],
@@ -1613,7 +1613,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             ),
             Dependabot::Dependency.new(
               name: "@dependabot-fixtures/npm-intermediate-dependency",
-              package_manager: "npm_and_yarn",
+              package_manager: "bun",
               previous_requirements: [],
               previous_version: "0.0.1",
               requirements: [],
@@ -1631,7 +1631,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           expect(checker.send(:updated_dependencies_after_full_unlock)).to contain_exactly_including_metadata(
             Dependabot::Dependency.new(
               name: "@dependabot-fixtures/npm-parent-dependency",
-              package_manager: "npm_and_yarn",
+              package_manager: "bun",
               previous_requirements: [{
                 requirement: "2.0.1",
                 file: "package.json",
@@ -1655,7 +1655,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             ),
             Dependabot::Dependency.new(
               name: "@dependabot-fixtures/npm-parent-dependency-2",
-              package_manager: "npm_and_yarn",
+              package_manager: "bun",
               previous_requirements: [{
                 requirement: "2.1.0",
                 file: "package.json",
@@ -1679,7 +1679,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             ),
             Dependabot::Dependency.new(
               name: "@dependabot-fixtures/npm-parent-dependency-3",
-              package_manager: "npm_and_yarn",
+              package_manager: "bun",
               previous_requirements: [{
                 requirement: "2.0.0",
                 file: "package.json",
@@ -1703,7 +1703,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             ),
             Dependabot::Dependency.new(
               name: "@dependabot-fixtures/npm-transitive-dependency",
-              package_manager: "npm_and_yarn",
+              package_manager: "bun",
               previous_requirements: [],
               previous_version: "1.0.0",
               requirements: [],
@@ -1722,7 +1722,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           expect(checker.send(:updated_dependencies_after_full_unlock)).to contain_exactly_including_metadata(
             Dependabot::Dependency.new(
               name: "@dependabot-fixtures/npm-transitive-dependency",
-              package_manager: "npm_and_yarn",
+              package_manager: "bun",
               previous_requirements: [],
               previous_version: "1.0.0",
               requirements: [],
@@ -1731,7 +1731,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             ),
             Dependabot::Dependency.new(
               name: "@dependabot-fixtures/npm-remove-dependency",
-              package_manager: "npm_and_yarn",
+              package_manager: "bun",
               previous_requirements: [{
                 requirement: "10.0.0",
                 file: "package.json",
@@ -1765,7 +1765,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           [
             Dependabot::SecurityAdvisory.new(
               dependency_name: "@dependabot-fixtures/npm-transitive-dependency-with-more-versions",
-              package_manager: "npm_and_yarn",
+              package_manager: "bun",
               vulnerable_versions: ["< 2.0.0"]
             )
           ]
@@ -1776,7 +1776,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             name: "@dependabot-fixtures/npm-transitive-dependency-with-more-versions",
             version: dependency_version,
             requirements: [],
-            package_manager: "npm_and_yarn"
+            package_manager: "bun"
           )
         end
 
@@ -1784,7 +1784,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           expect(checker.send(:updated_dependencies_after_full_unlock)).to eq_including_metadata([
             Dependabot::Dependency.new(
               name: "@dependabot-fixtures/npm-transitive-dependency-with-more-versions",
-              package_manager: "npm_and_yarn",
+              package_manager: "bun",
               previous_requirements: [],
               previous_version: "1.0.0",
               requirements: [],
@@ -1793,7 +1793,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             ),
             Dependabot::Dependency.new(
               name: "@dependabot-fixtures/npm-parent-dependency-with-more-versions",
-              package_manager: "npm_and_yarn",
+              package_manager: "bun",
               previous_requirements: [{
                 requirement: "^1.0.0",
                 file: "package.json",
@@ -1838,7 +1838,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         name: dependency_name,
         version: dependency_version,
         requirements: [],
-        package_manager: "npm_and_yarn"
+        package_manager: "bun"
       )
     end
 
@@ -1876,7 +1876,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         [
           Dependabot::SecurityAdvisory.new(
             dependency_name: "@dependabot-fixtures/npm-transitive-dependency",
-            package_manager: "npm_and_yarn",
+            package_manager: "bun",
             vulnerable_versions: ["< 1.0.1"]
           )
         ]
@@ -1931,7 +1931,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         [
           Dependabot::SecurityAdvisory.new(
             dependency_name: "@dependabot-fixtures/npm-transitive-dependency",
-            package_manager: "npm_and_yarn",
+            package_manager: "bun",
             vulnerable_versions: ["< 1.0.2"]
           )
         ]
@@ -1987,7 +1987,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         name: dependency_name,
         version: "3.4",
         requirements: dependency_requirements,
-        package_manager: "npm_and_yarn"
+        package_manager: "bun"
       )
     end
     let(:dependency_requirements) do
@@ -2034,7 +2034,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         [
           Dependabot::SecurityAdvisory.new(
             dependency_name: "jquery",
-            package_manager: "npm_and_yarn",
+            package_manager: "bun",
             vulnerable_versions: ["<=3.4.0"]
           )
         ]
@@ -2058,7 +2058,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         name: dependency_name,
         version: "3.4",
         requirements: dependency_requirements,
-        package_manager: "npm_and_yarn"
+        package_manager: "bun"
       )
     end
     let(:dependency_requirements) do
@@ -2091,7 +2091,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         name: dependency_name,
         version: "3.5",
         requirements: dependency_requirements,
-        package_manager: "npm_and_yarn"
+        package_manager: "bun"
       )
     end
     let(:dependency_requirements) do
@@ -2134,7 +2134,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         name: dependency_name,
         version: "1.0.0",
         requirements: dependency_requirements,
-        package_manager: "npm_and_yarn"
+        package_manager: "bun"
       )
     end
     let(:dependency_requirements) do
@@ -2180,7 +2180,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         name: "@types/node-forge",
         version: "1.0.0",
         requirements: dependency_requirements,
-        package_manager: "npm_and_yarn"
+        package_manager: "bun"
       )
     end
     let(:dependency_requirements) do
@@ -2229,7 +2229,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         name: dependency_name,
         version: "1.0.1",
         requirements: [],
-        package_manager: "npm_and_yarn"
+        package_manager: "bun"
       )
     end
 
@@ -2252,7 +2252,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         name: dependency_name,
         version: "1.0.1",
         requirements: [],
-        package_manager: "npm_and_yarn",
+        package_manager: "bun",
         subdependency_metadata: [{ production: false }]
       )
     end
