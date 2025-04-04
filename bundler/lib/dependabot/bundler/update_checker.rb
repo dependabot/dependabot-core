@@ -189,6 +189,7 @@ module Dependabot
               ignored_versions: ignored_versions,
               raise_on_ignored: raise_on_ignored,
               replacement_git_pin: tag,
+              cooldown_options: update_cooldown,
               options: options
             ).latest_resolvable_version_details
             true
@@ -351,6 +352,7 @@ module Dependabot
             remove_git_source: remove_git_source,
             unlock_requirement: unlock_requirement,
             latest_allowable_version: latest_version,
+            cooldown_options: update_cooldown,
             options: options
           )
       end
