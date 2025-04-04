@@ -64,7 +64,7 @@ module Dependabot
         end
 
         def registry
-          Bun::UpdateChecker::RegistryFinder.new(
+          Bun::Package::RegistryFinder.new(
             dependency: nil,
             credentials: credentials,
             npmrc_file: dependency_files.find { |f| f.name.end_with?(".npmrc") }
