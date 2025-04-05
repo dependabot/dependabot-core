@@ -5,6 +5,10 @@ shared: &shared
   - 'updater/Gemfil*'
   - 'omnibus/**'
   - '.github/workflows/ci.yml'
+dry_run:
+  - *shared
+  - 'bin/dry-run.rb'
+  - 'bin/spec/**'
 bun:
   - *shared
   - 'bun/**'
