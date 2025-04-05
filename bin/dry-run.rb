@@ -295,8 +295,16 @@ option_parse = OptionParser.new do |opts|
     Dependabot::Experiments.register(:enable_beta_ecosystems, true)
   end
 
-  opts.on("--cooldown", "Cooldown configuration as a JSON object") do |value|
-    $options[:cooldown] = JSON.parse(value)
+  opts.on("--cooldown JSON", "Cooldown configuration as a JSON object") do |value|
+    cooldown_options = JSON.parse(value)
+    raise "Invalid cooldown configuration" unless cooldown_options.is_a?(Hash)
+
+    # Convert kebab-case keys to snake_case and symbolize keys
+    cooldown_options = cooldown_options.each_with_object({}) do |(key, val), result|
+      result[key.tr("-", "_").to_sym] = val
+    end
+
+    $options[:cooldown] = cooldown_options
   rescue JSON::ParserError
     puts "Invalid JSON format for cooldown parameter. Please provide a valid JSON string."
     exit 1
@@ -569,8 +577,15 @@ def update_checker_for(dependency)
     requirements_update_strategy: $options[:requirements_update_strategy],
     ignored_versions: ignored_versions_for(dependency),
     security_advisories: security_advisories,
+    update_cooldown: update_cooldown,
     options: $options[:updater_options]
   )
+end
+
+def update_cooldown
+  return unless $options[:cooldown]
+
+  Dependabot::Package::ReleaseCooldownOptions.new(**$options[:cooldown])
 end
 
 def ignored_versions_for(dep)
