@@ -181,4 +181,68 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
       end
     end
   end
+
+  describe "#fetch_helm_chart_index" do
+    context "when helm CLI search fails" do
+      subject(:latest_chart_version) { checker.send(:fetch_latest_chart_version) }
+
+      let(:credentials) { [] }
+      let(:source) { { registry: repo_url, tag: version } }
+
+      before do
+        allow(Dependabot::Helm::Helpers).to receive(:search_releases)
+          .with(anything)
+          .and_return("")
+
+        stub_request(:get, "#{repo_url}/index.yaml")
+          .to_return(
+            status: 200,
+            body: fixture("helm", "registry", "bitnami.yaml")
+          )
+      end
+
+      it "falls back to fetching from index.yaml" do
+        expect(Dependabot::Helm::Helpers).to receive(:search_releases)
+        expect(checker).to receive(:fetch_releases_from_index).and_call_original
+        expect(checker).to receive(:fetch_helm_chart_index).with("#{repo_url}/index.yaml").and_call_original
+
+        latest_chart_version
+      end
+
+      it "returns the latest version from the index" do
+        expect(latest_chart_version).to eq(Dependabot::Docker::Version.new("20.11.3"))
+      end
+    end
+
+    context "with an oci protocol" do
+      subject(:fetch_index) { checker.send(:fetch_helm_chart_index, index_url) }
+
+      let(:index_url) { "oci://registry.example.com/charts/index.yaml" }
+      let(:https_url) { "https://registry.example.com/charts/index.yaml" }
+      let(:index_content) { fixture("helm", "registry", "bitnami.yaml") }
+
+      before do
+        stub_request(:get, https_url)
+          .to_return(
+            status: 200,
+            body: index_content
+          )
+      end
+
+      it "converts OCI URL to HTTPS when making the request" do
+        expect(Excon).to receive(:get)
+          .with(
+            https_url,
+            idempotent: true,
+            middlewares: anything
+          ).and_call_original
+
+        fetch_index
+      end
+
+      it "successfully retrieves and parses the index" do
+        expect(fetch_index).to be_a(Hash)
+      end
+    end
+  end
 end

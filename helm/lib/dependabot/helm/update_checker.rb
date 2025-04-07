@@ -217,9 +217,8 @@ module Dependabot
       sig { params(index_url: String).returns(T.nilable(T::Hash[T.untyped, T.untyped])) }
       def fetch_helm_chart_index(index_url)
         Dependabot.logger.info("Fetching Helm chart index from #{index_url}")
-
         response = Excon.get(
-          index_url,
+          index_url.gsub("oci://", "https://"),
           idempotent: true,
           middlewares: Excon.defaults[:middlewares] + [Excon::Middleware::RedirectFollower]
         )
