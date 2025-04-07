@@ -107,14 +107,18 @@ module Dependabot
         end
 
         sig { params(job_group: Dependabot::DependencyGroup).void }
-        def process_group_dependencies(job_group)
+        def process_group_dependencies(job_group) # rubocop:disable Metrics/AbcSize
           Dependabot.logger.info("Updating the '#{job_group.name}' group")
 
           existing_pr_dependencies = {}
 
+          # Reorder groups to process job_group first
+          job_group_name = job_group.name
+          groups = dependency_snapshot.groups.partition { |group| group.name == job_group_name }.flatten
+
           # Preprocess to discover existing group PRs and add their dependencies to the handled list before processing
           # the refresh. This prevents multiple PRs from being created for the same dependency during the refresh.
-          dependency_snapshot.groups.each do |group|
+          groups.each do |group|
             if Dependabot::Experiments.enabled?(:allow_refresh_for_existing_pr_dependencies)
               # Gather all dependencies in existing PRs so other groups will not consider them as handled when they
               # are not also in the PR of the group being checked, preventing erroneous PR closures
