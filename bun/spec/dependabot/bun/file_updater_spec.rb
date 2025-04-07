@@ -53,17 +53,8 @@ RSpec.describe Dependabot::Bun::FileUpdater do
     )
   end
 
-  # Variable to control the npm fallback version feature flag
-  let(:npm_fallback_version_above_v6_enabled) { true }
-  # Variable to control the enabling feature flag for the corepack fix
-  let(:enable_corepack_for_npm_and_yarn) { true }
-
   before do
     FileUtils.mkdir_p(tmp_path)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:npm_fallback_version_above_v6).and_return(npm_fallback_version_above_v6_enabled)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_corepack_for_npm_and_yarn).and_return(enable_corepack_for_npm_and_yarn)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_shared_helpers_command_timeout).and_return(true)
     allow(Dependabot::Experiments).to receive(:enabled?)
@@ -147,8 +138,6 @@ RSpec.describe Dependabot::Bun::FileUpdater do
     end
 
     context "with multiple dependencies" do
-      let(:npm_fallback_version_above_v6_enabled) { false }
-
       let(:files) { project_dependency_files("javascript/multiple_updates") }
 
       let(:dependencies) do
@@ -255,7 +244,6 @@ RSpec.describe Dependabot::Bun::FileUpdater do
     end
 
     context "with a git dependency" do
-      let(:npm_fallback_version_above_v6_enabled) { false }
       let(:dependency_name) { "is-number" }
       let(:requirements) do
         [{
@@ -307,7 +295,6 @@ RSpec.describe Dependabot::Bun::FileUpdater do
     end
 
     context "when a wildcard is specified" do
-      let(:npm_fallback_version_above_v6_enabled) { false }
       let(:files) { project_dependency_files("bun/wildcard") }
 
       let(:version) { "0.2.0" }
