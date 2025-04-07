@@ -1500,7 +1500,6 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         )
       end
     end
-
   end
 
   describe "#latest_resolvable_version" do
@@ -1612,6 +1611,40 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
                source: { tag: "xenial-20170915" }
              }]
           )
+      end
+    end
+
+    describe ".docker_read_timeout_in_seconds" do
+      context "when DEPENDABOT_DOCKER_READ_TIMEOUT_IN_SECONDS is set" do
+        it "returns the provided value" do
+          override_value = 10
+          stub_const("ENV", ENV.to_hash.merge("DEPENDABOT_DOCKER_READ_TIMEOUT_IN_SECONDS" => override_value))
+          expect(checker.send(:docker_read_timeout_in_seconds)).to eq(override_value)
+        end
+      end
+
+      context "when ENV does not provide an override" do
+        it "falls back to a default value" do
+          expect(checker.send(:docker_read_timeout_in_seconds))
+            .to eq(Dependabot::Docker::UpdateChecker::DEFAULT_DOCKER_READ_TIMEOUT_IN_SECONDS)
+        end
+      end
+    end
+
+    describe ".docker_open_timeout_in_seconds" do
+      context "when DEPENDABOT_DOCKER_OPEN_TIMEOUT_IN_SECONDS is set" do
+        it "returns the provided value" do
+          override_value = 10
+          stub_const("ENV", ENV.to_hash.merge("DEPENDABOT_DOCKER_OPEN_TIMEOUT_IN_SECONDS" => override_value))
+          expect(checker.send(:docker_open_timeout_in_seconds)).to eq(override_value)
+        end
+      end
+
+      context "when ENV does not provide an override" do
+        it "falls back to a default value" do
+          expect(checker.send(:docker_open_timeout_in_seconds))
+            .to eq(Dependabot::Docker::UpdateChecker::DEFAULT_DOCKER_OPEN_TIMEOUT_IN_SECONDS)
+        end
       end
     end
   end

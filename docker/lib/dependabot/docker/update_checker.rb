@@ -180,7 +180,6 @@ module Dependabot
         end
       end
 
-
       sig do
         params(candidate_tags: T::Array[Dependabot::Docker::Tag])
           .returns(T::Array[Dependabot::Docker::Tag])
