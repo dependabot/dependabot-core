@@ -1,0 +1,6 @@
+{
+    "content-hash": "abcdef1234567890abcdef1234567890",
+    "require": {
+        "phpunit/phpunit": ">=10.0.16, ==12.1.0"
+    }
+}
