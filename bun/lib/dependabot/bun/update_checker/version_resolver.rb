@@ -93,11 +93,9 @@ module Dependabot
           @original_package = T.let(nil, T.nilable(Dependabot::Dependency))
           @latest_types_package_version = T.let(nil, T.nilable(Dependabot::Version))
           @dependency_files_builder = T.let(nil, T.nilable(DependencyFilesBuilder))
-          # @latest_resolvable_version = T.let(nil, T.nilable(T.any(String, Gem::Version)))
           @resolve_latest_previous_version = T.let({}, T::Hash[Dependabot::Dependency, T.nilable(String)])
           @paths_requiring_update_check = T.let(nil, T.nilable(T::Array[String]))
           @top_level_dependencies = T.let(nil, T.nilable(T::Array[Dependabot::Dependency]))
-          # @peer_dependency_errors_checked = T.let(false, T::Boolean)
           @old_peer_dependency_errors = T.let(
             nil, T.nilable(T::Array[T.any(T::Hash[String, T.nilable(String)], String)])
           )
@@ -535,11 +533,7 @@ module Dependabot
               rescue Gem::Requirement::BadRequirementError
                 false
               end
-            end.map do |versions_with_details| # rubocop:disable Style/MultilineBlockChain
-              # Return just the version
-              version, = versions_with_details
-              version
-            end
+            end.map(&:first)
         end
 
         # rubocop:enable Metrics/PerceivedComplexity
