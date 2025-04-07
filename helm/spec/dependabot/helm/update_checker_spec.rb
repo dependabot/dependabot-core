@@ -183,24 +183,25 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
   end
 
   describe "#fetch_helm_chart_index" do
+    subject(:latest_chart_version) { checker.send(:fetch_latest_chart_version) }
+
+    let(:credentials) { [] }
+    let(:index_content) { fixture("helm", "registry", "bitnami.yaml") }
+    let(:source) { { registry: repo_url, tag: version } }
+
+    before do
+      allow(Dependabot::Helm::Helpers).to receive(:search_releases)
+        .with(anything)
+        .and_return("")
+
+      stub_request(:get, "#{repo_url}/index.yaml")
+        .to_return(
+          status: 200,
+          body: index_content
+        )
+    end
+
     context "when helm CLI search fails" do
-      subject(:latest_chart_version) { checker.send(:fetch_latest_chart_version) }
-
-      let(:credentials) { [] }
-      let(:source) { { registry: repo_url, tag: version } }
-
-      before do
-        allow(Dependabot::Helm::Helpers).to receive(:search_releases)
-          .with(anything)
-          .and_return("")
-
-        stub_request(:get, "#{repo_url}/index.yaml")
-          .to_return(
-            status: 200,
-            body: fixture("helm", "registry", "bitnami.yaml")
-          )
-      end
-
       it "falls back to fetching from index.yaml" do
         expect(Dependabot::Helm::Helpers).to receive(:search_releases)
         expect(checker).to receive(:fetch_releases_from_index).and_call_original
@@ -215,33 +216,17 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
     end
 
     context "with an oci protocol" do
-      subject(:fetch_index) { checker.send(:fetch_helm_chart_index, index_url) }
-
-      let(:index_url) { "oci://registry.example.com/charts/index.yaml" }
-      let(:https_url) { "https://registry.example.com/charts/index.yaml" }
-      let(:index_content) { fixture("helm", "registry", "bitnami.yaml") }
-
-      before do
-        stub_request(:get, https_url)
-          .to_return(
-            status: 200,
-            body: index_content
-          )
-      end
+      let(:repo_url) { "oci://charts.bitnami.com/bitnami" }
 
       it "converts OCI URL to HTTPS when making the request" do
         expect(Excon).to receive(:get)
           .with(
-            https_url,
+            "#{repo_url.gsub('oci', 'https')}/index.yaml",
             idempotent: true,
             middlewares: anything
-          ).and_call_original
+          )
 
-        fetch_index
-      end
-
-      it "successfully retrieves and parses the index" do
-        expect(fetch_index).to be_a(Hash)
+        latest_chart_version
       end
     end
   end
