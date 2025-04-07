@@ -263,8 +263,14 @@ module Dependabot
           # league/csv 9.21.0 requires php ^8.1.2 -> your php version 8.1
           if error.message.include?("your php version")
             tool_name = "PHP"
-            detected_version = error.message.match(/your php version \((.*?)\s*;/)[1]
-            supported_versions = error.message.match(/requires php\s(.*?)\s->/)[1]
+            # Added condition to check the nil value ,fix: https://github.com/github/dependabot-updates/issues/9166
+            if (match_data = error.message.match(/your php version \((.*?)\s*;/)) && match_data.length == 2
+              detected_version = match_data[1]
+            end
+            if (match_version = error.message.match(/requires php\s(.*?)\s->/)) && match_version.length == 2
+
+              supported_versions = match_version[1]
+            end
             raise ToolVersionNotSupported.new(tool_name, detected_version, supported_versions)
           end
 
