@@ -202,7 +202,7 @@ module Dependabot
             released_at: Time,
             downloads: Integer,
             url: String,
-            ruby_version: String,
+            ruby_version: T.nilable(String),
             yanked: T::Boolean
           ).returns(Dependabot::Package::PackageRelease)
         end
@@ -218,7 +218,7 @@ module Dependabot
             language: Dependabot::Package::PackageLanguage.new(
               name: PACKAGE_LANGUAGE,
               version: nil,
-              requirement: language_requirement(ruby_version)
+              requirement: ruby_version ? language_requirement(ruby_version) : nil
             )
           )
         end

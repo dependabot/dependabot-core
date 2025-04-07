@@ -180,7 +180,7 @@ module Dependabot
       def authenticate_registry_source(repo_url)
         return unless repo_url
 
-        repo_creds = Shared::Utils::CredentialsFinder.new(@credentials, private_repository_type: "helm_repository")
+        repo_creds = Shared::Utils::CredentialsFinder.new(@credentials, private_repository_type: "helm_registry")
                                                      .credentials_for_registry(repo_url)
         return unless repo_creds
 
