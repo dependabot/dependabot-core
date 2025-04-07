@@ -147,6 +147,13 @@ module Dependabot
             excluding_dependencies[directory]&.include?(dep)
           end
 
+          # Avoid adding current job group dependencies to the handled list, as it would block this job group updates.
+          if job_group
+            existing_group_dependencies = dependencies_in_existing_pr_for_group(T.must(job_group))
+                                          .filter_map { |dep| dep["dependency-name"] }
+            current_dependencies -= existing_group_dependencies
+          end
+
           add_handled_dependencies(current_dependencies.concat(dependencies_in_existing_prs.filter_map do |dep|
             dep["dependency-name"]
           end))
