@@ -46,7 +46,7 @@ internal static class UpdateCommand
             var resultOutputPath = context.ParseResult.GetValueForOption(ResultOutputPathOption);
 
             var (experimentsManager, _error) = await ExperimentsManager.FromJobFileAsync(jobId, jobPath.FullName);
-            var logger = new ConsoleLogger();
+            var logger = new OpenTelemetryLogger();
             var worker = new UpdaterWorker(jobId, experimentsManager, logger);
             await worker.RunAsync(repoRoot.FullName, solutionOrProjectFile.FullName, dependencyName, previousVersion, newVersion, isTransitive, resultOutputPath);
             setExitCode(0);

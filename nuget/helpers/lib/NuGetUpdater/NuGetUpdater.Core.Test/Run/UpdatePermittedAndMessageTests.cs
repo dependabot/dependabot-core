@@ -44,11 +44,13 @@ public class UpdatePermittedAndMessageTests
                 allowedUpdates: [
                     new AllowedUpdate() { DependencyType = DepType.Direct, UpdateType = UpdateType.All }
                 ],
+                dependencies: [],
                 existingPrs: [],
                 securityAdvisories: [
                     new Advisory() { DependencyName = "Some.Package", AffectedVersions = [], PatchedVersions = [Requirement.Parse(">= 1.11.0")], UnaffectedVersions = [] }
                 ],
-                securityUpdatesOnly: false),
+                securityUpdatesOnly: false,
+                updatingAPullRequest: false),
             new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: true),
             // expectedResult
             false,
@@ -63,11 +65,13 @@ public class UpdatePermittedAndMessageTests
                 allowedUpdates: [
                     new AllowedUpdate() { DependencyType = DepType.Direct, UpdateType = UpdateType.All }
                 ],
+                dependencies: [],
                 existingPrs: [],
                 securityAdvisories: [
                     new Advisory() { DependencyName = "Some.Package", AffectedVersions = [], PatchedVersions = [Requirement.Parse(">= 1.11.0")], UnaffectedVersions = [] }
                 ],
-                securityUpdatesOnly: true),
+                securityUpdatesOnly: true,
+                updatingAPullRequest: false),
             new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: true),
             // expectedResult
             true,
@@ -83,9 +87,11 @@ public class UpdatePermittedAndMessageTests
                     new AllowedUpdate() { DependencyType = DepType.Direct, UpdateType = UpdateType.All },
                     new AllowedUpdate() { DependencyType = DepType.Indirect, UpdateType = UpdateType.Security }
                 ],
+                dependencies: [],
                 existingPrs: [],
                 securityAdvisories: [],
-                securityUpdatesOnly: false),
+                securityUpdatesOnly: false,
+                updatingAPullRequest: false),
             new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: false),
             // expectedResult
             true,
@@ -101,9 +107,11 @@ public class UpdatePermittedAndMessageTests
                     new AllowedUpdate() { DependencyType = DepType.Direct, UpdateType = UpdateType.All },
                     new AllowedUpdate() { DependencyType = DepType.Indirect, UpdateType = UpdateType.Security }
                 ],
+                dependencies: [],
                 existingPrs: [],
                 securityAdvisories: [],
-                securityUpdatesOnly: false),
+                securityUpdatesOnly: false,
+                updatingAPullRequest: false),
             new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: true),
             // expectedResult
             false,
@@ -119,11 +127,13 @@ public class UpdatePermittedAndMessageTests
                     new AllowedUpdate() { DependencyType = DepType.Direct, UpdateType = UpdateType.All },
                     new AllowedUpdate() { DependencyType = DepType.Indirect, UpdateType = UpdateType.Security }
                 ],
+                dependencies: [],
                 existingPrs: [],
                 securityAdvisories: [
                     new Advisory() { DependencyName = "Some.Package", AffectedVersions = [], PatchedVersions = [Requirement.Parse(">= 1.11.0")], UnaffectedVersions = [] }
                 ],
-                securityUpdatesOnly: false),
+                securityUpdatesOnly: false,
+                updatingAPullRequest: false),
             new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: true),
             // expectedResult
             true,
@@ -139,9 +149,11 @@ public class UpdatePermittedAndMessageTests
                     new AllowedUpdate() { DependencyType = DepType.Direct, UpdateType = UpdateType.All },
                     new AllowedUpdate() { DependencyType = DepType.Indirect, UpdateType = UpdateType.Security }
                 ],
+                dependencies: [],
                 existingPrs: [],
                 securityAdvisories: [],
-                securityUpdatesOnly: true),
+                securityUpdatesOnly: true,
+                updatingAPullRequest: false),
             new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: false),
             // expectedResult
             false,
@@ -157,11 +169,13 @@ public class UpdatePermittedAndMessageTests
                     new AllowedUpdate() { DependencyType = DepType.Direct, UpdateType = UpdateType.All },
                     new AllowedUpdate() { DependencyType = DepType.Indirect, UpdateType = UpdateType.Security }
                 ],
+                dependencies: [],
                 existingPrs: [],
                 securityAdvisories: [
                     new Advisory() { DependencyName = "Some.Package", AffectedVersions = [], PatchedVersions = [Requirement.Parse(">= 1.11.0")], UnaffectedVersions = [] }
                 ],
-                securityUpdatesOnly: true),
+                securityUpdatesOnly: true,
+                updatingAPullRequest: false),
             new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: false),
             // expectedResult
             true,
@@ -177,11 +191,13 @@ public class UpdatePermittedAndMessageTests
                     new AllowedUpdate() { DependencyType = DepType.Direct, UpdateType = UpdateType.All },
                     new AllowedUpdate() { DependencyType = DepType.Indirect, UpdateType = UpdateType.Security }
                 ],
+                dependencies: [],
                 existingPrs: [],
                 securityAdvisories: [
                     new Advisory() { DependencyName = "Some.Package", AffectedVersions = [Requirement.Parse("> 1.8.0")], PatchedVersions = [], UnaffectedVersions = [] }
                 ],
-                securityUpdatesOnly: true),
+                securityUpdatesOnly: true,
+                updatingAPullRequest: false),
             new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: false),
             // expectedResult
             false,
@@ -197,11 +213,13 @@ public class UpdatePermittedAndMessageTests
                     new AllowedUpdate() { DependencyType = DepType.Direct, UpdateType = UpdateType.All },
                     new AllowedUpdate() { DependencyType = DepType.Indirect, UpdateType = UpdateType.Security }
                 ],
+                dependencies: [],
                 existingPrs: [],
                 securityAdvisories: [
                     new Advisory() { DependencyName = "Some.Package", AffectedVersions = [Requirement.Parse("< 1.8.0"), Requirement.Parse("> 1.8.0")], PatchedVersions = [], UnaffectedVersions = [] }
                 ],
-                securityUpdatesOnly: true),
+                securityUpdatesOnly: true,
+                updatingAPullRequest: false),
             new Dependency("Some.Package", "1.8.1", DependencyType.PackageReference, IsTransitive: false),
             // expectedResult
             true,
@@ -216,9 +234,11 @@ public class UpdatePermittedAndMessageTests
                 allowedUpdates: [
                     new AllowedUpdate() { DependencyName = "Some.Package" }
                 ],
+                dependencies: [],
                 existingPrs: [],
                 securityAdvisories: [],
-                securityUpdatesOnly: false),
+                securityUpdatesOnly: false,
+                updatingAPullRequest: false),
             new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: false),
             // expectedResult
             true,
@@ -233,9 +253,11 @@ public class UpdatePermittedAndMessageTests
                 allowedUpdates: [
                     new AllowedUpdate() { DependencyName = "Some.*" }
                 ],
+                dependencies: [],
                 existingPrs: [],
                 securityAdvisories: [],
-                securityUpdatesOnly: false),
+                securityUpdatesOnly: false,
+                updatingAPullRequest: false),
             new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: false),
             // expectedResult
             true,
@@ -250,9 +272,11 @@ public class UpdatePermittedAndMessageTests
                 allowedUpdates: [
                     new AllowedUpdate() { DependencyName = "Unrelated.Package" }
                 ],
+                dependencies: [],
                 existingPrs: [],
                 securityAdvisories: [],
-                securityUpdatesOnly: false),
+                securityUpdatesOnly: false,
+                updatingAPullRequest: false),
             new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: false),
             // expectedResult
             false,
@@ -267,9 +291,11 @@ public class UpdatePermittedAndMessageTests
                 allowedUpdates: [
                     new AllowedUpdate() { DependencyName = "Some" }
                 ],
+                dependencies: [],
                 existingPrs: [],
                 securityAdvisories: [],
-                securityUpdatesOnly: false),
+                securityUpdatesOnly: false,
+                updatingAPullRequest: false),
             new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: false),
             // expectedResult
             false,
@@ -284,9 +310,11 @@ public class UpdatePermittedAndMessageTests
                 allowedUpdates: [
                     new AllowedUpdate() { DependencyName = "Unrelated.*" }
                 ],
+                dependencies: [],
                 existingPrs: [],
                 securityAdvisories: [],
-                securityUpdatesOnly: false),
+                securityUpdatesOnly: false,
+                updatingAPullRequest: false),
             new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: false),
             // expectedResult
             false,
@@ -302,9 +330,11 @@ public class UpdatePermittedAndMessageTests
                     new AllowedUpdate() { DependencyName = "Unrelated.Package" },
                     new AllowedUpdate() { UpdateType = UpdateType.Security }
                 ],
+                dependencies: [],
                 existingPrs: [],
                 securityAdvisories: [],
-                securityUpdatesOnly: false),
+                securityUpdatesOnly: false,
+                updatingAPullRequest: false),
             new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: false),
             // expectedResult
             false,
@@ -319,11 +349,13 @@ public class UpdatePermittedAndMessageTests
                 allowedUpdates: [
                     new AllowedUpdate() { DependencyName = "Unrelated.Package"}, new AllowedUpdate(){ UpdateType = UpdateType.Security }
                 ],
+                dependencies: [],
                 existingPrs: [],
                 securityAdvisories: [
                     new Advisory() { DependencyName = "Some.Package", AffectedVersions = [], PatchedVersions = [Requirement.Parse(">= 1.11.0")], UnaffectedVersions = [] }
                 ],
-                securityUpdatesOnly: false),
+                securityUpdatesOnly: false,
+                updatingAPullRequest: false),
             new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: false),
             // expectedResult
             true,
@@ -338,11 +370,13 @@ public class UpdatePermittedAndMessageTests
                 allowedUpdates: [
                     new AllowedUpdate() { UpdateType = UpdateType.Security }
                 ],
+                dependencies: [],
                 existingPrs: [],
                 securityAdvisories: [
                     new Advisory() { DependencyName = "Some.Package", AffectedVersions = [Requirement.Parse("1.0.0")], PatchedVersions = [Requirement.Parse("1.1.0")] }
                 ],
-                securityUpdatesOnly: true),
+                securityUpdatesOnly: true,
+                updatingAPullRequest: false),
             new Dependency("Some.Package", "1.1.0", DependencyType.PackageReference),
             // expectedResult
             false,
@@ -357,34 +391,67 @@ public class UpdatePermittedAndMessageTests
                 allowedUpdates: [
                     new AllowedUpdate() { UpdateType = UpdateType.Security }
                 ],
+                dependencies: [],
                 existingPrs: [
                     new PullRequest() { Dependencies = [new PullRequestDependency() { DependencyName = "Some.Package", DependencyVersion = NuGetVersion.Parse("1.2.0") }] }
                 ],
                 securityAdvisories: [
                     new Advisory() { DependencyName = "Some.Package", AffectedVersions = [Requirement.Parse("1.1.0")] }
                 ],
-                securityUpdatesOnly: true),
+                securityUpdatesOnly: true,
+                updatingAPullRequest: false),
             new Dependency("Some.Package", "1.1.0", DependencyType.PackageReference),
             // expectedResult
             false,
             // expectedMessage
             new PullRequestExistsForLatestVersion("Some.Package", "1.2.0")
         ];
+
+        // security job, updating existing => do update
+        yield return
+        [
+            CreateJob(
+                allowedUpdates: [
+                    new AllowedUpdate() { UpdateType = UpdateType.All, DependencyType = DepType.Direct }
+                ],
+                dependencies: ["Some.Package"],
+                existingPrs: [
+                    new PullRequest() { Dependencies = [new PullRequestDependency() { DependencyName = "Some.Package", DependencyVersion = NuGetVersion.Parse("1.1.0") }] }
+                ],
+                securityAdvisories: [
+                    new Advisory() { DependencyName = "Some.Package", AffectedVersions = [Requirement.Parse(">= 1.0.0, < 1.1.0")] }
+                ],
+                securityUpdatesOnly: true,
+                updatingAPullRequest: true),
+            new Dependency("Some.Package", "1.0.0", DependencyType.PackageReference),
+            // expectedResult
+            true,
+            // expectedMessage
+            null
+        ];
     }
 
-    private static Job CreateJob(AllowedUpdate[] allowedUpdates, PullRequest[] existingPrs, Advisory[] securityAdvisories, bool securityUpdatesOnly)
+    private static Job CreateJob(
+        ImmutableArray<AllowedUpdate> allowedUpdates,
+        ImmutableArray<string> dependencies,
+        ImmutableArray<PullRequest> existingPrs,
+        ImmutableArray<Advisory> securityAdvisories,
+        bool securityUpdatesOnly,
+        bool updatingAPullRequest)
     {
         return new Job()
         {
-            AllowedUpdates = allowedUpdates.ToImmutableArray(),
-            ExistingPullRequests = existingPrs.ToImmutableArray(),
-            SecurityAdvisories = securityAdvisories.ToImmutableArray(),
+            AllowedUpdates = allowedUpdates,
+            Dependencies = dependencies,
+            ExistingPullRequests = existingPrs,
+            SecurityAdvisories = securityAdvisories,
             SecurityUpdatesOnly = securityUpdatesOnly,
             Source = new()
             {
                 Provider = "nuget",
                 Repo = "test/repo",
-            }
+            },
+            UpdatingAPullRequest = updatingAPullRequest,
         };
     }
 }
