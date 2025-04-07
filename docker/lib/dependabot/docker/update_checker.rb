@@ -199,6 +199,22 @@ module Dependabot
 
         []
       end
+
+      sig { params(candidate_tag: Dependabot::Docker::Tag).returns(T.nilable(Dependabot::Package::PackageRelease)) }
+      def publication_detail(candidate_tag)
+        return publication_details[candidate_tag.name] if publication_details.key?(candidate_tag.name)
+
+        details = T.must(publication_detail(candidate_tag))
+        publication_details[candidate_tag.name] = details
+
+        details
+      end
+
+      sig { returns(T::Hash[String, Dependabot::Package::PackageRelease]) }
+      def publication_details
+        @publication_details ||= T.let({}, T.nilable(T::Hash[T.untyped, T.untyped]))
+      end
+
       sig { params(tags: T::Array[Dependabot::Docker::Tag]).returns(T::Array[String]) }
       def identify_common_components(tags)
         tag_parts = tags.map do |tag|
@@ -545,7 +561,7 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def should_skip_cooldown?
-        @update_cooldown.nil? || !cooldown_enabled? || !@update_cooldown&.included?(dependency.name)
+        @update_cooldown.nil? || !cooldown_enabled? || !@update_cooldown.included?(dependency.name)
       end
 
       sig { returns(T::Boolean) }
@@ -559,9 +575,10 @@ module Dependabot
       def cooldown_days_for
         cooldown = @update_cooldown
 
-        cooldown.default_days
+        T.must(cooldown).default_days
       end
 
+      sig { params(release_date: T.untyped).returns(T::Boolean) }
       def cooldown_period?(release_date)
         days = cooldown_days_for
         (Time.now.to_i - release_date.to_i) < (days * 24 * 60 * 60)
