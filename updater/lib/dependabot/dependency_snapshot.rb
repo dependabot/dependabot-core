@@ -143,17 +143,14 @@ module Dependabot
 
           # also add dependencies that might be in the group, as a rebase would add them;
           # this avoids individual PR creation that immediately is superseded by a group PR supersede
-          current_dependencies = group.dependencies.map(&:name).reject do |dep|
-            excluding_dependencies[directory]&.include?(dep)
+          # This is only necessary for individual updates, not for group updates
+          unless job_group
+            current_dependencies = group.dependencies.map(&:name).reject do |dep|
+              excluding_dependencies[directory]&.include?(dep)
+            end
           end
 
-          # Avoid adding current job group dependencies to the handled list, as it would block this job group updates.
-          if job_group
-            existing_group_dependencies = dependencies_in_existing_pr_for_group(T.must(job_group))
-                                          .filter_map { |dep| dep["dependency-name"] }
-            current_dependencies -= existing_group_dependencies
-          end
-
+          current_dependencies ||= []
           add_handled_dependencies(current_dependencies.concat(dependencies_in_existing_prs.filter_map do |dep|
             dep["dependency-name"]
           end))
