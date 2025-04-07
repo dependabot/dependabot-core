@@ -26,6 +26,7 @@
     <PackageReference Include="Microsoft.Extensions.Logging" />
     <PackageReference Include="MSBuild.StructuredLogger" />
     <PackageReference Include="NuGet.Core" Aliases="CoreV2" />
+    <PackageReference Include="Microsoft.VisualStudio.SolutionPersistence" />
     <PackageReference Include="OpenTelemetry" />
     <PackageReference Include="OpenTelemetry.Exporter.Console" />
     <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
