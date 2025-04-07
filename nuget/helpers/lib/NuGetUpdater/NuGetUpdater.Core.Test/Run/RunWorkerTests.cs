@@ -86,7 +86,7 @@ public class RunWorkerTests
                     CanUpdate = true,
                     UpdatedDependencies =
                     [
-                        new("Some.Package", "1.0.2", DependencyType.Unknown, TargetFrameworks: ["net8.0"], InfoUrl: "https://nuget.example.com/some-package"),
+                        new("Some.Package", "1.0.1", DependencyType.Unknown, TargetFrameworks: ["net8.0"], InfoUrl: "https://nuget.example.com/some-package"),
                     ]
                 });
             }),
@@ -108,7 +108,14 @@ public class RunWorkerTests
                     """.SetEOL(EOL));
                 return new UpdateOperationResult()
                 {
-                    UpdateOperations = [],
+                    UpdateOperations = [
+                        new DirectUpdate()
+                        {
+                            DependencyName = "Some.Package",
+                            NewVersion = NuGetVersion.Parse("1.0.1"),
+                            UpdatedFiles = ["/some-dir/project.csproj"]
+                        }
+                    ],
                 };
             }),
             expectedResult: new RunResult()
@@ -319,7 +326,20 @@ public class RunWorkerTests
                     """.SetEOL(EOL));
                 return new UpdateOperationResult()
                 {
-                    UpdateOperations = [],
+                    UpdateOperations = [
+                        new DirectUpdate()
+                        {
+                            DependencyName = "Some.Package",
+                            NewVersion = NuGetVersion.Parse("1.0.1"),
+                            UpdatedFiles = ["/some-dir/project.csproj"]
+                        },
+                        new DirectUpdate()
+                        {
+                            DependencyName = "Some.Package2",
+                            NewVersion = NuGetVersion.Parse("1.0.1"),
+                            UpdatedFiles = ["/some-dir/project.csproj"]
+                        }
+                    ],
                 };
             }),
             expectedResult: new RunResult()
@@ -689,7 +709,14 @@ public class RunWorkerTests
 
                 return new UpdateOperationResult()
                 {
-                    UpdateOperations = [],
+                    UpdateOperations = [
+                        new DirectUpdate()
+                        {
+                            DependencyName = packageName,
+                            NewVersion = NuGetVersion.Parse(newVersion),
+                            UpdatedFiles = [filePath]
+                        }
+                    ],
                 };
             }),
             expectedResult: new RunResult()
@@ -1102,7 +1129,14 @@ public class RunWorkerTests
 
                 return new UpdateOperationResult()
                 {
-                    UpdateOperations = [],
+                    UpdateOperations = [
+                        new DirectUpdate()
+                        {
+                            DependencyName = packageName,
+                            NewVersion = NuGetVersion.Parse(newVersion),
+                            UpdatedFiles = [filePath]
+                        }
+                    ],
                 };
             }),
             expectedResult: new RunResult()
@@ -1567,7 +1601,14 @@ public class RunWorkerTests
                     """.SetEOL(EOL));
                 return new UpdateOperationResult()
                 {
-                    UpdateOperations = [],
+                    UpdateOperations = [
+                        new DirectUpdate()
+                        {
+                            DependencyName = packageName,
+                            NewVersion = NuGetVersion.Parse(newVersion),
+                            UpdatedFiles = [filePath]
+                        }
+                    ],
                 };
             }),
             expectedResult: new RunResult()
@@ -2322,7 +2363,7 @@ public class RunWorkerTests
             }),
             updaterWorker: new TestUpdaterWorker(async input =>
             {
-                var (repoRoot, filePath, dependencyName, _previousVersion, _newVersion, _isTransitive) = input;
+                var (repoRoot, filePath, dependencyName, _previousVersion, newVersion, _isTransitive) = input;
                 var dependencyFilePath = Path.Join(repoRoot, filePath);
                 var updatedContent = dependencyName switch
                 {
@@ -2333,7 +2374,14 @@ public class RunWorkerTests
                 await File.WriteAllTextAsync(dependencyFilePath, updatedContent);
                 return new UpdateOperationResult()
                 {
-                    UpdateOperations = [],
+                    UpdateOperations = [
+                        new DirectUpdate()
+                        {
+                            DependencyName = dependencyName,
+                            NewVersion = NuGetVersion.Parse(newVersion),
+                            UpdatedFiles = [filePath]
+                        }
+                    ],
                 };
             }),
             expectedResult: new()
