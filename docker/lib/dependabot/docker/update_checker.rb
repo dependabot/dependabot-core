@@ -12,6 +12,8 @@ require "dependabot/docker/file_parser"
 require "dependabot/docker/version"
 require "dependabot/docker/requirement"
 require "dependabot/shared/utils/credentials_finder"
+require "dependabot/package/release_cooldown_options"
+require "dependabot/package/package_release"
 
 module Dependabot
   module Docker
@@ -204,15 +206,64 @@ module Dependabot
       def publication_detail(candidate_tag)
         return publication_details[candidate_tag.name] if publication_details.key?(candidate_tag.name)
 
-        details = T.must(publication_detail(candidate_tag))
-        publication_details[candidate_tag.name] = details
+        details = get_tag_publication_details(candidate_tag)
+        publication_details[candidate_tag.name] = T.cast(details, Dependabot::Package::PackageRelease)
 
         details
       end
 
-      sig { returns(T::Hash[String, Dependabot::Package::PackageRelease]) }
+      sig { params(tag: Dependabot::Docker::Tag).returns(T.nilable(Dependabot::Package::PackageRelease)) }
+      def get_tag_publication_details(tag)
+        digest_info = with_retries(max_attempts: 3, errors: transient_docker_errors) do
+          client = docker_registry_client
+          client.digest(docker_repo_name, tag.name)
+        end
+
+        first_digest = digest_info.first&.fetch("digest")
+        return nil unless first_digest
+
+        blob_info = with_retries(max_attempts: 3, errors: transient_docker_errors) do
+          client = docker_registry_client
+          client.blob(docker_repo_name, first_digest)
+        end
+
+        last_modified = blob_info.headers[:last_modified]
+        published_date = last_modified ? Time.parse(last_modified) : nil
+
+        Dependabot::Package::PackageRelease.new(
+          version: Dependabot::Version.new(tag.name),
+          released_at: published_date,
+          latest: false,
+          yanked: false,
+          url: nil,
+          package_type: "docker"
+        )
+      end
+
+      sig do
+        params(
+          max_attempts: Integer,
+          errors: T::Array[T.class_of(StandardError)],
+          _blk: T.proc.returns(T.untyped)
+        ).returns(T.untyped)
+      end
+      def with_retries(max_attempts: 3, errors: [], &_blk)
+        attempt = 0
+        begin
+          attempt += 1
+          yield
+        rescue *errors
+          raise if attempt >= max_attempts
+
+          retry
+        end
+      end
+
+      sig { returns(T::Hash[String, T.nilable(Dependabot::Package::PackageRelease)]) }
       def publication_details
-        @publication_details ||= T.let({}, T.nilable(T::Hash[T.untyped, T.untyped]))
+        @publication_details ||= T.let({}, T.nilable(
+                                             T::Hash[String, T.nilable(Dependabot::Package::PackageRelease)]
+                                           ))
       end
 
       sig { params(tags: T::Array[Dependabot::Docker::Tag]).returns(T::Array[String]) }

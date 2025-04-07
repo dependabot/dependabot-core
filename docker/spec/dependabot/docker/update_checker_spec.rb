@@ -1462,6 +1462,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
     end
 
     describe "with cooldown options" do
+      subject(:latest_version) { checker.latest_version }
+
       let(:update_cooldown) do
         Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7)
       end
@@ -1477,28 +1479,26 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       end
 
       before do
-        # Mock the LatestVersionFinder to verify it receives cooldown_options
-        latest_version_finder = instance_double(Dependabot::Bundler::UpdateChecker::LatestVersionFinder)
-        allow(latest_version_finder)
-          .to receive(:latest_version_details).and_return({ version: Gem::Version.new("1.5.0") })
-        allow(Dependabot::Bundler::UpdateChecker::LatestVersionFinder)
-          .to receive(:new).and_return(latest_version_finder)
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:enable_cooldown_for_docker)
+          .and_return(true)
+
+        new_headers =
+          fixture("docker", "registry_manifest_headers", "generic.json")
+        stub_request(:head, repo_url + "manifests/17.10")
+          .and_return(status: 200, body: "", headers: JSON.parse(new_headers))
+        stub_request(:get, repo_url + "manifests/17.10")
+          .and_return(status: 200, body: fixture("docker", "registry_manifest_digests", "ubuntu_17.10.json"))
+
+        blob_headers =
+          fixture("docker", "image_blobs_headers", "ubuntu_17.10_38d6c1.json")
+
+        stub_request(:get, repo_url + "blobs/sha256:9c4bf7dbb981591d4a1169138471afe4bf5ff5418841d00e30a7ba372e38d6c1")
+          .and_return(status: 200, body: fixture("docker", "image_blobs", "ubuntu_17.10_38d6c1.json"),
+                      headers: JSON.parse(blob_headers))
       end
 
-      it "passes cooldown_options to LatestVersionFinder" do
-        checker.latest_version
-
-        expect(Dependabot::Bundler::UpdateChecker::LatestVersionFinder).to have_received(:new).with(
-          hash_including(cooldown_options: an_object_having_attributes(
-            default_days: expected_cooldown_options.default_days,
-            semver_major_days: expected_cooldown_options.semver_major_days,
-            semver_minor_days: expected_cooldown_options.semver_minor_days,
-            semver_patch_days: expected_cooldown_options.semver_patch_days,
-            include: expected_cooldown_options.include,
-            exclude: expected_cooldown_options.exclude
-          ))
-        )
-      end
+      it { is_expected.to eq("17.10") }
     end
   end
 
