@@ -264,7 +264,9 @@ module Dependabot
           if error.message.include?("your php version")
             tool_name = "PHP"
             # Match for the detected PHP version
-            detected_version_match = error.message.match(/your php version \((.*?)\s*;/)
+            detected_version_match =
+              error.message.match(/your php version \((\d+\.\d+\.\d+)\)/) ||
+              error.message.match(/your php version \((.*?)\s*;/)
             detected_version = detected_version_match ? detected_version_match[1] : nil
 
             # Match for the supported PHP versions
