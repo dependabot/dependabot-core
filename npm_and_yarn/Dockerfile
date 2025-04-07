@@ -13,7 +13,7 @@ ARG YARN_VERSION=4.7.0
 ARG BUN_VERSION=1.2.5
 
 # See https://github.com/nodesource/distributions#installation-instructions
-ARG NODEJS_VERSION=22
+ARG NODEJS_VERSION=20
 
 # Check for updates at https://github.com/npm/cli/releases
 # This version should be compatible with the Node.js version declared above. See https://nodejs.org/en/download/releases as well
