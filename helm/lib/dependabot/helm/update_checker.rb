@@ -107,8 +107,10 @@ module Dependabot
 
       sig { params(repo_url: String).returns(String) }
       def build_index_url(repo_url)
-        repo_url_trimmed = repo_url.to_s.strip.chomp("/")
-        "#{repo_url_trimmed}/index.yaml"
+        repo_url_trimmed = repo_url.strip.chomp("/")
+        normalized_repo_url = repo_url_trimmed.gsub("oci://", "https://")
+
+        "#{normalized_repo_url}/index.yaml"
       end
 
       sig { override.returns(T::Boolean) }
@@ -218,7 +220,7 @@ module Dependabot
       def fetch_helm_chart_index(index_url)
         Dependabot.logger.info("Fetching Helm chart index from #{index_url}")
         response = Excon.get(
-          index_url.gsub("oci://", "https://"),
+          index_url,
           idempotent: true,
           middlewares: Excon.defaults[:middlewares] + [Excon::Middleware::RedirectFollower]
         )
