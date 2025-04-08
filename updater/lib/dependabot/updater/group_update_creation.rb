@@ -129,7 +129,7 @@ module Dependabot
 
       def skip_dependency?(dependency, group)
         if dependency_snapshot.handled_dependencies.include?(dependency.name) &&
-           # During consecutive group updates, all dependencies should be included.
+           # Exclude the handled dependencies check for consecutive group updates
            job.dependency_group_to_refresh != group.name
           Dependabot.logger.info(
             "Skipping #{dependency.name} as it has already been handled by a previous group"
