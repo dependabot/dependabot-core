@@ -121,22 +121,20 @@ module Dependabot
         end
 
         def freeze_dependency(dep_string, deps_to_update_names, locked_deps)
-          package_name = dep_string.split(/[=>~<\[]/).first.strip
-          normalized_name = Uv::FileParser.normalize_dependency_name(package_name)
+          dep_match = dep_string.match(/^([^\[\]=<>!]+)(?:\[([^\]]+)\])?/)
+          return dep_string unless dep_match
+
+          dep_name = dep_match[1].strip
+          dep_extra = dep_match[2]
+
+          normalized_name = Uv::FileParser.normalize_dependency_name(dep_name)
 
           return dep_string if deps_to_update_names.include?(normalized_name)
 
           version = locked_version_for_dep(locked_deps, normalized_name)
           return dep_string unless version
 
-          if dep_string.include?("=") || dep_string.include?(">") ||
-             dep_string.include?("<") || dep_string.include?("~")
-            # Replace version constraint with exact version
-            dep_string.sub(/[=>~<\[].*$/, "==#{version}")
-          else
-            # Simple dependency, just append version
-            "#{dep_string}==#{version}"
-          end
+          dep_extra ? "#{dep_name}[#{dep_extra}]==#{version}" : "#{dep_name}==#{version}"
         end
       end
     end
