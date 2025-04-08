@@ -236,6 +236,4 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
       end
     end
   end
-
-
 end
