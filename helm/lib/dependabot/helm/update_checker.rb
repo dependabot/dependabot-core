@@ -264,6 +264,8 @@ module Dependabot
 
         Dependabot.logger.info("Docker UpdateChecker found latest version: #{latest_version || 'none'}")
 
+        return unless docker_checker.can_update?(requirements_to_unlock: :none)
+
         version_class.new(latest_version)
       end
 
