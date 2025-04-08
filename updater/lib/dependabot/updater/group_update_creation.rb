@@ -63,6 +63,7 @@ module Dependabot
           # We still want to update a dependency if it's been updated in another manifest files,
           # but we should skip it if it's been updated in _the same_ manifest file
           if dependency_snapshot.handled_dependencies.include?(dependency.name) and
+            # While performing group updates, all dependencies need to be checked.
             job.dependency_group_to_refresh != group.name
             Dependabot.logger.info(
               "Skipping #{dependency.name} as it has already been handled by a previous group"
