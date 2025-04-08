@@ -174,8 +174,14 @@ module Dependabot
         )
         versions = filter_ignored_versions(versions)
         versions = filter_lower_versions(versions)
+        versions = apply_post_fetch_lowest_security_fix_versions_filter(versions)
 
         versions.min
+      end
+
+      sig { params(versions: T::Array[Dependabot::Version]).returns(T::Array[Dependabot::Version]) }
+      def apply_post_fetch_lowest_security_fix_versions_filter(versions)
+        versions
       end
 
       sig do
