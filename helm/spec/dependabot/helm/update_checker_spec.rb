@@ -123,6 +123,12 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
       end
 
       it { is_expected.to eq(Dependabot::Docker::Version.new("17.10")) }
+
+      context "when the docker image is can't be updated" do
+        let(:version) { "latest" }
+
+        it { is_expected.to be_nil }
+      end
     end
   end
 
@@ -230,4 +236,6 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
       end
     end
   end
+
+
 end
