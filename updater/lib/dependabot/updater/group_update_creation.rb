@@ -62,14 +62,7 @@ module Dependabot
         group.dependencies.each do |dependency|
           # We still want to update a dependency if it's been updated in another manifest files,
           # but we should skip it if it's been updated in _the same_ manifest file
-          if dependency_snapshot.handled_dependencies.include?(dependency.name) and
-            # During consecutive group updates, all dependencies should be included.
-            job.dependency_group_to_refresh != group.name
-            Dependabot.logger.info(
-              "Skipping #{dependency.name} as it has already been handled by a previous group"
-            )
-            next
-          end
+          next if skip_dependency?(dependency, group)
 
           # Get the current state of the dependency files for use in this iteration, filter by directory
           dependency_files = group_changes.current_dependency_files(job)
@@ -132,6 +125,18 @@ module Dependabot
         dependency_change
       ensure
         cleanup_workspace
+      end
+
+      def skip_dependency?(dependency, group)
+        if dependency_snapshot.handled_dependencies.include?(dependency.name) &&
+           # During consecutive group updates, all dependencies should be included.
+           job.dependency_group_to_refresh != group.name
+          Dependabot.logger.info(
+            "Skipping #{dependency.name} as it has already been handled by a previous group"
+          )
+          return true
+        end
+        false
       end
 
       # rubocop:enable Metrics/PerceivedComplexity
