@@ -167,6 +167,23 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
           end
         end
       end
+
+      context "when the PHP version is invalid" do
+        let(:project_name) { "php_version_invalid_with_lock_file" }
+        let(:dependency_name) { "phpunit/phpunit" }
+        let(:dependency_version) { "12.1.0" }
+        let(:string_req) { ">=10.0.16, ==12.1.0" }
+        let(:latest_allowable_version) { Gem::Version.new("12.1.0") }
+
+        it "raises a Dependabot::ToolVersionNotSupported error with correct version details" do
+          expect { resolver.latest_resolvable_version }
+            .to raise_error(Dependabot::ToolVersionNotSupported) do |error|
+              expect(error.tool_name).to eq("PHP")
+              expect(error.detected_version).to eq("8.2.28")
+              expect(error.supported_versions).to eq(">=8.3")
+            end
+        end
+      end
     end
 
     context "when updating a subdependency that's not required anymore" do
@@ -326,10 +343,9 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       after { ENV.delete("COMPOSER_PROCESS_TIMEOUT") }
 
       it "raises a Dependabot::PrivateSourceTimedOut error" do
-        pending("TODO: this URL has no DNS record post GitHub acquisition, so switch to a routable URL that hangs")
         expect { resolver.latest_resolvable_version }
           .to raise_error(Dependabot::PrivateSourceTimedOut) do |error|
-            expect(error.source).to eq("https://composer.dependabot.com")
+            expect(error.source).to eq("https://example.com:81")
           end
       end
     end
