@@ -181,4 +181,53 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
       end
     end
   end
+
+  describe "#fetch_helm_chart_index" do
+    subject(:latest_chart_version) { checker.send(:fetch_latest_chart_version) }
+
+    let(:credentials) { [] }
+    let(:index_content) { fixture("helm", "registry", "bitnami.yaml") }
+    let(:source) { { registry: repo_url, tag: version } }
+
+    before do
+      allow(Dependabot::Helm::Helpers).to receive(:search_releases)
+        .with(anything)
+        .and_return("")
+
+      stub_request(:get, "#{repo_url}/index.yaml")
+        .to_return(
+          status: 200,
+          body: index_content
+        )
+    end
+
+    context "when helm CLI search fails" do
+      it "falls back to fetching from index.yaml" do
+        expect(Dependabot::Helm::Helpers).to receive(:search_releases)
+        expect(checker).to receive(:fetch_releases_from_index).and_call_original
+        expect(checker).to receive(:fetch_helm_chart_index).with("#{repo_url}/index.yaml").and_call_original
+
+        latest_chart_version
+      end
+
+      it "returns the latest version from the index" do
+        expect(latest_chart_version).to eq(Dependabot::Docker::Version.new("20.11.3"))
+      end
+    end
+
+    context "with an oci protocol" do
+      let(:repo_url) { "oci://charts.bitnami.com/bitnami" }
+
+      it "converts OCI URL to HTTPS when making the request" do
+        expect(Excon).to receive(:get)
+          .with(
+            "#{repo_url.gsub('oci', 'https')}/index.yaml",
+            idempotent: true,
+            middlewares: anything
+          )
+
+        latest_chart_version
+      end
+    end
+  end
 end
