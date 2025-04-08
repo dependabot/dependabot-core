@@ -203,7 +203,10 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
       end
 
       it "considers the dependencies in the other PRs as handled, and closes the duplicate PR" do
-        expect(mock_service).to receive(:close_pull_request).with(["dummy-pkg-b"], :update_no_longer_possible)
+        # As per this implementation, if a dependency is part of overlapping groups
+        # Both the groups condition will be validated and the dependency will be updated in both the groups PRs.
+        # It is up to customer to decide which group should take precedence and update the dependency accordingly
+        expect(mock_service).not_to receive(:close_pull_request).with(["dummy-pkg-b"], :update_no_longer_possible)
 
         refresh_group.perform
 
