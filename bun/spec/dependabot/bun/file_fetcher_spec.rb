@@ -73,32 +73,13 @@ RSpec.describe Dependabot::Bun::FileFetcher do
     describe "fetching and parsing the bun.lock" do
       before do
         allow(Dependabot::Experiments).to receive(:enabled?)
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:enable_bun_ecosystem).and_return(enable_beta_ecosystems)
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:enable_beta_ecosystems).and_return(enable_beta_ecosystems)
       end
 
-      context "when the experiment :enable_beta_ecosystems is inactive" do
-        let(:enable_beta_ecosystems) { false }
-
-        it "does not fetch or parse the the bun.lock" do
-          expect(file_fetcher_instance.files.map(&:name))
-            .to match_array(%w(package.json))
-          expect(file_fetcher_instance.ecosystem_versions)
-            .to match({ package_managers: { "unknown" => an_instance_of(Integer) } })
-        end
-      end
-
-      context "when the experiment :enable_beta_ecosystems is active" do
-        let(:enable_beta_ecosystems) { true }
-
-        it "fetches and parses the bun.lock" do
-          expect(file_fetcher_instance.files.map(&:name))
-            .to match_array(%w(package.json bun.lock))
-          expect(file_fetcher_instance.ecosystem_versions)
-            .to match({ package_managers: { "bun" => an_instance_of(Integer) } })
-        end
+      it "fetches and parses the bun.lock" do
+        expect(file_fetcher_instance.files.map(&:name))
+          .to match_array(%w(package.json bun.lock))
+        expect(file_fetcher_instance.ecosystem_versions)
+          .to match({ package_managers: { "bun" => an_instance_of(Integer) } })
       end
     end
   end
