@@ -145,10 +145,12 @@ module Dependabot
                 end
 
         updated_content.gsub!(regex) do |regex_match|
-          # TODO: updated content has the multiple sources with the same version, This will update only the first one
-          # But we need to compare the source name and update.
-          # Existing implementation always updates the first source it finds, Now I have updated with the version match
-          # But we need to update with the source name match as well
+          # TODO: In cases where the updated_content (of the tf file) contains multiple sources,
+          # the existing implementation only updates the first matching source.
+          # While I have improved it to use the version to locate the source for updating,
+          # this approach will fail if multiple sources share the same version.
+          # The implementation needs further enhancement
+          # to match and update the source based on both the version and the source name.
           version_regex = /^\s*version\s*=\s*["'].*#{Regexp.escape(old_req&.fetch(:requirement))}.*['"].*/
           regex_match.sub(version_regex) do |req_line_match|
             req_line_match.sub(old_req&.fetch(:requirement), new_req[:requirement])
