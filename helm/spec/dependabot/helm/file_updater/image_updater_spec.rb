@@ -327,7 +327,7 @@ RSpec.describe Dependabot::Helm::FileUpdater::ImageUpdater do
         YAML
       end
 
-      it "updates the image tag while preserving complex structures" do
+      it "processes the image tag and preserving complex structures" do
         updated_content = updater.updated_values_yaml_content("values.yaml")
         expect(updated_content).to include("- 1.20.0")
       end
