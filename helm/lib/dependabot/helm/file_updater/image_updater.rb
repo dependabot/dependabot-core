@@ -92,20 +92,34 @@ module Dependabot
           return content unless key == "image" && value_node.is_a?(Psych::Nodes::Mapping)
 
           dependency_name = dependency.name
-          dependency_version = T.must(dependency.version)
-          dependency_requirements = dependency.requirements
-
-          has_dependency = value_node.children.any? { |n| n.value == dependency_name }
+          has_dependency = contains_dependency?(value_node, dependency_name)
           return content unless has_dependency
 
-          dependency_requirements.each do |req|
+          dependency_version = T.must(dependency.version)
+          update_version_tags(value_node, content, dependency_version)
+        end
+
+        sig { params(node: Psych::Nodes::Node, dependency_name: String).returns(T::Boolean) }
+        def contains_dependency?(node, dependency_name)
+          node.children.any? do |child|
+            child.is_a?(Psych::Nodes::Scalar) && child.value == dependency_name
+          end
+        end
+
+        sig { params(value_node: Psych::Nodes::Mapping, content: T::Array[String], dependency_version: String).returns(T::Array[String]) }
+        def update_version_tags(value_node, content, dependency_version)
+          dependency.requirements.each do |req|
             next unless req[:metadata][:type] == :docker_image
 
-            version_scalar = value_node.children.find { |n| n.value == req[:source][:tag] }
-            next unless version_scalar
+            tag_value = req[:source][:tag]
+            version_scalar = value_node.children.find do |node|
+              node.is_a?(Psych::Nodes::Scalar) && node.value == tag_value
+            end
 
-            line = version_scalar.start_line
-            content[line] = T.must(content[line]).gsub(req[:source][:tag], dependency_version)
+            if version_scalar
+              line = version_scalar.start_line
+              content[line] = T.must(content[line]).gsub(tag_value, dependency_version)
+            end
           end
 
           content
