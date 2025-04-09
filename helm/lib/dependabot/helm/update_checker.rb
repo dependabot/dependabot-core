@@ -227,8 +227,13 @@ module Dependabot
         )
 
         Dependabot.logger.info("Received response from #{index_url} with status #{response.status}")
+        parsed_result = YAML.safe_load(response.body)
 
-        YAML.safe_load(response.body)
+        unless parsed_result.is_a?(Hash)
+          raise Dependabot::DependencyFileNotParseable, "Expected YAML to parse into a Hash, got String instead"
+        end
+
+        parsed_result
       rescue Excon::Error => e
         Dependabot.logger.error("Error fetching Helm index from #{index_url}: #{e.message}")
         nil

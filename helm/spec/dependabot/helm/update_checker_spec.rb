@@ -219,6 +219,25 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
       it "returns the latest version from the index" do
         expect(latest_chart_version).to eq(Dependabot::Docker::Version.new("20.11.3"))
       end
+
+      context "when the request returns a string" do
+        before do
+          stub_request(:get, "#{repo_url}/index.yaml")
+            .to_return(
+              status: 200,
+              body: "Not found"
+            )
+        end
+
+        it "returns nil" do
+          expect(latest_chart_version).to be_nil
+        end
+
+        it "logs an error" do
+          expect(Dependabot.logger).to receive(:error).with(/Error parsing Helm index/)
+          latest_chart_version
+        end
+      end
     end
 
     context "with an oci protocol" do
