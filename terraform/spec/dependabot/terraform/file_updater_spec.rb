@@ -1773,7 +1773,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
               source  = "hashicorp/aws"
             }
             http = {
-              version = "~> 4.28.0"
+              version = "~> 3.0"
               source  = "hashicorp/http"
             }
             github = {
