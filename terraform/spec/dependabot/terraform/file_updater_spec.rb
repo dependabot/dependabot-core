@@ -1736,6 +1736,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
     end
   end
+
   describe "#update_registry_declaration" do
     let(:new_req) do
       {
@@ -1814,7 +1815,6 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
         }
       TERRAFORM
     end
-
 
     let(:dependencies) do
       [
