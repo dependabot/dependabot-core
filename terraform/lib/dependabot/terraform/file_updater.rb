@@ -145,7 +145,7 @@ module Dependabot
                 end
 
         updated_content.gsub!(regex) do |regex_match|
-          version_regex = /^\s*version\s*=\s*["'].*#{Regexp.escape(old_req&.fetch(:requirement))}/
+          version_regex = /^\s*version\s*=\s*["'].*#{Regexp.escape(old_req&.fetch(:requirement))}.*['"].*/
           regex_match.sub(version_regex) do |req_line_match|
             req_line_match.sub(old_req&.fetch(:requirement), new_req[:requirement])
           end
