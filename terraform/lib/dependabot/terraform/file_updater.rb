@@ -96,7 +96,7 @@ module Dependabot
           when "git"
             update_git_declaration(new_req, old_req, content, file.name)
           when "registry", "provider"
-            update_registry_declaration(new_req, old_req, content)
+            content = update_registry_declaration(new_req, old_req, content)
           else
             raise "Don't know how to update a #{new_req[:source][:type]} " \
                   "declaration!"
@@ -134,10 +134,10 @@ module Dependabot
           new_req: T::Hash[Symbol, T.untyped],
           old_req: T.nilable(T::Hash[Symbol, T.untyped]),
           updated_content: String
-        )
-          .void
+        ).returns(String) # Change return type from void to String
       end
       def update_registry_declaration(new_req, old_req, updated_content)
+        updated_content = updated_content.dup
         regex = if new_req[:source][:type] == "provider"
                   provider_declaration_regex(updated_content)
                 else
@@ -145,9 +145,14 @@ module Dependabot
                 end
         updated_content.gsub!(regex) do |regex_match|
           regex_match.sub(/^\s*version\s*=.*/) do |req_line_match|
-            req_line_match.sub(old_req&.fetch(:requirement), new_req[:requirement])
+            if old_req && old_req[:requirement]
+              req_line_match.sub(old_req[:requirement], new_req[:requirement])
+            else
+              req_line_match.sub(/version\s*=.*/, "version = \"#{new_req[:requirement]}\"")
+            end
           end
         end
+        updated_content
       end
 
       sig { params(content: String, declaration_regex: Regexp).returns(T::Array[String]) }
