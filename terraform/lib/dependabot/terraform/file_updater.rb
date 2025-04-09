@@ -143,15 +143,14 @@ module Dependabot
                 else
                   registry_declaration_regex
                 end
+
         updated_content.gsub!(regex) do |regex_match|
-          regex_match.sub(/^\s*version\s*=.*/) do |req_line_match|
-            if old_req && old_req[:requirement]
-              req_line_match.sub(old_req[:requirement], new_req[:requirement])
-            else
-              req_line_match.sub(/version\s*=.*/, "version = \"#{new_req[:requirement]}\"")
-            end
+          version_regex = /^\s*version\s*=\s*["'].*#{Regexp.escape(old_req&.fetch(:requirement))}/
+          regex_match.sub(version_regex) do |req_line_match|
+            req_line_match.sub(old_req&.fetch(:requirement), new_req[:requirement])
           end
         end
+
         updated_content
       end
 
