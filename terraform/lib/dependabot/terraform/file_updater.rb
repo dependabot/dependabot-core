@@ -146,7 +146,7 @@ module Dependabot
 
         # Define and break down the version regex for better clarity
         version_key_pattern = /^\s*version\s*=\s*/
-        version_value_pattern = /["'].*#{Regexp.escape(old_req&.fetch(:requirement))}.*['"].*/
+        version_value_pattern = /["'].*#{Regexp.escape(old_req&.fetch(:requirement))}.*['"]/
         version_regex = /#{version_key_pattern}#{version_value_pattern}/
 
         updated_content.gsub!(regex) do |regex_match|
