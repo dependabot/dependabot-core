@@ -83,7 +83,7 @@ namespace :gems do
           sleep(2)
           begin
             sh "gem exec sigstore-cli:0.2.1 sign #{gem_path} --bundle #{gem_attestation_path}"
-            sh "gem push --attestation #{gem_attestation_path} #{gem_path}"
+            sh "gem push #{gem_path} --attestation #{gem_attestation_path}"
             break
           rescue StandardError => e
             puts "! `gem push` failed with error: #{e}"
