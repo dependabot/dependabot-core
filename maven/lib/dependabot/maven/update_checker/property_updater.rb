@@ -36,7 +36,7 @@ module Dependabot
                 credentials: credentials,
                 ignored_versions: ignored_versions,
                 security_advisories: []
-              ).versions.map { |v| v.fetch(:version) }
+              ).package_details_fetcher.versions.map { |v| v.fetch(:version) }
 
               versions.include?(updated_version(dep)) || versions.none?
             end
