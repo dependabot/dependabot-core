@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "toml-rb"
+require "citrus"
 
 require "dependabot/dependency"
 require "dependabot/uv/file_parser"
@@ -17,36 +18,73 @@ module Dependabot
         def initialize(pyproject_content:, lockfile: nil)
           @pyproject_content = pyproject_content
           @lockfile = lockfile
+          @lines = pyproject_content.split("\n")
         end
 
         def freeze_top_level_dependencies_except(dependencies_to_update)
           return @pyproject_content unless lockfile
 
-          pyproject_object = TomlRB.parse(@pyproject_content)
-          deps_to_update_names = dependencies_to_update.map(&:name)
+          deps_to_update_names = dependencies_to_update.map(&:name).map { |n| Uv::FileParser.normalize_dependency_name(n) }
+          locked_deps = parsed_lockfile_dependencies || {}
+          in_dependencies = false
+          in_dependencies_array = false
 
-          if pyproject_object["project"]&.key?("dependencies")
-            locked_deps = parsed_lockfile_dependencies || {}
+          updated_lines = @lines.map do |line|
+            if line.match?(/^\[project\]/)
+              in_dependencies = true
+              in_dependencies_array = false
+              line
+            elsif line.match?(/^dependencies\s*=\s*\[/)
+              in_dependencies_array = true
+              line
+            elsif in_dependencies && in_dependencies_array && line.strip.start_with?('"')
+              # Extract the full dependency string without quotes and trailing comma
+              dep_string = line.strip.gsub(/^"|"(?:,\s*)?$/, '')
+              parsed = parse_dependency(dep_string)
 
-            pyproject_object["project"]["dependencies"] =
-              pyproject_object["project"]["dependencies"].map do |dep_string|
-                freeze_dependency(dep_string, deps_to_update_names, locked_deps)
+              if parsed[:name]
+                normalized_name = Uv::FileParser.normalize_dependency_name(parsed[:name])
+
+                if deps_to_update_names.include?(normalized_name)
+                  line
+                else
+                  version = locked_version_for_dep(locked_deps, normalized_name)
+                  if version
+                    prefix = " " * line[/^\s*/].length
+                    suffix = line.end_with?(",") ? "," : ""
+                    dep_str = parsed[:extras] ? "#{parsed[:name]}[#{parsed[:extras]}]" : parsed[:name]
+                    %Q(#{prefix}"#{dep_str}==#{version}"#{suffix})
+                  else
+                    line
+                  end
+                end
+              else
+                line
               end
+            else
+              line
+            end
           end
 
-          TomlRB.dump(pyproject_object)
+          @pyproject_content = updated_lines.join("\n")
         end
 
         def update_python_requirement(python_version)
           return @pyproject_content unless python_version
 
-          pyproject_object = TomlRB.parse(@pyproject_content)
-
-          if pyproject_object["project"]&.key?("requires-python")
-            pyproject_object["project"]["requires-python"] = ">=#{python_version}"
+          in_project_table = false
+          updated_lines = @lines.map.with_index do |line, _i|
+            if line.match?(/^\[project\]/)
+              in_project_table = true
+              line
+            elsif in_project_table && line.match?(/^requires-python\s*=/)
+              "requires-python = \">=#{python_version}\""
+            else
+              line
+            end
           end
 
-          TomlRB.dump(pyproject_object)
+          @pyproject_content = updated_lines.join("\n")
         end
 
         def add_auth_env_vars(credentials)
@@ -135,6 +173,27 @@ module Dependabot
           return dep_string unless version
 
           dep_extra ? "#{dep_name}[#{dep_extra}]==#{version}" : "#{dep_name}==#{version}"
+        end
+
+        def parse_dependency(dep_string)
+          # Split by common version operators
+          parts = dep_string.split(/(?=[<>=~!])/)
+          name_part = parts.first.strip
+          version_part = parts[1..]&.join&.strip
+
+          # Handle extras in name
+          if name_part.include?("[")
+            name, extras = name_part.split("[", 2)
+            extras = extras.chomp("]")
+          else
+            name = name_part
+          end
+
+          {
+            name: name.strip,
+            extras: extras,
+            version_spec: version_part
+          }
         end
       end
     end
