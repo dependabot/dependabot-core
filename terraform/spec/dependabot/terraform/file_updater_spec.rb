@@ -1859,5 +1859,71 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       expect(content).not_to include('version = "~> 4.28.0"') # Old version is gone
       expect(content).to eq(expected_content) # Overall structure matches expected content
     end
+
+    context "when multiple sources contain the same version" do
+      let(:updated_content) do
+        <<~TERRAFORM
+          terraform {
+            required_providers {
+              aws = {
+                version = "~> 5.0, != 5.86.0"
+                source  = "hashicorp/aws"
+              }
+              http = {
+                version = "~> 4.28.0"
+                source  = "hashicorp/http"
+              }
+              github = {
+                version = "~> 4.28.0"
+                source  = "integrations/github"
+              }
+              random = {
+                version = "~> 3.6"
+                source  = "hashicorp/random"
+              }
+            }
+            required_version = "~> 1.10"
+          }
+        TERRAFORM
+      end
+
+      let(:expected_content) do
+        <<~TERRAFORM
+          terraform {
+            required_providers {
+              aws = {
+                version = "~> 5.0, != 5.86.0"
+                source  = "hashicorp/aws"
+              }
+              http = {
+                version = "~> 4.28.0"
+                source  = "hashicorp/http"
+              }
+              github = {
+                version = "~> 6.6.0"
+                source  = "integrations/github"
+              }
+              random = {
+                version = "~> 3.6"
+                source  = "hashicorp/random"
+              }
+            }
+            required_version = "~> 1.10"
+          }
+        TERRAFORM
+      end
+
+      it "updates the registry declaration with the new requirement" do
+        file_updater = described_class.new(
+          dependency_files: [Dependabot::DependencyFile.new(name: "main.tf", content: updated_content)],
+          dependencies: dependencies,
+          credentials: []
+        )
+        content = updated_content.dup
+        file_updater.send(:update_registry_declaration, new_req, old_req, content)
+        expect(content).to include('version = "~> 6.6.0"') # New version is present
+        expect(content).to eq(expected_content) # Overall structure matches expected content
+      end
+    end
   end
 end
