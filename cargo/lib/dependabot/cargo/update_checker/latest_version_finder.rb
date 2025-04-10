@@ -15,17 +15,6 @@ module Dependabot
       class LatestVersionFinder < Dependabot::Package::PackageLatestVersionFinder
         extend T::Sig
 
-        def initialize(dependency:, dependency_files:, credentials:,
-                       ignored_versions:, raise_on_ignored: false,
-                       security_advisories:)
-          @dependency          = dependency
-          @dependency_files    = dependency_files
-          @credentials         = credentials
-          @ignored_versions    = ignored_versions
-          @raise_on_ignored    = raise_on_ignored
-          @security_advisories = security_advisories
-        end
-
         sig do
           override.returns(T.nilable(Dependabot::Package::PackageDetails))
         end
@@ -55,6 +44,11 @@ module Dependabot
             reqs = (req.fetch(:requirement) || "").split(",").map(&:strip)
             reqs.any? { |r| r.match?(/[A-Za-z]/) }
           end
+        end
+
+        sig { override.returns(T::Boolean) }
+        def cooldown_enabled?
+          Dependabot::Experiments.enabled?(:enable_cooldown_for_cargo)
         end
 
         private
