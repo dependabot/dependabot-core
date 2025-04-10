@@ -177,6 +177,88 @@ RSpec.describe Dependabot::Uv::FileUpdater::PyprojectPreparer do
         expect(frozen_content).to include("whitenoise==6.8.2") # pinned without extras
       end
     end
+
+    context "with dependency goups with include-group" do
+      let(:pyproject_content) do
+        <<~TOML
+          [project]
+          name = "test-project"
+          version = "1.0.0"
+          dependencies = [
+              "requests>=2.0.0",
+              "click>=8.0.0"
+          ]
+
+          [dependency-groups]
+          test = [
+              "pytest>=7.0.0",
+              { include-group = "coverage" }
+          ]
+          coverage = [
+              "coverage>=7.0.0",
+              "pytest-cov>=4.0.0"
+          ]
+          dev = [
+              { include-group = "test" },
+              "black>=23.0.0"
+          ]
+        TOML
+      end
+      let(:lockfile_content) do
+        <<~TOML
+          version = 1
+          [[package]]
+          name = "requests"
+          version = "2.0.0"
+
+          [[package]]
+          name = "click"
+          version = "8.0.0"
+
+          [[package]]
+          name = "pytest"
+          version = "7.0.0"
+
+          [[package]]
+          name = "coverage"
+          version = "7.0.0"
+
+          [[package]]
+          name = "pytest-cov"
+          version = "4.0.0"
+
+          [[package]]
+          name = "black"
+          version = "23.0.0"
+        TOML
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "pytest",
+          version: "7.0.1",
+          requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=7.0.1",
+            groups: ["test"],
+            source: nil
+          }],
+          previous_version: "7.0.0",
+          previous_requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=7.0.0",
+            groups: ["test"],
+            source: nil
+          }],
+          package_manager: "uv"
+        )
+      end
+      it "pins dependencies preserving groups correctly" do
+        expect(frozen_content).to include("pytest>=7.0.0") # dependency to update, not pinned
+        expect(frozen_content).to include("coverage==7.0.0") # extra preserved and pinned
+        expect(frozen_content).to include("pytest-cov==4.0.0") # extra preserved and pinned
+        expect(frozen_content).to include("black==23.0.0") # pinned without extras
+      end
+    end
   end
 
   describe "#update_python_requirement" do
