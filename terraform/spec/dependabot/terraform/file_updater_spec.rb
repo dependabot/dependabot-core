@@ -1853,9 +1853,11 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
         dependencies: dependencies,
         credentials: []
       )
-
-      result = file_updater.send(:update_registry_declaration, new_req, old_req, updated_content)
-      expect(result.strip).to eq(expected_content.strip)
+      content = updated_content.dup
+      file_updater.send(:update_registry_declaration, new_req, old_req, content)
+      expect(content).to include('version = "~> 6.6.0"') # New version is present
+      expect(content).not_to include('version = "~> 4.28.0"') # Old version is gone
+      expect(content).to eq(expected_content) # Overall structure matches expected content
     end
   end
 end

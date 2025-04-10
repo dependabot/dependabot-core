@@ -96,7 +96,7 @@ module Dependabot
           when "git"
             update_git_declaration(new_req, old_req, content, file.name)
           when "registry", "provider"
-            content = update_registry_declaration(new_req, old_req, content)
+            update_registry_declaration(new_req, old_req, content)
           else
             raise "Don't know how to update a #{new_req[:source][:type]} " \
                   "declaration!"
@@ -134,10 +134,10 @@ module Dependabot
           new_req: T::Hash[Symbol, T.untyped],
           old_req: T.nilable(T::Hash[Symbol, T.untyped]),
           updated_content: String
-        ).returns(String) # Change return type from void to String
+        )
+          .void
       end
       def update_registry_declaration(new_req, old_req, updated_content)
-        updated_content = updated_content.dup
         regex = if new_req[:source][:type] == "provider"
                   provider_declaration_regex(updated_content)
                 else
@@ -145,19 +145,11 @@ module Dependabot
                 end
 
         updated_content.gsub!(regex) do |regex_match|
-          # TODO: In cases where the updated_content (of the tf file) contains multiple sources,
-          # the existing implementation only updates the first matching source.
-          # While I have improved it to use the version to locate the source for updating,
-          # this approach will fail if multiple sources share the same version.
-          # The implementation needs further enhancement
-          # to match and update the source based on both the version and the source name.
           version_regex = /^\s*version\s*=\s*["'].*#{Regexp.escape(old_req&.fetch(:requirement))}.*['"].*/
           regex_match.sub(version_regex) do |req_line_match|
-            req_line_match.sub(old_req&.fetch(:requirement), new_req[:requirement])
+            req_line_match.sub!(old_req&.fetch(:requirement), new_req[:requirement])
           end
         end
-
-        updated_content
       end
 
       sig { params(content: String, declaration_regex: Regexp).returns(T::Array[String]) }
