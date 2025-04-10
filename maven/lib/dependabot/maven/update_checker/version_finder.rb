@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "nokogiri"
@@ -19,6 +19,16 @@ module Dependabot
 
         TYPE_SUFFICES = %w(jre android java native_mt agp).freeze
 
+        sig do
+          params(
+            dependency: Dependabot::Dependency,
+            dependency_files: T::Array[Dependabot::DependencyFile],
+            credentials: T::Array[Dependabot::Credential],
+            ignored_versions: T::Array[String],
+            security_advisories: T::Array[Dependabot::SecurityAdvisory],
+            raise_on_ignored: T::Boolean
+          ).void
+        end
         def initialize(dependency:, dependency_files:, credentials:,
                        ignored_versions:, security_advisories:,
                        raise_on_ignored: false)
@@ -28,10 +38,16 @@ module Dependabot
           @ignored_versions    = ignored_versions
           @raise_on_ignored    = raise_on_ignored
           @security_advisories = security_advisories
-          @forbidden_urls      = []
-          @dependency_metadata = {}
+          @forbidden_urls      = T.let([], T::Array[String])
+          @dependency_metadata = T.let({}, T::Hash[T.untyped, Nokogiri::XML::Document])
+          @auth_headers_finder = T.let(nil, T.nilable(Utils::AuthHeadersFinder))
+          @pom_repository_details = T.let(nil, T.nilable(T::Array[T::Hash[String, T.untyped]]))
+          @repository_finder = T.let(nil, T.nilable(Maven::FileParser::RepositoriesFinder))
+          @repositories = T.let(nil, T.nilable(T::Array[T::Hash[String, T.untyped]]))
+          @released_check = T.let({}, T::Hash[Version, T::Boolean])
         end
 
+        sig { returns(T.nilable(T::Hash[T.untyped, T.untyped])) }
         def latest_version_details
           possible_versions = versions
 
@@ -43,6 +59,7 @@ module Dependabot
           possible_versions.reverse.find { |v| released?(v.fetch(:version)) }
         end
 
+        sig { returns(T.nilable(T::Hash[T.untyped, T.untyped])) }
         def lowest_security_fix_version_details
           possible_versions = versions
 
@@ -78,11 +95,17 @@ module Dependabot
 
         private
 
+        sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
+        sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
+        sig { returns(T::Array[String]) }
         attr_reader :ignored_versions
+        sig { returns(T::Array[String]) }
         attr_reader :forbidden_urls
+        sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
         attr_reader :security_advisories
 
         sig { params(possible_versions: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
@@ -112,7 +135,7 @@ module Dependabot
           filtered = possible_versions.select { |v| matches_dependency_version_type?(v.fetch(:version)) }
           if possible_versions.count > filtered.count
             diff = possible_versions.count - filtered.count
-            classifier = dependency.version.split(/[.\-]/).last
+            classifier = dependency.version&.split(/[.\-]/)&.last
             Dependabot.logger.info("Filtered out #{diff} non-#{classifier} classifier versions")
           end
           filtered
@@ -151,23 +174,23 @@ module Dependabot
           end
         end
 
+        sig { returns(T::Boolean) }
         def wants_prerelease?
           return false unless dependency.numeric_version
 
-          dependency.numeric_version.prerelease?
+          dependency.numeric_version&.prerelease? || false
         end
 
+        sig { returns(T::Boolean) }
         def wants_date_based_version?
           return false unless dependency.numeric_version
 
-          dependency.numeric_version >= version_class.new(100)
+          T.must(dependency.numeric_version) >= version_class.new(100)
         end
 
+        sig { params(version: Version).returns(T::Boolean) }
         def released?(version)
-          @released_check ||= {}
-          return @released_check[version] if @released_check.key?(version)
-
-          @released_check[version] =
+          @released_check[version] ||=
             repositories.any? do |repository_details|
               url = repository_details.fetch("url")
               response = Dependabot::RegistryClient.head(
@@ -184,13 +207,18 @@ module Dependabot
             end
         end
 
+        sig { params(repository_details: T::Hash[String, T.untyped]).returns(T.nilable(Nokogiri::XML::Document)) }
         def dependency_metadata(repository_details)
           repository_key = repository_details.hash
           return @dependency_metadata[repository_key] if @dependency_metadata.key?(repository_key)
 
-          @dependency_metadata[repository_key] = fetch_dependency_metadata(repository_details)
+          xml_document = fetch_dependency_metadata(repository_details)
+
+          @dependency_metadata[repository_key] ||= xml_document if xml_document
+          @dependency_metadata[repository_key]
         end
 
+        sig { params(repository_details: T::Hash[String, T.untyped]).returns(T.nilable(Nokogiri::XML::Document)) }
         def fetch_dependency_metadata(repository_details)
           response = Dependabot::RegistryClient.get(
             url: dependency_metadata_url(repository_details.fetch("url")),
@@ -219,6 +247,7 @@ module Dependabot
           nil
         end
 
+        sig { params(response: Excon::Response, repository_url: String).void }
         def check_response(response, repository_url)
           return unless [401, 403].include?(response.status)
           return if @forbidden_urls.include?(repository_url)
@@ -227,8 +256,9 @@ module Dependabot
           @forbidden_urls << repository_url
         end
 
+        sig { returns(T::Array[T::Hash[String, T.untyped]]) }
         def repositories
-          return @repositories if defined?(@repositories)
+          return @repositories if @repositories
 
           @repositories = credentials_repository_details
           pom_repository_details.each do |repo|
@@ -237,24 +267,33 @@ module Dependabot
           @repositories
         end
 
+        sig { returns(Maven::FileParser::RepositoriesFinder) }
         def repository_finder
-          @repository_finder ||=
+          return @repository_finder if @repository_finder
+
+          @repository_finder =
             Maven::FileParser::RepositoriesFinder.new(
               pom_fetcher: Maven::FileParser::PomFetcher.new(dependency_files: dependency_files),
               dependency_files: dependency_files,
               credentials: credentials
             )
+          @repository_finder
         end
 
+        sig { returns(T::Array[T::Hash[String, T.untyped]]) }
         def pom_repository_details
-          @pom_repository_details ||=
+          return @pom_repository_details if @pom_repository_details
+
+          @pom_repository_details =
             repository_finder
             .repository_urls(pom: pom)
             .map do |url|
               { "url" => url, "auth_headers" => {} }
             end
+          @pom_repository_details
         end
 
+        sig { returns(T::Array[T.untyped]) }
         def credentials_repository_details
           credentials
             .select { |cred| cred["type"] == "maven_repository" && cred["url"] }
@@ -266,13 +305,14 @@ module Dependabot
             end
         end
 
+        sig { params(comparison_version: Version).returns(T::Boolean) }
         def matches_dependency_version_type?(comparison_version)
           return true unless dependency.version
 
           current_type = dependency.version
-                                   .gsub("native-mt", "native_mt")
-                                   .split(/[.\-]/)
-                                   .find do |type|
+                                   &.gsub("native-mt", "native_mt")
+                                   &.split(/[.\-]/)
+                                   &.find do |type|
             TYPE_SUFFICES.find { |s| type.include?(s) }
           end
 
@@ -286,47 +326,57 @@ module Dependabot
           current_type == version_type
         end
 
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def pom
-          filename = dependency.requirements.first.fetch(:file)
+          filename = dependency.requirements.first&.fetch(:file)
           dependency_files.find { |f| f.name == filename }
         end
 
+        sig { params(repository_url: String).returns(String) }
         def dependency_metadata_url(repository_url)
           group_id, artifact_id = dependency.name.split(":")
 
           "#{repository_url}/" \
-            "#{group_id.tr('.', '/')}/" \
+            "#{group_id&.tr('.', '/')}/" \
             "#{artifact_id}/" \
             "maven-metadata.xml"
         end
 
+        sig { params(repository_url: String, version: Version).returns(String) }
         def dependency_files_url(repository_url, version)
           group_id, artifact_id = dependency.name.split(":")
-          type = dependency.requirements.first.dig(:metadata, :packaging_type)
-          classifier = dependency.requirements.first.dig(:metadata, :classifier)
+          type = dependency.requirements.first&.dig(:metadata, :packaging_type)
+          classifier = dependency.requirements.first&.dig(:metadata, :classifier)
 
           actual_classifier = classifier.nil? ? "" : "-#{classifier}"
           "#{repository_url}/" \
-            "#{group_id.tr('.', '/')}/" \
+            "#{group_id&.tr('.', '/')}/" \
             "#{artifact_id}/" \
             "#{version}/" \
             "#{artifact_id}-#{version}#{actual_classifier}.#{type}"
         end
 
+        sig { returns(T.class_of(Dependabot::Version)) }
         def version_class
           dependency.version_class
         end
 
+        sig { returns(T::Array[String]) }
         def central_repo_urls
           central_url_without_protocol = repository_finder.central_repo_url.gsub(%r{^.*://}, "")
 
           %w(http:// https://).map { |p| p + central_url_without_protocol }
         end
 
+        sig { returns(Utils::AuthHeadersFinder) }
         def auth_headers_finder
-          @auth_headers_finder ||= Utils::AuthHeadersFinder.new(credentials)
+          return @auth_headers_finder if @auth_headers_finder
+
+          @auth_headers_finder = Utils::AuthHeadersFinder.new(credentials)
+          @auth_headers_finder
         end
 
+        sig { params(maven_repo_url: String).returns(T::Hash[String, String]) }
         def auth_headers(maven_repo_url)
           auth_headers_finder.auth_headers(maven_repo_url)
         end
