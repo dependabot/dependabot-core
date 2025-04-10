@@ -144,8 +144,12 @@ module Dependabot
                   registry_declaration_regex
                 end
 
+        # Define and break down the version regex for better clarity
+        version_key_pattern = /^\s*version\s*=\s*/
+        version_value_pattern = /["'].*#{Regexp.escape(old_req&.fetch(:requirement))}.*['"].*/
+        version_regex = /#{version_key_pattern}#{version_value_pattern}/
+
         updated_content.gsub!(regex) do |regex_match|
-          version_regex = /^\s*version\s*=\s*["'].*#{Regexp.escape(old_req&.fetch(:requirement))}.*['"].*/
           regex_match.sub(version_regex) do |req_line_match|
             req_line_match.sub!(old_req&.fetch(:requirement), new_req[:requirement])
           end
