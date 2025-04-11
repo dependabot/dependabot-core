@@ -92,7 +92,7 @@ module Dependabot
           end
         old_declaration +=
           if specified_with_digest?(old_source)
-            "@sha256:#{old_digest}"
+            "@#{old_digest}"
           else
             ""
           end
@@ -103,7 +103,7 @@ module Dependabot
 
         previous_content.gsub(old_declaration_regex) do |old_dec|
           old_dec
-            .gsub("@sha256:#{old_digest}", "@sha256:#{new_digest}")
+            .gsub("@#{old_digest}", "@#{new_digest}")
             .gsub(":#{old_tag}", ":#{new_tag}")
         end
       end
@@ -160,7 +160,7 @@ module Dependabot
       def new_yaml_image(file)
         element = T.must(dependency).requirements.find { |r| r[:file] == file.name }
         prefix = element&.dig(:source, :registry) ? "#{element.fetch(:source)[:registry]}/" : ""
-        digest = element&.dig(:source, :digest) ? "@sha256:#{element.fetch(:source)[:digest]}" : ""
+        digest = element&.dig(:source, :digest) ? "@#{element.fetch(:source)[:digest]}" : ""
         tag = element&.dig(:source, :tag) ? ":#{element.fetch(:source)[:tag]}" : ""
         "#{prefix}#{T.must(dependency).name}#{tag}#{digest}"
       end
@@ -169,7 +169,7 @@ module Dependabot
       def old_yaml_images(file)
         T.must(previous_requirements(file)).map do |r|
           prefix = r.fetch(:source)[:registry] ? "#{r.fetch(:source)[:registry]}/" : ""
-          digest = r.fetch(:source)[:digest] ? "@sha256:#{r.fetch(:source)[:digest]}" : ""
+          digest = r.fetch(:source)[:digest] ? "@#{r.fetch(:source)[:digest]}" : ""
           tag = r.fetch(:source)[:tag] ? ":#{r.fetch(:source)[:tag]}" : ""
           "#{prefix}#{T.must(dependency).name}#{tag}#{digest}"
         end
@@ -179,7 +179,7 @@ module Dependabot
       def old_helm_tags(file)
         T.must(previous_requirements(file)).map do |r|
           tag = r.fetch(:source)[:tag] || ""
-          digest = r.fetch(:source)[:digest] ? "@sha256:#{r.fetch(:source)[:digest]}" : ""
+          digest = r.fetch(:source)[:digest] ? "@#{r.fetch(:source)[:digest]}" : ""
           "#{tag}#{digest}"
         end
       end
@@ -188,7 +188,7 @@ module Dependabot
       def new_helm_tag(file)
         element = T.must(dependency).requirements.find { |r| r[:file] == file.name }
         tag = T.must(element).dig(:source, :tag) || ""
-        digest = T.must(element).dig(:source, :digest) ? "@sha256:#{T.must(element).dig(:source, :digest)}" : ""
+        digest = T.must(element).dig(:source, :digest) ? "@#{T.must(element).dig(:source, :digest)}" : ""
         "#{tag}#{digest}"
       end
 
