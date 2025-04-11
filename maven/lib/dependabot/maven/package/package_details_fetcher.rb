@@ -13,10 +13,8 @@ require "dependabot/maven/file_parser/repositories_finder"
 require "dependabot/maven/version"
 require "dependabot/maven/requirement"
 require "dependabot/maven/utils/auth_headers_finder"
-
 require "sorbet-runtime"
 
-# Stores metadata for a package, including all its available versions
 module Dependabot
   module Maven
     module Package
@@ -35,14 +33,10 @@ module Dependabot
             credentials: T::Array[Dependabot::Credential]
           ).void
         end
-        def initialize(
-          dependency:,
-          dependency_files:,
-          credentials:
-        )
-          @dependency          = dependency
-          @dependency_files    = dependency_files
-          @credentials         = credentials
+        def initialize(dependency:, dependency_files:, credentials:)
+          @dependency = dependency
+          @dependency_files = dependency_files
+          @credentials = credentials
 
           @registry_urls = T.let(nil, T.nilable(T::Array[String]))
           @forbidden_urls = T.let([], T::Array[String])
@@ -70,7 +64,7 @@ module Dependabot
         sig { returns(T::Array[T.untyped]) }
         def versions
           version_details =
-            repositories.map do |repository_details|
+            repositories.flat_map do |repository_details|
               url = repository_details.fetch(URL_KEY)
               xml = dependency_metadata(repository_details)
               next [] if xml.nil?
@@ -79,7 +73,7 @@ module Dependabot
                        .select { |node| version_class.correct?(node.content) }
                        .map { |node| version_class.new(node.content) }
                        .map { |version| { version: version, source_url: url } }
-            end.flatten
+            end
 
           raise PrivateSourceAuthenticationFailure, forbidden_urls.first if version_details.none? && forbidden_urls.any?
 
@@ -148,18 +142,7 @@ module Dependabot
           nil
         rescue Excon::Error::Socket, Excon::Error::Timeout,
                Excon::Error::TooManyRedirects => e
-
-          if central_repo_urls.include?(url)
-            response_status = response&.status || 0
-            response_body = if response
-                              "RegistryError: #{response.status} response status with body #{response.body}"
-                            else
-                              "RegistryError: #{e.message}"
-                            end
-
-            raise RegistryError.new(response_status, response_body)
-          end
-
+          handle_registry_error(url, e, response)
           nil
         end
 
@@ -299,6 +282,26 @@ module Dependabot
         sig { params(maven_repo_url: String).returns(T::Hash[String, String]) }
         def auth_headers(maven_repo_url)
           auth_headers_finder.auth_headers(maven_repo_url)
+        end
+
+        sig do
+          params(
+            url: String,
+            error: Excon::Error,
+            response: T.nilable(Excon::Response)
+          ).void
+        end
+        def handle_registry_error(url, error, response)
+          return unless central_repo_urls.include?(url)
+
+          response_status = response&.status || 0
+          response_body = if response
+                            "RegistryError: #{response.status} response status with body #{response.body}"
+                          else
+                            "RegistryError: #{error.message}"
+                          end
+
+          raise RegistryError.new(response_status, response_body)
         end
       end
     end
