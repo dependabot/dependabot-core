@@ -1,5 +1,5 @@
 # Testing a grouped multi-group configuration.
-# Rebase patch which is listed first in the config
+# Rebase the pull request for the patch group, which is the first entry in the configuration.
 
 dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
 ! stdout create_pull_request
