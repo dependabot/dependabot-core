@@ -47,6 +47,8 @@ module Dependabot
           @repositories = T.let(nil, T.nilable(T::Array[T::Hash[String, T.untyped]]))
           @released_check = T.let({}, T::Hash[Version, T::Boolean])
           @auth_headers_finder = T.let(nil, T.nilable(Utils::AuthHeadersFinder))
+          @dependency_parts = T.let([], T::Array[String])
+          @dependency_classifier = T.let(nil, T.nilable(String))
         end
 
         sig { returns(Dependabot::Dependency) }
@@ -194,26 +196,61 @@ module Dependabot
 
         sig { params(repository_url: String).returns(String) }
         def dependency_metadata_url(repository_url)
-          group_id, artifact_id = dependency.name.split(":")
-
-          "#{repository_url}/" \
-            "#{group_id&.tr('.', '/')}/" \
-            "#{artifact_id}/" \
-            "maven-metadata.xml"
+          "#{dependency_artifact_id_url(repository_url)}/maven-metadata.xml"
         end
 
         sig { params(repository_url: String, version: Version).returns(String) }
         def dependency_files_url(repository_url, version)
-          group_id, artifact_id = dependency.name.split(":")
-          type = dependency.requirements.first&.dig(:metadata, :packaging_type)
-          classifier = dependency.requirements.first&.dig(:metadata, :classifier)
+          _, artifact_id = @dependency_parts
+          url = dependency_artifact_id_url(repository_url)
+          url += "/#{version}"
+          url += "/#{artifact_id}-#{version}"
+          url += dependency_classifier
+          url += ".#{dependency_type}"
+          url
+        end
 
-          actual_classifier = classifier.nil? ? "" : "-#{classifier}"
-          "#{repository_url}/" \
-            "#{group_id&.tr('.', '/')}/" \
-            "#{artifact_id}/" \
-            "#{version}/" \
-            "#{artifact_id}-#{version}#{actual_classifier}.#{type}"
+        sig { params(repository_url: String).returns(String) }
+        def dependency_artifact_id_url(repository_url)
+          group_path, artifact_id = dependency_parts
+
+          # Example:
+          # dependency: org.junit.jupiter:junit-jupiter-api
+          # group_id: org.junit.jupiter
+          # artifact_id: junit-jupiter-api
+          # dependency_parts: ["org/junit/jupiter", "junit-jupiter-api"]
+          # artifact_url: https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-api
+          "#{repository_url}/#{group_path}/#{artifact_id}"
+        end
+
+        # Example:
+        # dependency: org.junit.jupiter:junit-jupiter-api
+        # group_id: org.junit.jupiter
+        # artifact_id: junit-jupiter-api
+        # dependency_parts: ["org/junit/jupiter", "junit-jupiter-api"]
+        sig { returns(T::Array[String]) }
+        def dependency_parts
+          return @dependency_parts if @dependency_parts.any?
+
+          group_id, artifact_id = dependency.name.split(":")
+          group_id = group_id&.tr(".", "/")
+          group_path = group_id&.tr(".", "/")
+          @dependency_parts = [T.must(group_path), T.must(artifact_id)]
+          @dependency_parts
+        end
+
+        sig { returns(String) }
+        def dependency_type
+          @dependency_type ||= T.let(dependency.requirements.first&.dig(:metadata, :packaging_type), T.nilable(String))
+        end
+
+        sig { returns(String) }
+        def dependency_classifier
+          return @dependency_classifier if @dependency_classifier
+
+          classifier = dependency.requirements.first&.dig(:metadata, :classifier)
+          @dependency_classifier = classifier.nil? ? "" : "-#{classifier}"
+          @dependency_classifier
         end
 
         sig { returns(T::Array[T.untyped]) }
