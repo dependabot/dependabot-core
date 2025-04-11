@@ -80,6 +80,26 @@ module Dependabot
           version_details.sort_by { |details| details.fetch(:version) }
         end
 
+        sig { params(repository_details: T::Hash[String, T.untyped]).returns(T.nilable(Nokogiri::XML::Document)) }
+        def fetch_dependency_metadata(repository_details)
+          url = repository_details.fetch(URL_KEY)
+          auth_headers = repository_details.fetch(AUTH_HEADERS_KEY)
+          response = Dependabot::RegistryClient.get(
+            url: dependency_metadata_url(url),
+            headers: auth_headers
+          )
+          check_response(response, url)
+          return unless response.status < 400
+
+          Nokogiri::XML(response.body)
+        rescue URI::InvalidURIError
+          nil
+        rescue Excon::Error::Socket, Excon::Error::Timeout,
+               Excon::Error::TooManyRedirects => e
+          handle_registry_error(url, e, response)
+          nil
+        end
+
         sig { params(version: Version).returns(T::Boolean) }
         def released?(version)
           @released_check[version] ||=
@@ -126,26 +146,6 @@ module Dependabot
           @dependency_metadata[repository_key]
         end
 
-        sig { params(repository_details: T::Hash[String, T.untyped]).returns(T.nilable(Nokogiri::XML::Document)) }
-        def fetch_dependency_metadata(repository_details)
-          url = repository_details.fetch(URL_KEY)
-          auth_headers = repository_details.fetch(AUTH_HEADERS_KEY)
-          response = Dependabot::RegistryClient.get(
-            url: dependency_metadata_url(url),
-            headers: auth_headers
-          )
-          check_response(response, url)
-          return unless response.status < 400
-
-          Nokogiri::XML(response.body)
-        rescue URI::InvalidURIError
-          nil
-        rescue Excon::Error::Socket, Excon::Error::Timeout,
-               Excon::Error::TooManyRedirects => e
-          handle_registry_error(url, e, response)
-          nil
-        end
-
         sig { params(response: Excon::Response, repository_url: String).void }
         def check_response(response, repository_url)
           return unless [401, 403].include?(response.status)
@@ -168,6 +168,10 @@ module Dependabot
           @repository_finder
         end
 
+        # Returns the repository details for the POM file.
+        # Example:
+        #  repository_url: https://repo.maven.apache.org/maven2
+        #  returns: [{ "url" => "https://repo.maven.apache.org/maven2", "auth_headers" => {} }]
         sig { returns(T::Array[T::Hash[String, T.untyped]]) }
         def pom_repository_details
           return @pom_repository_details if @pom_repository_details
@@ -181,52 +185,66 @@ module Dependabot
           @pom_repository_details
         end
 
+        # Returns the POM file for the dependency, if it exists.
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def pom
           filename = dependency.requirements.first&.fetch(:file)
           dependency_files.find { |f| f.name == filename }
         end
 
+        # Constructs the URL for the dependency's metadata file (maven-metadata.xml).
+        #
+        # Example:
+        #   repository_url: https://repo.maven.apache.org/maven2
+        #   returns: https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-api/maven-metadata.xml
         sig { params(repository_url: String).returns(String) }
         def dependency_metadata_url(repository_url)
-          "#{dependency_artifact_id_url(repository_url)}/#{META_DATE_XML}"
+          "#{dependency_base_url(repository_url)}/#{META_DATE_XML}"
         end
 
+        # Constructs the URL for the dependency files, including version and artifact information.
+        #
+        # Example:
+        #   repository_url: https://repo.maven.apache.org/maven2
+        #   version: 5.0.0
+        #   returns: https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-api/5.0.0/junit-jupiter-api-5.0.0.jar
         sig { params(repository_url: String, version: Version).returns(String) }
         def dependency_files_url(repository_url, version)
           _, artifact_id = @dependency_parts
-          url = dependency_artifact_id_url(repository_url)
+          url = dependency_base_url(repository_url)
+          # Append the version and artifact-specific URL segments
           url += "/#{version}"
           url += "/#{artifact_id}-#{version}"
+          # Add classifier (if any) and file extension based on dependency type
           url += dependency_classifier
           url += ".#{dependency_type}"
           url
         end
 
+        #           # Constructs the full URL by combining the repository URL, group path, and artifact ID
+        #
+        # Example:
+        #   repository_url: https://repo.maven.apache.org/maven2
+        #   group_path: org/junit/jupiter
+        #   artifact_id: junit-jupiter-api
+        #   returns: https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-api
         sig { params(repository_url: String).returns(String) }
-        def dependency_artifact_id_url(repository_url)
+        def dependency_base_url(repository_url)
           group_path, artifact_id = dependency_parts
 
-          # Example:
-          # dependency: org.junit.jupiter:junit-jupiter-api
-          # group_id: org.junit.jupiter
-          # artifact_id: junit-jupiter-api
-          # dependency_parts: ["org/junit/jupiter", "junit-jupiter-api"]
-          # artifact_url: https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-api
           "#{repository_url}/#{group_path}/#{artifact_id}"
         end
 
+        # Splits the dependency name into its group path and artifact ID.
+        #
         # Example:
-        # dependency: org.junit.jupiter:junit-jupiter-api
-        # group_id: org.junit.jupiter
-        # artifact_id: junit-jupiter-api
-        # dependency_parts: ["org/junit/jupiter", "junit-jupiter-api"]
+        #   dependency.name: org.junit.jupiter:junit-jupiter-api
+        #   returns: ["org/junit/jupiter", "junit-jupiter-api"]
         sig { returns(T::Array[String]) }
         def dependency_parts
           return @dependency_parts if @dependency_parts.any?
 
           group_id, artifact_id = dependency.name.split(":")
-          group_id = group_id&.tr(".", "/")
           group_path = group_id&.tr(".", "/")
           @dependency_parts = [T.must(group_path), T.must(artifact_id)]
           @dependency_parts
