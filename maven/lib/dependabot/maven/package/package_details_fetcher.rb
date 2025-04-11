@@ -61,7 +61,7 @@ module Dependabot
         sig { returns(T::Array[T.untyped]) }
         attr_reader :forbidden_urls
 
-        sig { returns(T::Array[T.untyped]) }
+        sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
         def versions
           version_details =
             repositories.flat_map do |repository_details|
@@ -77,6 +77,7 @@ module Dependabot
 
           raise PrivateSourceAuthenticationFailure, forbidden_urls.first if version_details.none? && forbidden_urls.any?
 
+          debugger
           version_details.sort_by { |details| details.fetch(:version) }
         end
 

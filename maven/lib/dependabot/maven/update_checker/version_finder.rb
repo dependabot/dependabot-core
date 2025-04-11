@@ -53,14 +53,14 @@ module Dependabot
           )
         end
 
-        sig { returns(T::Array[T.untyped]) }
+        sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
         def versions
           package_details_fetcher.versions
         end
 
         sig { returns(T.nilable(T::Hash[T.untyped, T.untyped])) }
         def latest_version_details
-          possible_versions = package_details_fetcher.versions
+          possible_versions = versions
 
           possible_versions = filter_prereleases(possible_versions)
           possible_versions = filter_date_based_versions(possible_versions)
@@ -72,7 +72,7 @@ module Dependabot
 
         sig { returns(T.nilable(T::Hash[T.untyped, T.untyped])) }
         def lowest_security_fix_version_details
-          possible_versions = package_details_fetcher.versions
+          possible_versions = versions
 
           possible_versions = filter_prereleases(possible_versions)
           possible_versions = filter_date_based_versions(possible_versions)
