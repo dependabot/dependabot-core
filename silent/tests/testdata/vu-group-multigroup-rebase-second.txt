@@ -1,4 +1,5 @@
-# Testing a grouped multi-group configuration.
+# Testing a grouped multi-group configuration. 
+# Rebase minor which is listed second in the config
 
 dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
 ! stdout create_pull_request
