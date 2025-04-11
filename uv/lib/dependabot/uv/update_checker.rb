@@ -112,10 +112,6 @@ module Dependabot
       end
 
       def resolver
-        if Dependabot::Experiments.enabled?(:enable_file_parser_python_local)
-          Dependabot.logger.info("Python package resolver : #{resolver_type}")
-        end
-
         case resolver_type
         when :pip_compile then pip_compile_version_resolver
         when :requirements then pip_version_resolver
