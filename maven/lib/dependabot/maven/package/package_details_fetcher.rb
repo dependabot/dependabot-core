@@ -23,6 +23,11 @@ module Dependabot
       class PackageDetailsFetcher
         extend T::Sig
 
+        META_DATE_XML = T.let("maven-metadata.xml", String)
+        REPOSITORY_TYPE = T.let("maven_repository", String)
+        URL_KEY = T.let("url", String)
+        AUTH_HEADERS_KEY = T.let("auth_headers", String)
+
         sig do
           params(
             dependency: Dependabot::Dependency,
@@ -66,7 +71,7 @@ module Dependabot
         def versions
           version_details =
             repositories.map do |repository_details|
-              url = repository_details.fetch("url")
+              url = repository_details.fetch(URL_KEY)
               xml = dependency_metadata(repository_details)
               next [] if xml.nil?
 
@@ -85,10 +90,11 @@ module Dependabot
         def released?(version)
           @released_check[version] ||=
             repositories.any? do |repository_details|
-              url = repository_details.fetch("url")
+              url = repository_details.fetch(URL_KEY)
+              auth_headers = repository_details.fetch(AUTH_HEADERS_KEY)
               response = Dependabot::RegistryClient.head(
                 url: dependency_files_url(url, version),
-                headers: repository_details.fetch("auth_headers")
+                headers: auth_headers
               )
 
               response.status < 400
@@ -108,7 +114,9 @@ module Dependabot
 
           @repositories = credentials_repository_details
           pom_repository_details.each do |repo|
-            @repositories << repo unless @repositories.any? { |r| r["url"] == repo["url"] }
+            @repositories << repo unless @repositories.any? do |r|
+              r[URL_KEY] == repo[URL_KEY]
+            end
           end
           @repositories
         end
@@ -126,11 +134,13 @@ module Dependabot
 
         sig { params(repository_details: T::Hash[String, T.untyped]).returns(T.nilable(Nokogiri::XML::Document)) }
         def fetch_dependency_metadata(repository_details)
+          url = repository_details.fetch(URL_KEY)
+          auth_headers = repository_details.fetch(AUTH_HEADERS_KEY)
           response = Dependabot::RegistryClient.get(
-            url: dependency_metadata_url(repository_details.fetch("url")),
-            headers: repository_details.fetch("auth_headers")
+            url: dependency_metadata_url(url),
+            headers: auth_headers
           )
-          check_response(response, repository_details.fetch("url"))
+          check_response(response, url)
           return unless response.status < 400
 
           Nokogiri::XML(response.body)
@@ -139,7 +149,7 @@ module Dependabot
         rescue Excon::Error::Socket, Excon::Error::Timeout,
                Excon::Error::TooManyRedirects => e
 
-          if central_repo_urls.include?(repository_details["url"])
+          if central_repo_urls.include?(url)
             response_status = response&.status || 0
             response_body = if response
                               "RegistryError: #{response.status} response status with body #{response.body}"
@@ -183,7 +193,7 @@ module Dependabot
             repository_finder
             .repository_urls(pom: pom)
             .map do |url|
-              { "url" => url, "auth_headers" => {} }
+              { URL_KEY => url, AUTH_HEADERS_KEY => {} }
             end
           @pom_repository_details
         end
@@ -196,7 +206,7 @@ module Dependabot
 
         sig { params(repository_url: String).returns(String) }
         def dependency_metadata_url(repository_url)
-          "#{dependency_artifact_id_url(repository_url)}/maven-metadata.xml"
+          "#{dependency_artifact_id_url(repository_url)}/#{META_DATE_XML}"
         end
 
         sig { params(repository_url: String, version: Version).returns(String) }
@@ -256,11 +266,12 @@ module Dependabot
         sig { returns(T::Array[T.untyped]) }
         def credentials_repository_details
           credentials
-            .select { |cred| cred["type"] == "maven_repository" && cred["url"] }
+            .select { |cred| cred["type"] == REPOSITORY_TYPE && cred[URL_KEY] }
             .map do |cred|
+              url_value = cred.fetch(URL_KEY).gsub(%r{/+$}, "")
               {
-                "url" => cred.fetch("url").gsub(%r{/+$}, ""),
-                "auth_headers" => auth_headers(cred.fetch("url").gsub(%r{/+$}, ""))
+                URL_KEY => url_value,
+                AUTH_HEADERS_KEY => auth_headers(url_value)
               }
             end
         end
