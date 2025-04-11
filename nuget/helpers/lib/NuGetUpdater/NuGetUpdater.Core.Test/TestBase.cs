@@ -11,7 +11,7 @@ namespace NuGetUpdater.Core.Test
     {
         protected TestBase()
         {
-            MSBuildHelper.RegisterMSBuild(Environment.CurrentDirectory, Environment.CurrentDirectory);
+            MSBuildHelper.RegisterMSBuild(Environment.CurrentDirectory, Environment.CurrentDirectory, new TestLogger());
         }
 
         protected static void ValidateError(JobErrorBase expected, JobErrorBase? actual)

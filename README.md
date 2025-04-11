@@ -67,7 +67,7 @@ may be useful for advanced users looking for examples of how to hack on Dependab
 
 ## Dependabot on CI
 
-In an environment such as GitHub where Dependabot is running in a container, if you want to change your build or installation process depending on whether Dependabot is checking, you can determine it by the existence of `DEPENDABOT` environment variable.
+In an environment such as GitHub where Dependabot runs in a container, if you want to change your build or installation process depending on whether it's running within the context of the Dependabot container, you can check the existence of the `DEPENDABOT` environment variable.
 
 # Contributing to Dependabot
 
