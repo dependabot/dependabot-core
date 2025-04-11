@@ -117,6 +117,66 @@ RSpec.describe Dependabot::Uv::FileUpdater::PyprojectPreparer do
         expect(frozen_content).to eq(pyproject_content)
       end
     end
+
+    context "with dependencies containing extras" do
+      let(:pyproject_content) do
+        <<~TOML
+          [project]
+          name = "sample-project"
+          version = "0.1.0"
+          requires-python = ">=3.7"
+          dependencies = [
+              "django>=5.1.7",
+              "django-storages[google]>=1.14.5",
+              "whitenoise>=6.8.2",
+          ]
+        TOML
+      end
+
+      let(:lockfile_content) do
+        <<~TOML
+          version = 1
+          [[package]]
+          name = "django"
+          version = "5.1.7"
+
+          [[package]]
+          name = "django-storages"
+          version = "1.14.5"
+
+          [[package]]
+          name = "whitenoise"
+          version = "6.8.2"
+        TOML
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "django",
+          version: "5.1.8",
+          requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=5.1.8",
+            groups: [],
+            source: nil
+          }],
+          previous_version: "5.1.7",
+          previous_requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=5.1.7",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "uv"
+        )
+      end
+
+      it "pins dependencies preserving extras correctly" do
+        expect(frozen_content).to include("django>=5.1.7") # dependency to update, not pinned
+        expect(frozen_content).to include("django-storages[google]==1.14.5") # extra preserved and pinned
+        expect(frozen_content).to include("whitenoise==6.8.2") # pinned without extras
+      end
+    end
   end
 
   describe "#update_python_requirement" do
