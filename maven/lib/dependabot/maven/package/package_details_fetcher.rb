@@ -77,7 +77,6 @@ module Dependabot
 
           raise PrivateSourceAuthenticationFailure, forbidden_urls.first if version_details.none? && forbidden_urls.any?
 
-          debugger
           version_details.sort_by { |details| details.fetch(:version) }
         end
 
