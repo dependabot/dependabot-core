@@ -853,7 +853,7 @@ begin
 
   # rubocop:enable Style/GlobalVars
 rescue StandardError => e
-  puts "An error occurred: #{e.message}"
+  puts "An error occurred: #{e.class}, #{e.message}"
   exit 1
 end
 
