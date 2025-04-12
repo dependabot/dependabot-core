@@ -35,7 +35,7 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then SWIFT_UBUNTU_VERSION="${SWIFT_UBUNTU_VE
   && DOWNLOAD_URL=https://download.swift.org/swift-${SWIFT_VERSION}-release/${SWIFT_SHORT_UBUNTU_VERSION}/swift-${SWIFT_VERSION}-RELEASE/${SWIFT_TARBALL} \
   && curl --connect-timeout 15 --retry 5 "${DOWNLOAD_URL}" > "/tmp/${SWIFT_TARBALL}" \
   && curl --connect-timeout 15 --retry 5 "${DOWNLOAD_URL}.sig" > "/tmp/${SWIFT_SIGNATURE}" \
-  && sh -c 'curl --connect-timeout 15 --retry 5 https://www.swift.org/keys/all-keys.asc | gpg --import -' \
+  && sh -c 'curl --location --compressed --connect-timeout 15 --retry 5 https://www.swift.org/keys/all-keys.asc | gpg --import -' \
   && gpg --keyserver hkp://keyserver.ubuntu.com --refresh-keys Swift \
   && gpg --verify /tmp/${SWIFT_SIGNATURE} \
   && mkdir /opt/swift \
