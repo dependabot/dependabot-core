@@ -120,10 +120,6 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
         allow(Dependabot::Uv::FileUpdater::PyprojectPreparer).to receive(:new)
           .and_return(pyproject_preparer)
 
-        allow(pyproject_preparer).to receive(:freeze_top_level_dependencies_except)
-          .with(dependencies)
-          .and_return("frozen content")
-
         allow(pyproject_preparer).to receive_messages(
           update_python_requirement: "python requirement updated content",
           sanitize: "sanitized content"
