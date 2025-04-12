@@ -1,6 +1,7 @@
 # typed: strong
 # frozen_string_literal: true
 
+require "dependabot/security_advisory"
 require "dependabot/package/package_release"
 require "sorbet-runtime"
 
