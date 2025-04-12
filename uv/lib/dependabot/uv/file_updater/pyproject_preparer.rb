@@ -1,4 +1,4 @@
-# typed: true
+# typed: strong
 # frozen_string_literal: true
 
 require "toml-rb"
@@ -15,21 +15,26 @@ module Dependabot
   module Uv
     class FileUpdater
       class PyprojectPreparer
+        extend T::Sig
+
+        Credentials = T.type_alias { T::Array[T::Hash[String, String]] }
+
+        sig { params(pyproject_content: String, lockfile: T.nilable(Dependabot::DependencyFile)).void }
         def initialize(pyproject_content:, lockfile: nil)
           @pyproject_content = pyproject_content
           @lockfile = lockfile
-          @lines = pyproject_content.split("\n")
+          @lines = T.let(pyproject_content.split("\n"), T::Array[String])
         end
 
+        sig { params(python_version: T.nilable(String)).returns(String) }
         def update_python_requirement(python_version)
           return @pyproject_content unless python_version
 
-          in_project_table = false
-          updated_lines = @lines.map.with_index do |line, _i|
-            if line.match?(/^\[project\]/)
-              in_project_table = true
-              line
-            elsif in_project_table && line.match?(/^requires-python\s*=/)
+          in_project_table = T.let(false, T::Boolean)
+          updated_lines = @lines.map do |line|
+            in_project_table = true if line.match?(/^\[project\]/)
+
+            if in_project_table && line.match?(/^requires-python\s*=/)
               "requires-python = \">=#{python_version}\""
             else
               line
@@ -39,6 +44,7 @@ module Dependabot
           @pyproject_content = updated_lines.join("\n")
         end
 
+        sig { params(credentials: T.nilable(Credentials)).returns(T.nilable(Credentials)) }
         def add_auth_env_vars(credentials)
           return unless credentials
 
@@ -58,6 +64,7 @@ module Dependabot
           end
         end
 
+        sig { returns(String) }
         def sanitize
           # No special sanitization needed for UV files at this point
           @pyproject_content
@@ -65,8 +72,10 @@ module Dependabot
 
         private
 
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
         attr_reader :lockfile
 
+        sig { params(url: String).returns(String) }
         def sanitize_env_name(url)
           url.gsub(%r{^https?://}, "").gsub(/[^a-zA-Z0-9]/, "_").upcase
         end
