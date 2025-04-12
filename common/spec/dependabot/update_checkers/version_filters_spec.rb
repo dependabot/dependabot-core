@@ -1,3 +1,6 @@
+# typed: false
+# frozen_string_literal: true
+
 require "dependabot/update_checkers/version_filters"
 require "dependabot/package/package_release"
 require "rspec"
