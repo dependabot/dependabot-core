@@ -31,6 +31,8 @@ public class SpecialFilePatcherTests
 
     public static IEnumerable<object[]> SpecialImportsConditionPatcherTestData()
     {
+        // magic file names
+
         // one-off test to verify namespaces don't interfere
         yield return
         [
@@ -92,6 +94,23 @@ public class SpecialFilePatcherTests
               <Import Project="Some\Path\Microsoft.TextTemplating.targets" Condition="false" />
               <Import Project="Some\Path\Microsoft.WebApplication.targets" Condition="false" />
               <Import Project="Unrelated.Two.targets" />
+            </Project>
+            """
+        ];
+
+        // magic property segments
+        yield return
+        [
+            // fileContent
+            """
+            <Project>
+              <Import Project="$(PkgSome_Package)\build\Some.Package.targets" />
+            </Project>
+            """,
+            // expectedPatchedContent
+            """
+            <Project>
+              <Import Project="$(PkgSome_Package)\build\Some.Package.targets" Condition="false" />
             </Project>
             """
         ];
