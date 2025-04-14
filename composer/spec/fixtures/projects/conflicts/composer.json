@@ -27,10 +27,6 @@
         "psr-4": {
             "Tests\\Tsufeki\\KayoJsonMapper\\": "tests/Tsufeki/KayoJsonMapper/"
         }
-    },
-    "config": {
-      "platform": {
-        "php": "7.1.3"
-      }
     }
 }
+
