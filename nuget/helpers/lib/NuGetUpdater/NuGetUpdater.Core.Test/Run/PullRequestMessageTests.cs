@@ -2,6 +2,7 @@ using NuGet.Versioning;
 
 using NuGetUpdater.Core.Run;
 using NuGetUpdater.Core.Run.ApiModel;
+using NuGetUpdater.Core.Updater;
 
 using Xunit;
 
@@ -11,15 +12,15 @@ public class PullRequestMessageTests
 {
     [Theory]
     [MemberData(nameof(GetPullRequestApiMessageData))]
-    public void GetPullRequestApiMessage(Job job, DependencyFile[] updatedFiles, ReportedDependency[] updatedDependencies, MessageBase expectedMessage)
+    public void GetPullRequestApiMessage(Job job, DependencyFile[] updatedFiles, ReportedDependency[] updatedDependencies, UpdateOperationBase[] updateOperationsPerformed, MessageBase expectedMessage)
     {
-        var actualMessage = RunWorker.GetPullRequestApiMessage(job, updatedFiles, updatedDependencies, "TEST-COMMIT-SHA");
+        var actualMessage = RunWorker.GetPullRequestApiMessage(job, updatedFiles, updatedDependencies, [.. updateOperationsPerformed], "TEST-COMMIT-SHA");
         Assert.NotNull(actualMessage);
         actualMessage = actualMessage switch
         {
             // this isn't the place to verify the generated text
-            CreatePullRequest create => create with { CommitMessage = "test commit message", PrTitle = "test pr title", PrBody = "test pr body" },
-            UpdatePullRequest update => update with { CommitMessage = "test commit message", PrTitle = "test pr title", PrBody = "test pr body" },
+            CreatePullRequest create => create with { CommitMessage = RunWorkerTests.TestPullRequestCommitMessage, PrTitle = RunWorkerTests.TestPullRequestTitle, PrBody = RunWorkerTests.TestPullRequestBody },
+            UpdatePullRequest update => update with { CommitMessage = RunWorkerTests.TestPullRequestCommitMessage, PrTitle = RunWorkerTests.TestPullRequestTitle, PrBody = RunWorkerTests.TestPullRequestBody },
             _ => actualMessage,
         };
         Assert.Equal(expectedMessage.GetType(), actualMessage.GetType());
@@ -62,15 +63,25 @@ public class PullRequestMessageTests
                     Requirements = [],
                 }
             },
+            // updateOperationsPerformed
+            new UpdateOperationBase[]
+            {
+                new DirectUpdate()
+                {
+                    DependencyName = "Some.Dependency",
+                    NewVersion = NuGetVersion.Parse("1.0.1"),
+                    UpdatedFiles = ["/src/project.csproj"]
+                }
+            },
             // expectedMessage
             new CreatePullRequest()
             {
                 Dependencies = [new ReportedDependency() { Name = "Some.Dependency", Version = "1.0.1", Requirements = [] }],
                 UpdatedDependencyFiles = [new DependencyFile() { Directory = "/src/", Name = "project.csproj", Content = "project contents irrelevant" } ],
                 BaseCommitSha = "TEST-COMMIT-SHA",
-                CommitMessage = "test commit message",
-                PrTitle = "test pr title",
-                PrBody = "test pr body",
+                CommitMessage = RunWorkerTests.TestPullRequestCommitMessage,
+                PrTitle = RunWorkerTests.TestPullRequestTitle,
+                PrBody = RunWorkerTests.TestPullRequestBody,
             }
         ];
 
@@ -104,6 +115,16 @@ public class PullRequestMessageTests
                     Name = "Some.Dependency",
                     Version = "1.0.1",
                     Requirements = [], // not used
+                }
+            },
+            // updateOperationsPerformed
+            new UpdateOperationBase[]
+            {
+                new DirectUpdate()
+                {
+                    DependencyName = "Some.Dependency",
+                    NewVersion = NuGetVersion.Parse("1.0.1"),
+                    UpdatedFiles = ["/src/project.csproj"]
                 }
             },
             // expectedMessage
@@ -140,6 +161,8 @@ public class PullRequestMessageTests
             Array.Empty<DependencyFile>(),
             // updatedDependencies
             Array.Empty<ReportedDependency>(),
+            // updateOperationsPerformed
+            new UpdateOperationBase[] { },
             // expectedMessage
             new ClosePullRequest() { DependencyNames = ["Some.Dependency"], Reason = "dependency_removed" },
         ];
@@ -183,6 +206,16 @@ public class PullRequestMessageTests
                     Requirements = [],
                 }
             },
+            // updateOperationsPerformed
+            new UpdateOperationBase[]
+            {
+                new DirectUpdate()
+                {
+                    DependencyName = "Some.Dependency",
+                    NewVersion = NuGetVersion.Parse("1.0.1"),
+                    UpdatedFiles = ["/src/project.csproj"]
+                }
+            },
             // expectedMessage
             new UpdatePullRequest()
             {
@@ -190,9 +223,9 @@ public class PullRequestMessageTests
                 DependencyNames = ["Some.Dependency"],
                 UpdatedDependencyFiles = [new DependencyFile() { Directory = "/src/", Name = "project.csproj", Content = "project contents irrelevant" } ],
                 BaseCommitSha = "TEST-COMMIT-SHA",
-                CommitMessage = "test commit message",
-                PrTitle = "test pr title",
-                PrBody = "test pr body",
+                CommitMessage = RunWorkerTests.TestPullRequestCommitMessage,
+                PrTitle = RunWorkerTests.TestPullRequestTitle,
+                PrBody = RunWorkerTests.TestPullRequestBody,
             }
         ];
 
@@ -236,6 +269,16 @@ public class PullRequestMessageTests
                     Requirements = [],
                 }
             },
+            // updateOperationsPerformed
+            new UpdateOperationBase[]
+            {
+                new DirectUpdate()
+                {
+                    DependencyName = "Some.Dependency",
+                    NewVersion = NuGetVersion.Parse("1.0.1"),
+                    UpdatedFiles = ["/src/project.csproj"]
+                }
+            },
             // expectedMessage
             new UpdatePullRequest()
             {
@@ -243,9 +286,9 @@ public class PullRequestMessageTests
                 DependencyNames = ["Some.Dependency"],
                 UpdatedDependencyFiles = [new DependencyFile() { Directory = "/src/", Name = "project.csproj", Content = "project contents irrelevant" } ],
                 BaseCommitSha = "TEST-COMMIT-SHA",
-                CommitMessage = "test commit message",
-                PrTitle = "test pr title",
-                PrBody = "test pr body",
+                CommitMessage = RunWorkerTests.TestPullRequestCommitMessage,
+                PrTitle = RunWorkerTests.TestPullRequestTitle,
+                PrBody = RunWorkerTests.TestPullRequestBody,
             }
         ];
     }

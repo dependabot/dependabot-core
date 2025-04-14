@@ -1117,6 +1117,50 @@ public partial class DiscoveryWorkerTests
         }
 
         [Fact]
+        public async Task WindowsSpecificProjectAndWindowsSpecificDependency()
+        {
+            await TestDiscoveryAsync(
+                experimentsManager: new ExperimentsManager() { UseDirectDiscovery = true },
+                packages: [
+                    MockNuGetPackage.CreateSimplePackage("Some.Os.Package", "1.2.3", "net6.0-windows7.0")
+                ],
+                workspacePath: "",
+                files: [
+                    ("project.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFramework>net9.0-windows</TargetFramework>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="Some.Os.Package" Version="1.2.3" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                ],
+                expectedResult: new()
+                {
+                    Path = "",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "project.csproj",
+                            Dependencies = [
+                                new("Some.Os.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net9.0-windows"], IsDirect: true)
+                            ],
+                            Properties = [
+                                new("TargetFramework", "net9.0-windows", "project.csproj")
+                            ],
+                            TargetFrameworks = ["net9.0-windows"],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [],
+                            AdditionalFiles = []
+                        }
+                    ]
+                }
+            );
+        }
+
+        [Fact]
         public async Task DiscoveryWithTargetPlaformVersion_DirectDiscovery()
         {
             await TestDiscoveryAsync(
@@ -1367,6 +1411,56 @@ public partial class DiscoveryWorkerTests
                                 new("TargetFrameworkMoniker", ".NETCoreApp,Version=8.0", "project.csproj"),
                             ],
                             TargetFrameworks = ["net8.0"],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [],
+                            AdditionalFiles = [],
+                        }
+                    ]
+                }
+            );
+        }
+
+        [Fact]
+        public async Task LegacyProjectWithPackageReferencesReportsDependencies()
+        {
+            // This is a feature of the VS project system - a legacy project with <PackageReference> elements.  The `dotnet` CLI
+            // can't resolve the transitive dependencies; only the VS project system can, so there are some manual steps to allow
+            // dependency discovery.
+            await TestDiscoveryAsync(
+                experimentsManager: new ExperimentsManager() { UseDirectDiscovery = true },
+                packages: [
+                    MockNuGetPackage.CreateSimplePackage("Some.Dependency", "1.0.0", "net48", [(null, [("Some.Transitive.Dependency", "2.0.0")])]),
+                    MockNuGetPackage.CreateSimplePackage("Some.Transitive.Dependency", "2.0.0", "net48"),
+                ],
+                workspacePath: "",
+                files: [
+                    ("project.csproj", """
+                        <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                          <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                          <PropertyGroup>
+                            <OutputType>Library</OutputType>
+                            <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="Some.Dependency" Version="1.0.0" />
+                          </ItemGroup>
+                          <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                        </Project>
+                        """)
+                ],
+                expectedResult: new()
+                {
+                    Path = "",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "project.csproj",
+                            Dependencies = [
+                                new("Some.Dependency", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net48"], IsDirect: true),
+                                new("Some.Transitive.Dependency", "2.0.0", DependencyType.Unknown, TargetFrameworks: ["net48"], IsTransitive: true),
+                            ],
+                            Properties = [],
+                            TargetFrameworks = ["net48"],
                             ReferencedProjectPaths = [],
                             ImportedFiles = [],
                             AdditionalFiles = [],

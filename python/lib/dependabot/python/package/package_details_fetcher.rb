@@ -268,11 +268,13 @@ module Dependabot
 
         sig do
           params(
-            releases_json: T::Hash[String, T::Array[T::Hash[String, T.untyped]]]
+            releases_json: T.nilable(T::Hash[String, T::Array[T::Hash[String, T.untyped]]])
           )
             .returns(T::Array[Dependabot::Package::PackageRelease])
         end
         def format_version_releases(releases_json)
+          return [] unless releases_json
+
           releases_json.each_with_object([]) do |(version, release_data_array), versions|
             release_data = release_data_array.last
 

@@ -1,6 +1,8 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "sorbet-runtime"
+
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/dependency"
@@ -8,7 +10,6 @@ require "dependabot/pub/version"
 require "dependabot/pub/helpers"
 require "dependabot/pub/package_manager"
 require "dependabot/pub/language"
-require "sorbet-runtime"
 
 module Dependabot
   module Pub
@@ -78,9 +79,9 @@ module Dependabot
         raise "No pubspec.yaml!" unless get_original_file("pubspec.yaml")
       end
 
-      sig { returns(T::Array[Dependabot::Dependency]) }
+      sig { returns(T::Array[T::Hash[String, T.untyped]]) }
       def list
-        @list ||= T.let(dependency_services_list, T.nilable(T::Array[Dependabot::Dependency]))
+        @list ||= T.let(dependency_services_list, T.nilable(T::Array[T::Hash[String, T.untyped]]))
       end
     end
   end

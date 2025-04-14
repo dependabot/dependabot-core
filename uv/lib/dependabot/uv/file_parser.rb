@@ -14,6 +14,7 @@ require "dependabot/uv/name_normaliser"
 require "dependabot/uv/requirements_file_matcher"
 require "dependabot/uv/language_version_manager"
 require "dependabot/uv/package_manager"
+require "toml-rb"
 
 module Dependabot
   module Uv
@@ -47,6 +48,7 @@ module Dependabot
         dependency_set = DependencySet.new
 
         dependency_set += pyproject_file_dependencies if pyproject
+        dependency_set += uv_lock_file_dependencies
         dependency_set += requirement_dependencies if requirement_files.any?
 
         dependency_set.dependencies
@@ -62,6 +64,12 @@ module Dependabot
           ),
           T.nilable(Ecosystem)
         )
+      end
+
+      # Normalize dependency names to match the PyPI index normalization
+      sig { params(name: String, extras: T::Array[String]).returns(String) }
+      def self.normalize_dependency_name(name, extras = [])
+        NameNormaliser.normalise_including_extras(name, extras)
       end
 
       private
@@ -80,17 +88,11 @@ module Dependabot
 
       sig { returns(Ecosystem::VersionManager) }
       def package_manager
-        if Experiments.enabled?(:enable_file_parser_python_local)
-          Dependabot.logger.info("Detected package manager : #{detected_package_manager.name}")
-        end
-
         @package_manager ||= T.let(detected_package_manager, T.nilable(Ecosystem::VersionManager))
       end
 
       sig { returns(Ecosystem::VersionManager) }
       def detected_package_manager
-        setup_python_environment if Experiments.enabled?(:enable_file_parser_python_local)
-
         PackageManager.new(T.must(detect_uv_version))
       end
 
@@ -138,11 +140,6 @@ module Dependabot
 
       sig { returns(String) }
       def python_raw_version
-        if Experiments.enabled?(:enable_file_parser_python_local)
-          Dependabot.logger.info("Detected python version: #{language_version_manager.python_version}")
-          Dependabot.logger.info("Detected python major minor version: #{language_version_manager.python_major_minor}")
-        end
-
         language_version_manager.python_version
       end
 
@@ -162,6 +159,36 @@ module Dependabot
       sig { returns(T::Array[DependencyFile]) }
       def requirement_files
         dependency_files.select { |f| f.name.end_with?(".txt", ".in") }
+      end
+
+      sig { returns(T::Array[DependencyFile]) }
+      def uv_lock_files
+        dependency_files.select { |f| f.name == "uv.lock" }
+      end
+
+      sig { returns(DependencySet) }
+      def uv_lock_file_dependencies
+        dependency_set = DependencySet.new
+
+        uv_lock_files.each do |file|
+          lockfile_content = TomlRB.parse(file.content)
+          packages = lockfile_content.fetch("package", [])
+
+          packages.each do |package_data|
+            next unless package_data.is_a?(Hash) && package_data["name"] && package_data["version"]
+
+            dependency_set << Dependency.new(
+              name: normalised_name(package_data["name"]),
+              version: package_data["version"],
+              requirements: [], # Lock files don't contain requirements
+              package_manager: "uv"
+            )
+          end
+        rescue StandardError => e
+          Dependabot.logger.warn("Error parsing uv.lock: #{e.message}")
+        end
+
+        dependency_set
       end
 
       sig { returns(DependencySet) }
@@ -341,7 +368,7 @@ module Dependabot
 
       sig { params(name: String, extras: T::Array[String]).returns(String) }
       def normalised_name(name, extras = [])
-        NameNormaliser.normalise_including_extras(name, extras)
+        FileParser.normalize_dependency_name(name, extras)
       end
 
       sig { override.returns(T.untyped) }

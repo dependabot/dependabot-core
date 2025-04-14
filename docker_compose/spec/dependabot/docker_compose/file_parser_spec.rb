@@ -207,7 +207,9 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
               it "has the right details" do
                 expect(dependency).to be_a(Dependabot::Dependency)
                 expect(dependency.name).to eq("myreg/ubuntu")
-                expect(dependency.version).to eq("18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005")
+                expect(dependency.version).to eq(
+                  "18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005"
+                )
                 expect(dependency.requirements).to eq(expected_requirements)
               end
             end
@@ -514,7 +516,7 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
           content: <<~YAML
             services:
               api:
-                image: ubuntu:${TAG_VERSION}
+                image: ubuntu${TAG_VERSION}
               db:
                 image: postgres:12.3
               cache:
@@ -581,6 +583,26 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
           expect(dependency.version).to eq("18.04")
           expect(dependency.requirements).to eq(expected_requirements)
         end
+      end
+    end
+
+    context "with default value in variable" do
+      let(:dependency) { parser.parse.first }
+
+      let(:composefile) do
+        Dependabot::DependencyFile.new(
+          name: "docker-compose.yml",
+          content: <<~YAML
+            services:
+              api:
+                image: ${UBUNTU_IMAGE:-ubuntu:17.04}
+          YAML
+        )
+      end
+
+      it "returns dependency defined as default value" do
+        expect(dependency.name).to eq("ubuntu")
+        expect(dependency.version).to eq("17.04")
       end
     end
   end

@@ -63,13 +63,13 @@ module Dependabot
         )
       end
 
-      sig { params(checker: Dependabot::UpdateCheckers::Base, error_type: String).void }
-      def record_security_update_not_possible_error(checker, error_type = "security_update_not_possible")
+      sig { params(checker: Dependabot::UpdateCheckers::Base).void }
+      def record_security_update_not_possible_error(checker)
         latest_allowed_version =
           (checker.lowest_resolvable_security_fix_version ||
            checker.dependency.version)&.to_s
         lowest_non_vulnerable_version =
-          checker.lowest_security_fix_version.to_s
+          checker.lowest_security_fix_version&.to_s
         conflicting_dependencies = checker.conflicting_dependencies
 
         Dependabot.logger.info(
@@ -80,7 +80,7 @@ module Dependabot
         )
 
         service.record_update_job_error(
-          error_type: error_type,
+          error_type: "security_update_not_possible",
           error_details: {
             "dependency-name": checker.dependency.name,
             "latest-resolvable-version": latest_allowed_version,
@@ -148,10 +148,10 @@ module Dependabot
 
       sig { params(lowest_non_vulnerable_version: T.nilable(String)).returns(String) }
       def earliest_fixed_version_message(lowest_non_vulnerable_version)
-        if lowest_non_vulnerable_version
+        if lowest_non_vulnerable_version && !lowest_non_vulnerable_version.empty?
           "The earliest fixed version is #{lowest_non_vulnerable_version}."
         else
-          "Dependabot could not find a non-vulnerable version"
+          "Dependabot could not find an allowed non-vulnerable version"
         end
       end
 

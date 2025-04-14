@@ -1,0 +1,114 @@
+[
+  {
+    "name": ".circleci",
+    "path": ".circleci",
+    "sha": "a55330d23efd5d7a9f6de2f199025afaee1ec850",
+    "size": 0,
+    "url": "https://api.github.com/repos/dependabot/dependabot-core/contents/.circleci?ref=master",
+    "html_url": "https://github.com/dependabot/dependabot-core/tree/master/.circleci",
+    "git_url": "https://api.github.com/repos/dependabot/dependabot-core/git/trees/a55330d23efd5d7a9f6de2f199025afaee1ec850",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/dependabot/dependabot-core/contents/.circleci?ref=master",
+      "git": "https://api.github.com/repos/dependabot/dependabot-core/git/trees/a55330d23efd5d7a9f6de2f199025afaee1ec850",
+      "html": "https://github.com/dependabot/dependabot-core/tree/master/.circleci"
+    }
+  },
+  {
+    "name": ".editorconfig",
+    "path": ".editorconfig",
+    "sha": "90198c6fd1a76a01ccaa2bc945687b3fdf46401c",
+    "size": 198,
+    "url": "https://api.github.com/repos/dependabot/dependabot-core/contents/.editorconfig?ref=master",
+    "html_url": "https://github.com/dependabot/dependabot-core/blob/main/.editorconfig",
+    "git_url": "https://api.github.com/repos/dependabot/dependabot-core/git/blobs/90198c6fd1a76a01ccaa2bc945687b3fdf46401c",
+    "download_url": "https://raw.githubusercontent.com/dependabot/dependabot-core/master/.editorconfig",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/dependabot/dependabot-core/contents/.editorconfig?ref=master",
+      "git": "https://api.github.com/repos/dependabot/dependabot-core/git/blobs/90198c6fd1a76a01ccaa2bc945687b3fdf46401c",
+      "html": "https://github.com/dependabot/dependabot-core/blob/main/.editorconfig"
+    }
+  },
+  {
+    "name": ".gitignore",
+    "path": ".gitignore",
+    "sha": "952d80d51793764e2b9761b39dd714d6529c9c89",
+    "size": 346,
+    "url": "https://api.github.com/repos/dependabot/dependabot-core/contents/.gitignore?ref=master",
+    "html_url": "https://github.com/dependabot/dependabot-core/blob/main/.gitignore",
+    "git_url": "https://api.github.com/repos/dependabot/dependabot-core/git/blobs/952d80d51793764e2b9761b39dd714d6529c9c89",
+    "download_url": "https://raw.githubusercontent.com/dependabot/dependabot-core/master/.gitignore",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/dependabot/dependabot-core/contents/.gitignore?ref=master",
+      "git": "https://api.github.com/repos/dependabot/dependabot-core/git/blobs/952d80d51793764e2b9761b39dd714d6529c9c89",
+      "html": "https://github.com/dependabot/dependabot-core/blob/main/.gitignore"
+    }
+  },
+  {
+    "name": "Charts.yaml",
+    "path": "Charts.yaml",
+    "sha": "3610f39558406539335bcffbdcb6626ec30f8271",
+    "size": 746,
+    "url": "https://api.github.com/repos/dependabot/dependabot-core/contents/Charts.yaml?ref=master",
+    "html_url": "https://github.com/dependabot/dependabot-core/blob/main/Charts.yaml",
+    "git_url": "https://api.github.com/repos/dependabot/dependabot-core/git/blobs/3610f39558406539335bcffbdcb6626ec30f8271",
+    "download_url": "https://raw.githubusercontent.com/dependabot/dependabot-core/master/Charts.yaml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/dependabot/dependabot-core/contents/Charts.yaml?ref=master",
+      "git": "https://api.github.com/repos/dependabot/dependabot-core/git/blobs/3610f39558406539335bcffbdcb6626ec30f8271",
+      "html": "https://github.com/dependabot/dependabot-core/blob/main/Charts.yaml"
+    }
+  },
+  {
+    "name": "CHANGELOG.md",
+    "path": "CHANGELOG.md",
+    "sha": "fc4a6a0790fc4a903ed2a0636f46b361ad6144c6",
+    "size": 114851,
+    "url": "https://api.github.com/repos/dependabot/dependabot-core/contents/CHANGELOG.md?ref=master",
+    "html_url": "https://github.com/dependabot/dependabot-core/blob/main/CHANGELOG.md",
+    "git_url": "https://api.github.com/repos/dependabot/dependabot-core/git/blobs/fc4a6a0790fc4a903ed2a0636f46b361ad6144c6",
+    "download_url": "https://raw.githubusercontent.com/dependabot/dependabot-core/master/CHANGELOG.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/dependabot/dependabot-core/contents/CHANGELOG.md?ref=master",
+      "git": "https://api.github.com/repos/dependabot/dependabot-core/git/blobs/fc4a6a0790fc4a903ed2a0636f46b361ad6144c6",
+      "html": "https://github.com/dependabot/dependabot-core/blob/main/CHANGELOG.md"
+    }
+  },
+  {
+    "name": "CONTRIBUTING.md",
+    "path": "CONTRIBUTING.md",
+    "sha": "c60e1930968302a75220f8c09201450ff65e78f7",
+    "size": 2239,
+    "url": "https://api.github.com/repos/dependabot/dependabot-core/contents/CONTRIBUTING.md?ref=master",
+    "html_url": "https://github.com/dependabot/dependabot-core/blob/main/CONTRIBUTING.md",
+    "git_url": "https://api.github.com/repos/dependabot/dependabot-core/git/blobs/c60e1930968302a75220f8c09201450ff65e78f7",
+    "download_url": "https://raw.githubusercontent.com/dependabot/dependabot-core/master/CONTRIBUTING.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/dependabot/dependabot-core/contents/CONTRIBUTING.md?ref=master",
+      "git": "https://api.github.com/repos/dependabot/dependabot-core/git/blobs/c60e1930968302a75220f8c09201450ff65e78f7",
+      "html": "https://github.com/dependabot/dependabot-core/blob/main/CONTRIBUTING.md"
+    }
+  },
+  {
+    "name": "values.yaml",
+    "path": "values.yaml",
+    "sha": "311f9743315183cc6751313cb251cfeb3de45c1a",
+    "size": 4927,
+    "url": "https://api.github.com/repos/dependabot/dependabot-core/contents/values.yaml?ref=master",
+    "html_url": "https://github.com/dependabot/dependabot-core/blob/main/values.yaml",
+    "git_url": "https://api.github.com/repos/dependabot/dependabot-core/git/blobs/311f9743315183cc6751313cb251cfeb3de45c1a",
+    "download_url": "https://raw.githubusercontent.com/dependabot/dependabot-core/master/values.yaml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/dependabot/dependabot-core/contents/values.yaml?ref=master",
+      "git": "https://api.github.com/repos/dependabot/dependabot-core/git/blobs/311f9743315183cc6751313cb251cfeb3de45c1a",
+      "html": "https://github.com/dependabot/dependabot-core/blob/main/values.yaml"
+    }
+  }
+]

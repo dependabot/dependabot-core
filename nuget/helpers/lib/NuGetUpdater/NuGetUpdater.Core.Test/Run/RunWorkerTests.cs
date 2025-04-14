@@ -22,6 +22,10 @@ using TestFile = (string Path, string Content);
 
 public class RunWorkerTests
 {
+    public const string TestPullRequestCommitMessage = "test-pull-request-commit-message";
+    public const string TestPullRequestTitle = "test-pull-request-title";
+    public const string TestPullRequestBody = "test-pull-request-body";
+
     [Theory]
     [InlineData(EOLType.CR)]
     [InlineData(EOLType.LF)]
@@ -82,7 +86,7 @@ public class RunWorkerTests
                     CanUpdate = true,
                     UpdatedDependencies =
                     [
-                        new("Some.Package", "1.0.2", DependencyType.Unknown, TargetFrameworks: ["net8.0"], InfoUrl: "https://nuget.example.com/some-package"),
+                        new("Some.Package", "1.0.1", DependencyType.Unknown, TargetFrameworks: ["net8.0"], InfoUrl: "https://nuget.example.com/some-package"),
                     ]
                 });
             }),
@@ -102,7 +106,17 @@ public class RunWorkerTests
                       </ItemGroup>
                     </Project>
                     """.SetEOL(EOL));
-                return new UpdateOperationResult();
+                return new UpdateOperationResult()
+                {
+                    UpdateOperations = [
+                        new DirectUpdate()
+                        {
+                            DependencyName = "Some.Package",
+                            NewVersion = NuGetVersion.Parse("1.0.1"),
+                            UpdatedFiles = ["/some-dir/project.csproj"]
+                        }
+                    ],
+                };
             }),
             expectedResult: new RunResult()
             {
@@ -210,9 +224,9 @@ public class RunWorkerTests
                         },
                     ],
                     BaseCommitSha = "TEST-COMMIT-SHA",
-                    CommitMessage = "TODO: message",
-                    PrTitle = "TODO: title",
-                    PrBody = "TODO: body",
+                    CommitMessage = TestPullRequestCommitMessage,
+                    PrTitle = TestPullRequestTitle,
+                    PrBody = TestPullRequestBody,
                 },
                 new MarkAsProcessed("TEST-COMMIT-SHA")
             ]
@@ -310,7 +324,23 @@ public class RunWorkerTests
                       </ItemGroup>
                     </Project>
                     """.SetEOL(EOL));
-                return new UpdateOperationResult();
+                return new UpdateOperationResult()
+                {
+                    UpdateOperations = [
+                        new DirectUpdate()
+                        {
+                            DependencyName = "Some.Package",
+                            NewVersion = NuGetVersion.Parse("1.0.1"),
+                            UpdatedFiles = ["/some-dir/project.csproj"]
+                        },
+                        new DirectUpdate()
+                        {
+                            DependencyName = "Some.Package2",
+                            NewVersion = NuGetVersion.Parse("1.0.1"),
+                            UpdatedFiles = ["/some-dir/project.csproj"]
+                        }
+                    ],
+                };
             }),
             expectedResult: new RunResult()
             {
@@ -462,9 +492,9 @@ public class RunWorkerTests
 
                     ],
                     BaseCommitSha = "TEST-COMMIT-SHA",
-                    CommitMessage = "TODO: message",
-                    PrTitle = "TODO: title",
-                    PrBody = "TODO: body",
+                    CommitMessage = TestPullRequestCommitMessage,
+                    PrTitle = TestPullRequestTitle,
+                    PrBody = TestPullRequestBody,
                 },
                 new MarkAsProcessed("TEST-COMMIT-SHA")
             ]
@@ -677,7 +707,17 @@ public class RunWorkerTests
                         throw new NotSupportedException();
                 }
 
-                return new UpdateOperationResult();
+                return new UpdateOperationResult()
+                {
+                    UpdateOperations = [
+                        new DirectUpdate()
+                        {
+                            DependencyName = packageName,
+                            NewVersion = NuGetVersion.Parse(newVersion),
+                            UpdatedFiles = [filePath]
+                        }
+                    ],
+                };
             }),
             expectedResult: new RunResult()
             {
@@ -856,9 +896,9 @@ public class RunWorkerTests
                         },
                     ],
                     BaseCommitSha = "TEST-COMMIT-SHA",
-                    CommitMessage = "TODO: message",
-                    PrTitle = "TODO: title",
-                    PrBody = "TODO: body",
+                    CommitMessage = TestPullRequestCommitMessage,
+                    PrTitle = TestPullRequestTitle,
+                    PrBody = TestPullRequestBody,
                 },
                 new MarkAsProcessed("TEST-COMMIT-SHA")
             ]
@@ -1087,7 +1127,17 @@ public class RunWorkerTests
                         throw new NotSupportedException();
                 }
 
-                return new UpdateOperationResult();
+                return new UpdateOperationResult()
+                {
+                    UpdateOperations = [
+                        new DirectUpdate()
+                        {
+                            DependencyName = packageName,
+                            NewVersion = NuGetVersion.Parse(newVersion),
+                            UpdatedFiles = [filePath]
+                        }
+                    ],
+                };
             }),
             expectedResult: new RunResult()
             {
@@ -1416,9 +1466,9 @@ public class RunWorkerTests
                         },
                     ],
                     BaseCommitSha = "TEST-COMMIT-SHA",
-                    CommitMessage = "TODO: message",
-                    PrTitle = "TODO: title",
-                    PrBody = "TODO: body",
+                    CommitMessage = TestPullRequestCommitMessage,
+                    PrTitle = TestPullRequestTitle,
+                    PrBody = TestPullRequestBody,
                 },
                 new MarkAsProcessed("TEST-COMMIT-SHA")
             ]
@@ -1549,7 +1599,17 @@ public class RunWorkerTests
                       </PropertyGroup>
                     </Project>
                     """.SetEOL(EOL));
-                return new UpdateOperationResult();
+                return new UpdateOperationResult()
+                {
+                    UpdateOperations = [
+                        new DirectUpdate()
+                        {
+                            DependencyName = packageName,
+                            NewVersion = NuGetVersion.Parse(newVersion),
+                            UpdatedFiles = [filePath]
+                        }
+                    ],
+                };
             }),
             expectedResult: new RunResult()
             {
@@ -1724,9 +1784,9 @@ public class RunWorkerTests
                         }
                     ],
                     BaseCommitSha = "TEST-COMMIT-SHA",
-                    CommitMessage = "TODO: message",
-                    PrTitle = "TODO: title",
-                    PrBody = "TODO: body",
+                    CommitMessage = TestPullRequestCommitMessage,
+                    PrTitle = TestPullRequestTitle,
+                    PrBody = TestPullRequestBody,
                 },
                 new MarkAsProcessed("TEST-COMMIT-SHA")
             ]
@@ -2065,9 +2125,9 @@ public class RunWorkerTests
                         }
                     ],
                     BaseCommitSha = "TEST-COMMIT-SHA",
-                    CommitMessage = "TODO: message",
-                    PrTitle = "TODO: title",
-                    PrBody = "TODO: body"
+                    CommitMessage = TestPullRequestCommitMessage,
+                    PrTitle = TestPullRequestTitle,
+                    PrBody = TestPullRequestBody
                 },
                 new MarkAsProcessed("TEST-COMMIT-SHA")
             ]
@@ -2303,7 +2363,7 @@ public class RunWorkerTests
             }),
             updaterWorker: new TestUpdaterWorker(async input =>
             {
-                var (repoRoot, filePath, dependencyName, _previousVersion, _newVersion, _isTransitive) = input;
+                var (repoRoot, filePath, dependencyName, _previousVersion, newVersion, _isTransitive) = input;
                 var dependencyFilePath = Path.Join(repoRoot, filePath);
                 var updatedContent = dependencyName switch
                 {
@@ -2312,7 +2372,17 @@ public class RunWorkerTests
                     _ => throw new NotImplementedException("unreachable")
                 };
                 await File.WriteAllTextAsync(dependencyFilePath, updatedContent);
-                return new UpdateOperationResult();
+                return new UpdateOperationResult()
+                {
+                    UpdateOperations = [
+                        new DirectUpdate()
+                        {
+                            DependencyName = dependencyName,
+                            NewVersion = NuGetVersion.Parse(newVersion),
+                            UpdatedFiles = [filePath]
+                        }
+                    ],
+                };
             }),
             expectedResult: new()
             {
@@ -2450,9 +2520,9 @@ public class RunWorkerTests
                         },
                     ],
                     BaseCommitSha = "TEST-COMMIT-SHA",
-                    CommitMessage = "TODO: message",
-                    PrTitle = "TODO: title",
-                    PrBody = "TODO: body",
+                    CommitMessage = TestPullRequestCommitMessage,
+                    PrTitle = TestPullRequestTitle,
+                    PrBody = TestPullRequestBody,
                 },
                 new MarkAsProcessed("TEST-COMMIT-SHA"),
             ]
@@ -2593,7 +2663,16 @@ public class RunWorkerTests
         var worker = new RunWorker(jobId, testApiHandler, discoveryWorker, analyzeWorker, updaterWorker, logger);
         var repoContentsPathDirectoryInfo = new DirectoryInfo(tempDirectory.DirectoryPath);
         var actualResult = await worker.RunAsync(job, repoContentsPathDirectoryInfo, "TEST-COMMIT-SHA");
-        var actualApiMessages = testApiHandler.ReceivedMessages.ToArray();
+        var actualApiMessages = testApiHandler.ReceivedMessages
+            .Select(m =>
+                m.Object switch
+                {
+                    // this isn't the place to verify the generated text
+                    CreatePullRequest create => (m.Type, create with { CommitMessage = TestPullRequestCommitMessage, PrTitle = TestPullRequestTitle, PrBody = TestPullRequestBody }),
+                    UpdatePullRequest update => (m.Type, update with { CommitMessage = TestPullRequestCommitMessage, PrTitle = TestPullRequestTitle, PrBody = TestPullRequestBody }),
+                    _ => m,
+                }
+            ).ToArray();
 
         // assert
         var actualRunResultJson = JsonSerializer.Serialize(actualResult);

@@ -30,6 +30,8 @@ public abstract record JobErrorBase : MessageBase
             {
                 HttpStatusCode.Unauthorized or
                 HttpStatusCode.Forbidden => new PrivateSourceAuthenticationFailure(NuGetContext.GetPackageSourceUrls(currentDirectory)),
+                HttpStatusCode.TooManyRequests => new PrivateSourceBadResponse(NuGetContext.GetPackageSourceUrls(currentDirectory)),
+                HttpStatusCode.ServiceUnavailable => new PrivateSourceBadResponse(NuGetContext.GetPackageSourceUrls(currentDirectory)),
                 _ => new UnknownError(ex, jobId),
             },
             InvalidProjectFileException invalidProjectFile => new DependencyFileNotParseable(invalidProjectFile.ProjectFile),

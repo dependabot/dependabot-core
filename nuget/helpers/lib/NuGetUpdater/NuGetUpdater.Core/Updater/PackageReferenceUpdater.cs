@@ -1,9 +1,12 @@
 using System.Collections.Immutable;
+using System.Text.Json;
 
 using Microsoft.Language.Xml;
 
+using NuGet.Frameworks;
 using NuGet.Versioning;
 
+using NuGetUpdater.Core.Updater;
 using NuGetUpdater.Core.Utilities;
 
 namespace NuGetUpdater.Core;
@@ -21,7 +24,7 @@ namespace NuGetUpdater.Core;
 /// </remarks>
 internal static class PackageReferenceUpdater
 {
-    public static async Task UpdateDependencyAsync(
+    public static async Task<IEnumerable<UpdateOperationBase>> UpdateDependencyAsync(
         string repoRootPath,
         string projectPath,
         string dependencyName,
@@ -60,45 +63,67 @@ internal static class PackageReferenceUpdater
 
         if (!await DoesDependencyRequireUpdateAsync(repoRootPath, projectPath, tfms, topLevelDependencies, dependencyName, newDependencyVersion, experimentsManager, logger))
         {
-            return;
+            return [];
         }
 
+        var updateOperations = new List<UpdateOperationBase>();
         var peerDependencies = await GetUpdatedPeerDependenciesAsync(repoRootPath, projectPath, tfms, dependencyName, newDependencyVersion, experimentsManager, logger);
         if (experimentsManager.UseLegacyDependencySolver)
         {
             if (isTransitive)
             {
-                await UpdateTransitiveDependencyAsync(repoRootPath, projectPath, dependencyName, newDependencyVersion, buildFiles, experimentsManager, logger);
+                var updatedFiles = await UpdateTransitiveDependencyAsync(repoRootPath, projectPath, dependencyName, newDependencyVersion, buildFiles, experimentsManager, logger);
+                updateOperations.Add(new PinnedUpdate()
+                {
+                    DependencyName = dependencyName,
+                    NewVersion = NuGetVersion.Parse(newDependencyVersion),
+                    UpdatedFiles = [.. updatedFiles],
+                });
             }
             else
             {
                 if (peerDependencies is null)
                 {
-                    return;
+                    return updateOperations;
                 }
 
-                await UpdateTopLevelDepdendency(repoRootPath, buildFiles, tfms, dependencyName, previousDependencyVersion, newDependencyVersion, peerDependencies, experimentsManager, logger);
+                var topLevelUpdateOperations = await UpdateTopLevelDepdendency(repoRootPath, buildFiles, tfms, dependencyName, previousDependencyVersion, newDependencyVersion, peerDependencies, experimentsManager, logger);
+                updateOperations.AddRange(topLevelUpdateOperations);
             }
         }
         else
         {
             if (peerDependencies is null)
             {
-                return;
+                return updateOperations;
             }
 
-            await UpdateDependencyWithConflictResolution(repoRootPath, buildFiles, tfms, projectPath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive, peerDependencies, experimentsManager, logger);
+            var conflictResolutionUpdateOperations = await UpdateDependencyWithConflictResolution(
+                repoRootPath,
+                buildFiles,
+                tfms,
+                projectPath,
+                dependencyName,
+                previousDependencyVersion,
+                newDependencyVersion,
+                isTransitive,
+                peerDependencies,
+                experimentsManager,
+                logger);
+            updateOperations.AddRange(conflictResolutionUpdateOperations);
         }
 
         if (!await AreDependenciesCoherentAsync(repoRootPath, projectPath, dependencyName, buildFiles, tfms, experimentsManager, logger))
         {
-            return;
+            // should we return an empty set because we failed?
+            return updateOperations;
         }
 
         await SaveBuildFilesAsync(buildFiles, logger);
+        return updateOperations;
     }
 
-    public static async Task UpdateDependencyWithConflictResolution(
+    public static async Task<IEnumerable<UpdateOperationBase>> UpdateDependencyWithConflictResolution(
         string repoRootPath,
         ImmutableArray<ProjectBuildFile> buildFiles,
         string[] targetFrameworks,
@@ -111,17 +136,20 @@ internal static class PackageReferenceUpdater
         ExperimentsManager experimentsManager,
         ILogger logger)
     {
-        var topLevelDependencies = MSBuildHelper.GetTopLevelPackageDependencyInfos(buildFiles).ToArray();
+        var topLevelDependencies = MSBuildHelper.GetTopLevelPackageDependencyInfos(buildFiles).ToImmutableArray();
         var isDependencyTopLevel = topLevelDependencies.Any(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase));
-        var dependenciesToUpdate = new[] { new Dependency(dependencyName, newDependencyVersion, DependencyType.PackageReference) };
+        var dependenciesToUpdate = new[] { new Dependency(dependencyName, newDependencyVersion, DependencyType.PackageReference) }.ToImmutableArray();
+        var updateOperations = new List<UpdateOperationBase>();
 
         // update the initial dependency...
-        TryUpdateDependencyVersion(buildFiles, dependencyName, previousDependencyVersion, newDependencyVersion, logger);
+        var (_, updateOperationsPerformed) = TryUpdateDependencyVersion(buildFiles, dependencyName, previousDependencyVersion, newDependencyVersion, logger);
+        updateOperations.AddRange(updateOperationsPerformed);
 
         // ...and the peer dependencies...
         foreach (var (packageName, packageVersion) in peerDependencies.Where(kvp => string.Compare(kvp.Key, dependencyName, StringComparison.OrdinalIgnoreCase) != 0))
         {
-            TryUpdateDependencyVersion(buildFiles, packageName, previousDependencyVersion: null, newDependencyVersion: packageVersion, logger);
+            (_, updateOperationsPerformed) = TryUpdateDependencyVersion(buildFiles, packageName, previousDependencyVersion: null, newDependencyVersion: packageVersion, logger);
+            updateOperations.AddRange(updateOperationsPerformed);
         }
 
         // ...and everything else
@@ -136,21 +164,164 @@ internal static class PackageReferenceUpdater
                     continue;
                 }
 
-                var isDependencyInResolutionSet = resolvedDependencies.Any(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase));
+                var isDependencyInResolutionSet = resolvedDependencies.Value.Any(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase));
                 if (isTransitive && !isDependencyTopLevel && isDependencyInResolutionSet)
                 {
                     // a transitive dependency had to be pinned; add it here
-                    await UpdateTransitiveDependencyAsync(repoRootPath, projectPath, dependencyName, newDependencyVersion, buildFiles, experimentsManager, logger);
+                    var updatedFiles = await UpdateTransitiveDependencyAsync(repoRootPath, projectPath, dependencyName, newDependencyVersion, buildFiles, experimentsManager, logger);
                 }
 
                 // update all resolved dependencies that aren't the initial dependency
-                foreach (var resolvedDependency in resolvedDependencies
+                foreach (var resolvedDependency in resolvedDependencies.Value
                                                     .Where(d => !d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase))
                                                     .Where(d => d.Version is not null))
                 {
-                    TryUpdateDependencyVersion(buildFiles, resolvedDependency.Name, previousDependencyVersion: null, newDependencyVersion: resolvedDependency.Version!, logger);
+                    (_, updateOperationsPerformed) = TryUpdateDependencyVersion(buildFiles, resolvedDependency.Name, previousDependencyVersion: null, newDependencyVersion: resolvedDependency.Version!, logger);
+                    updateOperations.AddRange(updateOperationsPerformed);
+                }
+
+                updateOperationsPerformed = await ComputeUpdateOperations(repoRootPath, projectPath, tfm, topLevelDependencies, dependenciesToUpdate, resolvedDependencies.Value, experimentsManager, logger);
+                updateOperations.AddRange(updateOperationsPerformed.Select(u => u with { UpdatedFiles = [projectFile.Path] }));
+            }
+        }
+
+        return updateOperations;
+    }
+
+    internal static async Task<IEnumerable<UpdateOperationBase>> ComputeUpdateOperations(
+        string repoRoot,
+        string projectPath,
+        string targetFramework,
+        ImmutableArray<Dependency> topLevelDependencies,
+        ImmutableArray<Dependency> requestedUpdates,
+        ImmutableArray<Dependency> resolvedDependencies,
+        ExperimentsManager experimentsManager,
+        ILogger logger
+    )
+    {
+        var topLevelNames = topLevelDependencies.Select(d => d.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var requestedVersions = requestedUpdates.ToDictionary(d => d.Name, d => NuGetVersion.Parse(d.Version!), StringComparer.OrdinalIgnoreCase);
+        var resolvedVersions = resolvedDependencies
+            .Select(d => (d.Name, NuGetVersion.TryParse(d.Version, out var version), version))
+            .Where(d => d.Item2)
+            .ToDictionary(d => d.Item1, d => d.Item3!, StringComparer.OrdinalIgnoreCase);
+
+        var (packageParents, packageVersions) = await GetPackageGraphForDependencies(repoRoot, projectPath, targetFramework, resolvedDependencies, experimentsManager, logger);
+        var updateOperations = new List<UpdateOperationBase>();
+        foreach (var (requestedDependencyName, requestedDependencyVersion) in requestedVersions)
+        {
+            var isDependencyTopLevel = topLevelNames.Contains(requestedDependencyName);
+            var isDependencyInResolvedSet = resolvedVersions.ContainsKey(requestedDependencyName);
+            switch ((isDependencyTopLevel, isDependencyInResolvedSet))
+            {
+                case (true, true):
+                    // direct update performed
+                    var resolvedVer = resolvedVersions[requestedDependencyName];
+                    updateOperations.Add(new DirectUpdate()
+                    {
+                        DependencyName = requestedDependencyName,
+                        NewVersion = resolvedVer,
+                        UpdatedFiles = [],
+                    });
+                    break;
+                case (false, true):
+                    // pinned transitive update
+                    updateOperations.Add(new PinnedUpdate()
+                    {
+                        DependencyName = requestedDependencyName,
+                        NewVersion = resolvedVersions[requestedDependencyName],
+                        UpdatedFiles = [],
+                    });
+                    break;
+                case (false, false):
+                    // walk the first parent all the way up to find a top-level dependency that resulted in the desired change
+                    string? rootPackageName = null;
+                    var currentPackageName = requestedDependencyName;
+                    while (packageParents.TryGetValue(currentPackageName, out var parentSet))
+                    {
+                        currentPackageName = parentSet.First();
+                        if (topLevelNames.Contains(currentPackageName))
+                        {
+                            rootPackageName = currentPackageName;
+                            break;
+                        }
+                    }
+
+                    if (rootPackageName is not null)
+                    {
+                        updateOperations.Add(new ParentUpdate()
+                        {
+                            DependencyName = requestedDependencyName,
+                            NewVersion = requestedVersions[requestedDependencyName],
+                            UpdatedFiles = [],
+                            ParentDependencyName = rootPackageName,
+                            ParentNewVersion = packageVersions[rootPackageName],
+                        });
+                    }
+                    break;
+                case (true, false):
+                    // dependency is top-level, but not in the resolved versions; this can happen if an unrelated package has a wildcard
+                    break;
+            }
+        }
+
+        return [.. updateOperations];
+    }
+
+    private static async Task<(Dictionary<string, HashSet<string>> PackageParents, Dictionary<string, NuGetVersion> PackageVersions)> GetPackageGraphForDependencies(string repoRoot, string projectPath, string targetFramework, ImmutableArray<Dependency> topLevelDependencies, ExperimentsManager experimentsManager, ILogger logger)
+    {
+        var packageParents = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
+        var packageVersions = new Dictionary<string, NuGetVersion>(StringComparer.OrdinalIgnoreCase);
+        var tempDir = Directory.CreateTempSubdirectory("_package_graph_for_dependencies_");
+        try
+        {
+            // generate project.assets.json
+            var parsedTargetFramework = NuGetFramework.Parse(targetFramework);
+            var tempProject = await MSBuildHelper.CreateTempProjectAsync(tempDir, repoRoot, projectPath, targetFramework, topLevelDependencies, experimentsManager, logger, importDependencyTargets: !experimentsManager.UseDirectDiscovery);
+            var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(["build", tempProject, "/t:_ReportDependencies"], tempDir.FullName, experimentsManager);
+            var assetsJsonPath = Path.Join(tempDir.FullName, "obj", "project.assets.json");
+            var assetsJsonContent = await File.ReadAllTextAsync(assetsJsonPath);
+
+            // build reverse dependency graph
+            var assets = JsonDocument.Parse(assetsJsonContent).RootElement;
+            foreach (var tfmObject in assets.GetProperty("targets").EnumerateObject())
+            {
+                var reportedTargetFramework = NuGetFramework.Parse(tfmObject.Name);
+                if (reportedTargetFramework != parsedTargetFramework)
+                {
+                    // not interested in this target framework
+                    continue;
+                }
+
+                foreach (var parentObject in tfmObject.Value.EnumerateObject())
+                {
+                    var parts = parentObject.Name.Split('/');
+                    var parentName = parts[0];
+                    var parentVersion = parts[1];
+                    packageVersions[parentName] = NuGetVersion.Parse(parentVersion);
+
+                    if (parentObject.Value.TryGetProperty("dependencies", out var dependencies))
+                    {
+                        foreach (var childObject in dependencies.EnumerateObject())
+                        {
+                            var childName = childObject.Name;
+                            var parentSet = packageParents.GetOrAdd(childName, () => new(StringComparer.OrdinalIgnoreCase));
+                            parentSet.Add(parentName);
+                        }
+                    }
                 }
             }
+
+            return (packageParents, packageVersions);
+        }
+        catch (Exception ex)
+        {
+            logger.Error($"Error while generating package graph: {ex.Message}");
+            throw;
+        }
+        finally
+        {
+            tempDir.Delete(recursive: true);
         }
     }
 
@@ -227,7 +398,8 @@ internal static class PackageReferenceUpdater
         return true;
     }
 
-    private static async Task UpdateTransitiveDependencyAsync(
+    /// <returns>The updated files.</returns>
+    internal static async Task<IEnumerable<string>> UpdateTransitiveDependencyAsync(
         string repoRootPath,
         string projectPath,
         string dependencyName,
@@ -237,16 +409,30 @@ internal static class PackageReferenceUpdater
         ILogger logger
     )
     {
+        IEnumerable<string> updatedFiles;
         var directoryPackagesWithPinning = buildFiles.OfType<ProjectBuildFile>()
             .FirstOrDefault(bf => IsCpmTransitivePinningEnabled(bf));
         if (directoryPackagesWithPinning is not null)
         {
-            PinTransitiveDependency(directoryPackagesWithPinning, dependencyName, newDependencyVersion, logger);
+            updatedFiles = PinTransitiveDependency(directoryPackagesWithPinning, dependencyName, newDependencyVersion, logger);
         }
         else
         {
-            await AddTransitiveDependencyAsync(repoRootPath, projectPath, dependencyName, newDependencyVersion, experimentsManager, logger);
+            updatedFiles = await AddTransitiveDependencyAsync(repoRootPath, projectPath, dependencyName, newDependencyVersion, experimentsManager, logger);
+
+            // files directly modified on disk by an external tool need to be refreshed in-memory
+            foreach (var updatedFile in updatedFiles)
+            {
+                var matchingBuildFile = buildFiles.FirstOrDefault(bf => PathComparer.Instance.Compare(updatedFile, bf.Path) == 0);
+                if (matchingBuildFile is not null)
+                {
+                    var updatedContents = await File.ReadAllTextAsync(updatedFile);
+                    matchingBuildFile.Update(ProjectBuildFile.Parse(updatedContents));
+                }
+            }
         }
+
+        return updatedFiles;
     }
 
     private static bool IsCpmTransitivePinningEnabled(ProjectBuildFile buildFile)
@@ -271,7 +457,8 @@ internal static class PackageReferenceUpdater
         return isTransitivePinningEnabled is not null && string.Equals(isTransitivePinningEnabled, "true", StringComparison.OrdinalIgnoreCase);
     }
 
-    private static void PinTransitiveDependency(ProjectBuildFile directoryPackages, string dependencyName, string newDependencyVersion, ILogger logger)
+    /// <returns>The updated files.</returns>
+    private static IEnumerable<string> PinTransitiveDependency(ProjectBuildFile directoryPackages, string dependencyName, string newDependencyVersion, ILogger logger)
     {
         var existingPackageVersionElement = directoryPackages.ItemNodes
             .Where(e => e.Name.Equals("PackageVersion", StringComparison.OrdinalIgnoreCase) &&
@@ -288,7 +475,7 @@ internal static class PackageReferenceUpdater
         if (lastPackageVersion is null)
         {
             logger.Info($"    Transitive dependency [{dependencyName}/{newDependencyVersion}] was not pinned.");
-            return;
+            return [];
         }
 
         var lastItemGroup = lastPackageVersion.Parent;
@@ -324,7 +511,7 @@ internal static class PackageReferenceUpdater
             else
             {
                 logger.Info("      Existing PackageVersion element version was already correct.");
-                return;
+                return [];
             }
 
             updatedItemGroup = lastItemGroup.ReplaceChildElement(existingPackageVersionElement, updatedPackageVersionElement);
@@ -332,10 +519,14 @@ internal static class PackageReferenceUpdater
 
         var updatedXml = directoryPackages.Contents.ReplaceNode(lastItemGroup.AsNode, updatedItemGroup.AsNode);
         directoryPackages.Update(updatedXml);
+
+        return [directoryPackages.Path];
     }
 
-    private static async Task AddTransitiveDependencyAsync(string repoRootPath, string projectPath, string dependencyName, string newDependencyVersion, ExperimentsManager experimentsManager, ILogger logger)
+    /// <returns>The updated files.</returns>
+    private static async Task<IEnumerable<string>> AddTransitiveDependencyAsync(string repoRootPath, string projectPath, string dependencyName, string newDependencyVersion, ExperimentsManager experimentsManager, ILogger logger)
     {
+        var updatedFiles = new[] { projectPath }; // assume this worked unless...
         var projectDirectory = Path.GetDirectoryName(projectPath)!;
         await MSBuildHelper.HandleGlobalJsonAsync(projectDirectory, repoRootPath, experimentsManager, async () =>
         {
@@ -351,10 +542,13 @@ internal static class PackageReferenceUpdater
             if (exitCode != 0)
             {
                 logger.Warn($"    Transitive dependency [{dependencyName}/{newDependencyVersion}] was not added.\nSTDOUT:\n{stdout}\nSTDERR:\n{stderr}");
+                updatedFiles = [];
             }
 
             return exitCode;
         }, logger, retainMSBuildSdks: true);
+
+        return updatedFiles;
     }
 
     /// <summary>
@@ -371,7 +565,7 @@ internal static class PackageReferenceUpdater
         ILogger logger)
     {
         var newDependency = new[] { new Dependency(dependencyName, newDependencyVersion, DependencyType.Unknown) };
-        var tfmsAndDependencies = new Dictionary<string, Dependency[]>();
+        var tfmsAndDependencies = new Dictionary<string, ImmutableArray<Dependency>>();
         foreach (var tfm in tfms)
         {
             var dependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(repoRootPath, projectPath, tfm, newDependency, experimentsManager, logger);
@@ -415,7 +609,7 @@ internal static class PackageReferenceUpdater
         return packagesAndVersions;
     }
 
-    private static async Task UpdateTopLevelDepdendency(
+    private static async Task<IEnumerable<UpdateOperationBase>> UpdateTopLevelDepdendency(
         string repoRootPath,
         ImmutableArray<ProjectBuildFile> buildFiles,
         string[] targetFrameworks,
@@ -427,25 +621,29 @@ internal static class PackageReferenceUpdater
         ILogger logger)
     {
         // update dependencies...
-        var result = TryUpdateDependencyVersion(buildFiles, dependencyName, previousDependencyVersion, newDependencyVersion, logger);
-        if (result == UpdateResult.NotFound)
+        var updateOperations = new List<UpdateOperationBase>();
+        var (updateResult, updateOperationsPerformed) = TryUpdateDependencyVersion(buildFiles, dependencyName, previousDependencyVersion, newDependencyVersion, logger);
+        if (updateResult == UpdateResult.NotFound)
         {
             logger.Info($"    Root package [{dependencyName}/{previousDependencyVersion}] was not updated; skipping dependencies.");
-            return;
+            return [];
         }
+
+        updateOperations.AddRange(updateOperationsPerformed);
 
         foreach (var (packageName, packageVersion) in peerDependencies.Where(kvp => string.Compare(kvp.Key, dependencyName, StringComparison.OrdinalIgnoreCase) != 0))
         {
-            TryUpdateDependencyVersion(buildFiles, packageName, previousDependencyVersion: null, newDependencyVersion: packageVersion, logger);
+            (_, updateOperationsPerformed) = TryUpdateDependencyVersion(buildFiles, packageName, previousDependencyVersion: null, newDependencyVersion: packageVersion, logger);
+            updateOperations.AddRange(updateOperationsPerformed);
         }
 
         // ...and make them all coherent
-        Dependency[] updatedTopLevelDependencies = MSBuildHelper.GetTopLevelPackageDependencyInfos(buildFiles).ToArray();
+        var topLevelDependencies = MSBuildHelper.GetTopLevelPackageDependencyInfos(buildFiles).ToImmutableArray();
         foreach (ProjectBuildFile projectFile in buildFiles)
         {
             foreach (string tfm in targetFrameworks)
             {
-                var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflictsWithBruteForce(repoRootPath, projectFile.Path, tfm, updatedTopLevelDependencies, experimentsManager, logger);
+                var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflictsWithBruteForce(repoRootPath, projectFile.Path, tfm, topLevelDependencies, experimentsManager, logger);
                 if (resolvedDependencies is null)
                 {
                     logger.Info($"    Unable to resolve dependency conflicts for {projectFile.Path}.");
@@ -453,7 +651,7 @@ internal static class PackageReferenceUpdater
                 }
 
                 // ensure the originally requested dependency was resolved to the correct version
-                var specificResolvedDependency = resolvedDependencies.Where(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+                var specificResolvedDependency = resolvedDependencies.Value.Where(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
                 if (specificResolvedDependency is null)
                 {
                     logger.Info($"    Unable to resolve requested dependency for {dependencyName} in {projectFile.Path}.");
@@ -467,17 +665,24 @@ internal static class PackageReferenceUpdater
                 }
 
                 // update all versions
-                foreach (Dependency resolvedDependency in resolvedDependencies
+                foreach (Dependency resolvedDependency in resolvedDependencies.Value
                                                           .Where(d => !d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase))
                                                           .Where(d => d.Version is not null))
                 {
-                    TryUpdateDependencyVersion(buildFiles, resolvedDependency.Name, previousDependencyVersion: null, newDependencyVersion: resolvedDependency.Version!, logger);
+                    (_, updateOperationsPerformed) = TryUpdateDependencyVersion(buildFiles, resolvedDependency.Name, previousDependencyVersion: null, newDependencyVersion: resolvedDependency.Version!, logger);
+                    updateOperations.AddRange(updateOperationsPerformed);
                 }
+
+                updateOperationsPerformed = await ComputeUpdateOperations(repoRootPath, projectFile.Path, tfm, topLevelDependencies, [new Dependency(dependencyName, newDependencyVersion, DependencyType.PackageReference)], resolvedDependencies.Value, experimentsManager, logger);
+                updateOperations.AddRange(updateOperationsPerformed.Select(u => u with { UpdatedFiles = [projectFile.Path] }));
             }
         }
+
+        return updateOperations;
     }
 
-    private static UpdateResult TryUpdateDependencyVersion(
+    /// <returns>The updated files.</returns>
+    internal static (UpdateResult, IEnumerable<UpdateOperationBase>) TryUpdateDependencyVersion(
         ImmutableArray<ProjectBuildFile> buildFiles,
         string dependencyName,
         string? previousDependencyVersion,
@@ -488,6 +693,7 @@ internal static class PackageReferenceUpdater
         var foundUnsupported = false;
         var updateWasPerformed = false;
         var propertyNames = new List<string>();
+        var updateOperations = new List<UpdateOperationBase>();
 
         // First we locate all the PackageReference, GlobalPackageReference, or PackageVersion which set the Version
         // or VersionOverride attribute. In the simplest case we can update the version attribute directly then move
@@ -526,6 +732,12 @@ internal static class PackageReferenceUpdater
                         {
                             logger.Info($"    Found incorrect [{packageNode.Name}] version attribute in [{buildFile.RelativePath}].");
                             updateNodes.Add(versionAttribute);
+                            updateOperations.Add(new DirectUpdate()
+                            {
+                                DependencyName = dependencyName,
+                                NewVersion = NuGetVersion.Parse(newDependencyVersion),
+                                UpdatedFiles = [buildFile.Path],
+                            });
                         }
                         else if (previousDependencyVersion == null && NuGetVersion.TryParse(currentVersion, out var previousVersion))
                         {
@@ -536,6 +748,12 @@ internal static class PackageReferenceUpdater
 
                                 logger.Info($"    Found incorrect peer [{packageNode.Name}] version attribute in [{buildFile.RelativePath}].");
                                 updateNodes.Add(versionAttribute);
+                                updateOperations.Add(new DirectUpdate()
+                                {
+                                    DependencyName = dependencyName,
+                                    NewVersion = NuGetVersion.Parse(newDependencyVersion),
+                                    UpdatedFiles = [buildFile.Path],
+                                });
                             }
                         }
                         else if (string.Equals(currentVersion, newDependencyVersion, StringComparison.Ordinal))
@@ -566,6 +784,12 @@ internal static class PackageReferenceUpdater
                             if (versionElement is XmlElementSyntax elementSyntax)
                             {
                                 updateNodes.Add(elementSyntax);
+                                updateOperations.Add(new DirectUpdate()
+                                {
+                                    DependencyName = dependencyName,
+                                    NewVersion = NuGetVersion.Parse(newDependencyVersion),
+                                    UpdatedFiles = [buildFile.Path],
+                                });
                             }
                             else
                             {
@@ -583,6 +807,12 @@ internal static class PackageReferenceUpdater
                                 if (versionElement is XmlElementSyntax elementSyntax)
                                 {
                                     updateNodes.Add(elementSyntax);
+                                    updateOperations.Add(new DirectUpdate()
+                                    {
+                                        DependencyName = dependencyName,
+                                        NewVersion = NuGetVersion.Parse(newDependencyVersion),
+                                        UpdatedFiles = [buildFile.Path],
+                                    });
                                 }
                                 else
                                 {
@@ -706,13 +936,14 @@ internal static class PackageReferenceUpdater
             }
         }
 
-        return updateWasPerformed
+        var updateResult = updateWasPerformed
             ? UpdateResult.Updated
             : foundCorrect
                 ? UpdateResult.Correct
                 : foundUnsupported
                     ? UpdateResult.NotSupported
                     : UpdateResult.NotFound;
+        return (updateResult, updateOperations);
     }
 
     private static IEnumerable<IXmlElementSyntax> FindPackageNodes(

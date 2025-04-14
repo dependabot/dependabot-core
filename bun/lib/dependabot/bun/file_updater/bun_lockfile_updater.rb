@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 require "dependabot/bun/helpers"
-require "dependabot/bun/update_checker/registry_finder"
+require "dependabot/bun/package/registry_finder"
 require "dependabot/bun/registry_parser"
 require "dependabot/shared_helpers"
 

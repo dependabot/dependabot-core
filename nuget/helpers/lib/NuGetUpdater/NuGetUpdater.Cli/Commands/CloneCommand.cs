@@ -28,7 +28,7 @@ internal static class CloneCommand
         command.SetHandler(async (jobPath, repoContentsPath, apiUrl, jobId) =>
         {
             var apiHandler = new HttpApiHandler(apiUrl.ToString(), jobId);
-            var logger = new ConsoleLogger();
+            var logger = new OpenTelemetryLogger();
             var gitCommandHandler = new ShellGitCommandHandler(logger);
             var worker = new CloneWorker(jobId, apiHandler, gitCommandHandler);
             var exitCode = await worker.RunAsync(jobPath, repoContentsPath);

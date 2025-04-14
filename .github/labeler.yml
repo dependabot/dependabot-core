@@ -83,3 +83,7 @@
 "L: swift":
 - changed-files:
   - any-glob-to-any-file: swift/**
+
+"L: helm":
+- changed-files:
+  - any-glob-to-any-file: helm/**

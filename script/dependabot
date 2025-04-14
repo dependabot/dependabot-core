@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+touch .core-bash_history # allow bash history to persist across invocations
+
 dependabot \
   -v "$(pwd)"/.core-bash_history:/home/dependabot/.bash_history \
   -v "$(pwd)"/updater/bin:/home/dependabot/dependabot-updater/bin \
@@ -17,6 +19,7 @@ dependabot \
   -v "$(pwd)"/github_actions:/home/dependabot/github_actions \
   -v "$(pwd)"/go_modules:/home/dependabot/go_modules \
   -v "$(pwd)"/gradle:/home/dependabot/gradle \
+  -v "$(pwd)"/helm:/home/dependabot/helm \
   -v "$(pwd)"/hex:/home/dependabot/hex \
   -v "$(pwd)"/maven:/home/dependabot/maven \
   -v "$(pwd)"/npm_and_yarn:/home/dependabot/npm_and_yarn \

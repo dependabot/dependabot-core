@@ -1,15 +1,30 @@
 <Project>
   <PropertyGroup>
-    <!-- Dependency discovery requires a non-zero value for $(TargetPlatformVersion) -->
+    <!-- Dependency discovery requires a custom value for $(TargetPlatformVersion).  Minimum version of unspecified Windows targeting is 7.0. -->
     <_DefaultTargetPlatformVersion>1.0</_DefaultTargetPlatformVersion>
+    <_DefaultTargetPlatformVersion Condition="$(TargetFramework.ToLowerInvariant().EndsWith('-windows'))">7.0</_DefaultTargetPlatformVersion>
+    <_DiscoverDependenciesDependsOn>ResolveAssemblyReferences</_DiscoverDependenciesDependsOn>
+
+    <!-- only SDK-style projects set `$(NETCoreSdkVersion)`; legacy projects don't have it -->
+    <_IsLegacyStyleProject Condition="'$(NETCoreSdkVersion)' == ''">true</_IsLegacyStyleProject>
+
+    <!-- These targets only exists for SDK-style projects -->
+    <_DiscoverDependenciesDependsOn Condition="'$(_IsLegacyStyleProject)' != 'true'">$(_DiscoverDependenciesDependsOn);GenerateBuildDependencyFile;ResolvePackageAssets</_DiscoverDependenciesDependsOn>
+
+    <!-- For non-SDK-style projects, use a different target defined below -->
+    <_DiscoverDependenciesDependsOn Condition="'$(_IsLegacyStyleProject)' == 'true'">$(_DiscoverDependenciesDependsOn);_DependencyDiscovery_LegacyProjects</_DiscoverDependenciesDependsOn>
   </PropertyGroup>
 
   <Import Project="DependencyDiscovery.props" />
 
-  <Target Name="_DiscoverDependencies" DependsOnTargets="ResolveAssemblyReferences;GenerateBuildDependencyFile;ResolvePackageAssets">
+  <Target Name="_DiscoverDependencies" DependsOnTargets="$(_DiscoverDependenciesDependsOn)">
     <!--
-    The targets ResolveAssemblyReferences and GenerateBuildDependencyFile are sufficient for projects targeting .NET Standard or .NET Core.
-    The target ResolvePackageAssets is necessary for projects targeting .NET Framework.
+    This is purely a place to collect the `DependsOnTargets` attribute.
     -->
+  </Target>
+
+  <Target Name="_DependencyDiscovery_LegacyProjects" Condition="'@(PackageReference)' != ''">
+    <!-- pseudo-sdk-style project; legacy, but with PackageReference elements - dependencies need to be resolved differently; output a sentinel value to notify the dependency discovery -->
+    <Message Text="_DependencyDiscovery_LegacyProjects::UseTemporaryProject" Importance="High" />
   </Target>
 </Project>

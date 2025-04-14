@@ -54,6 +54,19 @@ RSpec.describe Dependabot::Package::PackageDetails do
       expect(details.dependency).to eq(dependency)
       expect(details.releases).to contain_exactly(release1)
     end
+
+    it "exposes dist_tags when provided" do
+      dist_tags = { "latest" => "6.1.4", "beta" => "6.2.0-beta1" }
+
+      details = described_class.new(
+        dependency: dependency,
+        releases: [release1, release2],
+        dist_tags: dist_tags
+      )
+
+      expect(details.dist_tags).to eq(dist_tags)
+      expect(details.dist_tags["latest"]).to eq("6.1.4")
+    end
   end
 
   describe "#releases" do

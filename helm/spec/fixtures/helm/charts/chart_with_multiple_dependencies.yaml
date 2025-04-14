@@ -1,0 +1,18 @@
+apiVersion: v2
+name: example-app
+version: 1.0.0
+description: Example Helm chart with multiple dependencies
+type: application
+dependencies:
+  - name: mysql
+    version: 8.1.0
+    repository: https://charts.bitnami.com/bitnami
+  - name: redis
+    version: 6.0.0
+    repository: https://charts.bitnami.com/bitnami
+  - name: mongodb
+    version: 10.3.1
+    repository: https://charts.bitnami.com/bitnami
+  - name: elasticsearch
+    version: 7.9.0
+    repository: https://charts.bitnami.com/bitnami

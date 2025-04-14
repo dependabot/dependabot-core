@@ -21,6 +21,7 @@ module Dependabot
       require_relative "update_checker/pip_version_resolver"
       require_relative "update_checker/requirements_updater"
       require_relative "update_checker/latest_version_finder"
+      require_relative "update_checker/lock_file_resolver"
 
       MAIN_PYPI_INDEXES = %w(
         https://pypi.python.org/simple/
@@ -111,13 +112,10 @@ module Dependabot
       end
 
       def resolver
-        if Dependabot::Experiments.enabled?(:enable_file_parser_python_local)
-          Dependabot.logger.info("Python package resolver : #{resolver_type}")
-        end
-
         case resolver_type
         when :pip_compile then pip_compile_version_resolver
         when :requirements then pip_version_resolver
+        when :lock_file then lock_file_resolver
         else raise "Unexpected resolver type #{resolver_type}"
         end
       end
@@ -125,15 +123,16 @@ module Dependabot
       def resolver_type
         reqs = requirements
 
-        # If there are no requirements then this is a sub-dependency. It
-        # must come from one of Pipenv, Poetry or pip-tools, and can't come
-        # from the first two unless they have a lockfile.
+        # If there are no requirements then this is a sub-dependency.
+        # It must come from one of Pipenv, Poetry or pip-tools,
+        # and can't come from the first two unless they have a lockfile.
         return subdependency_resolver if reqs.none?
 
         # Otherwise, this is a top-level dependency, and we can figure out
         # which resolver to use based on the filename of its requirements
         return :requirements if updating_pyproject?
         return :pip_compile if updating_in_file?
+        return :lock_file if updating_uv_lock?
 
         if dependency.version && !exact_requirement?(reqs)
           subdependency_resolver
@@ -144,6 +143,7 @@ module Dependabot
 
       def subdependency_resolver
         return :pip_compile if pip_compile_files.any?
+        return :lock_file if uv_lock.any?
 
         raise "Claimed to be a sub-dependency, but no lockfile exists!"
       end
@@ -167,8 +167,13 @@ module Dependabot
           credentials: credentials,
           ignored_versions: ignored_versions,
           raise_on_ignored: @raise_on_ignored,
+          update_cooldown: @update_cooldown,
           security_advisories: security_advisories
         )
+      end
+
+      def lock_file_resolver
+        @lock_file_resolver ||= LockFileResolver.new(**resolver_args)
       end
 
       def resolver_args
@@ -187,7 +192,7 @@ module Dependabot
         requirement = reqs.find do |r|
           file = r[:file]
 
-          file == "Pipfile" || file == "pyproject.toml" || file.end_with?(".in") || file.end_with?(".txt")
+          file == "uv.lock" || file == "pyproject.toml" || file.end_with?(".in") || file.end_with?(".txt")
         end
 
         requirement&.fetch(:requirement)
@@ -234,6 +239,7 @@ module Dependabot
           credentials: credentials,
           ignored_versions: ignored_versions,
           raise_on_ignored: @raise_on_ignored,
+          cooldown_options: @update_cooldown,
           security_advisories: security_advisories
         )
       end
@@ -265,6 +271,10 @@ module Dependabot
 
       def updating_in_file?
         requirement_files.any? { |f| f.end_with?(".in") }
+      end
+
+      def updating_uv_lock?
+        requirement_files.any?("uv.lock")
       end
 
       def requirements_text_file?
@@ -309,6 +319,10 @@ module Dependabot
 
       def pip_compile_files
         dependency_files.select { |f| f.name.end_with?(".in") }
+      end
+
+      def uv_lock
+        dependency_files.select { |f| f.name == "uv.lock" }
       end
     end
   end

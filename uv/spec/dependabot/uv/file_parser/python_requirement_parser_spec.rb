@@ -66,5 +66,34 @@ RSpec.describe Dependabot::Uv::FileParser::PythonRequirementParser do
         it { is_expected.to eq(["3.6.2"]) }
       end
     end
+
+    context "with a pyproject.toml file" do
+      context "with a dependency-groups array containing objects and strings" do
+        let(:files) { [pyproject_file] }
+        let(:pyproject_file) do
+          Dependabot::DependencyFile.new(
+            name: "pyproject.toml",
+            content: pyproject_body
+          )
+        end
+        let(:pyproject_body) do
+          <<~PYPROJECT
+            [project]
+            name = "spam-eggs"
+            version = "2020.0.0"
+            requires-python = ">=3.8"
+            [dependency-groups]
+            dev = [
+                {"include-group" = "docs"},
+                {"include-group" = "testing"},
+                {"include-group" = "typing"},
+                "deptry>=0.15.0",
+            ]
+          PYPROJECT
+        end
+
+        it { is_expected.to eq([">=3.8"]) }
+      end
+    end
   end
 end

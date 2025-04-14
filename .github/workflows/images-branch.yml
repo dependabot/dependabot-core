@@ -68,6 +68,7 @@ jobs:
           - { name: github_actions, ecosystem: github-actions }
           - { name: go_modules, ecosystem: gomod }
           - { name: gradle, ecosystem: gradle }
+          - { name: helm, ecosystem: helm }
           - { name: hex, ecosystem: mix }
           - { name: maven, ecosystem: maven }
           - { name: npm_and_yarn, ecosystem: npm }
@@ -91,7 +92,7 @@ jobs:
         with:
           submodules: recursive
 
-      - uses: sigstore/cosign-installer@dc72c7d5c4d10cd6bcb8cf6e3fd625a9e5e537da # v3.7.0
+      - uses: sigstore/cosign-installer@d7d6bc7722e3daa8354c50bcb52f4837da5e9b6a # v3.8.1
 
       - name: Prepare tag
         run: echo "DEPENDABOT_UPDATER_VERSION=${{ github.sha }}" >> $GITHUB_ENV
@@ -112,9 +113,11 @@ jobs:
           echo "DEPENDABOT_UPDATER_VERSION=$(git rev-parse HEAD)" >> $GITHUB_ENV
         if: github.event_name == 'workflow_dispatch'
 
-      - name: Log in to GHCR
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build ecosystem image
         run: script/build ${{ matrix.suite.name }}

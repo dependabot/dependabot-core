@@ -2,6 +2,8 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 
+using NuGet.Versioning;
+
 using NuGetUpdater.Core.Run.ApiModel;
 using NuGetUpdater.Core.Updater;
 
@@ -50,7 +52,20 @@ public partial class UpdateWorkerTests
                         <PackageReference Include="Some.Package" Version="13.0.1" />
                       </ItemGroup>
                     </Project>
-                    """
+                    """,
+                expectedResult: new()
+                {
+                    UpdateOperations = [
+                        new DirectUpdate()
+                        {
+                            DependencyName = "Some.Package",
+                            NewVersion = NuGetVersion.Parse("13.0.1"),
+                            UpdatedFiles = [
+                                "/src/test-project.csproj"
+                            ]
+                        }
+                    ]
+                }
             );
         }
 
@@ -2636,7 +2651,18 @@ public partial class UpdateWorkerTests
                           </ItemGroup>
                         </Project>
                         """)
-                ]
+                ],
+                expectedResult: new()
+                {
+                    UpdateOperations = [
+                        new PinnedUpdate()
+                        {
+                            DependencyName = "Some.Transitive.Dependency",
+                            NewVersion = NuGetVersion.Parse("5.0.2"),
+                            UpdatedFiles = ["/src/Directory.Build.props", "/src/Directory.Packages.props", "/src/test-project.csproj"]
+                        }
+                    ]
+                }
             );
         }
 
@@ -3106,7 +3132,26 @@ public partial class UpdateWorkerTests
                         <PackageReference Include="Some.Package" Version="2.0.0" />
                       </ItemGroup>
                     </Project>
-                    """
+                    """,
+                expectedResult: new()
+                {
+                    UpdateOperations = [
+                        new DirectUpdate()
+                        {
+                            DependencyName = "Some.Package",
+                            NewVersion = NuGetVersion.Parse("2.0.0"),
+                            UpdatedFiles = ["/src/test-project.csproj"]
+                        },
+                        new ParentUpdate()
+                        {
+                            DependencyName = "Transitive.Package",
+                            NewVersion = NuGetVersion.Parse("8.0.0"),
+                            UpdatedFiles = ["/src/test-project.csproj"],
+                            ParentDependencyName = "Some.Package",
+                            ParentNewVersion = NuGetVersion.Parse("2.0.0")
+                        }
+                    ]
+                }
             );
         }
 
@@ -3202,6 +3247,9 @@ public partial class UpdateWorkerTests
                     </Project>
                     """,
                 expectedResult: new() // success
+                {
+                    UpdateOperations = []
+                }
             );
         }
 
@@ -3484,6 +3532,7 @@ public partial class UpdateWorkerTests
                 expectedResult: new()
                 {
                     Error = new PrivateSourceAuthenticationFailure([$"{http.BaseUrl.TrimEnd('/')}/index.json"]),
+                    UpdateOperations = [],
                 }
             );
         }
@@ -3627,6 +3676,154 @@ public partial class UpdateWorkerTests
                       </PropertyGroup>
                       <ItemGroup>
                         <PackageReference Include="Some.Package" Version="2.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
+        }
+
+        [Fact]
+        public async Task CentralPackageManagementStillWorksWithMultipleFeedsListedInConfig()
+        {
+            using var http1 = TestHttpServer.CreateTestNuGetFeed(
+                MockNuGetPackage.CreateSimplePackage("Package1", "1.0.0", "net9.0"),
+                MockNuGetPackage.CreateSimplePackage("Package1", "1.0.1", "net9.0"));
+            using var http2 = TestHttpServer.CreateTestNuGetFeed(MockNuGetPackage.CreateSimplePackage("Package2", "2.0.0", "net9.0"));
+            await TestUpdate("Package1", "1.0.0", "1.0.1",
+                useSolution: false,
+                experimentsManager: new ExperimentsManager() { UseDirectDiscovery = true },
+                packages: [],
+                projectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net9.0</TargetFramework>
+                        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+                        <MSBuildTreatWarningsAsErrors>true</MSBuildTreatWarningsAsErrors>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Package1" />
+                        <PackageReference Include="Package2" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                additionalFiles: [
+                    ("Directory.Packages.props", """
+                        <Project>
+                          <PropertyGroup>
+                            <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageVersion Include="Package1" Version="1.0.0" />
+                            <PackageVersion Include="Package2" Version="2.0.0" />
+                          </ItemGroup>
+                        </Project>
+                        """),
+                    ("NuGet.Config", $"""
+                        <configuration>
+                          <packageSources>
+                            <!-- explicitly _not_ calling "clear" because we also want the upstream sources in addition to these two remote sources -->
+                            <add key="source_1" value="{http1.GetPackageFeedIndex()}" allowInsecureConnections="true" />
+                            <add key="source_2" value="{http2.GetPackageFeedIndex()}" allowInsecureConnections="true" />
+                          </packageSources>
+                        </configuration>
+                        """)
+                ],
+                expectedProjectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net9.0</TargetFramework>
+                        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+                        <MSBuildTreatWarningsAsErrors>true</MSBuildTreatWarningsAsErrors>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Package1" />
+                        <PackageReference Include="Package2" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                additionalFilesExpected: [
+                    ("Directory.Packages.props", """
+                        <Project>
+                          <PropertyGroup>
+                            <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageVersion Include="Package1" Version="1.0.1" />
+                            <PackageVersion Include="Package2" Version="2.0.0" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                ]
+            );
+        }
+
+        [Fact]
+        public async Task LegacyProjectWithPackageReferencesCanUpdate()
+        {
+            await TestUpdateForProject("Some.Dependency", "1.0.0", "1.0.1",
+                experimentsManager: new ExperimentsManager() { UseDirectDiscovery = true },
+                packages: [
+                    MockNuGetPackage.CreateSimplePackage("Some.Dependency", "1.0.0", "net48"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Dependency", "1.0.1", "net48"),
+                ],
+                projectContents: """
+                    <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                      <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                      <PropertyGroup>
+                        <OutputType>Library</OutputType>
+                        <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Dependency" Version="1.0.0" />
+                      </ItemGroup>
+                      <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                    </Project>
+                    """,
+                expectedProjectContents: """
+                    <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                      <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                      <PropertyGroup>
+                        <OutputType>Library</OutputType>
+                        <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Dependency" Version="1.0.1" />
+                      </ItemGroup>
+                      <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                    </Project>
+                    """
+            );
+        }
+
+        [Fact]
+        public async Task UpdateDependencyWhenUnrelatedDependencyHasWildcardVersion()
+        {
+            await TestUpdateForProject("Some.Package", "1.0.0", "1.0.1",
+                experimentsManager: new ExperimentsManager() { UseDirectDiscovery = true },
+                packages: [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net9.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.1", "net9.0"),
+                    MockNuGetPackage.CreateSimplePackage("Unrelated.Package", "2.1.0", "net9.0"),
+                ],
+                projectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net9.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.0.0" />
+                        <PackageReference Include="Unrelated.Package" Version="2.*" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                expectedProjectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net9.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.0.1" />
+                        <PackageReference Include="Unrelated.Package" Version="2.*" />
                       </ItemGroup>
                     </Project>
                     """

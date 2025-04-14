@@ -1,5 +1,4 @@
 using System.Collections.Immutable;
-using System.Runtime.InteropServices;
 using System.Text.Json;
 
 using NuGetUpdater.Core.Discover;
@@ -710,6 +709,61 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
     }
 
     [Fact]
+    public async Task TestRepo_DirectDiscovery_Slnx()
+    {
+        var solutionPath = "solution.slnx";
+        await TestDiscoveryAsync(
+            experimentsManager: new ExperimentsManager() { UseDirectDiscovery = true },
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net7.0"),
+            ],
+            workspacePath: "",
+            files: new[]
+            {
+                ("src/project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFrameworks>net7.0</TargetFrameworks>
+                      </PropertyGroup>
+
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="9.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                (solutionPath, """
+                    <Solution>
+                      <Folder Name="/src/">
+                        <Project Path="src\project.csproj" />
+                      </Folder>
+                    </Solution>
+                    """)
+            },
+            expectedResult: new()
+            {
+                Path = "",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "src/project.csproj",
+                        TargetFrameworks = ["net7.0"],
+                        Dependencies = [
+                            new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net7.0"], IsDirect: true)
+                        ],
+                        Properties = [
+                            new("TargetFrameworks", "net7.0", "src/project.csproj")
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
+                    }
+                ]
+            }
+        );
+    }
+
+    [Fact]
     public async Task TestRepo_SolutionFileCasingMismatchIsResolved()
     {
         var solutionPath = "solution.sln";
@@ -1248,6 +1302,160 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
         );
     }
 
+    [Fact]
+    public async Task ReportsPrivateSourceBadResponseFailure()
+    {
+        static (int, string) TestHttpHandler(string uriString)
+        {
+            var uri = new Uri(uriString, UriKind.Absolute);
+            var baseUrl = $"{uri.Scheme}://{uri.Host}:{uri.Port}";
+            return uri.PathAndQuery switch
+            {
+                // initial request is good
+                "/index.json" => (200, $$"""
+                    {
+                        "version": "3.0.0",
+                        "resources": [
+                            {
+                                "@id": "{{baseUrl}}/download",
+                                "@type": "PackageBaseAddress/3.0.0"
+                            },
+                            {
+                                "@id": "{{baseUrl}}/query",
+                                "@type": "SearchQueryService"
+                            },
+                            {
+                                "@id": "{{baseUrl}}/registrations",
+                                "@type": "RegistrationsBaseUrl"
+                            }
+                        ]
+                    }
+                    """),
+                // all other requests are unauthorized
+                _ => (429, "{}"),
+            };
+        }
+        // override various nuget locations
+        using var tempDir = new TemporaryDirectory();
+        using var _ = new TemporaryEnvironment(
+        [
+            ("NUGET_PACKAGES", Path.Combine(tempDir.DirectoryPath, "NUGET_PACKAGES")),
+            ("NUGET_HTTP_CACHE_PATH", Path.Combine(tempDir.DirectoryPath, "NUGET_HTTP_CACHE_PATH")),
+            ("NUGET_SCRATCH", Path.Combine(tempDir.DirectoryPath, "NUGET_SCRATCH")),
+            ("NUGET_PLUGINS_CACHE_PATH", Path.Combine(tempDir.DirectoryPath, "NUGET_PLUGINS_CACHE_PATH")),
+        ]);
+        using var http = TestHttpServer.CreateTestStringServer(TestHttpHandler);
+        var experimentsManager = new ExperimentsManager() { UseDirectDiscovery = true };
+        await TestDiscoveryAsync(
+            experimentsManager: experimentsManager,
+            workspacePath: "",
+            files:
+            [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.2.3" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("NuGet.Config", $"""
+                    <configuration>
+                      <packageSources>
+                        <clear />
+                        <add key="private_feed" value="{http.BaseUrl.TrimEnd('/')}/index.json" allowInsecureConnections="true" />
+                      </packageSources>
+                    </configuration>
+                    """),
+            ],
+            expectedResult: new()
+            {
+                Error = new PrivateSourceBadResponse([$"{http.BaseUrl.TrimEnd('/')}/index.json"]),
+                Path = "",
+                Projects = [],
+            }
+        );
+    }
+
+    [Fact]
+    public async Task ReportsPrivateSourceBadResponseFailureOnServiceUnavailable()
+    {
+        static (int, string) TestHttpHandler(string uriString)
+        {
+            var uri = new Uri(uriString, UriKind.Absolute);
+            var baseUrl = $"{uri.Scheme}://{uri.Host}:{uri.Port}";
+            return uri.PathAndQuery switch
+            {
+                // initial request is good
+                "/index.json" => (200, $$"""
+                    {
+                        "version": "3.0.0",
+                        "resources": [
+                            {
+                                "@id": "{{baseUrl}}/download",
+                                "@type": "PackageBaseAddress/3.0.0"
+                            },
+                            {
+                                "@id": "{{baseUrl}}/query",
+                                "@type": "SearchQueryService"
+                            },
+                            {
+                                "@id": "{{baseUrl}}/registrations",
+                                "@type": "RegistrationsBaseUrl"
+                            }
+                        ]
+                    }
+                    """),
+                // all other requests are unauthorized
+                _ => (503, "{}"),
+            };
+        }
+        // override various nuget locations
+        using var tempDir = new TemporaryDirectory();
+        using var _ = new TemporaryEnvironment(
+        [
+            ("NUGET_PACKAGES", Path.Combine(tempDir.DirectoryPath, "NUGET_PACKAGES")),
+            ("NUGET_HTTP_CACHE_PATH", Path.Combine(tempDir.DirectoryPath, "NUGET_HTTP_CACHE_PATH")),
+            ("NUGET_SCRATCH", Path.Combine(tempDir.DirectoryPath, "NUGET_SCRATCH")),
+            ("NUGET_PLUGINS_CACHE_PATH", Path.Combine(tempDir.DirectoryPath, "NUGET_PLUGINS_CACHE_PATH")),
+        ]);
+        using var http = TestHttpServer.CreateTestStringServer(TestHttpHandler);
+        var experimentsManager = new ExperimentsManager() { UseDirectDiscovery = true };
+        await TestDiscoveryAsync(
+            experimentsManager: experimentsManager,
+            workspacePath: "",
+            files:
+            [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.2.3" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("NuGet.Config", $"""
+                    <configuration>
+                      <packageSources>
+                        <clear />
+                        <add key="private_feed" value="{http.BaseUrl.TrimEnd('/')}/index.json" allowInsecureConnections="true" />
+                      </packageSources>
+                    </configuration>
+                    """),
+            ],
+            expectedResult: new()
+            {
+                Error = new PrivateSourceBadResponse([$"{http.BaseUrl.TrimEnd('/')}/index.json"]),
+                Path = "",
+                Projects = [],
+            }
+        );
+    }
+
     [LinuxOnlyFact]
     public async Task DiscoverySucceedsWhenNoWindowsAppRefPackageCanBeFound()
     {
@@ -1428,6 +1636,82 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         ],
                         ReferencedProjectPaths = [],
                         ImportedFiles = [],
+                        AdditionalFiles = [],
+                    }
+                ]
+            }
+        );
+    }
+
+    [Fact]
+    public async Task CentralPackageManagementStillWorksWithMultipleFeedsListedInConfig()
+    {
+        // If a repo doesn't contain a `NuGet.Config` file and `dependabot.yml` specifies a package source, a user-
+        // local `NuGet.Config` file is created before the updater is run that enumerates the specified feeds as well
+        // as `api.nuget.org`.  If a given project is using Central Package Management a warning NU1507 will be
+        // generated because of the multiple feeds listed.  If that project _also_ specifies $(TreatWarningsAsErrors)
+        // as true, this will cause dependency discovery to "fail".  To simulate this, multiple remote NuGet sources
+        // need to be listed in the `NuGet.Config` file in this test.
+        using var http1 = TestHttpServer.CreateTestNuGetFeed(MockNuGetPackage.CreateSimplePackage("Package1", "1.0.0", "net9.0"));
+        using var http2 = TestHttpServer.CreateTestNuGetFeed(MockNuGetPackage.CreateSimplePackage("Package2", "2.0.0", "net9.0"));
+        await TestDiscoveryAsync(
+            packages: [],
+            experimentsManager: new ExperimentsManager() { UseDirectDiscovery = true },
+            workspacePath: "/src",
+            files: [
+                ("src/NuGet.Config", $"""
+                    <configuration>
+                      <packageSources>
+                        <!-- explicitly _not_ calling "clear" because we also want the upstream sources in addition to these two remote sources -->
+                        <add key="source_1" value="{http1.GetPackageFeedIndex()}" allowInsecureConnections="true" />
+                        <add key="source_2" value="{http2.GetPackageFeedIndex()}" allowInsecureConnections="true" />
+                      </packageSources>
+                    </configuration>
+                    """),
+                ("src/project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net9.0</TargetFramework>
+                        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+                        <MSBuildTreatWarningsAsErrors>true</MSBuildTreatWarningsAsErrors>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Package1" />
+                        <PackageReference Include="Package2" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("src/Directory.Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageVersion Include="Package1" Version="1.0.0" />
+                        <PackageVersion Include="Package2" Version="2.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            expectedResult: new()
+            {
+                Path = "src",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "project.csproj",
+                        TargetFrameworks = ["net9.0"],
+                        Dependencies = [
+                            new("Package1", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"], IsDirect: true),
+                            new("Package2", "2.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"], IsDirect: true),
+                        ],
+                        Properties = [
+                            new("MSBuildTreatWarningsAsErrors", "false", "src/project.csproj"), // this was specifically overridden by discovery
+                            new("TargetFramework", "net9.0", "src/project.csproj"),
+                            new("TreatWarningsAsErrors", "false", "src/project.csproj"), // this was specifically overridden by discovery
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = ["Directory.Packages.props"],
                         AdditionalFiles = [],
                     }
                 ]

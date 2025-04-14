@@ -7,6 +7,7 @@ using System.Xml.XPath;
 using Microsoft.Language.Xml;
 
 using NuGet.CommandLine;
+using NuGet.Versioning;
 
 using NuGetUpdater.Core.Updater;
 using NuGetUpdater.Core.Utilities;
@@ -25,7 +26,7 @@ namespace NuGetUpdater.Core;
 /// <remarks>
 internal static partial class PackagesConfigUpdater
 {
-    public static async Task UpdateDependencyAsync(
+    public static async Task<IEnumerable<UpdateOperationBase>> UpdateDependencyAsync(
         string repoRootPath,
         string projectPath,
         string dependencyName,
@@ -44,7 +45,7 @@ internal static partial class PackagesConfigUpdater
         if (packagesSubDirectory is null)
         {
             logger.Info($"    Project [{projectPath}] does not reference this dependency.");
-            return;
+            return [];
         }
 
         logger.Info($"    Using packages directory [{packagesSubDirectory}] for project [{projectPath}].");
@@ -86,7 +87,7 @@ internal static partial class PackagesConfigUpdater
             }
         }
 
-        using (new WebApplicationTargetsConditionPatcher(projectPath))
+        using (new SpecialImportsConditionPatcher(projectPath))
         {
             RunNugetUpdate(updateArgs, restoreArgs, projectDirectory ?? packagesDirectory, logger);
         }
@@ -95,10 +96,18 @@ internal static partial class PackagesConfigUpdater
         projectBuildFile.NormalizeDirectorySeparatorsInProject();
 
         // Update binding redirects
-        await BindingRedirectManager.UpdateBindingRedirectsAsync(projectBuildFile, dependencyName, newDependencyVersion);
+        var updatedConfigFiles = await BindingRedirectManager.UpdateBindingRedirectsAsync(projectBuildFile, dependencyName, newDependencyVersion);
 
         logger.Info("    Writing project file back to disk");
         await projectBuildFile.SaveAsync();
+
+        var updateResult = new DirectUpdate()
+        {
+            DependencyName = dependencyName,
+            NewVersion = NuGetVersion.Parse(newDependencyVersion),
+            UpdatedFiles = [projectPath, packagesConfigPath, .. updatedConfigFiles],
+        };
+        return [updateResult];
     }
 
     private static void RunNugetUpdate(List<string> updateArgs, List<string> restoreArgs, string projectDirectory, ILogger logger)

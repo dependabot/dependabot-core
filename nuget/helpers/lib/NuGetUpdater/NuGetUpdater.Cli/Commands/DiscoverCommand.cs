@@ -28,6 +28,8 @@ internal static class DiscoverCommand
 
         command.SetHandler(async (jobId, jobPath, repoRoot, workspace, outputPath) =>
         {
+            var logger = new OpenTelemetryLogger();
+            MSBuildHelper.RegisterMSBuild(repoRoot.FullName, repoRoot.FullName, logger);
             var (experimentsManager, error) = await ExperimentsManager.FromJobFileAsync(jobId, jobPath.FullName);
             if (error is not null)
             {
@@ -42,7 +44,6 @@ internal static class DiscoverCommand
                 return;
             }
 
-            var logger = new ConsoleLogger();
             var worker = new DiscoveryWorker(jobId, experimentsManager, logger);
             await worker.RunAsync(repoRoot.FullName, workspace, outputPath.FullName);
         }, JobIdOption, JobPathOption, RepoRootOption, WorkspaceOption, OutputOption);

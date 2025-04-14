@@ -23,7 +23,7 @@ defmodule DependencyHelper do
       {:ok, result} ->
         result
 
-      {:error, _error} ->
+      :error ->
         result
     end
   end

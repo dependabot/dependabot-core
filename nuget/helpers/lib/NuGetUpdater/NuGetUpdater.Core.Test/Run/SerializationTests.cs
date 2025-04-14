@@ -517,10 +517,15 @@ public class SerializationTests
         Assert.Null(jobWrapper.Job.SecurityAdvisories[0].PatchedVersions);
     }
 
-    [Fact]
-    public void DeserializeCommitOptions()
+    [Theory]
+    [InlineData("true", true)] // bool
+    [InlineData("false", false)]
+    [InlineData("\"true\"", true)] // stringified bool
+    [InlineData("\"false\"", false)]
+    [InlineData("null", false)]
+    public void DeserializeCommitOptions(string includeScopeJsonValue, bool expectedIncludeScopeValue)
     {
-        var jsonWrapperJson = """
+        var jsonWrapperJson = $$"""
             {
                 "job": {
                     "source": {
@@ -530,7 +535,7 @@ public class SerializationTests
                     "commit-message-options": {
                         "prefix": "[SECURITY] ",
                         "prefix-development": null,
-                        "include-scope": true
+                        "include-scope": {{includeScopeJsonValue}}
                     }
                 }
             }
@@ -538,7 +543,7 @@ public class SerializationTests
         var jobWrapper = RunWorker.Deserialize(jsonWrapperJson)!;
         Assert.Equal("[SECURITY] ", jobWrapper.Job.CommitMessageOptions!.Prefix);
         Assert.Null(jobWrapper.Job.CommitMessageOptions!.PrefixDevelopment);
-        Assert.True(jobWrapper.Job.CommitMessageOptions!.IncludeScope);
+        Assert.Equal(expectedIncludeScopeValue, jobWrapper.Job.CommitMessageOptions!.IncludeScope);
     }
 
     [Fact]
@@ -641,6 +646,14 @@ public class SerializationTests
             new PrivateSourceAuthenticationFailure(["url1", "url2"]),
             """
             {"data":{"error-type":"private_source_authentication_failure","error-details":{"source":"(url1|url2)"}}}
+            """
+        ];
+
+        yield return
+        [
+            new PrivateSourceBadResponse(["url1", "url2"]),
+            """
+            {"data":{"error-type":"private_source_bad_response","error-details":{"source":"(url1|url2)"}}}
             """
         ];
 
