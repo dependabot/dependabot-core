@@ -44,7 +44,7 @@ module Dependabot
 
       sig { override.returns(T.nilable(Dependabot::Version)) }
       def latest_version
-        latest_version_details&.fetch(:version)
+        version_finder.latest_version
       end
 
       sig { override.returns(T.nilable(Dependabot::Version)) }
@@ -61,7 +61,7 @@ module Dependabot
 
       sig { override.returns(T.nilable(Dependabot::Version)) }
       def lowest_security_fix_version
-        lowest_security_fix_version_details&.fetch(:version)
+        version_finder.lowest_security_fix_version
       end
 
       sig { override.returns(T.nilable(Dependabot::Version)) }
@@ -142,19 +142,9 @@ module Dependabot
 
       sig { returns(T.nilable(T::Hash[T.untyped, T.untyped])) }
       def preferred_version_details
-        return lowest_security_fix_version_details if vulnerable?
+        return version_finder.lowest_security_fix_version_details if vulnerable?
 
-        latest_version_details
-      end
-
-      sig { returns(T.nilable(T::Hash[T.untyped, T.untyped])) }
-      def latest_version_details
         version_finder.latest_version_details
-      end
-
-      sig { returns(T.nilable(T::Hash[T.untyped, T.untyped])) }
-      def lowest_security_fix_version_details
-        version_finder.lowest_security_fix_version_details
       end
 
       sig { returns(VersionFinder) }
@@ -165,6 +155,7 @@ module Dependabot
             dependency_files: dependency_files,
             credentials: credentials,
             ignored_versions: ignored_versions,
+            cooldown_options: update_cooldown,
             raise_on_ignored: raise_on_ignored,
             security_advisories: security_advisories
           )
@@ -176,7 +167,7 @@ module Dependabot
           PropertyUpdater.new(
             dependency: dependency,
             dependency_files: dependency_files,
-            target_version_details: latest_version_details,
+            target_version_details: version_finder.latest_version_details,
             credentials: credentials,
             ignored_versions: ignored_versions
           )

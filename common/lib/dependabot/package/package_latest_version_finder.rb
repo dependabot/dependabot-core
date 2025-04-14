@@ -82,7 +82,7 @@ module Dependabot
 
       sig do
         params(language_version: T.nilable(T.any(String, Version)))
-          .returns(T.nilable(Gem::Version))
+          .returns(T.nilable(Dependabot::Version))
       end
       def latest_version(language_version: nil)
         @latest_version ||= fetch_latest_version(language_version: language_version)
@@ -90,7 +90,7 @@ module Dependabot
 
       sig do
         params(language_version: T.nilable(T.any(String, Version)))
-          .returns(T.nilable(Gem::Version))
+          .returns(T.nilable(Dependabot::Version))
       end
       def latest_version_with_no_unlock(language_version: nil)
         @latest_version_with_no_unlock ||= fetch_latest_version_with_no_unlock(language_version: language_version)
@@ -98,7 +98,7 @@ module Dependabot
 
       sig do
         params(language_version: T.nilable(T.any(String, Version)))
-          .returns(T.nilable(Gem::Version))
+          .returns(T.nilable(Dependabot::Version))
       end
       def lowest_security_fix_version(language_version: nil)
         @lowest_security_fix_version ||= fetch_lowest_security_fix_version(language_version: language_version)

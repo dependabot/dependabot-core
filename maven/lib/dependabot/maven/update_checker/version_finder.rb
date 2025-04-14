@@ -1,6 +1,8 @@
-# typed: strong
+# typed: strict
 # frozen_string_literal: true
 
+require "dependabot/package/package_latest_version_finder"
+require "dependabot/package/release_cooldown_options"
 require "dependabot/update_checkers/version_filters"
 require "dependabot/maven/package/package_details_fetcher"
 require "dependabot/maven/update_checker"
@@ -9,7 +11,7 @@ require "sorbet-runtime"
 module Dependabot
   module Maven
     class UpdateChecker
-      class VersionFinder
+      class VersionFinder < Dependabot::Package::PackageLatestVersionFinder
         extend T::Sig
 
         TYPE_SUFFICES = %w(jre android java native_mt agp).freeze
@@ -21,16 +23,18 @@ module Dependabot
             credentials: T::Array[Dependabot::Credential],
             ignored_versions: T::Array[String],
             security_advisories: T::Array[Dependabot::SecurityAdvisory],
+            cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions),
             raise_on_ignored: T::Boolean
           ).void
         end
-        def initialize(dependency:, dependency_files:, credentials:,
+        def initialize(dependency:, dependency_files:, credentials:, # rubocop:disable Metrics/AbcSize
                        ignored_versions:, security_advisories:,
-                       raise_on_ignored: false)
+                       cooldown_options: nil, raise_on_ignored: false)
           @dependency          = dependency
           @dependency_files    = dependency_files
           @credentials         = credentials
           @ignored_versions    = ignored_versions
+          @cooldown_options    = cooldown_options
           @raise_on_ignored    = raise_on_ignored
           @security_advisories = security_advisories
           @forbidden_urls      = T.let([], T::Array[String])
@@ -42,6 +46,8 @@ module Dependabot
           @released_check = T.let({}, T::Hash[Version, T::Boolean])
           @package_details_fetcher = T.let(nil, T.nilable(Package::PackageDetailsFetcher))
           @package_details = T.let(nil, T.nilable(Dependabot::Package::PackageDetails))
+          @latest_version_details = T.let(nil, T.nilable(T::Hash[T.untyped, T.untyped]))
+          @lowest_security_fix_version_details = T.let(nil, T.nilable(T::Hash[T.untyped, T.untyped]))
         end
 
         sig { returns(Package::PackageDetailsFetcher) }
@@ -53,29 +59,62 @@ module Dependabot
           )
         end
 
-        sig { returns(T::Array[Dependabot::Package::PackageRelease]) }
-        def releases
-          package_details_fetcher
-            .fetch
-            .releases.reverse
+        sig { override.returns(Dependabot::Package::PackageDetails) }
+        def package_details
+          @package_details ||= package_details_fetcher.fetch
+        end
+
+        sig { override.returns(T::Array[Dependabot::Package::PackageRelease]) }
+        def available_versions
+          package_details.releases.reverse
+        end
+
+        sig do
+          override.params(language_version: T.nilable(T.any(String, Dependabot::Version)))
+                  .returns(T.nilable(Dependabot::Version))
+        end
+        def fetch_latest_version(language_version: nil) # rubocop:disable Lint/UnusedMethodArgument
+          latest_version_details&.fetch(:version)
+        end
+
+        sig do
+          params(language_version: T.nilable(T.any(String, Version)))
+            .returns(T.nilable(Dependabot::Version))
+        end
+        def fetch_latest_version_with_no_unlock(language_version:) # rubocop:disable Lint/UnusedMethodArgument
+          latest_version_details&.fetch(:version)
+        end
+
+        sig do
+          params(language_version: T.nilable(T.any(String, Version)))
+            .returns(T.nilable(Dependabot::Version))
+        end
+        def fetch_lowest_security_fix_version(language_version:) # rubocop:disable Lint/UnusedMethodArgument
+          lowest_security_fix_version_details&.fetch(:version)
         end
 
         sig { returns(T.nilable(T::Hash[T.untyped, T.untyped])) }
         def latest_version_details
-          possible_versions = filter_prereleases(releases)
+          return @latest_version_details if @latest_version_details
+
+          possible_versions = filter_prereleases(available_versions)
           possible_versions = filter_date_based_versions(possible_versions)
           possible_versions = filter_version_types(possible_versions)
           possible_versions = filter_ignored_versions(possible_versions)
+          possible_versions = filter_by_cooldown(possible_versions)
 
           possible_versions_reverse = possible_versions.reverse
 
           release = possible_versions_reverse.find { |r| package_details_fetcher.released?(r.version) }
-          release ? { version: release.version, source_url: release.url } : nil
+          @latest_version_details = release ? { version: release.version, source_url: release.url } : nil
+          @latest_version_details
         end
 
         sig { returns(T.nilable(T::Hash[T.untyped, T.untyped])) }
         def lowest_security_fix_version_details
-          possible_versions = filter_prereleases(releases)
+          return @lowest_security_fix_version_details if @lowest_security_fix_version_details
+
+          possible_versions = filter_prereleases(available_versions)
           possible_versions = filter_date_based_versions(possible_versions)
           possible_versions = filter_version_types(possible_versions)
           possible_versions = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(possible_versions,
@@ -84,7 +123,8 @@ module Dependabot
           possible_versions = filter_lower_versions(possible_versions)
 
           release = possible_versions.find { |r| package_details_fetcher.released?(r.version) }
-          release ? { version: release.version, source_url: release.url } : nil
+          @lowest_security_fix_version_details = release ? { version: release.version, source_url: release.url } : nil
+          @lowest_security_fix_version_details
         end
 
         private

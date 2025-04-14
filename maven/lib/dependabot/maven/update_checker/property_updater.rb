@@ -36,7 +36,7 @@ module Dependabot
                 credentials: credentials,
                 ignored_versions: ignored_versions,
                 security_advisories: []
-              ).releases
+              ).available_versions
 
               versions = releases.map(&:version)
 
