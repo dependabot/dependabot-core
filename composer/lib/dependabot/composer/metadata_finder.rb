@@ -12,10 +12,12 @@ module Dependabot
     class MetadataFinder < Dependabot::MetadataFinders::Base
       private
 
+      sig { override.returns(T.nilable(Source)) }
       def look_up_source
         source_from_dependency || look_up_source_from_packagist
       end
 
+      sig { returns(T.nilable(Source)) }
       def source_from_dependency
         source_url =
           dependency.requirements
@@ -25,18 +27,21 @@ module Dependabot
         Source.from_url(source_url)
       end
 
+      sig { returns(T.nilable(Source)) }
       def look_up_source_from_packagist
-        return nil if packagist_listing&.fetch("packages", nil) == []
-        return nil unless packagist_listing&.dig("packages", dependency.name.downcase)
+        listing = packagist_listing
+        return nil if listing&.fetch("packages", nil) == []
 
-        version_listings = packagist_listing["packages"][dependency.name.downcase]
+        packages = listing&.dig("packages", dependency.name.downcase)
+        return nil unless packages
+
         # Packagist returns an array of version listings sorted newest to oldest.
         # So iterate until we find the first URL that appears to be a source URL.
         #
         # NOTE: Each listing may not have all fields because they are minified to remove duplicate elements:
         # * https://github.com/composer/composer/blob/main/UPGRADE-2.0.md#for-composer-repository-implementors
         # * https://github.com/composer/metadata-minifier
-        version_listings.each do |i|
+        packages.each do |i|
           [i["homepage"], i.dig("source", "url")].each do |url|
             source_url = Source.from_url(url)
             return source_url unless source_url.nil?
@@ -45,6 +50,7 @@ module Dependabot
         nil
       end
 
+      sig { returns(T.nilable(T::Hash[String, T.untyped])) }
       def packagist_listing
         return @packagist_listing unless @packagist_listing.nil?
 
