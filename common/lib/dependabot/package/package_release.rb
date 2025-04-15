@@ -84,6 +84,20 @@ module Dependabot
       def yanked?
         @yanked
       end
+
+      # Overriding the `==` method to compare two PackageRelease objects based on version
+      sig { params(other: Object).returns(T::Boolean) }
+      def ==(other)
+        # Ensure other is a PackageRelease object and compare versions
+        return false unless other.is_a?(PackageRelease)
+
+        version == other.version
+      end
+
+      sig { returns(String) }
+      def to_s
+        version.to_s
+      end
     end
   end
 end

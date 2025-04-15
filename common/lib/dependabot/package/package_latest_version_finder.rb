@@ -121,16 +121,16 @@ module Dependabot
           .returns(T.nilable(Dependabot::Version))
       end
       def fetch_latest_version(language_version: nil)
-        version_hashes = available_versions
-        return unless version_hashes
+        releases = available_versions
+        return unless releases
 
-        version_hashes = filter_yanked_versions(version_hashes)
-        version_hashes = filter_by_cooldown(version_hashes)
-        versions = filter_unsupported_versions(version_hashes, language_version)
-        versions = filter_prerelease_versions(versions)
-        versions = filter_ignored_versions(versions)
-        versions = apply_post_fetch_latest_versions_filter(versions)
-        versions.max_by(&:version)&.version
+        releases = filter_yanked_versions(releases)
+        releases = filter_by_cooldown(releases)
+        releases = filter_unsupported_versions(releases, language_version)
+        releases = filter_prerelease_versions(releases)
+        releases = filter_ignored_versions(releases)
+        releases = apply_post_fetch_latest_versions_filter(releases)
+        releases.max_by(&:version)&.version
       end
 
       sig do
