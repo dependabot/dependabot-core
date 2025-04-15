@@ -77,7 +77,7 @@ module Dependabot
         def latest_version_with_no_unlock(language_version: nil)
           with_custom_registry_rescue do
             return unless valid_npm_details?
-            return version_from_dist_tags if specified_dist_tag_requirement?
+            return version_from_dist_tags&.version if specified_dist_tag_requirement?
 
             super
           end
@@ -100,8 +100,8 @@ module Dependabot
           with_custom_registry_rescue do
             return unless valid_npm_details?
 
-            tag_version = version_from_dist_tags
-            return tag_version if tag_version
+            tag_release = version_from_dist_tags
+            return tag_release.version if tag_release
 
             return if specified_dist_tag_requirement?
 
@@ -117,7 +117,7 @@ module Dependabot
         def fetch_latest_version_with_no_unlock(language_version: nil)
           with_custom_registry_rescue do
             return unless valid_npm_details?
-            return version_from_dist_tags if specified_dist_tag_requirement?
+            return version_from_dist_tags&.version if specified_dist_tag_requirement?
 
             super
           end
@@ -188,7 +188,7 @@ module Dependabot
               if specified_dist_tag_requirement?
                 [version_from_dist_tags].compact
               else
-                possible_versions(filter_ignored: false)
+                possible_releases(filter_ignored: false)
               end
 
             secure_versions =
@@ -204,22 +204,22 @@ module Dependabot
             secure_versions = lazy_filter_yanked_versions_by_min_max(secure_versions, check_max: false)
 
             # Return the lowest non-yanked version
-            secure_versions.max
+            secure_versions.max_by(&:version)&.version
           end
         end
 
         sig do
-          params(versions_array: T::Array[Dependabot::Version])
-            .returns(T::Array[Dependabot::Version])
+          params(releases: T::Array[Dependabot::Package::PackageRelease])
+            .returns(T::Array[Dependabot::Package::PackageRelease])
         end
-        def filter_prerelease_versions(versions_array)
-          filtered = versions_array.reject do |v|
-            v.prerelease? && !related_to_current_pre?(v)
+        def filter_prerelease_versions(releases)
+          filtered = releases.reject do |release|
+            release.version.prerelease? && !related_to_current_pre?(release.version)
           end
 
-          if versions_array.count > filtered.count
+          if releases.count > filtered.count
             Dependabot.logger.info(
-              "Filtered out #{versions_array.count - filtered.count} unrelated pre-release versions"
+              "Filtered out #{releases.count - filtered.count} unrelated pre-release versions"
             )
           end
 
@@ -325,7 +325,7 @@ module Dependabot
           !!package_details&.releases&.any?
         end
 
-        sig { returns(T.nilable(Dependabot::Version)) }
+        sig { returns(T.nilable(Dependabot::Package::PackageRelease)) }
         def version_from_dist_tags # rubocop:disable Metrics/PerceivedComplexity
           dist_tags = package_details&.dist_tags
           return nil unless dist_tags
@@ -340,14 +340,14 @@ module Dependabot
 
           if dist_tag_req
             release = find_dist_tag_release(dist_tag_req, releases)
-            return release.version if release && !release.yanked?
+            return release if release && !release.yanked?
           end
 
           latest_release = find_dist_tag_release("latest", releases)
 
           return nil unless latest_release
 
-          return latest_release.version if wants_latest_dist_tag?(latest_release.version) && !latest_release.yanked?
+          return latest_release if wants_latest_dist_tag?(latest_release.version) && !latest_release.yanked?
 
           nil
         end
