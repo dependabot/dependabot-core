@@ -80,7 +80,6 @@ namespace :gems do
         else
           puts "> Releasing #{gem_path}"
           attempts += 1
-          sleep(2)
           begin
             sh "gem exec sigstore-cli:0.2.1 sign #{gem_path} --bundle #{gem_attestation_path}"
             sh "gem push #{gem_path} --attestation #{gem_attestation_path}"
@@ -88,6 +87,8 @@ namespace :gems do
           rescue StandardError => e
             puts "! `gem push` failed with error: #{e}"
             raise if attempts >= 3
+
+            sleep(2)
           end
         end
       end
