@@ -40,7 +40,7 @@ module Dependabot
 
           # The latest version details for the dependency from a registry
           #
-          sig { returns(T::Array[Gem::Version]) }
+          sig { returns(T::Array[Dependabot::Bundler::Version]) }
           def versions
             return rubygems_versions if dependency.name == "bundler"
             return rubygems_versions unless gemfile
@@ -99,7 +99,7 @@ module Dependabot
                 )
 
                 JSON.parse(response.body)
-                    .map { |d| Gem::Version.new(d["number"]) }
+                    .map { |d| Dependabot::Bundler::Version.new(d["number"]) }
               end
           rescue JSON::ParserError, Excon::Error::Timeout
             @rubygems_versions = []
@@ -123,7 +123,7 @@ module Dependabot
                     credentials: credentials
                   }
                 ).map do |version_string|
-                  Gem::Version.new(version_string)
+                  Dependabot::Bundler::Version.new(version_string)
                 end
               end
           end
