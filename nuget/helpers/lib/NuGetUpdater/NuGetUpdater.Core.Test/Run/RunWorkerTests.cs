@@ -27,11 +27,8 @@ public class RunWorkerTests
     public const string TestPullRequestTitle = "test-pull-request-title";
     public const string TestPullRequestBody = "test-pull-request-body";
 
-    [Theory]
-    [InlineData(EOLType.CR)]
-    [InlineData(EOLType.LF)]
-    [InlineData(EOLType.CRLF)]
-    public async Task UpdateSinglePackageProducedExpectedAPIMessages(EOLType EOL)
+    [Fact]
+    public async Task UpdateSinglePackageProducedExpectedAPIMessages()
     {
         await RunAsync(
             packages: [],
@@ -55,7 +52,7 @@ public class RunWorkerTests
                         <PackageReference Include="Some.Package" Version="1.0.0" />
                       </ItemGroup>
                     </Project>
-                    """.SetEOL(EOL))
+                    """)
             ],
             discoveryWorker: new TestDiscoveryWorker(_input =>
             {
@@ -106,7 +103,7 @@ public class RunWorkerTests
                         <PackageReference Include="Some.Package" Version="1.0.1" />
                       </ItemGroup>
                     </Project>
-                    """.SetEOL(EOL));
+                    """);
                 return new UpdateOperationResult()
                 {
                     UpdateOperations = [
@@ -136,7 +133,7 @@ public class RunWorkerTests
                                 <PackageReference Include="Some.Package" Version="1.0.0" />
                               </ItemGroup>
                             </Project>
-                            """.SetEOL(EOL))),
+                            """)),
                         ContentEncoding = "base64"
                     }
                 ],
@@ -222,7 +219,7 @@ public class RunWorkerTests
                                     <PackageReference Include="Some.Package" Version="1.0.1" />
                                   </ItemGroup>
                                 </Project>
-                                """.SetEOL(EOL),
+                                """,
                         },
                     ],
                     BaseCommitSha = "TEST-COMMIT-SHA",
@@ -235,14 +232,11 @@ public class RunWorkerTests
         );
     }
 
-    [Theory]
-    [InlineData(EOLType.CR)]
-    [InlineData(EOLType.LF)]
-    [InlineData(EOLType.CRLF)]
-    public async Task UpdateHandlesSemicolonsInPackageReference(EOLType EOL)
+    [Fact]
+    public async Task UpdateHandlesSemicolonsInPackageReference()
     {
-        var repoMetadata = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package" />""".SetEOL(EOL));
-        var repoMetadata2 = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package2" />""".SetEOL(EOL));
+        var repoMetadata = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package" />""");
+        var repoMetadata2 = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package2" />""");
         await RunAsync(
             packages:
             [
@@ -272,7 +266,7 @@ public class RunWorkerTests
                         <PackageReference Include="Some.Package;Some.Package2" Version="1.0.0" />
                       </ItemGroup>
                     </Project>
-                    """.SetEOL(EOL))
+                    """)
             ],
             discoveryWorker: new TestDiscoveryWorker(_input =>
             {
@@ -325,7 +319,7 @@ public class RunWorkerTests
                         <PackageReference Include="Some.Package;Some.Package2" Version="1.0.1" />
                       </ItemGroup>
                     </Project>
-                    """.SetEOL(EOL));
+                    """);
                 return new UpdateOperationResult()
                 {
                     UpdateOperations = [
@@ -361,7 +355,7 @@ public class RunWorkerTests
                                 <PackageReference Include="Some.Package;Some.Package2" Version="1.0.0" />
                               </ItemGroup>
                             </Project>
-                            """.SetEOL(EOL))),
+                            """)),
                         ContentEncoding = "base64"
                     }
                 ],
@@ -490,7 +484,7 @@ public class RunWorkerTests
                                     <PackageReference Include="Some.Package;Some.Package2" Version="1.0.1" />
                                   </ItemGroup>
                                 </Project>
-                                """.SetEOL(EOL),
+                                """,
                         }
 
                     ],
@@ -504,11 +498,8 @@ public class RunWorkerTests
         );
     }
 
-    [Theory]
-    [InlineData(EOLType.CR)]
-    [InlineData(EOLType.LF)]
-    [InlineData(EOLType.CRLF)]
-    public async Task PrivateSourceAuthenticationFailureIsForwaredToApiHandler(EOLType EOL)
+    [Fact]
+    public async Task PrivateSourceAuthenticationFailureIsForwaredToApiHandler()
     {
         await RunAsync(
             packages:
@@ -532,7 +523,7 @@ public class RunWorkerTests
                         <add key="private_feed" value="http://example.com/nuget/index.json" allowInsecureConnections="true" />
                       </packageSources>
                     </configuration>
-                    """.SetEOL(EOL)),
+                    """),
                 ("project.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
@@ -542,7 +533,7 @@ public class RunWorkerTests
                         <PackageReference Include="Some.Package" Version="1.0.0" />
                       </ItemGroup>
                     </Project>
-                    """.SetEOL(EOL))
+                    """)
             ],
             discoveryWorker: new TestDiscoveryWorker((_input) =>
             {
@@ -563,14 +554,11 @@ public class RunWorkerTests
         );
     }
 
-    [Theory]
-    [InlineData(EOLType.CR)]
-    [InlineData(EOLType.LF)]
-    [InlineData(EOLType.CRLF)]
-    public async Task UpdateHandlesPackagesConfigFiles(EOLType EOL)
+    [Fact]
+    public async Task UpdateHandlesPackagesConfigFiles()
     {
-        var repoMetadata = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package" />""".SetEOL(EOL));
-        var repoMetadata2 = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package2" />""".SetEOL(EOL));
+        var repoMetadata = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package" />""");
+        var repoMetadata2 = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package2" />""");
         await RunAsync(
             packages:
             [
@@ -600,13 +588,13 @@ public class RunWorkerTests
                         <PackageReference Include="Some.Package" Version="1.0.0" />
                       </ItemGroup>
                     </Project>
-                    """.SetEOL(EOL)),
+                    """),
                 ("some-dir/packages.config", """
                     <?xml version="1.0" encoding="utf-8"?>
                     <packages>
                       <package id="Some.Package2" version="2.0.0" targetFramework="net8.0" />
                     </packages>
-                    """.SetEOL(EOL)),
+                    """),
             ],
             discoveryWorker: new TestDiscoveryWorker(_input =>
             {
@@ -679,7 +667,7 @@ public class RunWorkerTests
                                 <PackageReference Include="Some.Package" Version="1.0.1" />
                               </ItemGroup>
                              </Project>
-                            """.SetEOL(EOL));
+                            """);
                         break;
                     case "Some.Package2":
                         await File.WriteAllTextAsync(projectPath, """
@@ -697,14 +685,14 @@ public class RunWorkerTests
                                 </Reference>
                               </ItemGroup>
                             </Project>
-                            """.SetEOL(EOL));
+                            """);
                         var packagesConfigPath = Path.Join(Path.GetDirectoryName(projectPath)!, "packages.config");
                         await File.WriteAllTextAsync(packagesConfigPath, """
                             <?xml version="1.0" encoding="utf-8"?>
                             <packages>
                               <package id="Some.Package2" version="2.0.1" targetFramework="net8.0" />
                             </packages>
-                            """.SetEOL(EOL));
+                            """);
                         break;
                     default:
                         throw new NotSupportedException();
@@ -735,7 +723,7 @@ public class RunWorkerTests
                             <packages>
                               <package id="Some.Package2" version="2.0.0" targetFramework="net8.0" />
                             </packages>
-                            """.SetEOL(EOL))),
+                            """)),
                         ContentEncoding = "base64"
                     },
                     new DependencyFile()
@@ -751,7 +739,7 @@ public class RunWorkerTests
                                 <PackageReference Include="Some.Package" Version="1.0.0" />
                               </ItemGroup>
                             </Project>
-                            """.SetEOL(EOL))),
+                            """)),
                         ContentEncoding = "base64"
                     },
                 ],
@@ -876,7 +864,7 @@ public class RunWorkerTests
                                 <packages>
                                   <package id="Some.Package2" version="2.0.1" targetFramework="net8.0" />
                                 </packages>
-                                """.SetEOL(EOL),
+                                """,
                         },
                         new DependencyFile()
                         {
@@ -897,7 +885,7 @@ public class RunWorkerTests
                                     </Reference>
                                   </ItemGroup>
                                 </Project>
-                                """.SetEOL(EOL),
+                                """,
                         },
                     ],
                     BaseCommitSha = "TEST-COMMIT-SHA",
@@ -910,14 +898,11 @@ public class RunWorkerTests
         );
     }
 
-    [Theory]
-    [InlineData(EOLType.CR)]
-    [InlineData(EOLType.LF)]
-    [InlineData(EOLType.CRLF)]
-    public async Task UpdateHandlesPackagesConfigFromReferencedCsprojFiles(EOLType EOL)
+    [Fact]
+    public async Task UpdateHandlesPackagesConfigFromReferencedCsprojFiles()
     {
-        var repoMetadata = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package" />""".SetEOL(EOL));
-        var repoMetadata2 = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package2" />""".SetEOL(EOL));
+        var repoMetadata = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package" />""");
+        var repoMetadata2 = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package2" />""");
         await RunAsync(
             packages:
             [
@@ -950,13 +935,13 @@ public class RunWorkerTests
                         <ProjectReference Include="../ProjectB/ProjectB.csproj" />
                       </ItemGroup>
                     </Project>
-                    """.SetEOL(EOL)),
+                    """),
                 ("some-dir/ProjectA/packages.config", """
                     <?xml version="1.0" encoding="utf-8"?>
                     <packages>
                       <package id="Some.Package2" version="2.0.0" targetFramework="net8.0" />
                     </packages>
-                    """.SetEOL(EOL)),
+                    """),
                 ("some-dir/ProjectB/ProjectB.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
@@ -966,13 +951,13 @@ public class RunWorkerTests
                         <PackageReference Include="Some.Package" Version="1.0.0" />
                       </ItemGroup>
                     </Project>
-                    """.SetEOL(EOL)),
+                    """),
                 ("some-dir/ProjectB/packages.config", """
                     <?xml version="1.0" encoding="utf-8"?>
                     <packages>
                       <package id="Some.Package2" version="2.0.0" targetFramework="net8.0" />
                     </packages>
-                    """.SetEOL(EOL)),
+                    """),
             ],
             discoveryWorker: new TestDiscoveryWorker(_input =>
             {
@@ -1063,7 +1048,7 @@ public class RunWorkerTests
                                 <ProjectReference Include="../ProjectB/ProjectB.csproj" />
                               </ItemGroup>
                             </Project>
-                            """.SetEOL(EOL));
+                            """);
                         break;
                     case ("ProjectA.csproj", "Some.Package2"):
                         await File.WriteAllTextAsync(projectPath, """
@@ -1084,13 +1069,13 @@ public class RunWorkerTests
                                 </Reference>
                               </ItemGroup>
                             </Project>
-                            """.SetEOL(EOL));
+                            """);
                         await File.WriteAllTextAsync(packagesConfigPath, """
                             <?xml version="1.0" encoding="utf-8"?>
                             <packages>
                               <package id="Some.Package2" version="2.0.1" targetFramework="net8.0" />
                             </packages>
-                            """.SetEOL(EOL));
+                            """);
                         break;
                     case ("ProjectB.csproj", "Some.Package"):
                         await File.WriteAllTextAsync(projectPath, """
@@ -1102,7 +1087,7 @@ public class RunWorkerTests
                                 <PackageReference Include="Some.Package" Version="1.0.1" />
                               </ItemGroup>
                             </Project>
-                            """.SetEOL(EOL));
+                            """);
                         break;
                     case ("ProjectB.csproj", "Some.Package2"):
                         await File.WriteAllTextAsync(projectPath, """
@@ -1120,13 +1105,13 @@ public class RunWorkerTests
                                 </Reference>
                               </ItemGroup>
                             </Project>
-                            """.SetEOL(EOL));
+                            """);
                         await File.WriteAllTextAsync(packagesConfigPath, """
                             <?xml version="1.0" encoding="utf-8"?>
                             <packages>
                               <package id="Some.Package2" version="2.0.1" targetFramework="net8.0" />
                             </packages>
-                            """.SetEOL(EOL));
+                            """);
                         break;
                     default:
                         throw new NotSupportedException();
@@ -1157,7 +1142,7 @@ public class RunWorkerTests
                             <packages>
                               <package id="Some.Package2" version="2.0.0" targetFramework="net8.0" />
                             </packages>
-                            """.SetEOL(EOL))),
+                            """)),
                         ContentEncoding = "base64"
                     },
                     new DependencyFile()
@@ -1176,7 +1161,7 @@ public class RunWorkerTests
                                 <ProjectReference Include="../ProjectB/ProjectB.csproj" />
                               </ItemGroup>
                             </Project>
-                            """.SetEOL(EOL))),
+                            """)),
                         ContentEncoding = "base64"
                     },
                     new DependencyFile()
@@ -1188,7 +1173,7 @@ public class RunWorkerTests
                             <packages>
                               <package id="Some.Package2" version="2.0.0" targetFramework="net8.0" />
                             </packages>
-                            """.SetEOL(EOL))),
+                            """)),
                         ContentEncoding = "base64"
                     },
                     new DependencyFile()
@@ -1204,7 +1189,7 @@ public class RunWorkerTests
                                 <PackageReference Include="Some.Package" Version="1.0.0" />
                               </ItemGroup>
                             </Project>
-                            """.SetEOL(EOL))),
+                            """)),
                         ContentEncoding = "base64"
                     },
                 ],
@@ -1415,7 +1400,7 @@ public class RunWorkerTests
                                 <packages>
                                   <package id="Some.Package2" version="2.0.1" targetFramework="net8.0" />
                                 </packages>
-                                """.SetEOL(EOL),
+                                """,
                         },
                         new DependencyFile()
                         {
@@ -1439,7 +1424,7 @@ public class RunWorkerTests
                                     </Reference>
                                   </ItemGroup>
                                 </Project>
-                                """.SetEOL(EOL),
+                                """,
                         },
                         new DependencyFile()
                         {
@@ -1450,7 +1435,7 @@ public class RunWorkerTests
                                 <packages>
                                   <package id="Some.Package2" version="2.0.1" targetFramework="net8.0" />
                                 </packages>
-                                """.SetEOL(EOL),
+                                """,
                         },
                         new DependencyFile()
                         {
@@ -1471,7 +1456,7 @@ public class RunWorkerTests
                                     </Reference>
                                   </ItemGroup>
                                 </Project>
-                                """.SetEOL(EOL),
+                                """,
                         },
                     ],
                     BaseCommitSha = "TEST-COMMIT-SHA",
@@ -1484,11 +1469,8 @@ public class RunWorkerTests
         );
     }
 
-    [Theory]
-    [InlineData(EOLType.CR)]
-    [InlineData(EOLType.LF)]
-    [InlineData(EOLType.CRLF)]
-    public async Task UpdatedFilesAreOnlyReportedOnce(EOLType EOL)
+    [Fact]
+    public async Task UpdatedFilesAreOnlyReportedOnce()
     {
         await RunAsync(
             job: new()
@@ -1515,14 +1497,14 @@ public class RunWorkerTests
                         <ProjectFile Include="project2/project2.csproj" />
                       </ItemGroup>
                     </Project>
-                    """.SetEOL(EOL)),
+                    """),
                 ("Directory.Build.props", """
                     <Project>
                       <PropertyGroup>
                         <SomePackageVersion>1.0.0</SomePackageVersion>
                       </PropertyGroup>
                     </Project>
-                    """.SetEOL(EOL)),
+                    """),
                 ("project1/project1.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
@@ -1532,7 +1514,7 @@ public class RunWorkerTests
                         <PackageReference Include="Some.Package" Version="$(SomePackageVersion)" />
                       </ItemGroup>
                     </Project>
-                    """.SetEOL(EOL)),
+                    """),
                 ("project2/project2.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
@@ -1542,7 +1524,7 @@ public class RunWorkerTests
                         <PackageReference Include="Some.Package" Version="$(SomePackageVersion)" />
                       </ItemGroup>
                     </Project>
-                    """.SetEOL(EOL))
+                    """)
             ],
             discoveryWorker: new TestDiscoveryWorker(_input =>
             {
@@ -1607,7 +1589,7 @@ public class RunWorkerTests
                         <SomePackageVersion>1.1.0</SomePackageVersion>
                       </PropertyGroup>
                     </Project>
-                    """.SetEOL(EOL));
+                    """);
                 return new UpdateOperationResult()
                 {
                     UpdateOperations = [
@@ -1634,7 +1616,7 @@ public class RunWorkerTests
                                 <SomePackageVersion>1.0.0</SomePackageVersion>
                               </PropertyGroup>
                             </Project>
-                            """.SetEOL(EOL))),
+                            """)),
                         ContentEncoding = "base64"
                     },
                     new DependencyFile()
@@ -1650,7 +1632,7 @@ public class RunWorkerTests
                                 <PackageReference Include="Some.Package" Version="$(SomePackageVersion)" />
                               </ItemGroup>
                             </Project>
-                            """.SetEOL(EOL))),
+                            """)),
                         ContentEncoding = "base64"
                     },
                     new DependencyFile()
@@ -1666,7 +1648,7 @@ public class RunWorkerTests
                                 <PackageReference Include="Some.Package" Version="$(SomePackageVersion)" />
                               </ItemGroup>
                             </Project>
-                            """.SetEOL(EOL))),
+                            """)),
                         ContentEncoding = "base64"
                     },
                 ],
@@ -1792,7 +1774,7 @@ public class RunWorkerTests
                                     <SomePackageVersion>1.1.0</SomePackageVersion>
                                   </PropertyGroup>
                                 </Project>
-                                """.SetEOL(EOL),
+                                """,
                         }
                     ],
                     BaseCommitSha = "TEST-COMMIT-SHA",
@@ -2535,6 +2517,259 @@ public class RunWorkerTests
                             Name = "file2",
                             Directory = "/",
                             Content = "updated2",
+                        },
+                    ],
+                    BaseCommitSha = "TEST-COMMIT-SHA",
+                    CommitMessage = TestPullRequestCommitMessage,
+                    PrTitle = TestPullRequestTitle,
+                    PrBody = TestPullRequestBody,
+                },
+                new MarkAsProcessed("TEST-COMMIT-SHA"),
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task LineEndingsAreDetectedAndRestored()
+    {
+        await RunAsync(
+            job: new Job()
+            {
+                Source = new()
+                {
+                    Provider = "github",
+                    Repo = "test/repo",
+                    Directory = "/",
+                }
+            },
+            files:
+            [
+                // initially LF
+                ("file1", string.Concat(
+                    "file1-line1\n",
+                    "file1-line2\n",
+                    "file1-line3\n"
+                    )
+                ),
+                // initially CRLF
+                ("file2", string.Concat(
+                    "file2-line1\r\n",
+                    "file2-line2\r\n",
+                    "file2-line3\r\n"
+                    )
+                )
+            ],
+            discoveryWorker: TestDiscoveryWorker.FromResults(("/", new()
+            {
+                Path = "/",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "file1",
+                        Dependencies = [new("Dependency1", "1.0.0", DependencyType.PackageReference)],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
+                    },
+                    new()
+                    {
+                        FilePath = "file2",
+                        Dependencies = [new("Dependency2", "2.0.0", DependencyType.PackageReference)],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
+                    }
+                ]
+            })),
+            analyzeWorker: new TestAnalyzeWorker(args =>
+            {
+                AnalysisResult result = args.Item3.Name switch
+                {
+                    "Dependency1" => new()
+                    {
+                        CanUpdate = true,
+                        UpdatedVersion = "1.0.1",
+                        UpdatedDependencies = [new("Dependency1", "1.0.1", DependencyType.PackageReference)],
+                    },
+                    "Dependency2" => new()
+                    {
+                        CanUpdate = true,
+                        UpdatedVersion = "2.0.1",
+                        UpdatedDependencies = [new("Dependency2", "2.0.1", DependencyType.PackageReference)],
+                    },
+                    _ => throw new NotImplementedException()
+                };
+                return Task.FromResult(result);
+            }),
+            updaterWorker: new TestUpdaterWorker(async args =>
+            {
+                var (repoRoot, filePath, dependencyName, _previousVersion, _newVersion, _isTransitive) = args;
+
+                // file is explicitly updated with CR
+                var (updatedFileContent, newVersion) = dependencyName switch
+                {
+                    "Dependency1" => (string.Concat(
+                        "file1-line1-updated\r",
+                        "file1-line2-updated\r",
+                        "file1-line3-updated\r"), "1.0.1"),
+                    "Dependency2" => (string.Concat(
+                        "file2-line1-updated\r",
+                        "file2-line2-updated\r",
+                        "file2-line3-updated\r"), "2.0.1"),
+                    _ => throw new NotImplementedException(),
+                };
+                var fullFilePath = Path.Join(repoRoot, filePath);
+                await File.WriteAllTextAsync(fullFilePath, updatedFileContent);
+                return new UpdateOperationResult()
+                {
+                    UpdateOperations = [new DirectUpdate()
+                    {
+                        DependencyName = dependencyName,
+                        NewVersion = NuGetVersion.Parse(newVersion),
+                        UpdatedFiles = [filePath],
+                    }],
+                };
+            }),
+            expectedResult: new()
+            {
+                Base64DependencyFiles = [
+                    new()
+                    {
+                        Directory = "/",
+                        Name = "file1",
+                        Content = Convert.ToBase64String(Encoding.UTF8.GetBytes(string.Concat(
+                            "file1-line1\n",
+                            "file1-line2\n",
+                            "file1-line3\n")))
+                    },
+                    new()
+                    {
+                        Directory = "/",
+                        Name = "file2",
+                        Content = Convert.ToBase64String(Encoding.UTF8.GetBytes(string.Concat(
+                            "file2-line1\r\n",
+                            "file2-line2\r\n",
+                            "file2-line3\r\n")))
+                    }
+                ],
+                BaseCommitSha = "TEST-COMMIT-SHA",
+            },
+            expectedApiMessages: [
+                new UpdatedDependencyList()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "Dependency1",
+                            Version = "1.0.0",
+                            Requirements = [
+                                new()
+                                {
+                                    Requirement = "1.0.0",
+                                    File = "/file1",
+                                    Groups = ["dependencies"],
+                                }
+                            ]
+                        },
+                        new()
+                        {
+                            Name = "Dependency2",
+                            Version = "2.0.0",
+                            Requirements = [
+                                new()
+                                {
+                                    Requirement = "2.0.0",
+                                    File = "/file2",
+                                    Groups = ["dependencies"]
+                                }
+                            ]
+                        }
+                    ],
+                    DependencyFiles = ["/file1", "/file2"]
+                },
+                new IncrementMetric()
+                {
+                    Metric = "updater.started",
+                    Tags = new()
+                    {
+                        ["operation"] = "group_update_all_versions"
+                    }
+                },
+                new CreatePullRequest()
+                {
+                    Dependencies =
+                    [
+                        new ReportedDependency()
+                        {
+                            Name = "Dependency1",
+                            Version = "1.0.1",
+                            Requirements =
+                            [
+                                new ReportedRequirement()
+                                {
+                                    Requirement = "1.0.1",
+                                    File = "/file1",
+                                    Groups = ["dependencies"],
+                                    Source = new() { SourceUrl = null },
+                                }
+                            ],
+                            PreviousVersion = "1.0.0",
+                            PreviousRequirements =
+                            [
+                                new ReportedRequirement()
+                                {
+                                    Requirement = "1.0.0",
+                                    File = "/file1",
+                                    Groups = ["dependencies"],
+                                }
+                            ],
+                        },
+                        new ReportedDependency()
+                        {
+                            Name = "Dependency2",
+                            Version = "2.0.1",
+                            Requirements =
+                            [
+                                new ReportedRequirement()
+                                {
+                                    Requirement = "2.0.1",
+                                    File = "/file2",
+                                    Groups = ["dependencies"],
+                                    Source = new() { SourceUrl = null },
+                                }
+                            ],
+                            PreviousVersion = "2.0.0",
+                            PreviousRequirements =
+                            [
+                                new ReportedRequirement()
+                                {
+                                    Requirement = "2.0.0",
+                                    File = "/file2",
+                                    Groups = ["dependencies"],
+                                }
+                            ],
+                        },
+                    ],
+                    UpdatedDependencyFiles =
+                    [
+                        // original line endings have been restored
+                        new DependencyFile()
+                        {
+                            Name = "file1",
+                            Directory = "/",
+                            Content = string.Concat(
+                                "file1-line1-updated\n",
+                                "file1-line2-updated\n",
+                                "file1-line3-updated\n"
+                            ),
+                        },
+                        new DependencyFile()
+                        {
+                            Name = "file2",
+                            Directory = "/",
+                            Content = string.Concat(
+                                "file2-line1-updated\r\n",
+                                "file2-line2-updated\r\n",
+                                "file2-line3-updated\r\n"
+                            ),
                         },
                     ],
                     BaseCommitSha = "TEST-COMMIT-SHA",
