@@ -155,7 +155,7 @@ module Dependabot
         params(language_version: T.nilable(T.any(String, Dependabot::Version)))
           .returns(T.nilable(Dependabot::Version))
       end
-      def fetch_lowest_security_fix_version(language_version:)
+      def fetch_lowest_security_fix_version(language_version: nil)
         releases = available_versions
         return unless releases
 
