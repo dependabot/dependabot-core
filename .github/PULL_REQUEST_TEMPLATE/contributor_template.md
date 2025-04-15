@@ -20,6 +20,6 @@
 
 <!-- Before requesting review, please ensure that your pull request fulfills the following requirements: -->
 
-- [ ] I have run tests, verified functionality, and added tests for new features.
+- [ ] I have added tests for new features.
 - [ ] I have written clear commit messages and provided a detailed PR description, including any breaking changes.
 - [ ] I have ensured the code is well-documented and follows project standards.
