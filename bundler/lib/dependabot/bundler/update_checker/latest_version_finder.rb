@@ -97,9 +97,7 @@ module Dependabot
 
           release = relevant_versions.max_by(&:version)
 
-          return if release.nil?
-
-          { version: release.version }
+          { version: release&.version }
         end
 
         sig do
