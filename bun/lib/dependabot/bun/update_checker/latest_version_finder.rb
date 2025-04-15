@@ -123,10 +123,14 @@ module Dependabot
           end
         end
 
-        sig { override.params(versions: T::Array[Dependabot::Version]).returns(T::Array[Dependabot::Version]) }
-        def apply_post_fetch_latest_versions_filter(versions)
-          original_count = versions.count
-          filtered_versions = lazy_filter_yanked_versions_by_min_max(versions, check_max: true)
+        sig do
+          override
+            .params(releases: T::Array[Dependabot::Package::PackageRelease])
+            .returns(T::Array[Dependabot::Package::PackageRelease])
+        end
+        def apply_post_fetch_latest_versions_filter(releases)
+          original_count = releases.count
+          filtered_versions = lazy_filter_yanked_versions_by_min_max(releases, check_max: true)
 
           # Log the filter if any versions were removed
           if original_count > filtered_versions.count
@@ -141,26 +145,30 @@ module Dependabot
 
         sig do
           params(
-            versions: T::Array[Dependabot::Version],
+            releases: T::Array[Dependabot::Package::PackageRelease],
             check_max: T::Boolean
-          ).returns(T::Array[Dependabot::Version])
+          ).returns(T::Array[Dependabot::Package::PackageRelease])
         end
-        def lazy_filter_yanked_versions_by_min_max(versions, check_max: true)
+        def lazy_filter_yanked_versions_by_min_max(releases, check_max: true)
           # Sort the versions based on the check_max flag (max -> descending, min -> ascending)
-          sorted_versions = check_max ? versions.sort.reverse : versions.sort
+          sorted_releases = if check_max
+                              releases.sort_by(&:version).reverse
+                            else
+                              releases.sort_by(&:version)
+                            end
 
           filtered_versions = []
 
           not_yanked = T.let(false, T::Boolean)
 
           # Iterate through the sorted versions lazily, filtering out yanked versions
-          sorted_versions.each do |version|
-            next if !not_yanked && yanked_version?(version)
+          sorted_releases.each do |release|
+            next if !not_yanked && yanked_version?(release.version)
 
             not_yanked = true
 
             # Once we find a valid (non-yanked) version, add it to the filtered list
-            filtered_versions << version
+            filtered_versions << release
             break
           end
 
