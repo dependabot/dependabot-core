@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -27,6 +27,14 @@ module Dependabot
       include PullRequestHelpers
 
       abstract!
+
+      sig { params(dependency_snapshot: Dependabot::DependencySnapshot, error_handler: Dependabot::Updater::ErrorHandler, job: Dependabot::Job, group: Dependabot::DependencyGroup).void }
+      def initialize(dependency_snapshot, error_handler, job, group)
+        @dependency_snapshot = T.let(dependency_snapshot, Dependabot::DependencySnapshot)
+        @error_handler = T.let(error_handler, Dependabot::Updater::ErrorHandler)
+        @job = T.let(job, Dependabot::Job)
+        @group = T.let(group, Dependabot::DependencyGroup)
+      end
 
       sig { returns(Dependabot::DependencySnapshot) }
       attr_reader :dependency_snapshot
@@ -92,7 +100,7 @@ module Dependabot
 
           next unless lead_dependency
 
-          dependency_change = create_change_for(T.must(lead_dependency), updated_dependencies, dependency_files, group)
+          dependency_change = create_change_for(lead_dependency, updated_dependencies, dependency_files, group)
 
           # Move on to the next dependency using the existing files if we
           # could not create a change for any reason
@@ -127,6 +135,7 @@ module Dependabot
         cleanup_workspace
       end
 
+      sig { params(dependency: T.untyped, group: T.untyped).returns(T::Boolean) }
       def skip_dependency?(dependency, group)
         # Check if dependency has already been handled
         handled_dependency = dependency_snapshot.handled_dependencies.include?(dependency.name)
@@ -146,6 +155,7 @@ module Dependabot
       # rubocop:enable Metrics/PerceivedComplexity
       # rubocop:enable Metrics/AbcSize
       # rubocop:enable Metrics/MethodLength
+      sig { params(dependency_change: T.untyped).void }
       def log_missing_previous_version(dependency_change)
         deps_no_previous_version = dependency_change.updated_dependencies.reject(&:previous_version).map(&:name)
         deps_no_change = dependency_change.updated_dependencies.reject(&:requirements_changed?).map(&:name)
