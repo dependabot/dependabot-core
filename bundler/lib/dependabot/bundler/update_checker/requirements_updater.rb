@@ -26,7 +26,7 @@ module Dependabot
         def initialize(requirements:, update_strategy:, updated_source:,
                        latest_version:, latest_resolvable_version:)
           @requirements = requirements
-          @latest_version = Gem::Version.new(latest_version) if latest_version
+          @latest_version = Dependabot::Bundler::Version.new(latest_version) if latest_version
           @updated_source = updated_source
           @update_strategy = update_strategy
 
@@ -35,7 +35,7 @@ module Dependabot
           return unless latest_resolvable_version
 
           @latest_resolvable_version =
-            Gem::Version.new(latest_resolvable_version)
+            Dependabot::Bundler::Version.new(latest_resolvable_version)
         end
 
         def updated_requirements
@@ -267,7 +267,9 @@ module Dependabot
         # Updates the version in a "<" or "<=" constraint to allow the given
         # version
         def update_greatest_version(requirement, version_to_be_permitted)
-          version_to_be_permitted = Gem::Version.new(version_to_be_permitted) if version_to_be_permitted.is_a?(String)
+          if version_to_be_permitted.is_a?(String)
+            version_to_be_permitted = Dependabot::Bundler::Version.new(version_to_be_permitted)
+          end
           op, version = requirement.requirements.first
           version = version.release if version.prerelease?
 

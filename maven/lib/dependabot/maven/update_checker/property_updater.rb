@@ -30,13 +30,15 @@ module Dependabot
             dependencies_using_property.all? do |dep|
               next false if includes_property_reference?(updated_version(dep))
 
-              versions = VersionFinder.new(
+              releases = VersionFinder.new(
                 dependency: dep,
                 dependency_files: dependency_files,
                 credentials: credentials,
                 ignored_versions: ignored_versions,
                 security_advisories: []
-              ).versions.map { |v| v.fetch(:version) }
+              ).releases
+
+              versions = releases.map(&:version)
 
               versions.include?(updated_version(dep)) || versions.none?
             end

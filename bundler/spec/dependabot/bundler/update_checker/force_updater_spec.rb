@@ -16,7 +16,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::ForceUpdater do
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
-      target_version: Gem::Version.new(target_version),
+      target_version: Dependabot::Bundler::Version.new(target_version),
       requirements_update_strategy: update_strategy,
       credentials: [{
         "type" => "git_source",
