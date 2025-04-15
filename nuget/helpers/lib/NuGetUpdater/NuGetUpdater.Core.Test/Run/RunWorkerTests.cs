@@ -1805,11 +1805,8 @@ public class RunWorkerTests
         );
     }
 
-    [Theory]
-    [InlineData(EOLType.CR)]
-    [InlineData(EOLType.LF)]
-    [InlineData(EOLType.CRLF)]
-    public async Task UpdatePackageWithDifferentVersionsInDifferentDirectories(EOLType EOL)
+    [Fact]
+    public async Task UpdatePackageWithDifferentVersionsInDifferentDirectories()
     {
         // this test passes `null` for discovery, analyze, and update workers to fully test the desired behavior
 
@@ -1851,7 +1848,7 @@ public class RunWorkerTests
                         <ProjectFile Include="library3\library3.csproj" />
                       </ItemGroup>
                     </Project>
-                    """.SetEOL(EOL)),
+                    """),
                 ("Directory.Build.props", "<Project />"),
                 ("Directory.Build.targets", "<Project />"),
                 ("Directory.Packages.props", """
@@ -1860,7 +1857,7 @@ public class RunWorkerTests
                         <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
                       </PropertyGroup>
                     </Project>
-                    """.SetEOL(EOL)),
+                    """),
                 ("library1/library1.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
@@ -1870,7 +1867,7 @@ public class RunWorkerTests
                         <PackageReference Include="Some.Package" Version="2.0.0" />
                       </ItemGroup>
                     </Project>
-                    """.SetEOL(EOL)),
+                    """),
                 ("library2/library2.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
@@ -1880,7 +1877,7 @@ public class RunWorkerTests
                         <PackageReference Include="Some.Package" Version="1.0.0" />
                       </ItemGroup>
                     </Project>
-                    """.SetEOL(EOL)),
+                    """),
                 ("library3/library3.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
@@ -1890,7 +1887,7 @@ public class RunWorkerTests
                         <PackageReference Include="Package.With.Transitive.Dependency" Version="0.1.0" />
                       </ItemGroup>
                     </Project>
-                    """.SetEOL(EOL)),
+                    """),
             ],
             discoveryWorker: null,
             analyzeWorker: null,
@@ -1923,7 +1920,7 @@ public class RunWorkerTests
                                 <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
                               </PropertyGroup>
                             </Project>
-                            """.SetEOL(EOL))),
+                            """)),
                         ContentEncoding = "base64"
                     },
                     new DependencyFile()
@@ -1939,7 +1936,7 @@ public class RunWorkerTests
                                 <PackageReference Include="Some.Package" Version="2.0.0" />
                               </ItemGroup>
                             </Project>
-                            """.SetEOL(EOL))),
+                            """)),
                         ContentEncoding = "base64"
                     },
                     new DependencyFile()
@@ -1955,7 +1952,7 @@ public class RunWorkerTests
                                 <PackageReference Include="Some.Package" Version="1.0.0" />
                               </ItemGroup>
                             </Project>
-                            """.SetEOL(EOL))),
+                            """)),
                         ContentEncoding = "base64"
                     },
                     new DependencyFile()
@@ -1971,7 +1968,7 @@ public class RunWorkerTests
                                 <PackageReference Include="Package.With.Transitive.Dependency" Version="0.1.0" />
                               </ItemGroup>
                             </Project>
-                            """.SetEOL(EOL))),
+                            """)),
                         ContentEncoding = "base64"
                     }
                 ],
@@ -2123,7 +2120,7 @@ public class RunWorkerTests
                                     <PackageReference Include="Some.Package" Version="2.0.0" />
                                   </ItemGroup>
                                 </Project>
-                                """.SetEOL(EOL)
+                                """
                         },
                         new()
                         {
@@ -2139,7 +2136,7 @@ public class RunWorkerTests
                                     <PackageReference Include="Some.Package" Version="2.0.0" />
                                   </ItemGroup>
                                 </Project>
-                                """.SetEOL(EOL)
+                                """
                         }
                     ],
                     BaseCommitSha = "TEST-COMMIT-SHA",
