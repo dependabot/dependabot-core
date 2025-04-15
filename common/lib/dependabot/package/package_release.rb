@@ -84,6 +84,18 @@ module Dependabot
       def yanked?
         @yanked
       end
+
+      sig { params(other: Object).returns(T::Boolean) }
+      def ==(other)
+        return false unless other.is_a?(PackageRelease)
+
+        version == other.version
+      end
+
+      sig { returns(String) }
+      def to_s
+        version.to_s
+      end
     end
   end
 end

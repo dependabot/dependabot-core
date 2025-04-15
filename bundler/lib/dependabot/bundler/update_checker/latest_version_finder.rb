@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "excon"
@@ -20,6 +20,34 @@ module Dependabot
       class LatestVersionFinder < Dependabot::Package::PackageLatestVersionFinder
         extend T::Sig
 
+        sig do
+          params(
+            dependency: Dependabot::Dependency,
+            dependency_files: T::Array[Dependabot::DependencyFile],
+            credentials: T::Array[Dependabot::Credential],
+            ignored_versions: T::Array[String],
+            security_advisories: T::Array[Dependabot::SecurityAdvisory],
+            cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions),
+            raise_on_ignored: T::Boolean,
+            options: T::Hash[Symbol, T.untyped]
+          ).void
+        end
+        def initialize(
+          dependency:,
+          dependency_files:,
+          credentials:,
+          ignored_versions:,
+          security_advisories:,
+          cooldown_options: nil,
+          raise_on_ignored: false,
+          options: {}
+        )
+          @package_details = T.let(nil, T.nilable(Dependabot::Package::PackageDetails))
+          @latest_version_details = T.let(nil, T.nilable(T::Hash[Symbol, T.untyped]))
+          @releases_from_dependency_source = T.let(nil, T.nilable(T::Array[Dependabot::Package::PackageRelease]))
+          super
+        end
+
         sig { override.returns(T.nilable(Dependabot::Package::PackageDetails)) }
         def package_details
           @package_details ||= Package::PackageDetailsFetcher.new(
@@ -29,6 +57,7 @@ module Dependabot
           ).fetch
         end
 
+        sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
         def latest_version_details
           @latest_version_details ||= if cooldown_enabled?
                                         latest_version = fetch_latest_version(language_version: nil)
@@ -47,7 +76,7 @@ module Dependabot
         def available_versions
           return nil if package_details&.releases.nil?
 
-          source_versions = dependency_source.versions
+          source_versions = releases_from_dependency_source
           return [] if source_versions.empty?
 
           T.must(package_details).releases.select do |release|
@@ -57,27 +86,52 @@ module Dependabot
 
         private
 
+        sig { returns(T.nilable(T::Hash[Symbol, Dependabot::Version])) }
         def fetch_latest_version_details
           return dependency_source.latest_git_version_details if dependency_source.git?
 
-          relevant_versions = dependency_source.versions
+          relevant_versions = releases_from_dependency_source
           relevant_versions = filter_prerelease_versions(relevant_versions)
           relevant_versions = filter_ignored_versions(relevant_versions)
 
-          relevant_versions.empty? ? nil : { version: relevant_versions.max }
+          return if relevant_versions.empty?
+
+          release = relevant_versions.max_by(&:version)
+
+          { version: release&.version }
         end
 
-        def fetch_lowest_security_fix_version(*)
+        sig do
+          params(language_version: T.nilable(T.any(String, Dependabot::Version)))
+            .returns(T.nilable(Dependabot::Version))
+        end
+        def fetch_lowest_security_fix_version(language_version: nil) # rubocop:disable Lint/UnusedMethodArgument
           return if dependency_source.git?
 
-          relevant_versions = dependency_source.versions
+          relevant_versions = releases_from_dependency_source
           relevant_versions = filter_prerelease_versions(relevant_versions)
-          relevant_versions = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(relevant_versions,
-                                                                                                    security_advisories)
+          relevant_versions = Dependabot::UpdateCheckers::VersionFilters
+                              .filter_vulnerable_versions(
+                                relevant_versions,
+                                security_advisories
+                              )
           relevant_versions = filter_ignored_versions(relevant_versions)
           relevant_versions = filter_lower_versions(relevant_versions)
 
-          relevant_versions.min
+          relevant_versions.min_by(&:version)&.version
+        end
+
+        sig { returns(T::Array[Dependabot::Package::PackageRelease]) }
+        def releases_from_dependency_source
+          return @releases_from_dependency_source if @releases_from_dependency_source
+
+          @releases_from_dependency_source =
+            dependency_source.versions.map do |version|
+              Dependabot::Package::PackageRelease.new(
+                version: version
+              )
+            end
+          @releases_from_dependency_source
         end
 
         sig { returns(T::Boolean) }
@@ -96,7 +150,7 @@ module Dependabot
           )
         end
 
-        # sig { returns(DependencySource) }
+        sig { returns(DependencySource) }
         def dependency_source
           @dependency_source ||= T.let(
             DependencySource.new(

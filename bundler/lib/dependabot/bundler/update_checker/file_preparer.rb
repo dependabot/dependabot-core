@@ -215,13 +215,13 @@ module Dependabot
           lower_bound_req = updated_version_req_lower_bound(filename)
 
           return lower_bound_req if latest_allowable_version.nil?
-          return lower_bound_req unless Gem::Version.correct?(latest_allowable_version)
+          return lower_bound_req unless Bundler::Version.correct?(latest_allowable_version)
 
           lower_bound_req + ", <= #{latest_allowable_version}"
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
-        def updated_version_req_lower_bound(filename)
+        def updated_version_req_lower_bound(filename) # rubocop:disable Metrics/CyclomaticComplexity
           original_req = dependency.requirements
                                    .find { |r| r.fetch(:file) == filename }
                                    &.fetch(:requirement)
@@ -234,9 +234,9 @@ module Dependabot
               dependency.requirements.map { |r| r[:requirement] }
                         .reject { |req_string| req_string.start_with?("<") }
                         .select { |req_string| req_string.match?(VERSION_REGEX) }
-                        .map { |req_string| req_string.match(VERSION_REGEX) }
-                        .select { |version| Gem::Version.correct?(version) }
-                        .max_by { |version| Gem::Version.new(version) }
+                        .map { |req_string| req_string.match(VERSION_REGEX)&.to_s }
+                        .select { |version| Bundler::Version.correct?(version) }
+                        .max_by { |version| Bundler::Version.new(version) }
 
             ">= #{version_for_requirement || 0}"
           end

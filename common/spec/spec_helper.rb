@@ -211,3 +211,8 @@ TestRequirement = Class.new(Dependabot::Requirement) do
     super(requirements)
   end
 end
+
+# Define an anonymous subclass of Dependabot::Requirement for testing purposes
+TestVersion = Class.new(Dependabot::Version) do
+  # Initialize with a version string
+end
