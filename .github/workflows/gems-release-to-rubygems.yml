@@ -19,8 +19,13 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - uses: ruby/setup-ruby@922ebc4c5262cd14e07bb0e1db020984b6c064fe # v1.226.0
 
+      - name: Install the RubyGems version specified in the Dockerfile.updater-core file
+        run: |
+          RUBYGEMS_VERSION=$(grep 'ARG RUBYGEMS_VERSION=' Dockerfile.updater-core | cut -d '=' -f 2)
+          gem update --system $RUBYGEMS_VERSION
+
       - uses: rubygems/configure-rubygems-credentials@bc6dd217f8a4f919d6835fcfefd470ef821f5c44 # v1.0.0
 
       # We can't use the https://github.com/rubygems/release-gem workflow because it calls `rake release` rather than `rake gems:release`.
       # `rake release` causes problems because it tries to push a git tag, but we've already manually tagged the release as part of the `gems-bump-version` workflow.
-      - run: gem install rake && rake gems:release
+      - run: gem exec rake gems:release

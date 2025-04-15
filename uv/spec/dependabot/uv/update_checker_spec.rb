@@ -75,9 +75,6 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
   before do
     stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
     allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_file_parser_python_local)
-      .and_return(false)
-    allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_cooldown_for_uv)
       .and_return(true)
     allow(Dependabot::Experiments).to receive(:enabled?)

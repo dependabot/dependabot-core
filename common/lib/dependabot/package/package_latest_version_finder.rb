@@ -81,24 +81,24 @@ module Dependabot
       end
 
       sig do
-        params(language_version: T.nilable(T.any(String, Version)))
-          .returns(T.nilable(Gem::Version))
+        params(language_version: T.nilable(T.any(String, Dependabot::Version)))
+          .returns(T.nilable(Dependabot::Version))
       end
       def latest_version(language_version: nil)
         @latest_version ||= fetch_latest_version(language_version: language_version)
       end
 
       sig do
-        params(language_version: T.nilable(T.any(String, Version)))
-          .returns(T.nilable(Gem::Version))
+        params(language_version: T.nilable(T.any(String, Dependabot::Version)))
+          .returns(T.nilable(Dependabot::Version))
       end
       def latest_version_with_no_unlock(language_version: nil)
         @latest_version_with_no_unlock ||= fetch_latest_version_with_no_unlock(language_version: language_version)
       end
 
       sig do
-        params(language_version: T.nilable(T.any(String, Version)))
-          .returns(T.nilable(Gem::Version))
+        params(language_version: T.nilable(T.any(String, Dependabot::Version)))
+          .returns(T.nilable(Dependabot::Version))
       end
       def lowest_security_fix_version(language_version: nil)
         @lowest_security_fix_version ||= fetch_lowest_security_fix_version(language_version: language_version)
@@ -117,7 +117,7 @@ module Dependabot
       protected
 
       sig do
-        params(language_version: T.nilable(T.any(String, Version)))
+        params(language_version: T.nilable(T.any(String, Dependabot::Version)))
           .returns(T.nilable(Dependabot::Version))
       end
       def fetch_latest_version(language_version: nil)
@@ -133,13 +133,16 @@ module Dependabot
         versions.max
       end
 
-      sig { params(versions: T::Array[Dependabot::Version]).returns(T::Array[Dependabot::Version]) }
+      sig do
+        params(versions: T::Array[Dependabot::Version])
+          .returns(T::Array[Dependabot::Version])
+      end
       def apply_post_fetch_latest_versions_filter(versions)
         versions
       end
 
       sig do
-        params(language_version: T.nilable(T.any(String, Version)))
+        params(language_version: T.nilable(T.any(String, Dependabot::Version)))
           .returns(T.nilable(Dependabot::Version))
       end
       def fetch_latest_version_with_no_unlock(language_version:)
@@ -157,7 +160,7 @@ module Dependabot
       end
 
       sig do
-        params(language_version: T.nilable(T.any(String, Version)))
+        params(language_version: T.nilable(T.any(String, Dependabot::Version)))
           .returns(T.nilable(Dependabot::Version))
       end
       def fetch_lowest_security_fix_version(language_version:)
@@ -174,8 +177,14 @@ module Dependabot
         )
         versions = filter_ignored_versions(versions)
         versions = filter_lower_versions(versions)
+        versions = apply_post_fetch_lowest_security_fix_versions_filter(versions)
 
         versions.min
+      end
+
+      sig { params(versions: T::Array[Dependabot::Version]).returns(T::Array[Dependabot::Version]) }
+      def apply_post_fetch_lowest_security_fix_versions_filter(versions)
+        versions
       end
 
       sig do
@@ -216,7 +225,7 @@ module Dependabot
       sig do
         params(
           releases: T::Array[Dependabot::Package::PackageRelease],
-          language_version: T.nilable(T.any(String, Version))
+          language_version: T.nilable(T.any(String, Dependabot::Version))
         )
           .returns(T::Array[Dependabot::Version])
       end
