@@ -130,10 +130,10 @@ module Dependabot
 
         updated_dependencies.none? do |dep|
           old_version = dep.previous_version
-          next unless Gem::Version.correct?(old_version)
-          next if Gem::Version.new(old_version).prerelease?
+          next unless Dependabot::Bundler::Version.correct?(old_version)
+          next if Dependabot::Bundler::Version.new(old_version).prerelease?
 
-          Gem::Version.new(dep.version).prerelease?
+          Dependabot::Bundler::Version.new(dep.version).prerelease?
         end
       rescue Dependabot::DependencyFileNotResolvable
         false
