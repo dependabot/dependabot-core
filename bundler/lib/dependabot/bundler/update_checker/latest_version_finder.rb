@@ -102,8 +102,11 @@ module Dependabot
           { version: release.version }
         end
 
-        sig { returns(T.nilable(Dependabot::Version)) }
-        def fetch_lowest_security_fix_version
+        sig do
+          params(language_version: T.nilable(T.any(String, Dependabot::Version)))
+            .returns(T.nilable(Dependabot::Version))
+        end
+        def fetch_lowest_security_fix_version(language_version: nil) # rubocop:disable Lint/UnusedMethodArgument
           return if dependency_source.git?
 
           relevant_versions = available_versions || []
