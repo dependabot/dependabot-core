@@ -180,7 +180,7 @@ module Dependabot
             .params(language_version: T.nilable(T.any(String, Dependabot::Version)))
             .returns(T.nilable(Dependabot::Version))
         end
-        def fetch_lowest_security_fix_version(language_version:) # rubocop:disable Lint/UnusedMethodArgument
+        def fetch_lowest_security_fix_version(language_version: nil) # rubocop:disable Lint/UnusedMethodArgument
           with_custom_registry_rescue do
             return unless valid_npm_details?
 
