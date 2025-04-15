@@ -7,10 +7,5 @@
   },
   "require-dev": {
     "phpunit/phpunit": "^4.0 || ^8.0"
-  },
-  "config": {
-    "platform": {
-      "php": "5.8.36"
-    }
   }
 }

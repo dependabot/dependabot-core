@@ -39,10 +39,7 @@
         "test": "vendor/bin/phpunit"
     },
     "config": {
-        "sort-packages": true,
-        "platform": {
-          "php": "7.1.3"
-        }
+        "sort-packages": true
     },
     "extra": {
         "laravel": {

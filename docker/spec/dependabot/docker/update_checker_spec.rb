@@ -7,6 +7,7 @@ require "dependabot/dependency"
 require "dependabot/docker/update_checker"
 require "dependabot/config"
 require "dependabot/config/update_config"
+require "dependabot/package/release_cooldown_options"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::Docker::UpdateChecker do
@@ -16,6 +17,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
   let(:source) { { tag: version } }
   let(:version) { "17.04" }
   let(:dependency_name) { "ubuntu" }
+  let(:update_cooldown) { nil }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -45,7 +47,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       dependency_files: [],
       credentials: credentials,
       ignored_versions: ignored_versions,
-      raise_on_ignored: raise_on_ignored
+      raise_on_ignored: raise_on_ignored,
+      update_cooldown: update_cooldown
     )
   end
 
@@ -1456,6 +1459,46 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
         it { is_expected.to eq("4-apache-202502070602") }
       end
+    end
+
+    describe "with cooldown options" do
+      subject(:latest_version) { checker.latest_version }
+
+      let(:update_cooldown) do
+        Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7)
+      end
+      let(:expected_cooldown_options) do
+        Dependabot::Package::ReleaseCooldownOptions.new(
+          default_days: 7,
+          semver_major_days: 0,
+          semver_minor_days: 0,
+          semver_patch_days: 0,
+          include: [],
+          exclude: []
+        )
+      end
+
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:enable_cooldown_for_docker)
+          .and_return(true)
+
+        new_headers =
+          fixture("docker", "registry_manifest_headers", "generic.json")
+        stub_request(:head, repo_url + "manifests/17.10")
+          .and_return(status: 200, body: "", headers: JSON.parse(new_headers))
+        stub_request(:get, repo_url + "manifests/17.10")
+          .and_return(status: 200, body: fixture("docker", "registry_manifest_digests", "ubuntu_17.10.json"))
+
+        blob_headers =
+          fixture("docker", "image_blobs_headers", "ubuntu_17.10_38d6c1.json")
+
+        stub_request(:get, repo_url + "blobs/sha256:9c4bf7dbb981591d4a1169138471afe4bf5ff5418841d00e30a7ba372e38d6c1")
+          .and_return(status: 200, body: fixture("docker", "image_blobs", "ubuntu_17.10_38d6c1.json"),
+                      headers: JSON.parse(blob_headers))
+      end
+
+      it { is_expected.to eq("17.10") }
     end
   end
 

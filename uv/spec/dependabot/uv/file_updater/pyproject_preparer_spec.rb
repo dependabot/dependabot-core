@@ -77,48 +77,6 @@ RSpec.describe Dependabot::Uv::FileUpdater::PyprojectPreparer do
     end
   end
 
-  describe "#freeze_top_level_dependencies_except" do
-    subject(:frozen_content) do
-      preparer.freeze_top_level_dependencies_except([dependency])
-    end
-
-    it "pins all dependencies except the updated one" do
-      expect(frozen_content).to include("requests>=2.31.0") # The original constraint
-    end
-
-    context "with multiple dependencies including one to update" do
-      let(:pyproject_content) do
-        <<~TOML
-          [project]
-          name = "sample-project"
-          version = "0.1.0"
-          requires-python = ">=3.7"
-          dependencies = [
-              "requests>=2.31.0",
-              "certifi>=2025.1.0",
-          ]
-
-          [build-system]
-          requires = ["setuptools>=42", "wheel"]
-          build-backend = "setuptools.build_meta"
-        TOML
-      end
-
-      it "pins all dependencies except the updated one" do
-        expect(frozen_content).to include("requests>=2.31.0") # Dependency to update, not pinned
-        expect(frozen_content).to include("certifi==2025.1.31") # Other dependency, pinned to lock version
-      end
-    end
-
-    context "without a lockfile" do
-      let(:lockfile) { nil }
-
-      it "returns the original content" do
-        expect(frozen_content).to eq(pyproject_content)
-      end
-    end
-  end
-
   describe "#update_python_requirement" do
     subject(:updated_content) { preparer.update_python_requirement("3.10") }
 

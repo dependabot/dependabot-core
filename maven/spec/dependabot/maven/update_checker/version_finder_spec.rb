@@ -658,7 +658,9 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
         let(:raise_on_ignored) { true }
 
         it "raises an error" do
-          expect { lowest_security_fix_version_details }.to raise_error(Dependabot::AllVersionsIgnored)
+          expect { lowest_security_fix_version_details }.to raise_error(
+            Dependabot::AllVersionsIgnored
+          )
         end
       end
     end
@@ -676,27 +678,27 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
     end
   end
 
-  describe "#versions" do
-    subject(:versions) { finder.versions }
+  describe "#releases" do
+    subject(:releases) { finder.releases }
 
     its(:count) { is_expected.to eq(70) }
 
-    describe "the first version" do
-      subject { versions.first }
+    describe "the first release" do
+      subject { releases.first }
 
-      its([:version]) { is_expected.to eq(version_class.new("r03")) }
+      its(:version) { is_expected.to eq(version_class.new("r03")) }
 
-      its([:source_url]) do
+      its(:url) do
         is_expected.to eq("https://repo.maven.apache.org/maven2")
       end
     end
 
-    describe "the last version" do
-      subject { versions.last }
+    describe "the last release" do
+      subject { releases.last }
 
-      its([:version]) { is_expected.to eq(version_class.new("23.7-rc1-jre")) }
+      its(:version) { is_expected.to eq(version_class.new("23.7-rc1-jre")) }
 
-      its([:source_url]) do
+      its(:url) do
         is_expected.to eq("https://repo.maven.apache.org/maven2")
       end
     end
@@ -739,22 +741,22 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
           .to_return(status: 404, body: "")
       end
 
-      describe "the first version" do
-        subject { versions.first }
+      describe "the first release" do
+        subject { releases.first }
 
-        its([:version]) { is_expected.to eq(version_class.new("r03")) }
+        its(:version) { is_expected.to eq(version_class.new("r03")) }
 
-        its([:source_url]) do
+        its(:url) do
           is_expected.to eq("http://repository.jboss.org/maven2")
         end
       end
 
-      describe "the last version" do
-        subject { versions.last }
+      describe "the last release" do
+        subject { releases.last }
 
-        its([:version]) { is_expected.to eq(version_class.new("23.7-rc1-jre")) }
+        its(:version) { is_expected.to eq(version_class.new("23.7-rc1-jre")) }
 
-        its([:source_url]) do
+        its(:url) do
           is_expected.to eq("http://repository.jboss.org/maven2")
         end
       end
@@ -772,22 +774,22 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
 
         its(:count) { is_expected.to eq(17) }
 
-        describe "the first version" do
-          subject { versions.first }
+        describe "the first release" do
+          subject { releases.first }
 
-          its([:version]) { is_expected.to eq(version_class.new("r01")) }
+          its(:version) { is_expected.to eq(version_class.new("r01")) }
 
-          its([:source_url]) do
+          its(:url) do
             is_expected.to eq("https://repo.maven.apache.org/maven2")
           end
         end
 
-        describe "the last version" do
-          subject { versions.last }
+        describe "the last release" do
+          subject { releases.last }
 
-          its([:version]) { is_expected.to eq(version_class.new("20040616")) }
+          its(:version) { is_expected.to eq(version_class.new("20040616")) }
 
-          its([:source_url]) do
+          its(:url) do
             is_expected.to eq("https://repo.maven.apache.org/maven2")
           end
         end

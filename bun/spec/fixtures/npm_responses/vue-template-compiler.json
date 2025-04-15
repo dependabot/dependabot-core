@@ -1,0 +1,4750 @@
+{
+    "_id": "vue-template-compiler",
+    "_rev": "115-dd377e259aa01ec1a8489a35128b907c",
+    "author": {
+        "name": "Evan You"
+    },
+    "bugs": {
+        "url": "https://github.com/vuejs/vue/issues"
+    },
+    "description": "template compiler for Vue 2.0",
+    "dist-tags": {
+        "beta": "2.5.18-beta.0",
+        "latest": "2.5.21"
+    },
+    "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+    "keywords": [
+        "vue",
+        "compiler"
+    ],
+    "license": "MIT",
+    "maintainers": [
+        {
+            "email": "yyx990803@gmail.com",
+            "name": "yyx990803"
+        }
+    ],
+    "name": "vue-template-compiler",
+    "readme": "# vue-template-compiler\n\n> This package is auto-generated. For pull requests please see [src/platforms/web/entry-compiler.js](https://github.com/vuejs/vue/tree/dev/src/platforms/web/entry-compiler.js).\n\nThis package can be used to pre-compile Vue 2.0 templates into render functions to avoid runtime-compilation overhead and CSP restrictions. You will only need it if you are writing build tools with very specific needs. In most cases you should be using [`vue-loader`](https://github.com/vuejs/vue-loader) or [`vueify`](https://github.com/vuejs/vueify) instead, both of which use this package internally.\n\n## Installation\n\n``` bash\nnpm install vue-template-compiler\n```\n\n``` js\nconst compiler = require('vue-template-compiler')\n```\n\n## API\n\n### compiler.compile(template, [options])\n\nCompiles a template string and returns compiled JavaScript code. The returned result is an object of the following format:\n\n``` js\n{\n  ast: ?ASTElement, // parsed template elements to AST\n  render: string, // main render function code\n  staticRenderFns: Array<string>, // render code for static sub trees, if any\n  errors: Array<string> // template syntax errors, if any\n}\n```\n\nNote the returned function code uses `with` and thus cannot be used in strict mode code.\n\n#### Options\n\nIt's possible to hook into the compilation process to support custom template features. **However, beware that by injecting custom compile-time modules, your templates will not work with other build tools built on standard built-in modules, e.g `vue-loader` and `vueify`.**\n\nThe optional `options` object can contain the following:\n\n- `modules`\n\n  An array of compiler modules. For details on compiler modules, refer to the `ModuleOptions` type in [flow declarations](https://github.com/vuejs/vue/blob/dev/flow/compiler.js#L38-L45) and the [built-in modules](https://github.com/vuejs/vue/tree/dev/src/platforms/web/compiler/modules).\n\n- `directives`\n\n  An object where the key is the directive name and the value is a function that transforms an template AST node. For example:\n\n  ``` js\n  compiler.compile('<div v-test></div>', {\n    directives: {\n      test (node, directiveMeta) {\n        // transform node based on directiveMeta\n      }\n    }\n  })\n  ```\n\n  By default, a compile-time directive will extract the directive and the directive will not be present at runtime. If you want the directive to also be handled by a runtime definition, return `true` in the transform function.\n\n  Refer to the implementation of some [built-in compile-time directives](https://github.com/vuejs/vue/tree/dev/src/platforms/web/compiler/directives).\n\n- `preserveWhitespace`\n\n  Defaults to `true`. This means the compiled render function preserves all whitespace characters between HTML tags. If set to `false`, whitespace between tags will be ignored. This can result in slightly better performance but may affect layout for inline elements.\n\n---\n\n### compiler.compileToFunctions(template)\n\nSimilar to `compiler.compile`, but directly returns instantiated functions:\n\n``` js\n{\n  render: Function,\n  staticRenderFns: Array<Function>\n}\n```\n\nThis is only useful at runtime with pre-configured builds, so it doesn't accept any compile-time options. In addition, this method uses `new Function()` so it is not CSP-compliant.\n\n---\n\n### compiler.ssrCompile(template, [options])\n\n> 2.4.0+\n\nSame as `compiler.compile` but generates SSR-specific render function code by optimizing parts of the template into string concatenation in order to improve SSR performance.\n\nThis is used by default in `vue-loader@>=12` and can be disabled using the [`optimizeSSR`](https://vue-loader.vuejs.org/en/options.html#optimizessr) option.\n\n---\n\n### compiler.ssrCompileToFunctions(template)\n\n> 2.4.0+\n\nSame as `compiler.compileToFunction` but generates SSR-specific render function code by optimizing parts of the template into string concatenation in order to improve SSR performance.\n\n---\n\n### compiler.parseComponent(file, [options])\n\nParse a SFC (single-file component, or `*.vue` file) into a descriptor (refer to the `SFCDescriptor` type in [flow declarations](https://github.com/vuejs/vue/blob/dev/flow/compiler.js)). This is used in SFC build tools like `vue-loader` and `vueify`.\n\n#### Options\n\n#### `pad`\n\n`pad` is useful when you are piping the extracted content into other pre-processors, as you will get correct line numbers or character indices if there are any syntax errors.\n\n- with `{ pad: \"line\" }`, the extracted content for each block will be prefixed with one newline for each line in the leading content from the original file to ensure that the line numbers align with the original file.\n- with `{ pad: \"space\" }`, the extracted content for each block will be prefixed with one space for each character in the leading content from the original file to ensure that the character count remains the same as the original file.\n",
+    "readmeFilename": "README.md",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/vuejs/vue.git"
+    },
+    "time": {
+        "0.1.0": "2016-06-10T15:47:48.751Z",
+        "2.0.0": "2016-09-30T18:31:55.901Z",
+        "2.0.0-alpha.1": "2016-06-10T23:23:27.189Z",
+        "2.0.0-alpha.2": "2016-06-13T23:36:41.487Z",
+        "2.0.0-alpha.3": "2016-06-15T18:22:31.815Z",
+        "2.0.0-alpha.4": "2016-06-16T17:00:42.859Z",
+        "2.0.0-alpha.5": "2016-06-17T18:22:33.997Z",
+        "2.0.0-alpha.6": "2016-06-22T19:33:15.168Z",
+        "2.0.0-alpha.7": "2016-06-28T02:24:08.315Z",
+        "2.0.0-alpha.8": "2016-06-28T09:02:05.303Z",
+        "2.0.0-beta.1": "2016-07-07T21:51:36.515Z",
+        "2.0.0-beta.2": "2016-07-17T05:51:17.599Z",
+        "2.0.0-beta.3": "2016-07-24T02:45:10.680Z",
+        "2.0.0-beta.4": "2016-07-26T02:04:18.753Z",
+        "2.0.0-beta.5": "2016-07-27T04:25:34.705Z",
+        "2.0.0-beta.6": "2016-08-01T19:27:28.778Z",
+        "2.0.0-beta.7": "2016-08-05T22:10:21.736Z",
+        "2.0.0-beta.8": "2016-08-10T04:55:24.490Z",
+        "2.0.0-rc.1": "2016-08-11T05:43:04.364Z",
+        "2.0.0-rc.2": "2016-08-16T03:39:02.125Z",
+        "2.0.0-rc.3": "2016-08-20T18:04:49.454Z",
+        "2.0.0-rc.4": "2016-08-29T19:48:56.796Z",
+        "2.0.0-rc.5": "2016-09-08T11:29:43.352Z",
+        "2.0.0-rc.6": "2016-09-13T13:20:57.312Z",
+        "2.0.0-rc.7": "2016-09-23T22:24:45.382Z",
+        "2.0.0-rc.8": "2016-09-27T21:08:24.459Z",
+        "2.0.1": "2016-09-30T21:11:56.222Z",
+        "2.0.2": "2016-10-12T04:54:02.591Z",
+        "2.0.3": "2016-10-13T09:27:23.552Z",
+        "2.0.4": "2016-11-04T20:46:59.814Z",
+        "2.0.5": "2016-11-05T03:47:23.261Z",
+        "2.0.6": "2016-11-15T23:04:59.183Z",
+        "2.0.7": "2016-11-16T21:54:20.675Z",
+        "2.0.8": "2016-11-20T03:14:55.846Z",
+        "2.1.0": "2016-11-22T16:15:02.605Z",
+        "2.1.1": "2016-11-23T21:00:38.410Z",
+        "2.1.10": "2017-01-17T17:17:07.192Z",
+        "2.1.2": "2016-11-23T23:41:21.564Z",
+        "2.1.3": "2016-11-24T00:21:12.848Z",
+        "2.1.4": "2016-12-02T03:01:15.152Z",
+        "2.1.5": "2016-12-13T03:09:24.368Z",
+        "2.1.6": "2016-12-13T17:22:24.686Z",
+        "2.1.7": "2016-12-24T16:36:10.421Z",
+        "2.1.8": "2016-12-28T05:54:31.533Z",
+        "2.1.9": "2017-01-16T23:48:02.573Z",
+        "2.2.0": "2017-02-26T04:28:11.670Z",
+        "2.2.0-beta.1": "2017-02-24T04:22:17.417Z",
+        "2.2.0-beta.2": "2017-02-25T00:01:06.539Z",
+        "2.2.1": "2017-02-26T13:10:45.467Z",
+        "2.2.2": "2017-03-09T02:32:35.226Z",
+        "2.2.3": "2017-03-13T08:07:55.424Z",
+        "2.2.4": "2017-03-13T15:08:05.946Z",
+        "2.2.5": "2017-03-24T04:53:25.305Z",
+        "2.2.6": "2017-03-27T02:46:02.193Z",
+        "2.3.0": "2017-04-27T06:22:02.445Z",
+        "2.3.0-beta.1": "2017-04-26T10:32:26.908Z",
+        "2.3.1": "2017-05-02T07:57:32.854Z",
+        "2.3.2": "2017-05-02T10:29:53.734Z",
+        "2.3.3": "2017-05-09T16:57:04.720Z",
+        "2.3.4": "2017-06-08T04:53:26.574Z",
+        "2.4.0": "2017-07-13T05:52:49.585Z",
+        "2.4.1": "2017-07-13T06:40:14.455Z",
+        "2.4.2": "2017-07-21T04:28:28.366Z",
+        "2.4.3": "2017-09-13T07:57:24.928Z",
+        "2.4.4": "2017-09-14T15:32:36.725Z",
+        "2.5.0": "2017-10-13T03:04:30.026Z",
+        "2.5.1": "2017-10-13T14:14:26.382Z",
+        "2.5.10": "2017-12-12T23:16:36.305Z",
+        "2.5.11": "2017-12-14T16:55:55.885Z",
+        "2.5.12": "2017-12-19T14:54:13.620Z",
+        "2.5.13": "2017-12-19T19:06:49.424Z",
+        "2.5.14": "2018-03-09T21:40:18.942Z",
+        "2.5.15": "2018-03-10T23:36:33.494Z",
+        "2.5.16": "2018-03-13T22:14:12.071Z",
+        "2.5.17": "2018-08-01T19:29:06.678Z",
+        "2.5.17-beta.0": "2018-03-23T23:28:55.636Z",
+        "2.5.18": "2018-12-07T21:08:56.863Z",
+        "2.5.18-beta.0": "2018-12-02T21:10:29.761Z",
+        "2.5.19": "2018-12-09T21:24:39.984Z",
+        "2.5.2": "2017-10-13T20:20:54.468Z",
+        "2.5.20": "2018-12-10T16:56:52.472Z",
+        "2.5.21": "2018-12-11T22:52:07.931Z",
+        "2.5.3": "2017-11-03T21:11:25.816Z",
+        "2.5.4": "2017-11-16T19:53:17.519Z",
+        "2.5.5": "2017-11-17T16:36:49.330Z",
+        "2.5.6": "2017-11-18T19:43:53.979Z",
+        "2.5.7": "2017-11-20T19:49:20.317Z",
+        "2.5.8": "2017-11-21T14:42:13.212Z",
+        "2.5.9": "2017-11-27T17:43:26.543Z",
+        "created": "2016-06-10T15:47:48.751Z",
+        "modified": "2018-12-11T22:52:10.556Z"
+    },
+    "users": {
+        "arturmiglio": true,
+        "chinawolf_wyp": true,
+        "cjr--": true,
+        "donecharlton": true,
+        "edgardleal": true,
+        "fakefarm": true,
+        "johnny_kim": true,
+        "msonowal": true,
+        "paulkolesnyk": true,
+        "pea3nut": true,
+        "shuoshubao": true,
+        "sibawite": true,
+        "stone_breaker": true,
+        "sujeet555": true,
+        "tommyzzm": true,
+        "usex": true,
+        "vlasterx": true,
+        "wuwenbin": true,
+        "wuxiaword": true,
+        "yanlaichang": true,
+        "yeming": true
+    },
+    "versions": {
+        "0.1.0": {
+            "_from": ".",
+            "_id": "vue-template-compiler@0.1.0",
+            "_nodeVersion": "6.0.0",
+            "_npmOperationalInternal": {
+                "host": "packages-16-east.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-0.1.0.tgz_1465573666173_0.632203227840364"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "3.8.6",
+            "_shasum": "8cc1c2fc14ceac3a4649ac5126f9103eeaf48622",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "entities": "^1.1.1"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "8cc1c2fc14ceac3a4649ac5126f9103eeaf48622",
+                "tarball": "http://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-0.1.0.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "0.1.0"
+        },
+        "2.0.0": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.0.0",
+            "_nodeVersion": "6.3.1",
+            "_npmOperationalInternal": {
+                "host": "packages-12-west.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.0.0.tgz_1475260314258_0.4241835630964488"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "3.10.3",
+            "_shasum": "0f4ffcf615f507ccd421eaa72b03063732818a3d",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "entities": "^1.1.1"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "0f4ffcf615f507ccd421eaa72b03063732818a3d",
+                "tarball": "http://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.0.0.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.0.0"
+        },
+        "2.0.0-alpha.1": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.0.0-alpha.1",
+            "_nodeVersion": "6.0.0",
+            "_npmOperationalInternal": {
+                "host": "packages-16-east.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.0.0-alpha.1.tgz_1465601004271_0.7862520646303892"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "3.8.6",
+            "_shasum": "6bdd707b8874b7b8d93430862cb0f98ce5365a50",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "entities": "^1.1.1",
+                "source-map": "^0.5.6"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "6bdd707b8874b7b8d93430862cb0f98ce5365a50",
+                "tarball": "http://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.0.0-alpha.1.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.0.0-alpha.1"
+        },
+        "2.0.0-alpha.2": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.0.0-alpha.2",
+            "_nodeVersion": "6.0.0",
+            "_npmOperationalInternal": {
+                "host": "packages-12-west.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.0.0-alpha.2.tgz_1465860998802_0.6736660019960254"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "3.8.6",
+            "_shasum": "441010add8ed18b2f140959b5cd83577eccaaed8",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "entities": "^1.1.1",
+                "source-map": "^0.5.6"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "441010add8ed18b2f140959b5cd83577eccaaed8",
+                "tarball": "http://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.0.0-alpha.2.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.0.0-alpha.2"
+        },
+        "2.0.0-alpha.3": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.0.0-alpha.3",
+            "_nodeVersion": "6.0.0",
+            "_npmOperationalInternal": {
+                "host": "packages-16-east.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.0.0-alpha.3.tgz_1466014948337_0.5379339947830886"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "3.8.6",
+            "_shasum": "0baac0f4bf594253eb7897880006829f22a79dee",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "entities": "^1.1.1",
+                "source-map": "^0.5.6"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "0baac0f4bf594253eb7897880006829f22a79dee",
+                "tarball": "http://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.0.0-alpha.3.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.0.0-alpha.3"
+        },
+        "2.0.0-alpha.4": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.0.0-alpha.4",
+            "_nodeVersion": "6.0.0",
+            "_npmOperationalInternal": {
+                "host": "packages-16-east.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.0.0-alpha.4.tgz_1466096441856_0.7140775457955897"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "3.8.6",
+            "_shasum": "b7f70f581749123cd67dd3dabdbefb8dbfffdf78",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "entities": "^1.1.1",
+                "source-map": "^0.5.6"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "b7f70f581749123cd67dd3dabdbefb8dbfffdf78",
+                "tarball": "http://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.0.0-alpha.4.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.0.0-alpha.4"
+        },
+        "2.0.0-alpha.5": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.0.0-alpha.5",
+            "_nodeVersion": "6.0.0",
+            "_npmOperationalInternal": {
+                "host": "packages-12-west.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.0.0-alpha.5.tgz_1466187751691_0.82523313164711"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "3.8.6",
+            "_shasum": "1b193b108b6317dc8e4ed046944e334832e0f231",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "entities": "^1.1.1",
+                "source-map": "^0.5.6"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "1b193b108b6317dc8e4ed046944e334832e0f231",
+                "tarball": "http://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.0.0-alpha.5.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.0.0-alpha.5"
+        },
+        "2.0.0-alpha.6": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.0.0-alpha.6",
+            "_nodeVersion": "6.0.0",
+            "_npmOperationalInternal": {
+                "host": "packages-12-west.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.0.0-alpha.6.tgz_1466623992689_0.7907917378470302"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "3.8.6",
+            "_shasum": "ff644dd2f64926a351fa803c580da95572ebdd3c",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "entities": "^1.1.1",
+                "source-map": "^0.5.6"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "ff644dd2f64926a351fa803c580da95572ebdd3c",
+                "tarball": "http://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.0.0-alpha.6.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.0.0-alpha.6"
+        },
+        "2.0.0-alpha.7": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.0.0-alpha.7",
+            "_nodeVersion": "6.2.2",
+            "_npmOperationalInternal": {
+                "host": "packages-16-east.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.0.0-alpha.7.tgz_1467080647270_0.06711079413071275"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "3.9.5",
+            "_shasum": "f332a44c6ae3473a9ec812ae276aecfd3a755170",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "entities": "^1.1.1",
+                "source-map": "^0.5.6"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "f332a44c6ae3473a9ec812ae276aecfd3a755170",
+                "tarball": "http://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.0.0-alpha.7.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.0.0-alpha.7"
+        },
+        "2.0.0-alpha.8": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.0.0-alpha.8",
+            "_nodeVersion": "6.2.2",
+            "_npmOperationalInternal": {
+                "host": "packages-12-west.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.0.0-alpha.8.tgz_1467104522891_0.7414562308695167"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "3.9.5",
+            "_shasum": "283a953544afac1dbe4cb81cc4dbe76824a7aa81",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "entities": "^1.1.1"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "283a953544afac1dbe4cb81cc4dbe76824a7aa81",
+                "tarball": "http://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.0.0-alpha.8.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.0.0-alpha.8"
+        },
+        "2.0.0-beta.1": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.0.0-beta.1",
+            "_nodeVersion": "6.2.2",
+            "_npmOperationalInternal": {
+                "host": "packages-12-west.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.0.0-beta.1.tgz_1467928293956_0.9618666989263147"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "3.9.5",
+            "_shasum": "e606eef3299523b47232161c731334f84323f478",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "entities": "^1.1.1"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "e606eef3299523b47232161c731334f84323f478",
+                "tarball": "http://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.0.0-beta.1.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.0.0-beta.1"
+        },
+        "2.0.0-beta.2": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.0.0-beta.2",
+            "_nodeVersion": "6.2.2",
+            "_npmOperationalInternal": {
+                "host": "packages-16-east.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.0.0-beta.2.tgz_1468734676537_0.14196887519210577"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "3.9.5",
+            "_shasum": "3315597cdf178ca9405204c8d90e7ea014b93347",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "entities": "^1.1.1"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "3315597cdf178ca9405204c8d90e7ea014b93347",
+                "tarball": "http://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.0.0-beta.2.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.0.0-beta.2"
+        },
+        "2.0.0-beta.3": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.0.0-beta.3",
+            "_nodeVersion": "6.2.2",
+            "_npmOperationalInternal": {
+                "host": "packages-16-east.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.0.0-beta.3.tgz_1469328308727_0.6214165429119021"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "3.9.5",
+            "_shasum": "dc79e0832c5cdc35563d0b39db3b7251e253ac2a",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "entities": "^1.1.1"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "dc79e0832c5cdc35563d0b39db3b7251e253ac2a",
+                "tarball": "http://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.0.0-beta.3.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.0.0-beta.3"
+        },
+        "2.0.0-beta.4": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.0.0-beta.4",
+            "_nodeVersion": "6.2.2",
+            "_npmOperationalInternal": {
+                "host": "packages-12-west.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.0.0-beta.4.tgz_1469498656925_0.1254767740610987"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "3.9.5",
+            "_shasum": "1a44bb19f5eabe9084f92a119725d4cce5de8922",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "entities": "^1.1.1"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "1a44bb19f5eabe9084f92a119725d4cce5de8922",
+                "tarball": "http://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.0.0-beta.4.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.0.0-beta.4"
+        },
+        "2.0.0-beta.5": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.0.0-beta.5",
+            "_nodeVersion": "6.3.0",
+            "_npmOperationalInternal": {
+                "host": "packages-16-east.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.0.0-beta.5.tgz_1469593532280_0.8089908831752837"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "3.10.3",
+            "_shasum": "d97482c16901ee30124782c4bbae467e625df779",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "entities": "^1.1.1"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "d97482c16901ee30124782c4bbae467e625df779",
+                "tarball": "http://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.0.0-beta.5.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.0.0-beta.5"
+        },
+        "2.0.0-beta.6": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.0.0-beta.6",
+            "_nodeVersion": "6.3.1",
+            "_npmOperationalInternal": {
+                "host": "packages-12-west.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.0.0-beta.6.tgz_1470079646981_0.9989801840856671"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "3.10.3",
+            "_shasum": "e6197acc61e45ef246c2d0f5f6df2fdead9fa42f",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "entities": "^1.1.1"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "e6197acc61e45ef246c2d0f5f6df2fdead9fa42f",
+                "tarball": "http://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.0.0-beta.6.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.0.0-beta.6"
+        },
+        "2.0.0-beta.7": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.0.0-beta.7",
+            "_nodeVersion": "6.3.1",
+            "_npmOperationalInternal": {
+                "host": "packages-12-west.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.0.0-beta.7.tgz_1470435019691_0.23125209426507354"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "3.10.3",
+            "_shasum": "b7e6ef2b7e098e3d7df224b1c8beba300efdaa36",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "entities": "^1.1.1"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "b7e6ef2b7e098e3d7df224b1c8beba300efdaa36",
+                "tarball": "http://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.0.0-beta.7.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.0.0-beta.7"
+        },
+        "2.0.0-beta.8": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.0.0-beta.8",
+            "_nodeVersion": "6.3.1",
+            "_npmOperationalInternal": {
+                "host": "packages-16-east.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.0.0-beta.8.tgz_1470804921815_0.8382573898416013"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "3.10.3",
+            "_shasum": "fb9566c91a31e03e1525ac2fdbb3793d8cccd7b3",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "entities": "^1.1.1"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "fb9566c91a31e03e1525ac2fdbb3793d8cccd7b3",
+                "tarball": "http://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.0.0-beta.8.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.0.0-beta.8"
+        },
+        "2.0.0-rc.1": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.0.0-rc.1",
+            "_nodeVersion": "6.3.0",
+            "_npmOperationalInternal": {
+                "host": "packages-16-east.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.0.0-rc.1.tgz_1470894183531_0.2927602673880756"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "3.10.3",
+            "_shasum": "d114829dcf12e111247136e5e6b20ec279ac3812",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "entities": "^1.1.1"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "d114829dcf12e111247136e5e6b20ec279ac3812",
+                "tarball": "http://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.0.0-rc.1.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.0.0-rc.1"
+        },
+        "2.0.0-rc.2": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.0.0-rc.2",
+            "_nodeVersion": "6.3.1",
+            "_npmOperationalInternal": {
+                "host": "packages-12-west.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.0.0-rc.2.tgz_1471318740368_0.930863729910925"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "3.10.3",
+            "_shasum": "6f964520c144519ee2d5ef61c716d4a6304e5283",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "entities": "^1.1.1"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "6f964520c144519ee2d5ef61c716d4a6304e5283",
+                "tarball": "http://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.0.0-rc.2.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.0.0-rc.2"
+        },
+        "2.0.0-rc.3": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.0.0-rc.3",
+            "_nodeVersion": "6.3.1",
+            "_npmOperationalInternal": {
+                "host": "packages-12-west.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.0.0-rc.3.tgz_1471716287809_0.5007426112424582"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "3.10.3",
+            "_shasum": "b68788fbd040d244544e1eac40a2acb7baa79809",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "entities": "^1.1.1"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "b68788fbd040d244544e1eac40a2acb7baa79809",
+                "tarball": "http://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.0.0-rc.3.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.0.0-rc.3"
+        },
+        "2.0.0-rc.4": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.0.0-rc.4",
+            "_nodeVersion": "6.3.1",
+            "_npmOperationalInternal": {
+                "host": "packages-12-west.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.0.0-rc.4.tgz_1472500135015_0.06218302855268121"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "3.10.3",
+            "_shasum": "780c38ced0cb3bca0918653ab9ef460a4d021f9f",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "entities": "^1.1.1"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "780c38ced0cb3bca0918653ab9ef460a4d021f9f",
+                "tarball": "http://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.0.0-rc.4.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.0.0-rc.4"
+        },
+        "2.0.0-rc.5": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.0.0-rc.5",
+            "_nodeVersion": "6.3.0",
+            "_npmOperationalInternal": {
+                "host": "packages-16-east.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.0.0-rc.5.tgz_1473334182187_0.8258694319520146"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "3.10.3",
+            "_shasum": "7a48d0ba8c11f12ec88a5f77b323deec95cec413",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "entities": "^1.1.1"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "7a48d0ba8c11f12ec88a5f77b323deec95cec413",
+                "tarball": "http://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.0.0-rc.5.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.0.0-rc.5"
+        },
+        "2.0.0-rc.6": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.0.0-rc.6",
+            "_nodeVersion": "6.3.1",
+            "_npmOperationalInternal": {
+                "host": "packages-12-west.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.0.0-rc.6.tgz_1473772855552_0.1562834254000336"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "3.10.3",
+            "_shasum": "616a717bd8eed5eeadc0475c7bd03759183e0d2c",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "entities": "^1.1.1"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "616a717bd8eed5eeadc0475c7bd03759183e0d2c",
+                "tarball": "http://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.0.0-rc.6.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.0.0-rc.6"
+        },
+        "2.0.0-rc.7": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.0.0-rc.7",
+            "_nodeVersion": "6.3.1",
+            "_npmOperationalInternal": {
+                "host": "packages-12-west.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.0.0-rc.7.tgz_1474669483328_0.9301417889073491"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "3.10.3",
+            "_shasum": "d9e56ff681c7744b5c2551b8c8327f8f352b97f4",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "entities": "^1.1.1"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "d9e56ff681c7744b5c2551b8c8327f8f352b97f4",
+                "tarball": "http://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.0.0-rc.7.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.0.0-rc.7"
+        },
+        "2.0.0-rc.8": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.0.0-rc.8",
+            "_nodeVersion": "6.3.1",
+            "_npmOperationalInternal": {
+                "host": "packages-16-east.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.0.0-rc.8.tgz_1475010503863_0.20440068026073277"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "3.10.3",
+            "_shasum": "d3725fc97bf4f4849fb29331f77a876222ac3f47",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "entities": "^1.1.1"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "d3725fc97bf4f4849fb29331f77a876222ac3f47",
+                "tarball": "http://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.0.0-rc.8.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.0.0-rc.8"
+        },
+        "2.0.1": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.0.1",
+            "_nodeVersion": "6.3.1",
+            "_npmOperationalInternal": {
+                "host": "packages-12-west.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.0.1.tgz_1475269914672_0.6228187016677111"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "3.10.3",
+            "_shasum": "7418c8c089eab1ca9756fcced4e43a9f1197bcaf",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "entities": "^1.1.1"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "7418c8c089eab1ca9756fcced4e43a9f1197bcaf",
+                "tarball": "http://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.0.1.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.0.1"
+        },
+        "2.0.2": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.0.2",
+            "_nodeVersion": "6.3.1",
+            "_npmOperationalInternal": {
+                "host": "packages-12-west.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.0.2.tgz_1476248040485_0.37699406826868653"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "3.10.3",
+            "_shasum": "4343f80fe7dde9ea1bd8887d2708e219f1530095",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "entities": "^1.1.1"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "4343f80fe7dde9ea1bd8887d2708e219f1530095",
+                "tarball": "http://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.0.2.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.0.2"
+        },
+        "2.0.3": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.0.3",
+            "_nodeVersion": "6.3.1",
+            "_npmOperationalInternal": {
+                "host": "packages-12-west.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.0.3.tgz_1476350841568_0.07474172697402537"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "3.10.3",
+            "_shasum": "da1462e7c95afb2daa20065e97589d8125226027",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "da1462e7c95afb2daa20065e97589d8125226027",
+                "tarball": "http://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.0.3.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.0.3"
+        },
+        "2.0.4": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.0.4",
+            "_nodeVersion": "6.9.1",
+            "_npmOperationalInternal": {
+                "host": "packages-12-west.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.0.4.tgz_1478292418151_0.9763727760873735"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "3.10.8",
+            "_shasum": "89d144c07ffcf6a67607dcdde37a21d535280d04",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "89d144c07ffcf6a67607dcdde37a21d535280d04",
+                "tarball": "http://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.0.4.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.0.4"
+        },
+        "2.0.5": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.0.5",
+            "_nodeVersion": "6.9.1",
+            "_npmOperationalInternal": {
+                "host": "packages-18-east.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.0.5.tgz_1478317642754_0.8964751057792455"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "3.10.8",
+            "_shasum": "6a8c454e7d4ed03cc295ae9733a432e31df25ea3",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "6a8c454e7d4ed03cc295ae9733a432e31df25ea3",
+                "tarball": "http://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.0.5.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.0.5"
+        },
+        "2.0.6": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.0.6",
+            "_nodeVersion": "6.9.1",
+            "_npmOperationalInternal": {
+                "host": "packages-12-west.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.0.6.tgz_1479251097235_0.20378840994089842"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "3.10.8",
+            "_shasum": "7f2b21bbb2e9a1e4141079d95b3920a603cde346",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "7f2b21bbb2e9a1e4141079d95b3920a603cde346",
+                "tarball": "http://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.0.6.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.0.6"
+        },
+        "2.0.7": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.0.7",
+            "_nodeVersion": "6.9.1",
+            "_npmOperationalInternal": {
+                "host": "packages-12-west.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.0.7.tgz_1479333258744_0.6008374257944524"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "3.10.8",
+            "_shasum": "8750875530826cf3e4f6d1a38d4e9fb9000fcacc",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "8750875530826cf3e4f6d1a38d4e9fb9000fcacc",
+                "tarball": "http://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.0.7.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.0.7"
+        },
+        "2.0.8": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.0.8",
+            "_nodeVersion": "6.9.1",
+            "_npmOperationalInternal": {
+                "host": "packages-18-east.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.0.8.tgz_1479611695312_0.7384220785461366"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "3.10.8",
+            "_shasum": "e91e1ed6b9b7404f8394166cfeb53eb8b620329a",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "e91e1ed6b9b7404f8394166cfeb53eb8b620329a",
+                "tarball": "http://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.0.8.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.0.8"
+        },
+        "2.1.0": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.1.0",
+            "_nodeVersion": "6.9.1",
+            "_npmOperationalInternal": {
+                "host": "packages-18-east.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.1.0.tgz_1479831301966_0.03232819214463234"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "3.10.8",
+            "_shasum": "b920111b239b2c4234a5ffd78ca42cb664f06559",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "b920111b239b2c4234a5ffd78ca42cb664f06559",
+                "tarball": "http://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.1.0.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.1.0"
+        },
+        "2.1.1": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.1.1",
+            "_nodeVersion": "6.9.1",
+            "_npmOperationalInternal": {
+                "host": "packages-18-east.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.1.1.tgz_1479934837859_0.4980195634998381"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "3.10.8",
+            "_shasum": "d7aba6375c8f4ac4242a7e874d30a10cfdf199bd",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "d7aba6375c8f4ac4242a7e874d30a10cfdf199bd",
+                "tarball": "http://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.1.1.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.1.1"
+        },
+        "2.1.10": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.1.10",
+            "_nodeVersion": "6.9.1",
+            "_npmOperationalInternal": {
+                "host": "packages-12-west.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.1.10.tgz_1484673425336_0.7574099285993725"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "3.10.8",
+            "_shasum": "cb89643adc395e97435585522e43d0a9b1913257",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "cb89643adc395e97435585522e43d0a9b1913257",
+                "tarball": "https://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.1.10.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.1.10"
+        },
+        "2.1.2": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.1.2",
+            "_nodeVersion": "6.9.1",
+            "_npmOperationalInternal": {
+                "host": "packages-12-west.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.1.2.tgz_1479944479583_0.11908129346556962"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "3.10.8",
+            "_shasum": "c16c9faec5099594a45244acf814747001164ab7",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "c16c9faec5099594a45244acf814747001164ab7",
+                "tarball": "http://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.1.2.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.1.2"
+        },
+        "2.1.3": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.1.3",
+            "_nodeVersion": "6.9.1",
+            "_npmOperationalInternal": {
+                "host": "packages-12-west.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.1.3.tgz_1479946870860_0.7439249947201461"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "3.10.8",
+            "_shasum": "af252df5848c15980cbf32d88a253db053290949",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "af252df5848c15980cbf32d88a253db053290949",
+                "tarball": "http://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.1.3.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.1.3"
+        },
+        "2.1.4": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.1.4",
+            "_nodeVersion": "6.9.1",
+            "_npmOperationalInternal": {
+                "host": "packages-12-west.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.1.4.tgz_1480647673030_0.4441324279177934"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "3.10.8",
+            "_shasum": "ce99cb9c2f5842062d3b744c716224b613f198d4",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "ce99cb9c2f5842062d3b744c716224b613f198d4",
+                "tarball": "http://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.1.4.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.1.4"
+        },
+        "2.1.5": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.1.5",
+            "_nodeVersion": "6.9.1",
+            "_npmOperationalInternal": {
+                "host": "packages-12-west.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.1.5.tgz_1481598562129_0.844346736324951"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "3.10.8",
+            "_shasum": "9555412e47b795fffdb9445c5b1645f9195b1f68",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "9555412e47b795fffdb9445c5b1645f9195b1f68",
+                "tarball": "http://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.1.5.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.1.5"
+        },
+        "2.1.6": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.1.6",
+            "_nodeVersion": "6.9.1",
+            "_npmOperationalInternal": {
+                "host": "packages-18-east.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.1.6.tgz_1481649744042_0.625743999145925"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "3.10.8",
+            "_shasum": "f96f968652fc1e861bb0052f61993ba1fdc18ad3",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "f96f968652fc1e861bb0052f61993ba1fdc18ad3",
+                "tarball": "http://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.1.6.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.1.6"
+        },
+        "2.1.7": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.1.7",
+            "_nodeVersion": "6.9.1",
+            "_npmOperationalInternal": {
+                "host": "packages-18-east.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.1.7.tgz_1482597369837_0.6365264630876482"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "3.10.8",
+            "_shasum": "5e1fc983271d3ac24c79abb64b71383357e2cea5",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "5e1fc983271d3ac24c79abb64b71383357e2cea5",
+                "tarball": "http://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.1.7.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.1.7"
+        },
+        "2.1.8": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.1.8",
+            "_nodeVersion": "6.9.1",
+            "_npmOperationalInternal": {
+                "host": "packages-18-east.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.1.8.tgz_1482904470835_0.8223959286697209"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "3.10.8",
+            "_shasum": "12dd1cc63793f59be580c694a61610cb9369d629",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "12dd1cc63793f59be580c694a61610cb9369d629",
+                "tarball": "http://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.1.8.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.1.8"
+        },
+        "2.1.9": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.1.9",
+            "_nodeVersion": "6.9.1",
+            "_npmOperationalInternal": {
+                "host": "packages-18-east.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.1.9.tgz_1484610481989_0.2465969081968069"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "3.10.8",
+            "_shasum": "240d99868b03dcc45eb3a638b96fb792707f3082",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "240d99868b03dcc45eb3a638b96fb792707f3082",
+                "tarball": "https://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.1.9.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.1.9"
+        },
+        "2.2.0": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.2.0",
+            "_nodeVersion": "7.4.0",
+            "_npmOperationalInternal": {
+                "host": "packages-18-east.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.2.0.tgz_1488083291124_0.08075056504458189"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "4.0.5",
+            "_shasum": "bdede1b931c7d2e8df3257011205e90afb1d86c9",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "bdede1b931c7d2e8df3257011205e90afb1d86c9",
+                "tarball": "https://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.2.0.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.2.0"
+        },
+        "2.2.0-beta.1": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.2.0-beta.1",
+            "_nodeVersion": "7.4.0",
+            "_npmOperationalInternal": {
+                "host": "packages-12-west.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.2.0-beta.1.tgz_1487910135333_0.9822736119385809"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "4.0.5",
+            "_shasum": "0c7de534c0b34405035c37c2f3e03efb75860d57",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "0c7de534c0b34405035c37c2f3e03efb75860d57",
+                "tarball": "https://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.2.0-beta.1.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.2.0-beta.1"
+        },
+        "2.2.0-beta.2": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.2.0-beta.2",
+            "_nodeVersion": "7.4.0",
+            "_npmOperationalInternal": {
+                "host": "packages-18-east.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.2.0-beta.2.tgz_1487980865969_0.251719186315313"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "4.0.5",
+            "_shasum": "eebd30a8c9408559dd6841caf9b963d9d27479de",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "eebd30a8c9408559dd6841caf9b963d9d27479de",
+                "tarball": "https://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.2.0-beta.2.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.2.0-beta.2"
+        },
+        "2.2.1": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.2.1",
+            "_nodeVersion": "7.4.0",
+            "_npmOperationalInternal": {
+                "host": "packages-18-east.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.2.1.tgz_1488114644902_0.003929657628759742"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "4.0.5",
+            "_shasum": "ca5e43db50dc6e761e3c1296313de33091783511",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "ca5e43db50dc6e761e3c1296313de33091783511",
+                "tarball": "https://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.2.1.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.2.1"
+        },
+        "2.2.2": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.2.2",
+            "_nodeVersion": "7.4.0",
+            "_npmOperationalInternal": {
+                "host": "packages-12-west.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.2.2.tgz_1489026754953_0.07284713024273515"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "4.0.5",
+            "_shasum": "0f5fd742ce19e24a92370cc7a46b02a6f4852152",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "0f5fd742ce19e24a92370cc7a46b02a6f4852152",
+                "tarball": "https://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.2.2.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.2.2"
+        },
+        "2.2.3": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.2.3",
+            "_nodeVersion": "7.4.0",
+            "_npmOperationalInternal": {
+                "host": "packages-18-east.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.2.3.tgz_1489392473320_0.315404535504058"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "4.0.5",
+            "_shasum": "7414dae6a0b0aaab8883beaddf84e2eed0efbd4d",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "7414dae6a0b0aaab8883beaddf84e2eed0efbd4d",
+                "tarball": "https://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.2.3.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.2.3"
+        },
+        "2.2.4": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.2.4",
+            "_nodeVersion": "7.4.0",
+            "_npmOperationalInternal": {
+                "host": "packages-18-east.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.2.4.tgz_1489417683896_0.9300020763184875"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "4.0.5",
+            "_shasum": "2856fb09f1571e9098872bf3c512d670eeeafba9",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "2856fb09f1571e9098872bf3c512d670eeeafba9",
+                "tarball": "https://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.2.4.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.2.4"
+        },
+        "2.2.5": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.2.5",
+            "_nodeVersion": "7.4.0",
+            "_npmOperationalInternal": {
+                "host": "packages-12-west.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.2.5.tgz_1490331205058_0.1326495127286762"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "4.0.5",
+            "_shasum": "71b1366c3f716e8137a87f82591de9f816609b57",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "71b1366c3f716e8137a87f82591de9f816609b57",
+                "tarball": "https://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.2.5.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.2.5"
+        },
+        "2.2.6": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.2.6",
+            "_nodeVersion": "7.4.0",
+            "_npmOperationalInternal": {
+                "host": "packages-18-east.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.2.6.tgz_1490582760033_0.6941290076356381"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "4.0.5",
+            "_shasum": "2e2928daf0cd0feca9dfc35a9729adeae173ec68",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "2e2928daf0cd0feca9dfc35a9729adeae173ec68",
+                "tarball": "https://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.2.6.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.2.6"
+        },
+        "2.3.0": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.3.0",
+            "_nodeVersion": "7.8.0",
+            "_npmOperationalInternal": {
+                "host": "packages-18-east.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.3.0.tgz_1493274119218_0.2161815227009356"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "4.2.0",
+            "_shasum": "a89a17064b68e182569da51ebbedd71ce57f93bf",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "a89a17064b68e182569da51ebbedd71ce57f93bf",
+                "tarball": "https://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.3.0.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.3.0"
+        },
+        "2.3.0-beta.1": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.3.0-beta.1",
+            "_nodeVersion": "7.8.0",
+            "_npmOperationalInternal": {
+                "host": "packages-12-west.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.3.0-beta.1.tgz_1493202746669_0.23542477609589696"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "4.2.0",
+            "_shasum": "7eba99ce9e47870cd31c8978781b84d1682b6edc",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "7eba99ce9e47870cd31c8978781b84d1682b6edc",
+                "tarball": "https://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.3.0-beta.1.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.3.0-beta.1"
+        },
+        "2.3.1": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.3.1",
+            "_nodeVersion": "7.8.0",
+            "_npmOperationalInternal": {
+                "host": "packages-12-west.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.3.1.tgz_1493711852600_0.01449577184394002"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "4.2.0",
+            "_shasum": "8bb63e10aca7b04ab31574bde11ed4b54516c711",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "8bb63e10aca7b04ab31574bde11ed4b54516c711",
+                "tarball": "https://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.3.1.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.3.1"
+        },
+        "2.3.2": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.3.2",
+            "_nodeVersion": "7.8.0",
+            "_npmOperationalInternal": {
+                "host": "packages-18-east.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.3.2.tgz_1493720991975_0.5621456524822861"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "4.2.0",
+            "_shasum": "d48a7f53df5f497033827182ceb4f0d340803017",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "d48a7f53df5f497033827182ceb4f0d340803017",
+                "tarball": "https://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.3.2.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.3.2"
+        },
+        "2.3.3": {
+            "_from": ".",
+            "_id": "vue-template-compiler@2.3.3",
+            "_nodeVersion": "7.8.0",
+            "_npmOperationalInternal": {
+                "host": "packages-18-east.internal.npmjs.com",
+                "tmp": "tmp/vue-template-compiler-2.3.3.tgz_1494349021428_0.2648846849333495"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "4.2.0",
+            "_shasum": "b5bab9ec57309c906b82a78c81a02179dbc2f470",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "shasum": "b5bab9ec57309c906b82a78c81a02179dbc2f470",
+                "tarball": "https://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.3.3.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "scripts": {},
+            "version": "2.3.3"
+        },
+        "2.3.4": {
+            "_id": "vue-template-compiler@2.3.4",
+            "_nodeVersion": "8.0.0",
+            "_npmOperationalInternal": {
+                "host": "s3://npm-registry-packages",
+                "tmp": "tmp/vue-template-compiler-2.3.4.tgz_1496897606486_0.6805336789693683"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "5.0.0",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "integrity": "sha512-GezvHn6bw053zIo0TQIjimRpyELjCEOrc5hGHtHUeadbVSdKB9yqY6By9WiYvbFwOZiuMmFpSfjD8VzVibWGtQ==",
+                "shasum": "5a88ac2c5e4d5d6218e6aa80e7e221fb7e67894c",
+                "tarball": "https://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.3.4.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "version": "2.3.4"
+        },
+        "2.4.0": {
+            "_id": "vue-template-compiler@2.4.0",
+            "_nodeVersion": "8.0.0",
+            "_npmOperationalInternal": {
+                "host": "s3://npm-registry-packages",
+                "tmp": "tmp/vue-template-compiler-2.4.0.tgz_1499925169482_0.07369869202375412"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "5.0.0",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "integrity": "sha512-iXoj4qzGnM4XYvIy/PcDqKgpq/AAnjFvwMdLva00gA21YKXBKYwCtP49OH8oq6NA+OYktDc6Cdkl5Zdqt/kkGw==",
+                "shasum": "17a84f575794637f9ca701f769f1fa498e6b9942",
+                "tarball": "https://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.4.0.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "version": "2.4.0"
+        },
+        "2.4.1": {
+            "_id": "vue-template-compiler@2.4.1",
+            "_nodeVersion": "8.0.0",
+            "_npmOperationalInternal": {
+                "host": "s3://npm-registry-packages",
+                "tmp": "tmp/vue-template-compiler-2.4.1.tgz_1499928014282_0.13857468427158892"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "5.0.0",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "integrity": "sha512-DE7D9qpgT8ExbWwnzDeakZjmi2tEP1auxq4sD1R2L10A6PFTvo+R0r3bpxPAReGJBqxS4qrjw3kGFzT6Jvb3YQ==",
+                "shasum": "20115cf8714f222f9be4111ec75b079a1c9b8197",
+                "tarball": "https://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.4.1.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "version": "2.4.1"
+        },
+        "2.4.2": {
+            "_id": "vue-template-compiler@2.4.2",
+            "_nodeVersion": "8.1.4",
+            "_npmOperationalInternal": {
+                "host": "s3://npm-registry-packages",
+                "tmp": "tmp/vue-template-compiler-2.4.2.tgz_1500611307316_0.17308465274982154"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "5.0.3",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "integrity": "sha512-sKa2Bdvh+j6V9eQSyJRxsf8fak0FtQkCZ145aYFDVwZBhHOTt1vKrODLo4RelI1dUczKlDCp5aZ9MD7uJOZwvw==",
+                "shasum": "5a45d843f148b098f6c1d1e35ac20c4956d30ad1",
+                "tarball": "https://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.4.2.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "version": "2.4.2"
+        },
+        "2.4.3": {
+            "_id": "vue-template-compiler@2.4.3",
+            "_nodeVersion": "8.4.0",
+            "_npmOperationalInternal": {
+                "host": "s3://npm-registry-packages",
+                "tmp": "tmp/vue-template-compiler-2.4.3.tgz_1505289443869_0.8663575437385589"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "5.4.1",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "integrity": "sha512-rtHVKIFjd3Ynb+9FSoA64m2h2SPTEVKk6PywkqbugpM0nxT3ykLFyhbLTdSX1qV5wI9h5DAR4ib4RubEFfyiBQ==",
+                "shasum": "ecf25f1f076d765de55789c124321fd8db042204",
+                "tarball": "https://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.4.3.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "version": "2.4.3"
+        },
+        "2.4.4": {
+            "_id": "vue-template-compiler@2.4.4",
+            "_nodeVersion": "8.4.0",
+            "_npmOperationalInternal": {
+                "host": "s3://npm-registry-packages",
+                "tmp": "tmp/vue-template-compiler-2.4.4.tgz_1505403155687_0.500732000451535"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "5.4.1",
+            "author": {
+                "name": "Evan You"
+            },
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "integrity": "sha512-XdHsNi8Z5WqwuFl/Z5eLKgE2DOEEOdMk1aA459uSgvwyy+pjKLBlQWsUpAtoR6o6Wmpujw6NtinAUGuqSTituQ==",
+                "shasum": "2cde3b704124985c27d50b5387c9691ba515fb57",
+                "tarball": "https://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.4.4.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "version": "2.4.4"
+        },
+        "2.5.0": {
+            "_id": "vue-template-compiler@2.5.0",
+            "_nodeVersion": "8.4.0",
+            "_npmOperationalInternal": {
+                "host": "s3://npm-registry-packages",
+                "tmp": "tmp/vue-template-compiler-2.5.0.tgz_1507863868844_0.015611472073942423"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "5.4.2",
+            "author": {
+                "name": "Evan You"
+            },
+            "browser": "browser.js",
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "integrity": "sha512-W4hDoXXpCwfilO1MRTDM4EHm1DC1mU1wS8WyvEo119cUtxdaPuq/dD0OJbSEIkeW8fdT07qGCSnLOfPlmrKRqw==",
+                "shasum": "2e138f1643e131f24f6e19733690713b7543a937",
+                "tarball": "https://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.5.0.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "jsdelivr": "browser.js",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "unpkg": "browser.js",
+            "version": "2.5.0"
+        },
+        "2.5.1": {
+            "_id": "vue-template-compiler@2.5.1",
+            "_nodeVersion": "8.4.0",
+            "_npmOperationalInternal": {
+                "host": "s3://npm-registry-packages",
+                "tmp": "tmp/vue-template-compiler-2.5.1.tgz_1507904065224_0.5822479287162423"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "5.4.2",
+            "author": {
+                "name": "Evan You"
+            },
+            "browser": "browser.js",
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "integrity": "sha512-8SPZmb2qrF/QmDfNzTkPW1SzFVRiizIdtZyMsDnZ/MCx4eTWt6xAQXGTrmFypc+uQ7M64whs4+i3mNpnKw/q4A==",
+                "shasum": "d62e1655970c17c97278d52c9e2809d1a4b39e17",
+                "tarball": "https://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.5.1.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "jsdelivr": "browser.js",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "unpkg": "browser.js",
+            "version": "2.5.1"
+        },
+        "2.5.10": {
+            "_id": "vue-template-compiler@2.5.10",
+            "_nodeVersion": "8.9.1",
+            "_npmOperationalInternal": {
+                "host": "s3://npm-registry-packages",
+                "tmp": "tmp/vue-template-compiler-2.5.10.tgz_1513120595130_0.143366408534348"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "5.5.1",
+            "author": {
+                "name": "Evan You"
+            },
+            "browser": "browser.js",
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "integrity": "sha512-vVpOik9YOCmtQCGhOmse+bepA6bbNLBkWYG8GJfWpZdOFfyq11zL7WiU6PnUl1P09XX0ZTyj44bT5IZn3La0ww==",
+                "shasum": "8d2754677430bf520650a7e2aee9070635158fc5",
+                "tarball": "https://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.5.10.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "jsdelivr": "browser.js",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "unpkg": "browser.js",
+            "version": "2.5.10"
+        },
+        "2.5.11": {
+            "_id": "vue-template-compiler@2.5.11",
+            "_nodeVersion": "8.9.1",
+            "_npmOperationalInternal": {
+                "host": "s3://npm-registry-packages",
+                "tmp": "tmp/vue-template-compiler-2.5.11.tgz_1513270554469_0.09964596852660179"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "5.5.1",
+            "author": {
+                "name": "Evan You"
+            },
+            "browser": "browser.js",
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "integrity": "sha512-tlEyfeK1TkoO/+w7QIYP1fjYEuJSf60XchxYH3gUSYKeW4blPqM2BtA29y50fU6Tjm9eLUgUy8qGMA2euOr4Qw==",
+                "shasum": "7dda6905e464ff173c8e70e1dfd1769a7888b7e8",
+                "tarball": "https://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.5.11.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "jsdelivr": "browser.js",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "unpkg": "browser.js",
+            "version": "2.5.11"
+        },
+        "2.5.12": {
+            "_id": "vue-template-compiler@2.5.12",
+            "_nodeVersion": "8.9.1",
+            "_npmOperationalInternal": {
+                "host": "s3://npm-registry-packages",
+                "tmp": "tmp/vue-template-compiler-2.5.12.tgz_1513695252588_0.926331032300368"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "5.5.1",
+            "author": {
+                "name": "Evan You"
+            },
+            "browser": "browser.js",
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "integrity": "sha512-abXVzvxvUMv24e28QlkhghThWCnaJzfs1fba1VnGJ5F4QD+dbt0zXoU867XmUE/fZFFdkvkqLGE1W6umgX18HQ==",
+                "shasum": "c3fbf60eaecdef06f20f51ed24bc178e3dda57b1",
+                "tarball": "https://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.5.12.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "jsdelivr": "browser.js",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "unpkg": "browser.js",
+            "version": "2.5.12"
+        },
+        "2.5.13": {
+            "_id": "vue-template-compiler@2.5.13",
+            "_nodeVersion": "8.9.1",
+            "_npmOperationalInternal": {
+                "host": "s3://npm-registry-packages",
+                "tmp": "tmp/vue-template-compiler-2.5.13.tgz_1513710408240_0.44011022592894733"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "5.5.1",
+            "author": {
+                "name": "Evan You"
+            },
+            "browser": "browser.js",
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "integrity": "sha512-15HWSgIxrGUcV0v7QRen2Y3fQsbgxXwMvjT/5XKMO0ANmaCcNh7y2OeIDTAuSGeosjb9+E1Pn2PHZ61VQWEgBQ==",
+                "shasum": "12a2aa0ecd6158ac5e5f14d294b0993f399c3d38",
+                "tarball": "https://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.5.13.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "jsdelivr": "browser.js",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "unpkg": "browser.js",
+            "version": "2.5.13"
+        },
+        "2.5.14": {
+            "_hasShrinkwrap": false,
+            "_id": "vue-template-compiler@2.5.14",
+            "_nodeVersion": "8.9.1",
+            "_npmOperationalInternal": {
+                "host": "s3://npm-registry-packages",
+                "tmp": "tmp/vue-template-compiler_2.5.14_1520631618809_0.7652027026265398"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "5.6.0",
+            "author": {
+                "name": "Evan You"
+            },
+            "browser": "browser.js",
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "fileCount": 5,
+                "integrity": "sha512-jN1JGEtm3TAvnARlbReKsHdu++jgj0H9lK5nv/p5nRXR3acej9PFmgrAmZ2LrdNRBZnWyHoSdkYKnEBxeex+rQ==",
+                "shasum": "ba058359d4bd5ba0807fbc8adfc98065d7dbfebd",
+                "tarball": "http://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.5.14.tgz",
+                "unpackedSize": 342769
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "jsdelivr": "browser.js",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "unpkg": "browser.js",
+            "version": "2.5.14"
+        },
+        "2.5.15": {
+            "_hasShrinkwrap": false,
+            "_id": "vue-template-compiler@2.5.15",
+            "_nodeVersion": "8.9.1",
+            "_npmOperationalInternal": {
+                "host": "s3://npm-registry-packages",
+                "tmp": "tmp/vue-template-compiler_2.5.15_1520724993387_0.5633020616747069"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "5.6.0",
+            "author": {
+                "name": "Evan You"
+            },
+            "browser": "browser.js",
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "fileCount": 5,
+                "integrity": "sha512-v3GRVovW8fWO01SAJ+1MbdzbCN+hVBusoqUOBE5FR9dVMGo3p/WDO2gRS/+gEgAALtL7i5pxi+V2l6EauM3XDA==",
+                "shasum": "cc004097e37167be8b85ea22ab2840d8e8cca1c0",
+                "tarball": "http://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.5.15.tgz",
+                "unpackedSize": 342769
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "jsdelivr": "browser.js",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "unpkg": "browser.js",
+            "version": "2.5.15"
+        },
+        "2.5.16": {
+            "_hasShrinkwrap": false,
+            "_id": "vue-template-compiler@2.5.16",
+            "_nodeVersion": "8.9.1",
+            "_npmOperationalInternal": {
+                "host": "s3://npm-registry-packages",
+                "tmp": "tmp/vue-template-compiler_2.5.16_1520979251894_0.08613384352062536"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "5.6.0",
+            "author": {
+                "name": "Evan You"
+            },
+            "browser": "browser.js",
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "fileCount": 5,
+                "integrity": "sha512-ZbuhCcF/hTYmldoUOVcu2fcbeSAZnfzwDskGduOrnjBiIWHgELAd+R8nAtX80aZkceWDKGQ6N9/0/EUpt+l22A==",
+                "shasum": "93b48570e56c720cdf3f051cc15287c26fbd04cb",
+                "tarball": "http://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.5.16.tgz",
+                "unpackedSize": 343575
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "jsdelivr": "browser.js",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "unpkg": "browser.js",
+            "version": "2.5.16"
+        },
+        "2.5.17": {
+            "_hasShrinkwrap": false,
+            "_id": "vue-template-compiler@2.5.17",
+            "_nodeVersion": "8.11.3",
+            "_npmOperationalInternal": {
+                "host": "s3://npm-registry-packages",
+                "tmp": "tmp/vue-template-compiler_2.5.17_1533151746557_0.3575059884052376"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "6.2.0",
+            "author": {
+                "name": "Evan You"
+            },
+            "browser": "browser.js",
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "fileCount": 5,
+                "integrity": "sha512-63uI4syCwtGR5IJvZM0LN5tVsahrelomHtCxvRkZPJ/Tf3ADm1U1wG6KWycK3qCfqR+ygM5vewUvmJ0REAYksg==",
+                "npm-signature": "-----BEGIN PGP SIGNATURE-----\r\nVersion: OpenPGP.js v3.0.4\r\nComment: https://openpgpjs.org\r\n\r\nwsFcBAEBCAAQBQJbYgoDCRA9TVsSAnZWagAAXSsP/1gPr7dv4dTCZZO4cMeS\nhkxYqI8n+NSzTts9RnvbS/ezhW4xpDbGsoHN70wOPrLzuTj0NkNb1YmI9Yip\nzOUa7fal6HUVkQWX07zgyXewqV5oAtFxNQYtdQw9FJLJwr4oN5vXGAR/KsAP\nwkl9YFNyL45icQpafnNNI5km8lhpYxuAENMroYI9gHenJlN0Q1w29Bh9uHRg\nPtVAMGhlZ+uRjdwQeu5yRFjErubiRb1nUybcQWefLyvxEq9rPpQbhjOMkCeJ\nCfA7l6XIH5/LUvUhoVvdRqgd18bh29/udQQHmYPbF37XEvcNtkRzAyg+1xAN\nFr0h2n4NyQw2P8Ik0ZXdfkKrRh/LNqy1zsV+eDouQ+56TY8VrIW7Ap40yj93\nU0wMH5nBZawV8f4gUDeQE9VPRU3ikmMD39P6KkfYwtTE3bjWbRs4sGbWBQmU\nMNEF97gPMhaDbLSLKfDPM3ag/8CvLE/HHsv+EJ685TRRt5GOMefdLc9i6k96\nKNRrNB+oXcLA7NmDAA5vr5rmDv7WnppvKiiOpU9UNKYaTbo3EMOWlY7VBLnw\nyx3glcEmX7Hdj44cfA8WYik7I6777uC9zqhiohqx51fsttLCJYT5AhsA73c6\nNBvdpz3JoV5eqrb9D6faN+PcfKZbLPza+toi8IkrzXAmBheznNnVHj/zUyyb\nhJtu\r\n=/djQ\r\n-----END PGP SIGNATURE-----\r\n",
+                "shasum": "52a4a078c327deb937482a509ae85c06f346c3cb",
+                "tarball": "https://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.5.17.tgz",
+                "unpackedSize": 343579
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "jsdelivr": "browser.js",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "unpkg": "browser.js",
+            "version": "2.5.17"
+        },
+        "2.5.17-beta.0": {
+            "_hasShrinkwrap": false,
+            "_id": "vue-template-compiler@2.5.17-beta.0",
+            "_nodeVersion": "8.9.1",
+            "_npmOperationalInternal": {
+                "host": "s3://npm-registry-packages",
+                "tmp": "tmp/vue-template-compiler_2.5.17-beta.0_1521847735556_0.9934028880315522"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "5.6.0",
+            "author": {
+                "name": "Evan You"
+            },
+            "browser": "browser.js",
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "fileCount": 5,
+                "integrity": "sha512-EPfe4BPJAYjjvmYpzYh2Fjugi5Zr4UVessbNOZlCmC9QLpHgRPMirXdP1YVHEV5Drl48sv9v4uNmeVsNaFyyVw==",
+                "shasum": "6653d4029bd6fc427de616ce626e7f1db63e615c",
+                "tarball": "http://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.5.17-beta.0.tgz",
+                "unpackedSize": 343738
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "jsdelivr": "browser.js",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "readme": "# vue-template-compiler\n\n> This package is auto-generated. For pull requests please see [src/platforms/web/entry-compiler.js](https://github.com/vuejs/vue/tree/dev/src/platforms/web/entry-compiler.js).\n\nThis package can be used to pre-compile Vue 2.0 templates into render functions to avoid runtime-compilation overhead and CSP restrictions. You will only need it if you are writing build tools with very specific needs. In most cases you should be using [`vue-loader`](https://github.com/vuejs/vue-loader) or [`vueify`](https://github.com/vuejs/vueify) instead, both of which use this package internally.\n\n## Installation\n\n``` bash\nnpm install vue-template-compiler\n```\n\n``` js\nconst compiler = require('vue-template-compiler')\n```\n\n## API\n\n### compiler.compile(template, [options])\n\nCompiles a template string and returns compiled JavaScript code. The returned result is an object of the following format:\n\n``` js\n{\n  ast: ?ASTElement, // parsed template elements to AST\n  render: string, // main render function code\n  staticRenderFns: Array<string>, // render code for static sub trees, if any\n  errors: Array<string> // template syntax errors, if any\n}\n```\n\nNote the returned function code uses `with` and thus cannot be used in strict mode code.\n\n#### Options\n\nIt's possible to hook into the compilation process to support custom template features. **However, beware that by injecting custom compile-time modules, your templates will not work with other build tools built on standard built-in modules, e.g `vue-loader` and `vueify`.**\n\nThe optional `options` object can contain the following:\n\n- `modules`\n\n  An array of compiler modules. For details on compiler modules, refer to the `ModuleOptions` type in [flow declarations](https://github.com/vuejs/vue/blob/dev/flow/compiler.js#L38-L45) and the [built-in modules](https://github.com/vuejs/vue/tree/dev/src/platforms/web/compiler/modules).\n\n- `directives`\n\n  An object where the key is the directive name and the value is a function that transforms an template AST node. For example:\n\n  ``` js\n  compiler.compile('<div v-test></div>', {\n    directives: {\n      test (node, directiveMeta) {\n        // transform node based on directiveMeta\n      }\n    }\n  })\n  ```\n\n  By default, a compile-time directive will extract the directive and the directive will not be present at runtime. If you want the directive to also be handled by a runtime definition, return `true` in the transform function.\n\n  Refer to the implementation of some [built-in compile-time directives](https://github.com/vuejs/vue/tree/dev/src/platforms/web/compiler/directives).\n\n- `preserveWhitespace`\n\n  Defaults to `true`. This means the compiled render function preserves all whitespace characters between HTML tags. If set to `false`, whitespace between tags will be ignored. This can result in slightly better performance but may affect layout for inline elements.\n\n---\n\n### compiler.compileToFunctions(template)\n\nSimilar to `compiler.compile`, but directly returns instantiated functions:\n\n``` js\n{\n  render: Function,\n  staticRenderFns: Array<Function>\n}\n```\n\nThis is only useful at runtime with pre-configured builds, so it doesn't accept any compile-time options. In addition, this method uses `new Function()` so it is not CSP-compliant.\n\n---\n\n### compiler.ssrCompile(template, [options])\n\n> 2.4.0+\n\nSame as `compiler.compile` but generates SSR-specific render function code by optimizing parts of the template into string concatenation in order to improve SSR performance.\n\nThis is used by default in `vue-loader@>=12` and can be disabled using the [`optimizeSSR`](https://vue-loader.vuejs.org/en/options.html#optimizessr) option.\n\n---\n\n### compiler.ssrCompileToFunctions(template)\n\n> 2.4.0+\n\nSame as `compiler.compileToFunction` but generates SSR-specific render function code by optimizing parts of the template into string concatenation in order to improve SSR performance.\n\n---\n\n### compiler.parseComponent(file, [options])\n\nParse a SFC (single-file component, or `*.vue` file) into a descriptor (refer to the `SFCDescriptor` type in [flow declarations](https://github.com/vuejs/vue/blob/dev/flow/compiler.js)). This is used in SFC build tools like `vue-loader` and `vueify`.\n\n#### Options\n\n#### `pad`\n\n`pad` is useful when you are piping the extracted content into other pre-processors, as you will get correct line numbers or character indices if there are any syntax errors.\n\n- with `{ pad: \"line\" }`, the extracted content for each block will be prefixed with one newline for each line in the leading content from the original file to ensure that the line numbers align with the original file.\n- with `{ pad: \"space\" }`, the extracted content for each block will be prefixed with one space for each character in the leading content from the original file to ensure that the character count remains the same as the original file.\n",
+            "readmeFilename": "README.md",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "unpkg": "browser.js",
+            "version": "2.5.17-beta.0"
+        },
+        "2.5.18": {
+            "_hasShrinkwrap": false,
+            "_id": "vue-template-compiler@2.5.18",
+            "_nodeVersion": "10.14.1",
+            "_npmOperationalInternal": {
+                "host": "s3://npm-registry-packages",
+                "tmp": "tmp/vue-template-compiler_2.5.18_1544216935575_0.776218491915591"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "6.4.1",
+            "author": {
+                "name": "Evan You"
+            },
+            "browser": "browser.js",
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "fileCount": 5,
+                "integrity": "sha512-WG2G+r5YxqkbTyJnbpkJuISTVI9MvYNGAZVKnmn8S4AoP0R0OufIKrHEV+GKwilLa+p3t/Plo8FzJXdhL9m4Sw==",
+                "npm-signature": "-----BEGIN PGP SIGNATURE-----\r\nVersion: OpenPGP.js v3.0.4\r\nComment: https://openpgpjs.org\r\n\r\nwsFcBAEBCAAQBQJcCuFpCRA9TVsSAnZWagAAgCcP/jdBNv0vyKSS3FdGJs34\nT/79sMQ2eNGFQr0OmTJcxzB95sT/c64HbO32+0AOZnIvNqhQCTUICHjxoGch\nmpsjHxHMkTqnulRB61G6pMiUN+Iz25NYB80VMTPtwiCRx1M4fb8jmRL6u6C7\nKS8VvV0pXlbQeb8sg9p37BZvKsfk3+Wfbw65CZsayw8UD37kp/OfDz4VYpoE\n3FVJwD9YExwe5TkwJzyWYX+PYTYTxs1dKUyKkIOrz9SJOAFPorciwBFuElCf\niG5qCUdYWf6X4MAK3YphykQrZ+aBkDcZRFMRtHCg+5NW/Dxr2L2QGHCX/mQF\nzugHgKFGxthDJz4mmN3L3rUBQdOVBa5y3pHfXtyv8py0YQHSgG7xAiV6yw+1\n6JyAZBS/FWvNDtU8cPrfTgvDBy9NC8yz9htsnLmv6+d+PJVaSPKBU835bNoq\nUfCFnfvAfyO3Bqtiq2ivPJQS68fSoFKydOcbXGR2sQ01IArbDhZEpkbSCIAg\nscn56n61p9jcUWq2GYoyumJBFXnbdeq11ojxqOPG6L0P17l+NoR7GYDIA2VY\n8ENNAb9E6SJn35XuBWTvPR6059PGOCRGYuxzfENwRaU1nrhHHrZlI9lsADjO\nS9KWlULVaWqf8FjbRBjVWbrYGEKZKDza7gKBv3Rb82TOksYMcfth3/iMe+TP\nhXvm\r\n=MbzT\r\n-----END PGP SIGNATURE-----\r\n",
+                "shasum": "8a346e477c5ada6efc890a2db4857090a2c54a05",
+                "tarball": "https://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.5.18.tgz",
+                "unpackedSize": 365621
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "jsdelivr": "browser.js",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "unpkg": "browser.js",
+            "version": "2.5.18"
+        },
+        "2.5.18-beta.0": {
+            "_hasShrinkwrap": false,
+            "_id": "vue-template-compiler@2.5.18-beta.0",
+            "_nodeVersion": "10.14.1",
+            "_npmOperationalInternal": {
+                "host": "s3://npm-registry-packages",
+                "tmp": "tmp/vue-template-compiler_2.5.18-beta.0_1543785029668_0.2507815591391793"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "6.4.1",
+            "author": {
+                "name": "Evan You"
+            },
+            "browser": "browser.js",
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "fileCount": 5,
+                "integrity": "sha512-8D5iZ02GlXi38veoQutYObGvYd5az/Xor6qII0U/2IdPYwGZi5hTBlR6m+14co5P9rIUusTX4cXuBS8vni5zlg==",
+                "npm-signature": "-----BEGIN PGP SIGNATURE-----\r\nVersion: OpenPGP.js v3.0.4\r\nComment: https://openpgpjs.org\r\n\r\nwsFcBAEBCAAQBQJcBEpGCRA9TVsSAnZWagAAjCcP/2l28Aebk5gXe4/aXpz8\nNGxZIjG84sJia+exZrKmRSTnJ8v7gskW619AgPwyCTov11vI7R5hQfF1Ua+d\nzQ3i8U2UF1paqxgYgjF3YgJEFUG6hhe0gnbss0LmpCUqllwuM2MPUaFBDKti\nS2J4RFqVJFZDKiIXc5dE1KrpphqyP/ENEPQgzpGOBDfXtDLZqiu1FWHJwXzP\nCdSfewNO7My5zFECZp/1e+d9M7kXqEDWIPWPYsQrgwc20BFbtYiTA/msq59U\nfV77hroxVY3aZGe6Po1MUX77ZLXrEBVR2v3GpiUhVgkFy0mz2Wp+U3oC9JL4\nhmpwfmWQk6nqXeFGx+YXhfT70jpMwxPcHCtoXoFbWbr/rOY2SDGqm367T5Ww\nl2lFtfrijFUnnBgsUKDS5o72TQHM5ziaJhDWvWYoF5mLFKtf02ovv8bqekTc\n8oPYiil947ijyXcepybnkgB/FSAXNKNFQiBTSJl3tb5hMJcs5cnkh23qXr7J\nvLM9+XDnf14Kh6IRbmtL+YccVhxt3x09LJSrJi/XiOLL1wfCuULYGBNOlcbb\nnvKDY1ixEw9xjdKl9ADkJBHvOGcdVdt0BeH0fFCCJVyF35wSp3zYZiaRu+1S\nKiiVklNdjqDGVtkLwedq0xmR1jI0ni61XtGLKps0t3aQSTihZRRuQS+J/MuS\npfX0\r\n=6bvz\r\n-----END PGP SIGNATURE-----\r\n",
+                "shasum": "29da5c41e51e914668e5de30911e8f481b2675ac",
+                "tarball": "https://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.5.18-beta.0.tgz",
+                "unpackedSize": 365670
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "jsdelivr": "browser.js",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "readme": "# vue-template-compiler\n\n> This package is auto-generated. For pull requests please see [src/platforms/web/entry-compiler.js](https://github.com/vuejs/vue/tree/dev/src/platforms/web/entry-compiler.js).\n\nThis package can be used to pre-compile Vue 2.0 templates into render functions to avoid runtime-compilation overhead and CSP restrictions. You will only need it if you are writing build tools with very specific needs. In most cases you should be using [`vue-loader`](https://github.com/vuejs/vue-loader) or [`vueify`](https://github.com/vuejs/vueify) instead, both of which use this package internally.\n\n## Installation\n\n``` bash\nnpm install vue-template-compiler\n```\n\n``` js\nconst compiler = require('vue-template-compiler')\n```\n\n## API\n\n### compiler.compile(template, [options])\n\nCompiles a template string and returns compiled JavaScript code. The returned result is an object of the following format:\n\n``` js\n{\n  ast: ?ASTElement, // parsed template elements to AST\n  render: string, // main render function code\n  staticRenderFns: Array<string>, // render code for static sub trees, if any\n  errors: Array<string> // template syntax errors, if any\n}\n```\n\nNote the returned function code uses `with` and thus cannot be used in strict mode code.\n\n#### Options\n\nIt's possible to hook into the compilation process to support custom template features. **However, beware that by injecting custom compile-time modules, your templates will not work with other build tools built on standard built-in modules, e.g `vue-loader` and `vueify`.**\n\nThe optional `options` object can contain the following:\n\n- `modules`\n\n  An array of compiler modules. For details on compiler modules, refer to the `ModuleOptions` type in [flow declarations](https://github.com/vuejs/vue/blob/dev/flow/compiler.js#L38-L45) and the [built-in modules](https://github.com/vuejs/vue/tree/dev/src/platforms/web/compiler/modules).\n\n- `directives`\n\n  An object where the key is the directive name and the value is a function that transforms an template AST node. For example:\n\n  ``` js\n  compiler.compile('<div v-test></div>', {\n    directives: {\n      test (node, directiveMeta) {\n        // transform node based on directiveMeta\n      }\n    }\n  })\n  ```\n\n  By default, a compile-time directive will extract the directive and the directive will not be present at runtime. If you want the directive to also be handled by a runtime definition, return `true` in the transform function.\n\n  Refer to the implementation of some [built-in compile-time directives](https://github.com/vuejs/vue/tree/dev/src/platforms/web/compiler/directives).\n\n- `preserveWhitespace`\n\n  Defaults to `true`. This means the compiled render function preserves all whitespace characters between HTML tags. If set to `false`, whitespace between tags will be ignored. This can result in slightly better performance but may affect layout for inline elements.\n\n---\n\n### compiler.compileToFunctions(template)\n\nSimilar to `compiler.compile`, but directly returns instantiated functions:\n\n``` js\n{\n  render: Function,\n  staticRenderFns: Array<Function>\n}\n```\n\nThis is only useful at runtime with pre-configured builds, so it doesn't accept any compile-time options. In addition, this method uses `new Function()` so it is not CSP-compliant.\n\n---\n\n### compiler.ssrCompile(template, [options])\n\n> 2.4.0+\n\nSame as `compiler.compile` but generates SSR-specific render function code by optimizing parts of the template into string concatenation in order to improve SSR performance.\n\nThis is used by default in `vue-loader@>=12` and can be disabled using the [`optimizeSSR`](https://vue-loader.vuejs.org/en/options.html#optimizessr) option.\n\n---\n\n### compiler.ssrCompileToFunctions(template)\n\n> 2.4.0+\n\nSame as `compiler.compileToFunction` but generates SSR-specific render function code by optimizing parts of the template into string concatenation in order to improve SSR performance.\n\n---\n\n### compiler.parseComponent(file, [options])\n\nParse a SFC (single-file component, or `*.vue` file) into a descriptor (refer to the `SFCDescriptor` type in [flow declarations](https://github.com/vuejs/vue/blob/dev/flow/compiler.js)). This is used in SFC build tools like `vue-loader` and `vueify`.\n\n#### Options\n\n#### `pad`\n\n`pad` is useful when you are piping the extracted content into other pre-processors, as you will get correct line numbers or character indices if there are any syntax errors.\n\n- with `{ pad: \"line\" }`, the extracted content for each block will be prefixed with one newline for each line in the leading content from the original file to ensure that the line numbers align with the original file.\n- with `{ pad: \"space\" }`, the extracted content for each block will be prefixed with one space for each character in the leading content from the original file to ensure that the character count remains the same as the original file.\n",
+            "readmeFilename": "README.md",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "unpkg": "browser.js",
+            "version": "2.5.18-beta.0"
+        },
+        "2.5.19": {
+            "_hasShrinkwrap": false,
+            "_id": "vue-template-compiler@2.5.19",
+            "_nodeVersion": "10.14.1",
+            "_npmOperationalInternal": {
+                "host": "s3://npm-registry-packages",
+                "tmp": "tmp/vue-template-compiler_2.5.19_1544390679876_0.34239125697879036"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "6.4.1",
+            "author": {
+                "name": "Evan You"
+            },
+            "browser": "browser.js",
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "fileCount": 5,
+                "integrity": "sha512-SIoE8gvl0UjZ/wccwHhj0HUqL+kLkJNy/8v7TXElz6rqxqKOKLoAynVV4L78qHZOHhLoyRl5BOmUFQPPdcD5qw==",
+                "npm-signature": "-----BEGIN PGP SIGNATURE-----\r\nVersion: OpenPGP.js v3.0.4\r\nComment: https://openpgpjs.org\r\n\r\nwsFcBAEBCAAQBQJcDYgYCRA9TVsSAnZWagAAZVYP/2CvsevKXhfxjbZGEztc\n/uzEgHkqsYV7JEbXoE7Co4uKFJZ/das2AzzbNY/Lt93oBlP/yhvofAjCxgeC\n2cvYIiG+NfLqRKh8F5axda0SVr7eSjQoozxBIH0OaVGddbAczY72n63ZrA/0\nJEp/Oqax5eqGp9097vxyCKY3Sw3GYorpBDnnVWHXRIpzhbnBK3PEXalNItMl\nf2/Uo6o5dBAuKetorQtrvoRjcsPQnwxuBKiaqGPZXWGEWd7eoQ02uDBAVB35\n/WrH4qlV9bYraYl8jbOqcVDIj9rCKRigxU04kpwiDpQymfnpC3FPIeWvs0D2\np9GeJG6XgoLqhtHDyovjGm8uzOwW66ETlbQI4fkW3Vfvl5MCfE0GNHi2WLSl\nM9pzspJewCRThSqdM3h6kMEynOo9HINo9A9cxQUts88nc3OPBP3BAGWXKv36\npAsfp9KpUO2qdr8Cpd0tMF7NVZoB8JOVcq2VunBsghGhyq723/RFrr+76MGy\n0Jl+Mhpi062P/aDkjATylXVOxJspAEn8YcgZbhLaQFZT5e1fcTofJuNIiu1K\nALIC02tFA6IaQyAiovGyTM9WYbnBZd/UO4K8r3kLkQxD3pXvhUs3DOJsaleS\nLIrPxw+AmkBJeRXjbCYpHIXmaD8OxbXmevrmOZuqfAzTn46ds8qnr9LJTXY4\nJ7kC\r\n=daf3\r\n-----END PGP SIGNATURE-----\r\n",
+                "shasum": "c23fcbea22fe6c116814141d2e6680023d6456f2",
+                "tarball": "https://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.5.19.tgz",
+                "unpackedSize": 365407
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "jsdelivr": "browser.js",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "unpkg": "browser.js",
+            "version": "2.5.19"
+        },
+        "2.5.2": {
+            "_id": "vue-template-compiler@2.5.2",
+            "_nodeVersion": "8.4.0",
+            "_npmOperationalInternal": {
+                "host": "s3://npm-registry-packages",
+                "tmp": "tmp/vue-template-compiler-2.5.2.tgz_1507926053338_0.7780654591042548"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "5.4.2",
+            "author": {
+                "name": "Evan You"
+            },
+            "browser": "browser.js",
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "integrity": "sha512-FtbqBWvEANPZaeRo09VKEF7tET4kPMtJYqwsy/Nm1fdr1zIcwcTI7CXqeraXMviczho5IjtxZ6Fab1Enm4rHmA==",
+                "shasum": "6f198ebc677b8f804315cd33b91e849315ae7177",
+                "tarball": "https://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.5.2.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "jsdelivr": "browser.js",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "unpkg": "browser.js",
+            "version": "2.5.2"
+        },
+        "2.5.20": {
+            "_hasShrinkwrap": false,
+            "_id": "vue-template-compiler@2.5.20",
+            "_nodeVersion": "10.14.1",
+            "_npmOperationalInternal": {
+                "host": "s3://npm-registry-packages",
+                "tmp": "tmp/vue-template-compiler_2.5.20_1544461012245_0.27095133286288564"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "6.4.1",
+            "author": {
+                "name": "Evan You"
+            },
+            "browser": "browser.js",
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "fileCount": 5,
+                "integrity": "sha512-aGJRLd1bJZi6oerGwCQVaDqvQ1T3dhCbNg9C2gNwzoKnyA3BmYfAWy8OQ3OhOebTri8o4YcLeXfwOOxtOKFfmA==",
+                "npm-signature": "-----BEGIN PGP SIGNATURE-----\r\nVersion: OpenPGP.js v3.0.4\r\nComment: https://openpgpjs.org\r\n\r\nwsFcBAEBCAAQBQJcDprUCRA9TVsSAnZWagAAkP4P/1ExegSTxlj/c3wFk2hH\njGlA0PJ4yEG8GyKdNEvj+Q+zMFZi+kceJ3C6PqVdn0aCsRdgcGv2iPxTrorv\ncDJuHcdyGiN91dztAfzxlbwaIjBnFkgfbgksiq7eBFYyVrudjo5Ag2emyE39\n9y+sEs2WCJ3v9zGVDN3JTFoxxLxnIU2of/PGZuw5uaqB/dKd6UhGHeAda1Na\nyGgcmu3BU5sEDHLStjwbrNCdoRWShs57g3874qQmy/cpjWvyvVWwBepgm/Wi\ndoKntbaSB+ZJc1IbPVOb/LihwNGVhaWOPkbbHpnnOU8n5OHy96V5fJvA8Mu1\nLFcU+b4EMVWVtBeTYyCnpLnyjPVQFCQj0HNIaJu8e0WEOH0oagiJXiztTe/O\nkJobc761iGj8V3QD9pp1H6Y5M+P/iDzqushGXEgXuoJAzV73EKj5/tiPkIXe\niaoiA9J0ksSWLlEgRFsWmFtioHK+m6H3Cnbz1oXeeOVFJ9aN+pUhkcTfbFlS\nwX/aTQkaK9fS5jj5Z7QWdC7Ljt3sOzKCe/emG1A6EXp3lKQAAZ1yf8H+6cBH\n/HjW/4up7BLEGuzsuft7i/Nw1bM+AMB3VAac8yEv9SNxjk31NZt70eiHkZHB\nuedajHXgnk76ZYAEjSpNHgKrxrN/BgWDBCJQUEXlKllYUuzYcby3Vm30VWNt\nIY4P\r\n=lNBD\r\n-----END PGP SIGNATURE-----\r\n",
+                "shasum": "b9c01741b7e0261d1c5aac5937c93bde98f880f0",
+                "tarball": "https://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.5.20.tgz",
+                "unpackedSize": 365407
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "jsdelivr": "browser.js",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "unpkg": "browser.js",
+            "version": "2.5.20"
+        },
+        "2.5.21": {
+            "_hasShrinkwrap": false,
+            "_id": "vue-template-compiler@2.5.21",
+            "_nodeVersion": "10.14.1",
+            "_npmOperationalInternal": {
+                "host": "s3://npm-registry-packages",
+                "tmp": "tmp/vue-template-compiler_2.5.21_1544568727808_0.33589135671502923"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "6.4.1",
+            "author": {
+                "name": "Evan You"
+            },
+            "browser": "browser.js",
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "fileCount": 5,
+                "integrity": "sha512-Vmk5Cv7UcmI99B9nXJEkaK262IQNnHp5rJYo+EwYpe2epTAXqcVyExhV6pk8jTkxQK2vRc8v8KmZBAwdmUZvvw==",
+                "npm-signature": "-----BEGIN PGP SIGNATURE-----\r\nVersion: OpenPGP.js v3.0.4\r\nComment: https://openpgpjs.org\r\n\r\nwsFcBAEBCAAQBQJcED+YCRA9TVsSAnZWagAAjW4P/2eA25GwE8a0xNGzKW5a\ni0egFhcD5PBsUzkG3ajfFExZ/tFktazlO5rECTUCfz+T/Blbk4gjvgRLsri/\nQOoPucq+IKheGfoyBiT9xs6owBwNJkuFXdQB6pT9CBIcdaGJhTCQK3X+kBll\nNJW81MW5rMH6UD5Xch+u4i6TcQZ5A7v+jXL9PLVWzNDqW++lKuxSpD6H436Q\nffuZDNTBNaCMqrouXANhHG4aSm9ASKznOTqcgcsHejQ30GBGSSBdzZlLx/YN\nysbjgfxXVhGjTTWEt8Ohfp8g6M8MWp54xWLZ9fGWEVOJD1clbIc+N5Qze3Ld\n6XL0Ly/bU4hzNrBloq7P4c9s854xW/uWYAXiQ3hu6PxMBNhKxv+5IXmgoXpp\nK7C3O4Txzulj4yIa/SW5yGk1fXB7Mi9T4bw03kTlZzcgRZ1ez2FHFQTWXoig\n+QJgp3htsOd2Vq8hbnKp9Xl9lIb+0Dc9PIIaR0PFLBZxhKxdvElILCenlNCM\nI4l7C6H6d4pyVZzZC5vBWaPFJXEmB678Zt5Bt3MSw2EubH7jGuzPlPxHkBPb\n0nVc1QoYp4D7C4/Z3AtbbERhJwb2M8ujYWtc36ARtWlXDcDnOycq3xiiYSNw\nhTPk1ubYEi7QoEWl97HFdtLUV7HxWkOGgkakpW1I2XQgnz/RzeXAWmM5lZs0\ngYnL\r\n=/5Dk\r\n-----END PGP SIGNATURE-----\r\n",
+                "shasum": "a57ceb903177e8f643560a8d639a0f8db647054a",
+                "tarball": "https://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.5.21.tgz",
+                "unpackedSize": 365457
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "jsdelivr": "browser.js",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "unpkg": "browser.js",
+            "version": "2.5.21"
+        },
+        "2.5.3": {
+            "_id": "vue-template-compiler@2.5.3",
+            "_nodeVersion": "8.4.0",
+            "_npmOperationalInternal": {
+                "host": "s3://npm-registry-packages",
+                "tmp": "tmp/vue-template-compiler-2.5.3.tgz_1509743484540_0.8031881826464087"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "5.4.2",
+            "author": {
+                "name": "Evan You"
+            },
+            "browser": "browser.js",
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "integrity": "sha512-C7yWPyT8ZPyXv9AL1eZEZSp72qDHGSgfD80Rf2A9s2vKmMbUuRInfsDsOfYtoiN2hK4hMGMQ71xaZs2e8RnucQ==",
+                "shasum": "ab631b0694e211a6aaf0d800102b37836aae36a4",
+                "tarball": "https://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.5.3.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "jsdelivr": "browser.js",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "unpkg": "browser.js",
+            "version": "2.5.3"
+        },
+        "2.5.4": {
+            "_id": "vue-template-compiler@2.5.4",
+            "_nodeVersion": "8.4.0",
+            "_npmOperationalInternal": {
+                "host": "s3://npm-registry-packages",
+                "tmp": "tmp/vue-template-compiler-2.5.4.tgz_1510861996425_0.5580066703259945"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "5.4.2",
+            "author": {
+                "name": "Evan You"
+            },
+            "browser": "browser.js",
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "integrity": "sha512-EOKW96eTxlcVAooCAYMLjuFZEcKXj7abCWjQaRJtcSApJEtBmo7ShmyBnJhYCpSSKzB9Fd6cXhvKmbLz2FZxsA==",
+                "shasum": "e104a80b69afbf37b56e0f2f91ff2037976e6d06",
+                "tarball": "https://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.5.4.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "jsdelivr": "browser.js",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "unpkg": "browser.js",
+            "version": "2.5.4"
+        },
+        "2.5.5": {
+            "_id": "vue-template-compiler@2.5.5",
+            "_nodeVersion": "8.4.0",
+            "_npmOperationalInternal": {
+                "host": "s3://npm-registry-packages",
+                "tmp": "tmp/vue-template-compiler-2.5.5.tgz_1510936608143_0.4366464097984135"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "5.4.2",
+            "author": {
+                "name": "Evan You"
+            },
+            "browser": "browser.js",
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "integrity": "sha512-KsVEmJhz7KbagsY5Nm4ai5n0j/NX+xouP1Y/t5obtWVdD5OfG7gZKUU9SOaI6N+k5q4obQoLKUxYsH23QMjmpA==",
+                "shasum": "0cfb47c784f75500d94aa57d2220bb324b59fae0",
+                "tarball": "https://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.5.5.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "jsdelivr": "browser.js",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "unpkg": "browser.js",
+            "version": "2.5.5"
+        },
+        "2.5.6": {
+            "_id": "vue-template-compiler@2.5.6",
+            "_nodeVersion": "8.4.0",
+            "_npmOperationalInternal": {
+                "host": "s3://npm-registry-packages",
+                "tmp": "tmp/vue-template-compiler-2.5.6.tgz_1511034232869_0.7405535557772964"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "5.4.2",
+            "author": {
+                "name": "Evan You"
+            },
+            "browser": "browser.js",
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "integrity": "sha512-YjjYpDHzZfKDRvufLPTgL33tRoTuRllnck99tzkBAu1cjdDqBsdUH5Zd9cX8Q16m4liyIRXa+L6UHp/MNxPMbw==",
+                "shasum": "93f062a230a4437ef16064f1eef9cf3797d34bb4",
+                "tarball": "https://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.5.6.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "jsdelivr": "browser.js",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "unpkg": "browser.js",
+            "version": "2.5.6"
+        },
+        "2.5.7": {
+            "_id": "vue-template-compiler@2.5.7",
+            "_nodeVersion": "8.4.0",
+            "_npmOperationalInternal": {
+                "host": "s3://npm-registry-packages",
+                "tmp": "tmp/vue-template-compiler-2.5.7.tgz_1511207359067_0.3623162468429655"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "5.4.2",
+            "author": {
+                "name": "Evan You"
+            },
+            "browser": "browser.js",
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "integrity": "sha512-XS17M9Sebm0vwD54rX2ziKSqFrUlWywKPU7rmekCU0m6trBjLfztbSOnms8mbW1AyaqIAE6aLmjGzAUf1QHJag==",
+                "shasum": "21467d78b20a932ad7b89d98b54171a039111a7e",
+                "tarball": "https://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.5.7.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "jsdelivr": "browser.js",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "unpkg": "browser.js",
+            "version": "2.5.7"
+        },
+        "2.5.8": {
+            "_id": "vue-template-compiler@2.5.8",
+            "_nodeVersion": "8.4.0",
+            "_npmOperationalInternal": {
+                "host": "s3://npm-registry-packages",
+                "tmp": "tmp/vue-template-compiler-2.5.8.tgz_1511275332068_0.5769521517213434"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "5.4.2",
+            "author": {
+                "name": "Evan You"
+            },
+            "browser": "browser.js",
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "integrity": "sha512-mghHWel7P8MZNWRCnuS01HSG/rsTt2iRztSpKImbEdvHJo1KxIy7QxbDjEPcStK+A0gTHHHWrjHuvkvREY2iwQ==",
+                "shasum": "826ae77e1d5faa7fa5fca554f33872dde38de674",
+                "tarball": "https://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.5.8.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "jsdelivr": "browser.js",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "unpkg": "browser.js",
+            "version": "2.5.8"
+        },
+        "2.5.9": {
+            "_id": "vue-template-compiler@2.5.9",
+            "_nodeVersion": "8.9.1",
+            "_npmOperationalInternal": {
+                "host": "s3://npm-registry-packages",
+                "tmp": "tmp/vue-template-compiler-2.5.9.tgz_1511804605231_0.5643487758934498"
+            },
+            "_npmUser": {
+                "email": "yyx990803@gmail.com",
+                "name": "yyx990803"
+            },
+            "_npmVersion": "5.5.1",
+            "author": {
+                "name": "Evan You"
+            },
+            "browser": "browser.js",
+            "bugs": {
+                "url": "https://github.com/vuejs/vue/issues"
+            },
+            "dependencies": {
+                "de-indent": "^1.0.2",
+                "he": "^1.1.0"
+            },
+            "description": "template compiler for Vue 2.0",
+            "directories": {},
+            "dist": {
+                "integrity": "sha512-Icev7QPuQ3flpOvxMe09irgXPklBi/VpiveUDs5nRVH5GA8R9asLBlahsA7AuRZQbaty0cGKm6kh/icDLcr93w==",
+                "shasum": "7fabc73c8d3d12d32340cd86c5fc33e00e86d686",
+                "tarball": "https://registry.npmjs.org/vue-template-compiler/-/vue-template-compiler-2.5.9.tgz"
+            },
+            "homepage": "https://github.com/vuejs/vue/tree/dev/packages/vue-template-compiler#readme",
+            "jsdelivr": "browser.js",
+            "keywords": [
+                "vue",
+                "compiler"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "yyx990803@gmail.com",
+                    "name": "yyx990803"
+                }
+            ],
+            "name": "vue-template-compiler",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/vuejs/vue.git"
+            },
+            "unpkg": "browser.js",
+            "version": "2.5.9"
+        }
+    }
+}

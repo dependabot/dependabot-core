@@ -37,8 +37,9 @@ module Dependabot
             (?<=require\s)php(?:\-[^\s\/]+)?\s.*?\s(?=->) # composer v2
           }x
         VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/
-        SOURCE_TIMED_OUT_REGEX =
-          /The "(?<url>[^"]+packages\.json)".*timed out/
+
+        # Example Timeout error from Composer 2.7.7: "curl error 28 while downloading https://example.com:81/packages.json: Failed to connect to example.com port 81 after 9853 ms: Connection timed out" # rubocop:disable Layout/LineLength
+        SOURCE_TIMED_OUT_REGEX = %r{curl error 28 while downloading (?<url>https?://.+/packages\.json): }
 
         def initialize(credentials:, dependency:, dependency_files:,
                        requirements_to_unlock:, latest_allowable_version:)
@@ -257,15 +258,6 @@ module Dependabot
           # to close a private repo if given invalid (or no) credentials
           if error.message.include?("github.com/laravel/nova.git")
             raise PrivateSourceAuthenticationFailure, "nova.laravel.com"
-          end
-
-          # To handle the case where the PHP version (configured in composer.json) is not supported
-          # league/csv 9.21.0 requires php ^8.1.2 -> your php version 8.1
-          if error.message.include?("your php version")
-            tool_name = "PHP"
-            detected_version = error.message.match(/your php version \((.*?)\s*;/)[1]
-            supported_versions = error.message.match(/requires php\s(.*?)\s->/)[1]
-            raise ToolVersionNotSupported.new(tool_name, detected_version, supported_versions)
           end
 
           dependency_url = Helpers.dependency_url_from_git_clone_error(error.message)
