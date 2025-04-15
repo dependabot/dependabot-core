@@ -107,7 +107,12 @@ module Dependabot
         def fetch_lowest_security_fix_version(language_version: nil) # rubocop:disable Lint/UnusedMethodArgument
           return if dependency_source.git?
 
-          relevant_versions = available_versions || []
+          relevant_versions = dependency_source.versions.map do |version|
+            Dependabot::Package::PackageRelease.new(
+              version: version
+            )
+          end
+
           relevant_versions = filter_prerelease_versions(relevant_versions)
           relevant_versions = Dependabot::UpdateCheckers::VersionFilters
                               .filter_vulnerable_versions(
