@@ -22,7 +22,7 @@
 
 - [ ] I have run the complete test suite to ensure all tests and linters pass.
 - [ ] I have thoroughly tested my code changes to ensure they work as expected, including adding additional tests for new functionality.
-- [ ] I have run Sorbet type-checking to ensure that all types are correct and complete.
+- [ ] I have run Sorbet type-checking in strict mode to ensure that all types are correct and complete.
 - [ ] I have written clear and descriptive commit messages.
 - [ ] I have provided a detailed description of the changes in the pull request, including the problem it addresses, how it fixes the problem, and any relevant details about the implementation.
 - [ ] I have ensured that the code is well-documented and easy to understand.
