@@ -42,7 +42,7 @@ class StubPackageLatestVersionFinder < Dependabot::Package::PackageLatestVersion
         language = if release[:language]
                      Dependabot::Package::PackageLanguage.new(
                        name: release[:language].fetch(:name, ""),
-                       version: release[:language].fetch(:version, nil)&.then { |v| Dependabot::Version.new(v) },
+                       version: release[:language].fetch(:version, nil)&.then { |v| TestVersion.new(v) },
                        requirement: release[:language].fetch(:requirement, nil)&.then do |r|
                          TestRequirement.new(r)
                        end
@@ -266,7 +266,7 @@ RSpec.describe Dependabot::Package::PackageLatestVersionFinder do
   describe "#latest_version" do
     subject(:latest_version) { finder.latest_version }
 
-    it { is_expected.to eq(Gem::Version.new("7.0.0")) }
+    it { is_expected.to eq(TestVersion.new("7.0.0")) }
 
     context "when all supported versions are ignored" do
       let(:ignored_versions) { ["7.0.0", "6.1.4", "6.0.2", "6.0.0"] }
@@ -286,7 +286,7 @@ RSpec.describe Dependabot::Package::PackageLatestVersionFinder do
       end
 
       it "ignores prerelease versions" do
-        expect(latest_version).to eq(Gem::Version.new("7.0.0"))
+        expect(latest_version).to eq(TestVersion.new("7.0.0"))
       end
 
       context "when prereleases are allowed" do
@@ -295,7 +295,7 @@ RSpec.describe Dependabot::Package::PackageLatestVersionFinder do
         end
 
         it "selects the highest prerelease version" do
-          expect(latest_version).to eq(Gem::Version.new("7.0.0"))
+          expect(latest_version).to eq(TestVersion.new("7.0.0"))
         end
       end
     end
@@ -305,7 +305,7 @@ RSpec.describe Dependabot::Package::PackageLatestVersionFinder do
     subject(:latest_version_with_no_unlock) { finder.latest_version_with_no_unlock }
 
     context "when no constraints are present" do
-      it { is_expected.to eq(Gem::Version.new("7.0.0")) }
+      it { is_expected.to eq(TestVersion.new("7.0.0")) }
     end
 
     context "with an exact version requirement" do
@@ -313,7 +313,7 @@ RSpec.describe Dependabot::Package::PackageLatestVersionFinder do
         [{ file: "Gemfile", requirement: "=6.0.2", groups: [], source: nil }]
       end
 
-      it { is_expected.to eq(Gem::Version.new("6.0.2")) }
+      it { is_expected.to eq(TestVersion.new("6.0.2")) }
     end
 
     context "with an upper bound restriction" do
@@ -321,13 +321,13 @@ RSpec.describe Dependabot::Package::PackageLatestVersionFinder do
         [{ file: "Gemfile", requirement: ">=6.0.0,<7.0.0", groups: [], source: nil }]
       end
 
-      it { is_expected.to eq(Gem::Version.new("6.1.4")) }
+      it { is_expected.to eq(TestVersion.new("6.1.4")) }
     end
 
     context "when ignored versions affect the latest selection" do
       let(:ignored_versions) { ["7.0.0"] }
 
-      it { is_expected.to eq(Gem::Version.new("6.1.4")) }
+      it { is_expected.to eq(TestVersion.new("6.1.4")) }
     end
   end
 
@@ -344,7 +344,7 @@ RSpec.describe Dependabot::Package::PackageLatestVersionFinder do
       ]
     end
 
-    it { is_expected.to eq(Gem::Version.new("6.0.2")) }
+    it { is_expected.to eq(TestVersion.new("6.0.2")) }
 
     context "when no non-vulnerable versions exist" do
       let(:available_releases) do
@@ -356,15 +356,18 @@ RSpec.describe Dependabot::Package::PackageLatestVersionFinder do
   end
 
   describe "version filtering" do
-    subject(:filtered_versions) { finder.send(:filter_ignored_versions, versions) }
+    subject(:filtered_versions) { finder.send(:filter_ignored_versions, releases) }
 
-    let(:versions) { [Gem::Version.new("7.0.0"), Gem::Version.new("6.1.4"), Gem::Version.new("6.0.2")] }
+    let(:r1) { Dependabot::Package::PackageRelease.new(version: TestVersion.new("7.0.0")) }
+    let(:r2) { Dependabot::Package::PackageRelease.new(version: TestVersion.new("6.1.4")) }
+    let(:r3) { Dependabot::Package::PackageRelease.new(version: TestVersion.new("6.0.2")) }
+    let(:releases) { [r1, r2, r3] }
 
     context "when no ignored versions are specified" do
       let(:ignored_versions) { [] }
 
       it "returns all versions" do
-        expect(filtered_versions).to eq(versions)
+        expect(filtered_versions).to eq(releases)
       end
     end
 
@@ -372,7 +375,7 @@ RSpec.describe Dependabot::Package::PackageLatestVersionFinder do
       let(:ignored_versions) { ["7.0.0"] }
 
       it "removes the ignored version" do
-        expect(filtered_versions).to eq([Gem::Version.new("6.1.4"), Gem::Version.new("6.0.2")])
+        expect(filtered_versions).to eq([r2, r3])
       end
     end
 
