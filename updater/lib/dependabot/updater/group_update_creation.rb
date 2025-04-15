@@ -28,7 +28,10 @@ module Dependabot
 
       abstract!
 
-      sig { params(dependency_snapshot: Dependabot::DependencySnapshot, error_handler: Dependabot::Updater::ErrorHandler, job: Dependabot::Job, group: Dependabot::DependencyGroup).void }
+      sig do
+        params(dependency_snapshot: Dependabot::DependencySnapshot, error_handler: Dependabot::Updater::ErrorHandler,
+               job: Dependabot::Job, group: Dependabot::DependencyGroup).void
+      end
       def initialize(dependency_snapshot, error_handler, job, group)
         @dependency_snapshot = T.let(dependency_snapshot, Dependabot::DependencySnapshot)
         @error_handler = T.let(error_handler, Dependabot::Updater::ErrorHandler)
@@ -135,7 +138,7 @@ module Dependabot
         cleanup_workspace
       end
 
-      sig { params(dependency: T.untyped, group: T.untyped).returns(T::Boolean) }
+      sig { params(dependency: Dependabot::Dependency, group: Dependabot::DependencyGroup).returns(T::Boolean) }
       def skip_dependency?(dependency, group)
         # Check if dependency has already been handled
         handled_dependency = dependency_snapshot.handled_dependencies.include?(dependency.name)
@@ -155,7 +158,7 @@ module Dependabot
       # rubocop:enable Metrics/PerceivedComplexity
       # rubocop:enable Metrics/AbcSize
       # rubocop:enable Metrics/MethodLength
-      sig { params(dependency_change: T.untyped).void }
+      sig { params(dependency_change: Dependabot::DependencyChange).void }
       def log_missing_previous_version(dependency_change)
         deps_no_previous_version = dependency_change.updated_dependencies.reject(&:previous_version).map(&:name)
         deps_no_change = dependency_change.updated_dependencies.reject(&:requirements_changed?).map(&:name)
