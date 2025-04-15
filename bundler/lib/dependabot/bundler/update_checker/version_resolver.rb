@@ -118,7 +118,7 @@ module Dependabot
                 # mismatch
                 return nil if ruby_version_incompatible?(details)
 
-                details[:version] = Gem::Version.new(details[:version])
+                details[:version] = Dependabot::Bundler::Version.new(details[:version])
               end
               details
             end
