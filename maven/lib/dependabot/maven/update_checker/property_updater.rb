@@ -1,6 +1,7 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "dependabot/package/release_cooldown_options"
 require "dependabot/maven/file_parser"
 require "dependabot/maven/update_checker"
 require "dependabot/maven/file_updater/declaration_finder"
@@ -19,18 +20,23 @@ module Dependabot
             dependency: Dependabot::Dependency,
             dependency_files: T::Array[Dependabot::DependencyFile],
             credentials: T::Array[Dependabot::Credential],
-            target_version_details: T.nilable(T::Hash[Symbol, T.untyped]),
-            ignored_versions: T::Array[String]
+            ignored_versions: T::Array[String],
+            target_version_details: T.nilable(T::Hash[T.untyped, T.untyped]),
+            update_cooldown: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
           ).void
         end
-        def initialize(dependency:, dependency_files:, credentials:,
-                       target_version_details:, ignored_versions:)
+        def initialize(
+          dependency:, dependency_files:, credentials:,
+          ignored_versions:, target_version_details:,
+          update_cooldown: nil
+        )
           @dependency       = dependency
           @dependency_files = dependency_files
           @credentials      = credentials
           @ignored_versions = ignored_versions
           @target_version   = T.let(target_version_details&.fetch(:version), T.nilable(Dependabot::Maven::Version))
           @source_url       = T.let(target_version_details&.fetch(:source_url), T.nilable(String))
+          @update_cooldown = update_cooldown
         end
 
         sig { returns(T::Boolean) }
@@ -47,7 +53,8 @@ module Dependabot
                 dependency_files: dependency_files,
                 credentials: credentials,
                 ignored_versions: ignored_versions,
-                security_advisories: []
+                security_advisories: [],
+                cooldown_options: update_cooldown
               ).releases
 
               versions = releases.map(&:version)
@@ -96,6 +103,9 @@ module Dependabot
 
         sig { returns(T::Array[String]) }
         attr_reader :ignored_versions
+
+        sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
+        attr_reader :update_cooldown
 
         sig { returns(T::Array[Dependabot::Dependency]) }
         def dependencies_using_property
