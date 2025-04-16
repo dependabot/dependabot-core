@@ -1,7 +1,6 @@
 name: Sorbet
 on: # yamllint disable-line rule:truthy
   pull_request:
-  push:
     branches: [main]  # Adjust this to the branch you want for push events
 
 jobs:
