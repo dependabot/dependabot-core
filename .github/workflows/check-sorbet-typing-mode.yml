@@ -2,53 +2,52 @@ name: Sorbet
 on: # yamllint disable-line rule:truthy
   pull_request:
     branches: [main]
-    paths:
-      - '*/lib/dependabot/**/*.rb'  # Trigger the workflow only for Ruby files
     types: [opened, synchronize, reopened]
   push:
     branches: [main]  # Adjust this to the branch you want for push events
-    paths:
-      - '*/lib/dependabot/**/*.rb'  # Trigger the workflow only for Ruby files
-
-permissions:
-  contents: read
 
 jobs:
   check-sorbet-typing-mode:
     name: Sorbet Typing Mode Check
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: read
+
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: ${{ github.event_name == 'pull_request' && '2' || '0' }}
 
       - name: Get Changed Files
         id: changed-files
+        uses: tj-actions/changed-files@ed68ef82c095e0d48ec87eccea555d944a631a4c # v46
+        with:
+          # No path filters for triggering; we will filter in the script
+          files: '**/lib/dependabot/**/*.rb'  # Only get changed Ruby files in dependabot directory
+
+      - name: List Changed Files
         run: |
-          if [ "${{ github.event_name }}" == "pull_request" ]; then
-            echo "Fetching changed files for PR..."
-            changed_files=$(git diff --name-only HEAD^1 HEAD | grep '\.rb$' | xargs)
-          else
-            echo "Fetching changed files for push event..."
-            changed_files=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }} | grep '\.rb$' | xargs)
-          fi
-          echo "changed_files=$changed_files" >> $GITHUB_ENV
+          echo "Changed Ruby files:"
+          echo "${{ steps.changed-files.outputs.all_changed_files }}"
 
       - name: Verify Sorbet Typing Mode
         run: |
           echo "Starting Sorbet typing check..."
           missing_sorbet_typing=false
 
-          for file in $changed_files; do
-            echo "Checking $file for Sorbet typing..."
-            # Check if the top of the file has `# typed: strict` or `# typed: strong`
-            if ! head -n 10 "$file" | grep -E -q '^# typed: (strict|strong)'; then
-              echo "No Sorbet typing found at the top of $file"
-              missing_sorbet_typing=true
-            else
-              echo "Sorbet typing found at the top of $file"
+          # Iterate over the changed Ruby files and filter only Ruby files
+          for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
+            # Apply filter here for Ruby files
+            if [[ "$file" == *.rb ]]; then
+              echo "Checking $file for Sorbet typing..."
+              # Check if the top of the file has `# typed: strict` or `# typed: strong`
+              if ! head -n 10 "$file" | grep -E -q '^# typed: (strict|strong)'; then
+                echo "No Sorbet typing found at the top of $file"
+                missing_sorbet_typing=true
+              else
+                echo "Sorbet typing found at the top of $file"
+              fi
             fi
           done
 
