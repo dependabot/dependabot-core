@@ -24,11 +24,6 @@ jobs:
           # No path filters for triggering; we will filter in the script
           files: '**/lib/dependabot/**/*.rb'  # Only get changed Ruby files in dependabot directory
 
-      - name: List Changed Files
-        run: |
-          echo "Changed Ruby files:"
-          echo "${{ steps.changed-files.outputs.all_changed_files }}"
-
       - name: Verify Sorbet Typing Mode
         run: |
           echo "Starting Sorbet typing check..."
