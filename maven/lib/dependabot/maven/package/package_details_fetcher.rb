@@ -344,7 +344,7 @@ module Dependabot
 
           @pom_repository_details =
             repository_finder
-            .repository_urls(pom: pom)
+            .repository_urls(pom: T.must(pom))
             .map do |url|
               { URL_KEY => url, AUTH_HEADERS_KEY => {} }
             end
