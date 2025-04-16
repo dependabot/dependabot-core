@@ -467,14 +467,6 @@ public class PackageManager
                             // Loop from the current version to the latest version, use next patch as a limit (unless there's a limit) so it doesn't look for versions that don't exist
                             for (NuGetVersion version = currentVersionParent; version <= latestVersion; version = NextPatch(version, versions))
                             {
-                                NuGetVersion nextPatch = NextPatch(version, versions);
-
-                                // If the next patch is the same as the currentVersioon, then the update is a Success
-                                if (nextPatch == version)
-                                {
-                                    return "Success";
-                                }
-
                                 string parentVersion = version.ToString();
                                 parent.NewVersion = parentVersion;
 
