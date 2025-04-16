@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "excon"
@@ -26,12 +26,20 @@ module Dependabot
           ).fetch
         end
 
-        def latest_version
-          @latest_version ||= fetch_latest_version
+        sig do
+          override.params(language_version: T.nilable(T.any(String, Dependabot::Version)))
+                  .returns(T.nilable(Dependabot::Version))
+        end
+        def latest_version(language_version: nil)
+          @latest_version ||= fetch_latest_version(language_version: language_version)
         end
 
-        def lowest_security_fix_version
-          @lowest_security_fix_version ||= fetch_lowest_security_fix_version(language_version: nil)
+        sig do
+          override.params(language_version: T.nilable(T.any(String, Dependabot::Version)))
+                  .returns(T.nilable(Dependabot::Version))
+        end
+        def lowest_security_fix_version(language_version: nil)
+          @lowest_security_fix_version ||= fetch_lowest_security_fix_version(language_version: language_version)
         end
 
         protected
@@ -53,14 +61,23 @@ module Dependabot
 
         private
 
+        sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
+        sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
+        sig { returns(T::Array[String]) }
         attr_reader :ignored_versions
+        sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
         attr_reader :security_advisories
 
-        def apply_post_fetch_lowest_security_fix_versions_filter(versions)
-          filter_prerelease_versions(versions)
+        sig do
+          override.params(releases: T::Array[Dependabot::Package::PackageRelease])
+                  .returns(T::Array[Dependabot::Package::PackageRelease])
+        end
+        def apply_post_fetch_lowest_security_fix_versions_filter(releases)
+          filter_prerelease_versions(releases)
         end
       end
     end

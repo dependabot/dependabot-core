@@ -342,7 +342,7 @@ module Dependabot
       sig { returns(Dependabot::Maven::FileParser::PropertyValueFinder) }
       def property_value_finder
         @property_value_finder ||= T.let(
-          PropertyValueFinder.new(dependency_files: dependency_files, credentials: credentials.map(&:to_s)),
+          PropertyValueFinder.new(dependency_files: dependency_files, credentials: @credentials),
           T.nilable(Dependabot::Maven::FileParser::PropertyValueFinder)
         )
       end
