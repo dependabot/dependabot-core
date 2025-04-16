@@ -21,7 +21,6 @@ jobs:
         id: changed-files
         uses: tj-actions/changed-files@ed68ef82c095e0d48ec87eccea555d944a631a4c # v46.0.5
         with:
-          # No path filters for triggering; we will filter in the script
           files: '**/lib/dependabot/**/*.rb'  # Only get changed Ruby files in dependabot directory
 
       - name: Verify Sorbet Typing Mode
