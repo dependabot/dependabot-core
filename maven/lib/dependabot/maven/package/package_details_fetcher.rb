@@ -99,22 +99,24 @@ module Dependabot
           @version_details = versions_details_from_xml
 
           begin
-            versions_details_hash = versions_details_hash_from_html
+            versions_details_hash = versions_details_hash_from_html if @version_details.any?
 
-            @version_details = @version_details.map do |version_details|
-              version = version_details[:version].to_s
-              version_details_hash = versions_details_hash[version]
+            if versions_details_hash
+              @version_details = @version_details.map do |version_details|
+                version = version_details[:version].to_s
+                version_details_hash = versions_details_hash[version]
 
-              next version_details unless version_details_hash
+                next version_details unless version_details_hash
 
-              release_date = version_details_hash[:release_date]
+                release_date = version_details_hash[:release_date]
 
-              next version_details unless release_date
+                next version_details unless release_date
 
-              version_details.merge(
-                release_date: version_details_hash[:release_date],
-                source_url: version_details[:source_url]
-              )
+                version_details.merge(
+                  release_date: version_details_hash[:release_date],
+                  source_url: version_details[:source_url]
+                )
+              end
             end
           rescue StandardError => e
             Dependabot.logger.error("Error fetching version details from HTML: #{e.message}")
