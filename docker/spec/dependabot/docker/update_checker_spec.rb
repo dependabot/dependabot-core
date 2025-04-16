@@ -144,7 +144,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         context "when the digest is up-to-date" do
           let(:source) do
             {
-              digest: "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86ca97" \
+              digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86ca97" \
                       "eba880ebf600d68608"
             }
           end
@@ -170,13 +170,13 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       end
 
       context "when the digest is out-to-date" do
-        let(:digest) { "c5dcd377b75ca89f40a7b4284c05c58be4cd43d089f83af1333e56bde33d579f" }
+        let(:digest) { "sha256:c5dcd377b75ca89f40a7b4284c05c58be4cd43d089f83af1333e56bde33d579f" }
 
         it { is_expected.to be_truthy }
       end
 
       context "when the digest is up-to-date" do
-        let(:latest_digest) { "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86ca97eba880ebf600d68608" }
+        let(:latest_digest) { "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86ca97eba880ebf600d68608" }
         let(:digest) { latest_digest }
 
         it { is_expected.to be_falsy }
@@ -229,7 +229,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       let(:source) do
         {
           registry: "registry.access.redhat.com",
-          digest: "3f32ebba0cbf3849a48372d4fc3a4ce70816f248d39eb50da7ea5f15c7f9d120"
+          digest: "sha256:3f32ebba0cbf3849a48372d4fc3a4ce70816f248d39eb50da7ea5f15c7f9d120"
         }
       end
       let(:version) { "8.5" }
@@ -261,9 +261,9 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       it { is_expected.to eq("artful") }
 
       context "when the version starts with a number" do
-        let(:version) { "309403913c7f0848e6616446edec909b55d53571" }
+        let(:version) { "sha256:309403913c7f0848e6616446edec909b55d53571" }
 
-        it { is_expected.to eq("309403913c7f0848e6616446edec909b55d53571") }
+        it { is_expected.to eq("sha256:309403913c7f0848e6616446edec909b55d53571") }
       end
     end
 
@@ -1387,7 +1387,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
     context "when the docker registry only knows about versions older than the current version" do
       let(:dependency_name) { "jetstack/cert-manager-controller" }
       let(:version) { "v1.7.2" }
-      let(:digest) { "1815870847a48a9a6f177b90005d8df273e79d00830c21af9d43e1b5d8d208b4" }
+      let(:digest) { "sha256:1815870847a48a9a6f177b90005d8df273e79d00830c21af9d43e1b5d8d208b4" }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: dependency_name,
@@ -1399,7 +1399,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
             source: {
               registry: "quay.io",
               tag: "v1.7.2",
-              digest: "18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005"
+              digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005"
             }
           }],
           package_manager: "docker"
@@ -1547,7 +1547,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
               groups: [],
               file: "Dockerfile",
               source: {
-                digest: "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
+                digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
                         "ca97eba880ebf600d68608"
               }
             }]
@@ -1573,7 +1573,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
               groups: [],
               file: "Dockerfile",
               source: {
-                digest: "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
+                digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
                         "ca97eba880ebf600d68608",
                 tag: "17.10"
               }

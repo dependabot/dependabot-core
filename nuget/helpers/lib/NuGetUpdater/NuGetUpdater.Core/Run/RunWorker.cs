@@ -125,6 +125,7 @@ public class RunWorker
         // TODO: pull out relevant dependencies, then check each for updates and track the changes
         var originalDependencyFileContents = new Dictionary<string, string>();
         var originalDependencyFileEOFs = new Dictionary<string, EOLType>();
+        var originalDependencyFileBOMs = new Dictionary<string, bool>();
         var actualUpdatedDependencies = new List<ReportedDependency>();
 
         // track original contents for later handling
@@ -133,8 +134,10 @@ public class RunWorker
             var repoFullPath = Path.Join(directory, fileName).FullyNormalizedRootedPath();
             var localFullPath = Path.Join(repoContentsPath.FullName, repoFullPath);
             var content = await File.ReadAllTextAsync(localFullPath);
+            var rawContent = await File.ReadAllBytesAsync(localFullPath);
             originalDependencyFileContents[repoFullPath] = content;
             originalDependencyFileEOFs[repoFullPath] = content.GetPredominantEOL();
+            originalDependencyFileBOMs[repoFullPath] = rawContent.HasBOM();
         }
 
         foreach (var project in discoveryResult.Projects)
@@ -257,15 +260,25 @@ public class RunWorker
             var updatedContent = await File.ReadAllTextAsync(localFullPath);
 
             updatedContent = updatedContent.SetEOL(originalDependencyFileEOFs[repoFullPath]);
-            await File.WriteAllTextAsync(localFullPath, updatedContent);
+            var updatedRawContent = updatedContent.SetBOM(originalDependencyFileBOMs[repoFullPath]);
+            await File.WriteAllBytesAsync(localFullPath, updatedRawContent);
 
             if (updatedContent != originalContent)
             {
+                var reportedContent = updatedContent;
+                var encoding = "utf-8";
+                if (originalDependencyFileBOMs[repoFullPath])
+                {
+                    reportedContent = Convert.ToBase64String(updatedRawContent);
+                    encoding = "base64";
+                }
+
                 updatedDependencyFiles[localFullPath] = new DependencyFile()
                 {
                     Name = Path.GetFileName(repoFullPath),
                     Directory = Path.GetDirectoryName(repoFullPath)!.NormalizePathToUnix(),
-                    Content = updatedContent,
+                    Content = reportedContent,
+                    ContentEncoding = encoding,
                 };
             }
         }
@@ -331,10 +344,17 @@ public class RunWorker
             Base64DependencyFiles = originalDependencyFileContents.OrderBy(kvp => kvp.Key).Select(kvp =>
             {
                 var fullPath = kvp.Key.FullyNormalizedRootedPath();
+                var rawContent = Encoding.UTF8.GetBytes(kvp.Value);
+                if (originalDependencyFileBOMs[kvp.Key])
+                {
+                    rawContent = Encoding.UTF8.GetPreamble().Concat(rawContent).ToArray();
+                }
+
                 return new DependencyFile()
                 {
                     Name = Path.GetFileName(fullPath),
-                    Content = Convert.ToBase64String(Encoding.UTF8.GetBytes(kvp.Value)),
+                    Content = Convert.ToBase64String(rawContent),
+                    ContentEncoding = "base64",
                     Directory = Path.GetDirectoryName(fullPath)!.NormalizePathToUnix(),
                 };
             }).ToArray(),

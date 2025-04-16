@@ -19,6 +19,7 @@ namespace NuGetUpdater.Core.Test.Run;
 using static NuGetUpdater.Core.Utilities.EOLHandling;
 
 using TestFile = (string Path, string Content);
+using RawTestFile = (string Path, byte[] Content);
 
 public class RunWorkerTests
 {
@@ -135,7 +136,8 @@ public class RunWorkerTests
                                 <PackageReference Include="Some.Package" Version="1.0.0" />
                               </ItemGroup>
                             </Project>
-                            """.SetEOL(EOL)))
+                            """.SetEOL(EOL))),
+                        ContentEncoding = "base64"
                     }
                 ],
                 BaseCommitSha = "TEST-COMMIT-SHA",
@@ -359,7 +361,8 @@ public class RunWorkerTests
                                 <PackageReference Include="Some.Package;Some.Package2" Version="1.0.0" />
                               </ItemGroup>
                             </Project>
-                            """.SetEOL(EOL)))
+                            """.SetEOL(EOL))),
+                        ContentEncoding = "base64"
                     }
                 ],
                 BaseCommitSha = "TEST-COMMIT-SHA",
@@ -732,7 +735,8 @@ public class RunWorkerTests
                             <packages>
                               <package id="Some.Package2" version="2.0.0" targetFramework="net8.0" />
                             </packages>
-                            """.SetEOL(EOL)))
+                            """.SetEOL(EOL))),
+                        ContentEncoding = "base64"
                     },
                     new DependencyFile()
                     {
@@ -747,7 +751,8 @@ public class RunWorkerTests
                                 <PackageReference Include="Some.Package" Version="1.0.0" />
                               </ItemGroup>
                             </Project>
-                            """.SetEOL(EOL)))
+                            """.SetEOL(EOL))),
+                        ContentEncoding = "base64"
                     },
                 ],
                 BaseCommitSha = "TEST-COMMIT-SHA",
@@ -1152,7 +1157,8 @@ public class RunWorkerTests
                             <packages>
                               <package id="Some.Package2" version="2.0.0" targetFramework="net8.0" />
                             </packages>
-                            """.SetEOL(EOL)))
+                            """.SetEOL(EOL))),
+                        ContentEncoding = "base64"
                     },
                     new DependencyFile()
                     {
@@ -1170,7 +1176,8 @@ public class RunWorkerTests
                                 <ProjectReference Include="../ProjectB/ProjectB.csproj" />
                               </ItemGroup>
                             </Project>
-                            """.SetEOL(EOL)))
+                            """.SetEOL(EOL))),
+                        ContentEncoding = "base64"
                     },
                     new DependencyFile()
                     {
@@ -1181,7 +1188,8 @@ public class RunWorkerTests
                             <packages>
                               <package id="Some.Package2" version="2.0.0" targetFramework="net8.0" />
                             </packages>
-                            """.SetEOL(EOL)))
+                            """.SetEOL(EOL))),
+                        ContentEncoding = "base64"
                     },
                     new DependencyFile()
                     {
@@ -1196,7 +1204,8 @@ public class RunWorkerTests
                                 <PackageReference Include="Some.Package" Version="1.0.0" />
                               </ItemGroup>
                             </Project>
-                            """.SetEOL(EOL)))
+                            """.SetEOL(EOL))),
+                        ContentEncoding = "base64"
                     },
                 ],
                 BaseCommitSha = "TEST-COMMIT-SHA",
@@ -1625,7 +1634,8 @@ public class RunWorkerTests
                                 <SomePackageVersion>1.0.0</SomePackageVersion>
                               </PropertyGroup>
                             </Project>
-                            """.SetEOL(EOL)))
+                            """.SetEOL(EOL))),
+                        ContentEncoding = "base64"
                     },
                     new DependencyFile()
                     {
@@ -1640,7 +1650,8 @@ public class RunWorkerTests
                                 <PackageReference Include="Some.Package" Version="$(SomePackageVersion)" />
                               </ItemGroup>
                             </Project>
-                            """.SetEOL(EOL)))
+                            """.SetEOL(EOL))),
+                        ContentEncoding = "base64"
                     },
                     new DependencyFile()
                     {
@@ -1655,7 +1666,8 @@ public class RunWorkerTests
                                 <PackageReference Include="Some.Package" Version="$(SomePackageVersion)" />
                               </ItemGroup>
                             </Project>
-                            """.SetEOL(EOL)))
+                            """.SetEOL(EOL))),
+                        ContentEncoding = "base64"
                     },
                 ],
                 BaseCommitSha = "TEST-COMMIT-SHA",
@@ -1891,13 +1903,15 @@ public class RunWorkerTests
                     {
                         Directory = "/",
                         Name = "Directory.Build.props",
-                        Content = Convert.ToBase64String(Encoding.UTF8.GetBytes("<Project />"))
+                        Content = Convert.ToBase64String(Encoding.UTF8.GetBytes("<Project />")),
+                        ContentEncoding = "base64"
                     },
                     new DependencyFile()
                     {
                         Directory = "/",
                         Name = "Directory.Build.targets",
-                        Content = Convert.ToBase64String(Encoding.UTF8.GetBytes("<Project />"))
+                        Content = Convert.ToBase64String(Encoding.UTF8.GetBytes("<Project />")),
+                        ContentEncoding = "base64"
                     },
                     new DependencyFile()
                     {
@@ -1909,7 +1923,8 @@ public class RunWorkerTests
                                 <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
                               </PropertyGroup>
                             </Project>
-                            """.SetEOL(EOL)))
+                            """.SetEOL(EOL))),
+                        ContentEncoding = "base64"
                     },
                     new DependencyFile()
                     {
@@ -1924,7 +1939,8 @@ public class RunWorkerTests
                                 <PackageReference Include="Some.Package" Version="2.0.0" />
                               </ItemGroup>
                             </Project>
-                            """.SetEOL(EOL)))
+                            """.SetEOL(EOL))),
+                        ContentEncoding = "base64"
                     },
                     new DependencyFile()
                     {
@@ -1939,7 +1955,8 @@ public class RunWorkerTests
                                 <PackageReference Include="Some.Package" Version="1.0.0" />
                               </ItemGroup>
                             </Project>
-                            """.SetEOL(EOL)))
+                            """.SetEOL(EOL))),
+                        ContentEncoding = "base64"
                     },
                     new DependencyFile()
                     {
@@ -1954,7 +1971,8 @@ public class RunWorkerTests
                                 <PackageReference Include="Package.With.Transitive.Dependency" Version="0.1.0" />
                               </ItemGroup>
                             </Project>
-                            """.SetEOL(EOL)))
+                            """.SetEOL(EOL))),
+                        ContentEncoding = "base64"
                     }
                 ],
                 BaseCommitSha = "TEST-COMMIT-SHA",
@@ -2184,7 +2202,8 @@ public class RunWorkerTests
                     {
                         Directory = "/",
                         Name = "project.csproj",
-                        Content = Convert.ToBase64String(Encoding.UTF8.GetBytes("contents irrelevant"))
+                        Content = Convert.ToBase64String(Encoding.UTF8.GetBytes("contents irrelevant")),
+                        ContentEncoding = "base64"
                     }
                 ],
                 BaseCommitSha = "TEST-COMMIT-SHA",
@@ -2273,7 +2292,8 @@ public class RunWorkerTests
                     {
                         Directory = "/",
                         Name = "project.csproj",
-                        Content = Convert.ToBase64String(Encoding.UTF8.GetBytes("contents irrelevant"))
+                        Content = Convert.ToBase64String(Encoding.UTF8.GetBytes("contents irrelevant")),
+                        ContentEncoding = "base64"
                     }
                 ],
                 BaseCommitSha = "TEST-COMMIT-SHA",
@@ -2391,13 +2411,15 @@ public class RunWorkerTests
                     {
                         Directory = "/.config",
                         Name = "dotnet-tools.json",
-                        Content = Convert.ToBase64String(Encoding.UTF8.GetBytes("dotnet-tools.json content old"))
+                        Content = Convert.ToBase64String(Encoding.UTF8.GetBytes("dotnet-tools.json content old")),
+                        ContentEncoding = "base64"
                     },
                     new()
                     {
                         Directory = "/",
                         Name = "global.json",
-                        Content = Convert.ToBase64String(Encoding.UTF8.GetBytes("global.json content old"))
+                        Content = Convert.ToBase64String(Encoding.UTF8.GetBytes("global.json content old")),
+                        ContentEncoding = "base64"
                     },
                 ],
                 BaseCommitSha = "TEST-COMMIT-SHA",
@@ -2598,7 +2620,8 @@ public class RunWorkerTests
                     {
                         Directory = "/",
                         Name = "project.csproj",
-                        Content = Convert.ToBase64String(Encoding.UTF8.GetBytes("contents irrelevant"))
+                        Content = Convert.ToBase64String(Encoding.UTF8.GetBytes("contents irrelevant")),
+                        ContentEncoding = "base64"
                     }
                 ],
                 BaseCommitSha = "TEST-COMMIT-SHA",
@@ -2637,18 +2660,258 @@ public class RunWorkerTests
         );
     }
 
-    private static async Task RunAsync(Job job, TestFile[] files, IDiscoveryWorker? discoveryWorker, IAnalyzeWorker? analyzeWorker, IUpdaterWorker? updaterWorker, RunResult expectedResult, object[] expectedApiMessages, MockNuGetPackage[]? packages = null, ExperimentsManager? experimentsManager = null, string? repoContentsPath = null)
+    [Fact]
+    public async Task ByteOrderMarksAreDetectedAndRestored()
+    {
+        var rawBOM = Encoding.UTF8.GetPreamble();
+
+        // file1 goes from BOM to no BOM
+        var file1ContentOriginal = rawBOM.Concat(Encoding.ASCII.GetBytes("content1")).ToArray();
+        var file1ContentUpdated = Encoding.ASCII.GetBytes("updated1");
+
+        // file2 goes from no BOM to BOM
+        var file2ContentOriginal = Encoding.ASCII.GetBytes("content2");
+        var file2ContentUpdated = rawBOM.Concat(Encoding.ASCII.GetBytes("updated2")).ToArray();
+
+        await RunAsync(
+            job: new Job()
+            {
+                Source = new()
+                {
+                    Provider = "github",
+                    Repo = "test/repo",
+                    Directory = "/",
+                }
+            },
+            rawFiles:
+            [
+                ("file1", file1ContentOriginal),
+                ("file2", file2ContentOriginal)
+            ],
+            discoveryWorker: TestDiscoveryWorker.FromResults(("/", new()
+            {
+                Path = "/",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "file1",
+                        Dependencies = [new("Dependency1", "1.0.0", DependencyType.PackageReference)],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
+                    },
+                    new()
+                    {
+                        FilePath = "file2",
+                        Dependencies = [new("Dependency2", "2.0.0", DependencyType.PackageReference)],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
+                    }
+                ]
+            })),
+            analyzeWorker: new TestAnalyzeWorker(args =>
+            {
+                AnalysisResult result = args.Item3.Name switch
+                {
+                    "Dependency1" => new()
+                    {
+                        CanUpdate = true,
+                        UpdatedVersion = "1.0.1",
+                        UpdatedDependencies = [new("Dependency1", "1.0.1", DependencyType.PackageReference)],
+                    },
+                    "Dependency2" => new()
+                    {
+                        CanUpdate = true,
+                        UpdatedVersion = "2.0.1",
+                        UpdatedDependencies = [new("Dependency2", "2.0.1", DependencyType.PackageReference)],
+                    },
+                    _ => throw new NotImplementedException()
+                };
+                return Task.FromResult(result);
+            }),
+            updaterWorker: new TestUpdaterWorker(async args =>
+            {
+                var (repoRoot, filePath, dependencyName, _previousVersion, _newVersion, _isTransitive) = args;
+
+                // file1 is rewritten without BOM, file2 is rewritten with BOM
+                var (updatedFileContent, newVersion) = dependencyName switch
+                {
+                    "Dependency1" => (file1ContentUpdated, "1.0.1"),
+                    "Dependency2" => (file2ContentUpdated, "2.0.1"),
+                    _ => throw new NotImplementedException(),
+                };
+                var fullFilePath = Path.Join(repoRoot, filePath);
+                await File.WriteAllBytesAsync(fullFilePath, updatedFileContent);
+                return new UpdateOperationResult()
+                {
+                    UpdateOperations = [new DirectUpdate()
+                    {
+                        DependencyName = dependencyName,
+                        NewVersion = NuGetVersion.Parse(newVersion),
+                        UpdatedFiles = [filePath],
+                    }],
+                };
+            }),
+            expectedResult: new()
+            {
+                Base64DependencyFiles = [
+                    new()
+                    {
+                        Directory = "/",
+                        Name = "file1",
+                        Content = Convert.ToBase64String(file1ContentOriginal),
+                        ContentEncoding = "base64",
+                    },
+                    new()
+                    {
+                        Directory = "/",
+                        Name = "file2",
+                        Content = Convert.ToBase64String(file2ContentOriginal),
+                        ContentEncoding = "base64",
+                    }
+                ],
+                BaseCommitSha = "TEST-COMMIT-SHA",
+            },
+            expectedApiMessages: [
+                new UpdatedDependencyList()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "Dependency1",
+                            Version = "1.0.0",
+                            Requirements = [
+                                new()
+                                {
+                                    Requirement = "1.0.0",
+                                    File = "/file1",
+                                    Groups = ["dependencies"],
+                                }
+                            ]
+                        },
+                        new()
+                        {
+                            Name = "Dependency2",
+                            Version = "2.0.0",
+                            Requirements = [
+                                new()
+                                {
+                                    Requirement = "2.0.0",
+                                    File = "/file2",
+                                    Groups = ["dependencies"]
+                                }
+                            ]
+                        }
+                    ],
+                    DependencyFiles = ["/file1", "/file2"]
+                },
+                new IncrementMetric()
+                {
+                    Metric = "updater.started",
+                    Tags = new()
+                    {
+                        ["operation"] = "group_update_all_versions"
+                    }
+                },
+                new CreatePullRequest()
+                {
+                    Dependencies =
+                    [
+                        new ReportedDependency()
+                        {
+                            Name = "Dependency1",
+                            Version = "1.0.1",
+                            Requirements =
+                            [
+                                new ReportedRequirement()
+                                {
+                                    Requirement = "1.0.1",
+                                    File = "/file1",
+                                    Groups = ["dependencies"],
+                                    Source = new() { SourceUrl = null },
+                                }
+                            ],
+                            PreviousVersion = "1.0.0",
+                            PreviousRequirements =
+                            [
+                                new ReportedRequirement()
+                                {
+                                    Requirement = "1.0.0",
+                                    File = "/file1",
+                                    Groups = ["dependencies"],
+                                }
+                            ],
+                        },
+                        new ReportedDependency()
+                        {
+                            Name = "Dependency2",
+                            Version = "2.0.1",
+                            Requirements =
+                            [
+                                new ReportedRequirement()
+                                {
+                                    Requirement = "2.0.1",
+                                    File = "/file2",
+                                    Groups = ["dependencies"],
+                                    Source = new() { SourceUrl = null },
+                                }
+                            ],
+                            PreviousVersion = "2.0.0",
+                            PreviousRequirements =
+                            [
+                                new ReportedRequirement()
+                                {
+                                    Requirement = "2.0.0",
+                                    File = "/file2",
+                                    Groups = ["dependencies"],
+                                }
+                            ],
+                        },
+                    ],
+                    UpdatedDependencyFiles =
+                    [
+                        // original line endings have been restored
+                        new DependencyFile()
+                        {
+                            Name = "file1",
+                            Directory = "/",
+                            Content = Convert.ToBase64String(rawBOM.Concat(file1ContentUpdated).ToArray()),
+                            ContentEncoding = "base64",
+                        },
+                        new DependencyFile()
+                        {
+                            Name = "file2",
+                            Directory = "/",
+                            Content = "updated2",
+                        },
+                    ],
+                    BaseCommitSha = "TEST-COMMIT-SHA",
+                    CommitMessage = TestPullRequestCommitMessage,
+                    PrTitle = TestPullRequestTitle,
+                    PrBody = TestPullRequestBody,
+                },
+                new MarkAsProcessed("TEST-COMMIT-SHA"),
+            ]
+        );
+    }
+
+    private static Task RunAsync(Job job, TestFile[] files, IDiscoveryWorker? discoveryWorker, IAnalyzeWorker? analyzeWorker, IUpdaterWorker? updaterWorker, RunResult expectedResult, object[] expectedApiMessages, MockNuGetPackage[]? packages = null, ExperimentsManager? experimentsManager = null, string? repoContentsPath = null)
+    {
+        var rawTestFiles = files.Select(f => (f.Path, Encoding.UTF8.GetBytes(f.Content))).ToArray();
+        return RunAsync(job, rawTestFiles, discoveryWorker, analyzeWorker, updaterWorker, expectedResult, expectedApiMessages, packages, experimentsManager, repoContentsPath);
+    }
+
+    private static async Task RunAsync(Job job, RawTestFile[] rawFiles, IDiscoveryWorker? discoveryWorker, IAnalyzeWorker? analyzeWorker, IUpdaterWorker? updaterWorker, RunResult expectedResult, object[] expectedApiMessages, MockNuGetPackage[]? packages = null, ExperimentsManager? experimentsManager = null, string? repoContentsPath = null)
     {
         // arrange
         using var tempDirectory = new TemporaryDirectory();
         repoContentsPath ??= tempDirectory.DirectoryPath;
         await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(packages, repoContentsPath);
-        foreach (var (path, content) in files)
+        foreach (var (path, content) in rawFiles)
         {
             var fullPath = Path.Combine(repoContentsPath, path);
             var directory = Path.GetDirectoryName(fullPath)!;
             Directory.CreateDirectory(directory);
-            await File.WriteAllTextAsync(fullPath, content);
+            await File.WriteAllBytesAsync(fullPath, content);
         }
 
         // act
