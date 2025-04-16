@@ -76,6 +76,10 @@ job:
   dependencies:
     - dependency-a
   existing-pull-requests: []
+  experiments:
+    grouped-updates-prototype: true
+    allow-refresh-for-existing-pr-dependencies: true
+    allow_refresh_group_with_all_dependencies: true
   existing-group-pull-requests:
     - dependency-group-name: patch
       dependencies:

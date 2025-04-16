@@ -143,15 +143,22 @@ module Dependabot
         # Check if dependency has already been handled
         handled_dependency = dependency_snapshot.handled_dependencies.include?(dependency.name)
 
-        # Exclude the handled dependencies check for consecutive group updates
-        consecutive_group_update = job.dependency_group_to_refresh != group.name
+        # Check if this is a group update
+        is_group_update = if Dependabot::Experiments.enabled?(:allow_refresh_group_with_all_dependencies)
+                            # this ensures dependency_group_to_refresh is set to the group name
+                            job.dependency_group_to_refresh == group.name
+                          else
+                            false
+                          end
 
-        if handled_dependency && consecutive_group_update
+        # Include all dependencies when performing a group update.
+        if handled_dependency && !is_group_update
           Dependabot.logger.info(
-            "Skipping #{dependency.name} as it has already been handled by a previous group"
+            "Skipping #{dependency.name} in group #{group.name} as it has already been handled by a previous group"
           )
           return true
         end
+
         false
       end
 
