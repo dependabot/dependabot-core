@@ -104,13 +104,15 @@ public class EndToEndTests
                     {
                         Directory = "/",
                         Name = "Directory.Build.props",
-                        Content = Convert.ToBase64String(Encoding.UTF8.GetBytes("<Project />"))
+                        Content = Convert.ToBase64String(Encoding.UTF8.GetBytes("<Project />")),
+                        ContentEncoding = "base64",
                     },
                     new DependencyFile()
                     {
                         Directory = "/",
                         Name = "Directory.Build.targets",
-                        Content = Convert.ToBase64String(Encoding.UTF8.GetBytes("<Project />"))
+                        Content = Convert.ToBase64String(Encoding.UTF8.GetBytes("<Project />")),
+                        ContentEncoding = "base64",
                     },
                     new DependencyFile()
                     {
@@ -122,7 +124,8 @@ public class EndToEndTests
                                 <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
                               </PropertyGroup>
                             </Project>
-                            """))
+                            """)),
+                        ContentEncoding = "base64",
                     },
                     new DependencyFile()
                     {
@@ -137,7 +140,8 @@ public class EndToEndTests
                                 <PackageReference Include="Some.Package" Version="2.0.0" />
                               </ItemGroup>
                             </Project>
-                            """))
+                            """)),
+                        ContentEncoding = "base64",
                     },
                     new DependencyFile()
                     {
@@ -152,7 +156,8 @@ public class EndToEndTests
                                 <PackageReference Include="Some.Package" Version="1.0.0" />
                               </ItemGroup>
                             </Project>
-                            """))
+                            """)),
+                        ContentEncoding = "base64",
                     },
                     new DependencyFile()
                     {
@@ -167,7 +172,8 @@ public class EndToEndTests
                                 <PackageReference Include="Package.With.Transitive.Dependency" Version="0.1.0" />
                               </ItemGroup>
                             </Project>
-                            """))
+                            """)),
+                        ContentEncoding = "base64",
                     }
                 ],
                 BaseCommitSha = "TEST-COMMIT-SHA",

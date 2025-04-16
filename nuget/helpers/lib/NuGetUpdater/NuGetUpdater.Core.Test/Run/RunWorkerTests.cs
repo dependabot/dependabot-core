@@ -2638,7 +2638,8 @@ public class RunWorkerTests
                         Content = Convert.ToBase64String(Encoding.UTF8.GetBytes(string.Concat(
                             "file1-line1\n",
                             "file1-line2\n",
-                            "file1-line3\n")))
+                            "file1-line3\n"))),
+                        ContentEncoding = "base64",
                     },
                     new()
                     {
@@ -2647,7 +2648,8 @@ public class RunWorkerTests
                         Content = Convert.ToBase64String(Encoding.UTF8.GetBytes(string.Concat(
                             "file2-line1\r\n",
                             "file2-line2\r\n",
-                            "file2-line3\r\n")))
+                            "file2-line3\r\n"))),
+                        ContentEncoding = "base64",
                     }
                 ],
                 BaseCommitSha = "TEST-COMMIT-SHA",
