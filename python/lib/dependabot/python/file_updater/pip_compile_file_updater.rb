@@ -12,6 +12,7 @@ require "dependabot/python/language_version_manager"
 require "dependabot/python/native_helpers"
 require "dependabot/python/name_normaliser"
 require "dependabot/python/authed_url_builder"
+require "sorbet-runtime"
 
 module Dependabot
   module Python
@@ -303,16 +304,20 @@ module Dependabot
 
         sig { params(file: Dependabot::DependencyFile).returns(T.nilable(String)) }
         def freeze_dependency_requirement(file)
-          return file.content unless file.name.end_with?(".in")
+          content = file.content
+          return content unless file.name.end_with?(".in")
 
           old_req = T.must(T.must(dependency).previous_requirements)
                      .find { |r| r[:file] == file.name }
 
-          return file.content unless old_req
-          return file.content if old_req == "==#{T.must(dependency).version}"
+          content = file.content
+          return content unless old_req
+          return content if old_req == "==#{T.must(dependency).version}"
+
+          return unless content
 
           RequirementReplacer.new(
-            content: file.content,
+            content: content,
             dependency_name: T.must(dependency).name,
             old_requirement: old_req[:requirement],
             new_requirement: "==#{T.must(dependency).version}",
@@ -322,17 +327,20 @@ module Dependabot
 
         sig { params(file: Dependabot::DependencyFile).returns(T.nilable(String)) }
         def update_dependency_requirement(file)
-          return file.content unless file.name.end_with?(".in")
+          content = file.content
+          return content unless file.name.end_with?(".in")
 
           old_req = T.must(T.must(dependency).previous_requirements)
                      .find { |r| r[:file] == file.name }
           new_req = T.must(dependency).requirements
                      .find { |r| r[:file] == file.name }
-          return file.content unless old_req&.fetch(:requirement)
-          return file.content if old_req == new_req
+          return content unless old_req&.fetch(:requirement)
+          return content if old_req == new_req
+
+          return unless content
 
           RequirementReplacer.new(
-            content: file.content,
+            content: content,
             dependency_name: T.must(dependency).name,
             old_requirement: old_req[:requirement],
             new_requirement: T.must(new_req)[:requirement],
@@ -449,7 +457,7 @@ module Dependabot
 
         sig { params(name: String, version: String, algorithm: String).returns(T::Array[String]) }
         def package_hashes_for(name:, version:, algorithm:)
-          index_urls = @index_urls || [nil]
+          index_urls = @index_urls&.any? ? @index_urls : [nil]
           hashes = []
 
           index_urls.each do |index_url|

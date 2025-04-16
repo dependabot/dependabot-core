@@ -195,7 +195,9 @@ module Dependabot
           .select { |cred| cred["type"] == "python_index" }
           .map { |c| AuthedUrlBuilder.authed_url(credential: c) }
 
-        (credential_urls + [MAIN_PYPI_URL]).map do |base_url|
+        (credential_urls + [MAIN_PYPI_URL]).filter_map do |base_url|
+          next if base_url.nil?
+
           base_url.gsub(%r{/$}, "") + "/#{normalised_dependency_name}/json"
         end
       end
