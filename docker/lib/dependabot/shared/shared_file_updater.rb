@@ -103,6 +103,7 @@ module Dependabot
 
         previous_content.gsub(old_declaration_regex) do |old_dec|
           old_dec
+            .gsub("@sha256:#{old_digest}", "@sha256:#{new_digest}")
             .gsub("@#{old_digest}", "@#{new_digest}")
             .gsub(":#{old_tag}", ":#{new_tag}")
         end
