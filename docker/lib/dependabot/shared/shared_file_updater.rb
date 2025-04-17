@@ -70,7 +70,7 @@ module Dependabot
         params(previous_content: String, old_source: T::Hash[Symbol, T.nilable(String)],
                new_source: T::Hash[Symbol, T.nilable(String)]).returns(String)
       end
-      def update_digest_and_tag(previous_content, old_source, new_source)
+      def update_digest_and_tag(previous_content, old_source, new_source) # rubocop:disable Metrics/PerceivedComplexity
         old_digest = old_source[:digest]
         new_digest = new_source[:digest]
 
