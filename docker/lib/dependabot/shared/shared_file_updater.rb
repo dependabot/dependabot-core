@@ -105,10 +105,13 @@ module Dependabot
           old_digest = old_digest.sub("sha256:", "") if old_digest&.start_with?("sha256:")
           new_digest = new_digest.sub("sha256:", "") if new_digest&.start_with?("sha256:")
 
+          unless old_digest.to_s.empty?
+            old_dec = old_dec.gsub("@sha256:#{old_digest}", "@sha256:#{new_digest}")
+            old_dec = old_dec.gsub("@#{old_digest}", "@#{new_digest}")
+          end
+
+          old_dec = old_dec.gsub(":#{old_tag}", ":#{new_tag}") unless old_tag.to_s.empty?
           old_dec
-            .gsub("@sha256:#{old_digest}", "@sha256:#{new_digest}")
-            .gsub("@#{old_digest}", "@#{new_digest}")
-            .gsub(":#{old_tag}", ":#{new_tag}")
         end
       end
 
