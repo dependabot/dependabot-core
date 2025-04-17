@@ -138,10 +138,7 @@ module Dependabot
           credentials.select(&:replaces_base?)
                      .filter_map { |cred| AuthedUrlBuilder.authed_url(credential: cred) }
         else
-          urls = credentials.filter_map { |cred| AuthedUrlBuilder.authed_url(credential: cred) }
-          # If there are no credentials that replace the base, we need to
-          # ensure that the base URL is included in the list of extra-index-urls.
-          urls
+          credentials.filter_map { |cred| AuthedUrlBuilder.authed_url(credential: cred) }
         end
       end
 
