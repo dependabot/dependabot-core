@@ -70,7 +70,7 @@ module Dependabot
         params(previous_content: String, old_source: T::Hash[Symbol, T.nilable(String)],
                new_source: T::Hash[Symbol, T.nilable(String)]).returns(String)
       end
-      def update_digest_and_tag(previous_content, old_source, new_source)
+      def update_digest_and_tag(previous_content, old_source, new_source) # rubocop:disable Metrics/PerceivedComplexity
         old_digest = old_source[:digest]
         new_digest = new_source[:digest]
 
@@ -102,9 +102,16 @@ module Dependabot
         old_declaration_regex = build_old_declaration_regex(escaped_declaration)
 
         previous_content.gsub(old_declaration_regex) do |old_dec|
+          old_digest = old_digest.sub("sha256:", "") if old_digest&.start_with?("sha256:")
+          new_digest = new_digest.sub("sha256:", "") if new_digest&.start_with?("sha256:")
+
+          unless old_digest.to_s.empty?
+            old_dec = old_dec.gsub("@sha256:#{old_digest}", "@sha256:#{new_digest}")
+            old_dec = old_dec.gsub("@#{old_digest}", "@#{new_digest}")
+          end
+
+          old_dec = old_dec.gsub(":#{old_tag}", ":#{new_tag}") unless old_tag.to_s.empty?
           old_dec
-            .gsub("@#{old_digest}", "@#{new_digest}")
-            .gsub(":#{old_tag}", ":#{new_tag}")
         end
       end
 
