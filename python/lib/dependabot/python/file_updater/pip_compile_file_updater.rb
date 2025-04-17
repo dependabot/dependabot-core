@@ -310,7 +310,6 @@ module Dependabot
           old_req = T.must(T.must(dependency).previous_requirements)
                      .find { |r| r[:file] == file.name }
 
-          content = file.content
           return content unless old_req
           return content if old_req == "==#{T.must(dependency).version}"
 
