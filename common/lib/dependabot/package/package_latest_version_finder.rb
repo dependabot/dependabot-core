@@ -19,6 +19,8 @@ module Dependabot
       extend T::Sig
       extend T::Helpers
 
+      DAY_IN_SECONDS = T.let(24 * 60 * 60, Integer)
+
       abstract!
 
       sig { returns(Dependabot::Dependency) }
@@ -203,8 +205,6 @@ module Dependabot
         filtered
       end
 
-      DAY_IN_SECONDS = T.let(24 * 60 * 60, Integer)
-
       sig do
         params(releases: T::Array[Dependabot::Package::PackageRelease])
           .returns(T::Array[Dependabot::Package::PackageRelease])
@@ -231,7 +231,7 @@ module Dependabot
         # Calculate the number of seconds passed since the release
         passed_seconds = Time.now.to_i - release.released_at.to_i
         # Check if the release is within the cooldown period
-        passed_seconds < days * 24 * 60 * 60
+        passed_seconds < days * DAY_IN_SECONDS
       end
 
       sig do
