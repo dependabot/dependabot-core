@@ -41,6 +41,7 @@ job:
   vendor-dependencies: false
   experiments:
     grouped-updates-prototype: true
+    allow_refresh_group_with_all_dependencies: true
   reject-external-code: false
   commit-message-options:
     prefix:
