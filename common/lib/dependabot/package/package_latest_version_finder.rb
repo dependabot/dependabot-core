@@ -19,6 +19,8 @@ module Dependabot
       extend T::Sig
       extend T::Helpers
 
+      DAY_IN_SECONDS = T.let(24 * 60 * 60, Integer)
+
       abstract!
 
       sig { returns(Dependabot::Dependency) }
@@ -211,19 +213,25 @@ module Dependabot
         return releases unless cooldown_enabled?
         return releases unless cooldown_options
 
-        current_version = dependency.version ? version_class.new(dependency.version) : nil
-
-        filtered = releases.reject do |release|
-          next false unless release.released_at
-
-          days = cooldown_days_for(current_version, release.version)
-          (Time.now.to_i - release.released_at.to_i) < (days * 24 * 60 * 60)
-        end
+        filtered = releases.reject { |release| in_cooldown_period?(release) }
 
         if releases.count > filtered.count
           Dependabot.logger.info("Filtered out #{releases.count - filtered.count} versions due to cooldown")
         end
         filtered
+      end
+
+      sig { params(release: Dependabot::Package::PackageRelease).returns(T::Boolean) }
+      def in_cooldown_period?(release)
+        return false unless release.released_at
+
+        current_version = dependency.version ? version_class.new(dependency.version) : nil
+        days = cooldown_days_for(current_version, release.version)
+
+        # Calculate the number of seconds passed since the release
+        passed_seconds = Time.now.to_i - release.released_at.to_i
+        # Check if the release is within the cooldown period
+        passed_seconds < days * DAY_IN_SECONDS
       end
 
       sig do
