@@ -102,6 +102,9 @@ module Dependabot
         old_declaration_regex = build_old_declaration_regex(escaped_declaration)
 
         previous_content.gsub(old_declaration_regex) do |old_dec|
+          old_digest = old_digest.sub("sha256:", "") if old_digest&.start_with?("sha256:")
+          new_digest = new_digest.sub("sha256:", "") if new_digest&.start_with?("sha256:")
+
           old_dec
             .gsub("@sha256:#{old_digest}", "@sha256:#{new_digest}")
             .gsub("@#{old_digest}", "@#{new_digest}")
