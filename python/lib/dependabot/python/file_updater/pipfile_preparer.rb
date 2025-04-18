@@ -75,8 +75,11 @@ module Dependabot
         end
 
         sig do
-          params(source: T::Hash[String, String],
-                 credentials: T::Array[Dependabot::Credential]).returns(T.nilable(T::Hash[String, String]))
+          params(
+            source: T::Hash[String, String],
+            credentials: T::Array[Dependabot::Credential]
+          )
+            .returns(T.nilable(T::Hash[String, String]))
         end
         def sub_auth_url(source, credentials)
           if source["url"]&.include?("${")
@@ -88,7 +91,9 @@ module Dependabot
 
             return nil if source_cred.nil?
 
-            source["url"] = AuthedUrlBuilder.authed_url(credential: source_cred)
+            source_url = AuthedUrlBuilder.authed_url(credential: source_cred)
+
+            source["url"] = source_url if source_url
           end
 
           source
