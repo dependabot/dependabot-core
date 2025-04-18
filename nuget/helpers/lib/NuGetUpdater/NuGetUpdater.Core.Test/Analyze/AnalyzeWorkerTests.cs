@@ -702,7 +702,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
 
                     // nothing else is found
                     return (404, Encoding.UTF8.GetBytes("{}"));
-            };
+            }
         }
         using var http1 = TestHttpServer.CreateTestServer(TestHttpHandler1);
         using var http2 = TestHttpServer.CreateTestServer(TestHttpHandler2);
@@ -874,7 +874,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
 
                     // nothing else is found
                     return (404, Encoding.UTF8.GetBytes("{}"));
-            };
+            }
         }
         using var http1 = TestHttpServer.CreateTestServer(TestHttpHandler1);
         using var http2 = TestHttpServer.CreateTestServer(TestHttpHandler2);
@@ -1064,7 +1064,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
 
                     // nothing else is found
                     return (404, Encoding.UTF8.GetBytes("{}"));
-            };
+            }
         }
         using var http = TestHttpServer.CreateTestServer(TestHttpHandler);
         await TestAnalyzeAsync(
