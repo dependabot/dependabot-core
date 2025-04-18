@@ -1,4 +1,4 @@
-# typed: true
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -9,12 +9,13 @@ module Dependabot
   module Swift
     class FileFetcher < Dependabot::FileFetchers::Base
       extend T::Sig
-      extend T::Helpers
 
+      sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
         filenames.include?("Package.swift")
       end
 
+      sig { override.returns(String) }
       def self.required_files_message
         "Repo must contain a Package.swift configuration file."
       end
@@ -29,14 +30,14 @@ module Dependabot
 
       private
 
+      sig { returns(Dependabot::DependencyFile) }
       def package_manifest
-        @package_manifest ||= fetch_file_from_host("Package.swift")
+        @package_manifest ||= T.let(fetch_file_from_host("Package.swift"), T.nilable(DependencyFile))
       end
 
+      sig { returns(T.nilable(DependencyFile)) }
       def package_resolved
-        return @package_resolved if defined?(@package_resolved)
-
-        @package_resolved = fetch_file_if_present("Package.resolved")
+        @package_resolved = T.let(fetch_file_if_present("Package.resolved"), T.nilable(DependencyFile))
       end
     end
   end

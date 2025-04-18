@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -20,6 +20,7 @@ module Dependabot
 
       # Patches Gem::Requirement to make it accept requirement strings like
       # "~> 4.2.5, >= 4.2.5.1" without first needing to split them.
+      sig { params(requirements: T.untyped).void }
       def initialize(*requirements)
         requirements = requirements.flatten.flat_map do |req_string|
           req_string.split(",").map(&:strip)

@@ -36,7 +36,7 @@ module Dependabot
           return [] unless found
 
           declaration = T.cast(found, T::Array[String]).first
-          requirement = NativeRequirement.new(T.cast(found, T::Array[String]).last)
+          requirement = NativeRequirement.new(T.must(T.cast(found, T::Array[String]).last))
 
           [
             {

@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/dependency"
@@ -12,16 +12,19 @@ require "dependabot/swift/language"
 module Dependabot
   module Swift
     class FileParser < Dependabot::FileParsers::Base
+      extend T::Sig
+
       require "dependabot/file_parsers/base/dependency_set"
 
+      sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
         dependency_set = DependencySet.new
 
         dependency_parser.parse.map do |dep|
           if dep.top_level?
-            source = dep.requirements.first[:source]
+            source = T.must(dep.requirements.first)[:source]
 
-            requirements = ManifestParser.new(package_manifest_file, source: source).requirements
+            requirements = ManifestParser.new(T.must(package_manifest_file), source: source).requirements
 
             dependency_set << Dependency.new(
               name: dep.name,
@@ -51,6 +54,7 @@ module Dependabot
 
       private
 
+      sig { returns(Dependabot::Swift::FileParser::DependencyParser) }
       def dependency_parser
         DependencyParser.new(
           dependency_files: dependency_files,
@@ -59,13 +63,15 @@ module Dependabot
         )
       end
 
+      sig { override.void }
       def check_required_files
         raise "No Package.swift!" unless package_manifest_file
       end
 
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def package_manifest_file
         # TODO: Select version-specific manifest
-        @package_manifest_file ||= get_original_file("Package.swift")
+        @package_manifest_file ||= T.let(get_original_file("Package.swift"), T.nilable(Dependabot::DependencyFile))
       end
 
       sig { returns(Ecosystem::VersionManager) }
