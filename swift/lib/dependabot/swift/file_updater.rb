@@ -1,4 +1,4 @@
-# typed: true
+# typed: strong
 # frozen_string_literal: true
 
 require "dependabot/file_updaters"
@@ -9,6 +9,9 @@ require "dependabot/swift/file_updater/manifest_updater"
 module Dependabot
   module Swift
     class FileUpdater < Dependabot::FileUpdaters::Base
+      extend T::Sig
+
+      sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
         [
           /Package(@swift-\d(\.\d){0,2})?\.swift/,
@@ -16,18 +19,21 @@ module Dependabot
         ]
       end
 
+      sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
-        updated_files = []
+        updated_files = T.let([], T::Array[Dependabot::DependencyFile])
 
-        SharedHelpers.in_a_temporary_repo_directory(manifest.directory, repo_contents_path) do
-          updated_manifest = nil
+        SharedHelpers.in_a_temporary_repo_directory(T.must(manifest).directory, repo_contents_path) do
+          updated_manifest = T.let(nil, T.nilable(Dependabot::DependencyFile))
 
-          if file_changed?(manifest)
-            updated_manifest = updated_file(file: manifest, content: updated_manifest_content)
+          if file_changed?(T.must(manifest))
+            updated_manifest = updated_file(file: T.must(manifest), content: updated_manifest_content)
             updated_files << updated_manifest
           end
 
-          updated_files << updated_file(file: lockfile, content: updated_lockfile_content(updated_manifest)) if lockfile
+          if lockfile
+            updated_files << updated_file(file: T.must(lockfile), content: updated_lockfile_content(updated_manifest))
+          end
         end
 
         updated_files
@@ -35,42 +41,54 @@ module Dependabot
 
       private
 
+      sig { returns(Dependabot::Dependency) }
       def dependency
         # For now we will be updating a single dependency.
         # TODO: Revisit when/if implementing full unlocks
-        dependencies.first
+        T.must(dependencies.first)
       end
 
+      sig { override.void }
       def check_required_files
         raise "A Package.swift file must be provided!" unless manifest
       end
 
+      sig { returns(String) }
       def updated_manifest_content
         ManifestUpdater.new(
-          manifest.content,
-          old_requirements: dependency.previous_requirements,
+          T.must(T.must(manifest).content),
+          old_requirements: T.must(dependency.previous_requirements),
           new_requirements: dependency.requirements
         ).updated_manifest_content
       end
 
+      sig { params(updated_manifest: T.nilable(Dependabot::DependencyFile)).returns(String) }
       def updated_lockfile_content(updated_manifest)
         LockfileUpdater.new(
           dependency: dependency,
-          manifest: updated_manifest || manifest,
-          repo_contents_path: repo_contents_path,
+          manifest: T.must(updated_manifest || manifest),
+          repo_contents_path: T.must(repo_contents_path),
           credentials: credentials,
           target_version: dependency.version
         ).updated_lockfile_content
       end
 
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def manifest
-        @manifest ||= get_original_file("Package.swift")
+        @manifest ||= T.let(
+          get_original_file("Package.swift"),
+          T.nilable(Dependabot::DependencyFile)
+        )
       end
 
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def lockfile
         return @lockfile if defined?(@lockfile)
 
-        @lockfile = get_original_file("Package.resolved")
+        @lockfile = T.let(
+          get_original_file("Package.resolved"),
+          T.nilable(Dependabot::DependencyFile)
+        )
       end
     end
   end
