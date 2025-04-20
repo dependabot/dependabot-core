@@ -389,8 +389,8 @@ module Dependabot
           classifier = dependency.requirements.first&.dig(:metadata, :classifier)
           actual_classifier = classifier.nil? ? "" : "-#{classifier}"
 
-          "#{base_url}/#{version.to_semver}/" \
-            "#{artifact_id}-#{version.to_semver}#{actual_classifier}.#{type}"
+          "#{base_url}/#{version}/" \
+            "#{artifact_id}-#{version}#{actual_classifier}.#{type}"
         end
 
         #           # Constructs the full URL by combining the repository URL, group path, and artifact ID
