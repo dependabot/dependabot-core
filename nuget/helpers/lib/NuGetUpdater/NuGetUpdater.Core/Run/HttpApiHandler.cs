@@ -57,7 +57,7 @@ public class HttpApiHandler : IApiHandler
 
     public async Task MarkAsProcessed(MarkAsProcessed markAsProcessed)
     {
-        await PostAsJson("mark_as_processed", markAsProcessed);
+        await PatchAsJson("mark_as_processed", markAsProcessed);
     }
 
     internal static string Serialize(object body)
@@ -70,11 +70,20 @@ public class HttpApiHandler : IApiHandler
         return payload;
     }
 
-    private async Task PostAsJson(string endpoint, object body)
+    private Task PostAsJson(string endpoint, object body) => SendAsJson(endpoint, body, "POST");
+    private Task PatchAsJson(string endpoint, object body) => SendAsJson(endpoint, body, "PATCH");
+
+    private async Task SendAsJson(string endpoint, object body, string method)
     {
+        var uri = $"{_apiUrl}/update_jobs/{_jobId}/{endpoint}";
         var payload = Serialize(body);
         var content = new StringContent(payload, Encoding.UTF8, "application/json");
-        var response = await HttpClient.PostAsync($"{_apiUrl}/update_jobs/{_jobId}/{endpoint}", content);
+        var httpMethod = new HttpMethod(method);
+        var message = new HttpRequestMessage(httpMethod, uri)
+        {
+            Content = content
+        };
+        var response = await HttpClient.SendAsync(message);
         var _ = response.EnsureSuccessStatusCode();
     }
 }
