@@ -299,6 +299,14 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         end
       end
 
+      context "with latest version details with malformed dependency version" do
+        let(:current_version) { "074eb7ea86b69a3828b9da004c014d82dbb794c9" }
+
+        it "fetches the latest version details" do
+          expect { finder.latest_version_details }.not_to raise_error
+        end
+      end
+
       context "with latest version" do
         subject(:result) { finder.latest_version }
 
