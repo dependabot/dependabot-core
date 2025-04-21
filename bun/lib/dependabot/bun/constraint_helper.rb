@@ -24,7 +24,7 @@ module Dependabot
         (?<version>\d+\.\d+\.\d+)               # Match major.minor.patch (e.g., 1.2.3)
         (?:-(?<prerelease>[a-zA-Z0-9.-]+))?     # Optional prerelease (e.g., -alpha.1, -rc.1, -beta.5)
         (?:\+(?<build>[a-zA-Z0-9.-]+))?         # Optional build metadata (e.g., +build.20231101, +exp.sha.5114f85)
-      /x, Regexp)
+      /x.freeze, Regexp)
 
       # Full SemVer validation regex (ensures the entire string is a valid SemVer)
       # This ensures the entire input strictly follows SemVer, without extra characters before/after.
@@ -36,7 +36,7 @@ module Dependabot
         (?: (>=|<=|>|<|=|~|\^)\s*)?  # Make operators optional (e.g., >=, ^, ~)
         (\d+\.\d+\.\d+(?:-[a-zA-Z0-9.-]+)?(?:\+[a-zA-Z0-9.-]+)?)  # Match full SemVer versions
         | (\*|latest) # Match wildcard (*) or 'latest'
-      /x, Regexp)
+      /x.freeze, Regexp)
 
       # /(>=|<=|>|<|=|~|\^)\s*(\d+\.\d+\.\d+(?:-[a-zA-Z0-9.-]+)?(?:\+[a-zA-Z0-9.-]+)?)|(\*|latest)/
 
