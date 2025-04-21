@@ -159,3 +159,41 @@ function Repair-FileCasingForName([string]$fileName) {
 function Repair-FileCasing() {
     Repair-FileCasingForName -fileName "NuGet.Config"
 }
+
+function Get-NuGetConfigContents([PSObject[]]$creds) {
+    $baseSourceLines = @("    <add key=`"nuget.org`" value=`"https://api.nuget.org/v3/index.json`" />")
+    $customSourceLines = @()
+    $i = 1
+    foreach ($cred in $creds) {
+        if ($cred.type -ne "nuget_feed") {
+            continue
+        }
+
+        if ("replaces-base" -in $cred.PSObject.Properties.Name -And $cred.'replaces-base') {
+            $baseSourceLines = @()
+        }
+
+        $sourceName = "nuget_source_$i"
+        $i++
+        $url = $cred.url
+        $customSourceLines += "    <add key=`"$sourceName`" value=`"$url`" />"
+    }
+
+    $lines = @()
+    $lines += '<?xml version="1.0" encoding="utf-8"?>'
+    $lines += '<configuration>'
+    $lines += '  <packageSources>'
+    $lines = $($lines; $baseSourceLines; $customSourceLines)
+    $lines += '  </packageSources>'
+    $lines += '</configuration>'
+    return ,$lines
+}
+
+function Set-NuGetConfig() {
+    $job = Get-Job -jobFilePath $env:DEPENDABOT_JOB_PATH
+    $lines = Get-NuGetConfigContents -creds $job.'credentials-metadata'
+    $nugetConfigPath = "$HOME/.nuget/NuGet/NuGet.Config"
+    $lines | Set-Content -Path $nugetConfigPath -Encoding utf8
+    Write-Host "User-level NuGet.Config set to ..."
+    Get-Content -Path $nugetConfigPath
+}

@@ -50,7 +50,8 @@ public class SerializationTests
                 "credentials-metadata": [
                   {
                     "host": "github.com",
-                    "type": "git_source"
+                    "type": "git_source",
+                    "replaces-base": false
                   }
                 ],
                 "max-updater-run-time": 0
@@ -116,7 +117,8 @@ public class SerializationTests
                 "credentials": [
                   {
                     "name": "some-cred",
-                    "token": "abc123"
+                    "token": "abc123",
+                    "replaces-base": false
                   }
                 ],
                 "existing-pull-requests": [

@@ -27,6 +27,14 @@ function Test-RequiredTargetingPacks([string] $testDirectory, [string[]] $expect
     Write-Host "OK"
 }
 
+function Test-NuGetConfig([string]$scenarioName, [string]$jobString, [string[]]$expectedLines) {
+    Write-Host "Test-NuGetConfig $scenarioName ... " -NoNewLine
+    $job = ConvertFrom-Json -InputObject $jobString
+    $actualLines = Get-NuGetConfigContents -creds $job.'credentials-metadata'
+    Assert-ArraysEqual -expected $expectedLines -actual $actualLines
+    Write-Host "OK"
+}
+
 try {
     Test-GlobalJsonVersions `
         -testDirectory "global-json-discovery-root-no-file" `
@@ -79,6 +87,66 @@ try {
     Test-RequiredTargetingPacks `
         -testDirectory "targeting-packs" `
         -expectedTargetingPacks @("Some.Targeting.Pack.Ref/1.0.1", "Some.Other.Targeting.Pack.Ref/1.0.2", "Some.Targeting.Pack.Ref/4.0.1", "Some.Other.Targeting.Pack.Ref/4.0.2")
+
+    Test-NuGetConfig `
+        -scenarioName "empty-set" `
+        -jobString @"
+{
+  "credentials-metadata": []
+}
+"@ `
+        -creds @() `
+        -expectedLines @(
+            '<?xml version="1.0" encoding="utf-8"?>'
+            '<configuration>',
+            '  <packageSources>',
+            '    <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />',
+            '  </packageSources>',
+            '</configuration>'
+        )
+
+    Test-NuGetConfig `
+        -scenarioName "only-nuget-feeds-added" `
+        -jobString @"
+{
+  "credentials-metadata": [
+    {"type":"nuget_feed", "url":"https://nuget.example.com/1/index.json"},
+    {"type":"npm_feed", "url":"https://npm.example.com", "replaces-base":true},
+    {"type":"nuget_feed", "url":"https://nuget.example.com/2/index.json"}
+  ]
+}
+"@ `
+        -expectedLines @(
+            '<?xml version="1.0" encoding="utf-8"?>'
+            '<configuration>',
+            '  <packageSources>',
+            '    <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />',
+            '    <add key="nuget_source_1" value="https://nuget.example.com/1/index.json" />',
+            '    <add key="nuget_source_2" value="https://nuget.example.com/2/index.json" />',
+            '  </packageSources>',
+            '</configuration>'
+        )
+
+    Test-NuGetConfig `
+        -scenarioName "replaces-base" `
+        -jobString @"
+{
+  "credentials-metadata": [
+    {"type":"nuget_feed", "url":"https://nuget.example.com/1/index.json"},
+    {"type":"npm_feed", "url":"https://npm.example.com"},
+    {"type":"nuget_feed", "url":"https://nuget.example.com/2/index.json","replaces-base":true}
+  ]
+}
+"@ `
+        -expectedLines @(
+            '<?xml version="1.0" encoding="utf-8"?>'
+            '<configuration>',
+            '  <packageSources>',
+            '    <add key="nuget_source_1" value="https://nuget.example.com/1/index.json" />',
+            '    <add key="nuget_source_2" value="https://nuget.example.com/2/index.json" />',
+            '  </packageSources>',
+            '</configuration>'
+        )
 }
 catch {
     Write-Host $_
