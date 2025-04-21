@@ -105,4 +105,44 @@ RSpec.describe Dependabot::Maven::Package::PackageDetailsFetcher do
       expect(fetcher.released?(unreleased_version)).to be(false)
     end
   end
+
+  describe "#dependency_files_url" do
+    it "correctly constructs the dependency files URL" do
+      expected_url = "https://repo.maven.apache.org/maven2/com/google/guava/guava/23.6-jre/guava-23.6-jre.jar"
+      version = Dependabot::Maven::Version.new("23.6-jre")
+
+      url = fetcher.send(:dependency_files_url, "https://repo.maven.apache.org/maven2", version)
+
+      expect(url).to eq(expected_url)
+    end
+  end
+
+  describe "#dependency_metadata_url" do
+    it "correctly constructs the metadata URL" do
+      expected_url = "https://repo.maven.apache.org/maven2/com/google/guava/guava/maven-metadata.xml"
+
+      url = fetcher.send(:dependency_metadata_url, "https://repo.maven.apache.org/maven2")
+
+      expect(url).to eq(expected_url)
+    end
+  end
+
+  describe "#dependency_base_url" do
+    it "correctly constructs the base URL" do
+      expected_url = "https://repo.maven.apache.org/maven2/com/google/guava/guava"
+
+      url = fetcher.send(:dependency_base_url, "https://repo.maven.apache.org/maven2")
+
+      expect(url).to eq(expected_url)
+    end
+  end
+
+  describe "#dependency_parts" do
+    it "splits the dependency name into group path and artifact ID" do
+      group_path, artifact_id = fetcher.send(:dependency_parts)
+
+      expect(group_path).to eq("com/google/guava")
+      expect(artifact_id).to eq("guava")
+    end
+  end
 end
