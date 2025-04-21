@@ -107,13 +107,106 @@ RSpec.describe Dependabot::Maven::Package::PackageDetailsFetcher do
   end
 
   describe "#dependency_files_url" do
-    it "correctly constructs the dependency files URL" do
-      expected_url = "https://repo.maven.apache.org/maven2/com/google/guava/guava/23.6-jre/guava-23.6-jre.jar"
-      version = Dependabot::Maven::Version.new("23.6-jre")
+    context "when version contains an underscore" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "io.jenkins:configuration-as-code",
+          version: "1958.vddc0d369b_e16", # Version with underscore
+          requirements: [{
+            requirement: "^23.0",
+            file: "pom.xml",
+            groups: ["dependencies"],
+            source: nil,
+            metadata: { packaging_type: "jar" }
+          }],
+          package_manager: "maven"
+        )
+      end
 
-      url = fetcher.send(:dependency_files_url, "https://repo.maven.apache.org/maven2", version)
+      it "correctly constructs the dependency files URL with an underscore in version" do
+        expected_url = "https://repo.jenkins-ci.org/public/io/jenkins/configuration-as-code/1958.vddc0d369b_e16/configuration-as-code-1958.vddc0d369b_e16.jar"
+        version = Dependabot::Maven::Version.new("1958.vddc0d369b_e16") # Version with underscore
 
-      expect(url).to eq(expected_url)
+        # Call the private method using `send` to fetch the constructed URL
+        url = fetcher.send(:dependency_files_url, "https://repo.jenkins-ci.org/public", version)
+
+        # Verify the URL is as expected
+        expect(url).to eq(expected_url)
+      end
+    end
+
+    context "when URL includes version snapshot" do
+      it "correctly constructs the dependency files URL when version is a snapshot" do
+        expected_url = "https://repo.maven.apache.org/maven2/com/google/guava/guava/23.6-SNAPSHOT/guava-23.6-SNAPSHOT.jar"
+        version = Dependabot::Maven::Version.new("23.6-SNAPSHOT")
+
+        url = fetcher.send(:dependency_files_url, "https://repo.maven.apache.org/maven2", version)
+
+        expect(url).to eq(expected_url)
+      end
+    end
+
+    context "when version includes hyphen and numbers" do
+      it "correctly constructs the dependency files URL when version includes hyphens and numbers" do
+        expected_url = "https://repo.maven.apache.org/maven2/com/google/guava/guava/23.6-rc1/guava-23.6-rc1.jar"
+        version = Dependabot::Maven::Version.new("23.6-rc1")
+
+        url = fetcher.send(:dependency_files_url, "https://repo.maven.apache.org/maven2", version)
+
+        expect(url).to eq(expected_url)
+      end
+    end
+
+    context "when dependency has no classifier" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "com.google.guava:guava",
+          version: "23.6-jre",
+          requirements: [{
+            requirement: "^23.0",
+            file: "pom.xml",
+            groups: ["dependencies"],
+            source: nil,
+            metadata: { packaging_type: "jar" }
+          }],
+          package_manager: "maven"
+        )
+      end
+
+      it "correctly constructs the dependency files URL without a classifier" do
+        expected_url = "https://repo.maven.apache.org/maven2/com/google/guava/guava/23.6-jre/guava-23.6-jre.jar"
+        version = Dependabot::Maven::Version.new("23.6-jre")
+
+        url = fetcher.send(:dependency_files_url, "https://repo.maven.apache.org/maven2", version)
+
+        expect(url).to eq(expected_url)
+      end
+    end
+
+    context "when dependency has a classifier" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "com.google.guava:guava",
+          version: "23.6-jre",
+          requirements: [{
+            requirement: "^23.0",
+            file: "pom.xml",
+            groups: ["dependencies"],
+            source: nil,
+            metadata: { packaging_type: "jar", classifier: "sources" }
+          }],
+          package_manager: "maven"
+        )
+      end
+
+      it "correctly constructs the dependency files URL with a classifier" do
+        expected_url = "https://repo.maven.apache.org/maven2/com/google/guava/guava/23.6-jre/guava-23.6-jre-sources.jar"
+        version = Dependabot::Maven::Version.new("23.6-jre")
+
+        url = fetcher.send(:dependency_files_url, "https://repo.maven.apache.org/maven2", version)
+
+        expect(url).to eq(expected_url)
+      end
     end
   end
 
