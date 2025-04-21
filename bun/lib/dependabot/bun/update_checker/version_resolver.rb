@@ -100,6 +100,7 @@ module Dependabot
             nil, T.nilable(T::Array[T.any(T::Hash[String, T.nilable(String)], String)])
           )
           @peer_dependency_errors = T.let(nil, T.nilable(T::Array[T.any(T::Hash[String, T.nilable(String)], String)]))
+          @peer_dependency_errors_cache = T.let({}, T::Hash[T.nilable(T.any(String, Gem::Version)), T::Array[T.any(T::Hash[String, T.nilable(String)], String)]])
         end
 
         sig { returns(T.nilable(T.any(String, Gem::Version))) }
@@ -415,17 +416,21 @@ module Dependabot
           ).returns(T::Array[T.any(T::Hash[String, T.nilable(String)], String)])
         end
         def fetch_peer_dependency_errors(version:)
+          return @peer_dependency_errors_cache[version] if @peer_dependency_errors_cache.key?(version)
+
           # TODO: Add all of the error handling that the FileUpdater does
           # here (since problematic repos will be resolved here before they're
           # seen by the FileUpdater)
           base_dir = T.must(dependency_files.first).directory
-          SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
+          errors = SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
             dependency_files_builder.write_temporary_dependency_files
 
             paths_requiring_update_check.flat_map do |path|
               run_checker(path: path, version: version)
             end.compact
           end
+          @peer_dependency_errors_cache[version] = errors
+          errors
         rescue SharedHelpers::HelperSubprocessFailed
           # Fall back to allowing the version through. Whatever error
           # occurred should be properly handled by the FileUpdater. We

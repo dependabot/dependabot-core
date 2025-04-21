@@ -24,6 +24,8 @@ module Dependabot
         def initialize(package_json:, dependencies:)
           @package_json = package_json
           @dependencies = dependencies
+          @cached_requirements = {}
+          @declaration_line_cache = {}
         end
 
         sig { returns(Dependabot::DependencyFile) }
@@ -221,18 +223,22 @@ module Dependabot
             .returns(String)
         end
         def declaration_line(dependency_name:, dependency_req:, content:)
+          cache_key = "#{dependency_name}-#{dependency_req&.fetch(:requirement)}"
+          return @declaration_line_cache[cache_key] if @declaration_line_cache.key?(cache_key)
+
           git_dependency = dependency_req&.dig(:source, :type) == "git"
 
           unless git_dependency
             requirement = dependency_req&.fetch(:requirement)
-            return content.match(/"#{Regexp.escape(dependency_name)}"\s*:\s*
+            @declaration_line_cache[cache_key] = content.match(/"#{Regexp.escape(dependency_name)}"\s*:\s*
                                   "#{Regexp.escape(requirement)}"/x).to_s
+            return @declaration_line_cache[cache_key]
           end
 
           username, repo =
             dependency_req&.dig(:source, :url)&.split("/")&.last(2)
 
-          content.match(
+          @declaration_line_cache[cache_key] = content.match(
             %r{"#{Regexp.escape(dependency_name)}"\s*:\s*
                ".*?#{Regexp.escape(username)}/#{Regexp.escape(repo)}.*"}x
           ).to_s

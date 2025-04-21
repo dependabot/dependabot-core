@@ -270,7 +270,8 @@ module Dependabot
 
       sig { params(requirement: String).returns(T::Boolean) }
       def git_url?(requirement)
-        requirement.match?(GIT_URL_REGEX)
+        @git_url_cache ||= {}
+        @git_url_cache[requirement] ||= requirement.match?(GIT_URL_REGEX)
       end
 
       sig { params(requirement: String).returns(T::Boolean) }
