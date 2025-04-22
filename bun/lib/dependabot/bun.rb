@@ -44,7 +44,7 @@ module Dependabot
 
     # Used to identify error messages indicating a package is missing, unreachable,
     # or there are network issues (e.g., ENOBUFS, ETIMEDOUT, registry down).
-    PACKAGE_MISSING_REGEX = /(?:ENOBUFS|ETIMEDOUT|The registry may be down)/.freeze
+    PACKAGE_MISSING_REGEX = /(ENOBUFS|ETIMEDOUT|The registry may be down)/.freeze
 
     # Used to check if error message contains timeout fetching package
     TIMEOUT_FETCHING_PACKAGE_REGEX = %r{(?<url>.+)/(?<package>[^/]+): ETIMEDOUT}.freeze
