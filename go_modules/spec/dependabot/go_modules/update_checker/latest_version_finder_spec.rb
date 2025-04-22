@@ -50,6 +50,8 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
 
   let(:goprivate) { "*" }
 
+  let(:cooldown_options) { nil }
+
   let(:finder) do
     described_class.new(
       dependency: dependency,
@@ -58,7 +60,8 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
       ignored_versions: ignored_versions,
       security_advisories: security_advisories,
       raise_on_ignored: raise_on_ignored,
-      goprivate: goprivate
+      goprivate: goprivate,
+      cooldown_options: cooldown_options
     )
   end
 
@@ -368,6 +371,80 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
         it "raises AllVersionsIgnored" do
           expect { finder.latest_version }
             .to raise_error(Dependabot::AllVersionsIgnored)
+        end
+      end
+    end
+  end
+
+  describe "#latest_version with cooldown options" do
+    context "when there's a newer major version and release date is still in cooldown" do
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:enable_shared_helpers_command_timeout).and_return(false)
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:enable_cooldown_for_gomodules).and_return(true)
+        allow(Dependabot::SharedHelpers)
+          .to receive(:run_shell_command).and_call_original
+
+        allow(Time).to receive(:now).and_return(Time.parse("2018-10-25T17:30:00.000Z"))
+      end
+
+      let(:cooldown_options) do
+        Dependabot::Package::ReleaseCooldownOptions.new(
+          default_days: 7,
+          semver_major_days: 7,
+          semver_minor_days: 7,
+          semver_patch_days: 7,
+          include: [],
+          exclude: []
+        )
+      end
+
+      it "returns the latest minor version for the dependency's current major version" do
+        expect(finder.latest_version).to be_nil
+      end
+
+      context "with an org specific goprivate" do
+        let(:goprivate) { "github.com/dependabot-fixtures/*" }
+
+        it "returns the latest minor version for the dependency's current major version" do
+          expect(finder.latest_version).to be_nil
+        end
+      end
+    end
+
+    context "when there's a newer major version and release date is out of cooldown" do
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:enable_shared_helpers_command_timeout).and_return(false)
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:enable_cooldown_for_gomodules).and_return(true)
+        allow(Dependabot::SharedHelpers)
+          .to receive(:run_shell_command).and_call_original
+
+        allow(Time).to receive(:now).and_return(Time.parse("2018-10-30T17:30:00.000Z"))
+      end
+
+      let(:cooldown_options) do
+        Dependabot::Package::ReleaseCooldownOptions.new(
+          default_days: 7,
+          semver_major_days: 7,
+          semver_minor_days: 7,
+          semver_patch_days: 7,
+          include: [],
+          exclude: []
+        )
+      end
+
+      it "returns the latest minor version for the dependency's current major version" do
+        expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("1.1.0"))
+      end
+
+      context "with an org specific goprivate" do
+        let(:goprivate) { "github.com/dependabot-fixtures/*" }
+
+        it "returns the latest minor version for the dependency's current major version" do
+          expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("1.1.0"))
         end
       end
     end
