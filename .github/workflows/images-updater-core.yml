@@ -16,14 +16,13 @@ jobs:
       contents: read
       id-token: write
       packages: write
+      attestations: write
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           submodules: recursive
           persist-credentials: false
-
-      - uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad # v4.0.0
 
       - name: Build dependabot-updater-core image
         run: script/build common
@@ -35,9 +34,16 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Push latest image
+        id: push
         run: |
           docker push "$UPDATER_CORE_IMAGE:latest"
-          cosign sign --yes $(cosign triangulate --type=digest "$UPDATER_CORE_IMAGE:latest")
+        
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-name: ${{ env.UPDATER_CORE_IMAGE }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
 
       - name: Push tagged image
         if: contains(github.ref, 'refs/tags')
