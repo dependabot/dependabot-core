@@ -365,10 +365,15 @@ public class RunWorker
 
     private async Task SendApiMessage(MessageBase? message)
     {
+        if (message is null)
+        {
+            return;
+        }
+
+        var report = message.GetReport();
+        _logger.Info(report);
         switch (message)
         {
-            case null:
-                break;
             case JobErrorBase error:
                 await _apiHandler.RecordUpdateJobError(error);
                 break;
