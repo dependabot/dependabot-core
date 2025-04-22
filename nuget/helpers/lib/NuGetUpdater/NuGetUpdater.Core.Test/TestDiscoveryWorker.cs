@@ -16,14 +16,13 @@ internal class TestDiscoveryWorker : IDiscoveryWorker
         return _getResult((repoRootPath, workspacePath));
     }
 
-    public static TestDiscoveryWorker FromResults(params (string RepoRootPath, string WorkspacePath, WorkspaceDiscoveryResult Result)[] results)
+    public static TestDiscoveryWorker FromResults(params (string WorkspacePath, WorkspaceDiscoveryResult Result)[] results)
     {
-        return new TestDiscoveryWorker(((string RepoRootPath, string WorkspacePath) input) =>
+        return new TestDiscoveryWorker(((string _RepoRootPath, string WorkspacePath) input) =>
         {
             foreach (var set in results)
             {
-                if (set.RepoRootPath == input.RepoRootPath &&
-                    set.WorkspacePath == input.WorkspacePath)
+                if (set.WorkspacePath == input.WorkspacePath)
                 {
                     return Task.FromResult(set.Result);
                 }

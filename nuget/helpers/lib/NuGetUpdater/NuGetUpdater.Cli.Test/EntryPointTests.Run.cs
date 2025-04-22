@@ -50,10 +50,10 @@ public partial class EntryPointTests
                 },
                 expectedUrls:
                 [
-                    "/update_jobs/TEST-ID/update_dependency_list",
-                    "/update_jobs/TEST-ID/increment_metric",
-                    "/update_jobs/TEST-ID/create_pull_request",
-                    "/update_jobs/TEST-ID/mark_as_processed",
+                    "POST /update_jobs/TEST-ID/update_dependency_list",
+                    "POST /update_jobs/TEST-ID/increment_metric",
+                    "POST /update_jobs/TEST-ID/create_pull_request",
+                    "PATCH /update_jobs/TEST-ID/mark_as_processed",
                 ]
             );
         }
@@ -79,9 +79,9 @@ public partial class EntryPointTests
             await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(packages, tempDirectory.DirectoryPath);
 
             var actualUrls = new List<string>();
-            using var http = TestHttpServer.CreateTestStringServer(url =>
+            using var http = TestHttpServer.CreateTestStringServer((method, url) =>
             {
-                actualUrls.Add(new Uri(url).PathAndQuery);
+                actualUrls.Add($"{method} {new Uri(url).PathAndQuery}");
                 return (200, "ok");
             });
             var args = new List<string>()

@@ -1,0 +1,88 @@
+# Chart.yaml - Main chart definition
+apiVersion: v2
+name: example-service
+description: A Helm chart for Kubernetes
+type: application
+version: 0.1.0
+appVersion: "1.16.0"
+dependencies:
+  - name: redis
+    version: 17.11.3
+    repository: https://charts.bitnami.com/bitnami
+  - name: mongodb
+    version: 13.9.1
+    repository: https://charts.bitnami.com/bitnami
+    condition: mongodb.enabled
+
+# values.yaml - Default configuration values
+replicaCount: 1
+
+image:
+  repository: nginx
+  pullPolicy: IfNotPresent
+  tag: "1.25.3"
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext: {}
+
+securityContext: {}
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+postgresql:
+  enabled: true
+  auth:
+    username: example-user
+    password: example-password
+    database: example-db
+
+mongodb:
+  enabled: false
+  auth:
+    rootPassword: mongodb-root-password
+    username: mongodb-user
+    password: mongodb-password
+    database: mongodb-database

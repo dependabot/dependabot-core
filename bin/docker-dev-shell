@@ -111,7 +111,7 @@ fi
 
 echo "$(tput setaf 2)=> running docker development shell$(tput sgr0)"
 CODE_DIR="/home/dependabot"
-touch .core-bash_history
+touch .core-bash_history # allow bash history to persist across invocations
 mkdir -p dry-run tmp
 docker run --rm -ti \
   -v "$(pwd)/.core-bash_history:/home/dependabot/.bash_history" \
@@ -119,6 +119,12 @@ docker run --rm -ti \
   -v "$(pwd)/.rubocop_todo.yml:$CODE_DIR/.rubocop_todo.yml" \
   -v "$(pwd)/.ruby-version:$CODE_DIR/.ruby-version" \
   -v "$(pwd)/bin:$CODE_DIR/bin" \
+  -v "$(pwd)/bun/.rubocop.yml:$CODE_DIR/bun/.rubocop.yml" \
+  -v "$(pwd)/bun/dependabot-bun.gemspec:$CODE_DIR/bun/dependabot-bun.gemspec" \
+  -v "$(pwd)/bun/helpers:$CODE_DIR/bun/helpers" \
+  -v "$(pwd)/bun/lib:$CODE_DIR/bun/lib" \
+  -v "$(pwd)/bun/script:$CODE_DIR/bun/script" \
+  -v "$(pwd)/bun/spec:$CODE_DIR/bun/spec" \
   -v "$(pwd)/bundler/.rubocop.yml:$CODE_DIR/bundler/.rubocop.yml" \
   -v "$(pwd)/bundler/dependabot-bundler.gemspec:$CODE_DIR/bundler/dependabot-bundler.gemspec" \
   -v "$(pwd)/bundler/helpers:$CODE_DIR/bundler/helpers" \
@@ -152,6 +158,11 @@ docker run --rm -ti \
   -v "$(pwd)/docker/lib:$CODE_DIR/docker/lib" \
   -v "$(pwd)/docker/script:$CODE_DIR/docker/script" \
   -v "$(pwd)/docker/spec:$CODE_DIR/docker/spec" \
+  -v "$(pwd)/docker_compose/.rubocop.yml:$CODE_DIR/docker_compose/.rubocop.yml" \
+  -v "$(pwd)/docker_compose/dependabot-docker_compose.gemspec:$CODE_DIR/docker_compose/dependabot-docker_compose.gemspec" \
+  -v "$(pwd)/docker_compose/lib:$CODE_DIR/docker_compose/lib" \
+  -v "$(pwd)/docker_compose/script:$CODE_DIR/docker_compose/script" \
+  -v "$(pwd)/docker_compose/spec:$CODE_DIR/docker_compose/spec" \
   -v "$(pwd)/dotnet_sdk/.rubocop.yml:$CODE_DIR/dotnet_sdk/.rubocop.yml" \
   -v "$(pwd)/dotnet_sdk/dependabot-dotnet_sdk.gemspec:$CODE_DIR/dotnet_sdk/dependabot-dotnet_sdk.gemspec" \
   -v "$(pwd)/dotnet_sdk/lib:$CODE_DIR/dotnet_sdk/lib" \
@@ -184,6 +195,11 @@ docker run --rm -ti \
   -v "$(pwd)/gradle/lib:$CODE_DIR/gradle/lib" \
   -v "$(pwd)/gradle/script:$CODE_DIR/gradle/script" \
   -v "$(pwd)/gradle/spec:$CODE_DIR/gradle/spec" \
+  -v "$(pwd)/helm/.rubocop.yml:$CODE_DIR/helm/.rubocop.yml" \
+  -v "$(pwd)/helm/dependabot-helm.gemspec:$CODE_DIR/helm/dependabot-helm.gemspec" \
+  -v "$(pwd)/helm/lib:$CODE_DIR/helm/lib" \
+  -v "$(pwd)/helm/script:$CODE_DIR/helm/script" \
+  -v "$(pwd)/helm/spec:$CODE_DIR/helm/spec" \
   -v "$(pwd)/hex/.rubocop.yml:$CODE_DIR/hex/.rubocop.yml" \
   -v "$(pwd)/hex/dependabot-hex.gemspec:$CODE_DIR/hex/dependabot-hex.gemspec" \
   -v "$(pwd)/hex/helpers:$CODE_DIR/hex/helpers" \
@@ -233,6 +249,12 @@ docker run --rm -ti \
   -v "$(pwd)/terraform/lib:$CODE_DIR/terraform/lib" \
   -v "$(pwd)/terraform/script:$CODE_DIR/terraform/script" \
   -v "$(pwd)/terraform/spec:$CODE_DIR/terraform/spec" \
+  -v "$(pwd)/uv/.rubocop.yml:$CODE_DIR/uv/.rubocop.yml" \
+  -v "$(pwd)/uv/dependabot-uv.gemspec:$CODE_DIR/uv/dependabot-uv.gemspec" \
+  -v "$(pwd)/uv/helpers:$CODE_DIR/uv/helpers" \
+  -v "$(pwd)/uv/lib:$CODE_DIR/uv/lib" \
+  -v "$(pwd)/uv/script:$CODE_DIR/uv/script" \
+  -v "$(pwd)/uv/spec:$CODE_DIR/uv/spec" \
   -v "$(pwd)/tmp:/$CODE_DIR/tmp" \
   -v "$(pwd)/updater/.rubocop.yml:$CODE_DIR/dependabot-updater/.rubocop.yml" \
   -v "$(pwd)/updater/bin:$CODE_DIR/dependabot-updater/bin" \

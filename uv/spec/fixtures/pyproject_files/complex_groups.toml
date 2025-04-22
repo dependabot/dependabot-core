@@ -1,0 +1,438 @@
+[project]
+name = "meltano"
+version = "3.7.2"
+description = "Meltano is your CLI for ELT+: Open Source, Flexible, and Scalable. Move, transform, and test your data with confidence using a streamlined data engineering workflow you’ll love."
+authors = [{ name = "Meltano", email = "hello@meltano.com" }]
+requires-python = ">=3.9,<3.14"
+readme = "README.md"
+license = "MIT"
+license-files = [
+  "LICENSE",
+]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+]
+keywords = [
+  "Meltano",
+  "ELT",
+  "Data integration",
+  "singer-io",
+  "dbt",
+]
+dependencies = [
+  "aiodocker>=0.24.0,<0.25",
+  "alembic>=1.14.0,<2",
+  "anyio>=4.4.0,<5",
+  "atomicwrites>=1.2.1,<2",
+  "backports-strenum>=1.3.1,<2 ; python_version < '3.11'",
+  "check-jsonschema>=0.31.0,<0.32",
+  "click~=8.1",
+  "click-default-group>=1.2.4,<2",
+  "click-didyoumean>=0.3.1,<0.4",
+  "croniter>=6.0.0,<7",
+  "dateparser>=1.2.1",
+  "fasteners>=0.19,<0.20",
+  "flatten-dict>=0,<1",
+  "importlib-metadata>=5 ; python_version < '3.12'",
+  "jinja2>=3.1.4,<4",
+  "jsonschema~=4.23",
+  "packaging~=24.2",
+  "pip~=25.0.1",
+  "psutil>=7.0.0,<8",
+  "python-dotenv>=1.0.1,<2",
+  "pyyaml>=6.0.2,<7",
+  "requests>=2.32.3,<3",
+  "rich>=13.9.4,<14",
+  "ruamel.yaml>=0.18.6,<0.19",
+  "setuptools>=76.0.0,<77 ; python_version >= '3.12'",
+  "smart-open>=7.0.5,<8",
+  "snowplow-tracker>=1.0.4,<2",
+  "sqlalchemy>=2.0.35,<3",
+  "structlog>=25.1.0,<26",
+  "typing-extensions>=4.12.2,<5",
+  "tzlocal~=5.3",
+  # Compatibility issues with boto: https://github.com/boto/botocore/pull/3034
+  "urllib3<2 ; python_version < '3.10'",
+  "uv>=0.1.24,<0.7",
+  "virtualenv>=20.26.6,<21",
+]
+
+[project.optional-dependencies]
+azure = [
+  "azure-storage-blob>=12.24.0,<13",
+  "azure-common>=1.1.28,<2",
+  "azure-core>=1.32.0,<2",
+  "azure-identity>=1.19.0,<2",
+]
+gcs = ["google-cloud-storage>=1.31.0"]
+mssql = ["pymssql>=2.3.2,<3"]
+postgres = ["psycopg[binary]>=3.2.3,<4"]
+psycopg2 = ["psycopg2-binary>=2.9.9,<3"]
+s3 = ["boto3>=1.35,<1.38"]
+
+[project.urls]
+Homepage = "https://meltano.com"
+Repository = "https://github.com/meltano/meltano"
+Documentation = "https://docs.meltano.com"
+Changelog = "https://github.com/meltano/meltano/blob/main/CHANGELOG.md"
+"Issue Tracker" = "https://github.com/meltano/meltano/issues"
+Slack = "https://meltano.com/slack"
+Twitter = "https://twitter.com/meltanodata/"
+Youtube = "https://www.youtube.com/meltano"
+
+[project.scripts]
+meltano = "meltano.cli:main"
+
+[project.entry-points."meltano.settings"]
+# AWS S3 state backend settings
+s3_aws_access_key_id = "meltano.core.state_store.s3:AWS_ACCESS_KEY_ID"
+s3_aws_secret_access_key = "meltano.core.state_store.s3:AWS_SECRET_ACCESS_KEY"
+s3_endpoint_url = "meltano.core.state_store.s3:ENDPOINT_URL"
+# Azure state backend settings
+azure_connection_string = "meltano.core.state_store.azure:CONNECTION_STRING"
+azure_storage_account_url = "meltano.core.state_store.azure:STORAGE_ACCOUNT_URL"
+# Google Cloud Storage state backend settings
+google_application_credentials = "meltano.core.state_store.google:APPLICATION_CREDENTIALS"
+
+[project.entry-points."meltano.state_backends"]
+# These keys should match the expected scheme for URIs of
+# the given type. E.g., filesystem state backends have a
+# file://<path>/<to>/<state directory> URI
+azure = "meltano.core.state_store.azure:AZStorageStateStoreManager"
+file = "meltano.core.state_store.filesystem:LocalFilesystemStateStoreManager"
+gs = "meltano.core.state_store.google:GCSStateStoreManager"
+s3 = "meltano.core.state_store.s3:S3StateStoreManager"
+
+[dependency-groups]
+coverage = [
+  "coverage[toml]>=7.6.12",
+]
+dev = [
+  { include-group = "testing" },
+  { include-group = "typing" },
+]
+pre-commit = [
+  "pre-commit>=4.0.1,<5",
+]
+testing = [
+  { include-group = "coverage" },
+  "backoff>=2.1.2,<3",
+  "colorama>=0.4.4,<0.5",
+  "mock>=5.0.2,<6",
+  "moto>=5.0.21,<6",
+  "pytest>=8.3.3,<9",
+  "pytest-asyncio>=0.25.0,<0.26",
+  "pytest-cov>=6.0.0,<7",
+  "pytest-docker~=3.1",
+  "pytest-order~=1.3",
+  "pytest-randomly~=3.16",
+  "pytest-structlog~=1.1",
+  "pytest-xdist~=3.6",
+  "requests-mock>=1.12.1,<2",
+  "setproctitle~=1.3",  # Used by pytest-xdist to aid with handling resource intensive processes.
+  "time-machine>=2.15.0,<3",
+]
+typing = [
+  "boto3-stubs[essential]>=1.35,<1.38",
+  "mypy>=1.13.0,<2",
+  "types-croniter==5.0.1.20241205",
+  "types-dateparser>=1.2.0.20250208",
+  "types-jsonschema>=4.23.0.20240813,<5",
+  "types-psutil>=7.0.0.20250218,<8",
+  "types-pyyaml>=6.0.12.20240917,<7",
+  "types-requests>=2.31.0,<3",
+]
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "src",
+  "tests",
+]
+
+[tool.hatch.build.targets.wheel]
+include = ["src/meltano"]
+
+[tool.hatch.build.targets.wheel.sources]
+"src/meltano" = "meltano"
+
+[tool.pytest.ini_options]
+addopts = [
+  "--cov=meltano",
+  "--cov=tests",
+  "--doctest-modules",
+  "--durations=10",
+  "--order-scope=module",
+  "-ra",
+  "-n=auto",
+  "--dist=loadfile",
+  "--strict-config",
+  "--strict-markers",
+]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "class"
+filterwarnings = [
+  "error",
+  "ignore:datetime.datetime.utcnow.* is deprecated:DeprecationWarning:time_machine.*",  # https://github.com/adamchainz/time-machine/issues/445
+  "ignore:datetime.datetime.utcnow.* is deprecated:DeprecationWarning:botocore.auth.*", # https://github.com/boto/boto3/issues/3889
+  "ignore: Parsing dates involving a day of month without a year specified is:DeprecationWarning:dateparser.*",  # https://github.com/scrapinghub/dateparser/issues/1246
+  "ignore::pytest.PytestUnraisableExceptionWarning",
+  "ignore::pytest.PytestUnhandledThreadExceptionWarning",
+]
+log_cli = true
+log_cli_format = "%(message)s"
+log_cli_level = "CRITICAL"
+log_file = "pytest.log"
+log_file_date_format = "%Y-%m-%d %H:%M:%S"
+log_file_format = "%(asctime)s [%(levelname)8s] %(message)s (%(filename)s:%(lineno)s)"
+log_file_level = "DEBUG"
+markers = [
+  "backend(type): backend specific test",
+  "meta: meta test",
+  "concurrent: test requires true concurrency",
+  "slow: slow test",
+]
+minversion = "8"
+testpaths = [
+  "tests/",
+]
+xfail_strict = true
+
+[tool.coverage.run]
+branch = true
+concurrency = [
+  "multiprocessing",
+  "thread",
+]
+disable_warnings = [
+  "no-sysmon",
+]
+parallel = true
+relative_files = true  # This allows coverage to be measured in Windows
+sigterm = true
+source = [
+  "meltano",
+  "tests",
+]
+omit = [
+  "**/meltano/migrations/env.py",
+  "**/meltano/cli/interactive/*",
+]
+
+[tool.coverage.paths]
+source = [
+  "src/meltano/",
+  "**/site-packages/meltano/",
+  "**/site-packages/meltano*/meltano/",
+]
+
+[tool.coverage.report]
+exclude_also = [
+  '''if (t\.)?TYPE_CHECKING:''',
+  '''(t\.)?assert_never''',
+  "\\.\\.\\.",
+]
+precision = 2
+show_missing = true
+skip_covered = true
+
+[tool.commitizen]
+name = "cz_version_bump"
+version = "3.7.2"
+prerelease_offset = 1
+tag_format = "v$major.$minor.$patch$prerelease"
+changelog_merge_prerelease = true
+version_files = [
+  "pyproject.toml:^version =",
+  "src/meltano/__init__.py:^__version__ =",
+  'docs/package.json:^  "version":',
+  ".github/ISSUE_TEMPLATE/bug.yml:^      placeholder:",
+]
+
+[tool.mypy]
+enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
+incremental = false # Disabled until https://github.com/python/mypy/issues/12664 is resolved
+files = [
+  "src/meltano/",
+]
+exclude = [
+  "src/meltano/migrations/",
+]
+warn_unreachable = true
+warn_unused_configs = true
+warn_unused_ignores = true
+
+# The following whitelist is used to allow for incremental adoption
+# of MyPy. Modules should be removed from this whitelist as and when
+# their respective type errors have been addressed. No new modules
+# should be added to this whitelist.
+[[tool.mypy.overrides]]
+ignore_errors = true
+module = [
+  "meltano.cli.add",
+  "meltano.cli.install",
+  "meltano.cli.interactive.*",
+  "meltano.cli.invoke",
+  "meltano.cli.state",
+  # Way too many modules at the root of meltano.core to tackle them all at once  # so listing them individually here.
+  "meltano.core.models",
+  "meltano.core.project_files",
+  "meltano.core.project_settings_service",
+  "meltano.core.sqlalchemy",
+  "meltano.core.task_sets_service",
+  "meltano.core.transform_add_service",
+  # Meltano Core submodules
+  "meltano.core.behavior.*",
+  "meltano.core.block.blockset",
+  "meltano.core.block.extract_load",
+  "meltano.core.block.future_utils",
+  "meltano.core.block.ioblock",
+  "meltano.core.block.plugin_command",
+  "meltano.core.block.singer",
+  "meltano.core.plugin.base",
+  "meltano.core.plugin.dbt.*",
+  "meltano.core.plugin.meltano_file",
+  "meltano.core.plugin.project_plugin",
+  "meltano.core.plugin.settings_service",
+  "meltano.core.runner.*",
+  "meltano.core.tracking.*",
+  "meltano.core.utils.*",
+]
+
+[[tool.mypy.overrides]]
+ignore_missing_imports = true
+module = [
+  "click_default_group.*",  # https://github.com/click-contrib/click-default-group/issues/26
+  "click_didyoumean.*",     # Unreleased, https://github.com/click-contrib/click-didyoumean/commit/048b275077382e5a80bdf05b02830013eb37ddd1
+  "flatten_dict.*",         # Stale package, https://github.com/ianlini/flatten-dict
+  "smart_open.*",           # https://github.com/piskvorky/smart_open/issues/772
+]
+
+[build-system]
+requires = ["hatchling==1.27.0"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+ignore = [
+  "N818",   # Allow Exceptions to have suffix 'Exception' rather than 'Error'
+  "UP026",  # Replace `mock` import with `unittest.mock` - remove once Python 3.7 support is dropped
+  "S310",   # Allow `urllib.open`
+  "S603",   # Allow `subprocess.run(..., shell=False)`
+  "COM812", # Handled by the Ruff formatter
+  "ISC001", # Handled by the Ruff formatter
+]
+select = [
+  "A",     # flake8-builtins
+  "ANN",   # flake8-annotations
+  "ARG",   # flake8-unused-arguments
+  "ASYNC", # flake8-async
+  "B",     # flake8-bugbear
+  "C4",    # flake8-comprehensions
+  "COM",   # flake8-commas
+  "D",     # pydocstyle/flake8-docstrings
+  "DTZ",   # flake8-datetimez
+  "E",     # pycodestyle (error)
+  "EM",    # flake8-errmsg
+  "ERA",   # flake8-eradicate
+  "F",     # pyflakes
+  "FBT",   # flake8-boolean-trap
+  "G",     # flake8-logging-format
+  "I",     # isort
+  "ICN",   # flake8-import-conventions
+  "INP",   # flake8-no-pep420
+  "ISC",   # flake8-implicit-str-concat
+  "N",     # pep8-naming
+  "PERF",  # Perflint
+  "PGH",   # pygrep-hooks
+  "PIE",   # flake8-pie
+  "PT",    # flake8-pytest-style
+  "PTH",   # flake8-use-pathlib
+  "Q",     # flake8-quotes
+  "RET",   # flake8-return
+  "RSE",   # flake8-raise
+  "RUF",   # Ruff specific rules
+  "S",     # flake8-bandit
+  "SIM",   # flake8-simplify
+  "T10",   # flake8-debugger
+  "T20",   # flake8-print
+  "TC",    # flake8-type-checking
+  "TID",   # flake8-tidy-imports
+  "UP",    # pyupgrade
+  "W",     # pycodestyle (warning)
+  "YTT",   # flake8-2020
+]
+unfixable = [
+  "ERA001", # Don't remove commented-out code
+]
+
+[tool.ruff.lint.per-file-ignores]
+"src/meltano/**/__init__.py" = [
+  "F401", # Permit unused imports in `__init__.py` files
+]
+"tests/**" = [
+  "ANN",
+  "D1",
+  "S101", # Allow 'assert' in tests
+  "INP",  # Don't require __init__.py files in tests directories
+]
+"src/meltano/migrations/versions/*" = [
+  "D103",
+  "D415",
+  "INP001",
+  "TC003",
+  "TID251",
+  "UP007",
+]
+
+[tool.ruff.lint.flake8-annotations]
+allow-star-arg-any = true
+mypy-init-return = true
+suppress-dummy-args = true
+
+[tool.ruff.lint.flake8-import-conventions]
+banned-from = [
+  "typing",
+]
+
+[tool.ruff.lint.flake8-import-conventions.extend-aliases]
+typing = "t"
+
+[tool.ruff.lint.flake8-pytest-style]
+parametrize-values-type = "tuple"
+
+[tool.ruff.lint.isort]
+known-first-party = ["asserts", "fixtures", "meltano"]
+required-imports = ["from __future__ import annotations"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"logging.getLogger".msg = "Use `structlog.stdlib.get_logger` instead"
+"logging.critical".msg = "Create a logger with `structlog.stdlib.get_logger`"
+"logging.fatal".msg = "Create a logger with `structlog.stdlib.get_logger`"
+"logging.error".msg = "Create a logger with `structlog.stdlib.get_logger`"
+"logging.exception".msg = "Create a logger with `structlog.stdlib.get_logger`"
+"logging.warning".msg = "Create a logger with `structlog.stdlib.get_logger`"
+"logging.warn".msg = "Create a logger with `structlog.stdlib.get_logger`"
+"logging.info".msg = "Create a logger with `structlog.stdlib.get_logger`"
+"logging.debug".msg = "Create a logger with `structlog.stdlib.get_logger`"
+"logging.log".msg = "Create a logger with `structlog.stdlib.get_logger`"
+"meltano.cli.cli.command".msg = "Use `click.command` and `meltano.cli.cli.add_command` instead"
+"meltano.cli.cli.group".msg = "Use `click.group` and `meltano.cli.cli.add_command` instead"
+
+[tool.check-wheel-contents]
+ignore = [
+  "W004",  # https://github.com/jwodder/check-wheel-contents/issues/5
+]

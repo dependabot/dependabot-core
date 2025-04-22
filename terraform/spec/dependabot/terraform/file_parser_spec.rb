@@ -951,6 +951,21 @@ RSpec.describe Dependabot::Terraform::FileParser do
         end
       end
     end
+
+    context "when a file is a support file" do
+      let(:support_file) do
+        Dependabot::DependencyFile.new(
+          name: "support.tf",
+          content: "module { source = 'foo/bar' }",
+          support_file: true
+        )
+      end
+      let(:files) { [support_file] }
+
+      it "skips the file and does not parse it" do
+        expect(dependencies).to be_empty
+      end
+    end
   end
 
   describe "#source_type" do
@@ -1049,7 +1064,6 @@ RSpec.describe Dependabot::Terraform::FileParser do
       it "returns the correct package manager" do
         expect(package_manager.name).to eq "terraform"
         expect(package_manager.requirement).to be_nil
-        expect(package_manager.version.to_s).to eq "1.10.0"
       end
     end
   end

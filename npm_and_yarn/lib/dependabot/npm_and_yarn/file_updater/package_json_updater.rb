@@ -11,11 +11,15 @@ module Dependabot
       class PackageJsonUpdater
         extend T::Sig
 
+        LOCAL_PACKAGE = T.let([/portal:/, /file:/].freeze, T::Array[Regexp])
+
+        PATCH_PACKAGE = T.let([/patch:/].freeze, T::Array[Regexp])
+
         sig do
           params(
             package_json: Dependabot::DependencyFile,
             dependencies: T::Array[Dependabot::Dependency]
-          ) .void
+          ).void
         end
         def initialize(package_json:, dependencies:)
           @package_json = package_json
@@ -37,8 +41,13 @@ module Dependabot
         sig { returns(T::Array[Dependabot::Dependency]) }
         attr_reader :dependencies
 
+        # rubocop:disable Metrics/PerceivedComplexity
+
         sig { returns(T.nilable(String)) }
         def updated_package_json_content
+          # checks if we are updating single dependency in package.json
+          unique_deps_count = dependencies.map(&:name).to_a.uniq.compact.length
+
           dependencies.reduce(package_json.content.dup) do |content, dep|
             updated_requirements(dep)&.each do |new_req|
               old_req = old_requirement(dep, new_req)
@@ -50,7 +59,25 @@ module Dependabot
                 new_req: new_req
               )
 
-              raise "Expected content to change!" if content == new_content
+              if Dependabot::Experiments.enabled?(:avoid_duplicate_updates_package_json) &&
+                 (content == new_content && unique_deps_count > 1)
+
+                # (we observed that) package.json does not always contains the same dependencies compared to
+                # "dependencies" list, for example, dependencies object can contain same name dependency "dep"=> "1.0.0"
+                # and "dev" => "1.0.1" while package.json can only contain "dep" => "1.0.0",the other dependency is
+                # not present in package.json so we don't have to update it, this is most likely (as observed)
+                # a transitive dependency which only needs update in lockfile, So we avoid throwing exception and let
+                # the update continue.
+
+                Dependabot.logger.info("experiment: avoid_duplicate_updates_package_json.
+                Updating package.json for #{dep.name} ")
+
+                raise "Expected content to change!"
+              end
+
+              if !Dependabot::Experiments.enabled?(:avoid_duplicate_updates_package_json) && (content == new_content)
+                raise "Expected content to change!"
+              end
 
               content = new_content
             end
@@ -69,7 +96,7 @@ module Dependabot
             content
           end
         end
-
+        # rubocop:enable Metrics/PerceivedComplexity
         sig do
           params(
             dependency: Dependabot::Dependency,
@@ -91,6 +118,8 @@ module Dependabot
         sig { params(dependency: Dependabot::Dependency).returns(T.nilable(T::Array[T::Hash[Symbol, T.untyped]])) }
         def updated_requirements(dependency)
           return unless dependency.previous_requirements
+
+          preliminary_check_for_update(dependency)
 
           updated_requirement_pairs =
             dependency.requirements.zip(T.must(dependency.previous_requirements))
@@ -317,6 +346,31 @@ module Dependabot
           end
 
           0
+        end
+
+        sig { params(dependency: Dependabot::Dependency).void }
+        def preliminary_check_for_update(dependency)
+          T.must(dependency.previous_requirements).each do |req, _dep|
+            next if req.fetch(:requirement).nil?
+
+            # some deps are patched with local patches, we don't need to update them
+            if req.fetch(:requirement).match?(Regexp.union(PATCH_PACKAGE))
+              Dependabot.logger.info("Func: updated_requirements. dependency patched #{dependency.name}," \
+                                     " Requirement: '#{req.fetch(:requirement)}'")
+
+              raise DependencyFileNotResolvable,
+                    "Dependency is patched locally, Update not required."
+            end
+
+            # some deps are added as local packages, we don't need to update them as they are referred to a local path
+            next unless req.fetch(:requirement).match?(Regexp.union(LOCAL_PACKAGE))
+
+            Dependabot.logger.info("Func: updated_requirements. local package #{dependency.name}," \
+                                   " Requirement: '#{req.fetch(:requirement)}'")
+
+            raise DependencyFileNotResolvable,
+                  "Local package, Update not required."
+          end
         end
       end
     end

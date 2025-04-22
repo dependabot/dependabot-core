@@ -34,12 +34,12 @@ module Dependabot
         MISSING_IMPLICIT_PLATFORM_REQ_REGEX =
           %r{
             (?<!with|for|by)\sext\-[^\s\/]+\s.*?\s(?=->)|
-            (?<=requires\s)php(?:\-[^\s\/]+)?\s.*?\s(?=->)| # composer v1
             (?<=require\s)php(?:\-[^\s\/]+)?\s.*?\s(?=->) # composer v2
           }x
         VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/
-        SOURCE_TIMED_OUT_REGEX =
-          /The "(?<url>[^"]+packages\.json)".*timed out/
+
+        # Example Timeout error from Composer 2.7.7: "curl error 28 while downloading https://example.com:81/packages.json: Failed to connect to example.com port 81 after 9853 ms: Connection timed out" # rubocop:disable Layout/LineLength
+        SOURCE_TIMED_OUT_REGEX = %r{curl error 28 while downloading (?<url>https?://.+/packages\.json): }
 
         def initialize(credentials:, dependency:, dependency_files:,
                        requirements_to_unlock:, latest_allowable_version:)
@@ -49,6 +49,7 @@ module Dependabot
           @requirements_to_unlock       = requirements_to_unlock
           @latest_allowable_version     = latest_allowable_version
           @composer_platform_extensions = initial_platform
+          @error_handler                = ComposerErrorHandler.new
         end
 
         def latest_resolvable_version
@@ -63,6 +64,7 @@ module Dependabot
         attr_reader :requirements_to_unlock
         attr_reader :latest_allowable_version
         attr_reader :composer_platform_extensions
+        attr_reader :error_handler
 
         def fetch_latest_resolvable_version
           version = fetch_latest_resolvable_version_string
@@ -345,6 +347,8 @@ module Dependabot
                   "See https://getcomposer.org/doc/04-schema.md for details on the schema."
             raise Dependabot::DependencyFileNotParseable, msg
           else
+            error_handler.handle_composer_error(error)
+
             raise error
           end
         end
@@ -523,6 +527,53 @@ module Dependabot
             .select { |cred| cred["type"] == PackageManager::REPOSITORY_KEY }
             .select { |cred| cred["password"] }
         end
+      end
+    end
+
+    class ComposerErrorHandler
+      extend T::Sig
+
+      # Private source errors
+      CURL_ERROR = /curl error 52 while downloading (?<url>.*): Empty reply from server/
+
+      PRIVATE_SOURCE_AUTH_FAIL = [
+        /Could not authenticate against (?<url>.*)/,
+        /The '(?<url>.*)' URL could not be accessed \(HTTP 403\)/,
+        /The "(?<url>.*)" file could not be downloaded/
+      ].freeze
+
+      REQUIREMENT_ERROR = /^(?<req>.*) is invalid, it should not contain uppercase characters/
+
+      NO_URL = "No URL specified"
+
+      def sanitize_uri(url)
+        url = "http://#{url}" unless url.start_with?("http")
+        uri = URI.parse(url)
+        host = T.must(uri.host).downcase
+        host.start_with?("www.") ? host[4..-1] : host
+      end
+
+      # Handles errors with specific to composer error codes
+      sig { params(error: SharedHelpers::HelperSubprocessFailed).void }
+      def handle_composer_error(error)
+        # private source auth errors
+        PRIVATE_SOURCE_AUTH_FAIL.each do |regex|
+          next unless error.message.match?(regex)
+
+          url = T.must(error.message.match(regex)).named_captures["url"]
+          raise Dependabot::PrivateSourceAuthenticationFailure, sanitize_uri(url).empty? ? NO_URL : sanitize_uri(url)
+        end
+
+        # invalid requirement mentioned in manifest file
+        if error.message.match?(REQUIREMENT_ERROR)
+          raise DependencyFileNotResolvable,
+                "Invalid requirement: #{T.must(error.message.match(REQUIREMENT_ERROR)).named_captures['req']}"
+        end
+
+        return unless error.message.match?(CURL_ERROR)
+
+        url = T.must(error.message.match(CURL_ERROR)).named_captures["url"]
+        raise PrivateSourceBadResponse, url
       end
     end
   end

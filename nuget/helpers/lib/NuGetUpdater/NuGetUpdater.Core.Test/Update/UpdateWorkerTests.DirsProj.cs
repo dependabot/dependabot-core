@@ -366,7 +366,7 @@ public partial class UpdateWorkerTests
 
                 experimentsManager ??= new ExperimentsManager();
                 var projectPath = Path.Combine(temporaryDirectory, projectFileName);
-                var worker = new UpdaterWorker(experimentsManager, new TestLogger());
+                var worker = new UpdaterWorker("TEST-JOB-ID", experimentsManager, new TestLogger());
                 await worker.RunAsync(temporaryDirectory, projectPath, dependencyName, oldVersion, newVersion, isTransitive);
             });
 

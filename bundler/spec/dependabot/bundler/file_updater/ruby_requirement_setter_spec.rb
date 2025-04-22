@@ -96,7 +96,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::RubyRequirementSetter do
           bundler_project_dependency_file("gemfile_impossible_ruby", filename: "example.gemspec")
         end
 
-        specify { expect { rewrite }.to raise_error(described_class::RubyVersionNotFound) }
+        specify { expect { rewrite }.to raise_error(Dependabot::ToolVersionNotSupported) }
       end
 
       context "when requiring ruby 3" do

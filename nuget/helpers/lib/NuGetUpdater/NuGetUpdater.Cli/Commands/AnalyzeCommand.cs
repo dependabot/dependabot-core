@@ -7,6 +7,7 @@ namespace NuGetUpdater.Cli.Commands;
 
 internal static class AnalyzeCommand
 {
+    internal static readonly Option<string> JobIdOption = new("--job-id") { IsRequired = true };
     internal static readonly Option<FileInfo> JobPathOption = new("--job-path") { IsRequired = true };
     internal static readonly Option<DirectoryInfo> RepoRootOption = new("--repo-root") { IsRequired = true };
     internal static readonly Option<FileInfo> DependencyFilePathOption = new("--dependency-file-path") { IsRequired = true };
@@ -17,6 +18,7 @@ internal static class AnalyzeCommand
     {
         Command command = new("analyze", "Determines how to update a dependency based on the workspace discovery information.")
         {
+            JobIdOption,
             JobPathOption,
             RepoRootOption,
             DependencyFilePathOption,
@@ -26,13 +28,13 @@ internal static class AnalyzeCommand
 
         command.TreatUnmatchedTokensAsErrors = true;
 
-        command.SetHandler(async (jobPath, repoRoot, discoveryPath, dependencyPath, analysisDirectory) =>
+        command.SetHandler(async (jobId, jobPath, repoRoot, discoveryPath, dependencyPath, analysisDirectory) =>
         {
-            var logger = new ConsoleLogger();
-            var experimentsManager = await ExperimentsManager.FromJobFileAsync(jobPath.FullName, logger);
-            var worker = new AnalyzeWorker(experimentsManager, logger);
+            var logger = new OpenTelemetryLogger();
+            var (experimentsManager, _errorResult) = await ExperimentsManager.FromJobFileAsync(jobId, jobPath.FullName);
+            var worker = new AnalyzeWorker(jobId, experimentsManager, logger);
             await worker.RunAsync(repoRoot.FullName, discoveryPath.FullName, dependencyPath.FullName, analysisDirectory.FullName);
-        }, JobPathOption, RepoRootOption, DiscoveryFilePathOption, DependencyFilePathOption, AnalysisFolderOption);
+        }, JobIdOption, JobPathOption, RepoRootOption, DiscoveryFilePathOption, DependencyFilePathOption, AnalysisFolderOption);
 
         return command;
     }

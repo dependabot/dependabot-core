@@ -296,6 +296,38 @@ RSpec.describe Dependabot::UpdateFilesCommand do
       end
     end
 
+    context "with a Dependabot::DependencyFileNotParseable error" do
+      let(:error) { Dependabot::DependencyFileNotParseable.new("path/to/file", "a") }
+
+      let(:snapshot) do
+        instance_double(Dependabot::DependencySnapshot,
+                        base_commit_sha: "1c6331732c41e4557a16dacb82534f1d1c831848")
+      end
+
+      let(:updater) do
+        instance_double(Dependabot::Updater,
+                        service: service,
+                        job: job,
+                        dependency_snapshot: snapshot)
+      end
+
+      before do
+        allow(Dependabot::DependencySnapshot).to receive(:create_from_job_definition).and_return(snapshot)
+        allow(Dependabot::Updater).to receive(:new).and_return(updater)
+        allow(updater).to receive(:run).and_raise(error)
+      end
+
+      it "only records a job error" do
+        expect(service).not_to receive(:capture_exception)
+        expect(service).to receive(:record_update_job_error).with(
+          error_type: "dependency_file_not_parseable",
+          error_details: { "file-path": "path/to/file", message: "a" }
+        )
+
+        perform_job
+      end
+    end
+
     context "with a Dependabot::DependencyFileNotFound error" do
       let(:error) { Dependabot::DependencyFileNotFound.new("path/to/file") }
 

@@ -123,13 +123,15 @@ updates:
     groups:
       common:
         patterns:
-          - pip
+          - hashin
           - cython
           - flake8
-      poetry:
+      # Keep the package managers themselves separate because they are higher risk
+      # and also higher visibility--ie, users generally want latest, so we don't
+      # want breakage in the `common` group to prevent updating package manager versions
+      pip:
         patterns:
-          - poetry
-          - hashin
+          - pip
       pip-tools:
         patterns:
           - pip-tools
@@ -137,6 +139,9 @@ updates:
         patterns:
           - pipfile
           - pipenv
+      poetry:
+        patterns:
+          - poetry
   - package-ecosystem: "pub"
     directory: "/pub/helpers"
     schedule:

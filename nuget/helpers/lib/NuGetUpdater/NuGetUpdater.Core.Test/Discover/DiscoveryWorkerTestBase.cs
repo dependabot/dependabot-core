@@ -5,7 +5,9 @@ using System.Text.Json;
 
 using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Test.Update;
+using NuGetUpdater.Core.Test.Updater;
 using NuGetUpdater.Core.Test.Utilities;
+using NuGetUpdater.Core.Updater;
 using NuGetUpdater.Core.Utilities;
 
 using Xunit;
@@ -21,14 +23,15 @@ public class DiscoveryWorkerTestBase : TestBase
         TestFile[] files,
         ExpectedWorkspaceDiscoveryResult expectedResult,
         MockNuGetPackage[]? packages = null,
+        bool includeCommonPackages = true,
         ExperimentsManager? experimentsManager = null)
     {
         experimentsManager ??= new ExperimentsManager();
         var actualResult = await RunDiscoveryAsync(files, async directoryPath =>
         {
-            await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(packages, directoryPath);
+            await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(packages, directoryPath, includeCommonPackages: includeCommonPackages);
 
-            var worker = new DiscoveryWorker(experimentsManager, new TestLogger());
+            var worker = new DiscoveryWorker("TEST-JOB-ID", experimentsManager, new TestLogger());
             var result = await worker.RunWithErrorHandlingAsync(directoryPath, workspacePath);
             return result;
         });
@@ -44,8 +47,7 @@ public class DiscoveryWorkerTestBase : TestBase
         ValidateResultWithDependencies(expectedResult.DotNetToolsJson, actualResult.DotNetToolsJson);
         ValidateProjectResults(expectedResult.Projects, actualResult.Projects, experimentsManager);
         Assert.Equal(expectedResult.ExpectedProjectCount ?? expectedResult.Projects.Length, actualResult.Projects.Length);
-        Assert.Equal(expectedResult.ErrorType, actualResult.ErrorType);
-        Assert.Equal(expectedResult.ErrorDetails, actualResult.ErrorDetails);
+        ValidateDiscoveryOperationResult(expectedResult, actualResult);
 
         return;
 
@@ -64,6 +66,22 @@ public class DiscoveryWorkerTestBase : TestBase
             Assert.Equal(expectedResult.FilePath.NormalizePathToUnix(), actualResult.FilePath.NormalizePathToUnix());
             ValidateDependencies(expectedResult.Dependencies, actualResult.Dependencies);
             Assert.Equal(expectedResult.ExpectedDependencyCount ?? expectedResult.Dependencies.Length, actualResult.Dependencies.Length);
+        }
+    }
+
+    protected static void ValidateDiscoveryOperationResult(ExpectedWorkspaceDiscoveryResult? expectedResult, WorkspaceDiscoveryResult actualResult)
+    {
+        if (expectedResult?.Error is not null)
+        {
+            ValidateError(expectedResult.Error, actualResult.Error);
+        }
+        else if (expectedResult?.ErrorRegex is not null)
+        {
+            ValidateErrorRegex(expectedResult.ErrorRegex, actualResult.Error);
+        }
+        else
+        {
+            Assert.Null(actualResult.Error);
         }
     }
 

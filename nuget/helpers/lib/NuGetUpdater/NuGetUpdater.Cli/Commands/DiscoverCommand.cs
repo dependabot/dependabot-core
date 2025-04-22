@@ -7,6 +7,7 @@ namespace NuGetUpdater.Cli.Commands;
 
 internal static class DiscoverCommand
 {
+    internal static readonly Option<string> JobIdOption = new("--job-id") { IsRequired = true };
     internal static readonly Option<FileInfo> JobPathOption = new("--job-path") { IsRequired = true };
     internal static readonly Option<DirectoryInfo> RepoRootOption = new("--repo-root") { IsRequired = true };
     internal static readonly Option<string> WorkspaceOption = new("--workspace") { IsRequired = true };
@@ -16,6 +17,7 @@ internal static class DiscoverCommand
     {
         Command command = new("discover", "Generates a report of the workspace dependencies and where they are located.")
         {
+            JobIdOption,
             JobPathOption,
             RepoRootOption,
             WorkspaceOption,
@@ -24,13 +26,27 @@ internal static class DiscoverCommand
 
         command.TreatUnmatchedTokensAsErrors = true;
 
-        command.SetHandler(async (jobPath, repoRoot, workspace, outputPath) =>
+        command.SetHandler(async (jobId, jobPath, repoRoot, workspace, outputPath) =>
         {
-            var logger = new ConsoleLogger();
-            var experimentsManager = await ExperimentsManager.FromJobFileAsync(jobPath.FullName, logger);
-            var worker = new DiscoveryWorker(experimentsManager, logger);
+            var logger = new OpenTelemetryLogger();
+            MSBuildHelper.RegisterMSBuild(repoRoot.FullName, repoRoot.FullName, logger);
+            var (experimentsManager, error) = await ExperimentsManager.FromJobFileAsync(jobId, jobPath.FullName);
+            if (error is not null)
+            {
+                // to make testing easier, this should be a `WorkspaceDiscoveryResult` object
+                var discoveryErrorResult = new WorkspaceDiscoveryResult
+                {
+                    Error = error,
+                    Path = workspace,
+                    Projects = [],
+                };
+                await DiscoveryWorker.WriteResultsAsync(repoRoot.FullName, outputPath.FullName, discoveryErrorResult);
+                return;
+            }
+
+            var worker = new DiscoveryWorker(jobId, experimentsManager, logger);
             await worker.RunAsync(repoRoot.FullName, workspace, outputPath.FullName);
-        }, JobPathOption, RepoRootOption, WorkspaceOption, OutputOption);
+        }, JobIdOption, JobPathOption, RepoRootOption, WorkspaceOption, OutputOption);
 
         return command;
     }

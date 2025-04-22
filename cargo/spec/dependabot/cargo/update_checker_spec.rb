@@ -49,6 +49,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
   let(:security_advisories) { [] }
   let(:raise_on_ignored) { false }
   let(:ignored_versions) { [] }
+  let(:update_cooldown) { nil }
   let(:checker) do
     described_class.new(
       dependency: dependency,
@@ -57,7 +58,8 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
       ignored_versions: ignored_versions,
       raise_on_ignored: raise_on_ignored,
       security_advisories: security_advisories,
-      requirements_update_strategy: requirements_update_strategy
+      requirements_update_strategy: requirements_update_strategy,
+      update_cooldown: update_cooldown
     )
   end
   let(:crates_fixture_name) { "#{dependency_name}.json" }
@@ -506,6 +508,45 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
       let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
 
       it { is_expected.to be(false) }
+    end
+  end
+
+  describe "with cooldown options" do
+    let(:update_cooldown) do
+      Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7)
+    end
+    let(:expected_cooldown_options) do
+      Dependabot::Package::ReleaseCooldownOptions.new(
+        default_days: 7,
+        semver_major_days: 7,
+        semver_minor_days: 7,
+        semver_patch_days: 7,
+        include: [],
+        exclude: []
+      )
+    end
+
+    before do
+      latest_version = instance_double(Dependabot::Cargo::UpdateChecker::LatestVersionFinder)
+      allow(latest_version)
+        .to receive(:latest_version).and_return({ version: Gem::Version.new("1.5.0") })
+      allow(Dependabot::Cargo::UpdateChecker::LatestVersionFinder)
+        .to receive(:new).and_return(latest_version)
+    end
+
+    it "passes cooldown_options to LatestVersionFinder" do
+      checker.latest_version
+
+      expect(Dependabot::Cargo::UpdateChecker::LatestVersionFinder).to have_received(:new).with(
+        hash_including(cooldown_options: an_object_having_attributes(
+          default_days: expected_cooldown_options.default_days,
+          semver_major_days: expected_cooldown_options.semver_major_days,
+          semver_minor_days: expected_cooldown_options.semver_minor_days,
+          semver_patch_days: expected_cooldown_options.semver_patch_days,
+          include: expected_cooldown_options.include,
+          exclude: expected_cooldown_options.exclude
+        ))
+      )
     end
   end
 end

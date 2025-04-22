@@ -4,6 +4,7 @@ using System.Text.Json;
 using NuGet;
 
 using NuGetUpdater.Core.Analyze;
+using NuGetUpdater.Core.Run.ApiModel;
 
 using Xunit;
 
@@ -478,6 +479,115 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
     }
 
     [Fact]
+    public async Task SafeVersionsPropertyIsHonored()
+    {
+        await TestAnalyzeAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0"), // initially this
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.1.0", "net8.0"), // should update to this due to `SafeVersions`
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.2.0", "net8.0"), // this should not be considered
+            ],
+            discovery: new()
+            {
+                Path = "/",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "./project.csproj",
+                        TargetFrameworks = ["net8.0"],
+                        Dependencies = [
+                            new("Some.Package", "1.0.0", DependencyType.PackageReference),
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
+                    },
+                ],
+            },
+            dependencyInfo: new()
+            {
+                Name = "Some.Package",
+                Version = "1.0.0",
+                IgnoredVersions = [],
+                IsVulnerable = false,
+                Vulnerabilities = [
+                    new()
+                    {
+                        DependencyName = "Some.Package",
+                        PackageManager = "nuget",
+                        VulnerableVersions = [Requirement.Parse(">= 1.0.0, < 1.1.0")],
+                        SafeVersions = [Requirement.Parse("= 1.1.0")]
+                    }
+                ],
+            },
+            expectedResult: new()
+            {
+                UpdatedVersion = "1.1.0",
+                CanUpdate = true,
+                VersionComesFromMultiDependencyProperty = false,
+                UpdatedDependencies = [
+                    new("Some.Package", "1.1.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
+                ],
+            }
+        );
+    }
+
+    [Fact]
+    public async Task WindowsSpecificProjectAndWindowsSpecificDependency()
+    {
+        await TestAnalyzeAsync(
+            experimentsManager: new ExperimentsManager() { UseDirectDiscovery = true },
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net6.0-windows7.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.1", "net6.0-windows7.0"),
+            ],
+            discovery: new()
+            {
+                Path = "/",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "./project.csproj",
+                        TargetFrameworks = ["net9.0-windows"],
+                        Dependencies = [
+                            new("Some.Package", "1.0.0", DependencyType.PackageReference),
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
+                    },
+                ],
+            },
+            dependencyInfo: new()
+            {
+                Name = "Some.Package",
+                Version = "1.0.0",
+                IgnoredVersions = [],
+                IsVulnerable = false,
+                Vulnerabilities = [
+                    new()
+                    {
+                        DependencyName = "Some.Package",
+                        PackageManager = "nuget",
+                        VulnerableVersions = [],
+                        SafeVersions = []
+                    }
+                ],
+            },
+            expectedResult: new()
+            {
+                UpdatedVersion = "1.0.1",
+                CanUpdate = true,
+                VersionComesFromMultiDependencyProperty = false,
+                UpdatedDependencies = [
+                    new("Some.Package", "1.0.1", DependencyType.PackageReference, TargetFrameworks: ["net9.0-windows"], IsDirect: true),
+                ],
+            }
+        );
+    }
+
+    [Fact]
     public async Task VersionFinderCanHandle404FromPackageSource_V2()
     {
         static (int, byte[]) TestHttpHandler1(string uriString)
@@ -592,7 +702,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
 
                     // nothing else is found
                     return (404, Encoding.UTF8.GetBytes("{}"));
-            };
+            }
         }
         using var http1 = TestHttpServer.CreateTestServer(TestHttpHandler1);
         using var http2 = TestHttpServer.CreateTestServer(TestHttpHandler2);
@@ -764,7 +874,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
 
                     // nothing else is found
                     return (404, Encoding.UTF8.GetBytes("{}"));
-            };
+            }
         }
         using var http1 = TestHttpServer.CreateTestServer(TestHttpHandler1);
         using var http2 = TestHttpServer.CreateTestServer(TestHttpHandler2);
@@ -954,7 +1064,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
 
                     // nothing else is found
                     return (404, Encoding.UTF8.GetBytes("{}"));
-            };
+            }
         }
         using var http = TestHttpServer.CreateTestServer(TestHttpHandler);
         await TestAnalyzeAsync(
@@ -1015,8 +1125,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
         using var temporaryDirectory = await TemporaryDirectory.CreateWithContentsAsync([]);
         await AnalyzeWorker.WriteResultsAsync(temporaryDirectory.DirectoryPath, "Some.Dependency", new()
         {
-            ErrorType = ErrorType.AuthenticationFailure,
-            ErrorDetails = "<some package feed>",
+            Error = new PrivateSourceAuthenticationFailure(["<some package feed>"]),
             UpdatedVersion = "",
             UpdatedDependencies = [],
         }, new TestLogger());
@@ -1025,16 +1134,23 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
         // raw result file should look like this:
         // {
         //   ...
-        //   "ErrorType": "AuthenticationFailure",
+        //   "Error": {
+        //     "error-type": "private_source_authentication_failure",
+        //     "error-details": {
+        //       "source": "(<some package feed>)"
+        //     }
+        //   }
         //   "ErrorDetails": "<some package feed>",
         //   ...
         // }
         var jsonDocument = JsonDocument.Parse(discoveryContents);
-        var errorType = jsonDocument.RootElement.GetProperty("ErrorType");
-        var errorDetails = jsonDocument.RootElement.GetProperty("ErrorDetails");
+        var error = jsonDocument.RootElement.GetProperty("Error");
+        var errorType = error.GetProperty("error-type");
+        var errorDetails = error.GetProperty("error-details");
+        var errorSource = errorDetails.GetProperty("source");
 
-        Assert.Equal("AuthenticationFailure", errorType.GetString());
-        Assert.Equal("<some package feed>", errorDetails.GetString());
+        Assert.Equal("private_source_authentication_failure", errorType.GetString());
+        Assert.Equal("(<some package feed>)", errorSource.GetString());
     }
 
     [Fact]
@@ -1110,8 +1226,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
             },
             expectedResult: new()
             {
-                ErrorType = ErrorType.AuthenticationFailure,
-                ErrorDetails = $"({http.BaseUrl.TrimEnd('/')}/index.json)",
+                Error = new PrivateSourceAuthenticationFailure([$"{http.BaseUrl.TrimEnd('/')}/index.json"]),
                 UpdatedVersion = string.Empty,
                 CanUpdate = false,
                 UpdatedDependencies = [],
@@ -1233,6 +1348,56 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
             {
                 UpdatedVersion = "1.0.0",
                 CanUpdate = false,
+                VersionComesFromMultiDependencyProperty = false,
+                UpdatedDependencies = [],
+            }
+        );
+    }
+
+    [Fact]
+    public async Task NuGetSourceDoesNotExist()
+    {
+        // this test simulates a `NuGet.Config` that points to an internal-only domain that dependabot doesn't have access to
+        await TestAnalyzeAsync(
+            extraFiles: [
+                ("NuGet.Config", """
+                    <configuration>
+                      <packageSources>
+                        <clear />
+                        <add key="feed_that_does_not_exist" value="https://this-domain-does-not-exist/nuget/v2" />
+                      </packageSources>
+                    </configuration>
+                    """)
+            ],
+            discovery: new()
+            {
+                Path = "/",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "./project.csproj",
+                        TargetFrameworks = ["net9.0"],
+                        Dependencies = [
+                            new("Some.Package", "1.0.0", DependencyType.PackageReference),
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
+                    }
+                ]
+            },
+            dependencyInfo: new()
+            {
+                Name = "Some.Package",
+                Version = "1.0.0",
+                IgnoredVersions = [],
+                IsVulnerable = false,
+                Vulnerabilities = [],
+            },
+            expectedResult: new()
+            {
+                CanUpdate = false,
+                UpdatedVersion = "1.0.0",
                 VersionComesFromMultiDependencyProperty = false,
                 UpdatedDependencies = [],
             }

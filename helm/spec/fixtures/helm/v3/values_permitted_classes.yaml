@@ -1,0 +1,8 @@
+image:
+  repository: nginx
+  date: 2023-01-01
+  time: 2023-01-01 12:00:00
+  symbol: :test_symbol
+  pullPolicy: IfNotPresent
+  tag: "1.25.3"
+

@@ -21,7 +21,13 @@ module Dependabot
 
         DOT_SEPARATOR_REGEX = %r{\.(?!\d+([.\/_\-]|$)+)}
 
-        sig { params(dependency_files: T::Array[DependencyFile], credentials: T::Array[String]).void }
+        sig do
+          params(
+            dependency_files: T::Array[DependencyFile],
+            credentials: T::Array[Dependabot::Credential]
+          )
+            .void
+        end
         def initialize(dependency_files:, credentials: [])
           @dependency_files = dependency_files
           @credentials = credentials

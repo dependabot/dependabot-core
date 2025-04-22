@@ -1709,5 +1709,155 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       specify { expect(updated_dependency_files).to all(be_a(Dependabot::DependencyFile)) }
       specify { expect(updated_dependency_files.length).to eq(1) }
     end
+
+    describe "#error_handler" do
+      subject(:error_handler) { Dependabot::Terraform::FileUpdaterErrorHandler.new }
+
+      let(:error) { instance_double(Dependabot::SharedHelpers::HelperSubprocessFailed, message: error_message) }
+
+      context "when the error message contains no resolvable releases" do
+        let(:error_message) do
+          "[31m[31m╷[0m[0m
+          [31m│[0m [0m[1m[31mError: [0m[0m[1mCould not retrieve providers for locking[0m
+          [31m│[0m [0m
+          [31m│[0m [0m[0mTerraform failed to fetch the requested providers for linux_amd64 in order
+          [31m│[0m [0mto calculate their checksums: some providers could not be installed:
+          [31m│[0m [0m- registry.terraform.io/firehydrant/firehydrant: no available releases
+          [31m│[0m [0mmatch the given constraints 0.13.4, 0.13.5.
+          [31m╵[0m[0m
+          [0m[0m"
+        end
+
+        it "raises a DependencyFileNotResolvable error with the correct message" do
+          expect do
+            error_handler.handle_helper_subprocess_failed_error(error)
+          end.to raise_error(Dependabot::DependencyFileNotResolvable)
+        end
+      end
+    end
+  end
+
+  describe "#update_registry_declaration" do
+    let(:new_req) do
+      {
+        requirement: "~> 6.6.0",
+        groups: [],
+        file: "main.tf",
+        source: {
+          type: "provider",
+          registry_hostname: "registry.terraform.io",
+          module_identifier: "integrations/github"
+        }
+      }
+    end
+
+    let(:old_req) do
+      {
+        requirement: "~> 4.28.0",
+        groups: [],
+        file: "main.tf",
+        source: {
+          type: "provider",
+          registry_hostname: "registry.terraform.io",
+          module_identifier: "integrations/github"
+        }
+      }
+    end
+
+    let(:updated_content) do
+      <<~TERRAFORM
+        terraform {
+          required_providers {
+            aws = {
+              version = "~> 5.0, != 5.86.0"
+              source  = "hashicorp/aws"
+            }
+            http = {
+              version = "~> 3.0"
+              source  = "hashicorp/http"
+            }
+            github = {
+              version = "~> 4.28.0"
+              source  = "integrations/github"
+            }
+            random = {
+              version = "~> 3.6"
+              source  = "hashicorp/random"
+            }
+          }
+          required_version = "~> 1.10"
+        }
+      TERRAFORM
+    end
+
+    let(:expected_content) do
+      <<~TERRAFORM
+        terraform {
+          required_providers {
+            aws = {
+              version = "~> 5.0, != 5.86.0"
+              source  = "hashicorp/aws"
+            }
+            http = {
+              version = "~> 3.0"
+              source  = "hashicorp/http"
+            }
+            github = {
+              version = "~> 6.6.0"
+              source  = "integrations/github"
+            }
+            random = {
+              version = "~> 3.6"
+              source  = "hashicorp/random"
+            }
+          }
+          required_version = "~> 1.10"
+        }
+      TERRAFORM
+    end
+
+    let(:dependencies) do
+      [
+        Dependabot::Dependency.new(
+          name: "integrations/github",
+          version: "6.6.0",
+          previous_version: "4.28.0",
+          requirements: [{
+            requirement: "~> 6.6.0",
+            groups: [],
+            file: "main.tf",
+            source: {
+              type: "provider",
+              registry_hostname: "registry.terraform.io",
+              module_identifier: "integrations/github"
+            }
+          }],
+          previous_requirements: [{
+            requirement: "~> 4.28.0",
+            groups: [],
+            file: "main.tf",
+            source: {
+              type: "provider",
+              registry_hostname: "registry.terraform.io",
+              module_identifier: "integrations/github"
+            }
+          }],
+          package_manager: "terraform"
+        )
+      ]
+    end
+
+    it "updates the registry declaration with the new requirement" do
+      file_updater = described_class.new(
+        dependency_files: [Dependabot::DependencyFile.new(name: "main.tf", content: updated_content)],
+        dependencies: dependencies,
+        credentials: []
+      )
+      content = updated_content.dup
+      file_updater.send(:update_registry_declaration, new_req, old_req, content)
+      expect(content).to include('version = "~> 6.6.0"') # New version is present
+      expect(content).not_to include('version = "~> 4.28.0"') # Old version is gone
+      expect(content).to eq(expected_content) # Overall structure matches expected content
+    end
   end
 end

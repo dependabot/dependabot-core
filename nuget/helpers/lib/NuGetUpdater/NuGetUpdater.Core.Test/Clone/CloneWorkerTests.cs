@@ -95,6 +95,65 @@ public class CloneWorkerTests
         );
     }
 
+    [Fact]
+    public async Task JobFileParseErrorIsReported_InvalidJson()
+    {
+        // arrange
+        var testApiHandler = new TestApiHandler();
+        var testGitCommandHandler = new TestGitCommandHandler();
+        var cloneWorker = new CloneWorker("JOB-ID", testApiHandler, testGitCommandHandler);
+        using var testDirectory = new TemporaryDirectory();
+        var jobFilePath = Path.Combine(testDirectory.DirectoryPath, "job.json");
+        await File.WriteAllTextAsync(jobFilePath, "not json");
+
+        // act
+        var result = await cloneWorker.RunAsync(new FileInfo(jobFilePath), new DirectoryInfo(testDirectory.DirectoryPath));
+
+        // assert
+        Assert.Equal(1, result);
+        var expectedParseErrorObject = testApiHandler.ReceivedMessages.Single(m => m.Type == typeof(UnknownError));
+        var unknownError = (UnknownError)expectedParseErrorObject.Object;
+        Assert.Equal("JsonException", unknownError.Details["error-class"]);
+    }
+
+    [Fact]
+    public async Task JobFileParseErrorIsReported_BadRequirement()
+    {
+        // arrange
+        var testApiHandler = new TestApiHandler();
+        var testGitCommandHandler = new TestGitCommandHandler();
+        var cloneWorker = new CloneWorker("JOB-ID", testApiHandler, testGitCommandHandler);
+        using var testDirectory = new TemporaryDirectory();
+        var jobFilePath = Path.Combine(testDirectory.DirectoryPath, "job.json");
+
+        // write a job file with a valid shape, but invalid requirement
+        await File.WriteAllTextAsync(jobFilePath, """
+            {
+                "job": {
+                    "source": {
+                        "provider": "github",
+                        "repo": "test/repo"
+                    },
+                    "security-advisories": [
+                        {
+                            "dependency-name": "Some.Dependency",
+                            "affected-versions": ["not a valid requirement"]
+                        }
+                    ]
+                }
+            }
+            """);
+
+        // act
+        var result = await cloneWorker.RunAsync(new FileInfo(jobFilePath), new DirectoryInfo(testDirectory.DirectoryPath));
+
+        // assert
+        Assert.Equal(1, result);
+        var expectedParseErrorObject = testApiHandler.ReceivedMessages.Single(m => m.Type == typeof(BadRequirement));
+        var badRequirement = (BadRequirement)expectedParseErrorObject.Object;
+        Assert.Equal("not a valid requirement", badRequirement.Details["message"]);
+    }
+
     private class TestGitCommandHandlerWithOutputs : TestGitCommandHandler
     {
         private readonly string _stdout;
@@ -134,8 +193,7 @@ public class CloneWorkerTests
         // arrange
         var testApiHandler = new TestApiHandler();
         testGitCommandHandler ??= new TestGitCommandHandler();
-        var testLogger = new TestLogger();
-        var worker = new CloneWorker(testApiHandler, testGitCommandHandler, testLogger);
+        var worker = new CloneWorker("TEST-JOB-ID", testApiHandler, testGitCommandHandler);
 
         // act
         var job = new Job()

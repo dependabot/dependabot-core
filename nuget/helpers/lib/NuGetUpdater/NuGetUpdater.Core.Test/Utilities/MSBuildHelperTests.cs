@@ -1,7 +1,8 @@
 using System.Collections.Immutable;
+using System.Text.Json;
 
-using NuGet.Build.Tasks;
-
+using NuGetUpdater.Core.Run;
+using NuGetUpdater.Core.Run.ApiModel;
 using NuGetUpdater.Core.Test.Update;
 
 using Xunit;
@@ -127,6 +128,50 @@ public class MSBuildHelperTests : TestBase
         }
     }
 
+    [Fact]
+    public async Task IntermediatePropsAndTargetsAreExcludedFromBuildFileDiscovery()
+    {
+        // arrange
+        var repoFiles = new[]
+        {
+            ("project.csproj", """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net9.0</TargetFramework>
+                  </PropertyGroup>
+                  <Import Project="SomeFile.props" />
+                  <ItemGroup>
+                    <PackageReference Include="Some.Package" Version="1.0.0" />
+                  </ItemGroup>
+                </Project>
+                """),
+            ("global.json", "{}"),
+            ("Directory.Build.props", "<Project />"),
+            ("Directory.Build.targets", "<Project />"),
+            ("SomeFile.props", "<Project />"),
+            // these simulate a direct discovery operation having previously been performed
+            ("obj/project.csproj.nuget.g.props", "<Project />"),
+            ("obj/project.csproj.nuget.g.targets", "<Project />"),
+        };
+        using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(repoFiles);
+        var fullProjectPath = Path.Combine(tempDir.DirectoryPath, "project.csproj");
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory([], tempDir.DirectoryPath);
+
+        // act
+        var (buildFiles, _tfms) = await MSBuildHelper.LoadBuildFilesAndTargetFrameworksAsync(tempDir.DirectoryPath, fullProjectPath);
+
+        // assert
+        var actualBuildFilePaths = buildFiles.Select(f => Path.GetRelativePath(tempDir.DirectoryPath, f.Path).NormalizePathToUnix()).ToArray();
+        var expectedBuildFilePaths = new[]
+        {
+            "project.csproj",
+            "Directory.Build.props",
+            "SomeFile.props",
+            "Directory.Build.targets",
+        };
+        AssertEx.Equal(expectedBuildFilePaths, actualBuildFilePaths);
+    }
+
     [Theory]
     [MemberData(nameof(GetTopLevelPackageDependencyInfosTestData))]
     public async Task TopLevelPackageDependenciesCanBeDetermined(TestFile[] buildFileContents, Dependency[] expectedTopLevelDependencies, MockNuGetPackage[] testPackages)
@@ -170,7 +215,7 @@ public class MSBuildHelperTests : TestBase
             new("Package.C", "3.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
             new("Package.D", "4.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
         ];
-        Dependency[] actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(
+        var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(
             temp.DirectoryPath,
             temp.DirectoryPath,
             "netstandard2.0",
@@ -423,7 +468,7 @@ public class MSBuildHelperTests : TestBase
             new("Package.B", "2.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
         ];
 
-        Dependency[] actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(
+        var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(
             temp.DirectoryPath,
             temp.DirectoryPath,
             "net8.0",
@@ -474,7 +519,7 @@ public class MSBuildHelperTests : TestBase
             {
                 new Dependency("Some.Package", "1.2.0", DependencyType.PackageReference),
                 new Dependency("Some.Other.Package", "1.0.0", DependencyType.PackageReference),
-            };
+            }.ToImmutableArray();
             var update = new[]
             {
                 new Dependency("Some.Other.Package", "1.2.0", DependencyType.PackageReference),
@@ -488,11 +533,11 @@ public class MSBuildHelperTests : TestBase
                 new TestLogger()
             );
             Assert.NotNull(resolvedDependencies);
-            Assert.Equal(2, resolvedDependencies.Length);
-            Assert.Equal("Some.Package", resolvedDependencies[0].Name);
-            Assert.Equal("1.2.0", resolvedDependencies[0].Version);
-            Assert.Equal("Some.Other.Package", resolvedDependencies[1].Name);
-            Assert.Equal("1.2.0", resolvedDependencies[1].Version);
+            Assert.Equal(2, resolvedDependencies.Value.Length);
+            Assert.Equal("Some.Package", resolvedDependencies.Value[0].Name);
+            Assert.Equal("1.2.0", resolvedDependencies.Value[0].Version);
+            Assert.Equal("Some.Other.Package", resolvedDependencies.Value[1].Name);
+            Assert.Equal("1.2.0", resolvedDependencies.Value[1].Version);
         }
         finally
         {
@@ -537,6 +582,101 @@ public class MSBuildHelperTests : TestBase
             """, evaluatedValue);
     }
 
+    [Theory]
+    [MemberData(nameof(GetTargetFrameworkValuesFromProjectData))]
+    public async Task GetTargetFrameworkValuesFromProject(string projectContents, string[] expectedTfms)
+    {
+        using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(
+        [
+            ("Directory.Build.props", "<Project />"),
+            ("Directory.Build.targets", "<Project />"),
+            ("project.csproj", projectContents)
+        ]);
+        var projectPath = Path.Combine(tempDir.DirectoryPath, "project.csproj");
+        var experimentsManager = new ExperimentsManager();
+        var logger = new TestLogger();
+        var actualTfms = await MSBuildHelper.GetTargetFrameworkValuesFromProject(tempDir.DirectoryPath, projectPath, experimentsManager, logger);
+        AssertEx.Equal(expectedTfms, actualTfms);
+    }
+
+    public static IEnumerable<object[]> GetTargetFrameworkValuesFromProjectData()
+    {
+        // SDK-style projects
+        yield return
+        [
+            """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>net8.0</TargetFramework>
+              </PropertyGroup>
+            </Project>
+            """,
+            new[] { "net8.0" }
+        ];
+
+        yield return
+        [
+            """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFrameworks> ; net8.0 ; </TargetFrameworks>
+              </PropertyGroup>
+            </Project>
+            """,
+            new[] { "net8.0" }
+        ];
+
+        yield return
+        [
+            """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+              </PropertyGroup>
+            </Project>
+            """,
+            new[] { "net8.0", "net9.0" }
+        ];
+
+        yield return
+        [
+            """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>net8.0-windows7.0</TargetFramework>
+              </PropertyGroup>
+            </Project>
+            """,
+            new[] { "net8.0-windows7.0" }
+        ];
+
+        yield return
+        [
+            """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>net9.0-windows</TargetFramework>
+              </PropertyGroup>
+            </Project>
+            """,
+            new[] { "net9.0-windows" }
+        ];
+
+        // legacy projects
+        yield return
+        [
+            """
+            <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+              <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+              <PropertyGroup>
+                <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+              </PropertyGroup>
+              <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+            </Project>
+            """,
+            new[] { "net45" }
+        ];
+    }
 
     #region
     // Updating root package
@@ -550,16 +690,26 @@ public class MSBuildHelperTests : TestBase
         var projectPath = Path.Join(tempDirectory.DirectoryPath, "project.csproj");
         await File.WriteAllTextAsync(projectPath, """
             <Project Sdk="Microsoft.NET.Sdk">
-                <PropertyGroup>
+              <PropertyGroup>
                 <TargetFramework>net8.0</TargetFramework>
-                </PropertyGroup>
-                <ItemGroup>
+              </PropertyGroup>
+              <ItemGroup>
                 <PackageReference Include="CS-Script.Core" Version="1.3.1" />
                 <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="3.4.0" />
                 <PackageReference Include="Microsoft.CodeAnalysis.Scripting.Common" Version="3.4.0" />
-                </ItemGroup>
+              </ItemGroup>
             </Project>
             """);
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory([
+            // initial packages
+            MockNuGetPackage.CreateSimplePackage("CS-Script.Core", "1.3.1", "net8.0", [(null, [("Microsoft.CodeAnalysis.Scripting.Common", "[3.4.0]")])]),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.Scripting.Common", "3.4.0", "net8.0", [(null, [("Microsoft.CodeAnalysis.Common", "[3.4.0]")])]),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.Common", "3.4.0", "net8.0"),
+            // available packages
+            MockNuGetPackage.CreateSimplePackage("CS-Script.Core", "2.0.0", "net8.0", [(null, [("Microsoft.CodeAnalysis.Scripting.Common", "[3.6.0]")])]),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.Scripting.Common", "3.6.0", "net8.0", [(null, [("Microsoft.CodeAnalysis.Common", "[3.6.0]")])]),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.Common", "3.6.0", "net8.0")
+        ], tempDirectory.DirectoryPath);
 
         var dependencies = new[]
         {
@@ -567,11 +717,11 @@ public class MSBuildHelperTests : TestBase
             new Dependency("CS-Script.Core", "1.3.1", DependencyType.PackageReference),
             new Dependency("Microsoft.CodeAnalysis.Common", "3.4.0", DependencyType.PackageReference),
             new Dependency("Microsoft.CodeAnalysis.Scripting.Common", "3.4.0", DependencyType.PackageReference),
-        };
+        }.ToImmutableArray();
         var update = new[]
         {
             new Dependency("CS-Script.Core", "2.0.0", DependencyType.PackageReference),
-        };
+        }.ToImmutableArray();
 
         var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(
             tempDirectory.DirectoryPath,
@@ -583,13 +733,14 @@ public class MSBuildHelperTests : TestBase
             new TestLogger()
         );
         Assert.NotNull(resolvedDependencies);
-        Assert.Equal(3, resolvedDependencies.Length);
-        Assert.Equal("CS-Script.Core", resolvedDependencies[0].Name);
-        Assert.Equal("2.0.0", resolvedDependencies[0].Version);
-        Assert.Equal("Microsoft.CodeAnalysis.Common", resolvedDependencies[1].Name);
-        Assert.Equal("3.6.0", resolvedDependencies[1].Version);
-        Assert.Equal("Microsoft.CodeAnalysis.Scripting.Common", resolvedDependencies[2].Name);
-        Assert.Equal("3.6.0", resolvedDependencies[2].Version);
+        var actualResolvedDependencies = resolvedDependencies.Value.Select(d => $"{d.Name}/{d.Version}").ToArray();
+        var expectedResolvedDependencies = new[]
+        {
+            "CS-Script.Core/2.0.0",
+            "Microsoft.CodeAnalysis.Common/3.6.0",
+            "Microsoft.CodeAnalysis.Scripting.Common/3.6.0",
+        };
+        AssertEx.Equal(expectedResolvedDependencies, actualResolvedDependencies);
     }
 
     // Updating a dependency (Microsoft.Bcl.AsyncInterfaces) of the root package (Azure.Core) will require the root package to also update, but since the dependency is not in the existing list, we do not include it
@@ -602,23 +753,31 @@ public class MSBuildHelperTests : TestBase
         var projectPath = Path.Join(tempDirectory.DirectoryPath, "project.csproj");
         await File.WriteAllTextAsync(projectPath, """
             <Project Sdk="Microsoft.NET.Sdk">
-                <PropertyGroup>
+              <PropertyGroup>
                 <TargetFramework>net8.0</TargetFramework>
-                </PropertyGroup>
-                <ItemGroup>
+              </PropertyGroup>
+              <ItemGroup>
                 <PackageReference Include="Azure.Core" Version="1.21.0" />
-                </ItemGroup>
+              </ItemGroup>
             </Project>
             """);
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory([
+            // initial packages
+            MockNuGetPackage.CreateSimplePackage("Azure.Core", "1.21.0", "net8.0", [(null, [("Microsoft.Bcl.AsyncInterfaces", "[1.0.0]")])]),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.Bcl.AsyncInterfaces", "1.0.0", "net8.0"),
+            // available packages
+            MockNuGetPackage.CreateSimplePackage("Azure.Core", "1.22.0", "net8.0", [(null, [("Microsoft.Bcl.AsyncInterfaces", "[1.1.1]")])]),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.Bcl.AsyncInterfaces", "1.1.1", "net8.0")
+        ], tempDirectory.DirectoryPath);
 
         var dependencies = new[]
         {
             new Dependency("Azure.Core", "1.21.0", DependencyType.PackageReference)
-        };
+        }.ToImmutableArray();
         var update = new[]
         {
             new Dependency("Microsoft.Bcl.AsyncInterfaces", "1.1.1", DependencyType.Unknown)
-        };
+        }.ToImmutableArray();
 
         var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(
             tempDirectory.DirectoryPath,
@@ -630,9 +789,12 @@ public class MSBuildHelperTests : TestBase
             new TestLogger()
         );
         Assert.NotNull(resolvedDependencies);
-        Assert.Single(resolvedDependencies);
-        Assert.Equal("Azure.Core", resolvedDependencies[0].Name);
-        Assert.Equal("1.22.0", resolvedDependencies[0].Version);
+        var actualResolvedDependencies = resolvedDependencies.Value.Select(d => $"{d.Name}/{d.Version}").ToArray();
+        var expectedResolvedDependencies = new[]
+        {
+            "Azure.Core/1.22.0",
+        };
+        AssertEx.Equal(expectedResolvedDependencies, actualResolvedDependencies);
     }
 
     // Adding a reference
@@ -647,23 +809,30 @@ public class MSBuildHelperTests : TestBase
         var projectPath = Path.Join(tempDirectory.DirectoryPath, "project.csproj");
         await File.WriteAllTextAsync(projectPath, """
             <Project Sdk="Microsoft.NET.Sdk">
-                <PropertyGroup>
+              <PropertyGroup>
                 <TargetFramework>net8.0</TargetFramework>
-                </PropertyGroup>
-                <ItemGroup>
+              </PropertyGroup>
+              <ItemGroup>
                 <PackageReference Include="Newtonsoft.Json.Bson" Version="1.0.2" />
-                </ItemGroup>
+              </ItemGroup>
             </Project>
             """);
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory([
+            // initial packages
+            MockNuGetPackage.CreateSimplePackage("Newtonsoft.Json.Bson", "1.0.2", "net8.0", [(null, [("Newtonsoft.Json", "12.0.1")])]),
+            MockNuGetPackage.CreateSimplePackage("Newtonsoft.Json", "12.0.1", "net8.0"),
+            // available packages
+            MockNuGetPackage.CreateSimplePackage("Newtonsoft.Json", "13.0.1", "net8.0")
+        ], tempDirectory.DirectoryPath);
 
         var dependencies = new[]
         {
             new Dependency("Newtonsoft.Json.Bson", "1.0.2", DependencyType.PackageReference)
-        };
+        }.ToImmutableArray();
         var update = new[]
         {
             new Dependency("Newtonsoft.Json", "13.0.1", DependencyType.Unknown)
-        };
+        }.ToImmutableArray();
 
         var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(
             tempDirectory.DirectoryPath,
@@ -675,11 +844,13 @@ public class MSBuildHelperTests : TestBase
             new TestLogger()
         );
         Assert.NotNull(resolvedDependencies);
-        Assert.Equal(2, resolvedDependencies.Length);
-        Assert.Equal("Newtonsoft.Json.Bson", resolvedDependencies[0].Name);
-        Assert.Equal("1.0.2", resolvedDependencies[0].Version);
-        Assert.Equal("Newtonsoft.Json", resolvedDependencies[1].Name);
-        Assert.Equal("13.0.1", resolvedDependencies[1].Version);
+        var actualResolvedDependencies = resolvedDependencies.Value.Select(d => $"{d.Name}/{d.Version}").ToArray();
+        var expectedResolvedDependencies = new[]
+        {
+            "Newtonsoft.Json.Bson/1.0.2",
+            "Newtonsoft.Json/13.0.1",
+        };
+        AssertEx.Equal(expectedResolvedDependencies, actualResolvedDependencies);
     }
 
     // Updating unreferenced dependency
@@ -695,27 +866,39 @@ public class MSBuildHelperTests : TestBase
         var projectPath = Path.Join(tempDirectory.DirectoryPath, "project.csproj");
         await File.WriteAllTextAsync(projectPath, """
             <Project Sdk="Microsoft.NET.Sdk">
-                <PropertyGroup>
+              <PropertyGroup>
                 <TargetFramework>net8.0</TargetFramework>
-                </PropertyGroup>
-                <ItemGroup>
+              </PropertyGroup>
+              <ItemGroup>
                 <PackageReference Include="Microsoft.CodeAnalysis.Compilers" Version="4.9.2" />
                 <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.9.2" />
                 <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="4.9.2" />
-                </ItemGroup>
+              </ItemGroup>
             </Project>
             """);
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory([
+            // initial packages
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.Compilers", "4.9.2", "net8.0", [(null, [("Microsoft.CodeAnalysis.Common", "[4.9.2]"), ("Microsoft.CodeAnalysis.CSharp", "[4.9.2]"), ("Microsoft.CodeAnalysis.VisualBasic", "[4.9.2]")])]),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.Common", "4.9.2", "net8.0"),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.CSharp", "4.9.2", "net8.0"),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.VisualBasic", "4.9.2", "net8.0"),
+            // available packages
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.Compilers", "4.10.0", "net8.0", [(null, [("Microsoft.CodeAnalysis.Common", "[4.10.0]"), ("Microsoft.CodeAnalysis.CSharp", "[4.10.0]"), ("Microsoft.CodeAnalysis.VisualBasic", "[4.10.0]")])]),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.Common", "4.10.0", "net8.0"),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.CSharp", "4.10.0", "net8.0"),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.VisualBasic", "4.10.0", "net8.0")
+        ], tempDirectory.DirectoryPath);
 
         var dependencies = new[]
         {
             new Dependency("Microsoft.CodeAnalysis.Compilers", "4.9.2", DependencyType.PackageReference),
             new Dependency("Microsoft.CodeAnalysis.CSharp", "4.9.2", DependencyType.PackageReference),
             new Dependency("Microsoft.CodeAnalysis.VisualBasic", "4.9.2", DependencyType.PackageReference)
-        };
+        }.ToImmutableArray();
         var update = new[]
         {
             new Dependency("Microsoft.CodeAnalysis.Common", "4.10.0", DependencyType.PackageReference)
-        };
+        }.ToImmutableArray();
 
         var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(
             tempDirectory.DirectoryPath,
@@ -727,13 +910,14 @@ public class MSBuildHelperTests : TestBase
             new TestLogger()
         );
         Assert.NotNull(resolvedDependencies);
-        Assert.Equal(3, resolvedDependencies.Length);
-        Assert.Equal("Microsoft.CodeAnalysis.Compilers", resolvedDependencies[0].Name);
-        Assert.Equal("4.10.0", resolvedDependencies[0].Version);
-        Assert.Equal("Microsoft.CodeAnalysis.CSharp", resolvedDependencies[1].Name);
-        Assert.Equal("4.10.0", resolvedDependencies[1].Version);
-        Assert.Equal("Microsoft.CodeAnalysis.VisualBasic", resolvedDependencies[2].Name);
-        Assert.Equal("4.10.0", resolvedDependencies[2].Version);
+        var actualResolvedDependencies = resolvedDependencies.Value.Select(d => $"{d.Name}/{d.Version}").ToArray();
+        var expectedResolvedDependencies = new[]
+        {
+            "Microsoft.CodeAnalysis.Compilers/4.10.0",
+            "Microsoft.CodeAnalysis.CSharp/4.10.0",
+            "Microsoft.CodeAnalysis.VisualBasic/4.10.0",
+        };
+        AssertEx.Equal(expectedResolvedDependencies, actualResolvedDependencies);
     }
 
     // Updating referenced dependency
@@ -747,17 +931,29 @@ public class MSBuildHelperTests : TestBase
         var projectPath = Path.Join(tempDirectory.DirectoryPath, "project.csproj");
         await File.WriteAllTextAsync(projectPath, """
             <Project Sdk="Microsoft.NET.Sdk">
-                <PropertyGroup>
+              <PropertyGroup>
                 <TargetFramework>net8.0</TargetFramework>
-                </PropertyGroup>
-                <ItemGroup>
+              </PropertyGroup>
+              <ItemGroup>
                 <PackageReference Include="Microsoft.CodeAnalysis.Compilers" Version="4.9.2" />
                 <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.9.2" />
                 <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.9.2" />
                 <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="4.9.2" />
-                </ItemGroup>
+              </ItemGroup>
             </Project>
             """);
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory([
+            // initial packages
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.Compilers", "4.9.2", "net8.0", [(null, [("Microsoft.CodeAnalysis.Common", "[4.9.2]"), ("Microsoft.CodeAnalysis.CSharp", "[4.9.2]"), ("Microsoft.CodeAnalysis.VisualBasic", "[4.9.2]")])]),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.Common", "4.9.2", "net8.0"),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.CSharp", "4.9.2", "net8.0"),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.VisualBasic", "4.9.2", "net8.0"),
+            // available packages
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.Compilers", "4.10.0", "net8.0", [(null, [("Microsoft.CodeAnalysis.Common", "[4.10.0]"), ("Microsoft.CodeAnalysis.CSharp", "[4.10.0]"), ("Microsoft.CodeAnalysis.VisualBasic", "[4.10.0]")])]),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.Common", "4.10.0", "net8.0"),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.CSharp", "4.10.0", "net8.0"),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.VisualBasic", "4.10.0", "net8.0")
+        ], tempDirectory.DirectoryPath);
 
         var dependencies = new[]
         {
@@ -765,11 +961,11 @@ public class MSBuildHelperTests : TestBase
             new Dependency("Microsoft.CodeAnalysis.Common", "4.9.2", DependencyType.PackageReference),
             new Dependency("Microsoft.CodeAnalysis.CSharp", "4.9.2", DependencyType.PackageReference),
             new Dependency("Microsoft.CodeAnalysis.VisualBasic", "4.9.2", DependencyType.PackageReference)
-        };
+        }.ToImmutableArray();
         var update = new[]
         {
             new Dependency("Microsoft.CodeAnalysis.Common", "4.10.0", DependencyType.PackageReference)
-        };
+        }.ToImmutableArray();
 
         var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(
             tempDirectory.DirectoryPath,
@@ -781,15 +977,15 @@ public class MSBuildHelperTests : TestBase
             new TestLogger()
         );
         Assert.NotNull(resolvedDependencies);
-        Assert.Equal(4, resolvedDependencies.Length);
-        Assert.Equal("Microsoft.CodeAnalysis.Compilers", resolvedDependencies[0].Name);
-        Assert.Equal("4.10.0", resolvedDependencies[0].Version);
-        Assert.Equal("Microsoft.CodeAnalysis.Common", resolvedDependencies[1].Name);
-        Assert.Equal("4.10.0", resolvedDependencies[1].Version);
-        Assert.Equal("Microsoft.CodeAnalysis.CSharp", resolvedDependencies[2].Name);
-        Assert.Equal("4.10.0", resolvedDependencies[2].Version);
-        Assert.Equal("Microsoft.CodeAnalysis.VisualBasic", resolvedDependencies[3].Name);
-        Assert.Equal("4.10.0", resolvedDependencies[3].Version);
+        var actualResolvedDependencies = resolvedDependencies.Value.Select(d => $"{d.Name}/{d.Version}").ToArray();
+        var expectedResolvedDependencies = new[]
+        {
+            "Microsoft.CodeAnalysis.Compilers/4.10.0",
+            "Microsoft.CodeAnalysis.Common/4.10.0",
+            "Microsoft.CodeAnalysis.CSharp/4.10.0",
+            "Microsoft.CodeAnalysis.VisualBasic/4.10.0",
+        };
+        AssertEx.Equal(expectedResolvedDependencies, actualResolvedDependencies);
     }
 
     // A combination of the third and fourth test, to measure efficiency of updating separate families
@@ -804,17 +1000,31 @@ public class MSBuildHelperTests : TestBase
         var projectPath = Path.Join(tempDirectory.DirectoryPath, "project.csproj");
         await File.WriteAllTextAsync(projectPath, """
             <Project Sdk="Microsoft.NET.Sdk">
-                <PropertyGroup>
+              <PropertyGroup>
                 <TargetFramework>net8.0</TargetFramework>
-                </PropertyGroup>
-                <ItemGroup>
+              </PropertyGroup>
+              <ItemGroup>
                 <PackageReference Include="Microsoft.CodeAnalysis.Compilers" Version="4.9.2" />
                 <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.9.2" />
                 <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="4.9.2" />
                 <PackageReference Include="Newtonsoft.Json.Bson" Version="1.0.2" />
-                </ItemGroup>
+              </ItemGroup>
             </Project>
             """);
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory([
+            // initial packages
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.Compilers", "4.9.2", "net8.0", [(null, [("Microsoft.CodeAnalysis.Common", "[4.9.2]"), ("Microsoft.CodeAnalysis.CSharp", "[4.9.2]"), ("Microsoft.CodeAnalysis.VisualBasic", "[4.9.2]")])]),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.Common", "4.9.2", "net8.0"),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.CSharp", "4.9.2", "net8.0"),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.VisualBasic", "4.9.2", "net8.0"),
+            MockNuGetPackage.CreateSimplePackage("Newtonsoft.Json.Bson", "1.0.2", "net8.0", [(null, [("Newtonsoft.Json", "13.0.1")])]),
+            MockNuGetPackage.CreateSimplePackage("Newtonsoft.Json", "13.0.1", "net8.0"),
+            // available packages
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.Compilers", "4.10.0", "net8.0", [(null, [("Microsoft.CodeAnalysis.Common", "[4.10.0]"), ("Microsoft.CodeAnalysis.CSharp", "[4.10.0]"), ("Microsoft.CodeAnalysis.VisualBasic", "[4.10.0]")])]),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.Common", "4.10.0", "net8.0"),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.CSharp", "4.10.0", "net8.0"),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.VisualBasic", "4.10.0", "net8.0")
+        ], tempDirectory.DirectoryPath);
 
         var dependencies = new[]
         {
@@ -822,12 +1032,12 @@ public class MSBuildHelperTests : TestBase
             new Dependency("Microsoft.CodeAnalysis.CSharp", "4.9.2", DependencyType.PackageReference),
             new Dependency("Microsoft.CodeAnalysis.VisualBasic", "4.9.2", DependencyType.PackageReference),
             new Dependency("Newtonsoft.Json.Bson", "1.0.2", DependencyType.PackageReference)
-        };
+        }.ToImmutableArray();
         var update = new[]
         {
             new Dependency("Microsoft.CodeAnalysis.Common", "4.10.0", DependencyType.PackageReference),
             new Dependency("Newtonsoft.Json", "13.0.1", DependencyType.Unknown)
-        };
+        }.ToImmutableArray();
 
         var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(
             tempDirectory.DirectoryPath,
@@ -839,17 +1049,16 @@ public class MSBuildHelperTests : TestBase
             new TestLogger()
         );
         Assert.NotNull(resolvedDependencies);
-        Assert.Equal(5, resolvedDependencies.Length);
-        Assert.Equal("Microsoft.CodeAnalysis.Compilers", resolvedDependencies[0].Name);
-        Assert.Equal("4.10.0", resolvedDependencies[0].Version);
-        Assert.Equal("Microsoft.CodeAnalysis.CSharp", resolvedDependencies[1].Name);
-        Assert.Equal("4.10.0", resolvedDependencies[1].Version);
-        Assert.Equal("Microsoft.CodeAnalysis.VisualBasic", resolvedDependencies[2].Name);
-        Assert.Equal("4.10.0", resolvedDependencies[2].Version);
-        Assert.Equal("Newtonsoft.Json.Bson", resolvedDependencies[3].Name);
-        Assert.Equal("1.0.2", resolvedDependencies[3].Version);
-        Assert.Equal("Newtonsoft.Json", resolvedDependencies[4].Name);
-        Assert.Equal("13.0.1", resolvedDependencies[4].Version);
+        var actualResolvedDependencies = resolvedDependencies.Value.Select(d => $"{d.Name}/{d.Version}").ToArray();
+        var expectedResolvedDependencies = new[]
+        {
+            "Microsoft.CodeAnalysis.Compilers/4.10.0",
+            "Microsoft.CodeAnalysis.CSharp/4.10.0",
+            "Microsoft.CodeAnalysis.VisualBasic/4.10.0",
+            "Newtonsoft.Json.Bson/1.0.2",
+            "Newtonsoft.Json/13.0.1",
+        };
+        AssertEx.Equal(expectedResolvedDependencies, actualResolvedDependencies);
     }
 
     // Two top level packages (Buildalyzer), (Microsoft.CodeAnalysis.CSharp.Scripting) that share a dependency (Microsoft.CodeAnalysis.Csharp)
@@ -899,11 +1108,11 @@ public class MSBuildHelperTests : TestBase
             new Dependency("Microsoft.CodeAnalysis.CSharp.Scripting", "3.10.0", DependencyType.PackageReference),
             new Dependency("Microsoft.CodeAnalysis.CSharp", "3.10.0", DependencyType.PackageReference),
             new Dependency("Microsoft.CodeAnalysis.Common", "3.10.0", DependencyType.PackageReference),
-        };
+        }.ToImmutableArray();
         var update = new[]
         {
             new Dependency("Buildalyzer", "7.0.1", DependencyType.PackageReference),
-        };
+        }.ToImmutableArray();
 
         // act
         var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(
@@ -925,7 +1134,7 @@ public class MSBuildHelperTests : TestBase
             "Microsoft.CodeAnalysis.Common/4.0.1"
         };
         Assert.NotNull(resolvedDependencies);
-        var actualDependencies = resolvedDependencies.Select(d => $"{d.Name}/{d.Version}").ToArray();
+        var actualDependencies = resolvedDependencies.Value.Select(d => $"{d.Name}/{d.Version}").ToArray();
         AssertEx.Equal(expectedDependencies, actualDependencies);
     }
 
@@ -941,31 +1150,46 @@ public class MSBuildHelperTests : TestBase
         var projectPath = Path.Join(tempDirectory.DirectoryPath, "project.csproj");
         await File.WriteAllTextAsync(projectPath, """
             <Project Sdk="Microsoft.NET.Sdk">
-                <PropertyGroup>
+              <PropertyGroup>
                 <TargetFramework>net8.0</TargetFramework>
-                </PropertyGroup>
-                <ItemGroup>
+              </PropertyGroup>
+              <ItemGroup>
                 <PackageReference Include="System.Collections.Immutable" Version="7.0.0" />
                 <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.8.0" />
                 <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="1.0.0" />
                 <PackageReference Include="Azure.Core" Version="1.21.0" />
-                </ItemGroup>
+              </ItemGroup>
             </Project>
             """);
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory([
+            // initial packages
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.CSharp.Scripting", "4.8.0", "net8.0", [(null, [("Microsoft.CodeAnalysis.CSharp", "[4.8.0]"), ("Microsoft.CodeAnalysis.Common", "[4.8.0]")])]),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.CSharp", "4.8.0", "net8.0", [(null, [("Microsoft.CodeAnalysis.Common", "[4.8.0]")])]),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.Common", "4.8.0", "net8.0", [(null, [("System.Collections.Immutable", "7.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("System.Collections.Immutable", "7.0.0", "net8.0"),
+            MockNuGetPackage.CreateSimplePackage("Azure.Core", "1.21.0", "net8.0", [(null, [("Microsoft.Bcl.AsyncInterfaces", "1.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.Bcl.AsyncInterfaces", "1.0.0", "net8.0"),
+            // available packages
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.CSharp.Scripting", "4.10.0", "net8.0", [(null, [("Microsoft.CodeAnalysis.CSharp", "[4.10.0]"), ("Microsoft.CodeAnalysis.Common", "[4.10.0]")])]),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.CSharp", "4.10.0", "net8.0", [(null, [("Microsoft.CodeAnalysis.Common", "[4.10.0]")])]),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.Common", "4.10.0", "net8.0", [(null, [("System.Collections.Immutable", "8.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("System.Collections.Immutable", "8.0.0", "net8.0"),
+            MockNuGetPackage.CreateSimplePackage("Azure.Core", "1.22.0", "net8.0", [(null, [("Microsoft.Bcl.AsyncInterfaces", "1.1.1")])]),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.Bcl.AsyncInterfaces", "1.1.1", "net8.0"),
+        ], tempDirectory.DirectoryPath);
 
         var dependencies = new[]
         {
             new Dependency("System.Collections.Immutable", "7.0.0", DependencyType.PackageReference),
             new Dependency("Microsoft.CodeAnalysis.CSharp.Scripting", "4.8.0", DependencyType.PackageReference),
-            new Dependency("Microsoft.Bcl.AsyncInterfaces", "1.0.0", DependencyType.Unknown),
+            new Dependency("Microsoft.Bcl.AsyncInterfaces", "1.0.0", DependencyType.PackageReference),
             new Dependency("Azure.Core", "1.21.0", DependencyType.PackageReference),
-
-        };
+        }.ToImmutableArray();
         var update = new[]
         {
             new Dependency("Microsoft.CodeAnalysis.Common", "4.10.0", DependencyType.PackageReference),
             new Dependency("Azure.Core", "1.22.0", DependencyType.PackageReference)
-        };
+        }.ToImmutableArray();
 
         var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(
             tempDirectory.DirectoryPath,
@@ -977,15 +1201,15 @@ public class MSBuildHelperTests : TestBase
             new TestLogger()
         );
         Assert.NotNull(resolvedDependencies);
-        Assert.Equal(4, resolvedDependencies.Length);
-        Assert.Equal("System.Collections.Immutable", resolvedDependencies[0].Name);
-        Assert.Equal("8.0.0", resolvedDependencies[0].Version);
-        Assert.Equal("Microsoft.CodeAnalysis.CSharp.Scripting", resolvedDependencies[1].Name);
-        Assert.Equal("4.10.0", resolvedDependencies[1].Version);
-        Assert.Equal("Microsoft.Bcl.AsyncInterfaces", resolvedDependencies[2].Name);
-        Assert.Equal("1.1.1", resolvedDependencies[2].Version);
-        Assert.Equal("Azure.Core", resolvedDependencies[3].Name);
-        Assert.Equal("1.22.0", resolvedDependencies[3].Version);
+        var actualResolvedDependencies = resolvedDependencies.Value.Select(d => $"{d.Name}/{d.Version}").ToArray();
+        var expectedResolvedDependencies = new[]
+        {
+            "System.Collections.Immutable/8.0.0",
+            "Microsoft.CodeAnalysis.CSharp.Scripting/4.10.0",
+            "Microsoft.Bcl.AsyncInterfaces/1.1.1",
+            "Azure.Core/1.22.0",
+        };
+        AssertEx.Equal(expectedResolvedDependencies, actualResolvedDependencies);
     }
 
     // Similar to the last test, except Microsoft.CodeAnalysis.Common is in the existing list
@@ -998,18 +1222,34 @@ public class MSBuildHelperTests : TestBase
         var projectPath = Path.Join(tempDirectory.DirectoryPath, "project.csproj");
         await File.WriteAllTextAsync(projectPath, """
             <Project Sdk="Microsoft.NET.Sdk">
-                <PropertyGroup>
+              <PropertyGroup>
                 <TargetFramework>net8.0</TargetFramework>
-                </PropertyGroup>
-                <ItemGroup>
+              </PropertyGroup>
+              <ItemGroup>
                 <PackageReference Include="System.Collections.Immutable" Version="7.0.0" />
                 <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.8.0" />
                 <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.8.0" />
                 <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="1.0.0" />
                 <PackageReference Include="Azure.Core" Version="1.21.0" />
-                </ItemGroup>
+              </ItemGroup>
             </Project>
             """);
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory([
+            // initial packages
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.CSharp.Scripting", "4.8.0", "net8.0", [(null, [("Microsoft.CodeAnalysis.CSharp", "[4.8.0]"), ("Microsoft.CodeAnalysis.Common", "[4.8.0]")])]),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.CSharp", "4.8.0", "net8.0", [(null, [("Microsoft.CodeAnalysis.Common", "[4.8.0]")])]),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.Common", "4.8.0", "net8.0", [(null, [("System.Collections.Immutable", "7.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("System.Collections.Immutable", "7.0.0", "net8.0"),
+            MockNuGetPackage.CreateSimplePackage("Azure.Core", "1.21.0", "net8.0", [(null, [("Microsoft.Bcl.AsyncInterfaces", "1.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.Bcl.AsyncInterfaces", "1.0.0", "net8.0"),
+            // available packages
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.CSharp.Scripting", "4.10.0", "net8.0", [(null, [("Microsoft.CodeAnalysis.CSharp", "[4.10.0]"), ("Microsoft.CodeAnalysis.Common", "[4.10.0]")])]),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.CSharp", "4.10.0", "net8.0", [(null, [("Microsoft.CodeAnalysis.Common", "[4.10.0]")])]),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.Common", "4.10.0", "net8.0", [(null, [("System.Collections.Immutable", "8.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("System.Collections.Immutable", "8.0.0", "net8.0"),
+            MockNuGetPackage.CreateSimplePackage("Azure.Core", "1.22.0", "net8.0", [(null, [("Microsoft.Bcl.AsyncInterfaces", "1.1.1")])]),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.Bcl.AsyncInterfaces", "1.1.1", "net8.0"),
+        ], tempDirectory.DirectoryPath);
 
         var dependencies = new[]
         {
@@ -1019,12 +1259,12 @@ public class MSBuildHelperTests : TestBase
             new Dependency("Microsoft.Bcl.AsyncInterfaces", "1.0.0", DependencyType.Unknown),
             new Dependency("Azure.Core", "1.21.0", DependencyType.PackageReference),
 
-        };
+        }.ToImmutableArray();
         var update = new[]
         {
             new Dependency("Microsoft.CodeAnalysis.Common", "4.10.0", DependencyType.PackageReference),
             new Dependency("Azure.Core", "1.22.0", DependencyType.PackageReference)
-        };
+        }.ToImmutableArray();
 
         var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(
             tempDirectory.DirectoryPath,
@@ -1036,17 +1276,16 @@ public class MSBuildHelperTests : TestBase
             new TestLogger()
         );
         Assert.NotNull(resolvedDependencies);
-        Assert.Equal(5, resolvedDependencies.Length);
-        Assert.Equal("System.Collections.Immutable", resolvedDependencies[0].Name);
-        Assert.Equal("8.0.0", resolvedDependencies[0].Version);
-        Assert.Equal("Microsoft.CodeAnalysis.CSharp.Scripting", resolvedDependencies[1].Name);
-        Assert.Equal("4.10.0", resolvedDependencies[1].Version);
-        Assert.Equal("Microsoft.CodeAnalysis.Common", resolvedDependencies[2].Name);
-        Assert.Equal("4.10.0", resolvedDependencies[2].Version);
-        Assert.Equal("Microsoft.Bcl.AsyncInterfaces", resolvedDependencies[3].Name);
-        Assert.Equal("1.1.1", resolvedDependencies[3].Version);
-        Assert.Equal("Azure.Core", resolvedDependencies[4].Name);
-        Assert.Equal("1.22.0", resolvedDependencies[4].Version);
+        var actualResolvedDependencies = resolvedDependencies.Value.Select(d => $"{d.Name}/{d.Version}").ToArray();
+        var expectedResolvedDependencies = new[]
+        {
+            "System.Collections.Immutable/8.0.0",
+            "Microsoft.CodeAnalysis.CSharp.Scripting/4.10.0",
+            "Microsoft.CodeAnalysis.Common/4.10.0",
+            "Microsoft.Bcl.AsyncInterfaces/1.1.1",
+            "Azure.Core/1.22.0"
+        };
+        AssertEx.Equal(expectedResolvedDependencies, actualResolvedDependencies);
     }
 
     // Out of scope test: AutoMapper.Extensions.Microsoft.DependencyInjection's versions are not yet compatible
@@ -1061,27 +1300,34 @@ public class MSBuildHelperTests : TestBase
         var projectPath = Path.Join(tempDirectory.DirectoryPath, "project.csproj");
         await File.WriteAllTextAsync(projectPath, """
             <Project Sdk="Microsoft.NET.Sdk">
-                <PropertyGroup>
+              <PropertyGroup>
                 <TargetFramework>net8.0</TargetFramework>
-                </PropertyGroup>
-                <ItemGroup>
+              </PropertyGroup>
+              <ItemGroup>
                 <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1" />
                 <PackageReference Include="AutoMapper" Version="12.0.1" />
                 <PackageReference Include="AutoMapper.Collection" Version="9.0.0" />
-                </ItemGroup>
+              </ItemGroup>
             </Project>
             """);
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory([
+            MockNuGetPackage.CreateSimplePackage("AutoMapper.Extensions.Microsoft.DependencyInjection", "12.0.1", "net8.0", [(null, [("AutoMapper", "[12.0.1]")])]),
+            MockNuGetPackage.CreateSimplePackage("AutoMapper", "12.0.1", "net8.0"),
+            MockNuGetPackage.CreateSimplePackage("AutoMapper", "13.0.1", "net8.0"),
+            MockNuGetPackage.CreateSimplePackage("AutoMapper.Collection", "9.0.0", "net8.0", [(null, [("AutoMapper", "[12.0.0, 13.0.0)")])]),
+            MockNuGetPackage.CreateSimplePackage("AutoMapper.Collection", "10.0.0", "net8.0", [(null, [("AutoMapper", "[13.0.0, 14.0.0)")])])
+        ], tempDirectory.DirectoryPath);
 
         var dependencies = new[]
         {
             new Dependency("AutoMapper.Extensions.Microsoft.DependencyInjection", "12.0.1", DependencyType.PackageReference),
             new Dependency("AutoMapper", "12.0.1", DependencyType.PackageReference),
             new Dependency("AutoMapper.Collection", "9.0.0", DependencyType.PackageReference)
-        };
+        }.ToImmutableArray();
         var update = new[]
         {
             new Dependency("AutoMapper.Collection", "10.0.0", DependencyType.PackageReference)
-        };
+        }.ToImmutableArray();
 
         var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(
             tempDirectory.DirectoryPath,
@@ -1093,13 +1339,14 @@ public class MSBuildHelperTests : TestBase
             new TestLogger()
         );
         Assert.NotNull(resolvedDependencies);
-        Assert.Equal(3, resolvedDependencies.Length);
-        Assert.Equal("AutoMapper.Extensions.Microsoft.DependencyInjection", resolvedDependencies[0].Name);
-        Assert.Equal("12.0.1", resolvedDependencies[0].Version);
-        Assert.Equal("AutoMapper", resolvedDependencies[1].Name);
-        Assert.Equal("12.0.1", resolvedDependencies[1].Version);
-        Assert.Equal("AutoMapper.Collection", resolvedDependencies[2].Name);
-        Assert.Equal("9.0.0", resolvedDependencies[2].Version);
+        var actualResolvedDependencies = resolvedDependencies.Value.Select(d => $"{d.Name}/{d.Version}").ToArray();
+        var expectedResolvedDependencies = new[]
+        {
+            "AutoMapper.Extensions.Microsoft.DependencyInjection/12.0.1",
+            "AutoMapper/12.0.1",
+            "AutoMapper.Collection/9.0.0",
+        };
+        AssertEx.Equal(expectedResolvedDependencies, actualResolvedDependencies);
     }
 
     // Two dependencies (Microsoft.Extensions.Caching.Memory), (Microsoft.EntityFrameworkCore.Analyzers) used by the same parent (Microsoft.EntityFrameworkCore), updating one of the dependencies
@@ -1112,25 +1359,35 @@ public class MSBuildHelperTests : TestBase
         var projectPath = Path.Join(tempDirectory.DirectoryPath, "project.csproj");
         await File.WriteAllTextAsync(projectPath, """
             <Project Sdk="Microsoft.NET.Sdk">
-                <PropertyGroup>
+              <PropertyGroup>
                 <TargetFramework>net8.0</TargetFramework>
-                </PropertyGroup>
-                <ItemGroup>
+              </PropertyGroup>
+              <ItemGroup>
                 <PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.11" />
                 <PackageReference Include="Microsoft.EntityFrameworkCore.Analyzers" Version="7.0.11" />
-                </ItemGroup>
+              </ItemGroup>
             </Project>
             """);
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory([
+            // initial packages
+            MockNuGetPackage.CreateSimplePackage("Microsoft.EntityFrameworkCore", "7.0.11", "net8.0", [(null, [("Microsoft.EntityFrameworkCore.Analyzers", "7.0.11"), ("Microsoft.Extensions.Caching.Memory", "7.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.EntityFrameworkCore.Analyzers", "7.0.11", "net8.0"),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.Extensions.Caching.Memory", "7.0.0", "net8.0"),
+            // available packages
+            MockNuGetPackage.CreateSimplePackage("Microsoft.EntityFrameworkCore", "8.0.0", "net8.0", [(null, [("Microsoft.EntityFrameworkCore.Analyzers", "8.0.0"), ("Microsoft.Extensions.Caching.Memory", "8.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.EntityFrameworkCore.Analyzers", "8.0.0", "net8.0"),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.Extensions.Caching.Memory", "8.0.0", "net8.0"),
+        ], tempDirectory.DirectoryPath);
 
         var dependencies = new[]
         {
             new Dependency("Microsoft.EntityFrameworkCore", "7.0.11", DependencyType.PackageReference),
             new Dependency("Microsoft.EntityFrameworkCore.Analyzers", "7.0.11", DependencyType.PackageReference)
-        };
+        }.ToImmutableArray();
         var update = new[]
         {
             new Dependency("Microsoft.Extensions.Caching.Memory", "8.0.0", DependencyType.PackageReference)
-        };
+        }.ToImmutableArray();
 
         var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(
             tempDirectory.DirectoryPath,
@@ -1142,11 +1399,13 @@ public class MSBuildHelperTests : TestBase
             new TestLogger()
         );
         Assert.NotNull(resolvedDependencies);
-        Assert.Equal(2, resolvedDependencies.Length);
-        Assert.Equal("Microsoft.EntityFrameworkCore", resolvedDependencies[0].Name);
-        Assert.Equal("8.0.0", resolvedDependencies[0].Version);
-        Assert.Equal("Microsoft.EntityFrameworkCore.Analyzers", resolvedDependencies[1].Name);
-        Assert.Equal("8.0.0", resolvedDependencies[1].Version);
+        var actualResolvedDependencies = resolvedDependencies.Value.Select(d => $"{d.Name}/{d.Version}").ToArray();
+        var expectedResolvedDependencies = new[]
+        {
+            "Microsoft.EntityFrameworkCore/8.0.0",
+            "Microsoft.EntityFrameworkCore.Analyzers/8.0.0",
+        };
+        AssertEx.Equal(expectedResolvedDependencies, actualResolvedDependencies);
     }
 
     // Updating referenced package
@@ -1160,17 +1419,26 @@ public class MSBuildHelperTests : TestBase
         var projectPath = Path.Join(tempDirectory.DirectoryPath, "project.csproj");
         await File.WriteAllTextAsync(projectPath, """
             <Project Sdk="Microsoft.NET.Sdk">
-                <PropertyGroup>
+              <PropertyGroup>
                 <TargetFramework>net8.0</TargetFramework>
-                </PropertyGroup>
-                <ItemGroup>
+              </PropertyGroup>
+              <ItemGroup>
                 <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="7.0.0" />
                 <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="7.0.0" />
-                <PackageReference Include= "Microsoft.EntityFrameworkCore" Version="7.0.0" />
+                <PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.0" />
                 <PackageReference Include="Microsoft.EntityFrameworkCore.Analyzers" Version="7.0.0" />
-                </ItemGroup>
+              </ItemGroup>
             </Project>
             """);
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory([
+            // initial packages
+            MockNuGetPackage.CreateSimplePackage("Microsoft.EntityFrameworkCore.Design", "7.0.0", "net8.0", [(null, [("Microsoft.EntityFrameworkCore.Relational", "[7.0.0]")])]),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.EntityFrameworkCore.Relational", "7.0.0", "net8.0", [(null, [("Microsoft.EntityFrameworkCore", "[7.0.0]")])]),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.EntityFrameworkCore", "7.0.0", "net8.0", [(null, [("Microsoft.EntityFrameworkCore.Analyzers", "[7.0.0]")])]),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.EntityFrameworkCore.Analyzers", "7.0.0", "net8.0"),
+            // available packages
+            MockNuGetPackage.CreateSimplePackage("Microsoft.EntityFrameworkCore.Analyzers", "8.0.0", "net8.0")
+        ], tempDirectory.DirectoryPath);
 
         var dependencies = new[]
         {
@@ -1178,11 +1446,11 @@ public class MSBuildHelperTests : TestBase
             new Dependency("Microsoft.EntityFrameworkCore.Relational", "7.0.0", DependencyType.PackageReference),
             new Dependency("Microsoft.EntityFrameworkCore", "7.0.0", DependencyType.PackageReference),
             new Dependency("Microsoft.EntityFrameworkCore.Analyzers", "7.0.0", DependencyType.PackageReference)
-        };
+        }.ToImmutableArray();
         var update = new[]
         {
             new Dependency("Microsoft.EntityFrameworkCore.Analyzers", "8.0.0", DependencyType.PackageReference)
-        };
+        }.ToImmutableArray();
 
         var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(
             tempDirectory.DirectoryPath,
@@ -1194,15 +1462,15 @@ public class MSBuildHelperTests : TestBase
             new TestLogger()
         );
         Assert.NotNull(resolvedDependencies);
-        Assert.Equal(4, resolvedDependencies.Length);
-        Assert.Equal("Microsoft.EntityFrameworkCore.Design", resolvedDependencies[0].Name);
-        Assert.Equal("7.0.0", resolvedDependencies[0].Version);
-        Assert.Equal("Microsoft.EntityFrameworkCore.Relational", resolvedDependencies[1].Name);
-        Assert.Equal("7.0.0", resolvedDependencies[1].Version);
-        Assert.Equal("Microsoft.EntityFrameworkCore", resolvedDependencies[2].Name);
-        Assert.Equal("7.0.0", resolvedDependencies[2].Version);
-        Assert.Equal("Microsoft.EntityFrameworkCore.Analyzers", resolvedDependencies[3].Name);
-        Assert.Equal("8.0.0", resolvedDependencies[3].Version);
+        var actualResolvedDependencies = resolvedDependencies.Value.Select(d => $"{d.Name}/{d.Version}").ToArray();
+        var expectedResolvedDependencies = new[]
+        {
+            "Microsoft.EntityFrameworkCore.Design/7.0.0",
+            "Microsoft.EntityFrameworkCore.Relational/7.0.0",
+            "Microsoft.EntityFrameworkCore/7.0.0",
+            "Microsoft.EntityFrameworkCore.Analyzers/8.0.0",
+        };
+        AssertEx.Equal(expectedResolvedDependencies, actualResolvedDependencies);
     }
 
     // Updating unreferenced package
@@ -1216,27 +1484,39 @@ public class MSBuildHelperTests : TestBase
         var projectPath = Path.Join(tempDirectory.DirectoryPath, "project.csproj");
         await File.WriteAllTextAsync(projectPath, """
             <Project Sdk="Microsoft.NET.Sdk">
-                <PropertyGroup>
+              <PropertyGroup>
                 <TargetFramework>net8.0</TargetFramework>
-                </PropertyGroup>
-                <ItemGroup>
+              </PropertyGroup>
+              <ItemGroup>
                 <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="7.0.0" />
                 <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="7.0.0" />
                 <PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.0" />
-                </ItemGroup>
+              </ItemGroup>
             </Project>
             """);
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory([
+            // initial packages
+            MockNuGetPackage.CreateSimplePackage("Microsoft.EntityFrameworkCore.Design", "7.0.0", "net8.0", [(null, [("Microsoft.EntityFrameworkCore.Relational", "[7.0.0]")])]),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.EntityFrameworkCore.Relational", "7.0.0", "net8.0", [(null, [("Microsoft.EntityFrameworkCore", "[7.0.0]")])]),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.EntityFrameworkCore", "7.0.0", "net8.0", [(null, [("Microsoft.EntityFrameworkCore.Analyzers", "[7.0.0]")])]),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.EntityFrameworkCore.Analyzers", "7.0.0", "net8.0"),
+            // available packages
+            MockNuGetPackage.CreateSimplePackage("Microsoft.EntityFrameworkCore.Design", "8.0.0", "net8.0", [(null, [("Microsoft.EntityFrameworkCore.Relational", "[8.0.0]")])]),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.EntityFrameworkCore.Relational", "8.0.0", "net8.0", [(null, [("Microsoft.EntityFrameworkCore", "[8.0.0]")])]),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.EntityFrameworkCore", "8.0.0", "net8.0", [(null, [("Microsoft.EntityFrameworkCore.Analyzers", "[8.0.0]")])]),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.EntityFrameworkCore.Analyzers", "8.0.0", "net8.0")
+        ], tempDirectory.DirectoryPath);
 
         var dependencies = new[]
         {
             new Dependency("Microsoft.EntityFrameworkCore.Design", "7.0.0", DependencyType.PackageReference),
             new Dependency("Microsoft.EntityFrameworkCore.Relational", "7.0.0", DependencyType.PackageReference),
             new Dependency("Microsoft.EntityFrameworkCore", "7.0.0", DependencyType.PackageReference),
-        };
+        }.ToImmutableArray();
         var update = new[]
         {
             new Dependency("Microsoft.EntityFrameworkCore.Analyzers", "8.0.0", DependencyType.PackageReference)
-        };
+        }.ToImmutableArray();
 
         var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(
             tempDirectory.DirectoryPath,
@@ -1248,13 +1528,14 @@ public class MSBuildHelperTests : TestBase
             new TestLogger()
         );
         Assert.NotNull(resolvedDependencies);
-        Assert.Equal(3, resolvedDependencies.Length);
-        Assert.Equal("Microsoft.EntityFrameworkCore.Design", resolvedDependencies[0].Name);
-        Assert.Equal("8.0.0", resolvedDependencies[0].Version);
-        Assert.Equal("Microsoft.EntityFrameworkCore.Relational", resolvedDependencies[1].Name);
-        Assert.Equal("8.0.0", resolvedDependencies[1].Version);
-        Assert.Equal("Microsoft.EntityFrameworkCore", resolvedDependencies[2].Name);
-        Assert.Equal("8.0.0", resolvedDependencies[2].Version);
+        var actualResolvedDependencies = resolvedDependencies.Value.Select(d => $"{d.Name}/{d.Version}").ToArray();
+        var expectedResolvedDependencies = new[]
+        {
+            "Microsoft.EntityFrameworkCore.Design/8.0.0",
+            "Microsoft.EntityFrameworkCore.Relational/8.0.0",
+            "Microsoft.EntityFrameworkCore/8.0.0",
+        };
+        AssertEx.Equal(expectedResolvedDependencies, actualResolvedDependencies);
     }
 
     // Updating a referenced transitive dependency
@@ -1268,17 +1549,26 @@ public class MSBuildHelperTests : TestBase
         var projectPath = Path.Join(tempDirectory.DirectoryPath, "project.csproj");
         await File.WriteAllTextAsync(projectPath, """
             <Project Sdk="Microsoft.NET.Sdk">
-                <PropertyGroup>
+              <PropertyGroup>
                 <TargetFramework>net8.0</TargetFramework>
-                </PropertyGroup>
-                <ItemGroup>
+              </PropertyGroup>
+              <ItemGroup>
                 <PackageReference Include="System.Collections.Immutable" Version="7.0.0" />
                 <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.8.0" />
                 <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" />
                 <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.8.0" />
-                </ItemGroup>
+              </ItemGroup>
             </Project>
             """);
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory([
+            // initial packages
+            MockNuGetPackage.CreateSimplePackage("System.Collections.Immutable", "7.0.0", "net8.0"),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.CSharp.Workspaces", "4.8.0", "net8.0", [(null, [("Microsoft.CodeAnalysis.CSharp", "[4.8.0]"), ("Microsoft.CodeAnalysis.Common", "[4.8.0]")])]),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.CSharp", "4.8.0", "net8.0", [(null, [("Microsoft.CodeAnalysis.Common", "[4.8.0]")])]),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.Common", "4.8.0", "net8.0", [(null, [("System.Collections.Immutable", "7.0.0")])]),
+            // available packages
+            MockNuGetPackage.CreateSimplePackage("System.Collections.Immutable", "8.0.0", "net8.0")
+        ], tempDirectory.DirectoryPath);
 
         var dependencies = new[]
         {
@@ -1286,11 +1576,11 @@ public class MSBuildHelperTests : TestBase
             new Dependency("Microsoft.CodeAnalysis.CSharp.Workspaces", "4.8.0", DependencyType.PackageReference),
             new Dependency("Microsoft.CodeAnalysis.CSharp", "4.8.0", DependencyType.PackageReference),
             new Dependency("Microsoft.CodeAnalysis.Common", "4.8.0", DependencyType.PackageReference),
-        };
+        }.ToImmutableArray();
         var update = new[]
         {
             new Dependency("System.Collections.Immutable", "8.0.0", DependencyType.PackageReference),
-        };
+        }.ToImmutableArray();
 
         var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(
             tempDirectory.DirectoryPath,
@@ -1302,15 +1592,15 @@ public class MSBuildHelperTests : TestBase
             new TestLogger()
         );
         Assert.NotNull(resolvedDependencies);
-        Assert.Equal(4, resolvedDependencies.Length);
-        Assert.Equal("System.Collections.Immutable", resolvedDependencies[0].Name);
-        Assert.Equal("8.0.0", resolvedDependencies[0].Version);
-        Assert.Equal("Microsoft.CodeAnalysis.CSharp.Workspaces", resolvedDependencies[1].Name);
-        Assert.Equal("4.8.0", resolvedDependencies[1].Version);
-        Assert.Equal("Microsoft.CodeAnalysis.CSharp", resolvedDependencies[2].Name);
-        Assert.Equal("4.8.0", resolvedDependencies[2].Version);
-        Assert.Equal("Microsoft.CodeAnalysis.Common", resolvedDependencies[3].Name);
-        Assert.Equal("4.8.0", resolvedDependencies[3].Version);
+        var actualResolvedDependencies = resolvedDependencies.Value.Select(d => $"{d.Name}/{d.Version}").ToArray();
+        var expectedResolvedDependencies = new[]
+        {
+            "System.Collections.Immutable/8.0.0",
+            "Microsoft.CodeAnalysis.CSharp.Workspaces/4.8.0",
+            "Microsoft.CodeAnalysis.CSharp/4.8.0",
+            "Microsoft.CodeAnalysis.Common/4.8.0",
+        };
+        AssertEx.Equal(expectedResolvedDependencies, actualResolvedDependencies);
     }
 
     // Similar to the last test, with the "grandchild" (System.Collections.Immutable) not in the existing list
@@ -1323,28 +1613,42 @@ public class MSBuildHelperTests : TestBase
         var projectPath = Path.Join(tempDirectory.DirectoryPath, "project.csproj");
         await File.WriteAllTextAsync(projectPath, """
             <Project Sdk="Microsoft.NET.Sdk">
-                <PropertyGroup>
+              <PropertyGroup>
                 <TargetFramework>net8.0</TargetFramework>
-                </PropertyGroup>
-                <ItemGroup>
+              </PropertyGroup>
+              <ItemGroup>
                 <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.8.0" />
                 <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" />
                 <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.8.0" />
-                </ItemGroup>
+              </ItemGroup>
             </Project>
             """);
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory([
+            // initial packages
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.CSharp.Workspaces", "4.8.0", "net8.0", [(null, [("Microsoft.CodeAnalysis.CSharp", "[4.8.0]"), ("Microsoft.CodeAnalysis.Common", "[4.8.0]")])]),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.CSharp", "4.8.0", "net8.0", [(null, [("Microsoft.CodeAnalysis.Common", "[4.8.0]")])]),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.Common", "4.8.0", "net8.0", [(null, [("System.Collections.Immutable", "7.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("System.Collections.Immutable", "7.0.0", "net8.0"),
+            // available packages
+            MockNuGetPackage.CreateSimplePackage("System.Collections.Immutable", "8.0.0", "net8.0"),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.CSharp.Workspaces", "4.9.2", "net8.0", [(null, [("Microsoft.CodeAnalysis.CSharp", "[4.9.2]"), ("Microsoft.CodeAnalysis.Common", "[4.9.2]")])]),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.CSharp", "4.9.2", "net8.0", [(null, [("Microsoft.CodeAnalysis.Common", "[4.9.2]")])]),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.Common", "4.9.2", "net8.0", [(null, [("System.Collections.Immutable", "8.0.0")])]),
+            //MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.CSharp.Workspaces", "4.10.0", "net8.0", [(null, [("Microsoft.CodeAnalysis.CSharp", "[4.10.0]"), ("Microsoft.CodeAnalysis.Common", "[4.10.0]")])]),
+            //MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.CSharp", "4.10.0", "net8.0", [(null, [("Microsoft.CodeAnalysis.Common", "[4.10.0]")])]),
+            //MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.Common", "4.10.0", "net8.0", [(null, [("System.Collections.Immutable", "8.0.0")])])
+       ], tempDirectory.DirectoryPath);
 
         var dependencies = new[]
         {
             new Dependency("Microsoft.CodeAnalysis.CSharp.Workspaces", "4.8.0", DependencyType.PackageReference),
             new Dependency("Microsoft.CodeAnalysis.CSharp", "4.8.0", DependencyType.PackageReference),
             new Dependency("Microsoft.CodeAnalysis.Common", "4.8.0", DependencyType.PackageReference),
-
-        };
+        }.ToImmutableArray();
         var update = new[]
         {
             new Dependency("System.Collections.Immutable", "8.0.0", DependencyType.PackageReference),
-        };
+        }.ToImmutableArray();
 
         var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(
             tempDirectory.DirectoryPath,
@@ -1356,15 +1660,149 @@ public class MSBuildHelperTests : TestBase
             new TestLogger()
         );
         Assert.NotNull(resolvedDependencies);
-        Assert.Equal(3, resolvedDependencies.Length);
-        Assert.Equal("Microsoft.CodeAnalysis.CSharp.Workspaces", resolvedDependencies[0].Name);
-        Assert.Equal("4.9.2", resolvedDependencies[0].Version);
-        Assert.Equal("Microsoft.CodeAnalysis.CSharp", resolvedDependencies[1].Name);
-        Assert.Equal("4.9.2", resolvedDependencies[1].Version);
-        Assert.Equal("Microsoft.CodeAnalysis.Common", resolvedDependencies[2].Name);
-        Assert.Equal("4.9.2", resolvedDependencies[2].Version);
+        var actualResolvedDependencies = resolvedDependencies.Value.Select(d => $"{d.Name}/{d.Version}").ToArray();
+        var expectedResolvedDependencies = new[]
+        {
+            "Microsoft.CodeAnalysis.CSharp.Workspaces/4.9.2",
+            "Microsoft.CodeAnalysis.CSharp/4.9.2",
+            "Microsoft.CodeAnalysis.Common/4.9.2",
+        };
+        AssertEx.Equal(expectedResolvedDependencies, actualResolvedDependencies);
     }
     #endregion
+
+    [Theory]
+    [MemberData(nameof(GenerateErrorFromToolOutputTestData))]
+    public async Task GenerateErrorFromToolOutput(string output, JobErrorBase? expectedError)
+    {
+        Exception? exception = null;
+        try
+        {
+            MSBuildHelper.ThrowOnError(output);
+        }
+        catch (Exception ex)
+        {
+            exception = ex;
+        }
+
+        if (expectedError is null)
+        {
+            Assert.Null(exception);
+        }
+        else
+        {
+            Assert.NotNull(exception);
+            using var tempDir = await TemporaryDirectory.CreateWithContentsAsync([("NuGet.Config", """
+                <configuration>
+                  <packageSources>
+                    <clear />
+                    <add key="test-feed" value="http://localhost/test-feed" />
+                  </packageSources>
+                </configuration>
+                """)]);
+            var actualError = JobErrorBase.ErrorFromException(exception, "TEST-JOB-ID", tempDir.DirectoryPath);
+            if (actualError is DependencyFileNotFound notFound)
+            {
+                // normalize default message for the test
+                actualError = new DependencyFileNotFound(notFound.Details["file-path"].ToString()!, "test message");
+            }
+
+            var actualErrorJson = JsonSerializer.Serialize(actualError, RunWorker.SerializerOptions);
+            var expectedErrorJson = JsonSerializer.Serialize(expectedError, RunWorker.SerializerOptions);
+            Assert.Equal(expectedErrorJson, actualErrorJson);
+        }
+    }
+
+    public static IEnumerable<object?[]> GenerateErrorFromToolOutputTestData()
+    {
+        yield return
+        [
+            // output
+            "Everything was good.",
+            // expectedError
+            null,
+        ];
+
+        yield return
+        [
+            // output
+            "Response status code does not indicate success: 403",
+            // expectedError
+            new PrivateSourceAuthenticationFailure(["http://localhost/test-feed"]),
+        ];
+
+        yield return
+        [
+            // output
+            "The imported file \"some.file\" does not exist",
+            // expectedError
+            new DependencyFileNotFound("some.file", "test message"),
+        ];
+
+        yield return
+        [
+            // output
+            "Package 'Some.Package' is not found on source 'some-source'.",
+            // expectedError
+            new DependencyNotFound("Some.Package"),
+        ];
+
+        yield return
+        [
+            // output
+            "error NU1101: Unable to find package Some.Package. No packages exist with this id in source(s): some-source",
+            // expectedError
+            new DependencyNotFound("Some.Package"),
+        ];
+
+        yield return
+        [
+            // output
+            "Unable to find package Some.Package with version (= 1.2.3)",
+            // expectedError
+            new DependencyNotFound("Some.Package"),
+        ];
+
+        yield return
+        [
+            // output
+            """error : Could not resolve SDK "missing-sdk".""",
+            // expectedError
+            new DependencyNotFound("missing-sdk"),
+        ];
+
+        yield return
+        [
+            // output
+            "Unable to resolve dependencies. 'Some.Package 1.2.3' is not compatible with",
+            // expectedError
+            new UpdateNotPossible(["Some.Package.1.2.3"]),
+        ];
+
+        yield return
+        [
+            // output
+            "Could not install package 'Some.Package 1.2.3'. You are trying to install this package into a project that targets 'SomeFramework'",
+            // expectedError
+            new UpdateNotPossible(["Some.Package.1.2.3"]),
+        ];
+
+        yield return
+        [
+            // output
+            "Unable to find a version of 'Some.Package' that is compatible with 'Some.Other.Package 4.5.6 constraint: Some.Package (>= 1.2.3)'",
+            // expectedError
+            new UpdateNotPossible(["Some.Package.1.2.3"]),
+        ];
+
+        yield return
+        [
+            // output
+            "the following error(s) may be blocking the current package operation: 'Some.Package 1.2.3 constraint: Some.Other.Package (>= 4.5.6)'",
+            // expectedError
+            new UpdateNotPossible(["Some.Package.1.2.3"]),
+        ];
+    }
 
     public static IEnumerable<object[]> GetTopLevelPackageDependencyInfosTestData()
     {

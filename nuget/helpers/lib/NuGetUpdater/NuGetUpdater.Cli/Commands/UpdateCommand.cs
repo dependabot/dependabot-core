@@ -6,6 +6,7 @@ namespace NuGetUpdater.Cli.Commands;
 
 internal static class UpdateCommand
 {
+    internal static readonly Option<string> JobIdOption = new("--job-id") { IsRequired = true };
     internal static readonly Option<FileInfo> JobPathOption = new("--job-path") { IsRequired = true };
     internal static readonly Option<DirectoryInfo> RepoRootOption = new("--repo-root", () => new DirectoryInfo(Environment.CurrentDirectory)) { IsRequired = false };
     internal static readonly Option<FileInfo> SolutionOrProjectFileOption = new("--solution-or-project") { IsRequired = true };
@@ -19,6 +20,7 @@ internal static class UpdateCommand
     {
         Command command = new("update", "Applies the changes from an analysis report to update a dependency.")
         {
+            JobIdOption,
             JobPathOption,
             RepoRootOption,
             SolutionOrProjectFileOption,
@@ -30,15 +32,25 @@ internal static class UpdateCommand
         };
 
         command.TreatUnmatchedTokensAsErrors = true;
-
-        command.SetHandler(async (jobPath, repoRoot, solutionOrProjectFile, dependencyName, newVersion, previousVersion, isTransitive, resultOutputPath) =>
+        command.SetHandler(async (context) =>
         {
-            var logger = new ConsoleLogger();
-            var experimentsManager = await ExperimentsManager.FromJobFileAsync(jobPath.FullName, logger);
-            var worker = new UpdaterWorker(experimentsManager, logger);
+            // since we have more than 8 arguments, we have to pull them out manually
+            var jobId = context.ParseResult.GetValueForOption(JobIdOption)!;
+            var jobPath = context.ParseResult.GetValueForOption(JobPathOption)!;
+            var repoRoot = context.ParseResult.GetValueForOption(RepoRootOption)!;
+            var solutionOrProjectFile = context.ParseResult.GetValueForOption(SolutionOrProjectFileOption)!;
+            var dependencyName = context.ParseResult.GetValueForOption(DependencyNameOption)!;
+            var newVersion = context.ParseResult.GetValueForOption(NewVersionOption)!;
+            var previousVersion = context.ParseResult.GetValueForOption(PreviousVersionOption)!;
+            var isTransitive = context.ParseResult.GetValueForOption(IsTransitiveOption);
+            var resultOutputPath = context.ParseResult.GetValueForOption(ResultOutputPathOption);
+
+            var (experimentsManager, _error) = await ExperimentsManager.FromJobFileAsync(jobId, jobPath.FullName);
+            var logger = new OpenTelemetryLogger();
+            var worker = new UpdaterWorker(jobId, experimentsManager, logger);
             await worker.RunAsync(repoRoot.FullName, solutionOrProjectFile.FullName, dependencyName, previousVersion, newVersion, isTransitive, resultOutputPath);
             setExitCode(0);
-        }, JobPathOption, RepoRootOption, SolutionOrProjectFileOption, DependencyNameOption, NewVersionOption, PreviousVersionOption, IsTransitiveOption, ResultOutputPathOption);
+        });
 
         return command;
     }

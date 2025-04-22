@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 
 using NuGet.Common;
 using NuGet.Configuration;
+using NuGet.Frameworks;
 using NuGet.Packaging.Core;
 using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
@@ -12,6 +13,7 @@ namespace NuGetUpdater.Core.Analyze;
 internal static class VersionFinder
 {
     public static Task<VersionResult> GetVersionsAsync(
+        ImmutableArray<NuGetFramework> projectTfms,
         string packageId,
         NuGetVersion currentVersion,
         NuGetContext nugetContext,
@@ -20,10 +22,11 @@ internal static class VersionFinder
     {
         var versionFilter = CreateVersionFilter(currentVersion);
 
-        return GetVersionsAsync(packageId, currentVersion, versionFilter, nugetContext, logger, cancellationToken);
+        return GetVersionsAsync(projectTfms, packageId, currentVersion, versionFilter, nugetContext, logger, cancellationToken);
     }
 
     public static Task<VersionResult> GetVersionsAsync(
+        ImmutableArray<NuGetFramework> projectTfms,
         DependencyInfo dependencyInfo,
         NuGetContext nugetContext,
         ILogger logger,
@@ -34,10 +37,11 @@ internal static class VersionFinder
         var currentVersion = versionRange.MinVersion!;
         var versionFilter = CreateVersionFilter(dependencyInfo, versionRange);
 
-        return GetVersionsAsync(packageId, currentVersion, versionFilter, nugetContext, logger, cancellationToken);
+        return GetVersionsAsync(projectTfms, packageId, currentVersion, versionFilter, nugetContext, logger, cancellationToken);
     }
 
     public static async Task<VersionResult> GetVersionsAsync(
+        ImmutableArray<NuGetFramework> projectTfms,
         string packageId,
         NuGetVersion currentVersion,
         Func<NuGetVersion, bool> versionFilter,
@@ -58,16 +62,24 @@ internal static class VersionFinder
 
         foreach (var source in sources)
         {
-            var sourceRepository = Repository.Factory.GetCoreV3(source);
-            var feed = await sourceRepository.GetResourceAsync<MetadataResource>();
-            if (feed is null)
-            {
-                logger.Warn($"Failed to get MetadataResource for [{source.Source}]");
-                continue;
-            }
-
+            MetadataResource? feed = null;
             try
             {
+                var sourceRepository = Repository.Factory.GetCoreV3(source);
+                feed = await sourceRepository.GetResourceAsync<MetadataResource>();
+                if (feed is null)
+                {
+                    logger.Warn($"Failed to get {nameof(MetadataResource)} for [{source.Source}]");
+                    continue;
+                }
+
+                var packageFinder = await sourceRepository.GetResourceAsync<FindPackageByIdResource>();
+                if (packageFinder is null)
+                {
+                    logger.Warn($"Failed to get {nameof(FindPackageByIdResource)} for [{source.Source}]");
+                    continue;
+                }
+
                 // a non-compliant v2 API returning 404 can cause this to throw
                 var existsInFeed = await feed.Exists(
                     packageId,
@@ -100,7 +112,21 @@ internal static class VersionFinder
                 result.AddCurrentVersionSource(source);
             }
 
-            result.AddRange(source, feedVersions.Where(versionFilter));
+            var versions = feedVersions.Where(versionFilter).ToArray();
+            foreach (var version in versions)
+            {
+                var isTfmCompatible = await CompatibilityChecker.CheckAsync(
+                    new PackageIdentity(packageId, version),
+                    projectTfms,
+                    nugetContext,
+                    logger,
+                    CancellationToken.None);
+                if (isTfmCompatible || projectTfms.IsEmpty)
+                {
+                    // dotnet-tools.json and global.json packages won't specify a TFM, so they're always compatible
+                    result.Add(source, version);
+                }
+            }
         }
 
         return result;
@@ -113,11 +139,22 @@ internal static class VersionFinder
             ? versionRange.MinVersion
             : null;
 
-        return version => (currentVersion is null || version > currentVersion)
-            && versionRange.Satisfies(version)
-            && (currentVersion is null || !currentVersion.IsPrerelease || !version.IsPrerelease || version.Version == currentVersion.Version)
-            && !dependencyInfo.IgnoredVersions.Any(r => r.IsSatisfiedBy(version))
-            && !dependencyInfo.Vulnerabilities.Any(v => v.IsVulnerable(version));
+        var safeVersions = dependencyInfo.Vulnerabilities.SelectMany(v => v.SafeVersions).ToList();
+        return version =>
+        {
+            var versionGreaterThanCurrent = currentVersion is null || version > currentVersion;
+            var rangeSatisfies = versionRange.Satisfies(version);
+            var prereleaseTypeMatches = currentVersion is null || !currentVersion.IsPrerelease || !version.IsPrerelease || version.Version == currentVersion.Version;
+            var isIgnoredVersion = dependencyInfo.IgnoredVersions.Any(i => i.IsSatisfiedBy(version));
+            var isVulnerableVersion = dependencyInfo.Vulnerabilities.Any(v => v.IsVulnerable(version));
+            var isSafeVersion = !safeVersions.Any() || safeVersions.Any(s => s.IsSatisfiedBy(version));
+            return versionGreaterThanCurrent
+                && rangeSatisfies
+                && prereleaseTypeMatches
+                && !isIgnoredVersion
+                && !isVulnerableVersion
+                && isSafeVersion;
+        };
     }
 
     internal static Func<NuGetVersion, bool> CreateVersionFilter(NuGetVersion currentVersion)

@@ -2,7 +2,7 @@
     "repositories": [
         {
             "type": "composer",
-            "url": "https://composer.dependabot.com/"
+            "url": "https://example.com:81/"
         },
         {
             "packagist.org": false

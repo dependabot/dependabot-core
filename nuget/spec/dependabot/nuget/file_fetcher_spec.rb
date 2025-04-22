@@ -72,6 +72,8 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
           discovery_json_content = discovery_content_hash.to_json
           File.write(discovery_json_path, discovery_json_content)
         end
+      allow(Dependabot::Nuget::NativeHelpers)
+        .to receive(:normalize_file_names)
       # stub call to `fetch_file_from_host` because it expects an empty directory and other things that make the test
       # more difficult than it needs to be
       allow(file_fetcher_instance)
@@ -260,8 +262,12 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
             Projects: [],
             GlobalJson: nil,
             DotNetToolsJson: nil,
-            ErrorType: "AuthenticationFailure",
-            ErrorDetails: "the-error-details"
+            Error: {
+              "error-type": "private_source_authentication_failure",
+              "error-details": {
+                source: "some-package-source"
+              }
+            }
           }
         ) do
           expect { fetched_file_paths }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure)

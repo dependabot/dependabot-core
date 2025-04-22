@@ -7,6 +7,7 @@ require "dependabot/dependency"
 require "dependabot/docker/update_checker"
 require "dependabot/config"
 require "dependabot/config/update_config"
+require "dependabot/package/release_cooldown_options"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::Docker::UpdateChecker do
@@ -16,6 +17,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
   let(:source) { { tag: version } }
   let(:version) { "17.04" }
   let(:dependency_name) { "ubuntu" }
+  let(:update_cooldown) { nil }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -45,7 +47,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       dependency_files: [],
       credentials: credentials,
       ignored_versions: ignored_versions,
-      raise_on_ignored: raise_on_ignored
+      raise_on_ignored: raise_on_ignored,
+      update_cooldown: update_cooldown
     )
   end
 
@@ -141,7 +144,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         context "when the digest is up-to-date" do
           let(:source) do
             {
-              digest: "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86ca97" \
+              digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86ca97" \
                       "eba880ebf600d68608"
             }
           end
@@ -167,13 +170,13 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       end
 
       context "when the digest is out-to-date" do
-        let(:digest) { "c5dcd377b75ca89f40a7b4284c05c58be4cd43d089f83af1333e56bde33d579f" }
+        let(:digest) { "sha256:c5dcd377b75ca89f40a7b4284c05c58be4cd43d089f83af1333e56bde33d579f" }
 
         it { is_expected.to be_truthy }
       end
 
       context "when the digest is up-to-date" do
-        let(:latest_digest) { "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86ca97eba880ebf600d68608" }
+        let(:latest_digest) { "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86ca97eba880ebf600d68608" }
         let(:digest) { latest_digest }
 
         it { is_expected.to be_falsy }
@@ -226,7 +229,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       let(:source) do
         {
           registry: "registry.access.redhat.com",
-          digest: "3f32ebba0cbf3849a48372d4fc3a4ce70816f248d39eb50da7ea5f15c7f9d120"
+          digest: "sha256:3f32ebba0cbf3849a48372d4fc3a4ce70816f248d39eb50da7ea5f15c7f9d120"
         }
       end
       let(:version) { "8.5" }
@@ -258,9 +261,9 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       it { is_expected.to eq("artful") }
 
       context "when the version starts with a number" do
-        let(:version) { "309403913c7f0848e6616446edec909b55d53571" }
+        let(:version) { "sha256:309403913c7f0848e6616446edec909b55d53571" }
 
-        it { is_expected.to eq("309403913c7f0848e6616446edec909b55d53571") }
+        it { is_expected.to eq("sha256:309403913c7f0848e6616446edec909b55d53571") }
       end
     end
 
@@ -426,6 +429,28 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       it { is_expected.to eq("17.04") }
     end
 
+    context "when fetching the latest tag results in a JSON parser error" do
+      let(:tags_fixture_name) { "ubuntu.json" }
+      let(:version) { "12.10" }
+
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "generic.json")
+      end
+
+      before do
+        stub_request(:head, repo_url + "manifests/17.10")
+          .and_return(
+            status: 200,
+            body: "",
+            headers: JSON.parse(headers_response)
+          )
+
+        stub_request(:head, repo_url + "manifests/latest").to_raise(JSON::ParserError)
+      end
+
+      it { is_expected.to eq("17.10") }
+    end
+
     context "when the dependency's version has a prefix" do
       let(:version) { "artful-20170826" }
 
@@ -476,6 +501,42 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       it { is_expected.to eq("17.10") }
 
+      context "when it returns a bad response (TooManyRequests) error" do
+        before do
+          stub_request(:get, repo_url + "tags/list")
+            .to_raise(RestClient::TooManyRequests)
+        end
+
+        it "raises" do
+          expect { checker.latest_version }
+            .to raise_error(Dependabot::PrivateSourceBadResponse)
+        end
+
+        context "when using a private registry" do
+          let(:dependency_name) { "ubuntu" }
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: dependency_name,
+              version: version,
+              requirements: [{
+                requirement: nil,
+                groups: [],
+                file: "Dockerfile",
+                source: { registry: "registry-host.io:5000" }
+              }],
+              package_manager: "docker"
+            )
+          end
+          let(:repo_url) { "https://registry-host.io:5000/v2/ubuntu/" }
+          let(:tags_fixture_name) { "ubuntu_no_latest.json" }
+
+          it "raises" do
+            expect { checker.latest_version }
+              .to raise_error(Dependabot::PrivateSourceBadResponse)
+          end
+        end
+      end
+
       context "when the time out occurs every time" do
         before do
           stub_request(:get, repo_url + "tags/list")
@@ -509,6 +570,42 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
             expect { checker.latest_version }
               .to raise_error(Dependabot::PrivateSourceTimedOut)
           end
+        end
+      end
+
+      context "when there is ServerBrokeConnection error response" do
+        before do
+          stub_request(:get, repo_url + "tags/list")
+            .to_raise(RestClient::ServerBrokeConnection)
+        end
+
+        it "raises" do
+          expect { checker.latest_version }
+            .to raise_error(Dependabot::PrivateSourceBadResponse)
+        end
+      end
+
+      context "when there is ParserError response from while accessing docker image tags" do
+        before do
+          stub_request(:get, repo_url + "tags/list")
+            .to_raise(JSON::ParserError.new("unexpected token"))
+        end
+
+        it "raises" do
+          expect { checker.latest_version }
+            .to raise_error(Dependabot::DependencyFileNotResolvable)
+        end
+      end
+
+      context "when TooManyRequests request error" do
+        before do
+          stub_request(:get, repo_url + "tags/list")
+            .to_raise(RestClient::TooManyRequests)
+        end
+
+        it "raises" do
+          expect { checker.latest_version }
+            .to raise_error(Dependabot::PrivateSourceBadResponse)
         end
       end
     end
@@ -1290,7 +1387,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
     context "when the docker registry only knows about versions older than the current version" do
       let(:dependency_name) { "jetstack/cert-manager-controller" }
       let(:version) { "v1.7.2" }
-      let(:digest) { "1815870847a48a9a6f177b90005d8df273e79d00830c21af9d43e1b5d8d208b4" }
+      let(:digest) { "sha256:1815870847a48a9a6f177b90005d8df273e79d00830c21af9d43e1b5d8d208b4" }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: dependency_name,
@@ -1302,7 +1399,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
             source: {
               registry: "quay.io",
               tag: "v1.7.2",
-              digest: "18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005"
+              digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005"
             }
           }],
           package_manager: "docker"
@@ -1317,6 +1414,91 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       end
 
       it { is_expected.to eq("v1.7.2") }
+    end
+
+    context "when versions have different components but similar structure" do
+      let(:dependency_name) { "owasp/modsecurity-crs" }
+      let(:version) { "3.3-apache-202209221209" }
+      let(:tags_fixture_name) { "owasp.json" }
+      let(:repo_url) { "https://registry.hub.docker.com/v2/owasp/modsecurity-crs/" }
+
+      new_headers =
+        fixture("docker", "registry_manifest_headers", "generic.json")
+
+      before do
+        tags_url = repo_url + "/tags/list"
+        stub_request(:get, tags_url)
+          .and_return(status: 200, body: registry_tags)
+
+        stub_request(:head, repo_url + "manifests/4.11-apache-202502070602")
+          .and_return(status: 200, body: "", headers: JSON.parse(new_headers))
+        stub_request(:head, repo_url + "manifests/4-apache-202502070602")
+          .and_return(status: 200, body: "", headers: JSON.parse(new_headers))
+      end
+
+      it { is_expected.to eq("4-apache-202502070602") }
+
+      context "with multiple components to match" do
+        let(:version) { "3.3-nginx-alpine-202209221209" }
+
+        before do
+          stub_request(:head, repo_url + "manifests/4.11-nginx-alpine-202502070602")
+            .and_return(status: 200, body: "", headers: JSON.parse(new_headers))
+          stub_request(:head, repo_url + "manifests/4-nginx-alpine-202502070602")
+            .and_return(status: 200, body: "", headers: JSON.parse(new_headers))
+        end
+
+        it { is_expected.to eq("4-nginx-alpine-202502070602") }
+      end
+
+      context "when components are in a different order" do
+        before do
+          stub_request(:head, repo_url + "manifests/4-202502070602-apache")
+            .and_return(status: 200, body: "", headers: JSON.parse(new_headers))
+        end
+
+        it { is_expected.to eq("4-apache-202502070602") }
+      end
+    end
+
+    describe "with cooldown options" do
+      subject(:latest_version) { checker.latest_version }
+
+      let(:update_cooldown) do
+        Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7)
+      end
+      let(:expected_cooldown_options) do
+        Dependabot::Package::ReleaseCooldownOptions.new(
+          default_days: 7,
+          semver_major_days: 0,
+          semver_minor_days: 0,
+          semver_patch_days: 0,
+          include: [],
+          exclude: []
+        )
+      end
+
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:enable_cooldown_for_docker)
+          .and_return(true)
+
+        new_headers =
+          fixture("docker", "registry_manifest_headers", "generic.json")
+        stub_request(:head, repo_url + "manifests/17.10")
+          .and_return(status: 200, body: "", headers: JSON.parse(new_headers))
+        stub_request(:get, repo_url + "manifests/17.10")
+          .and_return(status: 200, body: fixture("docker", "registry_manifest_digests", "ubuntu_17.10.json"))
+
+        blob_headers =
+          fixture("docker", "image_blobs_headers", "ubuntu_17.10_38d6c1.json")
+
+        stub_request(:get, repo_url + "blobs/sha256:9c4bf7dbb981591d4a1169138471afe4bf5ff5418841d00e30a7ba372e38d6c1")
+          .and_return(status: 200, body: fixture("docker", "image_blobs", "ubuntu_17.10_38d6c1.json"),
+                      headers: JSON.parse(blob_headers))
+      end
+
+      it { is_expected.to eq("17.10") }
     end
   end
 
@@ -1365,7 +1547,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
               groups: [],
               file: "Dockerfile",
               source: {
-                digest: "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
+                digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
                         "ca97eba880ebf600d68608"
               }
             }]
@@ -1391,7 +1573,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
               groups: [],
               file: "Dockerfile",
               source: {
-                digest: "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
+                digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
                         "ca97eba880ebf600d68608",
                 tag: "17.10"
               }
@@ -1429,6 +1611,40 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
                source: { tag: "xenial-20170915" }
              }]
           )
+      end
+    end
+  end
+
+  describe ".docker_read_timeout_in_seconds" do
+    context "when DEPENDABOT_DOCKER_READ_TIMEOUT_IN_SECONDS is set" do
+      it "returns the provided value" do
+        override_value = 10
+        stub_const("ENV", ENV.to_hash.merge("DEPENDABOT_DOCKER_READ_TIMEOUT_IN_SECONDS" => override_value))
+        expect(checker.send(:docker_read_timeout_in_seconds)).to eq(override_value)
+      end
+    end
+
+    context "when ENV does not provide an override" do
+      it "falls back to a default value" do
+        expect(checker.send(:docker_read_timeout_in_seconds))
+          .to eq(Dependabot::Docker::UpdateChecker::DEFAULT_DOCKER_READ_TIMEOUT_IN_SECONDS)
+      end
+    end
+  end
+
+  describe ".docker_open_timeout_in_seconds" do
+    context "when DEPENDABOT_DOCKER_OPEN_TIMEOUT_IN_SECONDS is set" do
+      it "returns the provided value" do
+        override_value = 10
+        stub_const("ENV", ENV.to_hash.merge("DEPENDABOT_DOCKER_OPEN_TIMEOUT_IN_SECONDS" => override_value))
+        expect(checker.send(:docker_open_timeout_in_seconds)).to eq(override_value)
+      end
+    end
+
+    context "when ENV does not provide an override" do
+      it "falls back to a default value" do
+        expect(checker.send(:docker_open_timeout_in_seconds))
+          .to eq(Dependabot::Docker::UpdateChecker::DEFAULT_DOCKER_OPEN_TIMEOUT_IN_SECONDS)
       end
     end
   end

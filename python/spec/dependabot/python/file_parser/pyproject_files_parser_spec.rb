@@ -154,7 +154,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
       end
 
       describe "a development sub-dependency" do
-        subject(:dep) { dependencies.find { |d| d.name == "atomicwrites" } }
+        subject(:dep) { dependencies.find { |d| d.name == "click" } }
 
         its(:subdependency_metadata) do
           is_expected.to eq([{ production: false }])
@@ -375,6 +375,45 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
       let(:pyproject_fixture_name) { "optional_dependencies_only.toml" }
 
       its(:length) { is_expected.to be > 0 }
+    end
+
+    describe "parse standard python files" do
+      subject(:dependencies) { parser.dependency_set.dependencies }
+
+      let(:pyproject_fixture_name) { "pyproject_1_0_0.toml" }
+
+      # fixture has 1 build system requires and plus 1 dependencies exists
+
+      its(:length) { is_expected.to eq(1) }
+
+      context "with a string declaration" do
+        subject(:dependency) { dependencies.first }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("pydantic")
+          expect(dependency.version).to eq("2.7.0")
+        end
+      end
+
+      context "without dependencies" do
+        subject(:dependencies) { parser.dependency_set.dependencies }
+
+        let(:pyproject_fixture_name) { "pyproject_1_0_0_nodeps.toml" }
+
+        # fixture has 1 build system requires and no dependencies or
+        # optional dependencies exists
+
+        its(:length) { is_expected.to eq(0) }
+      end
+
+      context "with optional dependencies only" do
+        subject(:dependencies) { parser.dependency_set.dependencies }
+
+        let(:pyproject_fixture_name) { "pyproject_1_0_0_optional_deps.toml" }
+
+        its(:length) { is_expected.to be > 0 }
+      end
     end
   end
 end

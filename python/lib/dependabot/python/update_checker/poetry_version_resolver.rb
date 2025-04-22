@@ -97,7 +97,7 @@ module Dependabot
                 language_version_manager.install_required_python
 
                 # use system git instead of the pure Python dulwich
-                run_poetry_command("pyenv exec poetry config experimental.system-git-client true")
+                run_poetry_command("pyenv exec poetry config system-git-client true")
 
                 # Shell out to Poetry, which handles everything for us.
                 run_poetry_update_command
@@ -364,9 +364,28 @@ module Dependabot
 
       # server response error codes while accessing package index
       SERVER_ERROR_CODES = T.let({
+        server500: /500 Server Error/,
         server502: /502 Server Error/,
         server503: /503 Server Error/,
         server504: /504 Server Error/
+      }.freeze, T::Hash[T.nilable(String), Regexp])
+
+      # invalid configuration in pyproject.toml
+      POETRY_VIRTUAL_ENV_CONFIG = %r{pypoetry/virtualenvs(.|\n)*list index out of range}
+
+      # error related to local project as dependency in pyproject.toml
+      ERR_LOCAL_PROJECT_PATH = /Path (?<path>.*) for (?<dep>.*) does not exist/
+
+      TIME_OUT_ERRORS = T.let({
+        time_out_max_retries: /Max retries exceeded/,
+        time_out_read_timed_out: /Read timed out/,
+        time_out_inactivity: /Timed out due to inactivity/
+      }.freeze, T::Hash[T.nilable(String), Regexp])
+
+      PACKAGE_RESOLVER_ERRORS = T.let({
+        package_info_error: /Unable to determine package info/,
+        self_dep_error: /Package '(?<path>.*)' is listed as a dependency of itself./,
+        incompatible_constraints: /Incompatible constraints in requirements/
       }.freeze, T::Hash[T.nilable(String), Regexp])
 
       sig do
@@ -401,6 +420,7 @@ module Dependabot
 
       # rubocop:disable Metrics/AbcSize
       # rubocop:disable Metrics/PerceivedComplexity
+      # rubocop:disable Metrics/CyclomaticComplexity
       sig { params(error: Exception).void }
       def handle_poetry_error(error)
         Dependabot.logger.warn(error.message)
@@ -418,11 +438,23 @@ module Dependabot
 
         raise DependencyFileNotResolvable, error.message if error.message.match(PYTHON_RANGE_NOT_SATISFIED)
 
+        if error.message.match(POETRY_VIRTUAL_ENV_CONFIG) || error.message.match(ERR_LOCAL_PROJECT_PATH)
+          msg = "Error while resolving pyproject.toml file"
+
+          raise DependencyFileNotResolvable, msg
+        end
+
         SERVER_ERROR_CODES.each do |(_error_codes, error_regex)|
           next unless error.message.match?(error_regex)
 
           index_url = URI.extract(error.message.to_s).last .then { sanitize_url(_1) }
           raise InconsistentRegistryResponse, index_url
+        end
+
+        TIME_OUT_ERRORS.each do |(_error_codes, error_regex)|
+          next unless error.message.match?(error_regex)
+
+          raise InconsistentRegistryResponse, "Inconsistent registry response"
         end
 
         CLIENT_ERROR_CODES.each do |(_error_codes, error_regex)|
@@ -431,9 +463,17 @@ module Dependabot
           index_url = URI.extract(error.message.to_s).last .then { sanitize_url(_1) }
           raise PrivateSourceAuthenticationFailure, index_url
         end
+
+        PACKAGE_RESOLVER_ERRORS.each do |(_error_codes, error_regex)|
+          next unless error.message.match?(error_regex)
+
+          message = "Package solving failed while resolving manifest file"
+          raise DependencyFileNotResolvable, message
+        end
       end
       # rubocop:enable Metrics/AbcSize
       # rubocop:enable Metrics/PerceivedComplexity
+      # rubocop:enable Metrics/CyclomaticComplexity
     end
   end
 end

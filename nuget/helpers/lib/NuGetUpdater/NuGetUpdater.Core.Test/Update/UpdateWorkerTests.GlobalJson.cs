@@ -69,10 +69,10 @@ public partial class UpdateWorkerTests
                       <PropertyGroup>
                         <TargetFramework>netstandard2.0</TargetFramework>
                       </PropertyGroup>
-                
+
                       <ItemGroup>
                         <PackageReference Include="Some.Package" Version="13.0.3" />
-                      </ItemGroup>>
+                      </ItemGroup>
                     </Project>
                     """,
                 additionalFiles:

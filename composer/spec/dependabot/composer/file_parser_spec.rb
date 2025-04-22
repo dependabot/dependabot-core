@@ -62,29 +62,23 @@ RSpec.describe Dependabot::Composer::FileParser do
       end
     end
 
-    context "with a version specified (composer v1)" do
-      let(:project_name) { "v1/minor_version" }
+    context "with the local package as dependency" do
+      before do
+        Dependabot::Experiments.register(:exclude_local_composer_packages, true)
+      end
 
-      describe "the first dependency" do
-        subject { dependencies.first }
+      after do
+        Dependabot::Experiments.register(:exclude_local_composer_packages, false)
+      end
 
-        it { is_expected.to be_a(Dependabot::Dependency) }
-        its(:name) { is_expected.to eq("monolog/monolog") }
-        its(:version) { is_expected.to eq("1.0.2") }
+      let(:project_name) { "local_package_as_dep" }
 
-        its(:requirements) do
-          is_expected.to eq(
-            [{
-              requirement: "1.0.*",
-              file: "composer.json",
-              groups: ["runtime"],
-              source: {
-                type: "git",
-                url: "https://github.com/Seldaek/monolog.git"
-              }
-            }]
-          )
-        end
+      its(:length) { is_expected.to eq(4) }
+
+      describe "top level dependencies" do
+        subject { dependencies.select(&:top_level?) }
+
+        its(:length) { is_expected.to eq(2) }
       end
     end
 
@@ -422,7 +416,7 @@ RSpec.describe Dependabot::Composer::FileParser do
 
     it "returns language with version" do
       expect(parser.ecosystem.language).to be_a(Dependabot::Composer::Language)
-      expect(parser.ecosystem.language.version).to eq("7.4.33")
+      expect(parser.ecosystem.language.version.to_s).to eq("8.2.28")
     end
   end
 

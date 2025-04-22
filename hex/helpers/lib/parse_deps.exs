@@ -1,8 +1,25 @@
 defmodule Parser do
+  @allowed_scms [Hex.SCM, Mix.SCM.Git, Mix.SCM.Path]
+
   def run do
-    Mix.Dep.load_on_environment([])
-    |> Enum.flat_map(&parse_dep/1)
-    |> Enum.map(&build_dependency(&1.opts[:lock], &1))
+    # This is necessary because we can't specify :extra_applications to have :hex in other mixfiles.
+    Mix.ensure_application!(:hex)
+
+    with {:ok, deps} <- converge_deps() do
+      result =
+        for %Mix.Dep{scm: scm} = dep <- deps, scm in @allowed_scms,
+            expanded_dep <- expand_deps(dep) do
+          build_dependency(expanded_dep.opts[:lock], expanded_dep)
+        end
+
+      {:ok, result}
+    end
+  end
+
+  defp converge_deps do
+    {:ok, Mix.Dep.Converger.converge()}
+  rescue e ->
+    {:error, Exception.format_banner(:error, e, __STACKTRACE__)}
   end
 
   defp build_dependency(nil, dep) do
@@ -36,7 +53,7 @@ defmodule Parser do
   defp parse_groups(only), do: [only]
 
   # path dependency
-  defp parse_dep(%{scm: Mix.SCM.Path, opts: opts} = dep) do
+  defp expand_deps(%{scm: Mix.SCM.Path, opts: opts} = dep) do
     cond do
       # umbrella dependency - ignore
       opts[:in_umbrella] ->
@@ -52,10 +69,7 @@ defmodule Parser do
   end
 
   # hex, git dependency
-  defp parse_dep(%{scm: scm} = dep) when scm in [Hex.SCM, Mix.SCM.Git], do: [dep]
-
-  # unsupported
-  defp parse_dep(_dep), do: []
+  defp expand_deps(%{scm: scm} = dep) when scm in [Hex.SCM, Mix.SCM.Git], do: [dep]
 
   defp umbrella_top_level_dep?(dep) do
     if Mix.Project.umbrella?() do
@@ -82,7 +96,9 @@ defmodule Parser do
     |> empty_str_to_nil()
   end
 
-  defp maybe_regex_to_str(s), do: if Regex.regex?(s), do: Regex.source(s), else: s
+  defp maybe_regex_to_str(%Regex{} = s), do: Regex.source(s)
+  defp maybe_regex_to_str(s), do: s
+
   defp empty_str_to_nil(""), do: nil
   defp empty_str_to_nil(s), do: s
 
@@ -99,6 +115,7 @@ defmodule Parser do
   end
 end
 
-dependencies = :erlang.term_to_binary({:ok, Parser.run()})
-
-IO.write(:stdio, dependencies)
+Parser.run()
+|> :erlang.term_to_binary()
+|> Base.encode64()
+|> IO.write()

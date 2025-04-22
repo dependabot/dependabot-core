@@ -1,6 +1,5 @@
 using NuGet.Versioning;
 
-using NuGetUpdater.Core.Analyze;
 using NuGetUpdater.Core.Run;
 using NuGetUpdater.Core.Run.ApiModel;
 using NuGetUpdater.Core.Test.Utilities;
@@ -229,36 +228,62 @@ public class SerializationTests
     }
 
     [Fact]
-    public async Task DeserializeExperimentsManager_UnsupportedJobFileShape_InfoIsReportedAndEmptyExperimentSetIsReturned()
+    public void DeserializeExperimentsManager_AlternateNames()
     {
-        // arrange
-        using var tempDir = new TemporaryDirectory();
-        var jobFilePath = Path.Combine(tempDir.DirectoryPath, "job.json");
-        var jobContent = """
+        // experiment names can be either snake case or kebab case
+        var jobWrapper = RunWorker.Deserialize("""
             {
-              "this-is-not-a-job-and-parsing-will-fail-but-an-empty-experiment-set-should-sill-be-returned": {
+              "job": {
+                "package-manager": "nuget",
+                "allowed-updates": [
+                  {
+                    "update-type": "all"
+                  }
+                ],
+                "source": {
+                  "provider": "github",
+                  "repo": "some-org/some-repo",
+                  "directory": "some-dir"
+                },
+                "experiments": {
+                  "nuget-legacy-dependency-solver": true,
+                  "nuget-use-direct-discovery": true
+                }
               }
             }
-            """;
-        await File.WriteAllTextAsync(jobFilePath, jobContent);
-        var capturingTestLogger = new CapturingTestLogger();
+            """);
+        var experimentsManager = ExperimentsManager.GetExperimentsManager(jobWrapper.Job.Experiments);
+        Assert.True(experimentsManager.UseLegacyDependencySolver);
+        Assert.True(experimentsManager.UseDirectDiscovery);
+    }
 
-        // act - this is the entrypoint the update command uses to parse the job file
-        var experimentsManager = await ExperimentsManager.FromJobFileAsync(jobFilePath, capturingTestLogger);
+    [Theory]
+    [MemberData(nameof(DeserializeErrorTypesData))]
+    public void SerializeError(JobErrorBase error, string expectedSerialization)
+    {
+        if (error is UnknownError unknown)
+        {
+            // special case the exception's call stack to make it testable
+            unknown.Details["error-backtrace"] = "TEST-BACKTRACE";
+        }
 
-        // assert
-        Assert.False(experimentsManager.UseLegacyDependencySolver);
-        Assert.False(experimentsManager.UseDirectDiscovery);
-        Assert.Single(capturingTestLogger.Messages, m => m.Contains("Error deserializing job file"));
+        var actual = HttpApiHandler.Serialize(error);
+        Assert.Equal(expectedSerialization, actual);
     }
 
     [Fact]
-    public void SerializeError()
+    public void SerializeError_AllErrorTypesHaveSerializationTests()
     {
-        var error = new JobRepoNotFound("some message");
-        var actual = HttpApiHandler.Serialize(error);
-        var expected = """{"data":{"error-type":"job_repo_not_found","error-details":{"message":"some message"}}}""";
-        Assert.Equal(expected, actual);
+        var untestedTypes = typeof(JobErrorBase).Assembly.GetTypes()
+            .Where(t => t.IsSubclassOf(typeof(JobErrorBase)))
+            .ToHashSet();
+        foreach (object?[] data in DeserializeErrorTypesData())
+        {
+            var testedErrorType = data[0]!.GetType();
+            untestedTypes.Remove(testedErrorType);
+        }
+
+        Assert.Empty(untestedTypes.Select(t => t.Name));
     }
 
     [Fact]
@@ -392,11 +417,11 @@ public class SerializationTests
             """;
         var jobWrapper = RunWorker.Deserialize(jsonWrapperJson)!;
         Assert.Single(jobWrapper.Job.ExistingPullRequests);
-        Assert.Single(jobWrapper.Job.ExistingPullRequests[0]);
-        Assert.Equal("Some.Package", jobWrapper.Job.ExistingPullRequests[0][0].DependencyName);
-        Assert.Equal(NuGetVersion.Parse("1.2.3"), jobWrapper.Job.ExistingPullRequests[0][0].DependencyVersion);
-        Assert.False(jobWrapper.Job.ExistingPullRequests[0][0].DependencyRemoved);
-        Assert.Null(jobWrapper.Job.ExistingPullRequests[0][0].Directory);
+        Assert.Single(jobWrapper.Job.ExistingPullRequests[0].Dependencies);
+        Assert.Equal("Some.Package", jobWrapper.Job.ExistingPullRequests[0].Dependencies[0].DependencyName);
+        Assert.Equal(NuGetVersion.Parse("1.2.3"), jobWrapper.Job.ExistingPullRequests[0].Dependencies[0].DependencyVersion);
+        Assert.False(jobWrapper.Job.ExistingPullRequests[0].Dependencies[0].DependencyRemoved);
+        Assert.Null(jobWrapper.Job.ExistingPullRequests[0].Dependencies[0].Directory);
     }
 
     [Fact]
@@ -492,10 +517,15 @@ public class SerializationTests
         Assert.Null(jobWrapper.Job.SecurityAdvisories[0].PatchedVersions);
     }
 
-    [Fact]
-    public void DeserializeCommitOptions()
+    [Theory]
+    [InlineData("true", true)] // bool
+    [InlineData("false", false)]
+    [InlineData("\"true\"", true)] // stringified bool
+    [InlineData("\"false\"", false)]
+    [InlineData("null", false)]
+    public void DeserializeCommitOptions(string includeScopeJsonValue, bool expectedIncludeScopeValue)
     {
-        var jsonWrapperJson = """
+        var jsonWrapperJson = $$"""
             {
                 "job": {
                     "source": {
@@ -503,7 +533,9 @@ public class SerializationTests
                         "repo": "some/repo"
                     },
                     "commit-message-options": {
-                        "prefix": "[SECURITY] "
+                        "prefix": "[SECURITY] ",
+                        "prefix-development": null,
+                        "include-scope": {{includeScopeJsonValue}}
                     }
                 }
             }
@@ -511,7 +543,151 @@ public class SerializationTests
         var jobWrapper = RunWorker.Deserialize(jsonWrapperJson)!;
         Assert.Equal("[SECURITY] ", jobWrapper.Job.CommitMessageOptions!.Prefix);
         Assert.Null(jobWrapper.Job.CommitMessageOptions!.PrefixDevelopment);
-        Assert.Null(jobWrapper.Job.CommitMessageOptions!.IncludeScope);
+        Assert.Equal(expectedIncludeScopeValue, jobWrapper.Job.CommitMessageOptions!.IncludeScope);
+    }
+
+    [Fact]
+    public void SerializeClosePullRequest()
+    {
+        var close = new ClosePullRequest()
+        {
+            DependencyNames = ["dep"],
+        };
+        var actual = HttpApiHandler.Serialize(close);
+        var expected = """
+            {"data":{"dependency-names":["dep"],"reason":"up_to_date"}}
+            """;
+        Assert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void SerializeCreatePullRequest()
+    {
+        var create = new CreatePullRequest()
+        {
+            Dependencies = [new() { Name = "dep", Version = "ver2", PreviousVersion = "ver1", Requirements = [new() { Requirement = "ver2", File = "project.csproj" }], PreviousRequirements = [new() { Requirement = "ver1", File = "project.csproj" }] }],
+            UpdatedDependencyFiles = [new() { Name = "project.csproj", Directory = "/", Content = "updated content" }],
+            BaseCommitSha = "TEST-COMMIT-SHA",
+            CommitMessage = "commit message",
+            PrTitle = "pr title",
+            PrBody = "pr body"
+        };
+        var actual = HttpApiHandler.Serialize(create);
+        var expected = """
+            {"data":{"dependencies":[{"name":"dep","version":"ver2","requirements":[{"requirement":"ver2","file":"project.csproj","groups":[],"source":null}],"previous-version":"ver1","previous-requirements":[{"requirement":"ver1","file":"project.csproj","groups":[],"source":null}]}],"updated-dependency-files":[{"name":"project.csproj","content":"updated content","directory":"/","type":"file","support_file":false,"content_encoding":"utf-8","deleted":false,"operation":"update","mode":null}],"base-commit-sha":"TEST-COMMIT-SHA","commit-message":"commit message","pr-title":"pr title","pr-body":"pr body"}}
+            """;
+        Assert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void SerializeUpdatePullRequest()
+    {
+        var update = new UpdatePullRequest()
+        {
+            BaseCommitSha = "TEST-COMMIT-SHA",
+            DependencyNames = ["dep"],
+            UpdatedDependencyFiles = [new() { Name = "project.csproj", Directory = "/", Content = "updated content" }],
+            PrTitle = "pr title",
+            PrBody = "pr body",
+            CommitMessage = "commit message",
+            DependencyGroup = null,
+        };
+        var actual = HttpApiHandler.Serialize(update);
+        var expected = """
+            {"data":{"base-commit-sha":"TEST-COMMIT-SHA","dependency-names":["dep"],"updated-dependency-files":[{"name":"project.csproj","content":"updated content","directory":"/","type":"file","support_file":false,"content_encoding":"utf-8","deleted":false,"operation":"update","mode":null}],"pr-title":"pr title","pr-body":"pr body","commit-message":"commit message","dependency-group":null}}
+            """;
+        Assert.Equal(expected, actual);
+    }
+
+    public static IEnumerable<object?[]> DeserializeErrorTypesData()
+    {
+        yield return
+        [
+            new BadRequirement("some message"),
+            """
+            {"data":{"error-type":"illformed_requirement","error-details":{"message":"some message"}}}
+            """
+        ];
+
+        yield return
+        [
+            new DependencyFileNotFound("/some/file", "some message"),
+            """
+            {"data":{"error-type":"dependency_file_not_found","error-details":{"message":"some message","file-path":"/some/file"}}}
+            """
+        ];
+
+        yield return
+        [
+            new DependencyFileNotParseable("/some/file", "some message"),
+            """
+            {"data":{"error-type":"dependency_file_not_parseable","error-details":{"message":"some message","file-path":"/some/file"}}}
+            """
+        ];
+
+        yield return
+        [
+            new DependencyNotFound("some source"),
+            """
+            {"data":{"error-type":"dependency_not_found","error-details":{"source":"some source"}}}
+            """
+        ];
+
+        yield return
+        [
+            new JobRepoNotFound("some message"),
+            """
+            {"data":{"error-type":"job_repo_not_found","error-details":{"message":"some message"}}}
+            """
+        ];
+
+        yield return
+        [
+            new PrivateSourceAuthenticationFailure(["url1", "url2"]),
+            """
+            {"data":{"error-type":"private_source_authentication_failure","error-details":{"source":"(url1|url2)"}}}
+            """
+        ];
+
+        yield return
+        [
+            new PrivateSourceBadResponse(["url1", "url2"]),
+            """
+            {"data":{"error-type":"private_source_bad_response","error-details":{"source":"(url1|url2)"}}}
+            """
+        ];
+
+        yield return
+        [
+            new PullRequestExistsForLatestVersion("dep", "ver"),
+            """
+            {"data":{"error-type":"pull_request_exists_for_latest_version","error-details":{"dependency-name":"dep","dependency-version":"ver"}}}
+            """
+        ];
+
+        yield return
+        [
+            new SecurityUpdateNotNeeded("dep"),
+            """
+            {"data":{"error-type":"security_update_not_needed","error-details":{"dependency-name":"dep"}}}
+            """
+        ];
+
+        yield return
+        [
+            new UnknownError(new Exception("some message"), "JOB-ID"),
+            """
+            {"data":{"error-type":"unknown_error","error-details":{"error-class":"Exception","error-message":"some message","error-backtrace":"TEST-BACKTRACE","package-manager":"nuget","job-id":"JOB-ID"}}}
+            """
+        ];
+
+        yield return
+        [
+            new UpdateNotPossible(["dep1", "dep2"]),
+            """
+            {"data":{"error-type":"update_not_possible","error-details":{"dependencies":["dep1","dep2"]}}}
+            """
+        ];
     }
 
     public static IEnumerable<object?[]> DeserializeAllowedUpdatesData()
@@ -595,17 +771,5 @@ public class SerializationTests
                 }
             }
         ];
-    }
-
-    private class CapturingTestLogger : ILogger
-    {
-        private readonly List<string> _messages = new();
-
-        public IReadOnlyList<string> Messages => _messages;
-
-        public void LogRaw(string message)
-        {
-            _messages.Add(message);
-        }
     }
 }

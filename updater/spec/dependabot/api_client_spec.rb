@@ -128,7 +128,6 @@ RSpec.describe Dependabot::ApiClient do
             "content_encoding" => "utf-8",
             "deleted" => false,
             "directory" => "/",
-            "mode" => "100644",
             "name" => "Gemfile",
             "operation" => "update",
             "support_file" => false,
@@ -138,7 +137,6 @@ RSpec.describe Dependabot::ApiClient do
             "content_encoding" => "utf-8",
             "deleted" => false,
             "directory" => "/",
-            "mode" => "100644",
             "name" => "Gemfile.lock",
             "operation" => "update",
             "support_file" => false,
@@ -212,6 +210,28 @@ RSpec.describe Dependabot::ApiClient do
                data = JSON.parse(req.body)["data"]
                expect(data["dependency-group"]).to eq({ "name" => "dummy-group-name" })
              end)
+      end
+    end
+
+    context "when API returns a 400 Bad Request" do
+      let(:body) do
+        <<~ERROR
+          { "errors": [{
+            "status": 400,
+            "title": "Bad Request",
+            "detail": "The request contains invalid or unauthorized changes"}]
+          }
+        ERROR
+      end
+
+      before do
+        stub_request(:post, create_pull_request_url).to_return(status: 400, body: body)
+      end
+
+      it "raises the correct error" do
+        expect do
+          client.create_pull_request(dependency_change, base_commit)
+        end.to raise_error(Dependabot::DependencyFileNotSupported)
       end
     end
   end
@@ -296,7 +316,6 @@ RSpec.describe Dependabot::ApiClient do
                   "content_encoding" => "utf-8",
                   "deleted" => false,
                   "directory" => "/",
-                  "mode" => "100644",
                   "name" => "Gemfile",
                   "operation" => "update",
                   "support_file" => false,
@@ -306,7 +325,6 @@ RSpec.describe Dependabot::ApiClient do
                   "content_encoding" => "utf-8",
                   "deleted" => false,
                   "directory" => "/",
-                  "mode" => "100644",
                   "name" => "Gemfile.lock",
                   "operation" => "update",
                   "support_file" => false,

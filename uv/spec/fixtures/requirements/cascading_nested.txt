@@ -1,0 +1,2 @@
+psycopg2==2.6.1
+-r ./nested/more_requirements.txt

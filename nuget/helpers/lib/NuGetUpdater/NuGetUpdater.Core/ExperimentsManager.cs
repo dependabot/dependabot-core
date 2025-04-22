@@ -1,12 +1,14 @@
 using System.Text.Json;
 
 using NuGetUpdater.Core.Run;
+using NuGetUpdater.Core.Run.ApiModel;
 
 namespace NuGetUpdater.Core;
 
 public record ExperimentsManager
 {
     public bool InstallDotnetSdks { get; init; } = false;
+    public bool NativeUpdater { get; init; } = false;
     public bool UseLegacyDependencySolver { get; init; } = false;
     public bool UseDirectDiscovery { get; init; } = false;
 
@@ -15,6 +17,7 @@ public record ExperimentsManager
         return new()
         {
             ["nuget_install_dotnet_sdks"] = InstallDotnetSdks,
+            ["nuget_native_updater"] = NativeUpdater,
             ["nuget_legacy_dependency_solver"] = UseLegacyDependencySolver,
             ["nuget_use_direct_discovery"] = UseDirectDiscovery,
         };
@@ -25,24 +28,34 @@ public record ExperimentsManager
         return new ExperimentsManager()
         {
             InstallDotnetSdks = IsEnabled(experiments, "nuget_install_dotnet_sdks"),
+            NativeUpdater = IsEnabled(experiments, "nuget_native_updater"),
             UseLegacyDependencySolver = IsEnabled(experiments, "nuget_legacy_dependency_solver"),
             UseDirectDiscovery = IsEnabled(experiments, "nuget_use_direct_discovery"),
         };
     }
 
-    public static async Task<ExperimentsManager> FromJobFileAsync(string jobFilePath, ILogger logger)
+    public static async Task<(ExperimentsManager ExperimentsManager, JobErrorBase? Error)> FromJobFileAsync(string jobId, string jobFilePath)
     {
-        var jobFileContent = await File.ReadAllTextAsync(jobFilePath);
+        var experimentsManager = new ExperimentsManager();
+        JobErrorBase? error = null;
+        var jobFileContent = string.Empty;
         try
         {
+            jobFileContent = await File.ReadAllTextAsync(jobFilePath);
             var jobWrapper = RunWorker.Deserialize(jobFileContent);
-            return GetExperimentsManager(jobWrapper.Job.Experiments);
+            experimentsManager = GetExperimentsManager(jobWrapper.Job.Experiments);
         }
         catch (JsonException ex)
         {
-            logger.Info($"Error deserializing job file: {ex.ToString()}: {jobFileContent}");
-            return new ExperimentsManager();
+            // this is a very specific case where we want to log the JSON contents for easier debugging
+            error = JobErrorBase.ErrorFromException(new NotSupportedException($"Error deserializing job file contents: {jobFileContent}", ex), jobId, Environment.CurrentDirectory); // TODO
         }
+        catch (Exception ex)
+        {
+            error = JobErrorBase.ErrorFromException(ex, jobId, Environment.CurrentDirectory); // TODO
+        }
+
+        return (experimentsManager, error);
     }
 
     private static bool IsEnabled(Dictionary<string, object>? experiments, string experimentName)
@@ -52,9 +65,13 @@ public record ExperimentsManager
             return false;
         }
 
-        if (experiments.TryGetValue(experimentName, out var value))
+        // prefer experiments named with underscores, but hyphens are also allowed as an alternate
+        object? experimentValue;
+        var experimentNameAlternate = experimentName.Replace("_", "-");
+        if (experiments.TryGetValue(experimentName, out experimentValue) ||
+            experiments.TryGetValue(experimentNameAlternate, out experimentValue))
         {
-            if ((value?.ToString() ?? "").Equals("true", StringComparison.OrdinalIgnoreCase))
+            if ((experimentValue?.ToString() ?? "").Equals("true", StringComparison.OrdinalIgnoreCase))
             {
                 return true;
             }

@@ -8,5 +8,7 @@ public interface IApiHandler
     Task UpdateDependencyList(UpdatedDependencyList updatedDependencyList);
     Task IncrementMetric(IncrementMetric incrementMetric);
     Task CreatePullRequest(CreatePullRequest createPullRequest);
+    Task ClosePullRequest(ClosePullRequest closePullRequest);
+    Task UpdatePullRequest(UpdatePullRequest updatePullRequest);
     Task MarkAsProcessed(MarkAsProcessed markAsProcessed);
 }

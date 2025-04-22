@@ -47,7 +47,9 @@ module Dependabot
         return false if parsed_version.nil?
 
         release_part, = T.must(parsed_version[:version]).split("_", 2)
-        release_part = Tag.new(T.must(release_part).chomp(".").chomp("-").chomp("_")).numeric_version || parsed_version
+        release_part = Tag.new(T.must(release_part).chomp(".").chomp("-").chomp("_")).numeric_version
+        return false unless release_part
+
         super(release_part.to_s)
       rescue ArgumentError
         # if we can't instantiate a version, it can't be correct

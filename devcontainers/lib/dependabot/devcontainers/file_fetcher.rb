@@ -29,6 +29,12 @@ module Dependabot
         fetched_files += root_files
         fetched_files += scoped_files
         fetched_files += custom_directory_files
+
+        # Mark all files as not support files
+        fetched_files.each do |file|
+          file.support_file = false
+        end
+
         return fetched_files if fetched_files.any?
 
         raise Dependabot::DependencyFileNotFound.new(

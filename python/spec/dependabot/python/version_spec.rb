@@ -63,6 +63,7 @@ RSpec.describe Dependabot::Python::Version do
         "1.0+foo&asd",
         "1.0+1+1",
         "1.0.0+abc 123",
+        "v1.8.0-failed.release.attempt",
         "v1.8.0--failed-release-attempt"
       ]
 

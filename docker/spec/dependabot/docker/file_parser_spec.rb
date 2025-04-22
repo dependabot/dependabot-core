@@ -158,14 +158,14 @@ RSpec.describe Dependabot::Docker::FileParser do
             requirement: nil,
             groups: [],
             file: "Dockerfile",
-            source: { digest: "18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005" }
+            source: { digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005" }
           }]
         end
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("my-fork/ubuntu")
-          expect(dependency.version).to eq("18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005")
+          expect(dependency.version).to eq("sha256:18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005")
           expect(dependency.requirements).to eq(expected_requirements)
         end
       end
@@ -275,7 +275,7 @@ RSpec.describe Dependabot::Docker::FileParser do
               groups: [],
               file: "Dockerfile",
               source: {
-                digest: "18305429afa14ea462f810146ba44d4363ae76e4c8d" \
+                digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8d" \
                         "fc38288cf73aa07485005"
               }
             }]
@@ -284,7 +284,7 @@ RSpec.describe Dependabot::Docker::FileParser do
           it "has the right details" do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("ubuntu")
-            expect(dependency.version).to eq("18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005")
+            expect(dependency.version).to eq("sha256:18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005")
             expect(dependency.requirements).to eq(expected_requirements)
           end
         end
@@ -335,7 +335,7 @@ RSpec.describe Dependabot::Docker::FileParser do
                   groups: [],
                   file: "Dockerfile",
                   source: {
-                    digest: "18305429afa14ea462f810146ba44d4363ae76e4c8d" \
+                    digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8d" \
                             "fc38288cf73aa07485005"
                   }
                 }]
@@ -344,7 +344,7 @@ RSpec.describe Dependabot::Docker::FileParser do
               it "has the right details" do
                 expect(dependency).to be_a(Dependabot::Dependency)
                 expect(dependency.name).to eq("ubuntu")
-                expect(dependency.version).to eq("18305429afa14ea462f810146ba44d4363ae76e4c8d" \
+                expect(dependency.version).to eq("sha256:18305429afa14ea462f810146ba44d4363ae76e4c8d" \
                                                  "fc38288cf73aa07485005")
                 expect(dependency.requirements).to eq(expected_requirements)
               end
@@ -380,14 +380,15 @@ RSpec.describe Dependabot::Docker::FileParser do
       it "determines the correct version" do
         expect(dependency).to be_a(Dependabot::Dependency)
         expect(dependency.name).to eq("ubuntu")
-        expect(dependency.version).to eq("12.04.5")
+        expect(dependency.version).to eq("12.04.5@sha256:18305429afa14ea462f810146ba44d4363ae76e4c8d" \
+                                         "fc38288cf73aa07485005")
         expect(dependency.requirements).to eq([{
           requirement: nil,
           groups: [],
           file: "Dockerfile",
           source: {
             tag: "12.04.5",
-            digest: "18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005"
+            digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005"
           }
         }])
       end
@@ -677,6 +678,14 @@ RSpec.describe Dependabot::Docker::FileParser do
           expect(dependency.name).to eq("ubuntu")
           expect(dependency.version).to eq("artful")
           expect(dependency.requirements).to eq(expected_requirements)
+
+          ecosystem = parser.ecosystem
+
+          expect(ecosystem.name).to eq("docker")
+          expect(ecosystem.package_manager.name).to eq("docker")
+
+          expect(ecosystem.package_manager.deprecated?).to be false
+          expect(ecosystem.package_manager.unsupported?).to be false
         end
       end
     end
@@ -823,7 +832,7 @@ RSpec.describe Dependabot::Docker::FileParser do
               groups: [],
               file: "digest.yaml",
               source: {
-                digest: "18305429afa14ea462f810146ba44d4363ae76e4c8d" \
+                digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8d" \
                         "fc38288cf73aa07485005"
               }
             }]
@@ -832,7 +841,7 @@ RSpec.describe Dependabot::Docker::FileParser do
           it "has the right details" do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("ubuntu")
-            expect(dependency.version).to eq("18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005")
+            expect(dependency.version).to eq("sha256:18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005")
             expect(dependency.requirements).to eq(expected_requirements)
           end
         end
@@ -865,14 +874,15 @@ RSpec.describe Dependabot::Docker::FileParser do
       it "determines the correct version" do
         expect(dependency).to be_a(Dependabot::Dependency)
         expect(dependency.name).to eq("ubuntu")
-        expect(dependency.version).to eq("12.04.5")
+        expect(dependency.version).to eq("12.04.5@sha256:18305429afa14ea462f810146ba44d4363ae76e4c8d" \
+                                         "fc38288cf73aa07485005")
         expect(dependency.requirements).to eq([{
           requirement: nil,
           groups: [],
           file: "digest_and_tag.yaml",
           source: {
             tag: "12.04.5",
-            digest: "18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005"
+            digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005"
           }
         }])
       end
@@ -1134,16 +1144,6 @@ RSpec.describe Dependabot::Docker::FileParser do
         end
       end
     end
-
-    context "with an invalid yaml file" do
-      let(:podfile_fixture_name) { "with_bom.yaml" }
-
-      it "throws when the yaml starts with a byte order mark" do
-        expect do
-          _unused = dependencies
-        end.to raise_error(Dependabot::DependencyFileNotParseable)
-      end
-    end
   end
 
   describe "YAML parse" do
@@ -1252,6 +1252,14 @@ RSpec.describe Dependabot::Docker::FileParser do
           expect(dependency.version).to eq("18.04")
           expect(dependency.requirements).to eq(expected_requirements)
         end
+      end
+    end
+
+    context "with images with unparseable versions" do
+      let(:helmfile_fixture_name) { "multi-image-with-bad-version.yaml" }
+
+      it "omits the images with unparseable version numbers" do
+        expect(dependencies.map(&:version)).to eq(["some-name_123"])
       end
     end
   end

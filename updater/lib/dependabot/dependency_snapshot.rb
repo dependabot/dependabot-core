@@ -119,25 +119,55 @@ module Dependabot
       @dependency_group_engine.find_group(name: T.must(job.dependency_group_to_refresh))
     end
 
-    sig { params(group: Dependabot::DependencyGroup).void }
-    def mark_group_handled(group)
+    # rubocop:disable Metrics/PerceivedComplexity
+    sig do
+      params(
+        group: Dependabot::DependencyGroup,
+        excluding_dependencies: T::Hash[String, T::Set[String]]
+      )
+        .void
+    end
+    def mark_group_handled(group, excluding_dependencies = {})
+      Dependabot.logger.info("Marking group '#{group.name}' as handled.")
+
       directories.each do |directory|
         @current_directory = directory
 
-        # add the existing dependencies in the group so individual updates don't try to update them
-        add_handled_dependencies(dependencies_in_existing_pr_for_group(group).filter_map { |d| d["dependency-name"] })
-        # also add dependencies that might be in the group, as a rebase would add them;
-        # this avoids individual PR creation that immediately is superseded by a group PR supersede
-        add_handled_dependencies(group.dependencies.map(&:name))
+        if Dependabot::Experiments.enabled?(:allow_refresh_for_existing_pr_dependencies)
+          # add the existing dependencies in the group so individual updates don't try to update them
+          dependencies_in_existing_prs = dependencies_in_existing_pr_for_group(group)
+
+          dependencies_in_existing_prs = dependencies_in_existing_prs.filter do |dep|
+            !dep["directory"] || dep["directory"] == directory
+          end
+
+          # also add dependencies that might be in the group, as a rebase would add them;
+          # this avoids individual PR creation that immediately is superseded by a group PR supersede
+          current_dependencies = group.dependencies.map(&:name).reject do |dep|
+            excluding_dependencies[directory]&.include?(dep)
+          end
+
+          add_handled_dependencies(current_dependencies.concat(dependencies_in_existing_prs.filter_map do |dep|
+            dep["dependency-name"]
+          end))
+        else
+          # add the existing dependencies in the group so individual updates don't try to update them
+          add_handled_dependencies(dependencies_in_existing_pr_for_group(group).filter_map { |d| d["dependency-name"] })
+          # also add dependencies that might be in the group, as a rebase would add them;
+          # this avoids individual PR creation that immediately is superseded by a group PR supersede
+          add_handled_dependencies(group.dependencies.map(&:name))
+        end
       end
     end
+    # rubocop:enable Metrics/PerceivedComplexity
 
     sig { params(dependency_names: T.any(String, T::Array[String])).void }
     def add_handled_dependencies(dependency_names)
       assert_current_directory_set!
-      set = @handled_dependencies[@current_directory] || Set.new
-      set += Array(dependency_names)
-      @handled_dependencies[@current_directory] = set
+      names = Array(dependency_names)
+      Dependabot.logger.info("Adding dependencies as handled: (#{names.join(', ')}).")
+      @handled_dependencies[@current_directory] ||= Set.new
+      @handled_dependencies[@current_directory]&.merge(names)
     end
 
     sig { returns(T::Set[String]) }
@@ -164,6 +194,17 @@ module Dependabot
 
       # Otherwise return dependencies that haven't been handled during the group update portion.
       allowed_dependencies.reject { |dep| handled_dependencies.include?(dep.name) }
+    end
+
+    sig { params(group: Dependabot::DependencyGroup).returns(T::Array[String]) }
+    def dependencies_in_existing_pr_for_group(group)
+      existing = job.existing_group_pull_requests.find do |pr|
+        pr["dependency-group-name"] == group.name
+      end&.fetch("dependencies", []) || []
+
+      existing.filter do |dep|
+        dep["dependency-name"]
+      end
     end
 
     private
@@ -272,13 +313,6 @@ module Dependabot
       @notices[@current_directory] = notices_for_current_directory
 
       parser
-    end
-
-    sig { params(group: Dependabot::DependencyGroup).returns(T::Array[T::Hash[String, String]]) }
-    def dependencies_in_existing_pr_for_group(group)
-      job.existing_group_pull_requests.find do |pr|
-        pr["dependency-group-name"] == group.name
-      end&.fetch("dependencies", []) || []
     end
 
     sig { void }

@@ -69,6 +69,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
 
   def run_parser_test(&_block)
     ENV["DEPENDABOT_NUGET_CACHE_DISABLED"] = "true"
+    ENV["DEPENDABOT_JOB_ID"] = "TEST-JOB-ID"
     clean_common_files
     Dependabot::Nuget::DiscoveryJsonReader.testonly_clear_caches
 
@@ -89,6 +90,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
   ensure
     Dependabot::Nuget::DiscoveryJsonReader.testonly_clear_caches
     ENV.delete("DEPENDABOT_NUGET_CACHE_DISABLED")
+    ENV.delete("DEPENDABOT_JOB_ID")
     clean_common_files
   end
 
@@ -1128,6 +1130,40 @@ RSpec.describe Dependabot::Nuget::FileParser do
           expect(package_manager.requirement).to be_nil
           expect(language.name).to eq "vb-dotnet472"
           expect(language.requirement).to be_nil
+        end
+      end
+    end
+
+    context "with a project file that has no dependencies" do
+      before do
+        intercept_native_tools(
+          discovery_content_hash: {
+            Path: "",
+            IsSuccess: true,
+            Projects: [{
+              FilePath: "my.csproj",
+              Dependencies: [],
+              IsSuccess: true,
+              Properties: [{
+                Name: "TargetFramework",
+                Value: "net9.0",
+                SourceFilePath: "my.csproj"
+              }],
+              TargetFrameworks: ["net9.0"],
+              ReferencedProjectPaths: [],
+              ImportedFiles: [],
+              AdditionalFiles: []
+            }],
+            GlobalJson: nil,
+            DotNetToolsJson: nil
+          }
+        )
+      end
+
+      it "is returns an empty set of dependencies" do
+        run_parser_test do |parser|
+          dependencies = parser.parse
+          expect(dependencies).to be_empty
         end
       end
     end

@@ -48,7 +48,7 @@ module Dependabot
           T.let(
             submodule_paths
             .map { |path| fetch_submodule_ref_from_host(path) }
-            .tap { |refs| refs.each { |f| f.support_file = true } }
+            .tap { |refs| refs.each { |f| f.support_file = false } }
             .uniq,
             T.nilable(T::Array[Dependabot::DependencyFile])
           )

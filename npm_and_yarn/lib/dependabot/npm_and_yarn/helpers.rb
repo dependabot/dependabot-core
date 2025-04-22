@@ -29,6 +29,10 @@ module Dependabot
       PNPM_DEFAULT_VERSION = PNPM_V9
       PNPM_FALLBACK_VERSION = PNPM_V6
 
+      # BUN Version Constants
+      BUN_V1 = 1
+      BUN_DEFAULT_VERSION = BUN_V1
+
       # YARN Version Constants
       YARN_V3 = 3
       YARN_V2 = 2
@@ -36,15 +40,14 @@ module Dependabot
       YARN_DEFAULT_VERSION = YARN_V3
       YARN_FALLBACK_VERSION = YARN_V1
 
+      # corepack supported package managers
+      SUPPORTED_COREPACK_PACKAGE_MANAGERS = %w(npm yarn pnpm).freeze
+
       # Determines the npm version depends to the feature flag
       # If the feature flag is enabled, we are going to use the minimum version npm 8
       # Otherwise, we are going to use old versionining npm 6
       sig { params(lockfile: T.nilable(DependencyFile)).returns(Integer) }
       def self.npm_version_numeric(lockfile)
-        if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
-          return npm_version_numeric_latest(lockfile)
-        end
-
         fallback_version_npm8 = Dependabot::Experiments.enabled?(:npm_fallback_version_above_v6)
 
         return npm_version_numeric_npm8_or_higher(lockfile) if fallback_version_npm8
@@ -161,6 +164,11 @@ module Dependabot
         PNPM_FALLBACK_VERSION
       end
 
+      sig { params(_bun_lock: T.nilable(DependencyFile)).returns(Integer) }
+      def self.bun_version_numeric(_bun_lock)
+        BUN_DEFAULT_VERSION
+      end
+
       sig { params(key: String, default_value: String).returns(T.untyped) }
       def self.fetch_yarnrc_yml_value(key, default_value)
         if File.exist?(".yarnrc.yml") && (yarnrc = YAML.load_file(".yarnrc.yml"))
@@ -173,10 +181,6 @@ module Dependabot
       sig { params(package_lock: T.nilable(DependencyFile)).returns(T::Boolean) }
       def self.npm8?(package_lock)
         return true unless package_lock&.content
-
-        if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
-          return npm_version_numeric_latest(package_lock) >= NPM_V8
-        end
 
         npm_version_numeric(package_lock) == NPM_V8
       end
@@ -317,8 +321,8 @@ module Dependabot
           package_manager_run_command(NpmPackageManager::NAME, command, fingerprint: fingerprint)
         else
           Dependabot::SharedHelpers.run_shell_command(
-            "corepack npm #{command}",
-            fingerprint: "corepack npm #{fingerprint}"
+            "npm #{command}",
+            fingerprint: "npm #{fingerprint}"
           )
         end
       end
@@ -351,6 +355,35 @@ module Dependabot
         result
       rescue StandardError => e
         Dependabot.logger.error("Error running node command: #{full_command}, Error: #{e.message}")
+        raise
+      end
+
+      sig { returns(T.nilable(String)) }
+      def self.bun_version
+        version = run_bun_command("--version", fingerprint: "--version").strip
+        if version.include?("+")
+          version.split("+").first # Remove build info, if present
+        end
+      rescue StandardError => e
+        Dependabot.logger.error("Error retrieving Bun version: #{e.message}")
+        nil
+      end
+
+      sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
+      def self.run_bun_command(command, fingerprint: nil)
+        full_command = "bun #{command}"
+
+        Dependabot.logger.info("Running bun command: #{full_command}")
+
+        result = Dependabot::SharedHelpers.run_shell_command(
+          full_command,
+          fingerprint: "bun #{fingerprint || command}"
+        )
+
+        Dependabot.logger.info("Command executed successfully: #{full_command}")
+        result
+      rescue StandardError => e
+        Dependabot.logger.error("Error running bun command: #{full_command}, Error: #{e.message}")
         raise
       end
 
@@ -428,6 +461,8 @@ module Dependabot
       # Attempt to activate the local version of the package manager
       sig { params(name: String).void }
       def self.fallback_to_local_version(name)
+        return "Corepack does not support #{name}" unless corepack_supported_package_manager?(name)
+
         Dependabot.logger.info("Falling back to activate the currently installed version of #{name}.")
 
         # Fetch the currently installed version directly from the environment
@@ -448,6 +483,8 @@ module Dependabot
           .returns(String)
       end
       def self.package_manager_install(name, version, env: {})
+        return "Corepack does not support #{name}" unless corepack_supported_package_manager?(name)
+
         Dependabot::SharedHelpers.run_shell_command(
           "corepack install #{name}@#{version} --global --cache-only",
           fingerprint: "corepack install <name>@<version> --global --cache-only",
@@ -458,6 +495,8 @@ module Dependabot
       # Prepare the package manager for use by using corepack
       sig { params(name: String, version: String).returns(String) }
       def self.package_manager_activate(name, version)
+        return "Corepack does not support #{name}" unless corepack_supported_package_manager?(name)
+
         Dependabot::SharedHelpers.run_shell_command(
           "corepack prepare #{name}@#{version} --activate",
           fingerprint: "corepack prepare <name>@<version> --activate"
@@ -498,6 +537,8 @@ module Dependabot
         ).returns(String)
       end
       def self.package_manager_run_command(name, command, fingerprint: nil)
+        return run_bun_command(command, fingerprint: fingerprint) if name == BunPackageManager::NAME
+
         full_command = "corepack #{name} #{command}"
 
         result = Dependabot::SharedHelpers.run_shell_command(
@@ -508,6 +549,11 @@ module Dependabot
         result
       rescue StandardError => e
         Dependabot.logger.error("Error running package manager command: #{full_command}, Error: #{e.message}")
+        if e.message.match?(/Response Code.*:.*404.*\(Not Found\)/) &&
+           e.message.include?("The remote server failed to provide the requested resource")
+          raise RegistryError.new(404, "The remote server failed to provide the requested resource")
+        end
+
         raise
       end
 
@@ -527,6 +573,11 @@ module Dependabot
           dependency.metadata[:all_versions] = dependency_set.all_versions_for_name(dependency.name)
           dependency
         end
+      end
+
+      sig { params(name: String).returns(T::Boolean) }
+      def self.corepack_supported_package_manager?(name)
+        SUPPORTED_COREPACK_PACKAGE_MANAGERS.include?(name)
       end
     end
   end
