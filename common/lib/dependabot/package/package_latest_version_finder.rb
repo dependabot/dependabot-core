@@ -162,7 +162,6 @@ module Dependabot
         return unless releases
 
         releases = filter_yanked_versions(releases)
-        releases = filter_by_cooldown(releases)
         releases = filter_unsupported_versions(releases, language_version)
         # versions = filter_prerelease_versions(versions)
         releases = Dependabot::UpdateCheckers::VersionFilters
