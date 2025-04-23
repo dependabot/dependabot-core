@@ -55,7 +55,7 @@ module Dependabot
             next if details["aliased"]
 
             name = T.cast(details["name"], String)
-            version = T.cast(details["version"], String)
+            version = T.cast(details["version"], T.nilable(String))
 
             dependency_args = {
               name: name,

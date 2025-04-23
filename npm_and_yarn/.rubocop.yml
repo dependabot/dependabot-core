@@ -6,18 +6,5 @@ inherit_mode:
 
 Sorbet/StrictSigil:
   Exclude:
-    - lib/dependabot/npm_and_yarn/file_parser/pnpm_lock.rb
-    - lib/dependabot/npm_and_yarn/file_parser/yarn_lock.rb
-    - lib/dependabot/npm_and_yarn/file_updater/bun_lockfile_updater.rb
-    - lib/dependabot/npm_and_yarn/file_updater/package_json_preparer.rb
     - lib/dependabot/npm_and_yarn/file_updater/pnpm_lockfile_updater.rb
-    - lib/dependabot/npm_and_yarn/file_updater/yarn_lockfile_updater.rb
-    - lib/dependabot/npm_and_yarn/metadata_finder.rb
-    - lib/dependabot/npm_and_yarn/native_helpers.rb
-    - lib/dependabot/npm_and_yarn/requirement.rb
-    - lib/dependabot/npm_and_yarn/update_checker/conflicting_dependency_resolver.rb
-    - lib/dependabot/npm_and_yarn/update_checker/dependency_files_builder.rb
-    - lib/dependabot/npm_and_yarn/update_checker/library_detector.rb
-    - lib/dependabot/npm_and_yarn/update_checker/requirements_updater.rb
     - lib/dependabot/npm_and_yarn/update_checker/subdependency_version_resolver.rb
-    - lib/dependabot/npm_and_yarn/update_checker/vulnerability_auditor.rb
