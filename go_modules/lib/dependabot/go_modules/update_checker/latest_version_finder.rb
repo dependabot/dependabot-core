@@ -19,8 +19,6 @@ module Dependabot
       class LatestVersionFinder < Dependabot::Package::PackageLatestVersionFinder
         extend T::Sig
 
-        DAY_IN_SECONDS = T.let(24 * 60 * 60, Integer)
-
         RESOLVABILITY_ERROR_REGEXES = T.let(
           [
             # Package url/proxy doesn't include any redirect meta tags
@@ -160,7 +158,6 @@ module Dependabot
           candidate_versions.max_by(&:version)&.version
         end
 
-        # rubocop:disable Metrics/AbcSize
         sig { params(release: Dependabot::Package::PackageRelease).returns(T::Boolean) }
         def in_cooldown_period?(release)
           env = { "GOPRIVATE" => @goprivate }
@@ -188,18 +185,8 @@ module Dependabot
             :@released_at, JSON.parse(release_info)["Time"] ? Time.parse(JSON.parse(release_info)["Time"]) : nil
           )
 
-          return false unless release.released_at
-
-          current_version = dependency.version ? version_class.new(dependency.version) : nil
-          days = cooldown_days_for(current_version, release.version)
-
-          # Calculate the number of seconds passed since the release
-          passed_seconds = Time.now.to_i - release.released_at.to_i
-          # Check if the release is within the cooldown period
-          passed_seconds < days * DAY_IN_SECONDS
+          super
         end
-        # rubocop:enable Metrics/AbcSize
-
         sig do
           override.returns(T.nilable(Dependabot::Package::PackageDetails))
         end
@@ -223,7 +210,6 @@ module Dependabot
                                                                                                     security_advisories)
           relevant_versions = filter_ignored_versions(relevant_versions)
           relevant_versions = filter_lower_versions(relevant_versions)
-          relevant_versions = filter_by_cooldown(relevant_versions)
 
           relevant_versions.min_by(&:version)&.version
         end
