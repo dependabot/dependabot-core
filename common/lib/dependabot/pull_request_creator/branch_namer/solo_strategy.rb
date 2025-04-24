@@ -146,19 +146,22 @@ module Dependabot
             current_tag = dependency.requirements.filter_map do |r|
               r.dig(:source, "tag") || r.dig(:source, :tag)
             end.first
+
             previous_tag = dependency.previous_requirements.filter_map do |r|
               r.dig(:source, "tag") || r.dig(:source, :tag)
             end.first
+
             current_digest = dependency.requirements.filter_map do |r|
               r.dig(:source, "digest") || r.dig(:source, :digest)
             end.first
+
             previous_digest = dependency.previous_requirements.filter_map do |r|
               r.dig(:source, "digest") || r.dig(:source, :digest)
             end.first
 
             # If the tag hasn't changed, but the digest has, we need to include the digest
             if current_tag == previous_tag && current_digest != previous_digest
-              digest_parts = current_digest&.split(':')
+              digest_parts = current_digest&.split(":")
               if current_tag && !current_tag.empty?
                 # If the tag isn't empty, we need to include it in the branch name
                 "#{current_tag}-#{digest_parts&.first}#{digest_parts&.last&.slice(0, 6)}"
