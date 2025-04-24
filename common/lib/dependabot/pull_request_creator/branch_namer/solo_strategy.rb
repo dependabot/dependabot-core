@@ -142,12 +142,9 @@ module Dependabot
             return new_ref(dependency) if ref_changed?(dependency) && new_ref(dependency)
 
             T.must(dependency.version)[0..6]
-          elsif package_manager == "docker"
+          elsif dependency.version != dependency.previous_version &&
+                package_manager == "docker"
             current_tag = dependency.requirements.filter_map do |r|
-              r.dig(:source, "tag") || r.dig(:source, :tag)
-            end.first
-
-            previous_tag = dependency.previous_requirements.filter_map do |r|
               r.dig(:source, "tag") || r.dig(:source, :tag)
             end.first
 
@@ -155,23 +152,38 @@ module Dependabot
               r.dig(:source, "digest") || r.dig(:source, :digest)
             end.first
 
-            previous_digest = dependency.previous_requirements.filter_map do |r|
-              r.dig(:source, "digest") || r.dig(:source, :digest)
-            end.first
+            if dependency.previous_requirements
+              previous_tag = dependency.previous_requirements.filter_map do |r|
+                r.dig(:source, "tag") || r.dig(:source, :tag)
+              end.first
 
-            # If the tag hasn't changed, but the digest has, we need to include the digest
-            if current_tag == previous_tag && current_digest != previous_digest
-              digest_parts = current_digest&.split(":")
-              if current_tag && !current_tag.empty?
-                # If the tag isn't empty, we need to include it in the branch name
-                "#{current_tag}-#{digest_parts&.first}#{digest_parts&.last&.slice(0, 6)}"
-              else
-                # If the tag is empty, just use the digest
-                "#{digest_parts&.first}#{digest_parts&.last&.slice(0, 6)}"
+              previous_digest = dependency.previous_requirements.filter_map do |r|
+                r.dig(:source, "digest") || r.dig(:source, :digest)
+              end.first
+
+              # If the tag hasn't changed, but the digest has, we need to include the digest
+              if current_tag == previous_tag && current_digest != previous_digest
+                digest_parts = current_digest&.split(":")
+                if current_tag && !current_tag.empty?
+                  # If the tag isn't empty, we need to include it in the branch name
+                  "#{current_tag}-#{digest_parts&.first}#{digest_parts&.last&.slice(0, 6)}"
+                else
+                  # If the tag is empty, just use the digest
+                  "#{digest_parts&.first}#{digest_parts&.last&.slice(0, 6)}"
+                end
+              elsif current_tag != previous_tag
+                # If the tag has changed, we don't need to include the digest
+                current_tag
               end
-            elsif current_tag != previous_tag
-              # If the tag has changed, we don't need to include the digest
-              current_tag
+            end
+
+            # If there were no previous requirements, we need to include the current tag and digest
+            if current_tag && !current_tag.empty?
+              if current_digest.nil?
+                current_tag
+              end
+              digest_parts = current_digest&.split(":")
+              "#{current_tag}-#{digest_parts&.first}#{digest_parts&.last&.slice(0, 6)}"
             end
           else
             dependency.version
