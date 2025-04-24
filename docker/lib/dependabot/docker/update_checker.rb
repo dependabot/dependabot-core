@@ -427,7 +427,7 @@ module Dependabot
 
       sig { params(tag: String).returns(T.nilable(String)) }
       def fetch_digest_of(tag)
-        docker_registry_client.manifest_digest(docker_repo_name, tag)
+        docker_registry_client.manifest_digest(docker_repo_name, tag)&.delete_prefix("sha256:")
       rescue *transient_docker_errors => e
         attempt ||= 1
         attempt += 1
