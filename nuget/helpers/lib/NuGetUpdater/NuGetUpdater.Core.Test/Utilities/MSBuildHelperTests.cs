@@ -1713,6 +1713,78 @@ public class MSBuildHelperTests : TestBase
         }
     }
 
+    [Theory]
+    [MemberData(nameof(GetProjectPathsFromProjectTestData))]
+    public async Task GetProjectPathsFromProject(string startingProjectPath, (string Path, string Content)[] files, string[] expectedProjectPaths)
+    {
+        using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(files);
+        var actualProjectPaths = MSBuildHelper.GetProjectPathsFromProject(Path.Combine(tempDir.DirectoryPath, startingProjectPath)).ToArray();
+        var repoRelativeProjectPaths = actualProjectPaths.Select(p => Path.GetRelativePath(tempDir.DirectoryPath, p).NormalizePathToUnix()).ToArray();
+        AssertEx.Equal(expectedProjectPaths, repoRelativeProjectPaths);
+    }
+
+    public static IEnumerable<object[]> GetProjectPathsFromProjectTestData()
+    {
+        // csproj - relative path
+        yield return
+        [
+            // startingProjectPath
+            "library/library.csproj",
+            // files
+            new[]
+            {
+                ("library/library.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <ProjectReference Include="..\common\common.csproj" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("common/common.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                    </Project>
+                    """),
+            },
+            // expectedProjectPaths
+            new[]
+            {
+                "common/common.csproj",
+            }
+        ];
+
+        // proj - recursive wildcard
+        yield return
+        [
+            // startingProjectPath
+            "dirs.proj",
+            // files
+            new[]
+            {
+                ("dirs.proj", """
+                    <Project>
+                      <ItemGroup>
+                        <ProjectFile Include="**\*.csproj" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("src/common/common.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                    </Project>
+                    """),
+                ("src/library/library.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                    </Project>
+                    """),
+            },
+            // expectedProjectPaths
+            new[]
+            {
+                "src/common/common.csproj",
+                "src/library/library.csproj",
+            }
+        ];
+    }
+
     public static IEnumerable<object?[]> GenerateErrorFromToolOutputTestData()
     {
         yield return
