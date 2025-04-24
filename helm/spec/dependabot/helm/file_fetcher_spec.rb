@@ -34,8 +34,6 @@ RSpec.describe Dependabot::Helm::FileFetcher do
 
   before do
     allow(file_fetcher_instance).to receive(:commit).and_return("sha")
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_beta_ecosystems).and_return(true)
   end
 
   context "with no Helm file" do
