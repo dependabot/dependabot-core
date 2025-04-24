@@ -94,13 +94,13 @@ module Dependabot
               return [package_release(version: T.must(dependency.version))] if version_strings.nil?
 
               version_info = version_strings.select { |v| version_class.correct?(v) }
-                                            .map { |v| version_class.new(v) }
+                                            .map { |version| version }
 
               package_releases = []
 
               version_info.map do |version|
                 package_releases << package_release(
-                  version: version.to_s
+                  version: version
                 )
               end
 
@@ -136,7 +136,8 @@ module Dependabot
         end
         def package_release(version:)
           Dependabot::Package::PackageRelease.new(
-            version: GoModules::Version.new(version)
+            version: GoModules::Version.new(version),
+            details: { "version_string" => version }
           )
         end
 

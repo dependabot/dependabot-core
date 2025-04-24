@@ -147,7 +147,7 @@ module Dependabot
           candidate_versions = available_versions_details
           candidate_versions = filter_prerelease_versions(candidate_versions)
           candidate_versions = filter_ignored_versions(candidate_versions)
-          candidate_versions = filter_by_cooldown(candidate_versions)
+          candidate_versions = lazy_filter_cooldown_versions(candidate_versions)
           # Adding the psuedo-version to the list to avoid downgrades
           if PSEUDO_VERSION_REGEX.match?(dependency.version)
             candidate_versions << Dependabot::Package::PackageRelease.new(
@@ -158,25 +158,47 @@ module Dependabot
           candidate_versions.max_by(&:version)&.version
         end
 
+        sig do
+          params(releases: T::Array[Dependabot::Package::PackageRelease], check_max: T::Boolean)
+            .returns(T::Array[Dependabot::Package::PackageRelease])
+        end
+        def lazy_filter_cooldown_versions(releases, check_max: true)
+          return releases unless cooldown_enabled?
+
+          Dependabot.logger.info("Initializing cooldown filter")
+
+          sorted_releases = if check_max
+                              releases.sort_by(&:version).reverse
+                            else
+                              releases.sort_by(&:version)
+                            end
+
+          filtered_versions = []
+          cooldown_filtered_versions = 0
+
+          # Iterate through the sorted versions lazily, filtering out cooldown versions
+          sorted_releases.each do |release|
+            if in_cooldown_period?(release)
+              Dependabot.logger.info("Filtered out (cooldown) : #{release}")
+              cooldown_filtered_versions += 1
+              next
+            end
+
+            filtered_versions << release
+            break
+          end
+
+          Dependabot.logger.info("Filtered out #{cooldown_filtered_versions} version(s) due to cooldown")
+
+          filtered_versions
+        end
+
         sig { params(release: Dependabot::Package::PackageRelease).returns(T::Boolean) }
         def in_cooldown_period?(release)
           env = { "GOPRIVATE" => @goprivate }
 
-          # retrieves the version strings for dependency
-          versions_json = SharedHelpers.run_shell_command(
-            "go list -m -versions -json #{dependency.name}",
-            fingerprint: "go list -m -versions -json <dependency_name>",
-            env: env
-          )
-          version_strings = JSON.parse(versions_json)["Versions"]
-
-          version_hash = {}
-          version_strings.each do |v|
-            version_hash.merge!({ v => version_class.new(v) })
-          end
-
           release_info = SharedHelpers.run_shell_command(
-            "go list -m -json #{dependency.name}@#{version_hash.key(release.version)}",
+            "go list -m -json #{dependency.name}@#{release.details.[]('version_string')}",
             fingerprint: "go list -m -json <dependency_name>",
             env: env
           )
@@ -185,7 +207,22 @@ module Dependabot
             :@released_at, JSON.parse(release_info)["Time"] ? Time.parse(JSON.parse(release_info)["Time"]) : nil
           )
 
-          super
+          return false unless release.released_at
+
+          current_version = version_class.correct?(dependency.version) ? version_class.new(dependency.version) : nil
+          days = cooldown_days_for(current_version, release.version)
+
+          # Calculate the number of seconds passed since the release
+          passed_seconds = Time.now.to_i - release.released_at.to_i
+          passed_days = passed_seconds / DAY_IN_SECONDS
+
+          if passed_days < days
+            Dependabot.logger.info("Version #{release.version}, Release date: #{release.released_at}." \
+                                   " Days since release: #{passed_days} (cooldown days: #{days})")
+          end
+
+          # Check if the release is within the cooldown period
+          passed_seconds < days * DAY_IN_SECONDS
         end
         sig do
           override.returns(T.nilable(Dependabot::Package::PackageDetails))
