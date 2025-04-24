@@ -152,7 +152,7 @@ module Dependabot
               return current_tag
             end
 
-            return format_digest_branch_name(current_tag, current_digest) if current_tag
+            format_digest_branch_name(current_tag, current_digest) if current_tag
           else
             dependency.version
           end
@@ -228,10 +228,10 @@ module Dependabot
           )
         end
 
-        sig {
+        sig do
           params(requirements: T.nilable(T::Array[T::Hash[Symbol,
                                                           T.untyped]])).returns([T.nilable(String), T.nilable(String)])
-        }
+        end
         def extract_tag_and_digest(requirements)
           return [nil, nil] unless requirements
 

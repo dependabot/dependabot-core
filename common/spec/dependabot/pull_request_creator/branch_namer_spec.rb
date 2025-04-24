@@ -532,6 +532,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
         let(:previous_source) do
           { tag: "17.10", digest: "sha256:2167a21baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
         end
+
         it "includes the tag and digest" do
           expect(new_branch_name).to eq("dependabot/docker/ubuntu-17.10-sha256183054")
         end
@@ -546,6 +547,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
         let(:previous_source) do
           { tag: "17.04", digest: "sha256:2167a21baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
         end
+
         it "includes the tag without the digest" do
           expect(new_branch_name).to eq("dependabot/docker/ubuntu-17.10")
         end
