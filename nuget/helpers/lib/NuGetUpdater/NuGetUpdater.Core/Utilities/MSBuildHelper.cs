@@ -110,65 +110,79 @@ internal static partial class MSBuildHelper
         return solution.ProjectsInOrder.Select(p => p.AbsolutePath);
     }
 
-    public static IEnumerable<string> GetProjectPathsFromProject(string projFilePath)
+    public static async Task<ImmutableArray<string>> GetProjectPathsFromProject(string projFilePath, ExperimentsManager experimentsManager, ILogger logger)
     {
-        var projectStack = new Stack<(string folderPath, ProjectRootElement)>();
-        var processedProjectFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        using var projectCollection = new ProjectCollection();
+        var projectsToProcess = new Stack<string>([projFilePath.NormalizePathToUnix()]);
+        var visitedProjects = new HashSet<string>(PathComparer.Instance);
+        var result = new List<string>();
+        var allowedFileExtensions = new HashSet<string>([".proj", ".csproj", ".fsproj", ".vbproj"], StringComparer.OrdinalIgnoreCase);
+        var projectDiscoveryTargetsPath = GetFileFromRuntimeDirectory("ProjectDiscovery.targets");
+        var projectFileRegex = new Regex(@"_ReportProjectFiles::ProjectFile=(?<Path>.*)$", RegexOptions.Multiline);
+        var projectReferenceRegex = new Regex(@"_ReportProjectReferences::ProjectReference=(?<Path>.*)$", RegexOptions.Multiline);
 
-        try
+        while (projectsToProcess.TryPop(out var currentProjectPath))
         {
-            var projectRootElement = ProjectRootElement.Open(projFilePath, projectCollection);
-            projectStack.Push((Path.GetFullPath(Path.GetDirectoryName(projFilePath)!), projectRootElement));
-        }
-        catch (InvalidProjectFileException)
-        {
-            yield break; // Skip invalid project files
-        }
-
-        while (projectStack.Count > 0)
-        {
-            var (folderPath, tmpProject) = projectStack.Pop();
-            foreach (var projectReference in tmpProject.Items.Where(static x => x.ItemType == "ProjectReference" || x.ItemType == "ProjectFile"))
+            var projectDirectory = Path.GetDirectoryName(currentProjectPath)!;
+            var projectToEvaluate = currentProjectPath;
+            if (Path.GetExtension(projectToEvaluate).Equals(".proj", StringComparison.OrdinalIgnoreCase))
             {
-                if (projectReference.Include is not { } projectPath)
+                // `.proj` files might be pseudo-MSBuild; as a cheap hack we can manually inject our targets into a temporary file in the same directory
+                projectToEvaluate = Path.Combine(projectDirectory, $"{Guid.NewGuid():d}.proj");
+                var xml = XDocument.Load(currentProjectPath);
+                xml.Root!.AddFirst(new XElement("Import", new XAttribute("Project", projectDiscoveryTargetsPath)));
+                await File.WriteAllTextAsync(projectToEvaluate, xml.ToString());
+            }
+
+            var args = new List<string>()
+            {
+                "msbuild",
+                projectToEvaluate,
+                "/t:_ReportFileReferences",
+                $"/p:CustomAfterMicrosoftCommonCrossTargetingTargets={projectDiscoveryTargetsPath}",
+                $"/p:CustomAfterMicrosoftCommonTargets={projectDiscoveryTargetsPath}",
+            };
+            var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(args, projectDirectory, experimentsManager);
+            if (exitCode != 0)
+            {
+                logger.Info($"Error enumerating reference projects from file {currentProjectPath}:\nSTDOUT:\n{stdOut}\nSTDERR:\n{stdErr}\n");
+            }
+
+            if (projectToEvaluate != currentProjectPath)
+            {
+                // this was a temporary project
+                File.Delete(projectToEvaluate);
+            }
+
+            stdOut = stdOut.Replace("\r", ""); // CR causes issues with the regex on Windows and the easiest thing is to just remove it
+
+            void HandleMatch(Match m)
+            {
+                var projectPath = m.Groups["Path"].Value;
+                if (File.Exists(projectPath) && allowedFileExtensions.Contains(Path.GetExtension(projectPath)))
                 {
-                    continue;
-                }
-
-                Matcher matcher = new Matcher();
-                matcher.AddInclude(PathHelper.NormalizePathToUnix(projectReference.Include));
-
-                string searchDirectory = PathHelper.NormalizePathToUnix(folderPath);
-
-                IEnumerable<string> files = matcher.GetResultsInFullPath(searchDirectory);
-
-                foreach (var file in files)
-                {
-                    // Check that we haven't already processed this file
-                    if (processedProjectFiles.Contains(file))
+                    if (visitedProjects.Add(projectPath))
                     {
-                        continue;
-                    }
-
-                    var projectExtension = Path.GetExtension(file).ToLowerInvariant();
-                    if (projectExtension == ".proj")
-                    {
-                        // If there is some MSBuild logic that needs to run to fully resolve the path skip the project
-                        if (File.Exists(file))
+                        projectsToProcess.Push(projectPath);
+                        if (!Path.GetExtension(projectPath).Equals(".proj", StringComparison.OrdinalIgnoreCase))
                         {
-                            var additionalProjectRootElement = ProjectRootElement.Open(file, projectCollection);
-                            projectStack.Push((Path.GetFullPath(Path.GetDirectoryName(file)!), additionalProjectRootElement));
-                            processedProjectFiles.Add(file);
+                            result.Add(projectPath);
                         }
-                    }
-                    else if (projectExtension == ".csproj" || projectExtension == ".vbproj" || projectExtension == ".fsproj")
-                    {
-                        yield return file;
                     }
                 }
             }
+
+            foreach (Match m in projectFileRegex.Matches(stdOut))
+            {
+                HandleMatch(m);
+            }
+
+            foreach (Match m in projectReferenceRegex.Matches(stdOut))
+            {
+                HandleMatch(m);
+            }
         }
+
+        return [.. result];
     }
 
     public static IReadOnlyDictionary<string, Property> GetProperties(ImmutableArray<ProjectBuildFile> buildFiles)

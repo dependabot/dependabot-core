@@ -1,0 +1,10 @@
+<Project>
+  <Target Name="_ReportFileReferences" DependsOnTargets="_ReportProjectFiles;_ReportProjectReferences">
+  </Target>
+  <Target Name="_ReportProjectFiles" Condition="'@(ProjectFile)' != ''">
+    <Message Text="_ReportProjectFiles::ProjectFile=%(ProjectFile.FullPath)" Importance="High" />
+  </Target>
+  <Target Name="_ReportProjectReferences" Condition="'@(ProjectReference)' != ''">
+    <Message Text="_ReportProjectReferences::ProjectReference=%(ProjectReference.FullPath)" Importance="High" />
+  </Target>
+</Project>

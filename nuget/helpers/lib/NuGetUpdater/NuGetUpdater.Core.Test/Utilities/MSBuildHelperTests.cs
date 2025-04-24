@@ -1718,14 +1718,18 @@ public class MSBuildHelperTests : TestBase
     public async Task GetProjectPathsFromProject(string startingProjectPath, (string Path, string Content)[] files, string[] expectedProjectPaths)
     {
         using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(files);
-        var actualProjectPaths = MSBuildHelper.GetProjectPathsFromProject(Path.Combine(tempDir.DirectoryPath, startingProjectPath)).ToArray();
+        var experimentsManager = new ExperimentsManager();
+        var logger = new TestLogger();
+        var actualProjectPaths = await MSBuildHelper.GetProjectPathsFromProject(Path.Combine(tempDir.DirectoryPath, startingProjectPath), experimentsManager, logger);
         var repoRelativeProjectPaths = actualProjectPaths.Select(p => Path.GetRelativePath(tempDir.DirectoryPath, p).NormalizePathToUnix()).ToArray();
         AssertEx.Equal(expectedProjectPaths, repoRelativeProjectPaths);
     }
 
     public static IEnumerable<object[]> GetProjectPathsFromProjectTestData()
     {
-        // csproj - relative path
+        // sdk-style projects
+
+        // sdk csproj - relative path
         yield return
         [
             // startingProjectPath
@@ -1742,6 +1746,256 @@ public class MSBuildHelperTests : TestBase
                     """),
                 ("common/common.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
+                    </Project>
+                    """),
+            },
+            // expectedProjectPaths
+            new[]
+            {
+                "common/common.csproj",
+            }
+        ];
+
+        // sdk csproj - absolute path via MSBuild property
+        yield return
+        [
+            // startingProjectPath
+            "library/library.csproj",
+            // files
+            new[]
+            {
+                ("library/library.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <ProjectReference Include="$(MSBuildThisFileDirectory)..\common\common.csproj" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("common/common.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                    </Project>
+                    """),
+            },
+            // expectedProjectPaths
+            new[]
+            {
+                "common/common.csproj",
+            }
+        ];
+
+        // sdk csproj - absolute path via local property
+        yield return
+        [
+            // startingProjectPath
+            "library/library.csproj",
+            // files
+            new[]
+            {
+                ("library/library.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <Computed_MSBuildThisFileDirectory>$(MSBuildThisFileDirectory)</Computed_MSBuildThisFileDirectory>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <ProjectReference Include="$(Computed_MSBuildThisFileDirectory)..\common\common.csproj" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("common/common.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                    </Project>
+                    """),
+            },
+            // expectedProjectPaths
+            new[]
+            {
+                "common/common.csproj",
+            }
+        ];
+
+        // sdk csproj - absolute path via imported property
+        yield return
+        [
+            // startingProjectPath
+            "library/library.csproj",
+            // files
+            new[]
+            {
+                ("Directory.Build.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <RepoRoot>$(MSBuildThisFileDirectory)</RepoRoot>
+                      </PropertyGroup>
+                    </Project>
+                    """),
+                ("library/library.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <ProjectReference Include="$(RepoRoot)common\common.csproj" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("common/common.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                    </Project>
+                    """),
+            },
+            // expectedProjectPaths
+            new[]
+            {
+                "common/common.csproj",
+            }
+        ];
+
+        // legacy projects
+
+        // csproj - relative path
+        yield return
+        [
+            // startingProjectPath
+            "library/library.csproj",
+            // files
+            new[]
+            {
+                ("library/library.csproj", """
+                    <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                      <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                      <PropertyGroup>
+                        <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <ProjectReference Include="..\common\common.csproj" />
+                      </ItemGroup>
+                      <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                    </Project>
+                    """),
+                ("common/common.csproj", """
+                    <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                      <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                      <PropertyGroup>
+                        <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+                      </PropertyGroup>
+                      <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                    </Project>
+                    """),
+            },
+            // expectedProjectPaths
+            new[]
+            {
+                "common/common.csproj",
+            }
+        ];
+
+        // csproj - absolute path via MSBuild property
+        yield return
+        [
+            // startingProjectPath
+            "library/library.csproj",
+            // files
+            new[]
+            {
+                ("library/library.csproj", """
+                    <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                      <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                      <PropertyGroup>
+                        <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <ProjectReference Include="$(MSBuildThisFileDirectory)..\common\common.csproj" />
+                      </ItemGroup>
+                      <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                    </Project>
+                    """),
+                ("common/common.csproj", """
+                    <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                      <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                      <PropertyGroup>
+                        <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+                      </PropertyGroup>
+                      <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                    </Project>
+                    """),
+            },
+            // expectedProjectPaths
+            new[]
+            {
+                "common/common.csproj",
+            }
+        ];
+
+        // csproj - absolute path via local property
+        yield return
+        [
+            // startingProjectPath
+            "library/library.csproj",
+            // files
+            new[]
+            {
+                ("library/library.csproj", """
+                    <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                      <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                      <PropertyGroup>
+                        <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+                        <Computed_MSBuildThisFileDirectory></Computed_MSBuildThisFileDirectory>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <ProjectReference Include="$(Computed_MSBuildThisFileDirectory)..\common\common.csproj" />
+                      </ItemGroup>
+                      <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                    </Project>
+                    """),
+                ("common/common.csproj", """
+                    <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                      <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                      <PropertyGroup>
+                        <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+                      </PropertyGroup>
+                      <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                    </Project>
+                    """),
+            },
+            // expectedProjectPaths
+            new[]
+            {
+                "common/common.csproj",
+            }
+        ];
+
+        // csproj - absolute path via imported property
+        yield return
+        [
+            // startingProjectPath
+            "library/library.csproj",
+            // files
+            new[]
+            {
+                ("Common.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <RepoRoot>$(MSBuildThisFileDirectory)</RepoRoot>
+                      </PropertyGroup>
+                    </Project>
+                    """),
+                ("library/library.csproj", """
+                    <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                      <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                      <Import Project="..\Common.props" />
+                      <PropertyGroup>
+                        <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <ProjectReference Include="$(RepoRoot)common\common.csproj" />
+                      </ItemGroup>
+                      <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                    </Project>
+                    """),
+                ("common/common.csproj", """
+                    <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                      <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                      <PropertyGroup>
+                        <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+                      </PropertyGroup>
+                      <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
                     </Project>
                     """),
             },
@@ -1780,6 +2034,90 @@ public class MSBuildHelperTests : TestBase
             new[]
             {
                 "src/common/common.csproj",
+                "src/library/library.csproj",
+            }
+        ];
+
+        // proj - recursive wildcard via imported property
+        yield return
+        [
+            // startingProjectPath
+            "dirs.proj",
+            // files
+            new[]
+            {
+                ("dirs.proj", """
+                    <Project>
+                      <Import Project="Common.props" />
+                      <ItemGroup>
+                        <ProjectFile Include="$(RepoRoot)**\*.csproj" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Common.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <RepoRoot>$(MSBuildThisFileDirectory)</RepoRoot>
+                      </PropertyGroup>
+                    </Project>
+                    """),
+                ("src/common/common.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                    </Project>
+                    """),
+                ("src/library/library.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                    </Project>
+                    """),
+            },
+            // expectedProjectPaths
+            new[]
+            {
+                "src/common/common.csproj",
+                "src/library/library.csproj",
+            }
+        ];
+
+        // proj - through another proj
+        yield return
+        [
+            // startingProjectPath
+            "dirs.proj",
+            // files
+            new[]
+            {
+                ("dirs.proj", """
+                    <Project>
+                      <ItemGroup>
+                        <ProjectFile Include="src\dirs.proj" />
+                        <ProjectFile Include="common\common.csproj" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("src/dirs.proj", """
+                    <Project>
+                      <ItemGroup>
+                        <ProjectReference Include="library\library.csproj" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("src/library/library.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <!-- this was also pulled in via `dirs.proj`; no duplicate should be reported -->
+                        <ProjectReference Include="..\..\common\common.csproj" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("common/common.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                    </Project>
+                    """),
+            },
+            // expectedProjectPaths
+            new[]
+            {
+                "common/common.csproj",
                 "src/library/library.csproj",
             }
         ];

@@ -174,7 +174,7 @@ public class UpdaterWorker : IUpdaterWorker
         }
 
         var updateOperations = new List<UpdateOperationBase>();
-        var projectFilePaths = MSBuildHelper.GetProjectPathsFromProject(projFilePath);
+        var projectFilePaths = await MSBuildHelper.GetProjectPathsFromProject(projFilePath, _experimentsManager, _logger);
         foreach (var projectFullPath in projectFilePaths)
         {
             // If there is some MSBuild logic that needs to run to fully resolve the path skip the project
@@ -210,7 +210,7 @@ public class UpdaterWorker : IUpdaterWorker
         }
 
         var updateOperations = new List<UpdateOperationBase>();
-        var projectFilePaths = MSBuildHelper.GetProjectPathsFromProject(projectPath);
+        var projectFilePaths = await MSBuildHelper.GetProjectPathsFromProject(projectPath, _experimentsManager, _logger);
         foreach (var projectFullPath in projectFilePaths.Concat([projectPath]))
         {
             // If there is some MSBuild logic that needs to run to fully resolve the path skip the project
