@@ -144,47 +144,15 @@ module Dependabot
             T.must(dependency.version)[0..6]
           elsif dependency.version != dependency.previous_version &&
                 package_manager == "docker"
-            current_tag = dependency.requirements.filter_map do |r|
-              r.dig(:source, "tag") || r.dig(:source, :tag)
-            end.first
-
-            current_digest = dependency.requirements.filter_map do |r|
-              r.dig(:source, "digest") || r.dig(:source, :digest)
-            end.first
-
-            if dependency.previous_requirements
-              previous_tag = dependency.previous_requirements.filter_map do |r|
-                r.dig(:source, "tag") || r.dig(:source, :tag)
-              end.first
-
-              previous_digest = dependency.previous_requirements.filter_map do |r|
-                r.dig(:source, "digest") || r.dig(:source, :digest)
-              end.first
-
-              # If the tag hasn't changed, but the digest has, we need to include the digest
-              if current_tag == previous_tag && current_digest != previous_digest
-                digest_parts = current_digest&.split(":")
-                if current_tag && !current_tag.empty?
-                  # If the tag isn't empty, we need to include it in the branch name
-                  "#{current_tag}-#{digest_parts&.first}#{digest_parts&.last&.slice(0, 6)}"
-                else
-                  # If the tag is empty, just use the digest
-                  "#{digest_parts&.first}#{digest_parts&.last&.slice(0, 6)}"
-                end
-              elsif current_tag != previous_tag
-                # If the tag has changed, we don't need to include the digest
-                current_tag
-              end
+            current_tag, current_digest = extract_tag_and_digest(dependency.requirements)
+            previous_tag, previous_digest = extract_tag_and_digest(dependency.previous_requirements)
+            if current_tag == previous_tag && current_digest != previous_digest
+              return format_digest_branch_name(current_tag, current_digest)
+            elsif current_tag != previous_tag
+              return current_tag
             end
 
-            # If there were no previous requirements, we need to include the current tag and digest
-            if current_tag && !current_tag.empty?
-              if current_digest.nil?
-                current_tag
-              end
-              digest_parts = current_digest&.split(":")
-              "#{current_tag}-#{digest_parts&.first}#{digest_parts&.last&.slice(0, 6)}"
-            end
+            return format_digest_branch_name(current_tag, current_digest) if current_tag
           else
             dependency.version
           end
@@ -258,6 +226,30 @@ module Dependabot
             end.sort.join(",")).slice(0, 10),
             T.nilable(String)
           )
+        end
+
+        sig {
+          params(requirements: T.nilable(T::Array[T::Hash[Symbol,
+                                                          T.untyped]])).returns([T.nilable(String), T.nilable(String)])
+        }
+        def extract_tag_and_digest(requirements)
+          return [nil, nil] unless requirements
+
+          tag = requirements.filter_map { |r| r.dig(:source, "tag") || r.dig(:source, :tag) }.first
+          digest = requirements.filter_map { |r| r.dig(:source, "digest") || r.dig(:source, :digest) }.first
+          [tag, digest]
+        end
+
+        sig { params(tag: T.nilable(String), digest: T.nilable(String)).returns(String) }
+        def format_digest_branch_name(tag, digest)
+          return tag if digest.nil?
+
+          digest_parts = digest.split(":")
+          if tag && !tag.empty?
+            "#{tag}-#{digest_parts.first}#{digest_parts.last&.slice(0, 6)}"
+          else
+            "#{digest_parts.first}#{digest_parts.last&.slice(0, 6)}"
+          end
         end
       end
     end
