@@ -240,7 +240,7 @@ module Dependabot
           [tag, digest]
         end
 
-        sig { params(tag: T.nilable(String), digest: T.nilable(String)).returns(String) }
+        sig { params(tag: T.nilable(String), digest: T.nilable(String)).returns(T.nilable(String)) }
         def format_digest_branch_name(tag, digest)
           return tag if digest.nil?
 
