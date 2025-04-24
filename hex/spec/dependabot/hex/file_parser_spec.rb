@@ -245,7 +245,7 @@ RSpec.describe Dependabot::Hex::FileParser do
               source: {
                 type: "git",
                 url: "https://github.com/dependabot-fixtures/phoenix.git",
-                branch: "master",
+                branch: nil,
                 ref: "v1.2.0"
               }
             }],
@@ -271,7 +271,7 @@ RSpec.describe Dependabot::Hex::FileParser do
                 source: {
                   type: "git",
                   url: "https://github.com/dependabot-fixtures/phoenix.git",
-                  branch: "master",
+                  branch: nil,
                   ref: "v1.2.0"
                 }
               }],
