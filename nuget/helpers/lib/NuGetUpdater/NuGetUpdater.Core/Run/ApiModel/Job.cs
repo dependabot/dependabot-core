@@ -2,7 +2,6 @@ using System.Collections.Immutable;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-using NuGet.Credentials;
 using NuGet.Versioning;
 
 namespace NuGetUpdater.Core.Run.ApiModel;
@@ -32,7 +31,7 @@ public sealed record Job
     public bool RejectExternalCode { get; init; } = false;
     public bool RepoPrivate { get; init; } = false;
     public CommitOptions? CommitMessageOptions { get; init; } = null;
-    public ImmutableArray<Dictionary<string, string>>? CredentialsMetadata { get; init; } = null;
+    public ImmutableArray<Dictionary<string, object>>? CredentialsMetadata { get; init; } = null;
     public int MaxUpdaterRunTime { get; init; } = 0;
 
     public IEnumerable<string> GetAllDirectories()

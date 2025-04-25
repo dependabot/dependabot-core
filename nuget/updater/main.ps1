@@ -44,6 +44,8 @@ function Update-Files {
         -dotnetInstallDir $env:DOTNET_INSTALL_DIR
     # TODO: install workloads?
 
+    Set-NuGetConfig
+
     Push-Location $env:DEPENDABOT_REPO_CONTENTS_PATH
     $baseCommitSha = git rev-parse HEAD
     Pop-Location
