@@ -122,12 +122,20 @@ module Dependabot
         potential_source
       end
 
-      sig { params(details: T.any(String, T::Hash[String, String])).returns(T.nilable(String)) }
+      sig do
+        params(
+          details: T.any(String, T::Array[String], T::Hash[String, String])
+        )
+        .returns(T.nilable(String))
+      end
       def get_url(details)
         url =
           case details
           when String then details
           when Hash then details.fetch("url", nil)
+          when Array
+            # Try to find the first valid URL string, and if not, return the first string (even if it isn't a URL)
+            details.find { |d| d.is_a?(String) && d.match?(%r{^[\w.-]+/[\w.-]+$}) } || details.find { |d| d.is_a?(String) }
           end
         return url unless url&.match?(%r{^[\w.-]+/[\w.-]+$})
 
