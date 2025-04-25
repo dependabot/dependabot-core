@@ -159,7 +159,7 @@ module Dependabot
           elsif current_tag != previous_tag
             current_tag
           else
-            format_digest_branch_name(current_tag, current_digest) if current_tag
+            format_digest_branch_name(current_tag, current_digest)
           end
         end
 
@@ -251,9 +251,9 @@ module Dependabot
 
           digest_parts = digest.split(":")
           if tag && !tag.empty?
-            "#{tag}-#{digest_parts.first}#{digest_parts.last&.slice(0, 6)}"
+            "#{tag}-#{digest_parts.first}-#{digest_parts.last&.slice(0, 6)}"
           else
-            "#{digest_parts.first}#{digest_parts.last&.slice(0, 6)}"
+            "#{digest_parts.first}-#{digest_parts.last&.slice(0, 6)}"
           end
         end
       end

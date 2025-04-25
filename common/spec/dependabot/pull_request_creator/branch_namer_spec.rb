@@ -520,7 +520,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
       let(:previous_version) { "sha256:2167a21baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
 
       it "truncates the version to just the digest when no tag is present" do
-        expect(new_branch_name).to eq("dependabot/docker/ubuntu-sha256183054")
+        expect(new_branch_name).to eq("dependabot/docker/ubuntu-sha256-183054")
       end
 
       context "when there is a tag present with only a digest change" do
@@ -534,7 +534,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
         end
 
         it "includes the tag and digest" do
-          expect(new_branch_name).to eq("dependabot/docker/ubuntu-17.10-sha256183054")
+          expect(new_branch_name).to eq("dependabot/docker/ubuntu-17.10-sha256-183054")
         end
       end
 
