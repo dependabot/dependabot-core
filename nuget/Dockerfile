@@ -42,8 +42,8 @@ RUN ARCH=$([ $TARGETARCH = "arm64" ] && echo "arm64" || echo "x64") \
  && pwsh --version
 
 # Install .NET SDK
-ARG DOTNET_LTS_SDK_VERSION=8.0.404
-ARG DOTNET_STS_SDK_VERSION=9.0.101
+ARG DOTNET_LTS_SDK_VERSION=8.0.408
+ARG DOTNET_STS_SDK_VERSION=9.0.203
 ARG DOTNET_SDK_INSTALL_URL=https://builds.dotnet.microsoft.com/dotnet/scripts/v1/dotnet-install.sh
 ENV DOTNET_INSTALL_DIR=/usr/local/dotnet/current
 ENV DOTNET_INSTALL_SCRIPT_PATH=/tmp/dotnet-install.sh
