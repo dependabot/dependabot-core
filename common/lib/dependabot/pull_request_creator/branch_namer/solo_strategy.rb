@@ -142,19 +142,24 @@ module Dependabot
             return new_ref(dependency) if ref_changed?(dependency) && new_ref(dependency)
 
             T.must(dependency.version)[0..6]
-          elsif dependency.version != dependency.previous_version &&
-                package_manager == "docker"
-            current_tag, current_digest = extract_tag_and_digest(dependency.requirements)
-            previous_tag, previous_digest = extract_tag_and_digest(dependency.previous_requirements)
-            if current_tag == previous_tag && current_digest != previous_digest
-              return format_digest_branch_name(current_tag, current_digest)
-            elsif current_tag != previous_tag
-              return current_tag
-            end
-
-            format_digest_branch_name(current_tag, current_digest) if current_tag
+          elsif dependency.version != dependency.previous_version && package_manager == "docker"
+            handle_docker_version_change(dependency)
           else
             dependency.version
+          end
+        end
+
+        sig { params(dependency: Dependabot::Dependency).returns(T.nilable(String)) }
+        def handle_docker_version_change(dependency)
+          current_tag, current_digest = extract_tag_and_digest(dependency.requirements)
+          previous_tag, previous_digest = extract_tag_and_digest(dependency.previous_requirements)
+
+          if current_tag == previous_tag && current_digest != previous_digest
+            format_digest_branch_name(current_tag, current_digest)
+          elsif current_tag != previous_tag
+            current_tag
+          else
+            format_digest_branch_name(current_tag, current_digest) if current_tag
           end
         end
 
@@ -229,8 +234,8 @@ module Dependabot
         end
 
         sig do
-          params(requirements: T.nilable(T::Array[T::Hash[Symbol,
-                                                          T.untyped]])).returns([T.nilable(String), T.nilable(String)])
+          params(requirements: T.nilable(T::Array[T::Hash[Symbol, T.untyped]]))
+            .returns([T.nilable(String), T.nilable(String)])
         end
         def extract_tag_and_digest(requirements)
           return [nil, nil] unless requirements
