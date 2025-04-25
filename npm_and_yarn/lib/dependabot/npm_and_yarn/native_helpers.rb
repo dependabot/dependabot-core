@@ -1,13 +1,19 @@
-# typed: true
+# typed: strong
 # frozen_string_literal: true
+
+require "sorbet-runtime"
 
 module Dependabot
   module NpmAndYarn
     module NativeHelpers
+      extend T::Sig
+
+      sig { returns(String) }
       def self.helper_path
         "node #{File.join(native_helpers_root, 'run.js')}"
       end
 
+      sig { returns(String) }
       def self.native_helpers_root
         helpers_root = ENV.fetch("DEPENDABOT_NATIVE_HELPERS_PATH", nil)
         return File.join(helpers_root, "npm_and_yarn") unless helpers_root.nil?
@@ -15,6 +21,7 @@ module Dependabot
         File.join(__dir__, "../../../helpers")
       end
 
+      sig { params(dependency_names: T::Array[String]).returns(String) }
       def self.run_npm8_subdependency_update_command(dependency_names)
         # NOTE: npm options
         # - `--force` ignores checks for platform (os, cpu) and engines
