@@ -88,7 +88,7 @@ module Dependabot
           end
       end
 
-      sig { override.returns(T.nilable(T.any(String, Dependabot::Version))) }
+      sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
       def latest_resolvable_version
         return unless latest_version
 
@@ -133,7 +133,11 @@ module Dependabot
 
       sig { override.returns(T.nilable(T.any(String, Dependabot::Version))) }
       def latest_resolvable_version_with_no_unlock
-        return latest_resolvable_version unless dependency.top_level?
+        unless dependency.top_level?
+          # TODO: We should use `Dependabot::Version` everywhere
+          return T.cast(latest_resolvable_version,
+                        T.nilable(T.any(String, Dependabot::Version)))
+        end
 
         return latest_resolvable_version_with_no_unlock_for_git_dependency if git_dependency?
 
