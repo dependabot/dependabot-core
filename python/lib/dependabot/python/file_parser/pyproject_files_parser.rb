@@ -43,16 +43,6 @@ module Dependabot
         sig { returns(Dependabot::FileParsers::Base::DependencySet) }
         def pyproject_dependencies
           if using_poetry?
-            missing_keys = missing_poetry_keys
-
-            if missing_keys.any?
-              raise DependencyFileNotParseable.new(
-                T.must(pyproject).path,
-                "#{T.must(pyproject).path} is missing the following sections:\n" \
-                "  * #{missing_keys.map { |key| "tool.poetry.#{key}" }.join("\n  * ")}\n"
-              )
-            end
-
             poetry_dependencies
           else
             pep621_dependencies
@@ -173,13 +163,6 @@ module Dependabot
         sig { returns(T.nilable(T::Boolean)) }
         def using_poetry?
           !poetry_root.nil?
-        end
-
-        sig { returns(T::Array[String]) }
-        def missing_poetry_keys
-          package_mode = T.must(poetry_root).fetch("package-mode", true)
-          required_keys = package_mode ? %w(name version description authors) : []
-          required_keys.reject { |key| T.must(poetry_root).key?(key) }
         end
 
         sig { returns(T::Boolean) }
