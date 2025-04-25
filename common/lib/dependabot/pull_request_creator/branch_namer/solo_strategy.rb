@@ -142,24 +142,13 @@ module Dependabot
             return new_ref(dependency) if ref_changed?(dependency) && new_ref(dependency)
 
             T.must(dependency.version)[0..6]
-          elsif dependency.version != dependency.previous_version && package_manager == "docker"
-            handle_docker_version_change(dependency)
+          elsif dependency.version == dependency.previous_version &&
+                package_manager == "docker"
+            dependency.requirements
+                      .filter_map { |r| r.dig(:source, "digest") || r.dig(:source, :digest) }
+                      .first.split(":").last[0..6]
           else
             dependency.version
-          end
-        end
-
-        sig { params(dependency: Dependabot::Dependency).returns(T.nilable(String)) }
-        def handle_docker_version_change(dependency)
-          current_tag, current_digest = extract_tag_and_digest(dependency.requirements)
-          previous_tag, previous_digest = extract_tag_and_digest(dependency.previous_requirements)
-
-          if current_tag == previous_tag && current_digest != previous_digest
-            format_digest_branch_name(current_tag, current_digest)
-          elsif current_tag != previous_tag
-            current_tag
-          else
-            format_digest_branch_name(current_tag, current_digest)
           end
         end
 
@@ -231,30 +220,6 @@ module Dependabot
             end.sort.join(",")).slice(0, 10),
             T.nilable(String)
           )
-        end
-
-        sig do
-          params(requirements: T.nilable(T::Array[T::Hash[Symbol, T.untyped]]))
-            .returns([T.nilable(String), T.nilable(String)])
-        end
-        def extract_tag_and_digest(requirements)
-          return [nil, nil] unless requirements
-
-          tag = requirements.filter_map { |r| r.dig(:source, "tag") || r.dig(:source, :tag) }.first
-          digest = requirements.filter_map { |r| r.dig(:source, "digest") || r.dig(:source, :digest) }.first
-          [tag, digest]
-        end
-
-        sig { params(tag: T.nilable(String), digest: T.nilable(String)).returns(T.nilable(String)) }
-        def format_digest_branch_name(tag, digest)
-          return tag if digest.nil?
-
-          digest_parts = digest.split(":")
-          if tag && !tag.empty?
-            "#{tag}-#{digest_parts.first}-#{digest_parts.last&.slice(0, 6)}"
-          else
-            "#{digest_parts.first}-#{digest_parts.last&.slice(0, 6)}"
-          end
         end
       end
     end
