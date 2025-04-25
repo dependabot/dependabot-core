@@ -825,7 +825,7 @@ module Dependabot
                 f.name == [path, "package-lock.json"].join("/").sub(%r{\A.?\/}, "")
               end
 
-              return run_npm8_checker(version: version) if Dependabot::NpmAndYarn::Helpers.npm8?(package_lock)
+              return run_npm8_checker(version: version) if Dependabot::NpmAndYarn::Helpers.parse_npm8?(package_lock)
 
               SharedHelpers.run_helper_subprocess(
                 command: NativeHelpers.helper_path,

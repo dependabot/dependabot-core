@@ -98,7 +98,7 @@ module Dependabot
                             run_pnpm_updater(path, lockfile_name)
                           elsif lockfile.name.end_with?("bun.lock")
                             run_bun_updater(path, lockfile_name)
-                          elsif !Helpers.npm8?(lockfile)
+                          elsif !Helpers.parse_npm8?(lockfile)
                             run_npm6_updater(path, lockfile_name)
                           else
                             run_npm_updater(path, lockfile_name)
@@ -215,7 +215,7 @@ module Dependabot
           end
         end
 
-        sig { returns(T.class_of(Gem::Version)) }
+        sig { returns(T.class_of(Dependabot::Version)) }
         def version_class
           dependency.version_class
         end
