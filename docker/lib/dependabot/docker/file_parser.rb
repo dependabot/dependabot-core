@@ -155,7 +155,7 @@ module Dependabot
 
         image = "#{repo}:#{tag}"
         image.prepend("#{registry}/") if registry
-        image << "@#{digest}/" if digest
+        image << "@sha256:#{digest}/" if digest
         [image]
       end
 
