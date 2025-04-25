@@ -67,7 +67,7 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
   describe "#latest_version" do
     subject(:latest_version) { checker.latest_version }
 
-    it { is_expected.to eq(Dependabot::Docker::Version.new("20.11.3")) }
+    it { is_expected.to eq(Dependabot::Helm::Version.new("20.11.3")) }
 
     context "when using a private repository" do
       before do
@@ -86,7 +86,7 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
       let(:dependency_name) { "my_chart" }
       let(:source) { { tag: version, registry: repo_url } }
 
-      it { is_expected.to eq(Dependabot::Docker::Version.new("1.1.0")) }
+      it { is_expected.to eq(Dependabot::Helm::Version.new("1.1.0")) }
 
       context "when authentication fails" do
         before do
@@ -122,12 +122,74 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
           .and_return(status: 200, body: repo_tags)
       end
 
-      it { is_expected.to eq(Dependabot::Docker::Version.new("17.10")) }
+      it { is_expected.to eq(Dependabot::Helm::Version.new("17.10")) }
 
       context "when the docker image is can't be updated" do
         let(:version) { "latest" }
 
         it { is_expected.to be_nil }
+      end
+    end
+
+    context "when oci is not in repo" do
+      before do
+        allow(checker).to receive(:fetch_releases_with_helm_cli)
+          .with(dependency_name, "oci---registry-sweet-security-helm", repo_url)
+          .and_return(nil)
+        allow(Dependabot::Helm::Helpers).to receive(:fetch_oci_tags)
+          .with("registry.sweet.security/helm/frontierchart")
+          .and_return(
+            "1.0.119807+c2277fddd003556d4982b86ef4e77fc84a41ed79\n1.0.124446+3123f85bdf6d8309d3d601938564a996f5cad238"
+          )
+      end
+
+      let(:credentials) { [] }
+      let(:version) { "1.0.119807+c2277fddd003556d4982b86ef4e77fc84a41ed79" }
+      let(:dependency_name) { "frontierchart" }
+      let(:repo_url) { "oci://registry.sweet.security/helm" }
+      let(:source) { { tag: version, registry: "oci://registry.sweet.security/helm" } }
+
+      it "returns the latest version" do
+        expect(checker.latest_version).to eq(
+          Dependabot::Helm::Version.new("1.0.124446+3123f85bdf6d8309d3d601938564a996f5cad238")
+        )
+      end
+
+      context "with private registry" do
+        before do
+          allow(Dependabot::Helm::Helpers).to receive(:oci_registry_login)
+            .with(username, password, repo_url)
+            .and_return("Login successful")
+        end
+
+        let(:credentials) do
+          [Dependabot::Credential.new({
+            "type" => "helm_registry",
+            "registry" => repo_url,
+            "username" => username,
+            "password" => password
+          })]
+        end
+
+        it "returns the latest version" do
+          expect(checker.latest_version).to eq(
+            Dependabot::Helm::Version.new("1.0.124446+3123f85bdf6d8309d3d601938564a996f5cad238")
+          )
+        end
+
+        context "with invalid login" do
+          before do
+            allow(Dependabot::Helm::Helpers).to receive(:oci_registry_login)
+              .with(username, password, repo_url)
+              .and_raise(StandardError)
+          end
+
+          it "raises a to PrivateSourceAuthenticationFailure error" do
+            error_class = Dependabot::PrivateSourceAuthenticationFailure
+            expect { latest_version }
+              .to raise_error(error_class)
+          end
+        end
       end
     end
   end
@@ -217,7 +279,7 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
       end
 
       it "returns the latest version from the index" do
-        expect(latest_chart_version).to eq(Dependabot::Docker::Version.new("20.11.3"))
+        expect(latest_chart_version).to eq(Dependabot::Helm::Version.new("20.11.3"))
       end
 
       context "when the request returns a string" do
@@ -241,6 +303,12 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
     end
 
     context "with an oci protocol" do
+      before do
+        allow(checker).to receive(:fetch_latest_oci_tag)
+          .with(dependency_name, repo_url)
+          .and_return(nil)
+      end
+
       let(:repo_url) { "oci://charts.bitnami.com/bitnami" }
 
       it "converts OCI URL to HTTPS when making the request" do
