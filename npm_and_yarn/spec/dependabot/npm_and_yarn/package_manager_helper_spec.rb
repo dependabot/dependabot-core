@@ -71,9 +71,6 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
 
   before do
     allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:npm_fallback_version_above_v6)
-      .and_return(false)
-    allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_shared_helpers_command_timeout)
       .and_return(true)
     allow(Dependabot::Experiments).to receive(:enabled?)
@@ -162,9 +159,6 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
 
       before do
         allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:npm_fallback_version_above_v6)
-          .and_return(false)
-        allow(Dependabot::Experiments).to receive(:enabled?)
           .with(:enable_shared_helpers_command_timeout)
           .and_return(true)
       end
@@ -205,9 +199,6 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
       end
 
       before do
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:npm_fallback_version_above_v6)
-          .and_return(false)
         allow(Dependabot::Experiments).to receive(:enabled?)
           .with(:enable_shared_helpers_command_timeout)
           .and_return(true)

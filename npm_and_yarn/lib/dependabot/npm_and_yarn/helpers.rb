@@ -43,39 +43,17 @@ module Dependabot
       # corepack supported package managers
       SUPPORTED_COREPACK_PACKAGE_MANAGERS = %w(npm yarn pnpm).freeze
 
-      # Determines the npm version depends to the feature flag
-      # If the feature flag is enabled, we are going to use the minimum version npm 8
-      # Otherwise, we are going to use old versionining npm 6
       sig { params(lockfile: T.nilable(DependencyFile)).returns(Integer) }
       def self.npm_version_numeric(lockfile)
-        fallback_version_npm8 = Dependabot::Experiments.enabled?(:npm_fallback_version_above_v6)
+        detected_npm_version = detect_npm_version(lockfile)
 
-        return npm_version_numeric_npm8_or_higher(lockfile) if fallback_version_npm8
+        return NPM_DEFAULT_VERSION if detected_npm_version.nil? || detected_npm_version == NPM_V6
 
-        npm_version_numeric_npm6_or_higher(lockfile)
+        detected_npm_version
       end
 
-      sig { params(lockfile: T.nilable(DependencyFile)).returns(Integer) }
-      def self.npm_version_numeric_npm6_or_higher(lockfile)
-        lockfile_content = lockfile&.content
-
-        if lockfile_content.nil? ||
-           lockfile_content.strip.empty? ||
-           JSON.parse(lockfile_content)["lockfileVersion"].to_i >= 2
-          return NPM_V8
-        end
-
-        NPM_V6
-      rescue JSON::ParserError
-        NPM_V6
-      end
-
-      # Determines the npm version based on the lockfile version
-      # - NPM 7 uses lockfileVersion 2
-      # - NPM 8 uses lockfileVersion 2
-      # - NPM 9 uses lockfileVersion 3
-      sig { params(lockfile: T.nilable(DependencyFile)).returns(Integer) }
-      def self.npm_version_numeric_npm8_or_higher(lockfile)
+      sig { params(lockfile: T.nilable(DependencyFile)).returns(T.nilable(Integer)) }
+      def self.detect_npm_version(lockfile)
         lockfile_content = lockfile&.content
 
         # Return default NPM version if there's no lockfile or it's empty
@@ -94,40 +72,13 @@ module Dependabot
         # Update needed to support npm 9+ based on lockfile version.
         return NPM_V8 if lockfile_version >= 2
 
-        NPM_DEFAULT_VERSION
+        NPM_V6 if lockfile_version >= 1
+        # Return nil if can't capture
       rescue JSON::ParserError
         NPM_DEFAULT_VERSION # Fallback to default npm version if parsing fails
       end
 
-      # rubocop:disable Metrics/PerceivedComplexity
-      sig { params(lockfile: T.nilable(DependencyFile)).returns(Integer) }
-      def self.npm_version_numeric_latest(lockfile)
-        lockfile_content = lockfile&.content
-
-        # Return npm 10 as the default if the lockfile is missing or empty
-        return NPM_V10 if lockfile_content.nil? || lockfile_content.strip.empty?
-
-        # Parse the lockfile content to extract the `lockfileVersion`
-        parsed_lockfile = JSON.parse(lockfile_content)
-        lockfile_version = parsed_lockfile["lockfileVersion"]&.to_i
-
-        # Determine the appropriate npm version based on `lockfileVersion`
-        if lockfile_version.nil?
-          NPM_V10 # Use npm 10 if `lockfileVersion` is missing or nil
-        elsif lockfile_version >= 3
-          NPM_V10 # Use npm 10 for lockfileVersion 3 or higher
-        elsif lockfile_version >= 2
-          NPM_V8 # Use npm 8 for lockfileVersion 2
-        elsif lockfile_version >= 1
-          # Use npm 8 if the fallback version flag is enabled, otherwise use npm 6
-          Dependabot::Experiments.enabled?(:npm_fallback_version_above_v6) ? NPM_V8 : NPM_V6
-        else
-          NPM_V10 # Default to npm 10 for unexpected or unsupported versions
-        end
-      rescue JSON::ParserError
-        NPM_V8 # Fallback to npm 8 if the lockfile content cannot be parsed
-      end
-      # rubocop:enable Metrics/PerceivedComplexity
+      private_class_method :detect_npm_version
 
       sig { params(yarn_lock: T.nilable(DependencyFile)).returns(Integer) }
       def self.yarn_version_numeric(yarn_lock)
@@ -179,10 +130,12 @@ module Dependabot
       end
 
       sig { params(package_lock: T.nilable(DependencyFile)).returns(T::Boolean) }
-      def self.npm8?(package_lock)
+      def self.parse_npm8?(package_lock)
         return true unless package_lock&.content
 
-        npm_version_numeric(package_lock) == NPM_V8
+        detected_npm = detect_npm_version(package_lock)
+        # For conversion reading properly from npm 6 lockfile we need to check if detected version is npm 6
+        detected_npm.nil? || detected_npm != NPM_V6
       end
 
       sig { params(yarn_lock: T.nilable(DependencyFile)).returns(T::Boolean) }

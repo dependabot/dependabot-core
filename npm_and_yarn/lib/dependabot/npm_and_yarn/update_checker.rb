@@ -43,7 +43,7 @@ module Dependabot
                      requirements_update_strategy: nil, dependency_group: nil,
                      update_cooldown: nil, options: {})
         @latest_version = T.let(nil, T.nilable(T.any(String, Gem::Version)))
-        @latest_resolvable_version = T.let(nil, T.nilable(T.any(String, Gem::Version)))
+        @latest_resolvable_version = T.let(nil, T.nilable(T.any(String, Dependabot::Version)))
         @updated_requirements = T.let(nil, T.nilable(T::Array[T::Hash[Symbol, T.untyped]]))
         @vulnerability_audit = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
         @vulnerable_versions = T.let(nil, T.nilable(T::Array[T.any(String, Gem::Version)]))
@@ -94,11 +94,17 @@ module Dependabot
 
         @latest_resolvable_version ||=
           if dependency.top_level?
-            version_resolver.latest_resolvable_version
+            T.cast(
+              version_resolver.latest_resolvable_version,
+              T.nilable(T.any(String, Dependabot::Version))
+            )
           else
             # If the dependency is indirect its version is constrained  by the
             # requirements placed on it by dependencies lower down the tree
-            subdependency_version_resolver.latest_resolvable_version
+            T.cast(
+              subdependency_version_resolver.latest_resolvable_version,
+              T.nilable(T.any(String, Dependabot::Version))
+            )
           end
       end
 

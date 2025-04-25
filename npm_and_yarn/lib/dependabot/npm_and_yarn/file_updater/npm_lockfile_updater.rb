@@ -248,22 +248,7 @@ module Dependabot
 
         sig { params(top_level_dependencies: T::Array[Dependabot::Dependency]).returns(T::Hash[String, String]) }
         def run_npm_top_level_updater(top_level_dependencies:)
-          if npm8?
-            run_npm8_top_level_updater(top_level_dependencies: top_level_dependencies)
-          else
-            T.cast(
-              SharedHelpers.run_helper_subprocess(
-                command: NativeHelpers.helper_path,
-                function: "npm6:update",
-                args: [
-                  Dir.pwd,
-                  lockfile_basename,
-                  top_level_dependencies.map(&:to_h)
-                ]
-              ),
-              T::Hash[String, String]
-            )
-          end
+          run_npm8_top_level_updater(top_level_dependencies: top_level_dependencies)
         end
 
         sig { params(top_level_dependencies: T::Array[Dependabot::Dependency]).returns(T::Hash[String, String]) }
@@ -301,18 +286,7 @@ module Dependabot
           params(sub_dependencies: T::Array[Dependabot::Dependency]).returns(T.nilable(T::Hash[String, String]))
         end
         def run_npm_subdependency_updater(sub_dependencies:)
-          if npm8?
-            run_npm8_subdependency_updater(sub_dependencies: sub_dependencies)
-          else
-            T.cast(
-              SharedHelpers.run_helper_subprocess(
-                command: NativeHelpers.helper_path,
-                function: "npm6:updateSubdependency",
-                args: [Dir.pwd, lockfile_basename, sub_dependencies.map(&:to_h)]
-              ),
-              T.nilable(T::Hash[String, String])
-            )
-          end
+          run_npm8_subdependency_updater(sub_dependencies: sub_dependencies)
         end
 
         sig { params(sub_dependencies: T::Array[Dependabot::Dependency]).returns(T::Hash[String, String]) }
@@ -894,8 +868,6 @@ module Dependabot
             .returns(String)
         end
         def restore_packages_name(updated_lockfile_content, parsed_updated_lockfile_content)
-          return updated_lockfile_content unless npm8?
-
           current_name = parsed_updated_lockfile_content.dig("packages", "", "name")
           original_name = parsed_lockfile.dig("packages", "", "name")
 
@@ -973,8 +945,6 @@ module Dependabot
             .returns(String)
         end
         def restore_locked_package_dependencies(updated_lockfile_content, parsed_updated_lockfile_content)
-          return updated_lockfile_content unless npm8?
-
           dependency_names_to_restore = (dependencies.map(&:name) + git_dependencies_to_lock.keys).uniq
 
           NpmAndYarn::FileParser.each_dependency(parsed_package_json) do |dependency_name, original_requirement, type|
@@ -1014,14 +984,8 @@ module Dependabot
             # updates the lockfile "from" field to the new git commit when we
             # run npm install
             original_from = %("from": "#{details[:from]}")
-            if npm8?
-              # NOTE: The `from` syntax has changed in npm 7 to include the dependency name
-              npm8_locked_from = %("from": "#{dependency_name}@#{details[:version]}")
-              updated_lockfile_content = updated_lockfile_content.gsub(npm8_locked_from, original_from)
-            else
-              npm6_locked_from = %("from": "#{details[:version]}")
-              updated_lockfile_content = updated_lockfile_content.gsub(npm6_locked_from, original_from)
-            end
+            npm8_locked_from = %("from": "#{dependency_name}@#{details[:version]}")
+            updated_lockfile_content = updated_lockfile_content.gsub(npm8_locked_from, original_from)
           end
 
           updated_lockfile_content
@@ -1101,16 +1065,6 @@ module Dependabot
         sig { returns(T::Boolean) }
         def npmrc_disables_lockfile?
           npmrc_content.match?(/^package-lock\s*=\s*false/)
-        end
-
-        sig { returns(T::Boolean) }
-        def npm8?
-          return T.must(@npm8) if defined?(@npm8)
-
-          @npm8 ||= T.let(
-            Dependabot::NpmAndYarn::Helpers.npm8?(lockfile),
-            T.nilable(T::Boolean)
-          )
         end
 
         sig { params(package_name: String).returns(String) }
