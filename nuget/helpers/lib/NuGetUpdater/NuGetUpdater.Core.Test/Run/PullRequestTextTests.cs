@@ -58,7 +58,7 @@ public class PullRequestTextTests
             // expectedBody
             """
             Performed the following updates:
-                - Updated Some.Package to 1.2.3 in a.txt
+            - Updated Some.Package to 1.2.3 in a.txt
             """
         ];
 
@@ -86,7 +86,7 @@ public class PullRequestTextTests
             // expectedBody
             """
             Performed the following updates:
-                - Updated Some.Package to 1.2.3 in a.txt
+            - Updated Some.Package to 1.2.3 in a.txt
             """
         ];
 
@@ -132,10 +132,10 @@ public class PullRequestTextTests
             // expectedBody
             """
             Performed the following updates:
-                - Updated Package.A to 1.0.0 in a1.txt
-                - Updated Package.A to 2.0.0 in a2.txt
-                - Updated Package.B to 3.0.0 in b1.txt
-                - Updated Package.B to 4.0.0 in b2.txt
+            - Updated Package.A to 1.0.0 in a1.txt
+            - Updated Package.A to 2.0.0 in a2.txt
+            - Updated Package.B to 3.0.0 in b1.txt
+            - Updated Package.B to 4.0.0 in b2.txt
             """
         ];
     }

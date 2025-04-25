@@ -29,8 +29,7 @@ public abstract record UpdateOperationBase
             return string.Empty;
         }
 
-        var separator = "\n    ";
-        var report = $"Performed the following updates:{separator}{string.Join(separator, updateMessages.Select(m => $"- {m}"))}";
+        var report = $"Performed the following updates:\n{string.Join("\n", updateMessages.Select(m => $"- {m}"))}";
         return report;
     }
 
