@@ -261,9 +261,9 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       it { is_expected.to eq("artful") }
 
       context "when the version starts with a number" do
-        let(:version) { "309403913c7f0848e6616446edec909b55d53571" }
+        let(:version) { "sha256:309403913c7f0848e6616446edec909b55d53571" }
 
-        it { is_expected.to eq("309403913c7f0848e6616446edec909b55d53571") }
+        it { is_expected.to eq("sha256:309403913c7f0848e6616446edec909b55d53571") }
       end
     end
 

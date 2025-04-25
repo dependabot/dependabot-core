@@ -487,68 +487,44 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
     end
 
     context "with a Docker digest update" do
-      let(:source) do
-        {
-          digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005"
-        }
-      end
-      let(:previous_source) do
-        {
-          digest: "sha256:2167a21baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-        }
-      end
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "ubuntu",
-          version: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005",
+          version: "17.10",
           previous_version: previous_version,
           package_manager: "docker",
           requirements: [{
             file: "Dockerfile",
             requirement: nil,
             groups: [],
-            source: source
+            source: {
+              type: "digest",
+              digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8d" \
+                      "fc38288cf73aa07485005"
+            }
           }],
           previous_requirements: [{
             file: "Dockerfile",
             requirement: nil,
             groups: [],
-            source: previous_source
+            source: {
+              type: "digest",
+              digest: "sha256:2167a21baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" \
+                      "aaaaaaaaaaaaaaaaaaaaa"
+            }
           }]
         )
       end
-      let(:previous_version) { "sha256:2167a21baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
+      let(:previous_version) { "17.10" }
 
-      it "truncates the version to just the digest when no tag is present" do
-        expect(new_branch_name).to eq("dependabot/docker/ubuntu-sha256-183054")
+      it "truncates the version" do
+        expect(new_branch_name).to eq("dependabot/docker/ubuntu-1830542")
       end
 
-      context "when there is a tag present with only a digest change" do
-        let(:version) { "17.10@sha256:18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005" }
-        let(:previous_version) { "17.10@sha256:2167a21baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
-        let(:source) do
-          { tag: "17.10", digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005" }
-        end
-        let(:previous_source) do
-          { tag: "17.10", digest: "sha256:2167a21baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
-        end
+      context "when there is a tag change" do
+        let(:previous_version) { "17.04" }
 
-        it "includes the tag and digest" do
-          expect(new_branch_name).to eq("dependabot/docker/ubuntu-17.10-sha256-183054")
-        end
-      end
-
-      context "when there is a tag and digest change" do
-        let(:version) { "17.10@sha256:18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005" }
-        let(:previous_version) { "17.10@sha256:2167a21baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
-        let(:source) do
-          { tag: "17.10", digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005" }
-        end
-        let(:previous_source) do
-          { tag: "17.04", digest: "sha256:2167a21baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
-        end
-
-        it "includes the tag without the digest" do
+        it "includes the tag rather than the SHA" do
           expect(new_branch_name).to eq("dependabot/docker/ubuntu-17.10")
         end
       end
