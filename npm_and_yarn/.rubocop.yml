@@ -1,4 +1,10 @@
 inherit_from: ../.rubocop.yml
 
+inherit_mode:
+  merge:
+    - Exclude
+
 Sorbet/StrictSigil:
-  Enabled: false
+  Exclude:
+    - lib/dependabot/npm_and_yarn/file_updater/pnpm_lockfile_updater.rb
+    - lib/dependabot/npm_and_yarn/update_checker/subdependency_version_resolver.rb

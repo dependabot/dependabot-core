@@ -84,7 +84,7 @@ module Dependabot
           end
         end
 
-        sig { params(dependency_name: String).returns(T.nilable(String)) }
+        sig { params(dependency_name: String).returns(String) }
         def registry_from_rc(dependency_name)
           explicit_registry_from_rc(dependency_name) || global_registry
         end

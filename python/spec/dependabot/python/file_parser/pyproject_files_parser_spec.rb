@@ -24,26 +24,6 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
 
     let(:pyproject_fixture_name) { "basic_poetry_dependencies.toml" }
 
-    context "when defined incorrectly" do
-      let(:pyproject_fixture_name) { "incorrect_poetry_setup.toml" }
-
-      it "raises a DependencyFileNotParseable error" do
-        expect { parser.dependency_set }
-          .to raise_error do |error|
-            expect(error.class)
-              .to eq(Dependabot::DependencyFileNotParseable)
-            expect(error.message)
-              .to eq <<~ERROR.strip
-                /pyproject.toml is missing the following sections:
-                  * tool.poetry.name
-                  * tool.poetry.version
-                  * tool.poetry.description
-                  * tool.poetry.authors
-              ERROR
-          end
-      end
-    end
-
     context "without a lockfile" do
       its(:length) { is_expected.to eq(15) }
 

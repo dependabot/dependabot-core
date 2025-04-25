@@ -162,7 +162,6 @@ module Dependabot
         return unless releases
 
         releases = filter_yanked_versions(releases)
-        releases = filter_by_cooldown(releases)
         releases = filter_unsupported_versions(releases, language_version)
         # versions = filter_prerelease_versions(versions)
         releases = Dependabot::UpdateCheckers::VersionFilters
@@ -225,7 +224,7 @@ module Dependabot
       def in_cooldown_period?(release)
         return false unless release.released_at
 
-        current_version = dependency.version ? version_class.new(dependency.version) : nil
+        current_version = version_class.correct?(dependency.version) ? version_class.new(dependency.version) : nil
         days = cooldown_days_for(current_version, release.version)
 
         # Calculate the number of seconds passed since the release
