@@ -382,19 +382,7 @@ public partial class UpdateWorkerTests
                     MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
                     MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net8.0"),
                     // necessary for the `net8.0-windows10.0.19041.0` TFM
-                    new("Microsoft.Windows.SDK.NET.Ref", "10.0.19041.54", Files:
-                    [
-                        ("data/FrameworkList.xml", Encoding.UTF8.GetBytes("""
-                            <FileList Name="Windows SDK .NET 6.0">
-                              <!-- contents omitted -->
-                            </FileList>
-                            """)),
-                        ("data/RuntimeList.xml", Encoding.UTF8.GetBytes("""
-                            <FileList Name="Windows SDK .NET 6.0" TargetFrameworkIdentifier=".NETCoreApp" TargetFrameworkVersion="6.0" FrameworkName="Microsoft.Windows.SDK.NET.Ref">
-                              <!-- contents omitted -->
-                            </FileList>
-                            """)),
-                    ]),
+                    MockNuGetPackage.WellKnownWindowsSdkRefPackage("10.0.19041.0"),
                 ],
                 // initial
                 projectContents: $"""
