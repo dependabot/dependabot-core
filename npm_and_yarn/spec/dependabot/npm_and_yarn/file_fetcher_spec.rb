@@ -597,8 +597,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
 
   context "with a package-lock.json file but no yarn.lock" do
     before do
-      Dependabot::Experiments.register(:npm_fallback_version_above_v6, true)
-
       stub_request(:get, url + "?ref=sha")
         .with(headers: { "Authorization" => "token token" })
         .to_return(
@@ -625,7 +623,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
 
   context "with both a package-lock.json file and a yarn.lock" do
     before do
-      Dependabot::Experiments.register(:npm_fallback_version_above_v6, true)
       stub_request(:get, url + "?ref=sha")
         .with(headers: { "Authorization" => "token token" })
         .to_return(
@@ -2188,7 +2185,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
   context "with both packageManager with version and valid engines fields (yarn)" do
     before do
       Dependabot::Experiments.register(:enable_pnpm_yarn_dynamic_engine, true)
-      Dependabot::Experiments.register(:npm_fallback_version_above_v6, true)
 
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
 
@@ -2211,7 +2207,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
   context "with both packageManager with version and valid engines fields (pnpm)" do
     before do
       Dependabot::Experiments.register(:enable_pnpm_yarn_dynamic_engine, true)
-      Dependabot::Experiments.register(:npm_fallback_version_above_v6, true)
 
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
 
@@ -2257,7 +2252,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
   context "with only packageManager and no engines fields (yarn)" do
     before do
       Dependabot::Experiments.register(:enable_pnpm_yarn_dynamic_engine, true)
-      Dependabot::Experiments.register(:npm_fallback_version_above_v6, true)
 
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
 
@@ -2281,7 +2275,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
   context "with packageManager and engines fields with engine field having non relevant version (pnpm)" do
     before do
       Dependabot::Experiments.register(:enable_pnpm_yarn_dynamic_engine, true)
-      Dependabot::Experiments.register(:npm_fallback_version_above_v6, true)
 
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
 
@@ -2305,7 +2298,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
   context "with packageManager and engines fields with engine field having non relevant version (yarn)" do
     before do
       Dependabot::Experiments.register(:enable_pnpm_yarn_dynamic_engine, true)
-      Dependabot::Experiments.register(:npm_fallback_version_above_v6, true)
 
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
 
@@ -2329,7 +2321,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
   context "with both packageManager and engines fields of same package-manager" do
     before do
       Dependabot::Experiments.register(:enable_pnpm_yarn_dynamic_engine, true)
-      Dependabot::Experiments.register(:npm_fallback_version_above_v6, true)
 
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
 

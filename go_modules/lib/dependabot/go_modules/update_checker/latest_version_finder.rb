@@ -47,7 +47,8 @@ module Dependabot
             ignored_versions: T::Array[String],
             security_advisories: T::Array[Dependabot::SecurityAdvisory],
             goprivate: String,
-            raise_on_ignored: T::Boolean
+            raise_on_ignored: T::Boolean,
+            cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
           )
             .void
         end
@@ -58,7 +59,8 @@ module Dependabot
           ignored_versions:,
           security_advisories:,
           goprivate:,
-          raise_on_ignored: false
+          raise_on_ignored: false,
+          cooldown_options: nil
         )
           @dependency          = dependency
           @dependency_files    = dependency_files
@@ -67,6 +69,17 @@ module Dependabot
           @security_advisories = security_advisories
           @raise_on_ignored    = raise_on_ignored
           @goprivate           = goprivate
+          @cooldown_options    = cooldown_options
+          super(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            credentials: credentials,
+            ignored_versions: ignored_versions,
+            security_advisories: security_advisories,
+            cooldown_options: cooldown_options,
+            raise_on_ignored: raise_on_ignored,
+            options: {}
+          )
         end
 
         sig do
@@ -85,6 +98,11 @@ module Dependabot
         def lowest_security_fix_version(language_version: nil)
           @lowest_security_fix_version ||= T.let(fetch_lowest_security_fix_version(language_version: language_version),
                                                  T.nilable(Dependabot::Version))
+        end
+
+        sig { override.returns(T::Boolean) }
+        def cooldown_enabled?
+          Dependabot::Experiments.enabled?(:enable_cooldown_for_gomodules)
         end
 
         private
@@ -107,6 +125,19 @@ module Dependabot
         sig { returns(String) }
         attr_reader :goprivate
 
+        sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
+        attr_reader :cooldown_options
+
+        sig { returns(T::Array[Dependabot::Package::PackageRelease]) }
+        def available_versions_details
+          @available_versions_details ||= T.let(Package::PackageDetailsFetcher.new(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            credentials: credentials,
+            goprivate: goprivate
+          ).fetch_available_versions, T.nilable(T::Array[Dependabot::Package::PackageRelease]))
+        end
+
         # rubocop:disable Lint/UnusedMethodArgument
         sig do
           params(language_version: T.nilable(T.any(String, Dependabot::Version)))
@@ -116,6 +147,7 @@ module Dependabot
           candidate_versions = available_versions_details
           candidate_versions = filter_prerelease_versions(candidate_versions)
           candidate_versions = filter_ignored_versions(candidate_versions)
+          candidate_versions = lazy_filter_cooldown_versions(candidate_versions)
           # Adding the psuedo-version to the list to avoid downgrades
           if PSEUDO_VERSION_REGEX.match?(dependency.version)
             candidate_versions << Dependabot::Package::PackageRelease.new(
@@ -126,6 +158,72 @@ module Dependabot
           candidate_versions.max_by(&:version)&.version
         end
 
+        sig do
+          params(releases: T::Array[Dependabot::Package::PackageRelease], check_max: T::Boolean)
+            .returns(T::Array[Dependabot::Package::PackageRelease])
+        end
+        def lazy_filter_cooldown_versions(releases, check_max: true)
+          return releases unless cooldown_enabled?
+
+          Dependabot.logger.info("Initializing cooldown filter")
+
+          sorted_releases = if check_max
+                              releases.sort_by(&:version).reverse
+                            else
+                              releases.sort_by(&:version)
+                            end
+
+          filtered_versions = []
+          cooldown_filtered_versions = 0
+
+          # Iterate through the sorted versions lazily, filtering out cooldown versions
+          sorted_releases.each do |release|
+            if in_cooldown_period?(release)
+              Dependabot.logger.info("Filtered out (cooldown) : #{release}")
+              cooldown_filtered_versions += 1
+              next
+            end
+
+            filtered_versions << release
+            break
+          end
+
+          Dependabot.logger.info("Filtered out #{cooldown_filtered_versions} version(s) due to cooldown")
+
+          filtered_versions
+        end
+
+        sig { params(release: Dependabot::Package::PackageRelease).returns(T::Boolean) }
+        def in_cooldown_period?(release)
+          env = { "GOPRIVATE" => @goprivate }
+
+          release_info = SharedHelpers.run_shell_command(
+            "go list -m -json #{dependency.name}@#{release.details.[]('version_string')}",
+            fingerprint: "go list -m -json <dependency_name>",
+            env: env
+          )
+
+          release.instance_variable_set(
+            :@released_at, JSON.parse(release_info)["Time"] ? Time.parse(JSON.parse(release_info)["Time"]) : nil
+          )
+
+          return false unless release.released_at
+
+          current_version = version_class.correct?(dependency.version) ? version_class.new(dependency.version) : nil
+          days = cooldown_days_for(current_version, release.version)
+
+          # Calculate the number of seconds passed since the release
+          passed_seconds = Time.now.to_i - release.released_at.to_i
+          passed_days = passed_seconds / DAY_IN_SECONDS
+
+          if passed_days < days
+            Dependabot.logger.info("Version #{release.version}, Release date: #{release.released_at}." \
+                                   " Days since release: #{passed_days} (cooldown days: #{days})")
+          end
+
+          # Check if the release is within the cooldown period
+          passed_seconds < days * DAY_IN_SECONDS
+        end
         sig do
           override.returns(T.nilable(Dependabot::Package::PackageDetails))
         end
@@ -153,16 +251,6 @@ module Dependabot
           relevant_versions.min_by(&:version)&.version
         end
         # rubocop:enable Lint/UnusedMethodArgument
-
-        sig { returns(T::Array[Dependabot::Package::PackageRelease]) }
-        def available_versions_details
-          @available_versions_details ||= T.let(Package::PackageDetailsFetcher.new(
-            dependency: dependency,
-            dependency_files: dependency_files,
-            credentials: credentials,
-            goprivate: goprivate
-          ).fetch_available_versions, T.nilable(T::Array[Dependabot::Package::PackageRelease]))
-        end
 
         sig { returns(T::Boolean) }
         def wants_prerelease?
