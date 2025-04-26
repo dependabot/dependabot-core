@@ -124,10 +124,12 @@ module Dependabot
 
       sig do
         params(
-          details: T.any(String, T::Array[String], T::Hash[String, String])
+          details: T.nilable(T.any(String, T::Array[String], T::Hash[String, String]))
         ).returns(T.nilable(String))
       end
       def get_url(details)
+        return unless details
+
         url =
           case details
           when String then details
