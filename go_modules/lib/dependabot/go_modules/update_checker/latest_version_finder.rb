@@ -164,6 +164,7 @@ module Dependabot
         end
         def lazy_filter_cooldown_versions(releases, check_max: true)
           return releases unless cooldown_enabled?
+          return releases unless cooldown_options
 
           Dependabot.logger.info("Initializing cooldown filter")
 
@@ -193,15 +194,21 @@ module Dependabot
           filtered_versions
         end
 
+        # rubocop:disable Metrics/AbcSize
         sig { params(release: Dependabot::Package::PackageRelease).returns(T::Boolean) }
         def in_cooldown_period?(release)
           env = { "GOPRIVATE" => @goprivate }
 
-          release_info = SharedHelpers.run_shell_command(
-            "go list -m -json #{dependency.name}@#{release.details.[]('version_string')}",
-            fingerprint: "go list -m -json <dependency_name>",
-            env: env
-          )
+          begin
+            release_info = SharedHelpers.run_shell_command(
+              "go list -m -json #{dependency.name}@#{release.details.[]('version_string')}",
+              fingerprint: "go list -m -json <dependency_name>",
+              env: env
+            )
+          rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
+            Dependabot.logger.info("Error while fetching release date info: #{e.message}")
+            return false
+          end
 
           release.instance_variable_set(
             :@released_at, JSON.parse(release_info)["Time"] ? Time.parse(JSON.parse(release_info)["Time"]) : nil
@@ -224,6 +231,8 @@ module Dependabot
           # Check if the release is within the cooldown period
           passed_seconds < days * DAY_IN_SECONDS
         end
+        # rubocop:enable Metrics/AbcSize
+
         sig do
           override.returns(T.nilable(Dependabot::Package::PackageDetails))
         end
