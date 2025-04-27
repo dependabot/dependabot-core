@@ -17,7 +17,7 @@ public sealed record ClosePullRequest : MessageBase
         report.AppendLine($"{nameof(ClosePullRequest)}: {Reason}");
         foreach (var dependencyName in DependencyNames)
         {
-            report.AppendLine($"  - {dependencyName}");
+            report.AppendLine($"- {dependencyName}");
         }
 
         return report.ToString().Trim();
