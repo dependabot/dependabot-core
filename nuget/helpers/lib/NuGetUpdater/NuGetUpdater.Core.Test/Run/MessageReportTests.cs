@@ -39,7 +39,7 @@ public class MessageReportTests
             // expected
             """
             Error type: illformed_requirement
-              - message: unparseable
+            - message: unparseable
             """
         ];
 
@@ -53,8 +53,8 @@ public class MessageReportTests
             // expected
             """
             ClosePullRequest: up_to_date
-              - Dependency1
-              - Dependency2
+            - Dependency1
+            - Dependency2
             """
         ];
 
@@ -86,8 +86,8 @@ public class MessageReportTests
             // expected
             """
             CreatePullRequest
-              - Dependency1/1.2.3
-              - Dependency2/4.5.6
+            - Dependency1/1.2.3
+            - Dependency2/4.5.6
             """
         ];
 
@@ -98,8 +98,8 @@ public class MessageReportTests
             // expected
             """
             Error type: dependency_file_not_found
-              - message: custom message
-              - file-path: path/to/file.txt
+            - message: custom message
+            - file-path: path/to/file.txt
             """
         ];
 
@@ -110,8 +110,8 @@ public class MessageReportTests
             // expected
             """
             Error type: dependency_file_not_parseable
-              - message: custom message
-              - file-path: path/to/file.txt
+            - message: custom message
+            - file-path: path/to/file.txt
             """
         ];
 
@@ -122,7 +122,7 @@ public class MessageReportTests
             // expected
             """
             Error type: dependency_not_found
-              - source: Some.Dependency
+            - source: Some.Dependency
             """
         ];
 
@@ -133,7 +133,7 @@ public class MessageReportTests
             // expected
             """
             Error type: job_repo_not_found
-              - message: custom message
+            - message: custom message
             """
         ];
 
@@ -144,7 +144,7 @@ public class MessageReportTests
             // expected
             """
             Error type: private_source_authentication_failure
-              - source: (url1|url2)
+            - source: (url1|url2)
             """
         ];
 
@@ -155,7 +155,7 @@ public class MessageReportTests
             // expected
             """
             Error type: private_source_bad_response
-              - source: (url1|url2)
+            - source: (url1|url2)
             """
         ];
 
@@ -166,8 +166,8 @@ public class MessageReportTests
             // expected
             """
             Error type: pull_request_exists_for_latest_version
-              - dependency-name: Some.Dependency
-              - dependency-version: 1.2.3
+            - dependency-name: Some.Dependency
+            - dependency-version: 1.2.3
             """
         ];
 
@@ -178,7 +178,7 @@ public class MessageReportTests
             // expected
             """
             Error type: security_update_not_needed
-              - dependency-name: Some.Dependency
+            - dependency-name: Some.Dependency
             """
         ];
 
@@ -189,11 +189,11 @@ public class MessageReportTests
             // expected
             """
             Error type: unknown_error
-              - error-class: NotImplementedException
-              - error-message: error message
-              - error-backtrace: <unknown>
-              - package-manager: nuget
-              - job-id: TEST-JOB-ID
+            - error-class: NotImplementedException
+            - error-message: error message
+            - error-backtrace: <unknown>
+            - package-manager: nuget
+            - job-id: TEST-JOB-ID
             """
         ];
 
@@ -204,7 +204,7 @@ public class MessageReportTests
             // expected
             """
             Error type: update_not_possible
-              - dependencies: Dependency1, Dependency2
+            - dependencies: Dependency1, Dependency2
             """
         ];
 
@@ -224,8 +224,8 @@ public class MessageReportTests
             // expected
             """
             UpdatePullRequest
-              - Dependency1
-              - Dependency2
+            - Dependency1
+            - Dependency2
             """
         ];
     }

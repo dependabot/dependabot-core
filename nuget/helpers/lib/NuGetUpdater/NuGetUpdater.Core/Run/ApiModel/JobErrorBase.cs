@@ -33,7 +33,7 @@ public abstract record JobErrorBase : MessageBase
                 valueString = string.Join(", ", strings);
             }
 
-            report.AppendLine($"  - {key}: {valueString}");
+            report.AppendLine($"- {key}: {valueString}");
         }
 
         return report.ToString().Trim();

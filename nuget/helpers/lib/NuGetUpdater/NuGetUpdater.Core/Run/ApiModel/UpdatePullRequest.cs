@@ -36,7 +36,7 @@ public sealed record UpdatePullRequest : MessageBase
         report.AppendLine(nameof(UpdatePullRequest));
         foreach (var d in dependencyNames)
         {
-            report.AppendLine($"  - {d}");
+            report.AppendLine($"- {d}");
         }
 
         return report.ToString().Trim();
