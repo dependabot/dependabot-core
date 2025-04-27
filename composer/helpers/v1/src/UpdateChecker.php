@@ -82,7 +82,15 @@ final class UpdateChecker
 
         // We found the package in the list of updated packages. Return its version.
         if ($updatedPackage instanceof PackageInterface) {
-            return ltrim($updatedPackage->getPrettyVersion(), 'v');
+            // TODO surprisingly the returned result of getPrettyVersion depends on the PHP version:
+            // - PHP 7 returns: "2.4.1"
+            // - PHP 8 returns: "2.4.1@stable"
+            // file_put_contents('php://stdout', $updatedPackage->getPrettyVersion());
+            //
+            // return ltrim($updatedPackage->getPrettyVersion(), 'v');
+            $pretty = $updatedPackage->getPrettyVersion();
+
+            return rtrim(ltrim($pretty, 'v'), '@stable');
         }
 
         // We didn't find the package in the list of updated packages. Check if

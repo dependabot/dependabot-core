@@ -22,18 +22,15 @@ internal class VersionResult
         _currentVersionSources.Add(source);
     }
 
-    public void AddRange(PackageSource source, IEnumerable<NuGetVersion> versions)
+    public void Add(PackageSource source, NuGetVersion version)
     {
-        foreach (var version in versions)
+        if (_versions.ContainsKey(version))
         {
-            if (_versions.ContainsKey(version))
-            {
-                _versions[version].Add(source);
-            }
-            else
-            {
-                _versions.Add(version, [source]);
-            }
+            _versions[version].Add(source);
+        }
+        else
+        {
+            _versions.Add(version, [source]);
         }
     }
 

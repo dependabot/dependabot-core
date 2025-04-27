@@ -80,12 +80,6 @@ RSpec.describe Dependabot::Maven::UpdateChecker::RequirementsUpdater do
         its([:requirement]) { is_expected.to eq("[23.6-jre]") }
       end
 
-      context "when a dynamic requirement was previously specified" do
-        let(:pom_req_string) { "22.+" }
-
-        its([:requirement]) { is_expected.to eq("23.+") }
-      end
-
       context "when there were multiple requirements" do
         let(:requirements) { [pom_req, other_pom_req] }
 

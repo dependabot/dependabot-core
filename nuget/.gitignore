@@ -4,3 +4,5 @@
 /tmp
 /dependabot-*.gem
 Properties/
+bin/
+obj/

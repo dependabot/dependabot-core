@@ -34,6 +34,11 @@ GEMSPECS = %w(
   silent/dependabot-silent.gemspec
   swift/dependabot-swift.gemspec
   devcontainers/dependabot-devcontainers.gemspec
+  dotnet_sdk/dependabot-dotnet_sdk.gemspec
+  bun/dependabot-bun.gemspec
+  docker_compose/dependabot-docker_compose.gemspec
+  uv/dependabot-uv.gemspec
+  helm/dependabot-helm.gemspec
 ).freeze
 
 def run_command(command)
@@ -63,7 +68,9 @@ namespace :gems do
 
     GEMSPECS.each do |gemspec_path|
       gem_name = File.basename(gemspec_path).sub(/\.gemspec$/, "")
-      gem_path = "pkg/#{gem_name}-#{Dependabot::VERSION}.gem"
+      gem_name_and_version = "#{gem_name}-#{Dependabot::VERSION}"
+      gem_path = "pkg/#{gem_name_and_version}.gem"
+      gem_attestation_path = "pkg/#{gem_name_and_version}.sigstore.json"
 
       attempts = 0
       loop do
@@ -73,13 +80,15 @@ namespace :gems do
         else
           puts "> Releasing #{gem_path}"
           attempts += 1
-          sleep(2)
           begin
-            sh "gem push #{gem_path}"
+            sh "gem exec sigstore-cli:0.2.1 sign #{gem_path} --bundle #{gem_attestation_path}"
+            sh "gem push #{gem_path} --attestation #{gem_attestation_path}"
             break
           rescue StandardError => e
             puts "! `gem push` failed with error: #{e}"
             raise if attempts >= 3
+
+            sleep(2)
           end
         end
       end
@@ -87,7 +96,7 @@ namespace :gems do
   end
 
   task :clean do
-    FileUtils.rm(Dir["pkg/*.gem"])
+    FileUtils.rm(Dir["pkg/*.gem", "pkg/*.sigstore.json"])
   end
 end
 
@@ -123,12 +132,8 @@ def guard_tag_match
 end
 
 def rubygems_release_exists?(name, version)
-  uri = URI.parse("https://rubygems.org/api/v1/versions/#{name}.json")
+  uri = URI.parse("https://rubygems.org/api/v2/rubygems/#{name}/versions/#{version}.json")
   response = Net::HTTP.get_response(uri)
-  return false if response.code != "200"
-
-  body = JSON.parse(response.body)
-  existing_versions = body.map { |b| b["number"] }
-  existing_versions.include?(version)
+  response.code == "200"
 end
 # rubocop:enable Metrics/BlockLength

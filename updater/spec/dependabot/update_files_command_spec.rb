@@ -3,6 +3,7 @@
 
 require "spec_helper"
 require "dependabot/update_files_command"
+require "dependabot/bundler"
 require "tmpdir"
 
 RSpec.describe Dependabot::UpdateFilesCommand do
@@ -107,6 +108,32 @@ RSpec.describe Dependabot::UpdateFilesCommand do
       it "marks the job as processed without proceeding further" do
         expect(service).to receive(:mark_job_as_processed)
         expect(Dependabot::Updater).not_to receive(:new)
+
+        perform_job
+      end
+    end
+
+    context "when there is an unsupported package manager version" do
+      let(:error) do
+        Dependabot::ToolVersionNotSupported.new(
+          "bundler",       # tool name
+          "1.0.0",         # detected version
+          ">= 2.0.0"       # supported versions
+        )
+      end
+
+      it_behaves_like "a fast-failed job"
+
+      it "records the unsupported version error with details" do
+        expect(service).to receive(:record_update_job_error).with(
+          error_type: "tool_version_not_supported",
+          error_details: {
+            "tool-name": "bundler",
+            "detected-version": "1.0.0",
+            "supported-versions": ">= 2.0.0"
+          }
+        )
+        expect(service).to receive(:mark_job_as_processed)
 
         perform_job
       end
@@ -257,6 +284,38 @@ RSpec.describe Dependabot::UpdateFilesCommand do
       let(:error) { Dependabot::DependencyFileNotParseable.new("path/to/file", "a") }
 
       it_behaves_like "a fast-failed job"
+
+      it "only records a job error" do
+        expect(service).not_to receive(:capture_exception)
+        expect(service).to receive(:record_update_job_error).with(
+          error_type: "dependency_file_not_parseable",
+          error_details: { "file-path": "path/to/file", message: "a" }
+        )
+
+        perform_job
+      end
+    end
+
+    context "with a Dependabot::DependencyFileNotParseable error" do
+      let(:error) { Dependabot::DependencyFileNotParseable.new("path/to/file", "a") }
+
+      let(:snapshot) do
+        instance_double(Dependabot::DependencySnapshot,
+                        base_commit_sha: "1c6331732c41e4557a16dacb82534f1d1c831848")
+      end
+
+      let(:updater) do
+        instance_double(Dependabot::Updater,
+                        service: service,
+                        job: job,
+                        dependency_snapshot: snapshot)
+      end
+
+      before do
+        allow(Dependabot::DependencySnapshot).to receive(:create_from_job_definition).and_return(snapshot)
+        allow(Dependabot::Updater).to receive(:new).and_return(updater)
+        allow(updater).to receive(:run).and_raise(error)
+      end
 
       it "only records a job error" do
         expect(service).not_to receive(:capture_exception)

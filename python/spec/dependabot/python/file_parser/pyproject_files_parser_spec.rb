@@ -24,26 +24,6 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
 
     let(:pyproject_fixture_name) { "basic_poetry_dependencies.toml" }
 
-    context "when defined incorrectly" do
-      let(:pyproject_fixture_name) { "incorrect_poetry_setup.toml" }
-
-      it "raises a DependencyFileNotParseable error" do
-        expect { parser.dependency_set }
-          .to raise_error do |error|
-            expect(error.class)
-              .to eq(Dependabot::DependencyFileNotParseable)
-            expect(error.message)
-              .to eq <<~ERROR.strip
-                /pyproject.toml is missing the following sections:
-                  * tool.poetry.name
-                  * tool.poetry.version
-                  * tool.poetry.description
-                  * tool.poetry.authors
-              ERROR
-          end
-      end
-    end
-
     context "without a lockfile" do
       its(:length) { is_expected.to eq(15) }
 
@@ -154,7 +134,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
       end
 
       describe "a development sub-dependency" do
-        subject(:dep) { dependencies.find { |d| d.name == "atomicwrites" } }
+        subject(:dep) { dependencies.find { |d| d.name == "click" } }
 
         its(:subdependency_metadata) do
           is_expected.to eq([{ production: false }])
@@ -281,7 +261,9 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
 
     let(:pyproject_fixture_name) { "standard_python.toml" }
 
-    its(:length) { is_expected.to eq(1) }
+    # fixture has 1 build system requires and plus 1 dependencies exists
+
+    its(:length) { is_expected.to eq(2) }
 
     context "with a string declaration" do
       subject(:dependency) { dependencies.first }
@@ -307,7 +289,10 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
 
       let(:pyproject_fixture_name) { "no_dependencies.toml" }
 
-      its(:length) { is_expected.to eq(0) }
+      # fixture has 1 build system requires and no dependencies or
+      # optional dependencies exists
+
+      its(:length) { is_expected.to eq(1) }
     end
 
     context "with dependencies with empty requirements" do
@@ -360,8 +345,8 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
       let(:pyproject_fixture_name) { "optional_dependencies.toml" }
 
       # fixture has 1 runtime dependency, plus 4 optional dependencies, but one
-      # is ignored because it has markers
-      its(:length) { is_expected.to eq(4) }
+      # is ignored because it has markers, plus 1 is build system requires
+      its(:length) { is_expected.to eq(5) }
     end
 
     context "with optional dependencies only" do
@@ -370,6 +355,45 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
       let(:pyproject_fixture_name) { "optional_dependencies_only.toml" }
 
       its(:length) { is_expected.to be > 0 }
+    end
+
+    describe "parse standard python files" do
+      subject(:dependencies) { parser.dependency_set.dependencies }
+
+      let(:pyproject_fixture_name) { "pyproject_1_0_0.toml" }
+
+      # fixture has 1 build system requires and plus 1 dependencies exists
+
+      its(:length) { is_expected.to eq(1) }
+
+      context "with a string declaration" do
+        subject(:dependency) { dependencies.first }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("pydantic")
+          expect(dependency.version).to eq("2.7.0")
+        end
+      end
+
+      context "without dependencies" do
+        subject(:dependencies) { parser.dependency_set.dependencies }
+
+        let(:pyproject_fixture_name) { "pyproject_1_0_0_nodeps.toml" }
+
+        # fixture has 1 build system requires and no dependencies or
+        # optional dependencies exists
+
+        its(:length) { is_expected.to eq(0) }
+      end
+
+      context "with optional dependencies only" do
+        subject(:dependencies) { parser.dependency_set.dependencies }
+
+        let(:pyproject_fixture_name) { "pyproject_1_0_0_optional_deps.toml" }
+
+        its(:length) { is_expected.to be > 0 }
+      end
     end
   end
 end

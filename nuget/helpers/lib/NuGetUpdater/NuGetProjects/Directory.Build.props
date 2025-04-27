@@ -3,7 +3,11 @@
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);IS_CORECLR</DefineConstants>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-    <NoWarn>$(NoWarn);NU1701</NoWarn>
+    <NoWarn>$(NoWarn);CA1305</NoWarn><!-- behavior of StringBuilder could vary based on user's locale -->
+    <NoWarn>$(NoWarn);CA2022</NoWarn><!-- avoid inexact Stream.Read() -->
+    <NoWarn>$(NoWarn);NU1701</NoWarn><!-- package target framework may not be compatible -->
+    <NoWarn>$(NoWarn);NU1903</NoWarn><!-- package has a known high severity vulnerability -->
+    <NoWarn>$(NoWarn);SYSLIB0014</NoWarn><!-- obsolete -->
     <NuGetSourceLocation>$(MSBuildThisFileDirectory)..\..\NuGet.Client</NuGetSourceLocation>
     <SharedDirectory>$(NuGetSourceLocation)\build\Shared</SharedDirectory>
     <Version>6.8.0</Version>

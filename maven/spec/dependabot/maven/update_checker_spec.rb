@@ -61,9 +61,12 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
       dependency_files: dependency_files,
       credentials: credentials,
       ignored_versions: ignored_versions,
-      security_advisories: security_advisories
+      security_advisories: security_advisories,
+      update_cooldown: cooldown_options
     )
   end
+
+  let(:cooldown_options) { nil }
 
   before do
     stub_request(:get, maven_central_metadata_url)
@@ -668,7 +671,8 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
             target_version_details: {
               version: version_class.new("23.6-jre"),
               source_url: "https://repo.maven.apache.org/maven2"
-            }
+            },
+            update_cooldown: nil
           )
           .and_call_original
         expect(latest_version_resolvable_with_full_unlock).to be(true)
@@ -727,86 +731,180 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
           )
       end
 
-      it "delegates to the PropertyUpdater" do
-        expect(described_class::PropertyUpdater)
-          .to receive(:new)
-          .with(
-            dependency: dependency,
-            dependency_files: dependency_files,
-            credentials: credentials,
-            ignored_versions: [],
-            target_version_details: {
-              version: version_class.new("23.6-jre"),
-              source_url: "https://repo.maven.apache.org/maven2"
-            }
-          )
-          .and_call_original
-        expect(checker_updated_dependencies_after_full_unlock).to eq(
-          [
-            Dependabot::Dependency.new(
-              name: "org.springframework:spring-beans",
-              version: "23.6-jre",
-              previous_version: "4.3.12.RELEASE",
-              requirements: [{
-                file: "pom.xml",
-                requirement: "23.6-jre",
-                groups: [],
-                source: {
-                  type: "maven_repo",
-                  url: "https://repo.maven.apache.org/maven2"
-                },
-                metadata: {
-                  property_name: "springframework.version",
-                  property_source: "pom.xml",
-                  packaging_type: "jar"
-                }
-              }],
-              previous_requirements: [{
-                file: "pom.xml",
-                requirement: "4.3.12.RELEASE",
-                groups: [],
-                source: nil,
-                metadata: {
-                  property_name: "springframework.version",
-                  property_source: "pom.xml",
-                  packaging_type: "jar"
-                }
-              }],
-              package_manager: "maven"
-            ),
-            Dependabot::Dependency.new(
-              name: "org.springframework:spring-context",
-              version: "23.6-jre",
-              previous_version: "4.3.12.RELEASE",
-              requirements: [{
-                file: "pom.xml",
-                requirement: "23.6-jre",
-                groups: [],
-                source: {
-                  type: "maven_repo",
-                  url: "https://repo.maven.apache.org/maven2"
-                },
-                metadata: {
-                  property_name: "springframework.version",
-                  property_source: "pom.xml",
-                  packaging_type: "jar"
-                }
-              }],
-              previous_requirements: [{
-                file: "pom.xml",
-                requirement: "4.3.12.RELEASE",
-                groups: [],
-                source: nil,
-                metadata: {
-                  property_name: "springframework.version",
-                  property_source: "pom.xml",
-                  packaging_type: "jar"
-                }
-              }],
-              package_manager: "maven"
+      context "without cooldown options" do
+        it "delegates to the PropertyUpdater" do
+          expect(described_class::PropertyUpdater)
+            .to receive(:new)
+            .with(
+              dependency: dependency,
+              dependency_files: dependency_files,
+              credentials: credentials,
+              ignored_versions: [],
+              target_version_details: {
+                version: version_class.new("23.6-jre"),
+                source_url: "https://repo.maven.apache.org/maven2"
+              },
+              update_cooldown: nil
             )
-          ]
-        )
+            .and_call_original
+          expect(checker_updated_dependencies_after_full_unlock).to eq(
+            [
+              Dependabot::Dependency.new(
+                name: "org.springframework:spring-beans",
+                version: "23.6-jre",
+                previous_version: "4.3.12.RELEASE",
+                requirements: [{
+                  file: "pom.xml",
+                  requirement: "23.6-jre",
+                  groups: [],
+                  source: {
+                    type: "maven_repo",
+                    url: "https://repo.maven.apache.org/maven2"
+                  },
+                  metadata: {
+                    property_name: "springframework.version",
+                    property_source: "pom.xml",
+                    packaging_type: "jar"
+                  }
+                }],
+                previous_requirements: [{
+                  file: "pom.xml",
+                  requirement: "4.3.12.RELEASE",
+                  groups: [],
+                  source: nil,
+                  metadata: {
+                    property_name: "springframework.version",
+                    property_source: "pom.xml",
+                    packaging_type: "jar"
+                  }
+                }],
+                package_manager: "maven"
+              ),
+              Dependabot::Dependency.new(
+                name: "org.springframework:spring-context",
+                version: "23.6-jre",
+                previous_version: "4.3.12.RELEASE",
+                requirements: [{
+                  file: "pom.xml",
+                  requirement: "23.6-jre",
+                  groups: [],
+                  source: {
+                    type: "maven_repo",
+                    url: "https://repo.maven.apache.org/maven2"
+                  },
+                  metadata: {
+                    property_name: "springframework.version",
+                    property_source: "pom.xml",
+                    packaging_type: "jar"
+                  }
+                }],
+                previous_requirements: [{
+                  file: "pom.xml",
+                  requirement: "4.3.12.RELEASE",
+                  groups: [],
+                  source: nil,
+                  metadata: {
+                    property_name: "springframework.version",
+                    property_source: "pom.xml",
+                    packaging_type: "jar"
+                  }
+                }],
+                package_manager: "maven"
+              )
+            ]
+          )
+        end
+      end
+
+      context "with cooldown options" do
+        let(:cooldown_options) do
+          Dependabot::Package::ReleaseCooldownOptions.new(
+            default_days: 20 # Now is 2017-12-14 , 23.5-jre release date: 2017-11-22
+          )
+        end
+
+        it "delegates to the PropertyUpdater" do
+          expect(described_class::PropertyUpdater)
+            .to receive(:new)
+            .with(
+              dependency: dependency,
+              dependency_files: dependency_files,
+              credentials: credentials,
+              ignored_versions: [],
+              target_version_details: {
+                version: version_class.new("23.6-jre"),
+                source_url: "https://repo.maven.apache.org/maven2"
+              },
+              update_cooldown: cooldown_options
+            )
+            .and_call_original
+          expect(checker_updated_dependencies_after_full_unlock).to eq(
+            [
+              Dependabot::Dependency.new(
+                name: "org.springframework:spring-beans",
+                version: "23.6-jre",
+                previous_version: "4.3.12.RELEASE",
+                requirements: [{
+                  file: "pom.xml",
+                  requirement: "23.6-jre",
+                  groups: [],
+                  source: {
+                    type: "maven_repo",
+                    url: "https://repo.maven.apache.org/maven2"
+                  },
+                  metadata: {
+                    property_name: "springframework.version",
+                    property_source: "pom.xml",
+                    packaging_type: "jar"
+                  }
+                }],
+                previous_requirements: [{
+                  file: "pom.xml",
+                  requirement: "4.3.12.RELEASE",
+                  groups: [],
+                  source: nil,
+                  metadata: {
+                    property_name: "springframework.version",
+                    property_source: "pom.xml",
+                    packaging_type: "jar"
+                  }
+                }],
+                package_manager: "maven"
+              ),
+              Dependabot::Dependency.new(
+                name: "org.springframework:spring-context",
+                version: "23.6-jre",
+                previous_version: "4.3.12.RELEASE",
+                requirements: [{
+                  file: "pom.xml",
+                  requirement: "23.6-jre",
+                  groups: [],
+                  source: {
+                    type: "maven_repo",
+                    url: "https://repo.maven.apache.org/maven2"
+                  },
+                  metadata: {
+                    property_name: "springframework.version",
+                    property_source: "pom.xml",
+                    packaging_type: "jar"
+                  }
+                }],
+                previous_requirements: [{
+                  file: "pom.xml",
+                  requirement: "4.3.12.RELEASE",
+                  groups: [],
+                  source: nil,
+                  metadata: {
+                    property_name: "springframework.version",
+                    property_source: "pom.xml",
+                    packaging_type: "jar"
+                  }
+                }],
+                package_manager: "maven"
+              )
+            ]
+          )
+        end
       end
     end
   end

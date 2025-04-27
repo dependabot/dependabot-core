@@ -36,7 +36,8 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
       increment_metric: nil,
       record_update_job_error: nil,
       create_pull_request: nil,
-      record_update_job_warning: nil
+      record_update_job_warning: nil,
+      record_ecosystem_meta: nil
     )
   end
 
@@ -57,6 +58,13 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
     Dependabot::DependencySnapshot.create_from_job_definition(
       job: job,
       job_definition: job_definition_with_fetched_files
+    )
+  end
+
+  let(:ecosystem) do
+    Dependabot::Ecosystem.new(
+      name: "bundler",
+      package_manager: package_manager
     )
   end
 
@@ -208,9 +216,6 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
   end
 
   before do
-    allow(Dependabot::Experiments).to receive(:enabled?).with(:bundler_v1_unsupported_error).and_return(false)
-    allow(Dependabot::Experiments).to receive(:enabled?).with(:add_deprecation_warn_to_pr_message).and_return(true)
-
     allow(Dependabot::UpdateCheckers).to receive(
       :for_package_manager
     ).and_return(stub_update_checker_class)
@@ -221,7 +226,7 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
 
     allow(dependency_snapshot).to receive_messages(
       job_dependencies: [dependency],
-      package_manager: package_manager,
+      ecosystem: ecosystem,
       notices: [warning_deprecation_notice]
     )
     allow(job).to receive(:security_fix?).and_return(true)
@@ -302,29 +307,6 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
         expect(create_security_update_pull_request)
           .to receive(:create_pull_request)
           .with(stub_dependency_change)
-        perform
-      end
-    end
-
-    context "when package manager version is unsupported" do
-      let(:package_manager_version) { "1" }
-      let(:supported_versions) { %w(2 3) }
-
-      before do
-        # Enable the feature flag for unsupported version
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:bundler_v1_unsupported_error)
-          .and_return(true)
-
-        # Ensure unsupported? method returns true so the error is triggered
-        allow(package_manager).to receive(:unsupported?).and_return(true)
-      end
-
-      it "logs the ToolVersionNotSupported error to the error handler" do
-        # Ensure the error handler receives the expected error
-        expect(mock_error_handler).to receive(:handle_dependency_error)
-          .with(hash_including(error: instance_of(Dependabot::ToolVersionNotSupported)))
-
         perform
       end
     end

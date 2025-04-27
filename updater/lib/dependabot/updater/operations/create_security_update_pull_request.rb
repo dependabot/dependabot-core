@@ -100,12 +100,13 @@ module Dependabot
           )
         rescue StandardError => e
           error_handler.handle_dependency_error(error: e, dependency: dependency)
+        ensure
+          service.record_ecosystem_meta(dependency_snapshot.ecosystem)
         end
 
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/PerceivedComplexity
         # rubocop:disable Metrics/MethodLength
-        # rubocop:disable Metrics/CyclomaticComplexity
         sig { params(dependency: Dependabot::Dependency).void }
         def check_and_create_pull_request(dependency)
           dependency = vulnerable_version(dependency) if dependency.metadata[:all_versions]
@@ -145,9 +146,6 @@ module Dependabot
           requirements_to_unlock = requirements_to_unlock(checker)
           log_requirements_for_update(requirements_to_unlock, checker)
           return record_security_update_not_possible_error(checker) if requirements_to_unlock == :update_not_possible
-
-          # Raise an error if the package manager version is unsupported
-          dependency_snapshot.package_manager&.raise_if_unsupported!
 
           updated_deps = checker.updated_dependencies(
             requirements_to_unlock: requirements_to_unlock
@@ -202,7 +200,6 @@ module Dependabot
         # rubocop:enable Metrics/MethodLength
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/PerceivedComplexity
-        # rubocop:enable Metrics/CyclomaticComplexity
         sig { params(dependency: Dependabot::Dependency).returns(Dependabot::Dependency) }
         def vulnerable_version(dependency)
           return dependency if dependency.metadata[:all_versions].count == 1

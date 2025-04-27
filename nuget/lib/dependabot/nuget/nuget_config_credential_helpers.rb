@@ -28,7 +28,7 @@ module Dependabot
 
         File.rename(user_nuget_config_path, temporary_nuget_config_path)
 
-        package_sources = []
+        package_sources = ["    <add key=\"nuget.org\" value=\"https://api.nuget.org/v3/index.json\" />"]
         package_source_credentials = []
         nuget_credentials.each_with_index do |c, i|
           source_name = "nuget_source_#{i + 1}"

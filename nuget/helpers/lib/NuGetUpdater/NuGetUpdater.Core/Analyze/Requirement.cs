@@ -52,10 +52,10 @@ public abstract class Requirement
 
     public static Requirement Parse(string requirement)
     {
-        var specificParts = requirement.Split(',');
+        var specificParts = requirement.Split(',').Where(p => !string.IsNullOrWhiteSpace(p)).ToArray();
         if (specificParts.Length == 1)
         {
-            return IndividualRequirement.ParseIndividual(requirement);
+            return IndividualRequirement.ParseIndividual(specificParts[0]);
         }
 
         var specificRequirements = specificParts.Select(IndividualRequirement.ParseIndividual).ToArray();

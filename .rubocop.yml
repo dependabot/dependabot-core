@@ -14,7 +14,6 @@ AllCops:
     - "*/spec/fixtures/**/*"
     - "vendor/**/*"
     - "dry-run/**/*"
-    - "bundler/helpers/v1/patched_bundler"
     - "bundler/helpers/spec_helpers/*"
   NewCops: enable
   TargetRubyVersion: 3.1
@@ -345,8 +344,10 @@ Sorbet/TrueSigil:
   Exclude:
     - "**/spec/**/*"
 Sorbet/StrictSigil:
+  Enabled: true
   Exclude:
     - "**/spec/**/*"
+    - "bin/**/*"
 Sorbet/StrongSigil:
   Exclude:
     - "**/spec/**/*"

@@ -2,6 +2,6 @@
   "require": {
       "monolog/monolog" : "1.0.1",
       "symfony/polyfill-mbstring": "1.0.1",
-      "dealerdirect/phpcodesniffer-composer-installer": "0.4.4"
+      "dealerdirect/phpcodesniffer-composer-installer": "1.0.0"
   }
 }

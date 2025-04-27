@@ -6,5 +6,7 @@ public sealed record PackagesConfigDiscoveryResult : IDiscoveryResultWithDepende
 {
     public required string FilePath { get; init; }
     public bool IsSuccess { get; init; } = true;
-    public ImmutableArray<Dependency> Dependencies { get; init; }
+    public required ImmutableArray<Dependency> Dependencies { get; init; }
+    public required ImmutableArray<string> TargetFrameworks { get; init; }
+    public required ImmutableArray<string> AdditionalFiles { get; init; }
 }

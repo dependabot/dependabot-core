@@ -1,18 +1,30 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/utils"
 require "dependabot/swift/requirement"
+require "sorbet-runtime"
 
 module Dependabot
   module Swift
     class NativeRequirement
-      # TODO: Support pinning to specific revisions
-      REGEXP = /(from.*|\.upToNextMajor.*|\.upToNextMinor.*|".*"\s*\.\.[\.<]\s*".*"|exact.*|\.exact.*)/
+      extend T::Sig
 
+      # TODO: Support pinning to specific revisions
+      REGEXP = T.let(/(from.*|\.upToNextMajor.*|\.upToNextMinor.*|".*"\s*\.\.[\.<]\s*".*"|exact.*|\.exact.*)/, Regexp)
+
+      sig { returns(String) }
       attr_reader :declaration
 
-      def self.map_requirements(requirements)
+      sig do
+        type_parameters(:T)
+          .params(
+            requirements: T::Array[T::Hash[Symbol, T.untyped]],
+            _blk: T.proc.params(declaration: NativeRequirement).returns(String)
+          )
+          .returns(T::Array[T::Hash[Symbol, T.untyped]])
+      end
+      def self.map_requirements(requirements, &_blk)
         requirements.map do |requirement|
           declaration = new(requirement[:metadata][:requirement_string])
 
@@ -26,6 +38,7 @@ module Dependabot
         end
       end
 
+      sig { params(declaration: String).void }
       def initialize(declaration)
         @declaration = declaration
 
@@ -39,21 +52,24 @@ module Dependabot
                        [">= #{min}", "< #{max}"]
                      end
 
-        @min = min
-        @max = max
-        @requirement = Requirement.new(constraint)
+        @min = T.let(min, String)
+        @max = T.let(max, String)
+        @requirement = T.let(Requirement.new(constraint), Requirement)
       end
 
+      sig { returns(String) }
       def to_s
         requirement.to_s
       end
 
+      sig { params(version: T.any(String, Gem::Version)).returns(T.nilable(String)) }
       def update_if_needed(version)
         return declaration if requirement.satisfied_by?(version)
 
         update(version)
       end
 
+      sig { params(version: T.any(String, Gem::Version)).returns(T.nilable(String)) }
       def update(version)
         if single_version_declaration?
           declaration.sub(min, version.to_s)
@@ -66,6 +82,7 @@ module Dependabot
 
       private
 
+      sig { params(declaration: String).returns([String, String]) }
       def parse_declaration(declaration)
         if up_to_next_major?
           min = declaration.gsub(/\Afrom\s*:\s*"(\S+)"\s*\z/, '\1')
@@ -90,24 +107,28 @@ module Dependabot
           raise "Unsupported constraint: #{declaration}"
         end
 
-        [min, max]
+        [T.must(min), T.must(max)]
       end
 
+      sig { params(separator: String).returns(T::Array[String]) }
       def parse_range(separator)
         declaration.split(separator).map { |str| unquote(str.strip) }
       end
 
+      sig { returns(T::Boolean) }
       def single_version_declaration?
         up_to_next_major? || up_to_next_major_deprecated? || up_to_next_minor_deprecated? ||
           exact_version? || exact_version_deprecated?
       end
 
+      sig { params(str: String).returns(String) }
       def bump_major(str)
         transform_version(str) do |s, i|
           i.zero? ? s.to_i + 1 : 0
         end
       end
 
+      sig { params(str: String).returns(String) }
       def bump_minor(str)
         transform_version(str) do |s, i|
           if i.zero?
@@ -118,44 +139,60 @@ module Dependabot
         end
       end
 
+      sig do
+        params(str: String, block: T.proc.params(s: String, i: Integer).returns(T.any(String, Integer))).returns(String)
+      end
       def transform_version(str, &block)
         str.split(".").map.with_index(&block).join(".")
       end
 
+      sig { returns(T::Boolean) }
       def up_to_next_major?
         declaration.start_with?("from")
       end
 
+      sig { returns(T::Boolean) }
       def up_to_next_major_deprecated?
         declaration.start_with?(".upToNextMajor")
       end
 
+      sig { returns(T::Boolean) }
       def up_to_next_minor_deprecated?
         declaration.start_with?(".upToNextMinor")
       end
 
+      sig { returns(T::Boolean) }
       def exact_version?
         declaration.start_with?("exact")
       end
 
+      sig { returns(T::Boolean) }
       def exact_version_deprecated?
         declaration.start_with?(".exact")
       end
 
+      sig { returns(T::Boolean) }
       def closed_range?
         declaration.include?("...")
       end
 
+      sig { returns(T::Boolean) }
       def range?
         declaration.include?("..<")
       end
 
+      sig { returns(String) }
       attr_reader :min
+
+      sig { returns(String) }
       attr_reader :max
+
+      sig { returns(Requirement) }
       attr_reader :requirement
 
+      sig { params(declaration: String).returns(String) }
       def unquote(declaration)
-        declaration[1..-2]
+        T.must(declaration[1..-2])
       end
     end
   end

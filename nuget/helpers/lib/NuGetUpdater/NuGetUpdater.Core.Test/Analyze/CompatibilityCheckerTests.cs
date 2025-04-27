@@ -30,7 +30,7 @@ public class CompatibilityCheckerTests
             projectFrameworks,
             isDevDependency,
             packageFrameworks,
-            new Logger(verbose: false));
+            new TestLogger());
 
         Assert.True(result);
     }
@@ -53,7 +53,7 @@ public class CompatibilityCheckerTests
             projectFrameworks,
             isDevDependency,
             packageFrameworks,
-            new Logger(verbose: false));
+            new TestLogger());
 
         Assert.False(result);
     }
@@ -76,7 +76,7 @@ public class CompatibilityCheckerTests
             projectFrameworks,
             isDevDependency,
             packageFrameworks,
-            new Logger(verbose: false));
+            new TestLogger());
 
         Assert.False(result);
     }
@@ -97,7 +97,7 @@ public class CompatibilityCheckerTests
             projectFrameworks,
             isDevDependency,
             packageFrameworks,
-            new Logger(verbose: false));
+            new TestLogger());
 
         Assert.True(result);
     }
@@ -118,7 +118,7 @@ public class CompatibilityCheckerTests
             projectFrameworks,
             isDevDependency,
             packageFrameworks,
-            new Logger(verbose: false));
+            new TestLogger());
 
         Assert.False(result);
     }
@@ -138,7 +138,7 @@ public class CompatibilityCheckerTests
             projectFrameworks,
             isDevDependency,
             packageFrameworks,
-            new Logger(verbose: false));
+            new TestLogger());
 
         Assert.False(result);
     }
@@ -161,7 +161,7 @@ public class CompatibilityCheckerTests
             projectFrameworks,
             isDevDependency,
             packageFrameworks,
-            new Logger(verbose: false));
+            new TestLogger());
 
         Assert.True(result);
     }

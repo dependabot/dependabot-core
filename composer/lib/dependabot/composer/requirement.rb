@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -14,6 +14,7 @@ module Dependabot
       AND_SEPARATOR = /(?<=[a-zA-Z0-9*])(?<!\sas)[\s,]+(?![\s,]*[|-]|as)/
       OR_SEPARATOR = /(?<=[a-zA-Z0-9*])[\s,]*\|\|?\s*/
 
+      sig { params(obj: String).returns(T::Array[T.any(String, Version)]) }
       def self.parse(obj)
         new_obj = obj.gsub(/@\w+/, "").gsub(/[a-z0-9\-_\.]*\sas\s+/i, "")
         return DefaultRequirement if new_obj == ""
@@ -30,6 +31,7 @@ module Dependabot
         end
       end
 
+      sig { params(requirements: T.untyped).void }
       def initialize(*requirements)
         requirements =
           requirements.flatten
@@ -41,6 +43,7 @@ module Dependabot
 
       private
 
+      sig { params(req_string: String).returns(T.any(String, T::Array[String])) }
       def convert_php_constraint_to_ruby_constraint(req_string)
         req_string = req_string.strip.gsub(/v(?=\d)/, "").gsub(/\.$/, "")
 
@@ -59,6 +62,7 @@ module Dependabot
         end
       end
 
+      sig { params(req_string: String).returns(String) }
       def convert_wildcard_req(req_string)
         if req_string.start_with?(">", "<")
           msg = "Illformed requirement [#{req_string.inspect}]"
@@ -69,17 +73,19 @@ module Dependabot
         "~> #{version}.0"
       end
 
+      sig { params(req_string: String).returns(String) }
       def convert_tilde_req(req_string)
         version = req_string.gsub(/^~/, "")
         "~> #{version}"
       end
 
+      sig { params(req_string: String).returns(T::Array[String]) }
       def convert_caret_req(req_string)
         version = req_string.gsub(/^\^/, "").gsub("x-dev", "0")
         parts = version.split(".")
         first_non_zero = parts.find { |d| d != "0" }
         first_non_zero_index =
-          first_non_zero ? parts.index(first_non_zero) : parts.count - 1
+          first_non_zero ? T.must(parts.index(first_non_zero)) : parts.count - 1
         upper_bound = parts.map.with_index do |part, i|
           if i < first_non_zero_index then part
           elsif i == first_non_zero_index then (part.to_i + 1).to_s
@@ -91,8 +97,10 @@ module Dependabot
         [">= #{version}", "< #{upper_bound}"]
       end
 
+      sig { params(req_string: String).returns(T::Array[String]) }
       def convert_hyphen_req(req_string)
         lower_bound, upper_bound = req_string.split(/\s+-\s+/)
+        upper_bound = T.must(upper_bound)
         if upper_bound.split(".").count < 3
           upper_bound_parts = upper_bound.split(".")
           upper_bound_parts[-1] = (upper_bound_parts[-1].to_i + 1).to_s

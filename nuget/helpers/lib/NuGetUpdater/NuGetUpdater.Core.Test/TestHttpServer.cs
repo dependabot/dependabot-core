@@ -2,17 +2,21 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 
+using NuGet.Versioning;
+using NuGet;
+using NuGetUpdater.Core.Utilities;
+
 namespace NuGetUpdater.Core.Test
 {
     public class TestHttpServer : IDisposable
     {
-        private readonly Func<string, (int, byte[])> _requestHandler;
+        private readonly Func<string, string, (int, byte[])> _requestHandler;
         private readonly HttpListener _listener;
         private bool _runServer = true;
 
         public string BaseUrl { get; }
 
-        private TestHttpServer(string baseurl, Func<string, (int, byte[])> requestHandler)
+        private TestHttpServer(string baseurl, Func<string, string, (int, byte[])> requestHandler)
         {
             BaseUrl = baseurl;
             _requestHandler = requestHandler;
@@ -32,12 +36,14 @@ namespace NuGetUpdater.Core.Test
             _listener.Stop();
         }
 
+        public string GetPackageFeedIndex() => BaseUrl.TrimEnd('/') + "/index.json";
+
         private async Task HandleResponses()
         {
             while (_runServer)
             {
                 var context = await _listener.GetContextAsync();
-                var (statusCode, response) = _requestHandler(context.Request.Url!.AbsoluteUri);
+                var (statusCode, response) = _requestHandler(context.Request.HttpMethod, context.Request.Url!.AbsoluteUri);
                 context.Response.StatusCode = statusCode;
                 await context.Response.OutputStream.WriteAsync(response);
                 context.Response.Close();
@@ -47,6 +53,11 @@ namespace NuGetUpdater.Core.Test
         private static readonly object PortGate = new();
 
         public static TestHttpServer CreateTestServer(Func<string, (int, byte[])> requestHandler)
+        {
+            return CreateTestServer((method, url) => requestHandler(url));
+        }
+
+        public static TestHttpServer CreateTestServer(Func<string, string, (int, byte[])> requestHandler)
         {
             // static lock to ensure the port is not recycled after `FindFreePort()` and before we can start the real server
             lock (PortGate)
@@ -61,12 +72,116 @@ namespace NuGetUpdater.Core.Test
 
         public static TestHttpServer CreateTestStringServer(Func<string, (int, string)> requestHandler)
         {
-            Func<string, (int, byte[])> bytesRequestHandler = url =>
+            return CreateTestStringServer((method, url) => requestHandler(url));
+        }
+
+        public static TestHttpServer CreateTestStringServer(Func<string, string, (int, string)> requestHandler)
+        {
+            Func<string, string, (int, byte[])> bytesRequestHandler = (method, url) =>
             {
-                var (statusCode, response) = requestHandler(url);
+                var (statusCode, response) = requestHandler(method, url);
                 return (statusCode, Encoding.UTF8.GetBytes(response));
             };
             return CreateTestServer(bytesRequestHandler);
+        }
+
+        public static TestHttpServer CreateTestNuGetFeed(params MockNuGetPackage[] packages)
+        {
+            var packageVersions = new Dictionary<string, HashSet<NuGetVersion>>(StringComparer.OrdinalIgnoreCase);
+            foreach (var package in packages)
+            {
+                var versions = packageVersions.GetOrAdd(package.Id, () => new HashSet<NuGetVersion>());
+                var version = NuGetVersion.Parse(package.Version);
+                versions.Add(version);
+            }
+
+            var responses = new Dictionary<string, byte[]>();
+            foreach (var kvp in packageVersions)
+            {
+                var packageId = kvp.Key;
+                var versions = kvp.Value.OrderBy(v => v).ToArray();
+
+                // registration
+                var registrationUrl = $"/registrations/{packageId.ToLowerInvariant()}/index.json";
+                var registrationContent = $$"""
+                {
+                  "count": {{versions.Length}},
+                  "items": [
+                    {
+                      "lower": "{{versions.First()}}",
+                      "upper": "{{versions.Last()}}",
+                      "items": [
+                        {{string.Join(",\n", versions.Select(v => $$"""
+                                                               {
+                                                                 "catalogEntry": {
+                                                                   "version": "{{v}}"
+                                                                 }
+                                                               }
+                                                               """))}}
+                      ]
+                    }
+                  ]
+                }
+                """;
+                responses[registrationUrl] = Encoding.UTF8.GetBytes(registrationContent);
+
+                // download
+                var downloadUrl = $"/download/{packageId.ToLowerInvariant()}/index.json";
+                var downloadContent = $$"""
+                {
+                  "versions": [{{string.Join(", ", versions.Select(v => $"\"{v}\""))}}]
+                }
+                """;
+                responses[downloadUrl] = Encoding.UTF8.GetBytes(downloadContent);
+
+                // nupkg
+                foreach (var package in packages.Where(p => p.Id.Equals(packageId, StringComparison.OrdinalIgnoreCase)))
+                {
+                    var id = packageId.ToLowerInvariant();
+                    var v = package.Version.ToLowerInvariant();
+                    var nupkgUrl = $"/download/{id}/{v}/{id}.{v}.nupkg";
+                    var nupkgContent = package.GetZipStream().ReadAllBytes();
+                    responses[nupkgUrl] = nupkgContent;
+                }
+            }
+
+            (int, byte[]) HttpHandler(string uriString)
+            {
+                var uri = new Uri(uriString, UriKind.Absolute);
+                var baseUrl = $"{uri.Scheme}://{uri.Host}:{uri.Port}";
+                if (uri.PathAndQuery == "/index.json")
+                {
+                    return (200, Encoding.UTF8.GetBytes($$"""
+                {
+                    "version": "3.0.0",
+                    "resources": [
+                        {
+                            "@id": "{{baseUrl}}/download",
+                            "@type": "PackageBaseAddress/3.0.0"
+                        },
+                        {
+                            "@id": "{{baseUrl}}/query",
+                            "@type": "SearchQueryService"
+                        },
+                        {
+                            "@id": "{{baseUrl}}/registrations",
+                            "@type": "RegistrationsBaseUrl"
+                        }
+                    ]
+                }
+                """));
+                }
+
+                if (responses.TryGetValue(uri.PathAndQuery, out var response))
+                {
+                    return (200, response);
+                }
+
+                return (404, Encoding.UTF8.GetBytes("{}"));
+            }
+
+            var server = CreateTestServer((method, url) => HttpHandler(url));
+            return server;
         }
 
         private static int FindFreePort()

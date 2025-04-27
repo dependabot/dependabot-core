@@ -1,44 +1,54 @@
 using System.Diagnostics;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using System.Xml.XPath;
 
 using Microsoft.Language.Xml;
 
 using NuGet.CommandLine;
+using NuGet.Versioning;
 
 using NuGetUpdater.Core.Updater;
+using NuGetUpdater.Core.Utilities;
 
 using Console = System.Console;
 
 namespace NuGetUpdater.Core;
 
-internal static class PackagesConfigUpdater
+/// <summary>
+/// Handles package updates for projects that use packages.config.
+/// </summary>
+/// <remarks>
+/// packages.config can appear in non-SDK-style projects, but not in SDK-style projects.
+/// See: https://learn.microsoft.com/en-us/nuget/reference/packages-config
+///      https://learn.microsoft.com/en-us/nuget/resources/check-project-format
+/// <remarks>
+internal static partial class PackagesConfigUpdater
 {
-    public static async Task UpdateDependencyAsync(
+    public static async Task<IEnumerable<UpdateOperationBase>> UpdateDependencyAsync(
         string repoRootPath,
         string projectPath,
         string dependencyName,
         string previousDependencyVersion,
         string newDependencyVersion,
         string packagesConfigPath,
-        Logger logger
+        ILogger logger
     )
     {
-        logger.Log($"  Found {NuGetHelper.PackagesConfigFileName}; running with NuGet.exe");
-
-        // use NuGet.exe to perform update
+        // packages.config project; use NuGet.exe to perform update
+        logger.Info($"  Found '{ProjectHelper.PackagesConfigFileName}' project; running NuGet.exe update");
 
         // ensure local packages directory exists
         var projectBuildFile = ProjectBuildFile.Open(repoRootPath, projectPath);
         var packagesSubDirectory = GetPathToPackagesDirectory(projectBuildFile, dependencyName, previousDependencyVersion, packagesConfigPath);
         if (packagesSubDirectory is null)
         {
-            logger.Log($"    Project [{projectPath}] does not reference this dependency.");
-            return;
+            logger.Info($"    Project [{projectPath}] does not reference this dependency.");
+            return [];
         }
 
-        logger.Log($"    Using packages directory [{packagesSubDirectory}] for project [{projectPath}].");
+        logger.Info($"    Using packages directory [{packagesSubDirectory}] for project [{projectPath}].");
 
         var projectDirectory = Path.GetDirectoryName(projectPath);
         var packagesDirectory = PathHelper.JoinPath(projectDirectory, packagesSubDirectory);
@@ -66,7 +76,7 @@ internal static class PackagesConfigUpdater
             "-NonInteractive",
         };
 
-        logger.Log("    Finding MSBuild...");
+        logger.Info("    Finding MSBuild...");
         var msbuildDirectory = MSBuildHelper.MSBuildPath;
         if (msbuildDirectory is not null)
         {
@@ -77,7 +87,7 @@ internal static class PackagesConfigUpdater
             }
         }
 
-        using (new WebApplicationTargetsConditionPatcher(projectPath))
+        using (new SpecialImportsConditionPatcher(projectPath))
         {
             RunNugetUpdate(updateArgs, restoreArgs, projectDirectory ?? packagesDirectory, logger);
         }
@@ -86,13 +96,21 @@ internal static class PackagesConfigUpdater
         projectBuildFile.NormalizeDirectorySeparatorsInProject();
 
         // Update binding redirects
-        await BindingRedirectManager.UpdateBindingRedirectsAsync(projectBuildFile);
+        var updatedConfigFiles = await BindingRedirectManager.UpdateBindingRedirectsAsync(projectBuildFile, dependencyName, newDependencyVersion);
 
-        logger.Log("    Writing project file back to disk");
+        logger.Info("    Writing project file back to disk");
         await projectBuildFile.SaveAsync();
+
+        var updateResult = new DirectUpdate()
+        {
+            DependencyName = dependencyName,
+            NewVersion = NuGetVersion.Parse(newDependencyVersion),
+            UpdatedFiles = [projectPath, packagesConfigPath, .. updatedConfigFiles],
+        };
+        return [updateResult];
     }
 
-    private static void RunNugetUpdate(List<string> updateArgs, List<string> restoreArgs, string projectDirectory, Logger logger)
+    private static void RunNugetUpdate(List<string> updateArgs, List<string> restoreArgs, string projectDirectory, ILogger logger)
     {
         var outputBuilder = new StringBuilder();
         var writer = new StringWriter(outputBuilder);
@@ -110,12 +128,12 @@ internal static class PackagesConfigUpdater
             var retryingAfterRestore = false;
 
         doRestore:
-            logger.Log($"    Running NuGet.exe with args: {string.Join(" ", updateArgs)}");
+            logger.Info($"    Running NuGet.exe with args: {string.Join(" ", updateArgs)}");
             outputBuilder.Clear();
             var result = Program.Main(updateArgs.ToArray());
             var fullOutput = outputBuilder.ToString();
-            logger.Log($"    Result: {result}");
-            logger.Log($"    Output:\n{fullOutput}");
+            logger.Info($"    Result: {result}");
+            logger.Info($"    Output:\n{fullOutput}");
             if (result != 0)
             {
                 // The initial `update` command can fail for several reasons:
@@ -126,33 +144,34 @@ internal static class PackagesConfigUpdater
                 //    and doesn't appear in the cache.  The message in this case will be "Could not install package
                 //    '<name> <version>'...the package does not contain any assembly references or content files that
                 //    are compatible with that framework.".
+                // 3. Yet another possibility is that the project explicitly imports a targets file without a condition
+                //    of `Exists(...)`.
                 // The solution in all cases is to run `restore` then try the update again.
-                if (!retryingAfterRestore &&
-                    (fullOutput.Contains("Existing packages must be restored before performing an install or update.") ||
-                    fullOutput.Contains("the package does not contain any assembly references or content files that are compatible with that framework.")))
+                if (!retryingAfterRestore && OutputIndicatesRestoreIsRequired(fullOutput))
                 {
                     retryingAfterRestore = true;
-                    logger.Log($"    Running NuGet.exe with args: {string.Join(" ", restoreArgs)}");
+                    logger.Info($"    Running NuGet.exe with args: {string.Join(" ", restoreArgs)}");
                     outputBuilder.Clear();
                     var exitCodeAgain = Program.Main(restoreArgs.ToArray());
                     var restoreOutput = outputBuilder.ToString();
 
                     if (exitCodeAgain != 0)
                     {
+                        MSBuildHelper.ThrowOnError(fullOutput);
+                        MSBuildHelper.ThrowOnError(restoreOutput);
                         throw new Exception($"Unable to restore.\nOutput:\n${restoreOutput}\n");
                     }
 
                     goto doRestore;
                 }
 
-                MSBuildHelper.ThrowOnUnauthenticatedFeed(fullOutput);
-                MSBuildHelper.ThrowOnMissingFile(fullOutput);
+                MSBuildHelper.ThrowOnError(fullOutput);
                 throw new Exception(fullOutput);
             }
         }
         catch (Exception e)
         {
-            logger.Log($"Error: {e}");
+            logger.Info($"Error: {e}");
             throw;
         }
         finally
@@ -166,10 +185,17 @@ internal static class PackagesConfigUpdater
             var deltaSpawnedProcesses = currentSpawnedProcesses.Except(existingSpawnedProcesses).ToArray();
             foreach (var credProvider in deltaSpawnedProcesses)
             {
-                logger.Log($"Ending spawned credential provider process");
+                logger.Info($"Ending spawned credential provider process");
                 credProvider.Kill();
             }
         }
+    }
+
+    private static bool OutputIndicatesRestoreIsRequired(string output)
+    {
+        return output.Contains("Existing packages must be restored before performing an install or update.")
+            || output.Contains("the package does not contain any assembly references or content files that are compatible with that framework.")
+            || MSBuildHelper.GetMissingFile(output) is not null;
     }
 
     private static Process[] GetLikelyNuGetSpawnedProcesses()
@@ -178,7 +204,7 @@ internal static class PackagesConfigUpdater
         return processes;
     }
 
-    internal static string? GetPathToPackagesDirectory(ProjectBuildFile projectBuildFile, string dependencyName, string dependencyVersion, string packagesConfigPath)
+    internal static string? GetPathToPackagesDirectory(ProjectBuildFile projectBuildFile, string dependencyName, string dependencyVersion, string? packagesConfigPath)
     {
         // the packages directory can be found from the hint path of the matching dependency, e.g., when given "Newtonsoft.Json", "7.0.1", and a project like this:
         // <Project>
@@ -195,8 +221,8 @@ internal static class PackagesConfigUpdater
         var hintPathSubString = $"{dependencyName}.{dependencyVersion}";
 
         string? partialPathMatch = null;
-        var hintPathNodes = projectBuildFile.Contents.Descendants().Where(e => e.IsHintPathNodeForDependency(dependencyName));
-        foreach (var hintPathNode in hintPathNodes)
+        var specificHintPathNodes = projectBuildFile.Contents.Descendants().Where(e => e.IsHintPathNodeForDependency(dependencyName, dependencyVersion)).ToArray();
+        foreach (var hintPathNode in specificHintPathNodes)
         {
             var hintPath = hintPathNode.GetContentValue();
             var hintPathSubStringLocation = hintPath.IndexOf(hintPathSubString, StringComparison.OrdinalIgnoreCase);
@@ -204,7 +230,7 @@ internal static class PackagesConfigUpdater
             {
                 // exact match was found, use it
                 var subpath = GetUpToIndexWithoutTrailingDirectorySeparator(hintPath, hintPathSubStringLocation);
-                return subpath;
+                return subpath.NormalizePathToUnix();
             }
 
             if (partialPathMatch is null)
@@ -224,7 +250,7 @@ internal static class PackagesConfigUpdater
             }
         }
 
-        if (partialPathMatch is null)
+        if (partialPathMatch is null && packagesConfigPath is not null)
         {
             // if we got this far, we couldn't find the packages directory for the specified dependency and there are 2 possibilities:
             // 1. the dependency doesn't actually exist in this project
@@ -237,26 +263,54 @@ internal static class PackagesConfigUpdater
             if (hasPackage)
             {
                 // the dependency exists in the packages.config file, so it must be the second case
-                // the vast majority of projects found in the wild use this, and since we have nothing to look for, we'll just have to hope
-                partialPathMatch = "../packages";
+                // at this point there's no perfect way to determine what the packages path is, but there's a really good chance that
+                // for any given package it looks something like this:
+                //   ..\..\packages\Package.Name.[version]\lib\Tfm\Package.Name.dll
+                var genericHintPathNodes = projectBuildFile.Contents.Descendants().Where(IsHintPathNode).ToArray();
+                if (genericHintPathNodes.Length > 0)
+                {
+                    foreach (var hintPathNode in genericHintPathNodes)
+                    {
+                        var hintPath = hintPathNode.GetContentValue();
+                        var match = PackageAssemblyHintPathPattern().Match(hintPath);
+                        if (match.Success)
+                        {
+                            partialPathMatch = match.Groups["PackagesPath"].Value;
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    // we know the dependency is used, but we have absolutely no idea where the packages path is, so we'll default to something reasonable
+                    partialPathMatch = "../packages";
+                }
             }
         }
 
-        return partialPathMatch;
+        return partialPathMatch?.NormalizePathToUnix();
     }
 
-    private static bool IsHintPathNodeForDependency(this IXmlElementSyntax element, string dependencyName)
+    private static bool IsHintPathNode(this IXmlElementSyntax element)
     {
         if (element.Name.Equals("HintPath", StringComparison.OrdinalIgnoreCase) &&
             element.Parent.Name.Equals("Reference", StringComparison.OrdinalIgnoreCase))
         {
-            // the include attribute will look like one of the following:
-            //   <Reference Include="Some.Dependency, Version=1.0.0.0, Culture=neutral, PublicKeyToken=abcd">
-            // or
-            //   <Reference Include="Some.Dependency">
-            string includeAttributeValue = element.Parent.GetAttributeValue("Include", StringComparison.OrdinalIgnoreCase);
-            if (includeAttributeValue.Equals(dependencyName, StringComparison.OrdinalIgnoreCase) ||
-                includeAttributeValue.StartsWith($"{dependencyName},", StringComparison.OrdinalIgnoreCase))
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool IsHintPathNodeForDependency(this IXmlElementSyntax element, string dependencyName, string dependencyVersion)
+    {
+        if (element.IsHintPathNode())
+        {
+            // the hint path will look similar to this:
+            //   ..\packages\Some.Package.1.2.3\lib\net45\Some.Package.dll
+            var assemblyPath = element.GetContentValue();
+            var match = PackageAssemblyHintPathPattern().Match(assemblyPath);
+            if (match.Success)
             {
                 return true;
             }
@@ -275,4 +329,8 @@ internal static class PackagesConfigUpdater
 
         return subpath;
     }
+
+    [GeneratedRegex(@"^(?<PackagesPath>.*)[/\\](?<PackageNameAndVersion>[^/\\]+)[/\\]lib[/\\](?<Tfm>[^/\\]+)[/\\](?<AssemblyName>[^/\\]+)$", RegexOptions.IgnoreCase)]
+    // e.g.,            ..\..\packages      \   Some.Package.1.2.3                \  lib  \   net45           \   Some.Package.dll
+    private static partial Regex PackageAssemblyHintPathPattern();
 }

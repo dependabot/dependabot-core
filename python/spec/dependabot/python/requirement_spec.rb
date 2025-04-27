@@ -77,31 +77,31 @@ RSpec.describe Dependabot::Python::Requirement do
     context "with a ^" do
       let(:requirement_string) { "^1.2.3" }
 
-      it { is_expected.to eq(described_class.new(">= 1.2.3", "< 2.0.0.a")) }
+      it { is_expected.to eq(described_class.new(">= 1.2.3", "< 2.0.0.dev")) }
 
       context "when dealing with two digits" do
         let(:requirement_string) { "^1.2" }
 
-        it { is_expected.to eq(described_class.new(">= 1.2", "< 2.0.0.a")) }
+        it { is_expected.to eq(described_class.new(">= 1.2", "< 2.0.0.dev")) }
       end
 
       context "with a pre-1.0.0 dependency" do
         let(:requirement_string) { "^0.2.3" }
 
-        it { is_expected.to eq(described_class.new(">= 0.2.3", "< 0.3.0.a")) }
+        it { is_expected.to eq(described_class.new(">= 0.2.3", "< 0.3.0.dev")) }
       end
     end
 
     context "with an *" do
       let(:requirement_string) { "== 1.3.*" }
 
-      its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.3.0.a").to_s) }
+      its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.3.0.dev").to_s) }
 
       context "without a prefix" do
         let(:requirement_string) { "1.3.*" }
 
         its(:to_s) do
-          is_expected.to eq(Gem::Requirement.new("~> 1.3.0.a").to_s)
+          is_expected.to eq(Gem::Requirement.new("~> 1.3.0.dev").to_s)
         end
       end
 
@@ -117,7 +117,7 @@ RSpec.describe Dependabot::Python::Requirement do
       context "with a >= op" do
         let(:requirement_string) { ">= 1.3.*" }
 
-        it { is_expected.to eq(described_class.new(">= 1.3.a")) }
+        it { is_expected.to eq(described_class.new(">= 1.3.dev")) }
       end
     end
 
@@ -163,7 +163,7 @@ RSpec.describe Dependabot::Python::Requirement do
       let(:requirement_string) { ["== 1.3.*", ">= 1.3.1"] }
 
       its(:to_s) do
-        is_expected.to eq(Gem::Requirement.new(["~> 1.3.0.a", ">= 1.3.1"]).to_s)
+        is_expected.to eq(Gem::Requirement.new(["~> 1.3.0.dev", ">= 1.3.1"]).to_s)
       end
     end
 
@@ -171,6 +171,18 @@ RSpec.describe Dependabot::Python::Requirement do
       let(:requirement_string) { "== 1.3.alpha" }
 
       it { is_expected.to be_satisfied_by(Gem::Version.new("1.3.a")) }
+    end
+
+    context "with a wildcard minor version" do
+      let(:requirement_string) { "== 1.2.*" }
+
+      its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.2.0.dev").to_s) }
+    end
+
+    context "with a wildcard major version" do
+      let(:requirement_string) { "== 2.*" }
+
+      it { is_expected.to eq(described_class.new("~> 2.0.dev")) }
     end
   end
 
@@ -237,6 +249,18 @@ RSpec.describe Dependabot::Python::Requirement do
         expect { requirements_array }
           .to raise_error(Gem::Requirement::BadRequirementError)
       end
+    end
+
+    context "with a wildcard minor version" do
+      let(:requirement_string) { "1.2.*" }
+
+      it { is_expected.to eq([described_class.new("~> 1.2.0.dev")]) }
+    end
+
+    context "with a wildcard major version" do
+      let(:requirement_string) { "2.*" }
+
+      it { is_expected.to eq([described_class.new("~> 2.0.dev")]) }
     end
   end
 
@@ -314,6 +338,28 @@ RSpec.describe Dependabot::Python::Requirement do
             let(:version_string) { "1.9.1" }
 
             it { is_expected.to be(false) }
+          end
+        end
+
+        context "with a minor version" do
+          let(:requirement_string) { "1.8.*" }
+
+          context "when a pre-release" do
+            let(:version_string) { "1.8-dev" }
+
+            it { is_expected.to be(true) }
+          end
+
+          context "when a full-release" do
+            let(:version_string) { "1.8.1" }
+
+            it { is_expected.to be(true) }
+
+            context "when out of range" do
+              let(:version_string) { "1.9.1" }
+
+              it { is_expected.to be(false) }
+            end
           end
         end
       end

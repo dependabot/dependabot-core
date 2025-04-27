@@ -486,14 +486,14 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         allow(Dir).to receive(:chdir).and_yield
 
         allow(Open3).to receive(:capture2e)
-          .with(anything, %r{git clone --no-recurse-submodules https://github\.com/actions/setup-node})
+          .with(anything, %r{git clone --no-recurse-submodules https://github\.com/actions/setup-node}, anything)
           .and_return(["", exit_status])
       end
 
       context "when it's in the current (default) branch" do
         before do
           allow(Open3).to receive(:capture2e)
-            .with(anything, "git branch --remotes --contains #{reference}")
+            .with(anything, "git branch --remotes --contains #{reference}", anything)
             .and_return(["  origin/HEAD -> origin/master\n  origin/master", exit_status])
         end
 
@@ -507,7 +507,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
         before do
           allow(Open3).to receive(:capture2e)
-            .with(anything, "git branch --remotes --contains #{reference}")
+            .with(anything, "git branch --remotes --contains #{reference}", anything)
             .and_return(["  origin/releases/v1\n", exit_status])
         end
 
@@ -519,7 +519,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       context "when multiple branches include it and the current (default) branch among them" do
         before do
           allow(Open3).to receive(:capture2e)
-            .with(anything, "git branch --remotes --contains #{reference}")
+            .with(anything, "git branch --remotes --contains #{reference}", anything)
             .and_return(["  origin/HEAD -> origin/master\n  origin/master\n  origin/v1.1\n", exit_status])
         end
 
@@ -531,7 +531,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       context "when multiple branches include it and the current (default) branch NOT among them" do
         before do
           allow(Open3).to receive(:capture2e)
-            .with(anything, "git branch --remotes --contains #{reference}")
+            .with(anything, "git branch --remotes --contains #{reference}", anything)
             .and_return(["  origin/3.3-stable\n  origin/production\n", exit_status])
         end
 
@@ -1100,6 +1100,114 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       it "updates all source refs to the target ref" do
         expect(updated_requirements).to eq(expected_requirements)
       end
+    end
+
+    context "when a dependency has a path based tag reference with semver" do
+      let(:service_pack_url) do
+        "https://github.com/gopidesupavan/monorepo-actions.git/info/refs" \
+          "?service=git-upload-pack"
+      end
+      let(:upload_pack_fixture) { "github-monorepo-path-based" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "gopidesupavan/monorepo-actions/first/run@run/v1.0.0",
+          version: "1.0.0",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow.yml",
+            source: {
+              type: "git",
+              url: "https://github.com/gopidesupavan/monorepo-actions",
+              ref: "run/v1.0.0",
+              branch: nil
+            },
+            metadata: { declaration_string: "gopidesupavan/monorepo-actions/first/run@run/v1.0.0" }
+          }],
+          package_manager: "github_actions"
+        )
+      end
+      let(:expected_requirements) do
+        [{
+          requirement: nil,
+          groups: [],
+          file: ".github/workflows/workflow.yml",
+          source: {
+            type: "git",
+            url: "https://github.com/gopidesupavan/monorepo-actions",
+            ref: "run/v3.0.0",
+            branch: nil
+          },
+          metadata: { declaration_string: "gopidesupavan/monorepo-actions/first/run@run/v1.0.0" }
+        }]
+      end
+
+      before do
+        stub_request(:get, service_pack_url)
+          .to_return(
+            status: 200,
+            body: fixture("git", "upload_packs", "github-monorepo-path-based"),
+            headers: {
+              "content-type" => "application/x-git-upload-pack-advertisement"
+            }
+          )
+      end
+
+      it { is_expected.to eq(expected_requirements) }
+    end
+
+    context "when a dependency has a path based tag reference without semver" do
+      let(:service_pack_url) do
+        "https://github.com/gopidesupavan/monorepo-actions.git/info/refs" \
+          "?service=git-upload-pack"
+      end
+      let(:upload_pack_fixture) { "github-monorepo-path-based" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "gopidesupavan/monorepo-actions/second/exec@exec/1.0.0",
+          version: "1.0.0",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow.yml",
+            source: {
+              type: "git",
+              url: "https://github.com/gopidesupavan/monorepo-actions",
+              ref: "exec/1.0.0",
+              branch: nil
+            },
+            metadata: { declaration_string: "gopidesupavan/monorepo-actions/second/exec@exec/1.0.0" }
+          }],
+          package_manager: "github_actions"
+        )
+      end
+      let(:expected_requirements) do
+        [{
+          requirement: nil,
+          groups: [],
+          file: ".github/workflows/workflow.yml",
+          source: {
+            type: "git",
+            url: "https://github.com/gopidesupavan/monorepo-actions",
+            ref: "exec/2.0.0",
+            branch: nil
+          },
+          metadata: { declaration_string: "gopidesupavan/monorepo-actions/second/exec@exec/1.0.0" }
+        }]
+      end
+
+      before do
+        stub_request(:get, service_pack_url)
+          .to_return(
+            status: 200,
+            body: fixture("git", "upload_packs", "github-monorepo-path-based"),
+            headers: {
+              "content-type" => "application/x-git-upload-pack-advertisement"
+            }
+          )
+      end
+
+      it { is_expected.to eq(expected_requirements) }
     end
   end
 end

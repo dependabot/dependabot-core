@@ -31,8 +31,7 @@ module Dependabot
         PATH_REGEX = /The path `(?<path>.*)` does not exist/
 
         module BundlerErrorPatterns
-          # The `set --global` optional part can be made required when Bundler 1 support is dropped
-          MISSING_AUTH_REGEX = /bundle config (?:set --global )?(?<source>.*) username:password/
+          MISSING_AUTH_REGEX = /bundle config set --global (?<source>.*) username:password/
 
           BAD_AUTH_REGEX = /Bad username or password for (?<source>.*)\.$/
           FORBIDDEN_AUTH_REGEX = /Access token could not be authenticated for (?<source>.*)\.$/

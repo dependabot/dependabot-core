@@ -245,7 +245,7 @@ RSpec.describe Dependabot::Hex::FileParser do
               source: {
                 type: "git",
                 url: "https://github.com/dependabot-fixtures/phoenix.git",
-                branch: "master",
+                branch: nil,
                 ref: "v1.2.0"
               }
             }],
@@ -255,8 +255,8 @@ RSpec.describe Dependabot::Hex::FileParser do
       end
 
       context "with a tag (rather than a ref)" do
-        let(:mixfile_fixture_name) { "git_source_with_charlist" }
-        let(:lockfile_fixture_name) { "git_source_with_charlist" }
+        let(:mixfile_fixture_name) { "git_source_tag_can_update" }
+        let(:lockfile_fixture_name) { "git_source_tag_can_update" }
 
         it "includes the git dependency" do
           expect(dependencies.length).to eq(2)
@@ -271,7 +271,7 @@ RSpec.describe Dependabot::Hex::FileParser do
                 source: {
                   type: "git",
                   url: "https://github.com/dependabot-fixtures/phoenix.git",
-                  branch: "master",
+                  branch: nil,
                   ref: "v1.2.0"
                 }
               }],
@@ -391,24 +391,31 @@ RSpec.describe Dependabot::Hex::FileParser do
             package_manager: "hex"
           )
         )
-        expect(dependencies).to include(
-          Dependabot::Dependency.new(
-            name: "plug",
-            version: "1.3.6",
-            requirements: [{
-              requirement: "1.3.6",
-              file: "apps/dependabot_web/mix.exs",
-              groups: [],
-              source: nil
-            }, {
-              requirement: "~> 1.3.0",
-              file: "apps/dependabot_business/mix.exs",
-              groups: [],
-              source: nil
-            }],
-            package_manager: "hex"
-          )
+
+        plug_expectation = Dependabot::Dependency.new(
+          name: "plug",
+          version: "1.3.6",
+          requirements: [{
+            requirement: "~> 1.3.0",
+            file: "apps/dependabot_business/mix.exs",
+            groups: [],
+            source: nil
+          }, {
+            requirement: "1.3.6",
+            file: "apps/dependabot_web/mix.exs",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "hex"
         )
+
+        plug_dep = dependencies.find { |d| d.name == "plug" }
+
+        expect(plug_dep.name).to eq(plug_expectation.name)
+        expect(plug_dep.version).to eq(plug_expectation.version)
+        expect(plug_dep.requirements).to match_array(plug_expectation.requirements)
+        expect(plug_dep.package_manager).to eq(plug_expectation.package_manager)
+
         expect(dependencies).to include(
           Dependabot::Dependency.new(
             name: "distillery",
@@ -449,6 +456,34 @@ RSpec.describe Dependabot::Hex::FileParser do
 
       it "raises UnexpectedExternalCode" do
         expect { dependencies }.to raise_error(Dependabot::UnexpectedExternalCode)
+      end
+    end
+  end
+
+  describe "#ecosystem" do
+    subject(:ecosystem) { parser.ecosystem }
+
+    it "has the correct name" do
+      expect(ecosystem.name).to eq "hex"
+    end
+
+    describe "#package_manager" do
+      subject(:package_manager) { ecosystem.package_manager }
+
+      it "returns the correct package manager" do
+        expect(package_manager.name).to eq "hex"
+        expect(package_manager.requirement).to be_nil
+        expect(package_manager.version.to_s).to eq "2.0.6"
+      end
+    end
+
+    describe "#language" do
+      subject(:language) { ecosystem.language }
+
+      it "returns the correct language" do
+        expect(language.name).to eq "elixir"
+        expect(language.requirement).to be_nil
+        expect(language.version.to_s).to eq "1.18.1"
       end
     end
   end

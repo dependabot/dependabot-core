@@ -13,12 +13,16 @@ internal sealed class PackagesConfigBuildFile : XmlBuildFile
     public PackagesConfigBuildFile(string basePath, string path, XmlDocumentSyntax contents)
         : base(basePath, path, contents)
     {
+        var invalidPackageElements = Packages.Where(p => p.GetAttribute("id") is null || p.GetAttribute("version") is null).ToList();
+        if (invalidPackageElements.Any())
+        {
+            throw new UnparseableFileException("`package` element missing `id` or `version` attributes", path);
+        }
     }
 
     public IEnumerable<IXmlElementSyntax> Packages => Contents.RootSyntax.GetElements("package", StringComparison.OrdinalIgnoreCase);
 
     public IEnumerable<Dependency> GetDependencies() => Packages
-        .Where(p => p.GetAttribute("id") is not null && p.GetAttribute("version") is not null)
         .Select(p => new Dependency(
             p.GetAttributeValue("id", StringComparison.OrdinalIgnoreCase),
             p.GetAttributeValue("version", StringComparison.OrdinalIgnoreCase),

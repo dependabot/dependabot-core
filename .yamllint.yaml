@@ -25,3 +25,4 @@ ignore:
   - "vendor/bundle/ruby/*"
   # TODO: VCR seems to be putting in bad indentation... need to track down why
   - "*/spec/fixtures/vcr_cassettes/*"
+  - "helm/spec/fixtures/helm/*"

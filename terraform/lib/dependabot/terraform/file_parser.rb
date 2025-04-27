@@ -15,6 +15,7 @@ require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/terraform/file_selector"
 require "dependabot/terraform/registry_client"
+require "dependabot/terraform/package_manager"
 
 module Dependabot
   module Terraform
@@ -41,12 +42,33 @@ module Dependabot
         dependency_set.dependencies.sort_by(&:name)
       end
 
+      sig { returns(Ecosystem) }
+      def ecosystem
+        @ecosystem ||= T.let(begin
+          Ecosystem.new(
+            name: ECOSYSTEM,
+            package_manager: package_manager
+          )
+        end, T.nilable(Dependabot::Ecosystem))
+      end
+
       private
 
+      # rubocop:disable Metrics/PerceivedComplexity
       sig { params(dependency_set: Dependabot::FileParsers::Base::DependencySet).void }
       def parse_terraform_files(dependency_set)
         terraform_files.each do |file|
+          next if file.support_file?
+
           modules = parsed_file(file).fetch("module", {})
+          # If override.tf files are present, we need to merge the modules
+          if override_terraform_files.any?
+            override_terraform_files.each do |override_file|
+              override_modules = parsed_file(override_file).fetch("module", {})
+              modules = merge_modules(override_modules, modules)
+            end
+          end
+
           modules.each do |name, details|
             details = details.first
 
@@ -67,6 +89,7 @@ module Dependabot
           end
         end
       end
+      # rubocop:enable Metrics/PerceivedComplexity
 
       sig { params(dependency_set: Dependabot::FileParsers::Base::DependencySet).void }
       def parse_terragrunt_files(dependency_set)
@@ -269,7 +292,7 @@ module Dependabot
           if git_url.include?("git@")
             T.must(git_url.split("git@").last).sub(":", "/")
           else
-            git_url.sub(%r{.*?://}, "")
+            git_url.sub(%r{(?:\w{3,5})?://}, "")
           end
 
         querystr = URI.parse("https://" + bare_uri).query
@@ -292,6 +315,7 @@ module Dependabot
       end
 
       # rubocop:disable Metrics/PerceivedComplexity
+      # rubocop:disable Metrics/CyclomaticComplexity
       sig { params(source_string: String).returns(Symbol) }
       def source_type(source_string)
         return :interpolation if source_string.include?("${")
@@ -308,11 +332,12 @@ module Dependabot
 
         path_uri = URI.parse(T.must(source_string.split(%r{(?<!:)//}).first))
         query_uri = URI.parse(source_string)
-        return :http_archive if path_uri.path.end_with?(*RegistryClient::ARCHIVE_EXTENSIONS)
+        return :http_archive if RegistryClient::ARCHIVE_EXTENSIONS.any? { |ext| path_uri.path&.end_with?(ext) }
         return :http_archive if query_uri.query&.include?("archive=")
 
         raise "HTTP source, but not an archive!"
       end
+      # rubocop:enable Metrics/CyclomaticComplexity
       # rubocop:enable Metrics/PerceivedComplexity
 
       # == Returns:
@@ -417,6 +442,25 @@ module Dependabot
             lockfile ? parsed_file(lockfile) : {}
           end,
           T.nilable(T::Hash[String, T.untyped])
+        )
+      end
+
+      sig { returns(Ecosystem::VersionManager) }
+      def package_manager
+        @package_manager ||= T.let(
+          PackageManager.new(T.must(terraform_version)),
+          T.nilable(Dependabot::Terraform::PackageManager)
+        )
+      end
+
+      sig { returns(T.nilable(String)) }
+      def terraform_version
+        @terraform_version ||= T.let(
+          begin
+            version = SharedHelpers.run_shell_command("terraform --version")
+            version.match(Dependabot::Ecosystem::VersionManager::DEFAULT_VERSION_PATTERN)&.captures&.first
+          end,
+          T.nilable(String)
         )
       end
     end

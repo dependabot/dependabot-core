@@ -1,1 +1,17 @@
 inherit_from: ../.rubocop.yml
+
+inherit_mode:
+  merge:
+    - Exclude
+
+Sorbet/StrictSigil:
+  Exclude:
+    - lib/dependabot/hex/file_updater/lockfile_updater.rb
+    - lib/dependabot/hex/file_updater/mixfile_requirement_updater.rb
+    - lib/dependabot/hex/file_updater/mixfile_updater.rb
+    - lib/dependabot/hex/requirement.rb
+    - lib/dependabot/hex/update_checker/file_preparer.rb
+    - lib/dependabot/hex/update_checker/requirements_updater.rb
+    - lib/dependabot/hex/update_checker/version_resolver.rb
+    - lib/dependabot/hex/update_checker.rb
+    - lib/dependabot/hex/version.rb

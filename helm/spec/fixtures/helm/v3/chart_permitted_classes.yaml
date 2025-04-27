@@ -1,0 +1,11 @@
+# Chart.yaml - Main chart definition
+apiVersion: v2
+name: example-service
+version: 0.1.0
+dependencies:
+  - name: redis
+    date: 2023-01-01
+    time: 2023-01-01 12:00:00
+    symbol: :test_symbol
+    version: 17.11.3
+    repository: https://charts.bitnami.com/bitnami

@@ -677,6 +677,14 @@ RSpec.describe Dependabot::Docker::FileParser do
           expect(dependency.name).to eq("ubuntu")
           expect(dependency.version).to eq("artful")
           expect(dependency.requirements).to eq(expected_requirements)
+
+          ecosystem = parser.ecosystem
+
+          expect(ecosystem.name).to eq("docker")
+          expect(ecosystem.package_manager.name).to eq("docker")
+
+          expect(ecosystem.package_manager.deprecated?).to be false
+          expect(ecosystem.package_manager.unsupported?).to be false
         end
       end
     end
@@ -1242,6 +1250,14 @@ RSpec.describe Dependabot::Docker::FileParser do
           expect(dependency.version).to eq("18.04")
           expect(dependency.requirements).to eq(expected_requirements)
         end
+      end
+    end
+
+    context "with images with unparseable versions" do
+      let(:helmfile_fixture_name) { "multi-image-with-bad-version.yaml" }
+
+      it "omits the images with unparseable version numbers" do
+        expect(dependencies.map(&:version)).to eq(["some-name_123"])
       end
     end
   end

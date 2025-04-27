@@ -19,10 +19,9 @@ internal record NuGetContext : IDisposable
     public ISettings Settings { get; }
     public IMachineWideSettings MachineWideSettings { get; }
     public ImmutableArray<PackageSource> PackageSources { get; }
-    public ILogger Logger { get; }
-    public string TempPackageDirectory { get; }
+    public NuGet.Common.ILogger Logger { get; }
 
-    public NuGetContext(string? currentDirectory = null, ILogger? logger = null)
+    public NuGetContext(string? currentDirectory = null, NuGet.Common.ILogger? logger = null)
     {
         SourceCacheContext = new SourceCacheContext();
         PackageDownloadContext = new PackageDownloadContext(SourceCacheContext);
@@ -37,23 +36,11 @@ internal record NuGetContext : IDisposable
             .Where(p => p.IsEnabled)
             .ToImmutableArray();
         Logger = logger ?? NullLogger.Instance;
-        TempPackageDirectory = Path.Combine(Path.GetTempPath(), $"dependabot-packages_{Guid.NewGuid():d}");
-        Directory.CreateDirectory(TempPackageDirectory);
     }
 
     public void Dispose()
     {
         SourceCacheContext.Dispose();
-        if (Directory.Exists(TempPackageDirectory))
-        {
-            try
-            {
-                Directory.Delete(TempPackageDirectory, recursive: true);
-            }
-            catch
-            {
-            }
-        }
     }
 
     private readonly Dictionary<PackageIdentity, string?> _packageInfoUrlCache = new();
@@ -142,11 +129,22 @@ internal record NuGetContext : IDisposable
             }
 
             var metadataResource = await sourceRepository.GetResourceAsync<PackageMetadataResource>(cancellationToken);
-            var metadata = await metadataResource.GetMetadataAsync(packageIdentity, SourceCacheContext, Logger, cancellationToken);
-            var url = metadata.ProjectUrl ?? metadata.LicenseUrl;
-            if (url is not null)
+            if (metadataResource is not null)
             {
-                return url.ToString();
+                try
+                {
+                    var metadata = await metadataResource.GetMetadataAsync(packageIdentity, SourceCacheContext, Logger, cancellationToken);
+                    var url = metadata.ProjectUrl ?? metadata.LicenseUrl;
+                    if (url is not null)
+                    {
+                        return url.ToString();
+                    }
+                }
+                catch (ArgumentException)
+                {
+                    // there was an issue deserializing the package metadata; this doesn't necessarily mean the package
+                    // is unavailable, just that we can't return a URL
+                }
             }
         }
 

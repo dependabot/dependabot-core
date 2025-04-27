@@ -173,4 +173,12 @@ module Functions
     credentials
       .select { |cred| cred["type"] == "git_source" }
   end
+
+  def self.bundler_raw_version
+    Bundler::VERSION
+  end
+
+  def self.ruby_raw_version
+    RUBY_VERSION
+  end
 end

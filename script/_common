@@ -23,6 +23,12 @@ function set_tag() {
       github_actions)
         TAG=github-actions
         ;;
+      dotnet_sdk)
+        TAG=dotnet-sdk
+        ;;
+      docker_compose)
+        TAG=docker-compose
+        ;;
       *)
         TAG=$ECOSYSTEM
         ;;

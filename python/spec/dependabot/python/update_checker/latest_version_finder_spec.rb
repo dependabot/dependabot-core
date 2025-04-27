@@ -152,7 +152,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
       it { is_expected.to eq(Gem::Version.new("3.2.4")) }
 
       context "when a python version specified" do
-        subject(:latest_python_version) { finder.latest_version(python_version: python_version) }
+        subject(:latest_python_version) { finder.latest_version(language_version: python_version) }
 
         context "when the latest version is allowed" do
           let(:python_version) { Dependabot::Python::Version.new("3.6.3") }
@@ -204,6 +204,12 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
       end
 
       it { is_expected.to eq(Gem::Version.new("2.7.0b1")) }
+
+      context "with a local version" do
+        let(:dependency_version) { "2.6.0a1+local.1" }
+
+        it { is_expected.to eq(Gem::Version.new("2.7.0b1")) }
+      end
     end
 
     context "when raise_on_ignored is enabled and later versions are allowed" do
@@ -623,7 +629,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
 
         context "when a python version specified" do
           subject do
-            finder.latest_version_with_no_unlock(python_version: python_version)
+            finder.latest_version_with_no_unlock(language_version: python_version)
           end
 
           context "when the latest version is allowed" do
@@ -736,7 +742,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
 
       context "when a python version specified" do
         subject do
-          finder.lowest_security_fix_version(python_version: python_version)
+          finder.lowest_security_fix_version(language_version: python_version)
         end
 
         context "when the safe version is allowed" do

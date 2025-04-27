@@ -102,7 +102,7 @@ public class FrameworkCompatibilityServiceFacts
     }
 
     [Theory]
-    [InlineData("net6.0-windows7.0", "net6.0-windows", "net6.0-windows7.0", "net7.0-windows", "net7.0-windows7.0")]
+    [InlineData("net6.0-windows7.0", "net6.0-windows", "net6.0-windows7.0", "net7.0-windows", "net7.0-windows7.0", "net8.0-windows", "net8.0-windows7.0", "net9.0-windows", "net9.0-windows7.0")]
     public void WindowsPlatformVersionsShouldContainAllSpecifiedFrameworks(string windowsDefaultVersionFramework, params string[] windowsProjectFrameworks)
     {
         var packageFramework = NuGetFramework.Parse(windowsDefaultVersionFramework);

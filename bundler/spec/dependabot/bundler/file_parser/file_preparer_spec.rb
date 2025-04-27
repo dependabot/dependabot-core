@@ -19,15 +19,7 @@ RSpec.describe Dependabot::Bundler::FileParser::FilePreparer do
       its(:content) { is_expected.to include('gem "business", "~> 1.4.0"') }
     end
 
-    describe "the updated lockfile", :bundler_v1_only do
-      subject do
-        prepared_dependency_files.find { |f| f.name == "Gemfile.lock" }
-      end
-
-      its(:content) { is_expected.to include("1.10.6") }
-    end
-
-    describe "the updated lockfile", :bundler_v2_only do
+    describe "the updated lockfile" do
       subject do
         prepared_dependency_files.find { |f| f.name == "Gemfile.lock" }
       end

@@ -52,6 +52,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
   let(:dependency_files) { [requirements_file] }
   let(:requirements_update_strategy) { nil }
   let(:security_advisories) { [] }
+  let(:cooldown_options) { nil }
   let(:raise_on_ignored) { false }
   let(:ignored_versions) { [] }
   let(:credentials) do
@@ -68,6 +69,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
       dependency_files: dependency_files,
       credentials: credentials,
       ignored_versions: ignored_versions,
+      update_cooldown: cooldown_options,
       raise_on_ignored: raise_on_ignored,
       security_advisories: security_advisories,
       requirements_update_strategy: requirements_update_strategy
@@ -75,9 +77,19 @@ RSpec.describe Dependabot::Python::UpdateChecker do
   end
   let(:pypi_response) { fixture("pypi", "pypi_simple_response.html") }
   let(:pypi_url) { "https://pypi.org/simple/luigi/" }
+  let(:enable_cooldown_for_python) { false }
 
   before do
     stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_file_parser_python_local)
+      .and_return(false)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_cooldown_for_python)
+      .and_return(true)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_shared_helpers_command_timeout)
+      .and_return(true)
   end
 
   it_behaves_like "an update checker"
@@ -154,6 +166,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
           dependency_files: dependency_files,
           credentials: credentials,
           ignored_versions: ignored_versions,
+          cooldown_options: cooldown_options,
           raise_on_ignored: raise_on_ignored,
           security_advisories: security_advisories
         ).and_call_original
@@ -225,18 +238,18 @@ RSpec.describe Dependabot::Python::UpdateChecker do
         it { is_expected.to eq(Gem::Version.new("3.2.4")) }
 
         context "when the version is set to the oldest version of python supported by Dependabot" do
-          let(:python_version_content) { "3.8.0\n" }
+          let(:python_version_content) { "3.9.0\n" }
 
           it { is_expected.to eq(Gem::Version.new("3.2.4")) }
         end
 
         context "when the version is set to a python version no longer supported by Dependabot" do
-          let(:python_version_content) { "3.7.0\n" }
+          let(:python_version_content) { "3.8.0\n" }
 
           it "raises a helpful error" do
             expect { latest_resolvable_version }.to raise_error(Dependabot::ToolVersionNotSupported) do |err|
               expect(err.message).to start_with(
-                "Dependabot detected the following Python requirement for your project: '3.7.0'."
+                "Dependabot detected the following Python requirement for your project: '3.8.0'."
               )
             end
           end
@@ -514,6 +527,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
             dependency_files: dependency_files,
             credentials: credentials,
             ignored_versions: ignored_versions,
+            cooldown_options: cooldown_options,
             raise_on_ignored: raise_on_ignored,
             security_advisories: security_advisories
           ).and_call_original
@@ -740,6 +754,63 @@ RSpec.describe Dependabot::Python::UpdateChecker do
       end
     end
 
+    context "when there is a pyproject.toml file with build system require dependencies" do
+      let(:dependency_files) { [pyproject] }
+      let(:pyproject_fixture_name) { "table_build_system_requires.toml" }
+
+      context "when updating a dependency inside" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "requests",
+            version: "1.2.3",
+            requirements: [{
+              file: "pyproject.toml",
+              requirement: "~=1.0.0",
+              groups: [],
+              source: nil
+            }],
+            package_manager: "pip"
+          )
+        end
+
+        let(:pypi_url) { "https://pypi.org/simple/requests/" }
+        let(:pypi_response) do
+          fixture("pypi", "pypi_simple_response_requests.html")
+        end
+
+        context "when dealing with a library" do
+          before do
+            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
+              .to_return(
+                status: 200,
+                body: fixture("pypi", "pypi_response_pendulum.json")
+              )
+          end
+
+          its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
+        end
+
+        context "when dealing with a non-library" do
+          before do
+            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
+              .to_return(status: 404)
+          end
+
+          its([:requirement]) { is_expected.to eq("~=2.19.1") }
+        end
+      end
+
+      context "when updating a dependency in an additional requirements file" do
+        let(:dependency_files) { super().append(requirements_file) }
+
+        let(:dependency) { requirements_dependency }
+
+        it "does not get affected by whether it's a library or not and updates using the :increase strategy" do
+          expect(first_updated_requirements[:requirement]).to eq("==2.6.0")
+        end
+      end
+    end
+
     context "when there were multiple requirements" do
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -785,6 +856,77 @@ RSpec.describe Dependabot::Python::UpdateChecker do
       let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
 
       it { is_expected.to be(false) }
+    end
+  end
+
+  describe "with cooldown options" do
+    let(:pypi_url) { "https://pypi.org/pypi/luigi/json" }
+    let(:pypi_response) { fixture("pypi", "pypi_response_luigi.json") }
+
+    before do
+      # Move `stub_request` inside `before` block
+      stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
+
+      # Package Name: luigi
+      # Current version: 2.0.0
+      # Release Versions:
+      # ...
+      # 2.0.0 => Date: 2015-10-23, Yanked: false
+      # 2.0.1 => Date: 2015-12-05, Yanked: false
+      # ...
+      # 3.3.0 => Date: 2023-05-04, Yanked: false
+      # 3.4.0 => Date: 2023-10-05, Yanked: false
+      # 3.5.0 => Date: 2024-01-15, Yanked: false
+      # 3.5.1 => Date: 2024-05-20, Yanked: false
+      # 3.5.2 => Date: 2024-09-04, Yanked: false
+      # 3.6.0 => Date: 2024-12-06, Yanked: false
+      allow(Time).to receive(:now).and_return(Time.parse("2024-12-08"))
+    end
+
+    describe "#latest_resolvable_version" do
+      subject(:latest_resolvable_version) { checker.latest_resolvable_version }
+
+      context "with a requirement file" do
+        let(:dependency_files) { [requirements_file] }
+
+        context "when cooldown is not set" do
+          let(:cooldown_options) { nil }
+
+          it { is_expected.to eq(Gem::Version.new("3.6.0")) }
+        end
+
+        context "when cooldown applies to patch updates" do
+          let(:cooldown_options) do
+            Dependabot::Package::ReleaseCooldownOptions.new(semver_patch_days: 2)
+          end
+
+          it { is_expected.to eq(Gem::Version.new("3.6.0")) }
+        end
+
+        context "when cooldown applies to minor updates" do
+          let(:cooldown_options) do
+            Dependabot::Package::ReleaseCooldownOptions.new(semver_minor_days: 5)
+          end
+
+          it { is_expected.to eq(Gem::Version.new("3.6.0")) }
+        end
+
+        context "when cooldown applies to major updates" do
+          let(:cooldown_options) do
+            Dependabot::Package::ReleaseCooldownOptions.new(semver_major_days: 10)
+          end
+
+          it { is_expected.to eq(Gem::Version.new("3.5.2")) }
+        end
+
+        context "when cooldown applies to all updates" do
+          let(:cooldown_options) do
+            Dependabot::Package::ReleaseCooldownOptions.new(default_days: 10)
+          end
+
+          it { is_expected.to eq(Gem::Version.new("3.5.2")) }
+        end
+      end
     end
   end
 end

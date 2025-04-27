@@ -16,7 +16,7 @@ RSpec.describe Dependabot::Maven::Requirement do
     context "with a pre-release version" do
       let(:requirement_string) { "1.3.alpha" }
 
-      it { is_expected.to be_satisfied_by(Gem::Version.new("1.3.a")) }
+      it { is_expected.to be_satisfied_by(Gem::Version.new("1.3.alpha")) }
     end
 
     context "with a version that wouldn't be a valid Gem::Version" do
@@ -113,6 +113,18 @@ RSpec.describe Dependabot::Maven::Requirement do
       let(:requirement_string) { "~> 4.2.5, >= 4.2.5.1" }
 
       it { is_expected.to eq(described_class.new("~> 4.2.5", ">= 4.2.5.1")) }
+
+      context "with dynamic version requirements" do
+        let(:requirement_string) { "~> 4.2.5+1.0.1, >= 4.2.5.1+1." }
+
+        it { is_expected.to eq(described_class.new("~> 4.2.5+1.0.1, >= 4.2.5.1+1.")) }
+      end
+
+      context "with additional semantic versioning" do
+        let(:requirement_string) { ">= 25-ea+5.a0" }
+
+        its(:to_s) { is_expected.to eq(described_class.new(">= 25-ea+5.a0").to_s) }
+      end
     end
   end
 

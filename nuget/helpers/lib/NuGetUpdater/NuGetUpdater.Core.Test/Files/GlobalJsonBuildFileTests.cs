@@ -30,7 +30,7 @@ public class GlobalJsonBuildFileTests
         basePath: "/",
         path: "/global.json",
         contents: contents,
-        logger: new Logger(verbose: true));
+        logger: new TestLogger());
 
     [Fact]
     public void GlobalJson_Malformed_DoesNotThrow()

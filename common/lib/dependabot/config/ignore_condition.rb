@@ -57,52 +57,18 @@ module Dependabot
         version = correct_version_for(dependency)
         return [] unless version
 
-        semver = version.to_semver
-
         transformed_update_types.flat_map do |t|
           case t
           when PATCH_VERSION_TYPE
-            ignore_patch(semver)
+            version.ignored_patch_versions
           when MINOR_VERSION_TYPE
-            ignore_minor(semver)
+            version.ignored_minor_versions
           when MAJOR_VERSION_TYPE
-            ignore_major(semver)
+            version.ignored_major_versions
           else
             []
           end
         end.compact
-      end
-
-      sig { params(version: String).returns(T::Array[String]) }
-      def ignore_patch(version)
-        parts = version.split(".")
-        version_parts = parts.fill("0", parts.length...2)
-        upper_parts = version_parts.first(1) + [version_parts[1].to_i + 1]
-        lower_bound = "> #{version}"
-        upper_bound = "< #{upper_parts.join('.')}"
-
-        ["#{lower_bound}, #{upper_bound}"]
-      end
-
-      sig { params(version: String).returns(T::Array[String]) }
-      def ignore_minor(version)
-        parts = version.split(".")
-        version_parts = parts.fill("0", parts.length...2)
-        lower_parts = version_parts.first(1) + [version_parts[1].to_i + 1] + ["a"]
-        upper_parts = version_parts.first(0) + [version_parts[0].to_i + 1]
-        lower_bound = ">= #{lower_parts.join('.')}"
-        upper_bound = "< #{upper_parts.join('.')}"
-
-        ["#{lower_bound}, #{upper_bound}"]
-      end
-
-      sig { params(version: String).returns(T::Array[String]) }
-      def ignore_major(version)
-        version_parts = version.split(".")
-        lower_parts = [version_parts[0].to_i + 1] + ["a"]
-        lower_bound = ">= #{lower_parts.join('.')}"
-
-        [lower_bound]
       end
 
       sig { params(dependency: Dependency).returns(T.nilable(Version)) }

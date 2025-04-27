@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -27,6 +27,17 @@ module Dependabot
       include PullRequestHelpers
 
       abstract!
+
+      sig do
+        params(dependency_snapshot: Dependabot::DependencySnapshot, error_handler: Dependabot::Updater::ErrorHandler,
+               job: Dependabot::Job, group: Dependabot::DependencyGroup).void
+      end
+      def initialize(dependency_snapshot, error_handler, job, group)
+        @dependency_snapshot = T.let(dependency_snapshot, Dependabot::DependencySnapshot)
+        @error_handler = T.let(error_handler, Dependabot::Updater::ErrorHandler)
+        @job = T.let(job, Dependabot::Job)
+        @group = T.let(group, Dependabot::DependencyGroup)
+      end
 
       sig { returns(Dependabot::DependencySnapshot) }
       attr_reader :dependency_snapshot
@@ -62,12 +73,7 @@ module Dependabot
         group.dependencies.each do |dependency|
           # We still want to update a dependency if it's been updated in another manifest files,
           # but we should skip it if it's been updated in _the same_ manifest file
-          if dependency_snapshot.handled_dependencies.include?(dependency.name)
-            Dependabot.logger.info(
-              "Skipping #{dependency.name} as it has already been handled by a previous group"
-            )
-            next
-          end
+          next if skip_dependency?(dependency, group)
 
           # Get the current state of the dependency files for use in this iteration, filter by directory
           dependency_files = group_changes.current_dependency_files(job)
@@ -97,7 +103,7 @@ module Dependabot
 
           next unless lead_dependency
 
-          dependency_change = create_change_for(T.must(lead_dependency), updated_dependencies, dependency_files, group)
+          dependency_change = create_change_for(lead_dependency, updated_dependencies, dependency_files, group)
 
           # Move on to the next dependency using the existing files if we
           # could not create a change for any reason
@@ -132,9 +138,34 @@ module Dependabot
         cleanup_workspace
       end
 
+      sig { params(dependency: Dependabot::Dependency, group: Dependabot::DependencyGroup).returns(T::Boolean) }
+      def skip_dependency?(dependency, group)
+        # Check if dependency has already been handled
+        handled_dependency = dependency_snapshot.handled_dependencies.include?(dependency.name)
+
+        # Check if this is a group update
+        is_group_update = if Dependabot::Experiments.enabled?(:allow_refresh_group_with_all_dependencies)
+                            # this ensures dependency_group_to_refresh is set to the group name
+                            job.dependency_group_to_refresh == group.name
+                          else
+                            false
+                          end
+
+        # Include all dependencies when performing a group update.
+        if handled_dependency && !is_group_update
+          Dependabot.logger.info(
+            "Skipping #{dependency.name} in group #{group.name} as it has already been handled by a previous group"
+          )
+          return true
+        end
+
+        false
+      end
+
       # rubocop:enable Metrics/PerceivedComplexity
       # rubocop:enable Metrics/AbcSize
       # rubocop:enable Metrics/MethodLength
+      sig { params(dependency_change: Dependabot::DependencyChange).void }
       def log_missing_previous_version(dependency_change)
         deps_no_previous_version = dependency_change.updated_dependencies.reject(&:previous_version).map(&:name)
         deps_no_change = dependency_change.updated_dependencies.reject(&:requirements_changed?).map(&:name)
@@ -241,9 +272,6 @@ module Dependabot
           return []
         end
 
-        # Raise an error if the package manager version is unsupported
-        dependency_snapshot.package_manager&.raise_if_unsupported!
-
         checker.updated_dependencies(
           requirements_to_unlock: requirements_to_unlock
         )
@@ -296,6 +324,7 @@ module Dependabot
           raise_on_ignored: raise_on_ignored,
           requirements_update_strategy: job.requirements_update_strategy,
           dependency_group: dependency_group,
+          update_cooldown: job.cooldown,
           options: job.experiments
         )
       end

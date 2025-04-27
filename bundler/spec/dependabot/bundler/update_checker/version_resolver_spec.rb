@@ -21,12 +21,14 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
       }],
       unlock_requirement: unlock_requirement,
       latest_allowable_version: latest_allowable_version,
+      cooldown_options: cooldown_options,
       options: {}
     )
   end
   let(:ignored_versions) { [] }
   let(:latest_allowable_version) { nil }
   let(:unlock_requirement) { false }
+  let(:cooldown_options) { {} }
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -69,7 +71,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
 
         let(:dependency_files) { bundler_project_dependency_files("gemfile") }
 
-        its([:version]) { is_expected.to eq(Gem::Version.new("1.4.0")) }
+        its([:version]) { is_expected.to eq(Dependabot::Bundler::Version.new("1.4.0")) }
       end
 
       context "with a minor version specified that can update" do
@@ -77,7 +79,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
 
         let(:dependency_files) { bundler_project_dependency_files("minor_version_specified_gemfile") }
 
-        its([:version]) { is_expected.to eq(Gem::Version.new("1.18.0")) }
+        its([:version]) { is_expected.to eq(Dependabot::Bundler::Version.new("1.18.0")) }
       end
 
       context "when updating a dep blocked by a sub-dep" do
@@ -89,12 +91,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
 
         let(:dependency_files) { bundler_project_dependency_files("blocked_by_subdep") }
 
-        it "only upgrades as far as the subdep allows", :bundler_v1_only do
-          expect(latest_resolvable_version_details[:version]).to eq(Gem::Version.new("1.1.0"))
-        end
-
-        it "is still able to upgrade to the latest version by upgrading the subdep as well", :bundler_v2_only do
-          expect(latest_resolvable_version_details[:version]).to eq(Gem::Version.new("2.0.0"))
+        it "is still able to upgrade to the latest version by upgrading the subdep as well" do
+          expect(latest_resolvable_version_details[:version]).to eq(Dependabot::Bundler::Version.new("2.0.0"))
         end
       end
 
@@ -104,7 +102,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
 
         let(:dependency_files) { bundler_project_dependency_files("subdependency") }
 
-        its([:version]) { is_expected.to eq(Gem::Version.new("0.7.0")) }
+        its([:version]) { is_expected.to eq(Dependabot::Bundler::Version.new("0.7.0")) }
 
         context "when it will be removed if other sub-dependencies are updated" do
           let(:gemfile_fixture_name) { "subdependency_change" }
@@ -114,54 +112,17 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
 
           it "is updated" do
             skip("skipped due to https://github.com/dependabot/dependabot-core/issues/2364")
-            expect(latest_resolvable_version_details.version).to eq(Gem::Version.new("1.10.9"))
+            expect(latest_resolvable_version_details.version).to eq(Dependabot::Bundler::Version.new("1.10.9"))
           end
         end
       end
 
-      context "with a Bundler v1 version specified", :bundler_v1_only do
+      context "with a Bundler v2 version specified" do
         let(:requirement_string) { "~> 1.4.0" }
 
         let(:dependency_files) { bundler_project_dependency_files("bundler_specified") }
 
-        its([:version]) { is_expected.to eq(Gem::Version.new("1.4.0")) }
-
-        context "when attempting to update Bundler" do
-          let(:dependency_name) { "bundler" }
-          let(:dependency_files) { bundler_project_dependency_files("bundler_specified") }
-
-          include_context "when stubbing rubygems versions api"
-
-          its([:version]) { is_expected.to eq(Gem::Version.new("1.16.3")) }
-
-          context "when wrapped in a source block" do
-            let(:dependency_files) do
-              bundler_project_dependency_files("bundler_specified_in_source_bundler_specified")
-            end
-
-            its([:version]) { is_expected.to eq(Gem::Version.new("1.16.3")) }
-          end
-
-          context "when required by another dependency" do
-            let(:gemfile_fixture_name) { "bundler_specified_and_required" }
-            let(:lockfile_fixture_name) do
-              "bundler_specified_and_required.lock"
-            end
-
-            it "is nil" do
-              skip("skipped due to https://github.com/dependabot/dependabot-core/issues/2364")
-              expect(latest_resolvable_version_details).to be_nil
-            end
-          end
-        end
-      end
-
-      context "with a Bundler v2 version specified", :bundler_v2_only do
-        let(:requirement_string) { "~> 1.4.0" }
-
-        let(:dependency_files) { bundler_project_dependency_files("bundler_specified") }
-
-        its([:version]) { is_expected.to eq(Gem::Version.new("1.4.0")) }
+        its([:version]) { is_expected.to eq(Dependabot::Bundler::Version.new("1.4.0")) }
 
         context "when attempting to update Bundler" do
           let(:dependency_name) { "bundler" }
@@ -175,35 +136,14 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
         end
       end
 
-      context "with a dependency that requires bundler v1", :bundler_v1_only do
-        let(:dependency_name) { "guard-bundler" }
-        let(:requirement_string) { "2.2.1" }
-
-        let(:dependency_files) { bundler_project_dependency_files("requires_bundler") }
-
-        its([:version]) { is_expected.to eq(Gem::Version.new("2.2.1")) }
-      end
-
-      context "when bundled with v1 and requesting a version that requires bundler v2", :bundler_v1_only do
-        let(:dependency_name) { "guard-bundler" }
-        let(:requirement_string) { "~> 3.0.0" }
-
-        let(:dependency_files) { bundler_project_dependency_files("requires_bundler") }
-
-        it "raises a DependencyFileNotResolvable error" do
-          expect { latest_resolvable_version_details }
-            .to raise_error(Dependabot::DependencyFileNotResolvable)
-        end
-      end
-
-      context "with a dependency that requires bundler v2", :bundler_v2_only do
+      context "with a dependency that requires bundler v2" do
         let(:dependency_name) { "guard-bundler" }
         let(:requirement_string) { "3.0.0" }
 
         let(:dependency_files) { bundler_project_dependency_files("requires_bundler") }
 
         it "resolves version" do
-          expect(latest_resolvable_version_details[:version]).to eq(Gem::Version.new("3.0.0"))
+          expect(latest_resolvable_version_details[:version]).to eq(Dependabot::Bundler::Version.new("3.0.0"))
         end
       end
 
@@ -212,7 +152,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
 
         let(:dependency_files) { bundler_project_dependency_files("default_gem_specified") }
 
-        its([:version]) { is_expected.to eq(Gem::Version.new("1.18.0")) }
+        its([:version]) { is_expected.to eq(Dependabot::Bundler::Version.new("1.18.0")) }
       end
 
       context "with a version conflict at the latest version" do
@@ -223,7 +163,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
         # version compatible with the version of i18n in the Gemfile.lock.
         let(:dependency_files) { bundler_project_dependency_files("version_conflict_no_req_change") }
 
-        its([:version]) { is_expected.to eq(Gem::Version.new("0.11.28")) }
+        its([:version]) { is_expected.to eq(Dependabot::Bundler::Version.new("0.11.28")) }
 
         context "with a gems.rb and gems.locked" do
           let(:requirements) do
@@ -237,7 +177,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
 
           let(:dependency_files) { bundler_project_dependency_files("version_conflict_no_req_change_gems_rb") }
 
-          its([:version]) { is_expected.to eq(Gem::Version.new("0.11.28")) }
+          its([:version]) { is_expected.to eq(Dependabot::Bundler::Version.new("0.11.28")) }
         end
       end
 
@@ -247,12 +187,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
 
         let(:dependency_files) { bundler_project_dependency_files("version_conflict_with_listed_subdep") }
 
-        it "does not allow the upgrade", :bundler_v1_only do
-          expect(latest_resolvable_version_details[:version]).to eq(Gem::Version.new("3.6.0"))
-        end
-
-        it "is still able to upgrade", :bundler_v2_only do
-          expect(latest_resolvable_version_details[:version]).to be > Gem::Version.new("3.6.0")
+        it "is still able to upgrade" do
+          expect(latest_resolvable_version_details[:version]).to be > Dependabot::Bundler::Version.new("3.6.0")
         end
       end
 
@@ -264,7 +200,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
         # or greater.
         let(:dependency_files) { bundler_project_dependency_files("legacy_ruby") }
 
-        its([:version]) { is_expected.to eq(Gem::Version.new("1.4.6")) }
+        its([:version]) { is_expected.to eq(Dependabot::Bundler::Version.new("1.4.6")) }
       end
 
       context "with a legacy Ruby when Bundler's compact index is down" do
@@ -311,7 +247,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
 
           let(:dependency_files) { bundler_project_dependency_files("legacy_ruby") }
 
-          its([:version]) { is_expected.to eq(Gem::Version.new("3.0.2")) }
+          its([:version]) { is_expected.to eq(Dependabot::Bundler::Version.new("3.0.2")) }
         end
 
         context "when the dependency has a required Ruby version range" do
@@ -332,7 +268,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
 
         let(:dependency_files) { bundler_project_dependency_files("jruby") }
 
-        its([:version]) { is_expected.to be >= Gem::Version.new("1.4.6") }
+        its([:version]) { is_expected.to be >= Dependabot::Bundler::Version.new("1.4.6") }
       end
 
       context "when a gem has been yanked" do
@@ -341,7 +277,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
         context "when it's that gem that we're attempting to bump" do
           let(:dependency_files) { bundler_project_dependency_files("minor_version_specified_yanked_gem") }
 
-          its([:version]) { is_expected.to eq(Gem::Version.new("1.18.0")) }
+          its([:version]) { is_expected.to eq(Dependabot::Bundler::Version.new("1.18.0")) }
         end
 
         context "when it's another gem" do
@@ -349,7 +285,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
           let(:requirement_string) { "~> 1.2" }
           let(:dependency_files) { bundler_project_dependency_files("minor_version_specified_yanked_gem") }
 
-          its([:version]) { is_expected.to eq(Gem::Version.new("1.3.1")) }
+          its([:version]) { is_expected.to eq(Dependabot::Bundler::Version.new("1.3.1")) }
         end
       end
 
@@ -424,11 +360,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
           }
         end
 
-        it "is nil", :bundler_v1_only do
-          expect(resolver.latest_resolvable_version_details).to be_nil
-        end
-
-        it "still resolves fine if the circular dependency does not cause any conflicts", :bundler_v2_only do
+        it "still resolves fine if the circular dependency does not cause any conflicts" do
           expect(resolver.latest_resolvable_version_details[:version].to_s).to eq("0.0.1")
         end
       end
@@ -494,7 +426,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
 
         it "takes the minimum ruby version into account" do
           expect(resolver.latest_resolvable_version_details[:version])
-            .to eq(Gem::Version.new("2.0.1"))
+            .to eq(Dependabot::Bundler::Version.new("2.0.1"))
         end
 
         context "when that isn't satisfied by the dependencies" do
@@ -505,9 +437,54 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
 
           it "ignores the minimum ruby version in the gemspec" do
             expect(resolver.latest_resolvable_version_details[:version])
-              .to eq(Gem::Version.new("7.2.0"))
+              .to eq(Dependabot::Bundler::Version.new("7.2.0"))
           end
         end
+      end
+    end
+
+    context "with cooldown options" do
+      let(:cooldown_options) do
+        Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7)
+      end
+      let(:expected_cooldown_options) do
+        Dependabot::Package::ReleaseCooldownOptions.new(
+          default_days: 7,
+          semver_major_days: 7,
+          semver_minor_days: 7,
+          semver_patch_days: 7,
+          include: [],
+          exclude: []
+        )
+      end
+
+      let(:dependency_files) { bundler_project_dependency_files("gemfile") }
+
+      before do
+        # Mock the LatestVersionFinder to verify it receives cooldown_options
+        latest_version_finder = instance_double(Dependabot::Bundler::UpdateChecker::LatestVersionFinder)
+        allow(latest_version_finder)
+          .to receive(:latest_version_details).and_return({ version: Dependabot::Bundler::Version.new("1.5.0") })
+        allow(Dependabot::Bundler::UpdateChecker::LatestVersionFinder)
+          .to receive(:new).and_return(latest_version_finder)
+
+        # Mock the NativeHelper to ensure that we use the latest_version_details method
+        allow(Dependabot::Bundler::NativeHelpers).to receive(:run_bundler_subprocess).and_return("latest")
+      end
+
+      it "passes cooldown_options to LatestVersionFinder" do
+        latest_resolvable_version_details
+
+        expect(Dependabot::Bundler::UpdateChecker::LatestVersionFinder).to have_received(:new).with(
+          hash_including(cooldown_options: an_object_having_attributes(
+            default_days: expected_cooldown_options.default_days,
+            semver_major_days: expected_cooldown_options.semver_major_days,
+            semver_minor_days: expected_cooldown_options.semver_minor_days,
+            semver_patch_days: expected_cooldown_options.semver_patch_days,
+            include: expected_cooldown_options.include,
+            exclude: expected_cooldown_options.exclude
+          ))
+        )
       end
     end
   end

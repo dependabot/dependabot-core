@@ -1,0 +1,40 @@
+[tool.poetry]
+name = "meine-stadt-transparent"
+version = "0.2.0"
+description = "A website to bring municipal politics to citizens"
+authors = ["Tobias Hößl <tobias@hoessl.eu>", "Konstantin Schütze <konstin@mailbox.org>"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+Django = "^1.11"
+django-allauth = "^0.37"
+django-anymail = "^4.1"
+django-braces = "^1.13"
+django_csp = "^3.4"
+django-debug-toolbar = "^1.9"
+django-elasticsearch-dsl = "^0.4"
+django-environ = "^0.4"
+django-geojson = "^2.11"
+django-settings-export = "^1.2"
+django-simple-history = "^2.3"
+django-webpack-loader = "^0.6"
+django-widget-tweaks = "^1.4"
+elasticsearch-dsl = "^5.4"
+geoextract = {git = "https://github.com/meine-stadt-transparent/geoextract", rev = "0d184e264c8356d22580076d35f16866c8ce6ecc"}
+geopy = "^1.16"
+gunicorn = "^19.9"
+html2text = "^2018.1"
+icalendar = "^4.0"
+jsonfield = "^2.0"
+mysqlclient = "^1.3"
+PyPDF2 = "^1.26"
+python = "^3.7"
+python-slugify = "^1.2"
+requests = "^2.19"
+splinter = "^0.7"
+textract = {git = "https://github.com/meine-stadt-transparent/textract", rev = "0776b86cd01fbad5b2518f75a659a1e5b614a5bd"}
+Wand = "^0.4.4"
+
+[tool.poetry.dev-dependencies]
+# See https://github.com/SeleniumHQ/selenium/issues/5296
+selenium = "3.8.0"

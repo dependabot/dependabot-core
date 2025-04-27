@@ -4,10 +4,10 @@ namespace NuGetUpdater.Core;
 
 internal sealed class GlobalJsonBuildFile : JsonBuildFile
 {
-    public static GlobalJsonBuildFile Open(string basePath, string path, Logger logger)
+    public static GlobalJsonBuildFile Open(string basePath, string path, ILogger logger)
         => new(basePath, path, File.ReadAllText(path), logger);
 
-    public GlobalJsonBuildFile(string basePath, string path, string contents, Logger logger)
+    public GlobalJsonBuildFile(string basePath, string path, string contents, ILogger logger)
         : base(basePath, path, contents, logger)
     {
     }

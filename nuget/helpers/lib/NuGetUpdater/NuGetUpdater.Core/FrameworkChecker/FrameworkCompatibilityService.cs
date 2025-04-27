@@ -61,14 +61,23 @@ public class FrameworkCompatibilityService
             }
         }
 
-        matrix.Add(
-            SupportedFrameworks.Net60Windows7,
-            new HashSet<NuGetFramework>
+        // e.g., explicitly allow a project targeting `net9.0-windows` to consume packages targeting `net9.0-windows7.0`
+        foreach (var packageFramework in SupportedFrameworks.TfmFilters.NetTfms)
+        {
+            if (packageFramework.Version.Major <= 5)
             {
-                SupportedFrameworks.Net60Windows, SupportedFrameworks.Net60Windows7,
-                SupportedFrameworks.Net70Windows, SupportedFrameworks.Net70Windows7
+                // the TFM `net5.0-windows7.0` isn't valid
+                continue;
             }
-        );
+
+            var packageFrameworkWithWindowsVersion = new NuGetFramework(packageFramework.Framework, packageFramework.Version, "windows", FrameworkConstants.Version7);
+            var compatibleVersions = SupportedFrameworks.TfmFilters.NetTfms.Where(t => t.Version.Major >= packageFrameworkWithWindowsVersion.Version.Major).ToArray();
+            foreach (var compatibleVersion in compatibleVersions)
+            {
+                var compatibleWindowsTargetWithoutVersion = new NuGetFramework(compatibleVersion.Framework, compatibleVersion.Version, "windows", FrameworkConstants.EmptyVersion);
+                matrix[packageFrameworkWithWindowsVersion].Add(compatibleWindowsTargetWithoutVersion);
+            }
+        }
 
         return matrix;
     }

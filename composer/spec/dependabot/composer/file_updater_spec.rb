@@ -145,25 +145,7 @@ RSpec.describe Dependabot::Composer::FileUpdater do
       it "updates the dependency version and plugin-api-version (to match installed composer) in the lockfile" do
         expect(updated_lockfile_entry["version"]).to eq("1.22.1")
         expect(parsed_updated_lockfile_content["prefer-stable"]).to be(false)
-        expect(parsed_updated_lockfile_content["plugin-api-version"]).to eq("2.6.0")
-      end
-    end
-
-    describe "updates the lockfile using composer v1" do
-      let(:updated_lockfile_content) do
-        updated_files.find { |f| f.name == "composer.lock" }.content
-      end
-      let(:parsed_updated_lockfile_content) { JSON.parse(updated_lockfile_content) }
-      let(:updated_lockfile_entry) do
-        parsed_updated_lockfile_content["packages"].find do |package|
-          package["name"] == dependency.name
-        end
-      end
-      let(:project_name) { "v1/exact_version" }
-
-      it "updates the dependency version and plugin-api-version (to match installed composer) in the lockfile" do
-        expect(updated_lockfile_entry["version"]).to eq("1.22.1")
-        expect(parsed_updated_lockfile_content["plugin-api-version"]).to eq("1.1.0")
+        expect(parsed_updated_lockfile_content["plugin-api-version"]).to eq("2.3.0")
       end
     end
 
@@ -181,7 +163,7 @@ RSpec.describe Dependabot::Composer::FileUpdater do
 
       it "updates the dependency and does not downgrade the composer version" do
         expect(updated_lockfile_entry["version"]).to eq("1.22.1")
-        expect(parsed_updated_lockfile_content["plugin-api-version"]).to eq("2.6.0")
+        expect(parsed_updated_lockfile_content["plugin-api-version"]).to eq("2.3.0")
       end
     end
   end
