@@ -27,7 +27,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
         {
             // this package ships with the SDK and is automatically added for F# projects but should be manually added here to make the test consistent
             // only direct package discovery finds this, though
-            expectedDependencies.Add(new Dependency("FSharp.Core", "9.0.100", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true));
+            expectedDependencies.Add(new Dependency("FSharp.Core", MockNuGetPackage.FSharpCorePackageVersion.Value, DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true));
         }
 
         var experimentsManager = new ExperimentsManager() { UseDirectDiscovery = useDirectDiscovery };
