@@ -1033,7 +1033,18 @@ internal static partial class MSBuildHelper
         var matches = patterns.Select(p => p.Match(output)).Where(m => m.Success);
         if (matches.Any())
         {
-            var packages = matches.Select(m => m.Groups["PackageName"].Value).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+            var packages = matches.Select(m =>
+                {
+                    var packageName = m.Groups["PackageName"].Value;
+                    if (m.Groups.TryGetValue("PackageVersion", out var versionGroup))
+                    {
+                        packageName = $"{packageName}/{versionGroup.Value}";
+                    }
+
+                    return packageName;
+                })
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
             throw new DependencyNotFoundException(packages);
         }
     }
