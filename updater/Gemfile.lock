@@ -30,7 +30,7 @@ PATH
       faraday (~> 2.7)
       faraday-retry (~> 2.2)
       gitlab (~> 5.0)
-      json (< 2.7)
+      json (< 2.12)
       nokogiri (~> 1.8)
       octokit (~> 7.2)
       opentelemetry-api (~> 1.5)
