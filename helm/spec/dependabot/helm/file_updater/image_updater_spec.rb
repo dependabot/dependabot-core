@@ -316,5 +316,21 @@ RSpec.describe Dependabot::Helm::FileUpdater::ImageUpdater do
           .to raise_error("Expected a values.yaml file to exist!")
       end
     end
+
+    context "with complex YAML structure containing arrays and maps" do
+      let(:fixture_content) do
+        <<~YAML
+          image:
+            repository: nginx
+            tag:
+              - 1.20.0
+        YAML
+      end
+
+      it "processes the image tag and preserving complex structures" do
+        updated_content = updater.updated_values_yaml_content("values.yaml")
+        expect(updated_content).to include("- 1.20.0")
+      end
+    end
   end
 end

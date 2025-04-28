@@ -78,7 +78,7 @@ module Dependabot
       sig { params(dependency_set: DependencySet).void }
       def parse_chart_yaml_files(dependency_set)
         helm_chart_files.each do |chart_file|
-          yaml = YAML.safe_load(T.must(chart_file.content), aliases: true)
+          yaml = YAML.safe_load(T.must(chart_file.content), aliases: true, permitted_classes: [Date, Time, Symbol])
           next unless yaml.is_a?(Hash)
 
           parse_dependencies(yaml, chart_file, dependency_set) if yaml["dependencies"].is_a?(Array)
@@ -88,7 +88,7 @@ module Dependabot
       sig { params(dependency_set: DependencySet).void }
       def parse_values_yaml_files(dependency_set)
         helm_values_files.each do |values_file|
-          yaml = YAML.safe_load(T.must(values_file.content), aliases: true)
+          yaml = YAML.safe_load(T.must(values_file.content), aliases: true, permitted_classes: [Date, Time, Symbol])
           next unless yaml.is_a?(Hash)
 
           find_images_in_hash(yaml).each do |image_details|

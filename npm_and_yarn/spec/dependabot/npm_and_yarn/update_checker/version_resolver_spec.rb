@@ -60,14 +60,11 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
     fixture("npm_responses", "opentelemetry-context-async-hooks.json")
   end
 
-  # Variable to control the npm fallback version feature flag
-  let(:npm_fallback_version_above_v6_enabled) { true }
-
   # Variable to control the enabling feature flag for the corepack fix
   let(:enable_corepack_for_npm_and_yarn) { true }
 
   # Variable to control the enabling feature flag for the cooldown
-  let(:enable_cooldown_for_npm_and_yarn) { false }
+  let(:enable_cooldown_for_npm_and_yarn) { true }
 
   before do
     stub_request(:get, react_dom_registry_listing_url)
@@ -82,8 +79,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       .to_return(status: 200, body: opentelemetry_api_registry_response)
     stub_request(:get, opentelemetry_context_async_hooks_registry_listing_url)
       .to_return(status: 200, body: opentelemetry_context_async_hooks_registry_response)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:npm_fallback_version_above_v6).and_return(npm_fallback_version_above_v6_enabled)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_corepack_for_npm_and_yarn).and_return(enable_corepack_for_npm_and_yarn)
     allow(Dependabot::Experiments).to receive(:enabled?)
@@ -501,7 +496,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         end
 
         context "when it has (old) peer requirements that aren't included" do
-          let(:npm_fallback_version_above_v6_enabled) { false }
           let(:project_name) { "npm6/peer_dependency_changed" }
           let(:latest_allowable_version) { Gem::Version.new("2.2.4") }
           let(:dependency) do
@@ -540,7 +534,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         end
 
         context "when the peer dependency was previously a normal dependency" do
-          let(:npm_fallback_version_above_v6_enabled) { false }
           let(:project_name) { "npm6/peer_dependency_switch" }
           let(:latest_allowable_version) { Gem::Version.new("2.5.4") }
           let(:dependency) do

@@ -43,9 +43,9 @@ public class UpdateOperationBaseTests
         // assert
         var expectedReport = """
             Performed the following updates:
-                - Updated Package.A to 1.0.0 in file/a.txt
-                - Pinned Package.B at 2.0.0 in file/b.txt
-                - Updated Package.C to 3.0.0 indirectly via Package.D/4.0.0 in file/c.txt
+            - Updated Package.A to 1.0.0 in file/a.txt
+            - Pinned Package.B at 2.0.0 in file/b.txt
+            - Updated Package.C to 3.0.0 indirectly via Package.D/4.0.0 in file/c.txt
             """.Replace("\r", "");
         Assert.Equal(expectedReport, actualReport);
     }

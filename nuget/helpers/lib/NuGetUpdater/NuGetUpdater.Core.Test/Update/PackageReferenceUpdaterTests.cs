@@ -11,6 +11,66 @@ namespace NuGetUpdater.Core.Test.Update;
 
 public class PackageReferenceUpdaterTests
 {
+    [Fact]
+    public async Task DirectBuildFileChangesAreMaintainedWhenPinningTransitiveDependency()
+    {
+        // arrange
+        using var tempDir = await TemporaryDirectory.CreateWithContentsAsync([("project.csproj", """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>net9.0</TargetFramework>
+              </PropertyGroup>
+              <ItemGroup>
+                <PackageReference Include="Completely.Different.Package" Version="1.0.0" />
+                <PackageReference Include="Some.Package" Version="1.0.0" />
+              </ItemGroup>
+            </Project>
+            """)]);
+        var packages = new[]
+        {
+            MockNuGetPackage.CreateSimplePackage("Completely.Different.Package", "1.0.0", "net9.0"),
+            MockNuGetPackage.CreateSimplePackage("Completely.Different.Package", "2.0.0", "net9.0"),
+            MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net9.0", [(null, [("Transitive.Package", "1.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Transitive.Package", "1.0.0", "net9.0"),
+            MockNuGetPackage.CreateSimplePackage("Transitive.Package", "2.0.0", "net9.0"),
+        };
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(packages, tempDir.DirectoryPath);
+        var fullProjectPath = Path.Combine(tempDir.DirectoryPath, "project.csproj");
+        var buildFile = ProjectBuildFile.Open(tempDir.DirectoryPath, fullProjectPath);
+        var experimentsManager = new ExperimentsManager();
+
+        // act
+        // pin transitive dependency
+        var updatedFiles = await PackageReferenceUpdater.UpdateTransitiveDependencyAsync(
+            tempDir.DirectoryPath,
+            fullProjectPath,
+            "Transitive.Package",
+            "2.0.0",
+            [buildFile],
+            experimentsManager,
+            new TestLogger());
+
+        // subsequent update should not overwrite previous change
+        PackageReferenceUpdater.TryUpdateDependencyVersion([buildFile], "Completely.Different.Package", "1.0.0", "2.0.0", new TestLogger());
+
+        // assert
+        await buildFile.SaveAsync();
+        var actualContents = await File.ReadAllTextAsync(fullProjectPath);
+        var expectedContents = """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>net9.0</TargetFramework>
+              </PropertyGroup>
+              <ItemGroup>
+                <PackageReference Include="Completely.Different.Package" Version="2.0.0" />
+                <PackageReference Include="Some.Package" Version="1.0.0" />
+                <PackageReference Include="Transitive.Package" Version="2.0.0" />
+              </ItemGroup>
+            </Project>
+            """;
+        Assert.Equal(expectedContents, actualContents);
+    }
+
     [Theory]
     [MemberData(nameof(ComputeUpdateOperationsTestData))]
     public async Task ComputeUpdateOperations

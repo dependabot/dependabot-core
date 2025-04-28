@@ -41,7 +41,7 @@ module Dependabot
                      requirements_update_strategy: nil, dependency_group: nil,
                      update_cooldown: nil, options: {})
         @latest_version = T.let(nil, T.nilable(T.any(String, Gem::Version)))
-        @latest_resolvable_version = T.let(nil, T.nilable(T.any(String, Gem::Version)))
+        @latest_resolvable_version = T.let(nil, T.nilable(T.any(String, Dependabot::Version)))
         @updated_requirements = T.let(nil, T.nilable(T::Array[T::Hash[Symbol, T.untyped]]))
         @vulnerability_audit = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
         @vulnerable_versions = T.let(nil, T.nilable(T::Array[T.any(String, Gem::Version)]))
@@ -86,17 +86,23 @@ module Dependabot
           end
       end
 
-      sig { override.returns(T.nilable(T.any(String, Dependabot::Version))) }
+      sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
       def latest_resolvable_version
         return unless latest_version
 
         @latest_resolvable_version ||=
           if dependency.top_level?
-            version_resolver.latest_resolvable_version
+            T.cast(
+              version_resolver.latest_resolvable_version,
+              T.nilable(T.any(String, Dependabot::Version))
+            )
           else
             # If the dependency is indirect its version is constrained  by the
             # requirements placed on it by dependencies lower down the tree
-            subdependency_version_resolver.latest_resolvable_version
+            T.cast(
+              subdependency_version_resolver.latest_resolvable_version,
+              T.nilable(T.any(String, Dependabot::Version))
+            )
           end
       end
 
@@ -131,7 +137,11 @@ module Dependabot
 
       sig { override.returns(T.nilable(T.any(String, Dependabot::Version))) }
       def latest_resolvable_version_with_no_unlock
-        return latest_resolvable_version unless dependency.top_level?
+        unless dependency.top_level?
+          # TODO: We should use `Dependabot::Version` everywhere
+          return T.cast(latest_resolvable_version,
+                        T.nilable(T.any(String, Dependabot::Version)))
+        end
 
         return latest_resolvable_version_with_no_unlock_for_git_dependency if git_dependency?
 
@@ -165,7 +175,7 @@ module Dependabot
             requirements: dependency.requirements,
             updated_source: updated_source,
             latest_resolvable_version: resolvable_version,
-            update_strategy: requirements_update_strategy
+            update_strategy: T.must(requirements_update_strategy)
           ).updated_requirements
       end
 
@@ -324,7 +334,7 @@ module Dependabot
             requirements: original_dep.requirements,
             updated_source: original_dep == dependency ? updated_source : original_source(original_dep),
             latest_resolvable_version: version,
-            update_strategy: requirements_update_strategy
+            update_strategy: T.must(requirements_update_strategy)
           ).updated_requirements,
           previous_version: previous_version,
           previous_requirements: original_dep.requirements,
@@ -514,7 +524,7 @@ module Dependabot
 
         @library =
           LibraryDetector.new(
-            package_json_file: package_json,
+            package_json_file: T.must(package_json),
             credentials: credentials,
             dependency_files: dependency_files
           ).library?

@@ -29,8 +29,7 @@ public abstract record UpdateOperationBase
             return string.Empty;
         }
 
-        var separator = "\n    ";
-        var report = $"Performed the following updates:{separator}{string.Join(separator, updateMessages.Select(m => $"- {m}"))}";
+        var report = $"Performed the following updates:\n{string.Join("\n", updateMessages.Select(m => $"- {m}"))}";
         return report;
     }
 
@@ -112,14 +111,14 @@ public abstract record UpdateOperationBase
 public record DirectUpdate : UpdateOperationBase
 {
     public override string Type => nameof(DirectUpdate);
-    public override string GetReport() => $"Updated {DependencyName} to {NewVersion} in {string.Join("", UpdatedFiles)}";
+    public override string GetReport() => $"Updated {DependencyName} to {NewVersion} in {string.Join(", ", UpdatedFiles)}";
     public sealed override string ToString() => GetString();
 }
 
 public record PinnedUpdate : UpdateOperationBase
 {
     public override string Type => nameof(PinnedUpdate);
-    public override string GetReport() => $"Pinned {DependencyName} at {NewVersion} in {string.Join("", UpdatedFiles)}";
+    public override string GetReport() => $"Pinned {DependencyName} at {NewVersion} in {string.Join(", ", UpdatedFiles)}";
     public sealed override string ToString() => GetString();
 }
 
@@ -129,7 +128,7 @@ public record ParentUpdate : UpdateOperationBase, IEquatable<UpdateOperationBase
     public required string ParentDependencyName { get; init; }
     public required NuGetVersion ParentNewVersion { get; init; }
 
-    public override string GetReport() => $"Updated {DependencyName} to {NewVersion} indirectly via {ParentDependencyName}/{ParentNewVersion} in {string.Join("", UpdatedFiles)}";
+    public override string GetReport() => $"Updated {DependencyName} to {NewVersion} indirectly via {ParentDependencyName}/{ParentNewVersion} in {string.Join(", ", UpdatedFiles)}";
 
     bool IEquatable<UpdateOperationBase>.Equals(UpdateOperationBase? other)
     {

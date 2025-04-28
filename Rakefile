@@ -68,7 +68,9 @@ namespace :gems do
 
     GEMSPECS.each do |gemspec_path|
       gem_name = File.basename(gemspec_path).sub(/\.gemspec$/, "")
-      gem_path = "pkg/#{gem_name}-#{Dependabot::VERSION}.gem"
+      gem_name_and_version = "#{gem_name}-#{Dependabot::VERSION}"
+      gem_path = "pkg/#{gem_name_and_version}.gem"
+      gem_attestation_path = "pkg/#{gem_name_and_version}.sigstore.json"
 
       attempts = 0
       loop do
@@ -78,13 +80,15 @@ namespace :gems do
         else
           puts "> Releasing #{gem_path}"
           attempts += 1
-          sleep(2)
           begin
-            sh "gem push #{gem_path}"
+            sh "gem exec sigstore-cli:0.2.1 sign #{gem_path} --bundle #{gem_attestation_path}"
+            sh "gem push #{gem_path} --attestation #{gem_attestation_path}"
             break
           rescue StandardError => e
             puts "! `gem push` failed with error: #{e}"
             raise if attempts >= 3
+
+            sleep(2)
           end
         end
       end
@@ -92,7 +96,7 @@ namespace :gems do
   end
 
   task :clean do
-    FileUtils.rm(Dir["pkg/*.gem"])
+    FileUtils.rm(Dir["pkg/*.gem", "pkg/*.sigstore.json"])
   end
 end
 

@@ -7,6 +7,9 @@ using Microsoft.Build.Definition;
 using Microsoft.Build.Evaluation;
 using Microsoft.Build.Exceptions;
 
+using Microsoft.VisualStudio.SolutionPersistence.Model;
+using Microsoft.VisualStudio.SolutionPersistence.Serializer;
+
 using NuGet.Frameworks;
 
 using NuGetUpdater.Core.Run.ApiModel;
@@ -65,7 +68,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
 
     public async Task<WorkspaceDiscoveryResult> RunAsync(string repoRootPath, string workspacePath)
     {
-        MSBuildHelper.RegisterMSBuild(repoRootPath, workspacePath);
+        MSBuildHelper.RegisterMSBuild(repoRootPath, workspacePath, _logger);
 
         // the `workspacePath` variable is relative to a repository root, so a rooted path actually isn't rooted; the
         // easy way to deal with this is to just trim the leading "/" if it exists
@@ -167,7 +170,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
         ImmutableArray<string> projects;
         try
         {
-            projects = ExpandEntryPointsIntoProjects(entryPoints);
+            projects = await ExpandEntryPointsIntoProjectsAsync(entryPoints);
         }
         catch (InvalidProjectFileException e)
         {
@@ -202,6 +205,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
                 switch (extension)
                 {
                     case ".sln":
+                    case ".slnx":
                     case ".proj":
                     case ".csproj":
                     case ".fsproj":
@@ -214,7 +218,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
             .ToImmutableArray();
     }
 
-    private static ImmutableArray<string> ExpandEntryPointsIntoProjects(IEnumerable<string> entryPoints)
+    private async static Task<ImmutableArray<string>> ExpandEntryPointsIntoProjectsAsync(IEnumerable<string> entryPoints)
     {
         HashSet<string> expandedProjects = new();
         HashSet<string> seenProjects = new();
@@ -231,6 +235,17 @@ public partial class DiscoveryWorker : IDiscoveryWorker
                     foreach (ProjectInSolution project in solution.ProjectsInOrder)
                     {
                         filesToExpand.Push(project.AbsolutePath);
+                    }
+                }
+                else if (extension == ".slnx")
+                {
+                    SolutionModel solution = await SolutionSerializers.SlnXml.OpenAsync(candidateEntryPoint, CancellationToken.None);
+                    string solutionPath = Path.GetDirectoryName(candidateEntryPoint) ?? string.Empty;
+
+                    foreach (SolutionProjectModel project in solution.SolutionProjects)
+                    {
+                        string projectPath = Path.Combine(solutionPath, project.FilePath);
+                        filesToExpand.Push(projectPath);
                     }
                 }
                 else if (extension == ".proj")

@@ -22,9 +22,9 @@ module Dependabot
           downloads: T.nilable(Integer),
           url: T.nilable(String),
           package_type: T.nilable(String),
-          language: T.nilable(Dependabot::Package::PackageLanguage)
-        )
-          .void
+          language: T.nilable(Dependabot::Package::PackageLanguage),
+          details: T::Hash[String, T.untyped]
+        ).void
       end
       def initialize(
         version:,
@@ -35,7 +35,8 @@ module Dependabot
         downloads: nil,
         url: nil,
         package_type: nil,
-        language: nil
+        language: nil,
+        details: {}
       )
         @version = T.let(version, Dependabot::Version)
         @released_at = T.let(released_at, T.nilable(Time))
@@ -46,6 +47,7 @@ module Dependabot
         @url = T.let(url, T.nilable(String))
         @package_type = T.let(package_type, T.nilable(String))
         @language = T.let(language, T.nilable(Dependabot::Package::PackageLanguage))
+        @details = T.let(details, T::Hash[String, T.untyped])
       end
 
       sig { returns(Dependabot::Version) }
@@ -75,9 +77,24 @@ module Dependabot
       sig { returns(T.nilable(Dependabot::Package::PackageLanguage)) }
       attr_reader :language
 
+      sig { returns(T::Hash[String, T.untyped]) }
+      attr_reader :details
+
       sig { returns(T::Boolean) }
       def yanked?
         @yanked
+      end
+
+      sig { params(other: Object).returns(T::Boolean) }
+      def ==(other)
+        return false unless other.is_a?(PackageRelease)
+
+        version == other.version
+      end
+
+      sig { returns(String) }
+      def to_s
+        version.to_s
       end
     end
   end

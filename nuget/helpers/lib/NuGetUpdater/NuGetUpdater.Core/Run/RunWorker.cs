@@ -69,7 +69,7 @@ public class RunWorker
 
         try
         {
-            MSBuildHelper.RegisterMSBuild(repoContentsPath.FullName, repoContentsPath.FullName);
+            MSBuildHelper.RegisterMSBuild(repoContentsPath.FullName, repoContentsPath.FullName, _logger);
 
             var experimentsManager = ExperimentsManager.GetExperimentsManager(job.Experiments);
             var allDependencyFiles = new Dictionary<string, DependencyFile>();
@@ -125,6 +125,7 @@ public class RunWorker
         // TODO: pull out relevant dependencies, then check each for updates and track the changes
         var originalDependencyFileContents = new Dictionary<string, string>();
         var originalDependencyFileEOFs = new Dictionary<string, EOLType>();
+        var originalDependencyFileBOMs = new Dictionary<string, bool>();
         var actualUpdatedDependencies = new List<ReportedDependency>();
 
         // track original contents for later handling
@@ -133,8 +134,10 @@ public class RunWorker
             var repoFullPath = Path.Join(directory, fileName).FullyNormalizedRootedPath();
             var localFullPath = Path.Join(repoContentsPath.FullName, repoFullPath);
             var content = await File.ReadAllTextAsync(localFullPath);
+            var rawContent = await File.ReadAllBytesAsync(localFullPath);
             originalDependencyFileContents[repoFullPath] = content;
             originalDependencyFileEOFs[repoFullPath] = content.GetPredominantEOL();
+            originalDependencyFileBOMs[repoFullPath] = rawContent.HasBOM();
         }
 
         foreach (var project in discoveryResult.Projects)
@@ -257,15 +260,25 @@ public class RunWorker
             var updatedContent = await File.ReadAllTextAsync(localFullPath);
 
             updatedContent = updatedContent.SetEOL(originalDependencyFileEOFs[repoFullPath]);
-            await File.WriteAllTextAsync(localFullPath, updatedContent);
+            var updatedRawContent = updatedContent.SetBOM(originalDependencyFileBOMs[repoFullPath]);
+            await File.WriteAllBytesAsync(localFullPath, updatedRawContent);
 
             if (updatedContent != originalContent)
             {
+                var reportedContent = updatedContent;
+                var encoding = "utf-8";
+                if (originalDependencyFileBOMs[repoFullPath])
+                {
+                    reportedContent = Convert.ToBase64String(updatedRawContent);
+                    encoding = "base64";
+                }
+
                 updatedDependencyFiles[localFullPath] = new DependencyFile()
                 {
                     Name = Path.GetFileName(repoFullPath),
                     Directory = Path.GetDirectoryName(repoFullPath)!.NormalizePathToUnix(),
-                    Content = updatedContent,
+                    Content = reportedContent,
+                    ContentEncoding = encoding,
                 };
             }
         }
@@ -291,7 +304,12 @@ public class RunWorker
             .Select(kvp => kvp.Value)
             .ToArray();
 
-        var resultMessage = GetPullRequestApiMessage(job, updatedDependencyFileList, actualUpdatedDependencies.ToArray(), baseCommitSha);
+        var normalizedUpdateOperationsPerformed = UpdateOperationBase.NormalizeUpdateOperationCollection(repoContentsPath.FullName, updateOperationsPerformed);
+        var report = UpdateOperationBase.GenerateUpdateOperationReport(normalizedUpdateOperationsPerformed);
+        _logger.Info(report);
+
+        var sortedUpdatedDependencies = actualUpdatedDependencies.OrderBy(d => d.Name, StringComparer.OrdinalIgnoreCase).ToArray();
+        var resultMessage = GetPullRequestApiMessage(job, updatedDependencyFileList, sortedUpdatedDependencies, normalizedUpdateOperationsPerformed, baseCommitSha);
         switch (resultMessage)
         {
             case ClosePullRequest close:
@@ -321,19 +339,22 @@ public class RunWorker
             await SendApiMessage(new SecurityUpdateNotNeeded(depName));
         }
 
-        var normalizedUpdateOperationsPerformed = UpdateOperationBase.NormalizeUpdateOperationCollection(repoContentsPath.FullName, updateOperationsPerformed);
-        var report = UpdateOperationBase.GenerateUpdateOperationReport(normalizedUpdateOperationsPerformed);
-        _logger.Info(report);
-
         var result = new RunResult()
         {
             Base64DependencyFiles = originalDependencyFileContents.OrderBy(kvp => kvp.Key).Select(kvp =>
             {
                 var fullPath = kvp.Key.FullyNormalizedRootedPath();
+                var rawContent = Encoding.UTF8.GetBytes(kvp.Value);
+                if (originalDependencyFileBOMs[kvp.Key])
+                {
+                    rawContent = Encoding.UTF8.GetPreamble().Concat(rawContent).ToArray();
+                }
+
                 return new DependencyFile()
                 {
                     Name = Path.GetFileName(fullPath),
-                    Content = Convert.ToBase64String(Encoding.UTF8.GetBytes(kvp.Value)),
+                    Content = Convert.ToBase64String(rawContent),
+                    ContentEncoding = "base64",
                     Directory = Path.GetDirectoryName(fullPath)!.NormalizePathToUnix(),
                 };
             }).ToArray(),
@@ -344,10 +365,15 @@ public class RunWorker
 
     private async Task SendApiMessage(MessageBase? message)
     {
+        if (message is null)
+        {
+            return;
+        }
+
+        var report = message.GetReport();
+        _logger.Info(report);
         switch (message)
         {
-            case null:
-                break;
             case JobErrorBase error:
                 await _apiHandler.RecordUpdateJobError(error);
                 break;
@@ -365,10 +391,16 @@ public class RunWorker
         }
     }
 
-    internal static MessageBase? GetPullRequestApiMessage(Job job, DependencyFile[] updatedFiles, ReportedDependency[] updatedDependencies, string baseCommitSha)
+    internal static MessageBase? GetPullRequestApiMessage(
+        Job job,
+        DependencyFile[] updatedFiles,
+        ReportedDependency[] updatedDependencies,
+        ImmutableArray<UpdateOperationBase> updateOperationsPerformed,
+        string baseCommitSha
+    )
     {
-        updatedDependencies = updatedDependencies.OrderBy(d => d.Name, StringComparer.OrdinalIgnoreCase).ToArray();
-        var updatedDependenciesSet = updatedDependencies.Select(d => d.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var updatedDependencyNames = updateOperationsPerformed.Select(u => u.DependencyName).OrderBy(d => d, StringComparer.OrdinalIgnoreCase).ToArray();
+        var updatedDependenciesSet = updatedDependencyNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         // all pull request dependencies with optional group name
         var existingPullRequests = job.GetAllExistingPullRequests();
@@ -390,12 +422,12 @@ public class RunWorker
                 return new UpdatePullRequest()
                 {
                     DependencyGroup = existingPullRequest.Item1,
-                    DependencyNames = updatedDependencies.Select(d => d.Name).ToImmutableArray(),
+                    DependencyNames = [.. updatedDependencyNames],
                     UpdatedDependencyFiles = updatedFiles,
                     BaseCommitSha = baseCommitSha,
-                    CommitMessage = PullRequestTextGenerator.GetPullRequestCommitMessage(job, updatedDependencies, updatedFiles, existingPullRequest.Item1),
-                    PrTitle = PullRequestTextGenerator.GetPullRequestTitle(job, updatedDependencies, updatedFiles, existingPullRequest.Item1),
-                    PrBody = PullRequestTextGenerator.GetPullRequestBody(job, updatedDependencies, updatedFiles, existingPullRequest.Item1),
+                    CommitMessage = PullRequestTextGenerator.GetPullRequestCommitMessage(job, updateOperationsPerformed, existingPullRequest.Item1),
+                    PrTitle = PullRequestTextGenerator.GetPullRequestTitle(job, updateOperationsPerformed, existingPullRequest.Item1),
+                    PrBody = PullRequestTextGenerator.GetPullRequestBody(job, updateOperationsPerformed, existingPullRequest.Item1),
                 };
             }
             else
@@ -422,16 +454,16 @@ public class RunWorker
         }
         else
         {
-            if (updatedDependencies.Any())
+            if (updatedDependencyNames.Any())
             {
                 return new CreatePullRequest()
                 {
                     Dependencies = updatedDependencies,
                     UpdatedDependencyFiles = updatedFiles,
                     BaseCommitSha = baseCommitSha,
-                    CommitMessage = PullRequestTextGenerator.GetPullRequestCommitMessage(job, updatedDependencies, updatedFiles),
-                    PrTitle = PullRequestTextGenerator.GetPullRequestTitle(job, updatedDependencies, updatedFiles),
-                    PrBody = PullRequestTextGenerator.GetPullRequestBody(job, updatedDependencies, updatedFiles),
+                    CommitMessage = PullRequestTextGenerator.GetPullRequestCommitMessage(job, updateOperationsPerformed, dependencyGroupName: null),
+                    PrTitle = PullRequestTextGenerator.GetPullRequestTitle(job, updateOperationsPerformed, dependencyGroupName: null),
+                    PrBody = PullRequestTextGenerator.GetPullRequestBody(job, updateOperationsPerformed, dependencyGroupName: null),
                 };
             }
         }
@@ -547,9 +579,33 @@ public class RunWorker
                         .ToArray();
                     if (existingPullRequests.Length > 0)
                     {
-                        var existingPrVersion = existingPullRequests[0].Item2.First(d => d.DependencyName.Equals(dependency.Name, StringComparison.OrdinalIgnoreCase)).DependencyVersion;
-                        message = new PullRequestExistsForLatestVersion(dependency.Name, existingPrVersion.ToString());
-                        return false;
+                        // found a matching pr...
+                        if (job.UpdatingAPullRequest)
+                        {
+                            // ...and we've been asked to update it
+                            return true;
+                        }
+                        else
+                        {
+                            // ...but no update requested => don't perform any update and report error
+                            var existingPrVersion = existingPullRequests[0].Item2.First(d => d.DependencyName.Equals(dependency.Name, StringComparison.OrdinalIgnoreCase)).DependencyVersion;
+                            message = new PullRequestExistsForLatestVersion(dependency.Name, existingPrVersion.ToString());
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        // no matching pr...
+                        if (job.UpdatingAPullRequest)
+                        {
+                            // ...but we've been asked to perform an update => no update possible, nothing to report
+                            return false;
+                        }
+                        else
+                        {
+                            // ...and no update specifically requested => create new
+                            return true;
+                        }
                     }
                 }
                 else
@@ -565,7 +621,7 @@ public class RunWorker
                     }
                 }
 
-                return isVulnerable;
+                return false;
             }
             else
             {

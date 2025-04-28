@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Text;
 using System.Text.Json.Serialization;
 
 namespace NuGetUpdater.Core.Run.ApiModel;
@@ -25,4 +26,19 @@ public sealed record UpdatePullRequest : MessageBase
 
     [JsonPropertyName("dependency-group")]
     public required string? DependencyGroup { get; init; }
+
+    public override string GetReport()
+    {
+        var dependencyNames = DependencyNames
+            .Order(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        var report = new StringBuilder();
+        report.AppendLine(nameof(UpdatePullRequest));
+        foreach (var d in dependencyNames)
+        {
+            report.AppendLine($"- {d}");
+        }
+
+        return report.ToString().Trim();
+    }
 }

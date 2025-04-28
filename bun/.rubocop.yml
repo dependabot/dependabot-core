@@ -1,1 +1,18 @@
 inherit_from: ../.rubocop.yml
+
+inherit_mode:
+  merge:
+    - Exclude
+
+Sorbet/StrictSigil:
+  Exclude:
+    - lib/dependabot/bun/file_updater/bun_lockfile_updater.rb
+    - lib/dependabot/bun/file_updater/package_json_preparer.rb
+    - lib/dependabot/bun/native_helpers.rb
+    - lib/dependabot/bun/requirement.rb
+    - lib/dependabot/bun/update_checker/conflicting_dependency_resolver.rb
+    - lib/dependabot/bun/update_checker/dependency_files_builder.rb
+    - lib/dependabot/bun/update_checker/library_detector.rb
+    - lib/dependabot/bun/update_checker/requirements_updater.rb
+    - lib/dependabot/bun/update_checker/subdependency_version_resolver.rb
+    - lib/dependabot/bun/update_checker/vulnerability_auditor.rb

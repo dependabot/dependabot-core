@@ -88,17 +88,11 @@ module Dependabot
 
       sig { returns(Ecosystem::VersionManager) }
       def package_manager
-        if Experiments.enabled?(:enable_file_parser_python_local)
-          Dependabot.logger.info("Detected package manager : #{detected_package_manager.name}")
-        end
-
         @package_manager ||= T.let(detected_package_manager, T.nilable(Ecosystem::VersionManager))
       end
 
       sig { returns(Ecosystem::VersionManager) }
       def detected_package_manager
-        setup_python_environment if Experiments.enabled?(:enable_file_parser_python_local)
-
         PackageManager.new(T.must(detect_uv_version))
       end
 
@@ -146,11 +140,6 @@ module Dependabot
 
       sig { returns(String) }
       def python_raw_version
-        if Experiments.enabled?(:enable_file_parser_python_local)
-          Dependabot.logger.info("Detected python version: #{language_version_manager.python_version}")
-          Dependabot.logger.info("Detected python major minor version: #{language_version_manager.python_major_minor}")
-        end
-
         language_version_manager.python_version
       end
 

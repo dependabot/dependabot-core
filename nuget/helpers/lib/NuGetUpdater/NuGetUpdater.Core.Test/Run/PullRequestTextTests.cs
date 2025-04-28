@@ -1,5 +1,10 @@
+using System.Collections.Immutable;
+
+using NuGet.Versioning;
+
 using NuGetUpdater.Core.Run;
 using NuGetUpdater.Core.Run.ApiModel;
+using NuGetUpdater.Core.Updater;
 
 using Xunit;
 
@@ -9,14 +14,22 @@ public class PullRequestTextTests
 {
     [Theory]
     [MemberData(nameof(GetPullRequestTextTestData))]
-    public void PullRequestText(Job job, ReportedDependency[] updatedDependencies, DependencyFile[] updatedFiles, string? dependencyGroupName, string expectedTitle, string expectedCommitMessage, string expectedBody)
+    public void PullRequestText(
+        Job job,
+        UpdateOperationBase[] updateOperationsPerformed,
+        string? dependencyGroupName,
+        string expectedTitle,
+        string expectedCommitMessage,
+        string expectedBody
+    )
     {
-        var actualTitle = PullRequestTextGenerator.GetPullRequestTitle(job, updatedDependencies, updatedFiles, dependencyGroupName);
-        var actualCommitMessage = PullRequestTextGenerator.GetPullRequestCommitMessage(job, updatedDependencies, updatedFiles, dependencyGroupName);
-        var actualBody = PullRequestTextGenerator.GetPullRequestBody(job, updatedDependencies, updatedFiles, dependencyGroupName);
+        var updateOperationsPerformedImmutable = updateOperationsPerformed.ToImmutableArray();
+        var actualTitle = PullRequestTextGenerator.GetPullRequestTitle(job, updateOperationsPerformedImmutable, dependencyGroupName);
+        var actualCommitMessage = PullRequestTextGenerator.GetPullRequestCommitMessage(job, updateOperationsPerformedImmutable, dependencyGroupName);
+        var actualBody = PullRequestTextGenerator.GetPullRequestBody(job, updateOperationsPerformedImmutable, dependencyGroupName);
         Assert.Equal(expectedTitle, actualTitle);
         Assert.Equal(expectedCommitMessage, actualCommitMessage);
-        Assert.Equal(expectedBody, actualBody);
+        Assert.Equal(expectedBody.Replace("\r", ""), actualBody);
     }
 
     public static IEnumerable<object?[]> GetPullRequestTextTestData()
@@ -26,18 +39,16 @@ public class PullRequestTextTests
         [
             // job
             FromCommitOptions(null),
-            // updatedDependencies
-            new []
+            // updateOperationsPerformed
+            new UpdateOperationBase[]
             {
-                new ReportedDependency()
+                new DirectUpdate()
                 {
-                    Name = "Some.Package",
-                    Version = "1.2.3",
-                    Requirements = []
+                    DependencyName = "Some.Package",
+                    NewVersion = NuGetVersion.Parse("1.2.3"),
+                    UpdatedFiles = ["a.txt"]
                 }
             },
-            // updatedFiles
-            Array.Empty<DependencyFile>(),
             // dependencyGroupName
             null,
             // expectedTitle
@@ -45,7 +56,10 @@ public class PullRequestTextTests
             // expectedCommitMessage
             "Update Some.Package to 1.2.3",
             // expectedBody
-            "Update Some.Package to 1.2.3"
+            """
+            Performed the following updates:
+            - Updated Some.Package to 1.2.3 in a.txt
+            """
         ];
 
         // single dependency, prefix given
@@ -53,18 +67,16 @@ public class PullRequestTextTests
         [
             // job
             FromCommitOptions(new(){ Prefix = "[SECURITY] " }),
-            // updatedDependencies
-            new []
+            // updateOperationsPerformed
+            new UpdateOperationBase[]
             {
-                new ReportedDependency()
+                new DirectUpdate()
                 {
-                    Name = "Some.Package",
-                    Version = "1.2.3",
-                    Requirements = []
+                    DependencyName = "Some.Package",
+                    NewVersion = NuGetVersion.Parse("1.2.3"),
+                    UpdatedFiles = ["a.txt"]
                 }
             },
-            // updatedFiles
-            Array.Empty<DependencyFile>(),
             // dependencyGroupName
             null,
             // expectedTitle
@@ -72,7 +84,10 @@ public class PullRequestTextTests
             // expectedCommitMessage
             "[SECURITY] Update Some.Package to 1.2.3",
             // expectedBody
-            "[SECURITY] Update Some.Package to 1.2.3"
+            """
+            Performed the following updates:
+            - Updated Some.Package to 1.2.3 in a.txt
+            """
         ];
 
         // multiple dependencies, multiple versions
@@ -80,36 +95,34 @@ public class PullRequestTextTests
         [
             // job
             FromCommitOptions(null),
-            // updatedDependencies
-            new[]
+            // updateOperationsPerformed
+            new UpdateOperationBase[]
             {
-                new ReportedDependency()
+                new DirectUpdate()
                 {
-                    Name = "Package.A",
-                    Version = "1.0.0",
-                    Requirements = []
+                    DependencyName = "Package.A",
+                    NewVersion = NuGetVersion.Parse("1.0.0"),
+                    UpdatedFiles = ["a1.txt"]
                 },
-                new ReportedDependency()
+                new DirectUpdate()
                 {
-                    Name = "Package.A",
-                    Version = "2.0.0",
-                    Requirements = []
+                    DependencyName = "Package.A",
+                    NewVersion = NuGetVersion.Parse("2.0.0"),
+                    UpdatedFiles = ["a2.txt"]
                 },
-                new ReportedDependency()
+                new DirectUpdate()
                 {
-                    Name = "Package.B",
-                    Version = "3.0.0",
-                    Requirements = []
+                    DependencyName = "Package.B",
+                    NewVersion = NuGetVersion.Parse("3.0.0"),
+                    UpdatedFiles = ["b1.txt"]
                 },
-                new ReportedDependency()
+                new DirectUpdate()
                 {
-                    Name = "Package.B",
-                    Version = "4.0.0",
-                    Requirements = []
+                    DependencyName = "Package.B",
+                    NewVersion = NuGetVersion.Parse("4.0.0"),
+                    UpdatedFiles = ["b2.txt"]
                 },
             },
-            // updatedFiles
-            Array.Empty<DependencyFile>(),
             // dependencyGroupName
             null,
             // expectedTitle
@@ -117,7 +130,13 @@ public class PullRequestTextTests
             // expectedCommitMessage
             "Update Package.A to 1.0.0, 2.0.0; Package.B to 3.0.0, 4.0.0",
             // expectedBody
-            "Update Package.A to 1.0.0, 2.0.0; Package.B to 3.0.0, 4.0.0"
+            """
+            Performed the following updates:
+            - Updated Package.A to 1.0.0 in a1.txt
+            - Updated Package.A to 2.0.0 in a2.txt
+            - Updated Package.B to 3.0.0 in b1.txt
+            - Updated Package.B to 4.0.0 in b2.txt
+            """
         ];
     }
 

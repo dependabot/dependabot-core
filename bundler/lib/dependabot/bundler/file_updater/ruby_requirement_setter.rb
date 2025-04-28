@@ -59,7 +59,7 @@ module Dependabot
 
           ruby_version =
             RUBY_VERSIONS
-            .map { |v| Gem::Version.new(v) }.sort
+            .map { |v| Dependabot::Bundler::Version.new(v) }.sort
             .find { |v| requirement.satisfied_by?(v) }
 
           unless ruby_version

@@ -10,7 +10,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
     described_class.new(replacement_version: replacement_version)
   end
 
-  let(:replacement_version) { Gem::Version.new("1.5.0") }
+  let(:replacement_version) { Dependabot::Bundler::Version.new("1.5.0") }
 
   describe "#rewrite" do
     subject(:rewrite) { sanitizer.rewrite(content) }
@@ -276,7 +276,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
       # rubocop:enable Lint/InterpolationCheck
 
       context "with a version constant used outside of a string" do
-        let(:content) { 'Spec.new { |s| Gem::Version.new("1.0.0") }' }
+        let(:content) { 'Spec.new { |s| Dependabot::Bundler::Version.new("1.0.0") }' }
 
         it { is_expected.to eq(content) }
       end

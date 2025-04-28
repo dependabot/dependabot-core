@@ -1,7 +1,8 @@
-# typed: true
+# typed: strong
 # frozen_string_literal: true
 
 require "toml-rb"
+require "citrus"
 
 require "dependabot/dependency"
 require "dependabot/uv/file_parser"
@@ -14,41 +15,36 @@ module Dependabot
   module Uv
     class FileUpdater
       class PyprojectPreparer
+        extend T::Sig
+
+        Credentials = T.type_alias { T::Array[T::Hash[String, String]] }
+
+        sig { params(pyproject_content: String, lockfile: T.nilable(Dependabot::DependencyFile)).void }
         def initialize(pyproject_content:, lockfile: nil)
           @pyproject_content = pyproject_content
           @lockfile = lockfile
+          @lines = T.let(pyproject_content.split("\n"), T::Array[String])
         end
 
-        def freeze_top_level_dependencies_except(dependencies_to_update)
-          return @pyproject_content unless lockfile
-
-          pyproject_object = TomlRB.parse(@pyproject_content)
-          deps_to_update_names = dependencies_to_update.map(&:name)
-
-          if pyproject_object["project"]&.key?("dependencies")
-            locked_deps = parsed_lockfile_dependencies || {}
-
-            pyproject_object["project"]["dependencies"] =
-              pyproject_object["project"]["dependencies"].map do |dep_string|
-                freeze_dependency(dep_string, deps_to_update_names, locked_deps)
-              end
-          end
-
-          TomlRB.dump(pyproject_object)
-        end
-
+        sig { params(python_version: T.nilable(String)).returns(String) }
         def update_python_requirement(python_version)
           return @pyproject_content unless python_version
 
-          pyproject_object = TomlRB.parse(@pyproject_content)
+          in_project_table = T.let(false, T::Boolean)
+          updated_lines = @lines.map do |line|
+            in_project_table = true if line.match?(/^\[project\]/)
 
-          if pyproject_object["project"]&.key?("requires-python")
-            pyproject_object["project"]["requires-python"] = ">=#{python_version}"
+            if in_project_table && line.match?(/^requires-python\s*=/)
+              "requires-python = \">=#{python_version}\""
+            else
+              line
+            end
           end
 
-          TomlRB.dump(pyproject_object)
+          @pyproject_content = updated_lines.join("\n")
         end
 
+        sig { params(credentials: T.nilable(Credentials)).returns(T.nilable(Credentials)) }
         def add_auth_env_vars(credentials)
           return unless credentials
 
@@ -68,6 +64,7 @@ module Dependabot
           end
         end
 
+        sig { returns(String) }
         def sanitize
           # No special sanitization needed for UV files at this point
           @pyproject_content
@@ -75,68 +72,12 @@ module Dependabot
 
         private
 
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
         attr_reader :lockfile
 
-        def parsed_lockfile
-          @parsed_lockfile ||= lockfile ? parse_lockfile(lockfile.content) : {}
-        end
-
-        def parse_lockfile(content)
-          TomlRB.parse(content)
-        rescue TomlRB::ParseError
-          {} # Return empty hash if parsing fails
-        end
-
-        def parsed_lockfile_dependencies
-          return {} unless lockfile
-
-          deps = {}
-          parsed = parsed_lockfile
-
-          # Handle UV lock format (version 1)
-          if parsed["version"] == 1 && parsed["package"].is_a?(Array)
-            parsed["package"].each do |pkg|
-              next unless pkg["name"] && pkg["version"]
-
-              deps[pkg["name"]] = { "version" => pkg["version"] }
-            end
-          # Handle traditional Poetry-style lock format
-          elsif parsed["dependencies"]
-            deps = parsed["dependencies"]
-          end
-
-          deps
-        end
-
-        def locked_version_for_dep(locked_deps, dep_name)
-          locked_deps.each do |name, details|
-            next unless Uv::FileParser.normalize_dependency_name(name) == dep_name
-            return details["version"] if details.is_a?(Hash) && details["version"]
-          end
-          nil
-        end
-
+        sig { params(url: String).returns(String) }
         def sanitize_env_name(url)
           url.gsub(%r{^https?://}, "").gsub(/[^a-zA-Z0-9]/, "_").upcase
-        end
-
-        def freeze_dependency(dep_string, deps_to_update_names, locked_deps)
-          package_name = dep_string.split(/[=>~<\[]/).first.strip
-          normalized_name = Uv::FileParser.normalize_dependency_name(package_name)
-
-          return dep_string if deps_to_update_names.include?(normalized_name)
-
-          version = locked_version_for_dep(locked_deps, normalized_name)
-          return dep_string unless version
-
-          if dep_string.include?("=") || dep_string.include?(">") ||
-             dep_string.include?("<") || dep_string.include?("~")
-            # Replace version constraint with exact version
-            dep_string.sub(/[=>~<\[].*$/, "==#{version}")
-          else
-            # Simple dependency, just append version
-            "#{dep_string}==#{version}"
-          end
         end
       end
     end

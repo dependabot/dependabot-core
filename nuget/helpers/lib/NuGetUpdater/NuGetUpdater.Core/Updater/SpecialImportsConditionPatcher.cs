@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+
 using Microsoft.Language.Xml;
 
 namespace NuGetUpdater.Core.Updater
@@ -7,11 +9,18 @@ namespace NuGetUpdater.Core.Updater
         private readonly List<string?> _capturedConditions = new List<string?>();
         private readonly XmlFilePreAndPostProcessor _processor;
 
+        // These files only ship with a full Visual Studio install
         private readonly HashSet<string> ImportedFilesToIgnore = new(StringComparer.OrdinalIgnoreCase)
         {
             "Microsoft.TextTemplating.targets",
             "Microsoft.WebApplication.targets"
         };
+
+        // PackageReference elements with `GeneratePathProperty="true"` will cause a special property to be created.
+        private readonly ImmutableArray<string> PathSegmentsToIgnore =
+        [
+            "$(Pkg"
+        ];
 
         public SpecialImportsConditionPatcher(string projectFilePath)
         {
@@ -25,8 +34,11 @@ namespace NuGetUpdater.Core.Updater
                         var projectPath = e.GetAttributeValue("Project");
                         if (projectPath is not null)
                         {
-                            var projectFileName = Path.GetFileName(projectPath.NormalizePathToUnix());
-                            return ImportedFilesToIgnore.Contains(projectFileName);
+                            var normalizedProjectPath = projectPath.NormalizePathToUnix();
+                            var projectFileName = Path.GetFileName(normalizedProjectPath);
+                            var hasForbiddenFile = ImportedFilesToIgnore.Contains(projectFileName);
+                            var hasForbiddenPathSegment = PathSegmentsToIgnore.Any(p => normalizedProjectPath.Contains(p, StringComparison.OrdinalIgnoreCase));
+                            return hasForbiddenFile || hasForbiddenPathSegment;
                         }
 
                         return false;

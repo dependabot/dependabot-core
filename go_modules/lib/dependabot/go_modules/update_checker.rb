@@ -66,6 +66,7 @@ module Dependabot
             ignored_versions: ignored_versions,
             security_advisories: security_advisories,
             raise_on_ignored: raise_on_ignored,
+            cooldown_options: update_cooldown,
             goprivate: options.fetch(:goprivate, "*")
           ),
           T.nilable(Dependabot::GoModules::UpdateChecker::LatestVersionFinder)

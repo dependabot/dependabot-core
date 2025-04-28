@@ -17,16 +17,17 @@ module Dependabot
         AWS_ECR_URL = /dkr\.ecr\.(?<region>[^.]+)\.amazonaws\.com/
         DEFAULT_DOCKER_HUB_REGISTRY = "registry.hub.docker.com"
 
-        sig { params(credentials: T::Array[Dependabot::Credential]).void }
-        def initialize(credentials)
+        sig { params(credentials: T::Array[Dependabot::Credential], private_repository_type: String).void }
+        def initialize(credentials, private_repository_type: "docker_registry")
           @credentials = credentials
+          @private_repository_type = private_repository_type
         end
 
         sig { params(registry_hostname: T.nilable(String)).returns(T.nilable(Dependabot::Credential)) }
         def credentials_for_registry(registry_hostname)
           registry_details =
             credentials
-            .select { |cred| cred["type"] == "docker_registry" }
+            .select { |cred| cred["type"] == private_repository_type }
             .find { |cred| cred.fetch("registry") == registry_hostname }
           return unless registry_details
           return registry_details unless registry_hostname&.match?(AWS_ECR_URL)
@@ -38,7 +39,7 @@ module Dependabot
         def base_registry
           @base_registry ||= T.let(
             credentials.find do |cred|
-              cred["type"] == "docker_registry" && cred.replaces_base?
+              cred["type"] == private_repository_type && cred.replaces_base?
             end,
             T.nilable(Dependabot::Credential)
           )
@@ -56,6 +57,9 @@ module Dependabot
 
         sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
+
+        sig { returns(String) }
+        attr_reader :private_repository_type
 
         sig { params(registry_details: Dependabot::Credential).returns(Dependabot::Credential) }
         def build_aws_credentials(registry_details)

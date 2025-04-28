@@ -1,0 +1,53 @@
+name: Sorbet
+on: # yamllint disable-line rule:truthy
+  pull_request:
+    branches: [main]  # Adjust this to the branch you want for creating PRs
+
+jobs:
+  check-sorbet-typing-mode:
+    name: Sorbet Typing Mode Check
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Get Changed Files
+        id: changed-files
+        uses: tj-actions/changed-files@ed68ef82c095e0d48ec87eccea555d944a631a4c # v46.0.5
+        with:
+          files: '**/lib/dependabot/**/*.rb'  # Only get changed Ruby files in dependabot directory
+
+      - name: Verify Sorbet Typing Mode
+        run: |
+          echo "Starting Sorbet typing check..."
+          missing_sorbet_typing=false
+
+          # Iterate over the changed Ruby files and filter only Ruby files
+          for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
+            echo "Checking $file for Sorbet typing..."
+            # Check if the top of the file has `# typed: strict` or `# typed: strong`
+            if ! head -n 10 "$file" | grep -E -q '^# typed: (strict|strong)'; then
+              echo "No Sorbet typing found at the top of $file"
+              missing_sorbet_typing=true
+            else
+              echo "Sorbet typing found at the top of $file"
+            fi
+          done
+
+          if [ "$missing_sorbet_typing" = true ]; then
+            echo "::error ::One or more Ruby files are missing Sorbet typing at the top."
+            echo "::error ::Please ensure you add either '# typed: strict' or '# typed: strong' at the very top of the file."
+            echo "::error ::Follow these steps to apply Sorbet typing:"
+            echo "::error ::1. Add '# typed: strict' or '# typed: strong' to the top of your Ruby file."
+            echo "::error ::2. Use '# typed: strict' for the most strict typing checks, and '# typed: strong' for more flexible checks."
+            echo "::error ::3. Add 'extend T::Sig' to your class or module to enable Sorbet signatures."
+            echo "::error ::4. Add 'require 'sorbet-runtime'' to enable Sorbet runtime checking."
+            echo "::error ::For more details on using Sorbet, check out the following resources:"
+            echo "::error ::1. [Getting Started with Sorbet](https://sorbet.org)"
+            exit 1  # Fail the job if any file is missing Sorbet typing
+          else
+            echo "All changed Ruby files have Sorbet typings."
+          fi

@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text;
 using System.Text.Json.Serialization;
 
 using Microsoft.Build.Exceptions;
@@ -20,6 +21,24 @@ public abstract record JobErrorBase : MessageBase
     [JsonPropertyName("error-details")]
     public Dictionary<string, object> Details { get; init; } = new();
 
+    public override string GetReport()
+    {
+        var report = new StringBuilder();
+        report.AppendLine($"Error type: {Type}");
+        foreach (var (key, value) in Details)
+        {
+            var valueString = value.ToString();
+            if (value is IEnumerable<string> strings)
+            {
+                valueString = string.Join(", ", strings);
+            }
+
+            report.AppendLine($"- {key}: {valueString}");
+        }
+
+        return report.ToString().Trim();
+    }
+
     public static JobErrorBase ErrorFromException(Exception ex, string jobId, string currentDirectory)
     {
         return ex switch
@@ -30,6 +49,8 @@ public abstract record JobErrorBase : MessageBase
             {
                 HttpStatusCode.Unauthorized or
                 HttpStatusCode.Forbidden => new PrivateSourceAuthenticationFailure(NuGetContext.GetPackageSourceUrls(currentDirectory)),
+                HttpStatusCode.TooManyRequests => new PrivateSourceBadResponse(NuGetContext.GetPackageSourceUrls(currentDirectory)),
+                HttpStatusCode.ServiceUnavailable => new PrivateSourceBadResponse(NuGetContext.GetPackageSourceUrls(currentDirectory)),
                 _ => new UnknownError(ex, jobId),
             },
             InvalidProjectFileException invalidProjectFile => new DependencyFileNotParseable(invalidProjectFile.ProjectFile),

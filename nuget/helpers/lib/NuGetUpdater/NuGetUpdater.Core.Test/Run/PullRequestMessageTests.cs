@@ -2,6 +2,7 @@ using NuGet.Versioning;
 
 using NuGetUpdater.Core.Run;
 using NuGetUpdater.Core.Run.ApiModel;
+using NuGetUpdater.Core.Updater;
 
 using Xunit;
 
@@ -11,9 +12,9 @@ public class PullRequestMessageTests
 {
     [Theory]
     [MemberData(nameof(GetPullRequestApiMessageData))]
-    public void GetPullRequestApiMessage(Job job, DependencyFile[] updatedFiles, ReportedDependency[] updatedDependencies, MessageBase expectedMessage)
+    public void GetPullRequestApiMessage(Job job, DependencyFile[] updatedFiles, ReportedDependency[] updatedDependencies, UpdateOperationBase[] updateOperationsPerformed, MessageBase expectedMessage)
     {
-        var actualMessage = RunWorker.GetPullRequestApiMessage(job, updatedFiles, updatedDependencies, "TEST-COMMIT-SHA");
+        var actualMessage = RunWorker.GetPullRequestApiMessage(job, updatedFiles, updatedDependencies, [.. updateOperationsPerformed], "TEST-COMMIT-SHA");
         Assert.NotNull(actualMessage);
         actualMessage = actualMessage switch
         {
@@ -62,6 +63,16 @@ public class PullRequestMessageTests
                     Requirements = [],
                 }
             },
+            // updateOperationsPerformed
+            new UpdateOperationBase[]
+            {
+                new DirectUpdate()
+                {
+                    DependencyName = "Some.Dependency",
+                    NewVersion = NuGetVersion.Parse("1.0.1"),
+                    UpdatedFiles = ["/src/project.csproj"]
+                }
+            },
             // expectedMessage
             new CreatePullRequest()
             {
@@ -106,6 +117,16 @@ public class PullRequestMessageTests
                     Requirements = [], // not used
                 }
             },
+            // updateOperationsPerformed
+            new UpdateOperationBase[]
+            {
+                new DirectUpdate()
+                {
+                    DependencyName = "Some.Dependency",
+                    NewVersion = NuGetVersion.Parse("1.0.1"),
+                    UpdatedFiles = ["/src/project.csproj"]
+                }
+            },
             // expectedMessage
             new ClosePullRequest() { DependencyNames = ["Some.Dependency"], Reason = "up_to_date" },
         ];
@@ -140,6 +161,8 @@ public class PullRequestMessageTests
             Array.Empty<DependencyFile>(),
             // updatedDependencies
             Array.Empty<ReportedDependency>(),
+            // updateOperationsPerformed
+            new UpdateOperationBase[] { },
             // expectedMessage
             new ClosePullRequest() { DependencyNames = ["Some.Dependency"], Reason = "dependency_removed" },
         ];
@@ -181,6 +204,16 @@ public class PullRequestMessageTests
                     Name = "Some.Dependency",
                     Version = "1.0.1",
                     Requirements = [],
+                }
+            },
+            // updateOperationsPerformed
+            new UpdateOperationBase[]
+            {
+                new DirectUpdate()
+                {
+                    DependencyName = "Some.Dependency",
+                    NewVersion = NuGetVersion.Parse("1.0.1"),
+                    UpdatedFiles = ["/src/project.csproj"]
                 }
             },
             // expectedMessage
@@ -234,6 +267,16 @@ public class PullRequestMessageTests
                     Name = "Some.Dependency",
                     Version = "1.0.1",
                     Requirements = [],
+                }
+            },
+            // updateOperationsPerformed
+            new UpdateOperationBase[]
+            {
+                new DirectUpdate()
+                {
+                    DependencyName = "Some.Dependency",
+                    NewVersion = NuGetVersion.Parse("1.0.1"),
+                    UpdatedFiles = ["/src/project.csproj"]
                 }
             },
             // expectedMessage

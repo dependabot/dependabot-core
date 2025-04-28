@@ -112,10 +112,6 @@ module Dependabot
       end
 
       def resolver
-        if Dependabot::Experiments.enabled?(:enable_file_parser_python_local)
-          Dependabot.logger.info("Python package resolver : #{resolver_type}")
-        end
-
         case resolver_type
         when :pip_compile then pip_compile_version_resolver
         when :requirements then pip_version_resolver
@@ -127,9 +123,9 @@ module Dependabot
       def resolver_type
         reqs = requirements
 
-        # If there are no requirements then this is a sub-dependency. It
-        # must come from one of Pipenv, Poetry or pip-tools, and can't come
-        # from the first two unless they have a lockfile.
+        # If there are no requirements then this is a sub-dependency.
+        # It must come from one of Pipenv, Poetry or pip-tools,
+        # and can't come from the first two unless they have a lockfile.
         return subdependency_resolver if reqs.none?
 
         # Otherwise, this is a top-level dependency, and we can figure out
@@ -147,6 +143,7 @@ module Dependabot
 
       def subdependency_resolver
         return :pip_compile if pip_compile_files.any?
+        return :lock_file if uv_lock.any?
 
         raise "Claimed to be a sub-dependency, but no lockfile exists!"
       end
@@ -322,6 +319,10 @@ module Dependabot
 
       def pip_compile_files
         dependency_files.select { |f| f.name.end_with?(".in") }
+      end
+
+      def uv_lock
+        dependency_files.select { |f| f.name == "uv.lock" }
       end
     end
   end

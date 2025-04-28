@@ -203,7 +203,10 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
       end
 
       it "considers the dependencies in the other PRs as handled, and closes the duplicate PR" do
-        expect(mock_service).to receive(:close_pull_request).with(["dummy-pkg-b"], :update_no_longer_possible)
+        # As per this implementation, if a dependency is part of overlapping groups
+        # Both the groups condition will be validated and the dependency will be updated in both the groups PRs.
+        # It is up to customer to decide which group should take precedence and update the dependency accordingly
+        expect(mock_service).not_to receive(:close_pull_request).with(["dummy-pkg-b"], :update_no_longer_possible)
 
         refresh_group.perform
 
@@ -280,7 +283,40 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
 
       before do
         stub_rubygems_calls
+        allow(Dependabot::Experiments).to receive(:enabled?).and_call_original
         allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:allow_refresh_for_existing_pr_dependencies)
+          .and_return(true)
+      end
+
+      after do
+        Dependabot::Experiments.reset!
+      end
+
+      it "updates the existing pull request without errors" do
+        expect(mock_service).not_to receive(:close_pull_request)
+        expect(mock_service).to receive(:update_pull_request) do |dependency_change|
+          expect(dependency_change.dependency_group.name).to eql("major")
+          expect(dependency_change.updated_dependency_files_hash)
+            .to eql(updated_bundler_files_hash(fixture: "bundler_multiple_groups"))
+        end
+
+        refresh_group.perform
+      end
+    end
+
+    context "when there is an existing group PR but group configured second" do
+      let(:job_definition) do
+        job_definition_fixture("bundler/version_updates/group_update_refresh_multiple_groups_unchaged_second_group")
+      end
+
+      let(:dependency_files) do
+        original_bundler_files(fixture: "bundler_multiple_groups")
+      end
+
+      before do
+        stub_rubygems_calls
+        allow(Dependabot::Experiments).to receive(:enabled?).and_call_original
         allow(Dependabot::Experiments).to receive(:enabled?)
           .with(:allow_refresh_for_existing_pr_dependencies)
           .and_return(true)

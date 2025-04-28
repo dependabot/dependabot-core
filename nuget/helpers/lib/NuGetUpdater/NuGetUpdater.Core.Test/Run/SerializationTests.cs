@@ -50,7 +50,8 @@ public class SerializationTests
                 "credentials-metadata": [
                   {
                     "host": "github.com",
-                    "type": "git_source"
+                    "type": "git_source",
+                    "replaces-base": false
                   }
                 ],
                 "max-updater-run-time": 0
@@ -116,7 +117,8 @@ public class SerializationTests
                 "credentials": [
                   {
                     "name": "some-cred",
-                    "token": "abc123"
+                    "token": "abc123",
+                    "replaces-base": false
                   }
                 ],
                 "existing-pull-requests": [
@@ -646,6 +648,14 @@ public class SerializationTests
             new PrivateSourceAuthenticationFailure(["url1", "url2"]),
             """
             {"data":{"error-type":"private_source_authentication_failure","error-details":{"source":"(url1|url2)"}}}
+            """
+        ];
+
+        yield return
+        [
+            new PrivateSourceBadResponse(["url1", "url2"]),
+            """
+            {"data":{"error-type":"private_source_bad_response","error-details":{"source":"(url1|url2)"}}}
             """
         ];
 
