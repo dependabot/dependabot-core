@@ -87,7 +87,7 @@ function Install-Sdks([string]$jobFilePath, [string]$repoContentsPath, [string]$
     $sdksToInstall = Get-SdkVersionsToInstall -repoRoot $rootDir -updateDirectories $candidateDirectories -installedSdks $installedSdks
     foreach ($sdkVersion in $sdksToInstall) {
         $versionParts = $sdkVersion.Split(".")
-        if ($versionParts.Length -eq 3 -and $versionParts[2] -eq "0") {
+        if (($versionParts.Length -eq 2) -or ($versionParts.Length -eq 3 -and $versionParts[2] -eq "0")) {
             $channelVersion = "$($versionParts[0]).$($versionParts[1])"
             Write-Host "Installing SDK from channel $channelVersion"
             & $dotnetInstallScriptPath --channel $channelVersion --install-dir $dotnetInstallDir
