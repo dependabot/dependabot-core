@@ -40,7 +40,7 @@ PATH
       psych (~> 5.0)
       sorbet-runtime (~> 0.5.11952)
       stackprof (~> 0.2.16)
-      toml-rb (>= 1.1.2)
+      toml-rb (~> 4.0)
 
 PATH
   remote: ../composer
@@ -447,7 +447,7 @@ GEM
       addressable (>= 2.8.0)
       crack (>= 0.3.2)
       hashdiff (>= 0.4.0, < 2.0.0)
-    webrick (1.8.2)
+    webrick (1.9.1)
     zeitwerk (2.7.1)
 
 PLATFORMS
@@ -509,7 +509,7 @@ DEPENDENCIES
   turbo_tests (~> 2.2.0)
   vcr (~> 6.1)
   webmock (~> 3.18)
-  webrick (>= 1.7)
+  webrick (~> 1.9)
   zeitwerk (~> 2.7)
 
 CHECKSUMS
@@ -655,7 +655,7 @@ CHECKSUMS
   unicode-display_width (2.6.0) sha256=12279874bba6d5e4d2728cef814b19197dbb10d7a7837a869bab65da943b7f5a
   vcr (6.3.1) sha256=37b56e157e720446a3f4d2d39919cabef8cb7b6c45936acffd2ef8229fec03ed
   webmock (3.24.0) sha256=be01357f6fc773606337ca79f3ba332b7d52cbe5c27587671abc0572dbec7122
-  webrick (1.8.2) sha256=431746a349199546ff9dd272cae10849c865f938216e41c402a6489248f12f21
+  webrick (1.9.1) sha256=b42d3c94f166f3fb73d87e9b359def9b5836c426fc8beacf38f2184a21b2a989
   zeitwerk (2.7.1) sha256=0945986050e4907140895378e74df1fe882a2271ed087cc6c6d6b00d415a2756
 
 BUNDLED WITH
