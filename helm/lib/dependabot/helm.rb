@@ -11,9 +11,11 @@ require "dependabot/helm/file_parser"
 require "dependabot/helm/file_updater"
 require "dependabot/helm/update_checker"
 
-Dependabot::Utils.register_version_class("helm", Dependabot::Docker::Version)
 Dependabot::Utils.register_requirement_class("helm", Dependabot::Docker::Requirement)
 Dependabot::MetadataFinders.register("helm", Dependabot::Docker::MetadataFinder)
+
+require "dependabot/helm/version"
+Dependabot::Utils.register_version_class("helm", Dependabot::Helm::Version)
 
 require "dependabot/pull_request_creator/labeler"
 Dependabot::PullRequestCreator::Labeler
