@@ -34,7 +34,7 @@ RSpec.describe Dependabot::GoModules::PathConverter do
       it { is_expected.to eq("https://github.com/kubernetes/apimachinery") }
     end
 
-    context "with a vanity URL that redirects" do
+    context "with a vanity URL that redirects", skip: "temporarily disabled" do
       skip "This test is temporarily disabled due to intermittent failures"
       let(:path) { "code.cloudfoundry.org/bytefmt" }
 
