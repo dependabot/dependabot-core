@@ -3,6 +3,7 @@ ARG TARGETARCH
 
 # Install regctl. See https://github.com/regclient/regclient/releases for updates
 ARG REGCTL_VERSION=0.5.6
+ARG ORAS_VERSION=1.2.2
 
 # These are manually calculated as they are not provided by the maintainer
 # curl -sL https://github.com/regclient/regclient/releases/download/v${REGCTL_VERSION}/regctl-linux-amd64 | sha256sum
@@ -38,6 +39,14 @@ RUN cd /tmp \
   && mv linux-${TARGETARCH}/helm /opt/bin/helm \
   && chmod o+rx /opt/bin/helm \
   && rm -rf linux-${TARGETARCH}
+
+
+RUN cd /tmp \
+  && curl -LO https://github.com/oras-project/oras/releases/download/v${ORAS_VERSION}/oras_${ORAS_VERSION}_linux_amd64.tar.gz \
+  && mkdir -p oras-install/ \
+  && tar -zxf oras_${ORAS_VERSION}_*.tar.gz -C oras-install/ \
+  && mv oras-install/oras /opt/bin/oras \
+  && rm -rf oras_${ORAS_VERSION}_*.tar.gz oras-install/
 
 USER dependabot
 
