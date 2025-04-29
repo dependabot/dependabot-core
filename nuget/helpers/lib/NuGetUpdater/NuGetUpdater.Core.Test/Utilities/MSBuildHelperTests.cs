@@ -1810,7 +1810,7 @@ public class MSBuildHelperTests : TestBase
             // output
             "Unable to find package Some.Package with version (= 1.2.3)",
             // expectedError
-            new DependencyNotFound("Some.Package"),
+            new DependencyNotFound("Some.Package/= 1.2.3"),
         ];
 
         yield return
