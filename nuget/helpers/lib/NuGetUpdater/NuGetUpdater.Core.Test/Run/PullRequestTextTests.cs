@@ -12,6 +12,26 @@ namespace NuGetUpdater.Core.Test.Run;
 
 public class PullRequestTextTests
 {
+    [Fact]
+    public void LongPullRequestTitleIsTrimmed()
+    {
+        var job = FromCommitOptions(null);
+        var updateOperations = new List<UpdateOperationBase>();
+        for (int i = 1; i <= 10; i++)
+        {
+            updateOperations.Add(new DirectUpdate()
+            {
+                DependencyName = $"Package{i}",
+                NewVersion = NuGetVersion.Parse($"{i}.0.0"),
+                UpdatedFiles = ["file.txt"],
+            });
+        }
+
+        var actualTitle = PullRequestTextGenerator.GetPullRequestTitle(job, [.. updateOperations], dependencyGroupName: null);
+        var expectedTitle = "Update Package1 and 9 other dependencies";
+        Assert.Equal(expectedTitle, actualTitle);
+    }
+
     [Theory]
     [MemberData(nameof(GetPullRequestTextTestData))]
     public void PullRequestText(
@@ -82,7 +102,7 @@ public class PullRequestTextTests
             // expectedTitle
             "[SECURITY] Update Some.Package to 1.2.3",
             // expectedCommitMessage
-            "[SECURITY] Update Some.Package to 1.2.3",
+            "Update Some.Package to 1.2.3",
             // expectedBody
             """
             Performed the following updates:
@@ -128,7 +148,11 @@ public class PullRequestTextTests
             // expectedTitle
             "Update Package.A to 1.0.0, 2.0.0; Package.B to 3.0.0, 4.0.0",
             // expectedCommitMessage
-            "Update Package.A to 1.0.0, 2.0.0; Package.B to 3.0.0, 4.0.0",
+            """
+            Update:
+            - Package.A to 1.0.0, 2.0.0
+            - Package.B to 3.0.0, 4.0.0
+            """,
             // expectedBody
             """
             Performed the following updates:
