@@ -1,0 +1,12 @@
+<settings>
+  <pluginGroups/>
+  <proxies>
+    <proxy>
+      <id>dependabot-proxy</id>
+      <active>true</active>
+      <protocol>http</protocol>
+      <host>172.18.0.2</host>
+      <port>1080</port>
+    </proxy>
+  </proxies>
+</settings>

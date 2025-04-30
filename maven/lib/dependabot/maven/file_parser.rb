@@ -3,6 +3,7 @@
 
 require "nokogiri"
 require "sorbet-runtime"
+require "open3"
 
 require "dependabot/dependency"
 require "dependabot/file_parsers"
@@ -19,6 +20,7 @@ module Dependabot
     class FileParser < Dependabot::FileParsers::Base
       extend T::Sig
       require "dependabot/file_parsers/base/dependency_set"
+      require_relative "file_parser/mvn_dependency_parser"
       require_relative "file_parser/property_value_finder"
 
       # The following "dependencies" are candidates for updating:
@@ -41,8 +43,16 @@ module Dependabot
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
         dependency_set = DependencySet.new
+        new_dependency_set = DependencySet.new
+
+        mvn_dependency_parser = MavenDependencyParser.new
+        new_dependency_set += mvn_dependency_parser.parse_dependency_tree(pomfiles)
+
         pomfiles.each { |pom| dependency_set += pomfile_dependencies(pom) }
         extensionfiles.each { |extension| dependency_set += extensionfile_dependencies(extension) }
+
+        binding.irb
+
         dependency_set.dependencies
       end
 
