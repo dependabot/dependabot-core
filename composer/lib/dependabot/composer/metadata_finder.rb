@@ -1,7 +1,9 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "excon"
+require "sorbet-runtime"
+
 require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
 require "dependabot/registry_client"
@@ -10,6 +12,21 @@ require "dependabot/composer/version"
 module Dependabot
   module Composer
     class MetadataFinder < Dependabot::MetadataFinders::Base
+      extend T::Sig
+
+      sig do
+        override
+          .params(
+            dependency: Dependabot::Dependency,
+            credentials: T::Array[Dependabot::Credential]
+          )
+          .void
+      end
+      def initialize(dependency:, credentials:)
+        @packagist_listing = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
+        super
+      end
+
       private
 
       sig { override.returns(T.nilable(Source)) }
