@@ -16,8 +16,6 @@ using Xunit;
 
 namespace NuGetUpdater.Core.Test.Run;
 
-using static NuGetUpdater.Core.Utilities.EOLHandling;
-
 using TestFile = (string Path, string Content);
 using RawTestFile = (string Path, byte[] Content);
 
@@ -3266,6 +3264,50 @@ public class RunWorkerTests
         );
     }
 
+    [Fact]
+    public async Task UnknownErrorsGenerateAllRequiredApiCalls()
+    {
+        await RunAsync(
+            job: new Job()
+            {
+                Source = new()
+                {
+                    Provider = "github",
+                    Repo = "test/repo",
+                    Directory = "some-dir",
+                }
+            },
+            packages: [],
+            files: [],
+            discoveryWorker: new TestDiscoveryWorker(_input =>
+            {
+                throw new FileNotFoundException("some required file is missing");
+            }),
+            analyzeWorker: TestAnalyzeWorker.FromResults(), // unreachable
+            updaterWorker: TestUpdaterWorker.FromResults(), // unreachable
+            expectedResult: new RunResult()
+            {
+                Base64DependencyFiles = [],
+                BaseCommitSha = "TEST-COMMIT-SHA",
+            },
+            expectedApiMessages:
+            [
+                new UnknownError(new FileNotFoundException("some required file is missing"), "TEST-JOB-ID"), // from record_update_job_error
+                new UnknownError(new FileNotFoundException("some required file is missing"), "TEST-JOB-ID"), // from record_update_job_unknown_error
+                new IncrementMetric()
+                {
+                    Metric = "updater.update_job_unknown_error",
+                    Tags = new()
+                    {
+                        ["package_manager"] = "nuget",
+                        ["class_name"] = "FileNotFoundException"
+                    }
+                },
+                new MarkAsProcessed("TEST-COMMIT-SHA")
+            ]
+        );
+    }
+
     internal static Task RunAsync(Job job, TestFile[] files, IDiscoveryWorker? discoveryWorker, IAnalyzeWorker? analyzeWorker, IUpdaterWorker? updaterWorker, RunResult expectedResult, object[] expectedApiMessages, MockNuGetPackage[]? packages = null, ExperimentsManager? experimentsManager = null, string? repoContentsPath = null)
     {
         var rawTestFiles = files.Select(f => (f.Path, Encoding.UTF8.GetBytes(f.Content))).ToArray();
@@ -3300,13 +3342,29 @@ public class RunWorkerTests
         var actualResult = await worker.RunAsync(job, repoContentsPathDirectoryInfo, "TEST-COMMIT-SHA");
         var actualApiMessages = testApiHandler.ReceivedMessages
             .Select(m =>
-                m.Object switch
+            {
+                object newObject;
+                switch (m.Object)
                 {
                     // this isn't the place to verify the generated text
-                    CreatePullRequest create => (m.Type, create with { CommitMessage = TestPullRequestCommitMessage, PrTitle = TestPullRequestTitle, PrBody = TestPullRequestBody }),
-                    UpdatePullRequest update => (m.Type, update with { CommitMessage = TestPullRequestCommitMessage, PrTitle = TestPullRequestTitle, PrBody = TestPullRequestBody }),
-                    _ => m,
+                    case CreatePullRequest create:
+                        newObject = create with { CommitMessage = TestPullRequestCommitMessage, PrTitle = TestPullRequestTitle, PrBody = TestPullRequestBody };
+                        break;
+                    case UpdatePullRequest update:
+                        newObject = update with { CommitMessage = TestPullRequestCommitMessage, PrTitle = TestPullRequestTitle, PrBody = TestPullRequestBody };
+                        break;
+                    // don't test callstacks
+                    case UnknownError unknown:
+                        unknown.Details["error-backtrace"] = "<unknown>";
+                        newObject = unknown;
+                        break;
+                    default:
+                        newObject = m.Object;
+                        break;
                 }
+
+                return (m.Type, Object: newObject);
+            }
             ).ToArray();
 
         // assert
