@@ -50,6 +50,7 @@ public abstract record JobErrorBase : MessageBase
         return ex switch
         {
             BadRequirementException badRequirement => new BadRequirement(badRequirement.Message),
+            BadResponseException badResponse => new PrivateSourceBadResponse([badResponse.Uri]),
             DependencyNotFoundException dependencyNotFound => new DependencyNotFound(string.Join(", ", dependencyNotFound.Dependencies)),
             HttpRequestException httpRequest => httpRequest.StatusCode switch
             {
