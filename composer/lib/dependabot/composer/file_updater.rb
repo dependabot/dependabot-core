@@ -56,7 +56,7 @@ module Dependabot
       def updated_composer_json_content
         ManifestUpdater.new(
           dependencies: dependencies,
-          manifest: composer_json
+          manifest: T.must(composer_json)
         ).updated_manifest_content
       end
 
