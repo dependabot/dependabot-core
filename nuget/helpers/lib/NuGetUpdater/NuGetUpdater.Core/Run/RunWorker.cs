@@ -419,7 +419,7 @@ public class RunWorker
         string baseCommitSha
     )
     {
-        var updatedDependencyNames = updateOperationsPerformed.Select(u => u.DependencyName).OrderBy(d => d, StringComparer.OrdinalIgnoreCase).ToArray();
+        var updatedDependencyNames = updateOperationsPerformed.Select(u => u.DependencyName).OrderBy(d => d, StringComparer.OrdinalIgnoreCase).ToImmutableArray();
         var updatedDependenciesSet = updatedDependencyNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         // all pull request dependencies with optional group name
@@ -439,10 +439,13 @@ public class RunWorker
         {
             if (job.UpdatingAPullRequest)
             {
+                // We've already determined that this pull request is an update; to get the server to accept it, we
+                // must return the same dependency set initially requested in the job if available.
+                var reportedDependencyNames = job.Dependencies ?? updatedDependencyNames;
                 return new UpdatePullRequest()
                 {
                     DependencyGroup = existingPullRequest.Item1,
-                    DependencyNames = [.. updatedDependencyNames],
+                    DependencyNames = reportedDependencyNames,
                     UpdatedDependencyFiles = updatedFiles,
                     BaseCommitSha = baseCommitSha,
                     CommitMessage = PullRequestTextGenerator.GetPullRequestCommitMessage(job, updateOperationsPerformed, existingPullRequest.Item1),
