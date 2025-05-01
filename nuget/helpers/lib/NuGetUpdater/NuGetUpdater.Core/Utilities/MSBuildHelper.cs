@@ -1029,6 +1029,7 @@ internal static partial class MSBuildHelper
             new Regex(@"Unable to find package (?<PackageName>[^ ]+)\. No packages exist with this id in source\(s\): (?<PackageSource>.*)$", RegexOptions.Multiline),
             new Regex(@"Unable to find package (?<PackageName>[^ ]+) with version \((?<PackageVersion>[^)]+)\)"),
             new Regex(@"Could not resolve SDK ""(?<PackageName>[^ ]+)""\."),
+            new Regex(@"Failed to fetch results from V2 feed at '.*FindPackagesById\(\)\?id='(?<PackageName>[^']+)'&semVerLevel=2\.0\.0' with following message : Response status code does not indicate success: 404\."),
         };
         var matches = patterns.Select(p => p.Match(output)).Where(m => m.Success);
         if (matches.Any())
