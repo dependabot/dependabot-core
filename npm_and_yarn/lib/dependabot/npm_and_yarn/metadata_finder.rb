@@ -220,6 +220,9 @@ module Dependabot
             new_source&.fetch(:url)
           end
 
+        # spaces must be escaped in base URL
+        registry_url = registry_url.gsub(" ", "%20")
+
         # NPM registries expect slashes to be escaped
         escaped_dependency_name = dependency.name.gsub("/", "%2F")
         "#{registry_url}/#{escaped_dependency_name}"

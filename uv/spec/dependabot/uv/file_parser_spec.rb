@@ -689,7 +689,7 @@ RSpec.describe Dependabot::Uv::FileParser do
 
             expect(ecosystem.name).to eq("uv")
             expect(ecosystem.package_manager.name).to eq("uv")
-            expect(ecosystem.package_manager.version.to_s).to eq("0.6.13")
+            expect(ecosystem.package_manager.version.to_s).to eq("0.7.1")
             expect(ecosystem.language.name).to eq("python")
           end
         end

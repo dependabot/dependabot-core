@@ -1559,7 +1559,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             {
                 Path = "",
                 Projects = [],
-                Error = new DependencyNotFound("Transitive.Dependency"),
+                Error = new DependencyNotFound("Transitive.Dependency/>= 4.5.6"),
             }
         );
     }
