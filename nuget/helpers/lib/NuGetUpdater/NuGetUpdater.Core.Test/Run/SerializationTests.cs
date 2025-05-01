@@ -263,12 +263,6 @@ public class SerializationTests
     [MemberData(nameof(DeserializeErrorTypesData))]
     public void SerializeError(JobErrorBase error, string expectedSerialization)
     {
-        if (error is UnknownError unknown)
-        {
-            // special case the exception's call stack to make it testable
-            unknown.Details["error-backtrace"] = "TEST-BACKTRACE";
-        }
-
         var actual = HttpApiHandler.Serialize(error);
         Assert.Equal(expectedSerialization, actual);
     }
@@ -679,7 +673,7 @@ public class SerializationTests
         [
             new UnknownError(new Exception("some message"), "JOB-ID"),
             """
-            {"data":{"error-type":"unknown_error","error-details":{"error-class":"Exception","error-message":"some message","error-backtrace":"TEST-BACKTRACE","package-manager":"nuget","job-id":"JOB-ID"}}}
+            {"data":{"error-type":"unknown_error","error-details":{"error-class":"Exception","error-message":"some message\n   \u003Cunknown\u003E","error-backtrace":"","package-manager":"nuget","job-id":"JOB-ID"}}}
             """
         ];
 
