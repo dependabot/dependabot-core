@@ -27,6 +27,12 @@ public abstract record JobErrorBase : MessageBase
         report.AppendLine($"Error type: {Type}");
         foreach (var (key, value) in Details)
         {
+            if (this is UnknownError && key == "error-backtrace")
+            {
+                // there's nothing meaningful in this field
+                continue;
+            }
+
             var valueString = value.ToString();
             if (value is IEnumerable<string> strings)
             {

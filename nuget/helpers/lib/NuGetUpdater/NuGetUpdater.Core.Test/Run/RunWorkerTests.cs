@@ -3355,7 +3355,14 @@ public class RunWorkerTests
                         break;
                     // don't test callstacks
                     case UnknownError unknown:
-                        unknown.Details["error-backtrace"] = "<unknown>";
+                        var message = (string)unknown.Details["error-message"];
+                        var stackTraceOffset = message.IndexOf('\n');
+                        if (stackTraceOffset >= 0)
+                        {
+                            var messageWithGenericStacktrace = $"{message[..stackTraceOffset]}\n{UnknownError.UnknownStackTrace}";
+                            unknown.Details["error-message"] = messageWithGenericStacktrace;
+                        }
+
                         newObject = unknown;
                         break;
                     default:
