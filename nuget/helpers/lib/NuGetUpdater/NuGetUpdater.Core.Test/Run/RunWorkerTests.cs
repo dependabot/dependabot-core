@@ -499,7 +499,7 @@ public class RunWorkerTests
     }
 
     [Fact]
-    public async Task PrivateSourceAuthenticationFailureIsForwaredToApiHandler()
+    public async Task ErrorsThrownFromDiscoveryWorkerAreForwaredToApiHandler()
     {
         await RunAsync(
             packages:
@@ -539,8 +539,8 @@ public class RunWorkerTests
             {
                 throw new HttpRequestException(message: null, inner: null, statusCode: HttpStatusCode.Unauthorized);
             }),
-            analyzeWorker: TestAnalyzeWorker.FromResults(),
-            updaterWorker: TestUpdaterWorker.FromResults(),
+            analyzeWorker: new TestAnalyzeWorker((_input) => throw new NotImplementedException("shouldn't get this far")),
+            updaterWorker: new TestUpdaterWorker((_input) => throw new NotImplementedException("shouldn't get this far")),
             expectedResult: new RunResult()
             {
                 Base64DependencyFiles = [],
@@ -548,6 +548,488 @@ public class RunWorkerTests
             },
             expectedApiMessages:
             [
+                new PrivateSourceAuthenticationFailure(["http://example.com/nuget/index.json"]),
+                new MarkAsProcessed("TEST-COMMIT-SHA")
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task ErrorsReturnedFromDiscoveryWorkerAreForwaredToApiHandler()
+    {
+        await RunAsync(
+            packages: [],
+            job: new Job()
+            {
+                Source = new()
+                {
+                    Provider = "github",
+                    Repo = "test/repo",
+                    Directory = "/",
+                }
+            },
+            files: [],
+            discoveryWorker: new TestDiscoveryWorker((_input) =>
+            {
+                return Task.FromResult(new WorkspaceDiscoveryResult()
+                {
+                    Path = "/",
+                    IsSuccess = false,
+                    Projects = [],
+                    Error = new PrivateSourceAuthenticationFailure(["http://example.com/nuget/index.json"]),
+                });
+            }),
+            analyzeWorker: new TestAnalyzeWorker((_input) => throw new NotImplementedException("shouldn't get this far")),
+            updaterWorker: new TestUpdaterWorker((_input) => throw new NotImplementedException("shouldn't get this far")),
+            expectedResult: new RunResult()
+            {
+                Base64DependencyFiles = [],
+                BaseCommitSha = "TEST-COMMIT-SHA",
+            },
+            expectedApiMessages:
+            [
+                new PrivateSourceAuthenticationFailure(["http://example.com/nuget/index.json"]),
+                new MarkAsProcessed("TEST-COMMIT-SHA")
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task ErrorsThrownFromAnalyzeWorkerAreForwaredToApiHandler()
+    {
+        await RunAsync(
+            packages: [],
+            job: new Job()
+            {
+                Source = new()
+                {
+                    Provider = "github",
+                    Repo = "test/repo",
+                    Directory = "/",
+                }
+            },
+            files:
+            [
+                ("NuGet.Config", """
+                    <configuration>
+                      <packageSources>
+                        <clear />
+                        <add key="private_feed" value="http://example.com/nuget/index.json" allowInsecureConnections="true" />
+                      </packageSources>
+                    </configuration>
+                    """),
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            discoveryWorker: new TestDiscoveryWorker((_input) =>
+            {
+                return Task.FromResult(new WorkspaceDiscoveryResult()
+                {
+                    Path = "",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "project.csproj",
+                            Dependencies = [new("Some.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"])],
+                            ImportedFiles = [],
+                            AdditionalFiles = [],
+                        }
+                    ]
+                });
+            }),
+            analyzeWorker: new TestAnalyzeWorker((_input) =>
+            {
+                throw new HttpRequestException(message: null, inner: null, statusCode: HttpStatusCode.Unauthorized);
+            }),
+            updaterWorker: new TestUpdaterWorker((_input) => throw new NotImplementedException("shouldn't get this far")),
+            expectedResult: new RunResult()
+            {
+                Base64DependencyFiles = [],
+                BaseCommitSha = "TEST-COMMIT-SHA",
+            },
+            expectedApiMessages:
+            [
+                new UpdatedDependencyList()
+                {
+                    Dependencies =
+                    [
+                        new ReportedDependency()
+                        {
+                            Name = "Some.Package",
+                            Version = "1.0.0",
+                            Requirements =
+                            [
+                                new ReportedRequirement()
+                                {
+                                    Requirement = "1.0.0",
+                                    File = "/project.csproj",
+                                    Groups = ["dependencies"],
+                                }
+                            ]
+                        }
+                    ],
+                    DependencyFiles = ["/project.csproj"],
+                },
+                new IncrementMetric()
+                {
+                    Metric = "updater.started",
+                    Tags = new()
+                    {
+                        ["operation"] = "group_update_all_versions"
+                    }
+                },
+                new PrivateSourceAuthenticationFailure(["http://example.com/nuget/index.json"]),
+                new MarkAsProcessed("TEST-COMMIT-SHA")
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task ErrorsReturnedFromAnalyzeWorkerAreForwaredToApiHandler()
+    {
+        await RunAsync(
+            packages: [],
+            job: new Job()
+            {
+                Source = new()
+                {
+                    Provider = "github",
+                    Repo = "test/repo",
+                    Directory = "/",
+                }
+            },
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            discoveryWorker: new TestDiscoveryWorker((_input) =>
+            {
+                return Task.FromResult(new WorkspaceDiscoveryResult()
+                {
+                    Path = "",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "project.csproj",
+                            Dependencies = [new("Some.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"])],
+                            ImportedFiles = [],
+                            AdditionalFiles = [],
+                        }
+                    ]
+                });
+            }),
+            analyzeWorker: new TestAnalyzeWorker((_input) =>
+            {
+                return Task.FromResult(new AnalysisResult()
+                {
+                    UpdatedVersion = "",
+                    CanUpdate = false,
+                    VersionComesFromMultiDependencyProperty = false,
+                    UpdatedDependencies = [],
+                    Error = new PrivateSourceAuthenticationFailure(["http://example.com/nuget/index.json"]),
+                });
+            }),
+            updaterWorker: new TestUpdaterWorker((_input) => throw new NotImplementedException("shouldn't get this far")),
+            expectedResult: new RunResult()
+            {
+                Base64DependencyFiles = [
+                    new()
+                    {
+                        Directory = "/",
+                        Name = "project.csproj",
+                        Content = Convert.ToBase64String(Encoding.UTF8.GetBytes("""
+                            <Project Sdk="Microsoft.NET.Sdk">
+                              <PropertyGroup>
+                                <TargetFramework>net8.0</TargetFramework>
+                              </PropertyGroup>
+                              <ItemGroup>
+                                <PackageReference Include="Some.Package" Version="1.0.0" />
+                              </ItemGroup>
+                            </Project>
+                            """)),
+                        ContentEncoding = "base64"
+                    }
+                ],
+                BaseCommitSha = "TEST-COMMIT-SHA",
+            },
+            expectedApiMessages:
+            [
+                new UpdatedDependencyList()
+                {
+                    Dependencies =
+                    [
+                        new ReportedDependency()
+                        {
+                            Name = "Some.Package",
+                            Version = "1.0.0",
+                            Requirements =
+                            [
+                                new ReportedRequirement()
+                                {
+                                    Requirement = "1.0.0",
+                                    File = "/project.csproj",
+                                    Groups = ["dependencies"],
+                                }
+                            ]
+                        }
+                    ],
+                    DependencyFiles = ["/project.csproj"],
+                },
+                new IncrementMetric()
+                {
+                    Metric = "updater.started",
+                    Tags = new()
+                    {
+                        ["operation"] = "group_update_all_versions"
+                    }
+                },
+                new PrivateSourceAuthenticationFailure(["http://example.com/nuget/index.json"]),
+                new MarkAsProcessed("TEST-COMMIT-SHA")
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task ErrorsThrownFromUpdaterWorkerAreForwaredToApiHandler()
+    {
+        await RunAsync(
+            packages: [],
+            job: new Job()
+            {
+                Source = new()
+                {
+                    Provider = "github",
+                    Repo = "test/repo",
+                    Directory = "/",
+                }
+            },
+            files:
+            [
+                ("NuGet.Config", """
+                    <configuration>
+                      <packageSources>
+                        <clear />
+                        <add key="private_feed" value="http://example.com/nuget/index.json" allowInsecureConnections="true" />
+                      </packageSources>
+                    </configuration>
+                    """),
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            discoveryWorker: new TestDiscoveryWorker((_input) =>
+            {
+                return Task.FromResult(new WorkspaceDiscoveryResult()
+                {
+                    Path = "",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "project.csproj",
+                            Dependencies = [new("Some.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"])],
+                            ImportedFiles = [],
+                            AdditionalFiles = [],
+                        }
+                    ]
+                });
+            }),
+            analyzeWorker: new TestAnalyzeWorker((_input) =>
+            {
+                return Task.FromResult(new AnalysisResult()
+                {
+                    UpdatedVersion = "1.0.1",
+                    CanUpdate = true,
+                    UpdatedDependencies =
+                    [
+                        new("Some.Package", "1.0.1", DependencyType.Unknown, TargetFrameworks: ["net8.0"], InfoUrl: "https://nuget.example.com/some-package"),
+                    ]
+                });
+            }),
+            updaterWorker: new TestUpdaterWorker((_input) =>
+            {
+                throw new HttpRequestException(message: null, inner: null, statusCode: HttpStatusCode.Unauthorized);
+            }),
+            expectedResult: new RunResult()
+            {
+                Base64DependencyFiles = [],
+                BaseCommitSha = "TEST-COMMIT-SHA",
+            },
+            expectedApiMessages:
+            [
+                new UpdatedDependencyList()
+                {
+                    Dependencies =
+                    [
+                        new ReportedDependency()
+                        {
+                            Name = "Some.Package",
+                            Version = "1.0.0",
+                            Requirements =
+                            [
+                                new ReportedRequirement()
+                                {
+                                    Requirement = "1.0.0",
+                                    File = "/project.csproj",
+                                    Groups = ["dependencies"],
+                                }
+                            ]
+                        }
+                    ],
+                    DependencyFiles = ["/project.csproj"],
+                },
+                new IncrementMetric()
+                {
+                    Metric = "updater.started",
+                    Tags = new()
+                    {
+                        ["operation"] = "group_update_all_versions"
+                    }
+                },
+                new PrivateSourceAuthenticationFailure(["http://example.com/nuget/index.json"]),
+                new MarkAsProcessed("TEST-COMMIT-SHA")
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task ErrorsReturnedFromUpdaterWorkerAreForwaredToApiHandler()
+    {
+        await RunAsync(
+            packages: [],
+            job: new Job()
+            {
+                Source = new()
+                {
+                    Provider = "github",
+                    Repo = "test/repo",
+                    Directory = "/",
+                }
+            },
+            files:
+            [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            discoveryWorker: new TestDiscoveryWorker((_input) =>
+            {
+                return Task.FromResult(new WorkspaceDiscoveryResult()
+                {
+                    Path = "",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "project.csproj",
+                            Dependencies = [new("Some.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"])],
+                            ImportedFiles = [],
+                            AdditionalFiles = [],
+                        }
+                    ]
+                });
+            }),
+            analyzeWorker: new TestAnalyzeWorker((_input) =>
+            {
+                return Task.FromResult(new AnalysisResult()
+                {
+                    UpdatedVersion = "1.0.1",
+                    CanUpdate = true,
+                    UpdatedDependencies =
+                    [
+                        new("Some.Package", "1.0.1", DependencyType.Unknown, TargetFrameworks: ["net8.0"], InfoUrl: "https://nuget.example.com/some-package"),
+                    ]
+                });
+            }),
+            updaterWorker: new TestUpdaterWorker((_input) =>
+            {
+                return Task.FromResult(new UpdateOperationResult()
+                {
+                    UpdateOperations = [],
+                    Error = new PrivateSourceAuthenticationFailure(["http://example.com/nuget/index.json"]),
+                });
+            }),
+            expectedResult: new RunResult()
+            {
+                Base64DependencyFiles = [
+                    new()
+                    {
+                        Directory = "/",
+                        Name = "project.csproj",
+                        Content = Convert.ToBase64String(Encoding.UTF8.GetBytes("""
+                            <Project Sdk="Microsoft.NET.Sdk">
+                              <PropertyGroup>
+                                <TargetFramework>net8.0</TargetFramework>
+                              </PropertyGroup>
+                              <ItemGroup>
+                                <PackageReference Include="Some.Package" Version="1.0.0" />
+                              </ItemGroup>
+                            </Project>
+                            """)),
+                        ContentEncoding = "base64"
+                    }
+                ],
+                BaseCommitSha = "TEST-COMMIT-SHA",
+            },
+            expectedApiMessages:
+            [
+                new UpdatedDependencyList()
+                {
+                    Dependencies =
+                    [
+                        new ReportedDependency()
+                        {
+                            Name = "Some.Package",
+                            Version = "1.0.0",
+                            Requirements =
+                            [
+                                new ReportedRequirement()
+                                {
+                                    Requirement = "1.0.0",
+                                    File = "/project.csproj",
+                                    Groups = ["dependencies"],
+                                }
+                            ]
+                        }
+                    ],
+                    DependencyFiles = ["/project.csproj"],
+                },
+                new IncrementMetric()
+                {
+                    Metric = "updater.started",
+                    Tags = new()
+                    {
+                        ["operation"] = "group_update_all_versions"
+                    }
+                },
                 new PrivateSourceAuthenticationFailure(["http://example.com/nuget/index.json"]),
                 new MarkAsProcessed("TEST-COMMIT-SHA")
             ]

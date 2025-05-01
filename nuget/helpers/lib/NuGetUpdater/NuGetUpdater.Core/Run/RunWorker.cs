@@ -113,7 +113,16 @@ public class RunWorker
         _logger.Info("Discovery JSON content:");
         _logger.Info(JsonSerializer.Serialize(discoveryResult, DiscoveryWorker.SerializerOptions));
 
-        // TODO: report errors
+        if (discoveryResult.Error is not null)
+        {
+            // this is unrecoverable
+            await _apiHandler.RecordUpdateJobError(discoveryResult.Error);
+            return new()
+            {
+                Base64DependencyFiles = [],
+                BaseCommitSha = baseCommitSha,
+            };
+        }
 
         // report dependencies
         var discoveredUpdatedDependencies = GetUpdatedDependencyListFromDiscovery(discoveryResult, repoContentsPath.FullName);
@@ -201,7 +210,15 @@ public class RunWorker
 
             var dependencyInfo = GetDependencyInfo(job, dependency);
             var analysisResult = await _analyzeWorker.RunAsync(repoContentsPath.FullName, discoveryResult, dependencyInfo);
-            // TODO: log analysisResult
+            _logger.Info("Analysis content:");
+            _logger.Info(JsonSerializer.Serialize(analysisResult, AnalyzeWorker.SerializerOptions));
+
+            if (analysisResult.Error is not null)
+            {
+                await _apiHandler.RecordUpdateJobError(analysisResult.Error);
+                continue;
+            }
+
             if (analysisResult.CanUpdate)
             {
                 if (!job.UpdatingAPullRequest)
@@ -240,8 +257,11 @@ public class RunWorker
                 };
 
                 var updateResult = await _updaterWorker.RunAsync(repoContentsPath.FullName, updateOperation.ProjectPath, dependency.Name, dependency.Version!, analysisResult.UpdatedVersion, isTransitive: dependency.IsTransitive);
-                // TODO: need to report if anything was actually updated
-                if (updateResult.Error is null)
+                if (updateResult.Error is not null)
+                {
+                    await _apiHandler.RecordUpdateJobError(updateResult.Error);
+                }
+                else
                 {
                     actualUpdatedDependencies.Add(updatedDependency);
                 }
