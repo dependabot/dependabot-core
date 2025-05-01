@@ -1,9 +1,12 @@
 using System.Collections.Immutable;
+using System.Text.Json;
 
 using NuGet.Frameworks;
 using NuGet.Versioning;
 
 using NuGetUpdater.Core.Analyze;
+using NuGetUpdater.Core.Run;
+using NuGetUpdater.Core.Run.ApiModel;
 using NuGetUpdater.Core.Test.Update;
 using NuGetUpdater.Core.Test.Utilities;
 
@@ -11,7 +14,7 @@ using Xunit;
 
 namespace NuGetUpdater.Core.Test.Analyze;
 
-public class VersionFinderTests
+public class VersionFinderTests : TestBase
 {
     [Fact]
     public void VersionFilter_VersionInIgnoredVersions_ReturnsFalse()
@@ -222,5 +225,75 @@ public class VersionFinderTests
         var actual = versions.Select(v => v.ToString()).ToArray();
         var expected = new[] { "2.0.0" };
         AssertEx.Equal(expected, actual);
+    }
+
+    [Fact]
+    public async Task FeedReturnsBadJson()
+    {
+        // arrange
+        using var http = TestHttpServer.CreateTestStringServer(url =>
+        {
+            var uri = new Uri(url, UriKind.Absolute);
+            var baseUrl = $"{uri.Scheme}://{uri.Host}:{uri.Port}";
+            return uri.PathAndQuery switch
+            {
+                // initial and search query are good, update should be possible...
+                "/index.json" => (200, $$"""
+                    {
+                        "version": "3.0.0",
+                        "resources": [
+                            {
+                                "@id": "{{baseUrl}}/download",
+                                "@type": "PackageBaseAddress/3.0.0"
+                            },
+                            {
+                                "@id": "{{baseUrl}}/query",
+                                "@type": "SearchQueryService"
+                            },
+                            {
+                                "@id": "{{baseUrl}}/registrations",
+                                "@type": "RegistrationsBaseUrl"
+                            }
+                        ]
+                    }
+                    """),
+                _ => (200, "") // empty string instead of expected JSON object
+            };
+        });
+        var feedUrl = $"{http.BaseUrl.TrimEnd('/')}/index.json";
+        using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(
+            ("NuGet.Config", $"""
+                <configuration>
+                  <packageSources>
+                    <clear />
+                    <add key="private_feed" value="{feedUrl}" allowInsecureConnections="true" />
+                  </packageSources>
+                </configuration>
+                """)
+        );
+
+        // act
+        var tfm = NuGetFramework.Parse("net9.0");
+        var dependencyInfo = new DependencyInfo
+        {
+            Name = "Some.Dependency",
+            Version = "1.0.0",
+            IsVulnerable = false,
+            IgnoredVersions = [],
+            Vulnerabilities = [],
+        };
+        var logger = new TestLogger();
+        var nugetContext = new NuGetContext(tempDir.DirectoryPath);
+        var exception = await Assert.ThrowsAsync<BadResponseException>(async () =>
+        {
+            await VersionFinder.GetVersionsAsync([tfm], dependencyInfo, nugetContext, logger, CancellationToken.None);
+        });
+        var error = JobErrorBase.ErrorFromException(exception, "TEST-JOB-ID", tempDir.DirectoryPath);
+
+        // assert
+        var expected = new PrivateSourceBadResponse([feedUrl]);
+        var expectedJson = JsonSerializer.Serialize(expected, RunWorker.SerializerOptions);
+        var actualJson = JsonSerializer.Serialize(error, RunWorker.SerializerOptions);
+        Assert.Equal(expectedJson, actualJson);
     }
 }
