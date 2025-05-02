@@ -1,11 +1,25 @@
 #!/bin/bash
 # shellcheck disable=all
 
+is_update_job_value=$(cat "$DEPENDABOT_JOB_PATH" | jq '.job | with_entries(.key |= sub("-";"_";"g")) .updating_a_pull_request')
+echo "Is update job value: $is_update_job_value"
+
 native_experiment_value=$(cat "$DEPENDABOT_JOB_PATH" | jq '.job.experiments | with_entries(.key |= sub("-";"_";"g")) .nuget_native_updater')
 echo "NuGet native updater experiment value: $native_experiment_value"
 
-if [ "$native_experiment_value" == "true" ]; then
+use_legacy_updater_when_updating_pr_value=$(cat "$DEPENDABOT_JOB_PATH" | jq '.job.experiments | with_entries(.key |= sub("-";"_";"g")) .nuget_use_legacy_updater_when_updating_pr')
+echo "Use legacy updater when updating a PR value: $use_legacy_updater_when_updating_pr_value"
+
+use_native_updater="$native_experiment_value"
+if [[ "$use_legacy_updater_when_updating_pr_value" == "true" && "$is_update_job_value" == "true" ]]; then
+    use_native_updater="false"
+    echo "Forcing legacy updater because this is an update job."
+fi
+
+if [ "$use_native_updater" == "true" ]; then
+    echo "Launching native updater."
     pwsh "$DEPENDABOT_HOME/dependabot-updater/bin/main.ps1" $*
 else
+    echo "Launching legacy updater."
     "$DEPENDABOT_HOME/dependabot-updater/bin/run-original" $*
 fi
