@@ -1,5 +1,7 @@
 using System.Collections.Immutable;
 
+using Newtonsoft.Json;
+
 using NuGet.Common;
 using NuGet.Configuration;
 using NuGet.Frameworks;
@@ -97,6 +99,11 @@ internal static class VersionFinder
             {
                 // if anything goes wrong here, the package source obviously doesn't contain the requested package
                 continue;
+            }
+            catch (JsonReaderException ex)
+            {
+                // unable to parse server response
+                throw new BadResponseException(ex.Message, source.Source);
             }
 
             var feedVersions = (await feed.GetVersions(

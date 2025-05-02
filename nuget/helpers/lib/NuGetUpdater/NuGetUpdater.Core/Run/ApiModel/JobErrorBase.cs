@@ -27,6 +27,12 @@ public abstract record JobErrorBase : MessageBase
         report.AppendLine($"Error type: {Type}");
         foreach (var (key, value) in Details)
         {
+            if (this is UnknownError && key == "error-backtrace")
+            {
+                // there's nothing meaningful in this field
+                continue;
+            }
+
             var valueString = value.ToString();
             if (value is IEnumerable<string> strings)
             {
@@ -44,6 +50,7 @@ public abstract record JobErrorBase : MessageBase
         return ex switch
         {
             BadRequirementException badRequirement => new BadRequirement(badRequirement.Message),
+            BadResponseException badResponse => new PrivateSourceBadResponse([badResponse.Uri]),
             DependencyNotFoundException dependencyNotFound => new DependencyNotFound(string.Join(", ", dependencyNotFound.Dependencies)),
             HttpRequestException httpRequest => httpRequest.StatusCode switch
             {
