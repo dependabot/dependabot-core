@@ -8,6 +8,53 @@ namespace NuGetUpdater.Core.Test.Run;
 
 public class HttpApiHandlerTests
 {
+    [Fact]
+    public async Task FailedRequestWithContentReportsData()
+    {
+        // arrange
+        // this mimics an error that can be returned by the server
+        var errorContent = """{"errors":[{"status":400,"title":"Bad Request","detail":"some-detail"}]}""";
+        using var http = TestHttpServer.CreateTestStringServer((method, url) =>
+        {
+            return (400, errorContent);
+        });
+        var handler = new HttpApiHandler(http.BaseUrl, "TEST-ID");
+
+        // act
+        var exception = await Assert.ThrowsAsync<HttpRequestException>(() => handler.IncrementMetric(new()
+        {
+            // body is irrelevant for this test
+            Metric = "TEST",
+        }));
+
+        // assert
+        var expectedMessage = $"400 (BadRequest): {errorContent}";
+        Assert.Equal(expectedMessage, exception.Message);
+    }
+
+    [Fact]
+    public async Task FailedRequestWithNoContentOnlyReportsStatusCode()
+    {
+        // arrange
+        using var http = TestHttpServer.CreateTestServer((method, url) =>
+        {
+            // no error content returned
+            return (500, null);
+        });
+        var handler = new HttpApiHandler(http.BaseUrl, "TEST-ID");
+
+        // act
+        var exception = await Assert.ThrowsAsync<HttpRequestException>(() => handler.IncrementMetric(new()
+        {
+            // body is irrelevant for this test
+            Metric = "TEST",
+        }));
+
+        // assert
+        var expectedMessage = $"500 (InternalServerError)";
+        Assert.Equal(expectedMessage, exception.Message);
+    }
+
     [Theory]
     [MemberData(nameof(ErrorsAreSentToTheCorrectEndpointTestData))]
     public async Task ErrorsAreSentToTheCorrectEndpoint(JobErrorBase error, params string[] expectedEndpoints)
