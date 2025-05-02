@@ -1,8 +1,6 @@
 # typed: strict
 # frozen_string_literal: true
 
-require "set"
-
 require "dependabot/git_commit_checker"
 require "dependabot/requirements_update_strategy"
 require "dependabot/shared_helpers"

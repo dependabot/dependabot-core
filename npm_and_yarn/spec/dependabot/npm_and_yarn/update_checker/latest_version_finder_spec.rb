@@ -944,7 +944,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
     context "when the npm registry uri is invalid and lookup returns a bad URI error" do
       before do
         stub_request(:get, registry_listing_url)
-          .to_return(status: 500, body: '{"error":"bad URI(is not URI?): "https://registry.npmjs.org/\"/webpack""}')
+          .to_return(status: 500, body: '{"error":"bad URI (is not URI?): "https://registry.npmjs.org/\"/webpack""}')
 
         allow(version_finder).to receive(:sleep).and_return(true)
       end
