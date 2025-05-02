@@ -34,7 +34,16 @@ public class HttpApiHandler : IApiHandler
             Content = content
         };
         var response = await HttpClient.SendAsync(message);
-        var _ = response.EnsureSuccessStatusCode();
+        if (!response.IsSuccessStatusCode)
+        {
+            var responseContent = await response.Content.ReadAsStringAsync();
+            if (!string.IsNullOrEmpty(responseContent))
+            {
+                responseContent = string.Concat(": ", responseContent);
+            }
+
+            throw new HttpRequestException(message: $"{(int)response.StatusCode} ({response.StatusCode}){responseContent}", inner: null, statusCode: response.StatusCode);
+        }
     }
 
     internal static string Serialize(object body)
