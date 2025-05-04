@@ -24,22 +24,22 @@ PATH
       aws-sdk-codecommit (~> 1.28)
       aws-sdk-ecr (~> 1.5)
       bundler (>= 1.16, < 3.0.0)
-      commonmarker (>= 0.20.1, < 0.24.0)
-      docker_registry2 (~> 1.18.2)
+      commonmarker (~> 0.23)
+      docker_registry2 (~> 1.18)
       excon (~> 0.109)
-      faraday (= 2.7.11)
-      faraday-retry (= 2.2.0)
-      gitlab (= 5.0.0)
+      faraday (~> 2.7)
+      faraday-retry (~> 2.2)
+      gitlab (~> 5.0)
       json (< 2.7)
       nokogiri (~> 1.8)
-      octokit (>= 4.6, < 8.0)
+      octokit (~> 7.2)
       opentelemetry-api (~> 1.5)
       opentelemetry-logs-api (~> 0.2)
       opentelemetry-metrics-api (~> 0.3)
-      parser (>= 2.5, < 4.0)
+      parser (~> 3.3)
       psych (~> 5.0)
-      sorbet-runtime (~> 0.5.11952)
-      stackprof (~> 0.2.16)
+      sorbet-runtime (~> 0.5)
+      stackprof (~> 0.2)
       toml-rb (~> 4.0)
 
 PATH
@@ -220,7 +220,8 @@ GEM
     faraday-net_http (3.0.2)
     faraday-retry (2.2.0)
       faraday (~> 2.0)
-    gitlab (5.0.0)
+    gitlab (5.1.0)
+      base64 (~> 0.2.0)
       httparty (~> 0.20)
       terminal-table (>= 1.5.1)
     gpgme (2.0.23)
@@ -256,7 +257,7 @@ GEM
       racc (~> 1.4)
     nokogiri (1.18.1-x86_64-linux-gnu)
       racc (~> 1.4)
-    octokit (6.1.1)
+    octokit (7.2.0)
       faraday (>= 1, < 3)
       sawyer (~> 0.9)
     opentelemetry-api (1.5.0)
@@ -277,7 +278,7 @@ GEM
     public_suffix (5.0.4)
     racc (1.8.1)
     rainbow (3.1.1)
-    rake (13.1.0)
+    rake (13.2.1)
     rbi (0.2.2)
       prism (~> 1.0)
       sorbet-runtime (>= 0.5.9204)
@@ -408,7 +409,7 @@ PLATFORMS
   x86_64-linux
 
 DEPENDENCIES
-  debug (~> 1.9.2)
+  debug (~> 1.9)
   dependabot-bun!
   dependabot-bundler!
   dependabot-cargo!
@@ -435,17 +436,17 @@ DEPENDENCIES
   dependabot-terraform!
   dependabot-uv!
   gpgme (~> 2.0)
-  rake (~> 13)
+  rake (~> 13.2)
   rspec-its (~> 1.3)
-  rspec-sorbet (~> 1.9.2)
-  rubocop (~> 1.67.0)
-  rubocop-performance (~> 1.22.1)
-  rubocop-rspec (~> 2.29.1)
-  rubocop-sorbet (~> 0.8.7)
-  simplecov (~> 0.22.0)
+  rspec-sorbet (~> 1.9)
+  rubocop (~> 1.67)
+  rubocop-performance (~> 1.22)
+  rubocop-rspec (~> 2.29)
+  rubocop-sorbet (~> 0.8)
+  simplecov (~> 0.22)
   sorbet (= 0.5.11952)
   tapioca (= 0.16.11)
-  turbo_tests (~> 2.2.0)
+  turbo_tests (~> 2.2)
   vcr (~> 6.1)
   webmock (~> 3.18)
   webrick (~> 1.9)
@@ -502,7 +503,7 @@ CHECKSUMS
   faraday (2.7.11) sha256=85dbf6bb776c66d2a03394d8fe535f90cb1c875e3c6ab9bb85d26ca13597c76e
   faraday-net_http (3.0.2) sha256=6882929abed8094e1ee30344a3369e856fe34530044630d1f652bf70ebd87e8d
   faraday-retry (2.2.0) sha256=80824a5454dd0ce7d8074013454d163569b909001a64bdb3499c9968df4f41c5
-  gitlab (5.0.0) sha256=ad0836386555bd228cbc4fe6442d12354562141229f72f668027a92fdd33800d
+  gitlab (5.1.0) sha256=021c27807a98f379c0cfeda459327c026d3756dbd6531dc1479f0e3df03572c7
   gpgme (2.0.23) sha256=c87bbafdb8719da7c58ebcac08297aa1fb227022ac6cd2972829ba68adc91c04
   hashdiff (1.1.0) sha256=b5465f0e7375f1ee883f53a766ece4dbc764b7674a7c5ffd76e79b2f5f6fc9c9
   http-accept (1.7.0) sha256=c626860682bfbb3b46462f8c39cd470fd7b0584f61b3cc9df5b2e9eb9972a126
@@ -523,7 +524,7 @@ CHECKSUMS
   nokogiri (1.18.1-arm64-darwin) sha256=d75193f284c899d225943a8944479faedd995a7573ddd5c8308ffbdf2ec55204
   nokogiri (1.18.1-x86_64-darwin) sha256=d94e3aa6483577495fc8969d6b4b5c075840ce6b1ab09636a6d4177ad171051d
   nokogiri (1.18.1-x86_64-linux-gnu) sha256=e516cf16ccde67ed4cc595a2621ca5ddd42562ecb24928914b0045a20a41620e
-  octokit (6.1.1) sha256=920e4a9d820205f70738f58de6a7e6ef0e2f25b27db954b5806a63105207b0bf
+  octokit (7.2.0) sha256=7032d968d03177ee7a29e3bd4782fc078215cca4743db0dfc66a49feb9411907
   opentelemetry-api (1.5.0) sha256=8dcc33e7aba70b1da630065ce0db3d6f50cb8ebd2017383209739439025ea997
   opentelemetry-logs-api (0.2.0) sha256=0e9241b9b53a315101a6a5f2efbfa80278a0d39f9220915871f8d6057c39b117
   opentelemetry-metrics-api (0.3.0) sha256=29f4b82cd5c5992884f4dc68d279a2cc114560f433c431bf9ef6f42d8d0f10b1
@@ -536,7 +537,7 @@ CHECKSUMS
   public_suffix (5.0.4) sha256=35cd648e0d21d06b8dce9331d19619538d1d898ba6d56a6f2258409d2526d1ae
   racc (1.8.1) sha256=4a7f6929691dbec8b5209a0b373bc2614882b55fc5d2e447a21aaa691303d62f
   rainbow (3.1.1) sha256=039491aa3a89f42efa1d6dec2fc4e62ede96eb6acd95e52f1ad581182b79bc6a
-  rake (13.1.0) sha256=be6a3e1aa7f66e6c65fa57555234eb75ce4cf4ada077658449207205474199c6
+  rake (13.2.1)
   rbi (0.2.2) sha256=738956d5fed03c35f75178a9621630f89c9cc1cb44cbc7a22cf64e9a7b2d121d
   rdoc (6.6.3.1) sha256=39f7b749229ab5ad9d21c81586151c1dd7a549fa8be4070ee09b524f9c656345
   regexp_parser (2.9.2) sha256=5a27e767ad634f8a4b544520d5cd28a0db7aa1198a5d7c9d7e11d7b3d9066446
