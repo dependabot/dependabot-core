@@ -49,6 +49,7 @@ module Dependabot
           @group = group
         end
 
+        # rubocop:disable Metrics/AbcSize
         sig { returns(T.nilable(Dependabot::DependencyChange)) }
         def perform
           if group.dependencies.empty?
@@ -66,6 +67,7 @@ module Dependabot
               error_handler.handle_job_error(error: e, dependency_group: group)
             ensure
               service.record_ecosystem_meta(dependency_snapshot.ecosystem)
+              service.record_cooldown_meta(job)
             end
           else
             Dependabot.logger.info("Nothing to update for Dependency Group: '#{group.name}'")
@@ -73,6 +75,7 @@ module Dependabot
 
           dependency_change
         end
+        # rubocop:enable Metrics/AbcSize
 
         private
 
