@@ -58,7 +58,7 @@ public partial class EntryPointTests
             );
         }
 
-        private static async Task RunAsync(TestFile[] files, Job job, string[] expectedUrls, MockNuGetPackage[]? packages = null)
+        private static async Task RunAsync(TestFile[] files, Job job, string[] expectedUrls, MockNuGetPackage[]? packages = null, string? repoContentsPath = null)
         {
             using var tempDirectory = new TemporaryDirectory();
 
@@ -90,7 +90,7 @@ public partial class EntryPointTests
                 "--job-path",
                 jobPath,
                 "--repo-contents-path",
-                tempDirectory.DirectoryPath,
+                repoContentsPath ?? tempDirectory.DirectoryPath,
                 "--api-url",
                 http.BaseUrl,
                 "--job-id",
