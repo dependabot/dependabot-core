@@ -223,12 +223,17 @@ public class RunWorker
             {
                 if (!job.UpdatingAPullRequest)
                 {
-                    var existingPullRequest = job.GetExistingPullRequestForDependency(analysisResult.UpdatedDependencies.First(d => d.Name.Equals(dependency.Name, StringComparison.OrdinalIgnoreCase)));
-                    if (existingPullRequest is not null)
+                    var updatedDependencyFromAnalysis = analysisResult.UpdatedDependencies
+                        .FirstOrDefault(d => d.Name.Equals(dependency.Name, StringComparison.OrdinalIgnoreCase));
+                    if (updatedDependencyFromAnalysis is not null)
                     {
-                        await SendApiMessage(new PullRequestExistsForLatestVersion(dependency.Name, analysisResult.UpdatedVersion));
-                        unhandledPullRequestDependenciesSet.RemoveWhere(handled => handled.Count == 1 && handled.Contains(dependency.Name));
-                        continue;
+                        var existingPullRequest = job.GetExistingPullRequestForDependency(updatedDependencyFromAnalysis);
+                        if (existingPullRequest is not null)
+                        {
+                            await SendApiMessage(new PullRequestExistsForLatestVersion(dependency.Name, analysisResult.UpdatedVersion));
+                            unhandledPullRequestDependenciesSet.RemoveWhere(handled => handled.Count == 1 && handled.Contains(dependency.Name));
+                            continue;
+                        }
                     }
                 }
 
