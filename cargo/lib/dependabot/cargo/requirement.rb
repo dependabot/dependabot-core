@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 ################################################################################
@@ -21,11 +21,12 @@ module Dependabot
       quoted = OPS.keys.map { |k| Regexp.quote(k) }.join("|")
       version_pattern = Cargo::Version::VERSION_PATTERN
 
-      PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{version_pattern})\\s*".freeze
+      PATTERN_RAW = T.let("\\s*(#{quoted})?\\s*(#{version_pattern})\\s*".freeze, String)
       PATTERN = /\A#{PATTERN_RAW}\z/
 
       # Use Cargo::Version rather than Gem::Version to ensure that
       # pre-release versions aren't transformed.
+      sig { override.params(obj: T.any(Gem::Version, String)).returns([String, Gem::Version]) }
       def self.parse(obj)
         return ["=", Cargo::Version.new(obj.to_s)] if obj.is_a?(Gem::Version)
 
@@ -47,9 +48,10 @@ module Dependabot
         [new(requirement_string)]
       end
 
+      sig { params(requirements: T.nilable(T.any(String, T::Array[String]))).void }
       def initialize(*requirements)
         requirements = requirements.flatten.flat_map do |req_string|
-          req_string.split(",").map(&:strip).map do |r|
+          T.must(req_string).split(",").map(&:strip).map do |r|
             convert_rust_constraint_to_ruby_constraint(r.strip)
           end
         end
@@ -59,6 +61,7 @@ module Dependabot
 
       private
 
+      sig { params(req_string: String).returns(T.any(String, T::Array[String])) }
       def convert_rust_constraint_to_ruby_constraint(req_string)
         if req_string.include?("*")
           ruby_range(req_string.gsub(/(?:\.|^)[*]/, "").gsub(/^[^\d]/, ""))
@@ -70,6 +73,7 @@ module Dependabot
         end
       end
 
+      sig { params(req_string: String).returns(String) }
       def convert_tilde_req(req_string)
         version = req_string.gsub(/^~/, "")
         parts = version.split(".")
@@ -77,6 +81,7 @@ module Dependabot
         "~> #{parts.join('.')}"
       end
 
+      sig { params(req_string: String).returns(String) }
       def ruby_range(req_string)
         parts = req_string.split(".")
 
@@ -91,12 +96,13 @@ module Dependabot
         "~> #{parts.join('.')}"
       end
 
+      sig { params(req_string: String).returns(T::Array[String]) }
       def convert_caret_req(req_string)
         version = req_string.gsub(/^\^/, "")
         parts = version.split(".")
         first_non_zero = parts.find { |d| d != "0" }
         first_non_zero_index =
-          first_non_zero ? parts.index(first_non_zero) : parts.count - 1
+          first_non_zero ? T.must(parts.index(first_non_zero)) : parts.count - 1
         upper_bound = parts.map.with_index do |part, i|
           if i < first_non_zero_index then part
           elsif i == first_non_zero_index then (part.to_i + 1).to_s
