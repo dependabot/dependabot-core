@@ -402,16 +402,35 @@ internal static class SdkProjectDiscovery
 
             // create dependencies
             var tfms = packagesByTfm.Keys.OrderBy(tfm => tfm).ToImmutableArray();
-            var dependencies = tfms.SelectMany(tfm =>
+            var groupedDependencies = new Dictionary<string, Dependency>(StringComparer.OrdinalIgnoreCase);
+            foreach (var tfm in tfms)
             {
-                return packagesByTfm[tfm].Keys.OrderBy(p => p).Select(packageName =>
+                var packages = packagesByTfm[tfm];
+                foreach (var package in packages)
                 {
-                    var packageVersion = packagesByTfm[tfm][packageName]!;
+                    var packageName = package.Key;
+                    var packageVersion = package.Value;
                     var isTopLevel = topLevelPackageNames.Contains(packageName);
                     var dependencyType = isTopLevel ? DependencyType.PackageReference : DependencyType.Unknown;
-                    return new Dependency(packageName, packageVersion, dependencyType, TargetFrameworks: [tfm], IsDirect: isTopLevel, IsTransitive: !isTopLevel);
-                });
-            }).ToImmutableArray();
+                    var combinedTfms = new HashSet<string>([tfm], StringComparer.OrdinalIgnoreCase);
+                    if (groupedDependencies.TryGetValue(packageName, out var existingDependency) &&
+                        existingDependency.Version == packageVersion &&
+                        existingDependency.Type == dependencyType &&
+                        existingDependency.TargetFrameworks is not null)
+                    {
+                        // same dependency, combine tfms
+                        combinedTfms.AddRange(existingDependency.TargetFrameworks);
+                    }
+
+                    var normalizedTfms = combinedTfms.OrderBy(t => t).ToImmutableArray();
+                    groupedDependencies[package.Key] = new Dependency(packageName, packageVersion, dependencyType, TargetFrameworks: normalizedTfms, IsDirect: isTopLevel, IsTransitive: !isTopLevel);
+                }
+            }
+
+            var dependencies = groupedDependencies.Values
+                .OrderBy(d => d.Name)
+                .ThenBy(d => d.Version)
+                .ToImmutableArray();
 
             // others
             var properties = resolvedProperties[projectPath]

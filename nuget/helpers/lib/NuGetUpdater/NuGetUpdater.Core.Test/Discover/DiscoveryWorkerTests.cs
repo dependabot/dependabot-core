@@ -673,8 +673,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         FilePath = "src/project.csproj",
                         TargetFrameworks = ["net7.0", "net8.0"],
                         Dependencies = [
-                            new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net7.0"], IsDirect: true),
-                            new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
+                            new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net7.0", "net8.0"], IsDirect: true),
                         ],
                         Properties = [
                             new("TargetFrameworks", "net7.0;net8.0", "src/project.csproj")
