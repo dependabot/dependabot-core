@@ -39,7 +39,8 @@ module Dependabot
                    :mark_job_as_processed,
                    :record_ecosystem_versions,
                    :increment_metric,
-                   :record_ecosystem_meta
+                   :record_ecosystem_meta,
+                   :record_cooldown_meta
 
     sig { void }
     def wait_for_calls_to_finish

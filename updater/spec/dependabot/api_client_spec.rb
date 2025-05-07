@@ -30,7 +30,11 @@ RSpec.describe Dependabot::ApiClient do
                       credentials: [],
                       commit_message_options: [],
                       updating_a_pull_request?: false,
-                      ignore_conditions: [])
+                      ignore_conditions: [],
+                      cooldown: cooldown)
+    end
+    let(:cooldown) do
+      nil
     end
     let(:dependencies) do
       [dependency]
@@ -78,6 +82,7 @@ RSpec.describe Dependabot::ApiClient do
     before do
       allow(Dependabot::PullRequestCreator::MessageBuilder).to receive_message_chain(:new, :message).and_return(message)
       allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_record_ecosystem_meta).and_return(true)
+      allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_cooldown_metrics_collection).and_return(true)
       stub_request(:post, create_pull_request_url)
         .to_return(status: 204, headers: headers)
     end
@@ -611,6 +616,83 @@ RSpec.describe Dependabot::ApiClient do
       it "does not send a request" do
         client.record_ecosystem_meta(ecosystem)
         expect(WebMock).not_to have_requested(:post, record_ecosystem_meta_url)
+      end
+    end
+  end
+
+  describe "record_cooldown_meta" do
+    before do
+      allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_cooldown_metrics_collection).and_return(true)
+    end
+
+    let(:job) do
+      instance_double(Dependabot::Job,
+                      source: source,
+                      credentials: [],
+                      package_manager: package_manager,
+                      commit_message_options: [],
+                      updating_a_pull_request?: false,
+                      ignore_conditions: [],
+                      cooldown: cooldown)
+    end
+
+    let(:source) do
+      instance_double(Dependabot::Source, provider: "github", repo: "gocardless/bump", directory: "/")
+    end
+
+    let(:package_manager) do
+      "bundler"
+    end
+
+    let(:cooldown) do
+      Dependabot::Package::ReleaseCooldownOptions.new(
+        default_days: 11,
+        semver_major_days: 2,
+        semver_minor_days: 3,
+        semver_patch_days: 4,
+        include: [],
+        exclude: []
+      )
+    end
+    let(:record_cooldown_meta_url) { "http://example.com/update_jobs/1/record_cooldown_meta" }
+
+    it "hits the correct endpoint" do
+      client.record_cooldown_meta(job)
+
+      expect(WebMock)
+        .to have_requested(:post, record_cooldown_meta_url)
+        .with(headers: { "Authorization" => "token" })
+    end
+
+    it "encodes the payload correctly" do
+      client.record_cooldown_meta(job)
+
+      expect(WebMock).to(have_requested(:post, record_cooldown_meta_url).with do |req|
+        data = JSON.parse(req.body)["data"]
+
+        expect(data).not_to be_nil
+        expect(data[0]["cooldown"]["config"]["default_days"]).to eq(11)
+        expect(data[0]["cooldown"]["config"]["semver_major_days"]).to eq(2)
+        expect(data[0]["cooldown"]["config"]["semver_minor_days"]).to eq(3)
+        expect(data[0]["cooldown"]["config"]["semver_patch_days"]).to eq(4)
+      end)
+    end
+
+    context "when cooldown is nil" do
+      it "does not send a request" do
+        client.record_cooldown_meta(nil)
+        expect(WebMock).not_to have_requested(:post, record_cooldown_meta_url)
+      end
+    end
+
+    context "when feature flag is disabled" do
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_cooldown_metrics_collection).and_return(false)
+      end
+
+      it "does not send a request" do
+        client.record_cooldown_meta(job)
+        expect(WebMock).not_to have_requested(:post, record_cooldown_meta_url)
       end
     end
   end

@@ -69,6 +69,7 @@ module Dependabot
           error_handler.handle_dependency_error(error: e, dependency: dependency)
         ensure
           service.record_ecosystem_meta(dependency_snapshot.ecosystem)
+          service.record_cooldown_meta(job)
         end
 
         private

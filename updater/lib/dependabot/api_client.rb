@@ -327,6 +327,62 @@ module Dependabot
       end
     end
 
+    # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
+    sig { params(job: T.nilable(Dependabot::Job)).void }
+    def record_cooldown_meta(job)
+      unless Dependabot::Experiments.enabled?(:enable_cooldown_metrics_collection)
+        Dependabot.logger.info("Cooldown metrics collection is disabled.")
+        return
+      end
+
+      return if job&.cooldown.nil?
+
+      cooldown = T.must(job).cooldown
+
+      begin
+        ::Dependabot::OpenTelemetry.tracer.in_span("record_cooldown_meta", kind: :internal) do |_span|
+          api_url = "#{base_url}/update_jobs/#{job_id}/record_cooldown_meta"
+
+          body = {
+            data: [
+              {
+                cooldown: {
+                  ecosystem_name: T.must(job).package_manager,
+                  config:
+                  {
+                    default_days: T.must(cooldown).default_days,
+                    semver_major_days: T.must(cooldown).semver_major_days,
+                    semver_minor_days: T.must(cooldown).semver_minor_days,
+                    semver_patch_days: T.must(cooldown).semver_patch_days
+                  }
+                }
+              }
+            ]
+          }
+
+          retry_count = 0
+
+          begin
+            response = http_client.post(api_url, json: body)
+            raise ApiError, response.body if response.code >= 400
+          rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError, ApiError => e
+            retry_count += 1
+            if retry_count <= MAX_REQUEST_RETRIES
+              sleep(rand(3.0..10.0))
+              retry
+            else
+              Dependabot.logger.error(
+                "Failed to record cooldown meta after #{MAX_REQUEST_RETRIES} retries: #{e.message}"
+              )
+            end
+          end
+        end
+      rescue StandardError => e
+        Dependabot.logger.error("Failed to record cooldown meta: #{e.message}")
+      end
+    end
+    # rubocop:enable Metrics/MethodLength, Metrics/AbcSize
+
     private
 
     # Update return type to allow returning a Hash or nil
