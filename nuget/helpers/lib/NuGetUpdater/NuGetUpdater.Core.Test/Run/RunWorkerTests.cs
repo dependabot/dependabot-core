@@ -3515,8 +3515,8 @@ public class RunWorkerTests
                         var stackTraceOffset = message.IndexOf('\n');
                         if (stackTraceOffset >= 0)
                         {
-                            var messageWithGenericStacktrace = $"{message[..stackTraceOffset]}\n{UnknownError.UnknownStackTrace}";
-                            unknown.Details["error-message"] = messageWithGenericStacktrace;
+                            var messageWithoutStackTrace = message[..stackTraceOffset].TrimEnd('\r');
+                            unknown.Details["error-message"] = messageWithoutStackTrace;
                         }
 
                         newObject = unknown;
