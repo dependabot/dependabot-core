@@ -39,6 +39,10 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
     )
   end
 
+  before do
+    ENV["GOTOOLCHAIN"] = ENV.fetch("GO_LEGACY")
+  end
+
   describe "#updated_go_mod_content" do
     subject(:updated_go_mod_content) { updater.updated_go_mod_content }
 
