@@ -5,6 +5,13 @@ require "dependabot/python/requirement_parser"
 require "dependabot/python/file_updater"
 require "dependabot/shared_helpers"
 require "dependabot/python/native_helpers"
+require "sorbet-runtime"
+
+# This class is responsible for updating the requirements in a requirements.txt
+# file. It uses the RequirementReplacer class to replace the old requirement
+# with the new requirement. It also handles the case where the requirement is
+# a hash, and replaces the old hash with the new hash.
+#
 
 module Dependabot
   module Python
