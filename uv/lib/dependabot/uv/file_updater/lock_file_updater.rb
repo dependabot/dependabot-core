@@ -181,9 +181,12 @@ module Dependabot
         end
 
         def run_update_command
+          options = lock_options
+          options_fingerprint = lock_options_fingerprint(options)
+
           # Use pyenv exec to ensure we're using the correct Python environment
-          command = "pyenv exec uv lock --upgrade-package #{dependency.name}"
-          fingerprint = "pyenv exec uv lock --upgrade-package <dependency_name>"
+          command = "pyenv exec uv lock --upgrade-package #{dependency.name} #{options}"
+          fingerprint = "pyenv exec uv lock --upgrade-package <dependency_name> #{options_fingerprint}"
 
           run_command(command, fingerprint:)
         end
@@ -244,6 +247,34 @@ module Dependabot
           /
             ["']?(?<declaration>#{escaped_name}\s*#{escaped_operator}[\d\.\*]+)["']?
           /x
+        end
+
+        def lock_options
+          options = lock_index_options
+
+          options.join(" ")
+        end
+
+        def lock_index_options
+          credentials
+            .select { |cred| cred["type"] == "python_index" }
+            .map do |cred|
+            authed_url = AuthedUrlBuilder.authed_url(credential: cred)
+
+            if cred.replaces_base?
+              "--default-index #{authed_url}"
+            else
+              "--index #{authed_url}"
+            end
+          end
+        end
+
+        def lock_options_fingerprint(options)
+          options.sub(
+            /--default-index\s+\S+/, "--default-index <default_index>"
+          ).sub(
+            /--index\s+\S+/, "--index <index>"
+          )
         end
 
         def escape(name)
