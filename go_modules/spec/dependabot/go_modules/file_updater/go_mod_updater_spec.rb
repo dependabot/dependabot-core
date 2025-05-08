@@ -39,10 +39,6 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
     )
   end
 
-  before do
-    ENV["GOTOOLCHAIN"] = ENV.fetch("GO_LEGACY")
-  end
-
   describe "#updated_go_mod_content" do
     subject(:updated_go_mod_content) { updater.updated_go_mod_content }
 
@@ -143,10 +139,6 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         end
 
         context "when dealing with a go 1.22 go.mod that will get a toolchain update" do
-          before do
-            ENV["GOTOOLCHAIN"] = "local+auto"
-          end
-
           let(:project_name) { "go_1.22" }
           let(:dependency_name) { "golang.org/x/text" }
           let(:dependency_version) { "v0.24.0" }
@@ -156,8 +148,6 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
             module github.com/dependabot/vgotest
 
             go 1.23.0
-
-            toolchain go1.24.1
 
             require golang.org/x/text v0.24.0
           GOMOD

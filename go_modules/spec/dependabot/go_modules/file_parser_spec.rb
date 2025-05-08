@@ -30,11 +30,6 @@ RSpec.describe Dependabot::GoModules::FileParser do
   let(:files) { [go_mod] }
   let(:parser) { described_class.new(dependency_files: files, source: source, repo_contents_path: repo_contents_path) }
 
-  after do
-    # Reset to the default go toolchain after each test
-    ENV["GOTOOLCHAIN"] = ENV.fetch("GO_LEGACY")
-  end
-
   it_behaves_like "a dependency file parser"
 
   it "requires a go.mod to be present" do
@@ -127,16 +122,6 @@ RSpec.describe Dependabot::GoModules::FileParser do
               }]
             )
           end
-        end
-      end
-
-      context "with a go.mod that has go 1.21 but no toolchain" do
-        let(:go_mod_fixture_name) { "go_1_21_no_toolchain.mod" }
-
-        it "sets GOTOOLCHAIN=local+auto" do
-          parser.parse
-
-          expect(ENV.fetch("GOTOOLCHAIN", nil)).to eq("local+auto")
         end
       end
     end
@@ -359,10 +344,6 @@ RSpec.describe Dependabot::GoModules::FileParser do
   describe "#ecosystem" do
     subject(:ecosystem) { parser.ecosystem }
 
-    before do
-      ENV["GO_LEGACY"] = "go1.20.10"
-    end
-
     it "has the correct name" do
       expect(ecosystem.name).to eq "go"
     end
@@ -373,7 +354,7 @@ RSpec.describe Dependabot::GoModules::FileParser do
       it "returns the correct package manager" do
         expect(package_manager.name).to eq "go_modules"
         expect(package_manager.requirement).to be_nil
-        expect(package_manager.version.to_s).to eq "1.20.10"
+        expect(package_manager.version.to_s).to eq "1.25"
       end
     end
 

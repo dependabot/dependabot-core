@@ -132,7 +132,7 @@ module Dependabot
         end
 
         sig { returns(T::Hash[Symbol, String]) }
-        def update_files # rubocop:disable Metrics/AbcSize, Metrics/PerceivedComplexity
+        def update_files
           in_repo_path do
             # During grouped updates, the dependency_files are from a previous dependency
             # update, so we need to update them on disk after the git reset in in_repo_path.
