@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Text;
 
 using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Test.Update;
@@ -516,6 +517,62 @@ public class SdkProjectDiscoveryTests : DiscoveryWorkerTestBase
                         new("TargetFramework", "net9.0-windows", "src/library.csproj"),
                     ],
                     TargetFrameworks = ["net9.0-windows"],
+                    ReferencedProjectPaths = [],
+                    AdditionalFiles = [],
+                },
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task TransitiveDependenciesWithoutAssembliesAreReported()
+    {
+        await TestDiscoverAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Dependency", "1.2.3", "net9.0", [(null, [("Transitive.Dependency", "4.5.6")])]),
+                new MockNuGetPackage(
+                    "Transitive.Dependency",
+                    "4.5.6",
+                    Files: [
+                        ("build/Transitive.Dependency.targets", Encoding.UTF8.GetBytes("<Project />"))
+                    ],
+                    DependencyGroups: [(null, [("Super.Transitive.Dependency", "7.8.9")])]
+                ),
+                MockNuGetPackage.CreateSimplePackage("Super.Transitive.Dependency", "7.8.9", "net9.0"),
+            ],
+            startingDirectory: "src",
+            projectPath: "src/library.csproj",
+            files:
+            [
+                ("src/library.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net9.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Dependency" Version="1.2.3" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            expectedProjects:
+            [
+                new()
+                {
+                    FilePath = "library.csproj",
+                    Dependencies =
+                    [
+                        new("Some.Dependency", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net9.0"], IsDirect: true),
+                        new("Transitive.Dependency", "4.5.6", DependencyType.Unknown, TargetFrameworks: ["net9.0"], IsTransitive: true),
+                        new("Super.Transitive.Dependency", "7.8.9", DependencyType.Unknown, TargetFrameworks: ["net9.0"], IsTransitive: true),
+                    ],
+                    ImportedFiles = [],
+                    Properties =
+                    [
+                        new("TargetFramework", "net9.0", "src/library.csproj"),
+                    ],
+                    TargetFrameworks = ["net9.0"],
                     ReferencedProjectPaths = [],
                     AdditionalFiles = [],
                 },

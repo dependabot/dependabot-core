@@ -108,6 +108,7 @@ module Dependabot
           process_dependency_error(e, dependency)
         ensure
           service.record_ecosystem_meta(dependency_snapshot.ecosystem)
+          service.record_cooldown_meta(job)
         end
 
         # rubocop:disable Metrics/AbcSize
