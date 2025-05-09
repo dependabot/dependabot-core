@@ -2,6 +2,7 @@ using NuGet.Versioning;
 
 using NuGetUpdater.Core.Run;
 using NuGetUpdater.Core.Run.ApiModel;
+using NuGetUpdater.Core.Test.Utilities;
 using NuGetUpdater.Core.Updater;
 
 using Xunit;
@@ -10,6 +11,81 @@ namespace NuGetUpdater.Core.Test.Run;
 
 public class PullRequestMessageTests
 {
+    [Fact]
+    public void UpdatePullRequestMessageAlwaysReportsJobDependencies()
+    {
+        // For the update operation to be considered valid, the reported updated dependency set _MUST_ match the
+        // originally requested dependencies from the job.  This situation can arise if a dependency was removed
+        // between the initial PR creation and the subsequent update.
+
+        // In this test two dependencies, Dependency1 and Dependency2, are requested in the job but ultimately only
+        // one of those dependencies was actually updated.  The scenario here is a bit contrived, but that's to make
+        // it more direct to test.
+
+        // arrange
+        var originalJobDependencies = new[]
+        {
+            "Dependency1",
+            "Dependency2"
+        };
+
+        var job = new Job()
+        {
+            Dependencies = [.. originalJobDependencies],
+            Source = new()
+            {
+                Provider = "github",
+                Repo = "test/repo",
+            },
+            ExistingPullRequests = [
+                    new PullRequest()
+                    {
+                        Dependencies = [
+                            new() { DependencyName = "Dependency1", DependencyVersion = NuGetVersion.Parse("1.0.1") },
+                        ]
+                    }
+                ],
+            UpdatingAPullRequest = true,
+        };
+
+        var updatedFiles = new[]
+        {
+            new DependencyFile()
+            {
+                Directory = "/src/",
+                Name = "project.csproj",
+                Content = "project contents irrelevant",
+            }
+        };
+
+        var updatedDependencies = new[]
+        {
+            new ReportedDependency()
+            {
+                Name = "Dependency1",
+                Version = "1.0.1",
+                Requirements = [],
+            },
+        };
+
+        var updateOperationsPerformed = new UpdateOperationBase[]
+        {
+            new DirectUpdate()
+            {
+                DependencyName = "Dependency1",
+                NewVersion = NuGetVersion.Parse("1.0.1"),
+                UpdatedFiles = ["/src/project.csproj"]
+            },
+        };
+
+        // act
+        var message = RunWorker.GetPullRequestApiMessage(job, updatedFiles, updatedDependencies, [.. updateOperationsPerformed], "TEST-COMMIT-SHA");
+
+        // assert
+        var update = Assert.IsType<UpdatePullRequest>(message);
+        AssertEx.Equal(originalJobDependencies, update.DependencyNames);
+    }
+
     [Theory]
     [MemberData(nameof(GetPullRequestApiMessageData))]
     public void GetPullRequestApiMessage(Job job, DependencyFile[] updatedFiles, ReportedDependency[] updatedDependencies, UpdateOperationBase[] updateOperationsPerformed, MessageBase expectedMessage)
