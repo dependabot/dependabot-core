@@ -23,7 +23,7 @@ COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
 ENV PATH=$DEPENDABOT_HOME/go/bin:$PATH
 
 # Temporarily install https://go.dev/cl/657178 for new toolchain behavior.
-# Switch to Go 1.25 when it is released.
+# TODO: Switch to Go 1.25 when it is released.
 RUN go install golang.org/dl/gotip@latest \
     && echo y | gotip download 657178 \
     && gotip version \
