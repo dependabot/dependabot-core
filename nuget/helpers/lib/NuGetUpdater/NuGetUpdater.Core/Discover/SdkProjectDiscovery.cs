@@ -461,7 +461,9 @@ internal static class SdkProjectDiscovery
                     {
                         foreach (var tfmObject in tfmObjects.EnumerateObject())
                         {
-                            var reportedTargetFramework = NuGetFramework.Parse(tfmObject.Name);
+                            // TFM might have a RID suffix after a slash that we can't parse
+                            var tfmParts = tfmObject.Name.Split('/');
+                            var reportedTargetFramework = NuGetFramework.Parse(tfmParts[0]);
                             if (reportedTargetFramework == parsedTfm)
                             {
                                 foreach (var packageObject in tfmObject.Value.EnumerateObject())
