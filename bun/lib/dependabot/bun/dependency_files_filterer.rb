@@ -17,31 +17,35 @@ module Dependabot
       def initialize(dependency_files:, updated_dependencies:)
         @dependency_files = dependency_files
         @updated_dependencies = updated_dependencies
+        @paths_requiring_update_check = T.let(nil, T.nilable(T::Array[String]))
+        @files_requiring_update = T.let(nil, T.nilable(T::Array[DependencyFile]))
+        @package_files_requiring_update = T.let(nil, T.nilable(T::Array[DependencyFile]))
+        @dependency_manifest_requirements = T.let(nil, T.nilable(T::Array[String]))
+        @root_lockfile = T.let(nil, T.nilable(DependencyFile))
+        @lockfiles = T.let(nil, T.nilable(T::Array[DependencyFile]))
+        @parsed_root_package_json = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
+        @lockfile_dependencies = T.let({}, T.nilable(T::Hash[String, T::Array[Dependency]]))
       end
 
       sig { returns(T::Array[String]) }
       def paths_requiring_update_check
-        @paths_requiring_update_check ||= T.let(fetch_paths_requiring_update_check, T.nilable(T::Array[String]))
+        @paths_requiring_update_check ||= fetch_paths_requiring_update_check
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def files_requiring_update
-        @files_requiring_update ||= T.let(
-          dependency_files.select do |file|
-            package_files_requiring_update.include?(file) ||
-              package_required_lockfile?(file) ||
-              workspaces_lockfile?(file)
-          end, T.nilable(T::Array[DependencyFile])
-        )
+        @files_requiring_update ||= dependency_files.select do |file|
+          package_files_requiring_update.include?(file) ||
+            package_required_lockfile?(file) ||
+            workspaces_lockfile?(file)
+        end
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def package_files_requiring_update
-        @package_files_requiring_update ||= T.let(
-          dependency_files.select do |file|
-            dependency_manifest_requirements.include?(file.name)
-          end, T.nilable(T::Array[DependencyFile])
-        )
+        @package_files_requiring_update ||= dependency_files.select do |file|
+          dependency_manifest_requirements.include?(file.name)
+        end
       end
 
       private
@@ -64,11 +68,9 @@ module Dependabot
 
       sig { returns(T::Array[String]) }
       def dependency_manifest_requirements
-        @dependency_manifest_requirements ||= T.let(
-          updated_dependencies.flat_map do |dep|
-            dep.requirements.map { |requirement| requirement[:file] }
-          end, T.nilable(T::Array[String])
-        )
+        @dependency_manifest_requirements ||= updated_dependencies.flat_map do |dep|
+          dep.requirements.map { |requirement| requirement[:file] }
+        end
       end
 
       sig { params(lockfile: DependencyFile).returns(T::Boolean) }
@@ -93,30 +95,24 @@ module Dependabot
 
       sig { returns(T.nilable(DependencyFile)) }
       def root_lockfile
-        @root_lockfile ||= T.let(
-          lockfiles.find do |file|
-            File.dirname(file.name) == "."
-          end, T.nilable(DependencyFile)
-        )
+        @root_lockfile ||= lockfiles.find do |file|
+          File.dirname(file.name) == "."
+        end
       end
 
       sig { returns(T::Array[DependencyFile]) }
       def lockfiles
-        @lockfiles ||= T.let(
-          dependency_files.select do |file|
-            lockfile?(file)
-          end, T.nilable(T::Array[DependencyFile])
-        )
+        @lockfiles ||= dependency_files.select do |file|
+          lockfile?(file)
+        end
       end
 
       sig { returns(T::Hash[String, T.untyped]) }
       def parsed_root_package_json
-        @parsed_root_package_json ||= T.let(
-          begin
-            package = T.must(dependency_files.find { |f| f.name == "package.json" })
-            JSON.parse(T.must(package.content))
-          end, T.nilable(T::Hash[String, T.untyped])
-        )
+        @parsed_root_package_json ||= begin
+          package = T.must(dependency_files.find { |f| f.name == "package.json" })
+          JSON.parse(T.must(package.content))
+        end
       end
 
       sig { params(lockfile: Dependabot::DependencyFile).returns(T::Boolean) }
@@ -130,7 +126,6 @@ module Dependabot
 
       sig { params(lockfile: DependencyFile).returns(T::Array[Dependency]) }
       def lockfile_dependencies(lockfile)
-        @lockfile_dependencies ||= T.let({}, T.nilable(T::Hash[String, T::Array[Dependency]]))
         @lockfile_dependencies[lockfile.name] ||=
           Bun::FileParser::LockfileParser.new(
             dependency_files: [lockfile]
