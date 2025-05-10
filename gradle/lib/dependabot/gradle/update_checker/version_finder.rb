@@ -40,6 +40,7 @@ module Dependabot
           possible_versions = filter_version_types(possible_versions)
           possible_versions = filter_ignored_versions(possible_versions)
 
+          Dependabot.logger.info(possible_versions.last)
           possible_versions.last
         end
 
@@ -70,7 +71,7 @@ module Dependabot
             end.flatten.compact
 
           raise PrivateSourceAuthenticationFailure, forbidden_urls.first if version_details.none? && forbidden_urls.any?
-
+          Dependabot.logger.info(version_details.sort_by { |details| details.fetch(:version) })
           version_details.sort_by { |details| details.fetch(:version) }
         end
 
@@ -322,10 +323,14 @@ module Dependabot
         end
 
         def plugin?
+          Dependabot.logger.info("plugin??")
+          Dependabot.logger.info(dependency.requirements.any? { |r| r.fetch(:groups).include? "plugins" })
           dependency.requirements.any? { |r| r.fetch(:groups).include? "plugins" }
         end
 
         def kotlin_plugin?
+          Dependabot.logger.info("kotlinplugin??")
+          Dependabot.logger.info(plugin? && dependency.requirements.any? { |r| r.fetch(:groups).include? "kotlin" })
           plugin? && dependency.requirements.any? { |r| r.fetch(:groups).include? "kotlin" }
         end
 
@@ -346,6 +351,7 @@ module Dependabot
         end
 
         def auth_headers(maven_repo_url)
+          Dependabot.logger.info("auth_headers_finder.auth_headers(#{maven_repo_url})")
           auth_headers_finder.auth_headers(maven_repo_url)
         end
       end
