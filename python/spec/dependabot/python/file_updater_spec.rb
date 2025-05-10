@@ -468,7 +468,7 @@ RSpec.describe Dependabot::Python::FileUpdater do
 
       context "when credentials do not replace base" do
         it "returns nil and authed urls for all credentials" do
-          expect(instance.send(:pip_compile_index_urls)).to eq([nil, "authed_url"])
+          expect(instance.send(:pip_compile_index_urls)).to eq(["authed_url"])
         end
       end
     end
