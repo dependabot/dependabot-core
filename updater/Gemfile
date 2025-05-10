@@ -28,7 +28,7 @@ gem "dependabot-swift", path: "../swift"
 gem "dependabot-terraform", path: "../terraform"
 gem "dependabot-uv", path: "../uv"
 
-gem "http", "~> 5.1"
+gem "http", "~> 5.2"
 gem "octokit", "~> 7.2"
 gem "opentelemetry-exporter-otlp", "~> 0.30"
 gem "opentelemetry-exporter-otlp-logs", "~> 0.2"
