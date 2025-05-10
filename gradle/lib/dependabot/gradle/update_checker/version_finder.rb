@@ -346,6 +346,7 @@ module Dependabot
         end
 
         def auth_headers(maven_repo_url)
+          Dependabot.logger.info("auth_headers_finder.auth_headers(#{maven_repo_url})")
           auth_headers_finder.auth_headers(maven_repo_url)
         end
       end
