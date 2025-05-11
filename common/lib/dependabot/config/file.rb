@@ -58,6 +58,7 @@ module Dependabot
       private
 
       PACKAGE_MANAGER_LOOKUP = T.let({
+        "azure-pipelines" => "azure_pipelines",
         "bun" => "bun",
         "bundler" => "bundler",
         "cargo" => "cargo",

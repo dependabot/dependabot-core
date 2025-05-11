@@ -1,0 +1,10 @@
+inherit_from: ../.rubocop.yml
+
+inherit_mode:
+  merge:
+    - Exclude
+
+
+Sorbet/StrictSigil:
+  Exclude:
+    - "test/**/*.rb"

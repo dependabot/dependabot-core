@@ -48,7 +48,8 @@ Sentry.init do |config|
     silent|
     swift|
     uv|
-    devcontainers
+    devcontainers|
+    azure_pipelines
   )}x
 
   config.before_send = ->(event, hint) { Dependabot::Sentry.process_chain(event, hint) }
@@ -84,3 +85,4 @@ require "dependabot/swift"
 require "dependabot/devcontainers"
 require "dependabot/bun"
 require "dependabot/uv"
+require "dependabot/azure_pipelines"

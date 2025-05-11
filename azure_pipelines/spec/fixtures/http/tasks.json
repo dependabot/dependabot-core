@@ -1,0 +1,1569 @@
+{
+  "count": 4,
+  "value": [
+    {
+      "visibility": [
+        "Build"
+      ],
+      "runsOn": [
+        "Agent",
+        "DeploymentGroup"
+      ],
+      "id": "8d8eebd8-2b94-4c97-85af-839254cc6da4",
+      "name": "Gradle",
+      "version": {
+        "major": 2,
+        "minor": 247,
+        "patch": 1,
+        "isTest": false
+      },
+      "serverOwned": true,
+      "contentsUploaded": true,
+      "iconUrl": "https://dev.azure.com/dependabot-scus1/_apis/distributedtask/tasks/8d8eebd8-2b94-4c97-85af-839254cc6da4/2.247.1/icon",
+      "minimumAgentVersion": "1.91.0",
+      "friendlyName": "Gradle",
+      "description": "Build using a Gradle wrapper script",
+      "category": "Build",
+      "helpMarkDown": "[Learn more about this task](https://go.microsoft.com/fwlink/?LinkID=613720) or [see the Gradle documentation](https://docs.gradle.org/current/userguide/userguide.html)",
+      "helpUrl": "https://docs.microsoft.com/azure/devops/pipelines/tasks/build/gradle",
+      "releaseNotes": "Configuration of the SonarQube analysis was moved to the [SonarQube](https://marketplace.visualstudio.com/items?itemName=SonarSource.sonarqube) or [SonarCloud](https://marketplace.visualstudio.com/items?itemName=SonarSource.sonarcloud) extensions, in task `Prepare Analysis Configuration`",
+      "deprecated": true,
+      "definitionType": "task",
+      "author": "Microsoft Corporation",
+      "demands": [
+        "java"
+      ],
+      "groups": [
+        {
+          "name": "junitTestResults",
+          "displayName": "JUnit Test Results",
+          "isExpanded": true
+        },
+        {
+          "name": "codeCoverage",
+          "displayName": "Code Coverage",
+          "isExpanded": true
+        },
+        {
+          "name": "advanced",
+          "displayName": "Advanced",
+          "isExpanded": false
+        },
+        {
+          "name": "CodeAnalysis",
+          "displayName": "Code Analysis",
+          "isExpanded": true
+        }
+      ],
+      "inputs": [
+        {
+          "aliases": [
+            "gradleWrapperFile"
+          ],
+          "name": "wrapperScript",
+          "label": "Gradle wrapper",
+          "defaultValue": "gradlew",
+          "required": true,
+          "type": "filePath",
+          "helpMarkDown": "Relative path from the repository root to the Gradle Wrapper script."
+        },
+        {
+          "aliases": [
+            "workingDirectory"
+          ],
+          "name": "cwd",
+          "label": "Working directory",
+          "defaultValue": "",
+          "type": "filePath",
+          "helpMarkDown": "Working directory in which to run the Gradle build. If not specified, the repository root directory is used."
+        },
+        {
+          "name": "options",
+          "label": "Options",
+          "defaultValue": "",
+          "type": "string",
+          "helpMarkDown": ""
+        },
+        {
+          "name": "tasks",
+          "label": "Tasks",
+          "defaultValue": "build",
+          "required": true,
+          "type": "string",
+          "helpMarkDown": ""
+        },
+        {
+          "name": "publishJUnitResults",
+          "label": "Publish to Azure Pipelines",
+          "defaultValue": "true",
+          "required": true,
+          "type": "boolean",
+          "helpMarkDown": "Select this option to publish JUnit test results produced by the Gradle build to Azure Pipelines. Each test results file matching `Test Results Files` will be published as a test run in Azure Pipelines.",
+          "groupName": "junitTestResults"
+        },
+        {
+          "name": "testResultsFiles",
+          "label": "Test results files",
+          "defaultValue": "**/TEST-*.xml",
+          "required": true,
+          "type": "filePath",
+          "helpMarkDown": "Test results files path. Wildcards can be used ([more information](https://go.microsoft.com/fwlink/?linkid=856077)). For example, `**/TEST-*.xml` for all XML files whose name starts with TEST-.",
+          "visibleRule": "publishJUnitResults = true",
+          "groupName": "junitTestResults"
+        },
+        {
+          "name": "testRunTitle",
+          "label": "Test run title",
+          "defaultValue": "",
+          "type": "string",
+          "helpMarkDown": "Provide a name for the test run.",
+          "visibleRule": "publishJUnitResults = true",
+          "groupName": "junitTestResults"
+        },
+        {
+          "aliases": [
+            "codeCoverageToolOption"
+          ],
+          "options": {
+            "None": "None",
+            "Cobertura": "Cobertura",
+            "JaCoCo": "JaCoCo"
+          },
+          "name": "codeCoverageTool",
+          "label": "Code coverage tool",
+          "defaultValue": "None",
+          "type": "pickList",
+          "helpMarkDown": "Select the code coverage tool.",
+          "groupName": "codeCoverage"
+        },
+        {
+          "aliases": [
+            "codeCoverageClassFilesDirectories"
+          ],
+          "name": "classFilesDirectories",
+          "label": "Class files directories",
+          "defaultValue": "build/classes/main/",
+          "required": true,
+          "type": "string",
+          "helpMarkDown": "Comma-separated list of directories containing class files and archive files (JAR, WAR, etc.). Code coverage is reported for class files in these directories. Normally, classes under `build/classes/java/main` (for Gradle 4+) are searched, which is the default class directory for Gradle builds",
+          "visibleRule": "codeCoverageTool != None",
+          "groupName": "codeCoverage"
+        },
+        {
+          "aliases": [
+            "codeCoverageClassFilter"
+          ],
+          "name": "classFilter",
+          "label": "Class inclusion/exclusion filters",
+          "defaultValue": "",
+          "type": "string",
+          "helpMarkDown": "Comma-separated list of filters to include or exclude classes from collecting code coverage. For example: +:com.*,+:org.*,-:my.app*.*.",
+          "visibleRule": "codeCoverageTool != None",
+          "groupName": "codeCoverage"
+        },
+        {
+          "aliases": [
+            "codeCoverageFailIfEmpty"
+          ],
+          "name": "failIfCoverageEmpty",
+          "label": "Fail when code coverage results are missing",
+          "defaultValue": "false",
+          "type": "boolean",
+          "helpMarkDown": "Fail the build if code coverage did not produce any results to publish.",
+          "visibleRule": "codeCoverageTool != None",
+          "groupName": "codeCoverage"
+        },
+        {
+          "aliases": [
+            "codeCoverageGradle5xOrHigher"
+          ],
+          "name": "gradle5xOrHigher",
+          "label": "Gradle version >= 5.x",
+          "defaultValue": "true",
+          "type": "boolean",
+          "helpMarkDown": "Set this to 'true' if gradle version is >= 5.x.'True' by default.",
+          "visibleRule": "codeCoverageTool = JaCoCo",
+          "groupName": "codeCoverage"
+        },
+        {
+          "aliases": [
+            "javaHomeOption"
+          ],
+          "options": {
+            "JDKVersion": "JDK Version",
+            "Path": "Path"
+          },
+          "name": "javaHomeSelection",
+          "label": "Set JAVA_HOME by",
+          "defaultValue": "JDKVersion",
+          "required": true,
+          "type": "radio",
+          "helpMarkDown": "Sets JAVA_HOME either by selecting a JDK version that will be discovered during builds or by manually entering a JDK path.",
+          "groupName": "advanced"
+        },
+        {
+          "aliases": [
+            "jdkVersionOption"
+          ],
+          "options": {
+            "default": "default",
+            "1.17": "JDK 17",
+            "1.11": "JDK 11",
+            "1.10": "JDK 10 (out of support)",
+            "1.9": "JDK 9 (out of support)",
+            "1.8": "JDK 8",
+            "1.7": "JDK 7",
+            "1.6": "JDK 6 (out of support)"
+          },
+          "name": "jdkVersion",
+          "label": "JDK version",
+          "defaultValue": "default",
+          "type": "pickList",
+          "helpMarkDown": "Will attempt to discover the path to the selected JDK version and set JAVA_HOME accordingly.",
+          "visibleRule": "javaHomeSelection = JDKVersion",
+          "groupName": "advanced"
+        },
+        {
+          "aliases": [
+            "jdkDirectory"
+          ],
+          "name": "jdkUserInputPath",
+          "label": "JDK path",
+          "defaultValue": "",
+          "required": true,
+          "type": "string",
+          "helpMarkDown": "Sets JAVA_HOME to the given path.",
+          "visibleRule": "javaHomeSelection = Path",
+          "groupName": "advanced"
+        },
+        {
+          "aliases": [
+            "jdkArchitectureOption"
+          ],
+          "options": {
+            "x86": "x86",
+            "x64": "x64"
+          },
+          "name": "jdkArchitecture",
+          "label": "JDK architecture",
+          "defaultValue": "x64",
+          "type": "pickList",
+          "helpMarkDown": "Optionally supply the architecture (x86, x64) of the JDK.",
+          "visibleRule": "jdkVersion != default",
+          "groupName": "advanced"
+        },
+        {
+          "aliases": [
+            "gradleOptions"
+          ],
+          "name": "gradleOpts",
+          "label": "Set GRADLE_OPTS",
+          "defaultValue": "-Xmx1024m",
+          "type": "string",
+          "helpMarkDown": "Sets the GRADLE_OPTS environment variable, which is used to send command-line arguments to start the JVM. The xmx flag specifies the maximum memory available to the JVM.",
+          "groupName": "advanced"
+        },
+        {
+          "aliases": [
+            "sonarQubeRunAnalysis"
+          ],
+          "name": "sqAnalysisEnabled",
+          "label": "Run SonarQube or SonarCloud Analysis",
+          "defaultValue": "false",
+          "required": true,
+          "type": "boolean",
+          "helpMarkDown": "This option has changed from version 1 of the **Gradle** task to use the [SonarQube](https://marketplace.visualstudio.com/items?itemName=SonarSource.sonarqube) and [SonarCloud](https://marketplace.visualstudio.com/items?itemName=SonarSource.sonarcloud) marketplace extensions. Enable this option to run [SonarQube or SonarCloud analysis](http://redirect.sonarsource.com/doc/install-configure-scanner-tfs-ts.html) after executing tasks in the **Tasks** field. You must also add a **Prepare Analysis Configuration** task from one of the extensions to the build pipeline before this Gradle task.",
+          "groupName": "CodeAnalysis"
+        },
+        {
+          "options": {
+            "specify": "Specify version number",
+            "build": "Use plugin applied in your build.gradle"
+          },
+          "name": "sqGradlePluginVersionChoice",
+          "label": "SonarQube scanner for Gradle version",
+          "defaultValue": "specify",
+          "required": true,
+          "type": "radio",
+          "helpMarkDown": "The SonarQube Gradle plugin version to use. You can declare it in your Gradle configuration file, or specify a version here.",
+          "visibleRule": "sqAnalysisEnabled = true",
+          "groupName": "CodeAnalysis"
+        },
+        {
+          "aliases": [
+            "sonarQubeGradlePluginVersion"
+          ],
+          "name": "sqGradlePluginVersion",
+          "label": "SonarQube scanner for Gradle plugin version",
+          "defaultValue": "2.6.1",
+          "required": true,
+          "type": "string",
+          "helpMarkDown": "Refer to https://plugins.gradle.org/plugin/org.sonarqube for all available versions.",
+          "visibleRule": "sqAnalysisEnabled = true && sqGradlePluginVersionChoice = specify",
+          "groupName": "CodeAnalysis"
+        },
+        {
+          "aliases": [
+            "checkStyleRunAnalysis"
+          ],
+          "name": "checkstyleAnalysisEnabled",
+          "label": "Run Checkstyle",
+          "defaultValue": "false",
+          "type": "boolean",
+          "helpMarkDown": "Run the Checkstyle tool with the default Sun checks. Results are uploaded as build artifacts.",
+          "groupName": "CodeAnalysis"
+        },
+        {
+          "aliases": [
+            "findBugsRunAnalysis"
+          ],
+          "name": "findbugsAnalysisEnabled",
+          "label": "Run FindBugs",
+          "defaultValue": "false",
+          "type": "boolean",
+          "helpMarkDown": "Use the FindBugs static analysis tool to look for bugs in the code. Results are uploaded as build artifacts. In Gradle 6.0 this plugin was removed. Use spotbugs plugin instead. [More info](https://docs.gradle.org/current/userguide/upgrading_version_5.html#the_findbugs_plugin_has_been_removed)",
+          "groupName": "CodeAnalysis"
+        },
+        {
+          "aliases": [
+            "pmdRunAnalysis"
+          ],
+          "name": "pmdAnalysisEnabled",
+          "label": "Run PMD",
+          "defaultValue": "false",
+          "type": "boolean",
+          "helpMarkDown": "Use the PMD Java static analysis tool to look for bugs in the code. Results are uploaded as build artifacts.",
+          "groupName": "CodeAnalysis"
+        },
+        {
+          "aliases": [
+            "spotBugsAnalysis"
+          ],
+          "name": "spotBugsAnalysisEnabled",
+          "label": "Run SpotBugs",
+          "defaultValue": "false",
+          "required": true,
+          "type": "boolean",
+          "helpMarkDown": "Enable this option to run spotBugs. This plugin works with Gradle v5.6 or later. [More info](https://spotbugs.readthedocs.io/en/stable/gradle.html#use-spotbugs-gradle-plugin)",
+          "groupName": "CodeAnalysis"
+        },
+        {
+          "options": {
+            "specify": "Specify version number",
+            "build": "Use plugin applied in your build.gradle"
+          },
+          "name": "spotBugsGradlePluginVersionChoice",
+          "label": "Spotbugs plugin version",
+          "defaultValue": "specify",
+          "required": true,
+          "type": "radio",
+          "helpMarkDown": "The Spotbugs Gradle plugin version to use. You can declare it in your Gradle configuration file, or specify a version here.",
+          "visibleRule": "spotBugsAnalysisEnabled = true",
+          "groupName": "CodeAnalysis"
+        },
+        {
+          "aliases": [
+            "spotbugsGradlePluginVersion"
+          ],
+          "name": "spotbugsGradlePluginVersion",
+          "label": "Version number",
+          "defaultValue": "4.7.0",
+          "required": true,
+          "type": "string",
+          "helpMarkDown": "Refer to https://plugins.gradle.org/plugin/com.github.spotbugs for all available versions.",
+          "visibleRule": "spotBugsAnalysisEnabled = true && spotBugsGradlePluginVersionChoice = specify",
+          "groupName": "CodeAnalysis"
+        }
+      ],
+      "satisfies": [],
+      "sourceDefinitions": [],
+      "dataSourceBindings": [],
+      "instanceNameFormat": "gradlew $(tasks)",
+      "preJobExecution": {},
+      "execution": {
+        "Node10": {
+          "target": "gradletask.js",
+          "argumentFormat": ""
+        },
+        "Node16": {
+          "target": "gradletask.js",
+          "argumentFormat": ""
+        },
+        "Node20_1": {
+          "target": "gradletask.js",
+          "argumentFormat": ""
+        }
+      },
+      "postJobExecution": {},
+      "_buildConfigMapping": {
+        "Default": "2.247.0",
+        "Node20_229_2": "2.247.1"
+      }
+    },
+    {
+      "visibility": [
+        "Build"
+      ],
+      "runsOn": [
+        "Agent",
+        "DeploymentGroup"
+      ],
+      "id": "8d8eebd8-2b94-4c97-85af-839254cc6da4",
+      "name": "Gradle",
+      "version": {
+        "major": 3,
+        "minor": 247,
+        "patch": 1,
+        "isTest": false
+      },
+      "serverOwned": true,
+      "contentsUploaded": true,
+      "iconUrl": "https://dev.azure.com/dependabot-scus1/_apis/distributedtask/tasks/8d8eebd8-2b94-4c97-85af-839254cc6da4/3.247.1/icon",
+      "minimumAgentVersion": "1.91.0",
+      "friendlyName": "Gradle",
+      "description": "Build using a Gradle wrapper script",
+      "category": "Build",
+      "helpMarkDown": "[Learn more about this task](https://go.microsoft.com/fwlink/?LinkID=613720) or [see the Gradle documentation](https://docs.gradle.org/current/userguide/userguide.html)",
+      "helpUrl": "https://docs.microsoft.com/azure/devops/pipelines/tasks/build/gradle",
+      "releaseNotes": "Configuration of the SonarQube analysis was moved to the [SonarQube](https://marketplace.visualstudio.com/items?itemName=SonarSource.sonarqube) or [SonarCloud](https://marketplace.visualstudio.com/items?itemName=SonarSource.sonarcloud) extensions, in task `Prepare Analysis Configuration`",
+      "definitionType": "task",
+      "author": "Microsoft Corporation",
+      "demands": [],
+      "groups": [
+        {
+          "name": "junitTestResults",
+          "displayName": "JUnit Test Results",
+          "isExpanded": true
+        },
+        {
+          "name": "codeCoverage",
+          "displayName": "Code Coverage",
+          "isExpanded": true
+        },
+        {
+          "name": "advanced",
+          "displayName": "Advanced",
+          "isExpanded": false
+        },
+        {
+          "name": "CodeAnalysis",
+          "displayName": "Code Analysis",
+          "isExpanded": true
+        }
+      ],
+      "inputs": [
+        {
+          "aliases": [
+            "gradleWrapperFile"
+          ],
+          "name": "wrapperScript",
+          "label": "Gradle wrapper",
+          "defaultValue": "gradlew",
+          "required": true,
+          "type": "filePath",
+          "helpMarkDown": "Relative path from the repository root to the Gradle Wrapper script."
+        },
+        {
+          "aliases": [
+            "workingDirectory"
+          ],
+          "name": "cwd",
+          "label": "Working directory",
+          "defaultValue": "",
+          "type": "filePath",
+          "helpMarkDown": "Working directory in which to run the Gradle build. If not specified, the repository root directory is used."
+        },
+        {
+          "name": "options",
+          "label": "Options",
+          "defaultValue": "",
+          "type": "string",
+          "helpMarkDown": ""
+        },
+        {
+          "name": "tasks",
+          "label": "Tasks",
+          "defaultValue": "build",
+          "required": true,
+          "type": "string",
+          "helpMarkDown": ""
+        },
+        {
+          "name": "publishJUnitResults",
+          "label": "Publish to Azure Pipelines",
+          "defaultValue": "true",
+          "required": true,
+          "type": "boolean",
+          "helpMarkDown": "Select this option to publish JUnit test results produced by the Gradle build to Azure Pipelines. Each test results file matching `Test Results Files` will be published as a test run in Azure Pipelines.",
+          "groupName": "junitTestResults"
+        },
+        {
+          "name": "testResultsFiles",
+          "label": "Test results files",
+          "defaultValue": "**/TEST-*.xml",
+          "required": true,
+          "type": "filePath",
+          "helpMarkDown": "Test results files path. Wildcards can be used ([more information](https://go.microsoft.com/fwlink/?linkid=856077)). For example, `**/TEST-*.xml` for all XML files whose name starts with TEST-.",
+          "visibleRule": "publishJUnitResults = true",
+          "groupName": "junitTestResults"
+        },
+        {
+          "name": "testRunTitle",
+          "label": "Test run title",
+          "defaultValue": "",
+          "type": "string",
+          "helpMarkDown": "Provide a name for the test run.",
+          "visibleRule": "publishJUnitResults = true",
+          "groupName": "junitTestResults"
+        },
+        {
+          "aliases": [
+            "codeCoverageToolOption"
+          ],
+          "options": {
+            "None": "None",
+            "Cobertura": "Cobertura",
+            "JaCoCo": "JaCoCo"
+          },
+          "name": "codeCoverageTool",
+          "label": "Code coverage tool",
+          "defaultValue": "None",
+          "type": "pickList",
+          "helpMarkDown": "Select the code coverage tool.",
+          "groupName": "codeCoverage"
+        },
+        {
+          "aliases": [
+            "codeCoverageClassFilesDirectories"
+          ],
+          "name": "classFilesDirectories",
+          "label": "Class files directories",
+          "defaultValue": "build/classes/main/",
+          "required": true,
+          "type": "string",
+          "helpMarkDown": "Comma-separated list of directories containing class files and archive files (JAR, WAR, etc.). Code coverage is reported for class files in these directories. Normally, classes under `build/classes/java/main` (for Gradle 4+) are searched, which is the default class directory for Gradle builds",
+          "visibleRule": "codeCoverageTool != None",
+          "groupName": "codeCoverage"
+        },
+        {
+          "aliases": [
+            "codeCoverageClassFilter"
+          ],
+          "name": "classFilter",
+          "label": "Class inclusion/exclusion filters",
+          "defaultValue": "",
+          "type": "string",
+          "helpMarkDown": "Comma-separated list of filters to include or exclude classes from collecting code coverage. For example: +:com.*,+:org.*,-:my.app*.*.",
+          "visibleRule": "codeCoverageTool != None",
+          "groupName": "codeCoverage"
+        },
+        {
+          "aliases": [
+            "codeCoverageFailIfEmpty"
+          ],
+          "name": "failIfCoverageEmpty",
+          "label": "Fail when code coverage results are missing",
+          "defaultValue": "false",
+          "type": "boolean",
+          "helpMarkDown": "Fail the build if code coverage did not produce any results to publish.",
+          "visibleRule": "codeCoverageTool != None",
+          "groupName": "codeCoverage"
+        },
+        {
+          "aliases": [
+            "codeCoverageGradle5xOrHigher"
+          ],
+          "name": "gradle5xOrHigher",
+          "label": "Gradle version >= 5.x",
+          "defaultValue": "true",
+          "type": "boolean",
+          "helpMarkDown": "Set this to 'true' if gradle version is >= 5.x.'True' by default.",
+          "visibleRule": "codeCoverageTool = JaCoCo",
+          "groupName": "codeCoverage"
+        },
+        {
+          "aliases": [
+            "javaHomeOption"
+          ],
+          "options": {
+            "JDKVersion": "JDK Version",
+            "Path": "Path"
+          },
+          "name": "javaHomeSelection",
+          "label": "Set JAVA_HOME by",
+          "defaultValue": "JDKVersion",
+          "required": true,
+          "type": "radio",
+          "helpMarkDown": "Sets JAVA_HOME either by selecting a JDK version that will be discovered during builds or by manually entering a JDK path.",
+          "groupName": "advanced"
+        },
+        {
+          "aliases": [
+            "jdkVersionOption"
+          ],
+          "options": {
+            "default": "default",
+            "1.17": "JDK 17",
+            "1.11": "JDK 11",
+            "1.10": "JDK 10 (out of support)",
+            "1.9": "JDK 9 (out of support)",
+            "1.8": "JDK 8",
+            "1.7": "JDK 7",
+            "1.6": "JDK 6 (out of support)"
+          },
+          "name": "jdkVersion",
+          "label": "JDK version",
+          "defaultValue": "default",
+          "type": "pickList",
+          "helpMarkDown": "Will attempt to discover the path to the selected JDK version and set JAVA_HOME accordingly.",
+          "visibleRule": "javaHomeSelection = JDKVersion",
+          "groupName": "advanced"
+        },
+        {
+          "aliases": [
+            "jdkDirectory"
+          ],
+          "name": "jdkUserInputPath",
+          "label": "JDK path",
+          "defaultValue": "",
+          "required": true,
+          "type": "string",
+          "helpMarkDown": "Sets JAVA_HOME to the given path.",
+          "visibleRule": "javaHomeSelection = Path",
+          "groupName": "advanced"
+        },
+        {
+          "aliases": [
+            "jdkArchitectureOption"
+          ],
+          "options": {
+            "x86": "x86",
+            "x64": "x64"
+          },
+          "name": "jdkArchitecture",
+          "label": "JDK architecture",
+          "defaultValue": "x64",
+          "type": "pickList",
+          "helpMarkDown": "Optionally supply the architecture (x86, x64) of the JDK.",
+          "visibleRule": "jdkVersion != default",
+          "groupName": "advanced"
+        },
+        {
+          "aliases": [
+            "gradleOptions"
+          ],
+          "name": "gradleOpts",
+          "label": "Set GRADLE_OPTS",
+          "defaultValue": "-Xmx1024m",
+          "type": "string",
+          "helpMarkDown": "Sets the GRADLE_OPTS environment variable, which is used to send command-line arguments to start the JVM. The xmx flag specifies the maximum memory available to the JVM.",
+          "groupName": "advanced"
+        },
+        {
+          "aliases": [
+            "sonarQubeRunAnalysis"
+          ],
+          "name": "sqAnalysisEnabled",
+          "label": "Run SonarQube or SonarCloud Analysis",
+          "defaultValue": "false",
+          "required": true,
+          "type": "boolean",
+          "helpMarkDown": "This option has changed from version 1 of the **Gradle** task to use the [SonarQube](https://marketplace.visualstudio.com/items?itemName=SonarSource.sonarqube) and [SonarCloud](https://marketplace.visualstudio.com/items?itemName=SonarSource.sonarcloud) marketplace extensions. Enable this option to run [SonarQube or SonarCloud analysis](http://redirect.sonarsource.com/doc/install-configure-scanner-tfs-ts.html) after executing tasks in the **Tasks** field. You must also add a **Prepare Analysis Configuration** task from one of the extensions to the build pipeline before this Gradle task.",
+          "groupName": "CodeAnalysis"
+        },
+        {
+          "options": {
+            "specify": "Specify version number",
+            "build": "Use plugin applied in your build.gradle"
+          },
+          "name": "sqGradlePluginVersionChoice",
+          "label": "SonarQube scanner for Gradle version",
+          "defaultValue": "specify",
+          "required": true,
+          "type": "radio",
+          "helpMarkDown": "The SonarQube Gradle plugin version to use. You can declare it in your Gradle configuration file, or specify a version here.",
+          "visibleRule": "sqAnalysisEnabled = true",
+          "groupName": "CodeAnalysis"
+        },
+        {
+          "aliases": [
+            "sonarQubeGradlePluginVersion"
+          ],
+          "name": "sqGradlePluginVersion",
+          "label": "SonarQube scanner for Gradle plugin version",
+          "defaultValue": "2.6.1",
+          "required": true,
+          "type": "string",
+          "helpMarkDown": "Refer to https://plugins.gradle.org/plugin/org.sonarqube for all available versions.",
+          "visibleRule": "sqAnalysisEnabled = true && sqGradlePluginVersionChoice = specify",
+          "groupName": "CodeAnalysis"
+        },
+        {
+          "aliases": [
+            "checkStyleRunAnalysis"
+          ],
+          "name": "checkstyleAnalysisEnabled",
+          "label": "Run Checkstyle",
+          "defaultValue": "false",
+          "type": "boolean",
+          "helpMarkDown": "Run the Checkstyle tool with the default Sun checks. Results are uploaded as build artifacts.",
+          "groupName": "CodeAnalysis"
+        },
+        {
+          "aliases": [
+            "findBugsRunAnalysis"
+          ],
+          "name": "findbugsAnalysisEnabled",
+          "label": "Run FindBugs",
+          "defaultValue": "false",
+          "type": "boolean",
+          "helpMarkDown": "Use the FindBugs static analysis tool to look for bugs in the code. Results are uploaded as build artifacts. In Gradle 6.0 this plugin was removed. Use spotbugs plugin instead. [More info](https://docs.gradle.org/current/userguide/upgrading_version_5.html#the_findbugs_plugin_has_been_removed)",
+          "groupName": "CodeAnalysis"
+        },
+        {
+          "aliases": [
+            "pmdRunAnalysis"
+          ],
+          "name": "pmdAnalysisEnabled",
+          "label": "Run PMD",
+          "defaultValue": "false",
+          "type": "boolean",
+          "helpMarkDown": "Use the PMD Java static analysis tool to look for bugs in the code. Results are uploaded as build artifacts.",
+          "groupName": "CodeAnalysis"
+        },
+        {
+          "aliases": [
+            "spotBugsAnalysis"
+          ],
+          "name": "spotBugsAnalysisEnabled",
+          "label": "Run SpotBugs",
+          "defaultValue": "false",
+          "required": true,
+          "type": "boolean",
+          "helpMarkDown": "Enable this option to run spotBugs. This plugin works with Gradle v5.6 or later. [More info](https://spotbugs.readthedocs.io/en/stable/gradle.html#use-spotbugs-gradle-plugin)",
+          "groupName": "CodeAnalysis"
+        },
+        {
+          "options": {
+            "specify": "Specify version number",
+            "build": "Use plugin applied in your build.gradle"
+          },
+          "name": "spotBugsGradlePluginVersionChoice",
+          "label": "Spotbugs plugin version",
+          "defaultValue": "specify",
+          "required": true,
+          "type": "radio",
+          "helpMarkDown": "The Spotbugs Gradle plugin version to use. You can declare it in your Gradle configuration file, or specify a version here.",
+          "visibleRule": "spotBugsAnalysisEnabled = true",
+          "groupName": "CodeAnalysis"
+        },
+        {
+          "aliases": [
+            "spotbugsGradlePluginVersion"
+          ],
+          "name": "spotbugsGradlePluginVersion",
+          "label": "Version number",
+          "defaultValue": "4.7.0",
+          "required": true,
+          "type": "string",
+          "helpMarkDown": "Refer to https://plugins.gradle.org/plugin/com.github.spotbugs for all available versions.",
+          "visibleRule": "spotBugsAnalysisEnabled = true && spotBugsGradlePluginVersionChoice = specify",
+          "groupName": "CodeAnalysis"
+        }
+      ],
+      "satisfies": [],
+      "sourceDefinitions": [],
+      "dataSourceBindings": [],
+      "instanceNameFormat": "gradlew $(tasks)",
+      "preJobExecution": {},
+      "execution": {
+        "Node10": {
+          "target": "gradletask.js",
+          "argumentFormat": ""
+        },
+        "Node16": {
+          "target": "gradletask.js",
+          "argumentFormat": ""
+        },
+        "Node20_1": {
+          "target": "gradletask.js",
+          "argumentFormat": ""
+        }
+      },
+      "postJobExecution": {},
+      "_buildConfigMapping": {
+        "Default": "3.247.0",
+        "Node20_229_2": "3.247.1"
+      }
+    },
+    {
+      "visibility": [
+        "Build"
+      ],
+      "runsOn": [
+        "Agent",
+        "DeploymentGroup"
+      ],
+      "id": "8d8eebd8-2b94-4c97-85af-839254cc6da4",
+      "name": "Gradle",
+      "version": {
+        "major": 1,
+        "minor": 128,
+        "patch": 0,
+        "isTest": false
+      },
+      "serverOwned": true,
+      "contentsUploaded": true,
+      "iconUrl": "https://dev.azure.com/dependabot-scus1/_apis/distributedtask/tasks/8d8eebd8-2b94-4c97-85af-839254cc6da4/1.128.0/icon",
+      "minimumAgentVersion": "1.91.0",
+      "friendlyName": "Gradle",
+      "description": "Build using a Gradle wrapper script",
+      "category": "Build",
+      "helpMarkDown": "[More Information](https://go.microsoft.com/fwlink/?LinkID=613720)",
+      "definitionType": "task",
+      "author": "Microsoft Corporation",
+      "demands": [
+        "java"
+      ],
+      "groups": [
+        {
+          "name": "junitTestResults",
+          "displayName": "JUnit Test Results",
+          "isExpanded": true
+        },
+        {
+          "name": "codeCoverage",
+          "displayName": "Code Coverage",
+          "isExpanded": true
+        },
+        {
+          "name": "advanced",
+          "displayName": "Advanced",
+          "isExpanded": false
+        },
+        {
+          "name": "CodeAnalysis",
+          "displayName": "Code Analysis",
+          "isExpanded": true
+        }
+      ],
+      "inputs": [
+        {
+          "aliases": [
+            "gradleWrapperFile"
+          ],
+          "name": "wrapperScript",
+          "label": "Gradle Wrapper",
+          "defaultValue": "gradlew",
+          "required": true,
+          "type": "filePath",
+          "helpMarkDown": "Relative path from the repository root to the Gradle Wrapper script."
+        },
+        {
+          "name": "options",
+          "label": "Options",
+          "defaultValue": "",
+          "type": "string",
+          "helpMarkDown": ""
+        },
+        {
+          "name": "tasks",
+          "label": "Tasks",
+          "defaultValue": "build",
+          "required": true,
+          "type": "string",
+          "helpMarkDown": ""
+        },
+        {
+          "aliases": [
+            "workingDirectory"
+          ],
+          "name": "cwd",
+          "label": "Working Directory",
+          "defaultValue": "",
+          "type": "filePath",
+          "helpMarkDown": "Working directory in which to run the Gradle build. If not specified, the repository root directory is used.",
+          "groupName": "advanced"
+        },
+        {
+          "name": "publishJUnitResults",
+          "label": "Publish to TFS/Team Services",
+          "defaultValue": "true",
+          "required": true,
+          "type": "boolean",
+          "helpMarkDown": "Select this option to publish JUnit test results produced by the Gradle build to TFS/Team Services. Each test results file matching `Test Results Files` will be published as a test run in TFS/Team Services.",
+          "groupName": "junitTestResults"
+        },
+        {
+          "name": "testResultsFiles",
+          "label": "Test Results Files",
+          "defaultValue": "**/build/test-results/TEST-*.xml",
+          "required": true,
+          "type": "filePath",
+          "helpMarkDown": "Test results files path. Wildcards can be used. For example, `**/TEST-*.xml` for all XML files whose name starts with TEST-.",
+          "visibleRule": "publishJUnitResults = true",
+          "groupName": "junitTestResults"
+        },
+        {
+          "name": "testRunTitle",
+          "label": "Test Run Title",
+          "defaultValue": "",
+          "type": "string",
+          "helpMarkDown": "Provide a name for the test run.",
+          "visibleRule": "publishJUnitResults = true",
+          "groupName": "junitTestResults"
+        },
+        {
+          "aliases": [
+            "codeCoverageToolOption"
+          ],
+          "options": {
+            "None": "None",
+            "Cobertura": "Cobertura",
+            "JaCoCo": "JaCoCo"
+          },
+          "name": "codeCoverageTool",
+          "label": "Code Coverage Tool",
+          "defaultValue": "None",
+          "type": "pickList",
+          "helpMarkDown": "Select the code coverage tool.",
+          "groupName": "codeCoverage"
+        },
+        {
+          "aliases": [
+            "codeCoverageClassFilesDirectories"
+          ],
+          "name": "classFilesDirectories",
+          "label": "Class Files Directories",
+          "defaultValue": "build/classes/main/",
+          "required": true,
+          "type": "string",
+          "helpMarkDown": "Comma-separated list of directories containing class files and archive files (JAR, WAR, etc.). Code coverage is reported for class files in these directories. Normally, classes under `build/classes/main` are searched, which is the default class directory for Gradle builds",
+          "visibleRule": "codeCoverageTool = false",
+          "groupName": "codeCoverage"
+        },
+        {
+          "aliases": [
+            "codeCoverageClassFilter"
+          ],
+          "name": "classFilter",
+          "label": "Class Inclusion/Exclusion Filters",
+          "defaultValue": "",
+          "type": "string",
+          "helpMarkDown": "Comma-separated list of filters to include or exclude classes from collecting code coverage. For example: +:com.*,+:org.*,-:my.app*.*.",
+          "visibleRule": "codeCoverageTool != None",
+          "groupName": "codeCoverage"
+        },
+        {
+          "aliases": [
+            "codeCoverageFailIfEmpty"
+          ],
+          "name": "failIfCoverageEmpty",
+          "label": "Fail When Code Coverage Results Are Missing",
+          "defaultValue": "false",
+          "type": "boolean",
+          "helpMarkDown": "Fail the build if code coverage did not produce any results to publish.",
+          "visibleRule": "codeCoverageTool != None",
+          "groupName": "codeCoverage"
+        },
+        {
+          "aliases": [
+            "javaHomeOption"
+          ],
+          "options": {
+            "JDKVersion": "JDK Version",
+            "Path": "Path"
+          },
+          "name": "javaHomeSelection",
+          "label": "Set JAVA_HOME by",
+          "defaultValue": "JDKVersion",
+          "required": true,
+          "type": "radio",
+          "helpMarkDown": "Sets JAVA_HOME either by selecting a JDK version that will be discovered during builds or by manually entering a JDK path.",
+          "groupName": "advanced"
+        },
+        {
+          "aliases": [
+            "jdkVersionOption"
+          ],
+          "options": {
+            "default": "default",
+            "1.9": "JDK 9",
+            "1.8": "JDK 8",
+            "1.7": "JDK 7",
+            "1.6": "JDK 6"
+          },
+          "name": "jdkVersion",
+          "label": "JDK Version",
+          "defaultValue": "default",
+          "type": "pickList",
+          "helpMarkDown": "Will attempt to discover the path to the selected JDK version and set JAVA_HOME accordingly.",
+          "visibleRule": "javaHomeSelection = JDKVersion",
+          "groupName": "advanced"
+        },
+        {
+          "aliases": [
+            "jdkDirectory"
+          ],
+          "name": "jdkUserInputPath",
+          "label": "JDK Path",
+          "defaultValue": "",
+          "required": true,
+          "type": "string",
+          "helpMarkDown": "Sets JAVA_HOME to the given path.",
+          "visibleRule": "javaHomeSelection = Path",
+          "groupName": "advanced"
+        },
+        {
+          "aliases": [
+            "jdkArchitectureOption"
+          ],
+          "options": {
+            "x86": "x86",
+            "x64": "x64"
+          },
+          "name": "jdkArchitecture",
+          "label": "JDK Architecture",
+          "defaultValue": "x64",
+          "type": "pickList",
+          "helpMarkDown": "Optionally supply the architecture (x86, x64) of the JDK.",
+          "visibleRule": "jdkVersion != default",
+          "groupName": "advanced"
+        },
+        {
+          "aliases": [
+            "gradleOptions"
+          ],
+          "name": "gradleOpts",
+          "label": "Set GRADLE_OPTS",
+          "defaultValue": "-Xmx1024m",
+          "type": "string",
+          "helpMarkDown": "Sets the GRADLE_OPTS environment variable, which is used to send command-line arguments to start the JVM. The xmx flag specifies the maximum memory available to the JVM.",
+          "groupName": "advanced"
+        },
+        {
+          "aliases": [
+            "sonarQubeRunAnalysis"
+          ],
+          "name": "sqAnalysisEnabled",
+          "label": "Run SonarQube Analysis",
+          "defaultValue": "false",
+          "required": true,
+          "type": "boolean",
+          "helpMarkDown": "Run a [SonarQube analysis](https://go.microsoft.com/fwlink/?LinkID=708598) after executing the current goals. 'install' or 'package' goals should be executed first.",
+          "groupName": "CodeAnalysis"
+        },
+        {
+          "aliases": [
+            "sonarQubeServiceEndpoint"
+          ],
+          "name": "sqConnectedServiceName",
+          "label": "SonarQube Endpoint",
+          "defaultValue": "",
+          "required": true,
+          "type": "connectedService:Generic",
+          "helpMarkDown": "The endpoint that specifies the SonarQube server to use",
+          "visibleRule": "sqAnalysisEnabled = true",
+          "groupName": "CodeAnalysis"
+        },
+        {
+          "aliases": [
+            "sonarQubeProjectName"
+          ],
+          "name": "sqProjectName",
+          "label": "SonarQube Project Name",
+          "defaultValue": "",
+          "required": true,
+          "type": "string",
+          "helpMarkDown": "The SonarQube project name, i.e. sonar.projectName.",
+          "visibleRule": "sqAnalysisEnabled = true",
+          "groupName": "CodeAnalysis"
+        },
+        {
+          "aliases": [
+            "sonarQubeProjectKey"
+          ],
+          "name": "sqProjectKey",
+          "label": "SonarQube Project Key",
+          "defaultValue": "",
+          "required": true,
+          "type": "string",
+          "helpMarkDown": "The SonarQube project unique key, i.e. sonar.projectKey.",
+          "visibleRule": "sqAnalysisEnabled = true",
+          "groupName": "CodeAnalysis"
+        },
+        {
+          "aliases": [
+            "sonarQubeProjectVersion"
+          ],
+          "name": "sqProjectVersion",
+          "label": "SonarQube Project Version",
+          "defaultValue": "",
+          "required": true,
+          "type": "string",
+          "helpMarkDown": "The SonarQube project version, i.e. sonar.projectVersion.",
+          "visibleRule": "sqAnalysisEnabled = true",
+          "groupName": "CodeAnalysis"
+        },
+        {
+          "aliases": [
+            "sonarQubeGradlePluginVersion"
+          ],
+          "name": "sqGradlePluginVersion",
+          "label": "SonarQube Gradle Plugin Version",
+          "defaultValue": "2.0.1",
+          "required": true,
+          "type": "string",
+          "helpMarkDown": "The SonarQube Gradle plugin version to use. Refer to https://plugins.gradle.org/plugin/org.sonarqube for all available versions.",
+          "visibleRule": "sqAnalysisEnabled = true",
+          "groupName": "CodeAnalysis"
+        },
+        {
+          "aliases": [
+            "sonarQubeSpecifyDB"
+          ],
+          "name": "sqDbDetailsRequired",
+          "label": "The SonarQube server version is lower than 5.2",
+          "defaultValue": "false",
+          "required": true,
+          "type": "boolean",
+          "helpMarkDown": "If using a SonarQube server 5.1 or lower, you must specify the database connection details.",
+          "visibleRule": "sqAnalysisEnabled = true",
+          "groupName": "CodeAnalysis"
+        },
+        {
+          "aliases": [
+            "sonarQubeDBUrl"
+          ],
+          "name": "sqDbUrl",
+          "label": "Db Connection String",
+          "defaultValue": "",
+          "type": "string",
+          "helpMarkDown": "SonarQube server 5.1 and lower only. Enter the database connection setting (i.e. sonar.jdbc.url). For example: jdbc:jtds:sqlserver://localhost/sonar;SelectMethod=Cursor",
+          "visibleRule": "sqDbDetailsRequired = true",
+          "groupName": "CodeAnalysis"
+        },
+        {
+          "aliases": [
+            "sonarQubeDBUsername"
+          ],
+          "name": "sqDbUsername",
+          "label": "Db Username",
+          "defaultValue": "",
+          "type": "string",
+          "helpMarkDown": "SonarQube server 5.1 and lower only. Enter the username for the database user (i.e. sonar.jdbc.username).",
+          "visibleRule": "sqDbDetailsRequired = true",
+          "groupName": "CodeAnalysis"
+        },
+        {
+          "aliases": [
+            "sonarQubeDBPassword"
+          ],
+          "name": "sqDbPassword",
+          "label": "Db User Password",
+          "defaultValue": "",
+          "type": "string",
+          "helpMarkDown": "SonarQube server 5.1 and lower only. Enter the password for the database user i.e. sonar.jdbc.password",
+          "visibleRule": "sqDbDetailsRequired = true",
+          "groupName": "CodeAnalysis"
+        },
+        {
+          "aliases": [
+            "sonarQubeIncludeFullReport"
+          ],
+          "name": "sqAnalysisIncludeFullReport",
+          "label": "Include full analysis report in the build summary (SQ 5.3+)",
+          "defaultValue": "true",
+          "type": "boolean",
+          "helpMarkDown": "This option will delay the build until the SonarQube analysis is completed.",
+          "visibleRule": "sqAnalysisEnabled = true",
+          "groupName": "CodeAnalysis"
+        },
+        {
+          "aliases": [
+            "sonarQubeFailWhenQualityGateFails"
+          ],
+          "name": "sqAnalysisBreakBuildIfQualityGateFailed",
+          "label": "Fail the build on quality gate failure (SQ 5.3+)",
+          "defaultValue": "",
+          "type": "boolean",
+          "helpMarkDown": "This option is only available when using a SonarQube server 5.3 or above. It will introduce delays as the build must wait for SonarQube to complete the analysis. [More information](https://go.microsoft.com/fwlink/?LinkId=722407)",
+          "visibleRule": "sqAnalysisEnabled = true",
+          "groupName": "CodeAnalysis"
+        },
+        {
+          "aliases": [
+            "checkStyleRunAnalysis"
+          ],
+          "name": "checkstyleAnalysisEnabled",
+          "label": "Run Checkstyle",
+          "defaultValue": "false",
+          "type": "boolean",
+          "helpMarkDown": "Run the Checkstyle tool with the default Sun checks. Results are uploaded as build artifacts.",
+          "groupName": "CodeAnalysis"
+        },
+        {
+          "aliases": [
+            "findBugsRunAnalysis"
+          ],
+          "name": "findbugsAnalysisEnabled",
+          "label": "Run FindBugs",
+          "defaultValue": "false",
+          "type": "boolean",
+          "helpMarkDown": "Use the FindBugs static analysis tool to look for bugs in the code. Results are uploaded as build artifacts.",
+          "groupName": "CodeAnalysis"
+        },
+        {
+          "aliases": [
+            "pmdRunAnalysis"
+          ],
+          "name": "pmdAnalysisEnabled",
+          "label": "Run PMD",
+          "defaultValue": "false",
+          "type": "boolean",
+          "helpMarkDown": "Use the PMD Java static analysis tool to look for bugs in the code. Results are uploaded as build artifacts.",
+          "groupName": "CodeAnalysis"
+        }
+      ],
+      "satisfies": [],
+      "sourceDefinitions": [],
+      "dataSourceBindings": [],
+      "instanceNameFormat": "gradlew $(tasks)",
+      "preJobExecution": {},
+      "execution": {
+        "Node": {
+          "target": "gradletask.js",
+          "argumentFormat": ""
+        }
+      },
+      "postJobExecution": {},
+      "_buildConfigMapping": {}
+    },
+    {
+      "visibility": [
+        "Build"
+      ],
+      "runsOn": [
+        "Agent",
+        "DeploymentGroup"
+      ],
+      "id": "8d8eebd8-2b94-4c97-85af-839254cc6da4",
+      "name": "Gradle",
+      "version": {
+        "major": 4,
+        "minor": 252,
+        "patch": 1,
+        "isTest": false
+      },
+      "serverOwned": true,
+      "contentsUploaded": true,
+      "iconUrl": "https://dev.azure.com/dependabot-scus1/_apis/distributedtask/tasks/8d8eebd8-2b94-4c97-85af-839254cc6da4/4.252.1/icon",
+      "minimumAgentVersion": "1.91.0",
+      "friendlyName": "Gradle",
+      "description": "Build using a Gradle wrapper script",
+      "category": "Build",
+      "helpMarkDown": "[Learn more about this task](https://go.microsoft.com/fwlink/?LinkID=613720) or [see the Gradle documentation](https://docs.gradle.org/current/userguide/userguide.html)",
+      "helpUrl": "https://docs.microsoft.com/azure/devops/pipelines/tasks/build/gradle",
+      "releaseNotes": "The Code Coverage option is deprecated. Refer to the [PublishCodeCoverageResultsV2 Task] (https://learn.microsoft.com/en-us/azure/devops/pipelines/tasks/reference/publish-code-coverage-results-v2?view=azure-pipelines) to get code coverage results.",
+      "definitionType": "task",
+      "author": "Microsoft Corporation",
+      "demands": [],
+      "groups": [
+        {
+          "name": "junitTestResults",
+          "displayName": "JUnit Test Results",
+          "isExpanded": true
+        },
+        {
+          "name": "advanced",
+          "displayName": "Advanced",
+          "isExpanded": false
+        },
+        {
+          "name": "CodeAnalysis",
+          "displayName": "Code Analysis",
+          "isExpanded": true
+        }
+      ],
+      "inputs": [
+        {
+          "aliases": [
+            "gradleWrapperFile"
+          ],
+          "name": "wrapperScript",
+          "label": "Gradle wrapper",
+          "defaultValue": "gradlew",
+          "required": true,
+          "type": "filePath",
+          "helpMarkDown": "Relative path from the repository root to the Gradle Wrapper script."
+        },
+        {
+          "aliases": [
+            "workingDirectory"
+          ],
+          "name": "cwd",
+          "label": "Working directory",
+          "defaultValue": "",
+          "type": "filePath",
+          "helpMarkDown": "Working directory in which to run the Gradle build. If not specified, the repository root directory is used."
+        },
+        {
+          "name": "options",
+          "label": "Options",
+          "defaultValue": "",
+          "type": "string",
+          "helpMarkDown": ""
+        },
+        {
+          "name": "tasks",
+          "label": "Tasks",
+          "defaultValue": "build",
+          "required": true,
+          "type": "string",
+          "helpMarkDown": ""
+        },
+        {
+          "name": "publishJUnitResults",
+          "label": "Publish to Azure Pipelines",
+          "defaultValue": "true",
+          "required": true,
+          "type": "boolean",
+          "helpMarkDown": "Select this option to publish JUnit test results produced by the Gradle build to Azure Pipelines. Each test results file matching `Test Results Files` will be published as a test run in Azure Pipelines.",
+          "groupName": "junitTestResults"
+        },
+        {
+          "name": "testResultsFiles",
+          "label": "Test results files",
+          "defaultValue": "**/TEST-*.xml",
+          "required": true,
+          "type": "filePath",
+          "helpMarkDown": "Test results files path. Wildcards can be used ([more information](https://go.microsoft.com/fwlink/?linkid=856077)). For example, `**/TEST-*.xml` for all XML files whose name starts with TEST-.",
+          "visibleRule": "publishJUnitResults = true",
+          "groupName": "junitTestResults"
+        },
+        {
+          "name": "testRunTitle",
+          "label": "Test run title",
+          "defaultValue": "",
+          "type": "string",
+          "helpMarkDown": "Provide a name for the test run.",
+          "visibleRule": "publishJUnitResults = true",
+          "groupName": "junitTestResults"
+        },
+        {
+          "aliases": [
+            "javaHomeOption"
+          ],
+          "options": {
+            "JDKVersion": "JDK Version",
+            "Path": "Path"
+          },
+          "name": "javaHomeSelection",
+          "label": "Set JAVA_HOME by",
+          "defaultValue": "JDKVersion",
+          "required": true,
+          "type": "radio",
+          "helpMarkDown": "Sets JAVA_HOME either by selecting a JDK version that will be discovered during builds or by manually entering a JDK path.",
+          "groupName": "advanced"
+        },
+        {
+          "aliases": [
+            "jdkVersionOption"
+          ],
+          "options": {
+            "default": "default",
+            "1.17": "JDK 17",
+            "1.11": "JDK 11",
+            "1.10": "JDK 10 (out of support)",
+            "1.9": "JDK 9 (out of support)",
+            "1.8": "JDK 8",
+            "1.7": "JDK 7",
+            "1.6": "JDK 6 (out of support)"
+          },
+          "name": "jdkVersion",
+          "label": "JDK version",
+          "defaultValue": "default",
+          "type": "pickList",
+          "helpMarkDown": "Will attempt to discover the path to the selected JDK version and set JAVA_HOME accordingly.",
+          "visibleRule": "javaHomeSelection = JDKVersion",
+          "groupName": "advanced"
+        },
+        {
+          "aliases": [
+            "jdkDirectory"
+          ],
+          "name": "jdkUserInputPath",
+          "label": "JDK path",
+          "defaultValue": "",
+          "required": true,
+          "type": "string",
+          "helpMarkDown": "Sets JAVA_HOME to the given path.",
+          "visibleRule": "javaHomeSelection = Path",
+          "groupName": "advanced"
+        },
+        {
+          "aliases": [
+            "jdkArchitectureOption"
+          ],
+          "options": {
+            "x86": "x86",
+            "x64": "x64"
+          },
+          "name": "jdkArchitecture",
+          "label": "JDK architecture",
+          "defaultValue": "x64",
+          "type": "pickList",
+          "helpMarkDown": "Optionally supply the architecture (x86, x64) of the JDK.",
+          "visibleRule": "jdkVersion != default",
+          "groupName": "advanced"
+        },
+        {
+          "aliases": [
+            "gradleOptions"
+          ],
+          "name": "gradleOpts",
+          "label": "Set GRADLE_OPTS",
+          "defaultValue": "-Xmx1024m",
+          "type": "string",
+          "helpMarkDown": "Sets the GRADLE_OPTS environment variable, which is used to send command-line arguments to start the JVM. The xmx flag specifies the maximum memory available to the JVM.",
+          "groupName": "advanced"
+        },
+        {
+          "aliases": [
+            "sonarQubeRunAnalysis"
+          ],
+          "name": "sqAnalysisEnabled",
+          "label": "Run SonarQube or SonarCloud Analysis",
+          "defaultValue": "false",
+          "required": true,
+          "type": "boolean",
+          "helpMarkDown": "This option has changed from version 1 of the **Gradle** task to use the [SonarQube](https://marketplace.visualstudio.com/items?itemName=SonarSource.sonarqube) and [SonarCloud](https://marketplace.visualstudio.com/items?itemName=SonarSource.sonarcloud) marketplace extensions. Enable this option to run [SonarQube or SonarCloud analysis](http://redirect.sonarsource.com/doc/install-configure-scanner-tfs-ts.html) after executing tasks in the **Tasks** field. You must also add a **Prepare Analysis Configuration** task from one of the extensions to the build pipeline before this Gradle task.",
+          "groupName": "CodeAnalysis"
+        },
+        {
+          "options": {
+            "specify": "Specify version number",
+            "build": "Use plugin applied in your build.gradle"
+          },
+          "name": "sqGradlePluginVersionChoice",
+          "label": "SonarQube scanner for Gradle version",
+          "defaultValue": "specify",
+          "required": true,
+          "type": "radio",
+          "helpMarkDown": "The SonarQube Gradle plugin version to use. You can declare it in your Gradle configuration file, or specify a version here.",
+          "visibleRule": "sqAnalysisEnabled = true",
+          "groupName": "CodeAnalysis"
+        },
+        {
+          "aliases": [
+            "sonarQubeGradlePluginVersion"
+          ],
+          "name": "sqGradlePluginVersion",
+          "label": "SonarQube scanner for Gradle plugin version",
+          "defaultValue": "2.6.1",
+          "required": true,
+          "type": "string",
+          "helpMarkDown": "Refer to https://plugins.gradle.org/plugin/org.sonarqube for all available versions.",
+          "visibleRule": "sqAnalysisEnabled = true && sqGradlePluginVersionChoice = specify",
+          "groupName": "CodeAnalysis"
+        },
+        {
+          "aliases": [
+            "checkStyleRunAnalysis"
+          ],
+          "name": "checkstyleAnalysisEnabled",
+          "label": "Run Checkstyle",
+          "defaultValue": "false",
+          "type": "boolean",
+          "helpMarkDown": "Run the Checkstyle tool with the default Sun checks. Results are uploaded as build artifacts.",
+          "groupName": "CodeAnalysis"
+        },
+        {
+          "aliases": [
+            "findBugsRunAnalysis"
+          ],
+          "name": "findbugsAnalysisEnabled",
+          "label": "Run FindBugs",
+          "defaultValue": "false",
+          "type": "boolean",
+          "helpMarkDown": "Use the FindBugs static analysis tool to look for bugs in the code. Results are uploaded as build artifacts. In Gradle 6.0 this plugin was removed. Use spotbugs plugin instead. [More info](https://docs.gradle.org/current/userguide/upgrading_version_5.html#the_findbugs_plugin_has_been_removed)",
+          "groupName": "CodeAnalysis"
+        },
+        {
+          "aliases": [
+            "pmdRunAnalysis"
+          ],
+          "name": "pmdAnalysisEnabled",
+          "label": "Run PMD",
+          "defaultValue": "false",
+          "type": "boolean",
+          "helpMarkDown": "Use the PMD Java static analysis tool to look for bugs in the code. Results are uploaded as build artifacts.",
+          "groupName": "CodeAnalysis"
+        },
+        {
+          "aliases": [
+            "spotBugsAnalysis"
+          ],
+          "name": "spotBugsAnalysisEnabled",
+          "label": "Run SpotBugs",
+          "defaultValue": "false",
+          "required": true,
+          "type": "boolean",
+          "helpMarkDown": "Enable this option to run spotBugs. This plugin works with Gradle v5.6 or later. [More info](https://spotbugs.readthedocs.io/en/stable/gradle.html#use-spotbugs-gradle-plugin)",
+          "groupName": "CodeAnalysis"
+        },
+        {
+          "options": {
+            "specify": "Specify version number",
+            "build": "Use plugin applied in your build.gradle"
+          },
+          "name": "spotBugsGradlePluginVersionChoice",
+          "label": "Spotbugs plugin version",
+          "defaultValue": "specify",
+          "required": true,
+          "type": "radio",
+          "helpMarkDown": "The Spotbugs Gradle plugin version to use. You can declare it in your Gradle configuration file, or specify a version here.",
+          "visibleRule": "spotBugsAnalysisEnabled = true",
+          "groupName": "CodeAnalysis"
+        },
+        {
+          "aliases": [
+            "spotbugsGradlePluginVersion"
+          ],
+          "name": "spotbugsGradlePluginVersion",
+          "label": "Version number",
+          "defaultValue": "4.7.0",
+          "required": true,
+          "type": "string",
+          "helpMarkDown": "Refer to https://plugins.gradle.org/plugin/com.github.spotbugs for all available versions.",
+          "visibleRule": "spotBugsAnalysisEnabled = true && spotBugsGradlePluginVersionChoice = specify",
+          "groupName": "CodeAnalysis"
+        }
+      ],
+      "satisfies": [],
+      "sourceDefinitions": [],
+      "dataSourceBindings": [],
+      "instanceNameFormat": "gradlew $(tasks)",
+      "preJobExecution": {},
+      "execution": {
+        "Node10": {
+          "target": "gradletask.js",
+          "argumentFormat": ""
+        },
+        "Node16": {
+          "target": "gradletask.js",
+          "argumentFormat": ""
+        },
+        "Node20_1": {
+          "target": "gradletask.js",
+          "argumentFormat": ""
+        }
+      },
+      "postJobExecution": {},
+      "_buildConfigMapping": {
+        "Default": "4.252.0",
+        "Node20-225": "4.252.1"
+      }
+    }
+  ]
+}

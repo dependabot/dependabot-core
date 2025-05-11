@@ -127,6 +127,7 @@ require "dependabot/pub"
 require "dependabot/swift"
 require "dependabot/terraform"
 require "dependabot/uv"
+require "dependabot/azure_pipelines"
 
 # GitHub credentials with write permission to the repo you want to update
 # (so that you can create a new branch, commit and pull request).
