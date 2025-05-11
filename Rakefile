@@ -14,6 +14,7 @@ require "yaml"
 # because it's an empty gem as a placeholder to prevent namesquatting.
 GEMSPECS = %w(
   common/dependabot-common.gemspec
+  azure_pipelines/dependabot-azure_pipelines.gemspec
   bun/dependabot-bun.gemspec
   bundler/dependabot-bundler.gemspec
   cargo/dependabot-cargo.gemspec

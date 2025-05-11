@@ -1,0 +1,17 @@
+stages:
+  - stage: Stage1
+    jobs:
+      - job: Job1
+        steps:
+          - task: Maven@4
+      - job: Job2
+        steps:
+          - task: Gradle@3
+  - stage: Stage2
+    jobs:
+      - job: Job3
+        steps:
+          - task: DockerCompose@1
+      - job: Job4
+        steps:
+          - task: Docker@1

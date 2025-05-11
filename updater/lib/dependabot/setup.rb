@@ -27,6 +27,7 @@ Sentry.init do |config|
     dependabot-updater/config|
     dependabot-updater/lib|
     common|
+    azure_pipelines|
     bundler|
     cargo|
     composer|
@@ -64,6 +65,7 @@ Dependabot::OpenTelemetry.configure
 Dependabot::Sorbet::Runtime.silently_report_errors!
 
 # Ecosystems
+require "dependabot/azure_pipelines"
 require "dependabot/bun"
 require "dependabot/bundler"
 require "dependabot/cargo"

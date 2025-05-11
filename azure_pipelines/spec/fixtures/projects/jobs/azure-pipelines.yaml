@@ -1,0 +1,7 @@
+jobs:
+  - job: Job1
+    steps:
+      - task: Maven@4
+  - job: Job2
+    steps:
+      - task: Gradle@3
