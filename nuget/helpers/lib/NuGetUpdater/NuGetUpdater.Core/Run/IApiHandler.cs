@@ -35,6 +35,28 @@ public static class IApiHandlerExtensions
     public static Task UpdatePullRequest(this IApiHandler handler, UpdatePullRequest updatePullRequest) => handler.PostAsJson("update_pull_request", updatePullRequest);
     public static Task MarkAsProcessed(this IApiHandler handler, MarkAsProcessed markAsProcessed) => handler.PatchAsJson("mark_as_processed", markAsProcessed);
 
-    private static Task PostAsJson(this IApiHandler handler, string endpoint, object body) => handler.SendAsync(endpoint, body, "POST");
-    private static Task PatchAsJson(this IApiHandler handler, string endpoint, object body) => handler.SendAsync(endpoint, body, "PATCH");
+    private static Task PostAsJson(this IApiHandler handler, string endpoint, object body) => handler.WithRetries(() => handler.SendAsync(endpoint, body, "POST"));
+    private static Task PatchAsJson(this IApiHandler handler, string endpoint, object body) => handler.WithRetries(() => handler.SendAsync(endpoint, body, "PATCH"));
+
+    private const int MaxRetries = 3;
+    private const int MinRetryDelay = 3;
+    private const int MaxRetryDelay = 10;
+
+    private static async Task WithRetries(this IApiHandler handler, Func<Task> action)
+    {
+        var retryCount = 0;
+        while (true)
+        {
+            try
+            {
+                await action();
+                return;
+            }
+            catch (HttpRequestException) when (retryCount < MaxRetries)
+            {
+                retryCount++;
+                await Task.Delay(TimeSpan.FromSeconds(Random.Shared.Next(MinRetryDelay, MaxRetryDelay)));
+            }
+        }
+    }
 }

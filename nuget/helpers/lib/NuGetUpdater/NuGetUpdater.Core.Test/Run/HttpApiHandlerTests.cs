@@ -55,6 +55,30 @@ public class HttpApiHandlerTests
         Assert.Equal(expectedMessage, exception.Message);
     }
 
+    [Fact]
+    public async Task ApiCallsAreAutomaticallyRetried()
+    {
+        // arrange
+        var requestCount = 0;
+        using var http = TestHttpServer.CreateTestServer((method, url) =>
+        {
+            if (requestCount < 2)
+            {
+                requestCount++;
+                return (500, Array.Empty<byte>());
+            }
+
+            return (200, Array.Empty<byte>());
+        });
+        var handler = new HttpApiHandler(http.BaseUrl, "TEST-ID");
+
+        // act
+        await handler.IncrementMetric(new()
+        {
+            Metric = "test",
+        });
+    }
+
     [Theory]
     [MemberData(nameof(ErrorsAreSentToTheCorrectEndpointTestData))]
     public async Task ErrorsAreSentToTheCorrectEndpoint(JobErrorBase error, params string[] expectedEndpoints)
