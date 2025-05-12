@@ -52,7 +52,9 @@ public static class IApiHandlerExtensions
                 await action();
                 return;
             }
-            catch (HttpRequestException) when (retryCount < MaxRetries)
+            catch (HttpRequestException ex)
+            when (retryCount < MaxRetries &&
+                (ex.StatusCode is null || ((int)ex.StatusCode) / 100 == 5))
             {
                 retryCount++;
                 await Task.Delay(TimeSpan.FromSeconds(Random.Shared.Next(MinRetryDelay, MaxRetryDelay)));

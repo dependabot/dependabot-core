@@ -39,7 +39,7 @@ public class HttpApiHandlerTests
         using var http = TestHttpServer.CreateTestServer((method, url) =>
         {
             // no error content returned
-            return (500, null);
+            return (400, null);
         });
         var handler = new HttpApiHandler(http.BaseUrl, "TEST-ID");
 
@@ -51,12 +51,12 @@ public class HttpApiHandlerTests
         }));
 
         // assert
-        var expectedMessage = $"500 (InternalServerError)";
+        var expectedMessage = $"400 (BadRequest)";
         Assert.Equal(expectedMessage, exception.Message);
     }
 
     [Fact]
-    public async Task ApiCallsAreAutomaticallyRetried()
+    public async Task ApiCallsAreAutomaticallyRetriedWhenTheServerThrowsAnError()
     {
         // arrange
         var requestCount = 0;
@@ -77,6 +77,23 @@ public class HttpApiHandlerTests
         {
             Metric = "test",
         });
+    }
+
+    [Fact]
+    public async Task ApiCallsAreNotRetriedOnABadRequest()
+    {
+        // arrange
+        var requestCount = 0;
+        using var http = TestHttpServer.CreateTestServer((method, url) =>
+        {
+            requestCount++;
+            return (400, Array.Empty<byte>());
+        });
+        var handler = new HttpApiHandler(http.BaseUrl, "TEST-ID");
+
+        // act
+        await Assert.ThrowsAsync<HttpRequestException>(() => handler.IncrementMetric(new() { Metric = "test" }));
+        Assert.True(requestCount == 1, $"Expected only 1 request, but received {requestCount}.");
     }
 
     [Theory]
