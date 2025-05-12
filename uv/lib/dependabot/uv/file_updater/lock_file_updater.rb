@@ -172,24 +172,6 @@ module Dependabot
           end
         end
 
-        sig do
-          params(
-            original_requires_python: T.nilable(String),
-            block: T.proc.returns(T.untyped)
-          ).returns(T.untyped)
-        end
-        def with_original_python_version(original_requires_python)
-          if original_requires_python
-            original_python_version = @original_python_version
-            @original_python_version = original_requires_python
-            result = yield
-            @original_python_version = original_python_version
-            result
-          else
-            yield
-          end
-        end
-
         sig { returns(String) }
         def prepared_pyproject
           @prepared_pyproject ||=
