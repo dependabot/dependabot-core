@@ -58,6 +58,13 @@ public abstract record JobErrorBase : MessageBase
             case HttpRequestException httpRequest:
                 if (httpRequest.StatusCode is null)
                 {
+                    if (httpRequest.InnerException is HttpIOException ioException &&
+                        ioException.HttpRequestError == HttpRequestError.ResponseEnded)
+                    {
+                        // server hung up on us
+                        return new PrivateSourceBadResponse(NuGetContext.GetPackageSourceUrls(currentDirectory));
+                    }
+
                     return new UnknownError(ex, jobId);
                 }
 
