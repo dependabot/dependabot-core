@@ -39,7 +39,8 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
       dependency_files: dependency_files,
       credentials: credentials,
       ignored_versions: ignored_versions,
-      security_advisories: security_advisories
+      security_advisories: security_advisories,
+      update_cooldown: expected_cooldown_options
     )
   end
   let(:maven_central_releases) do
@@ -50,6 +51,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
     "https://repo.maven.apache.org/maven2/" \
       "com/google/guava/guava/maven-metadata.xml"
   end
+  let(:expected_cooldown_options) { nil }
 
   before do
     stub_request(:get, maven_central_metadata_url)
@@ -189,6 +191,31 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
       it "finds the lowest available non-vulnerable version" do
         expect(lowest_security_fix_version).to eq(version_class.new("23.5-jre"))
       end
+    end
+  end
+
+  describe "#latest_version with cooldown" do
+    subject { checker.latest_version }
+
+    let(:expected_cooldown_options) do
+      Dependabot::Package::ReleaseCooldownOptions.new(
+        default_days: 7,
+        semver_major_days: 7,
+        semver_minor_days: 7,
+        semver_patch_days: 7,
+        include: [],
+        exclude: []
+      )
+    end
+
+    it { is_expected.to eq(version_class.new("23.6-jre")) }
+
+    context "when Maven Central doesn't return a release tag" do
+      let(:maven_central_releases) do
+        fixture("maven_central_metadata", "with_release.xml")
+      end
+
+      it { is_expected.to eq(version_class.new("23.6-jre")) }
     end
   end
 

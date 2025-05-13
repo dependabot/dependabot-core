@@ -14,7 +14,8 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
       credentials: credentials,
       ignored_versions: ignored_versions,
       raise_on_ignored: raise_on_ignored,
-      security_advisories: security_advisories
+      security_advisories: security_advisories,
+      cooldown_options: cooldown_options
     )
   end
   let(:version_class) { Dependabot::Gradle::Version }
@@ -22,6 +23,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
   let(:ignored_versions) { [] }
   let(:raise_on_ignored) { false }
   let(:security_advisories) { [] }
+  let(:cooldown_options) { nil }
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -542,6 +544,34 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
           end
         end
       end
+    end
+  end
+
+  describe "#latest_version_details with cooldown" do
+    subject(:latest_version_details) { finder.latest_version_details }
+
+    before do
+      allow(Dependabot::Experiments).to receive(:enabled?)
+        .with(:enable_cooldown_for_gradle).and_return(true)
+
+      allow(Time).to receive(:now).and_return(Time.parse("2018-10-25T17:30:00.000Z"))
+    end
+
+    let(:cooldown_options) do
+      Dependabot::Package::ReleaseCooldownOptions.new(
+        default_days: 90,
+        semver_major_days: 90,
+        semver_minor_days: 90,
+        semver_patch_days: 90,
+        include: [],
+        exclude: []
+      )
+    end
+
+    its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
+
+    its([:source_url]) do
+      is_expected.to eq("https://repo.maven.apache.org/maven2")
     end
   end
 
