@@ -1860,6 +1860,14 @@ public class MSBuildHelperTests : TestBase
             // expectedError
             new DependencyNotFound("Some.Package"),
         ];
+
+        yield return
+        [
+            // output
+            "This part is not reported.\nAn error occurred while reading file '/path/to/packages.config': Some error message.\nThis part is not reported.",
+            // expectedError
+            new DependencyFileNotParseable("/path/to/packages.config", "Some error message."),
+        ];
     }
 
     public static IEnumerable<object[]> GetTopLevelPackageDependencyInfosTestData()

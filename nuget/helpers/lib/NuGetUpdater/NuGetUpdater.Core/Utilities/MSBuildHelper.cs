@@ -969,6 +969,7 @@ internal static partial class MSBuildHelper
         ThrowOnUpdateNotPossible(output);
         ThrowOnRateLimitExceeded(output);
         ThrowOnServiceUnavailable(output);
+        ThrowOnUnparseableFile(output);
     }
 
     private static void ThrowOnUnauthenticatedFeed(string stdout)
@@ -1064,6 +1065,19 @@ internal static partial class MSBuildHelper
         {
             var packages = matches.Select(m => $"{m.Groups["PackageName"].Value}.{m.Groups["PackageVersion"].Value}").Distinct().ToArray();
             throw new UpdateNotPossibleException(packages);
+        }
+    }
+
+    private static void ThrowOnUnparseableFile(string output)
+    {
+        var patterns = new[]
+        {
+            new Regex(@"\nAn error occurred while reading file '(?<FilePath>[^']+)': (?<Message>[^\n]*)\n"),
+        };
+        var match = patterns.Select(p => p.Match(output)).Where(m => m.Success).FirstOrDefault();
+        if (match is not null)
+        {
+            throw new UnparseableFileException(match.Groups["Message"].Value, match.Groups["FilePath"].Value);
         }
     }
 
