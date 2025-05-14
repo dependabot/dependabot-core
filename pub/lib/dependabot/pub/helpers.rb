@@ -97,7 +97,9 @@ module Dependabot
         return JSON.parse(File.read(cache_file)) if File.file?(cache_file)
 
         report = JSON.parse(run_dependency_services("report"))["dependencies"]
+
         File.write(cache_file, JSON.generate(report))
+
         report
       end
 
@@ -118,6 +120,11 @@ module Dependabot
           end,
           T::Array[Dependabot::DependencyFile]
         )
+      end
+
+      sig { params(dependency: Dependabot::Dependency).returns(T::Hash[String, T.untyped]) }
+      def fetch_package_metadata(dependency)
+        Dependabot::RegistryClient.get(url: "#{repository_url(dependency)}/api/packages/#{dependency.name}")
       end
 
       # Clones the flutter repo into /tmp/flutter if needed
@@ -281,10 +288,13 @@ module Dependabot
               chdir: command_dir
             )
             raise_error(stderr) unless status.success?
+            # debugger
+            # puts stdout
             return stdout unless blk
 
             yield command_dir
           end
+          # debugger
         end
       end
 
@@ -403,6 +413,7 @@ module Dependabot
           .returns(T.nilable(String))
       end
       def dependencies_to_json(dependencies)
+        # debugger
         if dependencies.nil?
           nil
         else

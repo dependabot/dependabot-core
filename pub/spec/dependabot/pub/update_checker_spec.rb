@@ -8,6 +8,7 @@ require "dependabot/dependency_file"
 require "dependabot/dependency"
 require "dependabot/pub/update_checker"
 require "dependabot/requirements_update_strategy"
+require "dependabot/pub/update_checker/latest_version_finder"
 
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
