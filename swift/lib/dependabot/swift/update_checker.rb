@@ -24,6 +24,7 @@ module Dependabot
 
       sig { override.returns(T.nilable(Dependabot::Version)) }
       def latest_resolvable_version
+        Dependabot.logger.info("Running node command: latest_resolvable_version")
         @latest_resolvable_version = T.let(fetch_latest_resolvable_version, T.nilable(Dependabot::Version))
       end
 
@@ -84,6 +85,7 @@ module Dependabot
 
       sig { returns(T.nilable(Dependabot::Version)) }
       def fetch_latest_resolvable_version
+
         latest_resolvable_version = version_resolver_for(unlocked_requirements).latest_resolvable_version
         return current_version unless latest_resolvable_version
 
