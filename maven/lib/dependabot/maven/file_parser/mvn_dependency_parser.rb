@@ -30,7 +30,7 @@ module Dependabot
             group_id = node["groupId"]
             version = node["version"]
             type = node["type"]
-            classifier = node["classifier"]
+            classifier = node["classifier"].to_s.empty? ? nil : node["classifier"]
             scope = node["scope"]
 
             groups = scope == "test" ? ["test"] : []
@@ -40,7 +40,7 @@ module Dependabot
               package_manager: "maven",
               requirements: [{
                 requirement: version,
-                file: "pom.xml", # Assuming all dependencies are in pom.xml TODO: rethink
+                file: "pom.xml", # TODO: nil for transitive dependencies
                 groups: groups,
                 source: nil,
                 metadata: {
@@ -50,7 +50,7 @@ module Dependabot
               }]
             )
 
-            node["children"]&.each { |child| traverse_tree.call(child) } if node["children"]
+            node["children"]&.each { |child| traverse_tree.call(child) }
           end
 
           traverse_tree.call(dependency_tree)

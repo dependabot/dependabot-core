@@ -53,7 +53,7 @@ module Dependabot
 
         binding.irb
 
-        dependency_set.dependencies
+        new_dependency_set.dependencies
       end
 
       sig { returns(Ecosystem) }

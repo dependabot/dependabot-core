@@ -62,6 +62,7 @@ module Dependabot
           .returns(T::Array[Dependabot::DependencyFile])
       end
       def update_files_for_dependency(original_files:, dependency:)
+        # binding.irb
         files = original_files.dup
 
         # The UpdateChecker ensures the order of requirements is preserved
@@ -119,16 +120,71 @@ module Dependabot
       end
       def update_version_in_file(dependency, file, previous_req, requirement)
         updated_content = T.must(file.content)
+        original_file_declarations = original_file_declarations(dependency, previous_req)
 
-        original_file_declarations(dependency, previous_req).each do |old_dec|
-          updated_content = updated_content.gsub(old_dec) do
-            updated_file_declaration(old_dec, previous_req, requirement)
+        if original_file_declarations.any?
+          original_file_declarations.each do |old_dec|
+            updated_content = updated_content.gsub(old_dec) do
+              updated_file_declaration(old_dec, previous_req, requirement)
+            end
           end
+        else
+          updated_content = add_new_declaration(updated_content, dependency, requirement)
         end
+
+        binding.irb
 
         raise "Expected content to change!" if updated_content == file.content
 
         updated_file(file: file, content: updated_content)
+      end
+
+      sig do
+        params(
+          content: String,
+          dependency: Dependabot::Dependency,
+          requirement: T::Hash[Symbol, T.untyped]
+        ).returns(String)
+      end
+      def add_new_declaration(content, dependency, requirement) # rubocop:disable Metrics/AbcSize
+        binding.irb
+        doc = Nokogiri::XML(content) { |config| config.default_xml.noblanks }
+        doc.remove_namespaces!
+
+        project = doc.at_xpath("//project")
+        raise "<project> element not found in the XML content" unless project
+
+        dependency_management = project.at_xpath("dependencyManagement")
+        unless dependency_management
+          dependency_management = Nokogiri::XML::Node.new("dependencyManagement", doc)
+          dependencies = Nokogiri::XML::Node.new("dependencies", doc)
+          dependency_management.add_child(dependencies)
+          project.add_child(dependency_management)
+        end
+
+        dependencies = dependency_management.at_xpath("dependencies")
+        unless dependencies
+          dependencies = Nokogiri::XML::Node.new("dependencies", doc)
+          dependency_management.add_child(dependencies)
+        end
+
+        dependency_node = Nokogiri::XML::Node.new("dependency", doc)
+
+        group_id = Nokogiri::XML::Node.new("groupId", doc)
+        group_id.content = dependency.name.split(":").first
+        dependency_node.add_child(group_id)
+
+        artifact_id = Nokogiri::XML::Node.new("artifactId", doc)
+        artifact_id.content = dependency.name.split(":").last
+        dependency_node.add_child(artifact_id)
+
+        version = Nokogiri::XML::Node.new("version", doc)
+        version.content = requirement.fetch(:requirement)
+        dependency_node.add_child(version)
+
+        dependencies.add_child(dependency_node)
+
+        doc.to_xml
       end
 
       sig do

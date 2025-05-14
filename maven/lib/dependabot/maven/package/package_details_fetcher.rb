@@ -174,6 +174,7 @@ module Dependabot
         def released_check?(version)
           @released_check[version] ||=
             repositories.any? do |repository_details|
+              # binding.irb
               url = repository_details.fetch(URL_KEY)
               auth_headers = repository_details.fetch(AUTH_HEADERS_KEY)
               response = Dependabot::RegistryClient.head(
@@ -383,6 +384,7 @@ module Dependabot
         #            https://repo.maven.apache.org/maven2/com/google/guava/guava/23.7-jre/-23.7-jre.jar
         sig { params(repository_url: String, version: Dependabot::Version).returns(String) }
         def dependency_files_url(repository_url, version)
+          # binding.irb
           _, artifact_id = dependency_parts
           base_url = dependency_base_url(repository_url)
           type = dependency.requirements.first&.dig(:metadata, :packaging_type)
