@@ -1,192 +1,165 @@
+# typed: strict
 # frozen_string_literal: true
-
-require "dependabot/monkey_patches/bundler/definition_ruby_version_patch"
-require "dependabot/monkey_patches/bundler/definition_bundler_version_patch"
-require "dependabot/monkey_patches/bundler/git_source_patch"
 
 require "excon"
 
 require "dependabot/bundler/update_checker"
+require "dependabot/update_checkers/version_filters"
 require "dependabot/bundler/requirement"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
+require "dependabot/package/package_latest_version_finder"
+require "dependabot/bundler/update_checker/latest_version_finder/" \
+        "dependency_source"
+require "dependabot/bundler/package/package_details_fetcher"
+require "sorbet-runtime"
 
 module Dependabot
   module Bundler
     class UpdateChecker
-      class LatestVersionFinder
-        require_relative "shared_bundler_helpers"
-        include SharedBundlerHelpers
+      class LatestVersionFinder < Dependabot::Package::PackageLatestVersionFinder
+        extend T::Sig
 
-        def initialize(dependency:, dependency_files:, credentials:,
-                       ignored_versions:, security_advisories:)
-          @dependency          = dependency
-          @dependency_files    = dependency_files
-          @credentials         = credentials
-          @ignored_versions    = ignored_versions
-          @security_advisories = security_advisories
+        sig do
+          params(
+            dependency: Dependabot::Dependency,
+            dependency_files: T::Array[Dependabot::DependencyFile],
+            credentials: T::Array[Dependabot::Credential],
+            ignored_versions: T::Array[String],
+            security_advisories: T::Array[Dependabot::SecurityAdvisory],
+            cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions),
+            raise_on_ignored: T::Boolean,
+            options: T::Hash[Symbol, T.untyped]
+          ).void
+        end
+        def initialize(
+          dependency:,
+          dependency_files:,
+          credentials:,
+          ignored_versions:,
+          security_advisories:,
+          cooldown_options: nil,
+          raise_on_ignored: false,
+          options: {}
+        )
+          @package_details = T.let(nil, T.nilable(Dependabot::Package::PackageDetails))
+          @latest_version_details = T.let(nil, T.nilable(T::Hash[Symbol, T.untyped]))
+          @releases_from_dependency_source = T.let(nil, T.nilable(T::Array[Dependabot::Package::PackageRelease]))
+          super
         end
 
+        sig { override.returns(T.nilable(Dependabot::Package::PackageDetails)) }
+        def package_details
+          @package_details ||= Package::PackageDetailsFetcher.new(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            credentials: credentials
+          ).fetch
+        end
+
+        sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
         def latest_version_details
-          @latest_version_details ||= fetch_latest_version_details
+          @latest_version_details ||= if cooldown_enabled?
+                                        latest_version = fetch_latest_version(language_version: nil)
+                                        latest_version ? { version: latest_version } : nil
+                                      else
+                                        fetch_latest_version_details
+                                      end
         end
 
-        def lowest_security_fix_version
-          @lowest_security_fix_version ||= fetch_lowest_security_fix_version
+        sig { override.returns(T::Boolean) }
+        def cooldown_enabled?
+          Dependabot::Experiments.enabled?(:enable_cooldown_for_bundler)
+        end
+
+        sig { override.returns(T.nilable(T::Array[Dependabot::Package::PackageRelease])) }
+        def available_versions
+          return nil if package_details&.releases.nil?
+
+          source_versions = releases_from_dependency_source
+          return [] if source_versions.empty?
+
+          T.must(package_details).releases.select do |release|
+            source_versions.any? { |v| v.to_s == release.version.to_s }
+          end
         end
 
         private
 
-        attr_reader :dependency, :dependency_files, :credentials,
-                    :ignored_versions, :security_advisories
-
+        sig { returns(T.nilable(T::Hash[Symbol, Dependabot::Version])) }
         def fetch_latest_version_details
-          if dependency_source.is_a?(::Bundler::Source::Git)
-            return latest_git_version_details
-          end
+          return dependency_source.latest_git_version_details if dependency_source.git?
 
-          relevant_versions = registry_versions
+          relevant_versions = releases_from_dependency_source
           relevant_versions = filter_prerelease_versions(relevant_versions)
           relevant_versions = filter_ignored_versions(relevant_versions)
 
-          relevant_versions.empty? ? nil : { version: relevant_versions.max }
+          return if relevant_versions.empty?
+
+          release = relevant_versions.max_by(&:version)
+
+          { version: release&.version }
         end
 
-        def fetch_lowest_security_fix_version
-          return if dependency_source.is_a?(::Bundler::Source::Git)
+        sig do
+          params(language_version: T.nilable(T.any(String, Dependabot::Version)))
+            .returns(T.nilable(Dependabot::Version))
+        end
+        def fetch_lowest_security_fix_version(language_version: nil) # rubocop:disable Lint/UnusedMethodArgument
+          return if dependency_source.git?
 
-          relevant_versions = registry_versions
+          relevant_versions = releases_from_dependency_source
           relevant_versions = filter_prerelease_versions(relevant_versions)
+          relevant_versions = Dependabot::UpdateCheckers::VersionFilters
+                              .filter_vulnerable_versions(
+                                relevant_versions,
+                                security_advisories
+                              )
           relevant_versions = filter_ignored_versions(relevant_versions)
-          relevant_versions = filter_vulnerable_versions(relevant_versions)
           relevant_versions = filter_lower_versions(relevant_versions)
 
-          relevant_versions.min
+          relevant_versions.min_by(&:version)&.version
         end
 
-        def filter_prerelease_versions(versions_array)
-          return versions_array if wants_prerelease?
+        sig { returns(T::Array[Dependabot::Package::PackageRelease]) }
+        def releases_from_dependency_source
+          return @releases_from_dependency_source if @releases_from_dependency_source
 
-          versions_array.reject(&:prerelease?)
-        end
-
-        def filter_ignored_versions(versions_array)
-          versions_array.
-            reject { |v| ignore_reqs.any? { |r| r.satisfied_by?(v) } }
-        end
-
-        def filter_vulnerable_versions(versions_array)
-          versions_array.
-            reject { |v| security_advisories.any? { |a| a.vulnerable?(v) } }
-        end
-
-        def filter_lower_versions(versions_array)
-          versions_array.
-            select { |version| version > Gem::Version.new(dependency.version) }
-        end
-
-        def registry_versions
-          return rubygems_versions if dependency.name == "bundler"
-          return rubygems_versions unless dependency_source
-          return [] unless dependency_source.is_a?(::Bundler::Source::Rubygems)
-
-          remote = dependency_source.remotes.first
-          return rubygems_versions if remote.nil?
-          return rubygems_versions if remote.to_s == "https://rubygems.org/"
-
-          private_registry_versions
-        end
-
-        def rubygems_versions
-          @rubygems_versions ||=
-            begin
-              response = Excon.get(
-                "https://rubygems.org/api/v1/versions/#{dependency.name}.json",
-                idempotent: true,
-                **SharedHelpers.excon_defaults
+          @releases_from_dependency_source =
+            dependency_source.versions.map do |version|
+              Dependabot::Package::PackageRelease.new(
+                version: version
               )
-
-              JSON.parse(response.body).
-                map { |d| Gem::Version.new(d["number"]) }
             end
-        rescue JSON::ParserError, Excon::Error::Timeout
-          @rubygems_versions = []
+          @releases_from_dependency_source
         end
 
-        def private_registry_versions
-          @private_registry_versions ||=
-            in_a_temporary_bundler_context do
-              dependency_source.
-                fetchers.flat_map do |fetcher|
-                  fetcher.
-                    specs_with_retry([dependency.name], dependency_source).
-                    search_all(dependency.name)
-                end.
-                map(&:version)
-            end
-        end
-
-        def latest_git_version_details
-          dependency_source_details =
-            dependency.requirements.map { |r| r.fetch(:source) }.
-            uniq.compact.first
-
-          in_a_temporary_bundler_context do
-            SharedHelpers.with_git_configured(credentials: credentials) do
-              # Note: we don't set `ref`, as we want to unpin the dependency
-              source = ::Bundler::Source::Git.new(
-                "uri" => dependency_source_details[:url],
-                "branch" => dependency_source_details[:branch],
-                "name" => dependency.name,
-                "submodules" => true
-              )
-
-              # Tell Bundler we're fine with fetching the source remotely
-              source.instance_variable_set(:@allow_remote, true)
-
-              spec = source.specs.first
-              { version: spec.version, commit_sha: spec.source.revision }
-            end
-          end
-        end
-
+        sig { returns(T::Boolean) }
         def wants_prerelease?
-          @wants_prerelease ||=
+          @wants_prerelease ||= T.let(
             begin
-              current_version = dependency.version
-              if current_version && Gem::Version.correct?(current_version) &&
-                 Gem::Version.new(current_version).prerelease?
-                return true
+              current_version = dependency.numeric_version
+              if current_version&.prerelease?
+                true
+              else
+                dependency.requirements.any? do |req|
+                  req[:requirement].match?(/[a-z]/i)
+                end
               end
-
-              dependency.requirements.any? do |req|
-                req[:requirement].match?(/[a-z]/i)
-              end
-            end
+            end, T.nilable(T::Boolean)
+          )
         end
 
+        sig { returns(DependencySource) }
         def dependency_source
-          return nil unless gemfile
-
-          @dependency_source ||=
-            in_a_temporary_bundler_context do
-              definition = ::Bundler::Definition.build(gemfile.name, nil, {})
-
-              specified_source =
-                definition.dependencies.
-                find { |dep| dep.name == dependency.name }&.source
-
-              specified_source || definition.send(:sources).default_source
-            end
-        end
-
-        def ignore_reqs
-          ignored_versions.map { |req| Gem::Requirement.new(req.split(",")) }
-        end
-
-        def gemfile
-          dependency_files.find { |f| f.name == "Gemfile" } ||
-            dependency_files.find { |f| f.name == "gems.rb" }
+          @dependency_source ||= T.let(
+            DependencySource.new(
+              dependency: dependency,
+              dependency_files: dependency_files,
+              credentials: credentials,
+              options: options
+            ), T.nilable(DependencySource)
+          )
         end
       end
     end

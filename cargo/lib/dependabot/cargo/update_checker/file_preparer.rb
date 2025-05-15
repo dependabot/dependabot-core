@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "toml-rb"
@@ -38,8 +39,10 @@ module Dependabot
 
         private
 
-        attr_reader :dependency_files, :dependency, :replacement_git_pin,
-                    :latest_allowable_version
+        attr_reader :dependency_files
+        attr_reader :dependency
+        attr_reader :replacement_git_pin
+        attr_reader :latest_allowable_version
 
         def unlock_requirement?
           @unlock_requirement
@@ -62,7 +65,7 @@ module Dependabot
           content
         end
 
-        # Note: We don't need to care about formatting in this method, since
+        # NOTE: We don't need to care about formatting in this method, since
         # we're only using the manifest to find the latest resolvable version
         def replace_version_constraint(content, filename)
           parsed_manifest = TomlRB.parse(content)
@@ -120,13 +123,9 @@ module Dependabot
               next unless req.is_a?(Hash)
               next unless [req["tag"], req["rev"]].compact.uniq.count == 1
 
-              if req["tag"]
-                parsed_manifest[type][name]["tag"] = replacement_git_pin
-              end
+              parsed_manifest[type][name]["tag"] = replacement_git_pin if req["tag"]
 
-              if req["rev"]
-                parsed_manifest[type][name]["rev"] = replacement_git_pin
-              end
+              parsed_manifest[type][name]["rev"] = replacement_git_pin if req["rev"]
             end
           end
 
@@ -171,8 +170,8 @@ module Dependabot
               next unless details.is_a?(Hash)
               next unless details["git"]
 
-              details["git"] = details["git"].
-                               gsub(%r{ssh://git@(.*?)/}, 'https://\1/')
+              details["git"] = details["git"]
+                               .gsub(%r{ssh://git@(.*?)/}, 'https://\1/')
             end
           end
 
@@ -180,9 +179,9 @@ module Dependabot
         end
 
         def temporary_requirement_for_resolution(filename)
-          original_req = dependency.requirements.
-                         find { |r| r.fetch(:file) == filename }&.
-                         fetch(:requirement)
+          original_req = dependency.requirements
+                                   .find { |r| r.fetch(:file) == filename }
+                                   &.fetch(:requirement)
 
           lower_bound_req =
             if original_req && !unlock_requirement?
@@ -201,6 +200,7 @@ module Dependabot
           lower_bound_req + ", <= #{latest_allowable_version}"
         end
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def lower_bound_version
           @lower_bound_version ||=
             if git_dependency? && git_dependency_version
@@ -209,26 +209,26 @@ module Dependabot
               dependency.version
             else
               version_from_requirement =
-                dependency.requirements.map { |r| r.fetch(:requirement) }.
-                compact.
-                flat_map { |req_str| Cargo::Requirement.new(req_str) }.
-                flat_map(&:requirements).
-                reject { |req_array| req_array.first.start_with?("<") }.
-                map(&:last).
-                max&.to_s
+                dependency.requirements.filter_map { |r| r.fetch(:requirement) }
+                          .flat_map { |req_str| Cargo::Requirement.new(req_str) }
+                          .flat_map(&:requirements)
+                          .reject { |req_array| req_array.first.start_with?("<") }
+                          .map(&:last)
+                          .max&.to_s
 
               version_from_requirement || 0
             end
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def git_dependency_version
           return unless lockfile
 
-          TomlRB.parse(lockfile.content).
-            fetch("package", []).
-            select { |p| p["name"] == dependency.name }.
-            find { |p| p["source"].end_with?(dependency.version) }.
-            fetch("version")
+          TomlRB.parse(lockfile.content)
+                .fetch("package", [])
+                .select { |p| p["name"] == dependency.name }
+                .find { |p| p["source"].end_with?(dependency.version) }
+                .fetch("version")
         end
 
         def dependency_names_for_type(parsed_manifest, type)
@@ -253,9 +253,7 @@ module Dependabot
 
         def name_from_declaration(name, declaration)
           return name if declaration.is_a?(String)
-          unless declaration.is_a?(Hash)
-            raise "Unexpected dependency declaration: #{declaration}"
-          end
+          raise "Unexpected dependency declaration: #{declaration}" unless declaration.is_a?(Hash)
 
           declaration.fetch("package", name)
         end
@@ -279,9 +277,9 @@ module Dependabot
         end
 
         def git_dependency?
-          GitCommitChecker.
-            new(dependency: dependency, credentials: []).
-            git_dependency?
+          GitCommitChecker
+            .new(dependency: dependency, credentials: [])
+            .git_dependency?
         end
       end
     end

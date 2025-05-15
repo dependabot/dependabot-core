@@ -1,12 +1,13 @@
+# typed: true
 # frozen_string_literal: true
 
-require "dependabot/update_checkers"
-require "dependabot/update_checkers/base"
 require "dependabot/bundler/file_updater/requirement_replacer"
 require "dependabot/bundler/version"
 require "dependabot/git_commit_checker"
+require "dependabot/requirements_update_strategy"
+require "dependabot/update_checkers"
+require "dependabot/update_checkers/base"
 
-# rubocop:disable Metrics/ClassLength
 module Dependabot
   module Bundler
     class UpdateChecker < Dependabot::UpdateCheckers::Base
@@ -15,6 +16,7 @@ module Dependabot
       require_relative "update_checker/requirements_updater"
       require_relative "update_checker/version_resolver"
       require_relative "update_checker/latest_version_finder"
+      require_relative "update_checker/conflicting_dependency_resolver"
 
       def latest_version
         return latest_version_for_git_dependency if git_dependency?
@@ -28,16 +30,21 @@ module Dependabot
         latest_resolvable_version_details&.fetch(:version)
       end
 
+      def lowest_security_fix_version
+        latest_version_finder(remove_git_source: false)
+          .lowest_security_fix_version
+      end
+
       def lowest_resolvable_security_fix_version
         raise "Dependency not vulnerable!" unless vulnerable?
         return latest_resolvable_version if git_dependency?
 
         lowest_fix =
-          latest_version_finder(remove_git_source: false).
-          lowest_security_fix_version
-        return unless lowest_fix
+          latest_version_finder(remove_git_source: false)
+          .lowest_security_fix_version
+        return unless lowest_fix && resolvable?(lowest_fix)
 
-        resolvable?(lowest_fix) ? lowest_fix : latest_resolvable_version
+        lowest_fix
       end
 
       def latest_resolvable_version_with_no_unlock
@@ -45,8 +52,8 @@ module Dependabot
         return current_ver if git_dependency? && git_commit_checker.pinned?
 
         @latest_resolvable_version_detail_with_no_unlock ||=
-          version_resolver(remove_git_source: false, unlock_requirement: false).
-          latest_resolvable_version_details
+          version_resolver(remove_git_source: false, unlock_requirement: false)
+          .latest_resolvable_version_details
 
         if git_dependency?
           @latest_resolvable_version_detail_with_no_unlock&.fetch(:commit_sha)
@@ -56,19 +63,8 @@ module Dependabot
       end
 
       def updated_requirements
-        latest_version_for_req_updater =
-          if switching_source_from_git_to_rubygems?
-            git_commit_checker.local_tag_for_latest_version.fetch(:version).to_s
-          else
-            latest_version_details&.fetch(:version)&.to_s
-          end
-
-        latest_resolvable_version_for_req_updater =
-          if switching_source_from_git_to_rubygems?
-            latest_version_for_req_updater
-          else
-            preferred_resolvable_version_details&.fetch(:version)&.to_s
-          end
+        latest_version_for_req_updater = latest_version_details&.fetch(:version)&.to_s
+        latest_resolvable_version_for_req_updater = preferred_resolvable_version_details&.fetch(:version)&.to_s
 
         RequirementsUpdater.new(
           requirements: dependency.requirements,
@@ -80,43 +76,64 @@ module Dependabot
       end
 
       def requirements_unlocked_or_can_be?
-        dependency.requirements.
-          select { |r| requirement_class.new(r[:requirement]).specific? }.
-          all? do |req|
-            file = dependency_files.find { |f| f.name == req.fetch(:file) }
-            updated = FileUpdater::RequirementReplacer.new(
-              dependency: dependency,
-              file_type: file.name.end_with?("gemspec") ? :gemspec : :gemfile,
-              updated_requirement: "whatever"
-            ).rewrite(file.content)
+        return true if requirements_unlocked?
+        return false if requirements_update_strategy.lockfile_only?
 
-            updated != file.content
-          end
+        dependency.specific_requirements
+                  .all? do |req|
+          file = T.must(dependency_files.find { |f| f.name == req.fetch(:file) })
+          updated = FileUpdater::RequirementReplacer.new(
+            dependency: dependency,
+            file_type: file.name.end_with?("gemspec") ? :gemspec : :gemfile,
+            updated_requirement: "whatever"
+          ).rewrite(file.content)
+
+          updated != file.content
+        end
       end
 
       def requirements_update_strategy
         # If passed in as an option (in the base class) honour that option
-        if @requirements_update_strategy
-          return @requirements_update_strategy.to_sym
-        end
+        return @requirements_update_strategy if @requirements_update_strategy
 
         # Otherwise, widen ranges for libraries and bump versions for apps
-        dependency.version.nil? ? :bump_versions_if_necessary : :bump_versions
+        if dependency.version.nil?
+          RequirementsUpdateStrategy::BumpVersionsIfNecessary
+        else
+          RequirementsUpdateStrategy::BumpVersions
+        end
+      end
+
+      def conflicting_dependencies
+        ConflictingDependencyResolver.new(
+          dependency_files: dependency_files,
+          repo_contents_path: repo_contents_path,
+          credentials: credentials,
+          options: options
+        ).conflicting_dependencies(
+          dependency: dependency,
+          target_version: lowest_security_fix_version
+        )
       end
 
       private
 
+      def requirements_unlocked?
+        dependency.specific_requirements.none?
+      end
+
       def latest_version_resolvable_with_full_unlock?
         return false unless latest_version
+        return false if version_resolver(remove_git_source: false).latest_allowable_version_incompatible_with_ruby?
 
         updated_dependencies = force_updater.updated_dependencies
 
         updated_dependencies.none? do |dep|
           old_version = dep.previous_version
-          next unless Gem::Version.correct?(old_version)
-          next if Gem::Version.new(old_version).prerelease?
+          next unless Dependabot::Bundler::Version.correct?(old_version)
+          next if Dependabot::Bundler::Version.new(old_version).prerelease?
 
-          Gem::Version.new(dep.version).prerelease?
+          Dependabot::Bundler::Version.new(dep.version).prerelease?
         end
       rescue Dependabot::DependencyFileNotResolvable
         false
@@ -127,9 +144,7 @@ module Dependabot
       end
 
       def preferred_resolvable_version_details
-        if vulnerable?
-          return { version: lowest_resolvable_security_fix_version }
-        end
+        return { version: lowest_resolvable_security_fix_version } if vulnerable?
 
         latest_resolvable_version_details
       end
@@ -147,10 +162,12 @@ module Dependabot
             ForceUpdater.new(
               dependency: dependency,
               dependency_files: dependency_files,
+              repo_contents_path: repo_contents_path,
               credentials: credentials,
               target_version: version,
               requirements_update_strategy: requirements_update_strategy,
-              update_multiple_dependencies: false
+              update_multiple_dependencies: false,
+              options: options
             ).updated_dependencies
             true
           rescue Dependabot::DependencyFileNotResolvable
@@ -167,9 +184,13 @@ module Dependabot
             VersionResolver.new(
               dependency: dependency,
               unprepared_dependency_files: dependency_files,
+              repo_contents_path: repo_contents_path,
               credentials: credentials,
               ignored_versions: ignored_versions,
-              replacement_git_pin: tag
+              raise_on_ignored: raise_on_ignored,
+              replacement_git_pin: tag,
+              cooldown_options: update_cooldown,
+              options: options
             ).latest_resolvable_version_details
             true
           rescue Dependabot::DependencyFileNotResolvable
@@ -180,21 +201,21 @@ module Dependabot
       def latest_version_details(remove_git_source: false)
         @latest_version_details ||= {}
         @latest_version_details[remove_git_source] ||=
-          latest_version_finder(remove_git_source: remove_git_source).
-          latest_version_details
+          latest_version_finder(remove_git_source: remove_git_source)
+          .latest_version_details
       end
 
       def latest_resolvable_version_details(remove_git_source: false)
         @latest_resolvable_version_details ||= {}
         @latest_resolvable_version_details[remove_git_source] ||=
-          version_resolver(remove_git_source: remove_git_source).
-          latest_resolvable_version_details
+          version_resolver(remove_git_source: remove_git_source)
+          .latest_resolvable_version_details
       end
 
       def latest_version_for_git_dependency
         latest_release =
-          latest_version_details(remove_git_source: true)&.
-          fetch(:version)
+          latest_version_details(remove_git_source: true)
+          &.fetch(:version)
 
         # If there's been a release that includes the current pinned ref or
         # that the current branch is behind, we switch to that release.
@@ -202,9 +223,7 @@ module Dependabot
 
         # Otherwise, if the gem isn't pinned, the latest version is just the
         # latest commit for the specified branch.
-        unless git_commit_checker.pinned?
-          return git_commit_checker.head_commit_for_current_branch
-        end
+        return git_commit_checker.head_commit_for_current_branch unless git_commit_checker.pinned?
 
         # If the dependency is pinned to a tag that looks like a version then
         # we want to update that tag. The latest version will then be the SHA
@@ -228,9 +247,7 @@ module Dependabot
 
         # Otherwise, if the gem isn't pinned, the latest version is just the
         # latest commit for the specified branch.
-        unless git_commit_checker.pinned?
-          return latest_resolvable_commit_with_unchanged_git_source
-        end
+        return latest_resolvable_commit_with_unchanged_git_source unless git_commit_checker.pinned?
 
         # If the dependency is pinned to a tag that looks like a version then
         # we want to update that tag. The latest version will then be the SHA
@@ -249,8 +266,8 @@ module Dependabot
       def latest_resolvable_version_without_git_source
         return nil unless latest_version.is_a?(Gem::Version)
 
-        latest_resolvable_version_details(remove_git_source: true)&.
-        fetch(:version)
+        latest_resolvable_version_details(remove_git_source: true)
+          &.fetch(:version)
       rescue Dependabot::DependencyFileNotResolvable
         nil
       end
@@ -285,9 +302,6 @@ module Dependabot
         # Never need to update source, unless a git_dependency
         return dependency_source_details unless git_dependency?
 
-        # Source becomes `nil` if switching to default rubygems
-        return nil if should_switch_source_from_git_to_rubygems?
-
         # Update the git tag if updating a pinned version
         if git_commit_checker.pinned_ref_looks_like_version? &&
            latest_git_tag_is_resolvable?
@@ -300,25 +314,7 @@ module Dependabot
       end
 
       def dependency_source_details
-        sources =
-          dependency.requirements.map { |r| r.fetch(:source) }.uniq.compact
-
-        raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1
-
-        sources.first
-      end
-
-      def should_switch_source_from_git_to_rubygems?
-        return false unless git_dependency?
-        return false if latest_resolvable_version_for_git_dependency.nil?
-
-        Gem::Version.correct?(latest_resolvable_version_for_git_dependency)
-      end
-
-      def switching_source_from_git_to_rubygems?
-        return false unless updated_source&.fetch(:ref, nil)
-
-        updated_source.fetch(:ref) != dependency_source_details.fetch(:ref)
+        dependency.source_details
       end
 
       def force_updater
@@ -326,9 +322,11 @@ module Dependabot
           ForceUpdater.new(
             dependency: dependency,
             dependency_files: dependency_files,
+            repo_contents_path: repo_contents_path,
             credentials: credentials,
             target_version: latest_version,
-            requirements_update_strategy: requirements_update_strategy
+            requirements_update_strategy: requirements_update_strategy,
+            options: options
           )
       end
 
@@ -344,17 +342,19 @@ module Dependabot
         @version_resolver ||= {}
         @version_resolver[remove_git_source] ||= {}
         @version_resolver[remove_git_source][unlock_requirement] ||=
-          begin
-            VersionResolver.new(
-              dependency: dependency,
-              unprepared_dependency_files: dependency_files,
-              credentials: credentials,
-              ignored_versions: ignored_versions,
-              remove_git_source: remove_git_source,
-              unlock_requirement: unlock_requirement,
-              latest_allowable_version: latest_version
-            )
-          end
+          VersionResolver.new(
+            dependency: dependency,
+            unprepared_dependency_files: dependency_files,
+            repo_contents_path: repo_contents_path,
+            credentials: credentials,
+            ignored_versions: ignored_versions,
+            raise_on_ignored: raise_on_ignored,
+            remove_git_source: remove_git_source,
+            unlock_requirement: unlock_requirement,
+            latest_allowable_version: latest_version,
+            cooldown_options: update_cooldown,
+            options: options
+          )
       end
 
       def latest_version_finder(remove_git_source:)
@@ -371,7 +371,10 @@ module Dependabot
               dependency_files: prepared_dependency_files,
               credentials: credentials,
               ignored_versions: ignored_versions,
-              security_advisories: security_advisories
+              raise_on_ignored: raise_on_ignored,
+              security_advisories: security_advisories,
+              cooldown_options: update_cooldown,
+              options: options
             )
           end
       end
@@ -389,7 +392,6 @@ module Dependabot
     end
   end
 end
-# rubocop:enable Metrics/ClassLength
 
-Dependabot::UpdateCheckers.
-  register("bundler", Dependabot::Bundler::UpdateChecker)
+Dependabot::UpdateCheckers
+  .register("bundler", Dependabot::Bundler::UpdateChecker)

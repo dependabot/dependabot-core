@@ -1,14 +1,19 @@
+# typed: true
 # frozen_string_literal: true
 
 require "parser/current"
 require "dependabot/bundler/file_updater"
+require "dependabot/bundler/requirement"
 
 module Dependabot
   module Bundler
     class FileUpdater
       class RubyRequirementSetter
-        RUBY_VERSIONS =
-          %w(1.8.7 1.9.3 2.0.0 2.1.10 2.2.10 2.3.8 2.4.7 2.5.6 2.6.4).freeze
+        RUBY_VERSIONS = %w(
+          1.8.7 1.9.3 2.0.0 2.1.10 2.2.10 2.3.8 2.4.10 2.5.9 2.6.9 2.7.6 3.0.6 3.1.6 3.2.4 3.3.6
+        ).freeze
+
+        LANGUAGE = "ruby"
 
         attr_reader :gemspec
 
@@ -46,14 +51,24 @@ module Dependabot
         end
 
         def ruby_version
-          requirement = Gem::Requirement.new(ruby_requirement)
+          requirement = if ruby_requirement.is_a?(Gem::Requirement)
+                          ruby_requirement
+                        else
+                          Dependabot::Bundler::Requirement.new(ruby_requirement)
+                        end
 
           ruby_version =
-            RUBY_VERSIONS.
-            map { |v| Gem::Version.new(v) }.sort.
-            find { |v| requirement.satisfied_by?(v) }
+            RUBY_VERSIONS
+            .map { |v| Dependabot::Bundler::Version.new(v) }.sort
+            .find { |v| requirement.satisfied_by?(v) }
 
-          raise "Couldn't find Ruby version!" unless ruby_version
+          unless ruby_version
+            raise ToolVersionNotSupported.new(
+              LANGUAGE,
+              requirement.to_s,
+              RUBY_VERSIONS.join(", ")
+            )
+          end
 
           ruby_version
         end

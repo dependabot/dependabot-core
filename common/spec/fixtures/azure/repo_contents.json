@@ -1,0 +1,37 @@
+{
+    "objectId":"treeobjectid",
+    "url":"https://dev.azure.com/org/project/_apis/git/repositories/repo/trees/c3f6adf854087e2bb23b91f7a16a539af23b63bf",
+    "treeEntries":[
+       {
+          "objectId":"52f1692bcfa9b3e5bb8fce18295a2e97de74ed98",
+          "relativePath":".config",
+          "mode":"40000",
+          "gitObjectType":"tree",
+          "url":"https://dev.azure.com/office/e853b87d-318c-4879-bedc-5855f3483b54/_apis/git/repositories/97faf8b7-6265-4fd5-b5e8-16abad20f98d/trees/52f1692bcfa9b3e5bb8fce18295a2e97de74ed98",
+          "size":37
+       },
+       {
+          "objectId":"8fbfd693f834dac11658863f6d4bcaea0c07e93f",
+          "relativePath":"Gemfile",
+          "mode":"100644",
+          "gitObjectType":"blob",
+          "url":"https://dev.azure.com/office/e853b87d-318c-4879-bedc-5855f3483b54/_apis/git/repositories/97faf8b7-6265-4fd5-b5e8-16abad20f98d/blobs/8fbfd693f834dac11658863f6d4bcaea0c07e93f",
+          "size":800
+       },
+       {
+          "objectId":"ab3ae17079e5c299ce26f0feed8dd3215427c5f7",
+          "relativePath":".npmrc",
+          "mode":"100644",
+          "gitObjectType":"blob",
+          "url":"https://dev.azure.com/office/e853b87d-318c-4879-bedc-5855f3483b54/_apis/git/repositories/97faf8b7-6265-4fd5-b5e8-16abad20f98d/blobs/ab3ae17079e5c299ce26f0feed8dd3215427c5f7",
+          "size":575
+       },
+       {
+          "objectId":"39ba713f8b994fb1ec7dda5df2f78ca1a55c3237",
+          "relativePath":"test.gemspec",
+          "mode":"100644",
+          "gitObjectType":"blob",
+          "url":"https://dev.azure.com/office/e853b87d-318c-4879-bedc-5855f3483b54/_apis/git/repositories/97faf8b7-6265-4fd5-b5e8-16abad20f98d/trees/39ba713f8b994fb1ec7dda5df2f78ca1a55c3237",
+          "size":6672
+       }]
+}

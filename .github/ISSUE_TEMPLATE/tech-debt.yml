@@ -1,0 +1,10 @@
+name: ⚙ Tech Debt
+description: Tech debt is for code improvements that do not change the user-facing behavior (ie, neither adding features nor fixing bugs).
+labels: "T: tech-debt ⚙️"
+body:
+  - type: textarea
+    attributes:
+      label: Code improvement description
+      description: Describe the code improvement you'd like.
+    validations:
+      required: true

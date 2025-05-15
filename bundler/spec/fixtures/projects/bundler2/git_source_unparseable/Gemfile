@@ -1,0 +1,10 @@
+# frozen_string_literal: true
+source "https://rubygems.org"
+
+def git_gem(name, **options)
+  gem name, git: "git@github.com:dependabot-fixtures/business"
+end
+
+git_gem 'business'
+
+gemspec

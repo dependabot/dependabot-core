@@ -1,2 +1,0 @@
-yarn-offline-mirror "./yarn-packages-cache"
-yarn-offline-mirror-pruning true

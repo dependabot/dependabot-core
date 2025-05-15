@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "octokit"
@@ -10,6 +11,7 @@ RSpec.describe Dependabot::MetadataFinders::Base do
   subject(:finder) do
     described_class.new(dependency: dependency, credentials: credentials)
   end
+
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -20,6 +22,12 @@ RSpec.describe Dependabot::MetadataFinders::Base do
         [{ file: "Gemfile", requirement: ">= 0", groups: [], source: nil }],
       previous_version: dependency_previous_version,
       package_manager: "bundler"
+    )
+  end
+  let(:source) do
+    Dependabot::Source.new(
+      provider: "github",
+      repo: "gocardless/#{dependency_name}"
     )
   end
   let(:dependency_name) { "business" }
@@ -33,13 +41,8 @@ RSpec.describe Dependabot::MetadataFinders::Base do
       "password" => "token"
     }]
   end
+
   before { allow(finder).to receive(:source).and_return(source) }
-  let(:source) do
-    Dependabot::Source.new(
-      provider: "github",
-      repo: "gocardless/#{dependency_name}"
-    )
-  end
 
   describe "#source_url" do
     subject(:source_url) { finder.source_url }
@@ -59,27 +62,28 @@ RSpec.describe Dependabot::MetadataFinders::Base do
 
     context "without a source" do
       let(:source) { nil }
+
       it { is_expected.to be_nil }
     end
 
-    context "and a directory" do
+    context "when there is a directory" do
       before { source.directory = "my/directory" }
 
       it "doesn't include the directory (since it is unreliable)" do
-        expect(source_url).
-          to eq("https://github.com/gocardless/business")
+        expect(source_url)
+          .to eq("https://github.com/gocardless/business")
       end
 
-      context "for a package manager with reliable source directories" do
+      context "when there is a package manager with reliable source directories" do
         before do
-          allow(finder).
-            to receive(:reliable_source_directory?).
-            and_return(true)
+          allow(finder)
+            .to receive(:reliable_source_directory?)
+            .and_return(true)
         end
 
         it "includes the directory" do
-          expect(source_url).
-            to eq(
+          expect(source_url)
+            .to eq(
               "https://github.com/gocardless/business/tree/HEAD/my/directory"
             )
         end
@@ -88,8 +92,8 @@ RSpec.describe Dependabot::MetadataFinders::Base do
           before { source.directory = "./my/directory" }
 
           it "joins the directory correctly" do
-            expect(source_url).
-              to eq(
+            expect(source_url)
+              .to eq(
                 "https://github.com/gocardless/business/tree/HEAD/my/directory"
               )
           end
@@ -100,21 +104,22 @@ RSpec.describe Dependabot::MetadataFinders::Base do
 
   describe "#commits_url" do
     subject { finder.commits_url }
+
     let(:dummy_commits_finder) do
       instance_double(Dependabot::MetadataFinders::Base::CommitsFinder)
     end
 
     it "delegates to CommitsFinder (and caches the instance)" do
-      expect(Dependabot::MetadataFinders::Base::CommitsFinder).
-        to receive(:new).
-        with(
+      expect(Dependabot::MetadataFinders::Base::CommitsFinder)
+        .to receive(:new)
+        .with(
           credentials: credentials,
           source: source,
           dependency: dependency
         ).once.and_return(dummy_commits_finder)
-      expect(dummy_commits_finder).
-        to receive(:commits_url).twice.
-        and_return("https://example.com/commits")
+      expect(dummy_commits_finder)
+        .to receive(:commits_url).twice
+        .and_return("https://example.com/commits")
       expect(finder.commits_url).to eq("https://example.com/commits")
       expect(finder.commits_url).to eq("https://example.com/commits")
     end
@@ -122,21 +127,22 @@ RSpec.describe Dependabot::MetadataFinders::Base do
 
   describe "#commits" do
     subject { finder.commits }
+
     let(:dummy_commits_finder) do
       instance_double(Dependabot::MetadataFinders::Base::CommitsFinder)
     end
 
     it "delegates to CommitsFinder (and caches the instance)" do
-      expect(Dependabot::MetadataFinders::Base::CommitsFinder).
-        to receive(:new).
-        with(
+      expect(Dependabot::MetadataFinders::Base::CommitsFinder)
+        .to receive(:new)
+        .with(
           credentials: credentials,
           source: source,
           dependency: dependency
         ).once.and_return(dummy_commits_finder)
-      expect(dummy_commits_finder).
-        to receive(:commits).twice.
-        and_return(%w(some commits))
+      expect(dummy_commits_finder)
+        .to receive(:commits).twice
+        .and_return(%w(some commits))
       expect(finder.commits).to eq(%w(some commits))
       expect(finder.commits).to eq(%w(some commits))
     end
@@ -144,22 +150,23 @@ RSpec.describe Dependabot::MetadataFinders::Base do
 
   describe "#changelog_url" do
     subject { finder.changelog_url }
+
     let(:dummy_changelog_finder) do
       instance_double(Dependabot::MetadataFinders::Base::ChangelogFinder)
     end
 
     it "delegates to ChangelogFinder (and caches the instance)" do
-      expect(Dependabot::MetadataFinders::Base::ChangelogFinder).
-        to receive(:new).
-        with(
+      expect(Dependabot::MetadataFinders::Base::ChangelogFinder)
+        .to receive(:new)
+        .with(
           credentials: credentials,
           source: source,
           dependency: dependency,
           suggested_changelog_url: nil
         ).once.and_return(dummy_changelog_finder)
-      expect(dummy_changelog_finder).
-        to receive(:changelog_url).twice.
-        and_return("https://example.com/CHANGELOG.md")
+      expect(dummy_changelog_finder)
+        .to receive(:changelog_url).twice
+        .and_return("https://example.com/CHANGELOG.md")
       expect(finder.changelog_url).to eq("https://example.com/CHANGELOG.md")
       expect(finder.changelog_url).to eq("https://example.com/CHANGELOG.md")
     end
@@ -167,22 +174,23 @@ RSpec.describe Dependabot::MetadataFinders::Base do
 
   describe "#changelog_text" do
     subject { finder.changelog_text }
+
     let(:dummy_changelog_finder) do
       instance_double(Dependabot::MetadataFinders::Base::ChangelogFinder)
     end
 
     it "delegates to ChangelogFinder (and caches the instance)" do
-      expect(Dependabot::MetadataFinders::Base::ChangelogFinder).
-        to receive(:new).
-        with(
+      expect(Dependabot::MetadataFinders::Base::ChangelogFinder)
+        .to receive(:new)
+        .with(
           credentials: credentials,
           source: source,
           dependency: dependency,
           suggested_changelog_url: nil
         ).once.and_return(dummy_changelog_finder)
-      expect(dummy_changelog_finder).
-        to receive(:changelog_text).twice.
-        and_return("Such changelog")
+      expect(dummy_changelog_finder)
+        .to receive(:changelog_text).twice
+        .and_return("Such changelog")
       expect(finder.changelog_text).to eq("Such changelog")
       expect(finder.changelog_text).to eq("Such changelog")
     end
@@ -190,22 +198,23 @@ RSpec.describe Dependabot::MetadataFinders::Base do
 
   describe "#upgrade_guide_url" do
     subject { finder.upgrade_guide_url }
+
     let(:dummy_changelog_finder) do
       instance_double(Dependabot::MetadataFinders::Base::ChangelogFinder)
     end
 
     it "delegates to ChangelogFinder (and caches the instance)" do
-      expect(Dependabot::MetadataFinders::Base::ChangelogFinder).
-        to receive(:new).
-        with(
+      expect(Dependabot::MetadataFinders::Base::ChangelogFinder)
+        .to receive(:new)
+        .with(
           credentials: credentials,
           source: source,
           dependency: dependency,
           suggested_changelog_url: nil
         ).once.and_return(dummy_changelog_finder)
-      expect(dummy_changelog_finder).
-        to receive(:upgrade_guide_url).twice.
-        and_return("https://example.com/CHANGELOG.md")
+      expect(dummy_changelog_finder)
+        .to receive(:upgrade_guide_url).twice
+        .and_return("https://example.com/CHANGELOG.md")
       expect(finder.upgrade_guide_url).to eq("https://example.com/CHANGELOG.md")
       expect(finder.upgrade_guide_url).to eq("https://example.com/CHANGELOG.md")
     end
@@ -213,22 +222,23 @@ RSpec.describe Dependabot::MetadataFinders::Base do
 
   describe "#upgrade_guide_text" do
     subject { finder.upgrade_guide_text }
+
     let(:dummy_changelog_finder) do
       instance_double(Dependabot::MetadataFinders::Base::ChangelogFinder)
     end
 
     it "delegates to ReleaseFinder (and caches the instance)" do
-      expect(Dependabot::MetadataFinders::Base::ChangelogFinder).
-        to receive(:new).
-        with(
+      expect(Dependabot::MetadataFinders::Base::ChangelogFinder)
+        .to receive(:new)
+        .with(
           credentials: credentials,
           source: source,
           dependency: dependency,
           suggested_changelog_url: nil
         ).once.and_return(dummy_changelog_finder)
-      expect(dummy_changelog_finder).
-        to receive(:upgrade_guide_text).twice.
-        and_return("Some upgrade guide notes")
+      expect(dummy_changelog_finder)
+        .to receive(:upgrade_guide_text).twice
+        .and_return("Some upgrade guide notes")
       expect(finder.upgrade_guide_text).to eq("Some upgrade guide notes")
       expect(finder.upgrade_guide_text).to eq("Some upgrade guide notes")
     end
@@ -236,21 +246,22 @@ RSpec.describe Dependabot::MetadataFinders::Base do
 
   describe "#releases_url" do
     subject { finder.releases_url }
+
     let(:dummy_release_finder) do
       instance_double(Dependabot::MetadataFinders::Base::ReleaseFinder)
     end
 
     it "delegates to ReleaseFinder (and caches the instance)" do
-      expect(Dependabot::MetadataFinders::Base::ReleaseFinder).
-        to receive(:new).
-        with(
+      expect(Dependabot::MetadataFinders::Base::ReleaseFinder)
+        .to receive(:new)
+        .with(
           credentials: credentials,
           source: source,
           dependency: dependency
         ).once.and_return(dummy_release_finder)
-      expect(dummy_release_finder).
-        to receive(:releases_url).twice.
-        and_return("https://example.com/RELEASES.md")
+      expect(dummy_release_finder)
+        .to receive(:releases_url).twice
+        .and_return("https://example.com/RELEASES.md")
       expect(finder.releases_url).to eq("https://example.com/RELEASES.md")
       expect(finder.releases_url).to eq("https://example.com/RELEASES.md")
     end
@@ -258,21 +269,22 @@ RSpec.describe Dependabot::MetadataFinders::Base do
 
   describe "#releases_text" do
     subject { finder.releases_text }
+
     let(:dummy_release_finder) do
       instance_double(Dependabot::MetadataFinders::Base::ReleaseFinder)
     end
 
     it "delegates to ReleaseFinder (and caches the instance)" do
-      expect(Dependabot::MetadataFinders::Base::ReleaseFinder).
-        to receive(:new).
-        with(
+      expect(Dependabot::MetadataFinders::Base::ReleaseFinder)
+        .to receive(:new)
+        .with(
           credentials: credentials,
           source: source,
           dependency: dependency
         ).once.and_return(dummy_release_finder)
-      expect(dummy_release_finder).
-        to receive(:releases_text).twice.
-        and_return("Some release notes")
+      expect(dummy_release_finder)
+        .to receive(:releases_text).twice
+        .and_return("Some release notes")
       expect(finder.releases_text).to eq("Some release notes")
       expect(finder.releases_text).to eq("Some release notes")
     end

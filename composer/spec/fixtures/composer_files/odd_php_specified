@@ -1,7 +1,0 @@
-{
-    "require": {
-        "php-64bit": "7.2.*",
-        "erusev/parsedown": "^1.6.0",
-        "illuminate/support": "^5.2.0"
-    }
-}

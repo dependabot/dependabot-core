@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# typed: true
 # frozen_string_literal: true
 
 unless %w(minor patch).include?(ARGV[0])
@@ -8,8 +9,7 @@ end
 component = ARGV[0].to_sym
 
 # Update version file
-version_path = File.join(__dir__, "..", "common", "lib", "dependabot",
-                         "version.rb")
+version_path = File.join(__dir__, "..", "common", "lib", "dependabot.rb")
 version_contents = File.read(version_path)
 
 version = version_contents.scan(/\d+.\d+.\d+/).first
@@ -23,33 +23,20 @@ new_version =
   end
 
 new_version_contents = version_contents.gsub(version, new_version)
-File.open(version_path, "w") { |f| f.write(new_version_contents) }
+File.write(version_path, new_version_contents)
 
-puts "✓ common/lib/dependabot/version.rb updated"
+# Bump the updater's Gemfile.lock with the new version
+`cd updater/ && bundle lock`
+unless $?.success?
+  puts "Failed to update `updater/Gemfile.lock`"
+  exit $?.exitstatus
+end
 
-# Update CHANGELOG
+# Bump the root's Gemfile.lock with the new version
+`bundle lock`
+unless $?.success?
+  puts "Failed to update `Gemfile.lock`"
+  exit $?.exitstatus
+end
 
-changelog_path = File.join(__dir__, "..", "CHANGELOG.md")
-changelog_contents = File.read(changelog_path)
-
-commit_subjects = `git log --pretty="%s" v#{version}..HEAD`.lines
-proposed_changes = commit_subjects.map { |line| "- #{line}" }.join("")
-
-new_changelog_contents = [
-  "## v#{new_version}, #{Time.now.strftime('%e %B %Y').strip}\n",
-  proposed_changes,
-  changelog_contents
-].join("\n")
-File.open(changelog_path, "w") { |f| f.write(new_changelog_contents) }
-
-puts "✓ CHANGELOG.md updated"
-puts
-puts "Double check the changes (editing CHANGELOG.md where necessary), then"
-puts "commit, tag, and push the release:"
-puts
-puts "git add CHANGELOG.md common/lib/dependabot/version.rb"
-puts "git commit -m 'v#{new_version}'"
-puts "git push origin master"
-puts "git tag 'v#{new_version}'"
-puts "git push --tags origin master"
-puts
+puts new_version

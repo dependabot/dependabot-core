@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -46,19 +47,34 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
   let(:previous_requirements) do
     [{ file: "Cargo.toml", requirement: "0.1.12", groups: [], source: nil }]
   end
-  let(:tmp_path) { Dependabot::SharedHelpers::BUMP_TMP_DIR_PATH }
+  let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
 
-  before { Dir.mkdir(tmp_path) unless Dir.exist?(tmp_path) }
+  before { FileUtils.mkdir_p(tmp_path) }
 
   describe "#updated_lockfile_content" do
     subject(:updated_lockfile_content) { updater.updated_lockfile_content }
 
     it "doesn't store the files permanently" do
-      expect { updated_lockfile_content }.
-        to_not(change { Dir.entries(tmp_path) })
+      expect { updated_lockfile_content }
+        .not_to(change { Dir.entries(tmp_path) })
     end
 
-    it { expect { updated_lockfile_content }.to_not output.to_stdout }
+    it { expect { updated_lockfile_content }.not_to output.to_stdout }
+
+    context "when using a toolchain file that is too old" do
+      let(:toolchain_file) do
+        Dependabot::DependencyFile.new(
+          name: "rust-toolchain",
+          content: "[toolchain]\nchannel = \"1.67\"\n"
+        )
+      end
+      let(:dependency_files) { [manifest, lockfile, toolchain_file] }
+
+      it "raises a helpful error" do
+        expect { updated_lockfile_content }
+          .to raise_error(Dependabot::DependencyFileNotEvaluatable)
+      end
+    end
 
     context "when updating the lockfile fails" do
       let(:dependency_version) { "99.0.0" }
@@ -67,38 +83,95 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
       end
 
       it "raises a helpful error" do
-        expect { updater.updated_lockfile_content }.
-          to raise_error do |error|
-            expect(error).
-              to be_a(Dependabot::SharedHelpers::HelperSubprocessFailed)
+        expect { updater.updated_lockfile_content }
+          .to raise_error do |error|
+            expect(error)
+              .to be_a(Dependabot::SharedHelpers::HelperSubprocessFailed)
             expect(error.message).to include("failed to select a version")
           end
       end
 
-      context "because an existing requirement is no good" do
-        let(:manifest_fixture_name) { "yanked_version" }
-        let(:lockfile_fixture_name) { "yanked_version" }
+      context "when an existing requirement is not sufficient" do
+        let(:dependency_version) { "0.1.38" }
+        let(:requirements) do
+          [{ file: "Cargo.toml", requirement: "0.3.20", groups: [], source: nil }]
+        end
+
+        let(:manifest_fixture_name) { "missing_version" }
+        let(:lockfile_fixture_name) { "missing_version" }
 
         it "raises a helpful error" do
-          expect { updater.updated_lockfile_content }.
-            to raise_error do |error|
+          expect { updater.updated_lockfile_content }
+            .to raise_error do |error|
               expect(error).to be_a(Dependabot::DependencyFileNotResolvable)
-              expect(error.message).
-                to include("version for the requirement `regex = \"^99.0.0\"`")
+              expect(error.message)
+                .to include("version for the requirement `regex = \"^99.0.0\"`")
             end
+        end
+      end
+    end
+
+    context "when the dependency doesn't exist" do
+      random_unlikely_package_name = (0...255).map { ("a".."z").to_a[rand(26)] }.join
+      content = <<~CONTENT
+        [package]
+        name = "foo"
+        version = "0.1.0"
+        authors = ["me"]
+
+        [dependencies]
+        #{random_unlikely_package_name} = "99.99.99"
+      CONTENT
+
+      let(:manifest) do
+        Dependabot::DependencyFile.new(name: "Cargo.toml", content: content)
+      end
+
+      it "raises a helpful error" do
+        expect { updated_lockfile_content }
+          .to raise_error do |error|
+            expect(error).to be_a(Dependabot::DependencyFileNotResolvable)
+            expect(error.message).to include(random_unlikely_package_name)
+          end
+      end
+    end
+
+    context "when the package doesn't exist at the git source" do
+      content = <<~CONTENT
+        [package]
+        name = "foo"
+        version = "0.1.0"
+        authors = ["me"]
+        [dependencies]
+        yewtil = { git = "https://github.com/yewstack/yew" }
+      CONTENT
+
+      let(:manifest) do
+        Dependabot::DependencyFile.new(name: "Cargo.toml", content: content)
+      end
+
+      it "raises a helpful error" do
+        expect { updated_lockfile_content }
+          .to raise_error do |error|
+          expect(error).to be_a(Dependabot::DependencyFileNotResolvable)
+          expect(error.message).to include("yewtil")
         end
       end
     end
 
     describe "the updated lockfile" do
       it "updates the dependency version in the lockfile" do
-        expect(updated_lockfile_content).
-          to include(%(name = "time"\nversion = "0.1.40"))
+        expect(updated_lockfile_content)
+          .to include(%(name = "time"\nversion = "0.1.40"))
         expect(updated_lockfile_content).to include(
-          "d825be0eb33fda1a7e68012d51e9c7f451dc1a69391e7fdc197060bb8c56667b"
+          <<~CHECKSUM
+            checksum = "d825be0eb33fda1a7e68012d51e9c7f451dc1a69391e7fdc197060bb8c56667b"
+          CHECKSUM
         )
-        expect(updated_lockfile_content).to_not include(
-          "d5d788d3aa77bc0ef3e9621256885555368b47bd495c13dd2e7413c89f845520"
+        expect(updated_lockfile_content).not_to include(
+          <<~CHECKSUM
+            checksum = "d5d788d3aa77bc0ef3e9621256885555368b47bd495c13dd2e7413c89f845520"
+          CHECKSUM
         )
       end
 
@@ -106,8 +179,8 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
         let(:manifest_fixture_name) { "binary" }
 
         it "updates the dependency version in the lockfile" do
-          expect(updated_lockfile_content).
-            to include(%(name = "time"\nversion = "0.1.40"))
+          expect(updated_lockfile_content)
+            .to include(%(name = "time"\nversion = "0.1.40"))
         end
       end
 
@@ -115,8 +188,8 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
         let(:manifest_fixture_name) { "default_run" }
 
         it "updates the dependency version in the lockfile" do
-          expect(updated_lockfile_content).
-            to include(%(name = "time"\nversion = "0.1.40"))
+          expect(updated_lockfile_content)
+            .to include(%(name = "time"\nversion = "0.1.40"))
         end
       end
 
@@ -142,8 +215,8 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
         end
 
         it "updates the dependency version in the lockfile" do
-          expect(updated_lockfile_content).
-            to include(%(name = "time"\nversion = "0.1.40"))
+          expect(updated_lockfile_content)
+            .to include(%(name = "time"\nversion = "0.1.40"))
         end
       end
 
@@ -154,9 +227,10 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
           [{ file: "Cargo.toml", requirement: nil, groups: [], source: nil }]
         end
 
-        it "updates the dependency version in the lockfile" do
-          expect(updated_lockfile_content).
-            to include(%(name = "time"\nversion = "0.1.40"))
+        it "raises a DependencyFileNotResolvable error" do
+          expect { updated_lockfile_content }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+            expect(error.message).to include("unexpected end of input while parsing major version")
+          end
         end
       end
 
@@ -178,8 +252,22 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
         end
 
         it "updates the dependency version in the lockfile" do
-          expect(updated_lockfile_content).
-            to include(%(name = "rand"\nversion = "0.4.2"))
+          expect(updated_lockfile_content)
+            .to include(%(name = "rand"\nversion = "0.4.2"))
+        end
+      end
+
+      context "with an old format lockfile" do
+        let(:manifest_fixture_name) { "old_lockfile" }
+        let(:lockfile_fixture_name) { "old_lockfile" }
+
+        it "updates the lockfile to the new version" do
+          expect(updated_lockfile_content).to include(
+            <<~CHECKSUM
+              checksum = "d825be0eb33fda1a7e68012d51e9c7f451dc1a69391e7fdc197060bb8c56667b"
+            CHECKSUM
+          )
+          expect(updated_lockfile_content).not_to include("[metadata]")
         end
       end
 
@@ -189,7 +277,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
 
         let(:dependency_name) { "utf8-ranges" }
         let(:dependency_version) do
-          "8d38a931b7e34f9da339c058cbbca6ded624ea58"
+          "be9b8dfcaf449453cbf83ac85260ee80323f4f77"
         end
         let(:dependency_previous_version) do
           "83141b376b93484341c68fbca3ca110ae5cd2708"
@@ -210,8 +298,8 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
         end
 
         it "updates the dependency version in the lockfile" do
-          expect(updated_lockfile_content).
-            to include("utf8-ranges#8d38a931b7e34f9da339c058cbbca6ded624ea58")
+          expect(updated_lockfile_content)
+            .to include("utf8-ranges#be9b8dfcaf449453cbf83ac85260ee80323f4f77")
         end
 
         context "with an ssh URl" do
@@ -233,21 +321,13 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
           end
 
           it "updates the dependency version in the lockfile" do
-            expect(updated_lockfile_content).
-              to include("git+ssh://git@github.com/BurntSushi/utf8-ranges#"\
-                         "8d38a931b7e34f9da339c058cbbca6ded624ea58")
-            expect(updated_lockfile_content).to_not include("git+https://")
-
-            expect(updated_lockfile_content).to include(
-              "[metadata]\n"\
-              '"checksum utf8-ranges 1.0.4 (git+ssh://git@github.com/'\
-              "BurntSushi/utf8-ranges)\" = \"<none>\"\n"\
-              '"checksum utf8-ranges-parent 1.0.2 (git+ssh://git@github.com/'\
-              "dependabot-fixtures/utf8-ranges)\" = \"<none>\""
-            )
+            expect(updated_lockfile_content)
+              .to include("git+ssh://git@github.com/BurntSushi/utf8-ranges#" \
+                          "be9b8dfcaf449453cbf83ac85260ee80323f4f77")
+            expect(updated_lockfile_content).not_to include("git+https://")
 
             content = updated_lockfile_content
-            expect(content.scan(/name = "utf8-ranges"/).count).to eq(1)
+            expect(content.scan('name = "utf8-ranges"').count).to eq(1)
           end
         end
 
@@ -288,8 +368,8 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
           end
 
           it "updates the dependency version in the lockfile" do
-            expect(updated_lockfile_content).
-              to include "?tag=1.0.0#83141b376b93484341c68fbca3ca110ae5cd2708"
+            expect(updated_lockfile_content)
+              .to include "?tag=1.0.0#83141b376b93484341c68fbca3ca110ae5cd2708"
           end
         end
       end
@@ -326,14 +406,24 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
         end
 
         it "updates the dependency version in the lockfile" do
-          expect(updated_lockfile_content).
-            to include(%(name = "regex"\nversion = "0.2.10"))
+          expect(updated_lockfile_content)
+            .to include(%(name = "regex"\nversion = "0.2.10"))
           expect(updated_lockfile_content).to include(
             "aec3f58d903a7d2a9dc2bf0e41a746f4530e0cab6b615494e058f67a3ef947fb"
           )
-          expect(updated_lockfile_content).to_not include(
+          expect(updated_lockfile_content).not_to include(
             "bc2a4457b0c25dae6fee3dcd631ccded31e97d689b892c26554e096aa08dd136"
           )
+        end
+      end
+
+      context "when there is a linked dependency" do
+        let(:dependency_files) { [manifest, lockfile] }
+        let(:manifest_fixture_name) { "linked_dependency" }
+
+        it "updates the dependency version in the lockfile" do
+          expect(updated_lockfile_content)
+            .to include(%(name = "time"\nversion = "0.1.40"))
         end
       end
 
@@ -369,12 +459,12 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
         end
 
         it "updates the dependency version in the lockfile" do
-          expect(updated_lockfile_content).
-            to include(%(name = "log"\nversion = "0.4.1"))
+          expect(updated_lockfile_content)
+            .to include(%(name = "log"\nversion = "0.4.1"))
           expect(updated_lockfile_content).to include(
             "89f010e843f2b1a31dbd316b3b8d443758bc634bed37aabade59c686d644e0a2"
           )
-          expect(updated_lockfile_content).to_not include(
+          expect(updated_lockfile_content).not_to include(
             "b3a89a0c46ba789b8a247d4c567aed4d7c68e624672d238b45cc3ec20dc9f940"
           )
         end
@@ -415,12 +505,12 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
         end
 
         it "updates the dependency version in the lockfile" do
-          expect(updated_lockfile_content).
-            to include(%(name = "log"\nversion = "0.4.1"))
+          expect(updated_lockfile_content)
+            .to include(%(name = "log"\nversion = "0.4.1"))
           expect(updated_lockfile_content).to include(
             "89f010e843f2b1a31dbd316b3b8d443758bc634bed37aabade59c686d644e0a2"
           )
-          expect(updated_lockfile_content).to_not include(
+          expect(updated_lockfile_content).not_to include(
             "b3a89a0c46ba789b8a247d4c567aed4d7c68e624672d238b45cc3ec20dc9f940"
           )
         end

@@ -1,7 +1,9 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/dependency_file"
 require "dependabot/bundler/update_checker"
+require "dependabot/bundler/cached_lockfile_parser"
 require "dependabot/bundler/file_updater/gemspec_sanitizer"
 require "dependabot/bundler/file_updater/git_pin_replacer"
 require "dependabot/bundler/file_updater/git_source_remover"
@@ -24,7 +26,7 @@ module Dependabot
       #   version allowed by the gemspec, if the gemspec has a required ruby
       #   version range
       class FilePreparer
-        VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/.freeze
+        VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/
 
         # Can't be a constant because some of these don't exist in bundler
         # 1.15, which Heroku uses, which causes an exception on boot.
@@ -92,6 +94,7 @@ module Dependabot
           files += [
             lockfile,
             ruby_version_file,
+            tool_versions_file,
             *imported_ruby_files,
             *specification_files
           ].compact
@@ -101,8 +104,10 @@ module Dependabot
 
         private
 
-        attr_reader :dependency_files, :dependency, :replacement_git_pin,
-                    :latest_allowable_version
+        attr_reader :dependency_files
+        attr_reader :dependency
+        attr_reader :replacement_git_pin
+        attr_reader :latest_allowable_version
 
         def remove_git_source?
           @remove_git_source
@@ -122,14 +127,14 @@ module Dependabot
         end
 
         def evaled_gemfiles
-          dependency_files.
-            reject { |f| f.name.end_with?(".gemspec") }.
-            reject { |f| f.name.end_with?(".specification") }.
-            reject { |f| f.name.end_with?(".lock") }.
-            reject { |f| f.name.end_with?(".ruby-version") }.
-            reject { |f| f.name == "Gemfile" }.
-            reject { |f| f.name == "gems.rb" }.
-            reject { |f| f.name == "gems.locked" }
+          dependency_files
+            .reject { |f| f.name.end_with?(".gemspec") }
+            .reject { |f| f.name.end_with?(".specification") }
+            .reject { |f| f.name.end_with?(".lock") }
+            .reject { |f| f.name == "Gemfile" }
+            .reject { |f| f.name == "gems.rb" }
+            .reject { |f| f.name == "gems.locked" }
+            .reject(&:support_file?)
         end
 
         def lockfile
@@ -142,13 +147,16 @@ module Dependabot
         end
 
         def top_level_gemspecs
-          dependency_files.
-            select { |f| f.name.end_with?(".gemspec") }.
-            reject(&:support_file?)
+          dependency_files
+            .select { |f| f.name.end_with?(".gemspec") }
         end
 
         def ruby_version_file
           dependency_files.find { |f| f.name == ".ruby-version" }
+        end
+
+        def tool_versions_file
+          dependency_files.find { |f| f.name == ".tool-versions" }
         end
 
         def path_gemspecs
@@ -157,9 +165,9 @@ module Dependabot
         end
 
         def imported_ruby_files
-          dependency_files.
-            select { |f| f.name.end_with?(".rb") }.
-            reject { |f| f.name == "gems.rb" }
+          dependency_files
+            .select { |f| f.name.end_with?(".rb") }
+            .reject { |f| f.name == "gems.rb" }
         end
 
         def gemfile_content_for_update_check(file)
@@ -198,42 +206,42 @@ module Dependabot
         def sanitize_gemspec_content(gemspec_content)
           new_version = replacement_version_for_gemspec(gemspec_content)
 
-          FileUpdater::GemspecSanitizer.
-            new(replacement_version: new_version).
-            rewrite(gemspec_content)
+          FileUpdater::GemspecSanitizer
+            .new(replacement_version: new_version)
+            .rewrite(gemspec_content)
         end
 
         def updated_version_requirement_string(filename)
           lower_bound_req = updated_version_req_lower_bound(filename)
 
           return lower_bound_req if latest_allowable_version.nil?
-          unless Gem::Version.correct?(latest_allowable_version)
-            return lower_bound_req
-          end
+          return lower_bound_req unless Bundler::Version.correct?(latest_allowable_version)
 
           lower_bound_req + ", <= #{latest_allowable_version}"
         end
 
-        def updated_version_req_lower_bound(filename)
-          original_req = dependency.requirements.
-                         find { |r| r.fetch(:file) == filename }&.
-                         fetch(:requirement)
+        # rubocop:disable Metrics/PerceivedComplexity
+        def updated_version_req_lower_bound(filename) # rubocop:disable Metrics/CyclomaticComplexity
+          original_req = dependency.requirements
+                                   .find { |r| r.fetch(:file) == filename }
+                                   &.fetch(:requirement)
 
           if original_req && !unlock_requirement? then original_req
           elsif dependency.version&.match?(/^[0-9a-f]{40}$/) then ">= 0"
           elsif dependency.version then ">= #{dependency.version}"
           else
             version_for_requirement =
-              dependency.requirements.map { |r| r[:requirement] }.
-              reject { |req_string| req_string.start_with?("<") }.
-              select { |req_string| req_string.match?(VERSION_REGEX) }.
-              map { |req_string| req_string.match(VERSION_REGEX) }.
-              select { |version| Gem::Version.correct?(version) }.
-              max_by { |version| Gem::Version.new(version) }
+              dependency.requirements.map { |r| r[:requirement] }
+                        .reject { |req_string| req_string.start_with?("<") }
+                        .select { |req_string| req_string.match?(VERSION_REGEX) }
+                        .map { |req_string| req_string.match(VERSION_REGEX)&.to_s }
+                        .select { |version| Bundler::Version.correct?(version) }
+                        .max_by { |version| Bundler::Version.new(version) }
 
             ">= #{version_for_requirement || 0}"
           end
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def remove_git_source(content)
           FileUpdater::GitSourceRemover.new(
@@ -250,8 +258,8 @@ module Dependabot
 
         def lock_ruby_version(gemfile_content)
           top_level_gemspecs.each do |gs|
-            gemfile_content = FileUpdater::RubyRequirementSetter.
-                              new(gemspec: gs).rewrite(gemfile_content)
+            gemfile_content = FileUpdater::RubyRequirementSetter
+                              .new(gemspec: gs).rewrite(gemfile_content)
           end
 
           gemfile_content
@@ -261,24 +269,27 @@ module Dependabot
           @lock_ruby_version && file == gemfile
         end
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def replacement_version_for_gemspec(gemspec_content)
           return "0.0.1" unless lockfile
 
           gemspec_specs =
-            ::Bundler::LockfileParser.new(sanitized_lockfile_content).specs.
-            select { |s| gemspec_sources.include?(s.source.class) }
+            CachedLockfileParser.parse(sanitized_lockfile_content).specs
+                                .select { |s| gemspec_sources.include?(s.source.class) }
 
           gem_name =
-            FileUpdater::GemspecDependencyNameFinder.
-            new(gemspec_content: gemspec_content).
-            dependency_name
+            FileUpdater::GemspecDependencyNameFinder
+            .new(gemspec_content: gemspec_content)
+            .dependency_name
 
           return gemspec_specs.first&.version || "0.0.1" unless gem_name
 
           spec = gemspec_specs.find { |s| s.name == gem_name }
           spec&.version || gemspec_specs.first&.version || "0.0.1"
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
+        # TODO: Stop sanitizing the lockfile once we have bundler 2 installed
         def sanitized_lockfile_content
           re = FileUpdater::LockfileUpdater::LOCKFILE_ENDING
           lockfile.content.gsub(re, "")

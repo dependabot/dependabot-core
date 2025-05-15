@@ -1,8 +1,0 @@
-{
-    "require": {
-        "symfony/yaml": "4.3.3"
-    },
-    "require-dev": {
-        "phpunit/phpunit": "3.7.4"
-    }
-}

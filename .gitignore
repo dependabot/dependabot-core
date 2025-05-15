@@ -1,21 +1,34 @@
 /.bundle/
-/node_modules
+node_modules/
 /.env
+/.envrc
 /tmp
 /pkg
 /dependabot-*.gem
-Gemfile.lock
 vendor
+!common/spec/fixtures/projects/**/*/vendor
+!go_modules/spec/fixtures/projects/**/*
 .DS_Store
 *.pyc
 *git.store
 /.vscode/
 /.vscode-server/
 /.vscode-server-insiders/
-.byebug_history
-/terraform/helpers/install-dir
-/go_modules/helpers/install-dir
-/npm_and_yarn/helpers/node_modules
-/npm_and_yarn/helpers/install-dir
+**/helpers/install-dir
+/npm_and_yarn/helpers/.node-version
 /dry-run
 **/bin/helper
+/.core-bash_history
+coverage/
+.ruby-gemset
+.tool-versions
+.rspec_status
+.rdbg_history
+# Ignore Jetbrains IntelliJ project-config directory
+.idea/
+# Ignore spoom coverage report
+spoom_data/
+spoom_report.html
+.vs/
+# Ignore VSCode C# Dev Kit
+**/.mono/**/values.xml

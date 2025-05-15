@@ -1,0 +1,11 @@
+# frozen_string_literal: true
+
+source "https://rubygems.org"
+
+gem "business", "~> 1.4.0"
+
+if ENV["STATESMAN_NEXT"] == "1"
+  gem "statesman", "~> 7.2.0"
+else
+  gem "statesman", "~> 1.2.0" # rubocop:disable Bundler/DuplicatedGem
+end

@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "parser/current"
@@ -7,8 +8,10 @@ module Dependabot
   module Bundler
     class FileUpdater
       class RequirementReplacer
-        attr_reader :dependency, :file_type, :updated_requirement,
-                    :previous_requirement
+        attr_reader :dependency
+        attr_reader :file_type
+        attr_reader :updated_requirement
+        attr_reader :previous_requirement
 
         def initialize(dependency:, file_type:, updated_requirement:,
                        previous_requirement: nil, insert_if_bare: false)
@@ -48,15 +51,15 @@ module Dependabot
 
           updated_lines = updated_content.lines
           updated_line_index =
-            updated_lines.length.
-            times.find { |i| content.lines[i] != updated_content.lines[i] }
+            updated_lines.length
+                         .times.find { |i| content.lines[i] != updated_content.lines[i] }
           updated_line = updated_lines[updated_line_index]
 
           updated_line =
             if length_change.positive?
               updated_line.sub(/(?<=\s)\s{#{length_change}}#/, "#")
             elsif length_change.negative?
-              updated_line.sub(/(?<=\s{2})#/, " " * length_change.abs + "#")
+              updated_line.sub(/(?<=\s{2})#/, (" " * length_change.abs) + "#")
             end
 
           updated_lines[updated_line_index] = updated_line
@@ -64,9 +67,7 @@ module Dependabot
         end
 
         def length_change
-          unless previous_requirement.start_with?("=")
-            return updated_requirement.length - previous_requirement.length
-          end
+          return updated_requirement.length - previous_requirement.length unless previous_requirement.start_with?("=")
 
           updated_requirement.length -
             previous_requirement.gsub(/^=/, "").strip.length
@@ -75,7 +76,7 @@ module Dependabot
         class Rewriter < Parser::TreeRewriter
           # TODO: Ideally we wouldn't have to ignore all of these, but
           # implementing each one will be tricky.
-          SKIPPED_TYPES = %i(send lvar dstr begin if splat const or).freeze
+          SKIPPED_TYPES = %i(send lvar dstr begin if case splat const or).freeze
 
           def initialize(dependency:, file_type:, updated_requirement:,
                          insert_if_bare:)
@@ -116,7 +117,9 @@ module Dependabot
 
           private
 
-          attr_reader :dependency, :file_type, :updated_requirement
+          attr_reader :dependency
+          attr_reader :file_type
+          attr_reader :updated_requirement
 
           def insert_if_bare?
             @insert_if_bare
@@ -169,6 +172,8 @@ module Dependabot
             req_string.include?(" ")
           end
 
+          EQUALITY_OPERATOR = /(?<![<>!])=/
+
           def use_equality_operator?(requirement_nodes)
             return true if requirement_nodes.none?
 
@@ -180,7 +185,7 @@ module Dependabot
                 requirement_nodes.first.children.first.loc.expression.source
               end
 
-            req_string.match?(/(?<![<>])=/)
+            req_string.match?(EQUALITY_OPERATOR)
           end
 
           def new_requirement_string(quote_characters:,
@@ -188,8 +193,8 @@ module Dependabot
                                      use_equality_operator:)
             open_quote, close_quote = quote_characters
             new_requirement_string =
-              updated_requirement.split(",").
-              map do |r|
+              updated_requirement.split(",")
+                                 .map do |r|
                 req_string = serialized_req(r, use_equality_operator)
                 req_string = %(#{open_quote}#{req_string}#{close_quote})
                 req_string = req_string.delete(" ") unless space_after_specifier
@@ -205,9 +210,7 @@ module Dependabot
             # Gem::Requirement serializes exact matches as a string starting
             # with `=`. We may need to remove that equality operator if it
             # wasn't used originally.
-            unless use_equality_operator
-              tmp_req = tmp_req.gsub(/(?<![<>])=/, "")
-            end
+            tmp_req = tmp_req.gsub(EQUALITY_OPERATOR, "") unless use_equality_operator
 
             tmp_req.strip
           end

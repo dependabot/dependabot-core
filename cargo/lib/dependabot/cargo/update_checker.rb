@@ -1,6 +1,8 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/git_commit_checker"
+require "dependabot/requirements_update_strategy"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 
@@ -42,12 +44,14 @@ module Dependabot
           end
       end
 
+      def lowest_security_fix_version
+        latest_version_finder.lowest_security_fix_version
+      end
+
       def lowest_resolvable_security_fix_version
         raise "Dependency not vulnerable!" unless vulnerable?
 
-        if defined?(@lowest_resolvable_security_fix_version)
-          return @lowest_resolvable_security_fix_version
-        end
+        return @lowest_resolvable_security_fix_version if defined?(@lowest_resolvable_security_fix_version)
 
         @lowest_resolvable_security_fix_version =
           fetch_lowest_resolvable_security_fix_version
@@ -73,8 +77,16 @@ module Dependabot
         ).updated_requirements
       end
 
+      def requirements_unlocked_or_can_be?
+        !requirements_update_strategy.lockfile_only?
+      end
+
       def requirements_update_strategy
-        library? ? :bump_versions_if_necessary : :bump_versions
+        # If passed in as an option (in the base class) honour that option
+        return @requirements_update_strategy if @requirements_update_strategy
+
+        # Otherwise, widen ranges for libraries and bump versions for apps
+        library? ? RequirementsUpdateStrategy::BumpVersionsIfNecessary : RequirementsUpdateStrategy::BumpVersions
       end
 
       private
@@ -104,13 +116,16 @@ module Dependabot
       end
 
       def latest_version_finder
-        @latest_version_finder ||= LatestVersionFinder.new(
-          dependency: dependency,
-          dependency_files: dependency_files,
-          credentials: credentials,
-          ignored_versions: ignored_versions,
-          security_advisories: security_advisories
-        )
+        @latest_version_finder ||=
+          LatestVersionFinder.new(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            credentials: credentials,
+            ignored_versions: ignored_versions,
+            security_advisories: security_advisories,
+            cooldown_options: update_cooldown,
+            raise_on_ignored: raise_on_ignored
+          )
       end
 
       def latest_version_for_git_dependency
@@ -120,9 +135,7 @@ module Dependabot
       def latest_git_version_sha
         # If the gem isn't pinned, the latest version is just the latest
         # commit for the specified branch.
-        unless git_commit_checker.pinned?
-          return git_commit_checker.head_commit_for_current_branch
-        end
+        return git_commit_checker.head_commit_for_current_branch unless git_commit_checker.pinned?
 
         # If the dependency is pinned to a tag that looks like a version then
         # we want to update that tag. The latest version will then be the SHA
@@ -140,9 +153,7 @@ module Dependabot
       def latest_resolvable_version_for_git_dependency
         # If the gem isn't pinned, the latest version is just the latest
         # commit for the specified branch.
-        unless git_commit_checker.pinned?
-          return latest_resolvable_commit_with_unchanged_git_source
-        end
+        return latest_resolvable_commit_with_unchanged_git_source unless git_commit_checker.pinned?
 
         # If the dependency is pinned to a tag that looks like a version then
         # we want to update that tag. The latest version will then be the SHA
@@ -213,12 +224,10 @@ module Dependabot
       end
 
       def fetch_lowest_resolvable_security_fix_version
-        fix_version = latest_version_finder.lowest_security_fix_version
+        fix_version = lowest_security_fix_version
         return latest_resolvable_version if fix_version.nil?
 
-        if path_dependency? || git_dependency? || git_subdependency?
-          return latest_resolvable_version
-        end
+        return latest_resolvable_version if path_dependency? || git_dependency? || git_subdependency?
 
         prepared_files = FilePreparer.new(
           dependency_files: dependency_files,
@@ -255,12 +264,7 @@ module Dependabot
       end
 
       def dependency_source_details
-        sources =
-          dependency.requirements.map { |r| r.fetch(:source) }.uniq.compact
-
-        raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1
-
-        sources.first
+        dependency.source_details
       end
 
       def git_dependency?
@@ -274,12 +278,7 @@ module Dependabot
       end
 
       def path_dependency?
-        sources = dependency.requirements.
-                  map { |r| r.fetch(:source) }.uniq.compact
-
-        raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1
-
-        sources.first&.fetch(:type) == "path"
+        dependency.source_type == "path"
       end
 
       def git_commit_checker

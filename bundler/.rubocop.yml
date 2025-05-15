@@ -1,0 +1,30 @@
+inherit_from: ../.rubocop.yml
+
+inherit_mode:
+  merge:
+    - Exclude
+
+Sorbet/TrueSigil:
+  Exclude:
+    - "helpers/**/*.rb"
+
+Sorbet/StrictSigil:
+  Exclude:
+    - "helpers/**/*.rb"
+    - lib/dependabot/bundler/file_parser.rb
+    - lib/dependabot/bundler/file_updater/git_pin_replacer.rb
+    - lib/dependabot/bundler/file_updater/git_source_remover.rb
+    - lib/dependabot/bundler/file_updater/lockfile_updater.rb
+    - lib/dependabot/bundler/file_updater/requirement_replacer.rb
+    - lib/dependabot/bundler/file_updater/ruby_requirement_setter.rb
+    - lib/dependabot/bundler/file_updater.rb
+    - lib/dependabot/bundler/metadata_finder.rb
+    - lib/dependabot/bundler/requirement.rb
+    - lib/dependabot/bundler/update_checker/conflicting_dependency_resolver.rb
+    - lib/dependabot/bundler/update_checker/file_preparer.rb
+    - lib/dependabot/bundler/update_checker/force_updater.rb
+    - lib/dependabot/bundler/update_checker/latest_version_finder/dependency_source.rb
+    - lib/dependabot/bundler/update_checker/requirements_updater.rb
+    - lib/dependabot/bundler/update_checker/shared_bundler_helpers.rb
+    - lib/dependabot/bundler/update_checker/version_resolver.rb
+    - lib/dependabot/bundler/update_checker.rb

@@ -1,0 +1,20 @@
+GIT
+  remote: https://github.com/dependabot-fixtures/business.git
+  revision: d31e445215b5af70c1604715d97dd953e868380e
+  specs:
+    business (1.10.0)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    statesman (1.2.5)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  business!
+  statesman (~> 1.2.0)
+
+BUNDLED WITH
+   2.2.0

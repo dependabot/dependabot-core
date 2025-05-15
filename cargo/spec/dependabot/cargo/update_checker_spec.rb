@@ -1,41 +1,30 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/dependency"
-require "dependabot/dependency_file"
+
 require "dependabot/cargo/update_checker"
+require "dependabot/dependency_file"
+require "dependabot/dependency"
+require "dependabot/requirements_update_strategy"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::Cargo::UpdateChecker do
-  it_behaves_like "an update checker"
-
-  before do
-    stub_request(:get, crates_url).to_return(status: 200, body: crates_response)
+  let(:dependency_version) { "0.1.38" }
+  let(:dependency_name) { "time" }
+  let(:requirements) do
+    [{ file: "Cargo.toml", requirement: "0.1.12", groups: [], source: nil }]
   end
-  let(:crates_url) { "https://crates.io/api/v1/crates/#{dependency_name}" }
-  let(:crates_response) { fixture("crates_io_responses", crates_fixture_name) }
-  let(:crates_fixture_name) { "#{dependency_name}.json" }
-
-  let(:checker) do
-    described_class.new(
-      dependency: dependency,
-      dependency_files: dependency_files,
-      credentials: credentials,
-      ignored_versions: ignored_versions,
-      security_advisories: security_advisories
+  let(:dependency) do
+    Dependabot::Dependency.new(
+      name: dependency_name,
+      version: dependency_version,
+      requirements: requirements,
+      package_manager: "cargo"
     )
   end
-
-  let(:ignored_versions) { [] }
-  let(:security_advisories) { [] }
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
-  end
+  let(:lockfile_fixture_name) { "bare_version_specified" }
+  let(:manifest_fixture_name) { "bare_version_specified" }
   let(:dependency_files) do
     [
       Dependabot::DependencyFile.new(
@@ -48,41 +37,63 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
       )
     ]
   end
-  let(:manifest_fixture_name) { "bare_version_specified" }
-  let(:lockfile_fixture_name) { "bare_version_specified" }
-  let(:dependency) do
-    Dependabot::Dependency.new(
-      name: dependency_name,
-      version: dependency_version,
-      requirements: requirements,
-      package_manager: "cargo"
+  let(:credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
+  end
+  let(:requirements_update_strategy) { nil }
+  let(:security_advisories) { [] }
+  let(:raise_on_ignored) { false }
+  let(:ignored_versions) { [] }
+  let(:update_cooldown) { nil }
+  let(:checker) do
+    described_class.new(
+      dependency: dependency,
+      dependency_files: dependency_files,
+      credentials: credentials,
+      ignored_versions: ignored_versions,
+      raise_on_ignored: raise_on_ignored,
+      security_advisories: security_advisories,
+      requirements_update_strategy: requirements_update_strategy,
+      update_cooldown: update_cooldown
     )
   end
-  let(:requirements) do
-    [{ file: "Cargo.toml", requirement: "0.1.12", groups: [], source: nil }]
+  let(:crates_fixture_name) { "#{dependency_name}.json" }
+  let(:crates_response) { fixture("crates_io_responses", crates_fixture_name) }
+  let(:crates_url) { "https://crates.io/api/v1/crates/#{dependency_name}" }
+
+  before do
+    stub_request(:get, crates_url).to_return(status: 200, body: crates_response)
   end
-  let(:dependency_name) { "time" }
-  let(:dependency_version) { "0.1.38" }
+
+  it_behaves_like "an update checker"
 
   describe "#can_update?" do
     subject { checker.can_update?(requirements_to_unlock: :own) }
 
-    context "given an outdated dependency" do
+    context "when given an outdated dependency" do
       it { is_expected.to be_truthy }
     end
 
-    context "given an up-to-date dependency" do
+    context "when given an up-to-date dependency" do
       let(:dependency_version) { "0.1.40" }
+
       it { is_expected.to be_falsey }
     end
   end
 
   describe "#latest_version" do
     subject { checker.latest_version }
+
     it { is_expected.to eq(Gem::Version.new("0.1.40")) }
 
     context "when the latest version is being ignored" do
       let(:ignored_versions) { [">= 0.1.40, < 2.0"] }
+
       it { is_expected.to eq(Gem::Version.new("0.1.39")) }
     end
 
@@ -108,9 +119,9 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
         git_header = {
           "content-type" => "application/x-git-upload-pack-advertisement"
         }
-        stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
-          with(basic_auth: %w(x-access-token token)).
-          to_return(
+        stub_request(:get, git_url + "/info/refs?service=git-upload-pack")
+          .with(basic_auth: %w(x-access-token token))
+          .to_return(
             status: 200,
             body: fixture("git", "upload_packs", "utf8-ranges"),
             headers: git_header
@@ -185,20 +196,54 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
     end
   end
 
+  describe "#lowest_security_fix_version" do
+    subject(:lowest_security_fix_version) { checker.lowest_security_fix_version }
+
+    it "finds the lowest available non-vulnerable version" do
+      expect(lowest_security_fix_version).to eq(Gem::Version.new("0.1.39"))
+    end
+
+    context "with a security vulnerability" do
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "cargo",
+            vulnerable_versions: ["<= 0.1.39"]
+          )
+        ]
+      end
+
+      it "finds the lowest available non-vulnerable version" do
+        expect(lowest_security_fix_version).to eq(Gem::Version.new("0.1.40"))
+      end
+    end
+  end
+
   describe "#latest_resolvable_version" do
-    subject { checker.latest_resolvable_version }
+    subject(:latest_resolvable_version) { checker.latest_resolvable_version }
 
     it "delegates to VersionResolver" do
-      expect(Dependabot::Cargo::UpdateChecker::VersionResolver).
-        to receive(:new).
-        and_call_original
-      expect(checker.latest_resolvable_version).
-        to eq(Gem::Version.new("0.1.40"))
+      expect(Dependabot::Cargo::UpdateChecker::VersionResolver)
+        .to receive(:new)
+        .and_call_original
+      expect(checker.latest_resolvable_version)
+        .to eq(Gem::Version.new("0.1.40"))
     end
 
     context "when the latest version is being ignored" do
       let(:ignored_versions) { [">= 0.1.40, < 2.0"] }
+
       it { is_expected.to eq(Gem::Version.new("0.1.39")) }
+    end
+
+    context "when all versions are being ignored" do
+      let(:ignored_versions) { [">= 0"] }
+      let(:raise_on_ignored) { true }
+
+      it "raises an error" do
+        expect { latest_resolvable_version }.to raise_error(Dependabot::AllVersionsIgnored)
+      end
     end
 
     context "with a git dependency" do
@@ -207,9 +252,9 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
         git_header = {
           "content-type" => "application/x-git-upload-pack-advertisement"
         }
-        stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
-          with(basic_auth: %w(x-access-token token)).
-          to_return(
+        stub_request(:get, git_url + "/info/refs?service=git-upload-pack")
+          .with(basic_auth: %w(x-access-token token))
+          .to_return(
             status: 200,
             body: fixture("git", "upload_packs", "utf8-ranges"),
             headers: git_header
@@ -237,7 +282,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
         }
       end
 
-      it { is_expected.to eq("8d38a931b7e34f9da339c058cbbca6ded624ea58") }
+      it { is_expected.to eq("be9b8dfcaf449453cbf83ac85260ee80323f4f77") }
 
       context "with a tag" do
         let(:manifest_fixture_name) { "git_dependency_with_tag" }
@@ -268,7 +313,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
           }
         end
 
-        it { is_expected.to eq("8d38a931b7e34f9da339c058cbbca6ded624ea58") }
+        it { is_expected.to eq("be9b8dfcaf449453cbf83ac85260ee80323f4f77") }
       end
     end
 
@@ -301,12 +346,14 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
           )
         ]
       end
+
       it { is_expected.to eq(Gem::Version.new("0.1.39")) }
     end
   end
 
   describe "#latest_resolvable_version_with_no_unlock" do
     subject { checker.send(:latest_resolvable_version_with_no_unlock) }
+
     let(:dependency_name) { "regex" }
     let(:dependency_version) { "0.1.41" }
     let(:requirements) do
@@ -322,6 +369,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
 
     context "when the latest version is being ignored" do
       let(:ignored_versions) { [">= 0.1.60, < 2.0"] }
+
       it { is_expected.to eq(Gem::Version.new("0.1.59")) }
     end
 
@@ -346,21 +394,22 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
           ref: nil
         }
       end
+
       before do
         git_url = "https://github.com/BurntSushi/utf8-ranges.git"
         git_header = {
           "content-type" => "application/x-git-upload-pack-advertisement"
         }
-        stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
-          with(basic_auth: %w(x-access-token token)).
-          to_return(
+        stub_request(:get, git_url + "/info/refs?service=git-upload-pack")
+          .with(basic_auth: %w(x-access-token token))
+          .to_return(
             status: 200,
             body: fixture("git", "upload_packs", "utf8-ranges"),
             headers: git_header
           )
       end
 
-      it { is_expected.to eq("8d38a931b7e34f9da339c058cbbca6ded624ea58") }
+      it { is_expected.to eq("be9b8dfcaf449453cbf83ac85260ee80323f4f77") }
 
       context "with a tag" do
         let(:manifest_fixture_name) { "git_dependency_with_tag" }
@@ -395,17 +444,17 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
 
   describe "#updated_requirements" do
     it "delegates to the RequirementsUpdater" do
-      expect(described_class::RequirementsUpdater).
-        to receive(:new).
-        with(
+      expect(described_class::RequirementsUpdater)
+        .to receive(:new)
+        .with(
           requirements: requirements,
           updated_source: nil,
           target_version: "0.1.40",
-          update_strategy: :bump_versions
-        ).
-        and_call_original
-      expect(checker.updated_requirements).
-        to eq(
+          update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions
+        )
+        .and_call_original
+      expect(checker.updated_requirements)
+        .to eq(
           [{
             file: "Cargo.toml",
             requirement: "0.1.40",
@@ -428,17 +477,17 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
       end
 
       it "delegates to the RequirementsUpdater" do
-        expect(described_class::RequirementsUpdater).
-          to receive(:new).
-          with(
+        expect(described_class::RequirementsUpdater)
+          .to receive(:new)
+          .with(
             requirements: requirements,
             updated_source: nil,
             target_version: "0.1.39",
-            update_strategy: :bump_versions
-          ).
-          and_call_original
-        expect(checker.updated_requirements).
-          to eq(
+            update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions
+          )
+          .and_call_original
+        expect(checker.updated_requirements)
+          .to eq(
             [{
               file: "Cargo.toml",
               requirement: "0.1.39",
@@ -447,6 +496,57 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
             }]
           )
       end
+    end
+  end
+
+  describe "#requirements_unlocked_or_can_be?" do
+    subject { checker.requirements_unlocked_or_can_be? }
+
+    it { is_expected.to be(true) }
+
+    context "with the lockfile-only requirements update strategy set" do
+      let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
+
+      it { is_expected.to be(false) }
+    end
+  end
+
+  describe "with cooldown options" do
+    let(:update_cooldown) do
+      Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7)
+    end
+    let(:expected_cooldown_options) do
+      Dependabot::Package::ReleaseCooldownOptions.new(
+        default_days: 7,
+        semver_major_days: 7,
+        semver_minor_days: 7,
+        semver_patch_days: 7,
+        include: [],
+        exclude: []
+      )
+    end
+
+    before do
+      latest_version = instance_double(Dependabot::Cargo::UpdateChecker::LatestVersionFinder)
+      allow(latest_version)
+        .to receive(:latest_version).and_return({ version: Gem::Version.new("1.5.0") })
+      allow(Dependabot::Cargo::UpdateChecker::LatestVersionFinder)
+        .to receive(:new).and_return(latest_version)
+    end
+
+    it "passes cooldown_options to LatestVersionFinder" do
+      checker.latest_version
+
+      expect(Dependabot::Cargo::UpdateChecker::LatestVersionFinder).to have_received(:new).with(
+        hash_including(cooldown_options: an_object_having_attributes(
+          default_days: expected_cooldown_options.default_days,
+          semver_major_days: expected_cooldown_options.semver_major_days,
+          semver_minor_days: expected_cooldown_options.semver_minor_days,
+          semver_patch_days: expected_cooldown_options.semver_patch_days,
+          include: expected_cooldown_options.include,
+          exclude: expected_cooldown_options.exclude
+        ))
+      )
     end
   end
 end

@@ -1,3 +1,4 @@
+# typed: strict
 # frozen_string_literal: true
 
 require "parser/current"
@@ -7,6 +8,8 @@ module Dependabot
   module Bundler
     class FileUpdater
       class GemspecSanitizer
+        extend T::Sig
+
         UNNECESSARY_ASSIGNMENTS = %i(
           bindir=
           cert_chain=
@@ -22,21 +25,24 @@ module Dependabot
           rdoc_options=
         ).freeze
 
+        sig { returns(String) }
         attr_reader :replacement_version
 
+        sig { params(replacement_version: T.any(String, Integer, Gem::Version)).void }
         def initialize(replacement_version:)
-          @replacement_version = replacement_version
+          @replacement_version = T.let(replacement_version.to_s, String)
         end
 
+        sig { params(content: String).returns(String) }
         def rewrite(content)
           buffer = Parser::Source::Buffer.new("(gemspec_content)")
           buffer.source = content
           ast = Parser::CurrentRuby.new.parse(buffer)
 
           updated_content =
-            Rewriter.
-            new(replacement_version: replacement_version).
-            rewrite(buffer, ast)
+            Rewriter
+            .new(replacement_version: replacement_version)
+            .rewrite(buffer, ast)
 
           # Remove any constants from strings
           updated_content.gsub(
@@ -46,10 +52,16 @@ module Dependabot
         end
 
         class Rewriter < Parser::TreeRewriter
+          extend T::Sig
+
+          ParserNode = T.type_alias { T.nilable(T.any(Parser::AST::Node, Symbol, Integer, String, Float)) }
+
+          sig { params(replacement_version: String).void }
           def initialize(replacement_version:)
             @replacement_version = replacement_version
           end
 
+          sig { params(node: Parser::AST::Node).void }
           def on_send(node)
             # Wrap any `require` or `require_relative` calls in a rescue
             # block, as we might not have the required files
@@ -81,66 +93,66 @@ module Dependabot
 
           private
 
+          sig { returns(String) }
           attr_reader :replacement_version
 
+          sig { params(node: Parser::AST::Node).returns(T::Boolean) }
           def requires_file?(node)
             %i(require require_relative).include?(node.children[1])
           end
 
+          sig { params(node: Parser::AST::Node).void }
           def wrap_require(node)
             replace(
               node.loc.expression,
-              "begin\n"\
-              "#{node.loc.expression.source_line}\n"\
-              "rescue LoadError\n"\
+              "begin\n" \
+              "#{node.loc.expression.source_line}\n" \
+              "rescue LoadError\n" \
               "end"
             )
           end
 
+          sig { params(node: ParserNode).void }
           def replace_version_assignments(node)
             return unless node.is_a?(Parser::AST::Node)
 
-            if node_assigns_to_version_constant?(node)
-              return replace_constant(node)
-            end
+            return replace_constant(node) if node_assigns_to_version_constant?(node)
 
             node.children.each { |child| replace_version_assignments(child) }
           end
 
+          sig { params(node: ParserNode).void }
           def replace_version_constant_references(node)
             return unless node.is_a?(Parser::AST::Node)
 
-            if node_is_version_constant?(node)
-              return replace(node.loc.expression, %("#{replacement_version}"))
-            end
+            return replace(node.loc.expression, %("#{replacement_version}")) if node_is_version_constant?(node)
 
             node.children.each do |child|
               replace_version_constant_references(child)
             end
           end
 
+          sig { params(node: ParserNode).void }
           def replace_file_assignments(node)
             return unless node.is_a?(Parser::AST::Node)
 
-            if node_assigns_files_to_var?(node)
-              return replace_file_assignment(node)
-            end
+            return replace_file_assignment(node) if node_assigns_files_to_var?(node)
 
             node.children.each { |child| replace_file_assignments(child) }
           end
 
+          sig { params(node: ParserNode).void }
           def replace_require_paths_assignments(node)
             return unless node.is_a?(Parser::AST::Node)
 
-            if node_assigns_require_paths?(node)
-              return replace_require_paths_assignment(node)
-            end
+            return replace_require_paths_assignment(node) if node_assigns_require_paths?(node)
 
             node.children.each do |child|
               replace_require_paths_assignments(child)
             end
           end
 
+          sig { params(node: ParserNode).returns(T::Boolean) }
           def node_assigns_to_version_constant?(node)
             return false unless node.is_a?(Parser::AST::Node)
             return false unless node.children.first.is_a?(Parser::AST::Node)
@@ -153,15 +165,26 @@ module Dependabot
             node_interpolates_version_constant?(node.children.last)
           end
 
+          sig { params(node: ParserNode).returns(T::Boolean) }
           def node_assigns_files_to_var?(node)
             return false unless node.is_a?(Parser::AST::Node)
             return false unless node.children.first.is_a?(Parser::AST::Node)
             return false unless node.children.first&.type == :lvar
             return false unless node.children[1] == :files=
 
-            node.children[2]&.type == :send
+            node_dynamically_lists_files?(node.children[2])
           end
 
+          sig { params(node: ParserNode).returns(T::Boolean) }
+          def node_dynamically_lists_files?(node)
+            return false unless node.is_a?(Parser::AST::Node)
+
+            return true if node.type == :send
+
+            node.type == :block && node.children.first&.type == :send
+          end
+
+          sig { params(node: ParserNode).returns(T::Boolean) }
           def node_assigns_require_paths?(node)
             return false unless node.is_a?(Parser::AST::Node)
             return false unless node.children.first.is_a?(Parser::AST::Node)
@@ -170,6 +193,7 @@ module Dependabot
             node.children[1] == :require_paths=
           end
 
+          sig { params(node: ParserNode).void }
           def replace_file_reads(node)
             return unless node.is_a?(Parser::AST::Node)
             return if node.children[1] == :version=
@@ -179,6 +203,7 @@ module Dependabot
             node.children.each { |child| replace_file_reads(child) }
           end
 
+          sig { params(node: ParserNode).returns(T::Boolean) }
           def node_reads_a_file?(node)
             return false unless node.is_a?(Parser::AST::Node)
             return false unless node.children.first.is_a?(Parser::AST::Node)
@@ -188,6 +213,7 @@ module Dependabot
             node.children[1] == :read
           end
 
+          sig { params(node: ParserNode).returns(T::Boolean) }
           def node_uses_readlines?(node)
             return false unless node.is_a?(Parser::AST::Node)
             return false unless node.children.first.is_a?(Parser::AST::Node)
@@ -197,6 +223,7 @@ module Dependabot
             node.children[1] == :readlines
           end
 
+          sig { params(node: ParserNode).void }
           def replace_json_parses(node)
             return unless node.is_a?(Parser::AST::Node)
             return if node.children[1] == :version=
@@ -205,6 +232,7 @@ module Dependabot
             node.children.each { |child| replace_json_parses(child) }
           end
 
+          sig { params(node: ParserNode).returns(T::Boolean) }
           def node_parses_json?(node)
             return false unless node.is_a?(Parser::AST::Node)
             return false unless node.children.first.is_a?(Parser::AST::Node)
@@ -214,6 +242,7 @@ module Dependabot
             node.children[1] == :parse
           end
 
+          sig { params(node: ParserNode).void }
           def remove_find_dot_find_args(node)
             return unless node.is_a?(Parser::AST::Node)
             return if node.children[1] == :version=
@@ -222,6 +251,7 @@ module Dependabot
             node.children.each { |child| remove_find_dot_find_args(child) }
           end
 
+          sig { params(node: ParserNode).returns(T::Boolean) }
           def node_calls_find_dot_find?(node)
             return false unless node.is_a?(Parser::AST::Node)
             return false unless node.children.first.is_a?(Parser::AST::Node)
@@ -231,14 +261,12 @@ module Dependabot
             node.children[1] == :find
           end
 
+          sig { params(node: ParserNode).void }
           def remove_unnecessary_assignments(node)
             return unless node.is_a?(Parser::AST::Node)
 
-            if unnecessary_assignment?(node) &&
-               node.children.last&.location&.respond_to?(:heredoc_end)
-              range_to_remove = node.loc.expression.join(
-                node.children.last.location.heredoc_end
-              )
+            if unnecessary_assignment?(node) && node_includes_heredoc?(node)
+              range_to_remove = node.loc.expression.join(find_heredoc_end_range(node))
               return replace(range_to_remove, '"sanitized"')
             elsif unnecessary_assignment?(node)
               return replace(node.loc.expression, '"sanitized"')
@@ -249,6 +277,33 @@ module Dependabot
             end
           end
 
+          sig { params(node: ParserNode).returns(T::Boolean) }
+          def node_includes_heredoc?(node)
+            !!find_heredoc_end_range(node)
+          end
+
+          # Performs a depth-first search for the first heredoc in the given
+          # Parser::AST::Node.
+          #
+          # Returns a Parser::Source::Range identifying the location of the end
+          #   of the heredoc, or nil if no heredoc was found.
+          sig { params(node: ParserNode).returns(T.nilable(Parser::Source::Range)) }
+          def find_heredoc_end_range(node)
+            return unless node.is_a?(Parser::AST::Node)
+
+            node.children.each do |child|
+              next unless child.is_a?(Parser::AST::Node)
+
+              return child.location.heredoc_end if child.location.respond_to?(:heredoc_end)
+
+              range = find_heredoc_end_range(child)
+              return range if range
+            end
+
+            nil
+          end
+
+          sig { params(node: ParserNode).returns(T::Boolean) }
           def unnecessary_assignment?(node)
             return false unless node.is_a?(Parser::AST::Node)
             return false unless node.children.first.is_a?(Parser::AST::Node)
@@ -256,9 +311,10 @@ module Dependabot
             return true if node.children.first.type == :lvar &&
                            UNNECESSARY_ASSIGNMENTS.include?(node.children[1])
 
-            node.children[1] == :[]= && node.children.first.children.last
+            !!(node.children[1] == :[]= && node.children.first.children.last)
           end
 
+          sig { params(node: ParserNode).returns(T::Boolean) }
           def node_is_version_constant?(node)
             return false unless node.is_a?(Parser::AST::Node)
             return false unless node.type == :const
@@ -266,6 +322,7 @@ module Dependabot
             node.children.last.to_s.match?(/version/i)
           end
 
+          sig { params(node: ParserNode).returns(T::Boolean) }
           def node_calls_version_constant?(node)
             return false unless node.is_a?(Parser::AST::Node)
             return false unless node.type == :send
@@ -273,52 +330,47 @@ module Dependabot
             node.children.any? { |n| node_is_version_constant?(n) }
           end
 
+          sig { params(node: ParserNode).returns(T::Boolean) }
           def node_interpolates_version_constant?(node)
             return false unless node.is_a?(Parser::AST::Node)
             return false unless node.type == :dstr
 
-            node.children.
-              select { |n| n.type == :begin }.
-              flat_map(&:children).
-              any? { |n| node_is_version_constant?(n) }
+            node.children
+                .select { |n| n.type == :begin }
+                .flat_map(&:children)
+                .any? { |n| node_is_version_constant?(n) }
           end
 
+          sig { params(node: Parser::AST::Node).void }
           def replace_constant(node)
             case node.children.last&.type
             when :str, :int then nil # no-op
-            when :float, :const, :send, :lvar, :if
+            when :float, :const, :send, :lvar, :if, :dstr
               replace(
                 node.children.last.loc.expression,
                 %("#{replacement_version}")
               )
-            when :dstr
-              node.children.last.children.
-                select { |n| n.type == :begin }.
-                flat_map(&:children).
-                select { |n| node_is_version_constant?(n) }.
-                each do |n|
-                  replace(
-                    n.loc.expression,
-                    %("#{replacement_version}")
-                  )
-                end
             else
               raise "Unexpected node type #{node.children.last&.type}"
             end
           end
 
+          sig { params(node: Parser::AST::Node).void }
           def replace_file_assignment(node)
             replace(node.children.last.loc.expression, "[]")
           end
 
+          sig { params(node: Parser::AST::Node).void }
           def replace_require_paths_assignment(node)
             replace(node.children.last.loc.expression, "['lib']")
           end
 
+          sig { params(node: Parser::AST::Node).void }
           def replace_file_read(node)
             replace(node.loc.expression, %("#{replacement_version}"))
           end
 
+          sig { params(node: Parser::AST::Node).void }
           def replace_json_parse(node)
             replace(
               node.loc.expression,
@@ -326,10 +378,12 @@ module Dependabot
             )
           end
 
+          sig { params(node: Parser::AST::Node).void }
           def replace_file_readlines(node)
             replace(node.loc.expression, %(["#{replacement_version}"]))
           end
 
+          sig { params(node: Parser::AST::Node).void }
           def remove_find_args(node)
             last_arg = node.children.last
 

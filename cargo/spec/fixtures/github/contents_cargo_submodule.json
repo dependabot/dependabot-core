@@ -1,0 +1,17 @@
+{
+  "name": "sub_crate",
+  "path": "lib/sub_crate",
+  "sha": "453df4efd57f5e8958adf17d728520bd585c82c9",
+  "size": 0,
+  "url": "https://api.github.com/repos/dsp-testing/updates-issue-2483/contents/deps/rusty_v8?ref=main",
+  "html_url": "https://github.com/denoland/rusty_v8/tree/453df4efd57f5e8958adf17d728520bd585c82c9",
+  "git_url": "https://api.github.com/repos/denoland/rusty_v8/git/trees/453df4efd57f5e8958adf17d728520bd585c82c9",
+  "download_url": null,
+  "type": "submodule",
+  "submodule_git_url": "git@github.com:runconduit/conduit.git",
+  "_links": {
+    "self": "https://api.github.com/repos/runconduit/conduit/contents/Cargo.toml?ref=master",
+    "git": "https://api.github.com/repos/runconduit/conduit/git/blobs/cb9ddc34d2c13ca51bd54ec7374d89cbad814d78",
+    "html": "https://github.com/runconduit/conduit/blob/master/Cargo.toml"
+  }
+}

@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "toml-rb"
@@ -6,9 +7,8 @@ require "dependabot/git_commit_checker"
 require "dependabot/cargo/file_updater"
 require "dependabot/cargo/file_updater/manifest_updater"
 require "dependabot/cargo/file_parser"
+require "dependabot/cargo/helpers"
 require "dependabot/shared_helpers"
-
-# rubocop:disable Metrics/ClassLength
 module Dependabot
   module Cargo
     class FileUpdater
@@ -16,9 +16,9 @@ module Dependabot
         LOCKFILE_ENTRY_REGEX = /
           \[\[package\]\]\n
           (?:(?!^\[(\[package|metadata)).)+
-        /mx.freeze
+        /mx
 
-        LOCKFILE_CHECKSUM_REGEX = /^"checksum .*$/.freeze
+        LOCKFILE_CHECKSUM_REGEX = /^"checksum .*$/
 
         def initialize(dependencies:, dependency_files:, credentials:)
           @dependencies = dependencies
@@ -34,15 +34,13 @@ module Dependabot
             SharedHelpers.with_git_configured(credentials: credentials) do
               # Shell out to Cargo, which handles everything for us, and does
               # so without doing an install (so it's fast).
-              run_shell_command("cargo update -p #{dependency_spec}")
+              run_cargo_command("cargo update -p #{dependency_spec}", fingerprint: "cargo update -p <dependency_spec>")
             end
 
             updated_lockfile = File.read("Cargo.lock")
             updated_lockfile = post_process_lockfile(updated_lockfile)
 
-            if updated_lockfile.include?(desired_lockfile_content)
-              next updated_lockfile
-            end
+            next updated_lockfile if updated_lockfile.include?(desired_lockfile_content)
 
             raise "Failed to update #{dependency.name}!"
           end
@@ -53,7 +51,9 @@ module Dependabot
 
         private
 
-        attr_reader :dependencies, :dependency_files, :credentials
+        attr_reader :dependencies
+        attr_reader :dependency_files
+        attr_reader :credentials
 
         # Currently, there will only be a single updated dependency
         def dependency
@@ -62,21 +62,22 @@ module Dependabot
 
         def handle_cargo_error(error)
           raise unless error.message.include?("failed to select a version") ||
-                       error.message.include?("no matching version")
+                       error.message.include?("no matching version") ||
+                       error.message.include?("unexpected end of input while parsing major version number")
           raise if error.message.include?("`#{dependency.name} ")
 
           raise Dependabot::DependencyFileNotResolvable, error.message
         end
 
-        # rubocop:disable Metrics/AbcSize
-        # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/PerceivedComplexity
+        # rubocop:disable Metrics/CyclomaticComplexity
+        # rubocop:disable Metrics/AbcSize
         def better_specification_needed?(error)
           return false if @custom_specification
           return false unless error.message.match?(/specification .* is ambigu/)
 
-          spec_options = error.message.gsub(/.*following:\n/m, "").
-                         lines.map(&:strip)
+          spec_options = error.message.gsub(/.*following:\n/m, "")
+                              .lines.map(&:strip)
 
           ver = if git_dependency? && git_previous_version
                   git_previous_version
@@ -112,24 +113,23 @@ module Dependabot
             spec += ":#{git_previous_version}" if git_previous_version
           elsif dependency.previous_version
             spec += ":#{dependency.previous_version}"
-            spec = "https://github.com/rust-lang/crates.io-index#" + spec
           end
 
           spec
         end
 
         def git_previous_version
-          TomlRB.parse(lockfile.content).
-            fetch("package", []).
-            select { |p| p["name"] == dependency.name }.
-            find { |p| p["source"].end_with?(dependency.previous_version) }.
-            fetch("version")
+          TomlRB.parse(lockfile.content)
+                .fetch("package", [])
+                .select { |p| p["name"] == dependency.name }
+                .find { |p| p["source"].end_with?(dependency.previous_version) }
+                .fetch("version")
         end
 
         def git_source_url
-          dependency.previous_requirements.
-            find { |r| r.dig(:source, :type) == "git" }&.
-            dig(:source, :url)
+          dependency.previous_requirements
+                    .find { |r| r.dig(:source, :type) == "git" }
+                    &.dig(:source, :url)
         end
 
         def desired_lockfile_content
@@ -138,24 +138,51 @@ module Dependabot
           %(name = "#{dependency.name}"\nversion = "#{dependency.version}")
         end
 
-        def run_shell_command(command)
+        def run_cargo_command(command, fingerprint:)
           start = Time.now
           command = SharedHelpers.escape_command(command)
-          stdout, process = Open3.capture2e(command)
+          Helpers.setup_credentials_in_environment(credentials)
+          # Pass through any registry tokens supplied via CARGO_REGISTRIES_...
+          # environment variables.
+          env = ENV.select { |key, _value| key.match(/^CARGO_REGISTRIES_/) }
+          stdout, process = Open3.capture2e(env, command)
           time_taken = Time.now - start
 
           # Raise an error with the output from the shell session if Cargo
           # returns a non-zero status
           return if process.success?
 
+          if using_old_toolchain?(stdout)
+            raise Dependabot::DependencyFileNotEvaluatable, "Dependabot only supports toolchain 1.68 and up."
+          end
+
+          # package doesn't exist in the index
+          if (match = stdout.match(/no matching package named `([^`]+)` found/))
+            raise Dependabot::DependencyFileNotResolvable, match[1]
+          end
+
+          if (match = /error: no matching package found\nsearched package name: `([^`]+)`/m.match(stdout))
+            raise Dependabot::DependencyFileNotResolvable, match[1]
+          end
+
           raise SharedHelpers::HelperSubprocessFailed.new(
             message: stdout,
             error_context: {
               command: command,
+              fingerprint: fingerprint,
               time_taken: time_taken,
               process_exit_value: process.to_s
             }
           )
+        end
+
+        def using_old_toolchain?(message)
+          return true if message.include?("usage of sparse registries requires `-Z sparse-registry`")
+
+          version_log = /rust version (?<version>\d.\d+)/.match(message)
+          return false unless version_log
+
+          version_class.new(version_log[:version]) < version_class.new("1.68")
         end
 
         def write_temporary_dependency_files
@@ -164,6 +191,10 @@ module Dependabot
 
           File.write(lockfile.name, lockfile.content)
           File.write(toolchain.name, toolchain.content) if toolchain
+          return unless config
+
+          FileUtils.mkdir_p(File.dirname(config.name))
+          File.write(config.name, config.content)
         end
 
         def write_temporary_manifest_files
@@ -174,6 +205,8 @@ module Dependabot
             File.write(file.name, prepared_manifest_content(file))
 
             next if virtual_manifest?(file)
+
+            File.write(File.join(dir, "build.rs"), dummy_app_content)
 
             FileUtils.mkdir_p(File.join(dir, "src"))
             File.write(File.join(dir, "src/lib.rs"), dummy_app_content)
@@ -270,9 +303,7 @@ module Dependabot
 
         def remove_default_run_specification(content)
           parsed_manifest = TomlRB.parse(content)
-          if parsed_manifest.dig("package", "default-run")
-            parsed_manifest["package"].delete("default-run")
-          end
+          parsed_manifest["package"].delete("default-run") if parsed_manifest.dig("package", "default-run")
           TomlRB.dump(parsed_manifest)
         end
 
@@ -314,11 +345,11 @@ module Dependabot
           lockfile_content.scan(LOCKFILE_ENTRY_REGEX) do
             lockfile_entries << Regexp.last_match.to_s
           end
-          lockfile_entries.
-            select { |e| lockfile_entries.count(e) > 1 }.uniq.
-            each do |entry|
-              (lockfile_entries.count(entry) - 1).
-                times { lockfile_content = lockfile_content.sub(entry, "") }
+          lockfile_entries
+            .select { |e| lockfile_entries.count(e) > 1 }.uniq
+            .each do |entry|
+              (lockfile_entries.count(entry) - 1)
+                .times { lockfile_content = lockfile_content.sub(entry, "") }
             end
 
           # Loop through the lockfile checksums looking for duplicates. Replace
@@ -327,11 +358,11 @@ module Dependabot
           lockfile_content.scan(LOCKFILE_CHECKSUM_REGEX) do
             lockfile_checksums << Regexp.last_match.to_s
           end
-          lockfile_checksums.
-            select { |e| lockfile_checksums.count(e) > 1 }.uniq.
-            each do |cs|
-              (lockfile_checksums.count(cs) - 1).
-                times { lockfile_content = lockfile_content.sub("\n#{cs}", "") }
+          lockfile_checksums
+            .select { |e| lockfile_checksums.count(e) > 1 }.uniq
+            .each do |cs|
+              (lockfile_checksums.count(cs) - 1)
+                .times { lockfile_content = lockfile_content.sub("\n#{cs}", "") }
             end
 
           lockfile_content
@@ -350,16 +381,16 @@ module Dependabot
 
         def manifest_files
           @manifest_files ||=
-            dependency_files.
-            select { |f| f.name.end_with?("Cargo.toml") }.
-            reject(&:support_file?)
+            dependency_files
+            .select { |f| f.name.end_with?("Cargo.toml") }
+            .reject(&:support_file?)
         end
 
         def path_dependency_files
           @path_dependency_files ||=
-            dependency_files.
-            select { |f| f.name.end_with?("Cargo.toml") }.
-            select(&:support_file?)
+            dependency_files
+            .select { |f| f.name.end_with?("Cargo.toml") }
+            .select(&:support_file?)
         end
 
         def lockfile
@@ -371,11 +402,18 @@ module Dependabot
             dependency_files.find { |f| f.name == "rust-toolchain" }
         end
 
+        def config
+          @config ||= dependency_files.find { |f| f.name == ".cargo/config.toml" }
+        end
+
         def virtual_manifest?(file)
           !file.content.include?("[package]")
+        end
+
+        def version_class
+          dependency.version_class
         end
       end
     end
   end
 end
-# rubocop:enable Metrics/ClassLength

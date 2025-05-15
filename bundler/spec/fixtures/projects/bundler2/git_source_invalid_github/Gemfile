@@ -1,0 +1,5 @@
+# frozen_string_literal: true
+source "https://rubygems.org"
+
+# this user meant: github:  "dependabot-fixtures/business"
+gem "business", git: "dependabot-fixtures/business"

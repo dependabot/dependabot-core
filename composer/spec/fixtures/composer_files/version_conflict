@@ -1,7 +1,0 @@
-{
-    "require": {
-        "monolog/monolog": "1.22.0",
-        "aws/aws-sdk-php": "3.45.0",
-        "guzzlehttp/guzzle": "6.1.0"
-    }
-}

@@ -1,0 +1,5 @@
+[workspace]
+members = ["lib/inherit_ws_dep"]
+
+[workspace.dependencies]
+log = "=0.4.0"

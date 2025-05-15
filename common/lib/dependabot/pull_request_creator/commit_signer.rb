@@ -1,15 +1,40 @@
+# typed: strict
 # frozen_string_literal: true
 
 require "time"
 require "tmpdir"
+require "sorbet-runtime"
 require "dependabot/pull_request_creator"
 
 module Dependabot
   class PullRequestCreator
     class CommitSigner
-      attr_reader :author_details, :commit_message, :tree_sha, :parent_sha,
-                  :signature_key
+      extend T::Sig
 
+      sig { returns(T::Hash[Symbol, String]) }
+      attr_reader :author_details
+
+      sig { returns(String) }
+      attr_reader :commit_message
+
+      sig { returns(String) }
+      attr_reader :tree_sha
+
+      sig { returns(String) }
+      attr_reader :parent_sha
+
+      sig { returns(String) }
+      attr_reader :signature_key
+
+      sig do
+        params(
+          author_details: T::Hash[Symbol, String],
+          commit_message: String,
+          tree_sha: String,
+          parent_sha: String,
+          signature_key: String
+        ).void
+      end
       def initialize(author_details:, commit_message:, tree_sha:, parent_sha:,
                      signature_key:)
         @author_details = author_details
@@ -19,6 +44,7 @@ module Dependabot
         @signature_key = signature_key
       end
 
+      sig { returns(String) }
       def signature
         begin
           require "gpgme"
@@ -38,20 +64,21 @@ module Dependabot
         opts = { mode: GPGME::SIG_MODE_DETACH, signer: email }
         crypto.sign(commit_object, opts).to_s
       rescue Errno::ENOTEMPTY
-        FileUtils.remove_entry(dir, true)
+        FileUtils.remove_entry(T.must(dir), true)
         # This appears to be a Ruby bug which occurs very rarely
         raise if @retrying
 
-        @retrying = true
+        @retrying = T.let(true, T.nilable(T::Boolean))
         retry
       ensure
-        FileUtils.remove_entry(dir, true)
+        FileUtils.remove_entry(T.must(dir), true)
       end
 
       private
 
+      sig { returns(String) }
       def commit_object
-        time_str = Time.parse(author_details[:date]).strftime("%s %z")
+        time_str = Time.parse(T.must(author_details[:date])).strftime("%s %z")
         name = author_details[:name]
         email = author_details[:email]
 

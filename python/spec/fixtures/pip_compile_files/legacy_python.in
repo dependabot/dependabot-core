@@ -1,1 +1,0 @@
-wsgiref<=0.1.2   # Only works with Python < 3.2

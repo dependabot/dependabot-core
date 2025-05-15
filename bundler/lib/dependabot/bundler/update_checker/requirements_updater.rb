@@ -1,20 +1,32 @@
+# typed: true
 # frozen_string_literal: true
 
+require "sorbet-runtime"
+
 require "dependabot/bundler/update_checker"
+require "dependabot/requirements_update_strategy"
 
 module Dependabot
   module Bundler
     class UpdateChecker
       class RequirementsUpdater
+        extend T::Sig
+
         class UnfixableRequirement < StandardError; end
 
-        ALLOWED_UPDATE_STRATEGIES =
-          %i(bump_versions bump_versions_if_necessary).freeze
+        ALLOWED_UPDATE_STRATEGIES = T.let(
+          [
+            RequirementsUpdateStrategy::LockfileOnly,
+            RequirementsUpdateStrategy::BumpVersions,
+            RequirementsUpdateStrategy::BumpVersionsIfNecessary
+          ].freeze,
+          T::Array[Dependabot::RequirementsUpdateStrategy]
+        )
 
         def initialize(requirements:, update_strategy:, updated_source:,
                        latest_version:, latest_resolvable_version:)
           @requirements = requirements
-          @latest_version = Gem::Version.new(latest_version) if latest_version
+          @latest_version = Dependabot::Bundler::Version.new(latest_version) if latest_version
           @updated_source = updated_source
           @update_strategy = update_strategy
 
@@ -23,12 +35,14 @@ module Dependabot
           return unless latest_resolvable_version
 
           @latest_resolvable_version =
-            Gem::Version.new(latest_resolvable_version)
+            Dependabot::Bundler::Version.new(latest_resolvable_version)
         end
 
         def updated_requirements
+          return requirements if update_strategy.lockfile_only?
+
           requirements.map do |req|
-            if req[:file].match?(/\.gemspec/)
+            if req[:file].include?(".gemspec")
               update_gemspec_requirement(req)
             else
               # If a requirement doesn't come from a gemspec, it must be from
@@ -40,9 +54,11 @@ module Dependabot
 
         private
 
-        attr_reader :requirements, :updated_source,
-                    :latest_version, :latest_resolvable_version,
-                    :update_strategy
+        attr_reader :requirements
+        attr_reader :updated_source
+        attr_reader :latest_version
+        attr_reader :latest_resolvable_version
+        attr_reader :update_strategy
 
         def check_update_strategy
           return if ALLOWED_UPDATE_STRATEGIES.include?(update_strategy)
@@ -55,9 +71,9 @@ module Dependabot
           return req unless latest_resolvable_version
 
           case update_strategy
-          when :bump_versions
+          when RequirementsUpdateStrategy::BumpVersions
             update_version_requirement(req)
-          when :bump_versions_if_necessary
+          when RequirementsUpdateStrategy::BumpVersionsIfNecessary
             update_version_requirement_if_needed(req)
           else raise "Unexpected update strategy: #{update_strategy}"
           end
@@ -86,8 +102,7 @@ module Dependabot
         end
 
         def new_version_satisfies?(req)
-          original_req = Gem::Requirement.new(req[:requirement].split(","))
-          original_req.satisfied_by?(latest_resolvable_version)
+          Requirement.satisfied_by?(req, latest_resolvable_version)
         end
 
         def update_gemfile_range(requirements)
@@ -101,7 +116,7 @@ module Dependabot
               when "!="
                 []
               else
-                raise "Unexpected operation for unsatisfied Gemfile "\
+                raise "Unexpected operation for unsatisfied Gemfile " \
                       "requirement: #{op}"
               end
             end
@@ -110,23 +125,22 @@ module Dependabot
         end
 
         def at_same_precision(new_version, old_version)
-          release_precision = old_version.to_s.split(".").
-                              take_while { |i| i.match?(/^\d+$/) }.count
+          release_precision = old_version.to_s.split(".")
+                                         .take_while { |i| i.match?(/^\d+$/) }.count
           prerelease_precision =
             old_version.to_s.split(".").count - release_precision
 
           new_release =
             new_version.to_s.split(".").first(release_precision)
           new_prerelease =
-            new_version.to_s.split(".").
-            drop_while { |i| i.match?(/^\d+$/) }.
-            first([prerelease_precision, 1].max)
+            new_version.to_s.split(".")
+                       .drop_while { |i| i.match?(/^\d+$/) }
+                       .first([prerelease_precision, 1].max)
 
           [*new_release, *new_prerelease].join(".")
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
-        # rubocop:disable Metrics/CyclomaticComplexity
         def update_gemspec_requirement(req)
           req = req.merge(source: updated_source) if req.fetch(:source)
           return req unless latest_version && latest_resolvable_version
@@ -143,7 +157,8 @@ module Dependabot
               next r if requirement_satisfied?(r, req[:groups])
 
               if req[:groups] == ["development"] then bumped_requirements(r)
-              else widened_requirements(r)
+              else
+                widened_requirements(r)
               end
             end
 
@@ -153,7 +168,6 @@ module Dependabot
           req.merge(requirement: :unfixable)
         end
         # rubocop:enable Metrics/PerceivedComplexity
-        # rubocop:enable Metrics/CyclomaticComplexity
 
         def requirement_satisfied?(req, groups)
           if groups == ["development"]
@@ -190,7 +204,7 @@ module Dependabot
               req
             end
           when "<", "<=" then [update_greatest_version(req, latest_version)]
-          when "~>" then convert_twidle_to_range(req, latest_version)
+          when "~>" then convert_twiddle_to_range(req, latest_version)
           when "!=" then []
           when ">", ">=" then raise UnfixableRequirement
           else raise "Unexpected operation for requirement: #{op}"
@@ -216,8 +230,7 @@ module Dependabot
           end
         end
 
-        # rubocop:disable Metrics/AbcSize
-        def convert_twidle_to_range(requirement, version_to_be_permitted)
+        def convert_twiddle_to_range(requirement, version_to_be_permitted)
           version = requirement.requirements.first.last
           version = version.release if version.prerelease?
 
@@ -231,9 +244,7 @@ module Dependabot
           lb_segments = version.segments
           lb_segments.pop while lb_segments.any? && lb_segments.last.zero?
 
-          if lb_segments.none?
-            return [Gem::Requirement.new("< #{ub_segments.join('.')}")]
-          end
+          return [Gem::Requirement.new("< #{ub_segments.join('.')}")] if lb_segments.none?
 
           # Ensure versions have the same length as each other (cosmetic)
           length = [lb_segments.count, ub_segments.count].max
@@ -245,7 +256,6 @@ module Dependabot
             Gem::Requirement.new("< #{ub_segments.join('.')}")
           ]
         end
-        # rubocop:enable Metrics/AbcSize
 
         # Updates the version in a "~>" constraint to allow the given version
         def update_twiddle_version(requirement, version_to_be_permitted)
@@ -256,11 +266,9 @@ module Dependabot
 
         # Updates the version in a "<" or "<=" constraint to allow the given
         # version
-        # rubocop:disable Metrics/AbcSize
-        # rubocop:disable Metrics/PerceivedComplexity
         def update_greatest_version(requirement, version_to_be_permitted)
           if version_to_be_permitted.is_a?(String)
-            version_to_be_permitted = Gem::Version.new(version_to_be_permitted)
+            version_to_be_permitted = Dependabot::Bundler::Version.new(version_to_be_permitted)
           end
           op, version = requirement.requirements.first
           version = version.release if version.prerelease?
@@ -277,14 +285,13 @@ module Dependabot
               version_to_be_permitted.segments[index] + 1
             elsif index > version_to_be_permitted.segments.count - 1
               nil
-            else 0
+            else
+              0
             end
           end.compact
 
           Gem::Requirement.new("#{op} #{new_segments.join('.')}")
         end
-        # rubocop:enable Metrics/AbcSize
-        # rubocop:enable Metrics/PerceivedComplexity
       end
     end
   end

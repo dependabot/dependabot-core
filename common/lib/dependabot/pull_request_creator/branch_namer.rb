@@ -1,176 +1,101 @@
+# typed: strong
 # frozen_string_literal: true
+
+require "digest"
+require "sorbet-runtime"
 
 require "dependabot/metadata_finders"
 require "dependabot/pull_request_creator"
+require "dependabot/pull_request_creator/branch_namer/solo_strategy"
+require "dependabot/pull_request_creator/branch_namer/dependency_group_strategy"
 
 module Dependabot
   class PullRequestCreator
     class BranchNamer
-      attr_reader :dependencies, :files, :target_branch, :separator, :prefix
+      extend T::Sig
 
-      def initialize(dependencies:, files:, target_branch:, separator: "/",
-                     prefix: "dependabot")
+      sig { returns(T::Array[Dependabot::Dependency]) }
+      attr_reader :dependencies
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      attr_reader :files
+
+      sig { returns(T.nilable(String)) }
+      attr_reader :target_branch
+
+      sig { returns(String) }
+      attr_reader :separator
+
+      sig { returns(String) }
+      attr_reader :prefix
+
+      sig { returns(T.nilable(Integer)) }
+      attr_reader :max_length
+
+      sig { returns(T.nilable(Dependabot::DependencyGroup)) }
+      attr_reader :dependency_group
+
+      sig { returns(T::Boolean) }
+      attr_reader :includes_security_fixes
+
+      sig do
+        params(
+          dependencies: T::Array[Dependabot::Dependency],
+          files: T::Array[Dependabot::DependencyFile],
+          target_branch: T.nilable(String),
+          dependency_group: T.nilable(Dependabot::DependencyGroup),
+          separator: String,
+          prefix: String,
+          max_length: T.nilable(Integer),
+          includes_security_fixes: T::Boolean
+        )
+          .void
+      end
+      def initialize(dependencies:, files:, target_branch:, dependency_group: nil, separator: "/",
+                     prefix: "dependabot", max_length: nil, includes_security_fixes: false)
         @dependencies  = dependencies
         @files         = files
         @target_branch = target_branch
+        @dependency_group = dependency_group
         @separator     = separator
         @prefix        = prefix
+        @max_length    = max_length
+        @includes_security_fixes = includes_security_fixes
       end
 
-      # rubocop:disable Metrics/AbcSize
-      # rubocop:disable Metrics/PerceivedComplexity
-      # rubocop:disable Metrics/CyclomaticComplexity
+      sig { returns(String) }
       def new_branch_name
-        @name ||=
-          begin
-            dependency_name_part =
-              if dependencies.count > 1 && updating_a_property?
-                property_name
-              elsif dependencies.count > 1 && updating_a_dependency_set?
-                dependency_set.fetch(:group)
-              else
-                dependencies.map(&:name).join("-and-").tr(":", "-").tr("@", "")
-              end
-
-            dep = dependencies.first
-
-            if library? && ref_changed?(dependencies.first)
-              "#{dependency_name_part}-#{new_ref(dep)}"
-            elsif library?
-              "#{dependency_name_part}-#{sanitized_requirement(dep)}"
-            else
-              "#{dependency_name_part}-#{new_version(dep)}"
-            end
-          end
-
-        branch_name = File.join(prefixes, @name).
-                      gsub(%r{/\.}, "/dot-").
-                      gsub(%r{/\.}, "/dot-")
-
-        # Some users need branch names without slashes
-        branch_name.gsub("/", separator)
+        strategy.new_branch_name
       end
-      # rubocop:enable Metrics/AbcSize
-      # rubocop:enable Metrics/PerceivedComplexity
-      # rubocop:enable Metrics/CyclomaticComplexity
 
       private
 
-      def prefixes
-        [
-          prefix,
-          package_manager,
-          files.first.directory.tr(" ", "-"),
-          target_branch
-        ].compact
-      end
-
-      def package_manager
-        dependencies.first.package_manager
-      end
-
-      def updating_a_property?
-        dependencies.first.
-          requirements.
-          any? { |r| r.dig(:metadata, :property_name) }
-      end
-
-      def updating_a_dependency_set?
-        dependencies.first.
-          requirements.
-          any? { |r| r.dig(:metadata, :dependency_set) }
-      end
-
-      def property_name
-        @property_name ||= dependencies.first.requirements.
-                           find { |r| r.dig(:metadata, :property_name) }&.
-                           dig(:metadata, :property_name)
-
-        raise "No property name!" unless @property_name
-
-        @property_name
-      end
-
-      def dependency_set
-        @dependency_set ||= dependencies.first.requirements.
-                            find { |r| r.dig(:metadata, :dependency_set) }&.
-                            dig(:metadata, :dependency_set)
-
-        raise "No dependency set!" unless @dependency_set
-
-        @dependency_set
-      end
-
-      def sanitized_requirement(dependency)
-        new_library_requirement(dependency).
-          delete(" ").
-          gsub("!=", "neq-").
-          gsub(">=", "gte-").
-          gsub("<=", "lte-").
-          gsub("~>", "tw-").
-          gsub("^", "tw-").
-          gsub("||", "or-").
-          gsub("~", "approx-").
-          gsub("~=", "tw-").
-          gsub(/==*/, "eq-").
-          gsub(">", "gt-").
-          gsub("<", "lt-").
-          gsub("*", "star").
-          gsub(",", "-and-").
-          sub(/\.$/, "")
-      end
-
-      def new_version(dependency)
-        if dependency.version.match?(/^[0-9a-f]{40}$/)
-          return new_ref(dependency) if ref_changed?(dependency)
-
-          dependency.version[0..6]
-        elsif dependency.version == dependency.previous_version &&
-              package_manager == "docker"
-          dependency.requirements.
-            map { |r| r.dig(:source, "digest") || r.dig(:source, :digest) }.
-            compact.first.split(":").last[0..6]
-        else
-          dependency.version
-        end
-      end
-
-      def previous_ref(dependency)
-        dependency.previous_requirements.map do |r|
-          r.dig(:source, "ref") || r.dig(:source, :ref)
-        end.compact.first
-      end
-
-      def new_ref(dependency)
-        dependency.requirements.map do |r|
-          r.dig(:source, "ref") || r.dig(:source, :ref)
-        end.compact.first
-      end
-
-      def ref_changed?(dependency)
-        previous_ref(dependency) && new_ref(dependency) &&
-          previous_ref(dependency) != new_ref(dependency)
-      end
-
-      def new_library_requirement(dependency)
-        updated_reqs =
-          dependency.requirements - dependency.previous_requirements
-
-        gemspec =
-          updated_reqs.find { |r| r[:file].match?(%r{^[^/]*\.gemspec$}) }
-        return gemspec[:requirement] if gemspec
-
-        updated_reqs.first[:requirement]
-      end
-
-      def library?
-        return true if files.map(&:name).any? { |nm| nm.end_with?(".gemspec") }
-
-        dependencies.any? { |d| !d.appears_in_lockfile? }
-      end
-
-      def requirements_changed?(dependency)
-        (dependency.requirements - dependency.previous_requirements).any?
+      sig { returns(Dependabot::PullRequestCreator::BranchNamer::Base) }
+      def strategy
+        @strategy ||= T.let(
+          if dependency_group.nil?
+            SoloStrategy.new(
+              dependencies: dependencies,
+              files: files,
+              target_branch: target_branch,
+              separator: separator,
+              prefix: prefix,
+              max_length: max_length
+            )
+          else
+            DependencyGroupStrategy.new(
+              dependencies: dependencies,
+              files: files,
+              target_branch: target_branch,
+              dependency_group: T.must(dependency_group),
+              includes_security_fixes: includes_security_fixes,
+              separator: separator,
+              prefix: prefix,
+              max_length: max_length
+            )
+          end,
+          T.nilable(Dependabot::PullRequestCreator::BranchNamer::Base)
+        )
       end
     end
   end
