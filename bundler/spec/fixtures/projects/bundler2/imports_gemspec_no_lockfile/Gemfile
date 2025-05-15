@@ -2,7 +2,11 @@
 
 source "https://rubygems.org"
 
+<<<<<<<< HEAD:bundler/spec/fixtures/projects/bundler2/imports_gemspec_no_lockfile/Gemfile
 gemspec
+========
+gem "bundler", "~> 2.3.0"
+>>>>>>>> origin/main:bundler/spec/fixtures/projects/bundler2/bundler_specified/Gemfile
 
 gem "business", "~> 1.4.0"
 gem "statesman", "~> 1.2.0"

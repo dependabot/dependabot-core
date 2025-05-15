@@ -9,6 +9,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+<<<<<<<< HEAD:bun/helpers/test/yarn/fixtures/conflicting-dependency-parser/nested/package.json
     "askconfig": "^4.0.4"
+========
+    "apass": "1.1.0"
+>>>>>>>> origin/main:bun/helpers/test/npm6/fixtures/conflicting-dependency-parser/deeply-nested/package.json
   }
 }
