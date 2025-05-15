@@ -7,96 +7,111 @@ require "dependabot/dependency_file"
 require "dependabot/swift/package/package_details_fetcher"
 
 RSpec.describe Dependabot::Swift::Package::PackageDetailsFetcher do
-  let(:dependency) { instance_double(Dependabot::Dependency, name: "SwiftNetCDF") }
+  let(:dependency) do
+    Dependabot::Dependency.new(
+      name: "patrick-zippenfenig/SwiftNetCDF",
+      version: "v1.1.7",
+      requirements: [],
+      package_manager: "swift"
+    )
+  end
+
   let(:credentials) { [] }
   let(:fetcher) { described_class.new(dependency: dependency, credentials: credentials) }
 
-  describe "#fetch_release_details_from_github" do
-    let(:response_body) do
-      <<-HTML
-        <html>
-          <body>
-            <div class="release-entry">
-              <div class="release-header">
-                <a href="/patrick-zippenfenig/SwiftNetCDF/releases/tag/v1.0.0">v1.0.0</a>
-              </div>
-              <relative-time datetime="2023-01-01T00:00:00Z"></relative-time>
-            </div>
-            <div class="release-entry">
-              <div class="release-header">
-                <a href="/patrick-zippenfenig/SwiftNetCDF/releases/tag/v1.1.0">v1.1.0</a>
-              </div>
-              <relative-time datetime="2023-02-01T00:00:00Z"></relative-time>
-            </div>
-          </body>
-        </html>
-      HTML
+  describe "#fetch_version_and_release_date" do
+    context "when the API returns a successful response" do
+      let(:json_response) do
+        <<~JSON
+          [
+            {
+              "tag_name": "v1.1.7",
+              "published_at": "2023-10-01T00:00:00Z"
+            },
+            {
+              "tag_name": "v1.1.6",
+              "published_at": "2023-11-01T00:00:00Z"
+            }
+          ]
+        JSON
+      end
+
+      before do
+        allow(Excon).to receive(:get).and_return(double(status: 200, body: json_response))
+      end
+
+      it "fetches and parses the version and release date" do
+        result = fetcher.fetch_version_and_release_date
+
+        expect(result).to be_a(Dependabot::Package::PackageDetails)
+        expect(result.releases.size).to eq(2)
+        expect(result.releases.first.version.to_s).to eq("1.1.7")
+        expect(result.releases.first.released_at).to eq(Time.parse("2023-10-01T00:00:00Z"))
+      end
     end
 
-    before do
-      allow(Dependabot::RegistryClient).to receive(:get).and_return(
-        instance_double(Excon::Response, body: response_body)
-      )
+    context "when the API returns an empty response" do
+      before do
+        allow(Excon).to receive(:get).and_return(double(status: 200, body: "[]"))
+      end
+
+      it "returns an empty PackageDetails object" do
+        result = fetcher.fetch_version_and_release_date
+
+        expect(result).to be_a(Dependabot::Package::PackageDetails)
+        expect(result.releases).to be_empty
+      end
     end
 
-    it "fetches and parses release details from GitHub" do
-      releases = fetcher.fetch_release_details_from_github
+    context "when the API returns an error response" do
+      before do
+        allow(Excon).to receive(:get).and_return(double(status: 404, body: ""))
+      end
 
-      expect(releases).not_to be_nil
-      expect(releases.css("div.release-entry").size).to eq(2)
-
-      first_release = releases.css("div.release-entry").first
-      expect(first_release.at_css("div.release-header a").text.strip).to eq("v1.0.0")
-      expect(first_release.at_css("relative-time")["datetime"]).to eq("2023-01-01T00:00:00Z")
-
-      second_release = releases.css("div.release-entry").last
-      expect(second_release.at_css("div.release-header a").text.strip).to eq("v1.1.0")
-      expect(second_release.at_css("relative-time")["datetime"]).to eq("2023-02-01T00:00:00Z")
-    end
-
-    it "logs the fetched release details" do
-      expect(Dependabot.logger).to receive(:info).with(/Fetched release details:/)
-      fetcher.fetch_release_details_from_github
+      it "raises an error" do
+        expect { fetcher.fetch_version_and_release_date }.to raise_error("Failed to fetch releases: 404")
+      end
     end
   end
 
-  describe "#fetch_release_details" do
-    let(:html_content) do
-      <<-HTML
-        <html>
-          <body>
-            <div class="release-entry">
-              <div class="release-header">
-                <a href="/releases/tag/v1.0.0">v1.0.0</a>
-              </div>
-              <relative-time datetime="2023-01-01T00:00:00Z"></relative-time>
-            </div>
-            <div class="release-entry">
-              <div class="release-header">
-                <a href="/releases/tag/v1.1.0">v1.1.0</a>
-              </div>
-              <relative-time datetime="2023-02-01T00:00:00Z"></relative-time>
-            </div>
-          </body>
-        </html>
-      HTML
+  describe "#package_details" do
+    let(:releases) do
+      [
+        fetcher.package_release(
+          version: "v1.1.7",
+          released_at: Time.parse("2023-10-01T00:00:00Z"),
+          url: "https://api.github.com/repos/patrick-zippenfenig/SwiftNetCDF/releases"
+        ),
+        fetcher.package_release(
+          version: "v1.1.6",
+          released_at: Time.parse("2023-11-01T00:00:00Z"),
+          url: "https://api.github.com/repos/patrick-zippenfenig/SwiftNetCDF/releases"
+        )
+      ]
     end
 
-    let(:html_doc) { Nokogiri::HTML(html_content) }
-    let(:fetcher) { described_class.new(dependency: nil, credentials: []) }
+    it "creates a PackageDetails object with unique releases" do
+      result = fetcher.package_details(releases)
 
-    it "parses the HTML document and returns a hash of release details" do
-      release_details = fetcher.fetch_release_details(html_doc: html_doc)
-
-      expect(release_details).to eq({
-        "v1.0.0" => "2023-01-01T00:00:00Z",
-        "v1.1.0" => "2023-02-01T00:00:00Z"
-      })
+      expect(result).to be_a(Dependabot::Package::PackageDetails)
+      expect(result.releases.size).to eq(2)
+      expect(result.releases.map(&:version).map(&:to_s)).to eq(["1.1.7", "1.1.6"])
     end
+  end
 
-    it "logs the parsed release details" do
-      expect(Dependabot.logger).to receive(:info).with("Parsed release details: {\"v1.0.0\"=>\"2023-01-01T00:00:00Z\", \"v1.1.0\"=>\"2023-02-01T00:00:00Z\"}")
-      fetcher.fetch_release_details(html_doc: html_doc)
+  describe "#package_release" do
+    it "creates a PackageRelease object with the correct attributes" do
+      release = fetcher.package_release(
+        version: "v1.1.7",
+        released_at: Time.parse("2023-10-01T00:00:00Z"),
+        url: "https://api.github.com/repos/patrick-zippenfenig/SwiftNetCDF/releases"
+      )
+
+      expect(release).to be_a(Dependabot::Package::PackageRelease)
+      expect(release.version.to_s).to eq("1.1.7")
+      expect(release.released_at).to eq(Time.parse("2023-10-01T00:00:00Z"))
+      expect(release.url).to eq("https://api.github.com/repos/patrick-zippenfenig/SwiftNetCDF/releases")
+      expect(release.package_type).to eq("swift")
     end
   end
 end
