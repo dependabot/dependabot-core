@@ -58,7 +58,6 @@ module Dependabot
           params(releases: T::Array[Dependabot::Package::PackageRelease])
             .returns(Dependabot::Package::PackageDetails)
         end
-
         # This method creates a PackageDetails object from the releases hashand returns it.
         def package_details(releases)
           @package_details ||= T.let(
@@ -77,7 +76,6 @@ module Dependabot
             yanked: T::Boolean
           ).returns(Dependabot::Package::PackageRelease)
         end
-
         def package_release(version:, released_at:, url:, yanked: false)
           normalized_version = version.sub(/^v/, "") # Remove the "v" prefix if it exists
           Dependabot::Package::PackageRelease.new(
