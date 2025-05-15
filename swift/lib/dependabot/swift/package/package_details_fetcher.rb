@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "json"
@@ -21,6 +21,10 @@ module Dependabot
         RELEASES_URL = "https://github.com/patrick-zippenfenig/SwiftNetCDF/tags"
         APPLICATION_HTML = "text/html; charset=utf-8"
 
+        sig do
+          params(dependency: Dependabot::Dependency, credentials: T::Array[Dependabot::Credential],
+                 repo_name: T.nilable(String), package_manager: T.nilable(String)).void
+        end
         def initialize(dependency:, credentials:, repo_name: nil, package_manager: nil)
           @dependency_release_details_file = T.let(nil, T.nilable(Nokogiri::HTML::Document))
           @dependency = dependency
@@ -37,7 +41,7 @@ module Dependabot
           return if RELEASES_URL.nil?
 
           response = Dependabot::RegistryClient.get(
-            url: T.must(RELEASES_URL),
+            url: RELEASES_URL,
             headers: {
               "Accept" => APPLICATION_HTML
             }
@@ -65,7 +69,7 @@ module Dependabot
           return html_doc
         end
 
-        # sig { params(html_doc: T.any(Nokogiri::HTML::Document, Nokogiri::XML::Document)).returns(T::Hash[String, String]) }
+        sig { params(html_doc: T.untyped).returns(T::Hash[String, String]) }
         # This method parses the HTML document and extracts release details
         # such as tags and release dates, returning them as a hash.
         def fetch_release_details(html_doc: Nokogiri::HTML::Document)
