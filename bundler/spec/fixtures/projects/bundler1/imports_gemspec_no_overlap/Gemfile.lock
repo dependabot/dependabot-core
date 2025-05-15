@@ -1,0 +1,22 @@
+PATH
+  remote: .
+  specs:
+    example (0.9.3)
+      business (~> 1.0)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    business (1.4.0)
+    statesman (1.2.5)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  business (~> 1.4.0)
+  example!
+  statesman (~> 1.2.0)
+
+BUNDLED WITH
+   1.15.3

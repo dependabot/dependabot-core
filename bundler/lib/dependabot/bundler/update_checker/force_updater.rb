@@ -52,9 +52,6 @@ module Dependabot
 
         def force_update
           requirement = dependency.requirements.find { |req| req[:file] == gemfile.name }
-
-          valid_gem_version?(target_version)
-
           manifest_requirement_not_satisfied = requirement && !Requirement.satisfied_by?(requirement, target_version)
 
           if manifest_requirement_not_satisfied && requirements_update_strategy.lockfile_only?
@@ -81,15 +78,6 @@ module Dependabot
             msg = e.error_class + " with message: " + e.message
             raise Dependabot::DependencyFileNotResolvable, msg
           end
-        end
-
-        def valid_gem_version?(target_version)
-          # to rule out empty, non gem info ending up in as target_version
-          return true if target_version.is_a?(Gem::Version)
-
-          Dependabot.logger.warn("Bundler force update called with a non-Gem::Version #{target_version}")
-
-          raise Dependabot::DependencyFileNotResolvable
         end
 
         def original_dependencies

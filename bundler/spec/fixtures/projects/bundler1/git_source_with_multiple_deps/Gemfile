@@ -1,0 +1,10 @@
+# frozen_string_literal: true
+
+source "https://rubygems.org"
+
+gem "elasticsearch-dsl",
+    github: "dependabot-fixtures/elasticsearch-ruby",
+    branch: "5.x",
+    require: "elasticsearch/dsl"
+gem "elasticsearch-model", github: "dependabot-fixtures/elasticsearch-rails", branch: "5.x"
+gem "elasticsearch-rails", github: "dependabot-fixtures/elasticsearch-rails", branch: "5.x"

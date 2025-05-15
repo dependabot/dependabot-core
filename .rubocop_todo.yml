@@ -9,6 +9,7 @@
 # Offense count: 39
 RSpec/AnyInstance:
   Exclude:
+    - 'bundler/helpers/v1/spec/shared_contexts.rb'
     - 'bundler/spec/dependabot/bundler/update_checker_spec.rb'
     - 'common/spec/dependabot/clients/codecommit_spec.rb'
     - 'common/spec/dependabot/file_fetchers/base_spec.rb'
@@ -17,7 +18,6 @@ RSpec/AnyInstance:
     - 'gradle/spec/dependabot/gradle/metadata_finder_spec.rb'
     - 'maven/spec/dependabot/maven/metadata_finder_spec.rb'
     - 'npm_and_yarn/spec/dependabot/npm_and_yarn/update_checker_spec.rb'
-    - 'bun/spec/dependabot/bun/update_checker_spec.rb'
     - 'python/spec/dependabot/python/file_updater_spec.rb'
     - 'updater/spec/dependabot/dependency_change_builder_spec.rb'
     - 'updater/spec/dependabot/file_fetcher_command_spec.rb'
@@ -64,7 +64,6 @@ RSpec/IteratedExpectation:
     - 'hex/spec/dependabot/hex/file_updater_spec.rb'
     - 'maven/spec/dependabot/maven/file_updater_spec.rb'
     - 'npm_and_yarn/spec/dependabot/npm_and_yarn/file_updater_spec.rb'
-    - 'bun/spec/dependabot/bun/file_updater_spec.rb'
     - 'python/spec/dependabot/python/file_updater/requirement_file_updater_spec.rb'
     - 'python/spec/dependabot/python/file_updater_spec.rb'
 
@@ -154,7 +153,6 @@ RSpec/StubbedMock:
     - 'docker/spec/dependabot/docker/utils/credentials_finder_spec.rb'
     - 'go_modules/spec/dependabot/go_modules/file_updater_spec.rb'
     - 'npm_and_yarn/spec/dependabot/npm_and_yarn/update_checker_spec.rb'
-    - 'bun/spec/dependabot/bun/update_checker_spec.rb'
     - 'nuget/spec/dependabot/nuget/update_checker_spec.rb'
     - 'python/spec/dependabot/python/file_updater_spec.rb'
     - 'python/spec/dependabot/python/update_checker_spec.rb'

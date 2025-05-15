@@ -1,0 +1,20 @@
+GIT
+  remote: https://github.com/dependabot-fixtures/rubygems-circular-dependency
+  revision: 3c85f0bd8d6977b4dfda6a12acf93a282c4f5bf1
+  specs:
+    rubygems-circular-dependency (0.0.1)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    business (1.4.0)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  business
+  rubygems-circular-dependency!
+
+BUNDLED WITH
+   1.17.3

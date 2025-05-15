@@ -3,7 +3,6 @@
 
 require "sorbet-runtime"
 require "dependabot/credential"
-require "dependabot/ecosystem"
 
 module Dependabot
   module FileParsers
@@ -53,11 +52,6 @@ module Dependabot
 
       sig { abstract.returns(T::Array[Dependabot::Dependency]) }
       def parse; end
-
-      sig { returns(T.nilable(Ecosystem)) }
-      def ecosystem
-        nil
-      end
 
       private
 

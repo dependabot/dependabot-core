@@ -32,6 +32,7 @@ updates:
   # Watch the per-ecosystem native helpers
   - package-ecosystem: "composer"
     directories:
+      - "/composer/helpers/v1"
       - "/composer/helpers/v2"
     schedule:
       interval: "weekly"
@@ -123,15 +124,13 @@ updates:
     groups:
       common:
         patterns:
-          - hashin
+          - pip
           - cython
           - flake8
-      # Keep the package managers themselves separate because they are higher risk
-      # and also higher visibility--ie, users generally want latest, so we don't
-      # want breakage in the `common` group to prevent updating package manager versions
-      pip:
+      poetry:
         patterns:
-          - pip
+          - poetry
+          - hashin
       pip-tools:
         patterns:
           - pip-tools
@@ -139,29 +138,8 @@ updates:
         patterns:
           - pipfile
           - pipenv
-      poetry:
-        patterns:
-          - poetry
   - package-ecosystem: "pub"
     directory: "/pub/helpers"
-    schedule:
-      interval: "weekly"
-      day: "sunday"
-      time: "16:00"
-  - package-ecosystem: "nuget"
-    directory: "/nuget/helpers/lib/NuGetUpdater"
-    schedule:
-      interval: "weekly"
-      day: "sunday"
-      time: "16:00"
-  - package-ecosystem: "dotnet-sdk"
-    directory: "/nuget/helpers/lib/NuGetUpdater"
-    schedule:
-      interval: "weekly"
-      day: "sunday"
-      time: "16:00"
-  - package-ecosystem: "gitsubmodule"
-    directory: "/"
     schedule:
       interval: "weekly"
       day: "sunday"

@@ -20,11 +20,9 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
       credentials: credentials,
       ignored_versions: ignored_versions,
       raise_on_ignored: raise_on_ignored,
-      security_advisories: security_advisories,
-      cooldown_options: cooldown_options
+      security_advisories: security_advisories
     )
   end
-  let(:cooldown_options) { nil }
   let(:credentials) do
     [{
       "type" => "git_source",
@@ -466,79 +464,6 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
 
             it { is_expected.to eq(Gem::Version.new("2.0.0-pre3")) }
           end
-        end
-      end
-    end
-
-    describe "#latest_version with cooldown options" do
-      subject(:latest_version) { finder.latest_version }
-
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:enable_cooldown_for_cargo).and_return(true)
-        stub_request(:get, sparse_registry_url).to_return(status: 200, body: sparse_registry_response)
-      end
-
-      let(:cooldown_options) do
-        Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7)
-      end
-      let(:expected_cooldown_options) do
-        Dependabot::Package::ReleaseCooldownOptions.new(
-          default_days: 7,
-          semver_major_days: 7,
-          semver_minor_days: 7,
-          semver_patch_days: 7,
-          include: [],
-          exclude: []
-        )
-      end
-
-      context "when the latest version is released" do
-        let(:sparse_registry_response) do
-          <<~BODY
-            {"name": "hello-world", "vers": "1.0.0", "created_at": "2024-12-02T20:07:38.990663Z", "deps": [], "cksum": "b2c263921f1114820f4acc6b542d72bbc859ce7023c5b235346b157074dcccc7", "features": {}, "yanked": false, "links": null}
-            {"name": "hello-world", "vers": "2.0.0", "created_at": "#{Time.now}", "deps": [], "cksum": "8a55b58def1ecc7aa8590c7078f379ec9a85328363ffb81d4354314b132b95c4", "features": {}, "yanked": false, "links": null}
-          BODY
-        end
-
-        context "when new version is released but it is filtered out due to cooldown period" do
-          let(:requirements) do
-            [{
-              file: "Cargo.toml",
-              requirement: "~2.0.0",
-              groups: ["dependencies"],
-              source: {
-                type: "registry",
-                name: "honeyankit-test",
-                index: "sparse+https://cargo.cloudsmith.io/honeyankit/test/",
-                dl: "https://dl.cloudsmith.io/basic/honeyankit/test/cargo/{crate}-{version}.crate",
-                api: "https://cargo.cloudsmith.io/honeyankit/test"
-              }
-            }]
-          end
-
-          it { is_expected.to eq(Gem::Version.new("1.0.0")) }
-        end
-
-        context "when new version is released but and cooldown is disabled" do
-          let(:cooldown_options) { nil }
-
-          let(:requirements) do
-            [{
-              file: "Cargo.toml",
-              requirement: "~2.0.0",
-              groups: ["dependencies"],
-              source: {
-                type: "registry",
-                name: "honeyankit-test",
-                index: "sparse+https://cargo.cloudsmith.io/honeyankit/test/",
-                dl: "https://dl.cloudsmith.io/basic/honeyankit/test/cargo/{crate}-{version}.crate",
-                api: "https://cargo.cloudsmith.io/honeyankit/test"
-              }
-            }]
-          end
-
-          it { is_expected.to eq(Gem::Version.new("2.0.0")) }
         end
       end
     end

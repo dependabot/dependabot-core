@@ -854,30 +854,4 @@ RSpec.describe Dependabot::Cargo::FileParser do
       end
     end
   end
-
-  describe "#ecosystem" do
-    subject(:ecosystem) { parser.ecosystem }
-
-    it "has the correct name" do
-      expect(ecosystem.name).to eq "rust"
-    end
-
-    describe "#package_manager" do
-      subject(:package_manager) { ecosystem.package_manager }
-
-      it "returns the correct package manager" do
-        expect(package_manager.name).to eq "cargo"
-        expect(package_manager.requirement).to be_nil
-      end
-    end
-
-    describe "#language" do
-      subject(:language) { ecosystem.language }
-
-      it "returns the correct language" do
-        expect(language.name).to eq "rust"
-        expect(language.requirement).to be_nil
-      end
-    end
-  end
 end

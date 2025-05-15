@@ -116,16 +116,14 @@ module Dependabot
       end
 
       def latest_version_finder
-        @latest_version_finder ||=
-          LatestVersionFinder.new(
-            dependency: dependency,
-            dependency_files: dependency_files,
-            credentials: credentials,
-            ignored_versions: ignored_versions,
-            security_advisories: security_advisories,
-            cooldown_options: update_cooldown,
-            raise_on_ignored: raise_on_ignored
-          )
+        @latest_version_finder ||= LatestVersionFinder.new(
+          dependency: dependency,
+          dependency_files: dependency_files,
+          credentials: credentials,
+          ignored_versions: ignored_versions,
+          raise_on_ignored: raise_on_ignored,
+          security_advisories: security_advisories
+        )
       end
 
       def latest_version_for_git_dependency

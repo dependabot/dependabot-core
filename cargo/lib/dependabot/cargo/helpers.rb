@@ -21,12 +21,10 @@ module Dependabot
 
           token = "placeholder_token"
           if cred["token"].nil?
-            Dependabot.logger.info("No token found for #{cred['registry']}, dependabot-cli proxy will inject it")
+            puts "Setting #{token_env_var} to 'placeholder_token' because dependabot-cli proxy will override it anyway"
           else
             token = cred["token"]
-            Dependabot.logger.info(
-              "Token found for #{cred['registry']}, setting #{token_env_var} to provided token value"
-            )
+            puts "Setting #{token_env_var} to provided token value"
           end
 
           ENV[token_env_var] ||= token

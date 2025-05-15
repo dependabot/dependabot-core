@@ -5,13 +5,6 @@ shared: &shared
   - 'updater/Gemfil*'
   - 'omnibus/**'
   - '.github/workflows/ci.yml'
-dry_run:
-  - *shared
-  - 'bin/dry-run.rb'
-  - 'bin/spec/**'
-bun:
-  - *shared
-  - 'bun/**'
 bundler:
   - *shared
   - 'bundler/**'
@@ -30,12 +23,6 @@ devcontainers:
 docker:
   - *shared
   - 'docker/**'
-docker_compose:
-  - *shared
-  - 'docker_compose/**'
-dotnet_sdk:
-  - *shared
-  - 'dotnet_sdk/**'
 elm:
   - *shared
   - 'elm/**'
@@ -76,9 +63,3 @@ swift:
 terraform:
   - *shared
   - 'terraform/**'
-uv:
-  - *shared
-  - 'uv/**'
-helm:
-  - *shared
-  - 'helm/**'

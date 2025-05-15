@@ -1,0 +1,26 @@
+GEM
+  remote: https://rubygems.org/
+  remote: https://username:password@gems.contribsys.com/
+  specs:
+    concurrent-ruby (1.0.5)
+    connection_pool (2.2.1)
+    rack (1.4.7)
+    rack-protection (1.5.3)
+      rack
+    redis (3.3.3)
+    sidekiq (4.2.9)
+      concurrent-ruby (~> 1.0)
+      connection_pool (~> 2.2, >= 2.2.0)
+      rack-protection (>= 1.5.0)
+      redis (~> 3.2, >= 3.2.1)
+    sidekiq-pro (3.4.4)
+      sidekiq (>= 4.1.5)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  sidekiq-pro!
+
+BUNDLED WITH
+   1.15.3

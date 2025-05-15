@@ -7,8 +7,9 @@
       "request": "launch",
       "command": "rspec",
       "cwd": "${workspaceRoot}/${input:ecosystem}",
+      "useBundler": true,
       "script": "${file}",
-      "rdbgPath": "bundle exec rdbg"
+      "args": ["--tag", "focus"]
     },
     {
       "name": "Debug dry run",
@@ -84,7 +85,6 @@
         "composer",
         "dep",
         "docker",
-        "dotnet_sdk",
         "elm",
         "github_actions",
         "go_modules",
@@ -110,7 +110,6 @@
         "common",
         "composer",
         "docker",
-        "dotnet_sdk",
         "elm",
         "github_actions",
         "go_modules",

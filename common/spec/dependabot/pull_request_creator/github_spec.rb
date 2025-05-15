@@ -485,10 +485,19 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
           )
         end
 
-        it "raises a helpful error" do
-          expect { creator.create }
-            .to raise_error(Dependabot::PullRequestCreator::BranchAlreadyExists, /business-1.5.0 already exists/)
-          expect(WebMock).not_to have_requested(:post, "#{repo_api_url}/pulls")
+        it "creates a PR with the right details" do
+          creator.create
+
+          expect(WebMock)
+            .to have_requested(:post, "#{repo_api_url}/pulls")
+            .with(
+              body: {
+                base: "master",
+                head: "dependabot/bundler/business-1.5.0",
+                title: "PR name",
+                body: "PR msg"
+              }
+            )
         end
       end
 
@@ -528,10 +537,9 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
               )
           end
 
-          it "raises a helpful error" do
+          it "raises the error" do
             expect { creator.create }
-              .to raise_error(Dependabot::PullRequestCreator::BranchAlreadyExists, /business-1.5.0 already exists/)
-            expect(WebMock).not_to have_requested(:post, "#{repo_api_url}/pulls")
+              .to raise_error(Octokit::UnprocessableEntity)
           end
         end
 
@@ -541,7 +549,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
                   "&state=all"
             stub_request(:get, url).to_return(
               status: 200,
-              body: "[{ \"closed\": true }]",
+              body: "[{ \"merged\": true }]",
               headers: json_header
             )
             stub_request(
@@ -600,33 +608,6 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
               end
             end
           end
-        end
-      end
-    end
-
-    context "when the branch already exists" do
-      let(:service_pack_response) { fixture("git", "upload_packs", "existing-branch-with-no-pr") }
-
-      context "when the branch already exists" do
-        before do
-          url = "#{repo_api_url}/pulls?head=gocardless:#{branch_name}" \
-                "&state=all"
-          stub_request(:get, url)
-            .to_return(status: 200, body: "[]", headers: json_header)
-          stub_request(
-            :patch,
-            "#{repo_api_url}/git/refs/heads/#{branch_name}"
-          ).to_return(
-            status: 200,
-            body: fixture("github", "update_ref.json"),
-            headers: json_header
-          )
-        end
-
-        it "returns a suitable exception" do
-          expect { creator.create }
-            .to raise_error(Dependabot::PullRequestCreator::BranchAlreadyExists,
-                            "Duplicate branch #{branch_name} already exists")
         end
       end
     end

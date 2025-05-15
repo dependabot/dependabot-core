@@ -1,0 +1,15 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    business (1.4.1)
+    statesman (1.2.1)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  business (~> 1.4.0)
+  statesman (~> 1.2.0)
+
+BUNDLED WITH
+   1.10.6

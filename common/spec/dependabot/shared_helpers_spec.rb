@@ -16,18 +16,6 @@ RSpec.describe Dependabot::SharedHelpers do
   let(:spec_root) { File.join(File.dirname(__FILE__), "..") }
   let(:tmp) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
 
-  let(:enable_shared_helpers_command_timeout) { false }
-
-  before do
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_shared_helpers_command_timeout)
-      .and_return(enable_shared_helpers_command_timeout)
-  end
-
-  after do
-    Dependabot::Experiments.reset!
-  end
-
   describe ".in_a_temporary_directory" do
     def existing_tmp_folders
       Dir.glob(File.join(tmp, "*"))
@@ -161,173 +149,84 @@ RSpec.describe Dependabot::SharedHelpers do
     let(:stderr_to_stdout) { false }
     let(:error_class) { Dependabot::SharedHelpers::HelperSubprocessFailed }
 
-    context "when enable_shared_helpers_command_timeout is disabled" do
-      let(:enable_shared_helpers_command_timeout) { false }
+    context "when the subprocess is successful" do
+      it "returns the result" do
+        expect(run_subprocess).to eq("function" => function, "args" => args)
+      end
 
-      context "when the subprocess is successful" do
-        it "returns the result" do
+      context "with an env" do
+        let(:env) { { "MIX_EXS" => "something" } }
+
+        it "runs the function passed, as expected" do
           expect(run_subprocess).to eq("function" => function, "args" => args)
         end
-
-        context "with an env" do
-          let(:env) { { "MIX_EXS" => "something" } }
-
-          it "runs the function passed, as expected" do
-            expect(run_subprocess).to eq("function" => function, "args" => args)
-          end
-        end
-
-        context "when sending stderr to stdout" do
-          let(:stderr_to_stdout) { true }
-          let(:function) { "useful_error" }
-
-          it "raises a HelperSubprocessFailed error with stderr output" do
-            expect { run_subprocess }
-              .to raise_error(
-                Dependabot::SharedHelpers::HelperSubprocessFailed
-              ) do |error|
-                expect(error.message)
-                  .to include("Some useful error")
-              end
-          end
-        end
       end
 
-      context "when the subprocess fails gracefully" do
-        let(:function) { "error" }
+      context "when sending stderr to stdout" do
+        let(:stderr_to_stdout) { true }
+        let(:function) { "useful_error" }
 
-        it "raises a HelperSubprocessFailed error" do
+        it "raises a HelperSubprocessFailed error with stderr output" do
           expect { run_subprocess }
-            .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
-        end
-      end
-
-      context "when the subprocess fails gracefully with sensitive data" do
-        let(:function) { "sensitive_error" }
-
-        it "raises a HelperSubprocessFailed error" do
-          expect { run_subprocess }
-            .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed) do |error|
-              expect(error.message).to include("Something went wrong: https://www.example.com")
+            .to raise_error(
+              Dependabot::SharedHelpers::HelperSubprocessFailed
+            ) do |error|
+              expect(error.message)
+                .to include("Some useful error")
             end
-        end
-      end
-
-      context "when the subprocess fails ungracefully" do
-        let(:function) { "hard_error" }
-
-        it "raises a HelperSubprocessFailed error" do
-          expect { run_subprocess }
-            .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
-        end
-      end
-
-      context "when the subprocess is killed" do
-        let(:function) { "killed" }
-
-        it "raises a HelperSubprocessFailed error" do
-          expect { run_subprocess }
-            .to(raise_error do |error|
-              expect(error)
-                .to be_a(Dependabot::SharedHelpers::HelperSubprocessFailed)
-              expect(error.error_context[:process_termsig]).to eq(9)
-            end)
-        end
-      end
-
-      context "when a custom error class is passed" do
-        let(:error_class) { EcoSystemHelperSubprocessFailed }
-        let(:function) { "hard_error" }
-
-        it "raises the custom error class" do
-          expect { run_subprocess }
-            .to raise_error(EcoSystemHelperSubprocessFailed)
         end
       end
     end
 
-    context "when enable_shared_helpers_command_timeout is enabled" do
-      let(:enable_shared_helpers_command_timeout) { true }
+    context "when the subprocess fails gracefully" do
+      let(:function) { "error" }
 
-      context "when the subprocess is successful" do
-        it "returns the result" do
-          expect(run_subprocess).to eq("function" => function, "args" => args)
-        end
+      it "raises a HelperSubprocessFailed error" do
+        expect { run_subprocess }
+          .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
+      end
+    end
 
-        context "with an env" do
-          let(:env) { { "MIX_EXS" => "something" } }
+    context "when the subprocess fails gracefully with sensitive data" do
+      let(:function) { "sensitive_error" }
 
-          it "runs the function passed, as expected" do
-            expect(run_subprocess).to eq("function" => function, "args" => args)
+      it "raises a HelperSubprocessFailed error" do
+        expect { run_subprocess }
+          .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed) do |error|
+            expect(error.message).to include("Something went wrong: https://www.example.com")
           end
-        end
-
-        context "when sending stderr to stdout" do
-          let(:stderr_to_stdout) { true }
-          let(:function) { "useful_error" }
-
-          it "raises a HelperSubprocessFailed error with stderr output" do
-            expect { run_subprocess }
-              .to raise_error(
-                Dependabot::SharedHelpers::HelperSubprocessFailed
-              ) do |error|
-                expect(error.message)
-                  .to include("Some useful error")
-              end
-          end
-        end
       end
+    end
 
-      context "when the subprocess fails gracefully" do
-        let(:function) { "error" }
+    context "when the subprocess fails ungracefully" do
+      let(:function) { "hard_error" }
 
-        it "raises a HelperSubprocessFailed error" do
-          expect { run_subprocess }
-            .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
-        end
+      it "raises a HelperSubprocessFailed error" do
+        expect { run_subprocess }
+          .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
       end
+    end
 
-      context "when the subprocess fails gracefully with sensitive data" do
-        let(:function) { "sensitive_error" }
+    context "when the subprocess is killed" do
+      let(:function) { "killed" }
 
-        it "raises a HelperSubprocessFailed error" do
-          expect { run_subprocess }
-            .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed) do |error|
-              expect(error.message).to include("Something went wrong: https://www.example.com")
-            end
-        end
+      it "raises a HelperSubprocessFailed error" do
+        expect { run_subprocess }
+          .to(raise_error do |error|
+            expect(error)
+              .to be_a(Dependabot::SharedHelpers::HelperSubprocessFailed)
+            expect(error.error_context[:process_termsig]).to eq(9)
+          end)
       end
+    end
 
-      context "when the subprocess fails ungracefully" do
-        let(:function) { "hard_error" }
+    context "when a custom error class is passed" do
+      let(:error_class) { EcoSystemHelperSubprocessFailed }
+      let(:function) { "hard_error" }
 
-        it "raises a HelperSubprocessFailed error" do
-          expect { run_subprocess }
-            .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
-        end
-      end
-
-      context "when the subprocess is killed" do
-        let(:function) { "killed" }
-
-        it "raises a HelperSubprocessFailed error" do
-          expect { run_subprocess }
-            .to(raise_error do |error|
-              expect(error)
-                .to be_a(Dependabot::SharedHelpers::HelperSubprocessFailed)
-              expect(error.error_context[:process_termsig]).to eq(9)
-            end)
-        end
-      end
-
-      context "when a custom error class is passed" do
-        let(:error_class) { EcoSystemHelperSubprocessFailed }
-        let(:function) { "hard_error" }
-
-        it "raises the custom error class" do
-          expect { run_subprocess }
-            .to raise_error(EcoSystemHelperSubprocessFailed)
-        end
+      it "raises the custom error class" do
+        expect { run_subprocess }
+          .to raise_error(EcoSystemHelperSubprocessFailed)
       end
     end
   end
@@ -340,146 +239,70 @@ RSpec.describe Dependabot::SharedHelpers do
     let(:command) { File.join(spec_root, "helpers/test/run_bash") + " output" }
     let(:env) { nil }
 
-    context "when enable_shared_helpers_command_timeout is disabled" do
-      let(:enable_shared_helpers_command_timeout) { false }
+    context "when the subprocess is successful" do
+      it "returns the result" do
+        expect(run_shell_command).to eq("output\n")
+      end
+    end
 
-      context "when the subprocess is successful" do
-        it "returns the result" do
-          expect(run_shell_command).to eq("output\n")
-        end
+    context "with bash command as argument" do
+      let(:command) do
+        File.join(spec_root, "helpers/test/run_bash") + " $(ps)"
       end
 
-      context "with bash command as argument" do
-        let(:command) do
-          File.join(spec_root, "helpers/test/run_bash") + " $(ps)"
-        end
-
-        it "returns the argument" do
-          expect(run_shell_command).to eq("$(ps)\n")
-        end
-
-        context "when allowing unsafe shell command" do
-          subject(:run_shell_command) do
-            described_class
-              .run_shell_command(command, allow_unsafe_shell_command: true)
-          end
-
-          it "returns the command output" do
-            output = run_shell_command
-            expect(output).not_to eq("$(ps)\n")
-            expect(output).to include("PID")
-          end
-        end
+      it "returns the argument" do
+        expect(run_shell_command).to eq("$(ps)\n")
       end
 
-      context "with an environment variable" do
-        let(:env) { { "TEST_ENV" => "prefix:" } }
-
-        it "is available to the command" do
-          expect(run_shell_command).to eq("prefix:output\n")
-        end
-      end
-
-      context "when the subprocess exits" do
-        let(:command) { File.join(spec_root, "helpers/test/error_bash") }
-
-        it "raises a HelperSubprocessFailed error" do
-          expect { run_shell_command }
-            .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
-        end
-      end
-
-      context "when the subprocess exits with out of disk error" do
-        let(:command) { File.join(spec_root, "helpers/test/error_bash disk") }
-
-        it "raises a HelperSubprocessFailed out of disk error" do
-          expect { run_shell_command }
-            .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed) do |error|
-              expect(error.message).to include("No space left on device")
-            end
+      context "when allowing unsafe shell command" do
+        subject(:run_shell_command) do
+          described_class
+            .run_shell_command(command, allow_unsafe_shell_command: true)
         end
 
-        context "when the subprocess exits with out of memory error" do
-          let(:command) { File.join(spec_root, "helpers/test/error_bash memory") }
-
-          it "raises a HelperSubprocessFailed out of memory error" do
-            expect { run_shell_command }
-              .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed) do |error|
-                expect(error.message).to include("MemoryError")
-              end
-          end
+        it "returns the command output" do
+          output = run_shell_command
+          expect(output).not_to eq("$(ps)\n")
+          expect(output).to include("PID")
         end
       end
     end
 
-    context "when enable_shared_helpers_command_timeout is enabled" do
-      let(:enable_shared_helpers_command_timeout) { true }
+    context "with an environment variable" do
+      let(:env) { { "TEST_ENV" => "prefix:" } }
 
-      context "when the subprocess is successful" do
-        it "returns the result" do
-          expect(run_shell_command).to eq("output\n")
-        end
+      it "is available to the command" do
+        expect(run_shell_command).to eq("prefix:output\n")
       end
+    end
 
-      context "with bash command as argument" do
-        let(:command) do
-          File.join(spec_root, "helpers/test/run_bash") + " $(ps)"
-        end
+    context "when the subprocess exits" do
+      let(:command) { File.join(spec_root, "helpers/test/error_bash") }
 
-        it "returns the argument" do
-          expect(run_shell_command).to eq("$(ps)\n")
-        end
+      it "raises a HelperSubprocessFailed error" do
+        expect { run_shell_command }
+          .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
+      end
+    end
 
-        context "when allowing unsafe shell command" do
-          subject(:run_shell_command) do
-            described_class
-              .run_shell_command(command, allow_unsafe_shell_command: true)
+    context "when the subprocess exits with out of disk error" do
+      let(:command) { File.join(spec_root, "helpers/test/error_bash disk") }
+
+      it "raises a HelperSubprocessFailed out of disk error" do
+        expect { run_shell_command }
+          .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed) do |error|
+            expect(error.message).to include("No space left on device")
           end
-
-          it "returns the command output" do
-            output = run_shell_command
-            expect(output).not_to eq("$(ps)\n")
-            expect(output).to include("PID")
-          end
-        end
       end
 
-      context "with an environment variable" do
-        let(:env) { { "TEST_ENV" => "prefix:" } }
+      context "when the subprocess exits with out of memory error" do
+        let(:command) { File.join(spec_root, "helpers/test/error_bash memory") }
 
-        it "is available to the command" do
-          expect(run_shell_command).to eq("prefix:output\n")
-        end
-      end
-
-      context "when the subprocess exits" do
-        let(:command) { File.join(spec_root, "helpers/test/error_bash") }
-
-        it "raises a HelperSubprocessFailed error" do
-          expect { run_shell_command }
-            .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
-        end
-      end
-
-      context "when the subprocess exits with out of disk error" do
-        let(:command) { File.join(spec_root, "helpers/test/error_bash disk") }
-
-        it "raises a HelperSubprocessFailed out of disk error" do
+        it "raises a HelperSubprocessFailed out of memory error" do
           expect { run_shell_command }
             .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed) do |error|
-              expect(error.message).to include("No space left on device")
+              expect(error.message).to include("MemoryError")
             end
-        end
-
-        context "when the subprocess exits with out of memory error" do
-          let(:command) { File.join(spec_root, "helpers/test/error_bash memory") }
-
-          it "raises a HelperSubprocessFailed out of memory error" do
-            expect { run_shell_command }
-              .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed) do |error|
-                expect(error.message).to include("MemoryError")
-              end
-          end
         end
       end
     end
@@ -599,16 +422,12 @@ RSpec.describe Dependabot::SharedHelpers do
     end
 
     let(:credentials) { [] }
-    let(:git_config_path) { File.expand_path("XXXXXXXXXXXXXXXX.gitconfig", tmp) }
+    let(:git_config_path) { File.expand_path(".gitconfig", tmp) }
     let(:configured_git_config) { with_git_configured { `cat #{git_config_path}` } }
     let(:configured_git_credentials) { with_git_configured { `cat #{Dir.pwd}/git.store` } }
 
     def with_git_configured(&block)
       Dependabot::SharedHelpers.with_git_configured(credentials: credentials, &block)
-    end
-
-    before do
-      allow(SecureRandom).to receive(:hex).and_return("XXXXXXXXXXXXXXXX")
     end
 
     context "when the global .gitconfig has a safe directory" do
@@ -753,10 +572,10 @@ RSpec.describe Dependabot::SharedHelpers do
     context "when the host has run out of disk space" do
       before do
         allow(File).to receive(:open)
-          .with(git_config_path, anything)
+          .with(described_class::GIT_CONFIG_GLOBAL_PATH, anything)
           .and_raise(Errno::ENOSPC)
         allow(FileUtils).to receive(:rm_f)
-          .with(git_config_path)
+          .with(described_class::GIT_CONFIG_GLOBAL_PATH)
       end
 
       specify { expect { configured_git_config }.to raise_error(Dependabot::OutOfDisk) }

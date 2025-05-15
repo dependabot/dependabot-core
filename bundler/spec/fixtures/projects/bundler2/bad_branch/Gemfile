@@ -1,11 +1,6 @@
 # frozen_string_literal: true
-
 source "https://rubygems.org"
 
 gem "business", "~> 1.4.0"
-gem "prius", git: "git@github.com:dependabot-fixtures/does-not-exist"
 gem "statesman", "~> 1.2.0"
-<<<<<<<< HEAD:bundler/spec/fixtures/projects/bundler2/bad_branch/Gemfile
 gem "prius", git: "https://github.com/dependabot-fixtures/prius", branch: "bad"
-========
->>>>>>>> origin/main:bundler/spec/fixtures/projects/bundler2/private_git_source_no_lockfile/Gemfile

@@ -13,14 +13,11 @@
 "L: docker":
     - '(docker|kubernetes)'
 
-"L: docker:compose":
-    - '(docker_compose)'
-
 "L: elm":
     - '(elm)'
 
 "L: git:submodules":
-    - '(submodules)'
+    - '(git|submodules)'
 
 "L: github:actions":
     - '(actions)'
@@ -29,7 +26,7 @@
     - '(go|gomod)'
 
 "L: javascript":
-    - '(javascript|npm|pnpm|yarn|bun)'
+    - '(javascript|npm|pnpm|yarn)'
 
 "L: java:gradle":
     - '(gradle)'
@@ -47,16 +44,10 @@
     - '(dart|pub)'
 
 "L: python":
-    - '(python|pip|poetry|uv)'
-
-"L: python:uv":
-    - '(uv)'
+    - '(python|pip|poetry)'
 
 "L: terraform":
     - '(terraform)'
 
 "L: swift":
     - '(swift)'
-
-"L: helm":
-    - '(helm)'

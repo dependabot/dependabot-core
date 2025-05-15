@@ -20,26 +20,23 @@ RSpec.describe Dependabot::RegistryClient do
   describe "delegation to Excon" do
     describe "::get" do
       it "delegates requests using Dependabot defaults" do
-        expect(Excon).to receive(:get).with(url, **maven_defaults, **dependabot_defaults.merge({ retry_interval: 5 }))
+        expect(Excon).to receive(:get).with(url, **maven_defaults, **dependabot_defaults)
 
         described_class.get(url: url)
       end
 
       it "delegates headers correctly" do
         headers = { "Foo" => "Bar" }
-        expect(Excon).to receive(:get).with(url, **maven_defaults, **dependabot_defaults.merge({
-          headers: {
-            "Foo" => "Bar",
-            "User-Agent" => anything
-          },
-          retry_interval: 5
+        expect(Excon).to receive(:get).with(url, **maven_defaults, **dependabot_defaults.merge(headers: {
+          "Foo" => "Bar",
+          "User-Agent" => anything
         }))
 
         described_class.get(url: url, headers: headers)
       end
 
       it "delegates options correctly" do
-        options = { foo: "bar", retry_interval: 5 }
+        options = { foo: "bar" }
         expect(Excon).to receive(:get).with(url, **maven_defaults, **dependabot_defaults.merge(options))
 
         described_class.get(url: url, options: options)
@@ -53,8 +50,7 @@ RSpec.describe Dependabot::RegistryClient do
             "Foo" => "Bar",
             "User-Agent" => anything
           },
-          bar: "baaz",
-          retry_interval: 5
+          bar: "baaz"
         ))
 
         described_class.get(url: url, headers: headers, options: options)
@@ -63,10 +59,10 @@ RSpec.describe Dependabot::RegistryClient do
       it "ignores headers that are passed as options" do
         headers = { "Foo" => "Bar" }
         options = { headers: headers }
-        expect(Excon).to receive(:get).with(url, **maven_defaults, **dependabot_defaults.merge({ headers: {
+        expect(Excon).to receive(:get).with(url, **maven_defaults, **dependabot_defaults.merge(headers: {
           "Foo" => "Bar",
           "User-Agent" => anything
-        }, retry_interval: 5 }))
+        }))
 
         described_class.get(url: url, options: options)
       end
@@ -90,7 +86,7 @@ RSpec.describe Dependabot::RegistryClient do
       end
 
       it "delegates options correctly" do
-        options = { foo: "bar", retry_interval: 5 }
+        options = { foo: "bar" }
         expect(Excon).to receive(:head).with(url, **maven_defaults, **dependabot_defaults.merge(options))
 
         described_class.head(url: url, options: options)
