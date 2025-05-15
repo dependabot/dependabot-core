@@ -1776,6 +1776,14 @@ public class MSBuildHelperTests : TestBase
         yield return
         [
             // output
+            "Response status code does not indicate success: 401",
+            // expectedError
+            new PrivateSourceAuthenticationFailure(["http://localhost/test-feed"]),
+        ];
+
+        yield return
+        [
+            // output
             "Response status code does not indicate success: 403",
             // expectedError
             new PrivateSourceAuthenticationFailure(["http://localhost/test-feed"]),
