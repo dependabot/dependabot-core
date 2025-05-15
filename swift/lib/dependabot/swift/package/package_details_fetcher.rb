@@ -54,11 +54,11 @@ module Dependabot
           package_details(package_releases)
         end
 
+        # This method creates a PackageDetails object from the releases hashand returns it.
         sig do
           params(releases: T::Array[Dependabot::Package::PackageRelease])
             .returns(Dependabot::Package::PackageDetails)
         end
-        # This method creates a PackageDetails object from the releases hashand returns it.
         def package_details(releases)
           @package_details ||= T.let(
             Dependabot::Package::PackageDetails.new(
