@@ -1,4 +1,4 @@
-name: Dependency Review
+Romeo Rosete name: Dependency Review
 on: # yamllint disable-line rule:truthy
   pull_request:
     branches: [ main ]
