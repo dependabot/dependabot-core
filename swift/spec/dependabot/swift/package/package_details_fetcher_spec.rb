@@ -37,7 +37,7 @@ RSpec.describe Dependabot::Swift::Package::PackageDetailsFetcher do
       end
 
       before do
-        allow(Excon).to receive(:get).and_return(double(status: 200, body: json_response))
+        allow(Excon).to receive(:get).and_return(instance_double(status: 200, body: json_response))
       end
 
       it "fetches and parses the version and release date" do
@@ -52,7 +52,7 @@ RSpec.describe Dependabot::Swift::Package::PackageDetailsFetcher do
 
     context "when the API returns an empty response" do
       before do
-        allow(Excon).to receive(:get).and_return(double(status: 200, body: "[]"))
+        allow(Excon).to receive(:get).and_return(instance_double(status: 200, body: "[]"))
       end
 
       it "returns an empty PackageDetails object" do
@@ -65,7 +65,7 @@ RSpec.describe Dependabot::Swift::Package::PackageDetailsFetcher do
 
     context "when the API returns an error response" do
       before do
-        allow(Excon).to receive(:get).and_return(double(status: 404, body: ""))
+        allow(Excon).to receive(:get).and_return(instance_double(status: 404, body: ""))
       end
 
       it "raises an error" do
@@ -95,7 +95,7 @@ RSpec.describe Dependabot::Swift::Package::PackageDetailsFetcher do
 
       expect(result).to be_a(Dependabot::Package::PackageDetails)
       expect(result.releases.size).to eq(2)
-      expect(result.releases.map(&:version).map(&:to_s)).to eq(["1.1.7", "1.1.6"])
+      expect(result.releases.map { |x| x.version.to_s }).to eq(["1.1.7", "1.1.6"])
     end
   end
 
