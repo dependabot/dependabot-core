@@ -179,20 +179,22 @@ GEM
     addressable (2.8.7)
       public_suffix (>= 2.0.2, < 7.0)
     ast (2.4.2)
-    aws-eventstream (1.3.0)
-    aws-partitions (1.881.0)
-    aws-sdk-codecommit (1.63.0)
-      aws-sdk-core (~> 3, >= 3.188.0)
-      aws-sigv4 (~> 1.1)
-    aws-sdk-core (3.190.3)
+    aws-eventstream (1.3.2)
+    aws-partitions (1.1103.0)
+    aws-sdk-codecommit (1.85.0)
+      aws-sdk-core (~> 3, >= 3.216.0)
+      aws-sigv4 (~> 1.5)
+    aws-sdk-core (3.224.0)
       aws-eventstream (~> 1, >= 1.3.0)
-      aws-partitions (~> 1, >= 1.651.0)
-      aws-sigv4 (~> 1.8)
+      aws-partitions (~> 1, >= 1.992.0)
+      aws-sigv4 (~> 1.9)
+      base64
       jmespath (~> 1, >= 1.6.1)
-    aws-sdk-ecr (1.68.0)
-      aws-sdk-core (~> 3, >= 3.188.0)
-      aws-sigv4 (~> 1.1)
-    aws-sigv4 (1.8.0)
+      logger
+    aws-sdk-ecr (1.102.0)
+      aws-sdk-core (~> 3, >= 3.216.0)
+      aws-sigv4 (~> 1.5)
+    aws-sigv4 (1.11.0)
       aws-eventstream (~> 1, >= 1.0.2)
     base64 (0.2.0)
     bigdecimal (3.1.8)
@@ -260,6 +262,7 @@ GEM
     llhttp-ffi (0.4.0)
       ffi-compiler (~> 1.0)
       rake (~> 13.0)
+    logger (1.7.0)
     mime-types (3.4.1)
       mime-types-data (~> 3.2015)
     mime-types-data (3.2022.0105)
@@ -516,12 +519,12 @@ DEPENDENCIES
 CHECKSUMS
   addressable (2.8.7) sha256=462986537cf3735ab5f3c0f557f14155d778f4b43ea4f485a9deb9c8f7c58232
   ast (2.4.2) sha256=1e280232e6a33754cde542bc5ef85520b74db2aac73ec14acef453784447cc12
-  aws-eventstream (1.3.0) sha256=f1434cc03ab2248756eb02cfa45e900e59a061d7fbdc4a9fd82a5dd23d796d3f
-  aws-partitions (1.881.0) sha256=c02786a96b2fe8097b61d3838992a33b31a52649edd8301b9fad6efcd6e5b6fe
-  aws-sdk-codecommit (1.63.0) sha256=aa00135132d8e19525c0d48d1969861f5b018be4b4801024de88e2020dc33725
-  aws-sdk-core (3.190.3) sha256=f9b66775d79112bcffcd031aa2c97aac2b1819fa2d917b1c72557635260f3d41
-  aws-sdk-ecr (1.68.0) sha256=86763b7291170dc6dbbf827f35d4142683622e68d7dff6719eeb98b13b677e80
-  aws-sigv4 (1.8.0) sha256=84dd99768b91b93b63d1d8e53ee837cfd06ab402812772a7899a78f9f9117cbc
+  aws-eventstream (1.3.2) sha256=7e2c3a55ca70d7861d5d3c98e47daa463ed539c349caba22b48305b8919572d7
+  aws-partitions (1.1103.0) sha256=3138c7adf7f159ee93df76e5162cb75f3867784f2d2f162629cd9145ddec64f8
+  aws-sdk-codecommit (1.85.0) sha256=d28ffd21c778ef41c077182c675380ea9a6e7d41ff7339fba1ffe51c70c2e036
+  aws-sdk-core (3.224.0) sha256=c617aae3f43ba2bfe9f819c1a31c7c9dbda3e1d1a33c746c23c4dc15638817ac
+  aws-sdk-ecr (1.102.0) sha256=bc8194617752d47bda3c4576ee443e5745efa20ab24305483121b098cae85843
+  aws-sigv4 (1.11.0) sha256=50a8796991a862324442036ad7a395920572b84bb6cd29b945e5e1800e8da1db
   base64 (0.2.0) sha256=0f25e9b21a02a0cc0cea8ef92b2041035d39350946e8789c562b2d1a3da01507
   bigdecimal (3.1.8) sha256=a89467ed5a44f8ae01824af49cbc575871fa078332e8f77ea425725c1ffe27be
   citrus (3.0.2) sha256=4ec2412fc389ad186735f4baee1460f7900a8e130ffe3f216b30d4f9c684f650
@@ -582,6 +585,7 @@ CHECKSUMS
   json (2.6.3) sha256=86aaea16adf346a2b22743d88f8dcceeb1038843989ab93cda44b5176c845459
   language_server-protocol (3.17.0.3) sha256=3d5c58c02f44a20d972957a9febe386d7e7468ab3900ce6bd2b563dd910c6b3f
   llhttp-ffi (0.4.0) sha256=e5f7327db3cf8007e648342ef76347d6e0ae545a8402e519cca9c886eb37b001
+  logger (1.7.0) sha256=196edec7cc44b66cfb40f9755ce11b392f21f7967696af15d274dde7edff0203
   mime-types (3.4.1) sha256=6bcf8b0e656b6ae9977bdc1351ef211d0383252d2f759a59ef4bcf254542fc46
   mime-types-data (3.2022.0105) sha256=d8c401ba9ea8b648b7145b90081789ec714e91fd625d82c5040079c5ea696f00
   mini_mime (1.1.5) sha256=8681b7e2e4215f2a159f9400b5816d85e9d8c6c6b491e96a12797e798f8bccef
