@@ -37,7 +37,8 @@ RSpec.describe Dependabot::Swift::Package::PackageDetailsFetcher do
       end
 
       before do
-        allow(Excon).to receive(:get).and_return(instance_double(status: 200, body: json_response))
+        response_double = instance_double(Excon::Response, status: 200, body: json_response)
+        allow(Excon).to receive(:get).and_return(response_double)
       end
 
       it "fetches and parses the version and release date" do
@@ -52,7 +53,8 @@ RSpec.describe Dependabot::Swift::Package::PackageDetailsFetcher do
 
     context "when the API returns an empty response" do
       before do
-        allow(Excon).to receive(:get).and_return(instance_double(status: 200, body: "[]"))
+        response_double = instance_double(Excon::Response, status: 200, body: "[]")
+        allow(Excon).to receive(:get).and_return(response_double)
       end
 
       it "returns an empty PackageDetails object" do
@@ -65,7 +67,8 @@ RSpec.describe Dependabot::Swift::Package::PackageDetailsFetcher do
 
     context "when the API returns an error response" do
       before do
-        allow(Excon).to receive(:get).and_return(instance_double(status: 404, body: ""))
+        response_double = instance_double(Excon::Response, status: 404, body: "")
+        allow(Excon).to receive(:get).and_return(response_double)
       end
 
       it "raises an error" do
