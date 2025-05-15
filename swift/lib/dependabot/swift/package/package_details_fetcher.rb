@@ -22,7 +22,7 @@ module Dependabot
 
         sig { params(dependency: Dependency, credentials: T::Array[Dependabot::Credential]).void }
         def initialize(dependency:, credentials:)
-          super(dependency: dependency, credentials: credentials)
+          super
           @dependency = dependency
           @credentials = credentials
         end
@@ -58,8 +58,8 @@ module Dependabot
           params(releases: T::Array[Dependabot::Package::PackageRelease])
             .returns(Dependabot::Package::PackageDetails)
         end
-        # This method creates a PackageDetails object from the releases hash
-        # and returns it.
+
+        # This method creates a PackageDetails object from the releases hashand returns it.
         def package_details(releases)
           @package_details ||= T.let(
             Dependabot::Package::PackageDetails.new(
