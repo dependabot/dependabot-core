@@ -32,12 +32,29 @@ module Dependabot
         normalizer = name_normaliser_for(dependency)
         dep_name = T.must(normalizer).call(dependency.name)
 
+        if dependency.version.nil? && dependency.requirements.any?
+          dependency = extract_base_version_from_requirement(dependency)
+        end
+
         @ignore_conditions
           .select { |ic| self.class.wildcard_match?(T.must(normalizer).call(ic.dependency_name), dep_name) }
           .map { |ic| ic.ignored_versions(dependency, security_updates_only) }
           .flatten
           .compact
           .uniq
+      end
+
+      sig { params(dependency: Dependency).returns(Dependency) }
+      def extract_base_version_from_requirement(dependency)
+        requirements = dependency.requirements
+        requirement = T.must(requirements.first)[:requirement]
+        version = requirement&.match(/\d+\.\d+\.\d+/)&.to_s
+        Dependabot::Dependency.new(
+          name: dependency.name,
+          version: version,
+          requirements: dependency.requirements,
+          package_manager: dependency.package_manager
+        )
       end
 
       sig { params(wildcard_string: T.nilable(String), candidate_string: T.nilable(String)).returns(T::Boolean) }

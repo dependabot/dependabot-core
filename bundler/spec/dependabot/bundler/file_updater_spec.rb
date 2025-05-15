@@ -54,6 +54,50 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
 
   it_behaves_like "a dependency file updater"
 
+  describe "#updated_files_regex" do
+    subject(:updated_files_regex) { described_class.updated_files_regex }
+
+    it "is not empty" do
+      expect(updated_files_regex).not_to be_empty
+    end
+
+    context "when files match the regex patterns" do
+      it "returns true for files that should be updated" do
+        matching_files = [
+          "Gemfile",
+          "Gemfile.lock",
+          "gems.rb",
+          "gems.locked",
+          "some_project.gemspec",
+          "vendor/cache/business-1.5.0.gem",
+          "backend/Gemfile",
+          "backend/Gemfile.lock",
+          "backend/gems.rb",
+          "backend/gems.locked"
+        ]
+
+        matching_files.each do |file_name|
+          expect(updated_files_regex).to(be_any { |regex| file_name.match?(regex) })
+        end
+      end
+
+      it "returns false for files that should not be updated" do
+        non_matching_files = [
+          "README.md",
+          ".github/workflow/main.yml",
+          "some_random_file.rb",
+          "requirements.txt",
+          "package-lock.json",
+          "package.json"
+        ]
+
+        non_matching_files.each do |file_name|
+          expect(updated_files_regex).not_to(be_any { |regex| file_name.match?(regex) })
+        end
+      end
+    end
+  end
+
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
 
@@ -334,11 +378,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
             expect(file.content).to include("statesman (1.3.1)")
           end
 
-          it "locks the yanked gem to the latest version allowed by the Gemfile", :bundler_v1_only do
-            expect(file.content).to include("business (1.18.0)")
-          end
-
-          it "does not touch the yanked gem", :bundler_v2_only do
+          it "does not touch the yanked gem" do
             expect(file.content).to include("business (1.4.1)")
           end
         end
@@ -355,11 +395,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
           expect(file.content).to include("statesman (1.2.1)")
         end
 
-        it "preserves the BUNDLED WITH line in the lockfile", :bundler_v1_only do
-          expect(file.content).to include("BUNDLED WITH\n   1.10.6")
-        end
-
-        it "preserves the BUNDLED WITH line in the lockfile", :bundler_v2_only do
+        it "preserves the BUNDLED WITH line in the lockfile" do
           expect(file.content).to include("BUNDLED WITH\n   2.2.0")
         end
 
@@ -1469,11 +1505,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
         }]
       end
 
-      it "raises an error", :bundler_v1_only do
-        expect { updated_gemfile }.to raise_error(/Bundler could not find compatible versions for gem "bundler"/)
-      end
-
-      it "returns the latest version", :bundler_v2_only do
+      it "returns the latest version" do
         expect(updated_gemfile.content).to include("\"guard-bundler\", \"~> 2.2.1\"")
       end
     end

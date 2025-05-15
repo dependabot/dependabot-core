@@ -12,16 +12,8 @@ end
 require "#{common_dir}/spec/spec_helper.rb"
 
 module PackageManagerHelper
-  def self.use_bundler_1?
-    ENV["SUITE_NAME"] == "bundler1"
-  end
-
-  def self.use_bundler_2?
-    !use_bundler_1?
-  end
-
   def self.bundler_version
-    use_bundler_2? ? "2" : "1"
+    "2"
   end
 end
 
@@ -45,7 +37,7 @@ def bundler_project_dependency_file(project, filename:)
 end
 
 def bundler_build_tmp_repo(project)
-  build_tmp_repo(project, path: "projects/bundler1")
+  build_tmp_repo(project, path: "projects/bundler2")
 end
 
 def suppress_output
@@ -60,16 +52,6 @@ ensure
 end
 
 RSpec.configure do |config|
-  config.around do |example|
-    if PackageManagerHelper.use_bundler_2? && example.metadata[:bundler_v1_only]
-      example.skip
-    elsif PackageManagerHelper.use_bundler_1? && example.metadata[:bundler_v2_only]
-      example.skip
-    else
-      example.run
-    end
-  end
-
   config.after do
     # Cleanup side effects from cloning git gems, so that they don't interfere
     # with other specs.
