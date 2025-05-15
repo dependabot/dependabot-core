@@ -1059,6 +1059,7 @@ internal static partial class MSBuildHelper
             new Regex(@"Could not install package '(?<PackageName>[^ ]+) (?<PackageVersion>[^']+)'. You are trying to install this package"),
             new Regex(@"Unable to find a version of '[^']+' that is compatible with '[^ ]+ [^ ]+ constraint: (?<PackageName>[^ ]+) \([^ ]+ (?<PackageVersion>[^)]+)\)'"),
             new Regex(@"the following error\(s\) may be blocking the current package operation: '(?<PackageName>[^ ]+) (?<PackageVersion>[^ ]+) constraint:"),
+            new Regex(@"Unable to resolve '(?<PackageName>[^']+)'. An additional constraint '\((?<PackageVersion>[^)]+)\)' defined in packages.config prevents this operation."),
         };
         var matches = patterns.Select(p => p.Match(output)).Where(m => m.Success);
         if (matches.Any())

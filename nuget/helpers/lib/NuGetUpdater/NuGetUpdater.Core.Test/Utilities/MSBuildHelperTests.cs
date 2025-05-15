@@ -1856,6 +1856,14 @@ public class MSBuildHelperTests : TestBase
         yield return
         [
             // output
+            "Unable to resolve 'Some.Package'. An additional constraint '(= 1.2.3)' defined in packages.config prevents this operation.",
+            // expectedError
+            new UpdateNotPossible(["Some.Package.= 1.2.3"]),
+        ];
+
+        yield return
+        [
+            // output
             "Failed to fetch results from V2 feed at 'http://nuget.example.com/FindPackagesById()?id='Some.Package'&semVerLevel=2.0.0' with following message : Response status code does not indicate success: 404.",
             // expectedError
             new DependencyNotFound("Some.Package"),
