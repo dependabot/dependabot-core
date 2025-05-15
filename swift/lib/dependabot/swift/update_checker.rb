@@ -85,7 +85,6 @@ module Dependabot
 
       sig { returns(T.nilable(Dependabot::Version)) }
       def fetch_latest_resolvable_version
-
         latest_resolvable_version = version_resolver_for(unlocked_requirements).latest_resolvable_version
         return current_version unless latest_resolvable_version
 
