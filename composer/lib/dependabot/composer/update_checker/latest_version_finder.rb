@@ -88,7 +88,7 @@ module Dependabot
           params(language_version: T.nilable(T.any(String, Dependabot::Version)))
             .returns(T.nilable(Dependabot::Version))
         end
-        def fetch_latest_version(language_version: nil)
+        def fetch_latest_version(language_version: nil) # rubocop:disable Lint/UnusedMethodArgument
           versions = available_versions
           versions = filter_prerelease_versions(versions)
           versions = filter_ignored_versions(versions)
@@ -99,7 +99,7 @@ module Dependabot
           params(language_version: T.nilable(T.any(String, Dependabot::Version)))
             .returns(T.nilable(Dependabot::Version))
         end
-        def fetch_lowest_security_fix_version(language_version: nil)
+        def fetch_lowest_security_fix_version(language_version: nil) # rubocop:disable Lint/UnusedMethodArgument
           versions = available_versions
           versions = filter_prerelease_versions(versions)
           versions = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(versions,
@@ -131,8 +131,8 @@ module Dependabot
           ).fetch_available_versions
         end
 
-        sig { params(url: String).returns(T::Array[String]) }
-        def fetch_registry_versions_from_url(url)
+        sig { params(_url: String).returns(T::Array[String]) }
+        def fetch_registry_versions_from_url(_url)
           []
         rescue Excon::Error::Socket, Excon::Error::Timeout
           []

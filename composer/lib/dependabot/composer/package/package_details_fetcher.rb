@@ -117,7 +117,7 @@ module Dependabot
         end
         def format_version_release(release_data)
           version = release_data["version"].gsub(/^v/, "")
-          released_at = release_data["time"] ? Time.parse(release_data["time"]) : nil # this will return nil if the time key is missing, avoiding error
+          released_at = release_data["time"] ? Time.parse(release_data["time"]) : nil # this will return nil if the time key is missing, avoiding error # rubocop:disable Layout/LineLength
           url = release_data["dist"] ? release_data["dist"]["url"] : nil
           package_type = PACKAGE_TYPE
 
