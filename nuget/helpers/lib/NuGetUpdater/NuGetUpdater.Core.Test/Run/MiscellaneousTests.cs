@@ -15,6 +15,81 @@ namespace NuGetUpdater.Core.Test.Run;
 public class MiscellaneousTests
 {
     [Theory]
+    [MemberData(nameof(DependencyGroup_IsMatchTestData))]
+    public void DependencyGroup_IsMatch(string[]? patterns, string[]? excludePatterns, string dependencyName, bool expectedMatch)
+    {
+        var rules = new Dictionary<string, object>();
+        if (patterns is not null)
+        {
+            rules["patterns"] = patterns;
+        }
+
+        if (excludePatterns is not null)
+        {
+            rules["exclude-patterns"] = excludePatterns;
+        }
+
+        var group = new DependencyGroup()
+        {
+            Name = "TestGroup",
+            Rules = rules,
+        };
+        var isMatch = group.IsMatch(dependencyName);
+        Assert.Equal(expectedMatch, isMatch);
+    }
+
+    public static IEnumerable<object?[]> DependencyGroup_IsMatchTestData()
+    {
+        yield return
+        [
+            null, // patterns
+            null, // excludePatterns
+            "Some.Package", // dependencyName
+            true, // expectMatch
+        ];
+
+        yield return
+        [
+            new[] { "*" }, // patterns
+            null, // excludePatterns
+            "Some.Package", // dependencyName
+            true, // expectMatch
+        ];
+
+        yield return
+        [
+            new[] { "some.*" }, // patterns
+            null, // excludePatterns
+            "Some.Package", // dependencyName
+            true, // expectMatch
+        ];
+
+        yield return
+        [
+            null, // patterns
+            new[] { "some.*" }, // excludePatterns
+            "Some.Package", // dependencyName
+            false, // expectMatch
+        ];
+
+        yield return
+        [
+            new[] { "*" }, // patterns
+            new[] { "some.*" }, // excludePatterns
+            "Some.Package", // dependencyName
+            false, // expectMatch
+        ];
+
+        yield return
+        [
+            new[] { "*" }, // patterns
+            new[] { "other.*" }, // excludePatterns
+            "Some.Package", // dependencyName
+            true, // expectMatch
+        ];
+    }
+
+    [Theory]
     [MemberData(nameof(RequirementsFromIgnoredVersionsData))]
     public void RequirementsFromIgnoredVersions(string dependencyName, Condition[] ignoreConditions, Requirement[] expectedRequirements)
     {

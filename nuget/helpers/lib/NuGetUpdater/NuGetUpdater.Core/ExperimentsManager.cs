@@ -11,6 +11,7 @@ public record ExperimentsManager
     public bool NativeUpdater { get; init; } = false;
     public bool UseLegacyDependencySolver { get; init; } = false;
     public bool UseDirectDiscovery { get; init; } = false;
+    public bool UseGroupRunner { get; init; } = false;
 
     public Dictionary<string, object> ToDictionary()
     {
@@ -20,6 +21,7 @@ public record ExperimentsManager
             ["nuget_native_updater"] = NativeUpdater,
             ["nuget_legacy_dependency_solver"] = UseLegacyDependencySolver,
             ["nuget_use_direct_discovery"] = UseDirectDiscovery,
+            ["nuget_use_group_runner"] = UseGroupRunner,
         };
     }
 
@@ -31,6 +33,7 @@ public record ExperimentsManager
             NativeUpdater = IsEnabled(experiments, "nuget_native_updater"),
             UseLegacyDependencySolver = IsEnabled(experiments, "nuget_legacy_dependency_solver"),
             UseDirectDiscovery = IsEnabled(experiments, "nuget_use_direct_discovery"),
+            UseGroupRunner = IsEnabled(experiments, "nuget_use_group_runner"),
         };
     }
 

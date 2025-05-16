@@ -3495,7 +3495,7 @@ public class RunWorkerTests
 
         var worker = new RunWorker(jobId, testApiHandler, discoveryWorker, analyzeWorker, updaterWorker, logger);
         var repoContentsPathDirectoryInfo = new DirectoryInfo(tempDirectory.DirectoryPath);
-        var actualResult = await worker.RunAsync(job, repoContentsPathDirectoryInfo, "TEST-COMMIT-SHA");
+        var actualResult = await worker.RunAsync(job, repoContentsPathDirectoryInfo, "TEST-COMMIT-SHA", experimentsManager);
         var actualApiMessages = testApiHandler.ReceivedMessages
             .Select(m =>
             {
