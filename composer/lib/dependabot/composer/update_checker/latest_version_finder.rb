@@ -17,16 +17,18 @@ module Dependabot
     class UpdateChecker
       class LatestVersionFinder < Dependabot::Package::PackageLatestVersionFinder
         extend T::Sig
+
         sig do
           override.returns(T.nilable(Dependabot::Package::PackageDetails))
         end
         def package_details
-          @package_details ||= T.let(
-            Dependabot::Package::PackageDetails.new(
-              dependency: dependency,
-              releases: available_versions.reverse.uniq(&:version)
-            ), T.nilable(Dependabot::Package::PackageDetails)
-          )
+          @package_details ||= Package::PackageDetailsFetcher.new(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            credentials: credentials,
+            ignored_versions: ignored_versions,
+            security_advisories: security_advisories
+          ).fetch
         end
 
         sig do
@@ -126,7 +128,7 @@ module Dependabot
             ignored_versions: ignored_versions,
             security_advisories: security_advisories,
             raise_on_ignored: false
-          ).fetch
+          ).fetch_available_versions
         end
 
         sig { params(url: String).returns(T::Array[String]) }

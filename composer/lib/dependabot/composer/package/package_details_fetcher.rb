@@ -20,6 +20,9 @@ module Dependabot
       class PackageDetailsFetcher
         extend T::Sig
 
+        PACKAGE_TYPE = "composer"
+        PACKAGE_LANGUAGE = "php"
+
         sig do
           params(
             dependency: Dependabot::Dependency,
@@ -63,10 +66,19 @@ module Dependabot
         sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
         attr_reader :security_advisories
 
+        sig { returns(Dependabot::Package::PackageDetails) }
+        def fetch
+          package_releases = fetch_available_versions
+          Dependabot::Package::PackageDetails.new(
+            dependency: dependency,
+            releases: package_releases.reverse.uniq(&:version)
+          )
+        end
+
         sig do
           returns(T::Array[Dependabot::Package::PackageRelease])
         end
-        def fetch
+        def fetch_available_versions
           listing = fetch_package_listing
           return [] if listing.nil?
           return [] unless listing.is_a?(Hash)
@@ -87,14 +99,34 @@ module Dependabot
 
           package_releases = []
 
-          version_listings.map do |data|
-            package_releases << package_release(
-              version: data.fetch("version").gsub(/^v/, ""),
-              released_at: data["time"] ? Time.parse(data["time"]) : nil # this will return nil if the time key is missing, avoiding error
-            )
+          if version_listings.is_a?(Array)
+            version_listings.map do |data|
+              release = format_version_release(data)
+              package_releases << release
+            end
           end
 
           package_releases
+        end
+
+        sig do
+          params(
+            release_data: T::Hash[String, T.untyped]
+          )
+            .returns(T.nilable(Dependabot::Package::PackageRelease))
+        end
+        def format_version_release(release_data)
+          version = release_data["version"].gsub(/^v/, "")
+          released_at = release_data["time"] ? Time.parse(release_data["time"]) : nil # this will return nil if the time key is missing, avoiding error
+          url = release_data["dist"] ? release_data["dist"]["url"] : nil
+          package_type = PACKAGE_TYPE
+
+          package_release(
+            version: version,
+            released_at: released_at,
+            url: url,
+            package_type: package_type
+          )
         end
 
         sig { returns(T::Hash[String, T.untyped]) }
@@ -141,10 +173,11 @@ module Dependabot
             released_at: T.nilable(Time),
             downloads: T.nilable(Integer),
             url: T.nilable(String),
-            yanked: T::Boolean
+            yanked: T::Boolean,
+            package_type: T.nilable(String)
           ).returns(Dependabot::Package::PackageRelease)
         end
-        def package_release(version:, released_at:, downloads: nil, url: nil, yanked: false)
+        def package_release(version:, released_at:, downloads: nil, url: nil, yanked: false, package_type: nil)
           Dependabot::Package::PackageRelease.new(
             version: Composer::Version.new(version),
             released_at: released_at,
@@ -152,7 +185,7 @@ module Dependabot
             yanked_reason: nil,
             downloads: downloads,
             url: url,
-            package_type: nil,
+            package_type: package_type,
             language: nil
           )
         end
