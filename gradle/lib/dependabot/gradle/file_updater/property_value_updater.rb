@@ -1,6 +1,8 @@
 # typed: true
 # frozen_string_literal: true
 
+require "sorbet-runtime"
+
 require "dependabot/gradle/file_updater"
 require "dependabot/gradle/file_parser/property_value_finder"
 
@@ -8,10 +10,21 @@ module Dependabot
   module Gradle
     class FileUpdater
       class PropertyValueUpdater
+      extend T::Sig
+
         def initialize(dependency_files:)
           @dependency_files = dependency_files
         end
 
+        sig do
+          params(
+            property_name: String,
+            callsite_buildfile: Dependabot::DependencyFile,
+            previous_value: String,
+            updated_value: String
+          )
+          .returns(T::Array[Dependabot::DependencyFile])
+        end
         def update_files_for_property_change(property_name:,
                                              callsite_buildfile:,
                                              previous_value:,

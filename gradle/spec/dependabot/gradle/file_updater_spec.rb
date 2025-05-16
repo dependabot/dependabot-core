@@ -29,11 +29,12 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
       package_manager: "gradle"
     )
   end
+  let(:buildfile_folder) { "buildfiles" }
   let(:buildfile_fixture_name) { "basic_build.gradle" }
   let(:buildfile) do
     Dependabot::DependencyFile.new(
       name: "build.gradle",
-      content: fixture("buildfiles", buildfile_fixture_name)
+      content: fixture(buildfile_folder, buildfile_fixture_name)
     )
   end
   let(:dependencies) { [dependency] }
@@ -123,6 +124,61 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
       end
 
       its(:content) { is_expected.to include "version: '4.2.0'" }
+
+      context "with a lockfile" do
+        let(:buildfile_folder) { "buildfiles/lockfile/app" }
+        let(:buildfile_fixture_name) { "build.gradle.kts" }
+        let(:buildfile) do
+          Dependabot::DependencyFile.new(
+            name: "app/build.gradle.kts",
+            directory: "app/",
+            content: fixture(buildfile_folder, buildfile_fixture_name)
+          )
+        end
+        let(:lockfile) do
+          Dependabot::DependencyFile.new(
+            name: "app/gradle.lockfile",
+            directory: "app/",
+            content: fixture(buildfile_folder, "gradle.lockfile")
+          )
+        end
+        let(:dependency_files) { [buildfile, lockfile, Dependabot::DependencyFile.new(
+          name: "settings.gradle.kts",
+          directory: "/",
+          content: fixture(buildfile_folder, "..", "settings.gradle.kts")
+        )] }
+        let(:dependencies) do
+          [
+            Dependabot::Dependency.new(
+              name: "com.google.code.gson:gson",
+              version: "2.8.9",
+              package_manager: "gradle",
+              requirements: [{
+                file: "app/build.gradle.kts",
+                requirement: "2.8.9",
+                groups: [],
+                source: nil,
+                metadata: nil
+              }],
+              previous_requirements: [{
+                file: "app/build.gradle.kts",
+                requirement: "2.8.8",
+                groups: [],
+                source: nil,
+                metadata: nil
+              }]
+            )
+          ]
+        end
+
+        it "updates build.gradle.kts and gradle.lockfile" do
+          expect(updated_files.map(&:name)).to eq(["app/build.gradle.kts", "app/gradle.lockfile"])
+          expect(updated_files.first.content)
+            .to include('implementation("com.google.code.gson:gson:2.8.9")')
+          expect(updated_files.last.content)
+            .to include('com.google.code.gson:gson:2.8.9=runtimeClasspath')
+        end
+      end
 
       context "with kotlin" do
         let(:buildfile_fixture_name) { "build.gradle.kts" }

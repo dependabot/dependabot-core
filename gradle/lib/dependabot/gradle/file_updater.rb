@@ -6,6 +6,7 @@ require "sorbet-runtime"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 require "dependabot/gradle/file_parser"
+require "dependabot/gradle/file_updater/lockfile_updater"
 
 module Dependabot
   module Gradle
@@ -17,6 +18,7 @@ module Dependabot
 
       SUPPORTED_BUILD_FILE_NAMES = %w(build.gradle build.gradle.kts).freeze
 
+      sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
         [
           # Matches build.gradle or build.gradle.kts in root directory
@@ -26,10 +28,12 @@ module Dependabot
           # Matches settings.gradle or settings.gradle.kts in root or any subdirectory
           %r{(^|.*/)settings\.gradle(\.kts)?$},
           # Matches dependencies.gradle in root or any subdirectory
-          %r{(^|.*/)dependencies\.gradle$}
+          %r{(^|.*/)dependencies\.gradle$},
+          %r{(^|.*/)?gradle.lockfile$}
         ]
       end
 
+      sig { override.returns(T::Array[::Dependabot::DependencyFile]) }
       def updated_dependency_files
         updated_files = buildfiles.dup
 
@@ -53,26 +57,33 @@ module Dependabot
 
       private
 
+      sig { override.void }
       def check_required_files
         raise "No build.gradle or build.gradle.kts!" if dependency_files.empty?
       end
 
+      sig { void }
       def original_file
         dependency_files.find do |f|
           SUPPORTED_BUILD_FILE_NAMES.include?(f.name)
         end
       end
 
+      sig do
+        params(buildfiles: T::Array[Dependabot::DependencyFile], dependency: Dependabot::Dependency)
+          .returns(T::Array[Dependabot::DependencyFile])
+      end
       def update_buildfiles_for_dependency(buildfiles:, dependency:)
         files = buildfiles.dup
 
         # The UpdateChecker ensures the order of requirements is preserved
         # when updating, so we can zip them together in new/old pairs.
-        reqs = dependency.requirements.zip(dependency.previous_requirements)
+        reqs = dependency.requirements.zip(T.must(dependency.previous_requirements))
                          .reject { |new_req, old_req| new_req == old_req }
 
         # Loop through each changed requirement and update the buildfiles
         reqs.each do |new_req, old_req|
+          raise "Bad req match" if old_req.nil?
           raise "Bad req match" unless new_req[:file] == old_req[:file]
           next if new_req[:requirement] == old_req[:requirement]
 
@@ -92,7 +103,7 @@ module Dependabot
           elsif new_req.dig(:metadata, :dependency_set)
             files = update_files_for_dep_set_change(files, old_req, new_req)
           else
-            files[files.index(buildfile)] =
+            files[T.must(files.index(buildfile))] =
               update_version_in_buildfile(
                 dependency,
                 buildfile,
@@ -100,15 +111,26 @@ module Dependabot
                 new_req
               )
           end
+
+          updater = Dependabot::Gradle::LockfileUpdater.new(dependency_files: files)
+          lockfiles = updater.update_lockfiles(buildfile)
+          files.concat(lockfiles) unless lockfiles.empty?
         end
 
         files
       end
 
+      sig do
+        params(
+          buildfiles: T::Array[Dependabot::DependencyFile],
+          old_req: T::Hash[Symbol, T.untyped],
+          new_req: T::Hash[Symbol, T.untyped])
+        .returns(T::Array[Dependabot::DependencyFile])
+      end
       def update_files_for_property_change(buildfiles, old_req, new_req)
         files = buildfiles.dup
         property_name = new_req.fetch(:metadata).fetch(:property_name)
-        buildfile = files.find { |f| f.name == new_req.fetch(:file) }
+        buildfile = T.must(files.find { |f| f.name == new_req.fetch(:file) })
 
         PropertyValueUpdater.new(dependency_files: files)
                             .update_files_for_property_change(
@@ -119,10 +141,17 @@ module Dependabot
                             )
       end
 
+      sig do
+        params(
+          buildfiles: T::Array[Dependabot::DependencyFile],
+          old_req: T::Hash[Symbol, T.untyped],
+          new_req: T::Hash[Symbol, T.untyped])
+        .returns(T::Array[Dependabot::DependencyFile])
+      end
       def update_files_for_dep_set_change(buildfiles, old_req, new_req)
         files = buildfiles.dup
         dependency_set = new_req.fetch(:metadata).fetch(:dependency_set)
-        buildfile = files.find { |f| f.name == new_req.fetch(:file) }
+        buildfile = T.must(files.find { |f| f.name == new_req.fetch(:file) })
 
         DependencySetUpdater.new(dependency_files: files)
                             .update_files_for_dep_set_change(
@@ -157,8 +186,9 @@ module Dependabot
       def original_buildfile_declarations(dependency, requirement)
         # This implementation is limited to declarations that appear on a
         # single line.
-        buildfile = buildfiles.find { |f| f.name == requirement.fetch(:file) }
-        buildfile.content.lines.select do |line|
+        buildfile = T.must(buildfiles.find { |f| f.name == requirement.fetch(:file) })
+
+        T.must(buildfile.content).lines.select do |line|
           line = evaluate_properties(line, buildfile)
           line = line.gsub(%r{(?<=^|\s)//.*$}, "")
 
@@ -209,6 +239,7 @@ module Dependabot
         )
       end
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def buildfiles
         @buildfiles ||= dependency_files.reject(&:support_file?)
       end
