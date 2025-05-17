@@ -10,13 +10,13 @@ namespace NuGetUpdater.Core.Test
 {
     public class TestHttpServer : IDisposable
     {
-        private readonly Func<string, string, (int, byte[])> _requestHandler;
+        private readonly Func<string, string, (int, byte[]?)> _requestHandler;
         private readonly HttpListener _listener;
         private bool _runServer = true;
 
         public string BaseUrl { get; }
 
-        private TestHttpServer(string baseurl, Func<string, string, (int, byte[])> requestHandler)
+        private TestHttpServer(string baseurl, Func<string, string, (int, byte[]?)> requestHandler)
         {
             BaseUrl = baseurl;
             _requestHandler = requestHandler;
@@ -45,7 +45,11 @@ namespace NuGetUpdater.Core.Test
                 var context = await _listener.GetContextAsync();
                 var (statusCode, response) = _requestHandler(context.Request.HttpMethod, context.Request.Url!.AbsoluteUri);
                 context.Response.StatusCode = statusCode;
-                await context.Response.OutputStream.WriteAsync(response);
+                if (response is not null)
+                {
+                    await context.Response.OutputStream.WriteAsync(response);
+                }
+
                 context.Response.Close();
             }
         }
@@ -57,7 +61,7 @@ namespace NuGetUpdater.Core.Test
             return CreateTestServer((method, url) => requestHandler(url));
         }
 
-        public static TestHttpServer CreateTestServer(Func<string, string, (int, byte[])> requestHandler)
+        public static TestHttpServer CreateTestServer(Func<string, string, (int, byte[]?)> requestHandler)
         {
             // static lock to ensure the port is not recycled after `FindFreePort()` and before we can start the real server
             lock (PortGate)
@@ -77,7 +81,7 @@ namespace NuGetUpdater.Core.Test
 
         public static TestHttpServer CreateTestStringServer(Func<string, string, (int, string)> requestHandler)
         {
-            Func<string, string, (int, byte[])> bytesRequestHandler = (method, url) =>
+            Func<string, string, (int, byte[]?)> bytesRequestHandler = (method, url) =>
             {
                 var (statusCode, response) = requestHandler(method, url);
                 return (statusCode, Encoding.UTF8.GetBytes(response));

@@ -190,8 +190,7 @@ public class MessageReportTests
             """
             Error type: unknown_error
             - error-class: NotImplementedException
-            - error-message: error message
-            - error-backtrace: <unknown>
+            - error-message: System.NotImplementedException: error message
             - package-manager: nuget
             - job-id: TEST-JOB-ID
             """

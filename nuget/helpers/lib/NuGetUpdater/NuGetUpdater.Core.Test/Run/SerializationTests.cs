@@ -8,7 +8,7 @@ using Xunit;
 
 namespace NuGetUpdater.Core.Test.Run;
 
-public class SerializationTests
+public class SerializationTests : TestBase
 {
     [Fact]
     public void DeserializeJob()
@@ -260,15 +260,9 @@ public class SerializationTests
     }
 
     [Theory]
-    [MemberData(nameof(DeserializeErrorTypesData))]
+    [MemberData(nameof(SerializeErrorTypesData))]
     public void SerializeError(JobErrorBase error, string expectedSerialization)
     {
-        if (error is UnknownError unknown)
-        {
-            // special case the exception's call stack to make it testable
-            unknown.Details["error-backtrace"] = "TEST-BACKTRACE";
-        }
-
         var actual = HttpApiHandler.Serialize(error);
         Assert.Equal(expectedSerialization, actual);
     }
@@ -279,7 +273,7 @@ public class SerializationTests
         var untestedTypes = typeof(JobErrorBase).Assembly.GetTypes()
             .Where(t => t.IsSubclassOf(typeof(JobErrorBase)))
             .ToHashSet();
-        foreach (object?[] data in DeserializeErrorTypesData())
+        foreach (object?[] data in SerializeErrorTypesData())
         {
             var testedErrorType = data[0]!.GetType();
             untestedTypes.Remove(testedErrorType);
@@ -601,7 +595,42 @@ public class SerializationTests
         Assert.Equal(expected, actual);
     }
 
-    public static IEnumerable<object?[]> DeserializeErrorTypesData()
+    [Fact]
+    public void SerializeRealUnknownErrorWithInnerException()
+    {
+        // arrange
+        using var tempDir = new TemporaryDirectory();
+        var action = new Action(() =>
+        {
+            try
+            {
+                throw new NotImplementedException("inner message");
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException("outer message", ex);
+            }
+        });
+        var ex = Assert.Throws<InvalidOperationException>(action);
+
+        // act
+        var error = JobErrorBase.ErrorFromException(ex, "TEST-JOB-ID", tempDir.DirectoryPath);
+
+        // assert
+        // real exception message should look like this:
+        // System.InvalidOperationException: outer message
+        //  ---> System.NotImplementedException: inner message
+        //    at Namespace.Class.Method() in file.cs:line 123
+        //    --- End of inner exception stack trace ---
+        //    at Namespace.Class.Method() in file.cs:line 456
+        var errorMessage = Assert.IsType<string>(error.Details["error-message"]);
+        var lines = errorMessage.Split('\n').Select(l => l.TrimEnd('\r')).ToArray();
+        Assert.Equal("System.InvalidOperationException: outer message", lines[0]);
+        Assert.Equal(" ---> System.NotImplementedException: inner message", lines[1]);
+        Assert.Contains("   --- End of inner exception stack trace ---", lines[2..]);
+    }
+
+    public static IEnumerable<object?[]> SerializeErrorTypesData()
     {
         yield return
         [
@@ -679,7 +708,7 @@ public class SerializationTests
         [
             new UnknownError(new Exception("some message"), "JOB-ID"),
             """
-            {"data":{"error-type":"unknown_error","error-details":{"error-class":"Exception","error-message":"some message","error-backtrace":"TEST-BACKTRACE","package-manager":"nuget","job-id":"JOB-ID"}}}
+            {"data":{"error-type":"unknown_error","error-details":{"error-class":"Exception","error-message":"System.Exception: some message","error-backtrace":"","package-manager":"nuget","job-id":"JOB-ID"}}}
             """
         ];
 

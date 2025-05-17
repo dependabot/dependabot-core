@@ -33,7 +33,8 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
       record_update_job_error: nil,
       create_pull_request: nil,
       record_update_job_warning: nil,
-      record_ecosystem_meta: nil
+      record_ecosystem_meta: nil,
+      record_cooldown_meta: nil
     )
   end
 

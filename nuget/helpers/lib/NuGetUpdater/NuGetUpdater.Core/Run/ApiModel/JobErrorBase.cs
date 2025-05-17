@@ -27,6 +27,12 @@ public abstract record JobErrorBase : MessageBase
         report.AppendLine($"Error type: {Type}");
         foreach (var (key, value) in Details)
         {
+            if (this is UnknownError && key == "error-backtrace")
+            {
+                // there's nothing meaningful in this field
+                continue;
+            }
+
             var valueString = value.ToString();
             if (value is IEnumerable<string> strings)
             {
@@ -41,23 +47,64 @@ public abstract record JobErrorBase : MessageBase
 
     public static JobErrorBase ErrorFromException(Exception ex, string jobId, string currentDirectory)
     {
-        return ex switch
+        switch (ex)
         {
-            BadRequirementException badRequirement => new BadRequirement(badRequirement.Message),
-            DependencyNotFoundException dependencyNotFound => new DependencyNotFound(string.Join(", ", dependencyNotFound.Dependencies)),
-            HttpRequestException httpRequest => httpRequest.StatusCode switch
-            {
-                HttpStatusCode.Unauthorized or
-                HttpStatusCode.Forbidden => new PrivateSourceAuthenticationFailure(NuGetContext.GetPackageSourceUrls(currentDirectory)),
-                HttpStatusCode.TooManyRequests => new PrivateSourceBadResponse(NuGetContext.GetPackageSourceUrls(currentDirectory)),
-                HttpStatusCode.ServiceUnavailable => new PrivateSourceBadResponse(NuGetContext.GetPackageSourceUrls(currentDirectory)),
-                _ => new UnknownError(ex, jobId),
-            },
-            InvalidProjectFileException invalidProjectFile => new DependencyFileNotParseable(invalidProjectFile.ProjectFile),
-            MissingFileException missingFile => new DependencyFileNotFound(missingFile.FilePath, missingFile.Message),
-            UnparseableFileException unparseableFile => new DependencyFileNotParseable(unparseableFile.FilePath, unparseableFile.Message),
-            UpdateNotPossibleException updateNotPossible => new UpdateNotPossible(updateNotPossible.Dependencies),
-            _ => new UnknownError(ex, jobId),
-        };
+            case BadRequirementException badRequirement:
+                return new BadRequirement(badRequirement.Message);
+            case BadResponseException badResponse:
+                return new PrivateSourceBadResponse([badResponse.Uri]);
+            case DependencyNotFoundException dependencyNotFound:
+                return new DependencyNotFound(string.Join(", ", dependencyNotFound.Dependencies));
+            case HttpRequestException httpRequest:
+                if (httpRequest.StatusCode is null)
+                {
+                    if (httpRequest.InnerException is HttpIOException ioException &&
+                        ioException.HttpRequestError == HttpRequestError.ResponseEnded)
+                    {
+                        // server hung up on us
+                        return new PrivateSourceBadResponse(NuGetContext.GetPackageSourceUrls(currentDirectory));
+                    }
+
+                    return new UnknownError(ex, jobId);
+                }
+
+                switch (httpRequest.StatusCode)
+                {
+                    case HttpStatusCode.Unauthorized:
+                    case HttpStatusCode.Forbidden:
+                        return new PrivateSourceAuthenticationFailure(NuGetContext.GetPackageSourceUrls(currentDirectory));
+                    case HttpStatusCode.TooManyRequests:
+                    case HttpStatusCode.ServiceUnavailable:
+                        return new PrivateSourceBadResponse(NuGetContext.GetPackageSourceUrls(currentDirectory));
+                    default:
+                        if ((int)httpRequest.StatusCode / 100 == 5)
+                        {
+                            return new PrivateSourceBadResponse(NuGetContext.GetPackageSourceUrls(currentDirectory));
+                        }
+
+                        return new UnknownError(ex, jobId);
+                }
+            case InvalidProjectFileException invalidProjectFile:
+                return new DependencyFileNotParseable(invalidProjectFile.ProjectFile);
+            case MissingFileException missingFile:
+                return new DependencyFileNotFound(missingFile.FilePath, missingFile.Message);
+            case UnparseableFileException unparseableFile:
+                return new DependencyFileNotParseable(unparseableFile.FilePath, unparseableFile.Message);
+            case UpdateNotPossibleException updateNotPossible:
+                return new UpdateNotPossible(updateNotPossible.Dependencies);
+            default:
+                // if a more specific inner exception was encountered, use that, otherwise...
+                if (ex.InnerException is not null)
+                {
+                    var innerError = ErrorFromException(ex.InnerException, jobId, currentDirectory);
+                    if (innerError is not UnknownError)
+                    {
+                        return innerError;
+                    }
+                }
+
+                // ...return the whole thing
+                return new UnknownError(ex, jobId);
+        }
     }
 }

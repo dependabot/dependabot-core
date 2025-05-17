@@ -5,7 +5,7 @@ require "sorbet-runtime"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/errors"
-require "dependabot/docker/version"
+require "dependabot/helm/version"
 require "dependabot/docker/requirement"
 require "dependabot/shared/utils/credentials_finder"
 require "dependabot/shared_helpers"
@@ -191,6 +191,19 @@ module Dependabot
         raise PrivateSourceAuthenticationFailure, repo_url
       end
 
+      sig { params(repo_url: T.nilable(String)).returns(T.nilable(String)) }
+      def authenticate_oci_registry_source(repo_url)
+        return unless repo_url
+
+        repo_creds = Shared::Utils::CredentialsFinder.new(@credentials, private_repository_type: "helm_registry")
+                                                     .credentials_for_registry(repo_url)
+        return unless repo_creds
+
+        Helpers.oci_registry_login(T.must(repo_creds["username"]), T.must(repo_creds["password"]), repo_url)
+      rescue StandardError
+        raise PrivateSourceAuthenticationFailure, repo_url
+      end
+
       sig { returns(T.nilable(Gem::Version)) }
       def fetch_latest_chart_version
         chart_name = dependency.name
@@ -201,7 +214,33 @@ module Dependabot
         releases = fetch_releases_with_helm_cli(chart_name, repo_name, repo_url)
         return releases if releases
 
+        tag = fetch_latest_oci_tag(chart_name, repo_url) if repo_url&.start_with?("oci://")
+        return tag if tag
+
         fetch_releases_from_index(chart_name, repo_url)
+      end
+
+      sig { params(chart_name: String, repo_url: String).returns(T.nilable(Gem::Version)) }
+      def fetch_latest_oci_tag(chart_name, repo_url)
+        tags = fetch_oci_tags(chart_name, repo_url)
+        return nil unless tags && !tags.empty?
+
+        valid_tags = filter_valid_versions(tags)
+        return nil if valid_tags.empty?
+
+        highest_tag = valid_tags.map { |v| version_class.new(v) }.max
+        Dependabot.logger.info("Highest valid OCI tag for #{chart_name} is #{highest_tag}")
+        highest_tag
+      end
+
+      sig { params(chart_name: String, repo_url: String).returns(T.nilable(T::Array[String])) }
+      def fetch_oci_tags(chart_name, repo_url)
+        Dependabot.logger.info("Fetching OCI tags for #{repo_url}")
+        oci_registry = repo_url.gsub("oci://", "")
+        authenticate_oci_registry_source(repo_url)
+
+        release_tags = Helpers.fetch_oci_tags("#{oci_registry}/#{chart_name}").split("\n")
+        release_tags.map { |tag| tag.tr("_", "+") }
       end
 
       sig { params(repo_url: T.nilable(String)).returns(T.nilable(String)) }

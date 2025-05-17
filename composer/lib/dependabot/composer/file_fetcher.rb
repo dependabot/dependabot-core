@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "json"
@@ -15,14 +15,17 @@ module Dependabot
       require_relative "file_fetcher/path_dependency_builder"
       require_relative "helpers"
 
+      sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
         filenames.include?(PackageManager::MANIFEST_FILENAME)
       end
 
+      sig { override.returns(String) }
       def self.required_files_message
         "Repo must contain a #{PackageManager::MANIFEST_FILENAME}."
       end
 
+      sig { override.returns(T.nilable(T::Hash[Symbol, T.untyped])) }
       def ecosystem_versions
         {
           package_managers: {
@@ -44,28 +47,35 @@ module Dependabot
 
       private
 
+      sig { returns(Dependabot::DependencyFile) }
       def composer_json
-        @composer_json ||= fetch_file_from_host(PackageManager::MANIFEST_FILENAME)
+        @composer_json ||= T.let(
+          fetch_file_from_host(PackageManager::MANIFEST_FILENAME),
+          T.nilable(Dependabot::DependencyFile)
+        )
       end
 
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def composer_lock
-        return @composer_lock if defined?(@composer_lock)
-
-        @composer_lock = fetch_file_if_present(PackageManager::LOCKFILE_FILENAME)
+        @composer_lock ||= T.let(
+          fetch_file_if_present(PackageManager::LOCKFILE_FILENAME),
+          T.nilable(Dependabot::DependencyFile)
+        )
       end
 
       # NOTE: This is fetched but currently unused
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def auth_json
-        return @auth_json if defined?(@auth_json)
-
-        @auth_json = fetch_support_file(PackageManager::AUTH_FILENAME)
+        @auth_json ||= T.let(
+          fetch_support_file(PackageManager::AUTH_FILENAME),
+          T.nilable(Dependabot::DependencyFile)
+        )
       end
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def artifact_dependencies
-        return @artifact_dependencies if defined?(@artifact_dependencies)
-
         # Find zip files in the artifact sources and download them.
-        @artifact_dependencies =
+        @artifact_dependencies ||= T.let(
           artifact_sources.map do |url|
             repo_contents(dir: url)
               .select { |file| file.type == "file" && file.name.end_with?(".zip") }
@@ -78,7 +88,9 @@ module Dependabot
                 type: "file"
               )
             end
-          end.flatten
+          end.flatten,
+          T.nilable(T::Array[Dependabot::DependencyFile])
+        )
 
         # Add .gitkeep to all directories in case they are empty. Composer isn't ok with empty directories.
         @artifact_dependencies += artifact_sources.map do |url|
@@ -96,8 +108,9 @@ module Dependabot
         @artifact_dependencies
       end
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def path_dependencies
-        @path_dependencies ||=
+        @path_dependencies ||= T.let(
           begin
             composer_json_files = []
             unfetchable_deps = []
@@ -123,19 +136,24 @@ module Dependabot
             composer_json_files.tap do |files|
               files.each { |f| f.support_file = true }
             end
-          end
+          end,
+          T.nilable(T::Array[Dependabot::DependencyFile])
+        )
       end
 
+      sig { returns(T::Array[String]) }
       def artifact_sources
         sources.select { |details| details["type"] == "artifact" }.map { |details| details["url"] }
       end
 
+      sig { returns(T::Array[String]) }
       def path_sources
         sources.select { |details| details["type"] == "path" }.map { |details| details["url"] }
       end
 
+      sig { returns(T::Array[T::Hash[String, T.untyped]]) }
       def sources
-        @sources ||=
+        @sources ||= T.let(
           begin
             repos = parsed_composer_json.fetch("repositories", [])
             if repos.is_a?(Hash) || repos.is_a?(Array)
@@ -147,9 +165,12 @@ module Dependabot
             else
               []
             end
-          end
+          end,
+          T.nilable(T::Array[T::Hash[String, T.untyped]])
+        )
       end
 
+      sig { params(unfetchable_deps: T::Array[String]).returns(T::Array[Dependabot::DependencyFile]) }
       def build_unfetchable_deps(unfetchable_deps)
         unfetchable_deps.filter_map do |path|
           PathDependencyBuilder.new(
@@ -160,6 +181,7 @@ module Dependabot
         end
       end
 
+      sig { params(path: String).returns(T::Array[String]) }
       def expand_path(path)
         wildcard_depth = 0
         path = path.gsub(/\*$/, "")
@@ -185,6 +207,7 @@ module Dependabot
           .select { |p| p.to_s.start_with?(path.gsub(/\*$/, "")) }
       end
 
+      sig { returns(T::Array[String]) }
       def lockfile_path_dependency_paths
         keys = FileParser::DEPENDENCY_GROUP_KEYS
                .map { |h| h.fetch(:lockfile) }
@@ -198,20 +221,29 @@ module Dependabot
         end
       end
 
+      sig { returns(T::Hash[String, T.untyped]) }
       def parsed_composer_json
-        @parsed_composer_json ||= JSON.parse(composer_json.content)
+        @parsed_composer_json ||= T.let(
+          JSON.parse(T.must(composer_json.content)),
+          T.nilable(T::Hash[String, T.untyped])
+        )
       rescue JSON::ParserError
         raise Dependabot::DependencyFileNotParseable, composer_json.path
       end
 
+      sig { returns(T::Hash[String, T.untyped]) }
       def parsed_lockfile
         return {} unless composer_lock
 
-        @parsed_lockfile ||= JSON.parse(composer_lock.content)
+        @parsed_lockfile ||= T.let(
+          JSON.parse(T.must(T.must(composer_lock).content)),
+          T.nilable(T::Hash[String, T.untyped])
+        )
       rescue JSON::ParserError
         {}
       end
 
+      sig { params(filename: String).returns(Dependabot::DependencyFile) }
       def fetch_file_with_root_fallback(filename)
         path = Pathname.new(File.join(directory, filename)).cleanpath.to_path
 

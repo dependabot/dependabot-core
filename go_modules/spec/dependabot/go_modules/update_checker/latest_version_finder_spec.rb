@@ -448,6 +448,35 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
         end
       end
     end
+
+    context "when there's a newer major version and fetching release date is not successful" do
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:enable_shared_helpers_command_timeout).and_return(false)
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:enable_cooldown_for_gomodules).and_return(true)
+        allow(Dependabot::SharedHelpers)
+          .to receive(:run_shell_command).and_call_original
+      end
+
+      let(:dependency_version) { "0.0.0" }
+      let(:dependency_name) { "github.com/x/x" }
+
+      let(:cooldown_options) do
+        Dependabot::Package::ReleaseCooldownOptions.new(
+          default_days: 7,
+          semver_major_days: 7,
+          semver_minor_days: 7,
+          semver_patch_days: 7,
+          include: [],
+          exclude: []
+        )
+      end
+
+      it "returns the latest resolvable version" do
+        expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("0.0.0"))
+      end
+    end
   end
 
   describe "#lowest_security_fix_version" do

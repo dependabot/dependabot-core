@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 using Microsoft.Language.Xml;
 
@@ -526,7 +527,7 @@ internal static class PackageReferenceUpdater
     /// <returns>The updated files.</returns>
     private static async Task<IEnumerable<string>> AddTransitiveDependencyAsync(string repoRootPath, string projectPath, string dependencyName, string newDependencyVersion, ExperimentsManager experimentsManager, ILogger logger)
     {
-        var updatedFiles = new[] { projectPath }; // assume this worked unless...
+        var updatedFiles = new List<string>() { projectPath }; // assume this worked unless...
         var projectDirectory = Path.GetDirectoryName(projectPath)!;
         await MSBuildHelper.HandleGlobalJsonAsync(projectDirectory, repoRootPath, experimentsManager, async () =>
         {
@@ -543,6 +544,17 @@ internal static class PackageReferenceUpdater
             {
                 logger.Warn($"    Transitive dependency [{dependencyName}/{newDependencyVersion}] was not added.\nSTDOUT:\n{stdout}\nSTDERR:\n{stderr}");
                 updatedFiles = [];
+            }
+
+            // output might contain a line like this:
+            //   info : PackageReference for package 'Some.Package' added to 'C:\project.csproj' and PackageVersion added to central package management file 'C:\Directory.Packages.props'.
+            // we explicitly want to pull out this:                                                                                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            // so we can report all files updated on disk
+            var match = Regex.Match(stdout, @"added to central package management file '(?<CentralPackageManagementFilePath>[^']+)'");
+            if (match.Success)
+            {
+                var cpmFilePath = match.Groups["CentralPackageManagementFilePath"].Value;
+                updatedFiles.Add(cpmFilePath);
             }
 
             return exitCode;

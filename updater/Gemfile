@@ -29,7 +29,7 @@ gem "dependabot-terraform", path: "../terraform"
 gem "dependabot-uv", path: "../uv"
 
 gem "http", "~> 5.1"
-gem "octokit", "7.2.0"
+gem "octokit", "~> 7.2"
 gem "opentelemetry-exporter-otlp", "~> 0.30"
 gem "opentelemetry-exporter-otlp-logs", "~> 0.2"
 gem "opentelemetry-exporter-otlp-metrics", "~> 0.4"
@@ -42,9 +42,9 @@ gem "opentelemetry-metrics-sdk", "~> 0.6"
 gem "opentelemetry-sdk", "~> 1.8"
 gem "sentry-opentelemetry", "~> 5.23"
 gem "sentry-ruby", "~> 5.23"
-gem "terminal-table", "~> 3.0.2"
+gem "terminal-table", "~> 3.0"
 
-gem "flamegraph", "~> 0.9.5"
+gem "flamegraph", "~> 0.9"
 
 gem "zeitwerk", "~> 2.7"
 

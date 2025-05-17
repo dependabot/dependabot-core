@@ -177,7 +177,7 @@ COPY --from=rust /usr/local/cargo $CARGO_HOME
 RUN mkdir -p ~/.cargo && printf "[net]\ngit-fetch-with-cli = true\n" >> ~/.cargo/config.toml
 
 # Install uv by copying from the official image
-COPY --from=ghcr.io/astral-sh/uv:0.6.13 /uv /uvx /usr/local/bin/
+COPY --from=ghcr.io/astral-sh/uv:0.7.1 /uv /uvx /usr/local/bin/
 
 COPY --chown=dependabot:dependabot cargo $DEPENDABOT_HOME/cargo
 COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
