@@ -7,6 +7,7 @@ require "sorbet-runtime"
 
 require "dependabot/errors"
 require "dependabot/git_ref"
+require "dependabot/git_tag_release_date"
 require "dependabot/credential"
 
 module Dependabot
@@ -91,6 +92,31 @@ module Dependabot
       refs_for_upload_pack
         .find { |r| r.ref_sha == ref }
         &.commit_sha
+    end
+
+    sig { returns(T::Array[GitTagReleaseDate]) }
+    def refs_for_tag_with_release_date
+      @refs_for_tag_with_release_date ||= T.let(parse_refs_for_tag_with_release_date,
+                                                T.nilable(T::Array[GitTagReleaseDate]))
+    end
+
+    sig { returns(T::Array[GitTagReleaseDate]) }
+    def parse_refs_for_tag_with_release_date
+      result_lines = []
+      if upload_tag_with_release_date.nil?
+        return result_lines
+      end
+
+      T.must(upload_tag_with_release_date).lines.each do |line|
+        tag, release_date = line.split(/\s+/, 2)
+        next unless tag && release_date
+
+        result_lines << GitTagReleaseDate.new(
+          tag: tag.strip,
+          release_date: release_date.strip
+        )
+      end
+      result_lines
     end
 
     private
@@ -259,6 +285,63 @@ module Dependabot
     def excon_defaults
       # Some git hosts are slow when returning a large number of tags
       SharedHelpers.excon_defaults(read_timeout: 20)
+    end
+
+    sig { returns(T.nilable(String)) }
+    def upload_tag_with_release_date
+      @upload_tag_release_date ||= T.let(fetch_tags_with_release_date(url), T.nilable(String))
+    rescue Octokit::ClientError
+      raise Dependabot::GitDependenciesNotReachable, [url]
+    end
+
+    sig { params(uri: String).returns(String) }
+    def fetch_tags_with_release_date(uri)
+      response = fetch_raw_upload_pack_for(uri)
+      return response.body if response.status == 200
+
+      response_with_git = fetch_tags_with_release_date_from_git_for(uri)
+      return response_with_git.body if response_with_git.status == 200
+
+      raise Dependabot::GitDependenciesNotReachable, [uri] unless uri.match?(KNOWN_HOSTS)
+
+      raise "Unexpected response: #{response.status} - #{response.body}" if response.status < 400
+
+      if uri.match?(/github\.com/i)
+        response = response.data
+        response[:response_headers] = response[:headers]
+        raise Octokit::Error.from_response(response)
+      end
+
+      raise "Server error at #{uri}: #{response.body}" if response.status >= 500
+
+      raise Dependabot::GitDependenciesNotReachable, [uri]
+    rescue Excon::Error::Socket, Excon::Error::Timeout
+      raise if uri.match?(KNOWN_HOSTS)
+
+      raise Dependabot::GitDependenciesNotReachable, [uri]
+    end
+
+    sig { params(uri: String).returns(T.untyped) }
+    def fetch_tags_with_release_date_from_git_for(uri)
+      service_pack_uri = uri
+      service_pack_uri += ".git" unless service_pack_uri.end_with?(".git") || skip_git_suffix(uri)
+
+      env = { "PATH" => ENV.fetch("PATH", nil), "GIT_TERMINAL_PROMPT" => "0" }
+      command = "git for-each-ref --format=\"%(refname:short) %(creatordate:short)\" refs/tags #{service_pack_uri}"
+      command = SharedHelpers.escape_command(command)
+
+      begin
+        stdout, stderr, process = Open3.capture3(env, command)
+        # package the command response like a HTTP response so error handling remains unchanged
+      rescue Errno::ENOENT => e # thrown when `git` isn't installed...
+        OpenStruct.new(body: e.message, status: 500)
+      else
+        if process.success?
+          OpenStruct.new(body: stdout, status: 200)
+        else
+          OpenStruct.new(body: stderr, status: 500)
+        end
+      end
     end
   end
 end
