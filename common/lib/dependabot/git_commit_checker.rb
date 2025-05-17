@@ -220,6 +220,11 @@ module Dependabot
       @dependency_source_details || dependency.source_details(allowed_types: ["git"])
     end
 
+    sig { returns(T::Array[Dependabot::GitTagReleaseDate]) }
+    def refs_for_tag_with_release_date
+      local_repo_git_metadata_fetcher.refs_for_tag_with_release_date
+    end
+
     sig { params(commit_sha: T.nilable(String)).returns(T.nilable(String)) }
     def most_specific_version_tag_for_sha(commit_sha)
       tags = local_tags.select { |t| t.commit_sha == commit_sha && version_class.correct?(t.name) }
