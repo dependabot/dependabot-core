@@ -5,9 +5,12 @@ require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/git_metadata_fetcher"
 require "dependabot/git_ref"
+require "dependabot/git_tag_release_date"
 
 RSpec.describe Dependabot::GitMetadataFetcher do
   let(:checker) { described_class.new(url: url, credentials: credentials) }
+  let(:url_tag_release_date) { "https://github.com/example/repo.git" }
+  let(:fetcher) { described_class.new(url: url, credentials: credentials) }
 
   let(:url) { "https://github.com/gocardless/business" }
   let(:credentials) do
@@ -340,6 +343,73 @@ RSpec.describe Dependabot::GitMetadataFetcher do
         let(:ref) { "HEAD" }
 
         it { is_expected.to eq("7bb4e41ce5164074a0920d5b5770d196b4d90104") }
+      end
+    end
+  end
+
+  describe "#refs_for_tag_with_release_date" do
+    context "when upload_tag_with_release_date contains valid data" do
+      let(:upload_tag_with_release_date) do
+        <<~TAGS
+          v1.0.0 2023-01-01
+          v1.1.0 2023-02-01
+        TAGS
+      end
+
+      before do
+        allow(fetcher).to receive(:upload_tag_with_release_date).and_return(upload_tag_with_release_date)
+      end
+
+      it "parses the tags and release dates into GitTagReleaseDate objects" do
+        result = fetcher.refs_for_tag_with_release_date
+
+        expect(result.size).to eq(2)
+        expect(result.first).to be_a(Dependabot::GitTagReleaseDate)
+        expect(result.first.tag).to eq("v1.0.0")
+        expect(result.first.release_date).to eq("2023-01-01")
+        expect(result.last.tag).to eq("v1.1.0")
+        expect(result.last.release_date).to eq("2023-02-01")
+      end
+    end
+
+    context "when upload_tag_with_release_date is empty" do
+      before do
+        allow(fetcher).to receive(:upload_tag_with_release_date).and_return("")
+      end
+
+      it "returns an empty array" do
+        result = fetcher.refs_for_tag_with_release_date
+        expect(result).to eq([])
+      end
+    end
+
+    context "when upload_tag_with_release_date is nil" do
+      before do
+        allow(fetcher).to receive(:upload_tag_with_release_date).and_return(nil)
+      end
+
+      it "returns an empty array" do
+        result = fetcher.refs_for_tag_with_release_date
+        expect(result).to eq([])
+      end
+    end
+
+    context "when upload_tag_with_release_date contains invalid data" do
+      let(:upload_tag_with_release_date) do
+        <<~TAGS
+          invalid_line
+          v1.0.0
+        TAGS
+      end
+
+      before do
+        allow(fetcher).to receive(:upload_tag_with_release_date).and_return(upload_tag_with_release_date)
+      end
+
+      it "skips invalid lines and parses valid ones" do
+        result = fetcher.refs_for_tag_with_release_date
+
+        expect(result.size).to eq(2) # No valid tag-release pairs
       end
     end
   end
