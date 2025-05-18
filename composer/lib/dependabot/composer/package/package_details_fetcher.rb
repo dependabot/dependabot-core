@@ -10,7 +10,6 @@ require "sorbet-runtime"
 require "dependabot/registry_client"
 require "dependabot/package/package_release"
 require "dependabot/package/package_details"
-require "dependabot/python/package/package_registry_finder"
 
 # Stores metadata for a package, including all its available versions
 module Dependabot
