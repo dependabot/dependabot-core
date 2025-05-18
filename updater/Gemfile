@@ -42,7 +42,7 @@ gem "opentelemetry-metrics-sdk", "~> 0.7"
 gem "opentelemetry-sdk", "~> 1.8"
 gem "sentry-opentelemetry", "~> 5.24"
 gem "sentry-ruby", "~> 5.23"
-gem "terminal-table", "~> 3.0"
+gem "terminal-table", "~> 4.0"
 
 gem "flamegraph", "~> 0.9"
 

@@ -439,8 +439,8 @@ GEM
     sorbet-runtime (0.5.12104)
     stackprof (0.2.27)
     stringio (3.1.7)
-    terminal-table (3.0.2)
-      unicode-display_width (>= 1.1.1, < 3)
+    terminal-table (4.0.0)
+      unicode-display_width (>= 1.1.1, < 4)
     toml-rb (4.0.0)
       citrus (~> 3.0, > 3.0)
       racc (~> 1.7)
@@ -513,7 +513,7 @@ DEPENDENCIES
   sentry-opentelemetry (~> 5.24)
   sentry-ruby (~> 5.23)
   simplecov (~> 0.22)
-  terminal-table (~> 3.0)
+  terminal-table (~> 4.0)
   turbo_tests (~> 2.2)
   vcr (~> 6.1)
   webmock (~> 3.18)
@@ -658,7 +658,7 @@ CHECKSUMS
   sorbet-runtime (0.5.12104) sha256=eb50e58484773e0ae0a60496718406751ae6d7eb8eb7ab8db78a1479b4f27012
   stackprof (0.2.27) sha256=aff6d28656c852e74cf632cc2046f849033dc1dedffe7cb8c030d61b5745e80c
   stringio (3.1.7) sha256=5b78b7cb242a315fb4fca61a8255d62ec438f58da2b90be66048546ade4507fa
-  terminal-table (3.0.2) sha256=f951b6af5f3e00203fb290a669e0a85c5dd5b051b3b023392ccfd67ba5abae91
+  terminal-table (4.0.0) sha256=f504793203f8251b2ea7c7068333053f0beeea26093ec9962e62ea79f94301d2
   toml-rb (4.0.0) sha256=bc997a4114c94a65dd5287aa4784ef36cff2c80ec2ecb5980fe7d674f8ed37ea
   turbo_tests (2.2.4) sha256=d2ae747391ad59253d45b8dfae045cef9ae4126c78d1174caf82c898a3bb9c0c
   unicode-display_width (2.6.0) sha256=12279874bba6d5e4d2728cef814b19197dbb10d7a7837a869bab65da943b7f5a
