@@ -26,7 +26,7 @@ PATH
       bundler (>= 1.16, < 3.0.0)
       commonmarker (~> 0.23)
       docker_registry2 (~> 1.18)
-      excon (~> 0.109)
+      excon (>= 0.109, < 2.0)
       faraday (~> 2.7)
       faraday-retry (~> 2.2)
       gitlab (~> 5.0)
@@ -214,7 +214,8 @@ GEM
     docker_registry2 (1.18.2)
       rest-client (>= 1.8.0)
     domain_name (0.6.20240107)
-    excon (0.109.0)
+    excon (1.2.5)
+      logger
     faraday (2.13.1)
       faraday-net_http (>= 2.0, < 3.5)
       json
@@ -567,7 +568,7 @@ CHECKSUMS
   docile (1.4.0) sha256=5f1734bde23721245c20c3d723e76c104208e1aa01277a69901ce770f0ebb8d3
   docker_registry2 (1.18.2) sha256=2ace909110fbca29d69dd1cdec99f555024aa6f6577798638139c8e8e556910f
   domain_name (0.6.20240107) sha256=5f693b2215708476517479bf2b3802e49068ad82167bcd2286f899536a17d933
-  excon (0.109.0) sha256=bda092e866d77089a41f4791b221e0cb96c48ef981db96ad1dcc66fae5e3b5ce
+  excon (1.2.5) sha256=ca040bb61bc0059968f34a17115a00d2db8562e3c0c5c5c7432072b551c85a9d
   faraday (2.13.1) sha256=cc531eb5467e7d74d4517630fa96f1a7003647cbf20a9a3e067d098941217b75
   faraday-net_http (3.4.0) sha256=a1f1e4cd6a2cf21599c8221595e27582d9936819977bbd4089a601f24c64e54a
   faraday-retry (2.3.1) sha256=4004faa21f41fc5360d359bc79889fc58fb7fae0ce93bfb737a784ac76805c03
