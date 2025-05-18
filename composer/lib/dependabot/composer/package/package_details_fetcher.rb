@@ -49,6 +49,7 @@ module Dependabot
           @security_advisories = security_advisories
 
           @registry_urls = T.let(nil, T.nilable(T::Array[String]))
+          @registry_version_details = T.let(nil, T.nilable(T::Array[T::Hash[String, T.untyped]]))
         end
 
         sig { returns(Dependabot::Dependency) }
@@ -66,71 +67,43 @@ module Dependabot
         sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
         attr_reader :security_advisories
 
+        sig { returns(T::Array[Dependabot::Package::PackageRelease]) }
+        def fetch_releases
+          available_version_details = registry_version_details
+                                      .select do |version_details|
+            version = version_details.fetch("version")
+            version && version_class.correct?(version.gsub(/^v/, ""))
+          end
+
+          releases = available_version_details.map do |version_details|
+            format_version_release(version_details)
+          end
+          releases
+        end
+
         sig { returns(Dependabot::Package::PackageDetails) }
         def fetch
-          package_releases = fetch_available_versions
+          available_version_details = registry_version_details
+                                      .select do |version_details|
+            version = version_details.fetch("version")
+            version && version_class.correct?(version.gsub(/^v/, ""))
+          end
+
+          releases = available_version_details.map do |version_details|
+            format_version_release(version_details)
+          end
           Dependabot::Package::PackageDetails.new(
             dependency: dependency,
-            releases: package_releases.reverse.uniq(&:version)
+            releases: releases.reverse.uniq(&:version)
           )
         end
 
         sig do
-          returns(T::Array[Dependabot::Package::PackageRelease])
+          returns(T::Array[T::Hash[String, T.untyped]])
         end
-        def fetch_available_versions
-          listing = fetch_package_listing
-          return [] if listing.nil?
-          return [] unless listing.is_a?(Hash)
-          return [] if listing.fetch("packages", []) == []
-          return [] unless listing.dig("packages", dependency.name.downcase)
+        def registry_version_details
+          return @registry_version_details unless @registry_version_details.nil?
 
-          # Packagist's Metadata API format:
-          # v1: "packages": {<package name>: {<version_number>: {hash of metadata for a particular release version}}}
-          # v2: "packages": {<package name>: [{hash of metadata for a particular release version}]}
-          version_listings = listing.dig("packages", dependency.name.downcase)
-
-          if version_listings.is_a?(Hash) # some private registries are still using the v1 format
-            # Regardless of API version, composer always reads the version from the metadata hash. So for the v1 API,
-            # ignore the keys as repositories other than packagist.org could be using different keys. Instead, coerce
-            # to an array of metadata hashes to match v2 format.
-            version_listings = version_listings.values
-          end
-
-          package_releases = []
-
-          if version_listings.is_a?(Array)
-            version_listings.map do |data|
-              release = format_version_release(data)
-              package_releases << release
-            end
-          end
-
-          package_releases
-        end
-
-        sig do
-          params(
-            release_data: T::Hash[String, T.untyped]
-          )
-            .returns(T.nilable(Dependabot::Package::PackageRelease))
-        end
-        def format_version_release(release_data)
-          version = release_data["version"].gsub(/^v/, "")
-          released_at = release_data["time"] ? Time.parse(release_data["time"]) : nil # this will return nil if the time key is missing, avoiding error # rubocop:disable Layout/LineLength
-          url = release_data["dist"] ? release_data["dist"]["url"] : nil
-          package_type = PACKAGE_TYPE
-
-          package_release(
-            version: version,
-            released_at: released_at,
-            url: url,
-            package_type: package_type
-          )
-        end
-
-        sig { returns(T::Hash[String, T.untyped]) }
-        def fetch_package_listing # rubocop:disable Metrics/AbcSize,Metrics/PerceivedComplexity
           repositories =
             JSON.parse(T.must(composer_file.content))
                 .fetch("repositories", [])
@@ -145,11 +118,19 @@ module Dependabot
             urls << "https://repo.packagist.org/p2/#{dependency.name.downcase}.json"
           end
 
-          url = urls[0]
-          url_host = URI(url).host
-          cred = registry_credentials.find do |c|
-            url_host == c["registry"] || url_host == URI(T.must(c["registry"])).host
+          @registry_version_details = []
+          urls.each do |url|
+            @registry_version_details += fetch_registry_versions_from_url(url)
           end
+
+          @registry_version_details.uniq! { |version_details| version_details["version"] }
+          @registry_version_details
+        end
+
+        sig { params(url: String).returns(T::Array[T::Hash[String, T.untyped]]) }
+        def fetch_registry_versions_from_url(url)
+          url_host = URI(url).host
+          cred = registry_credentials.find { |c| url_host == c["registry"] || url_host == URI(T.must(c["registry"])).host } # rubocop:disable Layout/LineLength
 
           response = Dependabot::RegistryClient.get(
             url: url,
@@ -158,13 +139,67 @@ module Dependabot
               password: cred&.fetch("password", nil)
             }
           )
-          return {} unless response.status == 200
+
+          parse_registry_response(response, url)
+        rescue Excon::Error::Socket, Excon::Error::Timeout
+          []
+        end
+
+        sig { params(response: T.untyped, url: String).returns(T::Array[T::Hash[String, T.untyped]]) }
+        def parse_registry_response(response, url)
+          return [] unless response.status == 200
 
           listing = JSON.parse(response.body)
-          listing
+          return [] if listing.nil?
+          return [] unless listing.is_a?(Hash)
+          return [] if listing.fetch("packages", []) == []
+          return [] unless listing.dig("packages", dependency.name.downcase)
+
+          extract_versions(listing)
         rescue JSON::ParserError
           msg = "'#{url}' does not contain valid JSON"
           raise DependencyFileNotResolvable, msg
+        end
+
+        sig { params(listing: T::Hash[String, T.untyped]).returns(T::Array[T::Hash[String, T.untyped]]) }
+        def extract_versions(listing)
+          # Packagist's Metadata API format:
+          # v1: "packages": {<package name>: {<version_number>: {hash of metadata for a particular release version}}}
+          # v2: "packages": {<package name>: [{hash of metadata for a particular release version}]}
+          version_listings = listing.dig("packages", dependency.name.downcase)
+
+          if version_listings.is_a?(Hash) # some private registries are still using the v1 format
+            # Regardless of API version, composer always reads the version from the metadata hash. So for the v1 API,
+            # ignore the keys as repositories other than packagist.org could be using different keys. Instead, coerce
+            # to an array of metadata hashes to match v2 format.
+            version_listings = version_listings.values
+          end
+
+          if version_listings.is_a?(Array)
+            version_listings
+          else
+            []
+          end
+        end
+
+        sig do
+          params(
+            release_data: T::Hash[String, T.untyped]
+          )
+            .returns(Dependabot::Package::PackageRelease)
+        end
+        def format_version_release(release_data)
+          version = release_data["version"].gsub(/^v/, "")
+          released_at = release_data["time"] ? Time.parse(release_data["time"]) : nil # this will return nil if the time key is missing, avoiding error # rubocop:disable Layout/LineLength
+          url = release_data["dist"] ? release_data["dist"]["url"] : nil
+          package_type = PACKAGE_TYPE
+
+          package_release(
+            version: version,
+            released_at: released_at,
+            url: url,
+            package_type: package_type
+          )
         end
 
         sig do
@@ -187,19 +222,6 @@ module Dependabot
             url: url,
             package_type: package_type,
             language: nil
-          )
-        end
-
-        sig do
-          params(releases: T::Array[Dependabot::Package::PackageRelease])
-            .returns(Dependabot::Package::PackageDetails)
-        end
-        def package_details(releases)
-          @package_details ||= T.let(
-            Dependabot::Package::PackageDetails.new(
-              dependency: dependency,
-              releases: releases.reverse.uniq(&:version)
-            ), T.nilable(Dependabot::Package::PackageDetails)
           )
         end
 

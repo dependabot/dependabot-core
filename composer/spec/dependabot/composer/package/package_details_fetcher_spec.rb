@@ -70,6 +70,8 @@ RSpec.describe Dependabot::Composer::Package::PackageDetailsFetcher do
         expect(fetch.releases).not_to be_empty
         expect(a_request(:get, json_url)).to have_been_made.once
 
+        expect(fetch.releases.size).to be(894)
+
         first_result = fetch.releases.first
         expect(first_result.version).to eq(latest_release.version)
         expect(first_result.released_at).to eq(latest_release.released_at)

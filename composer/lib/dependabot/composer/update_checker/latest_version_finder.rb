@@ -19,19 +19,6 @@ module Dependabot
         extend T::Sig
 
         sig do
-          override.returns(T.nilable(Dependabot::Package::PackageDetails))
-        end
-        def package_details
-          @package_details ||= Package::PackageDetailsFetcher.new(
-            dependency: dependency,
-            dependency_files: dependency_files,
-            credentials: credentials,
-            ignored_versions: ignored_versions,
-            security_advisories: security_advisories
-          ).fetch
-        end
-
-        sig do
           params(
             dependency: Dependabot::Dependency,
             dependency_files: T::Array[Dependabot::DependencyFile],
@@ -49,6 +36,25 @@ module Dependabot
           @ignored_versions    = ignored_versions
           @raise_on_ignored    = raise_on_ignored
           @security_advisories = security_advisories
+          @fetcher = T.let(nil, T.nilable(Package::PackageDetailsFetcher))
+        end
+
+        sig { returns(Package::PackageDetailsFetcher) }
+        def fetcher
+          @fetcher ||= Package::PackageDetailsFetcher.new(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            credentials: credentials,
+            ignored_versions: ignored_versions,
+            security_advisories: security_advisories
+          )
+        end
+
+        sig do
+          override.returns(T.nilable(Dependabot::Package::PackageDetails))
+        end
+        def package_details
+          @package_details ||= fetcher.fetch
         end
 
         sig do
@@ -128,7 +134,7 @@ module Dependabot
             ignored_versions: ignored_versions,
             security_advisories: security_advisories,
             raise_on_ignored: false
-          ).fetch_available_versions
+          ).fetch_releases
         end
 
         sig { params(_url: String).returns(T::Array[String]) }
