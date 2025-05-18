@@ -51,7 +51,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "gpgme", "~> 2.0"
   spec.add_development_dependency "rake", "~> 13.2"
   spec.add_development_dependency "rspec", "~> 3.12"
-  spec.add_development_dependency "rspec-its", "~> 1.3"
+  spec.add_development_dependency "rspec-its", "~> 2.0"
   spec.add_development_dependency "rspec-sorbet", "~> 1.9"
   spec.add_development_dependency "rubocop", "~> 1.67"
   spec.add_development_dependency "rubocop-performance", "~> 1.22"
