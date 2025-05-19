@@ -95,10 +95,10 @@ module Dependabot
             .returns(T.nilable(Dependabot::Version))
         end
         def fetch_latest_version(language_version: nil) # rubocop:disable Lint/UnusedMethodArgument
-          versions = available_versions
-          versions = filter_prerelease_versions(versions)
-          versions = filter_ignored_versions(versions)
-          versions.max_by(&:version)&.version
+          releases = available_versions
+          releases = filter_prerelease_versions(releases)
+          releases = filter_ignored_versions(releases)
+          releases.max_by(&:version)&.version
         end
 
         sig do
@@ -106,13 +106,13 @@ module Dependabot
             .returns(T.nilable(Dependabot::Version))
         end
         def fetch_lowest_security_fix_version(language_version: nil) # rubocop:disable Lint/UnusedMethodArgument
-          versions = available_versions
-          versions = filter_prerelease_versions(versions)
-          versions = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(versions,
+          releases = available_versions
+          releases = filter_prerelease_versions(releases)
+          releases = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(releases,
                                                                                            security_advisories)
-          versions = filter_ignored_versions(versions)
-          versions = filter_lower_versions(versions)
-          versions.min_by(&:version)&.version
+          releases = filter_ignored_versions(releases)
+          releases = filter_lower_versions(releases)
+          releases.min_by(&:version)&.version
         end
 
         sig { returns(T::Boolean) }
