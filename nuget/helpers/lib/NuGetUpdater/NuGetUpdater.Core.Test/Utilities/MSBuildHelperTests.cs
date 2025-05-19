@@ -1776,6 +1776,14 @@ public class MSBuildHelperTests : TestBase
         yield return
         [
             // output
+            "Response status code does not indicate success: 401",
+            // expectedError
+            new PrivateSourceAuthenticationFailure(["http://localhost/test-feed"]),
+        ];
+
+        yield return
+        [
+            // output
             "Response status code does not indicate success: 403",
             // expectedError
             new PrivateSourceAuthenticationFailure(["http://localhost/test-feed"]),
@@ -1856,9 +1864,25 @@ public class MSBuildHelperTests : TestBase
         yield return
         [
             // output
+            "Unable to resolve 'Some.Package'. An additional constraint '(= 1.2.3)' defined in packages.config prevents this operation.",
+            // expectedError
+            new UpdateNotPossible(["Some.Package.= 1.2.3"]),
+        ];
+
+        yield return
+        [
+            // output
             "Failed to fetch results from V2 feed at 'http://nuget.example.com/FindPackagesById()?id='Some.Package'&semVerLevel=2.0.0' with following message : Response status code does not indicate success: 404.",
             // expectedError
             new DependencyNotFound("Some.Package"),
+        ];
+
+        yield return
+        [
+            // output
+            "This part is not reported.\nAn error occurred while reading file '/path/to/packages.config': Some error message.\nThis part is not reported.",
+            // expectedError
+            new DependencyFileNotParseable("/path/to/packages.config", "Some error message."),
         ];
     }
 

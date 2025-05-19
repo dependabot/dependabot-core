@@ -47,10 +47,17 @@ public class JobErrorBaseTests : TestBase
             new PrivateSourceBadResponse(["http://nuget.example.com/v3/index.json"]),
         ];
 
-        // inner exception turns into private_source_bad_response
+        // inner exception turns into private_source_bad_response; 500
         yield return
         [
             new FatalProtocolException("nope", new HttpRequestException("nope", null, HttpStatusCode.InternalServerError)),
+            new PrivateSourceBadResponse(["http://nuget.example.com/v3/index.json"]),
+        ];
+
+        // inner exception turns into private_source_bad_response; ResponseEnded
+        yield return
+        [
+            new FatalProtocolException("nope", new HttpRequestException("nope", new HttpIOException(HttpRequestError.ResponseEnded))),
             new PrivateSourceBadResponse(["http://nuget.example.com/v3/index.json"]),
         ];
 
