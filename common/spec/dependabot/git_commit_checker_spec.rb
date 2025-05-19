@@ -1568,7 +1568,8 @@ RSpec.describe Dependabot::GitCommitChecker do
     context "when the metadata fetcher raises an error" do
       before do
         allow(checker).to receive(:local_repo_git_metadata_fetcher).and_return(git_metadata_fetcher)
-        allow(git_metadata_fetcher).to receive(:refs_for_tag_with_release_date).and_raise(Dependabot::GitDependenciesNotReachable, "Error fetching metadata")
+        allow(git_metadata_fetcher).to receive(:refs_for_tag_with_release_date)
+                                   .and_raise(Dependabot::GitDependenciesNotReachable, "Error fetching metadata")
       end
 
       it "raises a GitDependenciesNotReachable error" do
