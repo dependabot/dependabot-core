@@ -348,52 +348,6 @@ $package_manager, $repo_name = ARGV
 # Ensure the script does not exit prematurely
 begin
   $package_manager, $repo_name = ARGV
-  # puts "**********begin**********"
-  # exit_flag = false  # Set this flag based on your conditions
-  # def checkit(dir_path = "tmp/")
-  #   if Dir.exist?(dir_path)
-  #     entries = Dir.entries(dir_path) - ['.', '..']
-
-  #     if entries.empty?
-  #       puts "Directory '#{dir_path}' is empty."
-  #     else
-  #       puts "Contents of '#{dir_path}':"
-  #       entries.each { |entry| puts "  - #{entry}" }
-  #     end
-  #   else
-  #     puts "Error: Directory '#{dir_path}' does not exist."
-  #   end
-  # end
-
-  def checkit
-    # Get all directories in tmp/
-    directories = Dir.entries('tmp/').select do |entry|
-      File.directory?(File.join('tmp/', entry)) && entry != '.' && entry != '..'
-    end
-
-    # Print all directories on a single line
-    puts directories.join(', ')
-
-    # Print the count on the second line
-    puts "Total directories: #{directories.count}"
-    puts "--------------------------------"
-    puts "pavel"
-    count_files
-    puts "count_files: #{count_files}"
-  end
-
-  def count_files
-    path = '/home/dependabot/bin/tmp/burntsushi/ripgrep/'
-    return 0 unless Dir.exist?(path)
-
-    count = 0
-    Dir.each_child(path) do |entry|
-      full_path = File.join(path, entry)
-      count += 1 if File.file?(full_path)
-    end
-    return count
-    #puts "count_files: #{count}"
-  end
 
   def show_diff(original_file, updated_file)
     return unless original_file
@@ -440,14 +394,6 @@ begin
     File.write(cache_path, Marshal.dump(data))
     data
   end
-
-  # no cloning up to here
-  #checkit
-  # USEFUL EXIT FLAG
-  #if exit_flag
-  #  puts "Exiting due to exit flag being set to true"
-  #  exit  # This will terminate the script
-  #end
 
   def dependency_files_cache_dir
     branch = $options[:branch] || ""
@@ -525,8 +471,6 @@ begin
   # rubocop:enable Metrics/CyclomaticComplexity
   # rubocop:enable Metrics/MethodLength
   # rubocop:enable Metrics/AbcSize
-  #puts "**********line 498**********pkdebug"
-  #checkit
 
   def fetch_files(fetcher)
     if $repo_contents_path
@@ -534,12 +478,8 @@ begin
         puts "=> reading cloned repo from #{$repo_contents_path}"
       else
         puts "=> cloning into #{$repo_contents_path}"
-        puts "no cloning bastarts"
-        puts "--deleted rm_rf*************************************************"
-        "===fetcher: #{fetcher.inspect} is a #{fetcher.class}"
         FileUtils.rm_rf($repo_contents_path)
-        #fetcher.clone_repo_contents
-        puts "<--dry-run.db-->line511-pkdebug -->"
+        fetcher.clone_repo_contents
       end
       if $options[:commit]
         Dir.chdir($repo_contents_path) do
@@ -589,9 +529,6 @@ begin
     end
   end
 
-  #puts "**********line 559**********pkdebug"
-  #checkit
-
   StackProf.start(raw: true) if $options[:profile]
 
   $network_trace_count = 0
@@ -622,19 +559,12 @@ begin
     repo_contents_path: $repo_contents_path,
     options: $options[:updater_options]
   }
-  puts "**********line 592**********pkdebug"
-  checkit
   $config_file = begin
     cfg_file = Dependabot::Config::FileFetcher.new(**fetcher_args).config_file
     Dependabot::Config::File.parse(cfg_file.content)
   rescue Dependabot::RepoNotFound, Dependabot::DependencyFileNotFound
     Dependabot::Config::File.new(updates: [])
   end
-
-  puts "**********line 600**********pkdebug******************************"
-  checkit
-  #exit
-  # this is where it the files are created
   $update_config = begin
     $config_file.update_config(
       $package_manager,
@@ -645,36 +575,15 @@ begin
     raise Dependabot::DependabotError, "Invalid package manager: #{$package_manager}"
   end
 
-
-  #puts "**********line 604**********pkdebug"
-  #checkit
-
-
   fetcher = Dependabot::FileFetchers.for_package_manager($package_manager).new(**fetcher_args)
   $files = fetch_files(fetcher)
   return if $files.empty?
 
   ecosystem_versions = fetcher.ecosystem_versions
-  puts "🎈 hah pavel Ecosystem Versions log: #{ecosystem_versions}" unless ecosystem_versions.nil?
-
-  #puts "**********line 585**********pkdebug"
-  #checkit
-  exit_flag = false
-  if exit_flag
-    puts "Exiting due to exit flag being set to true"
-    exit  # This will terminate the script
-  end
-
-
-
+  puts "🎈 Ecosystem Versions log: #{ecosystem_versions}" unless ecosystem_versions.nil?
 
   # Parse the dependency files
   puts "=> parsing dependency files"
-  puts "=> $repo_contents_path: #{$repo_contents_path}"
-  #puts "=> $files: #{$files}" #too long
-  puts "=> $source: #{$source}"
-  puts "=> $options[:credentials]: #{$options[:credentials]}"
-  puts "=> $options[:reject_external_code]: #{$options[:reject_external_code]}"
   parser = Dependabot::FileParsers.for_package_manager($package_manager).new(
     dependency_files: $files,
     repo_contents_path: $repo_contents_path,

@@ -262,8 +262,6 @@ docker run --rm -ti \
   -v "$(pwd)/updater/Gemfile:$CODE_DIR/dependabot-updater/Gemfile" \
   -v "$(pwd)/updater/lib:$CODE_DIR/dependabot-updater/lib" \
   -v "$(pwd)/updater/spec:$CODE_DIR/dependabot-updater/spec" \
-  -v /Users/pk/code/dependabot-core-my-scripts/dry_run_locals:/home/dependabot/bin/debug \
-  -v /Users/pk/code/dependabot/v_repos:/home/dependabot/bin/tmp/ \
   --name "$CONTAINER_NAME" \
   --env "LOCAL_GITHUB_ACCESS_TOKEN=$LOCAL_GITHUB_ACCESS_TOKEN" \
   --env "DEPENDABOT_TEST_ACCESS_TOKEN" \

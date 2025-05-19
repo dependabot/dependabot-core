@@ -248,7 +248,6 @@ module Dependabot
           .returns(Dependabot::DependencyFile)
       end
       def fetch_file_from_host(filename, type: "file", fetch_submodules: false)
-        puts "<--base.rb-->line251-->fetch_file_from_host,pkdebug --->"
         return load_cloned_file_if_present(filename) unless repo_contents_path.nil?
 
         path = Pathname.new(File.join(directory, filename)).cleanpath.to_path
@@ -518,12 +517,8 @@ module Dependabot
 
       sig { params(relative_path: String).returns(T::Array[OpenStruct]) }
       def _cloned_repo_contents(relative_path)
-        puts "<--base.rb-->line520-->_cloned_repo_contents,pkdebug --->"
-        checkit
         repo_path = File.join(clone_repo_contents, relative_path)
         return [] unless Dir.exist?(repo_path)
-        puts "<--base.rb-->line525-->_cloned_repo_contents,pkdebug --->"
-        checkit
 
         Dir.entries(repo_path).sort.filter_map do |name|
           next if name == "." || name == ".."
@@ -788,15 +783,9 @@ module Dependabot
           path = target_directory || File.join("tmp", source.repo)
           # Assume we're retrying the same branch, or that a `target_directory`
           # is specified when retrying a different branch.
-          puts "<--base.rb-->line786-->_clone_repo_contents,pkdebug --->"
-          checkit
-          puts "   ===path: #{path}"
-          #exit #pkdebug
           return path if Dir.exist?(File.join(path, ".git"))
 
           FileUtils.mkdir_p(path)
-          puts "   ===under mkdir"
-          checkit
 
           clone_options = StringIO.new
           clone_options << "--no-tags --depth 1"
@@ -806,24 +795,11 @@ module Dependabot
           submodule_cloning_failed = false
           retries = 0
           begin
-            puts "<--base.rb-->line807-->_clone_repo_contents,pkdebug --->"
-            puts "   ===under mkdir"
-            #checkit # dont understand why itis executed multiple times...
             SharedHelpers.run_shell_command(
               <<~CMD
-              echo "haha"
+                git clone #{clone_options.string} #{source.url} #{path}
               CMD
             )
-            puts "  ===clone_options: #{clone_options.string}"
-            puts "  ===source.url: #{source.url}"
-            puts "  ===path: #{path}"
-            # SharedHelpers.run_shell_command(
-            #   <<~CMD
-            #     git clone #{clone_options.string} #{source.url} #{path}
-            #   CMD
-            # )
-            puts "<--base.rb-->line814-->_clone_repo_contents,pkdebug --->"
-            checkit
 
             @submodules = find_submodules(path)
           rescue SharedHelpers::HelperSubprocessFailed => e
@@ -882,18 +858,6 @@ module Dependabot
       # rubocop:enable Metrics/MethodLength
       # rubocop:enable Metrics/PerceivedComplexity
       # rubocop:enable Metrics/BlockLength
-      def checkit
-        # Get all directories in tmp/
-        directories = Dir.entries('tmp/').select do |entry|
-          File.directory?(File.join('tmp/', entry)) && entry != '.' && entry != '..'
-        end
-
-        # Print all directories on a single line
-        puts directories.join(', ')
-
-        # Print the count on the second line
-        puts "Total directories: #{directories.count}"
-      end
 
       sig { params(str: String).returns(String) }
       def decode_binary_string(str)
