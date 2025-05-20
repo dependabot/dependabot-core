@@ -445,7 +445,7 @@ RSpec.describe Dependabot::GitMetadataFetcher do
       end
     end
 
-    context "with refs for tag with details throw interal server error 500" do
+    context "with refs for tag with details throw internal server error 500" do
       let(:upload_pack_fixture) { "tag_with_detail" }
       let(:url) { "https://github.com/dependabot/dependabot-core.git" }
       let(:stdout) { fixture("git", "upload_packs", upload_pack_fixture) }
