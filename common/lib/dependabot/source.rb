@@ -95,10 +95,9 @@ module Dependabot
       return github_enterprise_from_url(url_string) unless url_string&.match?(SOURCE_REGEX)
 
       captures = T.must(url_string.match(SOURCE_REGEX)).named_captures
-      provider = captures.fetch("provider")
 
       new(
-        provider: provider,
+        provider: T.must(captures.fetch("provider")),
         repo: T.must(captures.fetch("repo")).delete_suffix(".git").delete_suffix("."),
         directory: captures.fetch("directory"),
         branch: captures.fetch("branch")
