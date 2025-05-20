@@ -120,6 +120,11 @@ module Dependabot
         )
       end
 
+      sig { params(dependency: Dependabot::Dependency).returns(Excon::Response) }
+      def fetch_package_metadata(dependency)
+        Dependabot::RegistryClient.get(url: "#{repository_url(dependency)}/api/packages/#{dependency.name}")
+      end
+
       # Clones the flutter repo into /tmp/flutter if needed
       sig { void }
       def ensure_flutter_repo
