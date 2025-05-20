@@ -15,7 +15,7 @@ module Dependabot
         extend T::Sig
 
         AWS_ECR_URL = /dkr\.ecr\.(?<region>[^.]+)\.amazonaws\.com/
-        DEFAULT_DOCKER_HUB_REGISTRY = "registry.hub.docker.com"
+        DEFAULT_DOCKER_HUB_REGISTRY = "registry-1.docker.io"
 
         sig { params(credentials: T::Array[Dependabot::Credential], private_repository_type: String).void }
         def initialize(credentials, private_repository_type: "docker_registry")
