@@ -17,39 +17,25 @@ module Dependabot
 
       include Dependabot::Pub::Helpers
 
+      require_relative "update_checker/latest_version_finder"
+
       sig { override.returns(T.nilable(T.any(String, Dependabot::Version))) }
       def latest_version
-        version = version_unless_ignored(current_report["latest"], current_version: dependency.version)
+        version = version_unless_ignored(T.must(version_report.latest_version), current_version: dependency.version)
+
         raise AllVersionsIgnored if version.nil? && @raise_on_ignored
 
         version
       end
 
       sig { override.returns(T.nilable(T.any(String, Dependabot::Version))) }
-      def latest_resolvable_version_with_no_unlock
-        # Version we can get if we're not allowed to change pubspec.yaml, but we
-        # allow changes in the pubspec.lock file.
-        entry = current_report["compatible"].find { |d| d["name"] == dependency.name }
-        return nil unless entry
-
-        version_unless_ignored(entry["version"])
-      end
-
-      sig { override.returns(T.nilable(T.any(String, Dependabot::Version))) }
       def latest_resolvable_version
         # Latest version we can get if we're allowed to unlock the current
         # package in pubspec.yaml
-        entry = current_report["singleBreaking"].find { |d| d["name"] == dependency.name }
+        entry = version_report.latest_resolvable_version
         return nil unless entry
 
-        version_unless_ignored(entry["version"])
-      end
-
-      sig { override.returns(T.nilable(Dependabot::Version)) }
-      def lowest_resolvable_security_fix_version
-        raise "Dependency not vulnerable!" unless vulnerable?
-
-        lowest_security_fix_version
+        version_unless_ignored(entry)
       end
 
       sig { override.returns(T.nilable(Dependabot::Version)) }
@@ -68,7 +54,23 @@ module Dependabot
         T.cast(version_unless_ignored(version), Dependabot::Version)
       end
 
-      # rubocop:disable Metrics/PerceivedComplexity
+      sig { override.returns(T.nilable(Dependabot::Version)) }
+      def lowest_resolvable_security_fix_version
+        raise "Dependency not vulnerable!" unless vulnerable?
+
+        lowest_security_fix_version
+      end
+
+      sig { override.returns(T.nilable(T.any(String, Dependabot::Version))) }
+      def latest_resolvable_version_with_no_unlock
+        # Version we can get if we're not allowed to change pubspec.yaml, but we
+        # allow changes in the pubspec.lock file.
+        entry = version_report.latest_resolvable_version_with_no_unlock
+        return nil unless entry
+
+        version_unless_ignored(entry)
+      end
+
       sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
       def updated_requirements
         # Requirements that need to be changed, if obtain:
@@ -87,14 +89,13 @@ module Dependabot
 
                   updates&.find { |u| u["name"] == dependency.name }
                 else
-                  current_report["singleBreaking"].find { |d| d["name"] == dependency.name }
+                  version_report.latest_resolvable_version_hash
                 end
         return [] unless entry
 
         parse_updated_dependency(entry, resolved_requirements_update_strategy)
           .requirements
       end
-      # rubocop:enable Metrics/PerceivedComplexity
 
       private
 
@@ -167,20 +168,15 @@ module Dependabot
         end
       end
 
-      sig { params(version_string: String).returns(T::Boolean) }
-      def git_revision?(version_string)
-        version_string.match?(/^[0-9a-f]{6,}$/)
-      end
-
       sig { override.returns(T::Boolean) }
       def latest_version_resolvable_with_full_unlock?
-        entry = current_report["multiBreaking"].find { |d| d["name"] == dependency.name }
+        entry = version_report.latest_version_resolvable_with_full_unlock
         # This a bit dumb, but full-unlock is only considered if we can get the
         # latest version!
         return false unless entry
 
-        (!git_revision?(entry["version"]) && latest_version == Dependabot::Pub::Version.new(entry["version"])) ||
-          latest_version == entry["version"]
+        (!git_revision?(entry) && latest_version == Dependabot::Pub::Version.new(entry)) ||
+          latest_version == entry
       end
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
@@ -188,7 +184,7 @@ module Dependabot
         report_section = if vulnerable?
                            dependency_services_smallest_update
                          else
-                           current_report["multiBreaking"]
+                           version_report.latest_version_resolvable_with_full_unlock_hash
                          end
         # We only expose non-transitive dependencies here...
         direct_deps = report_section.reject do |d|
@@ -199,17 +195,19 @@ module Dependabot
         end
       end
 
-      sig { returns(T::Array[T::Hash[String, T.untyped]]) }
-      def report
-        @report ||= T.let(
-          dependency_services_report,
-          T.nilable(T::Array[T::Hash[String, T.untyped]])
-        )
-      end
-
-      sig { returns(T::Hash[String, T.untyped]) }
-      def current_report
-        T.must(report.find { |d| d["name"] == dependency.name })
+      sig { returns(Dependabot::Pub::UpdateChecker::LatestVersionFinder) }
+      def version_report
+        @version_report ||=
+          T.let(LatestVersionFinder.new(
+                  dependency: dependency,
+                  dependency_files: dependency_files,
+                  credentials: credentials,
+                  ignored_versions: ignored_versions,
+                  security_advisories: security_advisories,
+                  options: options,
+                  cooldown_options: update_cooldown
+                ),
+                T.nilable(Dependabot::Pub::UpdateChecker::LatestVersionFinder))
       end
 
       sig { returns(Dependabot::RequirementsUpdateStrategy) }
@@ -218,6 +216,11 @@ module Dependabot
           resolve_requirements_update_strategy,
           T.nilable(Dependabot::RequirementsUpdateStrategy)
         )
+      end
+
+      sig { params(version_string: String).returns(T::Boolean) }
+      def git_revision?(version_string)
+        version_string.match?(/^[0-9a-f]{6,}$/)
       end
 
       sig { returns(Dependabot::RequirementsUpdateStrategy) }
