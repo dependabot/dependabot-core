@@ -142,11 +142,18 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
             content: fixture(buildfile_folder, "gradle.lockfile")
           )
         end
-        let(:dependency_files) { [buildfile, lockfile, Dependabot::DependencyFile.new(
-          name: "settings.gradle.kts",
-          directory: "/",
-          content: fixture(buildfile_folder, "..", "settings.gradle.kts")
-        )] }
+        let(:dependency_files) do
+          [
+            buildfile,
+            lockfile,
+            Dependabot::DependencyFile.new(
+              name: "settings.gradle.kts",
+              directory: "/",
+              content: fixture(buildfile_folder, "..", "settings.gradle.kts")
+            )
+          ]
+        end
+
         let(:dependencies) do
           [
             Dependabot::Dependency.new(
@@ -176,7 +183,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
           expect(updated_files.first.content)
             .to include('implementation("com.google.code.gson:gson:2.8.9")')
           expect(updated_files.last.content)
-            .to include('com.google.code.gson:gson:2.8.9=runtimeClasspath')
+            .to include("com.google.code.gson:gson:2.8.9=runtimeClasspath")
         end
       end
 

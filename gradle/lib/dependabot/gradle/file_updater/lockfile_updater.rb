@@ -19,48 +19,43 @@ module Dependabot
       end
       def initialize(dependency_files:)
         @dependency_files = dependency_files
-        @lock_files = T.let(dependency_files.select { |f| f.name.end_with?(".lockfile") }, T::Array[Dependabot::DependencyFile])
       end
 
       sig do
         params(build_file: Dependabot::DependencyFile)
-        .returns(T::Array[Dependabot::DependencyFile])
+          .returns(T::Array[Dependabot::DependencyFile])
       end
       def update_lockfiles(build_file)
-        base_dir = build_file.directory
-        # If we don't have any lockfiles in the build files don't generate one
-        [] unless @dependency_files.any? do |file|
-          file.directory == build_file.directory and file.name.end_with?(".lockfile")
+        local_lockfiles = @dependency_files.select do |file|
+          file.directory == build_file.directory && file.name.end_with?(".lockfile")
         end
+        # If we don't have any lockfiles in the build files don't generate one
+        return [] unless local_lockfiles.any?
 
-        updated_lockfiles = T.let(Array.new, T::Array[Dependabot::DependencyFile])
+        updated_lockfiles = T.let([], T::Array[Dependabot::DependencyFile])
         SharedHelpers.in_a_temporary_directory do |temp_dir|
-          for file in @dependency_files
+          @dependency_files.each do |file|
             FileUtils.mkdir_p(Pathname.new(file.name).dirname)
             File.write(file.name, file.content)
           end
 
-          command_parts = [
-            "gradle",
-            "build",
-            "--write-locks"
-          ]
+          command_parts = ["gradle", "build", "--write-locks"]
 
           command = Shellwords.join(command_parts)
           begin
-            output = SharedHelpers.run_shell_command(command, cwd: File.join(temp_dir, build_file.directory))
-            for file in @lock_files.select{ |f| f.directory == build_file.directory }
+            SharedHelpers.run_shell_command(command, cwd: File.join(temp_dir, build_file.directory))
+            local_lockfiles.each do |file|
               f_content = File.read(File.join(temp_dir, file.name))
               tmp_file = file.dup
               tmp_file.content = f_content
               updated_lockfiles << tmp_file
             end
-          rescue SharedHelpers::HelperSubprocessFailed => e
+          rescue SharedHelpers::HelperSubprocessFailed
             return updated_lockfiles
           end
         end
 
-        return updated_lockfiles
+        updated_lockfiles
       end
     end
   end

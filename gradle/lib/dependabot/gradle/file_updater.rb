@@ -112,8 +112,7 @@ module Dependabot
               )
           end
 
-          updater = Dependabot::Gradle::LockfileUpdater.new(dependency_files: files)
-          lockfiles = updater.update_lockfiles(buildfile)
+          lockfiles = Dependabot::Gradle::LockfileUpdater.new(dependency_files: files).update_lockfiles(buildfile)
           files.concat(lockfiles) unless lockfiles.empty?
         end
 
@@ -124,8 +123,9 @@ module Dependabot
         params(
           buildfiles: T::Array[Dependabot::DependencyFile],
           old_req: T::Hash[Symbol, T.untyped],
-          new_req: T::Hash[Symbol, T.untyped])
-        .returns(T::Array[Dependabot::DependencyFile])
+          new_req: T::Hash[Symbol, T.untyped]
+        )
+          .returns(T::Array[Dependabot::DependencyFile])
       end
       def update_files_for_property_change(buildfiles, old_req, new_req)
         files = buildfiles.dup
@@ -145,8 +145,9 @@ module Dependabot
         params(
           buildfiles: T::Array[Dependabot::DependencyFile],
           old_req: T::Hash[Symbol, T.untyped],
-          new_req: T::Hash[Symbol, T.untyped])
-        .returns(T::Array[Dependabot::DependencyFile])
+          new_req: T::Hash[Symbol, T.untyped]
+        )
+          .returns(T::Array[Dependabot::DependencyFile])
       end
       def update_files_for_dep_set_change(buildfiles, old_req, new_req)
         files = buildfiles.dup
