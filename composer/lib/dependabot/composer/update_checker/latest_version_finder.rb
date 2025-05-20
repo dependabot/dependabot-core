@@ -18,32 +18,9 @@ module Dependabot
       class LatestVersionFinder < Dependabot::Package::PackageLatestVersionFinder
         extend T::Sig
 
-        sig do
-          params(
-            dependency: Dependabot::Dependency,
-            dependency_files: T::Array[Dependabot::DependencyFile],
-            credentials: T::Array[Dependabot::Credential],
-            ignored_versions: T::Array[String],
-            security_advisories: T::Array[Dependabot::SecurityAdvisory],
-            cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions),
-            raise_on_ignored: T::Boolean
-          ).void
-        end
-        def initialize(dependency:, dependency_files:, credentials:, ignored_versions:, security_advisories:,
-                       cooldown_options: nil, raise_on_ignored: false)
-          @dependency          = dependency
-          @dependency_files    = dependency_files
-          @credentials         = credentials
-          @ignored_versions    = ignored_versions
-          @security_advisories = security_advisories
-          @cooldown_options    = cooldown_options
-          @raise_on_ignored    = raise_on_ignored
-          @fetcher = T.let(nil, T.nilable(Package::PackageDetailsFetcher))
-        end
-
         sig { returns(Package::PackageDetailsFetcher) }
         def fetcher
-          @fetcher ||= Package::PackageDetailsFetcher.new(
+          Package::PackageDetailsFetcher.new(
             dependency: dependency,
             dependency_files: dependency_files,
             credentials: credentials,
@@ -60,21 +37,6 @@ module Dependabot
         end
 
         private
-
-        sig { returns(Dependabot::Dependency) }
-        attr_reader :dependency
-
-        sig { returns(T::Array[Dependabot::DependencyFile]) }
-        attr_reader :dependency_files
-
-        sig { returns(T::Array[Dependabot::Credential]) }
-        attr_reader :credentials
-
-        sig { returns(T::Array[String]) }
-        attr_reader :ignored_versions
-
-        sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
-        attr_reader :security_advisories
 
         sig do
           override
