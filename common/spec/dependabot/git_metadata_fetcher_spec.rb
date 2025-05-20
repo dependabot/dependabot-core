@@ -455,6 +455,7 @@ RSpec.describe Dependabot::GitMetadataFetcher do
         stub_request(:get, "https://github.com/dependabot/dependabot-core.git/info/refs?service=git-upload-pack")
           .to_return(status: 500, body: "", headers: {})
       end
+
       it "raises a helpful error" do
         expect { fetcher.refs_for_tag_with_detail }.to raise_error(Octokit::InternalServerError)
       end
