@@ -25,17 +25,19 @@ module Dependabot
             credentials: T::Array[Dependabot::Credential],
             ignored_versions: T::Array[String],
             security_advisories: T::Array[Dependabot::SecurityAdvisory],
+            cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions),
             raise_on_ignored: T::Boolean
           ).void
         end
         def initialize(dependency:, dependency_files:, credentials:, ignored_versions:, security_advisories:,
-                       raise_on_ignored: false)
+                       cooldown_options: nil, raise_on_ignored: false)
           @dependency          = dependency
           @dependency_files    = dependency_files
           @credentials         = credentials
           @ignored_versions    = ignored_versions
-          @raise_on_ignored    = raise_on_ignored
           @security_advisories = security_advisories
+          @cooldown_options    = cooldown_options
+          @raise_on_ignored    = raise_on_ignored
           @fetcher = T.let(nil, T.nilable(Package::PackageDetailsFetcher))
         end
 
@@ -57,22 +59,6 @@ module Dependabot
           @package_details ||= fetcher.fetch
         end
 
-        sig do
-          override.params(language_version: T.nilable(T.any(String, Dependabot::Version)))
-                  .returns(T.nilable(Dependabot::Version))
-        end
-        def latest_version(language_version: nil)
-          @latest_version ||= fetch_latest_version(language_version: language_version)
-        end
-
-        sig do
-          params(language_version: T.nilable(T.any(String, Dependabot::Version)))
-            .returns(T.nilable(Dependabot::Version))
-        end
-        def lowest_security_fix_version(language_version: nil)
-          @lowest_security_fix_version ||= fetch_lowest_security_fix_version(language_version: language_version)
-        end
-
         private
 
         sig { returns(Dependabot::Dependency) }
@@ -91,18 +77,21 @@ module Dependabot
         attr_reader :security_advisories
 
         sig do
-          params(language_version: T.nilable(T.any(String, Dependabot::Version)))
+          override
+            .params(language_version: T.nilable(T.any(String, Dependabot::Version)))
             .returns(T.nilable(Dependabot::Version))
         end
         def fetch_latest_version(language_version: nil) # rubocop:disable Lint/UnusedMethodArgument
           releases = available_versions
           releases = filter_prerelease_versions(releases)
           releases = filter_ignored_versions(releases)
+          releases = filter_by_cooldown(releases)
           releases.max_by(&:version)&.version
         end
 
         sig do
-          params(language_version: T.nilable(T.any(String, Dependabot::Version)))
+          override
+            .params(language_version: T.nilable(T.any(String, Dependabot::Version)))
             .returns(T.nilable(Dependabot::Version))
         end
         def fetch_lowest_security_fix_version(language_version: nil) # rubocop:disable Lint/UnusedMethodArgument
@@ -123,6 +112,11 @@ module Dependabot
           dependency.requirements.any? do |req|
             req[:requirement].match?(/\d-[A-Za-z]/)
           end
+        end
+
+        sig { returns(T::Boolean) }
+        def cooldown_enabled?
+          Dependabot::Experiments.enabled?(:enable_cooldown_for_composer)
         end
 
         sig { returns(T::Array[Dependabot::Package::PackageRelease]) }
