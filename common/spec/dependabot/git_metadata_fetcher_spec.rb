@@ -9,7 +9,6 @@ require "dependabot/git_tag_with_detail"
 
 RSpec.describe Dependabot::GitMetadataFetcher do
   let(:checker) { described_class.new(url: url, credentials: credentials) }
-  let(:fetcher) { described_class.new(url: url, credentials: credentials) }
 
   let(:url) { "https://github.com/gocardless/business" }
   let(:credentials) do
@@ -356,11 +355,11 @@ RSpec.describe Dependabot::GitMetadataFetcher do
       end
 
       before do
-        allow(fetcher).to receive(:upload_tag_with_detail).and_return(upload_tag_with_detail)
+        allow(checker).to receive(:upload_tag_with_detail).and_return(upload_tag_with_detail)
       end
 
       it "parses the tags and release dates into GitTagWithDetail objects" do
-        result = fetcher.refs_for_tag_with_detail
+        result = checker.refs_for_tag_with_detail
 
         expect(result.size).to eq(2)
         expect(result.first).to be_a(Dependabot::GitTagWithDetail)
@@ -373,22 +372,22 @@ RSpec.describe Dependabot::GitMetadataFetcher do
 
     context "when upload_tag_with_detail is empty" do
       before do
-        allow(fetcher).to receive(:upload_tag_with_detail).and_return("")
+        allow(checker).to receive(:upload_tag_with_detail).and_return("")
       end
 
       it "returns an empty array" do
-        result = fetcher.refs_for_tag_with_detail
+        result = checker.refs_for_tag_with_detail
         expect(result).to eq([])
       end
     end
 
     context "when upload_tag_with_detail is nil" do
       before do
-        allow(fetcher).to receive(:upload_tag_with_detail).and_return(nil)
+        allow(checker).to receive(:upload_tag_with_detail).and_return(nil)
       end
 
       it "returns an empty array" do
-        result = fetcher.refs_for_tag_with_detail
+        result = checker.refs_for_tag_with_detail
         expect(result).to eq([])
       end
     end
@@ -402,11 +401,11 @@ RSpec.describe Dependabot::GitMetadataFetcher do
       end
 
       before do
-        allow(fetcher).to receive(:upload_tag_with_detail).and_return(upload_tag_with_detail)
+        allow(checker).to receive(:upload_tag_with_detail).and_return(upload_tag_with_detail)
       end
 
       it "skips invalid lines and parses valid ones" do
-        result = fetcher.refs_for_tag_with_detail
+        result = checker.refs_for_tag_with_detail
 
         expect(result.size).to eq(2) # No valid tag-release pairs
       end
@@ -424,7 +423,6 @@ RSpec.describe Dependabot::GitMetadataFetcher do
           "password" => nil # No password provided
         }]
       end
-      let(:fetcher) { described_class.new(url: url, credentials: credentials) }
 
       before do
         stub_request(:get, "#{url}/info/refs?service=git-upload-pack")
@@ -440,7 +438,7 @@ RSpec.describe Dependabot::GitMetadataFetcher do
       end
 
       it "returns the correct number of tags" do
-        result = fetcher.refs_for_tag_with_detail
+        result = checker.refs_for_tag_with_detail
         expect(result.count).to eq(32)
       end
     end
@@ -457,7 +455,7 @@ RSpec.describe Dependabot::GitMetadataFetcher do
       end
 
       it "raises a helpful error" do
-        expect { fetcher.refs_for_tag_with_detail }.to raise_error(Octokit::InternalServerError)
+        expect { checker.refs_for_tag_with_detail }.to raise_error(Octokit::InternalServerError)
       end
     end
   end
