@@ -5,11 +5,10 @@ require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/git_metadata_fetcher"
 require "dependabot/git_ref"
-require "dependabot/git_tag_release_date"
+require "dependabot/git_tag_with_detail"
 
 RSpec.describe Dependabot::GitMetadataFetcher do
   let(:checker) { described_class.new(url: url, credentials: credentials) }
-  let(:url_tag_release_date) { "https://github.com/example/repo.git" }
   let(:fetcher) { described_class.new(url: url, credentials: credentials) }
 
   let(:url) { "https://github.com/gocardless/business" }
@@ -347,9 +346,9 @@ RSpec.describe Dependabot::GitMetadataFetcher do
     end
   end
 
-  describe "#refs_for_tag_with_release_date" do
-    context "when upload_tag_with_release_date contains valid data" do
-      let(:upload_tag_with_release_date) do
+  describe "#refs_for_tag_with_detail" do
+    context "when upload_tag_with_detail contains valid data" do
+      let(:upload_tag_with_detail) do
         <<~TAGS
           v1.0.0 2023-01-01
           v1.1.0 2023-02-01
@@ -357,14 +356,14 @@ RSpec.describe Dependabot::GitMetadataFetcher do
       end
 
       before do
-        allow(fetcher).to receive(:upload_tag_with_release_date).and_return(upload_tag_with_release_date)
+        allow(fetcher).to receive(:upload_tag_with_detail).and_return(upload_tag_with_detail)
       end
 
-      it "parses the tags and release dates into GitTagReleaseDate objects" do
-        result = fetcher.refs_for_tag_with_release_date
+      it "parses the tags and release dates into GitTagWithDetail objects" do
+        result = fetcher.refs_for_tag_with_detail
 
         expect(result.size).to eq(2)
-        expect(result.first).to be_a(Dependabot::GitTagReleaseDate)
+        expect(result.first).to be_a(Dependabot::GitTagWithDetail)
         expect(result.first.tag).to eq("v1.0.0")
         expect(result.first.release_date).to eq("2023-01-01")
         expect(result.last.tag).to eq("v1.1.0")
@@ -372,30 +371,30 @@ RSpec.describe Dependabot::GitMetadataFetcher do
       end
     end
 
-    context "when upload_tag_with_release_date is empty" do
+    context "when upload_tag_with_detail is empty" do
       before do
-        allow(fetcher).to receive(:upload_tag_with_release_date).and_return("")
+        allow(fetcher).to receive(:upload_tag_with_detail).and_return("")
       end
 
       it "returns an empty array" do
-        result = fetcher.refs_for_tag_with_release_date
+        result = fetcher.refs_for_tag_with_detail
         expect(result).to eq([])
       end
     end
 
-    context "when upload_tag_with_release_date is nil" do
+    context "when upload_tag_with_detail is nil" do
       before do
-        allow(fetcher).to receive(:upload_tag_with_release_date).and_return(nil)
+        allow(fetcher).to receive(:upload_tag_with_detail).and_return(nil)
       end
 
       it "returns an empty array" do
-        result = fetcher.refs_for_tag_with_release_date
+        result = fetcher.refs_for_tag_with_detail
         expect(result).to eq([])
       end
     end
 
-    context "when upload_tag_with_release_date contains invalid data" do
-      let(:upload_tag_with_release_date) do
+    context "when upload_tag_with_detail contains invalid data" do
+      let(:upload_tag_with_detail) do
         <<~TAGS
           invalid_line
           v1.0.0
@@ -403,13 +402,34 @@ RSpec.describe Dependabot::GitMetadataFetcher do
       end
 
       before do
-        allow(fetcher).to receive(:upload_tag_with_release_date).and_return(upload_tag_with_release_date)
+        allow(fetcher).to receive(:upload_tag_with_detail).and_return(upload_tag_with_detail)
       end
 
       it "skips invalid lines and parses valid ones" do
-        result = fetcher.refs_for_tag_with_release_date
+        result = fetcher.refs_for_tag_with_detail
 
         expect(result.size).to eq(2) # No valid tag-release pairs
+      end
+    end
+
+    context "with refs for tag and detail" do
+      let(:upload_pack_fixture) { "tag_with_detail" }
+      let(:stdout) { fixture("git", "upload_packs", upload_pack_fixture) }
+      let(:service_pack_uri) { "https://github.com/dependabot/dependabot-core.git" }
+
+      before do
+        stub_request(:get, service_pack_uri).to_return(status: 200)
+
+        exit_status = double(success?: false)
+        allow(Open3).to receive(:capture3).and_call_original
+        allow(Open3).to receive(:capture3)
+          .with(anything, "git for-each-ref --format=\"%(refname:short) %(creatordate:short)\" refs/tags
+          #{service_pack_uri}")
+          .and_return(["", "", exit_status])
+      end
+
+      it "raises a helpful error" do
+        expect { fetcher.refs_for_tag_with_detail }.to raise_error(Octokit::InternalServerError)
       end
     end
   end

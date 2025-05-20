@@ -7,7 +7,7 @@ require "sorbet-runtime"
 
 require "dependabot/errors"
 require "dependabot/git_ref"
-require "dependabot/git_tag_release_date"
+require "dependabot/git_tag_with_detail"
 require "dependabot/credential"
 
 module Dependabot
@@ -94,26 +94,24 @@ module Dependabot
         &.commit_sha
     end
 
-    sig { returns(T::Array[GitTagReleaseDate]) }
-    def refs_for_tag_with_release_date
-      @refs_for_tag_with_release_date ||= T.let(parse_refs_for_tag_with_release_date,
-                                                T.nilable(T::Array[GitTagReleaseDate]))
+    sig { returns(T::Array[GitTagWithDetail]) }
+    def refs_for_tag_with_detail
+      @refs_for_tag_with_detail ||= T.let(parse_refs_for_tag_with_detail,
+                                          T.nilable(T::Array[GitTagWithDetail]))
     end
 
-    sig { returns(T::Array[GitTagReleaseDate]) }
-    def parse_refs_for_tag_with_release_date
+    sig { returns(T::Array[GitTagWithDetail]) }
+    def parse_refs_for_tag_with_detail
       result_lines = []
-      if upload_tag_with_release_date.nil?
-        return result_lines
-      end
+      return result_lines if upload_tag_with_detail.nil?
 
-      T.must(upload_tag_with_release_date).lines.each do |line|
-        tag, release_date = line.split(/\s+/, 2)
-        next unless tag && release_date
+      T.must(upload_tag_with_detail).lines.each do |line|
+        tag, detail = line.split(/\s+/, 2)
+        next unless tag && detail
 
-        result_lines << GitTagReleaseDate.new(
+        result_lines << GitTagWithDetail.new(
           tag: tag.strip,
-          release_date: release_date.strip
+          release_date: detail.strip
         )
       end
       result_lines
@@ -288,18 +286,18 @@ module Dependabot
     end
 
     sig { returns(T.nilable(String)) }
-    def upload_tag_with_release_date
-      @upload_tag_release_date ||= T.let(fetch_tags_with_release_date(url), T.nilable(String))
+    def upload_tag_with_detail
+      @upload_tag_detail ||= T.let(fetch_tags_with_detail(url), T.nilable(String))
     rescue Octokit::ClientError
       raise Dependabot::GitDependenciesNotReachable, [url]
     end
 
     sig { params(uri: String).returns(String) }
-    def fetch_tags_with_release_date(uri)
+    def fetch_tags_with_detail(uri)
       response = fetch_raw_upload_pack_for(uri)
       return response.body if response.status == 200
 
-      response_with_git = fetch_tags_with_release_date_from_git_for(uri)
+      response_with_git = fetch_tags_with_detail_from_git_for(uri)
       return response_with_git.body if response_with_git.status == 200
 
       raise Dependabot::GitDependenciesNotReachable, [uri] unless uri.match?(KNOWN_HOSTS)
@@ -322,7 +320,7 @@ module Dependabot
     end
 
     sig { params(uri: String).returns(T.untyped) }
-    def fetch_tags_with_release_date_from_git_for(uri)
+    def fetch_tags_with_detail_from_git_for(uri)
       service_pack_uri = uri
       service_pack_uri += ".git" unless service_pack_uri.end_with?(".git") || skip_git_suffix(uri)
 

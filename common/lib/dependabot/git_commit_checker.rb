@@ -220,9 +220,9 @@ module Dependabot
       @dependency_source_details || dependency.source_details(allowed_types: ["git"])
     end
 
-    sig { returns(T::Array[Dependabot::GitTagReleaseDate]) }
-    def refs_for_tag_with_release_date
-      local_repo_git_metadata_fetcher.refs_for_tag_with_release_date
+    sig { returns(T::Array[Dependabot::GitTagWithDetail]) }
+    def refs_for_tag_with_detail
+      local_repo_git_metadata_fetcher.refs_for_tag_with_detail
     end
 
     sig { params(commit_sha: T.nilable(String)).returns(T.nilable(String)) }

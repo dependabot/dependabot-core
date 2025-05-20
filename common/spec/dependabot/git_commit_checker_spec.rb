@@ -1525,26 +1525,26 @@ RSpec.describe Dependabot::GitCommitChecker do
     end
   end
 
-  describe "#refs_for_tag_with_release_date" do
+  describe "#refs_for_tag_with_details" do
     context "when the metadata fetcher returns valid tag release dates" do
-      let(:tag_release_dates) do
+      let(:git_tag_with_detail) do
         [
-          Dependabot::GitTagReleaseDate.new(tag: "v1.0.0", release_date: "2023-01-01"),
-          Dependabot::GitTagReleaseDate.new(tag: "v1.1.0", release_date: "2023-02-01")
+          Dependabot::GitTagWithDetail.new(tag: "v1.0.0", release_date: "2023-01-01"),
+          Dependabot::GitTagWithDetail.new(tag: "v1.1.0", release_date: "2023-02-01")
         ]
       end
 
       before do
         allow(checker).to receive(:local_repo_git_metadata_fetcher).and_return(git_metadata_fetcher)
-        allow(git_metadata_fetcher).to receive(:refs_for_tag_with_release_date).and_return(tag_release_dates)
+        allow(git_metadata_fetcher).to receive(:refs_for_tag_with_detail).and_return(git_tag_with_detail)
       end
 
-      it "returns an array of GitTagReleaseDate objects" do
-        result = checker.refs_for_tag_with_release_date
+      it "returns an array of GitTagWithDetail objects" do
+        result = checker.refs_for_tag_with_detail
 
         expect(result).to be_an(Array)
         expect(result.size).to eq(2)
-        expect(result.first).to be_a(Dependabot::GitTagReleaseDate)
+        expect(result.first).to be_a(Dependabot::GitTagWithDetail)
         expect(result.first.tag).to eq("v1.0.0")
         expect(result.first.release_date).to eq("2023-01-01")
         expect(result.last.tag).to eq("v1.1.0")
@@ -1555,11 +1555,11 @@ RSpec.describe Dependabot::GitCommitChecker do
     context "when the metadata fetcher returns an empty array" do
       before do
         allow(checker).to receive(:local_repo_git_metadata_fetcher).and_return(git_metadata_fetcher)
-        allow(git_metadata_fetcher).to receive(:refs_for_tag_with_release_date).and_return([])
+        allow(git_metadata_fetcher).to receive(:refs_for_tag_with_detail).and_return([])
       end
 
       it "returns an empty array" do
-        result = checker.refs_for_tag_with_release_date
+        result = checker.refs_for_tag_with_detail
 
         expect(result).to eq([])
       end
@@ -1568,12 +1568,12 @@ RSpec.describe Dependabot::GitCommitChecker do
     context "when the metadata fetcher raises an error" do
       before do
         allow(checker).to receive(:local_repo_git_metadata_fetcher).and_return(git_metadata_fetcher)
-        allow(git_metadata_fetcher).to receive(:refs_for_tag_with_release_date)
+        allow(git_metadata_fetcher).to receive(:refs_for_tag_with_detail)
                                    .and_raise(Dependabot::GitDependenciesNotReachable, "Error fetching metadata")
       end
 
       it "raises a GitDependenciesNotReachable error" do
-        expect { checker.refs_for_tag_with_release_date }.to raise_error(Dependabot::GitDependenciesNotReachable)
+        expect { checker.refs_for_tag_with_detail }.to raise_error(Dependabot::GitDependenciesNotReachable)
       end
     end
   end

@@ -4,7 +4,7 @@
 require "sorbet-runtime"
 
 module Dependabot
-  class GitTagReleaseDate
+  class GitTagWithDetail
     extend T::Sig
 
     sig { returns(String) }
@@ -27,7 +27,7 @@ module Dependabot
     sig { params(other: BasicObject).returns(T::Boolean) }
     def ==(other)
       case other
-      when GitTagReleaseDate
+      when GitTagWithDetail
         to_h == other.to_h
       else
         false
