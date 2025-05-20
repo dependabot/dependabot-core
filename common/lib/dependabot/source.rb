@@ -96,9 +96,7 @@ module Dependabot
 
       captures = T.must(url_string.match(SOURCE_REGEX)).named_captures
       provider = captures.fetch("provider")
-      if provider.nil? || provider.empty?
-        provider = "github"
-      end
+      provider = "github" if provider.nil? || provider.empty?
 
       new(
         provider: provider,
