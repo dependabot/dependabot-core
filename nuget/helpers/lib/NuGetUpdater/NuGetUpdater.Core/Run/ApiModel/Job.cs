@@ -75,19 +75,24 @@ public sealed record Job
         return existingPullRequests;
     }
 
-    public Tuple<string?, ImmutableArray<PullRequestDependency>>? GetExistingPullRequestForDependencies(IEnumerable<Dependency> dependencies)
+    public Tuple<string?, ImmutableArray<PullRequestDependency>>? GetExistingPullRequestForDependencies(IEnumerable<Dependency> dependencies, bool considerVersions)
     {
         if (dependencies.Any(d => d.Version is null))
         {
             return null;
         }
 
-        var desiredDependencySet = dependencies.Select(d => $"{d.Name}/{d.Version}").ToHashSet(StringComparer.OrdinalIgnoreCase);
+        string CreateIdentifier(string dependencyName, string dependencyVersion)
+        {
+            return $"{dependencyName}/{(considerVersions ? dependencyVersion : null)}";
+        }
+
+        var desiredDependencySet = dependencies.Select(d => CreateIdentifier(d.Name, d.Version!)).ToHashSet(StringComparer.OrdinalIgnoreCase);
         var existingPullRequests = GetAllExistingPullRequests();
         var existingPullRequest = existingPullRequests
             .FirstOrDefault(pr =>
             {
-                var prDependencySet = pr.Item2.Select(d => $"{d.DependencyName}/{d.DependencyVersion}").ToHashSet(StringComparer.OrdinalIgnoreCase);
+                var prDependencySet = pr.Item2.Select(d => CreateIdentifier(d.DependencyName, d.DependencyVersion.ToString())).ToHashSet(StringComparer.OrdinalIgnoreCase);
                 return prDependencySet.SetEquals(desiredDependencySet);
             });
         return existingPullRequest;

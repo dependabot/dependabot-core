@@ -137,7 +137,7 @@ internal class CreateSecurityUpdatePullRequestHandler : IUpdateHandler
             var rawDependencies = updatedDependencies.Select(d => new Dependency(d.Name, d.Version, DependencyType.Unknown)).ToArray();
             if (rawDependencies.Length > 0)
             {
-                var existingPullRequest = job.GetExistingPullRequestForDependencies(rawDependencies);
+                var existingPullRequest = job.GetExistingPullRequestForDependencies(rawDependencies, considerVersions: true);
                 if (existingPullRequest is not null && updatedDependencies.Count > 0)
                 {
                     await apiHandler.RecordUpdateJobError(new PullRequestExistsForSecurityUpdate(rawDependencies));

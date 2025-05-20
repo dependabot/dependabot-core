@@ -247,7 +247,7 @@ public class RunWorker
                         .FirstOrDefault(d => d.Name.Equals(dependency.Name, StringComparison.OrdinalIgnoreCase));
                     if (updatedDependencyFromAnalysis is not null)
                     {
-                        var existingPullRequest = job.GetExistingPullRequestForDependencies([updatedDependencyFromAnalysis]);
+                        var existingPullRequest = job.GetExistingPullRequestForDependencies([updatedDependencyFromAnalysis], considerVersions: true);
                         if (existingPullRequest is not null)
                         {
                             await SendApiMessage(new PullRequestExistsForLatestVersion(dependency.Name, analysisResult.UpdatedVersion));
