@@ -412,22 +412,49 @@ RSpec.describe Dependabot::GitMetadataFetcher do
       end
     end
 
-    context "with refs for tag and detail" do
+    context "with refs for tag with details returns are success" do
       let(:upload_pack_fixture) { "tag_with_detail" }
+      let(:url) { "https://github.com/dependabot/dependabot-core.git" }
       let(:stdout) { fixture("git", "upload_packs", upload_pack_fixture) }
-      let(:service_pack_uri) { "https://github.com/dependabot/dependabot-core.git" }
+      let(:credentials) do
+        [{
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => nil # No password provided
+        }]
+      end
+      let(:fetcher) { described_class.new(url: url, credentials: credentials) }
 
       before do
-        stub_request(:get, service_pack_uri).to_return(status: 200)
+        stub_request(:get, "#{url}/info/refs?service=git-upload-pack")
+          .to_return(status: 200, body: stdout, headers: { "content-type" =>
+              "application/x-git-upload-pack-advertisement" })
 
-        exit_status = double(success?: false)
+        exit_status = double(success?: true)
         allow(Open3).to receive(:capture3).and_call_original
         allow(Open3).to receive(:capture3)
-          .with(anything, "git for-each-ref --format=\"%(refname:short) %(creatordate:short)\" refs/tags
-          #{service_pack_uri}")
-          .and_return(["", "", exit_status])
+          .with(anything, "git for-each-ref --format=\"%(refname:short) %(creatordate:short)\"
+          refs/tags #{url}")
+          .and_return([stdout, "", exit_status])
       end
 
+      it "returns the correct number of tags" do
+        result = fetcher.refs_for_tag_with_detail
+        expect(result.count).to eq(32)
+      end
+    end
+
+    context "with refs for tag with details throw interal server error 500" do
+      let(:upload_pack_fixture) { "tag_with_detail" }
+      let(:url) { "https://github.com/dependabot/dependabot-core.git" }
+      let(:stdout) { fixture("git", "upload_packs", upload_pack_fixture) }
+      let(:service_pack_url) { "https://github.com/dependabot/dependabot-core.git" }
+
+      before do
+        stub_request(:get, "https://github.com/dependabot/dependabot-core.git/info/refs?service=git-upload-pack")
+          .to_return(status: 500, body: "", headers: {})
+      end
       it "raises a helpful error" do
         expect { fetcher.refs_for_tag_with_detail }.to raise_error(Octokit::InternalServerError)
       end
