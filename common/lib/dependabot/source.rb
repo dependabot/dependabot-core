@@ -95,7 +95,6 @@ module Dependabot
       return github_enterprise_from_url(url_string) unless url_string&.match?(SOURCE_REGEX)
 
       captures = T.must(url_string.match(SOURCE_REGEX)).named_captures
-
       new(
         provider: T.must(captures.fetch("provider")),
         repo: T.must(captures.fetch("repo")).delete_suffix(".git").delete_suffix("."),
@@ -155,8 +154,6 @@ module Dependabot
               "provider's defaults."
         raise msg
       end
-
-      provider = "github" if provider.empty?
 
       @provider = provider
       @repo = repo
