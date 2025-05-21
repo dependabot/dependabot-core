@@ -222,6 +222,7 @@ module Dependabot
 
     sig { params(commit_sha: T.nilable(String)).returns(T.nilable(String)) }
     def most_specific_version_tag_for_sha(commit_sha)
+      Dependabot.logger.info("Finding most specific version tag for commit SHA #{commit_sha}")
       tags = local_tags.select { |t| t.commit_sha == commit_sha && version_class.correct?(t.name) }
                        .sort_by { |t| version_class.new(t.name) }
       return if tags.empty?
