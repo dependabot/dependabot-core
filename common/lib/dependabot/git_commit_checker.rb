@@ -2,8 +2,8 @@
 # frozen_string_literal: true
 
 require "excon"
-require "gitlab"
 require "sorbet-runtime"
+require "gitlab"
 require "dependabot/clients/github_with_retries"
 require "dependabot/clients/gitlab_with_retries"
 require "dependabot/clients/bitbucket_with_retries"
