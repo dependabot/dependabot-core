@@ -222,7 +222,8 @@ module Dependabot
 
     sig { returns(T::Array[Dependabot::GitTagWithDetail]) }
     def refs_for_tag_with_detail
-      local_repo_git_metadata_fetcher.refs_for_tag_with_detail
+      # local_repo_git_metadata_fetcher.refs_for_tag_with_detail
+      []
     end
 
     sig { params(commit_sha: T.nilable(String)).returns(T.nilable(String)) }
