@@ -69,6 +69,8 @@ module Dependabot
         end
       end
 
+      # rubocop:disable Metrics/AbcSize
+      # rubocop:disable Metrics/PerceivedComplexity
       sig do
         params(buildfiles: T::Array[Dependabot::DependencyFile], dependency: Dependabot::Dependency)
           .returns(T::Array[Dependabot::DependencyFile])
@@ -83,8 +85,7 @@ module Dependabot
 
         # Loop through each changed requirement and update the buildfiles
         reqs.each do |new_req, old_req|
-          raise "Bad req match" if old_req.nil?
-          raise "Bad req match" unless T.let(new_req[:file], String) == T.let(old_req[:file], String)
+          raise "Bad req match" if old_req.nil? || T.let(new_req[:file], String) != T.let(old_req[:file], String)
           next if T.let(new_req[:requirement], String) == T.let(old_req[:requirement], String)
 
           buildfile = files.find { |f| f.name == T.let(new_req.fetch(:file), String) }
@@ -113,6 +114,8 @@ module Dependabot
 
         files
       end
+      # rubocop:enable Metrics/PerceivedComplexity
+      # rubocop:enable Metrics/AbcSize
 
       sig do
         params(
@@ -187,6 +190,7 @@ module Dependabot
         updated_file(file: buildfile, content: updated_content)
       end
 
+      # rubocop:disable Metrics/AbcSize
       sig do
         params(
           dependency: Dependabot::Dependency,
@@ -203,8 +207,8 @@ module Dependabot
           line = line.gsub(%r{(?<=^|\s)//.*$}, "")
 
           if dependency.name.include?(":")
-            next false unless line.include?(T.must(dependency.name.split(":").first))
-            next false unless line.include?(T.must(dependency.name.split(":").last))
+            dep_parts = dependency.name.split(":")
+            next false unless line.include?(T.must(dep_parts.first)) || line.include?(T.must(dep_parts.last))
           elsif T.let(requirement.fetch(:file), String).end_with?(".toml")
             next false unless line.include?(dependency.name)
           else
@@ -216,6 +220,7 @@ module Dependabot
           line.include?(T.let(requirement.fetch(:requirement), String))
         end
       end
+      # rubocop:enable Metrics/AbcSize
 
       sig { params(string: String, buildfile: Dependabot::DependencyFile).returns(String) }
       def evaluate_properties(string, buildfile)
