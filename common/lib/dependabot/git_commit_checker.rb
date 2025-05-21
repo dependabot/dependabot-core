@@ -220,14 +220,9 @@ module Dependabot
       @dependency_source_details || dependency.source_details(allowed_types: ["git"])
     end
 
-    sig { returns(T::Array[Dependabot::GitTagWithDetail]) }
-    def refs_for_tag_with_detail
-      # local_repo_git_metadata_fetcher.refs_for_tag_with_detail
-      []
-    end
-
     sig { params(commit_sha: T.nilable(String)).returns(T.nilable(String)) }
     def most_specific_version_tag_for_sha(commit_sha)
+      Dependabot.logger.info("Finding most specific version tag for commit SHA #{commit_sha}")
       tags = local_tags.select { |t| t.commit_sha == commit_sha && version_class.correct?(t.name) }
                        .sort_by { |t| version_class.new(t.name) }
       return if tags.empty?
