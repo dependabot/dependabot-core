@@ -321,11 +321,11 @@ module Dependabot
 
     sig { params(uri: String).returns(T.untyped) }
     def fetch_tags_with_detail_from_git_for(uri)
-      service_pack_uri_1 = uri
-      service_pack_uri_1 += ".git" unless service_pack_uri_1.end_with?(".git") || skip_git_suffix(uri)
+      complete_uri = uri
+      complete_uri += ".git" unless complete_uri.end_with?(".git") || skip_git_suffix(uri)
 
       env = { "PATH" => ENV.fetch("PATH", nil), "GIT_TERMINAL_PROMPT" => "0" }
-      command = "git for-each-ref --format=\"%(refname:short) %(creatordate:short)\" refs/tags #{service_pack_uri_1}"
+      command = "git for-each-ref --format=\"%(refname:short) %(creatordate:short)\" refs/tags #{complete_uri}"
       command = SharedHelpers.escape_command(command)
 
       begin
