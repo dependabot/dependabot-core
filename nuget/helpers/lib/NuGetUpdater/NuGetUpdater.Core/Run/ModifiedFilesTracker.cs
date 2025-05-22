@@ -133,4 +133,19 @@ public class ModifiedFilesTracker
             .ToImmutableArray();
         return updatedDependencyFileList;
     }
+
+    public static ImmutableArray<DependencyFile> MergeUpdatedFileSet(ImmutableArray<DependencyFile> setA, ImmutableArray<DependencyFile> setB)
+    {
+        static string GetFullName(DependencyFile df) => Path.Join(df.Directory, df.Name).NormalizePathToUnix();
+        var finalSet = setA.ToDictionary(GetFullName, df => df);
+        foreach (var dependencyFile in setB)
+        {
+            finalSet[GetFullName(dependencyFile)] = dependencyFile;
+        }
+
+        return finalSet
+            .OrderBy(kvp => kvp.Key, StringComparer.OrdinalIgnoreCase)
+            .Select(kvp => kvp.Value)
+            .ToImmutableArray();
+    }
 }

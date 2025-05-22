@@ -34,7 +34,8 @@ public class MiscellaneousTests
             Name = "TestGroup",
             Rules = rules,
         };
-        var isMatch = group.IsMatch(dependencyName);
+        var matcher = group.GetGroupMatcher();
+        var isMatch = matcher.IsMatch(dependencyName);
         Assert.Equal(expectedMatch, isMatch);
     }
 
