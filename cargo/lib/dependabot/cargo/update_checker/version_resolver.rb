@@ -1,18 +1,36 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "toml-rb"
 require "open3"
+require "sorbet-runtime"
 require "dependabot/shared_helpers"
 require "dependabot/cargo/helpers"
 require "dependabot/cargo/update_checker"
 require "dependabot/cargo/file_parser"
 require "dependabot/cargo/version"
+require "dependabot/git_commit_checker"
 require "dependabot/errors"
+
 module Dependabot
   module Cargo
     class UpdateChecker
+      # rubocop:disable Metrics/ClassLength
       class VersionResolver
+        extend T::Sig
+
+        sig { returns(Dependabot::Dependency) }
+        attr_reader :dependency
+
+        sig { returns(T::Array[Dependabot::Credential]) }
+        attr_reader :credentials
+
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
+        attr_reader :prepared_dependency_files
+
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
+        attr_reader :original_dependency_files
+
         UNABLE_TO_UPDATE = /Unable to update (?<url>.*?)$/
         BRANCH_NOT_FOUND_REGEX = /#{UNABLE_TO_UPDATE}.*to find branch `(?<branch>[^`]+)`/m
         REVSPEC_PATTERN = /revspec '.*' not found/
@@ -26,31 +44,45 @@ module Dependabot
         NOT_OUR_REF = /fatal: remote error: upload-pack: not our ref/
         NOT_OUR_REF_REGEX = /#{NOT_OUR_REF}.*#{UNABLE_TO_UPDATE}/m
 
+        sig do
+          params(
+            dependency: Dependabot::Dependency,
+            credentials: T::Array[Dependabot::Credential],
+            original_dependency_files: T::Array[Dependabot::DependencyFile],
+            prepared_dependency_files: T::Array[Dependabot::DependencyFile]
+          ).void
+        end
         def initialize(dependency:, credentials:,
                        original_dependency_files:, prepared_dependency_files:)
-          @dependency = dependency
-          @prepared_dependency_files = prepared_dependency_files
-          @original_dependency_files = original_dependency_files
-          @credentials = credentials
+          @dependency = T.let(dependency, Dependabot::Dependency)
+          @prepared_dependency_files = T.let(prepared_dependency_files, T::Array[Dependabot::DependencyFile])
+          @original_dependency_files = T.let(original_dependency_files, T::Array[Dependabot::DependencyFile])
+          @credentials = T.let(credentials, T::Array[Dependabot::Credential])
+          @latest_resolvable_version = T.let(nil, T.nilable(T.any(String, Dependabot::Version)))
+          @custom_specification = T.let(nil, T.nilable(String))
+          @unreachable_git_urls = T.let(nil, T.nilable(T::Array[String]))
+          @reachable_git_urls = T.let(nil, T.nilable(T::Array[String]))
+          @prepared_manifest_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
+          @original_manifest_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
+          @lockfile = T.let(nil, T.nilable(Dependabot::DependencyFile))
+          @toolchain = T.let(nil, T.nilable(Dependabot::DependencyFile))
+          @config = T.let(nil, T.nilable(Dependabot::DependencyFile))
         end
 
+        sig { returns(T.nilable(T.any(String, Dependabot::Version))) }
         def latest_resolvable_version
           return @latest_resolvable_version if defined?(@latest_resolvable_version)
 
           @latest_resolvable_version = fetch_latest_resolvable_version
-          rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
-            raise Dependabot::DependencyFileNotResolvable, e.message
+        rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
+          raise Dependabot::DependencyFileNotResolvable, e.message
         end
 
         private
 
-        attr_reader :dependency
-        attr_reader :credentials
-        attr_reader :prepared_dependency_files
-        attr_reader :original_dependency_files
-
+        sig { returns(T.nilable(T.any(String, Dependabot::Version))) }
         def fetch_latest_resolvable_version
-          base_directory = prepared_dependency_files.first.directory
+          base_directory = T.must(prepared_dependency_files.first).directory
           SharedHelpers.in_a_temporary_directory(base_directory) do
             write_temporary_dependency_files
 
@@ -70,6 +102,7 @@ module Dependabot
           handle_cargo_errors(e)
         end
 
+        sig { returns(T.nilable(String)) }
         def fetch_version_from_new_lockfile
           check_rust_workspace_root unless File.exist?("Cargo.lock")
           lockfile_content = File.read("Cargo.lock")
@@ -95,6 +128,7 @@ module Dependabot
         # rubocop:disable Metrics/PerceivedComplexity
         # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/AbcSize
+        sig { params(error: Dependabot::SharedHelpers::HelperSubprocessFailed).returns(T::Boolean) }
         def better_specification_needed?(error)
           return false if @custom_specification
           return false unless error.message.match?(/specification .* is ambigu/)
@@ -108,16 +142,17 @@ module Dependabot
                   dependency.version
                 end
 
-          if spec_options.count { |s| s.end_with?(ver) } == 1
-            @custom_specification = spec_options.find { |s| s.end_with?(ver) }
+          ver_string = T.must(ver)
+          if spec_options.count { |s| s.end_with?(ver_string) } == 1
+            @custom_specification = spec_options.find { |s| s.end_with?(ver_string) }
             return true
-          elsif spec_options.count { |s| s.end_with?(ver) } > 1
-            spec_options.select! { |s| s.end_with?(ver) }
+          elsif spec_options.count { |s| s.end_with?(ver_string) } > 1
+            spec_options.select! { |s| s.end_with?(ver_string) }
           end
 
-          if git_dependency? && git_source_url &&
-             spec_options.count { |s| s.include?(git_source_url) } >= 1
-            spec_options.select! { |s| s.include?(git_source_url) }
+          if git_dependency? && git_source_url
+            git_url = T.must(git_source_url)
+            spec_options.select! { |s| s.include?(git_url) } if spec_options.count { |s| s.include?(git_url) } >= 1
           end
 
           @custom_specification = spec_options.first
@@ -127,6 +162,7 @@ module Dependabot
         # rubocop:enable Metrics/CyclomaticComplexity
         # rubocop:enable Metrics/PerceivedComplexity
 
+        sig { returns(String) }
         def dependency_spec
           return @custom_specification if @custom_specification
 
@@ -143,6 +179,7 @@ module Dependabot
 
         # Shell out to Cargo, which handles everything for us, and does
         # so without doing an install (so it's fast).
+        sig { void }
         def run_cargo_update_command
           run_cargo_command(
             "cargo update -p #{dependency_spec} -vv",
@@ -150,6 +187,7 @@ module Dependabot
           )
         end
 
+        sig { params(command: String, fingerprint: T.nilable(String)).void }
         def run_cargo_command(command, fingerprint: nil)
           start = Time.now
           command = SharedHelpers.escape_command(command)
@@ -176,21 +214,31 @@ module Dependabot
           )
         end
 
+        sig { params(prepared: T::Boolean).void }
         def write_temporary_dependency_files(prepared: true)
           write_manifest_files(prepared: prepared)
 
-          File.write(lockfile.name, lockfile.content) if lockfile
-          File.write(toolchain.name, toolchain.content) if toolchain
+          if lockfile
+            lockfile_obj = T.must(lockfile)
+            File.write(lockfile_obj.name, lockfile_obj.content)
+          end
+          if toolchain
+            toolchain_obj = T.must(toolchain)
+            File.write(toolchain_obj.name, toolchain_obj.content)
+          end
           return unless config
 
-          FileUtils.mkdir_p(File.dirname(config.name))
-          File.write(config.name, config.content)
+          config_obj = T.must(config)
+          FileUtils.mkdir_p(File.dirname(config_obj.name))
+          File.write(config_obj.name, config_obj.content)
         end
 
+        sig { void }
         def check_rust_workspace_root
           cargo_toml = original_dependency_files
                        .select { |f| f.name.end_with?("../Cargo.toml") }
                        .max_by { |f| f.name.length }
+          return unless cargo_toml
           return unless TomlRB.parse(cargo_toml.content)["workspace"]
 
           msg = "This project is part of a Rust workspace but is not the " \
@@ -205,6 +253,13 @@ module Dependabot
 
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/PerceivedComplexity
+        # rubocop:disable Metrics/CyclomaticComplexity
+        # rubocop:disable Metrics/MethodLength
+        # rubocop:disable Metrics/BlockNesting
+        sig do
+          params(error: Dependabot::SharedHelpers::HelperSubprocessFailed)
+            .returns(T.nilable(T.any(String, Dependabot::Version)))
+        end
         def handle_cargo_errors(error)
           if error.message.include?("does not have these features")
             # TODO: Ideally we should update the declaration not to ask
@@ -219,11 +274,18 @@ module Dependabot
             urls = unreachable_git_urls
 
             if urls.none?
-              url = error.message.match(UNABLE_TO_UPDATE)
-                         .named_captures.fetch("url").split(/[#?]/).first
-              raise if reachable_git_urls.include?(url)
+              match = error.message.match(UNABLE_TO_UPDATE)
+              if match
+                url_raw = match.named_captures["url"]
+                if url_raw
+                  url = url_raw.split(/[#?]/).first
+                  if url
+                    raise if reachable_git_urls.include?(url)
 
-              urls << url
+                    urls << url
+                  end
+                end
+              end
             end
 
             raise Dependabot::GitDependenciesNotReachable, urls
@@ -232,8 +294,14 @@ module Dependabot
           [BRANCH_NOT_FOUND_REGEX, REF_NOT_FOUND_REGEX, GIT_REF_NOT_FOUND_REGEX, NOT_OUR_REF_REGEX].each do |regex|
             next unless error.message.match?(regex)
 
-            dependency_url = error.message.match(regex).named_captures.fetch("url").split(/[#?]/).first
-            raise Dependabot::GitDependencyReferenceNotFound, dependency_url
+            dep_match = error.message.match(regex)
+            next unless dep_match
+
+            dep_url_raw = dep_match.named_captures["url"]
+            next unless dep_url_raw
+
+            dependency_url = dep_url_raw.split(/[#?]/).first
+            raise Dependabot::GitDependencyReferenceNotFound, T.must(dependency_url)
           end
 
           if workspace_native_library_update_error?(error.message)
@@ -267,7 +335,11 @@ module Dependabot
         end
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/PerceivedComplexity
+        # rubocop:enable Metrics/CyclomaticComplexity
+        # rubocop:enable Metrics/MethodLength
+        # rubocop:enable Metrics/BlockNesting
 
+        sig { params(message: String).returns(T::Boolean) }
         def using_old_toolchain?(message)
           return true if message.include?("usage of sparse registries requires `-Z sparse-registry`")
 
@@ -277,8 +349,9 @@ module Dependabot
           version_class.new(version_log[:version]) < version_class.new("1.68")
         end
 
+        sig { returns(T::Array[String]) }
         def unreachable_git_urls
-          return @unreachable_git_urls if defined?(@unreachable_git_urls)
+          return T.must(@unreachable_git_urls) if defined?(@unreachable_git_urls)
 
           @unreachable_git_urls = []
           @reachable_git_urls = []
@@ -296,7 +369,7 @@ module Dependabot
             next unless checker.git_dependency?
 
             url = dep.requirements.find { |r| r.dig(:source, :type) == "git" }
-                     .fetch(:source).fetch(:url)
+                     &.dig(:source, :url)
 
             if checker.git_repo_reachable?
               @reachable_git_urls << url
@@ -308,13 +381,15 @@ module Dependabot
           @unreachable_git_urls
         end
 
+        sig { returns(T::Array[String]) }
         def reachable_git_urls
-          return @reachable_git_urls if defined?(@reachable_git_urls)
+          return T.must(@reachable_git_urls) if defined?(@reachable_git_urls)
 
           unreachable_git_urls
-          @reachable_git_urls
+          T.must(@reachable_git_urls)
         end
 
+        sig { params(message: String).returns(T::Boolean) }
         def resolvability_error?(message)
           return true if message.include?("failed to parse lock")
           return true if message.include?("believes it's in a workspace")
@@ -330,8 +405,9 @@ module Dependabot
           !original_requirements_resolvable
         end
 
+        sig { returns(T.any(T::Boolean, Symbol)) }
         def original_requirements_resolvable?
-          base_directory = original_dependency_files.first.directory
+          base_directory = T.must(original_dependency_files.first).directory
           SharedHelpers.in_a_temporary_directory(base_directory) do
             write_temporary_dependency_files(prepared: false)
 
@@ -353,6 +429,7 @@ module Dependabot
           end
         end
 
+        sig { params(message: String).returns(T::Boolean) }
         def workspace_native_library_update_error?(message)
           return false unless message.include?("native library")
 
@@ -366,6 +443,7 @@ module Dependabot
           library_count >= 2
         end
 
+        sig { params(prepared: T::Boolean).void }
         def write_manifest_files(prepared: true)
           manifest_files = if prepared then prepared_manifest_files
                            else
@@ -376,7 +454,7 @@ module Dependabot
             path = file.name
             dir = Pathname.new(path).dirname
             FileUtils.mkdir_p(dir)
-            File.write(file.name, sanitized_manifest_content(file.content))
+            File.write(file.name, sanitized_manifest_content(T.must(file.content)))
 
             next if virtual_manifest?(file)
 
@@ -388,26 +466,31 @@ module Dependabot
           end
         end
 
+        sig { returns(T.nilable(String)) }
         def git_dependency_version
           return unless lockfile
 
-          TomlRB.parse(lockfile.content)
+          lockfile_obj = T.must(lockfile)
+          TomlRB.parse(lockfile_obj.content)
                 .fetch("package", [])
                 .select { |p| p["name"] == dependency.name }
                 .find { |p| p["source"].end_with?(dependency.version) }
                 .fetch("version")
         end
 
+        sig { returns(T.nilable(String)) }
         def git_source_url
           dependency.requirements
                     .find { |r| r.dig(:source, :type) == "git" }
                     &.dig(:source, :url)
         end
 
+        sig { returns(String) }
         def dummy_app_content
           %{fn main() {\nprintln!("Hello, world!");\n}}
         end
 
+        sig { params(content: String).returns(String) }
         def sanitized_manifest_content(content)
           object = TomlRB.parse(content)
 
@@ -424,32 +507,38 @@ module Dependabot
           TomlRB.dump(object)
         end
 
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
         def prepared_manifest_files
           @prepared_manifest_files ||=
             prepared_dependency_files
             .select { |f| f.name.end_with?("Cargo.toml") }
         end
 
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
         def original_manifest_files
           @original_manifest_files ||=
             original_dependency_files
             .select { |f| f.name.end_with?("Cargo.toml") }
         end
 
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def lockfile
           @lockfile ||= prepared_dependency_files
                         .find { |f| f.name == "Cargo.lock" }
         end
 
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def toolchain
           @toolchain ||= original_dependency_files
                          .find { |f| f.name == "rust-toolchain" }
         end
 
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def config
           @config ||= original_dependency_files.find { |f| f.name == ".cargo/config.toml" }
         end
 
+        sig { returns(T::Boolean) }
         def git_dependency?
           GitCommitChecker.new(
             dependency: dependency,
@@ -460,14 +549,17 @@ module Dependabot
         # When the package table is not present in a workspace manifest, it is
         # called a virtual manifest: https://doc.rust-lang.org/cargo/reference/
         # manifest.html#virtual-manifest
+        sig { params(file: Dependabot::DependencyFile).returns(T::Boolean) }
         def virtual_manifest?(file)
-          !file.content.include?("[package]")
+          !T.must(file.content).include?("[package]")
         end
 
+        sig { returns(T.class_of(Dependabot::Version)) }
         def version_class
           dependency.version_class
         end
       end
+      # rubocop:enable Metrics/ClassLength
     end
   end
 end
