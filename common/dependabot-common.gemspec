@@ -41,6 +41,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "opentelemetry-api", "~> 1.5"
   spec.add_dependency "opentelemetry-logs-api", "~> 0.2"
   spec.add_dependency "opentelemetry-metrics-api", "~> 0.3"
+  spec.add_dependency "ostruct", "~> 0.6"
   spec.add_dependency "parser", "~> 3.3"
   spec.add_dependency "psych", "~> 5.0"
   spec.add_dependency "sorbet-runtime", "~> 0.5"
