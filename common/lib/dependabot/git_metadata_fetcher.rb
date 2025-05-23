@@ -118,6 +118,32 @@ module Dependabot
       result_lines
     end
 
+    sig { params(uri: String).returns(String) }
+    def fetch_tags_with_detail(uri)
+      response_with_git = fetch_tags_with_detail_from_git_for(uri)
+      return response_with_git.body if response_with_git.status == 200
+
+      raise Dependabot::GitDependenciesNotReachable, [uri] unless uri.match?(KNOWN_HOSTS)
+
+      if response_with_git.status < 400
+        raise "Unexpected response: #{response_with_git.status} - #{response_with_git.body}"
+      end
+
+      if uri.match?(/github\.com/i)
+        response = response_with_git.data
+        response[:response_headers] = response[:headers] unless response.nil?
+        raise Octokit::Error.from_response(response)
+      end
+
+      raise "Server error at #{uri}: #{response_with_git.body}" if response_with_git.status >= 500
+
+      raise Dependabot::GitDependenciesNotReachable, [uri]
+    rescue Excon::Error::Socket, Excon::Error::Timeout
+      raise if uri.match?(KNOWN_HOSTS)
+
+      raise Dependabot::GitDependenciesNotReachable, [uri]
+    end
+
     private
 
     sig { returns(String) }
@@ -291,33 +317,6 @@ module Dependabot
       @upload_tag_detail ||= T.let(fetch_tags_with_detail(url), T.nilable(String))
     rescue Octokit::ClientError
       raise Dependabot::GitDependenciesNotReachable, [url]
-    end
-
-    sig { params(uri: String).returns(String) }
-    def fetch_tags_with_detail(uri)
-      response = fetch_raw_upload_pack_for(uri)
-      return response.body if response.status == 200
-
-      response_with_git = fetch_tags_with_detail_from_git_for(uri)
-      return response_with_git.body if response_with_git.status == 200
-
-      raise Dependabot::GitDependenciesNotReachable, [uri] unless uri.match?(KNOWN_HOSTS)
-
-      raise "Unexpected response: #{response.status} - #{response.body}" if response.status < 400
-
-      if uri.match?(/github\.com/i)
-        response = response.data
-        response[:response_headers] = response[:headers]
-        raise Octokit::Error.from_response(response)
-      end
-
-      raise "Server error at #{uri}: #{response.body}" if response.status >= 500
-
-      raise Dependabot::GitDependenciesNotReachable, [uri]
-    rescue Excon::Error::Socket, Excon::Error::Timeout
-      raise if uri.match?(KNOWN_HOSTS)
-
-      raise Dependabot::GitDependenciesNotReachable, [uri]
     end
 
     sig { params(uri: String).returns(T.untyped) }
