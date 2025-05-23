@@ -57,6 +57,7 @@ jobs:
           - { name: devcontainers, ecosystem: devcontainers }
           - { name: terraform, ecosystem: terraform }
           - { name: uv, ecosystem: uv }
+          - { name: rust_toolchain, ecosystem: rust-toolchain }
     env:
       COMMIT_SHA: ${{ github.sha }}
       NAME: ${{ matrix.suite.name }}

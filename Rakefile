@@ -39,6 +39,7 @@ GEMSPECS = %w(
   docker_compose/dependabot-docker_compose.gemspec
   uv/dependabot-uv.gemspec
   helm/dependabot-helm.gemspec
+  rust_toolchain/dependabot-rust_toolchain.gemspec
 ).freeze
 
 def run_command(command)
