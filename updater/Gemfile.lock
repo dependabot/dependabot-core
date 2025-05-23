@@ -151,6 +151,12 @@ PATH
       dependabot-common (= 0.315.0)
 
 PATH
+  remote: ../rust_toolchain
+  specs:
+    dependabot-rust_toolchain (0.315.0)
+      dependabot-common (= 0.315.0)
+
+PATH
   remote: ../silent
   specs:
     dependabot-silent (0.315.0)
@@ -481,6 +487,7 @@ DEPENDENCIES
   dependabot-nuget!
   dependabot-pub!
   dependabot-python!
+  dependabot-rust_toolchain!
   dependabot-silent!
   dependabot-swift!
   dependabot-terraform!
@@ -555,6 +562,7 @@ CHECKSUMS
   dependabot-nuget (0.315.0)
   dependabot-pub (0.315.0)
   dependabot-python (0.315.0)
+  dependabot-rust_toolchain (0.315.0)
   dependabot-silent (0.315.0)
   dependabot-swift (0.315.0)
   dependabot-terraform (0.315.0)

@@ -80,6 +80,7 @@ jobs:
           - { name: terraform, ecosystem: terraform }
           - { name: bun, ecosystem: bun }
           - { name: uv, ecosystem: uv }
+          - { name: rust_toolchain, ecosystem: rust-toolchain }
     permissions:
       contents: read
       id-token: write
