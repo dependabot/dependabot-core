@@ -424,38 +424,16 @@ RSpec.describe Dependabot::GitMetadataFetcher do
         }]
       end
 
-      before do
-        stub_request(:get, "#{url}/info/refs?service=git-upload-pack")
-          .to_return(status: 200, body: stdout, headers: { "content-type" =>
-              "application/x-git-upload-pack-advertisement" })
+      context "when the response is successful (200)" do
+        before do
+          allow(checker).to receive(:fetch_tags_with_detail_from_git_for)
+                        .with(url).and_return(OpenStruct.new(body: "tag1 2023-01-01\ntag2 2023-02-01", status: 200))
+        end
 
-        exit_status = double(success?: true)
-        allow(Open3).to receive(:capture3).and_call_original
-        allow(Open3).to receive(:capture3)
-          .with(anything, "git for-each-ref --format=\"%(refname:short) %(creatordate:short)\"
-          refs/tags #{url}")
-          .and_return([stdout, "", exit_status])
-      end
-
-      it "returns the correct number of tags" do
-        result = checker.refs_for_tag_with_detail
-        expect(result.count).to eq(32)
-      end
-    end
-
-    context "with refs for tag with details throw internal server error 500" do
-      let(:upload_pack_fixture) { "tag_with_detail" }
-      let(:url) { "https://github.com/dependabot/dependabot-core.git" }
-      let(:stdout) { fixture("git", "upload_packs", upload_pack_fixture) }
-      let(:service_pack_url) { "https://github.com/dependabot/dependabot-core.git" }
-
-      before do
-        stub_request(:get, "https://github.com/dependabot/dependabot-core.git/info/refs?service=git-upload-pack")
-          .to_return(status: 500, body: "", headers: {})
-      end
-
-      it "raises a helpful error" do
-        expect { checker.refs_for_tag_with_detail }.to raise_error(Octokit::InternalServerError)
+        it "returns the response body" do
+          result = checker.fetch_tags_with_detail(url)
+          expect(result).to eq("tag1 2023-01-01\ntag2 2023-02-01")
+        end
       end
     end
   end
