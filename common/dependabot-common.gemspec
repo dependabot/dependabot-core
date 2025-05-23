@@ -20,7 +20,7 @@ Gem::Specification.new do |spec|
   }
 
   spec.version = Dependabot::VERSION
-  spec.required_ruby_version = ">= 3.1.0"
+  spec.required_ruby_version = ">= 3.3.0"
   spec.required_rubygems_version = ">= 3.3.7"
 
   spec.require_path = "lib"
