@@ -238,6 +238,11 @@ docker run --rm -ti \
   -v "$(pwd)/python/lib:$CODE_DIR/python/lib" \
   -v "$(pwd)/python/script:$CODE_DIR/python/script" \
   -v "$(pwd)/python/spec:$CODE_DIR/python/spec" \
+  -v "$(pwd)/rust_toolchain/.rubocop.yml:$CODE_DIR/rust_toolchain/.rubocop.yml" \
+  -v "$(pwd)/rust_toolchain/dependabot-rust_toolchain.gemspec:$CODE_DIR/rust_toolchain/dependabot-rust_toolchain.gemspec" \
+  -v "$(pwd)/rust_toolchain/lib:$CODE_DIR/rust_toolchain/lib" \
+  -v "$(pwd)/rust_toolchain/script:$CODE_DIR/rust_toolchain/script" \
+  -v "$(pwd)/rust_toolchain/spec:$CODE_DIR/rust_toolchain/spec" \
   -v "$(pwd)/swift/.rubocop.yml:$CODE_DIR/swift/.rubocop.yml" \
   -v "$(pwd)/swift/dependabot-swift.gemspec:$CODE_DIR/swift/dependabot-swift.gemspec" \
   -v "$(pwd)/swift/lib:$CODE_DIR/swift/lib" \
