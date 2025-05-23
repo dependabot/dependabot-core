@@ -5,6 +5,7 @@ require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/git_metadata_fetcher"
 require "dependabot/git_ref"
+require "dependabot/git_tag_with_detail"
 
 RSpec.describe Dependabot::GitMetadataFetcher do
   let(:checker) { described_class.new(url: url, credentials: credentials) }
@@ -340,6 +341,121 @@ RSpec.describe Dependabot::GitMetadataFetcher do
         let(:ref) { "HEAD" }
 
         it { is_expected.to eq("7bb4e41ce5164074a0920d5b5770d196b4d90104") }
+      end
+    end
+  end
+
+  describe "#refs_for_tag_with_detail" do
+    context "when upload_tag_with_detail contains valid data" do
+      let(:upload_tag_with_detail) do
+        <<~TAGS
+          v1.0.0 2023-01-01
+          v1.1.0 2023-02-01
+        TAGS
+      end
+
+      before do
+        allow(checker).to receive(:upload_tag_with_detail).and_return(upload_tag_with_detail)
+      end
+
+      it "parses the tags and release dates into GitTagWithDetail objects" do
+        result = checker.refs_for_tag_with_detail
+
+        expect(result.size).to eq(2)
+        expect(result.first).to be_a(Dependabot::GitTagWithDetail)
+        expect(result.first.tag).to eq("v1.0.0")
+        expect(result.first.release_date).to eq("2023-01-01")
+        expect(result.last.tag).to eq("v1.1.0")
+        expect(result.last.release_date).to eq("2023-02-01")
+      end
+    end
+
+    context "when upload_tag_with_detail is empty" do
+      before do
+        allow(checker).to receive(:upload_tag_with_detail).and_return("")
+      end
+
+      it "returns an empty array" do
+        result = checker.refs_for_tag_with_detail
+        expect(result).to eq([])
+      end
+    end
+
+    context "when upload_tag_with_detail is nil" do
+      before do
+        allow(checker).to receive(:upload_tag_with_detail).and_return(nil)
+      end
+
+      it "returns an empty array" do
+        result = checker.refs_for_tag_with_detail
+        expect(result).to eq([])
+      end
+    end
+
+    context "when upload_tag_with_detail contains invalid data" do
+      let(:upload_tag_with_detail) do
+        <<~TAGS
+          invalid_line
+          v1.0.0
+        TAGS
+      end
+
+      before do
+        allow(checker).to receive(:upload_tag_with_detail).and_return(upload_tag_with_detail)
+      end
+
+      it "skips invalid lines and parses valid ones" do
+        result = checker.refs_for_tag_with_detail
+
+        expect(result.size).to eq(2) # No valid tag-release pairs
+      end
+    end
+
+    context "with refs for tag with details returns are success" do
+      let(:upload_pack_fixture) { "tag_with_detail" }
+      let(:url) { "https://github.com/dependabot/dependabot-core.git" }
+      let(:stdout) { fixture("git", "upload_packs", upload_pack_fixture) }
+      let(:credentials) do
+        [{
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => nil # No password provided
+        }]
+      end
+
+      before do
+        stub_request(:get, "#{url}/info/refs?service=git-upload-pack")
+          .to_return(status: 200, body: stdout, headers: { "content-type" =>
+              "application/x-git-upload-pack-advertisement" })
+
+        exit_status = double(success?: true)
+        allow(Open3).to receive(:capture3).and_call_original
+        allow(Open3).to receive(:capture3)
+          .with(anything, "git for-each-ref --format=\"%(refname:short) %(creatordate:short)\"
+          refs/tags #{url}")
+          .and_return([stdout, "", exit_status])
+      end
+
+      it "returns the correct number of tags" do
+        result = checker.refs_for_tag_with_detail
+        expect(result.count).to eq(32)
+      end
+    end
+
+    context "with refs for tag with details throw internal server error 500" do
+      let(:upload_pack_fixture) { "tag_with_detail" }
+      let(:url) { "https://github.com/dependabot/dependabot-core.git" }
+      let(:stdout) { fixture("git", "upload_packs", upload_pack_fixture) }
+      let(:service_pack_url) { "https://github.com/dependabot/dependabot-core.git" }
+
+      before do
+        stub_request(:get, "https://github.com/dependabot/dependabot-core.git/info/refs?service=git-upload-pack")
+          .to_return(status: 500, body: "", headers: {})
+      end
+
+      it "raises a helpful error" do
+        expect { checker.refs_for_tag_with_detail }.to raise_error(Octokit::InternalServerError)
       end
     end
   end

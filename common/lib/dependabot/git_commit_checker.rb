@@ -2,8 +2,8 @@
 # frozen_string_literal: true
 
 require "excon"
-require "gitlab"
 require "sorbet-runtime"
+require "gitlab"
 require "dependabot/clients/github_with_retries"
 require "dependabot/clients/gitlab_with_retries"
 require "dependabot/clients/bitbucket_with_retries"
@@ -218,6 +218,11 @@ module Dependabot
     sig { returns(T.nilable(T::Hash[T.any(Symbol, String), T.untyped])) }
     def dependency_source_details
       @dependency_source_details || dependency.source_details(allowed_types: ["git"])
+    end
+
+    sig { returns(T::Array[Dependabot::GitTagWithDetail]) }
+    def refs_for_tag_with_detail
+      local_repo_git_metadata_fetcher.refs_for_tag_with_detail
     end
 
     sig { params(commit_sha: T.nilable(String)).returns(T.nilable(String)) }
