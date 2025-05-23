@@ -13,6 +13,7 @@ module Dependabot
   module GitSubmodules
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       extend T::Sig
+      require_relative "update_checker/latest_version_finder"
 
       sig { override.returns(T.nilable(T.any(String, Dependabot::Version))) }
       def latest_version
@@ -57,12 +58,10 @@ module Dependabot
 
       sig { returns(T.nilable(String)) }
       def fetch_latest_version
-        git_commit_checker = Dependabot::GitCommitChecker.new(
+        LatestVersionFinder.new(
           dependency: dependency,
           credentials: credentials
-        )
-
-        git_commit_checker.head_commit_for_current_branch
+        ).version_list
       end
     end
   end
