@@ -90,6 +90,11 @@
     "ecosystem": "pip"
   },
   {
+    "core": "rust_toolchain",
+    "test": "rust-toolchain",
+    "ecosystem": "rust-toolchain"
+  },
+  {
     "core": "swift",
     "test": "swift",
     "ecosystem": "swift"

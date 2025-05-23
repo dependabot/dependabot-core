@@ -78,6 +78,7 @@ module Dependabot
         "npm" => "npm_and_yarn",
         "pip" => "pip",
         "pub" => "pub",
+        "rust-toolchain" => "rust_toolchain",
         "swift" => "swift",
         "terraform" => "terraform",
         "uv" => "uv"

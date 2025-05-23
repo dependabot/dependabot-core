@@ -29,6 +29,7 @@
 --ignore=nuget/spec/
 --ignore=pub/spec/
 --ignore=python/spec/
+--ignore=rust_toolchain/spec/
 --ignore=swift/spec/
 --ignore=terraform/spec/
 --ignore=updater/spec/
