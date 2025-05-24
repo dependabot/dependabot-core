@@ -1,3 +1,6 @@
+# typed: strict
+# frozen_string_literal: true
+
 require "dependabot/update_checkers/base"
 require "dependabot/shared_helpers"
 require "toml-rb"

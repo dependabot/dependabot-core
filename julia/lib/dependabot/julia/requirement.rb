@@ -1,3 +1,6 @@
+# typed: strict
+# frozen_string_literal: true
+
 require "dependabot/requirement"
 
 module Dependabot
@@ -57,13 +60,13 @@ module Dependabot
 
         version = req_string.gsub(/^\^\s*/, "")
         parts = version.split(".")
-        
+
         upper_bound = if parts[0] == "0"
           ">= #{version}, < 0.#{parts[1].to_i + 1}.0"
         else
           ">= #{version}, < #{parts[0].to_i + 1}.0.0"
         end
-        
+
         format(upper_bound)
       end
 

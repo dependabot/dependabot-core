@@ -1,17 +1,16 @@
+# typed: strict
+# frozen_string_literal: true
+
 require "dependabot/version"
 
 module Dependabot
   module Julia
     class Version < Dependabot::Version
-      def self.correct?(version_string)
-        return false if version_string.nil?
-        
-        version_string = version_string.gsub(/^v/, "") if version_string.is_a?(String)
-        super(version_string)
-      end
+      extend T::Sig
 
+      sig { params(version: T.nilable(T.any(String, Integer, Gem::Version))).void }
       def initialize(version)
-        @version_string = version.to_s
+        @version_string = T.let(version.to_s, String)
         version = version.gsub(/^v/, "") if version.is_a?(String)
         super
       end

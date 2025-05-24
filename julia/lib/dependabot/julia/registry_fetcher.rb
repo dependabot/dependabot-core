@@ -1,3 +1,6 @@
+# typed: strict
+# frozen_string_literal: true
+
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 
@@ -10,9 +13,9 @@ module Dependabot
         registry_path = clone_registry(credentials)
         pkg_path = File.join(registry_path, package_name[0].upcase, package_name)
         versions_file = File.join(pkg_path, "Versions.toml")
-        
+
         return nil unless File.exist?(versions_file)
-        
+
         versions = TomlRB.parse(File.read(versions_file))
         versions.keys.map { |v| v.delete_prefix('"').delete_suffix('"') }
                 .sort_by { |v| Version.new(v) }
