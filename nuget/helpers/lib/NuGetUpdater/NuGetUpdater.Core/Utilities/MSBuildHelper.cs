@@ -968,7 +968,7 @@ internal static partial class MSBuildHelper
         ThrowOnMissingPackages(output);
         ThrowOnUpdateNotPossible(output);
         ThrowOnRateLimitExceeded(output);
-        ThrowOnServiceUnavailable(output);
+        ThrowOnBadResponse(output);
         ThrowOnUnparseableFile(output);
     }
 
@@ -1001,16 +1001,20 @@ internal static partial class MSBuildHelper
         }
     }
 
-    private static void ThrowOnServiceUnavailable(string stdout)
+    private static void ThrowOnBadResponse(string stdout)
     {
-        var serviceUnavailableMessageSnippets = new string[]
+        var patterns = new[]
         {
-            "503 (Service Unavailable)",
-            "Response status code does not indicate success: 503",
+            new Regex(@"500 \(Internal Server Error\)"),
+            new Regex(@"503 \(Service Unavailable\)"),
+            new Regex(@"Response status code does not indicate success: 50\d"),
+            new Regex(@"The file is not a valid nupkg"),
+            new Regex(@"The response ended prematurely\. \(ResponseEnded\)"),
+            new Regex(@"The content at '.*' is not valid XML\."),
         };
-        if (serviceUnavailableMessageSnippets.Any(stdout.Contains))
+        if (patterns.Any(p => p.IsMatch(stdout)))
         {
-            throw new HttpRequestException(message: stdout, inner: null, statusCode: System.Net.HttpStatusCode.ServiceUnavailable);
+            throw new HttpRequestException(message: stdout, inner: null, statusCode: System.Net.HttpStatusCode.InternalServerError);
         }
     }
 
@@ -1030,11 +1034,12 @@ internal static partial class MSBuildHelper
             new Regex(@"Package '(?<PackageName>[^']*)' is not found on source '(?<PackageSource>[^$\r\n]*)'\."),
             new Regex(@"Unable to find package (?<PackageName>[^ ]+)\. No packages exist with this id in source\(s\): (?<PackageSource>.*)$", RegexOptions.Multiline),
             new Regex(@"Unable to find package (?<PackageName>[^ ]+) with version \((?<PackageVersion>[^)]+)\)"),
+            new Regex(@"Unable to find package '(?<PackageName>[^ ]+)'\."),
             new Regex(@"Could not resolve SDK ""(?<PackageName>[^ ]+)""\."),
             new Regex(@"Failed to fetch results from V2 feed at '.*FindPackagesById\(\)\?id='(?<PackageName>[^']+)'&semVerLevel=2\.0\.0' with following message : Response status code does not indicate success: 404\."),
         };
-        var matches = patterns.Select(p => p.Match(output)).Where(m => m.Success);
-        if (matches.Any())
+        var matches = patterns.Select(p => p.Match(output)).Where(m => m.Success).ToArray();
+        if (matches.Length > 0)
         {
             var packages = matches.Select(m =>
                 {

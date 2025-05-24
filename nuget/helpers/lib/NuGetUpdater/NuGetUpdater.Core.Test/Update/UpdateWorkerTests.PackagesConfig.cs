@@ -2576,7 +2576,7 @@ public partial class UpdateWorkerTests
                     """,
                 expectedResult: new()
                 {
-                    ErrorRegex = "Response status code does not indicate success",
+                    Error = new PrivateSourceBadResponse([$"{http.BaseUrl.TrimEnd('/')}/index.json"]),
                     UpdateOperations = [],
                 }
             );
@@ -2654,7 +2654,7 @@ public partial class UpdateWorkerTests
                     """,
                 expectedResult: new()
                 {
-                    Error = new DependencyNotFound("Unrelated.Package.1.0.0"),
+                    Error = new DependencyNotFound("Unrelated.Package"),
                     UpdateOperations = [],
                 }
             );
