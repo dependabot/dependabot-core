@@ -1,0 +1,224 @@
+# typed: strict
+# frozen_string_literal: true
+
+require "toml-rb"
+require "tempfile"
+require "dependabot/file_updaters"
+require "dependabot/file_updaters/base"
+require "dependabot/julia/registry_client"
+
+module Dependabot
+  module Julia
+    class FileUpdater < Dependabot::FileUpdaters::Base
+      extend T::Sig
+      sig { override.returns(T::Array[Regexp]) }
+      def self.updated_files_regex
+        [/(?:Julia)?Project\.toml$/i, /(?:Julia)?Manifest(?:-v[\d.]+)?\.toml$/i]
+      end
+
+      sig { override.returns(T::Array[Dependabot::DependencyFile]) }
+      def updated_dependency_files
+        updated_files = []
+
+        # Use DependabotHelper.jl for manifest updating
+        if project_file
+          project_path = T.let(nil, T.nilable(String))
+
+          begin
+            project_path = write_temp_project_file
+
+            result = registry_client.update_manifest(
+              project_path: project_path,
+              updates: build_updates_hash
+            )
+
+            if result["error"]
+              # Fallback to Ruby TOML manipulation
+              Dependabot.logger.warn("DependabotHelper.jl update failed: #{result['error']}, " \
+                                     "falling back to Ruby updating")
+              return fallback_updated_dependency_files
+            end
+
+            # Create updated files from DependabotHelper.jl results
+            updated_files = build_updated_files_from_result(result)
+          rescue StandardError => e
+            # Fallback to Ruby TOML manipulation if Julia helper fails
+            Dependabot.logger.warn("DependabotHelper.jl update failed with exception: #{e.message}, " \
+                                   "falling back to Ruby updating")
+            return fallback_updated_dependency_files
+          ensure
+            File.delete(project_path) if project_path && File.exist?(project_path)
+          end
+        end
+
+        raise "No files changed!" if updated_files.empty?
+
+        updated_files
+      end
+
+      # Fallback method using Ruby TOML manipulation
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def fallback_updated_dependency_files
+        updated_files = []
+
+        # Update Project.toml file
+        if project_file && file_changed?(T.must(project_file))
+          updated_files << updated_file(
+            file: T.must(project_file),
+            content: updated_project_content
+          )
+        end
+
+        # Update Manifest.toml file if it exists and dependencies have changed
+        if manifest_file
+          updated_manifest_content = build_updated_manifest_content
+          if updated_manifest_content != T.must(manifest_file).content
+            updated_files << updated_file(
+              file: T.must(manifest_file),
+              content: updated_manifest_content
+            )
+          end
+        end
+
+        raise "No files changed!" if updated_files.empty?
+
+        updated_files
+      end
+
+      private
+
+      sig { returns(T::Hash[String, String]) }
+      def build_updates_hash
+        updates = {}
+        dependencies.each do |dependency|
+          next unless dependency.version
+
+          updates[dependency.name] = dependency.version
+        end
+        updates
+      end
+
+      sig { params(result: T::Hash[String, T.untyped]).returns(T::Array[Dependabot::DependencyFile]) }
+      def build_updated_files_from_result(result)
+        updated_files = T.let([], T::Array[Dependabot::DependencyFile])
+
+        if result["project_content"] && result["project_content"] != T.must(project_file).content
+          updated_files << updated_file(
+            file: T.must(project_file),
+            content: result["project_content"]
+          )
+        end
+
+        if manifest_file && result["manifest_content"] &&
+           result["manifest_content"] != T.must(manifest_file).content
+          updated_files << updated_file(
+            file: T.must(manifest_file),
+            content: result["manifest_content"]
+          )
+        end
+
+        updated_files
+      end
+
+      # Helper methods for DependabotHelper.jl integration
+
+      sig { returns(Dependabot::Julia::RegistryClient) }
+      def registry_client
+        @registry_client ||= T.let(
+          Dependabot::Julia::RegistryClient.new(
+            credentials: credentials
+          ),
+          T.nilable(Dependabot::Julia::RegistryClient)
+        )
+      end
+
+      sig { returns(String) }
+      def write_temp_project_file
+        temp_file = Tempfile.new(["Project", ".toml"])
+        temp_file.write(T.must(project_file).content)
+        temp_file.close
+        T.must(temp_file.path)
+      end
+
+      sig { override.void }
+      def check_required_files
+        return if dependency_files.empty?
+
+        return if dependency_files.any? { |f| f.name.match?(/^(Julia)?Project\.toml$/i) }
+
+        raise Dependabot::DependencyFileNotFound, "No Project.toml or JuliaProject.toml found."
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def project_file
+        @project_file ||= T.let(dependency_files.find do |f|
+          f.name.match?(/^(Julia)?Project\.toml$/i)
+        end, T.nilable(Dependabot::DependencyFile))
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def manifest_file
+        @manifest_file ||= T.let(dependency_files.find do |f|
+          f.name.match?(/^(Julia)?Manifest(?:-v[\d.]+)?\.toml$/i)
+        end, T.nilable(Dependabot::DependencyFile))
+      end
+
+      sig { returns(String) }
+      def updated_project_content
+        return T.must(T.must(project_file).content) unless project_file
+
+        parsed_toml = T.cast(TomlRB.parse(T.must(project_file).content), T::Hash[String, T.untyped])
+
+        dependencies.each do |dependency|
+          # Update the [compat] section with new version requirements
+          parsed_toml["compat"] ||= {}
+          compat_section = T.cast(parsed_toml["compat"], T::Hash[String, T.untyped])
+
+          # Find the new requirement for this dependency
+          new_requirement = dependency.requirements
+                                      .find { |req| T.cast(req[:file], String) == T.must(project_file).name }
+                                      &.fetch(:requirement)
+
+          compat_section[dependency.name] = new_requirement if new_requirement
+        end
+
+        T.cast(TomlRB.dump(parsed_toml), String)
+      end
+
+      sig { returns(String) }
+      def build_updated_manifest_content
+        return T.must(T.must(manifest_file).content) unless manifest_file
+
+        parsed_manifest = T.cast(TomlRB.parse(T.must(manifest_file).content), T::Hash[String, T.untyped])
+
+        dependencies.each do |dependency|
+          update_dependency_in_manifest(dependency, parsed_manifest)
+        end
+
+        T.cast(TomlRB.dump(parsed_manifest), String)
+      end
+
+      sig { params(dependency: Dependabot::Dependency, manifest: T::Hash[String, T.untyped]).void }
+      def update_dependency_in_manifest(dependency, manifest)
+        deps_section = T.cast(manifest["deps"] || {}, T::Hash[String, T.untyped])
+        return unless deps_section[dependency.name]
+
+        dep_entries = T.unsafe(deps_section[dependency.name])
+        update_dependency_entries(dep_entries, dependency.version)
+      end
+
+      sig { params(dep_entries: T.untyped, version: T.nilable(String)).void }
+      def update_dependency_entries(dep_entries, version)
+        if dep_entries.is_a?(Array)
+          dep_entries.each do |dep_entry|
+            dep_entry["version"] = version if dep_entry.is_a?(Hash) && dep_entry["uuid"]
+          end
+        elsif dep_entries.is_a?(Hash) && dep_entries["uuid"]
+          dep_entries["version"] = version
+        end
+      end
+    end
+  end
+end
+
+Dependabot::FileUpdaters.register("julia", Dependabot::Julia::FileUpdater)

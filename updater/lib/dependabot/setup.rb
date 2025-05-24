@@ -16,6 +16,38 @@ Dependabot.logger = Logger.new($stdout).tap do |logger|
   logger.formatter = Dependabot::Logger::BasicFormatter.new
 end
 
+# Pattern for Sentry app directories
+SENTRY_APP_DIRS_PATTERN = %r{(
+  dependabot-updater/bin|
+  dependabot-updater/config|
+  dependabot-updater/lib|
+  common|
+  python|
+  terraform|
+  elm|
+  docker|
+  docker_compose|
+  dotnet_sdk|
+  git_submodules|
+  github_actions|
+  composer|
+  nuget|
+  gradle|
+  maven|
+  helm|
+  hex|
+  julia|
+  cargo|
+  go_modules|
+  npm_and_yarn|
+  bundler|
+  pub|
+  silent|
+  swift|
+  uv|
+  devcontainers
+)}x
+
 Sentry.init do |config|
   config.release = ENV.fetch("DEPENDABOT_UPDATER_VERSION")
   config.logger = Dependabot.logger
@@ -40,6 +72,7 @@ Sentry.init do |config|
     gradle|
     helm|
     hex|
+    julia|
     maven|
     npm_and_yarn|
     nuget|
@@ -75,6 +108,7 @@ require "dependabot/go_modules"
 require "dependabot/gradle"
 require "dependabot/helm"
 require "dependabot/hex"
+require "dependabot/julia"
 require "dependabot/maven"
 require "dependabot/npm_and_yarn"
 require "dependabot/nuget"
