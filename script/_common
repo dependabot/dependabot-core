@@ -29,6 +29,9 @@ function set_tag() {
       docker_compose)
         TAG=docker-compose
         ;;
+      rust_toolchain)
+        TAG=rust-toolchain
+        ;;
       *)
         TAG=$ECOSYSTEM
         ;;
