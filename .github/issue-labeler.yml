@@ -63,3 +63,6 @@
 
 "L: helm":
     - '(helm)'
+
+"L: julia":
+    - '(julia)'
