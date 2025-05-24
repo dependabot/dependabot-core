@@ -1,0 +1,3 @@
+name = "Example"
+uuid = "7876af07-990d-54b4-ab0e-23690620f79a"
+repo = "https://github.com/JuliaLang/Example.jl.git"
