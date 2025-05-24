@@ -71,3 +71,7 @@ uv:
 helm:
   - *common
   - 'helm/**'
+julia:
+  - 'julia/**'
+  - 'common/**'
+  - 'updater/**'
