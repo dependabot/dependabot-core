@@ -1,0 +1,14 @@
+name = "General"
+uuid = "23338594-aafe-5451-b93e-139f81909106"
+repo = "https://github.com/JuliaRegistries/General.git"
+
+description = """
+Official general Julia package registry where people can
+register any package they want without too much debate about
+naming and without enforced standards on documentation or
+testing. We nevertheless encourage documentation, testing and
+some amount of consideration when choosing package names.
+"""
+
+[packages]
+7876af07-990d-54b4-ab0e-23690620f79a = { name = "Example", path = "E/Example" }
