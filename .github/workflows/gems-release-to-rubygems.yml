@@ -17,7 +17,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - uses: ruby/setup-ruby@84684c07c1965536eb4802c8daf1a77968df0cb1 # v1.239.0
+      - uses: ruby/setup-ruby@bb0f760b6c925183520ee0bcc9c4a432a7c8c3c6 # v1.241.0
 
       - name: Install the RubyGems version specified in the Dockerfile.updater-core file
         run: |
