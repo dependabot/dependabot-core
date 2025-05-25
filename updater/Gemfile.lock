@@ -209,7 +209,7 @@ GEM
     debug (1.9.2)
       irb (~> 1.10)
       reline (>= 0.3.8)
-    diff-lcs (1.5.1)
+    diff-lcs (1.6.2)
     docile (1.4.0)
     docker_registry2 (1.18.2)
       rest-client (>= 1.8.0)
@@ -377,20 +377,20 @@ GEM
       rspec-core (~> 3.13.0)
       rspec-expectations (~> 3.13.0)
       rspec-mocks (~> 3.13.0)
-    rspec-core (3.13.0)
+    rspec-core (3.13.3)
       rspec-support (~> 3.13.0)
-    rspec-expectations (3.13.1)
+    rspec-expectations (3.13.4)
       diff-lcs (>= 1.2.0, < 2.0)
       rspec-support (~> 3.13.0)
-    rspec-its (1.3.0)
-      rspec-core (>= 3.0.0)
-      rspec-expectations (>= 3.0.0)
+    rspec-its (2.0.0)
+      rspec-core (>= 3.13.0)
+      rspec-expectations (>= 3.13.0)
     rspec-mocks (3.13.1)
       diff-lcs (>= 1.2.0, < 2.0)
       rspec-support (~> 3.13.0)
     rspec-sorbet (1.9.2)
       sorbet-runtime
-    rspec-support (3.13.1)
+    rspec-support (3.13.3)
     rubocop (1.67.0)
       json (~> 2.3)
       language_server-protocol (>= 3.17.0)
@@ -505,7 +505,7 @@ DEPENDENCIES
   opentelemetry-sdk (~> 1.8)
   rake (~> 13.2)
   rspec (~> 3.12)
-  rspec-its (~> 1.3)
+  rspec-its (~> 2.0)
   rspec-sorbet (~> 1.9)
   rubocop (~> 1.67)
   rubocop-performance (~> 1.22)
@@ -564,7 +564,7 @@ CHECKSUMS
   dependabot-swift (0.313.0)
   dependabot-terraform (0.313.0)
   dependabot-uv (0.313.0)
-  diff-lcs (1.5.1) sha256=273223dfb40685548436d32b4733aa67351769c7dea621da7d9dd4813e63ddfe
+  diff-lcs (1.6.2) sha256=9ae0d2cba7d4df3075fe8cd8602a8604993efc0dfa934cff568969efb1909962
   docile (1.4.0) sha256=5f1734bde23721245c20c3d723e76c104208e1aa01277a69901ce770f0ebb8d3
   docker_registry2 (1.18.2) sha256=2ace909110fbca29d69dd1cdec99f555024aa6f6577798638139c8e8e556910f
   domain_name (0.6.20240107) sha256=5f693b2215708476517479bf2b3802e49068ad82167bcd2286f899536a17d933
@@ -634,12 +634,12 @@ CHECKSUMS
   rest-client (2.1.0) sha256=35a6400bdb14fae28596618e312776c158f7ebbb0ccad752ff4fa142bf2747e3
   rexml (3.3.9) sha256=d71875b85299f341edf47d44df0212e7658cbdf35aeb69cefdb63f57af3137c9
   rspec (3.13.0) sha256=d490914ac1d5a5a64a0e1400c1d54ddd2a501324d703b8cfe83f458337bab993
-  rspec-core (3.13.0) sha256=557792b4e88da883d580342b263d9652b6a10a12d5bda9ef967b01a48f15454c
-  rspec-expectations (3.13.1) sha256=814cf8dadc797b00be55a84d7bc390c082735e5c914e62cbe8d0e19774b74200
-  rspec-its (1.3.0) sha256=4da51040e7820daafd40f2f6216d13c90aa949f0d302a0412c9ef6074e73ea97
+  rspec-core (3.13.3) sha256=25136507f4f9cf2e8977a2851e64e438b4331646054e345998714108745cdfe4
+  rspec-expectations (3.13.4) sha256=4e43459765dfee900b25aa1361e106ab0799895ede65fc57872069feb559ecd8
+  rspec-its (2.0.0) sha256=a88e8bc38149f2835e93533591ec4f5c829aacbfd41269a2e6f9f5b82f5260df
   rspec-mocks (3.13.1) sha256=087189899c337937bcf1d66a50dc3fc999ac88335bbeba4d385c2a38c87d7b38
   rspec-sorbet (1.9.2) sha256=28bf3969fa136ed22edd05b00d23aab52c276f2fcc89fccbb16b8fd0c48931c8
-  rspec-support (3.13.1) sha256=48877d4f15b772b7538f3693c22225f2eda490ba65a0515c4e7cf6f2f17de70f
+  rspec-support (3.13.3) sha256=2a61e393f6e18b7228726e0c6869c5d5a1419d37206116c4d917d145276b3f43
   rubocop (1.67.0) sha256=8ccca7226e76d0a9974af960ea446d1fb38adf0c491214294e2fed75a85c378c
   rubocop-ast (1.44.1) sha256=e3cc04203b2ef04f6d6cf5f85fe6d643f442b18cc3b23e3ada0ce5b6521b8e92
   rubocop-capybara (2.20.0) sha256=2a6844b942921f230ee3ab8c94fe77f41a9406096a140245270c0e11624bb938
