@@ -16,7 +16,7 @@
     "nock": "^14.0.4",
     "npm": "6.14.18",
     "@pnpm/lockfile-file": "^9.1.3",
-    "@pnpm/dependency-path": "^5.1.1",
+    "@pnpm/dependency-path": "^1000.0.9",
     "semver": "^7.7.2",
     "patch-package": "^8.0.0"
   },
