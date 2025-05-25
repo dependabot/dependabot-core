@@ -411,28 +411,77 @@ RSpec.describe Dependabot::GitMetadataFetcher do
       end
     end
 
-    context "with refs for tag with details returns are success" do
-      let(:upload_pack_fixture) { "tag_with_detail" }
+    describe "#fetch_tags_with_detail_from_git_for" do
       let(:url) { "https://github.com/dependabot/dependabot-core.git" }
-      let(:stdout) { fixture("git", "upload_packs", upload_pack_fixture) }
-      let(:credentials) do
-        [{
-          "type" => "git_source",
-          "host" => "github.com",
-          "username" => "x-access-token",
-          "password" => nil # No password provided
-        }]
-      end
+      let(:credentials) { [] }
 
-      context "when the response is successful (200)" do
+      context "when the repository is cloned successfully" do
         before do
-          allow(checker).to receive(:fetch_tags_with_detail_from_git_for)
-                        .with(url).and_return(OpenStruct.new(body: "tag1 2023-01-01\ntag2 2023-02-01", status: 200))
+          allow(Open3).to receive(:capture3).with(any_args).and_wrap_original do |_, _env, command|
+            if command.include?("git clone")
+              ["", "", instance_double(Process::Status, success?: true)]
+            elsif command.include?("git for-each-ref")
+              ["v1.0.0 2023-01-01\nv1.1.0 2023-02-01", "", instance_double(Process::Status, success?: true)]
+            else
+              raise "Unexpected command: #{command}"
+            end
+          end
         end
 
-        it "returns the response body" do
-          result = checker.fetch_tags_with_detail(url)
-          expect(result).to eq("tag1 2023-01-01\ntag2 2023-02-01")
+        it "returns the tags sorted by creation date" do
+          result = checker.send(:fetch_tags_with_detail_from_git_for, url)
+          expect(result.status).to eq(200)
+          expect(result.body).to eq("v1.0.0 2023-01-01\nv1.1.0 2023-02-01")
+        end
+      end
+
+      context "when cloning the repository fails" do
+        before do
+          allow(Open3).to receive(:capture3).with(any_args).and_wrap_original do |_, _env, command|
+            if command.include?("git clone")
+              ["", "Cloning failed", instance_double(Process::Status, success?: false)]
+            else
+              raise "Unexpected command: #{command}"
+            end
+          end
+        end
+
+        it "returns a 500 status with the error message" do
+          result = checker.send(:fetch_tags_with_detail_from_git_for, url)
+          expect(result.status).to eq(500)
+          expect(result.body).to eq("Cloning failed")
+        end
+      end
+
+      context "when fetching tags fails" do
+        before do
+          allow(Open3).to receive(:capture3).with(any_args).and_wrap_original do |_, _env, command|
+            if command.include?("git clone")
+              ["", "", instance_double(Process::Status, success?: true)]
+            elsif command.include?("git for-each-ref")
+              ["", "Fetching tags failed", instance_double(Process::Status, success?: false)]
+            else
+              raise "Unexpected command: #{command}"
+            end
+          end
+        end
+
+        it "returns a 500 status with the error message" do
+          result = checker.send(:fetch_tags_with_detail_from_git_for, url)
+          expect(result.status).to eq(500)
+          expect(result.body).to eq("Fetching tags failed")
+        end
+      end
+
+      context "when git is not installed" do
+        before do
+          allow(Open3).to receive(:capture3).and_raise(Errno::ENOENT, "No such file or directory - git")
+        end
+
+        it "returns a 500 status with the error message" do
+          result = checker.send(:fetch_tags_with_detail_from_git_for, url)
+          expect(result.status).to eq(500)
+          expect(result.body).to eq("No such file or directory - No such file or directory - git")
         end
       end
     end

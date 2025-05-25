@@ -5,7 +5,7 @@ require "excon"
 require "open3"
 require "ostruct"
 require "sorbet-runtime"
-
+require "tmpdir"
 require "dependabot/errors"
 require "dependabot/git_ref"
 require "dependabot/git_tag_with_detail"
@@ -318,28 +318,49 @@ module Dependabot
     rescue Octokit::ClientError
       raise Dependabot::GitDependenciesNotReachable, [url]
     end
-
+    # Added method to fetch tags with their creation dates from a git repository. Incase
+    # private registry is used, it will clone the repository and fetch tags with their creation dates.
     sig { params(uri: String).returns(T.untyped) }
     def fetch_tags_with_detail_from_git_for(uri)
-      complete_uri = uri
-      complete_uri += ".git" unless complete_uri.end_with?(".git") || skip_git_suffix(uri)
+      uri_ending_with_git = uri
+      uri_ending_with_git += ".git" unless uri_ending_with_git.end_with?(".git") || skip_git_suffix(uri)
 
-      env = { "PATH" => ENV.fetch("PATH", nil), "GIT_TERMINAL_PROMPT" => "0" }
-      command = "git for-each-ref --format=\"%(refname:short) %(creatordate:short)\" refs/tags #{complete_uri}"
-      command = SharedHelpers.escape_command(command)
+      Dir.mktmpdir do |dir|
+        # Clone the repository into a temporary directory
+        clone_command = "git clone --bare #{uri_ending_with_git} #{dir}"
+        env = { "PATH" => ENV.fetch("PATH", nil), "GIT_TERMINAL_PROMPT" => "0" }
+        clone_command = SharedHelpers.escape_command(clone_command)
 
-      begin
-        stdout, stderr, process = Open3.capture3(env, command)
-        # package the command response like a HTTP response so error handling remains unchanged
-      rescue Errno::ENOENT => e # thrown when `git` isn't installed...
-        OpenStruct.new(body: e.message, status: 500)
-      else
-        if process.success?
-          OpenStruct.new(body: stdout, status: 200)
-        else
-          OpenStruct.new(body: stderr, status: 500)
+        _stdout, stderr, process = Open3.capture3(env, clone_command)
+        unless process.success?
+          return OpenStruct.new(body: stderr, status: 500)
+        end
+
+        # Change to the cloned repository directory
+        Dir.chdir(dir) do
+          # Fetch tags and their creation dates
+          tags_command = 'git for-each-ref --format="%(refname:short) %(creatordate:short)" refs/tags'
+          tags_stdout, tags_stderr, tags_process = Open3.capture3(env, tags_command)
+
+          if tags_process.success?
+            # Parse and sort tags by creation date
+            tags = tags_stdout.lines.map do |line|
+              tag, date = line.strip.split(" ", 2)
+              { tag: tag, date: date }
+            end
+
+            sorted_tags = tags.sort_by { |tag| tag[:date] }
+
+            # Format the output as a string
+            formatted_output = sorted_tags.map { |tag| "#{tag[:tag]} #{tag[:date]}" }.join("\n")
+            return OpenStruct.new(body: formatted_output, status: 200)
+          else
+            return OpenStruct.new(body: tags_stderr, status: 500)
+          end
         end
       end
+    rescue Errno::ENOENT => e # Thrown when `git` isn't installed
+      OpenStruct.new(body: e.message, status: 500)
     end
   end
 end
