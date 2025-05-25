@@ -18,7 +18,7 @@
     <PackageVersion Include="Microsoft.Extensions.FileProviders.Abstractions" Version="9.0.5" />
     <PackageVersion Include="Microsoft.Extensions.FileSystemGlobbing" Version="9.0.5" />
     <PackageVersion Include="Microsoft.Extensions.Logging" Version="9.0.5" />
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.0" />
     <PackageVersion Include="Microsoft.VisualStudio.Setup.Configuration.Interop" Version="3.14.2075" />
     <PackageVersion Include="Microsoft.VisualStudio.SolutionPersistence" Version="1.0.52" />
     <PackageVersion Include="Microsoft.Web.Xdt" Version="3.1.0" />
