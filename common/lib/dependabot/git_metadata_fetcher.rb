@@ -338,23 +338,20 @@ module Dependabot
         Dir.chdir(dir) do
           # Fetch tags and their creation dates
           tags_command = 'git for-each-ref --format="%(refname:short) %(creatordate:short)" refs/tags'
-          tags_stdout, tags_stderr, tags_process = Open3.capture3(env, tags_command)
+          tags_stdout, stderr, process = Open3.capture3(env, tags_command)
 
-          if tags_process.success?
-            # Parse and sort tags by creation date
-            tags = tags_stdout.lines.map do |line|
-              tag, date = line.strip.split(" ", 2)
-              { tag: tag, date: date }
-            end
+          return OpenStruct.new(body: stderr, status: 500) unless process.success?
 
-            sorted_tags = tags.sort_by { |tag| tag[:date] }
-
-            # Format the output as a string
-            formatted_output = sorted_tags.map { |tag| "#{tag[:tag]} #{tag[:date]}" }.join("\n")
-            return OpenStruct.new(body: formatted_output, status: 200)
-          else
-            return OpenStruct.new(body: tags_stderr, status: 500)
+          # Parse and sort tags by creation date
+          tags = tags_stdout.lines.map do |line|
+            tag, date = line.strip.split(" ", 2)
+            { tag: tag, date: date }
           end
+          sorted_tags = tags.sort_by { |tag| tag[:date] }
+
+          # Format the output as a string
+          formatted_output = sorted_tags.map { |tag| "#{tag[:tag]} #{tag[:date]}" }.join("\n")
+          return OpenStruct.new(body: formatted_output, status: 200)
         end
       end
     rescue Errno::ENOENT => e # Thrown when `git` isn't installed
