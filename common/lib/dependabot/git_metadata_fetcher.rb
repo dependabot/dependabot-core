@@ -318,7 +318,7 @@ module Dependabot
     rescue Octokit::ClientError
       raise Dependabot::GitDependenciesNotReachable, [url]
     end
-    # Added method to fetch tags with their creation dates from a git repository. Incase
+    # Added method to fetch tags with their creation dates from a git repository. In case
     # private registry is used, it will clone the repository and fetch tags with their creation dates.
     sig { params(uri: String).returns(T.untyped) }
     def fetch_tags_with_detail_from_git_for(uri)
@@ -332,9 +332,7 @@ module Dependabot
         clone_command = SharedHelpers.escape_command(clone_command)
 
         _stdout, stderr, process = Open3.capture3(env, clone_command)
-        unless process.success?
-          return OpenStruct.new(body: stderr, status: 500)
-        end
+        return OpenStruct.new(body: stderr, status: 500) unless process.success?
 
         # Change to the cloned repository directory
         Dir.chdir(dir) do
