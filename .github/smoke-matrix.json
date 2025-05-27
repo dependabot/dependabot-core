@@ -98,5 +98,10 @@
     "core": "terraform",
     "test": "terraform",
     "ecosystem": "terraform"
+  },
+  {
+    "core": "julia",
+    "ecosystem": "julia",
+    "test": "julia"
   }
 ]
