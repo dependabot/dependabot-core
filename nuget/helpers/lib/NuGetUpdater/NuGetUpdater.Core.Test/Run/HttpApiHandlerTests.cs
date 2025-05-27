@@ -150,7 +150,12 @@ public class HttpApiHandlerTests
         yield return [new PrivateSourceAuthenticationFailure(["unused"]), "record_update_job_error"];
         yield return [new PrivateSourceBadResponse(["unused"]), "record_update_job_error"];
         yield return [new PullRequestExistsForLatestVersion("unused", "unused"), "record_update_job_error"];
+        yield return [new PullRequestExistsForSecurityUpdate([]), "record_update_job_error"];
+        yield return [new SecurityUpdateDependencyNotFound(), "record_update_job_error"];
+        yield return [new SecurityUpdateIgnored("unused"), "record_update_job_error"];
+        yield return [new SecurityUpdateNotFound("unused", "unused"), "record_update_job_error"];
         yield return [new SecurityUpdateNotNeeded("unused"), "record_update_job_error"];
+        yield return [new SecurityUpdateNotPossible("unused", "unused", "unused", []), "record_update_job_error"];
         yield return [new UnknownError(new Exception("unused"), "unused"), "record_update_job_error", "record_update_job_unknown_error", "increment_metric"];
         yield return [new UpdateNotPossible(["unused"]), "record_update_job_error"];
     }

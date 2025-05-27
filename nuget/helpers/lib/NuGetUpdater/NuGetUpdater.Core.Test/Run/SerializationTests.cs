@@ -556,9 +556,14 @@ public class SerializationTests : TestBase
         Assert.Equal(expected, actual);
     }
 
-    [Fact]
-    public void SerializeCreatePullRequest()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SerializeCreatePullRequest(bool withDependencyGroupName)
     {
+        var dependencyGroupName = withDependencyGroupName
+            ? "test-group"
+            : null;
         var create = new CreatePullRequest()
         {
             Dependencies = [new() { Name = "dep", Version = "ver2", PreviousVersion = "ver1", Requirements = [new() { Requirement = "ver2", File = "project.csproj" }], PreviousRequirements = [new() { Requirement = "ver1", File = "project.csproj" }] }],
@@ -566,18 +571,28 @@ public class SerializationTests : TestBase
             BaseCommitSha = "TEST-COMMIT-SHA",
             CommitMessage = "commit message",
             PrTitle = "pr title",
-            PrBody = "pr body"
+            PrBody = "pr body",
+            DependencyGroup = dependencyGroupName,
         };
         var actual = HttpApiHandler.Serialize(create);
-        var expected = """
-            {"data":{"dependencies":[{"name":"dep","version":"ver2","requirements":[{"requirement":"ver2","file":"project.csproj","groups":[],"source":null}],"previous-version":"ver1","previous-requirements":[{"requirement":"ver1","file":"project.csproj","groups":[],"source":null}]}],"updated-dependency-files":[{"name":"project.csproj","content":"updated content","directory":"/","type":"file","support_file":false,"content_encoding":"utf-8","deleted":false,"operation":"update","mode":null}],"base-commit-sha":"TEST-COMMIT-SHA","commit-message":"commit message","pr-title":"pr title","pr-body":"pr body"}}
+
+        var expectedDependencyGroupValue = withDependencyGroupName
+            ? """{"name":"test-group"}"""
+            : "null";
+        var expected = $$$"""
+            {"data":{"dependencies":[{"name":"dep","version":"ver2","requirements":[{"requirement":"ver2","file":"project.csproj","groups":[],"source":null}],"previous-version":"ver1","previous-requirements":[{"requirement":"ver1","file":"project.csproj","groups":[],"source":null}]}],"updated-dependency-files":[{"name":"project.csproj","content":"updated content","directory":"/","type":"file","support_file":false,"content_encoding":"utf-8","deleted":false,"operation":"update","mode":null}],"base-commit-sha":"TEST-COMMIT-SHA","commit-message":"commit message","pr-title":"pr title","pr-body":"pr body","dependency-group":{{{expectedDependencyGroupValue}}}}}
             """;
         Assert.Equal(expected, actual);
     }
 
-    [Fact]
-    public void SerializeUpdatePullRequest()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SerializeUpdatePullRequest(bool withDependencyGroupName)
     {
+        var dependencyGroupName = withDependencyGroupName
+            ? "test-group"
+            : null;
         var update = new UpdatePullRequest()
         {
             BaseCommitSha = "TEST-COMMIT-SHA",
@@ -586,11 +601,15 @@ public class SerializationTests : TestBase
             PrTitle = "pr title",
             PrBody = "pr body",
             CommitMessage = "commit message",
-            DependencyGroup = null,
+            DependencyGroup = dependencyGroupName,
         };
         var actual = HttpApiHandler.Serialize(update);
-        var expected = """
-            {"data":{"base-commit-sha":"TEST-COMMIT-SHA","dependency-names":["dep"],"updated-dependency-files":[{"name":"project.csproj","content":"updated content","directory":"/","type":"file","support_file":false,"content_encoding":"utf-8","deleted":false,"operation":"update","mode":null}],"pr-title":"pr title","pr-body":"pr body","commit-message":"commit message","dependency-group":null}}
+
+        var expectedDependencyGroupValue = withDependencyGroupName
+            ? """{"name":"test-group"}"""
+            : "null";
+        var expected = $$$"""
+            {"data":{"base-commit-sha":"TEST-COMMIT-SHA","dependency-names":["dep"],"updated-dependency-files":[{"name":"project.csproj","content":"updated content","directory":"/","type":"file","support_file":false,"content_encoding":"utf-8","deleted":false,"operation":"update","mode":null}],"pr-title":"pr title","pr-body":"pr body","commit-message":"commit message","dependency-group":{{{expectedDependencyGroupValue}}}}}
             """;
         Assert.Equal(expected, actual);
     }
@@ -698,9 +717,49 @@ public class SerializationTests : TestBase
 
         yield return
         [
+            new PullRequestExistsForSecurityUpdate([new("dep", "ver", DependencyType.PackageReference)]),
+            """
+            {"data":{"error-type":"pull_request_exists_for_security_update","error-details":{"updated-dependencies":[{"dependency-name":"dep","dependency-version":"ver","dependency-removed":false}]}}}
+            """
+        ];
+
+        yield return
+        [
+            new SecurityUpdateDependencyNotFound(),
+            """
+            {"data":{"error-type":"security_update_dependency_not_found","error-details":{}}}
+            """
+        ];
+
+        yield return
+        [
+            new SecurityUpdateIgnored("dep"),
+            """
+            {"data":{"error-type":"all_versions_ignored","error-details":{"dependency-name":"dep"}}}
+            """
+        ];
+
+        yield return
+        [
+            new SecurityUpdateNotFound("dep", "ver"),
+            """
+            {"data":{"error-type":"security_update_not_found","error-details":{"dependency-name":"dep","dependency-version":"ver"}}}
+            """
+        ];
+
+        yield return
+        [
             new SecurityUpdateNotNeeded("dep"),
             """
             {"data":{"error-type":"security_update_not_needed","error-details":{"dependency-name":"dep"}}}
+            """
+        ];
+
+        yield return
+        [
+            new SecurityUpdateNotPossible("dep", "ver1", "ver2", []),
+            """
+            {"data":{"error-type":"security_update_not_possible","error-details":{"dependency-name":"dep","latest-resolvable-version":"ver1","lowest-non-vulnerable-version":"ver2","conflicting-dependencies":[]}}}
             """
         ];
 

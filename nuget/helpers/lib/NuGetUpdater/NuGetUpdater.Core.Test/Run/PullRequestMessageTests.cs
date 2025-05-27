@@ -82,6 +82,7 @@ public class PullRequestMessageTests
                 CommitMessage = RunWorkerTests.TestPullRequestCommitMessage,
                 PrTitle = RunWorkerTests.TestPullRequestTitle,
                 PrBody = RunWorkerTests.TestPullRequestBody,
+                DependencyGroup = null,
             }
         ];
 
