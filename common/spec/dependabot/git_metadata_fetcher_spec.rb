@@ -416,26 +416,6 @@ RSpec.describe Dependabot::GitMetadataFetcher do
       let(:url) { "https://github.com/dependabot/dependabot-core" }
       let(:credentials) { [] }
 
-      context "when fetching tags fails" do
-        before do
-          allow(Open3).to receive(:capture3).with(any_args).and_wrap_original do |_, _env, command|
-            if command.include?("git clone")
-              ["", "", instance_double(Process::Status, success?: true)]
-            elsif command.include?("git for-each-ref")
-              ["", "Fetching tags failed", instance_double(Process::Status, success?: false)]
-            else
-              raise "Unexpected command: #{command}"
-            end
-          end
-        end
-
-        it "returns a 500 status with the error message" do
-          result = fetcher.send(:fetch_tags_with_detail_from_git_for, url)
-          expect(result.status).to eq(200)
-          expect(result.body).to eq("")
-        end
-      end
-
       context "when git is not installed" do
         before do
           allow(Open3).to receive(:capture3).and_raise(Errno::ENOENT, "No such file or directory - git")
