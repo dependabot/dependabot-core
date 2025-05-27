@@ -234,6 +234,13 @@ module Dependabot
       tags[-1]&.name
     end
 
+    sig { params(tags: T::Array[Dependabot::GitRef]).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+    def max_local_tag(tags)
+      max_version_tag = tags.max_by { |t| version_from_tag(t) }
+
+      to_local_tag(max_version_tag)
+    end
+
     private
 
     sig { returns(Dependabot::Dependency) }
@@ -253,13 +260,6 @@ module Dependabot
     sig { params(tags: T::Array[Dependabot::GitRef]).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
     def max_local_tag_for_lower_precision(tags)
       max_local_tag(select_lower_precision(tags))
-    end
-
-    sig { params(tags: T::Array[Dependabot::GitRef]).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
-    def max_local_tag(tags)
-      max_version_tag = tags.max_by { |t| version_from_tag(t) }
-
-      to_local_tag(max_version_tag)
     end
 
     # Find the latest version with the same precision as the pinned version.
