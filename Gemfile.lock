@@ -26,7 +26,7 @@ PATH
       bundler (>= 1.16, < 3.0.0)
       commonmarker (~> 0.23)
       docker_registry2 (~> 1.18)
-      excon (~> 0.109)
+      excon (~> 1.2)
       faraday (~> 2.7)
       faraday-retry (~> 2.2)
       gitlab (~> 5.0)
@@ -213,7 +213,8 @@ GEM
       rest-client (>= 1.8.0)
     domain_name (0.6.20231109)
     erubi (1.13.1)
-    excon (0.110.0)
+    excon (1.2.5)
+      logger
     faraday (2.7.11)
       base64
       faraday-net_http (>= 2.0, < 3.1)
@@ -242,6 +243,7 @@ GEM
     jmespath (1.6.2)
     json (2.11.3)
     language_server-protocol (3.17.0.3)
+    logger (1.7.0)
     mime-types (3.5.2)
       mime-types-data (~> 3.2015)
     mime-types-data (3.2023.1205)
@@ -501,7 +503,7 @@ CHECKSUMS
   docker_registry2 (1.18.2) sha256=2ace909110fbca29d69dd1cdec99f555024aa6f6577798638139c8e8e556910f
   domain_name (0.6.20231109) sha256=5127a1521ecca79d54accefc393f6d19db8600c6224416004414f7eaa28aecbe
   erubi (1.13.1) sha256=a082103b0885dbc5ecf1172fede897f9ebdb745a4b97a5e8dc63953db1ee4ad9
-  excon (0.110.0) sha256=5f5372e1ccb6089ef45949100f2fc9fe12df200ee69c45a00771621eeefe6fd4
+  excon (1.2.5) sha256=ca040bb61bc0059968f34a17115a00d2db8562e3c0c5c5c7432072b551c85a9d
   faraday (2.7.11) sha256=85dbf6bb776c66d2a03394d8fe535f90cb1c875e3c6ab9bb85d26ca13597c76e
   faraday-net_http (3.0.2) sha256=6882929abed8094e1ee30344a3369e856fe34530044630d1f652bf70ebd87e8d
   faraday-retry (2.2.0) sha256=80824a5454dd0ce7d8074013454d163569b909001a64bdb3499c9968df4f41c5
@@ -516,6 +518,7 @@ CHECKSUMS
   jmespath (1.6.2) sha256=238d774a58723d6c090494c8879b5e9918c19485f7e840f2c1c7532cf84ebcb1
   json (2.11.3) sha256=9a10f658a2de67c0eb837eb795dd48132ce797c403e52b5ebef87dcdc7f9ccc1
   language_server-protocol (3.17.0.3) sha256=3d5c58c02f44a20d972957a9febe386d7e7468ab3900ce6bd2b563dd910c6b3f
+  logger (1.7.0) sha256=196edec7cc44b66cfb40f9755ce11b392f21f7967696af15d274dde7edff0203
   mime-types (3.5.2) sha256=c1299f10fa34c75a6f168e99e9dadbd11bc507d9d62dc5cf98c4e65f2af8c4e4
   mime-types-data (3.2023.1205) sha256=8c4c79b29b03afdeb6a58c00ef0c5b856cf2371e2edc6cecf9ff33e9c7244a22
   mini_mime (1.1.5) sha256=8681b7e2e4215f2a159f9400b5816d85e9d8c6c6b491e96a12797e798f8bccef
