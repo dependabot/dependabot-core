@@ -123,16 +123,18 @@ module Dependabot
         original_file_declarations = original_file_declarations(dependency, previous_req)
 
         if original_file_declarations.any?
+          # If the file already has a declaration for this dependency, we
+          # update the existing declaration with the new version.
           original_file_declarations.each do |old_dec|
             updated_content = updated_content.gsub(old_dec) do
               updated_file_declaration(old_dec, previous_req, requirement)
             end
           end
         else
+          # If the file does not have a declaration for this dependency, we
+          # add a new declaration for it.
           updated_content = add_new_declaration(updated_content, dependency, requirement)
         end
-
-        binding.irb
 
         raise "Expected content to change!" if updated_content == file.content
 
@@ -147,7 +149,6 @@ module Dependabot
         ).returns(String)
       end
       def add_new_declaration(content, dependency, requirement) # rubocop:disable Metrics/AbcSize
-        binding.irb
         doc = Nokogiri::XML(content) { |config| config.default_xml.noblanks }
         doc.remove_namespaces!
 
