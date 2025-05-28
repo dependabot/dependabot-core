@@ -16,15 +16,15 @@ module Dependabot
             files: T::Array[Dependabot::DependencyFile],
             target_branch: T.nilable(String),
             includes_security_fixes: T::Boolean,
+            multi_ecosystem_name: String,
             separator: String,
             prefix: String,
             max_length: T.nilable(Integer),
-            multi_ecosystem_name: T.nilable(String)
           )
             .void
         end
-        def initialize(dependencies:, files:, target_branch:, includes_security_fixes:,
-                       separator: "/", prefix: "dependabot", max_length: nil, multi_ecosystem_name: nil)
+        def initialize(dependencies:, files:, target_branch:, includes_security_fixes:, multi_ecosystem_name:,
+                       separator: "/", prefix: "dependabot", max_length: nil)
           super(
             dependencies: dependencies,
             files: files,

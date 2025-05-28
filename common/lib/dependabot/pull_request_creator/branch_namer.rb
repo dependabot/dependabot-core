@@ -76,7 +76,7 @@ module Dependabot
 
       private
 
-      sig { returns(T.nilable(Dependabot::PullRequestCreator::BranchNamer::Base)) }
+      sig { returns(Dependabot::PullRequestCreator::BranchNamer::Base) }
       def strategy
         @strategy ||= T.let(
           if multi_ecosystem_name
