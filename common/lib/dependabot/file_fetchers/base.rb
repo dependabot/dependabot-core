@@ -2,8 +2,8 @@
 # frozen_string_literal: true
 
 require "ostruct"
-require "stringio"
 require "sorbet-runtime"
+require "stringio"
 
 require "dependabot/config"
 require "dependabot/dependency_file"
