@@ -16,6 +16,7 @@ module Dependabot
 
       require_relative "update_checker/requirements_updater"
       require_relative "update_checker/version_resolver"
+      require_relative "update_checker/latest_version_resolver"
 
       sig { override.returns(T.nilable(Dependabot::Version)) }
       def latest_version
@@ -111,6 +112,16 @@ module Dependabot
         )
       end
 
+      sig { returns(LatestVersionResolver) }
+      def cooldown_check_version_resolver_for
+        LatestVersionResolver.new(
+          dependency: dependency,
+          credentials: credentials,
+          cooldown_options: update_cooldown,
+          git_commit_checker: git_commit_checker
+        )
+      end
+
       sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
       def unlocked_requirements
         NativeRequirement.map_requirements(old_requirements) do |_old_requirement|
@@ -183,7 +194,7 @@ module Dependabot
 
       sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
       def latest_version_tag
-        git_commit_checker.local_tag_for_latest_version
+        cooldown_check_version_resolver_for.latest_version_tag
       end
 
       sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
