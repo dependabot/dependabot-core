@@ -34,7 +34,11 @@ module Dependabot
       end
       def update_config(package_manager, directory: nil, target_branch: nil)
         dir = directory || "/"
-        package_ecosystem = PACKAGE_MANAGER_LOOKUP.invert.fetch(package_manager)
+        inverted = PACKAGE_MANAGER_LOOKUP.invert
+        package_ecosystem = inverted[package_manager] || PACKAGE_MANAGER_LOOKUP[package_manager]
+        if package_ecosystem.nil?
+          inverted.fetch(package_manager) # throws KeyError
+        end
         cfg = updates.find do |u|
           u[:"package-ecosystem"] == package_ecosystem && u[:directory] == dir &&
             (target_branch.nil? || u[:"target-branch"] == target_branch)

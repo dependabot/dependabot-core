@@ -336,6 +336,22 @@ RSpec.describe Dependabot::Config::UpdateConfig do
     end
   end
 
+  describe "#with external and external values" do
+    let(:config) { Dependabot::Config::File.parse(fixture("configfile", "internal-external.yml")) }
+
+    it "parses the internal values" do
+      expect { config.update_config("github_actions") }.not_to raise_error
+    end
+
+    it "parses the external values" do
+      expect { config.update_config("github-actions") }.not_to raise_error
+    end
+
+    it "throws an exception for unknown values" do
+      expect { config.update_config("some other value") }.to raise_error(KeyError)
+    end
+  end
+
   describe ".wildcard_match?" do
     def wildcard_match?(wildcard_string, candidate_string)
       described_class.wildcard_match?(wildcard_string, candidate_string)
