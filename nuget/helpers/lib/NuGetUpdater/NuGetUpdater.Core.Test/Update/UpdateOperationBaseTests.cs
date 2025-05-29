@@ -21,19 +21,28 @@ public class UpdateOperationBaseTests
                 NewVersion = NuGetVersion.Parse("1.0.0"),
                 UpdatedFiles = ["file/a.txt"]
             },
-            new PinnedUpdate()
+            new DirectUpdate()
             {
                 DependencyName = "Package.B",
+                OldVersion = NuGetVersion.Parse("0.2.0"),
                 NewVersion = NuGetVersion.Parse("2.0.0"),
                 UpdatedFiles = ["file/b.txt"]
             },
-            new ParentUpdate()
+            new PinnedUpdate()
             {
                 DependencyName = "Package.C",
+                OldVersion = NuGetVersion.Parse("0.3.0"),
                 NewVersion = NuGetVersion.Parse("3.0.0"),
-                UpdatedFiles = ["file/c.txt"],
-                ParentDependencyName = "Package.D",
-                ParentNewVersion = NuGetVersion.Parse("4.0.0"),
+                UpdatedFiles = ["file/c.txt"]
+            },
+            new ParentUpdate()
+            {
+                DependencyName = "Package.D",
+                OldVersion = NuGetVersion.Parse("0.4.0"),
+                NewVersion = NuGetVersion.Parse("4.0.0"),
+                UpdatedFiles = ["file/d.txt"],
+                ParentDependencyName = "Package.E",
+                ParentNewVersion = NuGetVersion.Parse("5.0.0"),
             },
         };
 
@@ -44,8 +53,9 @@ public class UpdateOperationBaseTests
         var expectedReport = """
             Performed the following updates:
             - Updated Package.A to 1.0.0 in file/a.txt
-            - Pinned Package.B at 2.0.0 in file/b.txt
-            - Updated Package.C to 3.0.0 indirectly via Package.D/4.0.0 in file/c.txt
+            - Updated Package.B from 0.2.0 to 2.0.0 in file/b.txt
+            - Pinned Package.C at 3.0.0 in file/c.txt
+            - Updated Package.D to 4.0.0 indirectly via Package.E/5.0.0 in file/d.txt
             """.Replace("\r", "");
         Assert.Equal(expectedReport, actualReport);
     }
@@ -60,12 +70,14 @@ public class UpdateOperationBaseTests
             new DirectUpdate()
             {
                 DependencyName = "Dependency.Direct",
+                OldVersion = NuGetVersion.Parse("0.1.0"),
                 NewVersion = NuGetVersion.Parse("1.0.0"),
                 UpdatedFiles = ["/repo/root/file/a.txt"]
             },
             new PinnedUpdate()
             {
                 DependencyName = "Dependency.Pinned",
+                OldVersion = NuGetVersion.Parse("0.2.0"),
                 NewVersion = NuGetVersion.Parse("2.0.0"),
                 UpdatedFiles = ["/repo/root/file/b.txt"]
             },
@@ -73,12 +85,14 @@ public class UpdateOperationBaseTests
             new DirectUpdate()
             {
                 DependencyName = "Dependency.Direct",
+                OldVersion = NuGetVersion.Parse("0.1.0"),
                 NewVersion = NuGetVersion.Parse("1.0.0"),
                 UpdatedFiles = ["/repo/root/file/a.txt"]
             },
             new ParentUpdate()
             {
                 DependencyName = "Dependency.Parent",
+                OldVersion = NuGetVersion.Parse("0.3.0"),
                 NewVersion = NuGetVersion.Parse("3.0.0"),
                 UpdatedFiles = ["/repo/root/file/c.txt"],
                 ParentDependencyName = "Dependency.Root",
@@ -106,12 +120,14 @@ public class UpdateOperationBaseTests
             new DirectUpdate()
             {
                 DependencyName = "Dependency.Direct",
+                OldVersion = NuGetVersion.Parse("0.1.0"),
                 NewVersion = NuGetVersion.Parse("1.0.0"),
                 UpdatedFiles = ["/repo/root/file/b.txt"]
             },
             new DirectUpdate()
             {
                 DependencyName = "Dependency.Direct",
+                OldVersion = NuGetVersion.Parse("0.1.0"),
                 NewVersion = NuGetVersion.Parse("1.0.0"),
                 UpdatedFiles = ["/repo/root/file/a.txt"]
             },

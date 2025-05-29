@@ -261,6 +261,7 @@ public class RunWorker
                     PreviousRequirements = previousDependency.Requirements,
                 };
 
+                var projectDiscovery = discoveryResult.Projects.FirstOrDefault(p => Path.Join(discoveryResult.Path, p.FilePath).FullyNormalizedRootedPath().Equals(updateOperation.ProjectPath, StringComparison.OrdinalIgnoreCase));
                 var updateResult = await _updaterWorker.RunAsync(repoContentsPath.FullName, updateOperation.ProjectPath, dependency.Name, dependency.Version!, analysisResult.UpdatedVersion, isTransitive: dependency.IsTransitive);
                 if (updateResult.Error is not null)
                 {
@@ -271,7 +272,8 @@ public class RunWorker
                     actualUpdatedDependencies.Add(updatedDependency);
                 }
 
-                updateOperationsPerformed.AddRange(updateResult.UpdateOperations);
+                var patchedUpdateOperations = PatchInOldVersions(updateResult.UpdateOperations, projectDiscovery);
+                updateOperationsPerformed.AddRange(patchedUpdateOperations);
             }
         }
 
@@ -386,6 +388,22 @@ public class RunWorker
             BaseCommitSha = baseCommitSha,
         };
         return result;
+    }
+
+    private static ImmutableArray<UpdateOperationBase> PatchInOldVersions(ImmutableArray<UpdateOperationBase> updateOperations, ProjectDiscoveryResult? projectDiscovery)
+    {
+        if (projectDiscovery is null)
+        {
+            return updateOperations;
+        }
+
+        var originalPackageVersions = projectDiscovery
+            .Dependencies
+            .ToDictionary(d => d.Name, d => d.Version is null ? null : NuGetVersion.Parse(d.Version), StringComparer.OrdinalIgnoreCase);
+        var patchedUpdateOperations = updateOperations
+            .Select(uo => uo with { OldVersion = originalPackageVersions.GetValueOrDefault(uo.DependencyName) })
+            .ToImmutableArray();
+        return patchedUpdateOperations;
     }
 
     private async Task SendApiMessage(MessageBase? message)
