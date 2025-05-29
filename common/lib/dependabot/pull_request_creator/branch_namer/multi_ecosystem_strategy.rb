@@ -19,7 +19,7 @@ module Dependabot
             multi_ecosystem_name: String,
             separator: String,
             prefix: String,
-            max_length: T.nilable(Integer),
+            max_length: T.nilable(Integer)
           )
             .void
         end
