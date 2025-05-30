@@ -74,6 +74,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       .with(:enable_corepack_for_npm_and_yarn).and_return(enable_corepack_for_npm_and_yarn)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_shared_helpers_command_timeout).and_return(true)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:avoid_duplicate_updates_package_json).and_return(true)
   end
 
   after do
@@ -712,11 +714,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
           }
         end
 
-        it "uses pnpm update followed by install" do
+        it "uses pnpm install followed by install" do
           expect(Dependabot::NpmAndYarn::Helpers).not_to receive(:run_pnpm_command)
             .with(
-              "update prettier@3.3.3  --lockfile-only --no-save -r",
-              { fingerprint: "update <dependency_updates>  --lockfile-only --no-save -r" }
+              "install prettier@3.3.3 --lockfile-only -r",
+              { fingerprint: "install <dependency_updates> --lockfile-only -r" }
             )
           expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
             .with("install --lockfile-only")
@@ -727,11 +729,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
 
       context "when updating a regular package dependency" do
-        it "uses pnpm update followed by install" do
+        it "uses pnpm install followed by install" do
           expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
             .with(
-              "update prettier@3.3.3  --lockfile-only --no-save -r",
-              { fingerprint: "update <dependency_updates>  --lockfile-only --no-save -r" }
+              "install prettier@3.3.3 --lockfile-only -r",
+              { fingerprint: "install <dependency_updates> --lockfile-only -r" }
             )
             .ordered
           expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
