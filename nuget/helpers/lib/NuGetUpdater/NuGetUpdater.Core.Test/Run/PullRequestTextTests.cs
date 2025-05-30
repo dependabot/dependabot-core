@@ -83,7 +83,7 @@ public class PullRequestTextTests
             """
         ];
 
-        // single dependency, prefix given
+        // single dependency, prefix given, ends with space
         yield return
         [
             // job
@@ -103,6 +103,35 @@ public class PullRequestTextTests
             null,
             // expectedTitle
             "[SECURITY] Bump Some.Package from 1.0.0 to 1.2.3",
+            // expectedCommitMessage
+            "Bump Some.Package from 1.0.0 to 1.2.3",
+            // expectedBody
+            """
+            Performed the following updates:
+            - Updated Some.Package from 1.0.0 to 1.2.3 in a.txt
+            """
+        ];
+
+        // single dependency, prefix given, ends with character or bracket
+        yield return
+        [
+            // job
+            FromCommitOptions(new(){ Prefix = "chore(deps)" }),
+            // updateOperationsPerformed
+            new UpdateOperationBase[]
+            {
+                new DirectUpdate()
+                {
+                    DependencyName = "Some.Package",
+                    OldVersion = NuGetVersion.Parse("1.0.0"),
+                    NewVersion = NuGetVersion.Parse("1.2.3"),
+                    UpdatedFiles = ["a.txt"]
+                }
+            },
+            // dependencyGroupName
+            null,
+            // expectedTitle
+            "chore(deps): Bump Some.Package from 1.0.0 to 1.2.3",
             // expectedCommitMessage
             "Bump Some.Package from 1.0.0 to 1.2.3",
             // expectedBody

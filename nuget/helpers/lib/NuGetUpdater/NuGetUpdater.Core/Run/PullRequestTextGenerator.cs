@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Text;
+using System.Text.RegularExpressions;
 
 using NuGetUpdater.Core.Run.ApiModel;
 using NuGetUpdater.Core.Updater;
@@ -15,8 +16,30 @@ public class PullRequestTextGenerator
     public static string GetPullRequestTitle(Job job, ImmutableArray<UpdateOperationBase> updateOperationsPerformed, string? dependencyGroupName)
     {
         var shortTitle = GetPullRequestShortTitle(job, updateOperationsPerformed, dependencyGroupName);
-        var fullTitle = $"{job.CommitMessageOptions?.Prefix}{shortTitle}";
+        var titlePrefix = GetPullRequestTitlePrefix(job);
+        var fullTitle = $"{titlePrefix}{shortTitle}";
         return fullTitle;
+    }
+
+    private static string GetPullRequestTitlePrefix(Job job)
+    {
+        if (string.IsNullOrEmpty(job.CommitMessageOptions?.Prefix))
+        {
+            return string.Empty;
+        }
+
+        var prefix = job.CommitMessageOptions?.Prefix ?? string.Empty;
+        if (Regex.IsMatch(prefix, @"[a-z0-9\)\]]$", RegexOptions.IgnoreCase))
+        {
+            prefix += ":";
+        }
+
+        if (!prefix.EndsWith(" "))
+        {
+            prefix += " ";
+        }
+
+        return prefix;
     }
 
     private static string GetPullRequestShortTitle(Job job, ImmutableArray<UpdateOperationBase> updateOperationsPerformed, string? dependencyGroupName)
