@@ -75,7 +75,7 @@ public class PullRequestTextGenerator
     public static string GetPullRequestCommitMessage(Job job, ImmutableArray<UpdateOperationBase> updateOperationsPerformed, string? dependencyGroupName)
     {
         var sb = new StringBuilder();
-        sb.AppendLine(GetPullRequestShortTitle(job, updateOperationsPerformed, dependencyGroupName));
+        sb.AppendLine(GetPullRequestTitle(job, updateOperationsPerformed, dependencyGroupName));
         var dependencySets = GetDependencySets(updateOperationsPerformed);
         if (dependencySets.Length > 1 ||
             dependencyGroupName is not null)

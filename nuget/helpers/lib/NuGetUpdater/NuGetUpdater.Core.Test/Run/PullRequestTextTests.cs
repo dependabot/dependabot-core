@@ -104,7 +104,7 @@ public class PullRequestTextTests
             // expectedTitle
             "[SECURITY] Bump Some.Package from 1.0.0 to 1.2.3",
             // expectedCommitMessage
-            "Bump Some.Package from 1.0.0 to 1.2.3",
+            "[SECURITY] Bump Some.Package from 1.0.0 to 1.2.3",
             // expectedBody
             """
             Performed the following updates:
@@ -133,7 +133,7 @@ public class PullRequestTextTests
             // expectedTitle
             "chore(deps): Bump Some.Package from 1.0.0 to 1.2.3",
             // expectedCommitMessage
-            "Bump Some.Package from 1.0.0 to 1.2.3",
+            "chore(deps): Bump Some.Package from 1.0.0 to 1.2.3",
             // expectedBody
             """
             Performed the following updates:
