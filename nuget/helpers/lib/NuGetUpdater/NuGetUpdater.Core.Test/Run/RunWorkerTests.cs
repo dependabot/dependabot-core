@@ -29,6 +29,7 @@ public class RunWorkerTests
     public async Task UpdateSinglePackageProducedExpectedAPIMessages()
     {
         await RunAsync(
+            experimentsManager: new ExperimentsManager() { UseLegacyUpdateHandler = true },
             packages: [],
             job: new Job()
             {
@@ -224,6 +225,7 @@ public class RunWorkerTests
                     CommitMessage = TestPullRequestCommitMessage,
                     PrTitle = TestPullRequestTitle,
                     PrBody = TestPullRequestBody,
+                    DependencyGroup = null,
                 },
                 new MarkAsProcessed("TEST-COMMIT-SHA")
             ]
@@ -236,6 +238,7 @@ public class RunWorkerTests
         var repoMetadata = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package" />""");
         var repoMetadata2 = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package2" />""");
         await RunAsync(
+            experimentsManager: new ExperimentsManager() { UseLegacyUpdateHandler = true },
             packages:
             [
                 MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0", additionalMetadata: [repoMetadata]),
@@ -490,6 +493,7 @@ public class RunWorkerTests
                     CommitMessage = TestPullRequestCommitMessage,
                     PrTitle = TestPullRequestTitle,
                     PrBody = TestPullRequestBody,
+                    DependencyGroup = null,
                 },
                 new MarkAsProcessed("TEST-COMMIT-SHA")
             ]
@@ -500,6 +504,7 @@ public class RunWorkerTests
     public async Task ErrorsThrownFromDiscoveryWorkerAreForwaredToApiHandler()
     {
         await RunAsync(
+            experimentsManager: new ExperimentsManager() { UseLegacyUpdateHandler = true },
             packages:
             [
             ],
@@ -556,6 +561,7 @@ public class RunWorkerTests
     public async Task ErrorsReturnedFromDiscoveryWorkerAreForwaredToApiHandler()
     {
         await RunAsync(
+            experimentsManager: new ExperimentsManager() { UseLegacyUpdateHandler = true },
             packages: [],
             job: new Job()
             {
@@ -596,6 +602,7 @@ public class RunWorkerTests
     public async Task ErrorsThrownFromAnalyzeWorkerAreForwaredToApiHandler()
     {
         await RunAsync(
+            experimentsManager: new ExperimentsManager() { UseLegacyUpdateHandler = true },
             packages: [],
             job: new Job()
             {
@@ -694,6 +701,7 @@ public class RunWorkerTests
     public async Task ErrorsReturnedFromAnalyzeWorkerAreForwaredToApiHandler()
     {
         await RunAsync(
+            experimentsManager: new ExperimentsManager() { UseLegacyUpdateHandler = true },
             packages: [],
             job: new Job()
             {
@@ -807,6 +815,7 @@ public class RunWorkerTests
     public async Task ErrorsThrownFromUpdaterWorkerAreForwaredToApiHandler()
     {
         await RunAsync(
+            experimentsManager: new ExperimentsManager() { UseLegacyUpdateHandler = true },
             packages: [],
             job: new Job()
             {
@@ -916,6 +925,7 @@ public class RunWorkerTests
     public async Task ErrorsReturnedFromUpdaterWorkerAreForwaredToApiHandler()
     {
         await RunAsync(
+            experimentsManager: new ExperimentsManager() { UseLegacyUpdateHandler = true },
             packages: [],
             job: new Job()
             {
@@ -1040,6 +1050,7 @@ public class RunWorkerTests
         var repoMetadata = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package" />""");
         var repoMetadata2 = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package2" />""");
         await RunAsync(
+            experimentsManager: new ExperimentsManager() { UseLegacyUpdateHandler = true },
             packages:
             [
                 MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0", additionalMetadata: [repoMetadata]),
@@ -1372,6 +1383,7 @@ public class RunWorkerTests
                     CommitMessage = TestPullRequestCommitMessage,
                     PrTitle = TestPullRequestTitle,
                     PrBody = TestPullRequestBody,
+                    DependencyGroup = null,
                 },
                 new MarkAsProcessed("TEST-COMMIT-SHA")
             ]
@@ -1384,6 +1396,7 @@ public class RunWorkerTests
         var repoMetadata = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package" />""");
         var repoMetadata2 = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package2" />""");
         await RunAsync(
+            experimentsManager: new ExperimentsManager() { UseLegacyUpdateHandler = true },
             packages:
             [
                 MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0", additionalMetadata: [repoMetadata]),
@@ -1943,6 +1956,7 @@ public class RunWorkerTests
                     CommitMessage = TestPullRequestCommitMessage,
                     PrTitle = TestPullRequestTitle,
                     PrBody = TestPullRequestBody,
+                    DependencyGroup = null,
                 },
                 new MarkAsProcessed("TEST-COMMIT-SHA")
             ]
@@ -1953,6 +1967,7 @@ public class RunWorkerTests
     public async Task UpdatedFilesAreOnlyReportedOnce()
     {
         await RunAsync(
+            experimentsManager: new ExperimentsManager() { UseLegacyUpdateHandler = true },
             job: new()
             {
                 PackageManager = "nuget",
@@ -2261,6 +2276,7 @@ public class RunWorkerTests
                     CommitMessage = TestPullRequestCommitMessage,
                     PrTitle = TestPullRequestTitle,
                     PrBody = TestPullRequestBody,
+                    DependencyGroup = null,
                 },
                 new MarkAsProcessed("TEST-COMMIT-SHA")
             ]
@@ -2271,6 +2287,7 @@ public class RunWorkerTests
     public async Task PackageListedInSecurityAdvisoriesSectionIsNotVulnerable()
     {
         await RunAsync(
+            experimentsManager: new ExperimentsManager() { UseLegacyUpdateHandler = true },
             job: new()
             {
                 Source = new()
@@ -2361,6 +2378,7 @@ public class RunWorkerTests
     public async Task PackageListedInSecurityAdvisoriesSectionIsNotPresent()
     {
         await RunAsync(
+            experimentsManager: new ExperimentsManager() { UseLegacyUpdateHandler = true },
             job: new()
             {
                 Source = new()
@@ -2451,6 +2469,7 @@ public class RunWorkerTests
     public async Task NonProjectFilesAreIncludedInPullRequest()
     {
         await RunAsync(
+            experimentsManager: new ExperimentsManager() { UseLegacyUpdateHandler = true },
             job: new()
             {
                 Source = new()
@@ -2660,6 +2679,7 @@ public class RunWorkerTests
                     CommitMessage = TestPullRequestCommitMessage,
                     PrTitle = TestPullRequestTitle,
                     PrBody = TestPullRequestBody,
+                    DependencyGroup = null,
                 },
                 new MarkAsProcessed("TEST-COMMIT-SHA"),
             ]
@@ -2670,6 +2690,7 @@ public class RunWorkerTests
     public async Task PullRequestAlreadyExistsForLatestVersion()
     {
         await RunAsync(
+            experimentsManager: new ExperimentsManager() { UseLegacyUpdateHandler = true },
             job: new()
             {
                 Source = new()
@@ -2779,6 +2800,7 @@ public class RunWorkerTests
     public async Task AnalysisResultWithoutUpdatedDependenciesDoesNotCauseError()
     {
         await RunAsync(
+            experimentsManager: new ExperimentsManager() { UseLegacyUpdateHandler = true },
             job: new()
             {
                 Source = new()
@@ -2925,6 +2947,7 @@ public class RunWorkerTests
                     CommitMessage = TestPullRequestCommitMessage,
                     PrTitle = TestPullRequestTitle,
                     PrBody = TestPullRequestBody,
+                    DependencyGroup = null,
                 },
                 new MarkAsProcessed("TEST-COMMIT-SHA"),
             ]
@@ -2945,6 +2968,7 @@ public class RunWorkerTests
         var file2ContentUpdated = rawBOM.Concat(Encoding.ASCII.GetBytes("updated2")).ToArray();
 
         await RunAsync(
+            experimentsManager: new ExperimentsManager() { UseLegacyUpdateHandler = true },
             job: new Job()
             {
                 Source = new()
@@ -3159,6 +3183,7 @@ public class RunWorkerTests
                     CommitMessage = TestPullRequestCommitMessage,
                     PrTitle = TestPullRequestTitle,
                     PrBody = TestPullRequestBody,
+                    DependencyGroup = null,
                 },
                 new MarkAsProcessed("TEST-COMMIT-SHA"),
             ]
@@ -3169,6 +3194,7 @@ public class RunWorkerTests
     public async Task LineEndingsAreDetectedAndRestored()
     {
         await RunAsync(
+            experimentsManager: new ExperimentsManager() { UseLegacyUpdateHandler = true },
             job: new Job()
             {
                 Source = new()
@@ -3414,6 +3440,7 @@ public class RunWorkerTests
                     CommitMessage = TestPullRequestCommitMessage,
                     PrTitle = TestPullRequestTitle,
                     PrBody = TestPullRequestBody,
+                    DependencyGroup = null,
                 },
                 new MarkAsProcessed("TEST-COMMIT-SHA"),
             ]
@@ -3424,6 +3451,7 @@ public class RunWorkerTests
     public async Task UnknownErrorsGenerateAllRequiredApiCalls()
     {
         await RunAsync(
+            experimentsManager: new ExperimentsManager() { UseLegacyUpdateHandler = true },
             job: new Job()
             {
                 Source = new()
@@ -3495,7 +3523,7 @@ public class RunWorkerTests
 
         var worker = new RunWorker(jobId, testApiHandler, discoveryWorker, analyzeWorker, updaterWorker, logger);
         var repoContentsPathDirectoryInfo = new DirectoryInfo(tempDirectory.DirectoryPath);
-        var actualResult = await worker.RunAsync(job, repoContentsPathDirectoryInfo, "TEST-COMMIT-SHA");
+        var actualResult = await worker.RunAsync(job, repoContentsPathDirectoryInfo, "TEST-COMMIT-SHA", experimentsManager);
         var actualApiMessages = testApiHandler.ReceivedMessages
             .Select(m =>
             {
@@ -3559,6 +3587,6 @@ public class RunWorkerTests
 
     internal static string SerializeObjectAndType(object obj)
     {
-        return $"{obj.GetType().Name}:{JsonSerializer.Serialize(obj)}";
+        return $"{obj.GetType().Name}:{JsonSerializer.Serialize(obj, RunWorker.SerializerOptions)}";
     }
 }
