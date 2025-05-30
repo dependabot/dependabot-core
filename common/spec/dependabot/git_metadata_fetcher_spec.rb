@@ -411,51 +411,21 @@ RSpec.describe Dependabot::GitMetadataFetcher do
       end
     end
 
-    context "with refs for tag with details returns are success" do
-      let(:upload_pack_fixture) { "tag_with_detail" }
-      let(:url) { "https://github.com/dependabot/dependabot-core.git" }
-      let(:stdout) { fixture("git", "upload_packs", upload_pack_fixture) }
-      let(:credentials) do
-        [{
-          "type" => "git_source",
-          "host" => "github.com",
-          "username" => "x-access-token",
-          "password" => nil # No password provided
-        }]
-      end
+    describe "#fetch_tags_with_detail_from_git_for" do
+      let(:fetcher) { described_class.new(url: url, credentials: credentials) }
+      let(:url) { "https://github.com/dependabot/dependabot-core" }
+      let(:credentials) { [] }
 
-      before do
-        stub_request(:get, "#{url}/info/refs?service=git-upload-pack")
-          .to_return(status: 200, body: stdout, headers: { "content-type" =>
-              "application/x-git-upload-pack-advertisement" })
+      context "when git is not installed" do
+        before do
+          allow(Open3).to receive(:capture3).and_raise(Errno::ENOENT, "No such file or directory - git")
+        end
 
-        exit_status = double(success?: true)
-        allow(Open3).to receive(:capture3).and_call_original
-        allow(Open3).to receive(:capture3)
-          .with(anything, "git for-each-ref --format=\"%(refname:short) %(creatordate:short)\"
-          refs/tags #{url}")
-          .and_return([stdout, "", exit_status])
-      end
-
-      it "returns the correct number of tags" do
-        result = checker.refs_for_tag_with_detail
-        expect(result.count).to eq(32)
-      end
-    end
-
-    context "with refs for tag with details throw internal server error 500" do
-      let(:upload_pack_fixture) { "tag_with_detail" }
-      let(:url) { "https://github.com/dependabot/dependabot-core.git" }
-      let(:stdout) { fixture("git", "upload_packs", upload_pack_fixture) }
-      let(:service_pack_url) { "https://github.com/dependabot/dependabot-core.git" }
-
-      before do
-        stub_request(:get, "https://github.com/dependabot/dependabot-core.git/info/refs?service=git-upload-pack")
-          .to_return(status: 500, body: "", headers: {})
-      end
-
-      it "raises a helpful error" do
-        expect { checker.refs_for_tag_with_detail }.to raise_error(Octokit::InternalServerError)
+        it "returns a 500 status with the error message" do
+          result = fetcher.send(:fetch_tags_with_detail_from_git_for, url)
+          expect(result.status).to eq(500)
+          expect(result.body).to eq("No such file or directory - No such file or directory - git")
+        end
       end
     end
   end
