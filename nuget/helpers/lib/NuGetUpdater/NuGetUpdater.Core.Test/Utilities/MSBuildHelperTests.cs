@@ -1924,6 +1924,17 @@ public class MSBuildHelperTests : TestBase
             // expectedError
             new DependencyFileNotParseable("/path/to/packages.config", "Some error message."),
         ];
+
+        yield return
+        [
+            // output
+            """
+            NuGet.Config is not valid XML. Path: '/path/to/NuGet.Config'.
+              Some error message.
+            """,
+            // expectedError
+            new DependencyFileNotParseable("/path/to/NuGet.Config", "Some error message."),
+        ];
     }
 
     public static IEnumerable<object[]> GetTopLevelPackageDependencyInfosTestData()

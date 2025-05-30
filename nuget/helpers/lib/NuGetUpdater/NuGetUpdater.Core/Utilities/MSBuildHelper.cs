@@ -1080,6 +1080,7 @@ internal static partial class MSBuildHelper
         var patterns = new[]
         {
             new Regex(@"\nAn error occurred while reading file '(?<FilePath>[^']+)': (?<Message>[^\n]*)\n"),
+            new Regex(@"NuGet\.Config is not valid XML\. Path: '(?<FilePath>[^']+)'\.\n\s*(?<Message>[^\n]*)(\n|$)"),
         };
         var match = patterns.Select(p => p.Match(output)).Where(m => m.Success).FirstOrDefault();
         if (match is not null)
