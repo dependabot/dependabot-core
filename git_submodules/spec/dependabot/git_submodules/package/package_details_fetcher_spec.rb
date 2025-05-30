@@ -11,36 +11,118 @@ require "dependabot/registry_client"
 require "dependabot/git_submodules"
 require "dependabot/package/package_release"
 require "dependabot/package/package_details"
+require "spec_helper"
+require "dependabot/dependency"
+require "dependabot/git_submodules/package/package_details_fetcher"
 
 RSpec.describe Dependabot::GitSubmodules::Package::PackageDetailsFetcher do
-  subject(:fetcher) do
+  subject(:credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
+  end
+
+  let(:branch) { "master" }
+  let(:details_fetcher_instance) do
     described_class.new(
       dependency: dependency,
       credentials: credentials
     )
   end
-
+  let(:url) { "https://github.com/example/manifesto.git" }
   let(:dependency) do
     Dependabot::Dependency.new(
-      name: dependency_name,
-      version: dependency_version,
-      requirements: requirements,
-      package_manager: "git_submodules"
+      name: "manifesto",
+      version: "2468a02a6230e59ed1232d95d1ad3ef157195b03",
+      requirements: [{
+        file: ".gitmodules",
+        requirement: nil,
+        groups: [],
+        source: { type: "git", url: url, branch: branch, ref: branch }
+      }],
+      package_manager: "submodules"
+    )
+  end
+  let(:checker) do
+    described_class.new(
+      dependency: dependency,
+      credentials: [{
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }]
     )
   end
 
-  let(:requirements) { [] }
-  let(:dependency_name) { "example" }
-  let(:dependency_version) { "1.0.0" }
+  describe "#latest_version" do
+    context "when the response is git based" do
+      subject { checker.available_versions }
 
-  let(:credentials) { [] }
+      let(:git_url) { "https://github.com/example/manifesto.git" }
 
-  describe "#available_versions" do
-    it "returns the head commit for the current branch" do
-      allow_any_instance_of(Dependabot::GitCommitChecker).to receive(:head_commit_for_current_branch) # rubocop:disable RSpec/AnyInstance
-        .and_return("42bfb4554167e1d2fc2b950728d9bd8164f806c1")
+      before do
+        stub_request(:get, git_url + "/info/refs?service=git-upload-pack")
+          .to_return(
+            status: 200,
+            body: fixture("upload_packs", "manifesto"),
+            headers: {
+              "content-type" => "application/x-git-upload-pack-advertisement"
+            }
+          )
+      end
 
-      expect(fetcher.available_versions).to eq("42bfb4554167e1d2fc2b950728d9bd8164f806c1")
+      it "returns the latest version tag" do
+        expect(checker.available_versions.last.tag)
+          .to eq("fe1b155799ab728fae7d3edd5451c35942d711c4")
+      end
+    end
+
+    context "when the repo can't be found" do
+      let(:git_url) { "https://github.com/example/manifesto.git" }
+
+      before do
+        stub_request(:get, git_url + "/info/refs?service=git-upload-pack")
+          .to_return(status: 404)
+      end
+
+      it "raises a GitDependenciesNotReachable error" do
+        expect { checker.available_versions }.to raise_error do |error|
+          expect(error).to be_a(Dependabot::GitDependenciesNotReachable)
+          expect(error.dependency_urls)
+            .to eq(["https://github.com/example/manifesto.git"])
+        end
+      end
+    end
+
+    describe "#available_versions" do
+      it "returns an array of package releases" do
+        allow(checker).to receive(:fetch_tags_and_release_date)
+          .and_return(T::Array[Dependabot::GitTagWithDetail].new(
+                        [{ tag: "95a470a557091cdbdc9f68a178b60bdabncd", release_date: "2024-01-01T00:00:00Z" },
+                         { tag: "95a470a557091cdbdc9f68a178b60bd142c1", release_date: "2023-02-01T00:00:00Z" },
+                         { tag: "95a470a557091cdbdc9f68a178b60bd142c2", release_date: "2023-01-01T00:00:00Z" }]
+                      ))
+
+        releases = checker.available_versions
+
+        expect(releases.size).to eq(3)
+        expect(releases.first.tag).to eq("95a470a557091cdbdc9f68a178b60bd142c2")
+        expect(releases.first.released_at).to eq(Time.parse("2023-01-01T00:00:00Z"))
+      end
+
+      it "fetches latest tag info if no versions metadata is available" do
+        allow(checker).to receive(:fetch_tags_and_release_date).and_return([])
+        allow_any_instance_of(Dependabot::GitCommitChecker).to receive(:head_commit_for_current_branch) # rubocop:disable RSpec/AnyInstance
+          .and_return("95a470a557091cdbdc9f68a178b60bd142c")
+
+        releases = checker.available_versions
+        expect(releases.size).to eq(1)
+        expect(releases.first.tag).to eq("95a470a557091cdbdc9f68a178b60bd142c")
+      end
     end
   end
 end

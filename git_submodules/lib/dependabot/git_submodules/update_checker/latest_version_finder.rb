@@ -34,18 +34,18 @@ module Dependabot
         sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
 
-        sig { returns(T.nilable(String)) }
+        sig { returns(T.nilable(T::Array[Dependabot::Package::PackageRelease])) }
         def version_list
           @version_list ||=
             T.let(Package::PackageDetailsFetcher.new(
               dependency: dependency,
               credentials: credentials
-            ).available_versions, T.nilable(String))
+            ).available_versions, T.nilable(T::Array[Dependabot::Package::PackageRelease]))
         end
 
         sig { returns(T.nilable(T.any(String, Dependabot::Version))) }
         def latest_version
-          @latest_version ||= T.let(version_list, T.nilable(String))
+          version_list&.last&.tag
         end
       end
     end

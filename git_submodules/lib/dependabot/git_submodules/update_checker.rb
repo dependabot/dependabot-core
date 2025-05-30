@@ -61,7 +61,7 @@ module Dependabot
         LatestVersionFinder.new(
           dependency: dependency,
           credentials: credentials
-        ).version_list
+        ).latest_version
       end
     end
   end
