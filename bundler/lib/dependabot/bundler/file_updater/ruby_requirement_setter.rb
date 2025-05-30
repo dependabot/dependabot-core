@@ -1,26 +1,34 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "parser/current"
+require "sorbet-runtime"
+
 require "dependabot/bundler/file_updater"
 require "dependabot/bundler/requirement"
+require "dependabot/bundler/version"
 
 module Dependabot
   module Bundler
     class FileUpdater
       class RubyRequirementSetter
+        extend T::Sig
+
         RUBY_VERSIONS = %w(
-          1.8.7 1.9.3 2.0.0 2.1.10 2.2.10 2.3.8 2.4.10 2.5.9 2.6.9 2.7.6 3.0.6 3.1.6 3.2.4 3.3.6
+          1.8.7 1.9.3 2.0.0 2.1.10 2.2.10 2.3.8 2.4.10 2.5.9 2.6.9 2.7.6 3.0.6 3.1.6 3.2.8 3.3.8 3.4.4
         ).freeze
 
         LANGUAGE = "ruby"
 
+        sig { returns(Dependabot::DependencyFile) }
         attr_reader :gemspec
 
+        sig { params(gemspec: Dependabot::DependencyFile).void }
         def initialize(gemspec:)
           @gemspec = gemspec
         end
 
+        sig { params(content: String).returns(String) }
         def rewrite(content)
           return content unless gemspec_declares_ruby_requirement?
 
@@ -39,10 +47,12 @@ module Dependabot
 
         private
 
+        sig { returns(T::Boolean) }
         def gemspec_declares_ruby_requirement?
           !ruby_requirement.nil?
         end
 
+        sig { params(node: T.untyped).returns(T::Boolean) }
         def declares_ruby_version?(node)
           return false unless node.is_a?(Parser::AST::Node)
           return true if node.type == :send && node.children[1] == :ruby
@@ -50,6 +60,7 @@ module Dependabot
           node.children.any? { |cn| declares_ruby_version?(cn) }
         end
 
+        sig { returns(Dependabot::Version) }
         def ruby_version
           requirement = if ruby_requirement.is_a?(Gem::Requirement)
                           ruby_requirement
@@ -74,6 +85,7 @@ module Dependabot
         end
 
         # rubocop:disable Security/Eval
+        sig { returns(T.untyped) }
         def ruby_requirement
           ast = Parser::CurrentRuby.parse(gemspec.content)
           requirement_node = find_ruby_requirement_node(ast)
@@ -87,6 +99,7 @@ module Dependabot
         end
         # rubocop:enable Security/Eval
 
+        sig { params(node: T.untyped).returns(T.nilable(Parser::AST::Node)) }
         def find_ruby_requirement_node(node)
           return unless node.is_a?(Parser::AST::Node)
           return node if declares_ruby_requirement?(node)
@@ -97,6 +110,7 @@ module Dependabot
           end
         end
 
+        sig { params(node: T.untyped).returns(T::Boolean) }
         def declares_ruby_requirement?(node)
           return false unless node.is_a?(Parser::AST::Node)
 
@@ -104,10 +118,14 @@ module Dependabot
         end
 
         class GemfileRewriter < Parser::TreeRewriter
+          extend T::Sig
+
+          sig { override.params(ruby_version: Dependabot::Version).void }
           def initialize(ruby_version:)
             @ruby_version = ruby_version
           end
 
+          sig { override.params(node: T.untyped).void }
           def on_send(node)
             return unless declares_ruby_version?(node)
 
@@ -117,8 +135,10 @@ module Dependabot
 
           private
 
+          sig { returns(Dependabot::Version) }
           attr_reader :ruby_version
 
+          sig { params(node: T.untyped).returns(T::Boolean) }
           def declares_ruby_version?(node)
             return false unless node.is_a?(Parser::AST::Node)
             return false unless node.type == :send
