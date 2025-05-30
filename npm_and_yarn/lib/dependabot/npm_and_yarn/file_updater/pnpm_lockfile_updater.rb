@@ -168,8 +168,8 @@ module Dependabot
           end.join(" ")
 
           Helpers.run_pnpm_command(
-            "update #{dependency_updates}  --lockfile-only --no-save -r",
-            fingerprint: "update <dependency_updates>  --lockfile-only --no-save -r"
+            "install #{dependency_updates} --lockfile-only -r",
+            fingerprint: "install <dependency_updates> --lockfile-only -r"
           )
         end
 
