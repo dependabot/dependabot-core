@@ -354,8 +354,8 @@ module Dependabot
           package_manager_run_command(PNPMPackageManager::NAME, command, fingerprint: fingerprint)
         else
           Dependabot::SharedHelpers.run_shell_command(
-            "pnpm #{command}",
-            fingerprint: "pnpm #{fingerprint || command}"
+            "pnpm --config.manage-package-manager-versions=0 #{command}",
+            fingerprint: "pnpm --config.manage-package-manager-versions=0 #{fingerprint || command}"
           )
         end
       end
