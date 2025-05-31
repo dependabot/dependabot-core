@@ -529,7 +529,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
     before do
       latest_version = instance_double(Dependabot::Cargo::UpdateChecker::LatestVersionFinder)
       allow(latest_version)
-        .to receive(:latest_version).and_return({ version: Gem::Version.new("1.5.0") })
+        .to receive(:latest_version).and_return(Gem::Version.new("1.5.0"))
       allow(Dependabot::Cargo::UpdateChecker::LatestVersionFinder)
         .to receive(:new).and_return(latest_version)
     end

@@ -38,8 +38,8 @@ module Dependabot
           return @latest_resolvable_version if defined?(@latest_resolvable_version)
 
           @latest_resolvable_version = fetch_latest_resolvable_version
-          rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
-            raise Dependabot::DependencyFileNotResolvable, e.message
+        rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
+          raise Dependabot::DependencyFileNotResolvable, e.message
         end
 
         private
@@ -296,7 +296,7 @@ module Dependabot
             next unless checker.git_dependency?
 
             url = dep.requirements.find { |r| r.dig(:source, :type) == "git" }
-                     .fetch(:source).fetch(:url)
+                     &.dig(:source, :url)
 
             if checker.git_repo_reachable?
               @reachable_git_urls << url

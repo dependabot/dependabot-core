@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "toml-rb"
@@ -25,6 +25,7 @@ module Dependabot
       DEPENDENCY_TYPES =
         %w(dependencies dev-dependencies build-dependencies).freeze
 
+      sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
         check_rust_workspace_root
 
@@ -88,9 +89,10 @@ module Dependabot
         end, T.nilable(String))
       end
 
+      sig { void }
       def check_rust_workspace_root
         cargo_toml = dependency_files.find { |f| f.name == "Cargo.toml" }
-        workspace_root = parsed_file(cargo_toml).dig("package", "workspace")
+        workspace_root = parsed_file(T.must(cargo_toml)).dig("package", "workspace")
         return unless workspace_root
 
         msg = "This project is part of a Rust workspace but is not the " \
@@ -106,6 +108,7 @@ module Dependabot
       # rubocop:disable Metrics/AbcSize
       # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/PerceivedComplexity
+      sig { returns(DependencySet) }
       def manifest_dependencies
         dependency_set = DependencySet.new
 
@@ -145,6 +148,15 @@ module Dependabot
       # rubocop:enable Metrics/CyclomaticComplexity
       # rubocop:enable Metrics/PerceivedComplexity
 
+      sig do
+        params(
+          name: String,
+          requirement: T.any(String, T::Hash[String, T.untyped]),
+          type: String,
+          file: Dependabot::DependencyFile
+        )
+          .returns(Dependency)
+      end
       def build_dependency(name, requirement, type, file)
         Dependency.new(
           name: name,
@@ -159,11 +171,12 @@ module Dependabot
         )
       end
 
+      sig { returns(Dependabot::FileParsers::Base::DependencySet) }
       def lockfile_dependencies
         dependency_set = DependencySet.new
         return dependency_set unless lockfile
 
-        parsed_file(lockfile).fetch("package", []).each do |package_details|
+        parsed_file(T.must(lockfile)).fetch("package", []).each do |package_details|
           next unless package_details["source"]
 
           # TODO: This isn't quite right, as it will only give us one
@@ -179,40 +192,52 @@ module Dependabot
         dependency_set
       end
 
+      sig { returns(T::Array[String]) }
       def patched_dependencies
         root_manifest = manifest_files.find { |f| f.name == "Cargo.toml" }
-        return [] unless parsed_file(root_manifest)["patch"]
+        return [] unless root_manifest && parsed_file(root_manifest)["patch"]
 
         parsed_file(root_manifest)["patch"].values.flat_map(&:keys)
       end
 
+      sig { params(declaration: T.any(String, T::Hash[String, T.untyped])).returns(T.nilable(String)) }
       def requirement_from_declaration(declaration)
         if declaration.is_a?(String)
-          return declaration == "" ? nil : declaration
+          declaration == "" ? nil : declaration
+        elsif declaration.is_a?(Hash)
+          return declaration["version"] if declaration["version"].is_a?(String) && declaration["version"] != ""
+
+          nil
         end
-        raise "Unexpected dependency declaration: #{declaration}" unless declaration.is_a?(Hash)
-        return declaration["version"] if declaration["version"].is_a?(String) && declaration["version"] != ""
-
-        nil
       end
 
+      sig { params(name: String, declaration: T.any(String, T::Hash[String, T.untyped])).returns(String) }
       def name_from_declaration(name, declaration)
-        return name if declaration.is_a?(String)
-        raise "Unexpected dependency declaration: #{declaration}" unless declaration.is_a?(Hash)
-
-        declaration.fetch("package", name)
+        if declaration.is_a?(String)
+          name
+        elsif declaration.is_a?(Hash)
+          declaration.fetch("package", name)
+        end
       end
 
+      sig do
+        params(declaration: T.any(String, T::Hash[String, T.untyped])).returns(T.nilable(T::Hash[Symbol, T.untyped]))
+      end
       def source_from_declaration(declaration)
-        return if declaration.is_a?(String)
-        raise "Unexpected dependency declaration: #{declaration}" unless declaration.is_a?(Hash)
-
-        return git_source_details(declaration) if declaration["git"]
-        return { type: "path" } if declaration["path"]
-
-        registry_source_details(declaration)
+        if declaration.is_a?(String)
+          nil
+        elsif declaration.is_a?(Hash)
+          if declaration["git"]
+            git_source_details(declaration)
+          elsif declaration["path"]
+            { type: "path" }
+          else
+            registry_source_details(declaration)
+          end
+        end
       end
 
+      sig { params(declaration: T::Hash[String, T.untyped]).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
       def registry_source_details(declaration)
         registry_name = declaration["registry"]
         return if registry_name.nil?
@@ -242,6 +267,7 @@ module Dependabot
         end
       end
 
+      sig { params(registry_name: String, index_url: String).returns(T::Hash[Symbol, String]) }
       def sparse_registry_source_details(registry_name, index_url)
         token = credentials.find do |cred|
           cred["type"] == "cargo_registry" && cred["registry"] == registry_name
@@ -268,25 +294,32 @@ module Dependabot
 
       # Looks up dotted key name in cargo config
       # e.g. "registries.my_registry.index"
+      sig { params(key_name: String).returns(T.nilable(String)) }
       def cargo_config_field(key_name)
         cargo_config_from_env(key_name) || cargo_config_from_file(key_name)
       end
 
+      sig { params(key_name: String).returns(T.nilable(String)) }
       def cargo_config_from_env(key_name)
         env_var = "CARGO_#{key_name.upcase.tr('-.', '_')}"
         ENV.fetch(env_var, nil)
       end
 
+      sig { params(key_name: String).returns(T.untyped) }
       def cargo_config_from_file(key_name)
+        cargo_config = self.cargo_config
+        return unless cargo_config
+
         parsed_file(cargo_config).dig(*key_name.split("."))
       end
 
+      sig { params(name: String, declaration: T.any(String, T::Hash[String, T.untyped])).returns(T.nilable(String)) }
       def version_from_lockfile(name, declaration)
         return unless lockfile
 
         candidate_packages =
-          parsed_file(lockfile).fetch("package", [])
-                               .select { |p| p["name"] == name }
+          parsed_file(T.must(lockfile)).fetch("package", [])
+                                       .select { |p| p["name"] == name }
 
         if (req = requirement_from_declaration(declaration))
           req = Cargo::Requirement.new(req)
@@ -311,10 +344,12 @@ module Dependabot
         version_from_lockfile_details(package)
       end
 
+      sig { params(declaration: T.any(String, T::Hash[String, T.untyped])).returns(T::Boolean) }
       def git_req?(declaration)
         source_from_declaration(declaration)&.fetch(:type, nil) == "git"
       end
 
+      sig { params(declaration: T::Hash[String, T.untyped]).returns(T::Hash[Symbol, T.nilable(String)]) }
       def git_source_details(declaration)
         {
           type: "git",
@@ -324,38 +359,47 @@ module Dependabot
         }
       end
 
+      sig { params(package_details: T::Hash[String, T.untyped]).returns(String) }
       def version_from_lockfile_details(package_details)
         return package_details["version"] unless package_details["source"]&.start_with?("git+")
 
         package_details["source"].split("#").last
       end
 
+      sig { override.void }
       def check_required_files
         raise "No Cargo.toml!" unless get_original_file("Cargo.toml")
       end
 
+      sig { params(file: Dependabot::DependencyFile).returns(T.untyped) }
       def parsed_file(file)
-        @parsed_file ||= {}
+        @parsed_file ||= T.let({}, T.nilable(T::Hash[String, T::Hash[String, T.untyped]]))
         @parsed_file[file.name] ||= TomlRB.parse(file.content)
       rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
         raise Dependabot::DependencyFileNotParseable, file.path
       end
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def manifest_files
-        @manifest_files ||=
+        @manifest_files ||= T.let(
           dependency_files
           .select { |f| f.name.end_with?("Cargo.toml") }
-          .reject(&:support_file?)
+          .reject(&:support_file?),
+          T.nilable(T::Array[Dependabot::DependencyFile])
+        )
       end
 
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def lockfile
-        @lockfile ||= get_original_file("Cargo.lock")
+        @lockfile ||= T.let(get_original_file("Cargo.lock"), T.nilable(Dependabot::DependencyFile))
       end
 
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def cargo_config
-        @cargo_config ||= get_original_file(".cargo/config.toml")
+        @cargo_config ||= T.let(get_original_file(".cargo/config.toml"), T.nilable(Dependabot::DependencyFile))
       end
 
+      sig { returns(T.class_of(Cargo::Version)) }
       def version_class
         Cargo::Version
       end
