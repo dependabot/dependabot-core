@@ -80,7 +80,8 @@ module Dependabot
         "pub" => "pub",
         "swift" => "swift",
         "terraform" => "terraform",
-        "uv" => "uv"
+        "uv" => "uv",
+        "vcpkg" => "vcpkg"
       }.freeze, T::Hash[String, String])
 
       sig { params(cfg: T.nilable(T::Hash[Symbol, T.untyped])).returns(T::Array[IgnoreCondition]) }

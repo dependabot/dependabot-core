@@ -80,6 +80,7 @@ jobs:
           - { name: swift, ecosystem: swift }
           - { name: terraform, ecosystem: terraform }
           - { name: uv, ecosystem: uv }
+          - { name: vcpkg, ecosystem: vcpkg }
     permissions:
       contents: read
       id-token: write
