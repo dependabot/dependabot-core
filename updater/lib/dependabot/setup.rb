@@ -49,6 +49,7 @@ Sentry.init do |config|
     swift|
     terraform|
     uv|
+    vcpkg|
   )}x
 
   config.before_send = ->(event, hint) { Dependabot::Sentry.process_chain(event, hint) }
@@ -84,3 +85,4 @@ require "dependabot/silent"
 require "dependabot/swift"
 require "dependabot/terraform"
 require "dependabot/uv"
+require "dependabot/vcpkg"
