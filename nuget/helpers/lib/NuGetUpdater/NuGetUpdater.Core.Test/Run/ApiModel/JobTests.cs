@@ -3,7 +3,6 @@ using System.Collections.Immutable;
 using NuGet.Versioning;
 
 using NuGetUpdater.Core.Analyze;
-
 using NuGetUpdater.Core.Run.ApiModel;
 
 using Xunit;

@@ -123,7 +123,8 @@ public sealed record Job
         var version = NuGetVersion.Parse(dependency.Version);
         var dependencyInfo = RunWorker.GetDependencyInfo(this, dependency);
         var isVulnerable = dependencyInfo.Vulnerabilities.Any(v => v.IsVulnerable(version));
-        var allowed = AllowedUpdates.Any(allowedUpdate =>
+
+        bool IsAllowed(AllowedUpdate allowedUpdate)
         {
             // check name restriction, if any
             if (allowedUpdate.DependencyName is not null)
@@ -191,8 +192,9 @@ public sealed record Job
                 // ...no specific update being performed, do it if it's not transitive
                 return !dependency.IsTransitive;
             }
-        });
+        }
 
+        var allowed = AllowedUpdates.Any(IsAllowed);
         return allowed;
     }
 }
