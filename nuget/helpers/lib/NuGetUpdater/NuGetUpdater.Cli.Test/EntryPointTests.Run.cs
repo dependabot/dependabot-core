@@ -50,8 +50,8 @@ public partial class EntryPointTests
                 },
                 expectedUrls:
                 [
-                    "POST /update_jobs/TEST-ID/update_dependency_list",
                     "POST /update_jobs/TEST-ID/increment_metric",
+                    "POST /update_jobs/TEST-ID/update_dependency_list",
                     "POST /update_jobs/TEST-ID/create_pull_request",
                     "PATCH /update_jobs/TEST-ID/mark_as_processed",
                 ]
