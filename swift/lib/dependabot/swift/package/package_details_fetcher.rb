@@ -38,7 +38,8 @@ module Dependabot
 
         sig { returns(T::Array[GitTagWithDetail]) }
         def fetch_tag_and_release_date
-          url = RELEASES_URL + "#{@dependency.name}/releases"
+          truncate_github_url = @dependency.name.gsub("github.com/", "")
+          url = RELEASES_URL + "#{truncate_github_url}/releases"
           result_lines = T.let([], T::Array[GitTagWithDetail])
           # Fetch the releases from the GitHub API
           response = Excon.get(url, headers: { "Accept" => "application/vnd.github.v3+json" })
