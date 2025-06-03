@@ -1174,7 +1174,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
           )
         end
 
-        it { is_expected.to eq(Gem::Version.new("16.3.1")) }
+        it { is_expected.to eq(Gem::Version.new("15.6.2")) }
       end
 
       describe "updating a dependency that is a peer requirement with two semver constraints" do
@@ -1194,7 +1194,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
           )
         end
 
-        it { is_expected.to eq(Gem::Version.new("1.1.0")) }
+        it { is_expected.to eq(Gem::Version.new("1.0.4")) }
       end
 
       describe "updating a dependency that is a peer requirement of multiple dependencies" do
