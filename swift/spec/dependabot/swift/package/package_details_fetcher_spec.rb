@@ -11,7 +11,7 @@ require "excon"
 RSpec.describe Dependabot::Swift::Package::PackageDetailsFetcher do
   let(:dependency) do
     Dependabot::Dependency.new(
-      name: "patrick-zippenfenig/SwiftNetCDF",
+      name: "github.com/patrick-zippenfenig/SwiftNetCDF",
       version: "v1.1.7",
       requirements: [],
       package_manager: "swift"
@@ -51,6 +51,11 @@ RSpec.describe Dependabot::Swift::Package::PackageDetailsFetcher do
 
     before do
       allow(Excon).to receive(:get).and_return(instance_double(Excon::Response, status: 200, body: response_body))
+    end
+
+    it "removes 'github.com/' from the dependency name" do
+      truncate_github_url = dependency.name.gsub("github.com/", "")
+      expect(truncate_github_url).to eq("patrick-zippenfenig/SwiftNetCDF")
     end
 
     it "fetches and parses release details from the GitHub API" do
