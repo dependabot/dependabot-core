@@ -62,7 +62,6 @@ module Dependabot
           .returns(T::Array[Dependabot::DependencyFile])
       end
       def update_files_for_dependency(original_files:, dependency:)
-        # binding.irb
         files = original_files.dup
 
         # The UpdateChecker ensures the order of requirements is preserved
@@ -75,13 +74,14 @@ module Dependabot
           raise "Bad req match" unless new_req[:file] == T.must(old_req)[:file]
           next if new_req[:requirement] == T.must(old_req)[:requirement]
 
+          file_name = T.let(new_req.fetch(:file) || new_req.dig(:metadata, :pom_file), String)
           if new_req.dig(:metadata, :property_name)
             files = update_pomfiles_for_property_change(files, new_req)
-            pom = files.find { |f| f.name == new_req.fetch(:file) }
+            pom = files.find { |f| f.name == file_name }
             files[T.must(files.index(pom))] =
               remove_property_suffix_in_pom(dependency, T.must(pom), T.must(old_req))
           else
-            file = files.find { |f| f.name == new_req.fetch(:file) }
+            file = files.find { |f| f.name == file_name }
             files[T.must(files.index(file))] =
               update_version_in_file(dependency, T.must(file), T.must(old_req), new_req)
           end

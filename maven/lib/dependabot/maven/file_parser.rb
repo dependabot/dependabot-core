@@ -17,6 +17,7 @@ require "dependabot/errors"
 # - http://maven.apache.org/pom.html
 module Dependabot
   module Maven
+    # rubocop:disable Metrics/ClassLength
     class FileParser < Dependabot::FileParsers::Base
       extend T::Sig
       require "dependabot/file_parsers/base/dependency_set"
@@ -43,17 +44,31 @@ module Dependabot
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
         dependency_set = DependencySet.new
-        new_dependency_set = DependencySet.new
 
-        mvn_dependency_parser = MavenDependencyParser.new
-        new_dependency_set += mvn_dependency_parser.parse_dependency_tree(pomfiles)
+        dependencies = []
+        if Dependabot::Experiments.enabled?(:maven_transitive_dependencies)
+          mvn_dependency_parser = MavenDependencyParser.new
+          dependency_set += mvn_dependency_parser.build_dependency_set(pomfiles)
 
-        pomfiles.each { |pom| dependency_set += pomfile_dependencies(pom) }
-        extensionfiles.each { |extension| dependency_set += extensionfile_dependencies(extension) }
+          pomfiles.each { |pom| dependency_set += pomfile_dependencies(pom) }
+          extensionfiles.each { |extension| dependency_set += extensionfile_dependencies(extension) }
 
-        binding.irb
+          dependency_set.dependencies.each do |dep|
+            requirements = merge_requirements(dep.requirements)
+            dependencies << Dependabot::Dependency.new(
+              name: dep.name,
+              version: dep.version,
+              package_manager: "maven",
+              requirements: requirements
+            )
+          end
+        else
+          pomfiles.each { |pom| dependency_set += pomfile_dependencies(pom) }
+          extensionfiles.each { |extension| dependency_set += extensionfile_dependencies(extension) }
+          dependencies = dependency_set.dependencies
+        end
 
-        new_dependency_set.dependencies
+        dependencies
       end
 
       sig { returns(Ecosystem) }
@@ -396,7 +411,79 @@ module Dependabot
       def check_required_files
         raise "No pom.xml!" unless get_original_file("pom.xml")
       end
+
+      # Merge dependency scan requirements with file parsing requirements.
+      # Since dependency scan evaluates properties, we need to combine results with XML parsing,
+      # so we know when certain requirement not a literal value and can differentiate transitive dependencies
+      # from direct dependencies.
+      sig do
+        params(requirements: T::Array[T::Hash[Symbol, T.untyped]]).returns(T::Array[T::Hash[Symbol, T.untyped]])
+      end
+      def merge_requirements(requirements)
+        return requirements if requirements.length <= 1
+
+        merged = []
+        used_indices = Set.new
+
+        requirements.each_with_index do |dep_scan_req, i|
+          next if used_indices.include?(i) || dep_scan_req.dig(:metadata, :pom_file).nil?
+
+          # Look for another requirement where pom_file matches property_source
+          match_index = requirements.find_index.with_index do |parsing_req, j|
+            j > i &&
+              !used_indices.include?(j) &&
+              dep_scan_req.dig(:metadata, :pom_file) == parsing_req.fetch(:file)
+          end
+
+          if match_index
+            parsing_req = T.must(requirements[match_index])
+
+            # Merge the two requirements
+            # We prefer file and requirement properties from parsed requirements,
+            # because they include correct file and not evaluated property value.
+            merged_req = {
+              requirement: parsing_req[:requirement],
+              file: parsing_req[:file],
+              groups: (Array(dep_scan_req[:groups]) + Array(parsing_req[:groups])).uniq,
+              source: dep_scan_req[:source],
+              metadata: merge_metadata(dep_scan_req[:metadata], parsing_req[:metadata])
+            }
+
+            merged << merged_req
+            used_indices.add(i)
+            used_indices.add(match_index)
+          else
+            # No match found, keep the requirement as is
+            merged << dep_scan_req
+            used_indices.add(i)
+          end
+        end
+
+        merged
+      end
+
+      # Merge metadata from two requirements, combining all keys
+      sig do
+        params(metadata1: T::Hash[Symbol, T.untyped],
+               metadata2: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped])
+      end
+      def merge_metadata(metadata1, metadata2)
+        merged = metadata1.dup
+
+        metadata2.each do |key, value|
+          if merged[key] && merged[key] != value
+            # If values differ, keep both (could be arrays or create array)
+            merged[key] = Array(merged[key]) + Array(value)
+            merged[key] = merged[key].uniq if merged[key].respond_to?(:uniq)
+          else
+            merged[key] = value
+          end
+        end
+
+        merged
+      end
     end
+    # rubocop:enable Metrics/ClassLength
   end
 end
 
