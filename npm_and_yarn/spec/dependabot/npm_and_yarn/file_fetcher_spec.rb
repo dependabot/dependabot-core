@@ -2092,6 +2092,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
       it "parses the YAML content" do
         expect(file_fetcher.send(:parsed_pnpm_workspace_yaml)).to eq({ "packages" => ["packages/*"] })
       end
+
+      it "is not a support file" do
+        expect(file_fetcher.send(:pnpm_workspace_yaml).support_file).to be_falsey
+      end
     end
 
     context "when it's content contains valid alias" do
