@@ -58,7 +58,8 @@ module Dependabot
         error_details = error_details_for(error, dependency: dependency, dependency_group: dependency_group)
         service.record_update_job_error(
           error_type: error_details.fetch(:"error-type"),
-          error_details: error_details[:"error-detail"]
+          error_details: error_details[:"error-detail"],
+          dependency: dependency
         )
         # We don't set this flag in GHES because there older GHES version does not support reporting unknown errors.
         if Experiments.enabled?(:record_update_job_unknown_error) &&
