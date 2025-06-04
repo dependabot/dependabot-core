@@ -1,0 +1,254 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://rubygems.org/api/v1/versions/dummy-git-dependency.json
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - dependabot-core/0.218.0 excon/0.99.0 ruby/3.1.4 (x86_64-linux) (+https://github.com/dependabot/dependabot-core)
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '384'
+      Content-Type:
+      - application/json; charset=utf-8
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Xss-Protection:
+      - '0'
+      X-Content-Type-Options:
+      - nosniff
+      X-Download-Options:
+      - noopen
+      X-Permitted-Cross-Domain-Policies:
+      - none
+      Referrer-Policy:
+      - strict-origin-when-cross-origin
+      Last-Modified:
+      - Mon, 14 Dec 2020 17:08:06 GMT
+      Cache-Control:
+      - max-age=60, public
+      Content-Encoding:
+      - ''
+      Content-Security-Policy:
+      - default-src 'self'; font-src 'self' https://fonts.gstatic.com; img-src 'self'
+        https://secure.gaug.es https://gravatar.com https://www.gravatar.com https://secure.gravatar.com
+        https://*.fastly-insights.com https://avatars.githubusercontent.com; object-src
+        'none'; script-src 'self' https://secure.gaug.es https://www.fastly-insights.com
+        'nonce-'; style-src 'self' https://fonts.googleapis.com; connect-src 'self'
+        https://s3-us-west-2.amazonaws.com/rubygems-dumps/ https://*.fastly-insights.com
+        https://fastly-insights.com https://api.github.com http://localhost:*; form-action
+        'self' https://github.com/login/oauth/authorize; frame-ancestors 'self'; report-uri
+        https://csp-report.browser-intake-datadoghq.com/api/v2/logs?dd-api-key=pub852fa3e2312391fafa5640b60784e660&dd-evp-origin=content-security-policy&ddsource=csp-report&ddtags=service%3Arubygems.org%2Cversion%3A146af3740941a790a743a2e699036f0d7137b99e%2Cenv%3Aproduction%2Ctrace_id%3A4285453584986361312
+      X-Request-Id:
+      - cb7aac61-54b3-42e9-aadf-50389d975e32
+      X-Runtime:
+      - '0.014696'
+      Strict-Transport-Security:
+      - max-age=31536000
+      X-Backend:
+      - F_Rails 44.238.31.117:443
+      Accept-Ranges:
+      - bytes
+      Date:
+      - Fri, 02 Jun 2023 15:59:46 GMT
+      Via:
+      - 1.1 varnish
+      Age:
+      - '0'
+      X-Served-By:
+      - cache-lcy-eglc8600048-LCY
+      X-Cache:
+      - MISS
+      X-Cache-Hits:
+      - '0'
+      X-Timer:
+      - S1685721586.853325,VS0,VE168
+      Vary:
+      - Accept-Encoding
+      Etag:
+      - '"f59670cf8622242bfb55afc03a027238"'
+      Server:
+      - RubyGems.org
+    body:
+      encoding: UTF-8
+      string: '[{"authors":"Dependabot","built_at":"2019-11-22T00:00:00.000Z","created_at":"2019-11-22T15:24:24.964Z","description":null,"downloads_count":2033,"metadata":{},"number":"1.1.0","summary":"A
+        dummy package for testing Dependabot","platform":"ruby","rubygems_version":"\u003e=
+        0","ruby_version":"\u003e= 0","prerelease":false,"licenses":["MIT"],"requirements":[],"sha":"3c1b71569ef54c120b0c1d47704409bf9c63de0d581ad6bbb9521634063d7e2d"},{"authors":"Dependabot","built_at":"2019-11-22T00:00:00.000Z","created_at":"2019-11-22T15:24:41.638Z","description":null,"downloads_count":1476,"metadata":{},"number":"1.0.0","summary":"A
+        dummy package for testing Dependabot","platform":"ruby","rubygems_version":"\u003e=
+        0","ruby_version":"\u003e= 0","prerelease":false,"licenses":["MIT"],"requirements":[],"sha":"c020db324e8d21ee9f0e16ffcdc3c025b6da796c4d62e24e952725b76e2b0088"}]'
+  recorded_at: Fri, 02 Jun 2023 15:59:45 GMT
+- request:
+    method: get
+    uri: https://github.com/dependabot-fixtures/ruby-dummy-git-dependency.git/info/refs?service=git-upload-pack
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - dependabot-core/0.218.0 excon/0.99.0 ruby/3.1.4 (x86_64-linux) (+https://github.com/dependabot/dependabot-core)
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Server:
+      - GitHub-Babel/3.0
+      Content-Type:
+      - application/x-git-upload-pack-advertisement
+      Content-Security-Policy:
+      - default-src 'none'; sandbox
+      Expires:
+      - Fri, 01 Jan 1980 00:00:00 GMT
+      Pragma:
+      - no-cache
+      Cache-Control:
+      - no-cache, max-age=0, must-revalidate
+      Vary:
+      - Accept-Encoding
+      Date:
+      - Fri, 02 Jun 2023 15:59:46 GMT
+      X-Frame-Options:
+      - DENY
+      X-Github-Request-Id:
+      - DD50:EC5D:56DC982:581CFB3:647A11F2
+    body:
+      encoding: ASCII-8BIT
+      string: "001e# service=git-upload-pack\n00000155f229d172c826b95f464a82d8ddf8b3efce3825b0
+        HEAD\0multi_ack thin-pack side-band side-band-64k ofs-delta shallow deepen-since
+        deepen-not deepen-relative no-progress include-tag multi_ack_detailed allow-tip-sha1-in-want
+        allow-reachable-sha1-in-want no-done symref=HEAD:refs/heads/master filter
+        object-format=sha1 agent=git/github-aebc4fa63a74\n003ff229d172c826b95f464a82d8ddf8b3efce3825b0
+        refs/heads/master\n003e20151f9b67c8a04461fa0ee28385b6187b86587b refs/tags/v1.0.0\n003ec0e25c2eb332122873f73acb3b61fb2e261cfd8f
+        refs/tags/v1.1.0\n0000"
+  recorded_at: Fri, 02 Jun 2023 15:59:46 GMT
+- request:
+    method: get
+    uri: https://rubygems.org/api/v1/gems/dummy-git-dependency.json
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - dependabot-core/0.218.0 excon/0.99.0 ruby/3.1.4 (x86_64-linux) (+https://github.com/dependabot/dependabot-core)
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '445'
+      Content-Type:
+      - application/json; charset=utf-8
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Xss-Protection:
+      - '0'
+      X-Content-Type-Options:
+      - nosniff
+      X-Download-Options:
+      - noopen
+      X-Permitted-Cross-Domain-Policies:
+      - none
+      Referrer-Policy:
+      - strict-origin-when-cross-origin
+      Access-Control-Allow-Origin:
+      - "*"
+      Access-Control-Allow-Methods:
+      - GET
+      Access-Control-Max-Age:
+      - '1728000'
+      Cache-Control:
+      - max-age=60, public
+      Content-Encoding:
+      - ''
+      Content-Security-Policy:
+      - default-src 'self'; font-src 'self' https://fonts.gstatic.com; img-src 'self'
+        https://secure.gaug.es https://gravatar.com https://www.gravatar.com https://secure.gravatar.com
+        https://*.fastly-insights.com https://avatars.githubusercontent.com; object-src
+        'none'; script-src 'self' https://secure.gaug.es https://www.fastly-insights.com
+        'nonce-'; style-src 'self' https://fonts.googleapis.com; connect-src 'self'
+        https://s3-us-west-2.amazonaws.com/rubygems-dumps/ https://*.fastly-insights.com
+        https://fastly-insights.com https://api.github.com http://localhost:*; form-action
+        'self' https://github.com/login/oauth/authorize; frame-ancestors 'self'; report-uri
+        https://csp-report.browser-intake-datadoghq.com/api/v2/logs?dd-api-key=pub852fa3e2312391fafa5640b60784e660&dd-evp-origin=content-security-policy&ddsource=csp-report&ddtags=service%3Arubygems.org%2Cversion%3A146af3740941a790a743a2e699036f0d7137b99e%2Cenv%3Aproduction%2Ctrace_id%3A2719169708493862752
+      X-Request-Id:
+      - b3f6e55c-f0e9-4b2c-8deb-e44b382fb5b8
+      X-Runtime:
+      - '0.022959'
+      Strict-Transport-Security:
+      - max-age=31536000
+      X-Backend:
+      - F_Rails 44.238.31.117:443
+      Accept-Ranges:
+      - bytes
+      Date:
+      - Fri, 02 Jun 2023 15:59:46 GMT
+      Via:
+      - 1.1 varnish
+      Age:
+      - '0'
+      X-Served-By:
+      - cache-lhr7376-LHR
+      X-Cache:
+      - MISS
+      X-Cache-Hits:
+      - '0'
+      X-Timer:
+      - S1685721586.359029,VS0,VE629
+      Vary:
+      - Accept-Encoding
+      Etag:
+      - '"8540b24d44eb668142e74c17caf70060"'
+      Server:
+      - RubyGems.org
+    body:
+      encoding: UTF-8
+      string: '{"name":"dummy-git-dependency","downloads":3509,"version":"1.1.0","version_created_at":"2019-11-22T15:24:24.964Z","version_downloads":2033,"platform":"ruby","authors":"Dependabot","info":"A
+        dummy package for testing Dependabot","licenses":["MIT"],"metadata":{},"yanked":false,"sha":"3c1b71569ef54c120b0c1d47704409bf9c63de0d581ad6bbb9521634063d7e2d","project_uri":"https://rubygems.org/gems/dummy-git-dependency","gem_uri":"https://rubygems.org/gems/dummy-git-dependency-1.1.0.gem","homepage_uri":"http://github.com/dependabot/dummy-git-dependency","wiki_uri":null,"documentation_uri":"https://www.rubydoc.info/gems/dummy-git-dependency/1.1.0","mailing_list_uri":null,"source_code_uri":null,"bug_tracker_uri":null,"changelog_uri":null,"funding_uri":null,"dependencies":{"development":[],"runtime":[]}}'
+  recorded_at: Fri, 02 Jun 2023 15:59:46 GMT
+- request:
+    method: get
+    uri: https://github.com/dependabot/dummy-git-dependency.git/info/refs?service=git-upload-pack
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - dependabot-core/0.218.0 excon/0.99.0 ruby/3.1.4 (x86_64-linux) (+https://github.com/dependabot/dependabot-core)
+  response:
+    status:
+      code: 401
+      message: Unauthorized
+    headers:
+      Server:
+      - GitHub-Babel/3.0
+      Content-Security-Policy:
+      - default-src 'none'; sandbox
+      Content-Type:
+      - text/plain; charset=UTF-8
+      Www-Authenticate:
+      - Basic realm="GitHub"
+      Content-Length:
+      - '21'
+      Date:
+      - Fri, 02 Jun 2023 15:59:46 GMT
+      X-Frame-Options:
+      - DENY
+      X-Github-Request-Id:
+      - DD52:35CF:108CDB83:10C1816C:647A11F3
+    body:
+      encoding: ASCII-8BIT
+      string: Repository not found.
+  recorded_at: Fri, 02 Jun 2023 15:59:47 GMT
+recorded_with: VCR 6.1.0

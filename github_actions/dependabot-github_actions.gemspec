@@ -5,20 +5,27 @@ Gem::Specification.new do |spec|
     Bundler.load_gemspec_uncached("../common/dependabot-common.gemspec")
 
   spec.name         = "dependabot-github_actions"
-  spec.summary      = "GitHub Actions support for dependabot-common"
-  spec.version      = common_gemspec.version
-  spec.description  = common_gemspec.description
+  spec.summary      = "Provides Dependabot support for GitHub Actions"
+  spec.description  = "Dependabot-GitHub_Actions provides support for bumping GitHub Actions via Dependabot. " \
+                      "If you want support for multiple package managers, you probably want the meta-gem " \
+                      "dependabot-omnibus."
 
   spec.author       = common_gemspec.author
   spec.email        = common_gemspec.email
   spec.homepage     = common_gemspec.homepage
   spec.license      = common_gemspec.license
 
-  spec.require_path = "lib"
-  spec.files        = Dir["lib/**/*"]
+  spec.metadata = {
+    "bug_tracker_uri" => common_gemspec.metadata["bug_tracker_uri"],
+    "changelog_uri" => common_gemspec.metadata["changelog_uri"]
+  }
 
+  spec.version = common_gemspec.version
   spec.required_ruby_version = common_gemspec.required_ruby_version
   spec.required_rubygems_version = common_gemspec.required_ruby_version
+
+  spec.require_path = "lib"
+  spec.files        = Dir["lib/**/*"]
 
   spec.add_dependency "dependabot-common", Dependabot::VERSION
 

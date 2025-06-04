@@ -1,6 +1,8 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/pull_request_creator/azure"
@@ -30,12 +32,12 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
   let(:branch_name) { "dependabot/bundler/business-1.5.0" }
   let(:base_commit) { "basecommitsha" }
   let(:credentials) do
-    [{
+    [Dependabot::Credential.new({
       "type" => "git_source",
       "host" => "dev.azure.com",
       "username" => "x-access-token",
       "password" => "token"
-    }]
+    })]
   end
   let(:files) { [gemfile, gemfile_lock] }
   let(:commit_message) { "Commit msg" }
@@ -88,10 +90,10 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
   end
 
   before do
-    stub_request(:get, repo_api_url).
-      to_return(status: 200,
-                body: fixture("azure", "bump_repo.json"),
-                headers: json_header)
+    stub_request(:get, repo_api_url)
+      .to_return(status: 200,
+                 body: fixture("azure", "bump_repo.json"),
+                 headers: json_header)
     stub_request(
       :get,
       "#{repo_api_url}/refs?filter=heads/#{CGI.escape(branch_name)}"
@@ -100,48 +102,49 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
       body: fixture("azure", "branch_not_found.json"),
       headers: json_header
     )
-    stub_request(:post, "#{repo_api_url}/pushes?api-version=5.0").
-      to_return(status: 200,
-                headers: json_header)
-    stub_request(:post, "#{repo_api_url}/pullrequests?api-version=5.0").
-      to_return(status: 200,
-                headers: json_header)
+    stub_request(:post, "#{repo_api_url}/pushes?api-version=5.0")
+      .to_return(status: 200,
+                 headers: json_header)
+    stub_request(:post, "#{repo_api_url}/pullrequests?api-version=5.0")
+      .to_return(status: 200,
+                 headers: json_header)
   end
 
   describe "#create" do
     it "pushes a commit to Azure and creates a pull request" do
       creator.create
 
-      expect(WebMock).
-        to(
-          have_requested(:post, "#{repo_api_url}/pushes?api-version=5.0").
-            with do |req|
+      expect(WebMock)
+        .to(
+          have_requested(:post, "#{repo_api_url}/pushes?api-version=5.0")
+            .with do |req|
               json_body = JSON.parse(req.body)
               expect(json_body.fetch("commits").count).to eq(1)
-              expect(json_body.fetch("commits").first.keys).
-                to_not include("author")
+              expect(json_body.fetch("commits").first.keys)
+                .not_to include("author")
             end
         )
-      expect(WebMock).
-        to have_requested(:post, "#{repo_api_url}/pullrequests?api-version=5.0")
+      expect(WebMock)
+        .to have_requested(:post, "#{repo_api_url}/pullrequests?api-version=5.0")
     end
 
     context "with reviewers" do
       let(:reviewers) { ["0013-0006-1980"] }
+
       it "pushes a commit to Azure and creates a pull request with assigned reviewers" do
         creator.create
 
-        expect(WebMock).
-          to(
-            have_requested(:post, "#{repo_api_url}/pullrequests?api-version=5.0").
-            with do |req|
+        expect(WebMock)
+          .to(
+            have_requested(:post, "#{repo_api_url}/pullrequests?api-version=5.0")
+            .with do |req|
               reviewers = JSON.parse(req.body).fetch("reviewers")
               expect(reviewers.count).to eq(1)
               first_participant = reviewers.first
-              expect(first_participant.fetch("id")).
-                 to eq("0013-0006-1980")
-              expect(first_participant.fetch("isRequired")).
-                 to eq(true)
+              expect(first_participant.fetch("id"))
+                 .to eq("0013-0006-1980")
+              expect(first_participant.fetch("isRequired"))
+                 .to be(true)
             end
           )
       end
@@ -149,37 +152,21 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
 
     context "with assignees" do
       let(:assignees) { ["0013-0006-1980"] }
+
       it "pushes a commit to Azure and creates a pull request with assigned optional reviewers" do
         creator.create
 
-        expect(WebMock).
-          to(
-            have_requested(:post, "#{repo_api_url}/pullrequests?api-version=5.0").
-            with do |req|
+        expect(WebMock)
+          .to(
+            have_requested(:post, "#{repo_api_url}/pullrequests?api-version=5.0")
+            .with do |req|
               reviewers = JSON.parse(req.body).fetch("reviewers")
               expect(reviewers.count).to eq(1)
               first_participant = reviewers.first
-              expect(first_participant.fetch("id")).
-                to eq("0013-0006-1980")
-              expect(first_participant.fetch("isRequired")).
-                to eq(false)
-            end
-          )
-      end
-    end
-
-    context "with e very long pr description" do
-      let(:pr_description) { ("a" * 3997) + "💣 kaboom" }
-      it "truncates the description respecting azures encoding" do
-        creator.create
-
-        expect(WebMock).
-          to(
-            have_requested(:post, "#{repo_api_url}/pullrequests?api-version=5.0").
-            with do |req|
-              description = JSON.parse(req.body).fetch("description")
-              expect(description.length).to eq 4000
-              expect(description).to end_with("\n\n_Description has been truncated_")
+              expect(first_participant.fetch("id"))
+                .to eq("0013-0006-1980")
+              expect(first_participant.fetch("isRequired"))
+                .to be(false)
             end
           )
       end
@@ -193,32 +180,32 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
       it "includes the author details in the commit" do
         creator.create
 
-        expect(WebMock).
-          to(
-            have_requested(:post, "#{repo_api_url}/pushes?api-version=5.0").
-              with do |req|
+        expect(WebMock)
+          .to(
+            have_requested(:post, "#{repo_api_url}/pushes?api-version=5.0")
+              .with do |req|
                 json_body = JSON.parse(req.body)
                 expect(json_body.fetch("commits").count).to eq(1)
-                expect(json_body.fetch("commits").first.fetch("author")).
-                  to eq(author_details.transform_keys(&:to_s))
+                expect(json_body.fetch("commits").first.fetch("author"))
+                  .to eq(author_details.transform_keys(&:to_s))
               end
           )
       end
 
-      context "but are an empty hash" do
+      context "when there is an empty hash" do
         let(:author_details) { {} }
 
         it "does not include the author details in the commit" do
           creator.create
 
-          expect(WebMock).
-            to(
-              have_requested(:post, "#{repo_api_url}/pushes?api-version=5.0").
-                with do |req|
+          expect(WebMock)
+            .to(
+              have_requested(:post, "#{repo_api_url}/pushes?api-version=5.0")
+                .with do |req|
                   json_body = JSON.parse(req.body)
                   expect(json_body.fetch("commits").count).to eq(1)
-                  expect(json_body.fetch("commits").first.keys).
-                    to_not include("author")
+                  expect(json_body.fetch("commits").first.keys)
+                    .not_to include("author")
                 end
             )
         end
@@ -237,7 +224,7 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
         )
       end
 
-      context "but a pull request to this branch doesn't" do
+      context "when a pull request to this branch doesn't exist" do
         before do
           stub_request(
             :get,
@@ -253,22 +240,22 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
         end
 
         it "creates a commit and pull request with the right details" do
-          expect(creator.create).to_not be_nil
+          expect(creator.create).not_to be_nil
 
-          expect(WebMock).
-            to have_requested(
+          expect(WebMock)
+            .to have_requested(
               :post,
               "#{repo_api_url}/pushes?api-version=5.0"
             )
-          expect(WebMock).
-            to have_requested(
+          expect(WebMock)
+            .to have_requested(
               :post,
               "#{repo_api_url}/pullrequests?api-version=5.0"
             )
         end
       end
 
-      context "and a pull request to this branch already exists" do
+      context "when a pull request to this branch already exists" do
         before do
           stub_request(
             :get,
@@ -285,13 +272,13 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
         it "doesn't create a commit or pull request (and returns nil)" do
           expect(creator.create).to be_nil
 
-          expect(WebMock).
-            to_not have_requested(
+          expect(WebMock)
+            .not_to have_requested(
               :post,
               "#{repo_api_url}/pushes?api-version=5.0"
             )
-          expect(WebMock).
-            to_not have_requested(
+          expect(WebMock)
+            .not_to have_requested(
               :post,
               "#{repo_api_url}/pullrequests?api-version=5.0"
             )

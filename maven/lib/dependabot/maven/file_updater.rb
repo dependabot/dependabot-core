@@ -1,15 +1,20 @@
+# typed: strict
 # frozen_string_literal: true
 
 require "nokogiri"
+require "sorbet-runtime"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 
 module Dependabot
   module Maven
     class FileUpdater < Dependabot::FileUpdaters::Base
+      extend T::Sig
+
       require_relative "file_updater/declaration_finder"
       require_relative "file_updater/property_value_updater"
 
+      sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
         [
           /^pom\.xml$/, %r{/pom\.xml$},
@@ -18,8 +23,9 @@ module Dependabot
         ]
       end
 
+      sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
-        updated_files = dependency_files.dup
+        updated_files = T.let(dependency_files.dup, T::Array[Dependabot::DependencyFile])
 
         # Loop through each of the changed requirements, applying changes to
         # all pom and extensions files for that change. Note that the logic
@@ -42,51 +48,77 @@ module Dependabot
 
       private
 
+      sig { override.void }
       def check_required_files
         raise "No pom.xml!" unless get_original_file("pom.xml")
       end
 
+      # rubocop:disable Metrics/AbcSize
+      sig do
+        params(
+          original_files: T::Array[Dependabot::DependencyFile],
+          dependency: Dependabot::Dependency
+        )
+          .returns(T::Array[Dependabot::DependencyFile])
+      end
       def update_files_for_dependency(original_files:, dependency:)
         files = original_files.dup
 
         # The UpdateChecker ensures the order of requirements is preserved
         # when updating, so we can zip them together in new/old pairs.
-        reqs = dependency.requirements.zip(dependency.previous_requirements).
-               reject { |new_req, old_req| new_req == old_req }
+        reqs = dependency.requirements.zip(dependency.previous_requirements.to_a)
+                         .reject { |new_req, old_req| new_req == old_req }
 
         # Loop through each changed requirement and update the files
         reqs.each do |new_req, old_req|
-          raise "Bad req match" unless new_req[:file] == old_req[:file]
-          next if new_req[:requirement] == old_req[:requirement]
+          raise "Bad req match" unless new_req[:file] == T.must(old_req)[:file]
+          next if new_req[:requirement] == T.must(old_req)[:requirement]
 
           if new_req.dig(:metadata, :property_name)
             files = update_pomfiles_for_property_change(files, new_req)
             pom = files.find { |f| f.name == new_req.fetch(:file) }
-            files[files.index(pom)] =
-              remove_property_suffix_in_pom(dependency, pom, old_req)
+            files[T.must(files.index(pom))] =
+              remove_property_suffix_in_pom(dependency, T.must(pom), T.must(old_req))
           else
             file = files.find { |f| f.name == new_req.fetch(:file) }
-            files[files.index(file)] =
-              update_version_in_file(dependency, file, old_req, new_req)
+            files[T.must(files.index(file))] =
+              update_version_in_file(dependency, T.must(file), T.must(old_req), new_req)
           end
         end
 
         files
       end
+      # rubocop:enable Metrics/AbcSize
 
+      sig do
+        params(
+          pomfiles: T::Array[Dependabot::DependencyFile],
+          req: T::Hash[Symbol, T.untyped]
+        )
+          .returns(T::Array[Dependabot::DependencyFile])
+      end
       def update_pomfiles_for_property_change(pomfiles, req)
         property_name = req.fetch(:metadata).fetch(:property_name)
 
-        PropertyValueUpdater.new(dependency_files: pomfiles).
-          update_pomfiles_for_property_change(
-            property_name: property_name,
-            callsite_pom: pomfiles.find { |f| f.name == req.fetch(:file) },
-            updated_value: req.fetch(:requirement)
-          )
+        PropertyValueUpdater.new(dependency_files: pomfiles)
+                            .update_pomfiles_for_property_change(
+                              property_name: property_name,
+                              callsite_pom: T.must(pomfiles.find { |f| f.name == req.fetch(:file) }),
+                              updated_value: req.fetch(:requirement)
+                            )
       end
 
+      sig do
+        params(
+          dependency: Dependabot::Dependency,
+          file: Dependabot::DependencyFile,
+          previous_req: T::Hash[Symbol, T.untyped],
+          requirement: T::Hash[Symbol, T.untyped]
+        )
+          .returns(Dependabot::DependencyFile)
+      end
       def update_version_in_file(dependency, file, previous_req, requirement)
-        updated_content = file.content
+        updated_content = T.must(file.content)
 
         original_file_declarations(dependency, previous_req).each do |old_dec|
           updated_content = updated_content.gsub(old_dec) do
@@ -99,8 +131,16 @@ module Dependabot
         updated_file(file: file, content: updated_content)
       end
 
+      sig do
+        params(
+          dep: Dependabot::Dependency,
+          pom: Dependabot::DependencyFile,
+          req: T::Hash[Symbol, T.untyped]
+        )
+          .returns(Dependabot::DependencyFile)
+      end
       def remove_property_suffix_in_pom(dep, pom, req)
-        updated_content = pom.content
+        updated_content = T.must(pom.content)
 
         original_file_declarations(dep, req).each do |old_declaration|
           updated_content = updated_content.gsub(old_declaration) do |old_dec|
@@ -118,15 +158,27 @@ module Dependabot
         updated_file(file: pom, content: updated_content)
       end
 
+      sig do
+        params(
+          dependency: Dependabot::Dependency,
+          requirement: T::Hash[Symbol, T.untyped]
+        )
+          .returns(T::Array[String])
+      end
       def original_file_declarations(dependency, requirement)
         declaration_finder(dependency, requirement).declaration_strings
       end
 
-      # The declaration finder may need to make remote calls (to get parent
-      # POMs if it's searching for the value of a property), so we cache it.
+      sig do
+        params(
+          dependency: Dependabot::Dependency,
+          requirement: T::Hash[Symbol, T.untyped]
+        )
+          .returns(DeclarationFinder)
+      end
       def declaration_finder(dependency, requirement)
-        @declaration_finders ||= {}
-        @declaration_finders[dependency.hash + requirement.hash] ||=
+        @declaration_finders ||= T.let({}, T.nilable(T::Hash[Integer, DeclarationFinder]))
+        @declaration_finders[dependency.hash + requirement.hash] =
           DeclarationFinder.new(
             dependency: dependency,
             declaring_requirement: requirement,
@@ -134,6 +186,14 @@ module Dependabot
           )
       end
 
+      sig do
+        params(
+          old_declaration: String,
+          previous_req: T::Hash[Symbol, T.untyped],
+          requirement: T::Hash[Symbol, T.untyped]
+        )
+          .returns(String)
+      end
       def updated_file_declaration(old_declaration, previous_req, requirement)
         original_req_string = previous_req.fetch(:requirement)
 
@@ -143,9 +203,12 @@ module Dependabot
         )
       end
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def original_pomfiles
-        @original_pomfiles ||=
-          dependency_files.select { |f| f.name.end_with?("pom.xml") }
+        @original_pomfiles ||= T.let(
+          dependency_files.select { |f| f.name.end_with?("pom.xml") },
+          T.nilable(T::Array[Dependabot::DependencyFile])
+        )
       end
     end
   end

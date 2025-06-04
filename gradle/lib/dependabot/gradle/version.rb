@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/version"
@@ -21,7 +22,7 @@ module Dependabot
         "a" => 1, "alpha"     => 1,
         "b" => 2, "beta"      => 2,
         "m" => 3, "milestone" => 3,
-        "rc" => 4, "cr" => 4, "pr" => 4,
+        "rc" => 4, "cr" => 4, "pr" => 4, "pre" => 4,
         "snapshot" => 5, "dev" => 5,
         "ga" => 6, "" => 6, "final" => 6,
         "sp" => 7
@@ -153,6 +154,10 @@ module Dependabot
       end
 
       def compare_prefixed_token(prefix:, token:, other_prefix:, other_token:)
+        return 1 if token == "+" && other_token != "+"
+        return -1 if other_token == "+" && token != "+"
+        return 0 if token == "+" && other_token == "+"
+
         token_type = token.match?(/^\d+$/) ? :number : :qualifier
         other_token_type = other_token.match?(/^\d+$/) ? :number : :qualifier
 

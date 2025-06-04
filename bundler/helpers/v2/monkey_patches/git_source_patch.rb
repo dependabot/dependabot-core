@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "bundler/source"
@@ -18,7 +19,7 @@ module Bundler
         def configured_uri_for(uri)
           uri = uri.gsub(%r{git@(.*?):/?}, 'https://\1/')
           if /https?:/.match?(uri)
-            remote = Bundler::URI(uri)
+            remote = ::URI.parse(uri)
             config_auth = Bundler.settings[remote.to_s] || Bundler.settings[remote.host]
             remote.userinfo ||= config_auth
             remote.to_s
@@ -40,8 +41,8 @@ module Bundler
 
       def serialize_gemspecs_in(destination)
         original_load_paths = $LOAD_PATH.dup
-        reduced_load_paths = original_load_paths.
-                             reject { |p| p.include?("/gems/") }
+        reduced_load_paths = original_load_paths
+                             .reject { |p| p.include?("/gems/") }
 
         $LOAD_PATH.shift until $LOAD_PATH.empty?
         reduced_load_paths.each { |p| $LOAD_PATH << p }
@@ -54,7 +55,7 @@ module Bundler
           spec = Bundler.load_gemspec(spec_path)
           next unless spec
 
-          Bundler.rubygems.set_installed_by_version(spec)
+          spec.installed_by_version = Gem::VERSION
           Bundler.rubygems.validate(spec)
           File.binwrite(spec_path, spec.to_ruby)
         end

@@ -1,0 +1,6 @@
+{
+    "image": "mcr.microsoft.com/devcontainers/base:jammy",
+    "features": {
+        "ghcr.io/devcontainers/features/aws-cli@sha256:4b67518ec3733df53110c3caf7b9d6007363d1b5aaae2f1fa27f18ad0cc9b2b9": {},
+    }
+}

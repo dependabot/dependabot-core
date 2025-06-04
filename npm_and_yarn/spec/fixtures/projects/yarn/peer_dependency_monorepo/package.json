@@ -1,0 +1,24 @@
+{
+    "name": "foo",
+    "version": "1.0.0",
+    "private": "true",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "prettify": "prettier --write \"{{packages/*/src,examples,cypress,scripts}/**/,}*.{js,jsx,ts,tsx,css,md}\""
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/waltfy/PROTO_TEST.git"
+    },
+    "author": "",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/waltfy/PROTO_TEST/issues"
+    },
+    "homepage": "https://github.com/waltfy/PROTO_TEST#readme",
+    "workspaces": [
+      "packages/package1"
+    ]
+}

@@ -1,0 +1,31 @@
+! dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
+stderr dependency_file_not_supported
+stdout '{"data":{"error-type":"dependency_file_not_supported","error-details":{"dependency-name":"dependency-a"}},"type":"record_update_job_error"}'
+! stdout create_pull_request
+
+# Can't tell what version dependency-a is at, so it can't be updated. Similar to if
+# in requirements.txt you set a dependency requirement to *.
+
+-- manifest.json --
+{
+  "dependency-a": { "version": null }
+}
+
+-- input.yml --
+job:
+  package-manager: "silent"
+  dependencies:
+    - dependency-a
+  source:
+    directory: "/"
+    provider: example
+    hostname: example.com
+    api-endpoint: https://example.com/api/v3
+    repo: dependabot/smoke-tests
+  security-advisories:
+    - dependency-name: dependency-a
+      affected-versions:
+        - <= 1.2.3
+      patched-versions: []
+      unaffected-versions: []
+  security-updates-only: true

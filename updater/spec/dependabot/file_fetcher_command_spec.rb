@@ -1,8 +1,14 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
 require "dependabot/file_fetcher_command"
+require "dependabot/errors"
 require "tmpdir"
+
+require "support/dummy_package_manager/dummy"
+
+require "dependabot/bundler"
 
 RSpec.describe Dependabot::FileFetcherCommand do
   subject(:job) { described_class.new }
@@ -11,17 +17,18 @@ RSpec.describe Dependabot::FileFetcherCommand do
   let(:job_id) { "123123" }
 
   before do
-    allow(Dependabot::Environment).to receive(:job_id).and_return(job_id)
-    allow(Dependabot::Environment).to receive(:job_token).and_return("job_token")
     allow(Dependabot::ApiClient).to receive(:new).and_return(api_client)
 
     allow(api_client).to receive(:mark_job_as_processed)
     allow(api_client).to receive(:record_update_job_error)
-    allow(api_client).to receive(:record_package_manager_version)
+    allow(api_client).to receive(:record_ecosystem_versions)
+    allow(api_client).to receive(:is_a?).with(Dependabot::ApiClient).and_return(true)
 
-    allow(Dependabot::Environment).to receive(:output_path).and_return(File.join(Dir.mktmpdir, "output.json"))
-    allow(Dependabot::Environment).to receive(:job_id).and_return(job_id)
-    allow(Dependabot::Environment).to receive(:job_definition).and_return(job_definition)
+    allow(Dependabot::Environment).to receive_messages(job_id: job_id, job_token: "job_token",
+                                                       output_path: File.join(Dir.mktmpdir,
+                                                                              "output.json"),
+                                                       job_definition: job_definition,
+                                                       job_path: nil)
   end
 
   describe "#perform_job" do
@@ -31,7 +38,12 @@ RSpec.describe Dependabot::FileFetcherCommand do
       JSON.parse(fixture("jobs/job_with_credentials.json"))
     end
 
-    it "fetches the files and writes the fetched files to output.json", vcr: true do
+    after do
+      # The job definition in this context loads an experiment, so reset it
+      Dependabot::Experiments.reset!
+    end
+
+    it "fetches the files and writes the fetched files to output.json", :vcr do
       expect(api_client).not_to receive(:mark_job_as_processed)
 
       perform_job
@@ -44,26 +56,41 @@ RSpec.describe Dependabot::FileFetcherCommand do
       expect(dependency_file["content_encoding"]).to eq("utf-8")
     end
 
-    it "does not clone the repo", vcr: true do
-      expect_any_instance_of(Dependabot::Bundler::FileFetcher).
-        not_to receive(:clone_repo_contents)
+    context "when the fetcher raises a ToolVersionNotSupported error", :vcr do
+      before do
+        allow_any_instance_of(Dependabot::Bundler::FileFetcher)
+          .to receive(:commit).and_return("a" * 40)
+        allow_any_instance_of(Dependabot::Bundler::FileFetcher)
+          .to receive(:files).and_return([])
+        allow_any_instance_of(Dependabot::Bundler::FileFetcher)
+          .to receive(:ecosystem_versions)
+          .and_raise(Dependabot::ToolVersionNotSupported.new("Bundler", "1.7", "2.x"))
+      end
 
-      expect(api_client).not_to receive(:mark_job_as_processed)
+      it "tells the backend about the error (and doesn't re-raise it)" do
+        expect(api_client)
+          .to receive(:record_update_job_error)
+          .with(
+            error_details: { "tool-name": "Bundler", "detected-version": "1.7", "supported-versions": "2.x" },
+            error_type: "tool_version_not_supported"
+          )
+        expect(api_client).to receive(:mark_job_as_processed)
 
-      perform_job
+        expect { perform_job }.to output(/Error during file fetching; aborting/).to_stdout_from_any_process
+      end
     end
 
     context "when the fetcher raises a BranchNotFound error" do
       before do
-        allow_any_instance_of(Dependabot::Bundler::FileFetcher).
-          to receive(:commit).
-          and_raise(Dependabot::BranchNotFound, "my_branch")
+        allow_any_instance_of(Dependabot::Bundler::FileFetcher)
+          .to receive(:commit)
+          .and_raise(Dependabot::BranchNotFound, "my_branch")
       end
 
       it "tells the backend about the error (and doesn't re-raise it)" do
-        expect(api_client).
-          to receive(:record_update_job_error).
-          with(
+        expect(api_client)
+          .to receive(:record_update_job_error)
+          .with(
             error_details: { "branch-name": "my_branch" },
             error_type: "branch_not_found"
           )
@@ -79,16 +106,16 @@ RSpec.describe Dependabot::FileFetcherCommand do
       let(:source) { ::Dependabot::Source.new(provider: provider, repo: repo) }
 
       before do
-        allow_any_instance_of(Dependabot::Bundler::FileFetcher).
-          to receive(:commit).
-          and_raise(Dependabot::RepoNotFound, source)
+        allow_any_instance_of(Dependabot::Bundler::FileFetcher)
+          .to receive(:commit)
+          .and_raise(Dependabot::RepoNotFound, source)
       end
 
       it "tells the backend about the error (and doesn't re-raise it)" do
-        expect(api_client).
-          to receive(:record_update_job_error).
-          with(
-            error_details: {},
+        expect(api_client)
+          .to receive(:record_update_job_error)
+          .with(
+            error_details: { message: "Dependabot::RepoNotFound" },
             error_type: "job_repo_not_found"
           )
         expect(api_client).to receive(:mark_job_as_processed)
@@ -97,7 +124,88 @@ RSpec.describe Dependabot::FileFetcherCommand do
       end
     end
 
-    context "when the fetcher raises a rate limited error", vcr: true do
+    context "when the fetcher raises a file fetcher error (cloud)", :vcr do
+      before do
+        allow_any_instance_of(Dependabot::Bundler::FileFetcher)
+          .to receive(:commit)
+          .and_raise(StandardError, "my_branch")
+        Dependabot::Experiments.register(:record_update_job_unknown_error, true)
+      end
+
+      after do
+        Dependabot::Experiments.reset!
+      end
+
+      it "tells the backend about the error via update job error api (and doesn't re-raise it)" do
+        expect(api_client).to receive(:record_update_job_error).with(
+          error_type: "file_fetcher_error",
+          error_details: {
+            Dependabot::ErrorAttributes::BACKTRACE => an_instance_of(String),
+            Dependabot::ErrorAttributes::MESSAGE => "my_branch",
+            Dependabot::ErrorAttributes::CLASS => "StandardError",
+            Dependabot::ErrorAttributes::PACKAGE_MANAGER => "bundler",
+            Dependabot::ErrorAttributes::JOB_ID => "123123",
+            Dependabot::ErrorAttributes::DEPENDENCY_GROUPS => []
+          }
+        )
+        expect(api_client).to receive(:record_update_job_unknown_error)
+        expect(api_client).to receive(:mark_job_as_processed)
+
+        expect { perform_job }.to output(/Error during file fetching; aborting/).to_stdout_from_any_process
+      end
+
+      it "tells the backend about the error via update job unknown error (and doesn't re-raise it)" do
+        expect(api_client).to receive(:record_update_job_unknown_error).with(
+          error_type: "unknown_error",
+          error_details: {
+            Dependabot::ErrorAttributes::BACKTRACE => an_instance_of(String),
+            Dependabot::ErrorAttributes::MESSAGE => "my_branch",
+            Dependabot::ErrorAttributes::CLASS => "StandardError",
+            Dependabot::ErrorAttributes::PACKAGE_MANAGER => "bundler",
+            Dependabot::ErrorAttributes::JOB_ID => "123123",
+            Dependabot::ErrorAttributes::DEPENDENCY_GROUPS => [],
+            Dependabot::ErrorAttributes::SECURITY_UPDATE => false
+          }
+        )
+        expect(api_client).to receive(:mark_job_as_processed)
+
+        expect { perform_job }.to output(/Error during file fetching; aborting/).to_stdout_from_any_process
+      end
+    end
+
+    context "when the fetcher raises a file fetcher error (ghes)", :vcr do
+      before do
+        allow_any_instance_of(Dependabot::Bundler::FileFetcher)
+          .to receive(:commit)
+          .and_raise(StandardError, "my_branch")
+      end
+
+      it "tells the backend about the error via update job error api (and doesn't re-raise it)" do
+        expect(api_client).to receive(:record_update_job_error).with(
+          error_type: "file_fetcher_error",
+          error_details: {
+            Dependabot::ErrorAttributes::BACKTRACE => an_instance_of(String),
+            Dependabot::ErrorAttributes::MESSAGE => "my_branch",
+            Dependabot::ErrorAttributes::CLASS => "StandardError",
+            Dependabot::ErrorAttributes::PACKAGE_MANAGER => "bundler",
+            Dependabot::ErrorAttributes::JOB_ID => "123123",
+            Dependabot::ErrorAttributes::DEPENDENCY_GROUPS => []
+          }
+        )
+        expect(api_client).to receive(:mark_job_as_processed)
+
+        expect { perform_job }.to output(/Error during file fetching; aborting/).to_stdout_from_any_process
+      end
+
+      it "do not tells the backend about the error" do
+        expect(api_client).not_to receive(:record_update_job_unknown_error)
+        expect(api_client).to receive(:mark_job_as_processed)
+
+        expect { perform_job }.to output(/Error during file fetching; aborting/).to_stdout_from_any_process
+      end
+    end
+
+    context "when the fetcher raises a rate limited error" do
       let(:reset_at) { Time.now + 30 }
 
       before do
@@ -106,19 +214,16 @@ RSpec.describe Dependabot::FileFetcherCommand do
             "X-RateLimit-Reset" => reset_at
           }
         )
-        allow_any_instance_of(Dependabot::Bundler::FileFetcher).
-          to receive(:files).
-          and_raise(exception)
-        allow_any_instance_of(Dependabot::Bundler::FileFetcher).
-          to receive(:package_manager_version).
-          and_return(nil)
+        allow_any_instance_of(Dependabot::Bundler::FileFetcher)
+          .to receive(:commit)
+          .and_raise(exception)
       end
 
       it "retries the job when the rate-limit is reset and reports api error" do
-        expect(Raven).not_to receive(:capture_exception)
-        expect(api_client).
-          to receive(:record_update_job_error).
-          with(
+        expect(Sentry).not_to receive(:capture_exception)
+        expect(api_client)
+          .to receive(:record_update_job_error)
+          .with(
             error_details: { "rate-limit-reset": reset_at },
             error_type: "octokit_rate_limited"
           )
@@ -128,7 +233,7 @@ RSpec.describe Dependabot::FileFetcherCommand do
       end
     end
 
-    context "when vendoring dependencies", vcr: true do
+    context "when vendoring dependencies", :vcr do
       let(:job_definition) do
         JSON.parse(fixture("jobs/job_with_vendor_dependencies.json"))
       end
@@ -151,9 +256,9 @@ RSpec.describe Dependabot::FileFetcherCommand do
       end
     end
 
-    context "when package ecosystem always clones", vcr: true do
+    context "when package ecosystem always clones" do
       let(:job_definition) do
-        JSON.parse(fixture("jobs/job_with_go_modules.json"))
+        JSON.parse(fixture("jobs/job_with_dummy.json"))
       end
 
       before do
@@ -161,8 +266,6 @@ RSpec.describe Dependabot::FileFetcherCommand do
       end
 
       it "clones the repo" do
-        expect(api_client).not_to receive(:mark_job_as_processed)
-
         perform_job
 
         root_dir_entries = Dir.entries(Dependabot::Environment.repo_contents_path)
@@ -173,15 +276,15 @@ RSpec.describe Dependabot::FileFetcherCommand do
 
       context "when the fetcher raises a BranchNotFound error while cloning" do
         before do
-          allow_any_instance_of(Dependabot::GoModules::FileFetcher).
-            to receive(:clone_repo_contents).
-            and_raise(Dependabot::BranchNotFound, "my_branch")
+          allow_any_instance_of(DummyPackageManager::FileFetcher)
+            .to receive(:clone_repo_contents)
+            .and_raise(Dependabot::BranchNotFound, "my_branch")
         end
 
         it "tells the backend about the error (and doesn't re-raise it)" do
-          expect(api_client).
-            to receive(:record_update_job_error).
-            with(
+          expect(api_client)
+            .to receive(:record_update_job_error)
+            .with(
               error_details: { "branch-name": "my_branch" },
               error_type: "branch_not_found"
             )
@@ -193,15 +296,15 @@ RSpec.describe Dependabot::FileFetcherCommand do
 
       context "when the fetcher raises a OutOfDisk error while cloning" do
         before do
-          allow_any_instance_of(Dependabot::GoModules::FileFetcher).
-            to receive(:clone_repo_contents).
-            and_raise(Dependabot::OutOfDisk)
+          allow_any_instance_of(DummyPackageManager::FileFetcher)
+            .to receive(:clone_repo_contents)
+            .and_raise(Dependabot::OutOfDisk)
         end
 
         it "tells the backend about the error (and doesn't re-raise it)" do
-          expect(api_client).
-            to receive(:record_update_job_error).
-            with(
+          expect(api_client)
+            .to receive(:record_update_job_error)
+            .with(
               error_details: {},
               error_type: "out_of_disk"
             )
@@ -212,28 +315,30 @@ RSpec.describe Dependabot::FileFetcherCommand do
       end
     end
 
-    context "when the connectivity check is enabled", vcr: true do
+    context "when the connectivity check is enabled", :vcr do
       before do
         allow(ENV).to receive(:[]).and_call_original
         allow(ENV).to receive(:[]).with("ENABLE_CONNECTIVITY_CHECK").and_return("1")
       end
 
       it "logs connectivity is successful and does not raise an error" do
-        expect(Dependabot.logger).to receive(:info).with(/Connectivity check starting/)
-        expect(Dependabot.logger).to receive(:info).with(/Connectivity check successful/)
+        allow(Dependabot.logger).to receive(:info)
 
         expect { perform_job }.not_to raise_error
+
+        expect(Dependabot.logger).to have_received(:info).with(/Connectivity check starting/)
+        expect(Dependabot.logger).to have_received(:info).with(/Connectivity check successful/)
       end
 
       context "when connectivity is broken" do
         let(:mock_octokit) { instance_double(Octokit::Client) }
 
         before do
-          allow(Octokit::Client).
-            to receive(:new).
-            and_call_original
-          allow(Octokit::Client).
-            to receive(:new).with({
+          allow(Octokit::Client)
+            .to receive(:new)
+            .and_call_original
+          allow(Octokit::Client)
+            .to receive(:new).with({
               api_endpoint: "https://api.github.com/",
               connection_options: {
                 request: {
@@ -241,17 +346,20 @@ RSpec.describe Dependabot::FileFetcherCommand do
                   timeout: 5
                 }
               }
-            }).
-            and_return(mock_octokit)
-          allow(mock_octokit).to receive(:repository).
-            and_raise(Octokit::Error)
+            })
+                             .and_return(mock_octokit)
+          allow(mock_octokit).to receive(:repository)
+            .and_raise(Octokit::Error)
         end
 
         it "logs connectivity failed and does not raise an error" do
-          expect(Dependabot.logger).to receive(:info).with(/Connectivity check starting/)
-          expect(Dependabot.logger).to receive(:error).with(/Connectivity check failed/)
+          allow(Dependabot.logger).to receive(:info)
+          allow(Dependabot.logger).to receive(:error)
 
           expect { perform_job }.not_to raise_error
+
+          expect(Dependabot.logger).to have_received(:info).with(/Connectivity check starting/)
+          expect(Dependabot.logger).to have_received(:error).with(/Connectivity check failed/)
         end
       end
     end

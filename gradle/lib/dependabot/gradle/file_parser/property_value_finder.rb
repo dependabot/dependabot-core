@@ -1,4 +1,7 @@
+# typed: true
 # frozen_string_literal: true
+
+require "sorbet-runtime"
 
 require "dependabot/gradle/file_parser"
 
@@ -6,6 +9,8 @@ module Dependabot
   module Gradle
     class FileParser
       class PropertyValueFinder
+        extend T::Sig
+
         # rubocop:disable Layout/LineLength
         SUPPORTED_BUILD_FILE_NAMES = %w(build.gradle build.gradle.kts).freeze
 
@@ -111,14 +116,14 @@ module Dependabot
 
           @properties[buildfile.name] = {}
 
-          @properties[buildfile.name].
-            merge!(fetch_single_property_declarations(buildfile))
+          @properties[buildfile.name]
+            .merge!(fetch_single_property_declarations(buildfile))
 
-          @properties[buildfile.name].
-            merge!(fetch_kotlin_block_property_declarations(buildfile))
+          @properties[buildfile.name]
+            .merge!(fetch_kotlin_block_property_declarations(buildfile))
 
-          @properties[buildfile.name].
-            merge!(fetch_multi_property_declarations(buildfile))
+          @properties[buildfile.name]
+            .merge!(fetch_multi_property_declarations(buildfile))
 
           @properties[buildfile.name]
         end
@@ -128,8 +133,8 @@ module Dependabot
 
           prepared_content(buildfile).scan(SINGLE_PROPERTY_DECLARATION_REGEX) do
             declaration_string = Regexp.last_match.to_s.strip
-            captures = Regexp.last_match.named_captures
-            name = captures.fetch("name").sub(/^ext\./, "")
+            captures = T.must(Regexp.last_match).named_captures
+            name = T.must(captures.fetch("name")).sub(/^ext\./, "")
 
             unless properties.key?(name)
               properties[name] = {
@@ -146,28 +151,28 @@ module Dependabot
         def fetch_kotlin_block_property_declarations(buildfile)
           properties = {}
 
-          prepared_content(buildfile).
-            scan(KOTLIN_BLOCK_PROPERTY_DECLARATION_REGEX) do
-              captures = Regexp.last_match.named_captures
+          prepared_content(buildfile)
+            .scan(KOTLIN_BLOCK_PROPERTY_DECLARATION_REGEX) do
+              captures = T.must(Regexp.last_match).named_captures
               namespace = captures.fetch("namespace")
 
-              captures.fetch("values").
-                scan(KOTLIN_SINGLE_PROPERTY_SET_REGEX) do
-                  declaration_string = Regexp.last_match.to_s.strip
-                  sub_captures = Regexp.last_match.named_captures
-                  name = sub_captures.fetch("name")
-                  full_name = if namespace == "extra"
-                                name
-                              else
-                                [namespace, name].join(".")
-                              end
+              T.must(captures.fetch("values"))
+               .scan(KOTLIN_SINGLE_PROPERTY_SET_REGEX) do
+                declaration_string = Regexp.last_match.to_s.strip
+                sub_captures = T.must(Regexp.last_match).named_captures
+                name = sub_captures.fetch("name")
+                full_name = if namespace == "extra"
+                              name
+                            else
+                              [namespace, name].join(".")
+                            end
 
-                  properties[full_name] = {
-                    value: sub_captures.fetch("value"),
-                    declaration_string: declaration_string,
-                    file: buildfile.name
-                  }
-                end
+                properties[full_name] = {
+                  value: sub_captures.fetch("value"),
+                  declaration_string: declaration_string,
+                  file: buildfile.name
+                }
+              end
             end
 
           properties
@@ -177,12 +182,12 @@ module Dependabot
           properties = {}
 
           prepared_content(buildfile).scan(MULTI_PROPERTY_DECLARATION_REGEX) do
-            captures = Regexp.last_match.named_captures
-            namespace = captures.fetch("namespace").sub(/^ext\./, "")
+            captures = T.must(Regexp.last_match).named_captures
+            namespace = T.must(captures.fetch("namespace")).sub(/^ext\./, "")
 
-            captures.fetch("values").scan(NAMESPACED_DECLARATION_REGEX) do
+            T.must(captures.fetch("values")).scan(NAMESPACED_DECLARATION_REGEX) do
               declaration_string = Regexp.last_match.to_s.strip
-              sub_captures = Regexp.last_match.named_captures
+              sub_captures = T.must(Regexp.last_match).named_captures
               name = sub_captures.fetch("name")
               full_name = [namespace, name].join(".")
 
@@ -199,9 +204,9 @@ module Dependabot
 
         def prepared_content(buildfile)
           # Remove any comments
-          buildfile.content.
-            gsub(%r{(?<=^|\s)//.*$}, "\n").
-            gsub(%r{(?<=^|\s)/\*.*?\*/}m, "")
+          buildfile.content
+                   .gsub(%r{(?<=^|\s)//.*$}, "\n")
+                   .gsub(%r{(?<=^|\s)/\*.*?\*/}m, "")
         end
 
         def top_level_buildfile

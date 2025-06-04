@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -7,15 +8,8 @@ require "dependabot/bundler/file_parser"
 require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
 RSpec.describe Dependabot::Bundler::FileParser do
-  it_behaves_like "a dependency file parser"
-
-  let(:parser) do
-    described_class.new(
-      dependency_files: dependency_files,
-      source: source,
-      reject_external_code: reject_external_code
-    )
-  end
+  let(:reject_external_code) { false }
+  let(:dependency_files) { bundler_project_dependency_files("version_specified_gemfile") }
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -23,8 +17,15 @@ RSpec.describe Dependabot::Bundler::FileParser do
       directory: "/"
     )
   end
-  let(:dependency_files) { bundler_project_dependency_files("version_specified_gemfile") }
-  let(:reject_external_code) { false }
+  let(:parser) do
+    described_class.new(
+      dependency_files: dependency_files,
+      source: source,
+      reject_external_code: reject_external_code
+    )
+  end
+
+  it_behaves_like "a dependency file parser"
 
   describe "parse" do
     subject(:dependencies) { parser.parse }
@@ -34,6 +35,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
 
       describe "the first dependency" do
         subject { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: "~> 1.4.0",
@@ -49,13 +51,14 @@ RSpec.describe Dependabot::Bundler::FileParser do
         its(:version) { is_expected.to eq("1.4.0") }
       end
 
-      context "that is a pre-release with a dash" do
+      context "when that is a pre-release with a dash" do
         let(:dependency_files) { bundler_project_dependency_files("prerelease_with_dash_gemfile") }
 
         its(:length) { is_expected.to eq(2) }
 
         describe "the first dependency" do
           subject { dependencies.first }
+
           let(:expected_requirements) do
             [{
               requirement: "~> 1.4.0-rc1",
@@ -75,8 +78,10 @@ RSpec.describe Dependabot::Bundler::FileParser do
 
     context "with no version specified" do
       describe "the first dependency" do
-        let(:dependency_files) { bundler_project_dependency_files("version_not_specified") }
         subject { dependencies.first }
+
+        let(:dependency_files) { bundler_project_dependency_files("version_not_specified") }
+
         let(:expected_requirements) do
           [{
             requirement: ">= 0",
@@ -100,6 +105,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
 
       describe "the first dependency" do
         subject { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: "> 1.0.0, < 1.5.0",
@@ -115,10 +121,12 @@ RSpec.describe Dependabot::Bundler::FileParser do
 
     context "with development dependencies" do
       let(:dependency_files) { bundler_project_dependency_files("development_dependencies") }
+
       its(:length) { is_expected.to eq(2) }
 
       describe "the last dependency" do
         subject { dependencies.last }
+
         let(:expected_requirements) do
           [{
             requirement: "~> 1.4.0",
@@ -135,13 +143,14 @@ RSpec.describe Dependabot::Bundler::FileParser do
       end
     end
 
-    context "from a gems.rb and gems.locked" do
+    context "when using gems.rb and gems.locked" do
       let(:dependency_files) { bundler_project_dependency_files("version_specified_gems_rb") }
 
       its(:length) { is_expected.to eq(2) }
 
       describe "the first dependency" do
         subject { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: "~> 1.4.0",
@@ -163,38 +172,16 @@ RSpec.describe Dependabot::Bundler::FileParser do
 
       its(:length) { is_expected.to eq(5) }
 
-      describe "an untagged dependency", :bundler_v1_only do
+      describe "an untagged dependency" do
         subject { dependencies.find { |d| d.name == "uk_phone_numbers" } }
+
         let(:expected_requirements) do
           [{
             requirement: ">= 0",
             file: "Gemfile",
             source: {
               type: "git",
-              url: "http://github.com/dependabot-fixtures/uk_phone_numbers",
-              branch: nil,
-              ref: "master"
-            },
-            groups: [:default]
-          }]
-        end
-
-        it { is_expected.to be_a(Dependabot::Dependency) }
-        its(:requirements) { is_expected.to eq(expected_requirements) }
-        its(:version) do
-          is_expected.to eq("1530024bd6a68d36ac18e04836ce110e0d433c36")
-        end
-      end
-
-      describe "an untagged dependency", :bundler_v2_only do
-        subject { dependencies.find { |d| d.name == "uk_phone_numbers" } }
-        let(:expected_requirements) do
-          [{
-            requirement: ">= 0",
-            file: "Gemfile",
-            source: {
-              type: "git",
-              url: "http://github.com/dependabot-fixtures/uk_phone_numbers",
+              url: "https://github.com/dependabot-fixtures/uk_phone_numbers",
               branch: nil,
               ref: nil
             },
@@ -204,6 +191,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
 
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:requirements) { is_expected.to eq(expected_requirements) }
+
         its(:version) do
           is_expected.to eq("1530024bd6a68d36ac18e04836ce110e0d433c36")
         end
@@ -211,6 +199,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
 
       describe "a tagged dependency" do
         subject { dependencies.find { |d| d.name == "que" } }
+
         let(:expected_requirements) do
           [{
             requirement: ">= 0",
@@ -227,40 +216,17 @@ RSpec.describe Dependabot::Bundler::FileParser do
 
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:requirements) { is_expected.to eq(expected_requirements) }
+
         its(:version) do
           is_expected.to eq("997d1a6ee76a1f254fd72ce16acbc8d347fcaee3")
         end
       end
 
-      describe "a github dependency", :bundler_v1_only do
+      describe "a github dependency" do
+        subject { dependencies.find { |d| d.name == "business" } }
+
         let(:dependency_files) { bundler_project_dependency_files("github_source") }
 
-        subject { dependencies.find { |d| d.name == "business" } }
-        let(:expected_requirements) do
-          [{
-            requirement: ">= 0",
-            file: "Gemfile",
-            source: {
-              type: "git",
-              url: "https://github.com/dependabot-fixtures/business.git",
-              branch: nil,
-              ref: "master"
-            },
-            groups: [:default]
-          }]
-        end
-
-        it { is_expected.to be_a(Dependabot::Dependency) }
-        its(:requirements) { is_expected.to eq(expected_requirements) }
-        its(:version) do
-          is_expected.to eq("d31e445215b5af70c1604715d97dd953e868380e")
-        end
-      end
-
-      describe "a github dependency", :bundler_v2_only do
-        let(:dependency_files) { bundler_project_dependency_files("github_source") }
-
-        subject { dependencies.find { |d| d.name == "business" } }
         let(:expected_requirements) do
           [{
             requirement: ">= 0",
@@ -277,38 +243,17 @@ RSpec.describe Dependabot::Bundler::FileParser do
 
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:requirements) { is_expected.to eq(expected_requirements) }
+
         its(:version) do
           is_expected.to eq("d31e445215b5af70c1604715d97dd953e868380e")
         end
       end
 
-      context "with a subdependency of a git source", :bundler_v1_only do
+      context "with a subdependency of a git source" do
+        subject { dependencies.find { |d| d.name == "kaminari-actionview" } }
+
         let(:dependency_files) { bundler_project_dependency_files("git_source_undeclared") }
 
-        subject { dependencies.find { |d| d.name == "kaminari-actionview" } }
-        let(:expected_requirements) do
-          [{
-            requirement: ">= 0",
-            file: "Gemfile",
-            source: {
-              type: "git",
-              url: "https://github.com/dependabot-fixtures/kaminari",
-              branch: nil,
-              ref: "master"
-            },
-            groups: [:default]
-          }]
-        end
-
-        it { is_expected.to be_a(Dependabot::Dependency) }
-        its(:name) { is_expected.to eq("kaminari-actionview") }
-        its(:requirements) { is_expected.to eq(expected_requirements) }
-      end
-
-      context "with a subdependency of a git source", :bundler_v2_only do
-        let(:dependency_files) { bundler_project_dependency_files("git_source_undeclared") }
-
-        subject { dependencies.find { |d| d.name == "kaminari-actionview" } }
         let(:expected_requirements) do
           [{
             requirement: ">= 0",
@@ -329,7 +274,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
       end
     end
 
-    context "rejecting external code" do
+    context "when rejecting external code" do
       let(:reject_external_code) { true }
 
       context "with no git sources" do
@@ -361,6 +306,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
       let(:dependency_files) { bundler_project_dependency_files("subdependency") }
 
       its(:length) { is_expected.to eq(2) }
+
       it "is included" do
         expect(dependencies.map(&:name)).to include("i18n")
       end
@@ -370,17 +316,15 @@ RSpec.describe Dependabot::Bundler::FileParser do
       let(:dependency_files) { bundler_project_dependency_files("platform_windows") }
 
       its(:length) { is_expected.to eq(1) }
+
       it "is not included" do
-        expect(dependencies.map(&:name)).to_not include("statesman")
+        expect(dependencies.map(&:name)).not_to include("statesman")
       end
     end
 
     context "with a path-based dependency" do
       let(:dependency_files) do
-        bundler_project_dependency_files("path_source").tap do |files|
-          gemspec = files.find { |f| f.name == "plugins/example/example.gemspec" }
-          gemspec.support_file = true
-        end
+        bundler_project_dependency_files("path_source")
       end
 
       let(:expected_requirements) do
@@ -392,29 +336,30 @@ RSpec.describe Dependabot::Bundler::FileParser do
         }]
       end
 
-      its(:length) { is_expected.to eq(4) }
+      its(:length) { is_expected.to eq(15) }
 
       it "does not include the path dependency" do
-        expect(dependencies.map(&:name)).to_not include("example")
+        expect(dependencies.map(&:name)).not_to include("example")
       end
 
       it "includes the path dependency's sub-dependency" do
         sub_dep = dependencies.find { |dep| dep.name == "i18n" }
         expect(sub_dep.requirements).to eq([])
-        expect(sub_dep.top_level?).to eq(false)
+        expect(sub_dep.top_level?).to be(false)
       end
 
-      context "that comes from a .specification file" do
+      context "when that comes from a .specification file" do
         let(:dependency_files) { bundler_project_dependency_files("version_specified_gemfile_specification") }
 
         it "includes the path dependency" do
-          expect(dependencies.map(&:name)).to_not include("example")
+          expect(dependencies.map(&:name)).not_to include("example")
         end
       end
     end
 
     context "with a gem from a private gem source" do
       let(:dependency_files) { bundler_project_dependency_files("specified_source") }
+
       its(:length) { is_expected.to eq(2) }
 
       describe "the private dependency" do
@@ -442,17 +387,18 @@ RSpec.describe Dependabot::Bundler::FileParser do
       let(:dependency_files) { bundler_project_dependency_files("specified_plugin_source") }
 
       it "raises a helpful error" do
-        expect { parser.parse }.
-          to raise_error do |error|
+        expect { parser.parse }
+          .to raise_error do |error|
           expect(error.class).to eq(Dependabot::DependencyFileNotEvaluatable)
-          expect(error.message).
-            to include("No plugin sources available for aws-s3")
+          expect(error.message)
+            .to include("No plugin sources available for aws-s3")
         end
       end
     end
 
     context "with a gem from the default source, specified as a block" do
       let(:dependency_files) { bundler_project_dependency_files("block_source_rubygems") }
+
       its(:length) { is_expected.to eq(2) }
 
       describe "the first dependency" do
@@ -477,23 +423,23 @@ RSpec.describe Dependabot::Bundler::FileParser do
       let(:dependency_files) { bundler_project_dependency_files("unevaluatable_japanese_gemfile") }
 
       it "raises a helpful error" do
-        expect { parser.parse }.
-          to raise_error do |error|
+        expect { parser.parse }
+          .to raise_error do |error|
           expect(error.class).to eq(Dependabot::DependencyFileNotEvaluatable)
           expect(error.message.encoding.to_s).to eq("UTF-8")
         end
       end
 
-      context "because it contains an exec command" do
+      context "when it contains an exec command" do
         let(:dependency_files) { bundler_project_dependency_files("exec_error_gemfile") }
 
         it "raises a helpful error" do
-          expect { parser.parse }.
-            to raise_error do |error|
-            expect(error.message).
-              to start_with("Error evaluating your dependency files")
-            expect(error.class).
-              to eq(Dependabot::DependencyFileNotEvaluatable)
+          expect { parser.parse }
+            .to raise_error do |error|
+            expect(error.message)
+              .to start_with("Error evaluating your dependency files")
+            expect(error.class)
+              .to eq(Dependabot::DependencyFileNotEvaluatable)
           end
         end
       end
@@ -509,8 +455,8 @@ RSpec.describe Dependabot::Bundler::FileParser do
       let(:dependency_files) { bundler_project_dependency_files("includes_requires_gemfile") }
 
       it "blows up with a useful error" do
-        expect { parser.parse }.
-          to raise_error(Dependabot::DependencyFileNotEvaluatable)
+        expect { parser.parse }
+          .to raise_error(Dependabot::DependencyFileNotEvaluatable)
       end
     end
 
@@ -540,78 +486,30 @@ RSpec.describe Dependabot::Bundler::FileParser do
         let(:dependency_files) { bundler_project_dependency_files("imports_gemspec_from_path") }
 
         it "fetches details from the gemspec" do
-          expect(dependencies.map(&:name)).
-            to match_array(%w(business statesman))
+          expect(dependencies.map(&:name))
+            .to match_array(%w(business statesman))
           expect(dependencies.first.name).to eq("business")
-          expect(dependencies.first.requirements).
-            to match_array(
-              [{
-                file: "Gemfile",
-                requirement: "~> 1.4.0",
-                groups: [:default],
-                source: nil
-              }, {
-                file: "subdir/example.gemspec",
-                requirement: "~> 1.0",
-                groups: ["runtime"],
-                source: nil
-              }]
-            )
+          expect(dependencies.first.requirements)
+            .to contain_exactly({
+              file: "Gemfile",
+              requirement: "~> 1.4.0",
+              groups: [:default],
+              source: nil
+            }, {
+              file: "subdir/example.gemspec",
+              requirement: "~> 1.0",
+              groups: ["runtime"],
+              source: nil
+            })
         end
 
         context "with a gemspec with a float version number" do
           let(:dependency_files) { bundler_project_dependency_files("imports_gemspec_version_as_float") }
 
           it "includes the gemspec dependency" do
-            expect(dependencies.map(&:name)).
-              to match_array(%w(business statesman))
+            expect(dependencies.map(&:name))
+              .to match_array(%w(business statesman))
           end
-        end
-      end
-
-      context "with an unparseable git dep that also appears in the gemspec", :bundler_v1_only do
-        let(:dependency_files) { bundler_project_dependency_files("git_source_unparseable") }
-
-        it "includes source details on the gemspec requirement" do
-          expect(dependencies.map(&:name)).to match_array(%w(business))
-          expect(dependencies.first.name).to eq("business")
-          expect(dependencies.first.version).
-            to eq("1378a2b0b446d991b7567efbc7eeeed2720e4d8f")
-          expect(dependencies.first.requirements).
-            to match_array(
-              [{
-                file: "example.gemspec",
-                requirement: "~> 1.0",
-                groups: ["runtime"],
-                source: {
-                  type: "git",
-                  url: "git@github.com:dependabot-fixtures/business",
-                  branch: nil,
-                  ref: "master"
-                }
-              }]
-            )
-        end
-
-        it "includes source details on the gemspec requirement", :bundler_v2_only do
-          expect(dependencies.map(&:name)).to match_array(%w(business))
-          expect(dependencies.first.name).to eq("business")
-          expect(dependencies.first.version).
-            to eq("1378a2b0b446d991b7567efbc7eeeed2720e4d8f")
-          expect(dependencies.first.requirements).
-            to match_array(
-              [{
-                file: "example.gemspec",
-                requirement: "~> 1.0",
-                groups: ["runtime"],
-                source: {
-                  type: "git",
-                  url: "git@github.com:dependabot-fixtures/business",
-                  branch: nil,
-                  ref: nil
-                }
-              }]
-            )
         end
       end
 
@@ -619,25 +517,20 @@ RSpec.describe Dependabot::Bundler::FileParser do
         let(:dependency_files) { bundler_project_dependency_files("imports_two_gemspecs") }
 
         it "fetches details from both gemspecs" do
-          expect(dependencies.map(&:name)).
-            to match_array(%w(business statesman))
-          expect(dependencies.map(&:requirements)).
-            to match_array(
-              [
-                [{
-                  requirement: "~> 1.0",
-                  groups: ["runtime"],
-                  source: nil,
-                  file: "example.gemspec"
-                }],
-                [{
-                  requirement: "~> 1.0",
-                  groups: ["runtime"],
-                  source: nil,
-                  file: "example2.gemspec"
-                }]
-              ]
-            )
+          expect(dependencies.map(&:name))
+            .to match_array(%w(business statesman))
+          expect(dependencies.map(&:requirements))
+            .to contain_exactly([{
+              requirement: "~> 1.0",
+              groups: ["runtime"],
+              source: nil,
+              file: "example.gemspec"
+            }], [{
+              requirement: "~> 1.0",
+              groups: ["runtime"],
+              source: nil,
+              file: "example2.gemspec"
+            }])
         end
       end
 
@@ -655,12 +548,13 @@ RSpec.describe Dependabot::Bundler::FileParser do
           expect(diff_lcs.subdependency_metadata).to eq([{ production: false }])
 
           addressable = dependencies.find { |d| d.name == "addressable" }
-          expect(addressable.subdependency_metadata).
-            to eq([{ production: true }])
+          expect(addressable.subdependency_metadata)
+            .to eq([{ production: true }])
         end
 
         describe "a runtime gemspec dependency" do
           subject { dependencies.find { |dep| dep.name == "gitlab" } }
+
           let(:expected_requirements) do
             [{
               requirement: "~> 4.1",
@@ -678,6 +572,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
 
         describe "a development gemspec dependency" do
           subject { dependencies.find { |dep| dep.name == "webmock" } }
+
           let(:expected_requirements) do
             [{
               requirement: "~> 2.3.1",
@@ -693,7 +588,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
           its(:requirements) { is_expected.to eq(expected_requirements) }
         end
 
-        context "that needs to be sanitized" do
+        context "when that needs to be sanitized" do
           let(:dependency_files) { bundler_project_dependency_files("imports_gemspec_with_require") }
 
           it "includes details of each declaration" do
@@ -701,12 +596,12 @@ RSpec.describe Dependabot::Bundler::FileParser do
           end
         end
 
-        context "that can't be evaluated" do
+        context "when that can't be evaluated" do
           let(:dependency_files) { bundler_project_dependency_files("imports_gemspec_unevaluatable") }
 
           it "raises a helpful error" do
-            expect { parser.parse }.
-              to raise_error(Dependabot::DependencyFileNotEvaluatable)
+            expect { parser.parse }
+              .to raise_error(Dependabot::DependencyFileNotEvaluatable)
           end
         end
       end
@@ -716,18 +611,19 @@ RSpec.describe Dependabot::Bundler::FileParser do
       let(:dependency_files) { bundler_project_dependency_files("gemspec_loads_another") }
 
       describe "a development dependency loaded from an external gemspec" do
-        subject { dependencies.find { |d| d.name == "rake" } }
+        subject(:dependency) { dependencies.find { |d| d.name == "rake" } }
 
         it "is only loaded with its own gemspec as requirement" do
-          expect(subject.name).to eq("rake")
-          expect(subject.requirements.size).to eq(1)
-          expect(subject.requirements.first[:file]).to eq("another.gemspec")
+          expect(dependency.name).to eq("rake")
+          expect(dependency.requirements.size).to eq(1)
+          expect(dependency.requirements.first[:file]).to eq("another.gemspec")
         end
       end
     end
 
     context "with a gemspec and Gemfile (no lockfile)" do
       let(:dependency_files) { bundler_project_dependency_files("imports_gemspec_no_lockfile") }
+
       its(:length) { is_expected.to eq(13) }
 
       context "when a dependency appears in both" do
@@ -737,6 +633,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
 
         describe "the first dependency" do
           subject { dependencies.first }
+
           let(:expected_requirements) do
             [
               {
@@ -762,6 +659,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
           it { is_expected.to be_a(Dependabot::Dependency) }
           its(:name) { is_expected.to eq("business") }
           its(:version) { is_expected.to be_nil }
+
           its(:requirements) do
             is_expected.to match_array(expected_requirements)
           end
@@ -776,6 +674,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
 
       describe "the last dependency" do
         subject { dependencies.last }
+
         let(:expected_requirements) do
           [{
             requirement: ">= 0",
@@ -791,8 +690,9 @@ RSpec.describe Dependabot::Bundler::FileParser do
         its(:requirements) { is_expected.to eq(expected_requirements) }
       end
 
-      context "that needs to be sanitized" do
+      context "when that needs to be sanitized" do
         let(:dependency_files) { bundler_project_dependency_files("gemspec_with_require_no_lockfile") }
+
         its(:length) { is_expected.to eq(11) }
       end
     end
@@ -804,6 +704,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
 
       describe "the first dependency" do
         subject { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: "~> 1.4.0",
@@ -823,8 +724,42 @@ RSpec.describe Dependabot::Bundler::FileParser do
         let(:dependency_files) { bundler_project_dependency_files("platform_windows_no_lockfile") }
 
         its(:length) { is_expected.to eq(1) }
+
         it "is not included" do
-          expect(dependencies.map(&:name)).to_not include("statesman")
+          expect(dependencies.map(&:name)).not_to include("statesman")
+        end
+      end
+    end
+  end
+
+  describe "#package_manager" do
+    context "when there are no constraints" do
+      it "returns the correct package manager with no requirement" do
+        expect(parser.ecosystem.package_manager).to be_a(Dependabot::Bundler::PackageManager)
+        expect(parser.ecosystem.package_manager.requirement).to be_nil
+      end
+    end
+
+    context "when there are constraints" do
+      context "when bundler requirement specified in the Gemfile" do
+        let(:dependency_files) { bundler_project_dependency_files("bundler_specified") }
+
+        it "returns the correct package manager with requirement" do
+          expect(parser.ecosystem.package_manager).to be_a(Dependabot::Bundler::PackageManager)
+          expect(parser.ecosystem.package_manager.requirement).to be_a(Dependabot::Bundler::Requirement)
+          expect(parser.ecosystem.package_manager.requirement.min_version).to eq(Dependabot::Version.new("2.3.0"))
+          expect(parser.ecosystem.package_manager.requirement.max_version).to eq(Dependabot::Version.new("2.4.0"))
+        end
+      end
+
+      context "when bundler requirement specified in .gemspec" do
+        let(:dependency_files) { bundler_project_dependency_files("gemfile_example") }
+
+        it "returns the correct package manager with requirement" do
+          expect(parser.ecosystem.package_manager).to be_a(Dependabot::Bundler::PackageManager)
+          expect(parser.ecosystem.package_manager.requirement).to be_a(Dependabot::Bundler::Requirement)
+          expect(parser.ecosystem.package_manager.requirement.min_version).to eq(Dependabot::Version.new("1.12.0"))
+          expect(parser.ecosystem.package_manager.requirement.max_version).to be_nil
         end
       end
     end

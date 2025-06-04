@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "octokit"
@@ -5,8 +6,6 @@ require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/pull_request_creator/branch_namer"
-require "dependabot/pull_request_creator/branch_namer/solo_strategy"
-require "dependabot/pull_request_creator/branch_namer/group_rule_strategy"
 
 RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
   subject(:namer) do
@@ -49,6 +48,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
 
   describe "#new_branch_name" do
     subject(:new_branch_name) { namer.new_branch_name }
+
     it { is_expected.to eq("dependabot/dummy/business-1.5.0") }
 
     context "with directory" do
@@ -63,12 +63,12 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
 
       it { is_expected.to eq("dependabot/dummy/directory/business-1.5.0") }
 
-      context "that starts with a dot" do
+      context "when the directory name starts with a dot" do
         let(:directory) { ".directory" }
 
-        it "santizes the dot" do
-          expect(new_branch_name).
-            to eq("dependabot/dummy/dot-directory/business-1.5.0")
+        it "sanitizes the dot" do
+          expect(new_branch_name)
+            .to eq("dependabot/dummy/dot-directory/business-1.5.0")
         end
       end
     end
@@ -172,16 +172,16 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
         )
       end
 
-      it { is_expected.to eq("dependabot/dummy/business-and-statesman-1.5.0") }
+      it { is_expected.to eq("dependabot/dummy/multi-fc93691fd4") }
 
-      context "for a java property update" do
+      context "when dealing with a java property update" do
         let(:files) { [pom] }
         let(:pom) do
           Dependabot::DependencyFile.new(name: "pom.xml", content: pom_content)
         end
         let(:pom_content) do
-          fixture("java", "poms", "property_pom.xml").
-            gsub("4.3.12.RELEASE", "23.6-jre")
+          fixture("java", "poms", "property_pom.xml")
+            .gsub("4.3.12.RELEASE", "23.6-jre")
         end
         let(:dependencies) do
           [
@@ -229,11 +229,11 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
         end
 
         it do
-          is_expected.to eq("dependabot/maven/springframework.version-23.6-jre")
+          expect(new_branch_name).to eq("dependabot/maven/springframework.version-23.6-jre")
         end
       end
 
-      context "for a dependency set update" do
+      context "when dealing with a dependency set update" do
         let(:dependencies) { [dependency, dep2] }
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -326,7 +326,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
         )
       end
 
-      it { is_expected.to eq("dependabot/dummy/business-and-statesman--removed") }
+      it { is_expected.to eq("dependabot/dummy/multi-068ffedafd") }
     end
 
     context "with a : in the name" do
@@ -352,8 +352,8 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
       end
 
       it "replaces the colon with a hyphen" do
-        expect(new_branch_name).
-          to eq("dependabot/java/com.google.guava-guava-23.6-jre")
+        expect(new_branch_name)
+          .to eq("dependabot/java/com.google.guava-guava-23.6-jre")
       end
     end
 
@@ -369,8 +369,8 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
       end
 
       it "strips @ character" do
-        expect(new_branch_name).
-          to eq("dependabot/npm_and_yarn/storybook/addon-knobs-5.1.9")
+        expect(new_branch_name)
+          .to eq("dependabot/npm_and_yarn/storybook/addon-knobs-5.1.9")
       end
     end
 
@@ -386,8 +386,8 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
       end
 
       it "replaces the brackets with hyphens" do
-        expect(new_branch_name).
-          to eq("dependabot/pip/werkzeug-watchdog--0.16.0")
+        expect(new_branch_name)
+          .to eq("dependabot/pip/werkzeug-watchdog--0.16.0")
       end
     end
 
@@ -403,8 +403,8 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
       end
 
       it "strips the invalid character" do
-        expect(new_branch_name).
-          to eq("dependabot/pip/werkzeug-0.16.0")
+        expect(new_branch_name)
+          .to eq("dependabot/pip/werkzeug-0.16.0")
       end
     end
 
@@ -422,8 +422,9 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
 
       it { is_expected.to eq("dependabot/dummy/business-tw-1.5.0") }
 
-      context "that has a trailing dot" do
+      context "when there is a trailing dot" do
         let(:requirement_string) { "^7." }
+
         it { is_expected.to eq("dependabot/dummy/business-tw-7") }
       end
     end
@@ -466,7 +467,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
         expect(new_branch_name).to eq("dependabot/dummy/business-cff701b")
       end
 
-      context "due to a ref change" do
+      context "when there is a ref change" do
         let(:new_ref) { "v1.1.0" }
         let(:old_ref) { "v1.0.0" }
 
@@ -474,7 +475,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
           expect(new_branch_name).to eq("dependabot/dummy/business-v1.1.0")
         end
 
-        context "for a library" do
+        context "when dealing with a library" do
           let(:new_version) { nil }
           let(:previous_version) { nil }
 
@@ -520,7 +521,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
         expect(new_branch_name).to eq("dependabot/docker/ubuntu-1830542")
       end
 
-      context "due to a tag change" do
+      context "when there is a tag change" do
         let(:previous_version) { "17.04" }
 
         it "includes the tag rather than the SHA" do
@@ -657,7 +658,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
       end
     end
 
-    context "when no group rule is present" do
+    context "when no dependency group is present" do
       it "delegates to a solo strategy" do
         strategy = instance_double(described_class::SoloStrategy)
         allow(described_class::SoloStrategy).to receive(:new).and_return(strategy)
@@ -667,32 +668,51 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
             dependencies: dependencies,
             files: files,
             target_branch: target_branch,
-            group_rule: nil
+            dependency_group: nil
           )
 
-        expect(strategy).to receive(:new_branch_name)
+        expect(strategy).to receive(:new_branch_name).and_return("dependabot/dummy/business-1.1.0")
 
         branch_namer.new_branch_name
       end
     end
 
-    context "when a group rule is present" do
-      it "delegates to a group rule strategy" do
-        strategy = instance_double(described_class::GroupRuleStrategy)
-        allow(described_class::GroupRuleStrategy).to receive(:new).and_return(strategy)
+    context "when a dependency group is present" do
+      it "delegates to a dependency group strategy" do
+        strategy = instance_double(described_class::DependencyGroupStrategy)
+        allow(described_class::DependencyGroupStrategy).to receive(:new).and_return(strategy)
 
-        group_rule = double("GroupRule", name: "my_group_rule")
+        dependency_group = double("DependencyGroup", name: "my_dependency_group")
         branch_namer =
           described_class.new(
             dependencies: dependencies,
             files: files,
             target_branch: target_branch,
-            group_rule: group_rule
+            dependency_group: dependency_group
           )
 
-        expect(strategy).to receive(:new_branch_name)
+        expect(strategy).to receive(:new_branch_name).and_return("dependabot/dummy/business-1.1.0")
 
         branch_namer.new_branch_name
+      end
+    end
+
+    context "when a multi-ecosystem is present" do
+      it "delegates to a multi-ecosystem strategy" do
+        strategy = instance_double(described_class::MultiEcosystemStrategy)
+        allow(described_class::MultiEcosystemStrategy).to receive(:new).and_return(strategy)
+
+        branch_namer =
+          described_class.new(
+            dependencies: dependencies,
+            files: files,
+            target_branch: target_branch,
+            multi_ecosystem_name: "multi_ecosystem"
+          )
+
+        expect(strategy).to receive(:new_branch_name).and_return("dependabot/multi_ecosystem")
+
+        expect(branch_namer.new_branch_name).to eq("dependabot/multi_ecosystem")
       end
     end
   end

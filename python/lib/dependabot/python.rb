@@ -1,3 +1,4 @@
+# typed: strict
 # frozen_string_literal: true
 
 # These all need to be required so the various classes can be registered in a
@@ -12,8 +13,8 @@ require "dependabot/python/version"
 require "dependabot/python/name_normaliser"
 
 require "dependabot/pull_request_creator/labeler"
-Dependabot::PullRequestCreator::Labeler.
-  register_label_details("pip", name: "python", colour: "2b67c6")
+Dependabot::PullRequestCreator::Labeler
+  .register_label_details("pip", name: "python", colour: "2b67c6")
 
 require "dependabot/dependency"
 Dependabot::Dependency.register_production_check(

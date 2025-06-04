@@ -2,4 +2,4 @@ source "https://rubygems.org"
 
 gem "business", "~> 1.4"
 gem "statesman", "~> 1.2"
-gem "unresolvable_gem_name"
+gem "dependabot-omnibus", "999999"

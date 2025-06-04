@@ -1,0 +1,6 @@
+inherit_from: ../.rubocop.yml
+
+Sorbet/StrictSigil:
+  Exclude:
+    - lib/dependabot/silent/requirement.rb
+    - lib/dependabot/silent/update_checker.rb

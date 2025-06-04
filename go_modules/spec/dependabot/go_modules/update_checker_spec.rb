@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -7,44 +8,6 @@ require "dependabot/go_modules/update_checker"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::GoModules::UpdateChecker do
-  it_behaves_like "an update checker"
-
-  let(:checker) do
-    described_class.new(
-      dependency: dependency,
-      dependency_files: dependency_files,
-      credentials: github_credentials,
-      security_advisories: security_advisories,
-      ignored_versions: []
-    )
-  end
-
-  let(:security_advisories) { [] }
-
-  let(:dependency) do
-    Dependabot::Dependency.new(
-      name: dependency_name,
-      version: dependency_version,
-      requirements: requirements,
-      package_manager: "go_modules"
-    )
-  end
-  let(:dependency_name) { "github.com/dependabot-fixtures/go-modules-lib" }
-  let(:dependency_version) { "1.0.0" }
-  let(:requirements) do
-    [{
-      file: "go.mod",
-      requirement: dependency_version,
-      groups: [],
-      source: { type: "default", source: dependency_name }
-    }]
-  end
-  let(:go_mod_content) do
-    <<~GOMOD
-      module foobar
-      require #{dependency_name} v#{dependency_version}
-    GOMOD
-  end
   let(:dependency_files) do
     [
       Dependabot::DependencyFile.new(
@@ -53,21 +16,59 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
       )
     ]
   end
+  let(:go_mod_content) do
+    <<~GOMOD
+      module foobar
+      require #{dependency_name} v#{dependency_version}
+    GOMOD
+  end
+  let(:requirements) do
+    [{
+      file: "go.mod",
+      requirement: dependency_version,
+      groups: [],
+      source: { type: "default", source: dependency_name }
+    }]
+  end
+  let(:dependency_version) { "1.0.0" }
+  let(:dependency_name) { "github.com/dependabot-fixtures/go-modules-lib" }
+  let(:dependency) do
+    Dependabot::Dependency.new(
+      name: dependency_name,
+      version: dependency_version,
+      requirements: requirements,
+      package_manager: "go_modules"
+    )
+  end
+  let(:security_advisories) { [] }
+  let(:expected_cooldown_options) { nil }
+  let(:checker) do
+    described_class.new(
+      dependency: dependency,
+      dependency_files: dependency_files,
+      credentials: github_credentials,
+      security_advisories: security_advisories,
+      ignored_versions: [],
+      update_cooldown: expected_cooldown_options
+    )
+  end
+
+  it_behaves_like "an update checker"
 
   describe "#latest_resolvable_version" do
     subject(:latest_resolvable_version) { checker.latest_resolvable_version }
 
     context "when a supported newer version is available" do
       it "updates to the newer version" do
-        is_expected.to eq(Dependabot::GoModules::Version.new("1.1.0"))
+        expect(latest_resolvable_version).to eq(Dependabot::GoModules::Version.new("1.1.0"))
       end
     end
 
-    context "updates indirect dependencies" do
+    context "when updating indirect dependencies" do
       let(:requirements) { [] }
 
       it "updates to the newer version" do
-        is_expected.to eq(Dependabot::GoModules::Version.new("1.1.0"))
+        expect(latest_resolvable_version).to eq(Dependabot::GoModules::Version.new("1.1.0"))
       end
     end
 
@@ -96,7 +97,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
 
     context "when a supported newer version is available" do
       it "updates to the least new supported version" do
-        is_expected.to eq(Dependabot::GoModules::Version.new("1.0.5"))
+        expect(lowest_security_fix_version).to eq(Dependabot::GoModules::Version.new("1.0.5"))
       end
     end
   end
@@ -118,22 +119,22 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
 
     context "when a supported newer version is available" do
       it "updates to the least new supported version" do
-        is_expected.to eq(Dependabot::GoModules::Version.new("1.0.5"))
+        expect(lowest_resolvable_security_fix_version).to eq(Dependabot::GoModules::Version.new("1.0.5"))
       end
     end
 
-    context "updates indirect dependencies" do
+    context "when updating indirect dependencies" do
       let(:requirements) { [] }
 
       it "updates to the least new supported version" do
-        is_expected.to eq(Dependabot::GoModules::Version.new("1.0.5"))
+        expect(lowest_resolvable_security_fix_version).to eq(Dependabot::GoModules::Version.new("1.0.5"))
       end
     end
 
     context "when the current version is not vulnerable" do
       let(:dependency_version) { "1.0.0" }
 
-      it "raises an error " do
+      it "raises an error" do
         expect { lowest_resolvable_security_fix_version.to }.to raise_error(RuntimeError) do |error|
           expect(error.message).to eq("Dependency not vulnerable!")
         end
@@ -157,7 +158,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
 
     context "when the current version is vulnerable" do
       it "returns true" do
-        is_expected.to eq(true)
+        expect(vulnerable?).to be(true)
       end
     end
 
@@ -165,7 +166,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
       let(:dependency_version) { "1.0.1" }
 
       it "returns false" do
-        is_expected.to eq(false)
+        expect(vulnerable?).to be(false)
       end
     end
 
@@ -183,7 +184,28 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
       end
 
       it "returns true" do
-        is_expected.to eq(true)
+        expect(vulnerable?).to be(true)
+      end
+    end
+  end
+
+  describe "with cooldown options" do
+    subject(:latest_resolvable_version) { checker.latest_resolvable_version }
+
+    let(:expected_cooldown_options) do
+      Dependabot::Package::ReleaseCooldownOptions.new(
+        default_days: 7,
+        semver_major_days: 7,
+        semver_minor_days: 7,
+        semver_patch_days: 7,
+        include: [],
+        exclude: []
+      )
+    end
+
+    context "when a supported newer version is available" do
+      it "updates to the newer version" do
+        expect(latest_resolvable_version).to eq(Dependabot::GoModules::Version.new("1.1.0"))
       end
     end
   end

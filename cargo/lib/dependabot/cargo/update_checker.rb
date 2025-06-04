@@ -1,6 +1,8 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/git_commit_checker"
+require "dependabot/requirements_update_strategy"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 
@@ -75,8 +77,16 @@ module Dependabot
         ).updated_requirements
       end
 
+      def requirements_unlocked_or_can_be?
+        !requirements_update_strategy.lockfile_only?
+      end
+
       def requirements_update_strategy
-        library? ? :bump_versions_if_necessary : :bump_versions
+        # If passed in as an option (in the base class) honour that option
+        return @requirements_update_strategy if @requirements_update_strategy
+
+        # Otherwise, widen ranges for libraries and bump versions for apps
+        library? ? RequirementsUpdateStrategy::BumpVersionsIfNecessary : RequirementsUpdateStrategy::BumpVersions
       end
 
       private
@@ -106,14 +116,16 @@ module Dependabot
       end
 
       def latest_version_finder
-        @latest_version_finder ||= LatestVersionFinder.new(
-          dependency: dependency,
-          dependency_files: dependency_files,
-          credentials: credentials,
-          ignored_versions: ignored_versions,
-          raise_on_ignored: raise_on_ignored,
-          security_advisories: security_advisories
-        )
+        @latest_version_finder ||=
+          LatestVersionFinder.new(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            credentials: credentials,
+            ignored_versions: ignored_versions,
+            security_advisories: security_advisories,
+            cooldown_options: update_cooldown,
+            raise_on_ignored: raise_on_ignored
+          )
       end
 
       def latest_version_for_git_dependency
@@ -252,12 +264,7 @@ module Dependabot
       end
 
       def dependency_source_details
-        sources =
-          dependency.requirements.map { |r| r.fetch(:source) }.uniq.compact
-
-        raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1
-
-        sources.first
+        dependency.source_details
       end
 
       def git_dependency?
@@ -271,12 +278,7 @@ module Dependabot
       end
 
       def path_dependency?
-        sources = dependency.requirements.
-                  map { |r| r.fetch(:source) }.uniq.compact
-
-        raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1
-
-        sources.first&.fetch(:type) == "path"
+        dependency.source_type == "path"
       end
 
       def git_commit_checker

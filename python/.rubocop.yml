@@ -1,1 +1,22 @@
-inherit_from: ../omnibus/.rubocop.yml
+inherit_from: ../.rubocop.yml
+
+inherit_mode:
+  merge:
+    - Exclude
+
+Sorbet/StrictSigil:
+  Exclude:
+    - lib/dependabot/python/authed_url_builder.rb
+    - lib/dependabot/python/file_fetcher.rb
+    - lib/dependabot/python/file_updater/requirement_file_updater.rb
+    - lib/dependabot/python/file_updater/requirement_replacer.rb
+    - lib/dependabot/python/file_updater/setup_file_sanitizer.rb
+    - lib/dependabot/python/package/package_registry_finder.rb
+    - lib/dependabot/python/requirement.rb
+    - lib/dependabot/python/update_checker/pip_compile_version_resolver.rb
+    - lib/dependabot/python/update_checker/pip_version_resolver.rb
+    - lib/dependabot/python/update_checker/pipenv_version_resolver.rb
+    - lib/dependabot/python/update_checker/poetry_version_resolver.rb
+    - lib/dependabot/python/update_checker/requirements_updater.rb
+    - lib/dependabot/python/update_checker.rb
+    - lib/dependabot/python/version.rb

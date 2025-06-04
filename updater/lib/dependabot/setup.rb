@@ -1,16 +1,23 @@
+# typed: strict
 # frozen_string_literal: true
 
+require "sentry-ruby"
+require "sorbet-runtime"
+
+require "dependabot/environment"
 require "dependabot/logger"
 require "dependabot/logger/formats"
-require "dependabot/environment"
+require "dependabot/opentelemetry"
+require "dependabot/sentry"
+require "dependabot/sorbet/runtime"
 
 Dependabot.logger = Logger.new($stdout).tap do |logger|
   logger.level = Dependabot::Environment.log_level
   logger.formatter = Dependabot::Logger::BasicFormatter.new
 end
 
-require "dependabot/sentry"
-Raven.configure do |config|
+Sentry.init do |config|
+  config.release = ENV.fetch("DEPENDABOT_UPDATER_VERSION")
   config.logger = Dependabot.logger
   config.project_root = File.expand_path("../../..", __dir__)
 
@@ -23,30 +30,42 @@ Raven.configure do |config|
     terraform|
     elm|
     docker|
+    docker_compose|
+    dotnet_sdk|
     git_submodules|
     github_actions|
     composer|
     nuget|
     gradle|
     maven|
+    helm|
     hex|
     cargo|
     go_modules|
     npm_and_yarn|
     bundler|
-    pub
+    pub|
+    silent|
+    swift|
+    uv|
+    devcontainers
   )}x
 
-  config.processors += [ExceptionSanitizer]
+  config.before_send = ->(event, hint) { Dependabot::Sentry.process_chain(event, hint) }
+  config.propagate_traces = false
+  config.instrumenter = ::Dependabot::OpenTelemetry.should_configure? ? :otel : :sentry
 end
 
-# We configure `Dependabot::Utils.register_always_clone` for some ecosystems. In
-# order for that configuration to take effect, we need to make sure that these
-# registration commands have been executed.
+Dependabot::OpenTelemetry.configure
+Dependabot::Sorbet::Runtime.silently_report_errors!
+
+# Ecosystems
 require "dependabot/python"
 require "dependabot/terraform"
 require "dependabot/elm"
 require "dependabot/docker"
+require "dependabot/docker_compose"
+require "dependabot/dotnet_sdk"
 require "dependabot/git_submodules"
 require "dependabot/github_actions"
 require "dependabot/composer"
@@ -54,8 +73,14 @@ require "dependabot/nuget"
 require "dependabot/gradle"
 require "dependabot/maven"
 require "dependabot/hex"
+require "dependabot/helm"
 require "dependabot/cargo"
 require "dependabot/go_modules"
 require "dependabot/npm_and_yarn"
 require "dependabot/bundler"
 require "dependabot/pub"
+require "dependabot/silent"
+require "dependabot/swift"
+require "dependabot/devcontainers"
+require "dependabot/bun"
+require "dependabot/uv"

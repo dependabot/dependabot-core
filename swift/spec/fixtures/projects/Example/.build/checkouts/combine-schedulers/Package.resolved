@@ -1,0 +1,16 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "xctest-dynamic-overlay",
+        "repositoryURL": "https://github.com/pointfreeco/xctest-dynamic-overlay",
+        "state": {
+          "branch": null,
+          "revision": "f821dcbac7cb6913f8e0d1a80496d0ba0199fa81",
+          "version": "0.3.0"
+        }
+      }
+    ]
+  },
+  "version": 1
+}

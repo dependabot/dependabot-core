@@ -1,14 +1,19 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/registry_client"
 require "dependabot/bundler/native_helpers"
 require "dependabot/bundler/helpers"
+require "dependabot/bundler/update_checker/latest_version_finder"
+require "sorbet-runtime"
 
 module Dependabot
   module Bundler
     class UpdateChecker
-      class LatestVersionFinder
+      class LatestVersionFinder < Dependabot::Package::PackageLatestVersionFinder
         class DependencySource
+          extend T::Sig
+
           require_relative "../shared_bundler_helpers"
           include SharedBundlerHelpers
 
@@ -17,8 +22,11 @@ module Dependabot
           GIT = "git"
           OTHER = "other"
 
-          attr_reader :dependency, :dependency_files, :repo_contents_path,
-                      :credentials, :options
+          attr_reader :dependency
+          attr_reader :dependency_files
+          attr_reader :repo_contents_path
+          attr_reader :credentials
+          attr_reader :options
 
           def initialize(dependency:,
                          dependency_files:,
@@ -32,7 +40,7 @@ module Dependabot
 
           # The latest version details for the dependency from a registry
           #
-          # @return [Array<Gem::Version>]
+          sig { returns(T::Array[Dependabot::Bundler::Version]) }
           def versions
             return rubygems_versions if dependency.name == "bundler"
             return rubygems_versions unless gemfile
@@ -54,14 +62,14 @@ module Dependabot
             return unless git?
 
             source_details =
-              dependency.requirements.map { |r| r.fetch(:source) }.
-              uniq.compact.first
+              dependency.requirements.map { |r| r.fetch(:source) }
+                        .uniq.compact.first
 
             SharedHelpers.with_git_configured(credentials: credentials) do
               in_a_native_bundler_context do |tmp_dir|
                 NativeHelpers.run_bundler_subprocess(
                   bundler_version: bundler_version,
-                  function: "depencency_source_latest_git_version",
+                  function: "dependency_source_latest_git_version",
                   options: options,
                   args: {
                     dir: tmp_dir,
@@ -86,11 +94,12 @@ module Dependabot
             @rubygems_versions ||=
               begin
                 response = Dependabot::RegistryClient.get(
-                  url: dependency_rubygems_uri
+                  url: dependency_rubygems_uri,
+                  headers: { "Accept-Encoding" => "gzip" }
                 )
 
-                JSON.parse(response.body).
-                  map { |d| Gem::Version.new(d["number"]) }
+                JSON.parse(response.body)
+                    .map { |d| Dependabot::Bundler::Version.new(d["number"]) }
               end
           rescue JSON::ParserError, Excon::Error::Timeout
             @rubygems_versions = []
@@ -114,7 +123,7 @@ module Dependabot
                     credentials: credentials
                   }
                 ).map do |version_string|
-                  Gem::Version.new(version_string)
+                  Dependabot::Bundler::Version.new(version_string)
                 end
               end
           end

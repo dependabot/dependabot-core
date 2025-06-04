@@ -1,0 +1,8 @@
+<Project>
+  <Import Project="DependencyDiscovery.props" />
+
+  <Target Name="ReportTargetFramework">
+    <Message Text="ProjectData::TargetFrameworkMoniker=$(TargetFrameworkMoniker);ProjectData::TargetPlatformMoniker=$(TargetPlatformMoniker)" Importance="High" Condition="'$(TargetFrameworkMoniker)' != ''" />
+    <Message Text="ProjectData::TargetFrameworks=$(TargetFrameworks)" Importance="High" Condition="'$(TargetFrameworks)' != ''" />
+  </Target>
+</Project>

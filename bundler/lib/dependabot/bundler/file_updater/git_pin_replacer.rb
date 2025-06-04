@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "parser/current"
@@ -7,7 +8,8 @@ module Dependabot
   module Bundler
     class FileUpdater
       class GitPinReplacer
-        attr_reader :dependency, :new_pin
+        attr_reader :dependency
+        attr_reader :new_pin
 
         def initialize(dependency:, new_pin:)
           @dependency = dependency
@@ -19,14 +21,15 @@ module Dependabot
           buffer.source = content
           ast = Parser::CurrentRuby.new.parse(buffer)
 
-          Rewriter.
-            new(dependency: dependency, new_pin: new_pin).
-            rewrite(buffer, ast)
+          Rewriter
+            .new(dependency: dependency, new_pin: new_pin)
+            .rewrite(buffer, ast)
         end
 
         class Rewriter < Parser::TreeRewriter
           PIN_KEYS = %i(ref tag).freeze
-          attr_reader :dependency, :new_pin
+          attr_reader :dependency
+          attr_reader :new_pin
 
           def initialize(dependency:, new_pin:)
             @dependency = dependency

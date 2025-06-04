@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "octokit"
@@ -36,9 +37,9 @@ RSpec.describe Dependabot::PullRequestUpdater do
       let(:dummy_updater) { instance_double(described_class::Github) }
 
       it "delegates to PullRequestUpdater::Github with correct params" do
-        expect(described_class::Github).
-          to receive(:new).
-          with(
+        expect(described_class::Github)
+          .to receive(:new)
+          .with(
             source: source,
             base_commit: base_commit,
             old_commit: old_commit,
@@ -59,9 +60,9 @@ RSpec.describe Dependabot::PullRequestUpdater do
       let(:provider_metadata) { { target_project_id: 1 } }
 
       it "delegates to PullRequestUpdater::Gitlab with correct params" do
-        expect(described_class::Gitlab).
-          to receive(:new).
-          with(
+        expect(described_class::Gitlab)
+          .to receive(:new)
+          .with(
             source: source,
             base_commit: base_commit,
             old_commit: old_commit,
@@ -81,9 +82,9 @@ RSpec.describe Dependabot::PullRequestUpdater do
       let(:author_details) { { email: "support@dependabot.com", name: "dependabot" } }
 
       it "delegates to PullRequestUpdater::Azure with correct params" do
-        expect(described_class::Azure).
-          to receive(:new).
-          with(
+        expect(described_class::Azure)
+          .to receive(:new)
+          .with(
             source: source,
             base_commit: base_commit,
             old_commit: old_commit,
@@ -103,8 +104,8 @@ RSpec.describe Dependabot::PullRequestUpdater do
       end
 
       it "raise an error" do
-        expect { updater.update }.
-          to raise_error(RuntimeError, "Unexpected provider 'unknown'")
+        expect { updater.update }
+          .to raise_error(RuntimeError, "Unexpected provider 'unknown'")
       end
     end
   end

@@ -1,0 +1,7 @@
+name: _
+environment:
+  sdk: ^3.5.0
+dependencies:
+  path: 1.9.0 # Already at latest
+workspace:
+  - app

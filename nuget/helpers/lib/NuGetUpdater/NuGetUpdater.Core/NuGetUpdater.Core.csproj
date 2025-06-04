@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(CommonTargetFramework)</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <Nullable>enable</Nullable>
+    <GeneratePathProperty>true</GeneratePathProperty>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="DependencyDiscovery.props" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="DependencyDiscoveryTargetingPacks.props" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="DependencyDiscovery.targets" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="TargetFrameworkReporter.targets" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DotNetPackageCorrelation\DotNetPackageCorrelation.csproj" />
+    <ProjectReference Include="..\NuGetProjects\NuGet.CommandLine\NuGet.CommandLine.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="GuiLabs.Language.Xml" />
+    <PackageReference Include="DiffPlex" />
+    <PackageReference Include="Microsoft.Build.Locator" />
+    <PackageReference Include="Microsoft.Extensions.Logging" />
+    <PackageReference Include="MSBuild.StructuredLogger" />
+    <PackageReference Include="NuGet.Core" Aliases="CoreV2" />
+    <PackageReference Include="Microsoft.VisualStudio.SolutionPersistence" />
+    <PackageReference Include="OpenTelemetry" />
+    <PackageReference Include="OpenTelemetry.Exporter.Console" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="NuGetUpdater.Cli" />
+    <InternalsVisibleTo Include="NuGetUpdater.Cli.Test" />
+    <InternalsVisibleTo Include="NuGetUpdater.Core.Test" />
+  </ItemGroup>
+
+  <Import Project="EnsureDotNetPackageCorrelation.targets" />
+
+</Project>

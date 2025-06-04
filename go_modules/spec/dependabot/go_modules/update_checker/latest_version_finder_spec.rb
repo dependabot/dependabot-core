@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -49,6 +50,8 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
 
   let(:goprivate) { "*" }
 
+  let(:cooldown_options) { nil }
+
   let(:finder) do
     described_class.new(
       dependency: dependency,
@@ -57,15 +60,20 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
       ignored_versions: ignored_versions,
       security_advisories: security_advisories,
       raise_on_ignored: raise_on_ignored,
-      goprivate: goprivate
+      goprivate: goprivate,
+      cooldown_options: cooldown_options
     )
+  end
+
+  before do
+    ENV["GOTOOLCHAIN"] = "local"
   end
 
   describe "#latest_version" do
     context "when there's a newer major version but not a new minor version" do
       before do
-        allow(Dependabot::SharedHelpers).
-          to receive(:run_shell_command).and_call_original
+        allow(Dependabot::SharedHelpers)
+          .to receive(:run_shell_command).and_call_original
       end
 
       it "returns the latest minor version for the dependency's current major version" do
@@ -79,11 +87,11 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
           # The Go proxy can return unexpected results, so better to check that the env was set with a spy
           expect(finder.latest_version).instance_of?(Dependabot::GoModules::Version)
 
-          expect(Dependabot::SharedHelpers).
-            to have_received(:run_shell_command).
-            with("go list -m -versions -json github.com/dependabot-fixtures/go-modules-lib",
-                 { env: { "GOPRIVATE" => "" },
-                   fingerprint: "go list -m -versions -json <dependency_name>" })
+          expect(Dependabot::SharedHelpers)
+            .to have_received(:run_shell_command)
+            .with("go list -m -versions -json github.com/dependabot-fixtures/go-modules-lib",
+                  { env: { "GOPRIVATE" => "" },
+                    fingerprint: "go list -m -versions -json <dependency_name>" })
         end
       end
 
@@ -141,7 +149,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
       end
     end
 
-    context "for a Git pseudo-version with pre-releases available" do
+    context "when dealing with a Git pseudo-version with pre-releases available" do
       let(:dependency_version) { "1.0.0-20181018214848-ab544413d0d3" }
 
       it "returns the latest pre-release" do
@@ -152,16 +160,17 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
       end
     end
 
-    context "for a Git psuedo-version with releases available" do
+    context "when dealing with a Git psuedo-version with releases available" do
       let(:dependency_version) { "0.0.0-20201021035429-f5854403a974" }
       let(:dependency_name) { "golang.org/x/net" }
+      let(:ignored_versions) { ["> 0.8.0"] }
 
-      it "picks the latest version" do
+      it "picks the latest version not ignored" do
         expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("0.8.0"))
       end
     end
 
-    context "for a Git pseudo-version that is later than all releases" do
+    context "when dealing with a Git pseudo-version that is later than all releases" do
       let(:dependency_version) { "1.2.0-pre2.0.20181018214848-1f3e41dce654" }
 
       it "doesn't downgrade the dependency" do
@@ -182,8 +191,8 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
 
       it "raises a DependencyFileNotResolvable error" do
         error_class = Dependabot::DependencyFileNotResolvable
-        expect { finder.latest_version }.
-          to raise_error(error_class) do |error|
+        expect { finder.latest_version }
+          .to raise_error(error_class) do |error|
           expect(error.message).to include("example.com/test/package")
         end
       end
@@ -202,8 +211,8 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
 
       it "raises a DependencyFileNotResolvable error" do
         error_class = Dependabot::DependencyFileNotResolvable
-        expect { finder.latest_version }.
-          to raise_error(error_class) do |error|
+        expect { finder.latest_version }
+          .to raise_error(error_class) do |error|
           expect(error.message).to include("example.com/web/dependabot.com")
         end
       end
@@ -222,8 +231,8 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
 
       it "raises a DependencyFileNotResolvable error" do
         error_class = Dependabot::DependencyFileNotResolvable
-        expect { finder.latest_version }.
-          to raise_error(error_class) do |error|
+        expect { finder.latest_version }
+          .to raise_error(error_class) do |error|
           expect(error.message).to include("pkg-errors")
         end
       end
@@ -235,8 +244,8 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
 
       it "raises a DependencyFileNotResolvable error" do
         error_class = Dependabot::DependencyFileNotResolvable
-        expect { finder.latest_version }.
-          to raise_error(error_class) do |error|
+        expect { finder.latest_version }
+          .to raise_error(error_class) do |error|
           expect(error.message).to include("github.com/dependabot-fixtures/go-modules-lib/v2")
           expect(error.message).to include("version \"v2.0.0\" invalid")
         end
@@ -249,11 +258,20 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
 
       it "raises a DependencyFileNotResolvable error" do
         error_class = Dependabot::DependencyFileNotResolvable
-        expect { finder.latest_version }.
-          to raise_error(error_class) do |error|
+        expect { finder.latest_version }
+          .to raise_error(error_class) do |error|
           expect(error.message).to include("github.com/dependabot-fixtures/go-modules-lib")
           expect(error.message).to include("version \"v3.0.0\" invalid")
         end
+      end
+    end
+
+    context "when the dependency's Go version isn't supported by Dependabot" do
+      let(:dependency_name) { "github.com/dependabot-fixtures/future-go" }
+      let(:dependency_version) { "0.0.0-1" }
+
+      it "returns the correct release number" do
+        expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("1.0.0"))
       end
     end
 
@@ -270,11 +288,11 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
 
       it "raises a GitDependenciesNotReachable error" do
         error_class = Dependabot::GitDependenciesNotReachable
-        expect { finder.latest_version }.
-          to raise_error(error_class) do |error|
+        expect { finder.latest_version }
+          .to raise_error(error_class) do |error|
           expect(error.message).to include("github.com/dependabot-fixtures/go-modules-private")
-          expect(error.dependency_urls).
-            to eq(["github.com/dependabot-fixtures/go-modules-private"])
+          expect(error.dependency_urls)
+            .to eq(["github.com/dependabot-fixtures/go-modules-private"])
         end
       end
 
@@ -283,11 +301,11 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
 
         it "raises a GitDependenciesNotReachable error" do
           error_class = Dependabot::GitDependenciesNotReachable
-          expect { finder.latest_version }.
-            to raise_error(error_class) do |error|
+          expect { finder.latest_version }
+            .to raise_error(error_class) do |error|
             expect(error.message).to include("github.com/dependabot-fixtures/go-modules-private")
-            expect(error.dependency_urls).
-              to eq(["github.com/dependabot-fixtures/go-modules-private"])
+            expect(error.dependency_urls)
+              .to eq(["github.com/dependabot-fixtures/go-modules-private"])
           end
         end
       end
@@ -297,11 +315,11 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
 
         it "raises a GitDependenciesNotReachable error" do
           error_class = Dependabot::GitDependenciesNotReachable
-          expect { finder.latest_version }.
-            to raise_error(error_class) do |error|
+          expect { finder.latest_version }
+            .to raise_error(error_class) do |error|
             expect(error.message).to include("github.com/dependabot-fixtures/go-modules-private")
-            expect(error.dependency_urls).
-              to eq(["github.com/dependabot-fixtures/go-modules-private"])
+            expect(error.dependency_urls)
+              .to eq(["github.com/dependabot-fixtures/go-modules-private"])
           end
         end
       end
@@ -351,9 +369,112 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
         let(:ignored_versions) { ["> 1.0.1"] }
 
         it "raises AllVersionsIgnored" do
-          expect { finder.latest_version }.
-            to raise_error(Dependabot::AllVersionsIgnored)
+          expect { finder.latest_version }
+            .to raise_error(Dependabot::AllVersionsIgnored)
         end
+      end
+    end
+  end
+
+  describe "#latest_version with cooldown options" do
+    context "when there's a newer major version and release date is still in cooldown" do
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:enable_shared_helpers_command_timeout).and_return(false)
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:enable_cooldown_for_gomodules).and_return(true)
+        allow(Dependabot::SharedHelpers)
+          .to receive(:run_shell_command).and_call_original
+
+        allow(Time).to receive(:now).and_return(Time.parse("2018-10-25T17:30:00.000Z"))
+      end
+
+      let(:cooldown_options) do
+        Dependabot::Package::ReleaseCooldownOptions.new(
+          default_days: 7,
+          semver_major_days: 7,
+          semver_minor_days: 7,
+          semver_patch_days: 7,
+          include: [],
+          exclude: []
+        )
+      end
+
+      it "returns the latest minor version for the dependency's current major version" do
+        expect(finder.latest_version).to be_nil
+      end
+
+      context "with an org specific goprivate" do
+        let(:goprivate) { "github.com/dependabot-fixtures/*" }
+
+        it "returns the latest minor version for the dependency's current major version" do
+          expect(finder.latest_version).to be_nil
+        end
+      end
+    end
+
+    context "when there's a newer major version and release date is out of cooldown" do
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:enable_shared_helpers_command_timeout).and_return(false)
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:enable_cooldown_for_gomodules).and_return(true)
+        allow(Dependabot::SharedHelpers)
+          .to receive(:run_shell_command).and_call_original
+
+        allow(Time).to receive(:now).and_return(Time.parse("2018-10-30T17:30:00.000Z"))
+      end
+
+      let(:cooldown_options) do
+        Dependabot::Package::ReleaseCooldownOptions.new(
+          default_days: 7,
+          semver_major_days: 7,
+          semver_minor_days: 7,
+          semver_patch_days: 7,
+          include: [],
+          exclude: []
+        )
+      end
+
+      it "returns the latest minor version for the dependency's current major version" do
+        expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("1.1.0"))
+      end
+
+      context "with an org specific goprivate" do
+        let(:goprivate) { "github.com/dependabot-fixtures/*" }
+
+        it "returns the latest minor version for the dependency's current major version" do
+          expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("1.1.0"))
+        end
+      end
+    end
+
+    context "when there's a newer major version and fetching release date is not successful" do
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:enable_shared_helpers_command_timeout).and_return(false)
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:enable_cooldown_for_gomodules).and_return(true)
+        allow(Dependabot::SharedHelpers)
+          .to receive(:run_shell_command).and_call_original
+      end
+
+      let(:dependency_version) { "0.0.0" }
+      let(:dependency_name) { "github.com/x/x" }
+
+      let(:cooldown_options) do
+        Dependabot::Package::ReleaseCooldownOptions.new(
+          default_days: 7,
+          semver_major_days: 7,
+          semver_minor_days: 7,
+          semver_patch_days: 7,
+          include: [],
+          exclude: []
+        )
+      end
+
+      it "returns the latest resolvable version" do
+        expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("0.0.0"))
       end
     end
   end
@@ -439,7 +560,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
       let(:current_version) { "1.1.0" }
 
       it "doesn't return pre-release" do
-        expect(finder.lowest_security_fix_version).to_not eq(Dependabot::GoModules::Version.new("1.2.0-pre2"))
+        expect(finder.lowest_security_fix_version).not_to eq(Dependabot::GoModules::Version.new("1.2.0-pre2"))
       end
     end
   end

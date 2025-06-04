@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/hex/version"
@@ -31,7 +32,9 @@ module Dependabot
 
         private
 
-        attr_reader :requirements, :latest_resolvable_version, :updated_source
+        attr_reader :requirements
+        attr_reader :latest_resolvable_version
+        attr_reader :updated_source
         # rubocop:disable Metrics/PerceivedComplexity
         # rubocop:disable Metrics/AbcSize
         def updated_mixfile_requirement(req)
@@ -40,8 +43,8 @@ module Dependabot
           return req if req_satisfied_by_latest_resolvable?(req[:requirement])
 
           or_string_reqs = req[:requirement].split(OR_SEPARATOR)
-          last_string_reqs = or_string_reqs.last.split(AND_SEPARATOR).
-                             map(&:strip)
+          last_string_reqs = or_string_reqs.last.split(AND_SEPARATOR)
+                                           .map(&:strip)
 
           new_requirement =
             if last_string_reqs.any? { |r| r.match(/^(?:\d|=)/) }
@@ -70,8 +73,8 @@ module Dependabot
         end
 
         def req_satisfied_by_latest_resolvable?(requirement_string)
-          ruby_requirements(requirement_string).
-            any? { |r| r.satisfied_by?(latest_resolvable_version) }
+          ruby_requirements(requirement_string)
+            .any? { |r| r.satisfied_by?(latest_resolvable_version) }
         end
 
         def ruby_requirements(requirement_string)

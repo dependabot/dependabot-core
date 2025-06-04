@@ -1,93 +1,50 @@
+# typed: strict
 # frozen_string_literal: true
 
 require "excon"
 require "dependabot/cargo/update_checker"
 require "dependabot/update_checkers/version_filters"
 require "dependabot/registry_client"
+require "dependabot/cargo/package/package_details_fetcher"
+require "dependabot/package/package_latest_version_finder"
+require "sorbet-runtime"
 
 module Dependabot
   module Cargo
     class UpdateChecker
-      class LatestVersionFinder
-        def initialize(dependency:, dependency_files:, credentials:,
-                       ignored_versions:, raise_on_ignored: false,
-                       security_advisories:)
-          @dependency          = dependency
-          @dependency_files    = dependency_files
-          @credentials         = credentials
-          @ignored_versions    = ignored_versions
-          @raise_on_ignored    = raise_on_ignored
-          @security_advisories = security_advisories
+      class LatestVersionFinder < Dependabot::Package::PackageLatestVersionFinder
+        extend T::Sig
+
+        sig do
+          override.returns(T.nilable(Dependabot::Package::PackageDetails))
+        end
+        def package_details
+          @package_details ||= Package::PackageDetailsFetcher.new(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            credentials: credentials
+          ).fetch
         end
 
-        def latest_version
-          @latest_version ||= fetch_latest_version
+        sig do
+          override.params(language_version: T.nilable(T.any(String, Dependabot::Version)))
+                  .returns(T.nilable(Dependabot::Version))
+        end
+        def latest_version(language_version: nil)
+          @latest_version ||= fetch_latest_version(language_version: language_version)
         end
 
-        def lowest_security_fix_version
-          @lowest_security_fix_version ||= fetch_lowest_security_fix_version
+        sig do
+          override.params(language_version: T.nilable(T.any(String, Dependabot::Version)))
+                  .returns(T.nilable(Dependabot::Version))
+        end
+        def lowest_security_fix_version(language_version: nil)
+          @lowest_security_fix_version ||= fetch_lowest_security_fix_version(language_version: language_version)
         end
 
-        private
+        protected
 
-        attr_reader :dependency, :dependency_files, :credentials,
-                    :ignored_versions, :security_advisories
-
-        def fetch_latest_version
-          versions = available_versions
-          versions = filter_prerelease_versions(versions)
-          versions = filter_ignored_versions(versions)
-          versions.max
-        end
-
-        def fetch_lowest_security_fix_version
-          versions = available_versions
-          versions = filter_prerelease_versions(versions)
-          versions = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(versions,
-                                                                                           security_advisories)
-          versions = filter_ignored_versions(versions)
-          versions = filter_lower_versions(versions)
-
-          versions.min
-        end
-
-        def filter_prerelease_versions(versions_array)
-          return versions_array if wants_prerelease?
-
-          versions_array.reject(&:prerelease?)
-        end
-
-        def filter_ignored_versions(versions_array)
-          filtered = versions_array.
-                     reject { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }
-          if @raise_on_ignored && filter_lower_versions(filtered).empty? && filter_lower_versions(versions_array).any?
-            raise Dependabot::AllVersionsIgnored
-          end
-
-          filtered
-        end
-
-        def filter_lower_versions(versions_array)
-          return versions_array unless dependency.numeric_version
-
-          versions_array.
-            select { |version| version > dependency.numeric_version }
-        end
-
-        def available_versions
-          crates_listing.
-            fetch("versions", []).
-            reject { |v| v["yanked"] }.
-            map { |v| version_class.new(v.fetch("num")) }
-        end
-
-        def crates_listing
-          return @crates_listing unless @crates_listing.nil?
-
-          response = Dependabot::RegistryClient.get(url: "https://crates.io/api/v1/crates/#{dependency.name}")
-          @crates_listing = JSON.parse(response.body)
-        end
-
+        sig { override.returns(T::Boolean) }
         def wants_prerelease?
           return true if dependency.numeric_version&.prerelease?
 
@@ -97,18 +54,30 @@ module Dependabot
           end
         end
 
-        def ignore_requirements
-          ignored_versions.flat_map { |req| requirement_class.requirements_array(req) }
+        sig { override.returns(T::Boolean) }
+        def cooldown_enabled?
+          Dependabot::Experiments.enabled?(:enable_cooldown_for_cargo)
         end
 
-        def version_class
-          Utils.version_class_for_package_manager(dependency.package_manager)
-        end
+        private
 
-        def requirement_class
-          Utils.requirement_class_for_package_manager(
-            dependency.package_manager
-          )
+        sig { returns(Dependabot::Dependency) }
+        attr_reader :dependency
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
+        attr_reader :dependency_files
+        sig { returns(T::Array[Dependabot::Credential]) }
+        attr_reader :credentials
+        sig { returns(T::Array[String]) }
+        attr_reader :ignored_versions
+        sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
+        attr_reader :security_advisories
+
+        sig do
+          override.params(releases: T::Array[Dependabot::Package::PackageRelease])
+                  .returns(T::Array[Dependabot::Package::PackageRelease])
+        end
+        def apply_post_fetch_lowest_security_fix_versions_filter(releases)
+          filter_prerelease_versions(releases)
         end
       end
     end

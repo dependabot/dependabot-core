@@ -11,13 +11,12 @@ GitHub network, and so is not generally accessible.
 
 ## Setup
 
-To work on the Updater, you will need to start a Docker dev shell. The bundler
-shell will suffice
+To work on the Updater, you will need to start a Docker dev shell:
 
 ```zsh
-➜ bin/docker-dev-shell bundler
-[dependabot-core-dev] ~/dependabot-core $ cd updater/
-[dependabot-core-dev] ~/dependabot-core/updater $ bundle
+➜ bin/docker-dev-shell updater  # the docker-dev-shell internally maps 'updater' to the 'bundler' ecosystem image
+[dependabot-core-dev] ~ $ cd dependabot-updater/
+[dependabot-core-dev] ~/dependabot-updater $ bundle
 ```
 
 ## Tests
@@ -25,13 +24,13 @@ shell will suffice
 We run [rspec](https://rspec.info/) tests in the docker dev shell:
 
 ```zsh
-[dependabot-core-dev] ~/dependabot-core/updater $ bundle exec rspec
+[dependabot-core-dev] ~/dependabot-updater $ bundle exec rspec
 ```
 
 You can run an individual test file like so:
 
 ```zsh
-[dependabot-core-dev] ~/dependabot-core/updater $ bundle exec rspec spec/dependabot/integration_spec.rb
+[dependabot-core-dev] ~/dependabot-updater $ bundle exec rspec spec/dependabot/integration_spec.rb
 ```
 
 A small number of tests hit the GitHub API, so you will need to set the envvar
@@ -60,13 +59,13 @@ If you are adding a new test that makes network calls, please ensure you record 
 If you've added a new test which has the `vcr: true` metadata, you can record a fixture for just those changes like so:
 
 ```zsh
-[dependabot-core-dev] ~/dependabot-core/updater $ VCR=new_episodes bundle exec rspec
+[dependabot-core-dev] ~/dependabot-updater $ VCR=new_episodes bundle exec rspec
 ```
 
 #### Updating existing fixtures
 
-If you need to upadate existing fixtures, you can use the `all` flag like so:
+If you need to update existing fixtures, you can use the `all` flag like so:
 
 ```zsh
-[dependabot-core-dev] ~/dependabot-core/updater $ VCR=new_episodes bundle exec rspec
+[dependabot-core-dev] ~/dependabot-updater $ VCR=new_episodes bundle exec rspec
 ```

@@ -1,0 +1,5 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    navbar
+  

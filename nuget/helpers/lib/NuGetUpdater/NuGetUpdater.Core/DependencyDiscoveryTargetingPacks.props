@@ -1,0 +1,10 @@
+<Project>
+  <PropertyGroup>
+    <!--
+    Suppress errors like:
+      error MSB3644: The reference assemblies for .NETFramework,Version=v4.7.2 were not found.
+    because that's irrelevant to dependency discovery.
+    -->
+    <NoWarn>$(NoWarn);MSB3644</NoWarn>
+  </PropertyGroup>
+</Project>

@@ -1,1 +1,5 @@
-inherit_from: ../omnibus/.rubocop.yml
+inherit_from: ../.rubocop.yml
+
+inherit_mode:
+  merge:
+    - Exclude

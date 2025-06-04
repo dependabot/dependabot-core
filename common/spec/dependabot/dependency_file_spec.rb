@@ -1,10 +1,20 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
 require "dependabot/dependency_file"
 
 RSpec.describe Dependabot::DependencyFile do
+  around do |example|
+    repo_path = File.expand_path("spec/fixtures/projects/simple")
+    Dir.chdir(repo_path) { example.run }
+  end
+
   let(:file) { described_class.new(name: "Gemfile", content: "a") }
+
+  it "raises ArgumentError if an invalid mode is provided" do
+    expect { described_class.new(name: "somefile", content: "a", mode: "40755") }.to raise_error(ArgumentError)
+  end
 
   describe "#path" do
     subject { file.path }
@@ -18,13 +28,15 @@ RSpec.describe Dependabot::DependencyFile do
         described_class.new(name: "Gemfile", content: "a", directory: directory)
       end
 
-      context "that starts and ends with a slash" do
+      context "when starting and ending with a slash" do
         let(:directory) { "/path/to/files/" }
+
         it { is_expected.to eq("/path/to/files/Gemfile") }
       end
 
-      context "that doesn't start or end with a slash" do
+      context "when not starting or ending with a slash" do
         let(:directory) { "path/to/files" }
+
         it { is_expected.to eq("/path/to/files/Gemfile") }
       end
 
@@ -37,6 +49,7 @@ RSpec.describe Dependabot::DependencyFile do
             directory: directory
           )
         end
+
         it { is_expected.to eq("/path/to/Gemfile") }
       end
     end
@@ -54,29 +67,54 @@ RSpec.describe Dependabot::DependencyFile do
         described_class.new(name: "Gemfile", content: "a", directory: directory)
       end
 
-      context "that starts and ends with a slash" do
+      context "when starting and ending with a slash" do
         let(:directory) { "/path/to/files" }
+
         it { is_expected.to eq("/path/to/files") }
       end
 
-      context "that doesn't start or end with a slash" do
+      context "when not starting or ending with a slash" do
         let(:directory) { "path/to/files" }
+
         it { is_expected.to eq("/path/to/files") }
       end
     end
   end
 
   describe "#to_h" do
-    subject { file.to_h }
+    subject(:file_hash) { file.to_h }
+
+    context "when mode is specified directly" do
+      let(:file) do
+        described_class.new(
+          name: "my_script",
+          content: "a",
+          mode: "100755"
+        )
+      end
+
+      it "returns the correct array" do
+        expect(file_hash).to eq(
+          "name" => "my_script",
+          "content" => "a",
+          "directory" => "/",
+          "type" => "file",
+          "mode" => "100755",
+          "support_file" => false,
+          "content_encoding" => "utf-8",
+          "deleted" => false,
+          "operation" => Dependabot::DependencyFile::Operation::UPDATE
+        )
+      end
+    end
 
     context "with a non-symlink" do
       it "returns the correct array" do
-        expect(subject).to eq(
+        expect(file_hash).to eq(
           "name" => "Gemfile",
           "content" => "a",
           "directory" => "/",
           "type" => "file",
-          +"mode" => "100644",
           "support_file" => false,
           "content_encoding" => "utf-8",
           "deleted" => false,
@@ -86,7 +124,7 @@ RSpec.describe Dependabot::DependencyFile do
 
       it "has the correct operation properties" do
         expect(file.deleted).to be_falsey
-        expect(file.deleted?).to be_falsey
+        expect(file).not_to be_deleted
         expect(file.operation).to eq Dependabot::DependencyFile::Operation::UPDATE
       end
     end
@@ -102,11 +140,10 @@ RSpec.describe Dependabot::DependencyFile do
       end
 
       it "returns the correct array" do
-        expect(subject).to eq(
+        expect(file_hash).to eq(
           "name" => "Gemfile",
           "content" => "a",
           "directory" => "/",
-          "mode" => nil,
           "type" => "symlink",
           "support_file" => false,
           "symlink_target" => "nested/Gemfile",
@@ -118,7 +155,7 @@ RSpec.describe Dependabot::DependencyFile do
 
       it "has the correct operation properties" do
         expect(file.deleted).to be_falsey
-        expect(file.deleted?).to be_falsey
+        expect(file).not_to be_deleted
         expect(file.operation).to eq Dependabot::DependencyFile::Operation::UPDATE
       end
     end
@@ -133,11 +170,10 @@ RSpec.describe Dependabot::DependencyFile do
       end
 
       it "returns the correct array" do
-        expect(subject).to eq(
+        expect(file_hash).to eq(
           "name" => "Gemfile",
           "content" => "a",
           "directory" => "/",
-          "mode" => "100644",
           "type" => "file",
           "support_file" => false,
           "content_encoding" => "utf-8",
@@ -148,7 +184,7 @@ RSpec.describe Dependabot::DependencyFile do
 
       it "has the correct operation properties" do
         expect(file.deleted).to be_falsey
-        expect(file.deleted?).to be_falsey
+        expect(file).not_to be_deleted
         expect(file.operation).to eq Dependabot::DependencyFile::Operation::CREATE
       end
     end
@@ -163,11 +199,10 @@ RSpec.describe Dependabot::DependencyFile do
       end
 
       it "returns the correct array" do
-        expect(subject).to eq(
+        expect(file_hash).to eq(
           "name" => "Gemfile",
           "content" => "a",
           "directory" => "/",
-          "mode" => "100644",
           "type" => "file",
           "support_file" => false,
           "content_encoding" => "utf-8",
@@ -178,7 +213,7 @@ RSpec.describe Dependabot::DependencyFile do
 
       it "has the correct operation properties" do
         expect(file.deleted).to be_falsey
-        expect(file.deleted?).to be_falsey
+        expect(file).not_to be_deleted
         expect(file.operation).to eq Dependabot::DependencyFile::Operation::UPDATE
       end
     end
@@ -193,11 +228,10 @@ RSpec.describe Dependabot::DependencyFile do
       end
 
       it "returns the correct array" do
-        expect(subject).to eq(
+        expect(file_hash).to eq(
           "name" => "Gemfile",
           "content" => "a",
           "directory" => "/",
-          "mode" => "100644",
           "type" => "file",
           "support_file" => false,
           "content_encoding" => "utf-8",
@@ -208,7 +242,7 @@ RSpec.describe Dependabot::DependencyFile do
 
       it "has the correct operation properties" do
         expect(file.deleted).to be_truthy
-        expect(file.deleted?).to be_truthy
+        expect(file).to be_deleted
         expect(file.operation).to eq Dependabot::DependencyFile::Operation::DELETE
       end
     end
@@ -223,11 +257,10 @@ RSpec.describe Dependabot::DependencyFile do
       end
 
       it "returns the correct array" do
-        expect(subject).to eq(
+        expect(file_hash).to eq(
           "name" => "Gemfile",
           "content" => "a",
           "directory" => "/",
-          "mode" => "100644",
           "type" => "file",
           "support_file" => false,
           "content_encoding" => "utf-8",
@@ -238,7 +271,7 @@ RSpec.describe Dependabot::DependencyFile do
 
       it "has the correct operation properties" do
         expect(file.deleted).to be_truthy
-        expect(file.deleted?).to be_truthy
+        expect(file).to be_deleted
         expect(file.operation).to eq Dependabot::DependencyFile::Operation::DELETE
       end
     end
@@ -254,11 +287,10 @@ RSpec.describe Dependabot::DependencyFile do
       end
 
       it "returns the correct array" do
-        expect(subject).to eq(
+        expect(file_hash).to eq(
           "name" => "Gemfile",
           "content" => "a",
           "directory" => "/",
-          "mode" => "100644",
           "type" => "file",
           "support_file" => false,
           "content_encoding" => "utf-8",
@@ -269,7 +301,7 @@ RSpec.describe Dependabot::DependencyFile do
 
       it "has the correct operation properties" do
         expect(file.deleted).to be_truthy
-        expect(file.deleted?).to be_truthy
+        expect(file).to be_deleted
         expect(file.operation).to eq Dependabot::DependencyFile::Operation::DELETE
       end
     end
@@ -292,20 +324,29 @@ RSpec.describe Dependabot::DependencyFile do
       specify { expect(file1).to eq(file2) }
     end
 
+    context "when two dependency files are equal, but one is a vendored file" do
+      let(:file1) { described_class.new(name: "Gemfile", content: "a") }
+      let(:file2) do
+        described_class.new(name: "Gemfile", content: "a", vendored_file: true)
+      end
+
+      specify { expect(file1).to eq(file2) }
+    end
+
     context "when two dependency files are not equal" do
       let(:file1) { described_class.new(name: "Gemfile", content: "a") }
       let(:file2) { described_class.new(name: "Gemfile", content: "b") }
 
-      specify { expect(file1).to_not eq(file2) }
+      specify { expect(file1).not_to eq(file2) }
     end
   end
 
   describe "#decoded_content" do
-    context "for base64 encoded content" do
+    context "when dealing with a base64 encoded content" do
       let(:file) do
         described_class.new(
           name: "example.gem",
-          content_encoding: described_class::ContentEncoding::BASE64,
+          content_encoding: Dependabot::DependencyFile::ContentEncoding::BASE64,
           content: "YWJj\n"
         )
       end
@@ -315,7 +356,7 @@ RSpec.describe Dependabot::DependencyFile do
       end
     end
 
-    context "for utf-8 encoded content" do
+    context "when dealing with a utf-8 encoded content" do
       let(:file) do
         described_class.new(
           name: "example.gem",
@@ -325,6 +366,20 @@ RSpec.describe Dependabot::DependencyFile do
 
       it "returns the unencoded content" do
         expect(file.decoded_content).to eq("abc")
+      end
+    end
+  end
+
+  describe "#vendored_file?" do
+    it "is false by default" do
+      expect(file.vendored_file?).to be false
+    end
+
+    context "when set to true during creation" do
+      let(:file) { described_class.new(name: "Gemfile", content: "a", vendored_file: true) }
+
+      it "is true" do
+        expect(file.vendored_file?).to be true
       end
     end
   end

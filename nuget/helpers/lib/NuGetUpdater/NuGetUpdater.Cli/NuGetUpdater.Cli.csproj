@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(CommonTargetFramework)</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <_NETFrameworkTargetingPacksVersion>[1.0.3]</_NETFrameworkTargetingPacksVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NuGetUpdater.Core\NuGetUpdater.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" />
+  </ItemGroup>
+
+  <ItemGroup Label="Targeting packs required for .NET Framework in SDK-style projects">
+    <PackageDownload Include="Microsoft.NETFramework.ReferenceAssemblies" Version="$(_NETFrameworkTargetingPacksVersion)" />
+    <PackageDownload Include="Microsoft.NETFramework.ReferenceAssemblies.net20" Version="$(_NETFrameworkTargetingPacksVersion)" />
+    <PackageDownload Include="Microsoft.NETFramework.ReferenceAssemblies.net35" Version="$(_NETFrameworkTargetingPacksVersion)" />
+    <PackageDownload Include="Microsoft.NETFramework.ReferenceAssemblies.net40" Version="$(_NETFrameworkTargetingPacksVersion)" />
+    <PackageDownload Include="Microsoft.NETFramework.ReferenceAssemblies.net45" Version="$(_NETFrameworkTargetingPacksVersion)" />
+    <PackageDownload Include="Microsoft.NETFramework.ReferenceAssemblies.net451" Version="$(_NETFrameworkTargetingPacksVersion)" />
+    <PackageDownload Include="Microsoft.NETFramework.ReferenceAssemblies.net452" Version="$(_NETFrameworkTargetingPacksVersion)" />
+    <PackageDownload Include="Microsoft.NETFramework.ReferenceAssemblies.net46" Version="$(_NETFrameworkTargetingPacksVersion)" />
+    <PackageDownload Include="Microsoft.NETFramework.ReferenceAssemblies.net461" Version="$(_NETFrameworkTargetingPacksVersion)" />
+    <PackageDownload Include="Microsoft.NETFramework.ReferenceAssemblies.net462" Version="$(_NETFrameworkTargetingPacksVersion)" />
+    <PackageDownload Include="Microsoft.NETFramework.ReferenceAssemblies.net47" Version="$(_NETFrameworkTargetingPacksVersion)" />
+    <PackageDownload Include="Microsoft.NETFramework.ReferenceAssemblies.net471" Version="$(_NETFrameworkTargetingPacksVersion)" />
+    <PackageDownload Include="Microsoft.NETFramework.ReferenceAssemblies.net472" Version="$(_NETFrameworkTargetingPacksVersion)" />
+    <PackageDownload Include="Microsoft.NETFramework.ReferenceAssemblies.net48" Version="$(_NETFrameworkTargetingPacksVersion)" />
+    <PackageDownload Include="Microsoft.NETFramework.ReferenceAssemblies.net481" Version="$(_NETFrameworkTargetingPacksVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="NuGetUpdater.Cli.Test"/>
+  </ItemGroup>
+
+</Project>

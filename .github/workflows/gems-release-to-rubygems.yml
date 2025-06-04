@@ -1,0 +1,31 @@
+name: Gems - Release to RubyGems
+on: # yamllint disable-line rule:truthy
+  release:
+    # It's fine to trigger on every release because if we tag a release w/o
+    # bumping the Gem version, RubyGems will reject it with an error that the
+    # version is already live.
+    types: [published]
+
+jobs:
+  release-gems:
+    name: Release gems to rubygems.org
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: ruby/setup-ruby@13e7a03dc3ac6c3798f4570bfead2aed4d96abfb # v1.244.0
+
+      - name: Install the RubyGems version specified in the Dockerfile.updater-core file
+        run: |
+          RUBYGEMS_VERSION=$(grep 'ARG RUBYGEMS_VERSION=' Dockerfile.updater-core | cut -d '=' -f 2)
+          gem update --system $RUBYGEMS_VERSION
+
+      - uses: rubygems/configure-rubygems-credentials@bc6dd217f8a4f919d6835fcfefd470ef821f5c44 # v1.0.0
+
+      # We can't use the https://github.com/rubygems/release-gem workflow because it calls `rake release` rather than `rake gems:release`.
+      # `rake release` causes problems because it tries to push a git tag, but we've already manually tagged the release as part of the `gems-bump-version` workflow.
+      - run: gem exec rake gems:release

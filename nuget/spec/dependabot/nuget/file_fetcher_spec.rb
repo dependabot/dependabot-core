@@ -1,26 +1,34 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/dependency_file"
 require "dependabot/source"
 require "dependabot/nuget/file_fetcher"
+require "dependabot/nuget/discovery/discovery_json_reader"
+require "json"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::Nuget::FileFetcher do
-  it_behaves_like "a dependency file fetcher"
+  subject(:fetched_file_paths) do
+    files = file_fetcher_instance.fetch_files
+    files.map do |f|
+      Dependabot::Nuget::DiscoveryJsonReader.dependency_file_path(repo_contents_path: repo_contents_path,
+                                                                  dependency_file: f)
+    end
+  end
+  let(:report_stub_debug_information) { false } # set to `true` to write method stubbing information to the screen
 
+  let(:file_fetcher_instance) do
+    described_class.new(source: source, credentials: credentials, repo_contents_path: repo_contents_path)
+  end
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
-      repo: "gocardless/bump",
+      repo: "some/repo",
       directory: directory
     )
   end
-  let(:file_fetcher_instance) do
-    described_class.new(source: source, credentials: credentials)
-  end
-  let(:directory) { "/" }
-  let(:github_url) { "https://api.github.com/" }
-  let(:url) { github_url + "repos/gocardless/bump/contents/" }
   let(:credentials) do
     [{
       "type" => "git_source",
@@ -29,713 +37,242 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
       "password" => "token"
     }]
   end
+  let(:repo_contents_path) { File.join(Dir.tmpdir, ".dependabot", "unit-test") }
 
-  before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
+  it_behaves_like "a dependency file fetcher"
 
-  context "with a .csproj" do
-    before do
-      stub_request(:get, url + "?ref=sha").
-        with(headers: { "Authorization" => "token token" }).
-        to_return(
-          status: 200,
-          body: fixture("github", "contents_dotnet_repo.json"),
-          headers: { "content-type" => "application/json" }
-        )
-
-      stub_request(:get, File.join(url, "Nancy.csproj?ref=sha")).
-        with(headers: { "Authorization" => "token token" }).
-        to_return(
-          status: 200,
-          body: fixture("github", "contents_dotnet_csproj_basic.json"),
-          headers: { "content-type" => "application/json" }
-        )
-
-      stub_request(:get, File.join(url, "Directory.Build.props?ref=sha")).
-        with(headers: { "Authorization" => "token token" }).
-        to_return(status: 404)
-      stub_request(:get, File.join(url, "Directory.Packages.props?ref=sha")).
-        with(headers: { "Authorization" => "token token" }).
-        to_return(status: 404)
-      stub_request(:get, File.join(url, "Directory.Build.targets?ref=sha")).
-        with(headers: { "Authorization" => "token token" }).
-        to_return(status: 404)
-    end
-
-    it "fetches the .csproj" do
-      expect(file_fetcher_instance.files.map(&:name)).
-        to match_array(%w(Nancy.csproj))
-    end
-
-    context "with a nuget.config" do
-      before do
-        stub_request(:get, url + "?ref=sha").
-          with(headers: { "Authorization" => "token token" }).
-          to_return(
-            status: 200,
-            body: fixture("github", "contents_dotnet_repo_config.json"),
-            headers: { "content-type" => "application/json" }
-          )
-
-        stub_request(:get, File.join(url, "NuGet.Config?ref=sha")).
-          with(headers: { "Authorization" => "token token" }).
-          to_return(
-            status: 200,
-            body: fixture("github", "contents_dotnet_config.json"),
-            headers: { "content-type" => "application/json" }
-          )
-      end
-
-      it "fetches the NuGet.Config file" do
-        expect(file_fetcher_instance.files.map(&:name)).
-          to match_array(%w(Nancy.csproj NuGet.Config))
-      end
-    end
-
-    context "with a global.json" do
-      before do
-        stub_request(:get, url + "?ref=sha").
-          with(headers: { "Authorization" => "token token" }).
-          to_return(
-            status: 200,
-            body: fixture("github", "contents_dotnet_repo_global.json"),
-            headers: { "content-type" => "application/json" }
-          )
-
-        stub_request(:get, File.join(url, "global.json?ref=sha")).
-          with(headers: { "Authorization" => "token token" }).
-          to_return(
-            status: 200,
-            body: fixture("github", "contents_dotnet_config.json"),
-            headers: { "content-type" => "application/json" }
-          )
-      end
-
-      it "fetches the global.json file" do
-        expect(file_fetcher_instance.files.map(&:name)).
-          to match_array(%w(Nancy.csproj global.json))
-      end
-    end
-
-    context "that imports another project" do
-      before do
-        stub_request(:get, File.join(url, "Nancy.csproj?ref=sha")).
-          with(headers: { "Authorization" => "token token" }).
-          to_return(
-            status: 200,
-            body: fixture("github", "contents_dotnet_csproj_with_import.json"),
-            headers: { "content-type" => "application/json" }
-          )
-        stub_request(:get, File.join(url, "commonprops.props?ref=sha")).
-          with(headers: { "Authorization" => "token token" }).
-          to_return(
-            status: 200,
-            body: fixture("github", "contents_dotnet_csproj_basic.json"),
-            headers: { "content-type" => "application/json" }
-          )
-      end
-
-      it "fetches the imported file" do
-        expect(file_fetcher_instance.files.map(&:name)).
-          to match_array(%w(Nancy.csproj commonprops.props))
-      end
-
-      context "that imports itself" do
-        before do
-          stub_request(:get, File.join(url, "commonprops.props?ref=sha")).
-            with(headers: { "Authorization" => "token token" }).
-            to_return(
-              status: 200,
-              body:
-                fixture("github", "contents_dotnet_csproj_with_import.json"),
-              headers: { "content-type" => "application/json" }
-            )
-        end
-
-        it "only fetches the imported file once" do
-          expect(file_fetcher_instance.files.map(&:name)).
-            to match_array(%w(Nancy.csproj commonprops.props))
-        end
-      end
-
-      context "that imports another (granchild) file" do
-        before do
-          stub_request(:get, File.join(url, "commonprops.props?ref=sha")).
-            with(headers: { "Authorization" => "token token" }).
-            to_return(
-              status: 200,
-              body:
-                fixture("github", "contents_dotnet_csproj_with_import2.json"),
-              headers: { "content-type" => "application/json" }
-            )
-          stub_request(:get, File.join(url, "commonprops2.props?ref=sha")).
-            with(headers: { "Authorization" => "token token" }).
-            to_return(
-              status: 200,
-              body:
-                fixture("github", "contents_dotnet_csproj_with_import.json"),
-              headers: { "content-type" => "application/json" }
-            )
-        end
-
-        it "only fetches the imported file once" do
-          expect(file_fetcher_instance.files.map(&:name)).
-            to match_array(
-              %w(Nancy.csproj commonprops.props commonprops2.props)
-            )
-        end
-      end
-    end
+  def clean_common_files
+    Dependabot::Nuget::DiscoveryJsonReader.testonly_clear_discovery_files
   end
 
-  context "with a .vbproj" do
-    before do
-      stub_request(:get, url + "?ref=sha").
-        with(headers: { "Authorization" => "token token" }).
-        to_return(
-          status: 200,
-          body: fixture("github", "contents_dotnet_repo_vb.json"),
-          headers: { "content-type" => "application/json" }
-        )
-
-      stub_request(:get, File.join(url, "Nancy.vbproj?ref=sha")).
-        with(headers: { "Authorization" => "token token" }).
-        to_return(
-          status: 200,
-          body: fixture("github", "contents_dotnet_csproj_basic.json"),
-          headers: { "content-type" => "application/json" }
-        )
-
-      stub_request(:get, File.join(url, "Directory.Build.props?ref=sha")).
-        with(headers: { "Authorization" => "token token" }).
-        to_return(status: 404)
-      stub_request(:get, File.join(url, "Directory.Packages.props?ref=sha")).
-        with(headers: { "Authorization" => "token token" }).
-        to_return(status: 404)
-      stub_request(:get, File.join(url, "Directory.Build.targets?ref=sha")).
-        with(headers: { "Authorization" => "token token" }).
-        to_return(status: 404)
-    end
-
-    it "fetches the .vbproj" do
-      expect(file_fetcher_instance.files.map(&:name)).
-        to match_array(%w(Nancy.vbproj))
-    end
+  def clean_repo_files
+    FileUtils.rm_rf(repo_contents_path)
   end
 
-  context "with a .fsproj" do
-    before do
-      stub_request(:get, url + "?ref=sha").
-        with(headers: { "Authorization" => "token token" }).
-        to_return(
-          status: 200,
-          body: fixture("github", "contents_dotnet_repo_fs.json"),
-          headers: { "content-type" => "application/json" }
-        )
-
-      stub_request(:get, File.join(url, "Nancy.fsproj?ref=sha")).
-        with(headers: { "Authorization" => "token token" }).
-        to_return(
-          status: 200,
-          body: fixture("github", "contents_dotnet_csproj_basic.json"),
-          headers: { "content-type" => "application/json" }
-        )
-
-      stub_request(:get, File.join(url, "Directory.Build.props?ref=sha")).
-        with(headers: { "Authorization" => "token token" }).
-        to_return(status: 404)
-      stub_request(:get, File.join(url, "Directory.Build.targets?ref=sha")).
-        with(headers: { "Authorization" => "token token" }).
-        to_return(status: 404)
-    end
-
-    it "fetches the .vbproj" do
-      expect(file_fetcher_instance.files.map(&:name)).
-        to match_array(%w(Nancy.fsproj))
-    end
-  end
-
-  context "with a packages.config" do
-    before do
-      stub_request(:get, url + "?ref=sha").
-        with(headers: { "Authorization" => "token token" }).
-        to_return(
-          status: 200,
-          body: fixture("github", "contents_dotnet_repo_old.json"),
-          headers: { "content-type" => "application/json" }
-        )
-      stub_request(:get, File.join(url, "NuGet.Config?ref=sha")).
-        with(headers: { "Authorization" => "token token" }).
-        to_return(
-          status: 200,
-          body: fixture("github", "contents_dotnet_config.json"),
-          headers: { "content-type" => "application/json" }
-        )
-      stub_request(:get, File.join(url, "packages.config?ref=sha")).
-        with(headers: { "Authorization" => "token token" }).
-        to_return(
-          status: 200,
-          body: fixture("github", "contents_dotnet_csproj_basic.json"),
-          headers: { "content-type" => "application/json" }
-        )
-      stub_request(:get, File.join(url, "src?ref=sha")).
-        with(headers: { "Authorization" => "token token" }).
-        to_return(
-          status: 200,
-          body: fixture("github", "contents_dotnet_repo_old.json"),
-          headers: { "content-type" => "application/json" }
-        )
-    end
-
-    it "fetches the packages.config" do
-      expect(file_fetcher_instance.files.map(&:name)).
-        to match_array(%w(NuGet.Config packages.config))
-    end
-  end
-
-  context "with a *.sln" do
-    before do
-      stub_request(:get, url + "?ref=sha").
-        with(headers: { "Authorization" => "token token" }).
-        to_return(
-          status: 200,
-          body: fixture("github", "contents_dotnet_repo_with_sln.json"),
-          headers: { "content-type" => "application/json" }
-        )
-      stub_request(:get, File.join(url, "NuGet.Config?ref=sha")).
-        with(headers: { "Authorization" => "token token" }).
-        to_return(
-          status: 200,
-          body: fixture("github", "contents_dotnet_config.json"),
-          headers: { "content-type" => "application/json" }
-        )
-      stub_request(:get, File.join(url, "FSharp.sln?ref=sha")).
-        with(headers: { "Authorization" => "token token" }).
-        to_return(
-          status: 200,
-          body: fixture("github", "contents_dotnet_sln.json"),
-          headers: { "content-type" => "application/json" }
-        )
-      stub_request(:get, url + "src/GraphQL.Common?ref=sha").
-        with(headers: { "Authorization" => "token token" }).
-        to_return(
-          status: 200,
-          body: fixture("github", "contents_dotnet_repo_old.json"),
-          headers: { "content-type" => "application/json" }
-        )
-      stub_request(
-        :get,
-        File.join(url, "src/GraphQL.Common/GraphQL.Common.csproj?ref=sha")
-      ).with(headers: { "Authorization" => "token token" }).
-        to_return(
-          status: 200,
-          body: fixture("github",
-                        "contents_dotnet_csproj_with_parent_import.json"),
-          headers: { "content-type" => "application/json" }
-        )
-      stub_request(
-        :get,
-        File.join(url, "src/GraphQL.Common/packages.config?ref=sha")
-      ).with(headers: { "Authorization" => "token token" }).
-        to_return(
-          status: 200,
-          body: fixture("github",
-                        "contents_dotnet_csproj_with_parent_import.json"),
-          headers: { "content-type" => "application/json" }
-        )
-      stub_request(
-        :get,
-        File.join(url, "src/GraphQL.Common/NuGet.Config?ref=sha")
-      ).with(headers: { "Authorization" => "token token" }).
-        to_return(
-          status: 200,
-          body: fixture("github", "contents_dotnet_config.json"),
-          headers: { "content-type" => "application/json" }
-        )
-      stub_request(:get, File.join(url, "src/src.props?ref=sha")).
-        with(headers: { "Authorization" => "token token" }).
-        to_return(
-          status: 200,
-          body: fixture("github", "contents_dotnet_csproj_basic.json"),
-          headers: { "content-type" => "application/json" }
-        )
-      stub_request(
-        :get,
-        File.join(url, "src/GraphQL.Common?ref=sha")
-      ).with(headers: { "Authorization" => "token token" }).
-        to_return(
-          status: 200,
-          body: fixture("github", "contents_dotnet_repo_old.json"),
-          headers: { "content-type" => "application/json" }
-        )
-      stub_request(:get, File.join(url, "src?ref=sha")).
-        with(headers: { "Authorization" => "token token" }).
-        to_return(
-          status: 200,
-          body: fixture("github", "contents_dotnet_repo.json"),
-          headers: { "content-type" => "application/json" }
-        )
-      stub_request(:get, url + "Another.sln?ref=sha").
-        with(headers: { "Authorization" => "token token" }).
-        to_return(
-          status: 200,
-          body: fixture("github", "contents_dotnet_other_sln.json"),
-          headers: { "content-type" => "application/json" }
-        )
-    end
-
-    it "fetches the files the .sln points to" do
-      expect(file_fetcher_instance.files.map(&:name)).
-        to match_array(
-          %w(
-            NuGet.Config
-            src/GraphQL.Common/GraphQL.Common.csproj
-            src/GraphQL.Common/packages.config
-            src/GraphQL.Common/NuGet.Config
-            src/src.props
-          )
-        )
-    end
-
-    context "that can't be fetched" do
-      before do
-        stub_request(
-          :get,
-          File.join(url, "src/GraphQL.Common/GraphQL.Common.csproj?ref=sha")
-        ).with(headers: { "Authorization" => "token token" }).
-          to_return(status: 404)
-        stub_request(
-          :get,
-          File.join(url, "src/GraphQL.Common/packages.config?ref=sha")
-        ).with(headers: { "Authorization" => "token token" }).
-          to_return(status: 404)
-      end
-
-      it "raises a Dependabot::DependencyFileNotFound error" do
-        expect { file_fetcher_instance.files }.
-          to raise_error(Dependabot::DependencyFileNotFound) do |error|
-            expect(error.file_name).to eq("GraphQL.Common.csproj")
+  # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+  def run_fetch_test(files_on_disk:, discovery_content_hash:, &_block)
+    clean_common_files
+    clean_repo_files
+    ENV["DEPENDABOT_NUGET_CACHE_DISABLED"] = "true"
+    ENV["DEPENDABOT_JOB_PATH"] = File.join(repo_contents_path, "job.json")
+    FileUtils.mkdir_p(File.dirname(ENV.fetch("DEPENDABOT_JOB_PATH", nil)))
+    File.write(ENV.fetch("DEPENDABOT_JOB_PATH", nil), "unused")
+    begin
+      # stub call to native tool
+      Dependabot::Nuget::DiscoveryJsonReader.testonly_clear_caches
+      allow(Dependabot::Nuget::NativeHelpers)
+        .to receive(:run_nuget_discover_tool)
+        .and_wrap_original do |_original_method, *args, &_block|
+          discovery_json_path = args[0][:output_path]
+          FileUtils.mkdir_p(File.dirname(discovery_json_path))
+          if report_stub_debug_information
+            puts "stubbing call to `run_nuget_discover_tool` with args #{args}; writing prefabricated discovery " \
+                 "response to discovery.json to #{discovery_json_path}"
           end
+          discovery_json_content = discovery_content_hash.to_json
+          File.write(discovery_json_path, discovery_json_content)
+        end
+      allow(Dependabot::Nuget::NativeHelpers)
+        .to receive(:normalize_file_names)
+      # stub call to `fetch_file_from_host` because it expects an empty directory and other things that make the test
+      # more difficult than it needs to be
+      allow(file_fetcher_instance)
+        .to receive(:fetch_file_from_host)
+        .and_wrap_original do |_original_method, *args, &_block|
+          filename = args[0]
+          Dependabot::DependencyFile.new(
+            name: filename,
+            directory: directory,
+            content: "unused"
+          )
+        end
+      # ensure test files exist
+      files_on_disk.each do |f|
+        FileUtils.mkdir_p(File.join(repo_contents_path, File.dirname(f)))
+        FileUtils.touch(File.join(repo_contents_path, f))
       end
-    end
-
-    context "that can't be encoded to UTF-8" do
-      before do
-        stub_request(:get, File.join(url, "FSharp.sln?ref=sha")).
-          with(headers: { "Authorization" => "token token" }).
-          to_return(
-            status: 200,
-            body: fixture("github", "contents_image.json"),
-            headers: { "content-type" => "application/json" }
-          )
-        stub_request(:get, File.join(url, "Another.sln?ref=sha")).
-          with(headers: { "Authorization" => "token token" }).
-          to_return(
-            status: 200,
-            body: fixture("github", "contents_image.json"),
-            headers: { "content-type" => "application/json" }
-          )
-      end
-
-      it "raises a Dependabot::DependencyFileNotFound error" do
-        expect { file_fetcher_instance.files }.
-          to raise_error(Dependabot::DependencyFileNotFound) do |error|
-            expect(error.file_name).to eq("<anything>.(cs|vb|fs)proj")
-          end
-      end
-    end
-
-    context "that is nested in a src directory" do
-      before do
-        stub_request(:get, url + "?ref=sha").
-          with(headers: { "Authorization" => "token token" }).
-          to_return(
-            status: 200,
-            body: fixture("github", "contents_dotnet_repo_nested_sln.json"),
-            headers: { "content-type" => "application/json" }
-          )
-        stub_request(:get, url + "src?ref=sha").
-          with(headers: { "Authorization" => "token token" }).
-          to_return(
-            status: 200,
-            body: fixture("github", "contents_dotnet_repo_with_sln.json"),
-            headers: { "content-type" => "application/json" }
-          )
-        stub_request(:get, url + "src/FSharp.sln?ref=sha").
-          with(headers: { "Authorization" => "token token" }).
-          to_return(
-            status: 200,
-            body: fixture("github", "contents_dotnet_sln_nested.json"),
-            headers: { "content-type" => "application/json" }
-          )
-        stub_request(:get, url + "src/Another.sln?ref=sha").
-          with(headers: { "Authorization" => "token token" }).
-          to_return(
-            status: 200,
-            body: fixture("github", "contents_dotnet_other_sln_nested.json"),
-            headers: { "content-type" => "application/json" }
-          )
-        stub_request(
-          :get, File.join(url, "src/Validator/Directory.Build.props?ref=sha")
-        ).with(headers: { "Authorization" => "token token" }).
-          to_return(status: 404)
-        stub_request(
-          :get, File.join(url, "src/Validator/Directory.Packages.props?ref=sha")
-        ).with(headers: { "Authorization" => "token token" }).
-          to_return(status: 404)
-        stub_request(
-          :get, File.join(url, "src/Validator/Directory.Build.targets?ref=sha")
-        ).with(headers: { "Authorization" => "token token" }).
-          to_return(status: 404)
-        stub_request(:get, url + "src/Validator?ref=sha").
-          with(headers: { "Authorization" => "token token" }).
-          to_return(
-            status: 200,
-            body: fixture("github", "contents_dotnet_repo.json"),
-            headers: { "content-type" => "application/json" }
-          )
-        stub_request(:get, url + "src/Validator/Validator.csproj?ref=sha").
-          with(headers: { "Authorization" => "token token" }).
-          to_return(
-            status: 200,
-            body:
-              fixture("github", "contents_dotnet_csproj_from_other_sln.json"),
-            headers: { "content-type" => "application/json" }
-          )
-      end
-
-      it "fetches the files the .sln points to" do
-        expect(file_fetcher_instance.files.map(&:name)).
-          to match_array(
-            %w(
-              NuGet.Config
-              src/GraphQL.Common/GraphQL.Common.csproj
-              src/GraphQL.Common/packages.config
-              src/GraphQL.Common/NuGet.Config
-              src/Validator/Validator.csproj
-              src/src.props
-            )
-          )
-      end
-    end
-
-    context "with a Directory.Build.props file" do
-      before do
-        stub_request(:get, url + "src?ref=sha").
-          with(headers: { "Authorization" => "token token" }).
-          to_return(
-            status: 200,
-            body:
-              fixture("github", "contents_dotnet_repo_with_sln_and_props.json"),
-            headers: { "content-type" => "application/json" }
-          )
-        stub_request(:get, File.join(url, "src/Directory.Build.props?ref=sha")).
-          with(headers: { "Authorization" => "token token" }).
-          to_return(
-            status: 200,
-            body:
-              fixture("github", "contents_dotnet_directory_build_props.json"),
-            headers: { "content-type" => "application/json" }
-          )
-        stub_request(
-          :get, File.join(url, "src/build/dependencies.props?ref=sha")
-        ).with(headers: { "Authorization" => "token token" }).
-          to_return(
-            status: 200,
-            body:
-              fixture("github", "contents_dotnet_csproj_basic.json"),
-            headers: { "content-type" => "application/json" }
-          )
-        stub_request(:get, File.join(url, "src/build/sources.props?ref=sha")).
-          with(headers: { "Authorization" => "token token" }).
-          to_return(
-            status: 200,
-            body:
-              fixture("github", "contents_dotnet_csproj_basic.json"),
-            headers: { "content-type" => "application/json" }
-          )
-      end
-
-      it "fetches the Directory.Build.props file" do
-        expect(file_fetcher_instance.files.map(&:name)).
-          to match_array(
-            %w(
-              NuGet.Config
-              src/GraphQL.Common/GraphQL.Common.csproj
-              src/GraphQL.Common/packages.config
-              src/GraphQL.Common/NuGet.Config
-              src/src.props
-              src/Directory.Build.props
-              src/build/dependencies.props
-              src/build/sources.props
-            )
-          )
-      end
-    end
-
-    context "with a Directory.Build.targets file" do
-      before do
-        stub_request(:get, url + "src?ref=sha").
-          with(headers: { "Authorization" => "token token" }).
-          to_return(
-            status: 200,
-            body:
-              fixture("github", "contents_dotnet_repo_with_sln_and_trgts.json"),
-            headers: { "content-type" => "application/json" }
-          )
-        stub_request(
-          :get,
-          File.join(url, "src/Directory.Build.targets?ref=sha")
-        ).with(headers: { "Authorization" => "token token" }).
-          to_return(
-            status: 200,
-            body:
-              fixture("github", "contents_dotnet_directory_build_props.json"),
-            headers: { "content-type" => "application/json" }
-          )
-        stub_request(
-          :get, File.join(url, "src/build/dependencies.props?ref=sha")
-        ).with(headers: { "Authorization" => "token token" }).
-          to_return(
-            status: 200,
-            body:
-              fixture("github", "contents_dotnet_csproj_basic.json"),
-            headers: { "content-type" => "application/json" }
-          )
-        stub_request(:get, File.join(url, "src/build/sources.props?ref=sha")).
-          with(headers: { "Authorization" => "token token" }).
-          to_return(
-            status: 200,
-            body:
-              fixture("github", "contents_dotnet_csproj_basic.json"),
-            headers: { "content-type" => "application/json" }
-          )
-      end
-
-      it "fetches the files the .sln points to" do
-        expect(file_fetcher_instance.files.map(&:name)).
-          to match_array(
-            %w(
-              NuGet.Config
-              src/GraphQL.Common/GraphQL.Common.csproj
-              src/GraphQL.Common/packages.config
-              src/GraphQL.Common/NuGet.Config
-              src/src.props
-              src/Directory.Build.targets
-              src/build/dependencies.props
-              src/build/sources.props
-            )
-          )
-      end
-    end
-
-    context "with a Packages.props file" do
-      before do
-        stub_request(:get, url + "?ref=sha").
-          with(headers: { "Authorization" => "token token" }).
-          to_return(
-            status: 200,
-            body:
-              fixture("github",
-                      "contents_dotnet_repo_with_sln_and_packages.json"),
-            headers: { "content-type" => "application/json" }
-          )
-        stub_request(
-          :get, File.join(url, "src/build/dependencies.props?ref=sha")
-        ).with(headers: { "Authorization" => "token token" }).
-          to_return(
-            status: 200,
-            body:
-              fixture("github", "contents_dotnet_csproj_basic.json"),
-            headers: { "content-type" => "application/json" }
-          )
-        stub_request(:get, File.join(url, "src/build/sources.props?ref=sha")).
-          with(headers: { "Authorization" => "token token" }).
-          to_return(
-            status: 200,
-            body:
-              fixture("github", "contents_dotnet_csproj_basic.json"),
-            headers: { "content-type" => "application/json" }
-          )
-        stub_request(
-          :get,
-          File.join(url, "Packages.props?ref=sha")
-        ).with(headers: { "Authorization" => "token token" }).
-          to_return(
-            status: 200,
-            body:
-              fixture("github", "contents_dotnet_packages_props.json"),
-            headers: { "content-type" => "application/json" }
-          )
-      end
-
-      it "fetches the files the .sln points to" do
-        expect(file_fetcher_instance.files.map(&:name)).
-          to match_array(
-            %w(
-              NuGet.Config
-              src/GraphQL.Common/GraphQL.Common.csproj
-              src/GraphQL.Common/NuGet.Config
-              src/GraphQL.Common/packages.config
-              src/src.props
-              Packages.props
-            )
-          )
-      end
-    end
-
-    context "when one of the sln files isn't reachable" do
-      before do
-        stub_request(:get, File.join(url, "src/src.props?ref=sha")).
-          with(headers: { "Authorization" => "token token" }).
-          to_return(status: 404)
-      end
-
-      it "fetches the other files" do
-        expect(file_fetcher_instance.files.map(&:name)).
-          to match_array(
-            %w(
-              NuGet.Config
-              src/GraphQL.Common/GraphQL.Common.csproj
-              src/GraphQL.Common/packages.config
-              src/GraphQL.Common/NuGet.Config
-            )
-          )
-      end
+      # run the test
+      yield
+    ensure
+      clean_common_files
+      clean_repo_files
+      ENV.delete("DEPENDABOT_JOB_PATH")
+      ENV.delete("DEPENDABOT_NUGET_CACHE_DISABLED")
     end
   end
+  # rubocop:enable Metrics/AbcSize,Metrics/MethodLength
 
-  context "without any project files" do
-    before do
-      stub_request(:get, url + "?ref=sha").
-        with(headers: { "Authorization" => "token token" }).
-        to_return(
-          status: 200,
-          body: fixture("github", "contents_ruby.json"),
-          headers: { "content-type" => "application/json" }
-        )
-    end
+  context "when discovery JSON contents are properly reported" do
+    describe "when the starting directory is the root" do
+      let(:directory) { "/" }
 
-    it "raises a Dependabot::DependencyFileNotFound error" do
-      expect { file_fetcher_instance.files }.
-        to raise_error(Dependabot::DependencyFileNotFound) do |error|
-          expect(error.file_name).to eq("<anything>.(cs|vb|fs)proj")
+      it "reports the correct files" do
+        run_fetch_test(
+          files_on_disk: [
+            "Directory.Packages.props",
+            "src/project1/packages.config",
+            "src/project1/project1.csproj",
+            "src/project2/packages.config",
+            "src/project2/project2.csproj",
+            "src/project2/unrelated-file.cs"
+          ],
+          discovery_content_hash: {
+            Path: "",
+            IsSuccess: true,
+            Projects: [{
+              FilePath: "src/project1/project1.csproj",
+              IsSuccess: true,
+              Dependencies: [], # not relevant for this test
+              Properties: [], # not relevant for this test
+              TargetFrameworks: [], # not relevant for this test
+              ReferencedProjectPaths: [], # not relevant for this test
+              ImportedFiles: [
+                "../../Directory.Packages.props"
+              ],
+              AdditionalFiles: [
+                "packages.config"
+              ]
+            }, {
+              FilePath: "src/project2/project2.csproj",
+              IsSuccess: true,
+              Dependencies: [], # not relevant for this test
+              Properties: [], # not relevant for this test
+              TargetFrameworks: [], # not relevant for this test
+              ReferencedProjectPaths: [], # not relevant for this test
+              ImportedFiles: [
+                "../../Directory.Packages.props"
+              ],
+              AdditionalFiles: [
+                "packages.config"
+              ]
+            }],
+            GlobalJson: nil,
+            DotNetToolsJson: nil,
+            ErrorType: nil,
+            ErrorDetails: nil
+          }
+        ) do
+          expect(fetched_file_paths).to contain_exactly("/Directory.Packages.props",
+                                                        "/src/project1/packages.config",
+                                                        "/src/project1/project1.csproj",
+                                                        "/src/project2/packages.config",
+                                                        "/src/project2/project2.csproj")
         end
-    end
-  end
-
-  context "witha bad directory" do
-    let(:directory) { "dir/" }
-    before do
-      stub_request(:get, url + "dir?ref=sha").
-        with(headers: { "Authorization" => "token token" }).
-        to_return(status: 404)
+      end
     end
 
-    it "raises a Dependabot::DependencyFileNotFound error" do
-      expect { file_fetcher_instance.files }.
-        to raise_error(Dependabot::DependencyFileNotFound) do |error|
-          expect(error.file_path).to eq("dir/<anything>.(cs|vb|fs)proj")
+    describe "when the starting directory is not the root" do
+      let(:directory) { "/src" }
+
+      it "reports the correct files" do
+        run_fetch_test(
+          files_on_disk: [
+            "Directory.Packages.props",
+            "src/project1/packages.config",
+            "src/project1/project1.csproj",
+            "src/project2/packages.config",
+            "src/project2/project2.csproj",
+            "src/project2/unrelated-file.cs"
+          ],
+          discovery_content_hash: {
+            Path: "/src",
+            IsSuccess: true,
+            Projects: [{
+              FilePath: "project1/project1.csproj",
+              IsSuccess: true,
+              Dependencies: [], # not relevant for this test
+              Properties: [], # not relevant for this test
+              TargetFrameworks: [], # not relevant for this test
+              ReferencedProjectPaths: [], # not relevant for this test
+              ImportedFiles: [
+                "../../Directory.Packages.props"
+              ],
+              AdditionalFiles: [
+                "packages.config"
+              ]
+            }, {
+              FilePath: "project2/project2.csproj",
+              IsSuccess: true,
+              Dependencies: [], # not relevant for this test
+              Properties: [], # not relevant for this test
+              TargetFrameworks: [], # not relevant for this test
+              ReferencedProjectPaths: [], # not relevant for this test
+              ImportedFiles: [
+                "../../Directory.Packages.props"
+              ],
+              AdditionalFiles: [
+                "packages.config"
+              ]
+            }],
+            GlobalJson: nil,
+            DotNetToolsJson: nil,
+            ErrorType: nil,
+            ErrorDetails: nil
+          }
+        ) do
+          expect(fetched_file_paths).to contain_exactly("/Directory.Packages.props",
+                                                        "/src/project1/packages.config",
+                                                        "/src/project1/project1.csproj",
+                                                        "/src/project2/packages.config",
+                                                        "/src/project2/project2.csproj")
         end
+      end
+    end
+
+    describe "when global.json and dotnet-tools.json are present" do
+      let(:directory) { "/src" }
+
+      it "reports the correct files" do
+        run_fetch_test(
+          files_on_disk: [
+            "global.json",
+            ".config/dotnet-tools.json",
+            "src/unrelated-file.cs"
+          ],
+          discovery_content_hash: {
+            Path: "/src",
+            IsSuccess: true,
+            Projects: [], # unused in this test
+            GlobalJson: {
+              FilePath: "global.json",
+              Dependencies: []
+            },
+            DotNetToolsJson: {
+              FilePath: ".config/dotnet-tools.json",
+              Dependencies: []
+            },
+            ErrorType: nil,
+            ErrorDetails: nil
+          }
+        ) do
+          expect(fetched_file_paths).to contain_exactly("/.config/dotnet-tools.json", "/global.json")
+        end
+      end
+    end
+
+    context "when there is a private source authentication failure" do
+      let(:directory) { "/" }
+
+      it "raises the correct error" do
+        run_fetch_test(
+          files_on_disk: [],
+          discovery_content_hash: {
+            Path: "",
+            IsSucess: false,
+            Projects: [],
+            GlobalJson: nil,
+            DotNetToolsJson: nil,
+            Error: {
+              "error-type": "private_source_authentication_failure",
+              "error-details": {
+                source: "some-package-source"
+              }
+            }
+          }
+        ) do
+          expect { fetched_file_paths }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
+        end
+      end
     end
   end
 end

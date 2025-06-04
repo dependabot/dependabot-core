@@ -1,0 +1,15 @@
+! dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
+stderr dependency_file_not_found
+
+# Testing glob configuration when there are no manifests.
+
+-- input.yml --
+job:
+  package-manager: "silent"
+  source:
+    directories:
+      - "**/*"
+    provider: example
+    hostname: example.com
+    api-endpoint: https://example.com/api/v3
+    repo: dependabot/smoke-tests

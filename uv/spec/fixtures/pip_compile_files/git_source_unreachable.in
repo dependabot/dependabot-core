@@ -1,0 +1,6 @@
+flaky
+pytest
+pytest-xdist
+mock
+Attrs
+-e git+https://github.com/greysteil/unreachable#egg=unreachable

@@ -1,6 +1,8 @@
-#!/bin/bash -e
+#!/usr/bin/env bash
 #/ usage: ci-test SUITE_NAME
 #/ simulate the process followed by ~/.github/workflows/ci.yml
+
+set -e
 
 function print_usage() {
   grep ^#/ "$0" | cut -c4-
@@ -8,17 +10,15 @@ function print_usage() {
 
 function handle_args() {
   export SUITE_NAME=$1
-  case $SUITE_NAME in
-    bundler1 | bundler2)
-      export MODULE=bundler
-      ;;
-    "")
-      print_usage
-      exit 1
-      ;;
-    *)
-      export MODULE=$SUITE_NAME
-  esac
+
+  # Only allow "bundler" as a valid SUITE_NAME
+  if [[ "$SUITE_NAME" != "bundler" ]]; then
+    echo "Error: Only 'bundler' is allowed as SUITE_NAME."
+    print_usage
+    exit 1
+  fi
+
+  export MODULE="bundler"
 
   if ! [ -d "$MODULE" ]; then
     print_usage

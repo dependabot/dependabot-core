@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -19,6 +20,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecDependencyNameFinder do
       let(:gemspec_content) do
         bundler_project_dependency_file("gemfile_function_name", filename: "example.gemspec").content
       end
+
       it { is_expected.to be_nil }
     end
   end
