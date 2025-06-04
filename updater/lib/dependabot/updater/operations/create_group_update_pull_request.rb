@@ -63,7 +63,7 @@ module Dependabot
             Dependabot.logger.info("Creating a pull request for '#{group.name}'")
 
             # Report any failed dependency updates before creating the PR
-            report_failed_dependency_updates
+            report_failed_dependency_updates_for_security_updates
             begin
               service.create_pull_request(T.must(dependency_change), dependency_snapshot.base_commit_sha)
             rescue StandardError => e
@@ -76,7 +76,7 @@ module Dependabot
             Dependabot.logger.info("Nothing to update for Dependency Group: '#{group.name}'")
 
             # If there are no updates, we still want to report them as failed updates
-            report_failed_dependency_updates
+            report_failed_dependency_updates_for_security_updates
           end
 
           dependency_change
@@ -121,7 +121,10 @@ module Dependabot
         end
 
         sig { void }
-        def report_failed_dependency_updates
+        def report_failed_dependency_updates_for_security_updates
+          # Only report failed updates if the group applies to security updates
+          return unless job.security_updates_only?
+
           original_dependencies = group.dependencies
           updated_dependency_names = dependency_change&.updated_dependencies&.map(&:name) || []
 
@@ -131,14 +134,12 @@ module Dependabot
 
           failed_dependencies.each do |failed_dependency|
             error_handler.record_update_job_error(
-              error_type: "dependency_update_failed",
+              error_type: "security_update_failed",
               error_details: {
                 "dependency-name" => failed_dependency.name,
                 "dependency-version" => failed_dependency.version,
                 "directory" => job.source.directory || "/",
-                "dependency-group-name" => group.name
-              },
-              dependency: failed_dependency
+              }
             )
           end
         end
