@@ -129,7 +129,7 @@ internal class RefreshGroupUpdatePullRequestHandler : IUpdateHandler
 
                     var patchedUpdateOperations = RunWorker.PatchInOldVersions(updaterResult.UpdateOperations, projectDiscovery);
                     var updatedDependenciesForThis = patchedUpdateOperations
-                        .Select(o => o.ToReportedDependency(updatedDependencyList.Dependencies, analysisResult.UpdatedDependencies))
+                        .Select(o => o.ToReportedDependency(projectPath, updatedDependencyList.Dependencies, analysisResult.UpdatedDependencies))
                         .ToArray();
 
                     updatedDependencies.AddRange(updatedDependenciesForThis);

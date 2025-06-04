@@ -58,10 +58,10 @@ module Dependabot
 
       sig { returns(T.nilable(String)) }
       def fetch_latest_version
-        LatestVersionFinder.new(
+        T.let(LatestVersionFinder.new(
           dependency: dependency,
           credentials: credentials
-        ).version_list
+        ).latest_version, T.nilable(String))
       end
     end
   end
