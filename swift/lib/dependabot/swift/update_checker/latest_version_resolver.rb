@@ -46,47 +46,34 @@ module Dependabot
           allowed_version_tags = git_commit_checker.allowed_version_tags
           begin
             # sort the allowed version tags by name in descending order
-            allowed_version_tags = allowed_version_tags.sort_by(&:name).reverse
-            allowed_v_tags_after_filtering_cooldown = allowed_version_tags
-            allowed_version_tags.each do |gitref|
-              # Perform operations on each gitref
-              Dependabot.logger.info("Processing gitref: #{gitref.name}")
-              break unless check_if_version_is_in_cooldown?(gitref)
-
+            select_version_tags_in_cooldown_period&.each do |tag_name|
               # filter out if name is not in cooldown period
-              allowed_v_tags_after_filtering_cooldown.reject do |gitref_filtered|
-                gitref_filtered.name == gitref.name
+              allowed_version_tags.reject! do |gitref_filtered|
+                true if gitref_filtered.name == tag_name
               end
             end
-            git_commit_checker.max_local_tag(allowed_v_tags_after_filtering_cooldown)
+            Dependabot.logger.info("Allowed version tags after filtering versions in cooldown:
+              #{allowed_version_tags.map(&:name).join(', ')}")
+            git_commit_checker.max_local_tag(allowed_version_tags)
           rescue StandardError => e
             Dependabot.logger.error("Error fetching latest version tag: #{e.message}")
             git_commit_checker.local_tag_for_latest_version
           end
         end
 
-        # This method will return true if the tag is in cooldown period else false.
-        sig { params(tag: Dependabot::GitRef).returns(T::Boolean) }
-        def check_if_version_is_in_cooldown?(tag)
-          # to do check if the tag is in cooldown period
-          # call another method to fethch release details from the GitHub API
-          return false unless cooldown_enabled?
+        sig { returns(T.nilable(T::Array[String])) }
+        def select_version_tags_in_cooldown_period
+          version_tags_in_cooldown_period = T.let([], T::Array[String])
 
-          # rubocop:disable Style/Next
           package_details_fetcher.fetch_tag_and_release_date.each do |git_tag_with_detail|
-            Dependabot.logger.info("Checking if tag #{tag.name} is in cooldown period")
-            if git_tag_with_detail.tag == tag.name &&
-               check_if_version_in_cooldown_period?(git_tag_with_detail.release_date)
-              Dependabot.logger.info("Tag #{tag.name} is in cooldown period")
-              return true
+            if check_if_version_in_cooldown_period?(git_tag_with_detail.release_date)
+              version_tags_in_cooldown_period << git_tag_with_detail.tag
             end
           end
-
-          false
-          # rubocop:enable Style/Next
+          version_tags_in_cooldown_period
         rescue StandardError => e
           Dependabot.logger.error("Error checking if version is in cooldown: #{e.message}")
-          false
+          version_tags_in_cooldown_period
         end
 
         sig { params(release_date: String).returns(T::Boolean) }
@@ -102,7 +89,6 @@ module Dependabot
           days = [cooldown.default_days, cooldown.semver_major_days].max
           days = cooldown.semver_minor_days unless days > cooldown.semver_minor_days
           days = cooldown.semver_patch_days unless days > cooldown.semver_patch_days
-          Dependabot.logger.info("Cooldown days: #{days} and release date: #{release_date}")
           # Calculate the number of seconds passed since the release
           passed_seconds = Time.now.to_i - release_date_to_seconds(release_date)
           # Check if the release is within the cooldown period
