@@ -5,6 +5,7 @@ require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/git_metadata_fetcher"
 require "dependabot/git_ref"
+require "dependabot/git_tag_with_detail"
 
 RSpec.describe Dependabot::GitMetadataFetcher do
   let(:checker) { described_class.new(url: url, credentials: credentials) }
@@ -340,6 +341,91 @@ RSpec.describe Dependabot::GitMetadataFetcher do
         let(:ref) { "HEAD" }
 
         it { is_expected.to eq("7bb4e41ce5164074a0920d5b5770d196b4d90104") }
+      end
+    end
+  end
+
+  describe "#refs_for_tag_with_detail" do
+    context "when upload_tag_with_detail contains valid data" do
+      let(:upload_tag_with_detail) do
+        <<~TAGS
+          v1.0.0 2023-01-01
+          v1.1.0 2023-02-01
+        TAGS
+      end
+
+      before do
+        allow(checker).to receive(:upload_tag_with_detail).and_return(upload_tag_with_detail)
+      end
+
+      it "parses the tags and release dates into GitTagWithDetail objects" do
+        result = checker.refs_for_tag_with_detail
+
+        expect(result.size).to eq(2)
+        expect(result.first).to be_a(Dependabot::GitTagWithDetail)
+        expect(result.first.tag).to eq("v1.0.0")
+        expect(result.first.release_date).to eq("2023-01-01")
+        expect(result.last.tag).to eq("v1.1.0")
+        expect(result.last.release_date).to eq("2023-02-01")
+      end
+    end
+
+    context "when upload_tag_with_detail is empty" do
+      before do
+        allow(checker).to receive(:upload_tag_with_detail).and_return("")
+      end
+
+      it "returns an empty array" do
+        result = checker.refs_for_tag_with_detail
+        expect(result).to eq([])
+      end
+    end
+
+    context "when upload_tag_with_detail is nil" do
+      before do
+        allow(checker).to receive(:upload_tag_with_detail).and_return(nil)
+      end
+
+      it "returns an empty array" do
+        result = checker.refs_for_tag_with_detail
+        expect(result).to eq([])
+      end
+    end
+
+    context "when upload_tag_with_detail contains invalid data" do
+      let(:upload_tag_with_detail) do
+        <<~TAGS
+          invalid_line
+          v1.0.0
+        TAGS
+      end
+
+      before do
+        allow(checker).to receive(:upload_tag_with_detail).and_return(upload_tag_with_detail)
+      end
+
+      it "skips invalid lines and parses valid ones" do
+        result = checker.refs_for_tag_with_detail
+
+        expect(result.size).to eq(2) # No valid tag-release pairs
+      end
+    end
+
+    describe "#fetch_tags_with_detail_from_git_for" do
+      let(:fetcher) { described_class.new(url: url, credentials: credentials) }
+      let(:url) { "https://github.com/dependabot/dependabot-core" }
+      let(:credentials) { [] }
+
+      context "when git is not installed" do
+        before do
+          allow(Open3).to receive(:capture3).and_raise(Errno::ENOENT, "No such file or directory - git")
+        end
+
+        it "returns a 500 status with the error message" do
+          result = fetcher.send(:fetch_tags_with_detail_from_git_for, url)
+          expect(result.status).to eq(500)
+          expect(result.body).to eq("No such file or directory - No such file or directory - git")
+        end
       end
     end
   end

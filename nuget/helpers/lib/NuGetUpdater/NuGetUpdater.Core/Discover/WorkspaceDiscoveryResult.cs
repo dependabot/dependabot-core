@@ -9,4 +9,10 @@ public sealed record WorkspaceDiscoveryResult : NativeResult
     public ImmutableArray<ProjectDiscoveryResult> Projects { get; init; }
     public GlobalJsonDiscoveryResult? GlobalJson { get; init; }
     public DotNetToolsJsonDiscoveryResult? DotNetToolsJson { get; init; }
+
+    public ProjectDiscoveryResult? GetProjectDiscoveryFromPath(string repoPath)
+    {
+        var projectDiscovery = Projects.FirstOrDefault(p => System.IO.Path.Join(Path, p.FilePath).FullyNormalizedRootedPath().Equals(repoPath, StringComparison.OrdinalIgnoreCase));
+        return projectDiscovery;
+    }
 }

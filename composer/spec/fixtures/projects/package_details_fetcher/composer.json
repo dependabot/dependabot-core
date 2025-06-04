@@ -1,0 +1,15 @@
+{
+    "require": {
+        "php": "^8.2",
+        "ext-ctype": "*",
+        "ext-filter": "*",
+        "ext-mbstring": "*",
+        "doctrine/inflector": "^2.0",
+        "illuminate/collections": "^12.0",
+        "illuminate/conditionable": "^12.0",
+        "illuminate/contracts": "^12.0",
+        "illuminate/macroable": "^12.0",
+        "nesbot/carbon": "^3.8.4",
+        "voku/portable-ascii": "^2.0.2"
+    }
+}

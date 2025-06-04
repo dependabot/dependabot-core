@@ -1,9 +1,11 @@
 using System.Collections.Immutable;
-
-using NuGet.Versioning;
+using System.Text;
+using System.Text.RegularExpressions;
 
 using NuGetUpdater.Core.Run.ApiModel;
 using NuGetUpdater.Core.Updater;
+
+using DependencySet = (string Name, (NuGet.Versioning.NuGetVersion? OldVersion, NuGet.Versioning.NuGetVersion NewVersion)[] Versions);
 
 namespace NuGetUpdater.Core.Run;
 
@@ -13,20 +15,58 @@ public class PullRequestTextGenerator
 
     public static string GetPullRequestTitle(Job job, ImmutableArray<UpdateOperationBase> updateOperationsPerformed, string? dependencyGroupName)
     {
-        // simple version looks like
-        //   Update Some.Package to 1.2.3
-        // if multiple packages are updated to multiple versions, result looks like:
-        //   Update Package.A to 1.0.0, 2.0.0; Package.B to 3.0.0, 4.0.0
-        var dependencySets = GetDependencySets(updateOperationsPerformed);
-        var updatedPartTitles = dependencySets
-            .Select(d => $"{d.Name} to {string.Join(", ", d.Versions.Select(v => v.ToString()))}")
-            .ToArray();
-        var title = $"{job.CommitMessageOptions?.Prefix}Update {string.Join("; ", updatedPartTitles)}";
+        var shortTitle = GetPullRequestShortTitle(job, updateOperationsPerformed, dependencyGroupName);
+        var titlePrefix = GetPullRequestTitlePrefix(job);
+        var fullTitle = $"{titlePrefix}{shortTitle}";
+        return fullTitle;
+    }
 
-        // don't let the title get too long
-        if (title.Length > MaxTitleLength && updatedPartTitles.Length >= 3)
+    private static string GetPullRequestTitlePrefix(Job job)
+    {
+        if (string.IsNullOrEmpty(job.CommitMessageOptions?.Prefix))
         {
-            title = $"{job.CommitMessageOptions?.Prefix}Update {dependencySets[0].Name} and {dependencySets.Length - 1} other dependencies";
+            return string.Empty;
+        }
+
+        var prefix = job.CommitMessageOptions?.Prefix ?? string.Empty;
+        if (Regex.IsMatch(prefix, @"[a-z0-9\)\]]$", RegexOptions.IgnoreCase))
+        {
+            prefix += ":";
+        }
+
+        if (!prefix.EndsWith(" "))
+        {
+            prefix += " ";
+        }
+
+        return prefix;
+    }
+
+    private static string GetPullRequestShortTitle(Job job, ImmutableArray<UpdateOperationBase> updateOperationsPerformed, string? dependencyGroupName)
+    {
+        string title;
+        var dependencySets = GetDependencySets(updateOperationsPerformed);
+        if (dependencyGroupName is not null)
+        {
+            title = $"Bump the {dependencyGroupName} group with {dependencySets.Length} update{(dependencySets.Length > 1 ? "s" : "")}";
+        }
+        else
+        {
+            if (dependencySets.Length == 1)
+            {
+                title = GetDependencySetBumpText(dependencySets[0], isCommitMessageDetail: false);
+            }
+            else
+            {
+                var dependencyNames = dependencySets.Select(d => d.Name).Distinct().OrderBy(n => n).ToArray();
+                title = $"Bump {string.Join(", ", dependencyNames.Take(dependencyNames.Length - 1))} and {dependencyNames[^1]}";
+
+                // don't let the title get too long
+                if (title.Length > MaxTitleLength && dependencyNames.Length >= 3)
+                {
+                    title = $"Bump {dependencyNames[0]} and {dependencyNames.Length - 1} others";
+                }
+            }
         }
 
         return title;
@@ -34,28 +74,33 @@ public class PullRequestTextGenerator
 
     public static string GetPullRequestCommitMessage(Job job, ImmutableArray<UpdateOperationBase> updateOperationsPerformed, string? dependencyGroupName)
     {
-        // updating a single dependency looks like
-        //   Update Some.Package to 1.2.3
-        // if multiple packages are updated, result looks like:
-        //   Update:
-        //   - Package.A to 1.0.0
-        //   - Package.B to 2.0.0
+        var sb = new StringBuilder();
+        sb.AppendLine(GetPullRequestTitle(job, updateOperationsPerformed, dependencyGroupName));
         var dependencySets = GetDependencySets(updateOperationsPerformed);
-        if (dependencySets.Length == 1)
+        if (dependencySets.Length > 1 ||
+            dependencyGroupName is not null)
         {
-            var depName = dependencySets[0].Name;
-            var depVersions = dependencySets[0].Versions.Select(v => v.ToString());
-            return $"Update {dependencySets[0].Name} to {string.Join(", ", depVersions)}";
+            // multiple updates performed, enumerate them
+            sb.AppendLine();
+            foreach (var dependencySet in dependencySets)
+            {
+                sb.AppendLine(GetDependencySetBumpText(dependencySet, isCommitMessageDetail: true));
+            }
         }
 
-        var updatedParts = dependencySets
-            .Select(d => $"- {d.Name} to {string.Join(", ", d.Versions.Select(v => v.ToString()))}")
-            .ToArray();
-        var message = string.Join("\n", ["Update:", .. updatedParts]);
-        return message;
+        return sb.ToString().Replace("\r", "").TrimEnd();
     }
 
-    private static (string Name, NuGetVersion[] Versions)[] GetDependencySets(ImmutableArray<UpdateOperationBase> updateOperationsPerformed)
+    private static string GetDependencySetBumpText(DependencySet dependencySet, bool isCommitMessageDetail)
+    {
+        var bumpSuffix = isCommitMessageDetail ? "s" : string.Empty; // "Bumps" for commit message details, "Bump" otherwise
+        var fromText = dependencySet.Versions.Length == 1 && dependencySet.Versions[0].OldVersion is not null
+            ? $"from {dependencySet.Versions[0].OldVersion} "
+            : string.Empty;
+        return $"Bump{bumpSuffix} {dependencySet.Name} {fromText}to {string.Join(", ", dependencySet.Versions.Select(v => v.NewVersion.ToString()))}";
+    }
+
+    private static DependencySet[] GetDependencySets(ImmutableArray<UpdateOperationBase> updateOperationsPerformed)
     {
         var dependencySets = updateOperationsPerformed
             .GroupBy(d => d.DependencyName, StringComparer.OrdinalIgnoreCase)
@@ -64,8 +109,9 @@ public class PullRequestTextGenerator
             {
                 var name = g.Key;
                 var versions = g
-                    .Select(d => d.NewVersion)
-                    .OrderBy(v => v)
+                    .OrderBy(d => d.OldVersion)
+                    .ThenBy(d => d.NewVersion)
+                    .Select(d => (d.OldVersion, d.NewVersion))
                     .ToArray();
                 return (name, versions);
             })

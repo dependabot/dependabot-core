@@ -132,17 +132,25 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
           it { is_expected.to include(%(rsc.io/quote v1.5.2\n)) }
         end
 
-        context "when dealing with a go 1.11 go.mod" do
-          let(:project_name) { "go_1.11" }
-
-          it { is_expected.not_to include("go 1.") }
-          it { is_expected.to include("module github.com/dependabot/vgotest\n\nrequire") }
-        end
-
         context "when dealing with a go 1.12 go.mod" do
           let(:project_name) { "simple" }
 
           it { is_expected.to include("go 1.12") }
+        end
+
+        context "when dealing with a go 1.22 go.mod that will get a toolchain update" do
+          let(:project_name) { "go_1.22" }
+          let(:dependency_name) { "golang.org/x/text" }
+          let(:dependency_version) { "v0.24.0" }
+          let(:dependency_previous_version) { "v0.21.0" }
+
+          it { is_expected.to eq(<<~GOMOD) }
+            module github.com/dependabot/vgotest
+
+            go 1.23.0
+
+            require golang.org/x/text v0.24.0
+          GOMOD
         end
 
         context "when dealing with a go 1.13 go.mod" do

@@ -8,6 +8,7 @@ require "dependabot/dependency_file"
 require "dependabot/dependency"
 require "dependabot/pub/update_checker"
 require "dependabot/requirements_update_strategy"
+require "dependabot/pub/update_checker/latest_version_finder"
 
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
@@ -65,11 +66,13 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
       },
       raise_on_ignored: raise_on_ignored,
       security_advisories: security_advisories,
-      requirements_update_strategy: requirements_update_strategy
+      requirements_update_strategy: requirements_update_strategy,
+      update_cooldown: expected_cooldown_options
     )
   end
   let(:sample) { "simple" }
   let(:sample_files) { Dir.glob(File.join("spec", "fixtures", "pub_dev_responses", sample, "*")) }
+  let(:expected_cooldown_options) { nil }
 
   after do
     sample_files.each do |f|
@@ -484,6 +487,43 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
 
       it "can update" do
         expect(can_update).to be_falsey
+      end
+    end
+
+    context "with cooldown option enabled" do
+      let(:requirements_to_unlock) { :all }
+      let(:dependency_name) { "collection" }
+      let(:dependency_version) { "1.18.0" }
+
+      let(:expected_cooldown_options) do
+        Dependabot::Package::ReleaseCooldownOptions.new(
+          default_days: 90,
+          semver_major_days: 90,
+          semver_minor_days: 90,
+          semver_patch_days: 90,
+          include: [],
+          exclude: []
+        )
+      end
+
+      before do
+        WebMock.allow_net_connect!
+        stub_request(:get, "http://localhost:#{server[:Port]}/api/packages/#{dependency.name}").to_return(
+          status: 200,
+          body: fixture("pub_dev_responses/simple/#{dependency.name}.json"),
+          headers: {}
+        )
+        allow(Time).to receive(:now).and_return(Time.parse("2024-06-13T17:30:00.000Z"))
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:enable_shared_helpers_command_timeout).and_return(false)
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:enable_cooldown_for_pub).and_return(true)
+      end
+
+      it "filters out latest version from latest version list" do
+        expect(checker.latest_version).to eq(Gem::Version.new("1.18.0"))
+
+        expect(updated_dependencies).to eq []
       end
     end
   end

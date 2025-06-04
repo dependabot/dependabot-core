@@ -19,8 +19,8 @@ module Dependabot
       def parse
         dependency_set = DependencySet.new
 
-        config_dependency_files.each do |config_dependency_file|
-          dependency = parse_dependency_file(config_dependency_file)
+        config_dependency_files.each do |dependency_file|
+          dependency = parse_dependency_file(dependency_file)
           dependency_set << dependency if dependency
         end
 
@@ -51,21 +51,25 @@ module Dependabot
           raise Dependabot::DependencyFileNotParseable, T.must(dependency_files.first).path
         end
 
-        return unless contents["sdk"]
+        sdk_info = contents["sdk"]
+        return unless sdk_info
+
+        version = sdk_info["version"]
+        return unless version
 
         Dependabot::Dependency.new(
           name: "dotnet-sdk",
-          version: contents["sdk"]["version"],
+          version: version,
           package_manager: "dotnet_sdk",
           requirements: [{
             file: dependency_file.name,
-            requirement: contents["sdk"]["version"],
+            requirement: version,
             groups: [],
             source: nil
           }],
           metadata: {
-            allow_prerelease: contents["sdk"]["allowPrerelease"] || false,
-            roll_forward: contents["sdk"]["rollForward"] || "latestPatch"
+            allow_prerelease: sdk_info["allowPrerelease"] || false,
+            roll_forward: sdk_info["rollForward"] || "latestPatch"
           }
         )
       end
@@ -78,18 +82,14 @@ module Dependabot
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def config_dependency_files
         @config_dependency_files ||= T.let(
-          dependency_files.select do |f|
-            f.name.end_with?("global.json")
-          end,
+          dependency_files.filter { |f| f.name.end_with?("global.json") },
           T.nilable(T::Array[Dependabot::DependencyFile])
         )
       end
 
       sig { override.void }
       def check_required_files
-        return if dependency_files.any?
-
-        raise "No dependency files!"
+        raise "No dependency files!" if dependency_files.empty?
       end
 
       sig { returns(Ecosystem::VersionManager) }
@@ -99,13 +99,15 @@ module Dependabot
 
       sig { returns(T.nilable(String)) }
       def sdk_version
-        @sdk_version = T.let(nil, T.nilable(String))
-        config_dependency_files.each do |dependency_file|
-          @sdk_version ||= JSON.parse(T.must(dependency_file.content))["sdk"]["version"]
-
-          raise Dependabot::DependencyFileNotParseable, dependency_file.path if @sdk_version.nil?
-        end
-        @sdk_version
+        @sdk_version ||= T.let(
+          config_dependency_files.filter_map do |dependency_file|
+            contents = JSON.parse(T.must(dependency_file.content))
+            contents.dig("sdk", "version")
+          rescue JSON::ParserError
+            raise Dependabot::DependencyFileNotParseable, dependency_file.path
+          end.first,
+          T.nilable(String)
+        )
       end
     end
   end

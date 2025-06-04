@@ -25,6 +25,8 @@ ENV PYENV_ROOT=/usr/local/.pyenv \
   PATH="/usr/local/.pyenv/bin:$PATH"
 RUN mkdir -p "$PYENV_ROOT" && chown dependabot:dependabot "$PYENV_ROOT"
 USER dependabot
+ENV REQUESTS_CA_BUNDLE /etc/ssl/certs/ca-certificates.crt
+ENV SSL_CERT_FILE /etc/ssl/certs/ca-certificates.crt
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
 RUN git -c advice.detachedHead=false clone https://github.com/pyenv/pyenv.git --branch $PYENV_VERSION --single-branch --depth=1 /usr/local/.pyenv
 

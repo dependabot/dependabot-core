@@ -297,7 +297,7 @@ module Dependabot
       sig { params(url: String).returns(Excon::Response) }
       def get(url)
         response = Excon.get(
-          URI::DEFAULT_PARSER.escape(url),
+          URI::RFC2396_PARSER.escape(url),
           user: credentials&.fetch("username", nil),
           password: credentials&.fetch("password", nil),
           # Setting to false to prevent Excon retries, use BitbucketWithRetries for retries.

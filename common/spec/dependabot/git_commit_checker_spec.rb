@@ -6,6 +6,8 @@ require "dependabot/dependency"
 require "dependabot/git_commit_checker"
 
 RSpec.describe Dependabot::GitCommitChecker do
+  let(:git_metadata_fetcher) { instance_double(Dependabot::GitMetadataFetcher) }
+
   let(:checker) do
     described_class.new(
       dependency: dependency,
@@ -1520,6 +1522,59 @@ RSpec.describe Dependabot::GitCommitChecker do
       end
 
       it { is_expected.to be(false) }
+    end
+  end
+
+  describe "#refs_for_tag_with_details" do
+    context "when the metadata fetcher returns valid tag release dates" do
+      let(:git_tag_with_detail) do
+        [
+          Dependabot::GitTagWithDetail.new(tag: "v1.0.0", release_date: "2023-01-01"),
+          Dependabot::GitTagWithDetail.new(tag: "v1.1.0", release_date: "2023-02-01")
+        ]
+      end
+
+      before do
+        allow(checker).to receive(:local_repo_git_metadata_fetcher).and_return(git_metadata_fetcher)
+        allow(git_metadata_fetcher).to receive(:refs_for_tag_with_detail).and_return(git_tag_with_detail)
+      end
+
+      it "returns an array of GitTagWithDetail objects" do
+        result = checker.refs_for_tag_with_detail
+
+        expect(result).to be_an(Array)
+        expect(result.size).to eq(2)
+        expect(result.first).to be_a(Dependabot::GitTagWithDetail)
+        expect(result.first.tag).to eq("v1.0.0")
+        expect(result.first.release_date).to eq("2023-01-01")
+        expect(result.last.tag).to eq("v1.1.0")
+        expect(result.last.release_date).to eq("2023-02-01")
+      end
+    end
+
+    context "when the metadata fetcher returns an empty array" do
+      before do
+        allow(checker).to receive(:local_repo_git_metadata_fetcher).and_return(git_metadata_fetcher)
+        allow(git_metadata_fetcher).to receive(:refs_for_tag_with_detail).and_return([])
+      end
+
+      it "returns an empty array" do
+        result = checker.refs_for_tag_with_detail
+
+        expect(result).to eq([])
+      end
+    end
+
+    context "when the metadata fetcher raises an error" do
+      before do
+        allow(checker).to receive(:local_repo_git_metadata_fetcher).and_return(git_metadata_fetcher)
+        allow(git_metadata_fetcher).to receive(:refs_for_tag_with_detail)
+                                   .and_raise(Dependabot::GitDependenciesNotReachable, "Error fetching metadata")
+      end
+
+      it "raises a GitDependenciesNotReachable error" do
+        expect { checker.refs_for_tag_with_detail }.to raise_error(Dependabot::GitDependenciesNotReachable)
+      end
     end
   end
 end

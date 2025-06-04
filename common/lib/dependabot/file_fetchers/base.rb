@@ -1,8 +1,10 @@
 # typed: strict
 # frozen_string_literal: true
 
-require "stringio"
+require "ostruct"
 require "sorbet-runtime"
+require "stringio"
+
 require "dependabot/config"
 require "dependabot/dependency_file"
 require "dependabot/source"

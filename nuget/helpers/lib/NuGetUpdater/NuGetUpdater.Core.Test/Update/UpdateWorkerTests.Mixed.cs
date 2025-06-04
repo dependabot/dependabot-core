@@ -54,18 +54,21 @@ public partial class UpdateWorkerTests
                     new DirectUpdate()
                     {
                         DependencyName = "Package.A",
+                        OldVersion = NuGetVersion.Parse("0.1.0"),
                         NewVersion = NuGetVersion.Parse("1.0.0"),
                         UpdatedFiles = ["a.txt"]
                     },
                     new PinnedUpdate()
                     {
                         DependencyName = "Package.B",
+                        OldVersion = NuGetVersion.Parse("0.2.0"),
                         NewVersion = NuGetVersion.Parse("2.0.0"),
                         UpdatedFiles = ["b.txt"]
                     },
                     new ParentUpdate()
                     {
                         DependencyName = "Package.C",
+                        OldVersion = NuGetVersion.Parse("0.3.0"),
                         NewVersion = NuGetVersion.Parse("3.0.0"),
                         UpdatedFiles = ["c.txt"],
                         ParentDependencyName = "Package.D",
@@ -80,6 +83,7 @@ public partial class UpdateWorkerTests
                     {
                       "Type": "DirectUpdate",
                       "DependencyName": "Package.A",
+                      "OldVersion": "0.1.0",
                       "NewVersion": "1.0.0",
                       "UpdatedFiles": [
                         "a.txt"
@@ -88,6 +92,7 @@ public partial class UpdateWorkerTests
                     {
                       "Type": "PinnedUpdate",
                       "DependencyName": "Package.B",
+                      "OldVersion": "0.2.0",
                       "NewVersion": "2.0.0",
                       "UpdatedFiles": [
                         "b.txt"
@@ -98,6 +103,7 @@ public partial class UpdateWorkerTests
                       "ParentDependencyName": "Package.D",
                       "ParentNewVersion": "4.0.0",
                       "DependencyName": "Package.C",
+                      "OldVersion": "0.3.0",
                       "NewVersion": "3.0.0",
                       "UpdatedFiles": [
                         "c.txt"

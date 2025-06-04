@@ -23,6 +23,7 @@ module Dependabot
           url: T.nilable(String),
           package_type: T.nilable(String),
           language: T.nilable(Dependabot::Package::PackageLanguage),
+          tag: T.nilable(String),
           details: T::Hash[String, T.untyped]
         ).void
       end
@@ -36,6 +37,7 @@ module Dependabot
         url: nil,
         package_type: nil,
         language: nil,
+        tag: nil,
         details: {}
       )
         @version = T.let(version, Dependabot::Version)
@@ -47,6 +49,7 @@ module Dependabot
         @url = T.let(url, T.nilable(String))
         @package_type = T.let(package_type, T.nilable(String))
         @language = T.let(language, T.nilable(Dependabot::Package::PackageLanguage))
+        @tag = T.let(tag, T.nilable(String))
         @details = T.let(details, T::Hash[String, T.untyped])
       end
 
@@ -76,6 +79,9 @@ module Dependabot
 
       sig { returns(T.nilable(Dependabot::Package::PackageLanguage)) }
       attr_reader :language
+
+      sig { returns(T.nilable(String)) }
+      attr_reader :tag
 
       sig { returns(T::Hash[String, T.untyped]) }
       attr_reader :details
