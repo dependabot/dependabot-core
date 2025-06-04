@@ -6,7 +6,6 @@ require "sorbet-runtime"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 require "dependabot/gradle/file_parser"
-require "dependabot/gradle/file_updater/lockfile_updater"
 
 module Dependabot
   module Gradle
@@ -15,6 +14,7 @@ module Dependabot
 
       require_relative "file_updater/dependency_set_updater"
       require_relative "file_updater/property_value_updater"
+      require_relative "file_updater/lockfile_updater"
 
       SUPPORTED_BUILD_FILE_NAMES = %w(build.gradle build.gradle.kts).freeze
 
@@ -108,7 +108,7 @@ module Dependabot
             files[T.must(files.index(buildfile))] = update_version_in_buildfile(dependency, buildfile, old_req, new_req)
           end
 
-          lockfiles = Dependabot::Gradle::LockfileUpdater.new(dependency_files: files).update_lockfiles(buildfile)
+          lockfiles = LockfileUpdater.new(dependency_files: files).update_lockfiles(buildfile)
           files.concat(lockfiles) unless lockfiles.empty?
         end
 

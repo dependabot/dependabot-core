@@ -2,7 +2,7 @@ FROM ghcr.io/dependabot/dependabot-updater-core
 
 # Install Java
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    openjdk-11-jdk \
+    openjdk-21-jdk \
     # avoids keytool usage
     ca-certificates-java \
     wget \

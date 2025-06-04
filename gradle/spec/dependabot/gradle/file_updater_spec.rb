@@ -183,7 +183,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
           expect(updated_files.first.content)
             .to include('implementation("com.google.code.gson:gson:2.8.9")')
           expect(updated_files.last.content)
-            .to include("com.google.code.gson:gson:2.8.9=runtimeClasspath")
+            .to include("com.google.code.gson:gson:2.8.9=compileClasspath,runtimeClasspath,testCompileClasspath")
         end
       end
 
