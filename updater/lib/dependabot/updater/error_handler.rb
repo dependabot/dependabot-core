@@ -96,6 +96,22 @@ module Dependabot
         end
       end
 
+      # Records an update job error to the service - delegating to the service record_update_job_error method
+      sig do
+        params(
+          error_type: T.any(String, Symbol),
+          error_details: T.nilable(T::Hash[T.untyped, T.untyped]),
+          dependency: T.nilable(Dependabot::Dependency)
+        ).void
+      end
+      def record_update_job_error(error_type:, error_details:, dependency: nil)
+        service.record_update_job_error(
+          error_type: error_type,
+          error_details: error_details,
+          dependency: dependency
+        )
+      end
+
       # This method handles errors where there is no dependency in the current
       # context.
       sig do
