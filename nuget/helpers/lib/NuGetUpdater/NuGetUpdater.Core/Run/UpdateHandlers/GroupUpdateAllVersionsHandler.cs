@@ -81,7 +81,7 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                 var updateOperationsToPerform = RunWorker.GetUpdateOperations(discoveryResult).ToArray();
                 foreach (var (projectPath, dependency) in updateOperationsToPerform)
                 {
-                    if (dependency.IsTransitive)
+                    if (!job.IsUpdatePermitted(dependency))
                     {
                         continue;
                     }
@@ -134,7 +134,7 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
 
                     var patchedUpdateOperations = RunWorker.PatchInOldVersions(updaterResult.UpdateOperations, projectDiscovery);
                     var updatedDependenciesForThis = patchedUpdateOperations
-                        .Select(o => o.ToReportedDependency(updatedDependencyList.Dependencies, analysisResult.UpdatedDependencies))
+                        .Select(o => o.ToReportedDependency(projectPath, updatedDependencyList.Dependencies, analysisResult.UpdatedDependencies))
                         .ToArray();
 
                     updatedDependencies.AddRange(updatedDependenciesForThis);
@@ -191,7 +191,7 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
             var updateOperationsToPerform = RunWorker.GetUpdateOperations(discoveryResult).ToArray();
             foreach (var (projectPath, dependency) in updateOperationsToPerform)
             {
-                if (dependency.IsTransitive)
+                if (!job.IsUpdatePermitted(dependency))
                 {
                     continue;
                 }
@@ -238,8 +238,8 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
 
                 var patchedUpdateOperations = RunWorker.PatchInOldVersions(updaterResult.UpdateOperations, projectDiscovery);
                 var updatedDependenciesForThis = patchedUpdateOperations
-                        .Select(o => o.ToReportedDependency(updatedDependencyList.Dependencies, analysisResult.UpdatedDependencies))
-                        .ToArray();
+                    .Select(o => o.ToReportedDependency(projectPath, updatedDependencyList.Dependencies, analysisResult.UpdatedDependencies))
+                    .ToArray();
 
                 updatedDependencies.AddRange(updatedDependenciesForThis);
                 updateOperationsPerformed.AddRange(patchedUpdateOperations);
