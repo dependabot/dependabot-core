@@ -4,6 +4,7 @@ using System.Text.Json.Serialization;
 
 using NuGet.Versioning;
 
+using NuGetUpdater.Core.Run.ApiModel;
 using NuGetUpdater.Core.Utilities;
 
 
@@ -16,10 +17,38 @@ public abstract record UpdateOperationBase
 {
     public abstract string Type { get; }
     public required string DependencyName { get; init; }
+    public NuGetVersion? OldVersion { get; init; } = null;
     public required NuGetVersion NewVersion { get; init; }
     public required ImmutableArray<string> UpdatedFiles { get; init; }
 
     public abstract string GetReport();
+
+    public ReportedDependency ToReportedDependency(IEnumerable<ReportedDependency> previouslyReportedDependencies, IEnumerable<Dependency> updatedDependencies)
+    {
+        var updatedFilesSet = UpdatedFiles.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var previousDependency = previouslyReportedDependencies
+            .Single(d => d.Name.Equals(DependencyName, StringComparison.OrdinalIgnoreCase) && updatedFilesSet.Contains(d.Requirements.Single().File));
+        var projectPath = previousDependency.Requirements.Single().File;
+        return new ReportedDependency()
+        {
+            Name = DependencyName,
+            Version = NewVersion.ToString(),
+            Requirements = [
+                new()
+                {
+                    File = projectPath,
+                    Requirement = NewVersion.ToString(),
+                    Groups = previousDependency.Requirements.FirstOrDefault()?.Groups ?? [],
+                    Source = new()
+                    {
+                        SourceUrl = updatedDependencies.FirstOrDefault(d => d.Name.Equals(DependencyName, StringComparison.OrdinalIgnoreCase))?.InfoUrl,
+                    }
+                }
+            ],
+            PreviousVersion = previousDependency.Version,
+            PreviousRequirements = previousDependency.Requirements,
+        };
+    }
 
     internal static string GenerateUpdateOperationReport(IEnumerable<UpdateOperationBase> updateOperations)
     {
@@ -36,7 +65,7 @@ public abstract record UpdateOperationBase
     internal static ImmutableArray<UpdateOperationBase> NormalizeUpdateOperationCollection(string repoRootPath, IEnumerable<UpdateOperationBase> updateOperations)
     {
         var groupedByKindWithCombinedFiles = updateOperations
-            .GroupBy(u => (u.GetType(), u.DependencyName, u.NewVersion))
+            .GroupBy(u => (u.GetType(), u.DependencyName, u.OldVersion, u.NewVersion))
             .Select(g =>
             {
                 if (g.Key.Item1 == typeof(DirectUpdate))
@@ -44,6 +73,7 @@ public abstract record UpdateOperationBase
                     return new DirectUpdate()
                     {
                         DependencyName = g.Key.DependencyName,
+                        OldVersion = g.Key.OldVersion,
                         NewVersion = g.Key.NewVersion,
                         UpdatedFiles = [.. g.SelectMany(u => u.UpdatedFiles)],
                     } as UpdateOperationBase;
@@ -53,6 +83,7 @@ public abstract record UpdateOperationBase
                     return new PinnedUpdate()
                     {
                         DependencyName = g.Key.DependencyName,
+                        OldVersion = g.Key.OldVersion,
                         NewVersion = g.Key.NewVersion,
                         UpdatedFiles = [.. g.SelectMany(u => u.UpdatedFiles)],
                     };
@@ -63,6 +94,7 @@ public abstract record UpdateOperationBase
                     return new ParentUpdate()
                     {
                         DependencyName = g.Key.DependencyName,
+                        OldVersion = g.Key.OldVersion,
                         NewVersion = g.Key.NewVersion,
                         UpdatedFiles = [.. g.SelectMany(u => u.UpdatedFiles)],
                         ParentDependencyName = parentUpdate.ParentDependencyName,
@@ -82,6 +114,7 @@ public abstract record UpdateOperationBase
         var ordered = uniqueUpdateOperations
             .OrderBy(u => u.GetType().Name)
             .ThenBy(u => u.DependencyName)
+            .ThenBy(u => u.OldVersion)
             .ThenBy(u => u.NewVersion)
             .ThenBy(u => u.UpdatedFiles.Length)
             .ThenBy(u => string.Join(",", u.UpdatedFiles))
@@ -95,6 +128,7 @@ public abstract record UpdateOperationBase
     {
         var hash = new HashCode();
         hash.Add(DependencyName);
+        hash.Add(OldVersion);
         hash.Add(NewVersion);
         hash.Add(UpdatedFiles.Length);
         for (int i = 0; i < UpdatedFiles.Length; i++)
@@ -111,7 +145,14 @@ public abstract record UpdateOperationBase
 public record DirectUpdate : UpdateOperationBase
 {
     public override string Type => nameof(DirectUpdate);
-    public override string GetReport() => $"Updated {DependencyName} to {NewVersion} in {string.Join(", ", UpdatedFiles)}";
+    public override string GetReport()
+    {
+        var fromText = OldVersion is null
+            ? string.Empty
+            : $"from {OldVersion} ";
+        return $"Updated {DependencyName} {fromText}to {NewVersion} in {string.Join(", ", UpdatedFiles)}";
+    }
+
     public sealed override string ToString() => GetString();
 }
 
@@ -185,6 +226,7 @@ public class UpdateOperationBaseComparer : IEqualityComparer<UpdateOperationBase
         }
 
         if (x.DependencyName != y.DependencyName ||
+            x.OldVersion != y.OldVersion ||
             x.NewVersion != y.NewVersion ||
             !x.UpdatedFiles.SequenceEqual(y.UpdatedFiles))
         {
