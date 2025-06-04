@@ -87,7 +87,6 @@ RSpec.describe Dependabot::Swift::UpdateChecker::LatestVersionResolver do
     before do
       allow(git_commit_checker).to receive_messages(
         allowed_version_tags: allowed_version_tags,
-        latest_version_tag: latest_version_tag,
         local_tag_for_latest_version: allowed_version_tags.first[:tag]
       )
       allow(resolver).to receive(:select_version_tags_in_cooldown_period).and_return(["v1.1.0", "v2.0.0"])
