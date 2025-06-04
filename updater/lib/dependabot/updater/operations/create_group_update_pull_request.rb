@@ -134,7 +134,7 @@ module Dependabot
 
           failed_dependencies.each do |failed_dependency|
             error_handler.record_update_job_error(
-              error_type: "security_update_failed,
+              error_type: "security_update_failed",
               error_details: {
                 "dependency-name" => failed_dependency.name,
                 "dependency-version" => failed_dependency.version,
