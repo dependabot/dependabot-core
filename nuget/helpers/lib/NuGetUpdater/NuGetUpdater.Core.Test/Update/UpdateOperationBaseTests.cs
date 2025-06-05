@@ -1,5 +1,9 @@
+using System.Text.Json;
+
 using NuGet.Versioning;
 
+using NuGetUpdater.Core.Run;
+using NuGetUpdater.Core.Run.ApiModel;
 using NuGetUpdater.Core.Test.Utilities;
 using NuGetUpdater.Core.Updater;
 
@@ -142,5 +146,99 @@ public class UpdateOperationBaseTests
         Assert.Equal("Dependency.Direct", directUpdate.DependencyName);
         Assert.Equal(NuGetVersion.Parse("1.0.0"), directUpdate.NewVersion);
         AssertEx.Equal(["/file/a.txt", "/file/b.txt"], directUpdate.UpdatedFiles);
+    }
+
+    [Theory]
+    [MemberData(nameof(ToReportedDependencyTestData))]
+    public void ToReportedDependency(UpdateOperationBase updateOperation, ReportedDependency[] previouslyReportedDependencies, Dependency[] updatedDependencies, ReportedDependency expectedReportedDependency)
+    {
+        var actualReportedDependency = updateOperation.ToReportedDependency("project.csproj", previouslyReportedDependencies, updatedDependencies);
+
+        var actualReportedJson = JsonSerializer.Serialize(actualReportedDependency, RunWorker.SerializerOptions);
+        var expectedReportedJson = JsonSerializer.Serialize(expectedReportedDependency, RunWorker.SerializerOptions);
+        Assert.Equal(expectedReportedJson, actualReportedJson);
+    }
+
+    public static IEnumerable<object[]> ToReportedDependencyTestData()
+    {
+        // direct mapping
+        yield return
+        [
+            // updateOperation
+            new DirectUpdate()
+            {
+                DependencyName = "Some.Package",
+                NewVersion = NuGetVersion.Parse("2.0.0"),
+                UpdatedFiles = ["project.csproj"]
+            },
+            // previouslyReportedDependencies
+            new ReportedDependency[]
+            {
+                new()
+                {
+                    Name = "Some.Package",
+                    Version = "1.0.0",
+                    Requirements = [
+                        new() { Requirement = "1.0.0", File = "project.csproj" }
+                    ]
+                }
+            },
+            // updatedDependencies
+            new Dependency[]
+            {
+                new("Some.Package", "2.0.0", DependencyType.Unknown, InfoUrl: "https://nuget.example.com/Some.Package"),
+            },
+            // expectedReportedDependency
+            new ReportedDependency()
+            {
+                Name = "Some.Package",
+                Version = "2.0.0",
+                Requirements = [
+                    new() { Requirement = "2.0.0", File = "project.csproj", Source = new() { SourceUrl = "https://nuget.example.com/Some.Package" } }
+                ],
+                PreviousVersion = "1.0.0",
+                PreviousRequirements = [
+                    new() { Requirement = "1.0.0", File = "project.csproj" }
+                ],
+            },
+        ];
+
+        // updated dependency brought in new package not previously known
+        yield return
+        [
+            // updateOperation
+            new DirectUpdate()
+            {
+                DependencyName = "Transitive.Package",
+                NewVersion = NuGetVersion.Parse("3.0.0"),
+                UpdatedFiles = ["project.csproj"]
+            },
+            // previouslyReportedDependencies
+            new ReportedDependency[]
+            {
+                new()
+                {
+                    Name = "Some.Package",
+                    Version = "1.0.0",
+                    Requirements = [
+                        new() { Requirement = "1.0.0", File = "project.csproj" }
+                    ]
+                }
+            },
+            // updatedDependencies
+            new Dependency[]
+            {
+                new("Transitive.Package", "3.0.0", DependencyType.Unknown),
+            },
+            // expectedReportedDependency
+            new ReportedDependency()
+            {
+                Name = "Transitive.Package",
+                Version = "3.0.0",
+                Requirements = [
+                    new() { Requirement = "3.0.0", File = "project.csproj", Source = new() { SourceUrl = null } }
+                ],
+            },
+        ];
     }
 }
