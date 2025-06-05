@@ -28,7 +28,6 @@ module Dependabot
           @dependency = dependency
           @credentials = credentials
 
-          @ref = T.let(ref, String)
           @url = T.let(url, String)
         end
 
@@ -88,11 +87,16 @@ module Dependabot
           begin
             Dependabot.logger.info("Fetching release info for Git Submodules: #{dependency.name}")
 
-            response = Dependabot::RegistryClient.get(url: provider_url)
+            client = Dependabot::GitCommitChecker.new(
+              dependency: dependency,
+              credentials: credentials
+            )
+
+            response = client.ref_details_for_pinned_ref
 
             unless response.status == 200
-              Dependabot.logger.error("Error while fetching details for #{dependency.name}" \
-                                      " Detail : #{response.body}")
+              Dependabot.logger.error("Error while fetching details for #{dependency.name} " \
+                                      "Detail : #{response.body}")
             end
 
             return parsed_results unless response.status == 200
@@ -111,23 +115,6 @@ module Dependabot
             Dependabot.logger.error("Error while fetching package info for git submodule: #{e.message}")
             parsed_results
           end
-        end
-
-        sig { returns(String) }
-        def provider_url
-          provider_url = @url.gsub(/\.git$/, "")
-
-          api_url = {
-            github: provider_url.gsub("github.com", "api.github.com/repos")
-          }.freeze
-
-          "#{api_url[:github]}/commits?per_page=100&sha=#{@ref}"
-        end
-
-        sig { returns(String) }
-        def ref
-          dependency.source_details&.fetch(:ref, nil) ||
-            dependency.source_details&.fetch(:branch, nil) || "HEAD"
         end
 
         sig { returns(String) }

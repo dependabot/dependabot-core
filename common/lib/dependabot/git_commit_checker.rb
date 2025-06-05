@@ -100,6 +100,17 @@ module Dependabot
       local_repo_git_metadata_fetcher.head_commit_for_ref_sha(T.must(ref))
     end
 
+    sig { returns(Excon::Response) }
+    def ref_details_for_pinned_ref
+      T.must(T.let(
+               GitMetadataFetcher.new(
+                 url: dependency.source_details&.fetch(:url, nil),
+                 credentials: credentials
+               ).ref_details_for_pinned_ref(ref_pinned),
+               T.nilable(Excon::Response)
+             ))
+    end
+
     sig { params(ref: String).returns(T::Boolean) }
     def ref_looks_like_commit_sha?(ref)
       ref.match?(/^[0-9a-f]{6,40}$/)
@@ -617,6 +628,12 @@ module Dependabot
           ),
           T.nilable(Dependabot::GitMetadataFetcher)
         )
+    end
+
+    sig { returns(String) }
+    def ref_pinned
+      dependency.source_details&.fetch(:ref, nil) ||
+        dependency.source_details&.fetch(:branch, nil) || "HEAD"
     end
   end
   # rubocop:enable Metrics/ClassLength
