@@ -98,6 +98,7 @@ public class RunWorker
         try
         {
             var handler = GetUpdateHandler(job);
+            _logger.Info($"Starting update job of type {handler.TagName}");
             await handler.HandleAsync(job, repoContentsPath, baseCommitSha, _discoveryWorker, _analyzeWorker, _updaterWorker, _apiHandler, experimentsManager, _logger);
         }
         catch (Exception ex)

@@ -115,8 +115,13 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
 
                     if (updaterResult.UpdateOperations.Length == 0)
                     {
-                        await apiHandler.ClosePullRequest(new ClosePullRequest() { DependencyNames = [dependencyName], Reason = "update_no_longer_possible" });
-                        return;
+                        // nothing was done, but we may have already handled it
+                        var alreadyHandled = updatedDependencies.Where(updated => updated.Name == dependencyName && updated.Version == analysisResult.UpdatedVersion).Any();
+                        if (!alreadyHandled)
+                        {
+                            await apiHandler.ClosePullRequest(new ClosePullRequest() { DependencyNames = [dependencyName], Reason = "update_no_longer_possible" });
+                            return;
+                        }
                     }
 
                     var patchedUpdateOperations = RunWorker.PatchInOldVersions(updaterResult.UpdateOperations, projectDiscovery);

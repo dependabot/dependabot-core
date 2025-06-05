@@ -112,9 +112,14 @@ internal class CreateSecurityUpdatePullRequestHandler : IUpdateHandler
 
                     if (updaterResult.UpdateOperations.Length == 0)
                     {
-                        logger.Error($"Update of {dependency.Name} in {projectPath} not possible.");
-                        await apiHandler.RecordUpdateJobError(new SecurityUpdateNotPossible(dependencyName, analysisResult.UpdatedVersion, analysisResult.UpdatedVersion, []));
-                        return;
+                        // nothing was done, but we may have already handled it
+                        var alreadyHandled = updatedDependencies.Where(updated => updated.Name == dependencyName && updated.Version == analysisResult.UpdatedVersion).Any();
+                        if (!alreadyHandled)
+                        {
+                            logger.Error($"Update of {dependency.Name} in {projectPath} not possible.");
+                            await apiHandler.RecordUpdateJobError(new SecurityUpdateNotPossible(dependencyName, analysisResult.UpdatedVersion, analysisResult.UpdatedVersion, []));
+                            return;
+                        }
                     }
 
                     var patchedUpdateOperations = RunWorker.PatchInOldVersions(updaterResult.UpdateOperations, projectDiscovery);
