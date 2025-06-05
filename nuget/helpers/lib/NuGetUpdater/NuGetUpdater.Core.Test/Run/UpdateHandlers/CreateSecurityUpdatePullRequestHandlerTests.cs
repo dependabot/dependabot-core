@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+
 using NuGet.Versioning;
 
 using NuGetUpdater.Core.Analyze;
@@ -130,6 +132,153 @@ public class CreateSecurityUpdatePullRequestHandlerTests : UpdateHandlersTestsBa
                         {
                             Directory = "/src",
                             Name = "project.csproj",
+                            Content = "updated contents",
+                        }
+                    ],
+                    BaseCommitSha = "TEST-COMMIT-SHA",
+                    CommitMessage = RunWorkerTests.TestPullRequestCommitMessage,
+                    PrTitle = RunWorkerTests.TestPullRequestTitle,
+                    PrBody = RunWorkerTests.TestPullRequestBody,
+                    DependencyGroup = null,
+                },
+                new MarkAsProcessed("TEST-COMMIT-SHA"),
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task GeneratesCreatePullRequest_UpdatingOneProjectImplicitlyUpdatesTheOther()
+    {
+        await TestAsync(
+            job: new Job()
+            {
+                Dependencies = ["Some.Dependency"],
+                SecurityAdvisories = [new() { DependencyName = "Some.Dependency", AffectedVersions = [Requirement.Parse("= 1.0.0")] }],
+                SecurityUpdatesOnly = true,
+                Source = CreateJobSource("/src"),
+            },
+            files: [
+                ("src/Directory.Packages.props", "initial contents"),
+                ("src/project1.csproj", "initial contents"),
+                ("src/project2.csproj", "initial contents"),
+            ],
+            discoveryWorker: TestDiscoveryWorker.FromResults(
+                ("/src", new WorkspaceDiscoveryResult()
+                {
+                    Path = "/src",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "project1.csproj",
+                            Dependencies = [
+                                new("Some.Dependency", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"]),
+                            ],
+                            ImportedFiles = ["Directory.Packages.props"],
+                            AdditionalFiles = [],
+                        },
+                        new()
+                        {
+                            FilePath = "project2.csproj",
+                            Dependencies = [
+                                new("Some.Dependency", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"]),
+                            ],
+                            ImportedFiles = ["Directory.Packages.props"],
+                            AdditionalFiles = [],
+                        },
+                    ],
+                })
+            ),
+            analyzeWorker: new TestAnalyzeWorker(input =>
+            {
+                var repoRoot = input.Item1;
+                var discovery = input.Item2;
+                var dependencyInfo = input.Item3;
+                if (dependencyInfo.Name != "Some.Dependency")
+                {
+                    throw new NotImplementedException($"Test didn't expect to update dependency {dependencyInfo.Name}");
+                }
+
+                return Task.FromResult(new AnalysisResult()
+                {
+                    CanUpdate = true,
+                    UpdatedVersion = "2.0.0",
+                    UpdatedDependencies = [],
+                });
+            }),
+            updaterWorker: new TestUpdaterWorker(async input =>
+            {
+                var repoRoot = input.Item1;
+                var workspacePath = input.Item2;
+                var dependencyName = input.Item3;
+                var previousVersion = input.Item4;
+                var newVersion = input.Item5;
+                var isTransitive = input.Item6;
+
+                await File.WriteAllTextAsync(Path.Join(repoRoot, "src/Directory.Packages.props"), "updated contents");
+
+                // only report an update performed on the first project
+                ImmutableArray<UpdateOperationBase> updateOperations = workspacePath.EndsWith("project1.csproj")
+                    ? [new DirectUpdate() { DependencyName = "Some.Dependency", NewVersion = NuGetVersion.Parse("2.0.0"), UpdatedFiles = ["/src/Directory.Packages.csproj"] }]
+                    : [];
+
+                return new UpdateOperationResult()
+                {
+                    UpdateOperations = updateOperations,
+                };
+            }),
+            expectedUpdateHandler: CreateSecurityUpdatePullRequestHandler.Instance,
+            expectedApiMessages: [
+                new UpdatedDependencyList()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "Some.Dependency",
+                            Version = "1.0.0",
+                            Requirements = [
+                                new() { Requirement = "1.0.0", File = "/src/project1.csproj", Groups = ["dependencies"] },
+                            ],
+                        },
+                        new()
+                        {
+                            Name = "Some.Dependency",
+                            Version = "1.0.0",
+                            Requirements = [
+                                new() { Requirement = "1.0.0", File = "/src/project2.csproj", Groups = ["dependencies"] },
+                            ],
+                        },
+                    ],
+                    DependencyFiles = ["/src/Directory.Packages.props", "/src/project1.csproj", "/src/project2.csproj"],
+                },
+                new IncrementMetric()
+                {
+                    Metric = "updater.started",
+                    Tags = new()
+                    {
+                        ["operation"] = "create_security_pr",
+                    }
+                },
+                new CreatePullRequest()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "Some.Dependency",
+                            Version = "2.0.0",
+                            Requirements = [
+                                new() { Requirement = "2.0.0", File = "/src/project1.csproj", Groups = ["dependencies"], Source = new() { SourceUrl = null } },
+                            ],
+                            PreviousVersion = "1.0.0",
+                            PreviousRequirements = [
+                                new() { Requirement = "1.0.0", File = "/src/project1.csproj", Groups = ["dependencies"] },
+                            ],
+                        }
+                    ],
+                    UpdatedDependencyFiles = [
+                        new()
+                        {
+                            Directory = "/src",
+                            Name = "Directory.Packages.props",
                             Content = "updated contents",
                         }
                     ],
