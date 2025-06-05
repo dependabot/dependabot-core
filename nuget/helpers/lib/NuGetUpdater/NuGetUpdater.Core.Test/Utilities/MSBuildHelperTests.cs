@@ -1776,9 +1776,49 @@ public class MSBuildHelperTests : TestBase
         yield return
         [
             // output
+            "Response status code does not indicate success: 401",
+            // expectedError
+            new PrivateSourceAuthenticationFailure(["http://localhost/test-feed"]),
+        ];
+
+        yield return
+        [
+            // output
             "Response status code does not indicate success: 403",
             // expectedError
             new PrivateSourceAuthenticationFailure(["http://localhost/test-feed"]),
+        ];
+
+        yield return
+        [
+            // output
+            "Response status code does not indicate success: 500 (Internal Server Error).",
+            // expectedError
+            new PrivateSourceBadResponse(["http://localhost/test-feed"]),
+        ];
+
+        yield return
+        [
+            // output
+            "The response ended prematurely. (ResponseEnded)",
+            // expectedError
+            new PrivateSourceBadResponse(["http://localhost/test-feed"]),
+        ];
+
+        yield return
+        [
+            // output
+            "The file is not a valid nupkg.",
+            // expectedError
+            new PrivateSourceBadResponse(["http://localhost/test-feed"]),
+        ];
+
+        yield return
+        [
+            // output
+            "The content at 'http://localhost/test-feed/Packages(Id='Some.Package',Version='1.2.3')' is not valid XML.",
+            // expectedError
+            new PrivateSourceBadResponse(["http://localhost/test-feed"]),
         ];
 
         yield return
@@ -1824,6 +1864,14 @@ public class MSBuildHelperTests : TestBase
         yield return
         [
             // output
+            "Unable to find package 'Some.Package'. Existing packages must be restored before performing an install or update",
+            // expectedError
+            new DependencyNotFound("Some.Package"),
+        ];
+
+        yield return
+        [
+            // output
             "Unable to resolve dependencies. 'Some.Package 1.2.3' is not compatible with",
             // expectedError
             new UpdateNotPossible(["Some.Package.1.2.3"]),
@@ -1856,9 +1904,36 @@ public class MSBuildHelperTests : TestBase
         yield return
         [
             // output
+            "Unable to resolve 'Some.Package'. An additional constraint '(= 1.2.3)' defined in packages.config prevents this operation.",
+            // expectedError
+            new UpdateNotPossible(["Some.Package.= 1.2.3"]),
+        ];
+
+        yield return
+        [
+            // output
             "Failed to fetch results from V2 feed at 'http://nuget.example.com/FindPackagesById()?id='Some.Package'&semVerLevel=2.0.0' with following message : Response status code does not indicate success: 404.",
             // expectedError
             new DependencyNotFound("Some.Package"),
+        ];
+
+        yield return
+        [
+            // output
+            "This part is not reported.\nAn error occurred while reading file '/path/to/packages.config': Some error message.\nThis part is not reported.",
+            // expectedError
+            new DependencyFileNotParseable("/path/to/packages.config", "Some error message."),
+        ];
+
+        yield return
+        [
+            // output
+            """
+            NuGet.Config is not valid XML. Path: '/path/to/NuGet.Config'.
+              Some error message.
+            """,
+            // expectedError
+            new DependencyFileNotParseable("/path/to/NuGet.Config", "Some error message."),
         ];
     }
 

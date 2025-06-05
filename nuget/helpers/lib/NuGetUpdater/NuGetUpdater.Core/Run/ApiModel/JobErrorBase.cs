@@ -5,6 +5,7 @@ using System.Text.Json.Serialization;
 using Microsoft.Build.Exceptions;
 
 using NuGetUpdater.Core.Analyze;
+using NuGetUpdater.Core.Utilities;
 
 namespace NuGetUpdater.Core.Run.ApiModel;
 
@@ -25,24 +26,9 @@ public abstract record JobErrorBase : MessageBase
     {
         var report = new StringBuilder();
         report.AppendLine($"Error type: {Type}");
-        foreach (var (key, value) in Details)
-        {
-            if (this is UnknownError && key == "error-backtrace")
-            {
-                // there's nothing meaningful in this field
-                continue;
-            }
-
-            var valueString = value.ToString();
-            if (value is IEnumerable<string> strings)
-            {
-                valueString = string.Join(", ", strings);
-            }
-
-            report.AppendLine($"- {key}: {valueString}");
-        }
-
-        return report.ToString().Trim();
+        report.Append(MarkdownListBuilder.FromObject(Details));
+        var fullReport = report.ToString().TrimEnd();
+        return fullReport;
     }
 
     public static JobErrorBase ErrorFromException(Exception ex, string jobId, string currentDirectory)
@@ -58,6 +44,13 @@ public abstract record JobErrorBase : MessageBase
             case HttpRequestException httpRequest:
                 if (httpRequest.StatusCode is null)
                 {
+                    if (httpRequest.InnerException is HttpIOException ioException &&
+                        ioException.HttpRequestError == HttpRequestError.ResponseEnded)
+                    {
+                        // server hung up on us
+                        return new PrivateSourceBadResponse(NuGetContext.GetPackageSourceUrls(currentDirectory));
+                    }
+
                     return new UnknownError(ex, jobId);
                 }
 

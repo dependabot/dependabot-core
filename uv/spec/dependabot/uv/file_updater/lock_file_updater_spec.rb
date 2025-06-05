@@ -251,4 +251,83 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
       expect(match[:declaration]).to eq("redis~=4.5.4")
     end
   end
+
+  describe "#lock_index_options" do
+    subject(:lock_index_options) { updater.send(:lock_index_options) }
+
+    let(:credentials) do
+      [
+        Dependabot::Credential.new({
+          "type" => "python_index",
+          "index-url" => "https://example.com/simple",
+          "token" => "token",
+          "replaces-base" => false
+        }),
+        Dependabot::Credential.new({
+          "type" => "python_index",
+          "index-url" => "https://another.com/simple",
+          "token" => "another_token",
+          "replaces-base" => true
+        })
+      ]
+    end
+
+    it "matches authed urls to correct option index flags" do
+      expect(lock_index_options).to include("--default-index https://another_token@another.com/simple")
+      expect(lock_index_options).to include("--index https://token@example.com/simple")
+    end
+  end
+
+  describe "#lock_options_fingerprint" do
+    subject(:lock_options_fingerprint) { updater.send(:lock_options_fingerprint, options) }
+
+    let(:options) do
+      "--default-index https://another.com/simple --index https://example.com/simple"
+    end
+
+    it "replaces sensitive information in the fingerprint with placeholders" do
+      expect(lock_options_fingerprint).to eq("--default-index <default_index> --index <index>")
+    end
+  end
+
+  describe "#run_update_command" do
+    subject(:run_update_command) { updater.send(:run_update_command) }
+
+    let(:credentials) do
+      [
+        Dependabot::Credential.new({
+          "type" => "python_index",
+          "index-url" => "https://example.com/simple",
+          "token" => "token",
+          "replaces-base" => false
+        }),
+        Dependabot::Credential.new({
+          "type" => "python_index",
+          "index-url" => "https://another.com/simple",
+          "token" => "another_token",
+          "replaces-base" => true
+        })
+      ]
+    end
+
+    before do
+      allow(updater).to receive(:run_command)
+    end
+
+    it "includes the expected options in the command and fingerprint" do
+      expected_command = "pyenv exec uv lock --upgrade-package requests " \
+                         "--index https://token@example.com/simple " \
+                         "--default-index https://another_token@another.com/simple"
+      expected_fingerprint = "pyenv exec uv lock --upgrade-package <dependency_name> " \
+                             "--index <index> " \
+                             "--default-index <default_index>"
+
+      run_update_command
+
+      expect(updater).to have_received(:run_command).with(
+        expected_command,
+        fingerprint: expected_fingerprint
+      )
+    end
+  end
 end

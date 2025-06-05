@@ -2,8 +2,8 @@
 # frozen_string_literal: true
 
 require "excon"
-require "gitlab"
 require "sorbet-runtime"
+require "gitlab"
 require "dependabot/clients/github_with_retries"
 require "dependabot/clients/gitlab_with_retries"
 require "dependabot/clients/bitbucket_with_retries"
@@ -220,6 +220,11 @@ module Dependabot
       @dependency_source_details || dependency.source_details(allowed_types: ["git"])
     end
 
+    sig { returns(T::Array[Dependabot::GitTagWithDetail]) }
+    def refs_for_tag_with_detail
+      local_repo_git_metadata_fetcher.refs_for_tag_with_detail
+    end
+
     sig { params(commit_sha: T.nilable(String)).returns(T.nilable(String)) }
     def most_specific_version_tag_for_sha(commit_sha)
       tags = local_tags.select { |t| t.commit_sha == commit_sha && version_class.correct?(t.name) }
@@ -227,6 +232,13 @@ module Dependabot
       return if tags.empty?
 
       tags[-1]&.name
+    end
+
+    sig { params(tags: T::Array[Dependabot::GitRef]).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+    def max_local_tag(tags)
+      max_version_tag = tags.max_by { |t| version_from_tag(t) }
+
+      to_local_tag(max_version_tag)
     end
 
     private
@@ -248,13 +260,6 @@ module Dependabot
     sig { params(tags: T::Array[Dependabot::GitRef]).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
     def max_local_tag_for_lower_precision(tags)
       max_local_tag(select_lower_precision(tags))
-    end
-
-    sig { params(tags: T::Array[Dependabot::GitRef]).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
-    def max_local_tag(tags)
-      max_version_tag = tags.max_by { |t| version_from_tag(t) }
-
-      to_local_tag(max_version_tag)
     end
 
     # Find the latest version with the same precision as the pinned version.

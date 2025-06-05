@@ -200,7 +200,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       context "when accessing a malformed registry requirements" do
         it "raise a helpful error" do
           expect { latest_resolvable_version }.to raise_error do |error|
-            expect(error.message).to include("bad URI(is not URI?)")
+            expect(error.message).to include("bad URI (is not URI?)")
           end
         end
       end
