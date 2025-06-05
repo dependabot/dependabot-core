@@ -61,6 +61,9 @@ module Dependabot
 
           if dependency_change&.updated_dependencies&.any?
             Dependabot.logger.info("Creating a pull request for '#{group.name}'")
+
+            # Report any failed dependency updates before creating the PR
+            report_failed_dependency_updates_for_security_updates
             begin
               service.create_pull_request(T.must(dependency_change), dependency_snapshot.base_commit_sha)
             rescue StandardError => e
@@ -71,6 +74,9 @@ module Dependabot
             end
           else
             Dependabot.logger.info("Nothing to update for Dependency Group: '#{group.name}'")
+
+            # If there are no updates, we still want to report them as failed updates
+            report_failed_dependency_updates_for_security_updates
           end
 
           dependency_change
@@ -111,6 +117,31 @@ module Dependabot
             dependency_change = T.let(T.must(dependency_changes.first), Dependabot::DependencyChange)
             dependency_change.merge_changes!(T.must(dependency_changes[1..-1])) if dependency_changes.count > 1
             @dependency_change = T.let(dependency_change, T.nilable(Dependabot::DependencyChange))
+          end
+        end
+
+        sig { void }
+        def report_failed_dependency_updates_for_security_updates
+          # Only report failed updates if the group applies to security updates
+          return unless job.security_updates_only?
+
+          original_dependencies = group.dependencies
+          updated_dependency_names = dependency_change&.updated_dependencies&.map(&:name) || []
+
+          failed_dependencies = original_dependencies.reject do |dep|
+            updated_dependency_names.include?(dep.name)
+          end
+
+          failed_dependencies.each do |failed_dependency|
+            error_handler.record_update_job_error(
+              error_type: "security_update_failed",
+              error_details: {
+                "dependency-name" => failed_dependency.name,
+                "dependency-version" => failed_dependency.version,
+                "directory" => job.source.directory || "/",
+              },
+              dependency: failed_dependency
+            )
           end
         end
       end
