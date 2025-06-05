@@ -55,7 +55,7 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
 
             if (groupedUpdateOperationsToPerform.Count == 0)
             {
-                await apiHandler.ClosePullRequest(new ClosePullRequest() { DependencyNames = job.Dependencies, Reason = "dependencies_removed" });
+                await apiHandler.ClosePullRequest(ClosePullRequest.WithDependenciesRemoved(job));
                 continue;
             }
 
@@ -65,7 +65,7 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
                 .ToImmutableArray();
             if (missingDependencies.Length > 0)
             {
-                await apiHandler.ClosePullRequest(new ClosePullRequest() { DependencyNames = missingDependencies, Reason = "dependency_removed" });
+                await apiHandler.ClosePullRequest(ClosePullRequest.WithDependencyRemoved(job));
                 continue;
             }
 
@@ -82,7 +82,7 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
 
                 if (vulnerableDependenciesToUpdate.Length < dependencyGroupToUpdate.Value.Length)
                 {
-                    await apiHandler.ClosePullRequest(new ClosePullRequest() { DependencyNames = [dependencyName], Reason = "up_to_date" });
+                    await apiHandler.ClosePullRequest(ClosePullRequest.WithUpToDate(job));
                     return;
                 }
 
@@ -99,7 +99,7 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
                     if (!analysisResult.CanUpdate)
                     {
                         logger.Info($"No updatable version found for {dependency.Name} in {projectPath}.");
-                        await apiHandler.ClosePullRequest(new ClosePullRequest() { DependencyNames = [dependencyName], Reason = "update_no_longer_possible" });
+                        await apiHandler.ClosePullRequest(ClosePullRequest.WithUpdateNoLongerPossible(job));
                         return;
                     }
 
@@ -119,7 +119,7 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
                         var alreadyHandled = updatedDependencies.Where(updated => updated.Name == dependencyName && updated.Version == analysisResult.UpdatedVersion).Any();
                         if (!alreadyHandled)
                         {
-                            await apiHandler.ClosePullRequest(new ClosePullRequest() { DependencyNames = [dependencyName], Reason = "update_no_longer_possible" });
+                            await apiHandler.ClosePullRequest(ClosePullRequest.WithUpdateNoLongerPossible(job));
                             return;
                         }
                     }
@@ -151,7 +151,7 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
                 {
                     await apiHandler.UpdatePullRequest(new UpdatePullRequest()
                     {
-                        DependencyNames = [.. updatedDependencies.Select(d => d.Name)],
+                        DependencyNames = [.. jobDependencies.OrderBy(n => n, StringComparer.OrdinalIgnoreCase)],
                         DependencyGroup = null,
                         UpdatedDependencyFiles = [.. updatedDependencyFiles],
                         BaseCommitSha = baseCommitSha,
@@ -166,11 +166,7 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
                     var existingPrButDifferent = job.GetExistingPullRequestForDependencies(rawDependencies, considerVersions: false);
                     if (existingPrButDifferent is not null)
                     {
-                        await apiHandler.ClosePullRequest(new ClosePullRequest()
-                        {
-                            DependencyNames = [.. rawDependencies.Select(d => d.Name)],
-                            Reason = "dependencies_changed",
-                        });
+                        await apiHandler.ClosePullRequest(ClosePullRequest.WithDependenciesChanged(job));
                     }
 
                     await apiHandler.CreatePullRequest(new CreatePullRequest()
