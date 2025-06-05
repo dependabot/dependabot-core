@@ -263,7 +263,7 @@ public class RefreshSecurityUpdatePullRequestHandlerTests : UpdateHandlersTestsB
                         ["operation"] = "update_security_pr",
                     }
                 },
-                new ClosePullRequest() { DependencyNames = ["Other.Dependency"], Reason = "dependency_removed" },
+                new ClosePullRequest() { DependencyNames = ["Other.Dependency", "Some.Dependency"], Reason = "dependency_removed" },
                 new MarkAsProcessed("TEST-COMMIT-SHA"),
             ]
         );
