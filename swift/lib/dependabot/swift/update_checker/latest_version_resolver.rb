@@ -66,7 +66,7 @@ module Dependabot
           version_tags_in_cooldown_period = T.let([], T::Array[String])
 
           package_details_fetcher.fetch_tag_and_release_date.each do |git_tag_with_detail|
-            if check_if_version_in_cooldown_period?(git_tag_with_detail.release_date)
+            if check_if_version_in_cooldown_period?(T.must(git_tag_with_detail.release_date))
               version_tags_in_cooldown_period << git_tag_with_detail.tag
             end
           end

@@ -28,16 +28,8 @@ module Dependabot
           @dependency = dependency
           @credentials = credentials
 
-          @ref = T.let(ref, String)
           @url = T.let(url, String)
         end
-
-        # as git submodules do not have versions (refs/tags are used instead), we use a pseudo version as placeholder
-        VERSION = "1.0.0"
-
-        # we use a default release date in case we reply on fallback logic of
-        # getting refs/tags to prevent filtering out head release (greater than max cooldown period)
-        DEFAULT_RELEASE_DATE = T.let(Time.now.utc - (60 * 60 * 24 * 91), Time)
 
         sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
@@ -49,6 +41,9 @@ module Dependabot
         def available_versions
           versions_metadata = T.let(fetch_tags_and_release_date, T.nilable(T::Array[GitTagWithDetail]))
 
+          # as git submodules do not have versions (refs/tags are used instead), we use a pseudo version as placeholder
+          pseudo_version = 1.0
+
           # we fallback to the git based tag info if no versions metadata is available
           if versions_metadata&.empty?
             versions_metadata = T.let(fetch_latest_tag_info,
@@ -57,9 +52,9 @@ module Dependabot
 
           releases = T.must(versions_metadata).map do |version_details|
             Dependabot::Package::PackageRelease.new(
-              version: GitSubmodules::Version.new(VERSION),
+              version: GitSubmodules::Version.new((pseudo_version += 1).to_s),
               tag: version_details.tag,
-              released_at: Time.parse(version_details.release_date)
+              released_at: version_details.release_date ? Time.parse(T.must(version_details.release_date)) : nil
             )
           end
 
@@ -79,8 +74,7 @@ module Dependabot
 
           parsed_results <<
             GitTagWithDetail.new(
-              tag: T.must(git_commit_checker.head_commit_for_current_branch),
-              release_date: DEFAULT_RELEASE_DATE.to_s
+              tag: T.must(git_commit_checker.head_commit_for_current_branch)
             )
 
           parsed_results
@@ -93,11 +87,16 @@ module Dependabot
           begin
             Dependabot.logger.info("Fetching release info for Git Submodules: #{dependency.name}")
 
-            response = Excon.get(provider_url)
+            client = Dependabot::GitCommitChecker.new(
+              dependency: dependency,
+              credentials: credentials
+            )
+
+            response = client.ref_details_for_pinned_ref
 
             unless response.status == 200
-              Dependabot.logger.error("Error while fetching details for #{dependency.name}" \
-                                      " Detail : #{response.body}")
+              Dependabot.logger.error("Error while fetching details for #{dependency.name} " \
+                                      "Detail : #{response.body}")
             end
 
             return parsed_results unless response.status == 200
@@ -113,26 +112,9 @@ module Dependabot
 
             parsed_results
           rescue StandardError => e
-            Dependabot.logger.error("Error while fetching package info for Git Submodules: #{e.message}")
+            Dependabot.logger.error("Error while fetching package info for git submodule: #{e.message}")
             parsed_results
           end
-        end
-
-        sig { returns(String) }
-        def provider_url
-          provider_url = @url.gsub(/\.git$/, "")
-
-          api_url = {
-            github: provider_url.gsub("github.com", "api.github.com/repos")
-          }.freeze
-
-          "#{api_url[:github]}/commits?sha=#{@ref}"
-        end
-
-        sig { returns(String) }
-        def ref
-          dependency.source_details&.fetch(:ref, nil) ||
-            dependency.source_details&.fetch(:branch, nil) || "HEAD"
         end
 
         sig { returns(String) }

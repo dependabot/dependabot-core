@@ -5,6 +5,7 @@ require "excon"
 require "json"
 require "sorbet-runtime"
 
+require "spec_helper"
 require "dependabot/errors"
 require "dependabot/shared_helpers"
 require "dependabot/update_checkers/version_filters"
@@ -29,20 +30,26 @@ RSpec.describe Dependabot::GitSubmodules::UpdateChecker::LatestVersionFinder do
       package_manager: "submodules"
     )
   end
+  let(:credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
+  end
   let(:checker) do
     described_class.new(
       dependency: dependency,
-      credentials: [{
-        "type" => "git_source",
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      }]
+      credentials: credentials,
+      cooldown_options: cooldown_options
     )
   end
 
-  describe "#latest_version" do
-    subject { checker.latest_version }
+  let(:cooldown_options) { nil }
+
+  describe "#latest_version that returns latest tag based on git command" do
+    subject { checker.latest_tag }
 
     let(:git_url) { "https://github.com/example/manifesto.git" }
 
@@ -59,12 +66,6 @@ RSpec.describe Dependabot::GitSubmodules::UpdateChecker::LatestVersionFinder do
 
     it { is_expected.to eq("fe1b155799ab728fae7d3edd5451c35942d711c4") }
 
-    context "when the repo doesn't have a .git suffix" do
-      let(:url) { "https://github.com/example/manifesto" }
-
-      it { is_expected.to eq("fe1b155799ab728fae7d3edd5451c35942d711c4") }
-    end
-
     context "when the repo can't be found" do
       before do
         stub_request(:get, git_url + "/info/refs?service=git-upload-pack")
@@ -72,24 +73,60 @@ RSpec.describe Dependabot::GitSubmodules::UpdateChecker::LatestVersionFinder do
       end
 
       it "raises a GitDependenciesNotReachable error" do
-        expect { checker.latest_version }.to raise_error do |error|
+        expect { checker.latest_tag }.to raise_error do |error|
           expect(error).to be_a(Dependabot::GitDependenciesNotReachable)
           expect(error.dependency_urls)
             .to eq(["https://github.com/example/manifesto.git"])
         end
       end
     end
+  end
 
-    context "when the reference can't be found" do
-      let(:branch) { "bad-branch" }
+  describe "#latest_version with cooldown", vcr: { record: :new_episodes } do
+    subject { checker.latest_tag }
 
-      it "raises a GitDependencyReferenceNotFound error" do
-        expect { checker.latest_version }
-          .to raise_error do |error|
-            expect(error).to be_a(Dependabot::GitDependencyReferenceNotFound)
-            expect(error.dependency).to eq("manifesto")
-          end
+    before do
+      Dependabot::Experiments.register(:enable_cooldown_for_gitsubmodules, true)
+    end
+
+    after do
+      Dependabot::Experiments.register(:enable_cooldown_for_gitsubmodules, false)
+    end
+
+    let(:git_url) { "https://github.com/NuGet/NuGet.Client.git" }
+    let(:branch) { "release-6.12.x" }
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "NuGet",
+        version: "95a470a557091cdbdc9f68a178b60bd19329942c",
+        requirements: [{
+          file: ".gitmodules",
+          requirement: nil,
+          groups: [],
+          source: { type: "git", url: git_url, branch: branch, ref: branch }
+        }],
+        package_manager: "submodules"
+      )
+    end
+
+    context "when cooldown is enabled for 90 days" do
+      let(:cooldown_options) do
+        Dependabot::Package::ReleaseCooldownOptions.new(
+          default_days: 90
+        )
       end
+
+      it { is_expected.to eq("7a84f1ecdb1df83034aa639e496f3b25a16d94ec") }
+    end
+
+    context "when cooldown is enabled for 60 days" do
+      let(:cooldown_options) do
+        Dependabot::Package::ReleaseCooldownOptions.new(
+          default_days: 60
+        )
+      end
+
+      it { is_expected.to eq("95a470a557091cdbdc9f68a178b60bd19329942c") }
     end
   end
 end

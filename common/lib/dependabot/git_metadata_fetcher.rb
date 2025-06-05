@@ -144,6 +144,11 @@ module Dependabot
       raise Dependabot::GitDependenciesNotReachable, [uri]
     end
 
+    sig { params(ref: String).returns(Excon::Response) }
+    def ref_details_for_pinned_ref(ref)
+      Dependabot::RegistryClient.get(url: provider_url(ref))
+    end
+
     private
 
     sig { returns(String) }
@@ -357,6 +362,19 @@ module Dependabot
       end
     rescue Errno::ENOENT => e # Thrown when `git` isn't installed
       OpenStruct.new(body: e.message, status: 500)
+    end
+
+    sig do
+      params(ref: String).returns(String)
+    end
+    def provider_url(ref)
+      provider_url = url.gsub(/\.git$/, "")
+
+      api_url = {
+        github: provider_url.gsub("github.com", "api.github.com/repos")
+      }.freeze
+
+      "#{api_url[:github]}/commits?per_page=100&sha=#{ref}"
     end
   end
 end
