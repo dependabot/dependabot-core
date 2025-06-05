@@ -10,16 +10,16 @@ module Dependabot
     sig { returns(String) }
     attr_accessor :tag
 
-    sig { returns(String) }
+    sig { returns(T.nilable(String)) }
     attr_accessor :release_date
 
     sig do
       params(
         tag: String,
-        release_date: String
+        release_date: T.nilable(String)
       ).void
     end
-    def initialize(tag:, release_date:)
+    def initialize(tag:, release_date: nil)
       @tag = tag
       @release_date = release_date
     end

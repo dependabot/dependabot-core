@@ -60,8 +60,9 @@ module Dependabot
       def fetch_latest_version
         T.let(LatestVersionFinder.new(
           dependency: dependency,
-          credentials: credentials
-        ).latest_version, T.nilable(String))
+          credentials: credentials,
+          cooldown_options: update_cooldown
+        ).latest_tag, T.nilable(String))
       end
     end
   end
