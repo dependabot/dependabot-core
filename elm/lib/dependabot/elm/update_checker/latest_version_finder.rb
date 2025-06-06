@@ -1,20 +1,106 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "excon"
+require "json"
+require "sorbet-runtime"
+
 require "open3"
 require "shellwords"
-require "dependabot/shared_helpers"
 require "dependabot/errors"
+require "dependabot/package/package_latest_version_finder"
+require "dependabot/shared_helpers"
+require "dependabot/update_checkers/version_filters"
 require "dependabot/elm/file_parser"
+require "dependabot/elm/package/package_details_fetcher"
+require "dependabot/elm/requirement"
 require "dependabot/elm/update_checker"
 require "dependabot/elm/update_checker/cli_parser"
 require "dependabot/elm/update_checker/requirements_updater"
-require "dependabot/elm/requirement"
 
 module Dependabot
   module Elm
     class UpdateChecker
-      class Elm19VersionResolver
+      class LatestVersionFinder < Dependabot::Package::PackageLatestVersionFinder
+        extend T::Sig
+
+        sig do
+          params(
+            dependency: Dependabot::Dependency,
+            dependency_files: T::Array[Dependabot::DependencyFile],
+            credentials: T::Array[Dependabot::Credential],
+            ignored_versions: T::Array[String],
+            security_advisories: T::Array[Dependabot::SecurityAdvisory],
+            raise_on_ignored: T::Boolean,
+            options: T::Hash[Symbol, T.untyped],
+            cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
+          ).void
+        end
+        def initialize(
+          dependency:,
+          dependency_files:,
+          credentials:,
+          ignored_versions:,
+          security_advisories:,
+          raise_on_ignored:,
+          options: {},
+          cooldown_options: nil
+        )
+          @dependency          = dependency
+          @dependency_files    = dependency_files
+          @credentials         = credentials
+          @ignored_versions    = ignored_versions
+          @security_advisories = security_advisories
+          @raise_on_ignored    = raise_on_ignored
+          @options             = options
+          @cooldown_options = cooldown_options
+          super
+        end
+
+        sig { returns(Dependabot::Dependency) }
+        attr_reader :dependency
+        sig { returns(T::Array[Dependabot::Credential]) }
+        attr_reader :credentials
+        sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
+        attr_reader :cooldown_options
+        sig { returns(T::Array[String]) }
+        attr_reader :ignored_versions
+        sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
+        attr_reader :security_advisories
+        sig { override.returns(T.nilable(Dependabot::Package::PackageDetails)) }
+        def package_details; end
+
+        sig { returns(T.nilable(Dependabot::Version)) }
+        def release_version
+          releases = package_releases
+          releases = filter_ignored_versions(T.must(releases))
+          releases = filter_by_cooldown(releases)
+
+          releases.max_by(&:version)&.version
+        end
+
+        private
+
+        sig { returns(T.nilable(T::Array[Dependabot::Package::PackageRelease])) }
+        def package_releases
+          @package_releases = T.let(Dependabot::Elm::Package::PackageDetailsFetcher
+            .new(dependency: dependency)
+            .fetch_package_releases, T.nilable(T::Array[Dependabot::Package::PackageRelease]))
+        end
+
+        sig { override.returns(T::Boolean) }
+        def cooldown_enabled?
+          Dependabot::Experiments.enabled?(:enable_cooldown_for_elm)
+        end
+      end
+
+      ################################
+      ################################
+      #### ELM19 version finder ######
+      ################################
+      ################################
+
+      class Elm19LatestVersionFinder < Dependabot::Package::PackageLatestVersionFinder
         extend T::Sig
 
         class UnrecoverableState < StandardError; end
@@ -22,12 +108,14 @@ module Dependabot
         sig do
           params(
             dependency: Dependabot::Dependency,
-            dependency_files: T::Array[Dependabot::DependencyFile]
+            dependency_files: T::Array[Dependabot::DependencyFile],
+            cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
           ).void
         end
-        def initialize(dependency:, dependency_files:)
+        def initialize(dependency:, dependency_files:, cooldown_options: nil)
           @dependency = dependency
           @dependency_files = dependency_files
+          @cooldown_options = cooldown_options
 
           @install_metadata = T.let(nil, T.nilable(T::Hash[String, Dependabot::Elm::Version]))
           @original_dependency_details ||= T.let(nil, T.nilable(T::Array[Dependabot::Dependency]))
@@ -85,12 +173,27 @@ module Dependabot
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
 
+        sig { returns(T.nilable(T::Array[Dependabot::Package::PackageRelease])) }
+        def package_releases
+          T.let(Dependabot::Elm::Package::PackageDetailsFetcher
+           .new(dependency: dependency)
+           .fetch_package_releases, T.nilable(T::Array[Dependabot::Package::PackageRelease]))
+        end
+
         sig { params(unlock_requirement: Symbol).returns(T.nilable(Dependabot::Elm::Version)) }
         def fetch_latest_resolvable_version(unlock_requirement)
           changed_deps = install_metadata
-
           result = check_install_result(changed_deps)
           version_after_install = changed_deps.fetch(dependency.name)
+
+          # returns current version if new proposed version is in cooldown period
+          new_release = package_releases&.find { |release| release.version == version_after_install }
+
+          if cooldown_options && in_cooldown_period?(T.must(new_release))
+            Dependabot.logger.info("#{dependency.name} #{new_release} is in cooldown period," \
+                                   " returning current version #{current_version}")
+            return current_version
+          end
 
           # If the install was clean then we can definitely update
           return version_after_install if result == :clean_bump
@@ -112,6 +215,11 @@ module Dependabot
           return :forced_full_unlock_bump if other_deps_bumped.any?
 
           :clean_bump
+        end
+
+        sig { override.returns(T::Boolean) }
+        def cooldown_enabled?
+          Dependabot::Experiments.enabled?(:enable_cooldown_for_elm)
         end
 
         sig { returns(T::Hash[String, Dependabot::Elm::Version]) }
@@ -221,6 +329,8 @@ module Dependabot
         def requirement_class
           dependency.requirement_class
         end
+        sig { override.returns(T.nilable(Dependabot::Package::PackageDetails)) }
+        def package_details; end
       end
     end
   end
