@@ -10,6 +10,8 @@ module Dependabot
       class PackageJsonPreparer
         def initialize(package_json_content:)
           @package_json_content = package_json_content
+          @git_ssh_requirements_to_swap = nil
+          @ssh_requirements_cache = {}
         end
 
         def prepared_content
@@ -81,6 +83,20 @@ module Dependabot
           end
 
           @git_ssh_requirements_to_swap
+        end
+
+        def cached_ssh_requirements
+          @ssh_requirements_cache[package_json_content] ||= begin
+            requirements = []
+            Bun::FileParser.each_dependency(JSON.parse(package_json_content)) do |_, req, _t|
+              next unless req.is_a?(String)
+              next unless req.start_with?("git+ssh:")
+
+              req = req.split("#").first
+              requirements << req
+            end
+            requirements
+          end
         end
       end
     end
