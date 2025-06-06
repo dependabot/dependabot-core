@@ -57,6 +57,13 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
     {
         foreach (var group in job.DependencyGroups)
         {
+            var existingGroupPr = job.ExistingGroupPullRequests.FirstOrDefault(pr => pr.DependencyGroupName == group.Name);
+            if (existingGroupPr is not null)
+            {
+                logger.Info($"Existing pull request found for group {group.Name}.  Skipping pull request creation.");
+                continue;
+            }
+
             logger.Info($"Starting update for group {group.Name}");
             var groupMatcher = group.GetGroupMatcher();
             var updateOperationsPerformed = new List<UpdateOperationBase>();
