@@ -145,7 +145,9 @@ internal class RefreshGroupUpdatePullRequestHandler : IUpdateHandler
             var rawDependencies = updatedDependencies.Select(d => new Dependency(d.Name, d.Version, DependencyType.Unknown)).ToArray();
             if (rawDependencies.Length == 0)
             {
-                await apiHandler.ClosePullRequest(ClosePullRequest.WithUpdateNoLongerPossible(job));
+                var close = ClosePullRequest.WithUpdateNoLongerPossible(job);
+                logger.Info(close.GetReport());
+                await apiHandler.ClosePullRequest(close);
                 continue;
             }
 
