@@ -53,7 +53,9 @@ internal class RefreshVersionUpdatePullRequestHandler : IUpdateHandler
 
             if (relevantUpdateOperationsToPerform.Count == 0)
             {
-                await apiHandler.ClosePullRequest(ClosePullRequest.WithDependenciesRemoved(job));
+                var close = ClosePullRequest.WithDependenciesRemoved(job);
+                logger.Info(close.GetReport());
+                await apiHandler.ClosePullRequest(close);
                 continue;
             }
 
@@ -63,7 +65,9 @@ internal class RefreshVersionUpdatePullRequestHandler : IUpdateHandler
                 .ToImmutableArray();
             if (missingDependencies.Length > 0)
             {
-                await apiHandler.ClosePullRequest(ClosePullRequest.WithDependencyRemoved(job));
+                var close = ClosePullRequest.WithDependencyRemoved(job);
+                logger.Info(close.GetReport());
+                await apiHandler.ClosePullRequest(close);
                 continue;
             }
 
@@ -92,8 +96,7 @@ internal class RefreshVersionUpdatePullRequestHandler : IUpdateHandler
                     if (!analysisResult.CanUpdate)
                     {
                         logger.Info($"No updatable version found for {dependency.Name} in {projectPath}.");
-                        await apiHandler.ClosePullRequest(ClosePullRequest.WithUpdateNoLongerPossible(job));
-                        return;
+                        continue;
                     }
 
                     logger.Info($"Attempting update of {dependency.Name} from {dependency.Version} to {analysisResult.UpdatedVersion} for {projectPath}.");
@@ -108,8 +111,8 @@ internal class RefreshVersionUpdatePullRequestHandler : IUpdateHandler
 
                     if (updaterResult.UpdateOperations.Length == 0)
                     {
-                        await apiHandler.ClosePullRequest(ClosePullRequest.WithUpdateNoLongerPossible(job));
-                        return;
+                        logger.Info($"No update operations performed for {dependency.Name}/{dependency.Version} in project {projectPath}.");
+                        continue;
                     }
 
                     var patchedUpdateOperations = RunWorker.PatchInOldVersions(updaterResult.UpdateOperations, projectDiscovery);
@@ -126,6 +129,21 @@ internal class RefreshVersionUpdatePullRequestHandler : IUpdateHandler
                 }
             }
 
+            // ensure we did something
+            var updatesNotPerformed = jobDependencies
+                .Except(updatedDependencies.Select(d => d.Name), StringComparer.OrdinalIgnoreCase)
+                .Distinct()
+                .OrderBy(d => d, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+
+            if (updatesNotPerformed.Length > 0)
+            {
+                logger.Info($"No updates performed for: {string.Join(", ", updatesNotPerformed)}");
+                await apiHandler.ClosePullRequest(ClosePullRequest.WithUpdateNoLongerPossible(job));
+                continue;
+            }
+
+            // update or create
             var updatedDependencyFiles = await tracker.StopTrackingAsync();
             var rawDependencies = updatedDependencies.Select(d => new Dependency(d.Name, d.Version, DependencyType.Unknown)).ToArray();
             if (rawDependencies.Length > 0)
