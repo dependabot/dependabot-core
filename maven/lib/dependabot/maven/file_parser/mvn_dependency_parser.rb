@@ -59,7 +59,7 @@ module Dependabot
           params(dependency_files: T::Array[Dependabot::DependencyFile])
             .returns(Dependabot::FileParsers::Base::DependencySet)
         end
-        def run_mvn_cli_dependency_tree(dependency_files)
+        def run_mvn_cli_dependency_tree(dependency_files) # rubocop:disable Metrics/AbcSize
           dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
           # Copy only pom.xml files to a temporary directory to
@@ -81,7 +81,7 @@ module Dependabot
                 "mvn dependency:tree -DoutputFile=dependency-tree-output.json -DoutputType=json -e"
               )
               Dependabot.logger.info("mvn dependency:tree output: STDOUT:#{stdout} STDERR:#{stderr}")
-              raise "Failed to execute mvn dependency:tree: STDERR:#{stderr} STDOUT:#{stdout}" unless status.success?
+              handle_tool_error(stdout) unless status.success?
             end
 
             # mvn CLI outputs dependency tree for each pom.xml file, collect them
@@ -119,6 +119,10 @@ module Dependabot
           # Find the topmost directory level by finding the minimum number of "../" sequences
           relative_top_depth = 0
           dependency_files.each do |pom|
+            # This logic might generate incorrect depth if relative path is more complex,
+            # e.g. "../subdir/../pom.xml", but it should guarantee that resulted depth will be higher
+            # that actual maximul depth, which means that we will not escape the temporary directory.
+            # This is sufficient for our use case.
             depth = pom.name.scan("../").length
             relative_top_depth = [relative_top_depth, depth].max
           end
@@ -132,6 +136,17 @@ module Dependabot
           FileUtils.mkdir_p(base_depth_path)
 
           base_depth_path
+        end
+
+        sig { params(output: String).void }
+        def handle_tool_error(output)
+          if (match = output.match(
+            %r{Could not transfer artifact (?<artifact>[^ ]+) from/to (?<repository_name>[^ ]+) \((?<repository_url>[^ ]+)\): status code: (?<status_code>[0-9]+)}
+          )) && (match[:status_code] == ("403") || match[:status_code] == ("401"))
+            raise Dependabot::PrivateSourceAuthenticationFailure, match[:repository_url]
+          end
+
+          raise DependabotError, "mvn CLI failed with an unhandled error"
         end
       end
     end
