@@ -109,6 +109,16 @@ if [ "$#" -gt "1" ]; then
   CONTAINER_ARGS=("${@:2}")
 fi
 
+# Use Docker Desktop's special SSH agent path
+export SSH_AUTH_SOCK=/run/host-services/ssh-auth.sock
+
+# for Mac with Docker Desktop or Rancher Desktop, use:Add commentMore actions
+# SSH_AUTH_SOCK=/run/host-services/ssh-auth.sock ./bin/docker-dev-shell go_modules -r
+if [ -n "$SSH_AUTH_SOCK" ]; then
+  DOCKER_OPTS+=("-v" "$SSH_AUTH_SOCK:/tmp/ssh-auth.sock")
+  DOCKER_OPTS+=("-e" "SSH_AUTH_SOCK=/tmp/ssh-auth.sock")
+fi
+
 echo "$(tput setaf 2)=> running docker development shell$(tput sgr0)"
 CODE_DIR="/home/dependabot"
 touch .core-bash_history # allow bash history to persist across invocations
