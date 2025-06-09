@@ -3511,7 +3511,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           expect(parsed_packages.keys).to include(/babel-jest@22\.4\.4/)
 
           # Doesn't update unrelated dependencies
-          expect(parsed_packages.keys).to include(/eslint@4\.19\.1/)
+          expect(parsed_packages.keys).to include(/eslint@4\.14\.0/)
         end
       end
 

@@ -11,7 +11,7 @@ require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::Pub::FileUpdater do
   let(:project) { "can_update" }
-  let(:dev_null) { WEBrick::Log.new("/dev/null", 7) }
+  let(:dev_null) { WEBrick::Log.new(File::NULL, 7) }
   let(:server) { WEBrick::HTTPServer.new({ Port: 0, AccessLog: [], Logger: dev_null }) }
   let(:dependency_files) do
     files = project_dependency_files(project)
@@ -46,6 +46,8 @@ RSpec.describe Dependabot::Pub::FileUpdater do
       server.unmount "/api/packages/#{package}"
     end
     server.shutdown
+
+    FileUtils.rm_rf("/tmp/flutter")
   end
 
   before do

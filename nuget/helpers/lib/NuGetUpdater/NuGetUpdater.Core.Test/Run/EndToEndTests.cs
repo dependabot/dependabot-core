@@ -9,8 +9,10 @@ namespace NuGetUpdater.Core.Test.Run;
 
 public class EndToEndTests
 {
-    [Fact]
-    public async Task UpdatePackageWithDifferentVersionsInDifferentDirectories()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task UpdatePackageWithDifferentVersionsInDifferentDirectories(bool useLegacyUpdateHandler)
     {
         // this test passes `null` for discovery, analyze, and update workers to fully test the desired behavior
 
@@ -18,89 +20,10 @@ public class EndToEndTests
         //   library1.csproj - top level dependency, already up to date
         //   library2.csproj - top level dependency, needs direct update
         //   library3.csproj - transitive dependency, needs pin
-        await RunWorkerTests.RunAsync(
-            experimentsManager: new ExperimentsManager() { UseDirectDiscovery = true },
-            packages: [
-                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0"),
-                MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net8.0"),
-                MockNuGetPackage.CreateSimplePackage("Package.With.Transitive.Dependency", "0.1.0", "net8.0", [(null, [("Some.Package", "1.0.0")])]),
-            ],
-            job: new Job()
+        var base64DependencyFiles = useLegacyUpdateHandler
+            ? new[]
             {
-                AllowedUpdates = [new() { UpdateType = UpdateType.Security }],
-                SecurityAdvisories =
-                [
-                    new()
-                    {
-                        DependencyName = "Some.Package",
-                        AffectedVersions = [Requirement.Parse("= 1.0.0")]
-                    }
-                ],
-                Source = new()
-                {
-                    Provider = "github",
-                    Repo = "test/repo",
-                    Directory = "/"
-                }
-            },
-            files: [
-                ("dirs.proj", """
-                    <Project>
-                      <ItemGroup>
-                        <ProjectFile Include="library1\library1.csproj" />
-                        <ProjectFile Include="library2\library2.csproj" />
-                        <ProjectFile Include="library3\library3.csproj" />
-                      </ItemGroup>
-                    </Project>
-                    """),
-                ("Directory.Build.props", "<Project />"),
-                ("Directory.Build.targets", "<Project />"),
-                ("Directory.Packages.props", """
-                    <Project>
-                      <PropertyGroup>
-                        <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
-                      </PropertyGroup>
-                    </Project>
-                    """),
-                ("library1/library1.csproj", """
-                    <Project Sdk="Microsoft.NET.Sdk">
-                      <PropertyGroup>
-                        <TargetFramework>net8.0</TargetFramework>
-                      </PropertyGroup>
-                      <ItemGroup>
-                        <PackageReference Include="Some.Package" Version="2.0.0" />
-                      </ItemGroup>
-                    </Project>
-                    """),
-                ("library2/library2.csproj", """
-                    <Project Sdk="Microsoft.NET.Sdk">
-                      <PropertyGroup>
-                        <TargetFramework>net8.0</TargetFramework>
-                      </PropertyGroup>
-                      <ItemGroup>
-                        <PackageReference Include="Some.Package" Version="1.0.0" />
-                      </ItemGroup>
-                    </Project>
-                    """),
-                ("library3/library3.csproj", """
-                    <Project Sdk="Microsoft.NET.Sdk">
-                      <PropertyGroup>
-                        <TargetFramework>net8.0</TargetFramework>
-                      </PropertyGroup>
-                      <ItemGroup>
-                        <PackageReference Include="Package.With.Transitive.Dependency" Version="0.1.0" />
-                      </ItemGroup>
-                    </Project>
-                    """),
-            ],
-            discoveryWorker: null,
-            analyzeWorker: null,
-            updaterWorker: null,
-            expectedResult: new RunResult()
-            {
-                Base64DependencyFiles =
-                [
-                    new DependencyFile()
+                new DependencyFile()
                     {
                         Directory = "/",
                         Name = "Directory.Build.props",
@@ -175,7 +98,93 @@ public class EndToEndTests
                             """)),
                         ContentEncoding = "base64",
                     }
+            }
+            : [];
+        await RunWorkerTests.RunAsync(
+            experimentsManager: new ExperimentsManager() { UseDirectDiscovery = true, UseLegacyUpdateHandler = useLegacyUpdateHandler },
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Package.With.Transitive.Dependency", "0.1.0", "net8.0", [(null, [("Some.Package", "1.0.0")])]),
+            ],
+            job: new Job()
+            {
+                AllowedUpdates = [new() { UpdateType = UpdateType.Security }],
+                Dependencies = [
+                    "Some.Package"
                 ],
+                SecurityAdvisories =
+                [
+                    new()
+                    {
+                        DependencyName = "Some.Package",
+                        AffectedVersions = [Requirement.Parse("= 1.0.0")]
+                    }
+                ],
+                SecurityUpdatesOnly = true,
+                Source = new()
+                {
+                    Provider = "github",
+                    Repo = "test/repo",
+                    Directory = "/"
+                }
+            },
+            files: [
+                ("dirs.proj", """
+                    <Project>
+                      <ItemGroup>
+                        <ProjectFile Include="library1\library1.csproj" />
+                        <ProjectFile Include="library2\library2.csproj" />
+                        <ProjectFile Include="library3\library3.csproj" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Directory.Build.props", "<Project />"),
+                ("Directory.Build.targets", "<Project />"),
+                ("Directory.Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+                      </PropertyGroup>
+                    </Project>
+                    """),
+                ("library1/library1.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="2.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("library2/library2.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("library3/library3.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Package.With.Transitive.Dependency" Version="0.1.0" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+            ],
+            discoveryWorker: null,
+            analyzeWorker: null,
+            updaterWorker: null,
+            expectedResult: new RunResult()
+            {
+                Base64DependencyFiles = base64DependencyFiles,
                 BaseCommitSha = "TEST-COMMIT-SHA",
             },
             expectedApiMessages: [
@@ -346,7 +355,8 @@ public class EndToEndTests
                     BaseCommitSha = "TEST-COMMIT-SHA",
                     CommitMessage = RunWorkerTests.TestPullRequestCommitMessage,
                     PrTitle = RunWorkerTests.TestPullRequestTitle,
-                    PrBody = RunWorkerTests.TestPullRequestBody
+                    PrBody = RunWorkerTests.TestPullRequestBody,
+                    DependencyGroup = null,
                 },
                 new MarkAsProcessed("TEST-COMMIT-SHA")
             ]
