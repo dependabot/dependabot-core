@@ -82,7 +82,7 @@ RSpec.describe Dependabot::GitSubmodules::UpdateChecker::LatestVersionFinder do
     end
   end
 
-  describe "#latest_version with cooldown", vcr: { record: :new_episodes } do
+  describe "#latest_version with cooldown", :vcr do
     subject { checker.latest_tag }
 
     before do
