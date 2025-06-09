@@ -1792,6 +1792,38 @@ public class MSBuildHelperTests : TestBase
         yield return
         [
             // output
+            "Response status code does not indicate success: 500 (Internal Server Error).",
+            // expectedError
+            new PrivateSourceBadResponse(["http://localhost/test-feed"]),
+        ];
+
+        yield return
+        [
+            // output
+            "The response ended prematurely. (ResponseEnded)",
+            // expectedError
+            new PrivateSourceBadResponse(["http://localhost/test-feed"]),
+        ];
+
+        yield return
+        [
+            // output
+            "The file is not a valid nupkg.",
+            // expectedError
+            new PrivateSourceBadResponse(["http://localhost/test-feed"]),
+        ];
+
+        yield return
+        [
+            // output
+            "The content at 'http://localhost/test-feed/Packages(Id='Some.Package',Version='1.2.3')' is not valid XML.",
+            // expectedError
+            new PrivateSourceBadResponse(["http://localhost/test-feed"]),
+        ];
+
+        yield return
+        [
+            // output
             "The imported file \"some.file\" does not exist",
             // expectedError
             new DependencyFileNotFound("some.file", "test message"),
@@ -1827,6 +1859,14 @@ public class MSBuildHelperTests : TestBase
             """error : Could not resolve SDK "missing-sdk".""",
             // expectedError
             new DependencyNotFound("missing-sdk"),
+        ];
+
+        yield return
+        [
+            // output
+            "Unable to find package 'Some.Package'. Existing packages must be restored before performing an install or update",
+            // expectedError
+            new DependencyNotFound("Some.Package"),
         ];
 
         yield return
@@ -1883,6 +1923,17 @@ public class MSBuildHelperTests : TestBase
             "This part is not reported.\nAn error occurred while reading file '/path/to/packages.config': Some error message.\nThis part is not reported.",
             // expectedError
             new DependencyFileNotParseable("/path/to/packages.config", "Some error message."),
+        ];
+
+        yield return
+        [
+            // output
+            """
+            NuGet.Config is not valid XML. Path: '/path/to/NuGet.Config'.
+              Some error message.
+            """,
+            // expectedError
+            new DependencyFileNotParseable("/path/to/NuGet.Config", "Some error message."),
         ];
     }
 

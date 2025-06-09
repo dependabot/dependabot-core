@@ -22,4 +22,19 @@ public sealed record ClosePullRequest : MessageBase
 
         return report.ToString().Trim();
     }
+
+    public static ClosePullRequest WithDependenciesChanged(Job job) => CloseWithReason(job, "dependencies_changed");
+    public static ClosePullRequest WithDependenciesRemoved(Job job) => CloseWithReason(job, "dependencies_removed");
+    public static ClosePullRequest WithDependencyRemoved(Job job) => CloseWithReason(job, "dependency_removed");
+    public static ClosePullRequest WithUpdateNoLongerPossible(Job job) => CloseWithReason(job, "update_no_longer_possible");
+    public static ClosePullRequest WithUpToDate(Job job) => CloseWithReason(job, "up_to_date");
+
+    private static ClosePullRequest CloseWithReason(Job job, string reason)
+    {
+        return new ClosePullRequest()
+        {
+            DependencyNames = [.. job.Dependencies.Distinct().OrderBy(n => n, StringComparer.OrdinalIgnoreCase)],
+            Reason = reason,
+        };
+    }
 }

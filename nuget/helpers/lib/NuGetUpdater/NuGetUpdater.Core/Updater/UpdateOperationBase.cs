@@ -4,6 +4,7 @@ using System.Text.Json.Serialization;
 
 using NuGet.Versioning;
 
+using NuGetUpdater.Core.Run.ApiModel;
 using NuGetUpdater.Core.Utilities;
 
 
@@ -21,6 +22,32 @@ public abstract record UpdateOperationBase
     public required ImmutableArray<string> UpdatedFiles { get; init; }
 
     public abstract string GetReport();
+
+    public ReportedDependency ToReportedDependency(string projectPath, IEnumerable<ReportedDependency> previouslyReportedDependencies, IEnumerable<Dependency> updatedDependencies)
+    {
+        var updatedFilesSet = UpdatedFiles.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var previousDependency = previouslyReportedDependencies
+            .SingleOrDefault(d => d.Name.Equals(DependencyName, StringComparison.OrdinalIgnoreCase) && PathComparer.Instance.Equals(d.Requirements.Single().File, projectPath));
+        return new ReportedDependency()
+        {
+            Name = DependencyName,
+            Version = NewVersion.ToString(),
+            Requirements = [
+                new()
+                {
+                    File = projectPath,
+                    Requirement = NewVersion.ToString(),
+                    Groups = previousDependency?.Requirements.FirstOrDefault()?.Groups ?? [],
+                    Source = new()
+                    {
+                        SourceUrl = updatedDependencies.FirstOrDefault(d => d.Name.Equals(DependencyName, StringComparison.OrdinalIgnoreCase))?.InfoUrl,
+                    }
+                }
+            ],
+            PreviousVersion = previousDependency?.Version,
+            PreviousRequirements = previousDependency?.Requirements,
+        };
+    }
 
     internal static string GenerateUpdateOperationReport(IEnumerable<UpdateOperationBase> updateOperations)
     {
