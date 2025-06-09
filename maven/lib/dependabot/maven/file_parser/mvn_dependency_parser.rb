@@ -59,7 +59,8 @@ module Dependabot
           params(dependency_files: T::Array[Dependabot::DependencyFile])
             .returns(Dependabot::FileParsers::Base::DependencySet)
         end
-        def run_mvn_cli_dependency_tree(dependency_files) # rubocop:disable Metrics/AbcSize
+        def run_mvn_cli_dependency_tree(dependency_files)
+          proxy_url = URI.parse(ENV.fetch("HTTPS_PROXY"))
           dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
           # Copy only pom.xml files to a temporary directory to
@@ -77,10 +78,15 @@ module Dependabot
             end
 
             Dir.chdir(project_directory) do
-              stdout, stderr, status = Open3.capture3(
-                "mvn dependency:tree -DoutputFile=dependency-tree-output.json -DoutputType=json -e"
+              stdout, _, status = Open3.capture3(
+                { "PROXY_HOST" => proxy_url.host },
+                "mvn",
+                "dependency:tree",
+                "-DoutputFile=dependency-tree-output.json",
+                "-DoutputType=json",
+                "-e"
               )
-              Dependabot.logger.info("mvn dependency:tree output: STDOUT:#{stdout} STDERR:#{stderr}")
+              Dependabot.logger.info("mvn dependency:tree output: STDOUT:#{stdout}")
               handle_tool_error(stdout) unless status.success?
             end
 
