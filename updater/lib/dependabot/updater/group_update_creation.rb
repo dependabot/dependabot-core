@@ -69,11 +69,17 @@ module Dependabot
         # A list of notices that will be used in PR messages and/or sent to the dependabot github alerts.
         notices = dependency_snapshot.notices
 
+        # Track dependencies that were not updated with reasons
+        not_updated_dependencies = []
+
         Dependabot.logger.info("Updating the #{job.source.directory} directory.")
         group.dependencies.each do |dependency|
-          # We still want to update a dependency if it's been updated in another manifest files,
+          # We still want to update a dependency if it's been updated in another manifest file,
           # but we should skip it if it's been updated in _the same_ manifest file
-          next if skip_dependency?(dependency, group)
+          if skip_dependency?(dependency, group)
+            not_updated_dependencies << { name: dependency.name, reason: "already handled by previous group" }
+            next
+          end
 
           # Get the current state of the dependency files for use in this iteration, filter by directory
           dependency_files = group_changes.current_dependency_files(job)
@@ -84,7 +90,10 @@ module Dependabot
 
           # If the dependency can not be found in the reparsed files then it was likely removed by a previous
           # dependency update
-          next if dependency.nil?
+          if dependency.nil?
+            not_updated_dependencies << { name: dependency.name, reason: "removed by previous update" }
+            next
+          end
 
           # If the dependency version changed, then we can deduce that the dependency was updated already.
           original_dependency = original_dependencies.find { |d| d.name == dependency.name }
@@ -95,23 +104,40 @@ module Dependabot
           end
 
           updated_dependencies = compile_updates_for(dependency, dependency_files, group)
-          next unless updated_dependencies.any?
+          unless updated_dependencies.any?
+            not_updated_dependencies << { name: dependency.name, reason: "no updates available or update not possible" }
+            next
+          end
 
           lead_dependency = updated_dependencies.find do |dep|
             dep.name.casecmp(dependency.name)&.zero?
           end
 
-          next unless lead_dependency
+          unless lead_dependency
+            not_updated_dependencies << { name: dependency.name, reason: "lead dependency not found" }
+            next
+          end
 
           dependency_change = create_change_for(lead_dependency, updated_dependencies, dependency_files, group)
 
           # Move on to the next dependency using the existing files if we
           # could not create a change for any reason
-          next unless dependency_change
+          unless dependency_change
+            not_updated_dependencies << { name: dependency.name, reason: "failed to create dependency change" }
+            next
+          end
 
           # Store the updated files for the next loop
           group_changes.merge(dependency_change)
           store_changes(dependency)
+        end
+
+        # Log which dependencies were not updated and why
+        if not_updated_dependencies.any?
+          Dependabot.logger.info("Dependencies in group '#{group.name}' that were not updated:")
+          not_updated_dependencies.each do |dep_info|
+            Dependabot.logger.info("  - #{dep_info[:name]}: #{dep_info[:reason]}")
+          end
         end
 
         # Create a single Dependabot::DependencyChange that aggregates everything we've updated
