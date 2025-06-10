@@ -70,7 +70,6 @@ module Dependabot
       end
 
       # rubocop:disable Metrics/AbcSize
-      # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/PerceivedComplexity
       sig do
         params(buildfiles: T::Array[Dependabot::DependencyFile], dependency: Dependabot::Dependency)
@@ -109,21 +108,12 @@ module Dependabot
           end
 
           lockfile_updater = LockfileUpdater.new(dependency_files: files)
-          lockfiles = lockfile_updater.update_lockfiles(buildfile)
-          lockfiles.each do |lockfile|
-            if files.any? { |f| f.name == lockfile.name && f.directory == lockfile.directory }
-              existing_file = files.find { |f| f.name == lockfile.name && f.directory == lockfile.directory }
-              files[T.must(files.index(existing_file))] = lockfile
-            else
-              files << lockfile
-            end
-          end
+          files = lockfile_updater.update_lockfiles(buildfile)
         end
 
         files
       end
       # rubocop:enable Metrics/PerceivedComplexity
-      # rubocop:enable Metrics/CyclomaticComplexity
       # rubocop:enable Metrics/AbcSize
 
       sig do

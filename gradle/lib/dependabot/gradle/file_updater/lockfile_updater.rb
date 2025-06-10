@@ -84,13 +84,13 @@ module Dependabot
         end
 
         sig { params(file_name: String).void }
-        def write_properties_file(file_name)
+        def write_properties_file(file_name) # rubocop:disable Metrics/PerceivedComplexity
           http_proxy = ENV.fetch("HTTP_PROXY", nil)
           https_proxy = ENV.fetch("HTTPS_PROXY", nil)
           http_split = http_proxy&.split(":")
           https_split = https_proxy&.split(":")
-          http_proxy_host = http_split&.fetch(1) ? http_split[1]&.gsub("//", "") : "host.docker.internal"
-          https_proxy_host = https_split&.fetch(1) ? https_split[1]&.gsub("//", "") : "host.docker.internal"
+          http_proxy_host = http_split&.fetch(1, nil)&.gsub("//", "") || "host.docker.internal"
+          https_proxy_host = https_split&.fetch(1, nil)&.gsub("//", "") || "host.docker.internal"
           http_proxy_port = http_split&.fetch(2) || "1080"
           https_proxy_port = https_split&.fetch(2) || "1080"
           properties_content = "
