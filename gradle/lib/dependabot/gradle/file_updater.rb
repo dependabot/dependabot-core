@@ -16,7 +16,7 @@ module Dependabot
       require_relative "file_updater/property_value_updater"
       require_relative "file_updater/lockfile_updater"
 
-      SUPPORTED_BUILD_FILE_NAMES = %w(build.gradle build.gradle.kts, gradle.lockfile).freeze
+      SUPPORTED_BUILD_FILE_NAMES = %w(build.gradle build.gradle.kts gradle.lockfile).freeze
 
       sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex

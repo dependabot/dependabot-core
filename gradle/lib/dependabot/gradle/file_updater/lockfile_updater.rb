@@ -36,18 +36,11 @@ module Dependabot
 
           updated_lockfiles = @dependency_files.dup
           SharedHelpers.in_a_temporary_directory do |temp_dir|
-            @dependency_files.each do |file|
-              in_path_name = File.join(temp_dir, file.directory, file.name)
-              FileUtils.mkdir_p(File.dirname(in_path_name))
-              puts "#{in_path_name} => #{file.content}"
-              File.write(in_path_name, file.content)
-            end
+            populate_temp_directory(temp_dir)
             cwd = File.join(temp_dir, build_file.directory, build_file.name)
             cwd = File.dirname(cwd)
 
-            # Create gradle.properties file with proxy settings if needed
-            # This is needed for Gradle to resolve dependencies without network issues
-            # when running in a Docker container behind a proxy
+            # Create gradle.properties file with proxy settings
             # Would prefer to use command line arguments, but they don't work.
             properties_filename = File.join(temp_dir, build_file.directory, "gradle.properties")
             write_properties_file(properties_filename)
@@ -62,13 +55,8 @@ module Dependabot
             command = Shellwords.join(command_parts)
 
             Dir.chdir(cwd) do
-              SharedHelpers.run_shell_command(command, env: env, cwd: cwd)
-              local_lockfiles.each do |file|
-                f_content = File.read(File.join(temp_dir, file.directory, file.name))
-                tmp_file = file.dup
-                tmp_file.content = f_content
-                updated_lockfiles[T.must(updated_lockfiles.index(file))] = tmp_file
-              end
+              SharedHelpers.run_shell_command(command, cwd: cwd)
+              update_lockfiles_content(temp_dir, local_lockfiles, updated_lockfiles)
             rescue SharedHelpers::HelperSubprocessFailed => e
               puts "Failed to update lockfiles: #{e.message}"
               return updated_lockfiles
@@ -77,10 +65,35 @@ module Dependabot
           updated_lockfiles
         end
 
+        sig do
+           params(
+            temp_dir: String,
+            local_lockfiles: T::Array[Dependabot::DependencyFile],
+            updated_lockfiles: T::Array[Dependabot::DependencyFile]
+          ).void
+        end
+        def update_lockfiles_content(temp_dir, local_lockfiles, updated_lockfiles)
+            local_lockfiles.each do |file|
+              f_content = File.read(File.join(temp_dir, file.directory, file.name))
+              tmp_file = file.dup
+              tmp_file.content = f_content
+              updated_lockfiles[T.must(updated_lockfiles.index(file))] = tmp_file
+            end
+        end
+
+        sig { params(temp_dir: String).void }
+        def populate_temp_directory(temp_dir)
+          @dependency_files.each do |file|
+            in_path_name = File.join(temp_dir, file.directory, file.name)
+            FileUtils.mkdir_p(File.dirname(in_path_name))
+            File.write(in_path_name, file.content)
+          end
+        end
+
         sig { params(file_name: String).void }
         def write_properties_file(file_name)
-          http_proxy = ENV["HTTP_PROXY"]
-          https_proxy = ENV["HTTPS_PROXY"]
+          http_proxy = ENV.fetch["HTTP_PROXY"]
+          https_proxy = ENV.fetch["HTTPS_PROXY"]
           http_proxy_host = http_proxy ? T.must(http_proxy.split(":")[1]).gsub("//", "") : "host.docker.internal"
           https_proxy_host = https_proxy ? T.must(https_proxy.split(":")[1]).gsub("//", "") : "host.docker.internal"
           http_proxy_port = http_proxy ? http_proxy.split(":")[2] : "1080"
