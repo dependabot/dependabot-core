@@ -70,6 +70,7 @@ module Dependabot
       end
 
       # rubocop:disable Metrics/AbcSize
+      # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/PerceivedComplexity
       sig do
         params(buildfiles: T::Array[Dependabot::DependencyFile], dependency: Dependabot::Dependency)
@@ -122,6 +123,7 @@ module Dependabot
         files
       end
       # rubocop:enable Metrics/PerceivedComplexity
+      # rubocop:enable Metrics/CyclomaticComplexity
       # rubocop:enable Metrics/AbcSize
 
       sig do
@@ -249,8 +251,10 @@ module Dependabot
 
       sig { returns(Gradle::FileParser::PropertyValueFinder) }
       def property_value_finder
-        @property_value_finder = T.let(@property_value_finder, T.nilable(Gradle::FileParser::PropertyValueFinder))
-        @property_value_finder ||= Gradle::FileParser::PropertyValueFinder.new(dependency_files: dependency_files)
+        @property_value_finder ||= T.let(
+          Gradle::FileParser::PropertyValueFinder.new(dependency_files: dependency_files),
+          T.nilable(Gradle::FileParser::PropertyValueFinder)
+        )
       end
 
       sig do

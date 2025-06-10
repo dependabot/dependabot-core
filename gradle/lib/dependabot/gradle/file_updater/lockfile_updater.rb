@@ -36,7 +36,6 @@ module Dependabot
 
           updated_lockfiles = @dependency_files.dup
           SharedHelpers.in_a_temporary_directory do |temp_dir|
-            temp_dir = T.let(temp_dir, String)
             populate_temp_directory(temp_dir)
             cwd = File.join(temp_dir, build_file.directory, build_file.name)
             cwd = File.dirname(cwd)
@@ -68,7 +67,7 @@ module Dependabot
 
         sig do
           params(
-            temp_dir: String,
+            temp_dir: T.any(Pathname, String),
             local_lockfiles: T::Array[Dependabot::DependencyFile],
             updated_lockfiles: T::Array[Dependabot::DependencyFile]
           ).void
@@ -82,7 +81,7 @@ module Dependabot
           end
         end
 
-        sig { params(temp_dir: String).void }
+        sig { params(temp_dir: T.any(Pathname, String)).void }
         def populate_temp_directory(temp_dir)
           @dependency_files.each do |file|
             in_path_name = File.join(temp_dir, file.directory, file.name)
@@ -95,10 +94,12 @@ module Dependabot
         def write_properties_file(file_name)
           http_proxy = ENV.fetch("HTTP_PROXY")
           https_proxy = ENV.fetch("HTTPS_PROXY")
-          http_proxy_host = http_proxy ? T.must(http_proxy.split(":")[1]).gsub("//", "") : "host.docker.internal"
-          https_proxy_host = https_proxy ? T.must(https_proxy.split(":")[1]).gsub("//", "") : "host.docker.internal"
-          http_proxy_port = http_proxy ? http_proxy.split(":")[2] : "1080"
-          https_proxy_port = https_proxy ? https_proxy.split(":")[2] : "1080"
+          http_split = http_proxy.split(":")
+          https_split = https_proxy.split(":")
+          http_proxy_host = http_split[1] ? http_split[1]&.gsub("//", "") : "host.docker.internal"
+          https_proxy_host = https_split[1] ? https_split[1]&.gsub("//", "") : "host.docker.internal"
+          http_proxy_port = http_split[2] || "1080"
+          https_proxy_port = https_split[2] || "1080"
           properties_content = "
 systemProp.http.proxy_host=#{http_proxy_host}
 systemProp.http.proxy_port=#{http_proxy_port}
