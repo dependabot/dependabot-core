@@ -83,7 +83,6 @@ module Dependabot
         # when updating, so we can zip them together in new/old pairs.
         reqs = dependency.requirements.zip(T.must(dependency.previous_requirements))
                          .reject { |new_req, old_req| new_req == old_req }
-        lockfile_updater = LockfileUpdater.new(dependency_files: files)
         # Loop through each changed requirement and update the buildfiles
         reqs.each do |new_req, old_req|
           raise "Bad req match" if old_req.nil? || T.let(new_req[:file], String) != T.let(old_req[:file], String)
@@ -109,6 +108,7 @@ module Dependabot
             files[T.must(files.index(buildfile))] = update_version_in_buildfile(dependency, buildfile, old_req, new_req)
           end
 
+          lockfile_updater = LockfileUpdater.new(dependency_files: files)
           lockfiles = lockfile_updater.update_lockfiles(buildfile)
           lockfiles.each do |lockfile|
             if files.any? { |f| f.name == lockfile.name && f.directory == lockfile.directory }
