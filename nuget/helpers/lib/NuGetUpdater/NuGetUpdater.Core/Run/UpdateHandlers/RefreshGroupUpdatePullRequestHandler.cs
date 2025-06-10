@@ -129,7 +129,7 @@ internal class RefreshGroupUpdatePullRequestHandler : IUpdateHandler
 
                     var patchedUpdateOperations = RunWorker.PatchInOldVersions(updaterResult.UpdateOperations, projectDiscovery);
                     var updatedDependenciesForThis = patchedUpdateOperations
-                        .Select(o => o.ToReportedDependency(updatedDependencyList.Dependencies, analysisResult.UpdatedDependencies))
+                        .Select(o => o.ToReportedDependency(projectPath, updatedDependencyList.Dependencies, analysisResult.UpdatedDependencies))
                         .ToArray();
 
                     updatedDependencies.AddRange(updatedDependenciesForThis);
@@ -145,7 +145,9 @@ internal class RefreshGroupUpdatePullRequestHandler : IUpdateHandler
             var rawDependencies = updatedDependencies.Select(d => new Dependency(d.Name, d.Version, DependencyType.Unknown)).ToArray();
             if (rawDependencies.Length == 0)
             {
-                await apiHandler.ClosePullRequest(new ClosePullRequest() { DependencyNames = job.Dependencies, Reason = "update_no_longer_possible" });
+                var close = ClosePullRequest.WithUpdateNoLongerPossible(job);
+                logger.Info(close.GetReport());
+                await apiHandler.ClosePullRequest(close);
                 continue;
             }
 
@@ -157,7 +159,7 @@ internal class RefreshGroupUpdatePullRequestHandler : IUpdateHandler
             {
                 await apiHandler.UpdatePullRequest(new UpdatePullRequest()
                 {
-                    DependencyNames = [.. updatedDependencies.Select(d => d.Name)],
+                    DependencyNames = [.. jobDependencies.OrderBy(n => n, StringComparer.OrdinalIgnoreCase)],
                     DependencyGroup = group.Name,
                     UpdatedDependencyFiles = [.. updatedDependencyFiles],
                     BaseCommitSha = baseCommitSha,
@@ -172,11 +174,7 @@ internal class RefreshGroupUpdatePullRequestHandler : IUpdateHandler
                 var existingPrButDifferent = job.GetExistingPullRequestForDependencies(rawDependencies, considerVersions: false);
                 if (existingPrButDifferent is not null)
                 {
-                    await apiHandler.ClosePullRequest(new ClosePullRequest()
-                    {
-                        DependencyNames = [.. rawDependencies.Select(d => d.Name)],
-                        Reason = "dependencies_changed",
-                    });
+                    await apiHandler.ClosePullRequest(ClosePullRequest.WithDependenciesChanged(job));
                 }
 
                 await apiHandler.CreatePullRequest(new CreatePullRequest()

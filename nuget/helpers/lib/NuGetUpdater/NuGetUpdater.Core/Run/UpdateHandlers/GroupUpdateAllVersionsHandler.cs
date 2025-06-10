@@ -57,6 +57,13 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
     {
         foreach (var group in job.DependencyGroups)
         {
+            var existingGroupPr = job.ExistingGroupPullRequests.FirstOrDefault(pr => pr.DependencyGroupName == group.Name);
+            if (existingGroupPr is not null)
+            {
+                logger.Info($"Existing pull request found for group {group.Name}.  Skipping pull request creation.");
+                continue;
+            }
+
             logger.Info($"Starting update for group {group.Name}");
             var groupMatcher = group.GetGroupMatcher();
             var updateOperationsPerformed = new List<UpdateOperationBase>();
@@ -81,7 +88,7 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                 var updateOperationsToPerform = RunWorker.GetUpdateOperations(discoveryResult).ToArray();
                 foreach (var (projectPath, dependency) in updateOperationsToPerform)
                 {
-                    if (dependency.IsTransitive)
+                    if (!job.IsUpdatePermitted(dependency))
                     {
                         continue;
                     }
@@ -134,7 +141,7 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
 
                     var patchedUpdateOperations = RunWorker.PatchInOldVersions(updaterResult.UpdateOperations, projectDiscovery);
                     var updatedDependenciesForThis = patchedUpdateOperations
-                        .Select(o => o.ToReportedDependency(updatedDependencyList.Dependencies, analysisResult.UpdatedDependencies))
+                        .Select(o => o.ToReportedDependency(projectPath, updatedDependencyList.Dependencies, analysisResult.UpdatedDependencies))
                         .ToArray();
 
                     updatedDependencies.AddRange(updatedDependenciesForThis);
@@ -191,7 +198,7 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
             var updateOperationsToPerform = RunWorker.GetUpdateOperations(discoveryResult).ToArray();
             foreach (var (projectPath, dependency) in updateOperationsToPerform)
             {
-                if (dependency.IsTransitive)
+                if (!job.IsUpdatePermitted(dependency))
                 {
                     continue;
                 }
@@ -238,8 +245,8 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
 
                 var patchedUpdateOperations = RunWorker.PatchInOldVersions(updaterResult.UpdateOperations, projectDiscovery);
                 var updatedDependenciesForThis = patchedUpdateOperations
-                        .Select(o => o.ToReportedDependency(updatedDependencyList.Dependencies, analysisResult.UpdatedDependencies))
-                        .ToArray();
+                    .Select(o => o.ToReportedDependency(projectPath, updatedDependencyList.Dependencies, analysisResult.UpdatedDependencies))
+                    .ToArray();
 
                 updatedDependencies.AddRange(updatedDependenciesForThis);
                 updateOperationsPerformed.AddRange(patchedUpdateOperations);

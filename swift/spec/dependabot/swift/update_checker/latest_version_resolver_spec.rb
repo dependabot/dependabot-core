@@ -30,7 +30,7 @@ RSpec.describe Dependabot::Swift::UpdateChecker::LatestVersionResolver do
     )
   end
   let(:package_details_fetcher) do
-    Dependabot::PackageDetailsFetcher.new(
+    Dependabot::Swift::Package::PackageDetailsFetcher.new(
       dependency: dependency,
       credentials: credentials,
       git_commit_checker: git_commit_checker
@@ -54,7 +54,7 @@ RSpec.describe Dependabot::Swift::UpdateChecker::LatestVersionResolver do
     )
   end
 
-  describe "#latest_version_tag" do
+  describe "#select_version_tags_in_cooldown_period" do
     let(:allowed_version_tags) do
       [
         {
@@ -80,42 +80,23 @@ RSpec.describe Dependabot::Swift::UpdateChecker::LatestVersionResolver do
       }
     end
 
+    let(:git_tag_with_detail_one) { instance_double(tag: "v1.0.0", release_date: "2025-06-01") }
+    let(:git_tag_with_detail_two) { instance_double(tag: "v1.1.0", release_date: "2025-06-03") }
+    let(:git_tag_with_detail_three) { instance_double(tag: "v2.0.0", release_date: "2025-05-30") }
+
     before do
       allow(git_commit_checker).to receive_messages(
         allowed_version_tags: allowed_version_tags,
-        max_local_tag: allowed_version_tags.last
+        local_tag_for_latest_version: allowed_version_tags.first[:tag]
       )
-      allow(resolver).to receive(:check_if_version_is_in_cooldown?).and_return(false)
+      allow(resolver).to receive(:select_version_tags_in_cooldown_period).and_return(["v1.1.0", "v2.0.0"])
+                     .and_return([])
+      allow(resolver).to receive(:check_if_version_in_cooldown_period?).and_return(false, true, true)
     end
 
-    it "returns the latest version tag not in cooldown period" do
-      expect(resolver.latest_version_tag).to eq(latest_version_tag)
-    end
-  end
-
-  describe "#check_if_version_is_in_cooldown?" do
-    let(:git_tag_with_detail) do
-      Dependabot::GitTagWithDetail.new(
-        tag: "v1.0.0",
-        release_date: "2025-05-27T12:34:56Z"
-      )
-    end
-
-    let(:git_ref) do
-      Dependabot::GitRef.new(
-        name: "v1.0.0",
-        commit_sha: "abc123"
-      )
-    end
-
-    before do
-      allow(resolver.package_details_fetcher).to receive(:fetch_tag_and_release_date).and_return([git_tag_with_detail])
-      allow(resolver).to receive(:check_if_version_in_cooldown_period?).and_return(true)
-    end
-
-    it "returns false if the tag is not in cooldown period" do
-      allow(resolver).to receive(:check_if_version_in_cooldown_period?).and_return(false)
-      expect(resolver.check_if_version_is_in_cooldown?(git_ref)).to be false
+    it "returns tags that are in the cooldown period" do
+      result = resolver.select_version_tags_in_cooldown_period
+      expect(result).to eq([])
     end
   end
 

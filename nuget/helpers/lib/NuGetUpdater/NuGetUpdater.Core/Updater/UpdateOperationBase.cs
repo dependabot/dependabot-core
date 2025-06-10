@@ -23,12 +23,11 @@ public abstract record UpdateOperationBase
 
     public abstract string GetReport();
 
-    public ReportedDependency ToReportedDependency(IEnumerable<ReportedDependency> previouslyReportedDependencies, IEnumerable<Dependency> updatedDependencies)
+    public ReportedDependency ToReportedDependency(string projectPath, IEnumerable<ReportedDependency> previouslyReportedDependencies, IEnumerable<Dependency> updatedDependencies)
     {
         var updatedFilesSet = UpdatedFiles.ToHashSet(StringComparer.OrdinalIgnoreCase);
         var previousDependency = previouslyReportedDependencies
-            .Single(d => d.Name.Equals(DependencyName, StringComparison.OrdinalIgnoreCase) && updatedFilesSet.Contains(d.Requirements.Single().File));
-        var projectPath = previousDependency.Requirements.Single().File;
+            .SingleOrDefault(d => d.Name.Equals(DependencyName, StringComparison.OrdinalIgnoreCase) && PathComparer.Instance.Equals(d.Requirements.Single().File, projectPath));
         return new ReportedDependency()
         {
             Name = DependencyName,
@@ -38,15 +37,15 @@ public abstract record UpdateOperationBase
                 {
                     File = projectPath,
                     Requirement = NewVersion.ToString(),
-                    Groups = previousDependency.Requirements.FirstOrDefault()?.Groups ?? [],
+                    Groups = previousDependency?.Requirements.FirstOrDefault()?.Groups ?? [],
                     Source = new()
                     {
                         SourceUrl = updatedDependencies.FirstOrDefault(d => d.Name.Equals(DependencyName, StringComparison.OrdinalIgnoreCase))?.InfoUrl,
                     }
                 }
             ],
-            PreviousVersion = previousDependency.Version,
-            PreviousRequirements = previousDependency.Requirements,
+            PreviousVersion = previousDependency?.Version,
+            PreviousRequirements = previousDependency?.Requirements,
         };
     }
 
