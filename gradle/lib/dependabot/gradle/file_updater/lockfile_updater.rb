@@ -36,6 +36,7 @@ module Dependabot
 
           updated_lockfiles = @dependency_files.dup
           SharedHelpers.in_a_temporary_directory do |temp_dir|
+            temp_dir = T.let(temp_dir, String)
             populate_temp_directory(temp_dir)
             cwd = File.join(temp_dir, build_file.directory, build_file.name)
             cwd = File.dirname(cwd)
@@ -66,19 +67,19 @@ module Dependabot
         end
 
         sig do
-           params(
+          params(
             temp_dir: String,
             local_lockfiles: T::Array[Dependabot::DependencyFile],
             updated_lockfiles: T::Array[Dependabot::DependencyFile]
           ).void
         end
         def update_lockfiles_content(temp_dir, local_lockfiles, updated_lockfiles)
-            local_lockfiles.each do |file|
-              f_content = File.read(File.join(temp_dir, file.directory, file.name))
-              tmp_file = file.dup
-              tmp_file.content = f_content
-              updated_lockfiles[T.must(updated_lockfiles.index(file))] = tmp_file
-            end
+          local_lockfiles.each do |file|
+            f_content = File.read(File.join(temp_dir, file.directory, file.name))
+            tmp_file = file.dup
+            tmp_file.content = f_content
+            updated_lockfiles[T.must(updated_lockfiles.index(file))] = tmp_file
+          end
         end
 
         sig { params(temp_dir: String).void }
@@ -92,8 +93,8 @@ module Dependabot
 
         sig { params(file_name: String).void }
         def write_properties_file(file_name)
-          http_proxy = ENV.fetch["HTTP_PROXY"]
-          https_proxy = ENV.fetch["HTTPS_PROXY"]
+          http_proxy = ENV.fetch("HTTP_PROXY")
+          https_proxy = ENV.fetch("HTTPS_PROXY")
           http_proxy_host = http_proxy ? T.must(http_proxy.split(":")[1]).gsub("//", "") : "host.docker.internal"
           https_proxy_host = https_proxy ? T.must(https_proxy.split(":")[1]).gsub("//", "") : "host.docker.internal"
           http_proxy_port = http_proxy ? http_proxy.split(":")[2] : "1080"
