@@ -13,28 +13,21 @@ module Dependabot
       class LockfileUpdater
         extend T::Sig
 
-        sig do
-          params(
-            dependency_files: T::Array[Dependabot::DependencyFile]
-          ).void
-        end
+        sig { params(dependency_files: T::Array[Dependabot::DependencyFile]).void }
         def initialize(dependency_files:)
           @dependency_files = dependency_files
         end
 
-        sig do
-          params(build_file: Dependabot::DependencyFile)
-            .returns(T::Array[Dependabot::DependencyFile])
-        end
+        sig { params(build_file: Dependabot::DependencyFile).returns(T::Array[Dependabot::DependencyFile]) }
         def update_lockfiles(build_file)
-          local_lockfiles = @dependency_files.select do |file|
+          local_lockfiles = dependency_files.select do |file|
             file.directory == build_file.directory && file.name.end_with?(".lockfile")
           end
 
           # If we don't have any lockfiles in the build files don't generate one
-          return @dependency_files unless local_lockfiles.any?
+          return dependency_files unless local_lockfiles.any?
 
-          updated_lockfiles = @dependency_files.dup
+          updated_files = dependency_files.dup
           SharedHelpers.in_a_temporary_directory do |temp_dir|
             populate_temp_directory(temp_dir)
             cwd = File.join(temp_dir, build_file.directory, build_file.name)
@@ -56,13 +49,13 @@ module Dependabot
 
             Dir.chdir(cwd) do
               SharedHelpers.run_shell_command(command, cwd: cwd)
-              update_lockfiles_content(temp_dir, local_lockfiles, updated_lockfiles)
+              update_lockfiles_content(temp_dir, local_lockfiles, updated_files)
             rescue SharedHelpers::HelperSubprocessFailed => e
               puts "Failed to update lockfiles: #{e.message}"
-              return updated_lockfiles
+              return updated_files
             end
           end
-          updated_lockfiles
+          updated_files
         end
 
         sig do
@@ -107,6 +100,11 @@ systemProp.https.proxy_host=#{https_proxy_host}
 systemProp.https.proxy_port=#{https_proxy_port}"
           File.write(file_name, properties_content)
         end
+
+        private
+
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
+        attr_reader :dependency_files
       end
     end
   end
