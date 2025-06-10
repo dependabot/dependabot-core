@@ -79,6 +79,9 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
         stub_content_request("?ref=sha", "contents_java_with_settings.json")
         stub_content_request("settings.gradle?ref=sha", "contents_java_simple_settings.json")
         stub_content_request("app/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+        stub_request(:get, File.join(url, "app/gradle.lockfile?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
       end
 
       it "fetches the main buildfile and subproject buildfile" do
