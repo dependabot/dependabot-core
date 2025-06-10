@@ -58,7 +58,7 @@ The open-source [Dependabot CLI](https://github.com/dependabot/cli) is our recom
 
 We use it in production here at GitHub, and advanced users can also leverage it to run a self-hosted version of Dependabot within their own projects / CI systems.
 
-Unfortunately, while it creates dependency diffs, it's currently missing the logic to turn those diffs into actual PRs. So you will need to wire that up yourself.
+It creates dependency diffs but does not create PRs. So you will need to wire that up yourself.
 To aid with that, we created the [example-cli-usage](https://github.com/dependabot/example-cli-usage) repo which demonstrates how to turn those diffs into actual PR's.
 
 ## Write your own Ruby-based tool
