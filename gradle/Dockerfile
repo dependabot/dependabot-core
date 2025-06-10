@@ -15,8 +15,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Install Gradle
 ENV GRADLE_HOME=/opt/gradle
-ENV GRADLE_VERSION=8.14
-ARG GRADLE_DOWNLOAD_SHA256=61ad310d3c7d3e5da131b76bbf22b5a4c0786e9d892dae8c1658d4b484de3caa
+ENV GRADLE_VERSION=8.14.2
+ARG GRADLE_DOWNLOAD_SHA256=7197a12f450794931532469d4ff21a59ea2c1cd59a3ec3f89c035c3c420a6999
 RUN set -o errexit -o nounset \
     && echo "Downloading Gradle" \
     && wget --no-verbose --output-document=gradle.zip "https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip" \

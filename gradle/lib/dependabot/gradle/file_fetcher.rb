@@ -15,6 +15,8 @@ module Dependabot
       require_relative "file_parser"
       require_relative "file_fetcher/settings_file_parser"
 
+      SUPPORTED_LOCK_FILE_NAMES = T.let(%w(gradle.lockfile).freeze, T::Array[String])
+
       SUPPORTED_BUILD_FILE_NAMES =
         T.let(%w(build.gradle build.gradle.kts).freeze, T::Array[String])
 
@@ -38,6 +40,7 @@ module Dependabot
       def initialize(source:, credentials:, repo_contents_path: nil, options: {})
         super
 
+        @lockfile_name = T.let(nil, T.nilable(String))
         @buildfile_name = T.let(nil, T.nilable(String))
       end
 
@@ -62,8 +65,10 @@ module Dependabot
 
       sig { params(root_dir: String).returns(T::Array[DependencyFile]) }
       def all_buildfiles_in_build(root_dir)
-        files = [buildfile(root_dir), settings_file(root_dir), version_catalog_file(root_dir)].compact
+        files = [buildfile(root_dir), settings_file(root_dir), version_catalog_file(root_dir), lockfile(root_dir)]
+          .compact
         files += subproject_buildfiles(root_dir)
+        files += subproject_lockfiles(root_dir)
         files += dependency_script_plugins(root_dir)
         files + included_builds(root_dir)
                 .flat_map { |dir| all_buildfiles_in_build(dir) }
@@ -91,6 +96,28 @@ module Dependabot
       sig { params(parts: T::Array[String]).returns(String) }
       def clean_join(parts)
         Pathname.new(File.join(parts)).cleanpath.to_path
+      end
+
+      sig { params(root_dir: String).returns(T::Array[DependencyFile]) }
+      def subproject_lockfiles(root_dir)
+        return [] unless settings_file(root_dir)
+
+        subproject_paths =
+          SettingsFileParser
+          .new(settings_file: T.must(settings_file(root_dir)))
+          .subproject_paths
+
+        subproject_paths.filter_map do |path|
+          if @lockfile_name
+            lockfile_path = File.join(root_dir, path, @lockfile_name)
+            fetch_file_from_host(lockfile_path)
+          else
+            lockfile(File.join(root_dir, path))
+          end
+        rescue Dependabot::DependencyFileNotFound
+          # Gradle itself doesn't worry about missing subprojects, so we don't
+          nil
+        end
       end
 
       sig { params(root_dir: String).returns(T::Array[DependencyFile]) }
@@ -153,6 +180,13 @@ module Dependabot
         true
       rescue Dependabot::DependencyFileNotFound
         false
+      end
+
+      sig { params(dir: String).returns(T.nilable(DependencyFile)) }
+      def lockfile(dir)
+        file = find_first(dir, SUPPORTED_LOCK_FILE_NAMES) || return
+        @lockfile_name ||= File.basename(file.name)
+        file
       end
 
       sig { params(dir: String).returns(T.nilable(DependencyFile)) }
