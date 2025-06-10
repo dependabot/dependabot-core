@@ -25,6 +25,7 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
       source: nil
     }]
   end
+  let(:update_cooldown) { nil }
   let(:dependency_version) { "2.2.0" }
   let(:dependency_name) { "realWorld/ElmPackage" }
   let(:dependency) do
@@ -47,7 +48,8 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
       dependency_files: dependency_files,
       credentials: credentials,
       ignored_versions: ignored_versions,
-      raise_on_ignored: raise_on_ignored
+      raise_on_ignored: raise_on_ignored,
+      update_cooldown: update_cooldown
     )
   end
 
@@ -227,6 +229,83 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
           expect { latest_version }.not_to raise_error
         end
       end
+    end
+  end
+
+  describe "#latest_version with cooldown options" do
+    subject(:latest_version) { checker.latest_version }
+
+    before do
+      allow(Time).to receive(:now).and_return(Time.parse("2017-01-23T17:30:00.000Z"))
+      stub_request(:get, elm_package_url)
+        .to_return(status: 200, body: elm_package_response)
+
+      allow(Dependabot::Experiments).to receive(:enabled?)
+        .with(:enable_cooldown_for_elm).and_return(true)
+    end
+
+    after do
+      Dependabot::Experiments.reset!
+    end
+
+    let(:update_cooldown) do
+      Dependabot::Package::ReleaseCooldownOptions.new(
+        default_days: 90,
+        semver_major_days: 90,
+        semver_minor_days: 90,
+        semver_patch_days: 90,
+        include: [],
+        exclude: []
+      )
+    end
+
+    let(:elm_package_url) do
+      "https://package.elm-lang.org/packages/realWorld/ElmPackage/releases.json"
+    end
+    let(:elm_package_response) do
+      fixture("elm_package_responses", "elm-lang-core.json")
+    end
+
+    it { is_expected.to eq(Dependabot::Elm::Version.new("4.0.5")) }
+
+    context "when the registry 404s" do
+      before { stub_request(:get, elm_package_url).to_return(status: 404) }
+
+      it { is_expected.to be_nil }
+    end
+
+    context "when raise_on_ignored is enabled and later versions are allowed" do
+      let(:raise_on_ignored) { true }
+
+      it "doesn't raise an error" do
+        expect { latest_version }.not_to raise_error
+      end
+    end
+
+    context "when on the latest version" do
+      let(:dependency_version) { "5.1.1" }
+
+      it { is_expected.to eq(Dependabot::Elm::Version.new("4.0.5")) }
+
+      context "when raise_on_ignored is enabled" do
+        let(:raise_on_ignored) { true }
+
+        it "doesn't raise an error" do
+          expect { latest_version }.not_to raise_error
+        end
+      end
+    end
+
+    context "when the latest version is being ignored" do
+      let(:ignored_versions) { [">= 5.0.0"] }
+
+      it { is_expected.to eq(Dependabot::Elm::Version.new("4.0.5")) }
+    end
+
+    context "when ignoring several versions" do
+      let(:ignored_versions) { [">= 5.0.0, < 5.1.0"] }
+
+      it { is_expected.to eq(Dependabot::Elm::Version.new("4.0.5")) }
     end
   end
 end
