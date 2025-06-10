@@ -60,11 +60,6 @@ module Dependabot
               "--debug"
             ]
             command = Shellwords.join(command_parts)
-            env = {
-              "HTTP_PROXY" => http_proxy,
-              "HTTPS_PROXY" => https_proxy,
-              "SOCKS_PROXY" => https_proxy
-            }
 
             Dir.chdir(cwd) do
               SharedHelpers.run_shell_command(command, env: env, cwd: cwd)
@@ -82,7 +77,7 @@ module Dependabot
           updated_lockfiles
         end
 
-        sig { params(properties_filename: String).void }
+        sig { params(file_name: String).void }
         def write_properties_file(file_name)
           http_proxy = ENV["HTTP_PROXY"]
           https_proxy = ENV["HTTPS_PROXY"]
@@ -95,7 +90,7 @@ systemProp.http.proxy_host=#{http_proxy_host}
 systemProp.http.proxy_port=#{http_proxy_port}
 systemProp.https.proxy_host=#{https_proxy_host}
 systemProp.https.proxy_port=#{https_proxy_port}"
-          File.write(properties_filename, properties_content)
+          File.write(file_name, properties_content)
         end
       end
     end
