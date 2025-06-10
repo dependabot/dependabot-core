@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "excon"
+require "ostruct"
 require "sorbet-runtime"
 
 require "dependabot/clients/github_with_retries"

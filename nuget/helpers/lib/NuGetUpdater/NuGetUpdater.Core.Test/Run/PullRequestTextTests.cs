@@ -28,7 +28,7 @@ public class PullRequestTextTests
         }
 
         var actualTitle = PullRequestTextGenerator.GetPullRequestTitle(job, [.. updateOperations], dependencyGroupName: null);
-        var expectedTitle = "Update Package1 and 9 other dependencies";
+        var expectedTitle = "Bump Package1 and 9 others";
         Assert.Equal(expectedTitle, actualTitle);
     }
 
@@ -45,10 +45,10 @@ public class PullRequestTextTests
     {
         var updateOperationsPerformedImmutable = updateOperationsPerformed.ToImmutableArray();
         var actualTitle = PullRequestTextGenerator.GetPullRequestTitle(job, updateOperationsPerformedImmutable, dependencyGroupName);
-        var actualCommitMessage = PullRequestTextGenerator.GetPullRequestCommitMessage(job, updateOperationsPerformedImmutable, dependencyGroupName);
-        var actualBody = PullRequestTextGenerator.GetPullRequestBody(job, updateOperationsPerformedImmutable, dependencyGroupName);
+        var actualCommitMessage = PullRequestTextGenerator.GetPullRequestCommitMessage(job, updateOperationsPerformedImmutable, dependencyGroupName).Replace("\r", "");
+        var actualBody = PullRequestTextGenerator.GetPullRequestBody(job, updateOperationsPerformedImmutable, dependencyGroupName).Replace("\r", "");
         Assert.Equal(expectedTitle, actualTitle);
-        Assert.Equal(expectedCommitMessage, actualCommitMessage);
+        Assert.Equal(expectedCommitMessage.Replace("\r", ""), actualCommitMessage);
         Assert.Equal(expectedBody.Replace("\r", ""), actualBody);
     }
 
@@ -65,6 +65,7 @@ public class PullRequestTextTests
                 new DirectUpdate()
                 {
                     DependencyName = "Some.Package",
+                    OldVersion = NuGetVersion.Parse("1.0.0"),
                     NewVersion = NuGetVersion.Parse("1.2.3"),
                     UpdatedFiles = ["a.txt"]
                 }
@@ -72,17 +73,17 @@ public class PullRequestTextTests
             // dependencyGroupName
             null,
             // expectedTitle
-            "Update Some.Package to 1.2.3",
+            "Bump Some.Package from 1.0.0 to 1.2.3",
             // expectedCommitMessage
-            "Update Some.Package to 1.2.3",
+            "Bump Some.Package from 1.0.0 to 1.2.3",
             // expectedBody
             """
             Performed the following updates:
-            - Updated Some.Package to 1.2.3 in a.txt
+            - Updated Some.Package from 1.0.0 to 1.2.3 in a.txt
             """
         ];
 
-        // single dependency, prefix given
+        // single dependency, prefix given, ends with space
         yield return
         [
             // job
@@ -93,6 +94,7 @@ public class PullRequestTextTests
                 new DirectUpdate()
                 {
                     DependencyName = "Some.Package",
+                    OldVersion = NuGetVersion.Parse("1.0.0"),
                     NewVersion = NuGetVersion.Parse("1.2.3"),
                     UpdatedFiles = ["a.txt"]
                 }
@@ -100,17 +102,83 @@ public class PullRequestTextTests
             // dependencyGroupName
             null,
             // expectedTitle
-            "[SECURITY] Update Some.Package to 1.2.3",
+            "[SECURITY] Bump Some.Package from 1.0.0 to 1.2.3",
             // expectedCommitMessage
-            "Update Some.Package to 1.2.3",
+            "[SECURITY] Bump Some.Package from 1.0.0 to 1.2.3",
             // expectedBody
             """
             Performed the following updates:
-            - Updated Some.Package to 1.2.3 in a.txt
+            - Updated Some.Package from 1.0.0 to 1.2.3 in a.txt
             """
         ];
 
-        // multiple dependencies, multiple versions
+        // single dependency, prefix given, ends with character or bracket
+        yield return
+        [
+            // job
+            FromCommitOptions(new(){ Prefix = "chore(deps)" }),
+            // updateOperationsPerformed
+            new UpdateOperationBase[]
+            {
+                new DirectUpdate()
+                {
+                    DependencyName = "Some.Package",
+                    OldVersion = NuGetVersion.Parse("1.0.0"),
+                    NewVersion = NuGetVersion.Parse("1.2.3"),
+                    UpdatedFiles = ["a.txt"]
+                }
+            },
+            // dependencyGroupName
+            null,
+            // expectedTitle
+            "chore(deps): Bump Some.Package from 1.0.0 to 1.2.3",
+            // expectedCommitMessage
+            "chore(deps): Bump Some.Package from 1.0.0 to 1.2.3",
+            // expectedBody
+            """
+            Performed the following updates:
+            - Updated Some.Package from 1.0.0 to 1.2.3 in a.txt
+            """
+        ];
+
+        // single dependency, multiple versions
+        yield return
+        [
+            // job
+            FromCommitOptions(null),
+            // updateOperationsPerformed
+            new UpdateOperationBase[]
+            {
+                new DirectUpdate()
+                {
+                    DependencyName = "Some.Package",
+                    OldVersion = NuGetVersion.Parse("1.0.0"),
+                    NewVersion = NuGetVersion.Parse("1.2.3"),
+                    UpdatedFiles = ["a.txt"]
+                },
+                new DirectUpdate()
+                {
+                    DependencyName = "Some.Package",
+                    OldVersion = NuGetVersion.Parse("4.0.0"),
+                    NewVersion = NuGetVersion.Parse("4.5.6"),
+                    UpdatedFiles = ["b.txt"]
+                },
+            },
+            // dependencyGroupName
+            null,
+            // expectedTitle
+            "Bump Some.Package to 1.2.3, 4.5.6",
+            // expectedCommitMessage
+            "Bump Some.Package to 1.2.3, 4.5.6",
+            // expectedBody
+            """
+            Performed the following updates:
+            - Updated Some.Package from 1.0.0 to 1.2.3 in a.txt
+            - Updated Some.Package from 4.0.0 to 4.5.6 in b.txt
+            """
+        ];
+
+        // two dependencies, two versions each
         yield return
         [
             // job
@@ -121,24 +189,28 @@ public class PullRequestTextTests
                 new DirectUpdate()
                 {
                     DependencyName = "Package.A",
+                    OldVersion = NuGetVersion.Parse("0.1.0"),
                     NewVersion = NuGetVersion.Parse("1.0.0"),
                     UpdatedFiles = ["a1.txt"]
                 },
                 new DirectUpdate()
                 {
                     DependencyName = "Package.A",
+                    OldVersion = NuGetVersion.Parse("0.2.0"),
                     NewVersion = NuGetVersion.Parse("2.0.0"),
                     UpdatedFiles = ["a2.txt"]
                 },
                 new DirectUpdate()
                 {
                     DependencyName = "Package.B",
+                    OldVersion = NuGetVersion.Parse("0.3.0"),
                     NewVersion = NuGetVersion.Parse("3.0.0"),
                     UpdatedFiles = ["b1.txt"]
                 },
                 new DirectUpdate()
                 {
                     DependencyName = "Package.B",
+                    OldVersion = NuGetVersion.Parse("0.4.0"),
                     NewVersion = NuGetVersion.Parse("4.0.0"),
                     UpdatedFiles = ["b2.txt"]
                 },
@@ -146,20 +218,227 @@ public class PullRequestTextTests
             // dependencyGroupName
             null,
             // expectedTitle
-            "Update Package.A to 1.0.0, 2.0.0; Package.B to 3.0.0, 4.0.0",
+            "Bump Package.A and Package.B",
             // expectedCommitMessage
             """
-            Update:
-            - Package.A to 1.0.0, 2.0.0
-            - Package.B to 3.0.0, 4.0.0
+            Bump Package.A and Package.B
+
+            Bumps Package.A to 1.0.0, 2.0.0
+            Bumps Package.B to 3.0.0, 4.0.0
             """,
             // expectedBody
             """
             Performed the following updates:
-            - Updated Package.A to 1.0.0 in a1.txt
-            - Updated Package.A to 2.0.0 in a2.txt
-            - Updated Package.B to 3.0.0 in b1.txt
-            - Updated Package.B to 4.0.0 in b2.txt
+            - Updated Package.A from 0.1.0 to 1.0.0 in a1.txt
+            - Updated Package.A from 0.2.0 to 2.0.0 in a2.txt
+            - Updated Package.B from 0.3.0 to 3.0.0 in b1.txt
+            - Updated Package.B from 0.4.0 to 4.0.0 in b2.txt
+            """
+        ];
+
+        // four dependencies, two versions each
+        yield return
+        [
+            // job
+            FromCommitOptions(null),
+            // updateOperationsPerformed
+            new UpdateOperationBase[]
+            {
+                new DirectUpdate()
+                {
+                    DependencyName = "Package.A",
+                    OldVersion = NuGetVersion.Parse("0.1.0"),
+                    NewVersion = NuGetVersion.Parse("1.0.0"),
+                    UpdatedFiles = ["a1.txt"]
+                },
+                new DirectUpdate()
+                {
+                    DependencyName = "Package.A",
+                    OldVersion = NuGetVersion.Parse("0.2.0"),
+                    NewVersion = NuGetVersion.Parse("2.0.0"),
+                    UpdatedFiles = ["a2.txt"]
+                },
+                new DirectUpdate()
+                {
+                    DependencyName = "Package.B",
+                    OldVersion = NuGetVersion.Parse("0.3.0"),
+                    NewVersion = NuGetVersion.Parse("3.0.0"),
+                    UpdatedFiles = ["b1.txt"]
+                },
+                new DirectUpdate()
+                {
+                    DependencyName = "Package.B",
+                    OldVersion = NuGetVersion.Parse("0.4.0"),
+                    NewVersion = NuGetVersion.Parse("4.0.0"),
+                    UpdatedFiles = ["b2.txt"]
+                },
+                new DirectUpdate()
+                {
+                    DependencyName = "Package.C",
+                    OldVersion = NuGetVersion.Parse("0.5.0"),
+                    NewVersion = NuGetVersion.Parse("5.0.0"),
+                    UpdatedFiles = ["c1.txt"]
+                },
+                new DirectUpdate()
+                {
+                    DependencyName = "Package.C",
+                    OldVersion = NuGetVersion.Parse("0.6.0"),
+                    NewVersion = NuGetVersion.Parse("6.0.0"),
+                    UpdatedFiles = ["c2.txt"]
+                },
+                new DirectUpdate()
+                {
+                    DependencyName = "Package.D",
+                    OldVersion = NuGetVersion.Parse("0.7.0"),
+                    NewVersion = NuGetVersion.Parse("7.0.0"),
+                    UpdatedFiles = ["d1.txt"]
+                },
+                new DirectUpdate()
+                {
+                    DependencyName = "Package.D",
+                    OldVersion = NuGetVersion.Parse("0.8.0"),
+                    NewVersion = NuGetVersion.Parse("8.0.0"),
+                    UpdatedFiles = ["d2.txt"]
+                },
+            },
+            // dependencyGroupName
+            null,
+            // expectedTitle
+            "Bump Package.A, Package.B, Package.C and Package.D",
+            // expectedCommitMessage
+            """
+            Bump Package.A, Package.B, Package.C and Package.D
+
+            Bumps Package.A to 1.0.0, 2.0.0
+            Bumps Package.B to 3.0.0, 4.0.0
+            Bumps Package.C to 5.0.0, 6.0.0
+            Bumps Package.D to 7.0.0, 8.0.0
+            """,
+            // expectedBody
+            """
+            Performed the following updates:
+            - Updated Package.A from 0.1.0 to 1.0.0 in a1.txt
+            - Updated Package.A from 0.2.0 to 2.0.0 in a2.txt
+            - Updated Package.B from 0.3.0 to 3.0.0 in b1.txt
+            - Updated Package.B from 0.4.0 to 4.0.0 in b2.txt
+            - Updated Package.C from 0.5.0 to 5.0.0 in c1.txt
+            - Updated Package.C from 0.6.0 to 6.0.0 in c2.txt
+            - Updated Package.D from 0.7.0 to 7.0.0 in d1.txt
+            - Updated Package.D from 0.8.0 to 8.0.0 in d2.txt
+            """
+        ];
+
+        // group with one update
+        yield return
+        [
+            // job
+            FromCommitOptions(null),
+            // updateOperationsPerformed
+            new UpdateOperationBase[]
+            {
+                new DirectUpdate()
+                {
+                    DependencyName = "Some.Package",
+                    OldVersion = NuGetVersion.Parse("1.0.0"),
+                    NewVersion = NuGetVersion.Parse("1.2.3"),
+                    UpdatedFiles = ["a.txt"]
+                }
+            },
+            // dependencyGroupName
+            "test-group",
+            // expectedTitle
+            "Bump the test-group group with 1 update",
+            // expectedCommitMessage
+            """
+            Bump the test-group group with 1 update
+
+            Bumps Some.Package from 1.0.0 to 1.2.3
+            """,
+            // expectedBody
+            """
+            Performed the following updates:
+            - Updated Some.Package from 1.0.0 to 1.2.3 in a.txt
+            """
+        ];
+
+        // group with multiple updates
+        yield return
+        [
+            // job
+            FromCommitOptions(null),
+            // updateOperationsPerformed
+            new UpdateOperationBase[]
+            {
+                new DirectUpdate()
+                {
+                    DependencyName = "Package.A",
+                    OldVersion = NuGetVersion.Parse("1.0.0"),
+                    NewVersion = NuGetVersion.Parse("1.2.3"),
+                    UpdatedFiles = ["a.txt"]
+                },
+                new DirectUpdate()
+                {
+                    DependencyName = "Package.B",
+                    OldVersion = NuGetVersion.Parse("4.0.0"),
+                    NewVersion = NuGetVersion.Parse("4.5.6"),
+                    UpdatedFiles = ["a.txt"]
+                }
+            },
+            // dependencyGroupName
+            "test-group",
+            // expectedTitle
+            "Bump the test-group group with 2 updates",
+            // expectedCommitMessage
+            """
+            Bump the test-group group with 2 updates
+
+            Bumps Package.A from 1.0.0 to 1.2.3
+            Bumps Package.B from 4.0.0 to 4.5.6
+            """,
+            // expectedBody
+            """
+            Performed the following updates:
+            - Updated Package.A from 1.0.0 to 1.2.3 in a.txt
+            - Updated Package.B from 4.0.0 to 4.5.6 in a.txt
+            """
+        ];
+
+        // multiple updates to the same dependency
+        yield return
+        [
+            // job
+            FromCommitOptions(null),
+            // updateOperationsPerformed
+            new UpdateOperationBase[]
+            {
+                new DirectUpdate()
+                {
+                    DependencyName = "Some.Package",
+                    OldVersion = NuGetVersion.Parse("1.0.0"),
+                    NewVersion = NuGetVersion.Parse("1.2.3"),
+                    UpdatedFiles = ["a.txt"]
+                },
+                new DirectUpdate()
+                {
+                    DependencyName = "Some.Package",
+                    OldVersion = NuGetVersion.Parse("1.0.0"),
+                    NewVersion = NuGetVersion.Parse("1.2.3"),
+                    UpdatedFiles = ["b.txt"]
+                }
+            },
+            // dependencyGroupName
+            null,
+            // expectedTitle
+            "Bump Some.Package to 1.2.3",
+            // expectedCommitMessage
+            """
+            Bump Some.Package to 1.2.3
+            """,
+            // expectedBody
+            """
+            Performed the following updates:
+            - Updated Some.Package from 1.0.0 to 1.2.3 in a.txt
+            - Updated Some.Package from 1.0.0 to 1.2.3 in b.txt
             """
         ];
     }
