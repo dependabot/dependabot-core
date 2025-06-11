@@ -58,7 +58,7 @@ RSpec.describe Dependabot::Maven::FileParser::MavenDependencyParser do
 
       it "parses the dependencies correctly" do
         allow(Dependabot::Maven::NativeHelpers).to receive(:run_mvn_dependency_tree_plugin)
-          .and_wrap_original do |_original_method, *args, &_block|
+          .and_wrap_original do |_original_method, *_args, &_block|
           File.write("dependency-tree-output.json", "{
             \"groupId\": \"com.dependabot\",
             \"artifactId\": \"test-project\",
@@ -116,7 +116,7 @@ RSpec.describe Dependabot::Maven::FileParser::MavenDependencyParser do
 
       it "parses the dependencies correctly" do
         allow(Dependabot::Maven::NativeHelpers).to receive(:run_mvn_dependency_tree_plugin)
-          .and_wrap_original do |_original_method, *args, &_block|
+          .and_wrap_original do |_original_method, *_args, &_block|
           File.write("dependency-tree-output.json", "{
             \"groupId\": \"com.dependabot\",
             \"artifactId\": \"test-project\",
@@ -187,7 +187,7 @@ RSpec.describe Dependabot::Maven::FileParser::MavenDependencyParser do
 
       it "parses the dependencies correctly" do
         allow(Dependabot::Maven::NativeHelpers).to receive(:run_mvn_dependency_tree_plugin)
-          .and_wrap_original do |_original_method, *args, &_block|
+          .and_wrap_original do |_original_method, *_args, &_block|
           File.write("dependency-tree-output.json", "{
             \"groupId\": \"com.dependabot\",
             \"artifactId\": \"test-project\",
@@ -266,7 +266,7 @@ RSpec.describe Dependabot::Maven::FileParser::MavenDependencyParser do
 
       it "parses the dependencies correctly" do
         allow(Dependabot::Maven::NativeHelpers).to receive(:run_mvn_dependency_tree_plugin)
-          .and_wrap_original do |_original_method, *args, &_block|
+          .and_wrap_original do |_original_method, *_args, &_block|
           File.write("dependency-tree-output.json", "{
             \"groupId\": \"com.dependabot\",
             \"artifactId\": \"test-project\",

@@ -70,6 +70,7 @@ module Dependabot
                  dependency_tree: T::Hash[String, T.untyped]).void
         end
         def extract_dependencies_from_tree(pom, dependency_set, dependency_tree)
+          traverse_tree = T.let(-> {}, T.proc.params(node: T::Hash[String, T.untyped]).void)
           traverse_tree = lambda do |node|
             artifact_id = node["artifactId"]
             group_id = node["groupId"]
