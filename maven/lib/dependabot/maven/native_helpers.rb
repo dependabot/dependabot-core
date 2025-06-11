@@ -10,15 +10,15 @@ module Dependabot
       extend T::Sig
 
       sig do
-        void
+        params(file_name: String).void
       end
-      def self.run_mvn_dependency_tree_plugin
+      def self.run_mvn_dependency_tree_plugin(file_name)
         proxy_url = URI.parse(ENV.fetch("HTTPS_PROXY"))
         stdout, _, status = Open3.capture3(
           { "PROXY_HOST" => proxy_url.host },
           "mvn",
           "dependency:tree",
-          "-DoutputFile=dependency-tree-output.json",
+          "-DoutputFile=#{file_name}",
           "-DoutputType=json",
           "-e"
         )
