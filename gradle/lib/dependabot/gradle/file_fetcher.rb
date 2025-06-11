@@ -40,7 +40,7 @@ module Dependabot
       def initialize(source:, credentials:, repo_contents_path: nil, options: {})
         super
 
-        @lockfile_name = T.let(nil, T.nilable(String))
+        @lockfile_name = T.let(T.must(SUPPORTED_LOCK_FILE_NAMES.first), String)
         @buildfile_name = T.let(nil, T.nilable(String))
       end
 
@@ -108,12 +108,8 @@ module Dependabot
           .subproject_paths
 
         subproject_paths.filter_map do |path|
-          if @lockfile_name
-            lockfile_path = File.join(root_dir, path, @lockfile_name)
-            fetch_file_from_host(lockfile_path)
-          else
-            lockfile(File.join(root_dir, path))
-          end
+          lockfile_path = File.join(root_dir, path, @lockfile_name)
+          fetch_file_from_host(lockfile_path)
         rescue Dependabot::DependencyFileNotFound
           # Gradle itself doesn't worry about missing subprojects, so we don't
           nil
@@ -184,9 +180,7 @@ module Dependabot
 
       sig { params(dir: String).returns(T.nilable(DependencyFile)) }
       def lockfile(dir)
-        file = find_first(dir, SUPPORTED_LOCK_FILE_NAMES) || return
-        @lockfile_name ||= File.basename(file.name)
-        file
+        fetch_file_if_present(File.join(dir, @lockfile_name))
       end
 
       sig { params(dir: String).returns(T.nilable(DependencyFile)) }

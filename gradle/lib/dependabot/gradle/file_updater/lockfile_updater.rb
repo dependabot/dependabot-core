@@ -42,8 +42,7 @@ module Dependabot
               "gradle",
               "dependencies",
               "--no-daemon",
-              "--write-locks",
-              "--debug"
+              "--write-locks"
             ]
             command = Shellwords.join(command_parts)
 
