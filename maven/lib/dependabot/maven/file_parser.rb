@@ -47,8 +47,7 @@ module Dependabot
 
         dependencies = []
         if Dependabot::Experiments.enabled?(:maven_transitive_dependencies)
-          mvn_dependency_parser = MavenDependencyParser.new
-          dependency_set += mvn_dependency_parser.build_dependency_set(pomfiles)
+          dependency_set += MavenDependencyParser.build_dependency_set(pomfiles)
 
           pomfiles.each { |pom| dependency_set += pomfile_dependencies(pom) }
           extensionfiles.each { |extension| dependency_set += extensionfile_dependencies(extension) }
@@ -424,7 +423,6 @@ module Dependabot
 
         merged = []
         used_indices = Set.new
-
         requirements.each_with_index do |dep_scan_req, i|
           next if used_indices.include?(i) || dep_scan_req.dig(:metadata, :pom_file).nil?
 

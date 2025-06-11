@@ -13,7 +13,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY --from=maven:3.9.9 /usr/share/maven /usr/share/maven
 
-
 ENV MAVEN_HOME=/usr/share/maven
 
 RUN ln -s ${MAVEN_HOME}/bin/mvn /usr/bin/mvn

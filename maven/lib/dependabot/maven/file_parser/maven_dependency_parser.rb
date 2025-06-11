@@ -19,7 +19,7 @@ module Dependabot
           params(dependency_files: T::Array[Dependabot::DependencyFile])
             .returns(Dependabot::FileParsers::Base::DependencySet)
         end
-        def build_dependency_set(dependency_files)
+        def self.build_dependency_set(dependency_files)
           dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
           # Copy only pom.xml files to a temporary directory to
@@ -62,14 +62,12 @@ module Dependabot
           dependency_set
         end
 
-        private
-
         sig do
           params(pom: Dependabot::DependencyFile,
                  dependency_set: Dependabot::FileParsers::Base::DependencySet,
                  dependency_tree: T::Hash[String, T.untyped]).void
         end
-        def extract_dependencies_from_tree(pom, dependency_set, dependency_tree)
+        def self.extract_dependencies_from_tree(pom, dependency_set, dependency_tree)
           traverse_tree = T.let(-> {}, T.proc.params(node: T::Hash[String, T.untyped]).void)
           traverse_tree = lambda do |node|
             artifact_id = node["artifactId"]
@@ -107,7 +105,7 @@ module Dependabot
           params(dependency_files: T::Array[Dependabot::DependencyFile], temp_path: String)
             .returns(String)
         end
-        def create_directory_structure(dependency_files, temp_path)
+        def self.create_directory_structure(dependency_files, temp_path)
           # Find the topmost directory level by finding the minimum number of "../" sequences
           relative_top_depth = 0
           dependency_files.each do |pom|
