@@ -93,10 +93,10 @@ module Dependabot
           http_proxy_port = http_split&.fetch(2) || "1080"
           https_proxy_port = https_split&.fetch(2) || "1080"
           properties_content = "
-systemProp.http.proxy_host=#{http_proxy_host}
-systemProp.http.proxy_port=#{http_proxy_port}
-systemProp.https.proxy_host=#{https_proxy_host}
-systemProp.https.proxy_port=#{https_proxy_port}"
+systemProp.http.proxyHost=#{http_proxy_host}
+systemProp.http.proxyPort=#{http_proxy_port}
+systemProp.https.proxyHost=#{https_proxy_host}
+systemProp.https.proxyPort=#{https_proxy_port}"
           File.write(file_name, properties_content)
         end
 
