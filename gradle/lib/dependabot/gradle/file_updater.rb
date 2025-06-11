@@ -108,14 +108,16 @@ module Dependabot
             files[T.must(files.index(buildfile))] = update_version_in_buildfile(dependency, buildfile, old_req, new_req)
           end
 
-          lockfile_updater = LockfileUpdater.new(dependency_files: files)
-          lockfiles = lockfile_updater.update_lockfiles(buildfile)
-          lockfiles.each do |lockfile|
-            if files.any? { |f| f.name == lockfile.name && f.directory == lockfile.directory }
-              existing_file = files.find { |f| f.name == lockfile.name && f.directory == lockfile.directory }
-              files[T.must(files.index(existing_file))] = lockfile
-            else
-              files << lockfile
+          if Dependabot::Experiments.enabled?(:gradle_lockfile_updater)
+            lockfile_updater = LockfileUpdater.new(dependency_files: files)
+            lockfiles = lockfile_updater.update_lockfiles(buildfile)
+            lockfiles.each do |lockfile|
+              if files.any? { |f| f.name == lockfile.name && f.directory == lockfile.directory }
+                existing_file = files.find { |f| f.name == lockfile.name && f.directory == lockfile.directory }
+                files[T.must(files.index(existing_file))] = lockfile
+              else
+                files << lockfile
+              end
             end
           end
         end
