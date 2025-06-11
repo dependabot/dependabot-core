@@ -25,6 +25,17 @@ module Dependabot
       end
 
       sig { override.returns(T.nilable(Dependabot::Version)) }
+      def lowest_security_fix_version
+        latest_version_finder.lowest_security_fix_version
+      end
+
+      sig { override.returns(T.nilable(Dependabot::Version)) }
+      def lowest_resolvable_security_fix_version
+        # Resolvability isn't an issue for dotnet SDKs
+        lowest_security_fix_version
+      end
+
+      sig { override.returns(T.nilable(Dependabot::Version)) }
       def latest_resolvable_version_with_no_unlock
         raise NotImplementedError
       end
@@ -34,7 +45,7 @@ module Dependabot
         dependency.requirements.map do |requirement|
           {
             file: requirement[:file],
-            requirement: latest_version,
+            requirement: preferred_resolvable_version,
             groups: requirement[:groups],
             source: requirement[:source]
           }
@@ -56,7 +67,15 @@ module Dependabot
       sig { returns(LatestVersionFinder) }
       def latest_version_finder
         @latest_version_finder ||= T.let(
-          LatestVersionFinder.new(dependency: dependency, ignored_versions: ignored_versions),
+          LatestVersionFinder.new(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            credentials: credentials,
+            ignored_versions: ignored_versions,
+            security_advisories: security_advisories,
+            cooldown_options: update_cooldown,
+            raise_on_ignored: raise_on_ignored
+          ),
           T.nilable(LatestVersionFinder)
         )
       end
