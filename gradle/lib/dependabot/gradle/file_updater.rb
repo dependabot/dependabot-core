@@ -109,6 +109,7 @@ module Dependabot
           end
 
           next unless Dependabot::Experiments.enabled?(:gradle_lockfile_updater)
+
           lockfile_updater = LockfileUpdater.new(dependency_files: files)
           lockfiles = lockfile_updater.update_lockfiles(buildfile)
           lockfiles.each do |lockfile|
@@ -118,7 +119,6 @@ module Dependabot
             else
               files[T.must(files.index(existing_file))] = lockfile
             end
-          end
           end
         end
 
