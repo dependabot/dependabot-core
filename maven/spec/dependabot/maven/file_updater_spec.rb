@@ -251,6 +251,39 @@ RSpec.describe Dependabot::Maven::FileUpdater do
         end
 
         its(:content) do
+          is_expected.to include("<dependencyManagement>")
+          is_expected.to include("</dependencyManagement>")
+          is_expected.to include("<version>3.7.2</version>")
+        end
+      end
+
+      context "with a transitive dependency already exists in dependencyManagement section" do
+        let(:pom_body) do
+          fixture("poms", "transitive_dependency_pom_version_defined.xml")
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "org.apache.zookeeper:zookeeper",
+            version: "3.7.2",
+            requirements: [{
+              file: "pom.xml",
+              requirement: "3.7.2",
+              groups: [],
+              source: nil,
+              metadata: { packaging_type: "jar" }
+            }],
+            previous_requirements: [{
+              file: "pom.xml",
+              requirement: "3.4.6",
+              groups: [],
+              source: nil,
+              metadata: { packaging_type: "jar" }
+            }],
+            package_manager: "maven"
+          )
+        end
+
+        its(:content) do
           is_expected.to include("<version>3.7.2</version>")
         end
       end

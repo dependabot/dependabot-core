@@ -3,6 +3,9 @@
 
 require "sorbet-runtime"
 
+require "dependabot/maven/file_parser"
+require "dependabot/maven/native_helpers"
+
 module Dependabot
   module Maven
     class FileParser
@@ -60,7 +63,6 @@ module Dependabot
             .returns(Dependabot::FileParsers::Base::DependencySet)
         end
         def run_mvn_cli_dependency_tree(dependency_files)
-          proxy_url = URI.parse(ENV.fetch("HTTPS_PROXY"))
           dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
           # Copy only pom.xml files to a temporary directory to
@@ -78,16 +80,7 @@ module Dependabot
             end
 
             Dir.chdir(project_directory) do
-              stdout, _, status = Open3.capture3(
-                { "PROXY_HOST" => proxy_url.host },
-                "mvn",
-                "dependency:tree",
-                "-DoutputFile=dependency-tree-output.json",
-                "-DoutputType=json",
-                "-e"
-              )
-              Dependabot.logger.info("mvn dependency:tree output: STDOUT:#{stdout}")
-              handle_tool_error(stdout) unless status.success?
+              NativeHelpers.run_mvn_dependency_tree_plugin
             end
 
             # mvn CLI outputs dependency tree for each pom.xml file, collect them
@@ -142,17 +135,6 @@ module Dependabot
           FileUtils.mkdir_p(base_depth_path)
 
           base_depth_path
-        end
-
-        sig { params(output: String).void }
-        def handle_tool_error(output)
-          if (match = output.match(
-            %r{Could not transfer artifact (?<artifact>[^ ]+) from/to (?<repository_name>[^ ]+) \((?<repository_url>[^ ]+)\): status code: (?<status_code>[0-9]+)}
-          )) && (match[:status_code] == ("403") || match[:status_code] == ("401"))
-            raise Dependabot::PrivateSourceAuthenticationFailure, match[:repository_url]
-          end
-
-          raise DependabotError, "mvn CLI failed with an unhandled error"
         end
       end
     end
