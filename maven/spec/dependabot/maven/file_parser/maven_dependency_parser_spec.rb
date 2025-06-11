@@ -8,7 +8,7 @@ require "dependabot/maven/file_parser/maven_dependency_parser"
 
 RSpec.describe Dependabot::Maven::FileParser::MavenDependencyParser do
   describe "build_dependency_set" do
-    let(:parser) { described_class.new }
+    let(:dependency_set) { described_class.build_dependency_set(dependency_files) }
     let(:dependency_files) do
       [Dependabot::DependencyFile.new(name: "pom.xml", content: "<project><dependencies></dependencies></project>")]
     end
@@ -17,7 +17,7 @@ RSpec.describe Dependabot::Maven::FileParser::MavenDependencyParser do
       allow(Dependabot::Maven::NativeHelpers).to receive(:run_mvn_dependency_tree_plugin)
         .and_return(nil)
 
-      expect(parser.build_dependency_set(dependency_files)).to be_a(Dependabot::FileParsers::Base::DependencySet)
+      expect(dependency_set).to be_a(Dependabot::FileParsers::Base::DependencySet)
     end
 
     context "with a single empty pom.xml file" do
@@ -25,13 +25,11 @@ RSpec.describe Dependabot::Maven::FileParser::MavenDependencyParser do
         [Dependabot::DependencyFile.new(name: "pom.xml", content: "<project><dependencies></dependencies></project>")]
       end
 
-      let(:parser) { described_class.new }
-
       it "returns an empty DependencySet" do
         allow(Dependabot::Maven::NativeHelpers).to receive(:run_mvn_dependency_tree_plugin)
           .and_return(nil)
 
-        expect(parser.build_dependency_set(dependency_files).dependencies).to be_empty
+        expect(dependency_set.dependencies).to be_empty
       end
     end
 
@@ -79,7 +77,6 @@ RSpec.describe Dependabot::Maven::FileParser::MavenDependencyParser do
           }")
         end
 
-        dependency_set = parser.build_dependency_set(dependency_files)
         expect(dependency_set.dependencies.size).to eq(2)
         expect(dependency_set.dependencies[0].name).to eq("com.dependabot:test-project")
         expect(dependency_set.dependencies[0].version).to eq("1.0-SNAPSHOT")
@@ -148,7 +145,6 @@ RSpec.describe Dependabot::Maven::FileParser::MavenDependencyParser do
           }")
         end
 
-        dependency_set = parser.build_dependency_set(dependency_files)
         expect(dependency_set.dependencies.size).to eq(3)
         expect(dependency_set.dependencies[0].name).to eq("com.dependabot:test-project")
         expect(dependency_set.dependencies[0].version).to eq("1.0-SNAPSHOT")
@@ -230,7 +226,6 @@ RSpec.describe Dependabot::Maven::FileParser::MavenDependencyParser do
           }")
         end
 
-        dependency_set = parser.build_dependency_set(dependency_files)
         expect(dependency_set.dependencies.size).to eq(4)
         expect(dependency_set.dependencies[0].name).to eq("com.dependabot:test-project")
         expect(dependency_set.dependencies[0].version).to eq("1.0-SNAPSHOT")
@@ -311,7 +306,6 @@ RSpec.describe Dependabot::Maven::FileParser::MavenDependencyParser do
           }")
         end
 
-        dependency_set = parser.build_dependency_set(dependency_files)
         expect(dependency_set.dependencies.size).to eq(4)
         expect(dependency_set.dependencies[0].name).to eq("com.dependabot:test-project")
         expect(dependency_set.dependencies[0].version).to eq("1.0-SNAPSHOT")
