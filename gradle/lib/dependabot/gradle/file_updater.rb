@@ -112,11 +112,11 @@ module Dependabot
             lockfile_updater = LockfileUpdater.new(dependency_files: files)
             lockfiles = lockfile_updater.update_lockfiles(buildfile)
             lockfiles.each do |lockfile|
-              if files.any? { |f| f.name == lockfile.name && f.directory == lockfile.directory }
-                existing_file = files.find { |f| f.name == lockfile.name && f.directory == lockfile.directory }
-                files[T.must(files.index(existing_file))] = lockfile
-              else
+              existing_file = files.find { |f| f.name == lockfile.name && f.directory == lockfile.directory }
+              if existing_file.nil?
                 files << lockfile
+              else
+                files[T.must(files.index(existing_file))] = lockfile
               end
             end
           end
