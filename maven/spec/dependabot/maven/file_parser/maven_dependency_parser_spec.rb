@@ -57,24 +57,26 @@ RSpec.describe Dependabot::Maven::FileParser::MavenDependencyParser do
       it "parses the dependencies correctly" do
         allow(Dependabot::Maven::NativeHelpers).to receive(:run_mvn_dependency_tree_plugin)
           .and_wrap_original do |_original_method, *_args, &_block|
-          File.write("dependency-tree-output.json", "{
-            \"groupId\": \"com.dependabot\",
-            \"artifactId\": \"test-project\",
-            \"version\": \"1.0-SNAPSHOT\",
-            \"type\": \"jar\",
-            \"scope\": \"\",
-            \"classifier\": \"\",
-            \"optional\": \"false\",
-            \"children\": [{
-              \"groupId\": \"com.example\",
-              \"artifactId\": \"example-artifact\",
-              \"version\": \"1.0.0\",
-              \"type\": \"jar\",
-              \"scope\": \"compile\",
-              \"classifier\": \"\",
-              \"optional\": \"false\"
-            }]
-          }")
+          File.write("dependency-tree-output.json", {
+            groupId: "com.dependabot",
+            artifactId: "test-project",
+            version: "1.0-SNAPSHOT",
+            type: "jar",
+            scope: "",
+            classifier: "",
+            optional: "false",
+            children: [
+              {
+                groupId: "com.example",
+                artifactId: "example-artifact",
+                version: "1.0.0",
+                type: "jar",
+                scope: "compile",
+                classifier: "",
+                optional: "false"
+              }
+            ]
+          }.to_json)
         end
 
         expect(dependency_set.dependencies.size).to eq(2)
@@ -114,35 +116,35 @@ RSpec.describe Dependabot::Maven::FileParser::MavenDependencyParser do
       it "parses the dependencies correctly" do
         allow(Dependabot::Maven::NativeHelpers).to receive(:run_mvn_dependency_tree_plugin)
           .and_wrap_original do |_original_method, *_args, &_block|
-          File.write("dependency-tree-output.json", "{
-            \"groupId\": \"com.dependabot\",
-            \"artifactId\": \"test-project\",
-            \"version\": \"1.0-SNAPSHOT\",
-            \"type\": \"jar\",
-            \"scope\": \"\",
-            \"classifier\": \"\",
-            \"optional\": \"false\",
-            \"children\": [
+          File.write("dependency-tree-output.json", {
+            groupId: "com.dependabot",
+            artifactId: "test-project",
+            version: "1.0-SNAPSHOT",
+            type: "jar",
+            scope: "",
+            classifier: "",
+            optional: "false",
+            children: [
               {
-                \"groupId\": \"com.example\",
-                \"artifactId\": \"example-artifact\",
-                \"version\": \"1.0.0\",
-                \"type\": \"jar\",
-                \"scope\": \"compile\",
-                \"classifier\": \"\",
-                \"optional\": \"false\"
+                groupId: "com.example",
+                artifactId: "example-artifact",
+                version: "1.0.0",
+                type: "jar",
+                scope: "compile",
+                classifier: "",
+                optional: "false"
               },
               {
-                \"groupId\": \"com.example\",
-                \"artifactId\": \"example-second-artifact\",
-                \"version\": \"1.0.1\",
-                \"type\": \"jar\",
-                \"scope\": \"compile\",
-                \"classifier\": \"\",
-                \"optional\": \"false\"
+                groupId: "com.example",
+                artifactId: "example-second-artifact",
+                version: "1.0.1",
+                type: "jar",
+                scope: "compile",
+                classifier: "",
+                optional: "false"
               }
             ]
-          }")
+          }.to_json)
         end
 
         expect(dependency_set.dependencies.size).to eq(3)
@@ -184,46 +186,46 @@ RSpec.describe Dependabot::Maven::FileParser::MavenDependencyParser do
       it "parses the dependencies correctly" do
         allow(Dependabot::Maven::NativeHelpers).to receive(:run_mvn_dependency_tree_plugin)
           .and_wrap_original do |_original_method, *_args, &_block|
-          File.write("dependency-tree-output.json", "{
-            \"groupId\": \"com.dependabot\",
-            \"artifactId\": \"test-project\",
-            \"version\": \"1.0-SNAPSHOT\",
-            \"type\": \"jar\",
-            \"scope\": \"\",
-            \"classifier\": \"\",
-            \"optional\": \"false\",
-            \"children\": [
+          File.write("dependency-tree-output.json", {
+            groupId: "com.dependabot",
+            artifactId: "test-project",
+            version: "1.0-SNAPSHOT",
+            type: "jar",
+            scope: "",
+            classifier: "",
+            optional: "false",
+            children: [
               {
-                \"groupId\": \"com.example\",
-                \"artifactId\": \"example-artifact\",
-                \"version\": \"1.0.0\",
-                \"type\": \"jar\",
-                \"scope\": \"compile\",
-                \"classifier\": \"\",
-                \"optional\": \"false\",
-                \"children\": [
+                groupId: "com.example",
+                artifactId: "example-artifact",
+                version: "1.0.0",
+                type: "jar",
+                scope: "compile",
+                classifier: "",
+                optional: "false",
+                children: [
                   {
-                    \"groupId\": \"com.example\",
-                    \"artifactId\": \"example-transitive-artifact\",
-                    \"version\": \"1.0.2\",
-                    \"type\": \"jar\",
-                    \"scope\": \"compile\",
-                    \"classifier\": \"\",
-                    \"optional\": \"false\"
+                    groupId: "com.example",
+                    artifactId: "example-transitive-artifact",
+                    version: "1.0.2",
+                    type: "jar",
+                    scope: "compile",
+                    classifier: "",
+                    optional: "false"
                   }
                 ]
               },
               {
-                \"groupId\": \"com.example\",
-                \"artifactId\": \"example-second-artifact\",
-                \"version\": \"1.0.1\",
-                \"type\": \"jar\",
-                \"scope\": \"compile\",
-                \"classifier\": \"\",
-                \"optional\": \"false\"
+                groupId: "com.example",
+                artifactId: "example-second-artifact",
+                version: "1.0.1",
+                type: "jar",
+                scope: "compile",
+                classifier: "",
+                optional: "false"
               }
             ]
-          }")
+          }.to_json)
         end
 
         expect(dependency_set.dependencies.size).to eq(4)
@@ -262,48 +264,48 @@ RSpec.describe Dependabot::Maven::FileParser::MavenDependencyParser do
       it "parses the dependencies correctly" do
         allow(Dependabot::Maven::NativeHelpers).to receive(:run_mvn_dependency_tree_plugin)
           .and_wrap_original do |_original_method, *_args, &_block|
-          File.write("dependency-tree-output.json", "{
-            \"groupId\": \"com.dependabot\",
-            \"artifactId\": \"test-project\",
-            \"version\": \"1.0-SNAPSHOT\",
-            \"type\": \"jar\",
-            \"scope\": \"\",
-            \"classifier\": \"\",
-            \"optional\": \"false\",
-            \"children\": [
+          File.write("dependency-tree-output.json", {
+            groupId: "com.dependabot",
+            artifactId: "test-project",
+            version: "1.0-SNAPSHOT",
+            type: "jar",
+            scope: "",
+            classifier: "",
+            optional: "false",
+            children: [
               {
-                \"groupId\": \"com.example\",
-                \"artifactId\": \"example-artifact\",
-                \"version\": \"1.0.0\",
-                \"type\": \"jar\",
-                \"scope\": \"compile\",
-                \"classifier\": \"\",
-                \"optional\": \"false\",
-                \"children\": [
+                groupId: "com.example",
+                artifactId: "example-artifact",
+                version: "1.0.0",
+                type: "jar",
+                scope: "compile",
+                classifier: "",
+                optional: "false",
+                children: [
                   {
-                    \"groupId\": \"com.example\",
-                    \"artifactId\": \"example-transitive-artifact\",
-                    \"version\": \"1.0.2\",
-                    \"type\": \"jar\",
-                    \"scope\": \"compile\",
-                    \"classifier\": \"\",
-                    \"optional\": \"false\",
-                    \"children\": [
+                    groupId: "com.example",
+                    artifactId: "example-transitive-artifact",
+                    version: "1.0.2",
+                    type: "jar",
+                    scope: "compile",
+                    classifier: "",
+                    optional: "false",
+                    children: [
                       {
-                        \"groupId\": \"com.example\",
-                        \"artifactId\": \"example-nested-artifact\",
-                        \"version\": \"1.0.3\",
-                        \"type\": \"jar\",
-                        \"scope\": \"compile\",
-                        \"classifier\": \"\",
-                        \"optional\": \"false\"
+                        groupId: "com.example",
+                        artifactId: "example-nested-artifact",
+                        version: "1.0.3",
+                        type: "jar",
+                        scope: "compile",
+                        classifier: "",
+                        optional: "false"
                       }
                     ]
                   }
                 ]
               }
             ]
-          }")
+          }.to_json)
         end
 
         expect(dependency_set.dependencies.size).to eq(4)
