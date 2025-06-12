@@ -27,7 +27,8 @@ def parse_pep621_dependencies(pyproject_path):
     with open(pyproject_path, "rb") as file:
         project_toml = tomli.load(file)
 
-    def parse_toml_section_pep621_dependencies(pyproject_path, dependencies, group=None):
+    def parse_toml_section_pep621_dependencies(
+            pyproject_path, dependencies, group=None):
         requirement_packages = []
 
         def version_from_req(specifier_set):

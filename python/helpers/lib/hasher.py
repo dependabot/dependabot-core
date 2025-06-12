@@ -8,7 +8,8 @@ from poetry.factory import Factory
 
 
 def get_dependency_hash(
-    dependency_name, dependency_version, algorithm, index_url=hashin.DEFAULT_INDEX_URL
+    dependency_name, dependency_version,
+    algorithm, index_url=hashin.DEFAULT_INDEX_URL
 ):
     try:
         hashes = hashin.get_package_hashes(

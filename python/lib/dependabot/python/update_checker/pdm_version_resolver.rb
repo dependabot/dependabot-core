@@ -1,10 +1,12 @@
-# typed: true # rubocop:disable Sorbet/StrictSigil
+# typed: strict
 # frozen_string_literal: true
 
 require "excon"
 require "toml-rb"
 require "open3"
 require "uri"
+require "sorbet-runtime"
+
 require "dependabot/dependency"
 require "dependabot/errors"
 require "dependabot/shared_helpers"
@@ -24,6 +26,8 @@ module Dependabot
     class UpdateChecker
       # This class does version resolution for PDM pyproject.toml files.
       class PdmVersionResolver
+        extend T::Sig
+
         GIT_REFERENCE_NOT_FOUND_REGEX = /
           (Failed\sto\scheckout
           (?<tag>.+?)
@@ -39,18 +43,39 @@ module Dependabot
           \s+check\syour\sgit\sconfiguration
         /mx
 
+        sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
+
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
+
+        sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
+
+        sig { returns(T.nilable(String)) }
         attr_reader :repo_contents_path
 
+        sig do
+          params(
+            dependency: Dependabot::Dependency,
+            dependency_files: T::Array[Dependabot::DependencyFile],
+            credentials: T::Array[Dependabot::Credential],
+            repo_contents_path: T.nilable(String)
+          ).void
+        end
         def initialize(dependency:, dependency_files:, credentials:, repo_contents_path:)
           @dependency = dependency
           @dependency_files = dependency_files
           @credentials = credentials
           @repo_contents_path = repo_contents_path
+          @resolvable = T.let({}, T::Hash[String, T::Boolean])
+          @latest_resolvable_version_string = T.let({}, T::Hash[T.nilable(String), T.nilable(String)])
+          @language_version_manager = T.let(nil, T.nilable(Dependabot::Python::LanguageVersionManager))
+          @python_requirement_parser = T.let(nil, T.nilable(Dependabot::Python::FileParser::PythonRequirementParser))
+          @pyproject = T.let(nil, T.nilable(Dependabot::DependencyFile))
         end
 
+        sig { params(requirement: T.nilable(String)).returns(T.nilable(Python::Version)) }
         def latest_resolvable_version(requirement: nil)
           version_string =
             fetch_latest_resolvable_version_string(requirement: requirement)
@@ -58,9 +83,9 @@ module Dependabot
           version_string.nil? ? nil : Python::Version.new(version_string)
         end
 
+        sig { params(version: String).returns(T::Boolean) }
         def resolvable?(version:)
-          @resolvable ||= {}
-          return @resolvable[version] if @resolvable.key?(version)
+          return T.must(@resolvable[version]) if @resolvable.key?(version)
 
           @resolvable[version] = if fetch_latest_resolvable_version_string(requirement: "==#{version}")
                                    true
@@ -76,8 +101,8 @@ module Dependabot
 
         private
 
+        sig { params(requirement: T.nilable(String)).returns(T.nilable(String)) }
         def fetch_latest_resolvable_version_string(requirement:)
-          @latest_resolvable_version_string ||= {}
           return @latest_resolvable_version_string[requirement] if @latest_resolvable_version_string.key?(requirement)
 
           @latest_resolvable_version_string[requirement] ||=
@@ -95,10 +120,12 @@ module Dependabot
                 fetch_version_from_parsed_lockfile(parsed_lockfile)
               rescue SharedHelpers::HelperSubprocessFailed => e
                 handle_pdm_errors(e)
+                nil
               end
             end
         end
 
+        sig { params(updated_lockfile: T.untyped).returns(T.nilable(String)) }
         def fetch_version_from_parsed_lockfile(updated_lockfile)
           # PDM lock file structure has packages under ["package"] key
           version =
@@ -111,6 +138,7 @@ module Dependabot
           raise "No version in lockfile!"
         end
 
+        sig { params(error: T.untyped).void }
         def handle_pdm_errors(error)
           if error.message.gsub(/\s/, "").match?(GIT_REFERENCE_NOT_FOUND_REGEX)
             message = error.message.gsub(/\s/, "")
@@ -137,14 +165,15 @@ module Dependabot
           nil
         end
 
+        sig { void }
         def run_pdm_update_command
           Dependabot.logger.info("Checking update for #{dependency.name}")
           command = "pyenv exec pdm --non-interactive update --no-sync --update-reuse #{dependency.name}"
-          if T.must(dependency.requirements).any?
-            groups = T.must(dependency&.requirements&.first)[:groups]
+          if dependency.requirements.any?
+            groups = T.let(T.must(dependency.requirements.first)[:groups], T::Array[String])
             command << " --group #{groups.first}" unless groups.empty?
           end
-          fingerprint = command.sub(T.must(dependency).name, "<dependency_name>")
+          fingerprint = command.sub(dependency.name, "<dependency_name>")
 
           SharedHelpers.run_shell_command(
             command,
@@ -152,6 +181,7 @@ module Dependabot
           )
         end
 
+        sig { params(updated_req: T.nilable(String)).void }
         def write_temporary_dependency_files(updated_req:)
           dependency_files.each do |file|
             path = file.name
@@ -165,8 +195,9 @@ module Dependabot
           update_pyproject_requirement(updated_req)
         end
 
+        sig { params(updated_req: String).void }
         def update_pyproject_requirement(updated_req)
-          content = pyproject.content
+          content = T.must(pyproject).content
           parsed_content = TomlRB.parse(content)
           group = (T.must(dependency.requirements.first)[:groups].first if dependency.requirements.any?)
 
@@ -182,21 +213,25 @@ module Dependabot
           File.write("pyproject.toml", TomlRB.dump(parsed_content))
         end
 
+        sig { params(parsed_content: T.untyped, updated_req: String).void }
         def update_pep621_dependencies!(parsed_content, updated_req)
           dependencies = parsed_content["project"]["dependencies"]
           update_dependency_array!(dependencies, updated_req)
         end
 
+        sig { params(parsed_content: T.untyped, group: String, updated_req: String).void }
         def update_pdm_dev_dependencies!(parsed_content, group, updated_req)
           dependencies = parsed_content.dig("tool", "pdm", "dev-dependencies", group)
           update_dependency_array!(dependencies, updated_req)
         end
 
+        sig { params(parsed_content: T.untyped, group: String, updated_req: String).void }
         def update_dependency_group!(parsed_content, group, updated_req)
           dependencies = parsed_content.dig("dependency-groups", group)
           update_dependency_array!(dependencies, updated_req)
         end
 
+        sig { params(dependencies: T.untyped, updated_req: String).void }
         def update_dependency_array!(dependencies, updated_req)
           return unless dependencies.is_a?(Array)
 
@@ -212,22 +247,26 @@ module Dependabot
           end
         end
 
+        sig { returns(Dependabot::Python::LanguageVersionManager) }
         def language_version_manager
           @language_version_manager ||= LanguageVersionManager.new(
             python_requirement_parser: python_requirement_parser
           )
         end
 
+        sig { returns(Dependabot::Python::FileParser::PythonRequirementParser) }
         def python_requirement_parser
           @python_requirement_parser ||= FileParser::PythonRequirementParser.new(
             dependency_files: dependency_files
           )
         end
 
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def pyproject
           @pyproject ||= dependency_files.find { |f| f.name == "pyproject.toml" }
         end
 
+        sig { params(name: String).returns(String) }
         def normalise(name)
           NameNormaliser.normalise(name)
         end
