@@ -29,8 +29,7 @@ module Dependabot
       sig { params(output: String).void }
       def self.handle_tool_error(output)
         if (match = output.match(
-          %r{Could not transfer artifact (?<artifact>[^ ]+) from/to (?<repository_name>[^ ]+)
-           \((?<repository_url>[^ ]+)\): status code: (?<status_code>[0-9]+)}
+          %r{Could not transfer artifact (?<artifact>[^ ]+) from/to (?<repository_name>[^ ]+) \((?<repository_url>[^ ]+)\): status code: (?<status_code>[0-9]+)} # rubocop:disable Layout/LineLength
         )) && (match[:status_code] == ("403") || match[:status_code] == ("401"))
           raise Dependabot::PrivateSourceAuthenticationFailure, match[:repository_url]
         end
