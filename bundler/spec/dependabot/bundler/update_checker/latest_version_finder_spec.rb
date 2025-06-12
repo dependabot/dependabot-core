@@ -328,10 +328,10 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
       let(:dependency_name) { "business" }
       let(:current_version) { "1.3" }
       let(:requirements) do
-        [{requirement: "1.3",
-          groups: [:default],
-          source: {type: "rubygems", url: "https://repo.fury.io/greysteil/"},
-          file: "Gemfile"}]
+        [ { requirement: "1.3",
+            groups: [:default],
+            source: { type: "rubygems", url: "https://repo.fury.io/greysteil/" },
+            file: "Gemfile" } ]
       end
 
       let(:private_registry_url) { "https://repo.fury.io/greysteil/api/v1/" }
