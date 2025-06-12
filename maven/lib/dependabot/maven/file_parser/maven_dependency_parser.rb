@@ -109,11 +109,8 @@ module Dependabot
           # Find the topmost directory level by finding the minimum number of "../" sequences
           relative_top_depth = 0
           dependency_files.each do |pom|
-            # This logic might generate incorrect depth if relative path is more complex,
-            # e.g. "../subdir/../pom.xml", but it should guarantee that resulted depth will be higher
-            # that actual maximul depth, which means that we will not escape the temporary directory.
-            # This is sufficient for our use case.
-            depth = pom.name.scan("../").length
+            normalized_path = Pathname.new(pom.name).cleanpath.to_s
+            depth = normalized_path.scan("../").length
             relative_top_depth = [relative_top_depth, depth].max
           end
 

@@ -318,4 +318,84 @@ RSpec.describe Dependabot::Maven::FileParser::MavenDependencyParser do
       end
     end
   end
+
+  describe "create_directory_structure" do
+    let(:base_depth_path) { described_class.create_directory_structure(dependency_files, temp_path) }
+    let(:temp_path) { Dir.mktmpdir }
+
+    context "with no files" do
+      let(:dependency_files) do
+        []
+      end
+
+      it "creates a directory structure with the correct depth" do
+        expect(base_depth_path).to eq(temp_path)
+        expect(Dir.exist?(base_depth_path)).to be true
+      end
+    end
+
+    context "with a single pom.xml file" do
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(name: "pom.xml", content: "<project><dependencies></dependencies></project>"),
+          Dependabot::DependencyFile.new(name: "subdir/pom.xml",
+                                         content: "<project><dependencies></dependencies></project>")
+        ]
+      end
+
+      it "creates a directory structure with the correct depth" do
+        expect(base_depth_path).to eq(temp_path)
+        expect(Dir.exist?(base_depth_path)).to be true
+      end
+    end
+
+    context "with multiple pom.xml files in different directories" do
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(name: "pom.xml", content: "<project><dependencies></dependencies></project>"),
+          Dependabot::DependencyFile.new(name: "subdir/pom.xml",
+                                         content: "<project><dependencies></dependencies></project>"),
+          Dependabot::DependencyFile.new(name: "another/subdir/pom.xml",
+                                         content: "<project><dependencies></dependencies></project>")
+        ]
+      end
+
+      it "creates a directory structure with the correct depth" do
+        expect(base_depth_path).to eq(temp_path)
+        expect(Dir.exist?(base_depth_path)).to be true
+      end
+    end
+
+    context "with multiple pom.xml files with relative path leading to the directories up the filesystem tree" do
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(name: "pom.xml", content: "<project><dependencies></dependencies></project>"),
+          Dependabot::DependencyFile.new(name: "../pom.xml",
+                                         content: "<project><dependencies></dependencies></project>"),
+          Dependabot::DependencyFile.new(name: "../../../pom.xml",
+                                         content: "<project><dependencies></dependencies></project>")
+        ]
+      end
+
+      it "creates a directory structure with the correct depth" do
+        expect(base_depth_path).to eq(File.join(temp_path, "l0/l1/l2"))
+        expect(Dir.exist?(base_depth_path)).to be true
+      end
+    end
+
+    context "with multiple pom.xml files with denormalized paths" do
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(name: "pom.xml", content: "<project><dependencies></dependencies></project>"),
+          Dependabot::DependencyFile.new(name: "../subdir/../pom.xml",
+                                         content: "<project><dependencies></dependencies></project>")
+        ]
+      end
+
+      it "creates a directory structure with the correct depth" do
+        expect(base_depth_path).to eq(File.join(temp_path, "l0"))
+        expect(Dir.exist?(base_depth_path)).to be true
+      end
+    end
+  end
 end
