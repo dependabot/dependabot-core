@@ -1,4 +1,4 @@
-# typed: true
+# typed: true # rubocop:disable Sorbet/StrictSigil
 # frozen_string_literal: true
 
 require "excon"
@@ -24,8 +24,6 @@ module Dependabot
     class UpdateChecker
       # This class does version resolution for PDM pyproject.toml files.
       class PdmVersionResolver
-        extend T::Sig
-
         GIT_REFERENCE_NOT_FOUND_REGEX = /
           (Failed\sto\scheckout
           (?<tag>.+?)
