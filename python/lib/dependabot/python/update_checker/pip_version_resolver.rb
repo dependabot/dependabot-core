@@ -17,7 +17,7 @@ module Dependabot
           @dependency_files    = dependency_files
           @credentials         = credentials
           @ignored_versions    = ignored_versions
-          @update_cooldown = update_cooldown
+          @update_cooldown     = update_cooldown
           @raise_on_ignored    = raise_on_ignored
           @security_advisories = security_advisories
         end
