@@ -1,5 +1,7 @@
-# typed: true
+# typed: strong
 # frozen_string_literal: true
+
+require "sorbet-runtime"
 
 require "dependabot/version"
 require "dependabot/utils"
@@ -11,11 +13,15 @@ require "dependabot/utils"
 module Dependabot
   module Composer
     class Version < Dependabot::Version
+      extend T::Sig
+
+      sig { override.params(version: VersionParameter).void }
       def initialize(version)
-        @version_string = version.to_s
+        @version_string = T.let(version.to_s, String)
         super
       end
 
+      sig { returns(String) }
       def to_s
         @version_string
       end

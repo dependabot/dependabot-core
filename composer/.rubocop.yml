@@ -3,14 +3,3 @@ inherit_from: ../.rubocop.yml
 inherit_mode:
   merge:
     - Exclude
-
-Sorbet/StrictSigil:
-  Exclude:
-    - lib/dependabot/composer/file_fetcher.rb
-    - lib/dependabot/composer/file_updater/lockfile_updater.rb
-    - lib/dependabot/composer/file_updater/manifest_updater.rb
-    - lib/dependabot/composer/metadata_finder.rb
-    - lib/dependabot/composer/update_checker/latest_version_finder.rb
-    - lib/dependabot/composer/update_checker/requirements_updater.rb
-    - lib/dependabot/composer/update_checker/version_resolver.rb
-    - lib/dependabot/composer/version.rb

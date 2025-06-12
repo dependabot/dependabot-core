@@ -82,6 +82,7 @@ public class MessageReportTests
                 CommitMessage = "unused",
                 PrTitle = "unused",
                 PrBody = "unused",
+                DependencyGroup = null, // unused
             },
             // expected
             """
@@ -174,6 +175,53 @@ public class MessageReportTests
         yield return
         [
             // message
+            new PullRequestExistsForSecurityUpdate([new("Some.Dependency", "1.2.3", DependencyType.PackageReference)]),
+            // expected
+            """
+            Error type: pull_request_exists_for_security_update
+            - updated-dependencies:
+              - - dependency-name: Some.Dependency
+                - dependency-version: 1.2.3
+                - dependency-removed: false
+            """
+        ];
+
+        yield return
+        [
+            // message
+            new SecurityUpdateDependencyNotFound(),
+            // expected
+            """
+            Error type: security_update_dependency_not_found
+            """
+        ];
+
+        yield return
+        [
+            // message
+            new SecurityUpdateIgnored("Some.Dependency"),
+            // expected
+            """
+            Error type: all_versions_ignored
+            - dependency-name: Some.Dependency
+            """
+        ];
+
+        yield return
+        [
+            // message
+            new SecurityUpdateNotFound("Some.Dependency", "1.2.3"),
+            // expected
+            """
+            Error type: security_update_not_found
+            - dependency-name: Some.Dependency
+            - dependency-version: 1.2.3
+            """
+        ];
+
+        yield return
+        [
+            // message
             new SecurityUpdateNotNeeded("Some.Dependency"),
             // expected
             """
@@ -185,13 +233,28 @@ public class MessageReportTests
         yield return
         [
             // message
+            new SecurityUpdateNotPossible("Some.Dependency", "1.2.3", "4.5.6", ["dep1", "dep2"]),
+            // expected
+            """
+            Error type: security_update_not_possible
+            - dependency-name: Some.Dependency
+            - latest-resolvable-version: 1.2.3
+            - lowest-non-vulnerable-version: 4.5.6
+            - conflicting-dependencies:
+              - dep1
+              - dep2
+            """
+        ];
+
+        yield return
+        [
+            // message
             new UnknownError(new NotImplementedException("error message"), "TEST-JOB-ID"),
             // expected
             """
             Error type: unknown_error
             - error-class: NotImplementedException
-            - error-message: error message
-            - error-backtrace: <unknown>
+            - error-message: System.NotImplementedException: error message
             - package-manager: nuget
             - job-id: TEST-JOB-ID
             """
@@ -204,7 +267,9 @@ public class MessageReportTests
             // expected
             """
             Error type: update_not_possible
-            - dependencies: Dependency1, Dependency2
+            - dependencies:
+              - Dependency1
+              - Dependency2
             """
         ];
 

@@ -832,10 +832,8 @@ public partial class DiscoveryWorkerTests
                         {
                             FilePath = "myproj.csproj",
                             Dependencies = [
-                                new("Some.Package", "1.2.3.4", DependencyType.PackageReference, TargetFrameworks: ["net7.0"], IsDirect: true),
-                                new("Some.Package", "1.2.3.4", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
-                                new("Transitive.Dependency", "5.6.7.8", DependencyType.Unknown, TargetFrameworks: ["net7.0"], IsTransitive: true),
-                                new("Transitive.Dependency", "5.6.7.8", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+                                new("Some.Package", "1.2.3.4", DependencyType.PackageReference, TargetFrameworks: ["net7.0", "net8.0"], IsDirect: true),
+                                new("Transitive.Dependency", "5.6.7.8", DependencyType.Unknown, TargetFrameworks: ["net7.0", "net8.0"], IsTransitive: true),
                             ],
                             Properties = [
                                 new("TargetFrameworks", "net7.0;net8.0", "myproj.csproj"),
@@ -1191,11 +1189,7 @@ public partial class DiscoveryWorkerTests
                         {
                             FilePath = "project.csproj",
                             Dependencies = [
-                                new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0-android"], IsDirect: true),
-                                new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0-ios"], IsDirect: true),
-                                new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0-maccatalyst"], IsDirect: true),
-                                new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0-macos"], IsDirect: true),
-                                new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0-windows"], IsDirect: true),
+                                new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0-android", "net8.0-ios", "net8.0-maccatalyst", "net8.0-macos", "net8.0-windows"], IsDirect: true),
                             ],
                             Properties = [
                                 new("TargetFrameworks", "net8.0-ios;net8.0-android;net8.0-macos;net8.0-maccatalyst;net8.0-windows", @"src/project.csproj"),

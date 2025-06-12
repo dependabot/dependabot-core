@@ -13,8 +13,9 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
       dependency_files: files,
       credentials: credentials,
       ignored_versions: ignored_versions,
-      raise_on_ignored: raise_on_ignored,
-      security_advisories: security_advisories
+      security_advisories: security_advisories,
+      cooldown_options: cooldown_options,
+      raise_on_ignored: raise_on_ignored
     )
   end
 
@@ -42,10 +43,14 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
     sanitized_name = dependency_name.downcase.gsub("/", "--")
     fixture("packagist_responses", "#{sanitized_name}.json")
   end
+  let(:cooldown_options) { nil }
+  let(:enable_cooldown_for_composer) { false }
 
   before do
     url = "https://repo.packagist.org/p2/#{dependency_name.downcase}.json"
     stub_request(:get, url).to_return(status: 200, body: packagist_response)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_cooldown_for_composer).and_return(enable_cooldown_for_composer)
   end
 
   describe "#latest_version" do
@@ -375,6 +380,40 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
       let(:project_name) { "git_source_unreachable_git_url" }
 
       it { is_expected.to eq(Gem::Version.new("3.2.0")) }
+    end
+  end
+
+  describe "#latest_version with cooldown options" do
+    let(:cooldown_options) do
+      Dependabot::Package::ReleaseCooldownOptions.new(
+        default_days: 20
+      )
+    end
+
+    context "when enable_cooldown_for_composer is enabled" do
+      let(:enable_cooldown_for_composer) { true }
+      let(:dependency_name) { "illuminate/support" }
+      let(:json_url) { "https://repo.packagist.org/p2/#{dependency_name}.json" }
+
+      before do
+        stub_request(:get, json_url)
+          .to_return(
+            status: 200,
+            body: fixture("packagist_responses", "illuminate-support-response.json"),
+            headers: { "Content-Type" => "application/json" }
+          )
+
+        allow(Time).to receive(:now).and_return(Time.parse("2025-05-19T17:30:00.000Z"))
+      end
+
+      context "with a valid JSON response" do
+        subject(:result) { finder.latest_version }
+
+        it "fetches the latest version details" do
+          expect(result).to be_a(Dependabot::Version)
+          expect(result).to eq(Dependabot::Composer::Version.new("12.11.0"))
+        end
+      end
     end
   end
 

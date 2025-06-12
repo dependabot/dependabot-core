@@ -1,10 +1,10 @@
 # This list must match the versions specified in
 # python/lib/dependabot/python/language.rb: PRE_INSTALLED_PYTHON_VERSIONS_RAW
-ARG PY_3_13=3.13.2
-ARG PY_3_12=3.12.9
-ARG PY_3_11=3.11.11
-ARG PY_3_10=3.10.16
-ARG PY_3_9=3.9.21
+ARG PY_3_13=3.13.3
+ARG PY_3_12=3.12.10
+ARG PY_3_11=3.11.12
+ARG PY_3_10=3.10.17
+ARG PY_3_9=3.9.22
 ARG PYENV_VERSION=v2.5.2
 
 FROM ghcr.io/dependabot/dependabot-updater-core AS python-core
@@ -25,6 +25,8 @@ ENV PYENV_ROOT=/usr/local/.pyenv \
   PATH="/usr/local/.pyenv/bin:$PATH"
 RUN mkdir -p "$PYENV_ROOT" && chown dependabot:dependabot "$PYENV_ROOT"
 USER dependabot
+ENV REQUESTS_CA_BUNDLE /etc/ssl/certs/ca-certificates.crt
+ENV SSL_CERT_FILE /etc/ssl/certs/ca-certificates.crt
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
 RUN git -c advice.detachedHead=false clone https://github.com/pyenv/pyenv.git --branch $PYENV_VERSION --single-branch --depth=1 /usr/local/.pyenv
 

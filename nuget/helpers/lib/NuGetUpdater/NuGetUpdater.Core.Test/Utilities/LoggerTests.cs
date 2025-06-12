@@ -5,7 +5,6 @@ using System.Text;
 using System.Threading.Tasks;
 
 using Xunit;
-using Xunit.Abstractions;
 using Xunit.Sdk;
 
 namespace NuGetUpdater.Core.Test.Utilities;

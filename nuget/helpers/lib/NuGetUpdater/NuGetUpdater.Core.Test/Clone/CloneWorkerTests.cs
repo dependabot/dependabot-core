@@ -111,7 +111,7 @@ public class CloneWorkerTests
 
         // assert
         Assert.Equal(1, result);
-        var expectedParseErrorObject = testApiHandler.ReceivedMessages.Single(m => m.Type == typeof(UnknownError));
+        var expectedParseErrorObject = testApiHandler.ReceivedMessages.First(m => m.Type == typeof(UnknownError));
         var unknownError = (UnknownError)expectedParseErrorObject.Object;
         Assert.Equal("JsonException", unknownError.Details["error-class"]);
     }

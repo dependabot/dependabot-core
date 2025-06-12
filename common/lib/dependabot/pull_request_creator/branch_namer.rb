@@ -8,6 +8,7 @@ require "dependabot/metadata_finders"
 require "dependabot/pull_request_creator"
 require "dependabot/pull_request_creator/branch_namer/solo_strategy"
 require "dependabot/pull_request_creator/branch_namer/dependency_group_strategy"
+require "dependabot/pull_request_creator/branch_namer/multi_ecosystem_strategy"
 
 module Dependabot
   class PullRequestCreator
@@ -38,6 +39,9 @@ module Dependabot
       sig { returns(T::Boolean) }
       attr_reader :includes_security_fixes
 
+      sig { returns(T.nilable(String)) }
+      attr_reader :multi_ecosystem_name
+
       sig do
         params(
           dependencies: T::Array[Dependabot::Dependency],
@@ -47,12 +51,13 @@ module Dependabot
           separator: String,
           prefix: String,
           max_length: T.nilable(Integer),
-          includes_security_fixes: T::Boolean
+          includes_security_fixes: T::Boolean,
+          multi_ecosystem_name: T.nilable(String)
         )
           .void
       end
       def initialize(dependencies:, files:, target_branch:, dependency_group: nil, separator: "/",
-                     prefix: "dependabot", max_length: nil, includes_security_fixes: false)
+                     prefix: "dependabot", max_length: nil, includes_security_fixes: false, multi_ecosystem_name: nil)
         @dependencies  = dependencies
         @files         = files
         @target_branch = target_branch
@@ -61,6 +66,7 @@ module Dependabot
         @prefix        = prefix
         @max_length    = max_length
         @includes_security_fixes = includes_security_fixes
+        @multi_ecosystem_name = multi_ecosystem_name
       end
 
       sig { returns(String) }
@@ -73,28 +79,54 @@ module Dependabot
       sig { returns(Dependabot::PullRequestCreator::BranchNamer::Base) }
       def strategy
         @strategy ||= T.let(
-          if dependency_group.nil?
-            SoloStrategy.new(
-              dependencies: dependencies,
-              files: files,
-              target_branch: target_branch,
-              separator: separator,
-              prefix: prefix,
-              max_length: max_length
-            )
+          if multi_ecosystem_name
+            build_multi_ecosystem_strategy
+          elsif dependency_group.nil?
+            build_solo_strategy
           else
-            DependencyGroupStrategy.new(
-              dependencies: dependencies,
-              files: files,
-              target_branch: target_branch,
-              dependency_group: T.must(dependency_group),
-              includes_security_fixes: includes_security_fixes,
-              separator: separator,
-              prefix: prefix,
-              max_length: max_length
-            )
+            build_dependency_group_strategy
           end,
           T.nilable(Dependabot::PullRequestCreator::BranchNamer::Base)
+        )
+      end
+
+      sig { returns(Dependabot::PullRequestCreator::BranchNamer::MultiEcosystemStrategy) }
+      def build_multi_ecosystem_strategy
+        MultiEcosystemStrategy.new(
+          dependencies: dependencies,
+          files: files,
+          target_branch: target_branch,
+          includes_security_fixes: includes_security_fixes,
+          separator: separator,
+          prefix: prefix,
+          max_length: max_length,
+          multi_ecosystem_name: T.must(multi_ecosystem_name)
+        )
+      end
+
+      sig { returns(Dependabot::PullRequestCreator::BranchNamer::SoloStrategy) }
+      def build_solo_strategy
+        SoloStrategy.new(
+          dependencies: dependencies,
+          files: files,
+          target_branch: target_branch,
+          separator: separator,
+          prefix: prefix,
+          max_length: max_length
+        )
+      end
+
+      sig { returns(Dependabot::PullRequestCreator::BranchNamer::DependencyGroupStrategy) }
+      def build_dependency_group_strategy
+        DependencyGroupStrategy.new(
+          dependencies: dependencies,
+          files: files,
+          target_branch: target_branch,
+          dependency_group: T.must(dependency_group),
+          includes_security_fixes: includes_security_fixes,
+          separator: separator,
+          prefix: prefix,
+          max_length: max_length
         )
       end
     end

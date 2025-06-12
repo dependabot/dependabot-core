@@ -28,7 +28,7 @@ module Dependabot
         latest_version_from_registry || latest_resolvable_version
       end
 
-      sig { override.returns(T.nilable(Dependabot::Composer::Version)) }
+      sig { override.returns(T.nilable(Dependabot::Version)) }
       def latest_resolvable_version
         return nil if path_dependency? || git_dependency?
 
@@ -40,26 +40,26 @@ module Dependabot
             latest_allowable_version: latest_version_from_registry,
             requirements_to_unlock: :own
           ).latest_resolvable_version,
-          T.nilable(Dependabot::Composer::Version)
+          T.nilable(Dependabot::Version)
         )
       end
 
-      sig { override.returns(T.nilable(Dependabot::Composer::Version)) }
+      sig { override.returns(T.nilable(Dependabot::Version)) }
       def lowest_security_fix_version
         latest_version_finder.lowest_security_fix_version
       end
 
-      sig { override.returns(T.nilable(Dependabot::Composer::Version)) }
+      sig { override.returns(T.nilable(Dependabot::Version)) }
       def lowest_resolvable_security_fix_version
         raise "Dependency not vulnerable!" unless vulnerable?
 
         @lowest_resolvable_security_fix_version ||= T.let(
           fetch_lowest_resolvable_security_fix_version,
-          T.nilable(Dependabot::Composer::Version)
+          T.nilable(Dependabot::Version)
         )
       end
 
-      sig { override.returns(T.nilable(Dependabot::Composer::Version)) }
+      sig { override.returns(T.nilable(Dependabot::Version)) }
       def latest_resolvable_version_with_no_unlock
         return nil if path_dependency? || git_dependency?
 
@@ -71,7 +71,7 @@ module Dependabot
             latest_allowable_version: latest_version_from_registry,
             requirements_to_unlock: :none
           ).latest_resolvable_version,
-          T.nilable(Dependabot::Composer::Version)
+          T.nilable(Dependabot::Version)
         )
       end
 
@@ -80,7 +80,7 @@ module Dependabot
         RequirementsUpdater.new(
           requirements: dependency.requirements,
           latest_resolvable_version: preferred_resolvable_version&.to_s,
-          update_strategy: requirements_update_strategy
+          update_strategy: T.must(requirements_update_strategy)
         ).updated_requirements
       end
 
@@ -111,7 +111,7 @@ module Dependabot
         raise NotImplementedError
       end
 
-      sig { returns(T.nilable(Dependabot::Composer::Version)) }
+      sig { returns(T.nilable(Dependabot::Version)) }
       def latest_version_from_registry
         latest_version_finder.latest_version
       end
@@ -125,13 +125,14 @@ module Dependabot
             credentials: credentials,
             ignored_versions: ignored_versions,
             raise_on_ignored: raise_on_ignored,
-            security_advisories: security_advisories
+            security_advisories: security_advisories,
+            cooldown_options: update_cooldown
           ),
           T.nilable(Dependabot::Composer::UpdateChecker::LatestVersionFinder)
         )
       end
 
-      sig { returns(T.nilable(Dependabot::Composer::Version)) }
+      sig { returns(T.nilable(Dependabot::Version)) }
       def fetch_lowest_resolvable_security_fix_version
         return nil if path_dependency? || git_dependency?
 

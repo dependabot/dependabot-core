@@ -59,7 +59,7 @@ public class PathHelperTests
     }
 
     [LinuxOnlyFact]
-    public async void FilesWithDifferentlyCasedDirectoriesCanBeResolved()
+    public async Task FilesWithDifferentlyCasedDirectoriesCanBeResolved()
     {
         // arrange
         using var temp = new TemporaryDirectory();

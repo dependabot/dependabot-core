@@ -968,7 +968,8 @@ internal static partial class MSBuildHelper
         ThrowOnMissingPackages(output);
         ThrowOnUpdateNotPossible(output);
         ThrowOnRateLimitExceeded(output);
-        ThrowOnServiceUnavailable(output);
+        ThrowOnBadResponse(output);
+        ThrowOnUnparseableFile(output);
     }
 
     private static void ThrowOnUnauthenticatedFeed(string stdout)
@@ -978,6 +979,7 @@ internal static partial class MSBuildHelper
             "The plugin credential provider could not acquire credentials",
             "401 (Unauthorized)",
             "error NU1301: Unable to load the service index for source",
+            "Response status code does not indicate success: 401",
             "Response status code does not indicate success: 403",
         };
         if (unauthorizedMessageSnippets.Any(stdout.Contains))
@@ -999,16 +1001,20 @@ internal static partial class MSBuildHelper
         }
     }
 
-    private static void ThrowOnServiceUnavailable(string stdout)
+    private static void ThrowOnBadResponse(string stdout)
     {
-        var serviceUnavailableMessageSnippets = new string[]
+        var patterns = new[]
         {
-            "503 (Service Unavailable)",
-            "Response status code does not indicate success: 503",
+            new Regex(@"500 \(Internal Server Error\)"),
+            new Regex(@"503 \(Service Unavailable\)"),
+            new Regex(@"Response status code does not indicate success: 50\d"),
+            new Regex(@"The file is not a valid nupkg"),
+            new Regex(@"The response ended prematurely\. \(ResponseEnded\)"),
+            new Regex(@"The content at '.*' is not valid XML\."),
         };
-        if (serviceUnavailableMessageSnippets.Any(stdout.Contains))
+        if (patterns.Any(p => p.IsMatch(stdout)))
         {
-            throw new HttpRequestException(message: stdout, inner: null, statusCode: System.Net.HttpStatusCode.ServiceUnavailable);
+            throw new HttpRequestException(message: stdout, inner: null, statusCode: System.Net.HttpStatusCode.InternalServerError);
         }
     }
 
@@ -1028,12 +1034,25 @@ internal static partial class MSBuildHelper
             new Regex(@"Package '(?<PackageName>[^']*)' is not found on source '(?<PackageSource>[^$\r\n]*)'\."),
             new Regex(@"Unable to find package (?<PackageName>[^ ]+)\. No packages exist with this id in source\(s\): (?<PackageSource>.*)$", RegexOptions.Multiline),
             new Regex(@"Unable to find package (?<PackageName>[^ ]+) with version \((?<PackageVersion>[^)]+)\)"),
+            new Regex(@"Unable to find package '(?<PackageName>[^ ]+)'\."),
             new Regex(@"Could not resolve SDK ""(?<PackageName>[^ ]+)""\."),
+            new Regex(@"Failed to fetch results from V2 feed at '.*FindPackagesById\(\)\?id='(?<PackageName>[^']+)'&semVerLevel=2\.0\.0' with following message : Response status code does not indicate success: 404\."),
         };
-        var matches = patterns.Select(p => p.Match(output)).Where(m => m.Success);
-        if (matches.Any())
+        var matches = patterns.Select(p => p.Match(output)).Where(m => m.Success).ToArray();
+        if (matches.Length > 0)
         {
-            var packages = matches.Select(m => m.Groups["PackageName"].Value).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+            var packages = matches.Select(m =>
+                {
+                    var packageName = m.Groups["PackageName"].Value;
+                    if (m.Groups.TryGetValue("PackageVersion", out var versionGroup))
+                    {
+                        packageName = $"{packageName}/{versionGroup.Value}";
+                    }
+
+                    return packageName;
+                })
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
             throw new DependencyNotFoundException(packages);
         }
     }
@@ -1046,12 +1065,27 @@ internal static partial class MSBuildHelper
             new Regex(@"Could not install package '(?<PackageName>[^ ]+) (?<PackageVersion>[^']+)'. You are trying to install this package"),
             new Regex(@"Unable to find a version of '[^']+' that is compatible with '[^ ]+ [^ ]+ constraint: (?<PackageName>[^ ]+) \([^ ]+ (?<PackageVersion>[^)]+)\)'"),
             new Regex(@"the following error\(s\) may be blocking the current package operation: '(?<PackageName>[^ ]+) (?<PackageVersion>[^ ]+) constraint:"),
+            new Regex(@"Unable to resolve '(?<PackageName>[^']+)'. An additional constraint '\((?<PackageVersion>[^)]+)\)' defined in packages.config prevents this operation."),
         };
         var matches = patterns.Select(p => p.Match(output)).Where(m => m.Success);
         if (matches.Any())
         {
             var packages = matches.Select(m => $"{m.Groups["PackageName"].Value}.{m.Groups["PackageVersion"].Value}").Distinct().ToArray();
             throw new UpdateNotPossibleException(packages);
+        }
+    }
+
+    private static void ThrowOnUnparseableFile(string output)
+    {
+        var patterns = new[]
+        {
+            new Regex(@"\nAn error occurred while reading file '(?<FilePath>[^']+)': (?<Message>[^\n]*)\n"),
+            new Regex(@"NuGet\.Config is not valid XML\. Path: '(?<FilePath>[^']+)'\.\n\s*(?<Message>[^\n]*)(\n|$)"),
+        };
+        var match = patterns.Select(p => p.Match(output)).Where(m => m.Success).FirstOrDefault();
+        if (match is not null)
+        {
+            throw new UnparseableFileException(match.Groups["Message"].Value, match.Groups["FilePath"].Value);
         }
     }
 

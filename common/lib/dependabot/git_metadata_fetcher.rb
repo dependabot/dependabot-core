@@ -3,10 +3,12 @@
 
 require "excon"
 require "open3"
+require "ostruct"
 require "sorbet-runtime"
-
+require "tmpdir"
 require "dependabot/errors"
 require "dependabot/git_ref"
+require "dependabot/git_tag_with_detail"
 require "dependabot/credential"
 
 module Dependabot
@@ -91,6 +93,60 @@ module Dependabot
       refs_for_upload_pack
         .find { |r| r.ref_sha == ref }
         &.commit_sha
+    end
+
+    sig { returns(T::Array[GitTagWithDetail]) }
+    def refs_for_tag_with_detail
+      @refs_for_tag_with_detail ||= T.let(parse_refs_for_tag_with_detail,
+                                          T.nilable(T::Array[GitTagWithDetail]))
+    end
+
+    sig { returns(T::Array[GitTagWithDetail]) }
+    def parse_refs_for_tag_with_detail
+      result_lines = []
+      return result_lines if upload_tag_with_detail.nil?
+
+      T.must(upload_tag_with_detail).lines.each do |line|
+        tag, detail = line.split(/\s+/, 2)
+        next unless tag && detail
+
+        result_lines << GitTagWithDetail.new(
+          tag: tag.strip,
+          release_date: detail.strip
+        )
+      end
+      result_lines
+    end
+
+    sig { params(uri: String).returns(String) }
+    def fetch_tags_with_detail(uri)
+      response_with_git = fetch_tags_with_detail_from_git_for(uri)
+      return response_with_git.body if response_with_git.status == 200
+
+      raise Dependabot::GitDependenciesNotReachable, [uri] unless uri.match?(KNOWN_HOSTS)
+
+      if response_with_git.status < 400
+        raise "Unexpected response: #{response_with_git.status} - #{response_with_git.body}"
+      end
+
+      if uri.match?(/github\.com/i)
+        response = response_with_git.data
+        response[:response_headers] = response[:headers] unless response.nil?
+        raise Octokit::Error.from_response(response)
+      end
+
+      raise "Server error at #{uri}: #{response_with_git.body}" if response_with_git.status >= 500
+
+      raise Dependabot::GitDependenciesNotReachable, [uri]
+    rescue Excon::Error::Socket, Excon::Error::Timeout
+      raise if uri.match?(KNOWN_HOSTS)
+
+      raise Dependabot::GitDependenciesNotReachable, [uri]
+    end
+
+    sig { params(ref: String).returns(Excon::Response) }
+    def ref_details_for_pinned_ref(ref)
+      Dependabot::RegistryClient.get(url: provider_url(ref))
     end
 
     private
@@ -259,6 +315,66 @@ module Dependabot
     def excon_defaults
       # Some git hosts are slow when returning a large number of tags
       SharedHelpers.excon_defaults(read_timeout: 20)
+    end
+
+    sig { returns(T.nilable(String)) }
+    def upload_tag_with_detail
+      @upload_tag_detail ||= T.let(fetch_tags_with_detail(url), T.nilable(String))
+    rescue Octokit::ClientError
+      raise Dependabot::GitDependenciesNotReachable, [url]
+    end
+
+    # Added method to fetch tags with their creation dates from a git repository. In case
+    # private registry is used, it will clone the repository and fetch tags with their creation dates.
+    sig { params(uri: String).returns(T.untyped) }
+    def fetch_tags_with_detail_from_git_for(uri)
+      uri_ending_with_git = uri
+      uri_ending_with_git += ".git" unless uri_ending_with_git.end_with?(".git") || skip_git_suffix(uri)
+
+      Dir.mktmpdir do |dir|
+        # Clone the repository into a temporary directory
+        clone_command = "git clone --bare #{uri_ending_with_git} #{dir}"
+        env = { "PATH" => ENV.fetch("PATH", nil), "GIT_TERMINAL_PROMPT" => "0" }
+        clone_command = SharedHelpers.escape_command(clone_command)
+
+        _stdout, stderr, process = Open3.capture3(env, clone_command)
+        return OpenStruct.new(body: stderr, status: 500) unless process.success?
+
+        # Change to the cloned repository directory
+        Dir.chdir(dir) do
+          # Fetch tags and their creation dates
+          tags_command = 'git for-each-ref --format="%(refname:short) %(creatordate:short)" refs/tags'
+          tags_stdout, stderr, process = Open3.capture3(env, tags_command)
+
+          return OpenStruct.new(body: stderr, status: 500) unless process.success?
+
+          # Parse and sort tags by creation date
+          tags = tags_stdout.lines.map do |line|
+            tag, date = line.strip.split(" ", 2)
+            { tag: tag, date: date }
+          end
+          sorted_tags = tags.sort_by { |tag| tag[:date] }
+
+          # Format the output as a string
+          formatted_output = sorted_tags.map { |tag| "#{tag[:tag]} #{tag[:date]}" }.join("\n")
+          return OpenStruct.new(body: formatted_output, status: 200)
+        end
+      end
+    rescue Errno::ENOENT => e # Thrown when `git` isn't installed
+      OpenStruct.new(body: e.message, status: 500)
+    end
+
+    sig do
+      params(ref: String).returns(String)
+    end
+    def provider_url(ref)
+      provider_url = url.gsub(/\.git$/, "")
+
+      api_url = {
+        github: provider_url.gsub("github.com", "api.github.com/repos")
+      }.freeze
+
+      "#{api_url[:github]}/commits?per_page=100&sha=#{ref}"
     end
   end
 end

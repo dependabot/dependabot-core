@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.IO;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -10,10 +11,9 @@ using NuGet.Versioning;
 using NuGetUpdater.Core.Analyze;
 using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Run.ApiModel;
+using NuGetUpdater.Core.Run.UpdateHandlers;
 using NuGetUpdater.Core.Updater;
 using NuGetUpdater.Core.Utilities;
-
-using static NuGetUpdater.Core.Utilities.EOLHandling;
 
 namespace NuGetUpdater.Core.Run;
 
@@ -47,17 +47,74 @@ public class RunWorker
     {
         var jobFileContent = await File.ReadAllTextAsync(jobFilePath.FullName);
         var jobWrapper = Deserialize(jobFileContent);
-        var result = await RunAsync(jobWrapper.Job, repoContentsPath, baseCommitSha);
-        var resultJson = JsonSerializer.Serialize(result, SerializerOptions);
-        await File.WriteAllTextAsync(outputFilePath.FullName, resultJson);
+        var experimentsManager = ExperimentsManager.GetExperimentsManager(jobWrapper.Job.Experiments);
+        var result = await RunAsync(jobWrapper.Job, repoContentsPath, baseCommitSha, experimentsManager);
+        if (experimentsManager.UseLegacyUpdateHandler)
+        {
+            // only the legacy handler writes this file
+            var resultJson = JsonSerializer.Serialize(result, SerializerOptions);
+            await File.WriteAllTextAsync(outputFilePath.FullName, resultJson);
+        }
     }
 
-    public Task<RunResult> RunAsync(Job job, DirectoryInfo repoContentsPath, string baseCommitSha)
+    public async Task<RunResult> RunAsync(Job job, DirectoryInfo repoContentsPath, string baseCommitSha, ExperimentsManager experimentsManager)
     {
-        return RunWithErrorHandlingAsync(job, repoContentsPath, baseCommitSha);
+        RunResult result;
+        if (experimentsManager.UseLegacyUpdateHandler)
+        {
+            result = await RunWithErrorHandlingAsync(job, repoContentsPath, baseCommitSha, experimentsManager);
+        }
+        else
+        {
+            await RunScenarioHandlersWithErrorHandlingAsync(job, repoContentsPath, baseCommitSha, experimentsManager);
+
+            // the group updater doesn't return this, so we provide an empty object
+            result = new RunResult()
+            {
+                Base64DependencyFiles = [],
+                BaseCommitSha = baseCommitSha,
+            };
+        }
+
+        return result;
     }
 
-    private async Task<RunResult> RunWithErrorHandlingAsync(Job job, DirectoryInfo repoContentsPath, string baseCommitSha)
+    private static readonly ImmutableArray<IUpdateHandler> UpdateHandlers =
+    [
+        GroupUpdateAllVersionsHandler.Instance,
+        RefreshGroupUpdatePullRequestHandler.Instance,
+        CreateSecurityUpdatePullRequestHandler.Instance,
+        RefreshSecurityUpdatePullRequestHandler.Instance,
+        RefreshVersionUpdatePullRequestHandler.Instance,
+    ];
+
+    public static IUpdateHandler GetUpdateHandler(Job job) =>
+        UpdateHandlers.FirstOrDefault(h => h.CanHandle(job)) ?? throw new InvalidOperationException("Unable to find appropriate update handler.");
+
+    private async Task RunScenarioHandlersWithErrorHandlingAsync(Job job, DirectoryInfo repoContentsPath, string baseCommitSha, ExperimentsManager experimentsManager)
+    {
+        JobErrorBase? error = null;
+
+        try
+        {
+            var handler = GetUpdateHandler(job);
+            _logger.Info($"Starting update job of type {handler.TagName}");
+            await handler.HandleAsync(job, repoContentsPath, baseCommitSha, _discoveryWorker, _analyzeWorker, _updaterWorker, _apiHandler, experimentsManager, _logger);
+        }
+        catch (Exception ex)
+        {
+            error = JobErrorBase.ErrorFromException(ex, _jobId, repoContentsPath.FullName);
+        }
+
+        if (error is not null)
+        {
+            await _apiHandler.RecordUpdateJobError(error);
+        }
+
+        await _apiHandler.MarkAsProcessed(new(baseCommitSha));
+    }
+
+    private async Task<RunResult> RunWithErrorHandlingAsync(Job job, DirectoryInfo repoContentsPath, string baseCommitSha, ExperimentsManager experimentsManager)
     {
         JobErrorBase? error = null;
         var currentDirectory = repoContentsPath.FullName; // used for error reporting below
@@ -71,7 +128,6 @@ public class RunWorker
         {
             MSBuildHelper.RegisterMSBuild(repoContentsPath.FullName, repoContentsPath.FullName, _logger);
 
-            var experimentsManager = ExperimentsManager.GetExperimentsManager(job.Experiments);
             var allDependencyFiles = new Dictionary<string, DependencyFile>();
             foreach (var directory in job.GetAllDirectories())
             {
@@ -109,57 +165,32 @@ public class RunWorker
     private async Task<RunResult> RunForDirectory(Job job, DirectoryInfo repoContentsPath, string repoDirectory, string baseCommitSha, ExperimentsManager experimentsManager)
     {
         var discoveryResult = await _discoveryWorker.RunAsync(repoContentsPath.FullName, repoDirectory);
+        _logger.ReportDiscovery(discoveryResult);
 
-        _logger.Info("Discovery JSON content:");
-        _logger.Info(JsonSerializer.Serialize(discoveryResult, DiscoveryWorker.SerializerOptions));
-
-        // TODO: report errors
+        if (discoveryResult.Error is not null)
+        {
+            // this is unrecoverable
+            await _apiHandler.RecordUpdateJobError(discoveryResult.Error);
+            return new()
+            {
+                Base64DependencyFiles = [],
+                BaseCommitSha = baseCommitSha,
+            };
+        }
 
         // report dependencies
-        var discoveredUpdatedDependencies = GetUpdatedDependencyListFromDiscovery(discoveryResult, repoContentsPath.FullName);
+        var discoveredUpdatedDependencies = GetUpdatedDependencyListFromDiscovery(discoveryResult);
         await _apiHandler.UpdateDependencyList(discoveredUpdatedDependencies);
 
         var incrementMetric = GetIncrementMetric(job);
         await _apiHandler.IncrementMetric(incrementMetric);
 
         // TODO: pull out relevant dependencies, then check each for updates and track the changes
-        var originalDependencyFileContents = new Dictionary<string, string>();
-        var originalDependencyFileEOFs = new Dictionary<string, EOLType>();
-        var originalDependencyFileBOMs = new Dictionary<string, bool>();
         var actualUpdatedDependencies = new List<ReportedDependency>();
 
         // track original contents for later handling
-        async Task TrackOriginalContentsAsync(string directory, string fileName)
-        {
-            var repoFullPath = Path.Join(directory, fileName).FullyNormalizedRootedPath();
-            var localFullPath = Path.Join(repoContentsPath.FullName, repoFullPath);
-            var content = await File.ReadAllTextAsync(localFullPath);
-            var rawContent = await File.ReadAllBytesAsync(localFullPath);
-            originalDependencyFileContents[repoFullPath] = content;
-            originalDependencyFileEOFs[repoFullPath] = content.GetPredominantEOL();
-            originalDependencyFileBOMs[repoFullPath] = rawContent.HasBOM();
-        }
-
-        foreach (var project in discoveryResult.Projects)
-        {
-            var projectDirectory = Path.GetDirectoryName(project.FilePath);
-            await TrackOriginalContentsAsync(discoveryResult.Path, project.FilePath);
-            foreach (var extraFile in project.ImportedFiles.Concat(project.AdditionalFiles))
-            {
-                var extraFilePath = Path.Join(projectDirectory, extraFile);
-                await TrackOriginalContentsAsync(discoveryResult.Path, extraFilePath);
-            }
-        }
-
-        var nonProjectFiles = new[]
-        {
-            discoveryResult.GlobalJson?.FilePath,
-            discoveryResult.DotNetToolsJson?.FilePath,
-        }.Where(f => f is not null).Cast<string>().ToArray();
-        foreach (var nonProjectFile in nonProjectFiles)
-        {
-            await TrackOriginalContentsAsync(discoveryResult.Path, nonProjectFile);
-        }
+        var tracker = new ModifiedFilesTracker(repoContentsPath);
+        await tracker.StartTrackingAsync(discoveryResult);
 
         // do update
         var updateOperationsPerformed = new List<UpdateOperationBase>();
@@ -201,17 +232,29 @@ public class RunWorker
 
             var dependencyInfo = GetDependencyInfo(job, dependency);
             var analysisResult = await _analyzeWorker.RunAsync(repoContentsPath.FullName, discoveryResult, dependencyInfo);
-            // TODO: log analysisResult
+            _logger.ReportAnalysis(analysisResult);
+
+            if (analysisResult.Error is not null)
+            {
+                await _apiHandler.RecordUpdateJobError(analysisResult.Error);
+                continue;
+            }
+
             if (analysisResult.CanUpdate)
             {
                 if (!job.UpdatingAPullRequest)
                 {
-                    var existingPullRequest = job.GetExistingPullRequestForDependency(analysisResult.UpdatedDependencies.First(d => d.Name.Equals(dependency.Name, StringComparison.OrdinalIgnoreCase)));
-                    if (existingPullRequest is not null)
+                    var updatedDependencyFromAnalysis = analysisResult.UpdatedDependencies
+                        .FirstOrDefault(d => d.Name.Equals(dependency.Name, StringComparison.OrdinalIgnoreCase));
+                    if (updatedDependencyFromAnalysis is not null)
                     {
-                        await SendApiMessage(new PullRequestExistsForLatestVersion(dependency.Name, analysisResult.UpdatedVersion));
-                        unhandledPullRequestDependenciesSet.RemoveWhere(handled => handled.Count == 1 && handled.Contains(dependency.Name));
-                        continue;
+                        var existingPullRequest = job.GetExistingPullRequestForDependencies([updatedDependencyFromAnalysis], considerVersions: true);
+                        if (existingPullRequest is not null)
+                        {
+                            await SendApiMessage(new PullRequestExistsForLatestVersion(dependency.Name, analysisResult.UpdatedVersion));
+                            unhandledPullRequestDependenciesSet.RemoveWhere(handled => handled.Count == 1 && handled.Contains(dependency.Name));
+                            continue;
+                        }
                     }
                 }
 
@@ -239,77 +282,30 @@ public class RunWorker
                     PreviousRequirements = previousDependency.Requirements,
                 };
 
+                var projectDiscovery = discoveryResult.GetProjectDiscoveryFromPath(updateOperation.ProjectPath);
                 var updateResult = await _updaterWorker.RunAsync(repoContentsPath.FullName, updateOperation.ProjectPath, dependency.Name, dependency.Version!, analysisResult.UpdatedVersion, isTransitive: dependency.IsTransitive);
-                // TODO: need to report if anything was actually updated
-                if (updateResult.Error is null)
+                if (updateResult.Error is not null)
+                {
+                    await _apiHandler.RecordUpdateJobError(updateResult.Error);
+                }
+                else
                 {
                     actualUpdatedDependencies.Add(updatedDependency);
                 }
 
-                updateOperationsPerformed.AddRange(updateResult.UpdateOperations);
+                var patchedUpdateOperations = PatchInOldVersions(updateResult.UpdateOperations, projectDiscovery);
+                updateOperationsPerformed.AddRange(patchedUpdateOperations);
             }
         }
 
         // create PR - we need to manually check file contents; we can't easily use `git status` in tests
-        var updatedDependencyFiles = new Dictionary<string, DependencyFile>();
-        async Task AddUpdatedFileIfDifferentAsync(string directory, string fileName)
-        {
-            var repoFullPath = Path.Join(directory, fileName).FullyNormalizedRootedPath();
-            var localFullPath = Path.GetFullPath(Path.Join(repoContentsPath.FullName, repoFullPath));
-            var originalContent = originalDependencyFileContents[repoFullPath];
-            var updatedContent = await File.ReadAllTextAsync(localFullPath);
-
-            updatedContent = updatedContent.SetEOL(originalDependencyFileEOFs[repoFullPath]);
-            var updatedRawContent = updatedContent.SetBOM(originalDependencyFileBOMs[repoFullPath]);
-            await File.WriteAllBytesAsync(localFullPath, updatedRawContent);
-
-            if (updatedContent != originalContent)
-            {
-                var reportedContent = updatedContent;
-                var encoding = "utf-8";
-                if (originalDependencyFileBOMs[repoFullPath])
-                {
-                    reportedContent = Convert.ToBase64String(updatedRawContent);
-                    encoding = "base64";
-                }
-
-                updatedDependencyFiles[localFullPath] = new DependencyFile()
-                {
-                    Name = Path.GetFileName(repoFullPath),
-                    Directory = Path.GetDirectoryName(repoFullPath)!.NormalizePathToUnix(),
-                    Content = reportedContent,
-                    ContentEncoding = encoding,
-                };
-            }
-        }
-
-        foreach (var project in discoveryResult.Projects)
-        {
-            await AddUpdatedFileIfDifferentAsync(discoveryResult.Path, project.FilePath);
-            var projectDirectory = Path.GetDirectoryName(project.FilePath);
-            foreach (var extraFile in project.ImportedFiles.Concat(project.AdditionalFiles))
-            {
-                var extraFilePath = Path.Join(projectDirectory, extraFile);
-                await AddUpdatedFileIfDifferentAsync(discoveryResult.Path, extraFilePath);
-            }
-        }
-
-        foreach (var nonProjectFile in nonProjectFiles)
-        {
-            await AddUpdatedFileIfDifferentAsync(discoveryResult.Path, nonProjectFile);
-        }
-
-        var updatedDependencyFileList = updatedDependencyFiles
-            .OrderBy(kvp => kvp.Key)
-            .Select(kvp => kvp.Value)
-            .ToArray();
-
+        var updatedDependencyFiles = await tracker.StopTrackingAsync();
         var normalizedUpdateOperationsPerformed = UpdateOperationBase.NormalizeUpdateOperationCollection(repoContentsPath.FullName, updateOperationsPerformed);
         var report = UpdateOperationBase.GenerateUpdateOperationReport(normalizedUpdateOperationsPerformed);
         _logger.Info(report);
 
         var sortedUpdatedDependencies = actualUpdatedDependencies.OrderBy(d => d.Name, StringComparer.OrdinalIgnoreCase).ToArray();
-        var resultMessage = GetPullRequestApiMessage(job, updatedDependencyFileList, sortedUpdatedDependencies, normalizedUpdateOperationsPerformed, baseCommitSha);
+        var resultMessage = GetPullRequestApiMessage(job, [.. updatedDependencyFiles], sortedUpdatedDependencies, normalizedUpdateOperationsPerformed, baseCommitSha);
         switch (resultMessage)
         {
             case ClosePullRequest close:
@@ -341,11 +337,11 @@ public class RunWorker
 
         var result = new RunResult()
         {
-            Base64DependencyFiles = originalDependencyFileContents.OrderBy(kvp => kvp.Key).Select(kvp =>
+            Base64DependencyFiles = tracker.OriginalDependencyFileContents.OrderBy(kvp => kvp.Key).Select(kvp =>
             {
                 var fullPath = kvp.Key.FullyNormalizedRootedPath();
                 var rawContent = Encoding.UTF8.GetBytes(kvp.Value);
-                if (originalDependencyFileBOMs[kvp.Key])
+                if (tracker.OriginalDependencyFileBOMs[kvp.Key])
                 {
                     rawContent = Encoding.UTF8.GetPreamble().Concat(rawContent).ToArray();
                 }
@@ -361,6 +357,22 @@ public class RunWorker
             BaseCommitSha = baseCommitSha,
         };
         return result;
+    }
+
+    internal static ImmutableArray<UpdateOperationBase> PatchInOldVersions(ImmutableArray<UpdateOperationBase> updateOperations, ProjectDiscoveryResult? projectDiscovery)
+    {
+        if (projectDiscovery is null)
+        {
+            return updateOperations;
+        }
+
+        var originalPackageVersions = projectDiscovery
+            .Dependencies
+            .ToDictionary(d => d.Name, d => d.Version is null ? null : NuGetVersion.Parse(d.Version), StringComparer.OrdinalIgnoreCase);
+        var patchedUpdateOperations = updateOperations
+            .Select(uo => uo with { OldVersion = originalPackageVersions.GetValueOrDefault(uo.DependencyName) })
+            .ToImmutableArray();
+        return patchedUpdateOperations;
     }
 
     private async Task SendApiMessage(MessageBase? message)
@@ -408,7 +420,7 @@ public class RunWorker
         if (existingPullRequest is null && updatedFiles.Length == 0)
         {
             // it's possible that we were asked to update a specific package, but it's no longer there; in that case find _that_ specific PR
-            var requestedUpdates = (job.Dependencies ?? []).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var requestedUpdates = job.Dependencies.ToHashSet(StringComparer.OrdinalIgnoreCase);
             existingPullRequest = existingPullRequests.FirstOrDefault(pr => pr.Item2.Select(d => d.DependencyName).All(requestedUpdates.Contains));
         }
 
@@ -464,6 +476,7 @@ public class RunWorker
                     CommitMessage = PullRequestTextGenerator.GetPullRequestCommitMessage(job, updateOperationsPerformed, dependencyGroupName: null),
                     PrTitle = PullRequestTextGenerator.GetPullRequestTitle(job, updateOperationsPerformed, dependencyGroupName: null),
                     PrBody = PullRequestTextGenerator.GetPullRequestBody(job, updateOperationsPerformed, dependencyGroupName: null),
+                    DependencyGroup = null,
                 };
             }
         }
@@ -613,7 +626,7 @@ public class RunWorker
                     // not vulnerable => no longer needed
                     var specificJobDependencies = job.SecurityAdvisories
                         .Select(a => a.DependencyName)
-                        .Concat(job.Dependencies ?? [])
+                        .Concat(job.Dependencies)
                         .ToHashSet(StringComparer.OrdinalIgnoreCase);
                     if (specificJobDependencies.Contains(dependency.Name))
                     {
@@ -627,7 +640,7 @@ public class RunWorker
             {
                 // not a security update, so only update if...
                 // ...we've been explicitly asked to update this
-                if ((job.Dependencies ?? []).Any(d => d.Equals(dependency.Name, StringComparison.OrdinalIgnoreCase)))
+                if (job.Dependencies.Any(d => d.Equals(dependency.Name, StringComparison.OrdinalIgnoreCase)))
                 {
                     return true;
                 }
@@ -683,7 +696,7 @@ public class RunWorker
         return dependencyInfo;
     }
 
-    internal static UpdatedDependencyList GetUpdatedDependencyListFromDiscovery(WorkspaceDiscoveryResult discoveryResult, string pathToContents)
+    internal static UpdatedDependencyList GetUpdatedDependencyListFromDiscovery(WorkspaceDiscoveryResult discoveryResult)
     {
         string GetFullRepoPath(string path)
         {

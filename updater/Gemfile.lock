@@ -1,177 +1,178 @@
 PATH
   remote: ../bun
   specs:
-    dependabot-bun (0.310.0)
-      dependabot-common (= 0.310.0)
+    dependabot-bun (0.317.0)
+      dependabot-common (= 0.317.0)
 
 PATH
   remote: ../bundler
   specs:
-    dependabot-bundler (0.310.0)
-      dependabot-common (= 0.310.0)
+    dependabot-bundler (0.317.0)
+      dependabot-common (= 0.317.0)
       parallel (~> 1.24)
 
 PATH
   remote: ../cargo
   specs:
-    dependabot-cargo (0.310.0)
-      dependabot-common (= 0.310.0)
+    dependabot-cargo (0.317.0)
+      dependabot-common (= 0.317.0)
 
 PATH
   remote: ../common
   specs:
-    dependabot-common (0.310.0)
+    dependabot-common (0.317.0)
       aws-sdk-codecommit (~> 1.28)
       aws-sdk-ecr (~> 1.5)
       bundler (>= 1.16, < 3.0.0)
-      commonmarker (>= 0.20.1, < 0.24.0)
-      docker_registry2 (~> 1.18.2)
-      excon (~> 0.109)
-      faraday (= 2.7.11)
-      faraday-retry (= 2.2.0)
-      gitlab (= 5.0.0)
-      json (< 2.7)
+      commonmarker (~> 0.23)
+      docker_registry2 (~> 1.18)
+      excon (~> 1.2)
+      faraday (~> 2.7)
+      faraday-retry (~> 2.2)
+      gitlab (~> 5.0)
+      json (< 2.12)
       nokogiri (~> 1.8)
-      octokit (>= 4.6, < 8.0)
+      octokit (~> 7.2)
       opentelemetry-api (~> 1.5)
       opentelemetry-logs-api (~> 0.2)
       opentelemetry-metrics-api (~> 0.3)
-      parser (>= 2.5, < 4.0)
+      ostruct (~> 0.6)
+      parser (~> 3.3)
       psych (~> 5.0)
-      sorbet-runtime (~> 0.5.11952)
-      stackprof (~> 0.2.16)
-      toml-rb (>= 1.1.2)
+      sorbet-runtime (~> 0.5)
+      stackprof (~> 0.2)
+      toml-rb (~> 4.0)
 
 PATH
   remote: ../composer
   specs:
-    dependabot-composer (0.310.0)
-      dependabot-common (= 0.310.0)
+    dependabot-composer (0.317.0)
+      dependabot-common (= 0.317.0)
 
 PATH
   remote: ../devcontainers
   specs:
-    dependabot-devcontainers (0.310.0)
-      dependabot-common (= 0.310.0)
+    dependabot-devcontainers (0.317.0)
+      dependabot-common (= 0.317.0)
 
 PATH
   remote: ../docker_compose
   specs:
-    dependabot-docker_compose (0.310.0)
-      dependabot-common (= 0.310.0)
-      dependabot-docker (= 0.310.0)
+    dependabot-docker_compose (0.317.0)
+      dependabot-common (= 0.317.0)
+      dependabot-docker (= 0.317.0)
 
 PATH
   remote: ../docker
   specs:
-    dependabot-docker (0.310.0)
-      dependabot-common (= 0.310.0)
+    dependabot-docker (0.317.0)
+      dependabot-common (= 0.317.0)
 
 PATH
   remote: ../dotnet_sdk
   specs:
-    dependabot-dotnet_sdk (0.310.0)
-      dependabot-common (= 0.310.0)
+    dependabot-dotnet_sdk (0.317.0)
+      dependabot-common (= 0.317.0)
 
 PATH
   remote: ../elm
   specs:
-    dependabot-elm (0.310.0)
-      dependabot-common (= 0.310.0)
+    dependabot-elm (0.317.0)
+      dependabot-common (= 0.317.0)
 
 PATH
   remote: ../git_submodules
   specs:
-    dependabot-git_submodules (0.310.0)
-      dependabot-common (= 0.310.0)
+    dependabot-git_submodules (0.317.0)
+      dependabot-common (= 0.317.0)
       parseconfig (~> 1.0, < 1.1.0)
 
 PATH
   remote: ../github_actions
   specs:
-    dependabot-github_actions (0.310.0)
-      dependabot-common (= 0.310.0)
+    dependabot-github_actions (0.317.0)
+      dependabot-common (= 0.317.0)
 
 PATH
   remote: ../go_modules
   specs:
-    dependabot-go_modules (0.310.0)
-      dependabot-common (= 0.310.0)
+    dependabot-go_modules (0.317.0)
+      dependabot-common (= 0.317.0)
 
 PATH
   remote: ../gradle
   specs:
-    dependabot-gradle (0.310.0)
-      dependabot-common (= 0.310.0)
-      dependabot-maven (= 0.310.0)
+    dependabot-gradle (0.317.0)
+      dependabot-common (= 0.317.0)
+      dependabot-maven (= 0.317.0)
 
 PATH
   remote: ../helm
   specs:
-    dependabot-helm (0.310.0)
-      dependabot-common (= 0.310.0)
-      dependabot-docker (= 0.310.0)
+    dependabot-helm (0.317.0)
+      dependabot-common (= 0.317.0)
+      dependabot-docker (= 0.317.0)
 
 PATH
   remote: ../hex
   specs:
-    dependabot-hex (0.310.0)
-      dependabot-common (= 0.310.0)
+    dependabot-hex (0.317.0)
+      dependabot-common (= 0.317.0)
 
 PATH
   remote: ../maven
   specs:
-    dependabot-maven (0.310.0)
-      dependabot-common (= 0.310.0)
+    dependabot-maven (0.317.0)
+      dependabot-common (= 0.317.0)
 
 PATH
   remote: ../npm_and_yarn
   specs:
-    dependabot-npm_and_yarn (0.310.0)
-      dependabot-common (= 0.310.0)
+    dependabot-npm_and_yarn (0.317.0)
+      dependabot-common (= 0.317.0)
 
 PATH
   remote: ../nuget
   specs:
-    dependabot-nuget (0.310.0)
-      dependabot-common (= 0.310.0)
+    dependabot-nuget (0.317.0)
+      dependabot-common (= 0.317.0)
       rubyzip (>= 2.3.2, < 3.0)
 
 PATH
   remote: ../pub
   specs:
-    dependabot-pub (0.310.0)
-      dependabot-common (= 0.310.0)
+    dependabot-pub (0.317.0)
+      dependabot-common (= 0.317.0)
 
 PATH
   remote: ../python
   specs:
-    dependabot-python (0.310.0)
-      dependabot-common (= 0.310.0)
+    dependabot-python (0.317.0)
+      dependabot-common (= 0.317.0)
 
 PATH
   remote: ../silent
   specs:
-    dependabot-silent (0.310.0)
-      dependabot-common (= 0.310.0)
+    dependabot-silent (0.317.0)
+      dependabot-common (= 0.317.0)
 
 PATH
   remote: ../swift
   specs:
-    dependabot-swift (0.310.0)
-      dependabot-common (= 0.310.0)
+    dependabot-swift (0.317.0)
+      dependabot-common (= 0.317.0)
 
 PATH
   remote: ../terraform
   specs:
-    dependabot-terraform (0.310.0)
-      dependabot-common (= 0.310.0)
+    dependabot-terraform (0.317.0)
+      dependabot-common (= 0.317.0)
 
 PATH
   remote: ../uv
   specs:
-    dependabot-uv (0.310.0)
-      dependabot-common (= 0.310.0)
+    dependabot-uv (0.317.0)
+      dependabot-common (= 0.317.0)
 
 GEM
   remote: https://rubygems.org/
@@ -194,7 +195,7 @@ GEM
       aws-sigv4 (~> 1.1)
     aws-sigv4 (1.8.0)
       aws-eventstream (~> 1, >= 1.0.2)
-    base64 (0.1.1)
+    base64 (0.2.0)
     bigdecimal (3.1.8)
     citrus (3.0.2)
     commonmarker (0.23.10)
@@ -212,7 +213,8 @@ GEM
       rest-client (>= 1.8.0)
     domain_name (0.5.20190701)
       unf (>= 0.0.5, < 1.0.0)
-    excon (0.109.0)
+    excon (1.2.5)
+      logger
     faraday (2.7.11)
       base64
       faraday-net_http (>= 2.0, < 3.1)
@@ -225,7 +227,8 @@ GEM
       ffi (>= 1.0.0)
       rake
     flamegraph (0.9.5)
-    gitlab (5.0.0)
+    gitlab (5.1.0)
+      base64 (~> 0.2.0)
       httparty (~> 0.20)
       terminal-table (>= 1.5.1)
     google-protobuf (4.28.2)
@@ -249,25 +252,26 @@ GEM
       csv
       mini_mime (>= 1.0.0)
       multi_xml (>= 0.5.2)
-    io-console (0.7.2)
+    io-console (0.8.0)
     irb (1.12.0)
       rdoc
       reline (>= 0.4.2)
     jmespath (1.6.2)
-    json (2.6.3)
+    json (2.9.1)
     language_server-protocol (3.17.0.3)
     llhttp-ffi (0.4.0)
       ffi-compiler (~> 1.0)
       rake (~> 13.0)
+    logger (1.7.0)
     mime-types (3.4.1)
       mime-types-data (~> 3.2015)
     mime-types-data (3.2022.0105)
     mini_mime (1.1.5)
-    mini_portile2 (2.8.6)
+    mini_portile2 (2.8.9)
     multi_xml (0.7.1)
       bigdecimal (~> 3.1)
     netrc (0.11.0)
-    nokogiri (1.16.5)
+    nokogiri (1.18.8)
       mini_portile2 (~> 2.8.2)
       racc (~> 1.4)
     octokit (7.2.0)
@@ -338,11 +342,12 @@ GEM
       opentelemetry-semantic_conventions
     opentelemetry-semantic_conventions (1.10.0)
       opentelemetry-api (~> 1.0)
+    ostruct (0.6.1)
     parallel (1.26.3)
     parallel_tests (4.7.1)
       parallel
     parseconfig (1.0.8)
-    parser (3.3.6.0)
+    parser (3.3.7.1)
       ast (~> 2.4.1)
       racc
     psych (5.1.2)
@@ -354,14 +359,14 @@ GEM
     rdoc (6.6.3.1)
       psych (>= 4.0.0)
     regexp_parser (2.9.2)
-    reline (0.5.2)
+    reline (0.6.1)
       io-console (~> 0.5)
     rest-client (2.1.0)
       http-accept (>= 1.7.0, < 2.0)
       http-cookie (>= 1.0.2, < 2.0)
       mime-types (>= 1.16, < 4.0)
       netrc (~> 0.8)
-    rexml (3.3.9)
+    rexml (3.4.1)
     rspec (3.13.0)
       rspec-core (~> 3.13.0)
       rspec-expectations (~> 3.13.0)
@@ -447,14 +452,14 @@ GEM
       addressable (>= 2.8.0)
       crack (>= 0.3.2)
       hashdiff (>= 0.4.0, < 2.0.0)
-    webrick (1.8.2)
+    webrick (1.9.1)
     zeitwerk (2.7.1)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
-  debug (~> 1.9.2)
+  debug (~> 1.9)
   dependabot-bun!
   dependabot-bundler!
   dependabot-cargo!
@@ -480,10 +485,10 @@ DEPENDENCIES
   dependabot-swift!
   dependabot-terraform!
   dependabot-uv!
-  flamegraph (~> 0.9.5)
+  flamegraph (~> 0.9)
   gpgme (~> 2.0)
   http (~> 5.1)
-  octokit (= 7.2.0)
+  octokit (~> 7.2)
   opentelemetry-exporter-otlp (~> 0.30)
   opentelemetry-exporter-otlp-logs (~> 0.2)
   opentelemetry-exporter-otlp-metrics (~> 0.4)
@@ -494,22 +499,22 @@ DEPENDENCIES
   opentelemetry-logs-sdk (~> 0.2)
   opentelemetry-metrics-sdk (~> 0.6)
   opentelemetry-sdk (~> 1.8)
-  rake (~> 13)
+  rake (~> 13.2)
   rspec (~> 3.12)
   rspec-its (~> 1.3)
-  rspec-sorbet (~> 1.9.2)
-  rubocop (~> 1.67.0)
-  rubocop-performance (~> 1.22.1)
-  rubocop-rspec (~> 2.29.1)
-  rubocop-sorbet (~> 0.8.7)
+  rspec-sorbet (~> 1.9)
+  rubocop (~> 1.67)
+  rubocop-performance (~> 1.22)
+  rubocop-rspec (~> 2.29)
+  rubocop-sorbet (~> 0.8)
   sentry-opentelemetry (~> 5.23)
   sentry-ruby (~> 5.23)
-  simplecov (~> 0.22.0)
-  terminal-table (~> 3.0.2)
-  turbo_tests (~> 2.2.0)
+  simplecov (~> 0.22)
+  terminal-table (~> 3.0)
+  turbo_tests (~> 2.2)
   vcr (~> 6.1)
   webmock (~> 3.18)
-  webrick (>= 1.7)
+  webrick (~> 1.9)
   zeitwerk (~> 2.7)
 
 CHECKSUMS
@@ -521,7 +526,7 @@ CHECKSUMS
   aws-sdk-core (3.190.3) sha256=f9b66775d79112bcffcd031aa2c97aac2b1819fa2d917b1c72557635260f3d41
   aws-sdk-ecr (1.68.0) sha256=86763b7291170dc6dbbf827f35d4142683622e68d7dff6719eeb98b13b677e80
   aws-sigv4 (1.8.0) sha256=84dd99768b91b93b63d1d8e53ee837cfd06ab402812772a7899a78f9f9117cbc
-  base64 (0.1.1) sha256=0c75d351a429b5176a476cd8a3740cff3277d2bac26a50b5c7456c266e9acd33
+  base64 (0.2.0) sha256=0f25e9b21a02a0cc0cea8ef92b2041035d39350946e8789c562b2d1a3da01507
   bigdecimal (3.1.8) sha256=a89467ed5a44f8ae01824af49cbc575871fa078332e8f77ea425725c1ffe27be
   citrus (3.0.2) sha256=4ec2412fc389ad186735f4baee1460f7900a8e130ffe3f216b30d4f9c684f650
   commonmarker (0.23.10) sha256=fdd312ae2bb4071b2f3085d4d7533cb9f8d9057a2eaa0760228a65bc3ed565d1
@@ -529,43 +534,43 @@ CHECKSUMS
   crack (1.0.0) sha256=c83aefdb428cdc7b66c7f287e488c796f055c0839e6e545fec2c7047743c4a49
   csv (3.3.0) sha256=0bbd1defdc31134abefed027a639b3723c2753862150f4c3ee61cab71b20d67d
   debug (1.9.2) sha256=48e026c0852c7a10c60263e2e527968308958e266231e36d64e3efcabec7e7fc
-  dependabot-bun (0.310.0)
-  dependabot-bundler (0.310.0)
-  dependabot-cargo (0.310.0)
-  dependabot-common (0.310.0)
-  dependabot-composer (0.310.0)
-  dependabot-devcontainers (0.310.0)
-  dependabot-docker (0.310.0)
-  dependabot-docker_compose (0.310.0)
-  dependabot-dotnet_sdk (0.310.0)
-  dependabot-elm (0.310.0)
-  dependabot-git_submodules (0.310.0)
-  dependabot-github_actions (0.310.0)
-  dependabot-go_modules (0.310.0)
-  dependabot-gradle (0.310.0)
-  dependabot-helm (0.310.0)
-  dependabot-hex (0.310.0)
-  dependabot-maven (0.310.0)
-  dependabot-npm_and_yarn (0.310.0)
-  dependabot-nuget (0.310.0)
-  dependabot-pub (0.310.0)
-  dependabot-python (0.310.0)
-  dependabot-silent (0.310.0)
-  dependabot-swift (0.310.0)
-  dependabot-terraform (0.310.0)
-  dependabot-uv (0.310.0)
+  dependabot-bun (0.317.0)
+  dependabot-bundler (0.317.0)
+  dependabot-cargo (0.317.0)
+  dependabot-common (0.317.0)
+  dependabot-composer (0.317.0)
+  dependabot-devcontainers (0.317.0)
+  dependabot-docker (0.317.0)
+  dependabot-docker_compose (0.317.0)
+  dependabot-dotnet_sdk (0.317.0)
+  dependabot-elm (0.317.0)
+  dependabot-git_submodules (0.317.0)
+  dependabot-github_actions (0.317.0)
+  dependabot-go_modules (0.317.0)
+  dependabot-gradle (0.317.0)
+  dependabot-helm (0.317.0)
+  dependabot-hex (0.317.0)
+  dependabot-maven (0.317.0)
+  dependabot-npm_and_yarn (0.317.0)
+  dependabot-nuget (0.317.0)
+  dependabot-pub (0.317.0)
+  dependabot-python (0.317.0)
+  dependabot-silent (0.317.0)
+  dependabot-swift (0.317.0)
+  dependabot-terraform (0.317.0)
+  dependabot-uv (0.317.0)
   diff-lcs (1.5.1) sha256=273223dfb40685548436d32b4733aa67351769c7dea621da7d9dd4813e63ddfe
   docile (1.4.0) sha256=5f1734bde23721245c20c3d723e76c104208e1aa01277a69901ce770f0ebb8d3
   docker_registry2 (1.18.2) sha256=2ace909110fbca29d69dd1cdec99f555024aa6f6577798638139c8e8e556910f
   domain_name (0.5.20190701) sha256=000a600454cb4a344769b2f10b531765ea7bd3a304fe47ed12e5ca1eab969851
-  excon (0.109.0) sha256=bda092e866d77089a41f4791b221e0cb96c48ef981db96ad1dcc66fae5e3b5ce
+  excon (1.2.5) sha256=ca040bb61bc0059968f34a17115a00d2db8562e3c0c5c5c7432072b551c85a9d
   faraday (2.7.11) sha256=85dbf6bb776c66d2a03394d8fe535f90cb1c875e3c6ab9bb85d26ca13597c76e
   faraday-net_http (3.0.2) sha256=6882929abed8094e1ee30344a3369e856fe34530044630d1f652bf70ebd87e8d
   faraday-retry (2.2.0) sha256=80824a5454dd0ce7d8074013454d163569b909001a64bdb3499c9968df4f41c5
   ffi (1.15.5) sha256=6f2ed2fa68047962d6072b964420cba91d82ce6fa8ee251950c17fca6af3c2a0
   ffi-compiler (1.0.1) sha256=019f389b078a2fec9de7f4f65771095f80a447e34436b4588bcb629e2a564c30
   flamegraph (0.9.5) sha256=a683020637ffa0e14a72640fa41babf14d926bfeaed87e31907cfd06ab2de8dc
-  gitlab (5.0.0) sha256=ad0836386555bd228cbc4fe6442d12354562141229f72f668027a92fdd33800d
+  gitlab (5.1.0) sha256=021c27807a98f379c0cfeda459327c026d3756dbd6531dc1479f0e3df03572c7
   google-protobuf (4.28.2) sha256=6841bb4566bc33fc2d59b4dd28bfd9308fc528545f21722e9f6e6fa566289c29
   googleapis-common-protos-types (1.16.0) sha256=94655d1aeb9f3cb2da6b58affb131562851a8d89b69273fac84570f505b3d1f7
   gpgme (2.0.24) sha256=53eccd7042abb4fd5c78f30bc9ed075b1325e6450eab207f2f6a1e7e28ae3b64
@@ -575,19 +580,20 @@ CHECKSUMS
   http-cookie (1.0.5) sha256=73756d46c7dbdc7023deecdb8a171348ea95a1b99810b31cfe8b4fb4e9a6318f
   http-form_data (2.3.0) sha256=cc4eeb1361d9876821e31d7b1cf0b68f1cf874b201d27903480479d86448a5f3
   httparty (0.22.0) sha256=78652a5c9471cf0093d3b2083c2295c9c8f12b44c65112f1846af2b71430fa6c
-  io-console (0.7.2) sha256=f0dccff252f877a4f60d04a4dc6b442b185ebffb4b320ab69212a92b48a7a221
+  io-console (0.8.0) sha256=cd6a9facbc69871d69b2cb8b926fc6ea7ef06f06e505e81a64f14a470fddefa2
   irb (1.12.0) sha256=07634937fbb7d28d07e46da50d0aa43b4d2f7258174d08de4e32dfb57c10539d
   jmespath (1.6.2) sha256=238d774a58723d6c090494c8879b5e9918c19485f7e840f2c1c7532cf84ebcb1
-  json (2.6.3) sha256=86aaea16adf346a2b22743d88f8dcceeb1038843989ab93cda44b5176c845459
+  json (2.9.1) sha256=d2bdef4644052fad91c1785d48263756fe32fcac08b96a20bb15840e96550d11
   language_server-protocol (3.17.0.3) sha256=3d5c58c02f44a20d972957a9febe386d7e7468ab3900ce6bd2b563dd910c6b3f
   llhttp-ffi (0.4.0) sha256=e5f7327db3cf8007e648342ef76347d6e0ae545a8402e519cca9c886eb37b001
+  logger (1.7.0) sha256=196edec7cc44b66cfb40f9755ce11b392f21f7967696af15d274dde7edff0203
   mime-types (3.4.1) sha256=6bcf8b0e656b6ae9977bdc1351ef211d0383252d2f759a59ef4bcf254542fc46
   mime-types-data (3.2022.0105) sha256=d8c401ba9ea8b648b7145b90081789ec714e91fd625d82c5040079c5ea696f00
   mini_mime (1.1.5) sha256=8681b7e2e4215f2a159f9400b5816d85e9d8c6c6b491e96a12797e798f8bccef
-  mini_portile2 (2.8.6) sha256=4e2ab09b924906fd42c0b6eb72816db6a435d0404e9cbdcc5d722c133b493991
+  mini_portile2 (2.8.9) sha256=0cd7c7f824e010c072e33f68bc02d85a00aeb6fce05bb4819c03dfd3c140c289
   multi_xml (0.7.1) sha256=4fce100c68af588ff91b8ba90a0bb3f0466f06c909f21a32f4962059140ba61b
   netrc (0.11.0) sha256=de1ce33da8c99ab1d97871726cba75151113f117146becbe45aa85cb3dabee3f
-  nokogiri (1.16.5) sha256=ec36162c68984fa0a90a5c4ae7ab7759460639e716cc1ce75f34c3cb54158ad2
+  nokogiri (1.18.8) sha256=8c7464875d9ca7f71080c24c0db7bcaa3940e8be3c6fc4bcebccf8b9a0016365
   octokit (7.2.0) sha256=7032d968d03177ee7a29e3bd4782fc078215cca4743db0dfc66a49feb9411907
   opentelemetry-api (1.5.0) sha256=8dcc33e7aba70b1da630065ce0db3d6f50cb8ebd2017383209739439025ea997
   opentelemetry-common (0.22.0) sha256=ce5e96a0f838d67eb70a1d32e02bdbe7b8f41767bc71994d73b299a8b0c5878d
@@ -606,10 +612,11 @@ CHECKSUMS
   opentelemetry-registry (0.3.0) sha256=116ab6114a706340900718298c126f720e50b1ef3cfdbe5997611ff232fe6822
   opentelemetry-sdk (1.8.0) sha256=fad979b4a6c7ad5b2f9f2bfde77ab5c0c6a9b81d5a6458becf5957e3fa371df7
   opentelemetry-semantic_conventions (1.10.0) sha256=13d24c1071736004a6c09113ee9fe163a25daa0defe6ab279a42cac7b92b1b76
+  ostruct (0.6.1) sha256=09a3fb7ecc1fa4039f25418cc05ae9c82bd520472c5c6a6f515f03e4988cb817
   parallel (1.26.3) sha256=d86babb7a2b814be9f4b81587bf0b6ce2da7d45969fab24d8ae4bf2bb4d4c7ef
   parallel_tests (4.7.1) sha256=98ad977f5e5a28df77c0364504bdea21f0a2a9ea86eae238668fdfec341ab860
   parseconfig (1.0.8) sha256=b86e117fcb635eb850b6dbae2454fc7a5a7b3767482951a07a9eb06f667a222f
-  parser (3.3.6.0) sha256=25d4e67cc4f0f7cab9a2ae1f38e2005b6904d2ea13c34734511d0faad038bc3b
+  parser (3.3.7.1) sha256=7dbe61618025519024ac72402a6677ead02099587a5538e84371b76659e6aca1
   psych (5.1.2) sha256=337322f58fc2bf24827d2b9bd5ab595f6a72971867d151bb39980060ea40a368
   public_suffix (6.0.1) sha256=61d44e1cab5cbbbe5b31068481cf16976dd0dc1b6b07bd95617ef8c5e3e00c6f
   racc (1.8.1) sha256=4a7f6929691dbec8b5209a0b373bc2614882b55fc5d2e447a21aaa691303d62f
@@ -617,9 +624,9 @@ CHECKSUMS
   rake (13.2.1) sha256=46cb38dae65d7d74b6020a4ac9d48afed8eb8149c040eccf0523bec91907059d
   rdoc (6.6.3.1) sha256=39f7b749229ab5ad9d21c81586151c1dd7a549fa8be4070ee09b524f9c656345
   regexp_parser (2.9.2) sha256=5a27e767ad634f8a4b544520d5cd28a0db7aa1198a5d7c9d7e11d7b3d9066446
-  reline (0.5.2) sha256=03d49a8074ebcde3df6f9abc0875299242775bdacc4e8cdb5d5dbd3d453c8e77
+  reline (0.6.1) sha256=1afcc9d7cb1029cdbe780d72f2f09251ce46d3780050f3ec39c3ccc6b60675fb
   rest-client (2.1.0) sha256=35a6400bdb14fae28596618e312776c158f7ebbb0ccad752ff4fa142bf2747e3
-  rexml (3.3.9) sha256=d71875b85299f341edf47d44df0212e7658cbdf35aeb69cefdb63f57af3137c9
+  rexml (3.4.1) sha256=c74527a9a0a04b4ec31dbe0dc4ed6004b960af943d8db42e539edde3a871abca
   rspec (3.13.0) sha256=d490914ac1d5a5a64a0e1400c1d54ddd2a501324d703b8cfe83f458337bab993
   rspec-core (3.13.0) sha256=557792b4e88da883d580342b263d9652b6a10a12d5bda9ef967b01a48f15454c
   rspec-expectations (3.13.1) sha256=814cf8dadc797b00be55a84d7bc390c082735e5c914e62cbe8d0e19774b74200
@@ -655,8 +662,8 @@ CHECKSUMS
   unicode-display_width (2.6.0) sha256=12279874bba6d5e4d2728cef814b19197dbb10d7a7837a869bab65da943b7f5a
   vcr (6.3.1) sha256=37b56e157e720446a3f4d2d39919cabef8cb7b6c45936acffd2ef8229fec03ed
   webmock (3.24.0) sha256=be01357f6fc773606337ca79f3ba332b7d52cbe5c27587671abc0572dbec7122
-  webrick (1.8.2) sha256=431746a349199546ff9dd272cae10849c865f938216e41c402a6489248f12f21
+  webrick (1.9.1) sha256=b42d3c94f166f3fb73d87e9b359def9b5836c426fc8beacf38f2184a21b2a989
   zeitwerk (2.7.1) sha256=0945986050e4907140895378e74df1fe882a2271ed087cc6c6d6b00d415a2756
 
 BUNDLED WITH
-   2.6.3
+   2.6.9

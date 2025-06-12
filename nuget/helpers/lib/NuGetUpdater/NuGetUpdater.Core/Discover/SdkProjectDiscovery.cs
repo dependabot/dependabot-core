@@ -1,9 +1,11 @@
 using System.Collections.Immutable;
+using System.Text.Json;
 using System.Xml.Linq;
 using System.Xml.XPath;
 
 using Microsoft.Build.Logging.StructuredLogger;
 
+using NuGet.Frameworks;
 using NuGet.Versioning;
 
 using NuGetUpdater.Core.Utilities;
@@ -39,6 +41,8 @@ internal static class SdkProjectDiscovery
     // these packages are resolved during restore, but aren't really updatable and shouldn't be reported as dependencies
     private static readonly HashSet<string> NonReportedPackgeNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     {
+        "Microsoft.NETCore.Platforms",
+        "Microsoft.NETCore.Targets",
         "NETStandard.Library"
     };
 
@@ -83,6 +87,9 @@ internal static class SdkProjectDiscovery
 
         Dictionary<string, Dictionary<string, Dictionary<string, string>>> packagesReplacedBySdkPerProject = new(PathComparer.Instance);
         //    projectPath                tfm        packageName  packageVersion
+
+        Dictionary<string, Dictionary<string, HashSet<string>>> packageDependencies = new(PathComparer.Instance);
+        //    projectPath                tfm  packageNames
 
         Dictionary<string, Dictionary<string, string>> resolvedProperties = new(PathComparer.Instance);
         //    projectPath       propertyName  propertyValue
@@ -228,6 +235,28 @@ internal static class SdkProjectDiscovery
                                         }
                                     }
                                 }
+
+                                // track all referenced projects in case they have no assemblies and can't be otherwise reported
+                                if (addItem.Name.Equals("PackageDependencies", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    var projectEvaluation = GetNearestProjectEvaluation(node);
+                                    if (projectEvaluation is not null)
+                                    {
+                                        var specificPackageDeps = packageDependencies.GetOrAdd(projectEvaluation.ProjectFile, () => new(StringComparer.OrdinalIgnoreCase));
+                                        var tfm = GetPropertyValueFromProjectEvaluation(projectEvaluation, "TargetFramework");
+                                        if (tfm is not null)
+                                        {
+                                            var packagesByTfm = specificPackageDeps.GetOrAdd(tfm, () => new(StringComparer.OrdinalIgnoreCase));
+                                            foreach (var package in addItem.Children.OfType<Item>())
+                                            {
+                                                if (!NonReportedPackgeNames.Contains(package.Name))
+                                                {
+                                                    packagesByTfm.Add(package.Name);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
                             break;
                         case Target target when target.Name == "_HandlePackageFileConflicts":
@@ -330,7 +359,7 @@ internal static class SdkProjectDiscovery
         }
 
         // and done
-        var projectDiscoveryResults = BuildResults(
+        var projectDiscoveryResults = await BuildResults(
             repoRootPath,
             workspacePath,
             packagesPerProject,
@@ -338,6 +367,7 @@ internal static class SdkProjectDiscovery
             packagesReplacedBySdkPerProject,
             topLevelPackagesPerProject,
             resolvedProperties,
+            packageDependencies,
             referencedProjects,
             importedFiles,
             additionalFiles
@@ -345,7 +375,7 @@ internal static class SdkProjectDiscovery
         return projectDiscoveryResults;
     }
 
-    private static ImmutableArray<ProjectDiscoveryResult> BuildResults(
+    private static async Task<ImmutableArray<ProjectDiscoveryResult>> BuildResults(
         string repoRootPath,
         string workspacePath,
         Dictionary<string, Dictionary<string, Dictionary<string, string>>> packagesPerProject,
@@ -353,13 +383,14 @@ internal static class SdkProjectDiscovery
         Dictionary<string, Dictionary<string, Dictionary<string, string>>> packagesReplacedBySdkPerProject,
         Dictionary<string, Dictionary<string, HashSet<string>>> topLevelPackagesPerProject,
         Dictionary<string, Dictionary<string, string>> resolvedProperties,
+        Dictionary<string, Dictionary<string, HashSet<string>>> packageDependencies,
         Dictionary<string, HashSet<string>> referencedProjects,
         Dictionary<string, HashSet<string>> importedFiles,
         Dictionary<string, HashSet<string>> additionalFiles
     )
     {
         var projectDiscoveryResults = new List<ProjectDiscoveryResult>();
-        foreach (var projectPath in packagesPerProject.Keys.OrderBy(p => p)) //packagesPerProject.Keys.OrderBy(p => p).Select(projectPath =>
+        foreach (var projectPath in packagesPerProject.Keys.OrderBy(p => p))
         {
             // gather some project-level information
             var packagesByTfm = packagesPerProject[projectPath];
@@ -400,18 +431,99 @@ internal static class SdkProjectDiscovery
                 .SelectMany(kvp => kvp.Value)
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
+            var propertiesForProject = resolvedProperties.GetOrAdd(projectPath, () => new(StringComparer.OrdinalIgnoreCase));
+            var assetsJson = new Lazy<JsonElement?>(() =>
+            {
+                if (propertiesForProject.TryGetValue("ProjectAssetsFile", out var assetsFilePath))
+                {
+                    var assetsContent = File.ReadAllText(assetsFilePath);
+                    var assets = JsonDocument.Parse(assetsContent).RootElement;
+                    return assets;
+                }
+
+                return null;
+            });
+
             // create dependencies
             var tfms = packagesByTfm.Keys.OrderBy(tfm => tfm).ToImmutableArray();
-            var dependencies = tfms.SelectMany(tfm =>
+            var groupedDependencies = new Dictionary<string, Dependency>(StringComparer.OrdinalIgnoreCase);
+            foreach (var tfm in tfms)
             {
-                return packagesByTfm[tfm].Keys.OrderBy(p => p).Select(packageName =>
+                var parsedTfm = NuGetFramework.Parse(tfm);
+                var packages = packagesByTfm[tfm];
+
+                // augment with any packages that might not have reported assemblies
+                var assetsPackageVersions = new Lazy<Dictionary<string, string>>(() =>
                 {
-                    var packageVersion = packagesByTfm[tfm][packageName]!;
+                    var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                    if (assetsJson.Value is { } assets &&
+                        assets.TryGetProperty("targets", out var tfmObjects))
+                    {
+                        foreach (var tfmObject in tfmObjects.EnumerateObject())
+                        {
+                            // TFM might have a RID suffix after a slash that we can't parse
+                            var tfmParts = tfmObject.Name.Split('/');
+                            var reportedTargetFramework = NuGetFramework.Parse(tfmParts[0]);
+                            if (reportedTargetFramework == parsedTfm)
+                            {
+                                foreach (var packageObject in tfmObject.Value.EnumerateObject())
+                                {
+                                    var parts = packageObject.Name.Split('/');
+                                    if (parts.Length == 2)
+                                    {
+                                        var packageName = parts[0];
+                                        var packageVersion = parts[1];
+                                        result[packageName] = packageVersion;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    return result;
+                });
+                var packageDepsForProject = packageDependencies.GetOrAdd(projectPath, () => new(StringComparer.OrdinalIgnoreCase));
+                var packageDepsForTfm = packageDepsForProject.GetOrAdd(tfm, () => new(StringComparer.OrdinalIgnoreCase));
+                foreach (var packageDepName in packageDepsForTfm)
+                {
+                    if (packages.ContainsKey(packageDepName))
+                    {
+                        // we already know about this
+                        continue;
+                    }
+
+                    // otherwise find the corresponding version through project.assets.json
+                    if (assetsPackageVersions.Value.TryGetValue(packageDepName, out var packageDepVersion))
+                    {
+                        packages[packageDepName] = packageDepVersion;
+                    }
+                }
+
+                foreach (var package in packages)
+                {
+                    var packageName = package.Key;
+                    var packageVersion = package.Value;
                     var isTopLevel = topLevelPackageNames.Contains(packageName);
                     var dependencyType = isTopLevel ? DependencyType.PackageReference : DependencyType.Unknown;
-                    return new Dependency(packageName, packageVersion, dependencyType, TargetFrameworks: [tfm], IsDirect: isTopLevel, IsTransitive: !isTopLevel);
-                });
-            }).ToImmutableArray();
+                    var combinedTfms = new HashSet<string>([tfm], StringComparer.OrdinalIgnoreCase);
+                    if (groupedDependencies.TryGetValue(packageName, out var existingDependency) &&
+                        existingDependency.Version == packageVersion &&
+                        existingDependency.Type == dependencyType &&
+                        existingDependency.TargetFrameworks is not null)
+                    {
+                        // same dependency, combine tfms
+                        combinedTfms.AddRange(existingDependency.TargetFrameworks);
+                    }
+
+                    var normalizedTfms = combinedTfms.OrderBy(t => t).ToImmutableArray();
+                    groupedDependencies[package.Key] = new Dependency(packageName, packageVersion, dependencyType, TargetFrameworks: normalizedTfms, IsDirect: isTopLevel, IsTransitive: !isTopLevel);
+                }
+            }
+
+            var dependencies = groupedDependencies.Values
+                .OrderBy(d => d.Name)
+                .ThenBy(d => d.Version)
+                .ToImmutableArray();
 
             // others
             var properties = resolvedProperties[projectPath]
