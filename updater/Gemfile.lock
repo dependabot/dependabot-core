@@ -24,7 +24,7 @@ PATH
       aws-sdk-codecommit (~> 1.28)
       aws-sdk-ecr (~> 1.5)
       bundler (>= 1.16, < 3.0.0)
-      commonmarker (~> 0.23)
+      commonmarker (~> 2.3)
       docker_registry2 (~> 1.18)
       excon (~> 1.2)
       faraday (~> 2.7)
@@ -196,9 +196,10 @@ GEM
     aws-sigv4 (1.8.0)
       aws-eventstream (~> 1, >= 1.0.2)
     base64 (0.2.0)
-    bigdecimal (3.1.8)
+    bigdecimal (3.2.2)
     citrus (3.0.2)
-    commonmarker (0.23.10)
+    commonmarker (2.3.0)
+      rb_sys (~> 0.9)
     concurrent-ruby (1.2.3)
     crack (1.0.0)
       bigdecimal
@@ -231,10 +232,10 @@ GEM
       base64 (~> 0.2.0)
       httparty (~> 0.20)
       terminal-table (>= 1.5.1)
-    google-protobuf (4.28.2)
+    google-protobuf (4.31.1)
       bigdecimal
       rake (>= 13)
-    googleapis-common-protos-types (1.16.0)
+    googleapis-common-protos-types (1.20.0)
       google-protobuf (>= 3.18, < 5.a)
     gpgme (2.0.24)
       mini_portile2 (~> 2.7)
@@ -355,7 +356,10 @@ GEM
     public_suffix (6.0.1)
     racc (1.8.1)
     rainbow (3.1.1)
-    rake (13.2.1)
+    rake (13.3.0)
+    rake-compiler-dock (1.9.1)
+    rb_sys (0.9.116)
+      rake-compiler-dock (= 1.9.1)
     rdoc (6.6.3.1)
       psych (>= 4.0.0)
     regexp_parser (2.9.2)
@@ -527,9 +531,9 @@ CHECKSUMS
   aws-sdk-ecr (1.68.0) sha256=86763b7291170dc6dbbf827f35d4142683622e68d7dff6719eeb98b13b677e80
   aws-sigv4 (1.8.0) sha256=84dd99768b91b93b63d1d8e53ee837cfd06ab402812772a7899a78f9f9117cbc
   base64 (0.2.0) sha256=0f25e9b21a02a0cc0cea8ef92b2041035d39350946e8789c562b2d1a3da01507
-  bigdecimal (3.1.8) sha256=a89467ed5a44f8ae01824af49cbc575871fa078332e8f77ea425725c1ffe27be
+  bigdecimal (3.2.2) sha256=39085f76b495eb39a79ce07af716f3a6829bc35eb44f2195e2753749f2fa5adc
   citrus (3.0.2) sha256=4ec2412fc389ad186735f4baee1460f7900a8e130ffe3f216b30d4f9c684f650
-  commonmarker (0.23.10) sha256=fdd312ae2bb4071b2f3085d4d7533cb9f8d9057a2eaa0760228a65bc3ed565d1
+  commonmarker (2.3.0) sha256=74fb85e4ae59a9fc166dd1813ad791805d09dec1a4e79c81a7be0a6a8dc5dc63
   concurrent-ruby (1.2.3) sha256=82fdd3f8a0816e28d513e637bb2b90a45d7b982bdf4f3a0511722d2e495801e2
   crack (1.0.0) sha256=c83aefdb428cdc7b66c7f287e488c796f055c0839e6e545fec2c7047743c4a49
   csv (3.3.0) sha256=0bbd1defdc31134abefed027a639b3723c2753862150f4c3ee61cab71b20d67d
@@ -571,8 +575,8 @@ CHECKSUMS
   ffi-compiler (1.0.1) sha256=019f389b078a2fec9de7f4f65771095f80a447e34436b4588bcb629e2a564c30
   flamegraph (0.9.5) sha256=a683020637ffa0e14a72640fa41babf14d926bfeaed87e31907cfd06ab2de8dc
   gitlab (5.1.0) sha256=021c27807a98f379c0cfeda459327c026d3756dbd6531dc1479f0e3df03572c7
-  google-protobuf (4.28.2) sha256=6841bb4566bc33fc2d59b4dd28bfd9308fc528545f21722e9f6e6fa566289c29
-  googleapis-common-protos-types (1.16.0) sha256=94655d1aeb9f3cb2da6b58affb131562851a8d89b69273fac84570f505b3d1f7
+  google-protobuf (4.31.1) sha256=022bc82931a0860a7f2ace41bd48e904c8e65032c1d5eefc33294b5edf9741f8
+  googleapis-common-protos-types (1.20.0) sha256=5e374b06bcfc7e13556e7c0d87b99f1fa3d42de6396a1de3d8fc13aefb4dd07f
   gpgme (2.0.24) sha256=53eccd7042abb4fd5c78f30bc9ed075b1325e6450eab207f2f6a1e7e28ae3b64
   hashdiff (1.1.1) sha256=c7966316726e0ceefe9f5c6aef107ebc3ccfef8b6db55fe3934f046b2cf0936a
   http (5.1.1) sha256=fcaec14a4f82de6d2f9cb978c07326814c6c2b42b8974f6ec166ff19c645ebaf
@@ -621,7 +625,9 @@ CHECKSUMS
   public_suffix (6.0.1) sha256=61d44e1cab5cbbbe5b31068481cf16976dd0dc1b6b07bd95617ef8c5e3e00c6f
   racc (1.8.1) sha256=4a7f6929691dbec8b5209a0b373bc2614882b55fc5d2e447a21aaa691303d62f
   rainbow (3.1.1) sha256=039491aa3a89f42efa1d6dec2fc4e62ede96eb6acd95e52f1ad581182b79bc6a
-  rake (13.2.1) sha256=46cb38dae65d7d74b6020a4ac9d48afed8eb8149c040eccf0523bec91907059d
+  rake (13.3.0) sha256=96f5092d786ff412c62fde76f793cc0541bd84d2eb579caa529aa8a059934493
+  rake-compiler-dock (1.9.1) sha256=e73720a29aba9c114728ce39cc0d8eef69ba61d88e7978c57bac171724cd4d53
+  rb_sys (0.9.116) sha256=c879891018535d4362455197065ea580541b10ffdfa940bec512ec1dd9a7def4
   rdoc (6.6.3.1) sha256=39f7b749229ab5ad9d21c81586151c1dd7a549fa8be4070ee09b524f9c656345
   regexp_parser (2.9.2) sha256=5a27e767ad634f8a4b544520d5cd28a0db7aa1198a5d7c9d7e11d7b3d9066446
   reline (0.6.1) sha256=1afcc9d7cb1029cdbe780d72f2f09251ce46d3780050f3ec39c3ccc6b60675fb

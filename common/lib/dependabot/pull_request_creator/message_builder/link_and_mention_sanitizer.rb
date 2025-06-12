@@ -1,4 +1,4 @@
-# typed: strong
+# typed: strict
 # frozen_string_literal: true
 
 require "commonmarker"
@@ -30,12 +30,19 @@ module Dependabot
         MARKDOWN_REGEX = /\[(.+?)\]\(([^)]+)\)|\[(.+?)\]|\A#+\s+([^\s].*)/
 
         COMMONMARKER_OPTIONS = T.let(
-          %i(GITHUB_PRE_LANG FULL_INFO_STRING).freeze,
-          T::Array[Symbol]
+          { github_pre_lang: true, full_info_string: true }.freeze,
+          T::Hash[Symbol, TrueClass]
         )
         COMMONMARKER_EXTENSIONS = T.let(
-          %i(table tasklist strikethrough autolink tagfilter).freeze,
-          T::Array[Symbol]
+          {
+            autolink: true,
+            header_ids: nil,
+            strikethrough: true,
+            table: true,
+            tagfilter: true,
+            tasklist: true
+          }.freeze,
+          T::Hash[Symbol, TrueClass]
         )
 
         sig { returns(T.nilable(String)) }
@@ -48,30 +55,38 @@ module Dependabot
 
         sig { params(text: String, unsafe: T::Boolean, format_html: T::Boolean).returns(String) }
         def sanitize_links_and_mentions(text:, unsafe: false, format_html: true)
-          doc = CommonMarker.render_doc(
-            text, :LIBERAL_HTML_TAG, COMMONMARKER_EXTENSIONS
-          )
+          doc = Commonmarker.parse(text, options: { render: COMMONMARKER_OPTIONS })
 
           sanitize_team_mentions(doc)
           sanitize_mentions(doc)
           sanitize_links(doc)
           sanitize_nwo_text(doc)
 
-          render_options = if text.match?(MARKDOWN_REGEX)
-                             COMMONMARKER_OPTIONS
-                           else
-                             COMMONMARKER_OPTIONS + [:HARDBREAKS]
-                           end
+          render_options = COMMONMARKER_OPTIONS.dup
+          render_options[:hardbreaks] = true if text.match?(MARKDOWN_REGEX)
+          render_options[:unsafe] = true if unsafe
 
-          mode = unsafe ? :UNSAFE : :DEFAULT
-          return doc.to_commonmark([mode] + render_options) unless format_html
+          unless format_html
+            return doc.to_commonmark(
+              options: {
+                extension: COMMONMARKER_EXTENSIONS,
+                render: render_options
+              }
+            )
+          end
 
-          doc.to_html(([mode] + render_options), COMMONMARKER_EXTENSIONS)
+          doc.to_html(
+            options: {
+              extension: COMMONMARKER_EXTENSIONS,
+              render: render_options
+            },
+            plugins: { syntax_highlighter: nil }
+          )
         end
 
         private
 
-        sig { params(doc: CommonMarker::Node).void }
+        sig { params(doc: Commonmarker::Node).void }
         def sanitize_mentions(doc)
           doc.walk do |node|
             if node.type == :text &&
@@ -96,7 +111,7 @@ module Dependabot
         # This is because there are ecosystems that have packages that follow the same pattern
         # (e.g. @angular/angular-cli), and we don't want to create an invalid link, since
         # team mentions link to `https://github.com/org/:organization_name/teams/:team_name`.
-        sig { params(doc: CommonMarker::Node).void }
+        sig { params(doc: Commonmarker::Node).void }
         def sanitize_team_mentions(doc)
           doc.walk do |node|
             if node.type == :text &&
@@ -112,7 +127,7 @@ module Dependabot
           end
         end
 
-        sig { params(doc: CommonMarker::Node).void }
+        sig { params(doc: Commonmarker::Node).void }
         def sanitize_links(doc)
           doc.walk do |node|
             if node.type == :link && node.url.match?(GITHUB_REF_REGEX)
@@ -122,7 +137,7 @@ module Dependabot
                   next
                 end
 
-                last_match = T.must(subnode.string_content.match(GITHUB_REF_REGEX))
+                last_match = subnode.string_content.match(GITHUB_REF_REGEX)
                 number = last_match.named_captures.fetch("number")
                 repo = last_match.named_captures.fetch("repo")
                 subnode.string_content = "#{repo}##{number}"
@@ -136,7 +151,7 @@ module Dependabot
           end
         end
 
-        sig { params(doc: CommonMarker::Node).void }
+        sig { params(doc: Commonmarker::Node).void }
         def sanitize_nwo_text(doc)
           doc.walk do |node|
             if node.type == :text &&
@@ -147,9 +162,9 @@ module Dependabot
           end
         end
 
-        sig { params(node: CommonMarker::Node).void }
+        sig { params(node: Commonmarker::Node).void }
         def replace_nwo_node(node)
-          match = T.must(node.string_content.match(GITHUB_NWO_REGEX))
+          match = node.string_content.match(GITHUB_NWO_REGEX)
           repo = match.named_captures.fetch("repo")
           number = match.named_captures.fetch("number")
           new_node = build_nwo_text_node("#{repo}##{number}")
@@ -166,9 +181,9 @@ module Dependabot
           )
         end
 
-        sig { params(text: String).returns(T::Array[CommonMarker::Node]) }
+        sig { params(text: String).returns(T::Array[Commonmarker::Node]) }
         def build_mention_nodes(text)
-          nodes = T.let([], T::Array[CommonMarker::Node])
+          nodes = T.let([], T::Array[Commonmarker::Node])
           scan = StringScanner.new(text)
 
           until scan.eos?
@@ -176,7 +191,7 @@ module Dependabot
                    scan.scan_until(EOS_REGEX)
             line_match = T.must(line).match(MENTION_REGEX)
             mention = line_match&.to_s
-            text_node = CommonMarker::Node.new(:text)
+            text_node = Commonmarker::Node.new(:text)
 
             if mention && !mention.end_with?("/")
               text_node.string_content = line_match.pre_match
@@ -193,9 +208,9 @@ module Dependabot
           nodes
         end
 
-        sig { params(text: String).returns(T::Array[CommonMarker::Node]) }
+        sig { params(text: String).returns(T::Array[Commonmarker::Node]) }
         def build_team_mention_nodes(text)
-          nodes = T.let([], T::Array[CommonMarker::Node])
+          nodes = T.let([], T::Array[Commonmarker::Node])
 
           scan = StringScanner.new(text)
           until scan.eos?
@@ -203,7 +218,7 @@ module Dependabot
                    scan.scan_until(EOS_REGEX)
             line_match = T.must(line).match(TEAM_MENTION_REGEX)
             mention = line_match&.to_s
-            text_node = CommonMarker::Node.new(:text)
+            text_node = Commonmarker::Node.new(:text)
 
             if mention
               text_node.string_content = line_match.pre_match
@@ -218,25 +233,24 @@ module Dependabot
           nodes
         end
 
-        sig { params(text: String).returns(T::Array[CommonMarker::Node]) }
+        sig { params(text: String).returns(T::Array[Commonmarker::Node]) }
         def build_mention_link_text_nodes(text)
-          code_node = CommonMarker::Node.new(:code)
+          code_node = Commonmarker::Node.new(:code)
           code_node.string_content = insert_zero_width_space_in_mention(text)
           [code_node]
         end
 
-        sig { params(text: String).returns(CommonMarker::Node) }
+        sig { params(text: String).returns(Commonmarker::Node) }
         def build_nwo_text_node(text)
-          code_node = CommonMarker::Node.new(:code)
+          code_node = Commonmarker::Node.new(:code)
           code_node.string_content = text
           code_node
         end
 
-        sig { params(url: String, text: String).returns(CommonMarker::Node) }
+        sig { params(url: String, text: String).returns(Commonmarker::Node) }
         def create_link_node(url, text)
-          link_node = CommonMarker::Node.new(:link)
-          code_node = CommonMarker::Node.new(:code)
-          link_node.url = url
+          link_node = Commonmarker::Node.new(:link, url: url)
+          code_node = Commonmarker::Node.new(:code)
           code_node.string_content = insert_zero_width_space_in_mention(text)
           link_node.append_child(code_node)
           link_node
@@ -251,9 +265,9 @@ module Dependabot
           mention.sub("@", "@\u200B").encode("utf-8")
         end
 
-        sig { params(node: CommonMarker::Node).returns(T::Boolean) }
+        sig { params(node: Commonmarker::Node).returns(T::Boolean) }
         def parent_node_link?(node)
-          node.type == :link || (!node.parent.nil? && parent_node_link?(T.must(node.parent)))
+          node.type == :link || (!node.parent.nil? && parent_node_link?(node.parent))
         end
       end
     end
