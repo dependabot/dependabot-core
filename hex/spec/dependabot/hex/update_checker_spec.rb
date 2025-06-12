@@ -19,9 +19,11 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
       dependency_files: files,
       credentials: credentials,
       ignored_versions: ignored_versions,
-      raise_on_ignored: raise_on_ignored
+      raise_on_ignored: raise_on_ignored,
+      update_cooldown: update_cooldown
     )
   end
+  let(:update_cooldown) { nil }
   let(:credentials) do
     [Dependabot::Credential.new({
       "type" => "git_source",
@@ -179,6 +181,164 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
       end
 
       it { is_expected.to eq(Gem::Version.new("1.7.1")) }
+    end
+
+    context "when the registry 404s" do
+      before { stub_request(:get, hex_url).to_return(status: 404) }
+
+      it { is_expected.to eq(Gem::Version.new("1.3.5")) }
+    end
+
+    context "with a dependency with a git source" do
+      let(:mixfile_body) { fixture("mixfiles", "git_source") }
+      let(:lockfile_body) { fixture("lockfiles", "git_source") }
+
+      let(:dependency_name) { "phoenix" }
+      let(:version) { "178ce1a2344515e9145599970313fcc190d4b881" }
+      let(:dependency_requirements) do
+        [{
+          file: "mix.exs",
+          requirement: "~> 1.3.0",
+          groups: [],
+          source: {
+            type: "git",
+            url: "https://github.com/dependabot-fixtures/phoenix.git",
+            branch: "master",
+            ref: "v1.2.0"
+          }
+        }]
+      end
+
+      before do
+        git_url = "https://github.com/dependabot-fixtures/phoenix.git"
+        git_header = {
+          "content-type" => "application/x-git-upload-pack-advertisement"
+        }
+        stub_request(:get, git_url + "/info/refs?service=git-upload-pack")
+          .with(basic_auth: %w(x-access-token token))
+          .to_return(
+            status: 200,
+            body: fixture("git", "upload_packs", "phoenix"),
+            headers: git_header
+          )
+      end
+
+      it { is_expected.to eq("81705318ff929b2bc3c9c1b637c3f801e7371551") }
+    end
+  end
+
+  describe "#latest_version with cooldown" do
+    subject(:latest_version) { checker.latest_version }
+
+    before do
+      allow(Time).to receive(:now).and_return(Time.parse("2017-01-23T17:30:00.000Z"))
+
+      allow(checker).to receive(:latest_resolvable_version)
+        .and_return(Gem::Version.new("1.3.5"))
+
+      allow(Dependabot::Experiments).to receive(:enabled?)
+        .with(:enable_cooldown_for_hex).and_return(true)
+    end
+
+    after do
+      Dependabot::Experiments.reset!
+    end
+
+    let(:update_cooldown) do
+      Dependabot::Package::ReleaseCooldownOptions.new(
+        default_days: 90,
+        semver_major_days: 90,
+        semver_minor_days: 90,
+        semver_patch_days: 90,
+        include: [],
+        exclude: []
+      )
+    end
+
+    it { is_expected.to eq(Gem::Version.new("1.2.2")) }
+
+    context "without a lockfile" do
+      let(:files) { [mixfile] }
+
+      it { is_expected.to eq(Gem::Version.new("1.2.2")) }
+
+      context "with a requirement specified to 2dp" do
+        let(:dependency_requirements) do
+          [{ file: "mix.exs", requirement: "~> 1.3", groups: [], source: nil }]
+        end
+        let(:mixfile_body) { fixture("mixfiles", "major_version") }
+
+        it { is_expected.to eq(Gem::Version.new("1.2.2")) }
+      end
+    end
+
+    context "when raise_on_ignored is enabled and later versions are allowed" do
+      let(:raise_on_ignored) { true }
+
+      it "doesn't raise an error" do
+        expect { latest_version }.not_to raise_error
+      end
+    end
+
+    context "when the current version isn't known" do
+      let(:current_version) { nil }
+
+      context "when raise_on_ignored is enabled" do
+        let(:raise_on_ignored) { true }
+
+        it "doesn't raise an error" do
+          expect { latest_version }.not_to raise_error
+        end
+      end
+    end
+
+    context "when the dependency is a git dependency" do
+      let(:dependency_version) { "a1b78a929dac93a52f08db4f2847d76d6cfe39bd" }
+
+      context "when raise_on_ignored is enabled" do
+        let(:raise_on_ignored) { true }
+
+        it "doesn't raise an error" do
+          expect { latest_version }.not_to raise_error
+        end
+      end
+    end
+
+    context "when the user is ignoring all later versions" do
+      let(:ignored_versions) { ["> 1.1.1"] }
+
+      it { is_expected.to eq(Gem::Version.new("1.1.1")) }
+
+      context "when raise_on_ignored is enabled" do
+        let(:raise_on_ignored) { true }
+
+        it "raises an error" do
+          expect { latest_version }.to raise_error(Dependabot::AllVersionsIgnored)
+        end
+      end
+    end
+
+    context "when the user is ignoring all versions" do
+      let(:ignored_versions) { [">= 0, < 99"] }
+
+      it { is_expected.to eq(Gem::Version.new("1.3.5")) }
+
+      context "when raise_on_ignored is enabled" do
+        let(:raise_on_ignored) { true }
+
+        it "raises an error" do
+          expect { latest_version }.to raise_error(Dependabot::AllVersionsIgnored)
+        end
+      end
+    end
+
+    context "when the dependency doesn't have a requirement" do
+      let(:version) { "1.4.0" }
+      let(:dependency_requirements) do
+        [{ file: "mix.exs", requirement: nil, groups: [], source: nil }]
+      end
+
+      it { is_expected.to eq(Gem::Version.new("1.2.2")) }
     end
 
     context "when the registry 404s" do
