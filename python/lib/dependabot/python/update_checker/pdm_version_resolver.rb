@@ -68,14 +68,14 @@ module Dependabot
           @dependency_files = dependency_files
           @credentials = credentials
           @repo_contents_path = repo_contents_path
-          @resolvable = T.let({}, T::Hash[String, T::Boolean])
+          @resolvable = T.let({}, T::Hash[Dependabot::Version, T::Boolean])
           @latest_resolvable_version_string = T.let({}, T::Hash[T.nilable(String), T.nilable(String)])
           @language_version_manager = T.let(nil, T.nilable(Dependabot::Python::LanguageVersionManager))
           @python_requirement_parser = T.let(nil, T.nilable(Dependabot::Python::FileParser::PythonRequirementParser))
           @pyproject = T.let(nil, T.nilable(Dependabot::DependencyFile))
         end
 
-        sig { params(requirement: T.nilable(String)).returns(T.nilable(Python::Version)) }
+        sig { params(requirement: T.nilable(String)).returns(T.nilable(Dependabot::Version)) }
         def latest_resolvable_version(requirement: nil)
           version_string =
             fetch_latest_resolvable_version_string(requirement: requirement)
@@ -83,7 +83,7 @@ module Dependabot
           version_string.nil? ? nil : Python::Version.new(version_string)
         end
 
-        sig { params(version: String).returns(T::Boolean) }
+        sig { params(version: Dependabot::Version).returns(T::Boolean) }
         def resolvable?(version:)
           return T.must(@resolvable[version]) if @resolvable.key?(version)
 
