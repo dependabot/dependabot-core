@@ -12,9 +12,9 @@ RSpec.describe Dependabot::Maven::NativeHelpers do
       let(:output) { "Could not transfer artifact com.example:example:jar:1.0.0 from/to example-repo (https://example.com/repo): status code: 403" }
 
       it "raises PrivateSourceAuthenticationFailure for 401 and 403 errors" do
-        expect {
+        expect do
           described_class.handle_tool_error(output)
-        }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
+        end.to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
       end
     end
 
@@ -22,17 +22,17 @@ RSpec.describe Dependabot::Maven::NativeHelpers do
       let(:output) { "Could not transfer artifact com.example:example:jar:1.0.0 from/to example-repo (https://example.com/repo): status code: 401" }
 
       it "raises PrivateSourceAuthenticationFailure for 401 and 403 errors" do
-        expect {
+        expect do
           described_class.handle_tool_error(output)
-        }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
+        end.to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
       end
     end
 
     it "raises DependabotError for other errors" do
       output = "Some other error occurred"
-      expect {
+      expect do
         described_class.handle_tool_error(output)
-      }.to raise_error(Dependabot::DependabotError)
+      end.to raise_error(Dependabot::DependabotError)
     end
   end
 end
