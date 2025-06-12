@@ -181,7 +181,7 @@ module Dependabot
       def pdm_based?
         return false unless pyproject
 
-        !TomlRB.parse(pyproject&.content).dig("tool", "pdm").nil? || pdm_lock
+        !TomlRB.parse(pyproject&.content).dig("tool", "pdm").nil? || !pdm_lock.nil?
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }

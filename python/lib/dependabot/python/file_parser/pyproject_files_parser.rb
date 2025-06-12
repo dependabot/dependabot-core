@@ -288,7 +288,7 @@ module Dependabot
 
         sig { returns(T.untyped) }
         def parsed_lockfile
-          @parsed_lockfile ||= T.let(TomlRB.parse(T.must(lockfile).content), T.untyped)
+          @parsed_lockfile ||= T.let(TomlRB.parse(lockfile&.content), T.untyped) if lockfile
         rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
           raise Dependabot::DependencyFileNotParseable, T.must(lockfile).path
         end
