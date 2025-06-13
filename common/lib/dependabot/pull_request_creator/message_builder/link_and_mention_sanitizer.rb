@@ -30,7 +30,7 @@ module Dependabot
         MARKDOWN_REGEX = /\[(.+?)\]\(([^)]+)\)|\[(.+?)\]|\A#+\s+([^\s].*)/
 
         COMMONMARKER_OPTIONS = T.let(
-          { github_pre_lang: true, full_info_string: true, width: 120 }.freeze,
+          { escaped_char_spans: false, github_pre_lang: true, full_info_string: true, width: 120 }.freeze,
           T::Hash[Symbol, T.any(T::Boolean, Integer)]
         )
         COMMONMARKER_EXTENSIONS = T.let(
