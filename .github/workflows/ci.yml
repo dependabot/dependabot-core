@@ -134,3 +134,4 @@ jobs:
         run: |
           cd silent/tests
           go test ./...
+
