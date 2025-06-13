@@ -30,8 +30,8 @@ module Dependabot
         MARKDOWN_REGEX = /\[(.+?)\]\(([^)]+)\)|\[(.+?)\]|\A#+\s+([^\s].*)/
 
         COMMONMARKER_OPTIONS = T.let(
-          { github_pre_lang: true, full_info_string: true }.freeze,
-          T::Hash[Symbol, TrueClass]
+          { github_pre_lang: true, full_info_string: true, width: 120 }.freeze,
+          T::Hash[Symbol, T.any(T::Boolean, Integer)]
         )
         COMMONMARKER_EXTENSIONS = T.let(
           {
@@ -42,7 +42,7 @@ module Dependabot
             tagfilter: true,
             tasklist: true
           }.freeze,
-          T::Hash[Symbol, TrueClass]
+          T::Hash[Symbol, T.nilable(T::Boolean)]
         )
 
         sig { returns(T.nilable(String)) }
@@ -63,7 +63,7 @@ module Dependabot
           sanitize_nwo_text(doc)
 
           render_options = COMMONMARKER_OPTIONS.dup
-          render_options[:hardbreaks] = true if text.match?(MARKDOWN_REGEX)
+          render_options[:hardbreaks] = false if text.match?(MARKDOWN_REGEX)
           render_options[:unsafe] = true if unsafe
 
           unless format_html
