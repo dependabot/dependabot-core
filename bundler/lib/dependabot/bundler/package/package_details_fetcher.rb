@@ -21,16 +21,12 @@ module Dependabot
         require_relative "../update_checker/shared_bundler_helpers"
         include Dependabot::Bundler::UpdateChecker::SharedBundlerHelpers
 
-        RELEASES_URL = "https://rubygems.org/api/v1/versions/%s.json"
-        GEM_URL = "https://rubygems.org/gems/%s.gem"
+        RELEASES_URL = "%s/api/v1/versions/%s.json"
+        GEM_URL = "%s/gems/%s.gem"
         PACKAGE_TYPE = "gem"
         PACKAGE_LANGUAGE = "ruby"
         APPLICATION_JSON = "application/json"
-
         RUBYGEMS = "rubygems"
-        PRIVATE_REGISTRY = "private"
-        GIT = "git"
-        OTHER = "other"
 
         sig do
           params(
@@ -58,15 +54,7 @@ module Dependabot
 
         sig { returns(Dependabot::Package::PackageDetails) }
         def fetch
-          return rubygems_versions if dependency.name == "bundler"
-          return rubygems_versions unless gemfile
-
-          case source_type
-          when OTHER, GIT, PRIVATE_REGISTRY
-            package_details([])
-          else
-            rubygems_versions
-          end
+          rubygems_versions
         end
 
         private
@@ -130,12 +118,15 @@ module Dependabot
           response = registry_json_response_for_dependency
           raise unless response.status == 200
 
+          registry_url = get_url_from_dependency(dependency) || "https://rubygems.org" # Get registry_url
+
           package_releases = JSON.parse(response.body).map do |release|
+            gem_name_with_version = "#{@dependency.name}-#{release['number']}"
             package_release(
               version: release["number"],
               released_at: Time.parse(release["created_at"]),
               downloads: release["downloads_count"],
-              url: GEM_URL % "#{@dependency.name}-#{release['number']}",
+              url: format(GEM_URL, registry_url, gem_name_with_version),
               ruby_version: release["ruby_version"]
             )
           end
@@ -143,9 +134,24 @@ module Dependabot
           package_details(package_releases)
         end
 
+        sig { params(dependency: T.untyped).returns(T.nilable(String)) }
+        def get_url_from_dependency(dependency)
+          return nil unless dependency&.requirements&.any?
+
+          first_requirement = dependency.requirements.first
+          return nil unless first_requirement && first_requirement[:source]
+
+          url = T.let(first_requirement[:source][:url], T.nilable(String))
+          return nil unless url
+
+          url.end_with?("/") ? url.chop : url
+        end
+
         sig { returns(Excon::Response) }
         def registry_json_response_for_dependency
-          url = RELEASES_URL % dependency.name
+          registry_url = get_url_from_dependency(dependency) || "https://rubygems.org"
+
+          url = format(RELEASES_URL, registry_url, dependency.name)
           Dependabot::RegistryClient.get(
             url: url,
             headers: { "Accept" => APPLICATION_JSON }
@@ -155,27 +161,6 @@ module Dependabot
         sig { params(req_string: String).returns(Requirement) }
         def language_requirement(req_string)
           Requirement.new(req_string)
-        end
-
-        sig { returns(String) }
-        def source_type
-          @source_type ||= begin
-            return @source_type = RUBYGEMS unless gemfile
-
-            @source_type = in_a_native_bundler_context do |tmp_dir|
-              NativeHelpers.run_bundler_subprocess(
-                bundler_version: bundler_version,
-                function: "dependency_source_type",
-                options: {}, # options,
-                args: {
-                  dir: tmp_dir,
-                  gemfile_name: gemfile.name,
-                  dependency_name: dependency.name,
-                  credentials: credentials
-                }
-              )
-            end
-          end
         end
 
         sig { override.returns(String) }
