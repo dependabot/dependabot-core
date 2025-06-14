@@ -69,49 +69,25 @@ module Dependabot
         # A list of notices that will be used in PR messages and/or sent to the dependabot github alerts.
         notices = dependency_snapshot.notices
 
+        # Track dependencies that were not updated with reasons
+        not_updated_dependencies = []
+
         Dependabot.logger.info("Updating the #{job.source.directory} directory.")
         group.dependencies.each do |dependency|
-          # We still want to update a dependency if it's been updated in another manifest files,
+          # We still want to update a dependency if it's been updated in another manifest file,
           # but we should skip it if it's been updated in _the same_ manifest file
-          next if skip_dependency?(dependency, group)
-
-          # Get the current state of the dependency files for use in this iteration, filter by directory
-          dependency_files = group_changes.current_dependency_files(job)
-
-          # Reparse the current files
-          reparsed_dependencies = dependency_file_parser(dependency_files).parse
-          dependency = reparsed_dependencies.find { |d| d.name == dependency.name }
-
-          # If the dependency can not be found in the reparsed files then it was likely removed by a previous
-          # dependency update
-          next if dependency.nil?
-
-          # If the dependency version changed, then we can deduce that the dependency was updated already.
-          original_dependency = original_dependencies.find { |d| d.name == dependency.name }
-          updated_dependency = deduce_updated_dependency(dependency, original_dependency)
-          unless updated_dependency.nil?
-            group_changes.add_updated_dependency(updated_dependency)
-            next
+          result = process_dependency_in_group(dependency, group, group_changes, original_dependencies)
+          if result
+            not_updated_dependencies << result
           end
+        end
 
-          updated_dependencies = compile_updates_for(dependency, dependency_files, group)
-          next unless updated_dependencies.any?
-
-          lead_dependency = updated_dependencies.find do |dep|
-            dep.name.casecmp(dependency.name)&.zero?
+        # Log which dependencies were not updated and why
+        if not_updated_dependencies.any?
+          Dependabot.logger.info("Dependencies in group '#{group.name}' that were not updated:")
+          not_updated_dependencies.each do |dep_info|
+            Dependabot.logger.info("  - #{dep_info[:name]}: #{dep_info[:reason]}")
           end
-
-          next unless lead_dependency
-
-          dependency_change = create_change_for(lead_dependency, updated_dependencies, dependency_files, group)
-
-          # Move on to the next dependency using the existing files if we
-          # could not create a change for any reason
-          next unless dependency_change
-
-          # Store the updated files for the next loop
-          group_changes.merge(dependency_change)
-          store_changes(dependency)
         end
 
         # Create a single Dependabot::DependencyChange that aggregates everything we've updated
@@ -137,6 +113,73 @@ module Dependabot
       ensure
         cleanup_workspace
       end
+
+      # Extract the body of the group.dependencies.each loop into this method
+      sig do
+        params(
+          dependency: Dependabot::Dependency,
+          group: Dependabot::DependencyGroup,
+          group_changes: Dependabot::Updater::DependencyGroupChangeBatch,
+          original_dependencies: T::Array[Dependabot::Dependency]
+        ).returns(T.nilable(T::Hash[Symbol, String]))
+      end
+      def process_dependency_in_group(dependency, group, group_changes, original_dependencies)
+        # We still want to update a dependency if it's been updated in another manifest file,
+        # but we should skip it if it's been updated in _the same_ manifest file
+        if skip_dependency?(dependency, group)
+          return { name: dependency.name, reason: "already handled by previous group" }
+        end
+
+        # Get the current state of the dependency files for use in this iteration, filter by directory
+        dependency_files = group_changes.current_dependency_files(job)
+
+        # Reparse the current files
+        reparsed_dependencies = dependency_file_parser(dependency_files).parse
+        dependency = reparsed_dependencies.find { |d| d.name == dependency.name }
+
+        # If the dependency can not be found in the reparsed files then it was likely removed by a previous
+        # dependency update
+        if dependency.nil?
+          return { name: dependency.name, reason: "removed by previous update" }
+        end
+
+        # If the dependency version changed, then we can deduce that the dependency was updated already.
+        original_dependency = original_dependencies.find { |d| d.name == dependency.name }
+        updated_dependency = deduce_updated_dependency(dependency, original_dependency)
+        unless updated_dependency.nil?
+          group_changes.add_updated_dependency(updated_dependency)
+          return nil
+        end
+
+        updated_dependencies = compile_updates_for(dependency, dependency_files, group)
+        unless updated_dependencies.any?
+          return { name: dependency.name, reason: "no updates available or update not possible" }
+        end
+
+        lead_dependency = updated_dependencies.find do |dep|
+          dep.name.casecmp(dependency.name)&.zero?
+        end
+
+        unless lead_dependency
+          return { name: dependency.name, reason: "lead dependency not found" }
+        end
+
+        dependency_change = create_change_for(lead_dependency, updated_dependencies, dependency_files, group)
+
+        # Move on to the next dependency using the existing files if we
+        # could not create a change for any reason
+        unless dependency_change
+          return { name: dependency.name, reason: "failed to create dependency change" }
+        end
+
+        # Store the updated files for the next loop
+        group_changes.merge(dependency_change)
+        store_changes(dependency)
+
+        nil # Indicates successful processing
+      end
+
+
 
       sig { params(dependency: Dependabot::Dependency, group: Dependabot::DependencyGroup).returns(T::Boolean) }
       def skip_dependency?(dependency, group)
