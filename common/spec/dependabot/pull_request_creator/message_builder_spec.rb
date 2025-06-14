@@ -1290,30 +1290,30 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             expect(pr_message).to eq(
               "Bumps [business](https://github.com/gocardless/business) from `2468a02` to `cff701b`.\n" \
               "# Commits\n\n" \
-              "  - [`26f4887`](https://github.com/gocardless/business/commit/" \
+              "- [`26f4887`](https://github.com/gocardless/business/commit/" \
               "26f4887ec647493f044836363537e329d9d213aa) Bump version to\n" \
-              "    v1.4.0\n" \
-              "  - [`7abe4c2`](https://github.com/gocardless/business/commit/" \
+              "  v1.4.0\n" \
+              "- [`7abe4c2`](https://github.com/gocardless/business/commit/" \
               "7abe4c2dc0161904c40c221a48999d12995fbea7) \\[Fix\n" \
-              "    [\\#9](https://redirect.github.com/gocardless/business/issues/9)\\] Allow custom calendars\n" \
-              "  - [`1c72c35`](https://github.com/gocardless/business/commit/" \
+              "  [\\#9](https://redirect.github.com/gocardless/business/issues/9)\\] Allow custom calendars\n" \
+              "- [`1c72c35`](https://github.com/gocardless/business/commit/" \
               "1c72c35ff2aa9d7ce0403d7fd4aa010d94723076) Allow custom\n" \
-              "    calendars\n" \
-              "  - [`5555535`](https://github.com/gocardless/business/commit/" \
+              "  calendars\n" \
+              "- [`5555535`](https://github.com/gocardless/business/commit/" \
               "5555535ff2aa9d7ce0403d7fd4aa010d94723076)\n" \
-              "  - [`0bfb8c3`](https://github.com/gocardless/business/commit/" \
+              "- [`0bfb8c3`](https://github.com/gocardless/business/commit/" \
               "0bfb8c3f0d2701abf9248185beeb8adf643374f6) Spacing:\n" \
-              "    [my/repo\\#5](https://redirect.github.com/my/repo/pull/5)\n" \
-              "  - [`a5970da`](https://github.com/gocardless/business/commit/" \
-              "a5970daf0b824e4c3974e57474b6cf9e39a11d0f) Merge pull\n" \
-              "    request [\\#8](https://redirect.github.com/gocardless/business/issues/8) from" \
+              "  [my/repo\\#5](https://redirect.github.com/my/repo/pull/5)\n" \
+              "- [`a5970da`](https://github.com/gocardless/business/commit/" \
+              "a5970daf0b824e4c3974e57474b6cf9e39a11d0f) Merge pull request\n" \
+              "  [\\#8](https://redirect.github.com/gocardless/business/issues/8) from" \
               " gocardless/rename-sepa-to-ecb\n" \
-              "  - [`d2eb29b`](https://github.com/gocardless/business/commit/" \
+              "- [`d2eb29b`](https://github.com/gocardless/business/commit/" \
               "d2eb29beda934c14220146c82f830de2edd63a25)\n" \
-              "    [12](https://redirect.github.com/gocardless/business/issues/12) Remove *SEPA* calendar" \
+              "  [12](https://redirect.github.com/gocardless/business/issues/12) Remove *SEPA* calendar" \
               " (replaced by TARGET)\n" \
-              "  - See full diff in [compare\n" \
-              "    view](https://github.com/gocardless/business/compare/2468a02a6230e59ed1232d95d1ad3ef157195b03...cff701b3bfb182afc99a85657d7c9f3d6c1ccce2)\n"
+              "- See full diff in [compare\n" \
+              "  view](https://github.com/gocardless/business/compare/2468a02a6230e59ed1232d95d1ad3ef157195b03...cff701b3bfb182afc99a85657d7c9f3d6c1ccce2)\n"
             )
           end
         end
