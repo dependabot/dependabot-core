@@ -170,7 +170,8 @@ module Dependabot
           @prepared_pyproject ||=
             begin
               content = updated_pyproject_content
-              content = sanitize(T.must(content))
+              content = pin_dependencies(T.must(content))
+              content = sanitize(content)
               content
             end
         end
@@ -180,6 +181,37 @@ module Dependabot
           PyprojectPreparer
             .new(pyproject_content: pyproject_content)
             .sanitize
+        end
+
+        sig { params(pyproject_content: String).returns(String) }
+        def pin_dependencies(pyproject_content) # rubocop:disable Metrics/PerceivedComplexity
+          project = TomlRB.parse(pyproject_content)
+          dependencies.each do |dep|
+            # top-level dependencies have been updated
+            next if dep.top_level? || dep.version.nil?
+
+            metadata = dep.subdependency_metadata&.first
+            group = if metadata.nil?
+                      nil
+                    else
+                      metadata[:groups].first
+                    end
+            group = nil if group == "default"
+            file_deps = if group.nil?
+                          project.dig("project", "dependencies")
+                        elsif project.dig("project", "optional-dependencies")&.key?(group)
+                          project.dig("project", "optional-dependencies", group)
+                        elsif project["dependency-groups"]&.key?(group)
+                          project.dig("dependency-groups", group)
+                        elsif project.dig("tool", "pdm", "dev-dependencies")&.key?(group)
+                          project.dig("tool", "pdm", "dev-dependencies", group)
+                        else
+                          []
+                        end
+            file_deps << T.must(metadata)[:req]
+          end
+
+          TomlRB.dump(project)
         end
 
         sig { params(pyproject_content: String).returns(String) }

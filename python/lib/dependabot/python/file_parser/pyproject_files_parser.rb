@@ -188,6 +188,8 @@ module Dependabot
             next if details["url"]
 
             name = normalise(details.fetch("name"))
+            req = "#{name}==#{details.fetch('version')}"
+            req << " ; #{details.fetch('marker')}" if details.key?("marker")
             dependencies <<
               Dependency.new(
                 name: name,
@@ -195,7 +197,9 @@ module Dependabot
                 requirements: [],
                 package_manager: "pip",
                 subdependency_metadata: [{
-                  production: details.fetch("groups").include?("default")
+                  production: details.fetch("groups").include?("default"),
+                  groups: details.fetch("groups", []),
+                  req: req
                 }]
               )
           end
