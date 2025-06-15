@@ -28,6 +28,7 @@ GEMSPECS = %w(
   npm_and_yarn/dependabot-npm_and_yarn.gemspec
   composer/dependabot-composer.gemspec
   hex/dependabot-hex.gemspec
+  julia/dependabot-julia.gemspec
   python/dependabot-python.gemspec
   pub/dependabot-pub.gemspec
   omnibus/dependabot-omnibus.gemspec
