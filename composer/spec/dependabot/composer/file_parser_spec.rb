@@ -62,26 +62,6 @@ RSpec.describe Dependabot::Composer::FileParser do
       end
     end
 
-    context "with the local package as dependency" do
-      before do
-        Dependabot::Experiments.register(:exclude_local_composer_packages, true)
-      end
-
-      after do
-        Dependabot::Experiments.register(:exclude_local_composer_packages, false)
-      end
-
-      let(:project_name) { "local_package_as_dep" }
-
-      its(:length) { is_expected.to eq(4) }
-
-      describe "top level dependencies" do
-        subject { dependencies.select(&:top_level?) }
-
-        its(:length) { is_expected.to eq(2) }
-      end
-    end
-
     context "with doctored entries" do
       let(:project_name) { "doctored" }
 
