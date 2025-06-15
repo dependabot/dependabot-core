@@ -119,16 +119,6 @@ module Dependabot
           parsed_composer_json[manifest].each do |name, req|
             next unless package?(name)
 
-            if Dependabot::Experiments.enabled?(:exclude_local_composer_packages)
-              local_package_prefix = ["dev-main", "dev-master", "@dev"]
-
-              # we avoid updating local packages, so we skip them adding to dependency list
-              if local_package_prefix.include?(req)
-                Dependabot.logger.info("Skipping #{name} with version #{req} as it cannot be updated.")
-                next
-              end
-            end
-
             if lockfile
               group = keys[:group]
               next unless group.is_a?(String)
