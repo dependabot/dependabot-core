@@ -201,6 +201,7 @@ internal static class PackageReferenceUpdater
     )
     {
         var topLevelNames = topLevelDependencies.Select(d => d.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var topLevelVersionStrings = topLevelDependencies.ToDictionary(d => d.Name, d => d.Version!, StringComparer.OrdinalIgnoreCase);
         var requestedVersions = requestedUpdates.ToDictionary(d => d.Name, d => NuGetVersion.Parse(d.Version!), StringComparer.OrdinalIgnoreCase);
         var resolvedVersions = resolvedDependencies
             .Select(d => (d.Name, NuGetVersion.TryParse(d.Version, out var version), version))
@@ -248,16 +249,22 @@ internal static class PackageReferenceUpdater
                         }
                     }
 
-                    if (rootPackageName is not null)
+                    if (rootPackageName is not null && resolvedVersions.TryGetValue(rootPackageName, out var rootPackageVersion))
                     {
-                        updateOperations.Add(new ParentUpdate()
+                        // from a few lines up we've already confirmed that `rootPackageName` was a top-level dependency
+                        var rootPackageVersionString = topLevelVersionStrings[rootPackageName];
+                        if (NuGetVersion.TryParse(rootPackageVersionString, out var resolvedRootPackageVersion)
+                            && rootPackageVersion > resolvedRootPackageVersion)
                         {
-                            DependencyName = requestedDependencyName,
-                            NewVersion = requestedVersions[requestedDependencyName],
-                            UpdatedFiles = [],
-                            ParentDependencyName = rootPackageName,
-                            ParentNewVersion = packageVersions[rootPackageName],
-                        });
+                            updateOperations.Add(new ParentUpdate()
+                            {
+                                DependencyName = requestedDependencyName,
+                                NewVersion = requestedVersions[requestedDependencyName],
+                                UpdatedFiles = [],
+                                ParentDependencyName = rootPackageName,
+                                ParentNewVersion = packageVersions[rootPackageName],
+                            });
+                        }
                     }
                     break;
                 case (true, false):

@@ -478,7 +478,7 @@ internal static partial class MSBuildHelper
             // Return as array
             var candidatePackagesArray = candidatePackages.ToImmutableArray();
 
-            var targetFrameworks = new NuGetFramework[] { NuGetFramework.Parse(targetFramework) };
+            var targetFrameworks = ImmutableArray.Create<NuGetFramework>(NuGetFramework.Parse(targetFramework));
 
             var resolveProjectPath = projectPath;
 
@@ -492,15 +492,23 @@ internal static partial class MSBuildHelper
             // Target framework compatibility check
             foreach (var package in candidatePackages)
             {
-                if (!NuGetVersion.TryParse(package.Version, out var nuGetVersion))
+                if (package.Version is null ||
+                    !VersionRange.TryParse(package.Version, out var nuGetVersionRange))
                 {
                     // If version is not valid, return original packages and revert
                     return packages;
                 }
 
+                if (nuGetVersionRange.IsFloating)
+                {
+                    // If a wildcard version, the original project specified it this way and we can count on restore to do the appropriate thing
+                    continue;
+                }
+
+                var nuGetVersion = nuGetVersionRange.MinVersion; // not a wildcard, so `MinVersion` is just the version itself
                 var packageIdentity = new NuGet.Packaging.Core.PackageIdentity(package.Name, nuGetVersion);
 
-                bool isNewPackageCompatible = await CompatibilityChecker.CheckAsync(packageIdentity, targetFrameworks.ToImmutableArray(), nugetContext, logger, CancellationToken.None);
+                bool isNewPackageCompatible = await CompatibilityChecker.CheckAsync(packageIdentity, targetFrameworks, nugetContext, logger, CancellationToken.None);
                 if (!isNewPackageCompatible)
                 {
                     // If the package target framework is not compatible, return original packages and revert
