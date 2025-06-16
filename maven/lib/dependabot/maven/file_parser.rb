@@ -442,7 +442,7 @@ module Dependabot
             merged_req = {
               requirement: parsing_req[:requirement],
               file: parsing_req[:file],
-              groups: (Array(dep_scan_req[:groups]) + Array(parsing_req[:groups])).uniq,
+              groups: [*dep_scan_req[:groups], *parsing_req[:groups]].uniq.compact,
               source: dep_scan_req[:source],
               metadata: merge_metadata(dep_scan_req[:metadata], parsing_req[:metadata])
             }
@@ -466,19 +466,16 @@ module Dependabot
                metadata2: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped])
       end
       def merge_metadata(metadata1, metadata2)
-        merged = metadata1.dup
-
-        metadata2.each do |key, value|
-          if merged[key] && merged[key] != value
-            # If values differ, keep both (could be arrays or create array)
-            merged[key] = Array(merged[key]) + Array(value)
-            merged[key] = merged[key].uniq if merged[key].respond_to?(:uniq)
+        metadata1.merge(metadata2) do |_key, old_value, new_value|
+          case [old_value, new_value]
+          in [nil, new_value] then new_value
+          in [old_value, nil] then old_value
+          in [old_value, new_value] if old_value == new_value then old_value
           else
-            merged[key] = value
+            # If values differ, combine them
+            [*old_value, *new_value].uniq
           end
         end
-
-        merged
       end
     end
     # rubocop:enable Metrics/ClassLength

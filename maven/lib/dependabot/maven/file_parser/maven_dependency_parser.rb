@@ -95,7 +95,7 @@ module Dependabot
               }]
             )
 
-            node["children"]&.each { |child| traverse_tree.call(child) }
+            node["children"]&.each(&traverse_tree)
           end
 
           traverse_tree.call(dependency_tree)
@@ -107,17 +107,13 @@ module Dependabot
         end
         def self.create_directory_structure(dependency_files, temp_path)
           # Find the topmost directory level by finding the minimum number of "../" sequences
-          relative_top_depth = 0
-          dependency_files.each do |pom|
-            normalized_path = Pathname.new(pom.name).cleanpath.to_s
-            depth = normalized_path.scan("../").length
-            relative_top_depth = [relative_top_depth, depth].max
-          end
+          relative_top_depth = dependency_files.map do |pom|
+            Pathname.new(pom.name).cleanpath.to_s.scan("../").length
+          end.max || 0
 
           # Create the base directory structure with the required depth
-          base_depth_path = temp_path
-          relative_top_depth.times do |i|
-            base_depth_path = File.join(base_depth_path, "l#{i}")
+          base_depth_path = (0...relative_top_depth).reduce(temp_path) do |path, i|
+            File.join(path, "l#{i}")
           end
 
           FileUtils.mkdir_p(base_depth_path)
