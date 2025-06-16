@@ -6,35 +6,50 @@ require "sorbet-runtime"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 require "dependabot/devcontainers/file_updater/config_updater"
+require "dependabot/devcontainers/file_updater/image_config_updater"
 
 module Dependabot
   module Devcontainers
     class FileUpdater < Dependabot::FileUpdaters::Base
       extend T::Sig
 
+      DOCKER_REGEXP = /dockerfile/i
       sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
         [
           /^\.?devcontainer\.json$/,
-          /^\.?devcontainer-lock\.json$/
+          /^\.?devcontainer-lock\.json$/,
+          DOCKER_REGEXP,
+          /^\.?docker-compose\.yml$/
+
         ]
       end
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
         updated_files = []
-
-        manifests.each do |manifest|
+        feature_manifests.each do |manifest|
           requirement = dependency.requirements.find { |req| req[:file] == manifest.name }
           next unless requirement
 
-          config_contents, lockfile_contents = update(manifest, requirement)
+          config_contents, lockfile_contents = update_features(manifest, requirement)
 
           updated_files << updated_file(file: manifest, content: T.must(config_contents)) if file_changed?(manifest)
 
           lockfile = lockfile_for(manifest)
 
           updated_files << updated_file(file: lockfile, content: lockfile_contents) if lockfile && lockfile_contents
+        end
+
+        image_manifests.each do |image|
+          file_name = image.requirements.first[:file]
+          manifest = Dependabot::DependencyFile.new(
+            content: File.read(file_name),
+            name: file_name
+          )
+
+          config_contents = update_images(manifest)
+          updated_files << updated_file(file: manifest, content: T.must(config_contents)) if file_changed?(manifest)
         end
 
         updated_files
@@ -56,10 +71,20 @@ module Dependabot
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
-      def manifests
-        @manifests ||= T.let(
+      def feature_manifests
+        @feature_manifests ||= T.let(
           dependency_files.select do |f|
             f.name.end_with?("devcontainer.json")
+          end,
+          T.nilable(T::Array[Dependabot::DependencyFile])
+        )
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def image_manifests
+        @image_manifests ||= T.let(
+          dependencies.select do |i|
+            i.requirements.any? { |req| req[:groups].include?("image") }
           end,
           T.nilable(T::Array[Dependabot::DependencyFile])
         )
@@ -89,11 +114,22 @@ module Dependabot
         )
           .returns(T::Array[String])
       end
-      def update(manifest, requirement)
+      def update_features(manifest, requirement)
         ConfigUpdater.new(
           feature: dependency.name,
           requirement: requirement[:requirement],
           version: T.must(dependency.version),
+          manifest: manifest,
+          repo_contents_path: T.must(repo_contents_path),
+          credentials: credentials
+        ).update
+      end
+
+      def update_images(manifest)
+        ImageConfigUpdater.new(
+          image: dependency.name,
+          version: dependency.previous_version,
+          requirement: dependency.version,
           manifest: manifest,
           repo_contents_path: T.must(repo_contents_path),
           credentials: credentials
