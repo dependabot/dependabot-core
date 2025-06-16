@@ -63,8 +63,6 @@ module Dependabot
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         def fetch_updated_dependency_files
-          return [] unless create_or_update_lock_file?
-
           updated_files = []
 
           if file_changed?(pyproject)
@@ -370,11 +368,6 @@ module Dependabot
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def pdm_lock
           dependency_files.find { |f| f.name == "pdm.lock" }
-        end
-
-        sig { returns(T::Boolean) }
-        def create_or_update_lock_file?
-          T.must(dependency).requirements.select { _1[:file].end_with?(*REQUIRED_FILES) }.any?
         end
       end
     end

@@ -68,14 +68,15 @@ module Dependabot
           @dependency_files = dependency_files
           @credentials = credentials
           @repo_contents_path = repo_contents_path
-          @resolvable = T.let({}, T::Hash[Dependabot::Version, T::Boolean])
+          @resolvable = T.let({}, T::Hash[Gem::Version, T::Boolean])
           @latest_resolvable_version_string = T.let({}, T::Hash[T.nilable(String), T.nilable(String)])
           @language_version_manager = T.let(nil, T.nilable(Dependabot::Python::LanguageVersionManager))
           @python_requirement_parser = T.let(nil, T.nilable(Dependabot::Python::FileParser::PythonRequirementParser))
           @pyproject = T.let(nil, T.nilable(Dependabot::DependencyFile))
+          @pdm_lock = T.let(nil, T.nilable(Dependabot::DependencyFile))
         end
 
-        sig { params(requirement: T.nilable(String)).returns(T.nilable(Dependabot::Version)) }
+        sig { params(requirement: T.nilable(String)).returns(T.nilable(Gem::Version)) }
         def latest_resolvable_version(requirement: nil)
           version_string =
             fetch_latest_resolvable_version_string(requirement: requirement)
@@ -83,7 +84,7 @@ module Dependabot
           version_string.nil? ? nil : Python::Version.new(version_string)
         end
 
-        sig { params(version: Dependabot::Version).returns(T::Boolean) }
+        sig { params(version: Gem::Version).returns(T::Boolean) }
         def resolvable?(version:)
           return T.must(@resolvable[version]) if @resolvable.key?(version)
 
@@ -92,9 +93,8 @@ module Dependabot
                                  else
                                    false
                                  end
-        rescue SharedHelpers::HelperSubprocessFailed => e
-          raise unless e.message.include?("Resolution failed") ||
-                       e.message.include?("No solution found")
+        rescue Dependabot::DependabotError => e
+          raise unless e.message.include?("Unable to find a resolution")
 
           @resolvable[version] = false
         end
@@ -158,11 +158,14 @@ module Dependabot
             raise GitDependenciesNotReachable, url
           end
 
-          raise unless error.message.include?("Resolution failed") ||
-                       error.message.include?("No solution found") ||
-                       error.message.include?("not found")
+          if error.message.include?("ResolutionError") ||
+             error.message.include?("Unable to find a resolution") ||
+             error.message.include?("CandidateNotFound")
+            raise Dependabot::DependencyFileNotResolvable,
+                  "Unable to find a resolution for #{dependency.name}"
+          end
 
-          nil
+          raise
         end
 
         sig { void }
@@ -202,8 +205,10 @@ module Dependabot
           group = (T.must(dependency.requirements.first)[:groups].first if dependency.requirements.any?)
 
           # Update dependencies in the appropriate section
-          if group.nil? && parsed_content.dig("project", "dependencies")
-            update_pep621_dependencies!(parsed_content, updated_req)
+          update_pep621_dependencies!(parsed_content, updated_req) if group.nil?
+
+          if parsed_content.dig("project", "optional-dependencies", group)
+            update_optional_dependencies!(parsed_content, group, updated_req)
           end
           if parsed_content.dig("tool", "pdm", "dev-dependencies", group)
             update_pdm_dev_dependencies!(parsed_content, group, updated_req)
@@ -220,6 +225,12 @@ module Dependabot
         end
 
         sig { params(parsed_content: T.untyped, group: String, updated_req: String).void }
+        def update_optional_dependencies!(parsed_content, group, updated_req)
+          dependencies = parsed_content.dig("project", "optional-dependencies", group)
+          update_dependency_array!(dependencies, updated_req)
+        end
+
+        sig { params(parsed_content: T.untyped, group: String, updated_req: String).void }
         def update_pdm_dev_dependencies!(parsed_content, group, updated_req)
           dependencies = parsed_content.dig("tool", "pdm", "dev-dependencies", group)
           update_dependency_array!(dependencies, updated_req)
@@ -231,9 +242,29 @@ module Dependabot
           update_dependency_array!(dependencies, updated_req)
         end
 
+        sig { params(updated_req: String).returns(String) }
+        def get_updated_lock_requirement(updated_req)
+          return "#{dependency.name}#{updated_req}" unless pdm_lock
+
+          lock_data = TomlRB.parse(T.must(pdm_lock&.content))
+          entry = lock_data["package"].find { |pkg| pkg["name"] == dependency.name }
+          marker = if entry.nil? || !entry.key?("marker")
+                     nil
+                   else
+                     entry["marker"]
+                   end
+
+          "#{dependency.name}#{updated_req}#{marker ? " ;#{marker}" : ''}"
+        end
+
         sig { params(dependencies: T.untyped, updated_req: String).void }
         def update_dependency_array!(dependencies, updated_req)
           return unless dependencies.is_a?(Array)
+
+          unless dependency.top_level?
+            dependencies << get_updated_lock_requirement(updated_req)
+            return
+          end
 
           dependencies.map! do |dep|
             unless dep.is_a?(String) && normalise(dep).start_with?(normalise(dependency.name)) && !dep.include?("@")
@@ -264,6 +295,11 @@ module Dependabot
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def pyproject
           @pyproject ||= dependency_files.find { |f| f.name == "pyproject.toml" }
+        end
+
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
+        def pdm_lock
+          @pdm_lock ||= dependency_files.find { |f| f.name == "pdm.lock" }
         end
 
         sig { params(name: String).returns(String) }
