@@ -115,7 +115,17 @@ module Dependabot
         # ]
         sig { returns(Dependabot::Package::PackageDetails) }
         def rubygems_versions
-          response = registry_json_response_for_dependency
+          registry_url = get_url_from_dependency(dependency) || "https://rubygems.org"
+
+          # TODO: Github private registry support
+          # registry_url = "https://rubygems.pkg.github.com/#{OWNER_NAME}"
+          # Corresponding API URL:
+          # curl  -H "Accept: application/json" \
+          #       -H "Authorization: Bearer <<TOKEN>>" \
+          #       https://api.github.com/orgs/dsp-testing/packages/rubygems/json/version
+          return package_details([]) if registry_url.include?("rubygems.pkg.github.com")
+
+          response = registry_json_response_for_dependency(registry_url)
           raise unless response.status == 200
 
           registry_url = get_url_from_dependency(dependency) || "https://rubygems.org" # Get registry_url
@@ -147,11 +157,10 @@ module Dependabot
           url.end_with?("/") ? url.chop : url
         end
 
-        sig { returns(Excon::Response) }
-        def registry_json_response_for_dependency
-          registry_url = get_url_from_dependency(dependency) || "https://rubygems.org"
-
+        sig { params(registry_url: T.nilable(String)).returns(Excon::Response) }
+        def registry_json_response_for_dependency(registry_url = "https://rubygems.org")
           url = format(RELEASES_URL, registry_url, dependency.name)
+
           Dependabot::RegistryClient.get(
             url: url,
             headers: { "Accept" => APPLICATION_JSON }
