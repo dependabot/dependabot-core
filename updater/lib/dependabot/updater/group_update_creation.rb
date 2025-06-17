@@ -77,9 +77,7 @@ module Dependabot
           # We still want to update a dependency if it's been updated in another manifest file,
           # but we should skip it if it's been updated in _the same_ manifest file
           result = process_dependency_in_group(dependency, group, group_changes, original_dependencies)
-          if result
-            not_updated_dependencies << result
-          end
+          not_updated_dependencies << result if result
         end
 
         # Log which dependencies were not updated and why
@@ -142,9 +140,7 @@ module Dependabot
 
         # If the dependency can not be found in the reparsed files then it was likely removed by a previous
         # dependency update
-        if dependency.nil?
-          return { name: original_dependency_name, reason: "removed by previous update" }
-        end
+        return { name: original_dependency_name, reason: "removed by previous update" } if dependency.nil?
 
         # If the dependency version changed, then we can deduce that the dependency was updated already.
         original_dependency = original_dependencies.find { |d| d.name == dependency.name }
@@ -163,17 +159,13 @@ module Dependabot
           dep.name.casecmp(dependency.name)&.zero?
         end
 
-        unless lead_dependency
-          return { name: dependency.name, reason: "lead dependency not found" }
-        end
+        return { name: dependency.name, reason: "lead dependency not found" } unless lead_dependency
 
         dependency_change = create_change_for(lead_dependency, updated_dependencies, dependency_files, group)
 
         # Move on to the next dependency using the existing files if we
         # could not create a change for any reason
-        unless dependency_change
-          return { name: dependency.name, reason: "failed to create dependency change" }
-        end
+        return { name: dependency.name, reason: "failed to create dependency change" } unless dependency_change
 
         # Store the updated files for the next loop
         group_changes.merge(dependency_change)
@@ -181,8 +173,6 @@ module Dependabot
 
         nil # Indicates successful processing
       end
-
-
 
       sig { params(dependency: Dependabot::Dependency, group: Dependabot::DependencyGroup).returns(T::Boolean) }
       def skip_dependency?(dependency, group)
@@ -286,7 +276,8 @@ module Dependabot
         )
           .returns(T::Array[Dependabot::Dependency])
       end
-      def compile_updates_for(dependency, dependency_files, group) # rubocop:disable Metrics/MethodLength
+      def compile_updates_for(dependency, dependency_files, group)
+        # rubocop:disable Metrics/MethodLength
         checker = update_checker_for(
           dependency,
           dependency_files,
@@ -434,6 +425,7 @@ module Dependabot
         # some ecosystems don't do semver exactly, so anything lower gets individual for now
         false
       end
+
       # rubocop:enable Metrics/AbcSize
 
       sig { params(version: Gem::Version).returns(T::Hash[Symbol, Integer]) }
@@ -448,12 +440,15 @@ module Dependabot
       sig { params(checker: Dependabot::UpdateCheckers::Base).returns(Symbol) }
       def requirements_to_unlock(checker)
         if !checker.requirements_unlocked_or_can_be?
-          if checker.can_update?(requirements_to_unlock: :none) then :none
+          if checker.can_update?(requirements_to_unlock: :none) then
+            :none
           else
             :update_not_possible
           end
-        elsif checker.can_update?(requirements_to_unlock: :own) then :own
-        elsif checker.can_update?(requirements_to_unlock: :all) then :all
+        elsif checker.can_update?(requirements_to_unlock: :own) then
+          :own
+        elsif checker.can_update?(requirements_to_unlock: :all) then
+          :all
         else
           :update_not_possible
         end
