@@ -114,6 +114,46 @@ public class MiscellaneousTests
         ];
     }
 
+    [Fact]
+    public void DeserializeDependencyGroup()
+    {
+        var json = """
+            {
+              "name": "test-group",
+              "rules": {
+                "patterns": ["Test.*"],
+                "exclude-patterns": ["Dependency.*"]
+              }
+            }
+            """;
+        var group = JsonSerializer.Deserialize<DependencyGroup>(json, RunWorker.SerializerOptions);
+        Assert.NotNull(group);
+        Assert.Equal("test-group", group.Name);
+        var matcher = group.GetGroupMatcher();
+        Assert.Equal(["Test.*"], matcher.Patterns);
+        Assert.Equal(["Dependency.*"], matcher.ExcludePatterns);
+    }
+
+    [Fact]
+    public void DeserializeDependencyGroup_UnexpectedShape()
+    {
+        var json = """
+            {
+              "name": "test-group",
+              "rules": {
+                "patterns": { "unexpected": 1 },
+                "exclude-patterns": { "unexpected": 2 }
+              }
+            }
+            """;
+        var group = JsonSerializer.Deserialize<DependencyGroup>(json, RunWorker.SerializerOptions);
+        Assert.NotNull(group);
+        Assert.Equal("test-group", group.Name);
+        var matcher = group.GetGroupMatcher();
+        Assert.Equal([], matcher.Patterns);
+        Assert.Equal([], matcher.ExcludePatterns);
+    }
+
     [Theory]
     [MemberData(nameof(DependencyGroup_IsMatchTestData))]
     public void DependencyGroup_IsMatch(string[]? patterns, string[]? excludePatterns, string dependencyName, bool expectedMatch)

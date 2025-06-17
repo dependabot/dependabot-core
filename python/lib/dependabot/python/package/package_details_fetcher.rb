@@ -79,7 +79,7 @@ module Dependabot
 
           Dependabot::Package::PackageDetails.new(
             dependency: dependency,
-            releases: package_releases.reverse.uniq(&:version)
+            releases: package_releases.reverse
           )
         end
 
