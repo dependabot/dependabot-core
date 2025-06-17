@@ -131,7 +131,13 @@ module Dependabot
           return package_details([]) if parsed_url.host == "rubygems.pkg.github.com"
 
           response = registry_json_response_for_dependency(registry_url)
-          raise unless response.status == 200
+
+          unless response.status == 200
+            error_details = "Status: #{response.status}"
+            error_message = "Failed to fetch versions for '#{dependency.name}' from '#{registry_url}'. #{error_details}"
+            Dependabot.logger.info(error_message)
+            return package_details([])
+          end
 
           registry_url = get_url_from_dependency(dependency) || "https://rubygems.org" # Get registry_url
 
