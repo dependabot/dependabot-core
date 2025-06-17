@@ -402,6 +402,45 @@ public class PullRequestTextTests
             - Updated Package.B from 4.0.0 to 4.5.6 in a.txt
             """
         ];
+
+        // multiple updates to the same dependency
+        yield return
+        [
+            // job
+            FromCommitOptions(null),
+            // updateOperationsPerformed
+            new UpdateOperationBase[]
+            {
+                new DirectUpdate()
+                {
+                    DependencyName = "Some.Package",
+                    OldVersion = NuGetVersion.Parse("1.0.0"),
+                    NewVersion = NuGetVersion.Parse("1.2.3"),
+                    UpdatedFiles = ["a.txt"]
+                },
+                new DirectUpdate()
+                {
+                    DependencyName = "Some.Package",
+                    OldVersion = NuGetVersion.Parse("1.0.0"),
+                    NewVersion = NuGetVersion.Parse("1.2.3"),
+                    UpdatedFiles = ["b.txt"]
+                }
+            },
+            // dependencyGroupName
+            null,
+            // expectedTitle
+            "Bump Some.Package to 1.2.3",
+            // expectedCommitMessage
+            """
+            Bump Some.Package to 1.2.3
+            """,
+            // expectedBody
+            """
+            Performed the following updates:
+            - Updated Some.Package from 1.0.0 to 1.2.3 in a.txt
+            - Updated Some.Package from 1.0.0 to 1.2.3 in b.txt
+            """
+        ];
     }
 
     private static Job FromCommitOptions(CommitOptions? commitOptions)
