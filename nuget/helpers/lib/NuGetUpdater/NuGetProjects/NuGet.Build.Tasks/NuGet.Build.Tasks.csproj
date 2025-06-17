@@ -13,6 +13,8 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Build.Tasks.Core" ExcludeAssets="runtime" />
     <PackageReference Include="Microsoft.Build.Utilities.Core" ExcludeAssets="runtime" />
+    <PackageReference Include="System.Security.Cryptography.Pkcs" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" />
     <PackageReference Include="System.Threading.Tasks.Dataflow" />
   </ItemGroup>
 

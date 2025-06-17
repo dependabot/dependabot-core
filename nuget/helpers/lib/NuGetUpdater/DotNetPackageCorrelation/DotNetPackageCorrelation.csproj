@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <PackageReference Include="Semver" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" />
     <PackageReference Include="System.Text.Json" />
   </ItemGroup>
 
