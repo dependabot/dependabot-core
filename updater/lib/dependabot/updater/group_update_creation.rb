@@ -553,7 +553,8 @@ module Dependabot
 
           if vulnerability_conflicts.any?
             # This indicates vulnerability auditor found fix unavailable
-            explanation = vulnerability_conflicts.first["explanation"]
+            first_conflict = vulnerability_conflicts.first
+            explanation = first_conflict["explanation"] if first_conflict
             Dependabot.logger.info(
               "Security update not possible for #{dependency.name} in group #{group.name}: #{explanation}"
             )
