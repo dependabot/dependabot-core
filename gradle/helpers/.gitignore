@@ -1,0 +1,27 @@
+# Kotlin/Gradle build artifacts
+/build/
+/out/
+/.gradle/
+/.idea/
+*.iml
+*.class
+
+# VS Code
+.vscode/
+
+# Logs
+*.log
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Generated binary CLI
+/build/install/
+
+# Kotlin-specific
+*.kotlin_module
+
+# JetBrains run/debug configs
+*.iws
+*.ipr
