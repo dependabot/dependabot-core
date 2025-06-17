@@ -123,12 +123,12 @@ module Dependabot
           # curl  -H "Accept: application/json" \
           #       -H "Authorization: Bearer <<TOKEN>>" \
           #       https://api.github.com/orgs/dsp-testing/packages/rubygems/json/version
-          begin
-            parsed_url = URI.parse(registry_url)
-            return package_details([]) if parsed_url.host == "rubygems.pkg.github.com"
+          parsed_url = begin
+            URI.parse(registry_url)
           rescue URI::InvalidURIError
             raise "Invalid registry URL: #{registry_url}"
           end
+          return package_details([]) if parsed_url.host == "rubygems.pkg.github.com"
 
           response = registry_json_response_for_dependency(registry_url)
           raise unless response.status == 200
