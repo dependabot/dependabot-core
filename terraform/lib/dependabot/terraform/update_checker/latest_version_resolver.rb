@@ -36,7 +36,7 @@ module Dependabot
         attr_reader :dependency
 
         # Return latest version tag for the dependency, it removes tags that are in cooldown period
-        # and returns the latest version tag that is not in cooldown period. If eexception occurs
+        # and returns the latest version tag that is not in cooldown period. If exception occurs
         # it will return the latest version tag from the git_commit_checker. as it was before
         sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
         def latest_version_tag
