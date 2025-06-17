@@ -133,14 +133,17 @@ module Dependabot
         # Get the current state of the dependency files for use in this iteration, filter by directory
         dependency_files = group_changes.current_dependency_files(job)
 
+        # Store the original dependency name before reassignment
+        original_dependency_name = dependency.name
+
         # Reparse the current files
         reparsed_dependencies = dependency_file_parser(dependency_files).parse
-        dependency = reparsed_dependencies.find { |d| d.name == dependency.name }
+        dependency = reparsed_dependencies.find { |d| d.name == original_dependency_name }
 
         # If the dependency can not be found in the reparsed files then it was likely removed by a previous
         # dependency update
         if dependency.nil?
-          return { name: dependency.name, reason: "removed by previous update" }
+          return { name: original_dependency_name, reason: "removed by previous update" }
         end
 
         # If the dependency version changed, then we can deduce that the dependency was updated already.
