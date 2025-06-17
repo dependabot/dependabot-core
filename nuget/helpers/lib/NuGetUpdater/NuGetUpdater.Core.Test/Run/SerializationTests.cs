@@ -316,7 +316,7 @@ public class SerializationTests : TestBase
 
         Assert.Equal("Package.1", jobWrapper.Job.IgnoreConditions[0].DependencyName);
         Assert.Equal("some-file", jobWrapper.Job.IgnoreConditions[0].Source);
-        Assert.Equal("version-update:semver-major", jobWrapper.Job.IgnoreConditions[0].UpdateTypes.Single());
+        Assert.Equal(ConditionUpdateType.SemVerMajor, jobWrapper.Job.IgnoreConditions[0].UpdateTypes.Single());
         Assert.Null(jobWrapper.Job.IgnoreConditions[0].UpdatedAt);
         Assert.Equal("> 1.2.3", jobWrapper.Job.IgnoreConditions[0].VersionRequirement?.ToString());
 

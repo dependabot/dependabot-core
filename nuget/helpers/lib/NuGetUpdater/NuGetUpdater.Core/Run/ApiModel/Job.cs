@@ -100,15 +100,14 @@ public sealed record Job
         return existingPullRequest;
     }
 
-    public bool IsDependencyIgnored(string dependencyName, string dependencyVersion)
+    public bool IsDependencyIgnoredByNameOnly(string dependencyName)
     {
-        var versionsToIgnore = IgnoreConditions
-            .Where(c => FileSystemName.MatchesSimpleExpression(c.DependencyName, dependencyName))
-            .Select(c => c.VersionRequirement ?? Requirement.Parse(">= 0.0.0")) // no range means ignore everything
+        var packageNamesToIgnore = IgnoreConditions
+            .Where(c => c.UpdateTypes.Length == 0 && c.VersionRequirement is null) // ignoring by name means there can't be any qualification
+            .Select(c => c.DependencyName)
             .ToArray();
-        var parsedDependencyVersion = NuGetVersion.Parse(dependencyVersion);
-        var isIgnored = versionsToIgnore
-            .Any(r => r.IsSatisfiedBy(parsedDependencyVersion));
+        var isIgnored = packageNamesToIgnore
+            .Any(p => FileSystemName.MatchesSimpleExpression(p, dependencyName));
         return isIgnored;
     }
 

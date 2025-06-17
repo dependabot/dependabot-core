@@ -16,8 +16,8 @@ namespace NuGetUpdater.Core.Test.Run;
 public class MiscellaneousTests
 {
     [Theory]
-    [MemberData(nameof(IsDependencyIgnoredTestData))]
-    public void IsDependencyIgnored(Condition[] ignoreConditions, string dependencyName, string dependencyVersion, bool expectedIgnored)
+    [MemberData(nameof(IsDependencyIgnoredByNameOnlyTestData))]
+    public void IsDependencyIgnoredByNameOnly(Condition[] ignoreConditions, string dependencyName, bool expectedIgnored)
     {
         // arrange
         var job = new Job()
@@ -31,14 +31,15 @@ public class MiscellaneousTests
         };
 
         // act
-        var actualIsIgnored = job.IsDependencyIgnored(dependencyName, dependencyVersion);
+        var actualIsIgnored = job.IsDependencyIgnoredByNameOnly(dependencyName);
 
         // assert
         Assert.Equal(expectedIgnored, actualIsIgnored);
     }
 
-    public static IEnumerable<object[]> IsDependencyIgnoredTestData()
+    public static IEnumerable<object[]> IsDependencyIgnoredByNameOnlyTestData()
     {
+        // non-matching name
         yield return
         [
             // ignoreConditions
@@ -51,12 +52,11 @@ public class MiscellaneousTests
             },
             // dependencyName
             "Some.Dependency",
-            // dependencyVersion
-            "1.2.3",
             // expectedIgnored
             false,
         ];
 
+        // matching name, but has version requirement
         yield return
         [
             // ignoreConditions
@@ -70,31 +70,11 @@ public class MiscellaneousTests
             },
             // dependencyName
             "Some.Dependency",
-            // dependencyVersion
-            "1.2.3",
             // expectedIgnored
             false,
         ];
 
-        yield return
-        [
-            // ignoreConditions
-            new[]
-            {
-                new Condition()
-                {
-                    DependencyName = "Some.Dependency",
-                    VersionRequirement = Requirement.Parse("> 1.0.0"),
-                }
-            },
-            // dependencyName
-            "Some.Dependency",
-            // dependencyVersion
-            "1.2.3",
-            // expectedIgnored
-            true,
-        ];
-
+        // wildcard matching name
         yield return
         [
             // ignoreConditions
@@ -107,10 +87,26 @@ public class MiscellaneousTests
             },
             // dependencyName
             "Some.Dependency",
-            // dependencyVersion
-            "1.2.3",
             // expectedIgnored
             true,
+        ];
+
+        // matching name, but has update type restrictions
+        yield return
+        [
+            // ignoreConditions
+            new[]
+            {
+                new Condition()
+                {
+                    DependencyName = "Some.*",
+                    UpdateTypes = [ConditionUpdateType.SemVerMajor],
+                }
+            },
+            // dependencyName
+            "Some.Dependency",
+            // expectedIgnored
+            false,
         ];
     }
 
@@ -665,6 +661,7 @@ public class MiscellaneousTests
 
     public static IEnumerable<object[]> DependencyInfoFromJobData()
     {
+        // with security advisory
         yield return
         [
             // job
@@ -707,7 +704,45 @@ public class MiscellaneousTests
                         VulnerableVersions = [Requirement.Parse(">= 1.0.0, < 1.1.0")],
                         SafeVersions = [Requirement.Parse("= 1.1.0"), Requirement.Parse("= 1.2.0")],
                     }
-                ]
+                ],
+                IgnoredUpdateTypes = [],
+            }
+        ];
+
+        yield return
+        [
+            // job
+            new Job()
+            {
+                Source = new()
+                {
+                    Provider = "github",
+                    Repo = "some/repo",
+                },
+                IgnoreConditions = [
+                    new Condition()
+                    {
+                        DependencyName = "Some.*",
+                        UpdateTypes = [ConditionUpdateType.SemVerMajor],
+                    },
+                    new Condition()
+                    {
+                        DependencyName = "Unrelated.*",
+                        UpdateTypes = [ConditionUpdateType.SemVerMinor],
+                    },
+                ],
+            },
+            // dependency
+            new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
+            // expectedDependencyInfo
+            new DependencyInfo()
+            {
+                Name = "Some.Dependency",
+                Version = "1.0.0",
+                IsVulnerable = false,
+                IgnoredVersions = [],
+                Vulnerabilities = [],
+                IgnoredUpdateTypes = [ConditionUpdateType.SemVerMajor],
             }
         ];
     }

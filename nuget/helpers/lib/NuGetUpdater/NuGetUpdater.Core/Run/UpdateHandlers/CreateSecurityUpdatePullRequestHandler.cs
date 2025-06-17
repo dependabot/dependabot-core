@@ -65,13 +65,29 @@ internal class CreateSecurityUpdatePullRequestHandler : IUpdateHandler
             foreach (var dependencyGroupToUpdate in groupedUpdateOperationsToPerform)
             {
                 var dependencyName = dependencyGroupToUpdate.Key;
-                var vulnerableDependenciesToUpdate = dependencyGroupToUpdate.Value
+                var vulnerableCandidateDependenciesToUpdate = dependencyGroupToUpdate.Value
                     .Select(o => (o.ProjectPath, o.Dependency, RunWorker.GetDependencyInfo(job, o.Dependency)))
                     .Where(set => set.Item3.IsVulnerable)
                     .ToArray();
+                var vulnerableDependenciesToUpdate = vulnerableCandidateDependenciesToUpdate
+                    .Where(o => !job.IsDependencyIgnoredByNameOnly(o.Dependency.Name))
+                    .ToArray();
                 if (vulnerableDependenciesToUpdate.Length == 0)
                 {
-                    await apiHandler.RecordUpdateJobError(new SecurityUpdateNotNeeded(dependencyName));
+                    // no update possible, check backwards to see if it's because of ignore conditions
+                    var ignoredUpdates = vulnerableCandidateDependenciesToUpdate
+                        .Where(set => set.Dependency.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase))
+                        .ToArray();
+                    if (ignoredUpdates.Length > 0)
+                    {
+                        logger.Error($"Cannot update {dependencyName} because all versions are ignored.");
+                        await apiHandler.RecordUpdateJobError(new SecurityUpdateIgnored(dependencyName));
+                    }
+                    else
+                    {
+                        await apiHandler.RecordUpdateJobError(new SecurityUpdateNotNeeded(dependencyName));
+                    }
+
                     continue;
                 }
 
@@ -89,14 +105,6 @@ internal class CreateSecurityUpdatePullRequestHandler : IUpdateHandler
                     {
                         logger.Info($"No updatable version found for {dependency.Name} in {projectPath}.");
                         await apiHandler.RecordUpdateJobError(new SecurityUpdateNotFound(dependency.Name, dependency.Version!));
-                        continue;
-                    }
-
-                    if (dependencyInfo.IgnoredVersions.Any(ignored => ignored.IsSatisfiedBy(NuGetVersion.Parse(analysisResult.UpdatedVersion))) ||
-                        job.IsDependencyIgnored(dependency.Name, dependency.Version!))
-                    {
-                        logger.Error($"Cannot update {dependency.Name} for {projectPath} because all versions are ignored.");
-                        await apiHandler.RecordUpdateJobError(new SecurityUpdateIgnored(dependencyName));
                         continue;
                     }
 

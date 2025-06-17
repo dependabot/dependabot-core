@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.IO;
+using System.IO.Enumeration;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -677,7 +678,12 @@ public class RunWorker
         var dependencyVersion = NuGetVersion.Parse(dependency.Version!);
         var securityAdvisories = job.SecurityAdvisories.Where(s => s.DependencyName.Equals(dependency.Name, StringComparison.OrdinalIgnoreCase)).ToArray();
         var isVulnerable = securityAdvisories.Any(s => (s.AffectedVersions ?? []).Any(v => v.IsSatisfiedBy(dependencyVersion)));
-        var ignoredVersions = GetIgnoredRequirementsForDependency(job, dependency.Name);
+        var ignoredVersions = job.IgnoreConditions
+            .Where(c => FileSystemName.MatchesSimpleExpression(c.DependencyName, dependency.Name))
+            .Select(c => c.VersionRequirement)
+            .Where(r => r is not null)
+            .Cast<Requirement>()
+            .ToImmutableArray();
         var vulnerabilities = securityAdvisories.Select(s => new SecurityVulnerability()
         {
             DependencyName = dependency.Name,
@@ -685,6 +691,11 @@ public class RunWorker
             VulnerableVersions = s.AffectedVersions ?? [],
             SafeVersions = s.SafeVersions.ToImmutableArray(),
         }).ToImmutableArray();
+        var ignoredUpdateTypes = job.IgnoreConditions
+            .Where(c => FileSystemName.MatchesSimpleExpression(c.DependencyName, dependency.Name))
+            .SelectMany(c => c.UpdateTypes)
+            .Distinct()
+            .ToImmutableArray();
         var dependencyInfo = new DependencyInfo()
         {
             Name = dependency.Name,
@@ -692,6 +703,7 @@ public class RunWorker
             IsVulnerable = isVulnerable,
             IgnoredVersions = ignoredVersions,
             Vulnerabilities = vulnerabilities,
+            IgnoredUpdateTypes = ignoredUpdateTypes,
         };
         return dependencyInfo;
     }
