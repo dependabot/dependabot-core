@@ -21,6 +21,7 @@ module Dependabot
   class Updater
     extend T::Sig
 
+    # rubocop:disable Metrics/ModuleLength
     module GroupUpdateCreation
       extend T::Sig
       extend T::Helpers
@@ -55,7 +56,6 @@ module Dependabot
       # outcome of attempting to update every dependency iteratively which
       # can be used for PR creation.
       # rubocop:disable Metrics/AbcSize
-      # rubocop:disable Metrics/MethodLength
       # rubocop:disable Metrics/PerceivedComplexity
       sig { params(group: Dependabot::DependencyGroup).returns(T.nilable(Dependabot::DependencyChange)) }
       def compile_all_dependency_changes_for(group)
@@ -200,7 +200,7 @@ module Dependabot
 
       # rubocop:enable Metrics/PerceivedComplexity
       # rubocop:enable Metrics/AbcSize
-      # rubocop:enable Metrics/MethodLength
+
       sig { params(dependency_change: Dependabot::DependencyChange).void }
       def log_missing_previous_version(dependency_change)
         deps_no_previous_version = dependency_change.updated_dependencies.reject(&:previous_version).map(&:name)
@@ -268,6 +268,7 @@ module Dependabot
       #
       # This method **must** must return an Array when it errors
       #
+      # rubocop:disable Metrics/MethodLength
       sig do
         params(
           dependency: Dependabot::Dependency,
@@ -277,7 +278,6 @@ module Dependabot
           .returns(T::Array[Dependabot::Dependency])
       end
       def compile_updates_for(dependency, dependency_files, group)
-        # rubocop:disable Metrics/MethodLength
         checker = update_checker_for(
           dependency,
           dependency_files,
@@ -328,6 +328,7 @@ module Dependabot
         error_handler.handle_dependency_error(error: e, dependency: dependency, dependency_group: group)
         [] # return an empty set
       end
+      # rubocop:enable Metrics/MethodLength
 
       sig { params(dependency: Dependabot::Dependency).void }
       def log_up_to_date(dependency)
@@ -440,14 +441,14 @@ module Dependabot
       sig { params(checker: Dependabot::UpdateCheckers::Base).returns(Symbol) }
       def requirements_to_unlock(checker)
         if !checker.requirements_unlocked_or_can_be?
-          if checker.can_update?(requirements_to_unlock: :none) then
+          if checker.can_update?(requirements_to_unlock: :none)
             :none
           else
             :update_not_possible
           end
-        elsif checker.can_update?(requirements_to_unlock: :own) then
+        elsif checker.can_update?(requirements_to_unlock: :own)
           :own
-        elsif checker.can_update?(requirements_to_unlock: :all) then
+        elsif checker.can_update?(requirements_to_unlock: :all)
           :all
         else
           :update_not_possible
@@ -540,5 +541,6 @@ module Dependabot
         Dependabot::Dependency.new(**dependency_params)
       end
     end
+    # rubocop:enable Metrics/ModuleLength
   end
 end
