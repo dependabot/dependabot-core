@@ -138,7 +138,7 @@ module Dependabot
             Dependabot.logger.info(error_message)
             return package_details([])
           end
-          
+
           registry_url = get_url_from_dependency(dependency) || "https://rubygems.org" # Get registry_url
 
           package_releases = JSON.parse(response.body).map do |release|
