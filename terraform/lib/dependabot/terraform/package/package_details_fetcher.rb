@@ -15,8 +15,8 @@ module Dependabot
         extend T::Sig
 
         RELEASES_URL_GIT = "https://api.github.com/repos/"
-        RELEASE_URL_FOR_PROVIDER = "https://registry.terraform.io/v2/providers"
-        RELEASE_URL_FOR_MODULE = "https://registry.terraform.io/v2/modules"
+        RELEASE_URL_FOR_PROVIDER = "https://registry.terraform.io/v2/providers/"
+        RELEASE_URL_FOR_MODULE = "https://registry.terraform.io/v2/modules/"
         APPLICATION_JSON = "JSON"
         INCLUDE_FOR_PROVIDER = "?include=provider-versions"
         INCLUDE_FOR_MODULE = "?include=module-versions"
