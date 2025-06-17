@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.IO.Enumeration;
+using System.Text.Json;
 
 namespace NuGetUpdater.Core.Run.ApiModel;
 
@@ -32,33 +33,43 @@ public class GroupMatcher
 
     public static GroupMatcher FromRules(Dictionary<string, object> rules)
     {
-        string[] patterns;
-        if (rules.TryGetValue("patterns", out var patternsObject) &&
-            patternsObject is string[] patternsArray)
-        {
-            patterns = patternsArray;
-        }
-        else
-        {
-            patterns = ["*"]; // default to matching everything unless excluded below
-        }
-
-        string[] excludePatterns;
-        if (rules.TryGetValue("exclude-patterns", out var excludePatternsObject) &&
-            excludePatternsObject is string[] excludePatternsArray)
-        {
-            excludePatterns = excludePatternsArray;
-        }
-        else
-        {
-            excludePatterns = [];
-        }
+        var patterns = GetStringArray(rules, "patterns", ["*"]); // default to matching everything unless explicitly excluded
+        var excludePatterns = GetStringArray(rules, "exclude-patterns", []);
 
         return new GroupMatcher()
         {
-            Patterns = [.. patterns],
-            ExcludePatterns = [.. excludePatterns],
+            Patterns = patterns,
+            ExcludePatterns = excludePatterns,
         };
+    }
+
+    private static ImmutableArray<string> GetStringArray(Dictionary<string, object> rules, string propertyName, ImmutableArray<string> defaultValue)
+    {
+        if (!rules.TryGetValue(propertyName, out var propertyObject))
+        {
+            return defaultValue;
+        }
+
+        if (propertyObject is string[] stringArray)
+        {
+            // shortcut for unit tests which directly supply the array
+            return [.. stringArray];
+        }
+
+        var patternsElements = new List<string>();
+        if (propertyObject is JsonElement element &&
+            element.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var arrayElement in element.EnumerateArray())
+            {
+                if (arrayElement.ValueKind == JsonValueKind.String)
+                {
+                    patternsElements.Add(arrayElement.GetString()!);
+                }
+            }
+        }
+
+        return [.. patternsElements];
     }
 }
 

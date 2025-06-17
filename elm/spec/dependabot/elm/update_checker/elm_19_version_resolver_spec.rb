@@ -4,10 +4,10 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/elm/update_checker/elm_19_version_resolver"
+require "dependabot/elm/update_checker/latest_version_finder"
 
 namespace = Dependabot::Elm::UpdateChecker
-RSpec.describe namespace::Elm19VersionResolver do
+RSpec.describe namespace::Elm19LatestVersionFinder do
   def elm_version(version_string)
     Dependabot::Elm::Version.new(version_string)
   end
@@ -15,9 +15,11 @@ RSpec.describe namespace::Elm19VersionResolver do
   let(:resolver) do
     described_class.new(
       dependency: dependency,
-      dependency_files: dependency_files
+      dependency_files: dependency_files,
+      cooldown_options: update_cooldown
     )
   end
+  let(:update_cooldown) { nil }
   let(:unlock_requirement) { :own }
   let(:dependency_files) { [elm_json] }
   let(:elm_json) do
@@ -43,6 +45,11 @@ RSpec.describe namespace::Elm19VersionResolver do
   describe "#latest_resolvable_version" do
     subject(:latest_resolvable_version) do
       resolver.latest_resolvable_version(unlock_requirement: unlock_requirement)
+    end
+
+    before do
+      stub_request(:get, "https://package.elm-lang.org/packages/elm/parser/releases.json")
+        .to_return(status: 200, body: fixture("elm_jsons", "elm-parser.json"))
     end
 
     context "when dealing with an app" do
@@ -104,6 +111,11 @@ RSpec.describe namespace::Elm19VersionResolver do
         let(:dependency_version) { "1.0.0" }
         let(:dependency_requirement) { "1.0.0" }
 
+        before do
+          stub_request(:get, "https://package.elm-lang.org/packages/elm/http/releases.json")
+            .to_return(status: 200, body: fixture("elm_jsons", "elm-http.json"))
+        end
+
         it { is_expected.to eq(elm_version(dependency_version)) }
 
         context "when :all unlocks" do
@@ -119,6 +131,11 @@ RSpec.describe namespace::Elm19VersionResolver do
         let(:dependency_name) { "elm/http" }
         let(:dependency_version) { "1.0.0" }
         let(:dependency_requirement) { "1.0.0" }
+
+        before do
+          stub_request(:get, "https://package.elm-lang.org/packages/elm/http/releases.json")
+            .to_return(status: 200, body: fixture("elm_jsons", "elm-http.json"))
+        end
 
         # TODO: Indirect dependency updates don't work yet!
         # We need to run `elm install` to figure them out, but it's not clear
