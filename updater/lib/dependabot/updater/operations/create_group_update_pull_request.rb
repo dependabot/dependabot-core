@@ -132,15 +132,18 @@ module Dependabot
             updated_dependency_names.include?(dep.name)
           end
 
-          failed_dependencies.each do |failed_dependency|
-            error_handler.record_update_job_error(
-              error_type: "security_update_failed",
-              error_details: {
-                "dependency-name" => failed_dependency.name,
-                "dependency-version" => failed_dependency.version,
-                "directory" => job.source.directory || "/",
-              },
-              dependency: failed_dependency
+          # Filter out dependencies that were already handled (i.e., had errors reported during processing)
+          unhandled_failed_dependencies = failed_dependencies.reject do |dep|
+            dependency_snapshot.handled_dependencies.include?(dep.name)
+          end
+
+          unhandled_failed_dependencies.each do |failed_dependency|
+            error_handler.handle_dependency_error(
+              error: Dependabot::DependabotError.new(
+                "Security update failed for #{failed_dependency.name} #{failed_dependency.version}"
+              ),
+              dependency: failed_dependency,
+              dependency_group: group
             )
           end
         end
