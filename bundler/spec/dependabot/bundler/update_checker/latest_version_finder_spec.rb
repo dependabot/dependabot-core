@@ -316,6 +316,71 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
       end
     end
 
+    context "with cooldown enabled with private registry" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: current_version,
+          requirements: requirements,
+          package_manager: "bundler"
+        )
+      end
+      let(:dependency_name) { "business" }
+      let(:current_version) { "1.3" }
+      let(:requirements) do
+        [{ requirement: "1.3",
+           groups: [:default],
+           source: { type: "rubygems", url: "https://repo.fury.io/greysteil/" },
+           file: "Gemfile" }]
+      end
+
+      let(:private_registry_url) { "https://repo.fury.io/greysteil/api/v1/" }
+      let(:enable_cooldown_for_bundler) { true }
+      let(:cooldown_options) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 60) }
+
+      before do
+        rubygems_response = fixture("ruby", "rubygems_response_versions.json")
+        stub_request(:get, private_registry_url + "versions/business.json")
+          .to_return(status: 200, body: rubygems_response)
+          .to_return(status: 200, body: rubygems_response)
+
+        rubygems_response = fixture("ruby", "rubygems_response_versions.json")
+        stub_request(:get, rubygems_url + "versions/business.json")
+          .to_return(status: 200, body: rubygems_response)
+          .to_return(status: 200, body: rubygems_response)
+
+        allow(Dependabot::Bundler::NativeHelpers).to receive(:run_bundler_subprocess).and_return("rubygems")
+
+        allow(Time).to receive(:now).and_return(Time.parse("2015-06-03T17:30:00.000Z"))
+      end
+
+      context "with latest version details" do
+        subject(:result) { finder.latest_version_details }
+
+        it "fetches the latest version details" do
+          expect(result).to be_a(Hash)
+          expect(result).not_to be_empty
+          expect(result[:version]).to eq(Dependabot::Bundler::Version.new("1.4.0"))
+        end
+      end
+
+      context "with latest version details with malformed dependency version" do
+        let(:current_version) { "074eb7ea86b69a3828b9da004c014d82dbb794c9" }
+
+        it "fetches the latest version details" do
+          expect { finder.latest_version_details }.not_to raise_error
+        end
+      end
+
+      context "with latest version" do
+        subject(:result) { finder.latest_version }
+
+        it "fetches the latest version" do
+          expect(result).to eq(Dependabot::Bundler::Version.new("1.4.0"))
+        end
+      end
+    end
+
     context "with a private rubygems source" do
       let(:dependency_files) { bundler_project_dependency_files("specified_source") }
       let(:subprocess_error) do

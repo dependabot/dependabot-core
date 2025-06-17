@@ -1,10 +1,6 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
 using NuGet.Frameworks;
 
 using NuGetUpdater.Core.FrameworkChecker;
@@ -64,17 +60,18 @@ public class FrameworkCompatibilityServiceFacts
     }
 
     [Theory]
-    [InlineData("portable-net45+sl4+win8+wp7")]
-    [InlineData("portable-net40+sl4")]
-    [InlineData("portable-net45+sl5+win8+wpa81+wp8")]
-    public void PCLPackageFrameworksReturnsEmptySet(string pclFrameworkName)
+    [InlineData("portable-net45+win8+wpa81", "net48", true)] // profile 111, compatible
+    [InlineData("portable-net45+win8+wpa81", "net40", false)] // profile 111, incompatible
+    [InlineData("portable-net45+win8+wp8+wpa81", "net48", true)] // profile 259, compatible
+    public void PCLPackageFrameworksReportCompatibility(string pclFrameworkName, string projectFrameworkName, bool expectedCompatible)
     {
         var portableFramework = NuGetFramework.Parse(pclFrameworkName);
+        var projectFramework = NuGetFramework.Parse(projectFrameworkName);
 
-        var result = _service.GetCompatibleFrameworks([portableFramework]);
+        var compatible = _service.GetCompatibleFrameworks([portableFramework]);
 
-        Assert.True(portableFramework.IsPCL);
-        Assert.Empty(result);
+        var actualCompatible = compatible.Contains(projectFramework);
+        Assert.Equal(expectedCompatible, actualCompatible);
     }
 
     [Theory]
