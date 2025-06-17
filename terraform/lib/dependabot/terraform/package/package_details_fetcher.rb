@@ -101,7 +101,7 @@ module Dependabot
         end
 
         sig { returns(T::Array[GitTagWithDetail]) }
-        def fetch_tag_and_release_date_from_modeule
+        def fetch_tag_and_release_date_from_module
           url = RELEASE_URL_FOR_MODULE + dependency_source_details&.fetch(:module_identifier) +
                 INCLUDE_FOR_MODULE
           Dependabot.logger.info("Fetching provider release details from URL: #{url}")

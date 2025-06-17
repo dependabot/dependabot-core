@@ -81,8 +81,8 @@ module Dependabot
         return @latest_version_for_registry_dependency if @latest_version_for_registry_dependency
 
         versions = all_module_versions
-        # Filter versions if they are in cooldown period
-        versions = latest_version_resolver.filter_versions_in_cooldown_period(versions)
+        # Filter versions which are in cooldown period
+        latest_version_resolver.filter_versions_in_cooldown_period_from_module(versions)
         versions.reject!(&:prerelease?) unless wants_prerelease?
         versions.reject! { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }
         @latest_version_for_registry_dependency = T.let(
@@ -121,6 +121,8 @@ module Dependabot
         return @latest_version_for_provider_dependency if @latest_version_for_provider_dependency
 
         versions = all_provider_versions
+        # Filter versions which are in cooldown period
+        latest_version_resolver.filter_versions_in_cooldown_period_from_provider(versions)
         versions.reject!(&:prerelease?) unless wants_prerelease?
         versions.reject! { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }
 
