@@ -151,6 +151,12 @@ PATH
       dependabot-common (= 0.319.1)
 
 PATH
+  remote: rust_toolchain
+  specs:
+    dependabot-rust_toolchain (0.319.1)
+      dependabot-common (= 0.319.1)
+
+PATH
   remote: silent
   specs:
     dependabot-silent (0.319.1)
@@ -255,12 +261,6 @@ GEM
     multi_xml (0.7.1)
       bigdecimal (~> 3.1)
     netrc (0.11.0)
-    nokogiri (1.18.1-aarch64-linux-gnu)
-      racc (~> 1.4)
-    nokogiri (1.18.1-arm64-darwin)
-      racc (~> 1.4)
-    nokogiri (1.18.1-x86_64-darwin)
-      racc (~> 1.4)
     nokogiri (1.18.1-x86_64-linux-gnu)
       racc (~> 1.4)
     octokit (7.2.0)
@@ -361,8 +361,6 @@ GEM
     sorbet (0.5.11952)
       sorbet-static (= 0.5.11952)
     sorbet-runtime (0.5.11952)
-    sorbet-static (0.5.11952-aarch64-linux)
-    sorbet-static (0.5.11952-universal-darwin)
     sorbet-static (0.5.11952-x86_64-linux)
     sorbet-static-and-runtime (0.5.11952)
       sorbet (= 0.5.11952)
@@ -407,10 +405,6 @@ GEM
     zeitwerk (2.7.1)
 
 PLATFORMS
-  aarch64-linux
-  arm64-darwin
-  universal-darwin
-  x86_64-darwin
   x86_64-linux
 
 DEPENDENCIES
@@ -436,6 +430,7 @@ DEPENDENCIES
   dependabot-nuget!
   dependabot-pub!
   dependabot-python!
+  dependabot-rust_toolchain!
   dependabot-silent!
   dependabot-swift!
   dependabot-terraform!
@@ -498,6 +493,7 @@ CHECKSUMS
   dependabot-nuget (0.319.1)
   dependabot-pub (0.319.1)
   dependabot-python (0.319.1)
+  dependabot-rust_toolchain (0.319.1)
   dependabot-silent (0.319.1)
   dependabot-swift (0.319.1)
   dependabot-terraform (0.319.1)
@@ -529,9 +525,6 @@ CHECKSUMS
   mini_portile2 (2.8.5) sha256=7a37db8ae758086c3c3ac3a59c036704d331e965d5e106635e4a42d6e66089ce
   multi_xml (0.7.1) sha256=4fce100c68af588ff91b8ba90a0bb3f0466f06c909f21a32f4962059140ba61b
   netrc (0.11.0) sha256=de1ce33da8c99ab1d97871726cba75151113f117146becbe45aa85cb3dabee3f
-  nokogiri (1.18.1-aarch64-linux-gnu) sha256=35837013800e34342fcbaca305f8c49231f6bd4f779bfa23fe7b4686ae82d5b8
-  nokogiri (1.18.1-arm64-darwin) sha256=d75193f284c899d225943a8944479faedd995a7573ddd5c8308ffbdf2ec55204
-  nokogiri (1.18.1-x86_64-darwin) sha256=d94e3aa6483577495fc8969d6b4b5c075840ce6b1ab09636a6d4177ad171051d
   nokogiri (1.18.1-x86_64-linux-gnu) sha256=e516cf16ccde67ed4cc595a2621ca5ddd42562ecb24928914b0045a20a41620e
   octokit (7.2.0) sha256=7032d968d03177ee7a29e3bd4782fc078215cca4743db0dfc66a49feb9411907
   opentelemetry-api (1.5.0) sha256=8dcc33e7aba70b1da630065ce0db3d6f50cb8ebd2017383209739439025ea997
@@ -578,8 +571,6 @@ CHECKSUMS
   simplecov_json_formatter (0.1.4) sha256=529418fbe8de1713ac2b2d612aa3daa56d316975d307244399fa4838c601b428
   sorbet (0.5.11952) sha256=0e5ed931243e140cd2fa42baca4a4f571fa779cbcccda40b4e44c12483120425
   sorbet-runtime (0.5.11952) sha256=03261787bff1d400bce3cc0d81a2aa9bc9899cdd0dfbdc2c019e427697d87edf
-  sorbet-static (0.5.11952-aarch64-linux) sha256=a7fb0d3debfa28edc8fd425be51859a8f29caebd1bb6d430b266cd42adfee47c
-  sorbet-static (0.5.11952-universal-darwin) sha256=e24575b632d9ce90950cc64066a2cad6a2c583bb5cf1a6872a031b8d0dcd6e2f
   sorbet-static (0.5.11952-x86_64-linux) sha256=d6cff58d2b215a6b5c66af0df016ce45b3deb0641cfa0fe88a3072d74ad74605
   sorbet-static-and-runtime (0.5.11952) sha256=cb94d25267ac0d65055b4651e08c6cc81c00bbdc79735cb5099a7103a739ece8
   spoom (1.5.1) sha256=61dbab2059a094506210886455a513615c6915654048e3d2447223790e423095
