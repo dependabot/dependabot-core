@@ -88,7 +88,7 @@ module Dependabot
 
             return nil if source_cred.nil?
 
-            source["url"] = AuthedUrlBuilder.authed_url(credential: source_cred)
+            source["url"] = AuthedUrlBuilder.authed_url(credential: source_cred.to_h)
           end
 
           source
@@ -101,7 +101,7 @@ module Dependabot
             credentials.select { |cred| cred["type"] == "python_index" }.map.with_index do |c, i|
               {
                 "name" => "dependabot-inserted-index-#{i}",
-                "url" => AuthedUrlBuilder.authed_url(credential: c)
+                "url" => AuthedUrlBuilder.authed_url(credential: c.to_h)
               }
             end
         end
