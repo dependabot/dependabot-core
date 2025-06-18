@@ -1,6 +1,8 @@
 #!/usr/bin/env ruby
-# typed: true
+# typed: strict
 # frozen_string_literal: true
+
+require "sorbet-runtime"
 
 unless %w(minor patch).include?(ARGV[0])
   puts "usage: bin/bump-version.rb minor|patch"
@@ -13,6 +15,11 @@ version_path = File.join(__dir__, "..", "common", "lib", "dependabot.rb")
 version_contents = File.read(version_path)
 
 version = version_contents.scan(/\d+.\d+.\d+/).first
+unless version
+  puts "Could not find version in #{version_path}"
+  exit 1
+end
+
 segments = Gem::Version.new(version).segments
 new_version =
   case component
@@ -29,14 +36,14 @@ File.write(version_path, new_version_contents)
 `cd updater/ && bundle lock`
 unless $?.success?
   puts "Failed to update `updater/Gemfile.lock`"
-  exit $?.exitstatus
+  exit T.must($?).exitstatus
 end
 
 # Bump the root's Gemfile.lock with the new version
 `bundle lock`
 unless $?.success?
   puts "Failed to update `Gemfile.lock`"
-  exit $?.exitstatus
+  exit T.must($?).exitstatus
 end
 
 puts new_version

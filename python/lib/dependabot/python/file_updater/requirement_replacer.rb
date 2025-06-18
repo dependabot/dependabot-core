@@ -1,6 +1,7 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
+require "sorbet-runtime"
 require "dependabot/dependency"
 require "dependabot/python/requirement_parser"
 require "dependabot/python/file_updater"
@@ -12,20 +13,33 @@ module Dependabot
   module Python
     class FileUpdater
       class RequirementReplacer
+        extend T::Sig
+
         PACKAGE_NOT_FOUND_ERROR = "PackageNotFoundError"
 
         CERTIFICATE_VERIFY_FAILED = /CERTIFICATE_VERIFY_FAILED/
 
+        sig do
+          params(
+            content: String,
+            dependency_name: String,
+            old_requirement: T.nilable(String),
+            new_requirement: String,
+            new_hash_version: T.nilable(String),
+            index_urls: T.nilable(T::Array[T.nilable(String)])
+          ).void
+        end
         def initialize(content:, dependency_name:, old_requirement:,
                        new_requirement:, new_hash_version: nil, index_urls: nil)
-          @content          = content
-          @dependency_name  = normalise(dependency_name)
-          @old_requirement  = old_requirement
-          @new_requirement  = new_requirement
-          @new_hash_version = new_hash_version
-          @index_urls = index_urls
+          @content = T.let(content, String)
+          @dependency_name = T.let(normalise(dependency_name), String)
+          @old_requirement = T.let(old_requirement, T.nilable(String))
+          @new_requirement = T.let(new_requirement, String)
+          @new_hash_version = T.let(new_hash_version, T.nilable(String))
+          @index_urls = T.let(index_urls, T.nilable(T::Array[T.nilable(String)]))
         end
 
+        sig { returns(String) }
         def updated_content
           updated_content =
             content.gsub(original_declaration_replacement_regex) do |mtch|
@@ -43,12 +57,22 @@ module Dependabot
 
         private
 
+        sig { returns(String) }
         attr_reader :content
+
+        sig { returns(String) }
         attr_reader :dependency_name
+
+        sig { returns(T.nilable(String)) }
         attr_reader :old_requirement
+
+        sig { returns(String) }
         attr_reader :new_requirement
+
+        sig { returns(T.nilable(String)) }
         attr_reader :new_hash_version
 
+        sig { returns(T::Boolean) }
         def update_hashes?
           !new_hash_version.nil?
         end

@@ -1,6 +1,7 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
+require "sorbet-runtime"
 require "dependabot/python/update_checker"
 require "dependabot/python/authed_url_builder"
 require "dependabot/errors"
@@ -9,15 +10,25 @@ module Dependabot
   module Python
     module Package
       class PackageRegistryFinder
-        PYPI_BASE_URL = "https://pypi.org/simple/"
-        ENVIRONMENT_VARIABLE_REGEX = /\$\{.+\}/
+        extend T::Sig
 
+        PYPI_BASE_URL = T.let("https://pypi.org/simple/", String)
+        ENVIRONMENT_VARIABLE_REGEX = T.let(/\$\{.+\}/, Regexp)
+
+        sig do
+          params(
+            dependency_files: T::Array[Dependabot::DependencyFile],
+            credentials: T::Array[Dependabot::Credential],
+            dependency: Dependabot::Dependency
+          ).void
+        end
         def initialize(dependency_files:, credentials:, dependency:)
-          @dependency_files = dependency_files
-          @credentials      = credentials
-          @dependency       = dependency
+          @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
+          @credentials      = T.let(credentials, T::Array[Dependabot::Credential])
+          @dependency       = T.let(dependency, Dependabot::Dependency)
         end
 
+        sig { returns(T::Array[String]) }
         def registry_urls
           extra_index_urls =
             config_variable_index_urls[:extra] +

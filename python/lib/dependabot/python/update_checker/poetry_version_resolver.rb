@@ -1,6 +1,7 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
+require "sorbet-runtime"
 require "excon"
 require "toml-rb"
 require "open3"
@@ -41,25 +42,62 @@ module Dependabot
           \s+check\syour\sgit\sconfiguration
         /mx
 
-        INCOMPATIBLE_CONSTRAINTS = /Incompatible constraints in requirements of (?<dep>.+?) ((?<ver>.+?)):/
+        INCOMPATIBLE_CONSTRAINTS = T.let(/Incompatible constraints in requirements of (?<dep>.+?) ((?<ver>.+?)):/,
+                                         Regexp)
 
+        sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
+
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
+
+        sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
+
+        sig { returns(T.nilable(String)) }
         attr_reader :repo_contents_path
 
         sig { returns(Dependabot::Python::PoetryErrorHandler) }
         attr_reader :error_handler
 
-        def initialize(dependency:, dependency_files:, credentials:, repo_contents_path:)
-          @dependency               = dependency
-          @dependency_files         = dependency_files
-          @credentials              = credentials
-          @repo_contents_path       = repo_contents_path
-          @error_handler = PoetryErrorHandler.new(dependencies: dependency,
-                                                  dependency_files: dependency_files)
+        sig do
+          params(
+            dependency: Dependabot::Dependency,
+            dependency_files: T::Array[Dependabot::DependencyFile],
+            credentials: T::Array[Dependabot::Credential],
+            repo_contents_path: T.nilable(String)
+          ).void
+        end
+        def initialize(dependency:, dependency_files:, credentials:,
+                       repo_contents_path:)
+          @dependency = T.let(dependency, Dependabot::Dependency)
+          @dependency_files = T.let(
+            dependency_files, T::Array[Dependabot::DependencyFile]
+          )
+          @credentials = T.let(
+            credentials, T::Array[Dependabot::Credential]
+          )
+          @repo_contents_path = T.let(
+            repo_contents_path, T.nilable(String)
+          )
+          @resolvable = T.let(
+            {}, T::Hash[String, T::Boolean]
+          )
+          @latest_resolvable_version_string = T.let(
+            {}, T::Hash[String, T.nilable(String)]
+          )
+          @original_reqs_resolvable = T.let(
+            nil, T.nilable(T::Boolean)
+          )
+          @error_handler = T.let(
+            PoetryErrorHandler.new(
+              dependencies: dependency, dependency_files: dependency_files
+            ),
+            Dependabot::Python::PoetryErrorHandler
+          )
         end
 
+        sig { params(requirement: T.nilable(String)).returns(T.nilable(Dependabot::Python::Version)) }
         def latest_resolvable_version(requirement: nil)
           version_string =
             fetch_latest_resolvable_version_string(requirement: requirement)

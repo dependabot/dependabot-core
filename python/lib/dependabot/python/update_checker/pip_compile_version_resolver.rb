@@ -1,6 +1,7 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
+require "sorbet-runtime"
 require "open3"
 require "dependabot/dependency"
 require "dependabot/python/requirement_parser"
