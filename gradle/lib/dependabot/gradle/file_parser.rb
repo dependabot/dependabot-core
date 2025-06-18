@@ -1,10 +1,11 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "sorbet-runtime"
 require "toml-rb"
 
 require "dependabot/dependency"
+require "dependabot/ecosystem"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
@@ -26,24 +27,28 @@ module Dependabot
       require "dependabot/file_parsers/base/dependency_set"
       require_relative "file_parser/property_value_finder"
 
-      SUPPORTED_BUILD_FILE_NAMES = %w(build.gradle build.gradle.kts settings.gradle settings.gradle.kts).freeze
+      SUPPORTED_BUILD_FILE_NAMES = T.let(%w(build.gradle build.gradle.kts settings.gradle settings.gradle.kts).freeze,
+                                         T::Array[String])
 
-      PROPERTY_REGEX =
+      PROPERTY_REGEX = T.let(
         /
           (?:\$\{property\((?<property_name>[^:\s]*?)\)\})|
           (?:\$\{(?<property_name>[^:\s]*?)\})|
           (?:\$(?<property_name>[^:\s"']*))
-        /x
+        /x,
+        Regexp
+      )
 
-      PART = %r{[^\s,@'":/\\]+}
-      VSN_PART = %r{[^\s,'":/\\]+}
-      DEPENDENCY_DECLARATION_REGEX = /(?:\(|\s)\s*['"](?<declaration>#{PART}:#{PART}:#{VSN_PART})['"]/
+      PART = T.let(%r{[^\s,@'":/\\]+}, Regexp)
+      VSN_PART = T.let(%r{[^\s,'":/\\]+}, Regexp)
+      DEPENDENCY_DECLARATION_REGEX = T.let(/(?:\(|\s)\s*['"](?<declaration>#{PART}:#{PART}:#{VSN_PART})['"]/o, Regexp)
 
-      DEPENDENCY_SET_DECLARATION_REGEX = /(?:^|\s)dependencySet\((?<arguments>[^\)]+)\)\s*\{/
-      DEPENDENCY_SET_ENTRY_REGEX = /entry\s+['"](?<name>#{PART})['"]/
-      PLUGIN_BLOCK_DECLARATION_REGEX = /(?:^|\s)plugins\s*\{/
-      PLUGIN_ID_REGEX = /['"](?<id>#{PART})['"]/
+      DEPENDENCY_SET_DECLARATION_REGEX = T.let(/(?:^|\s)dependencySet\((?<arguments>[^\)]+)\)\s*\{/, Regexp)
+      DEPENDENCY_SET_ENTRY_REGEX = T.let(/entry\s+['"](?<name>#{PART})['"]/o, Regexp)
+      PLUGIN_BLOCK_DECLARATION_REGEX = T.let(/(?:^|\s)plugins\s*\{/, Regexp)
+      PLUGIN_ID_REGEX = T.let(/['"](?<id>#{PART})['"]/o, Regexp)
 
+      sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
         dependency_set = DependencySet.new
         buildfiles.each do |buildfile|
@@ -60,14 +65,19 @@ module Dependabot
         end
       end
 
+      sig { params(buildfile: T.nilable(Dependabot::DependencyFile)).returns(T::Array[String]) }
       def self.find_include_names(buildfile)
         return [] unless buildfile
 
-        buildfile.content
-                 .scan(/apply(\(| )\s*from(\s+=|:)\s+['"]([^'"]+)['"]/)
-                 .map { |match| match[2] }
+        T.must(buildfile.content)
+         .scan(/apply(\(| )\s*from(\s+=|:)\s+['"]([^'"]+)['"]/)
+         .map { |match| T.must(match[2]) }
       end
 
+      sig do
+        params(buildfile: Dependabot::DependencyFile,
+               dependency_files: T::Array[Dependabot::DependencyFile]).returns(T::Array[Dependabot::DependencyFile])
+      end
       def self.find_includes(buildfile, dependency_files)
         FileParser.find_include_names(buildfile)
                   .filter_map { |f| dependency_files.find { |bf| bf.name == f } }
@@ -102,6 +112,7 @@ module Dependabot
         end, T.nilable(Dependabot::Gradle::Language))
       end
 
+      sig { params(toml_file: Dependabot::DependencyFile).returns(DependencySet) }
       def version_catalog_dependencies(toml_file)
         dependency_set = DependencySet.new
         parsed_toml_file = parsed_toml_file(toml_file)
@@ -110,14 +121,26 @@ module Dependabot
         dependency_set
       end
 
+      sig do
+        params(parsed_toml_file: T::Hash[String, T.untyped],
+               toml_file: Dependabot::DependencyFile).returns(DependencySet)
+      end
       def version_catalog_library_dependencies(parsed_toml_file, toml_file)
         dependencies_for_declarations(parsed_toml_file["libraries"], toml_file, :details_for_library_dependency)
       end
 
+      sig do
+        params(parsed_toml_file: T::Hash[String, T.untyped],
+               toml_file: Dependabot::DependencyFile).returns(DependencySet)
+      end
       def version_catalog_plugin_dependencies(parsed_toml_file, toml_file)
         dependencies_for_declarations(parsed_toml_file["plugins"], toml_file, :details_for_plugin_dependency)
       end
 
+      sig do
+        params(declarations: T.untyped, toml_file: Dependabot::DependencyFile,
+               details_getter: Symbol).returns(DependencySet)
+      end
       def dependencies_for_declarations(declarations, toml_file, details_getter)
         dependency_set = DependencySet.new
         return dependency_set unless declarations
@@ -139,32 +162,43 @@ module Dependabot
         dependency_set
       end
 
+      sig { params(declaration: T.untyped).returns([String, String, T.untyped]) }
       def details_for_library_dependency(declaration)
-        return declaration.split(":") if declaration.is_a?(String)
+        return T.cast(declaration.split(":"), [String, String, T.untyped]) if declaration.is_a?(String)
 
-        if declaration["module"]
-          [*declaration["module"].split(":"), declaration["version"]]
+        hash = T.cast(declaration, T::Hash[String, T.untyped])
+        if hash["module"]
+          parts = hash["module"].split(":")
+          [parts[0], parts[1], hash["version"]]
         else
-          [declaration["group"], declaration["name"], declaration["version"]]
+          [hash["group"], hash["name"], hash["version"]]
         end
       end
 
+      sig { params(declaration: T.untyped).returns([String, T.untyped, T.untyped]) }
       def details_for_plugin_dependency(declaration)
-        return ["plugins", *declaration.split(":")] if declaration.is_a?(String)
-
-        ["plugins", declaration["id"], declaration["version"]]
+        if declaration.is_a?(String)
+          parts = declaration.split(":")
+          ["plugins", parts[0], parts[1]]
+        else
+          decl_hash = T.cast(declaration, T::Hash[String, T.untyped])
+          ["plugins", decl_hash["id"], decl_hash["version"]]
+        end
       end
 
+      sig { params(file: Dependabot::DependencyFile).returns(T::Hash[String, T.untyped]) }
       def parsed_toml_file(file)
         TomlRB.parse(file.content)
       rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
         raise Dependabot::DependencyFileNotParseable, file.path
       end
 
+      sig { params(key: String).returns(Regexp) }
       def map_value_regex(key)
         /(?:^|\s|,|\()#{Regexp.quote(key)}(\s*=|:)\s*['"](?<value>[^'"]+)['"]/
       end
 
+      sig { params(buildfile: Dependabot::DependencyFile).returns(DependencySet) }
       def buildfile_dependencies(buildfile)
         dependency_set = DependencySet.new
 
@@ -176,6 +210,7 @@ module Dependabot
         dependency_set
       end
 
+      sig { params(buildfile: Dependabot::DependencyFile).returns(DependencySet) }
       def shortform_buildfile_dependencies(buildfile)
         dependency_set = DependencySet.new
 
@@ -193,6 +228,7 @@ module Dependabot
         dependency_set
       end
 
+      sig { params(buildfile: Dependabot::DependencyFile).returns(DependencySet) }
       def keyword_arg_buildfile_dependencies(buildfile)
         dependency_set = DependencySet.new
 
@@ -211,10 +247,11 @@ module Dependabot
         dependency_set
       end
 
+      sig { params(buildfile: Dependabot::DependencyFile).returns(DependencySet) }
       def dependency_set_dependencies(buildfile)
         dependency_set = DependencySet.new
 
-        dependency_set_blocks = []
+        dependency_set_blocks = T.let([], T::Array[T::Hash[Symbol, String]])
 
         prepared_content(buildfile).scan(DEPENDENCY_SET_DECLARATION_REGEX) do
           mch = T.must(Regexp.last_match)
@@ -226,12 +263,13 @@ module Dependabot
         end
 
         dependency_set_blocks.each do |blk|
-          group   = argument_from_string(blk[:arguments], "group")
-          version = argument_from_string(blk[:arguments], "version")
+          arguments = T.must(blk[:arguments])
+          group   = argument_from_string(arguments, "group")
+          version = argument_from_string(arguments, "version")
 
           next unless group && version
 
-          blk[:block].scan(DEPENDENCY_SET_ENTRY_REGEX).flatten.each do |name|
+          T.must(blk[:block]).scan(DEPENDENCY_SET_ENTRY_REGEX).flatten.each do |name|
             dep = dependency_from(
               details_hash: { group: group, name: name, version: version },
               buildfile: buildfile,
@@ -244,15 +282,17 @@ module Dependabot
         dependency_set
       end
 
+      sig { params(buildfile: Dependabot::DependencyFile).returns(DependencySet) }
       def plugin_dependencies(buildfile)
         dependency_set = DependencySet.new
 
-        plugin_blocks = []
+        plugin_blocks = T.let([], T::Array[String])
 
         prepared_content(buildfile).scan(PLUGIN_BLOCK_DECLARATION_REGEX) do
           mch = T.must(Regexp.last_match)
+          post_match_str = mch.post_match
           plugin_blocks <<
-            mch.post_match[0..closing_bracket_index(mch.post_match)]
+            T.must(post_match_str.slice(0..closing_bracket_index(mch.post_match)))
         end
 
         plugin_blocks.each do |blk|
@@ -272,14 +312,19 @@ module Dependabot
         dependency_set
       end
 
+      sig { params(version: T.nilable(String)).returns(T.nilable(String)) }
       def format_plugin_version(version)
+        return nil unless version
+
         quoted?(version) ? unquote(version) : "$#{version}"
       end
 
+      sig { params(line: String).returns(T::Array[String]) }
       def extra_groups(line)
         line.match?(/kotlin(\s+#{PLUGIN_ID_REGEX}|\(#{PLUGIN_ID_REGEX}\))/o) ? ["kotlin"] : []
       end
 
+      sig { params(string: String, arg_name: String).returns(T.nilable(String)) }
       def argument_from_string(string, arg_name)
         string
           .match(map_value_regex(arg_name))
@@ -287,11 +332,20 @@ module Dependabot
           &.fetch("value")
       end
 
+      sig do
+        params(
+          details_hash: T::Hash[Symbol, T.untyped],
+          buildfile: Dependabot::DependencyFile,
+          in_dependency_set: T::Boolean
+        ).returns(T.nilable(Dependabot::Dependency))
+      end
       def dependency_from(details_hash:, buildfile:, in_dependency_set: false)
-        group   = evaluated_value(details_hash[:group], buildfile)
-        name    = evaluated_value(details_hash[:name], buildfile)
-        version = evaluated_value(details_hash[:version], buildfile)
-        extra_groups = details_hash[:extra_groups] || []
+        group   = evaluated_value(T.cast(details_hash[:group], T.nilable(String)), buildfile)
+        name    = evaluated_value(T.cast(details_hash[:name], T.nilable(String)), buildfile)
+        version = evaluated_value(T.cast(details_hash[:version], T.nilable(String)), buildfile)
+        extra_groups = T.cast(details_hash[:extra_groups], T.nilable(T::Array[String])) || []
+
+        return nil unless group && name && version
 
         dependency_name =
           if group == "plugins" then name
@@ -325,8 +379,15 @@ module Dependabot
         )
       end
 
+      sig do
+        params(
+          group: String,
+          name: String,
+          version: String
+        ).returns(T.nilable(T::Hash[Symbol, T.untyped]))
+      end
       def source_from(group, name, version)
-        return nil unless group&.start_with?("com.github") && version.match?(/\A[0-9a-f]{40}\Z/)
+        return nil unless group.start_with?("com.github") && version.match?(/\A[0-9a-f]{40}\Z/)
 
         account = group.sub("com.github.", "")
 
@@ -338,6 +399,12 @@ module Dependabot
         }
       end
 
+      sig do
+        params(
+          details_hash: T::Hash[Symbol, T.untyped],
+          in_dependency_set: T::Boolean
+        ).returns(T.nilable(T::Hash[Symbol, T.untyped]))
+      end
       def dependency_metadata(details_hash, in_dependency_set)
         version_property_name =
           details_hash[:version]
@@ -357,11 +424,12 @@ module Dependabot
         metadata
       end
 
+      sig { params(value: T.nilable(String), buildfile: Dependabot::DependencyFile).returns(T.nilable(String)) }
       def evaluated_value(value, buildfile)
-        return value unless value.scan(PROPERTY_REGEX).count == 1
+        return value unless value&.scan(PROPERTY_REGEX)&.count == 1
 
-        property_name  = value.match(PROPERTY_REGEX)
-                              .named_captures.fetch("property_name")
+        property_name  = T.must(value).match(PROPERTY_REGEX)
+                          &.named_captures&.fetch("property_name")
         property_value = property_value_finder.property_value(
           property_name: property_name,
           callsite_buildfile: buildfile
@@ -369,32 +437,35 @@ module Dependabot
 
         return value unless property_value
 
-        value.gsub(PROPERTY_REGEX, property_value)
+        T.must(value).gsub(PROPERTY_REGEX, property_value)
       end
 
+      sig { returns(PropertyValueFinder) }
       def property_value_finder
-        @property_value_finder ||=
-          PropertyValueFinder.new(dependency_files: dependency_files)
+        @property_value_finder ||= PropertyValueFinder.new(dependency_files: dependency_files)
+        )
       end
 
+      sig { params(buildfile: Dependabot::DependencyFile).returns(String) }
       def prepared_content(buildfile)
         # Remove any comments
         prepared_content =
-          buildfile.content
-                   .gsub(%r{(?<=^|\s)//.*$}, "\n")
-                   .gsub(%r{(?<=^|\s)/\*.*?\*/}m, "")
+          T.must(buildfile.content)
+           .gsub(%r{(?<=^|\s)//.*$}, "\n")
+           .gsub(%r{(?<=^|\s)/\*.*?\*/}m, "")
 
         # Remove the dependencyVerification section added by Gradle Witness
         # (TODO: Support updating this in the FileUpdater)
         prepared_content.dup.scan(/dependencyVerification\s*{/) do
           mtch = T.must(Regexp.last_match)
           block = mtch.post_match[0..closing_bracket_index(mtch.post_match)]
-          prepared_content.gsub!(block, "")
+          prepared_content.gsub!(T.must(block), "")
         end
 
         prepared_content
       end
 
+      sig { params(string: String).returns(Integer) }
       def closing_bracket_index(string)
         closes_required = 1
 
@@ -407,42 +478,57 @@ module Dependabot
         0
       end
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def buildfiles
-        @buildfiles ||= dependency_files.select do |f|
-          f.name.end_with?(*SUPPORTED_BUILD_FILE_NAMES)
-        end
+        @buildfiles ||= T.let(
+          dependency_files.select do |f|
+            f.name.end_with?("build.gradle", "build.gradle.kts", "settings.gradle", "settings.gradle.kts")
+          end,
+          T.nilable(T::Array[Dependabot::DependencyFile])
+        )
       end
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def version_catalog_file
-        @version_catalog_file ||= dependency_files.select do |f|
-          f.name.end_with?("libs.versions.toml")
-        end
+        @version_catalog_file ||= T.let(
+          dependency_files.select do |f|
+            f.name.end_with?("libs.versions.toml")
+          end,
+          T.nilable(T::Array[Dependabot::DependencyFile])
+        )
       end
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def script_plugin_files
-        @script_plugin_files ||=
+        @script_plugin_files ||= T.let(
           buildfiles.flat_map do |buildfile|
             FileParser.find_includes(buildfile, dependency_files)
           end
-                    .uniq
+                    .uniq,
+          T.nilable(T::Array[Dependabot::DependencyFile])
+        )
       end
 
+      sig { override.void }
       def check_required_files
         raise "No build.gradle or build.gradle.kts!" if dependency_files.empty?
       end
 
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def original_file
         dependency_files.find do |f|
           SUPPORTED_BUILD_FILE_NAMES.include?(f.name)
         end
       end
 
+      sig { params(string: T.nilable(String)).returns(T::Boolean) }
       def quoted?(string)
-        string&.match?(/^['"].*['"]$/)
+        string&.match?(/^['"].*['"]$/) || false
       end
 
+      sig { params(string: String).returns(String) }
       def unquote(string)
-        string[1..-2]
+        T.must(string[1..-2])
       end
     end
   end
