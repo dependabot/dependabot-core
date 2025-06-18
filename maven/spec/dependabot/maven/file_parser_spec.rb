@@ -2,9 +2,12 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/source"
+require "dependabot/file_parsers/base/dependency_set"
 require "dependabot/maven/file_parser"
+require "dependabot/maven/file_parser/maven_dependency_parser"
 require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
 RSpec.describe Dependabot::Maven::FileParser do
@@ -1058,6 +1061,173 @@ RSpec.describe Dependabot::Maven::FileParser do
               source: nil,
               metadata: {
                 packaging_type: "pom"
+              }
+            }]
+          )
+        end
+      end
+    end
+
+    context "with a native maven dependency tree parse" do
+      before do
+        dependency_set = Dependabot::FileParsers::Base::DependencySet.new
+        dependency_set << Dependabot::Dependency.new(
+          name: "com.dependabot:basic-pom",
+          version: "0.0.1-RELEASE",
+          package_manager: "maven",
+          requirements: [{
+            requirement: "0.0.1-RELEASE",
+            file: nil,
+            groups: [],
+            source: nil,
+            metadata: {
+              packaging_type: "jar",
+              classifier: "",
+              pom_file: "pom.xml"
+            }
+          }]
+        )
+        dependency_set << Dependabot::Dependency.new(
+          name: "com.google.guava:guava",
+          version: "23.3-jre",
+          package_manager: "maven",
+          requirements: [{
+            requirement: "23.3-jre",
+            file: nil,
+            groups: [],
+            source: nil,
+            metadata: {
+              packaging_type: "jar",
+              classifier: "",
+              pom_file: "pom.xml"
+            }
+          }]
+        )
+        dependency_set << Dependabot::Dependency.new(
+          name: "org.apache.httpcomponents:httpclient",
+          version: "4.5.3",
+          package_manager: "maven",
+          requirements: [{
+            requirement: "4.5.3",
+            file: nil,
+            groups: [],
+            source: nil,
+            metadata: {
+              packaging_type: "jar",
+              classifier: "",
+              pom_file: "pom.xml"
+            }
+          }]
+        )
+        dependency_set << Dependabot::Dependency.new(
+          name: "io.mockk:mockk",
+          version: "1.0.0",
+          package_manager: "maven",
+          requirements: [{
+            requirement: "1.0.0",
+            file: nil,
+            groups: [],
+            source: nil,
+            metadata: {
+              packaging_type: "jar",
+              classifier: "",
+              pom_file: "pom.xml"
+            }
+          }]
+        )
+        dependency_set << Dependabot::Dependency.new(
+          name: "com.google.code.findbugs:jsr305",
+          version: "1.3.9",
+          package_manager: "maven",
+          requirements: [{
+            requirement: "1.3.9",
+            file: nil,
+            groups: [],
+            source: nil,
+            metadata: {
+              packaging_type: "jar",
+              classifier: "",
+              pom_file: "pom.xml"
+            }
+          }]
+        )
+        dependency_set << Dependabot::Dependency.new(
+          name: "org.apache.httpcomponents:httpcore",
+          version: "4.4.6",
+          package_manager: "maven",
+          requirements: [{
+            requirement: "4.4.6",
+            file: nil,
+            groups: [],
+            source: nil,
+            metadata: {
+              packaging_type: "jar",
+              classifier: "",
+              pom_file: "pom.xml"
+            }
+          }]
+        )
+
+        allow(Dependabot::Maven::FileParser::MavenDependencyParser).to receive(:build_dependency_set)
+          .and_return(dependency_set)
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:maven_transitive_dependencies).and_return(true)
+      end
+
+      it "merges direct and transitive dependencies" do
+        expect(dependencies.map(&:name))
+          .to match_array(
+            %w(
+              com.dependabot:basic-pom
+              com.google.guava:guava
+              org.apache.httpcomponents:httpclient
+              io.mockk:mockk
+              com.google.code.findbugs:jsr305
+              org.apache.httpcomponents:httpcore
+            )
+          )
+      end
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies[0] }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("com.dependabot:basic-pom")
+          expect(dependency.version).to eq("0.0.1-RELEASE")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "0.0.1-RELEASE",
+              file: nil,
+              groups: [],
+              source: nil,
+              metadata: {
+                packaging_type: "jar",
+                classifier: "",
+                pom_file: "pom.xml"
+              }
+            }]
+          )
+        end
+      end
+
+      describe "the second dependency" do
+        subject(:dependency) { dependencies[1] }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("com.google.guava:guava")
+          expect(dependency.version).to eq("23.3-jre")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "23.3-jre",
+              file: "pom.xml",
+              groups: [],
+              source: nil,
+              metadata: {
+                packaging_type: "jar",
+                classifier: "",
+                pom_file: "pom.xml"
               }
             }]
           )
