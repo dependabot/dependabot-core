@@ -442,7 +442,9 @@ module Dependabot
 
       sig { returns(PropertyValueFinder) }
       def property_value_finder
-        @property_value_finder ||= PropertyValueFinder.new(dependency_files: dependency_files)
+        @property_value_finder ||= T.let(
+          PropertyValueFinder.new(dependency_files: dependency_files),
+          T.nilable(PropertyValueFinder)
         )
       end
 
@@ -521,9 +523,9 @@ module Dependabot
         end
       end
 
-      sig { params(string: T.nilable(String)).returns(T::Boolean) }
+      sig { params(string: String).returns(T::Boolean) }
       def quoted?(string)
-        string&.match?(/^['"].*['"]$/) || false
+        string.match?(/^['"].*['"]$/) || false
       end
 
       sig { params(string: String).returns(String) }
