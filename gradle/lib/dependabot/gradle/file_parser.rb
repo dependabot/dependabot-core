@@ -428,8 +428,8 @@ module Dependabot
       def evaluated_value(value, buildfile)
         return value unless value&.scan(PROPERTY_REGEX)&.count == 1
 
-        property_name  = T.must(value).match(PROPERTY_REGEX)
-                          &.named_captures&.fetch("property_name")
+        property_name  = T.must(T.must(value).match(PROPERTY_REGEX)
+                          &.named_captures&.fetch("property_name"))
         property_value = property_value_finder.property_value(
           property_name: property_name,
           callsite_buildfile: buildfile
