@@ -103,7 +103,7 @@ public sealed record Job
     public bool IsDependencyIgnoredByNameOnly(string dependencyName)
     {
         var packageNamesToIgnore = IgnoreConditions
-            .Where(c => c.UpdateTypes.Length == 0 && c.VersionRequirement is null) // ignoring by name means there can't be any qualification
+            .Where(c => (c.UpdateTypes ?? []).Length == 0 && c.VersionRequirement is null) // ignoring by name means there can't be any qualification
             .Select(c => c.DependencyName)
             .ToArray();
         var isIgnored = packageNamesToIgnore

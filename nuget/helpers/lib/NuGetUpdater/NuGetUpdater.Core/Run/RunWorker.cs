@@ -693,7 +693,7 @@ public class RunWorker
         }).ToImmutableArray();
         var ignoredUpdateTypes = job.IgnoreConditions
             .Where(c => FileSystemName.MatchesSimpleExpression(c.DependencyName, dependency.Name))
-            .SelectMany(c => c.UpdateTypes)
+            .SelectMany(c => c.UpdateTypes ?? [])
             .Distinct()
             .ToImmutableArray();
         var dependencyInfo = new DependencyInfo()

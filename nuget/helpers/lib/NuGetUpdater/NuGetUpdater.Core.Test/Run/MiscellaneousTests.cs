@@ -108,6 +108,24 @@ public class MiscellaneousTests
             // expectedIgnored
             false,
         ];
+
+        // explicitly null update types
+        yield return
+        [
+            // ignoreConditions
+            new[]
+            {
+                new Condition()
+                {
+                    DependencyName = "Some.*",
+                    UpdateTypes = null,
+                }
+            },
+            // dependencyName
+            "Some.Dependency",
+            // expectedIgnored
+            true,
+        ];
     }
 
     [Fact]

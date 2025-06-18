@@ -11,7 +11,7 @@ public sealed record Condition
     [JsonPropertyName("source")]
     public string? Source { get; init; } = null;
     [JsonPropertyName("update-types")]
-    public ConditionUpdateType[] UpdateTypes { get; init; } = [];
+    public ConditionUpdateType[]? UpdateTypes { get; init; } = null;
     [JsonPropertyName("updated-at")]
     public DateTime? UpdatedAt { get; init; } = null;
     [JsonPropertyName("version-requirement")]
