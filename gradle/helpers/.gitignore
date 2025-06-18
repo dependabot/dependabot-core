@@ -1,27 +1,25 @@
-# Kotlin/Gradle build artifacts
-/build/
-/out/
+# Gradle build system
 /.gradle/
-/.idea/
-*.iml
-*.class
+build/
+!build/libs/gradle-helper.jar
 
-# VS Code
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
 .vscode/
 
-# Logs
+# Kotlin/Java
+*.class
 *.log
+*.kotlin_module
+/out/
+/bin/
 
-# OS junk
+# OS
 .DS_Store
 Thumbs.db
 
-# Generated binary CLI
-/build/install/
-
-# Kotlin-specific
-*.kotlin_module
-
-# JetBrains run/debug configs
-*.iws
-*.ipr
+# Test fixture local state (keep project code but not cache)
+spec/fixtures/settings_files/.gradle/
