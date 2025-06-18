@@ -91,8 +91,8 @@ internal class RefreshGroupUpdatePullRequestHandler : IUpdateHandler
             {
                 var dependencyName = dependencyGroupToUpdate.Key;
                 var relevantDependenciesToUpdate = dependencyGroupToUpdate.Value
+                    .Where(o => !job.IsDependencyIgnoredByNameOnly(o.Dependency.Name))
                     .Select(o => (o.ProjectPath, o.Dependency, RunWorker.GetDependencyInfo(job, o.Dependency)))
-                    .Where(set => !job.IsDependencyIgnored(set.Dependency.Name, set.Dependency.Version!))
                     .ToArray();
 
                 foreach (var (projectPath, dependency, dependencyInfo) in relevantDependenciesToUpdate)
