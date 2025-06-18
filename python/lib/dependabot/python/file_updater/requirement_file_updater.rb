@@ -29,14 +29,14 @@ module Dependabot
             dependencies: T::Array[Dependabot::Dependency],
             dependency_files: T::Array[Dependabot::DependencyFile],
             credentials: T::Array[Dependabot::Credential],
-            index_urls: T.nilable(T::Array[String])
+            index_urls: T.nilable(T::Array[T.nilable(String)])
           ).void
         end
         def initialize(dependencies:, dependency_files:, credentials:, index_urls: nil)
           @dependencies = T.let(dependencies, T::Array[Dependabot::Dependency])
           @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
           @credentials = T.let(credentials, T::Array[Dependabot::Credential])
-          @index_urls = T.let(index_urls, T.nilable(T::Array[String]))
+          @index_urls = T.let(index_urls, T.nilable(T::Array[T.nilable(String)]))
           @updated_dependency_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
         end
 
