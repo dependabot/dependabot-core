@@ -341,7 +341,7 @@ module Dependabot
 
         constraints_paths = all_requirement_files.map do |req_file|
           current_dir = File.dirname(req_file.name)
-          paths = req_file.content.scan(CONSTRAINT_REGEX).flatten
+          paths = T.must(req_file.content).scan(CONSTRAINT_REGEX).flatten
 
           paths.map do |path|
             path = File.join(current_dir, path) unless current_dir == "."
@@ -361,7 +361,8 @@ module Dependabot
           path = T.must(dep[:path])
           project_files += fetch_project_file(path)
         rescue Dependabot::DependencyFileNotFound => e
-          unfetchable_deps << if sdist_or_wheel?(path)
+          path_value = T.must(dep[:path])
+          unfetchable_deps << if sdist_or_wheel?(path_value)
                                 e.file_path&.gsub(%r{^/}, "")
                               else
                                 "\"#{dep[:name]}\" at #{cleanpath(File.join(directory, dep[:file]))}"
@@ -429,10 +430,10 @@ module Dependabot
 
       sig { params(file: Dependabot::DependencyFile).returns(T::Boolean) }
       def requirements_file?(file)
-        return false unless file.content.valid_encoding?
+        return false unless T.must(file.content).valid_encoding?
         return true if file.name.match?(/requirements/x)
 
-        file.content.lines.all? do |line|
+        T.must(file.content).lines.all? do |line|
           next true if line.strip.empty?
           next true if line.strip.start_with?("#", "-r ", "-c ", "-e ", "--")
 
@@ -466,19 +467,27 @@ module Dependabot
         # If this is a pip-compile lockfile, rely on whatever path dependencies we found in the main manifest
         return [] if pip_compile_file_matcher.lockfile_for_pip_compile_file?(req_file)
 
+        content = T.must(req_file.content)
+
         uneditable_reqs =
-          req_file.content
-                  .scan(/(?<name>^['"]?(?:file:)?(?<path>\..*?)(?=\[|#|'|"|$))/)
-                  .filter_map do |n, p|
-                    { name: n.strip, path: p.strip, file: req_file.name } unless p.include?("://")
-                  end
+          content
+          .scan(/(?<name>^['"]?(?:file:)?(?<path>\..*?)(?=\[|#|'|"|$))/)
+          .filter_map do |match|
+            n, p = match
+            next unless p && !p.include?("://")
+
+            { name: n.to_s.strip, path: p.to_s.strip, file: req_file.name }
+          end
 
         editable_reqs =
-          req_file.content
-                  .scan(/(?<name>^(?:-e)\s+['"]?(?:file:)?(?<path>.*?)(?=\[|#|'|"|$))/)
-                  .filter_map do |n, p|
-                    { name: n.strip, path: p.strip, file: req_file.name } unless p.include?("://") || p.include?("git@")
-                  end
+          content
+          .scan(/(?<name>^(?:-e)\s+['"]?(?:file:)?(?<path>.*?)(?=\[|#|'|"|$))/)
+          .filter_map do |match|
+            n, p = match
+            next unless p && !p.include?("://") && !p.include?("git@")
+
+            { name: n.to_s.strip, path: p.to_s.strip, file: req_file.name }
+          end
 
         uneditable_reqs + editable_reqs
       end
@@ -494,7 +503,8 @@ module Dependabot
           parsed_pipfile[dep_type].each do |_, req|
             next unless req.is_a?(Hash) && req["path"]
 
-            deps << { name: req["path"], path: req["path"], file: pipfile.name }
+            pipfile_obj = T.must(pipfile)
+            deps << { name: req["path"], path: req["path"], file: pipfile_obj.name }
           end
         end
 
