@@ -231,7 +231,6 @@ public class NullAsEmptyStringArrayConverter : JsonConverter<ImmutableArray<stri
 
     public override void Write(Utf8JsonWriter writer, ImmutableArray<string> value, JsonSerializerOptions options)
     {
-        writer.WriteStartArray();
-        writer.WriteEndArray();
+        JsonSerializer.Serialize(writer, value, options);
     }
 }

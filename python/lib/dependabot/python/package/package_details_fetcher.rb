@@ -79,7 +79,7 @@ module Dependabot
 
           Dependabot::Package::PackageDetails.new(
             dependency: dependency,
-            releases: package_releases.reverse.uniq(&:version)
+            releases: package_releases.reverse
           )
         end
 
@@ -387,7 +387,7 @@ module Dependabot
 
         sig { params(json_url: String).returns(Excon::Response) }
         def registry_json_response_for_dependency(json_url)
-          url = "#{json_url.chomp('/')}/#{@dependency.name}/json"
+          url = "#{json_url.chomp('/')}/#{remove_optional(@dependency.name)}/json"
           Dependabot::RegistryClient.get(
             url: url,
             headers: { "Accept" => APPLICATION_JSON }
@@ -481,6 +481,12 @@ module Dependabot
         sig { params(index_url: String).returns(String) }
         def sanitized_url(index_url)
           index_url.sub(%r{//([^/@]+)@}, "//redacted@")
+        end
+
+        sig { params(dep_name: String).returns(String) }
+        def remove_optional(dep_name)
+          # Remove any optional dependencies postfix, e.g., "pyvista[io] "
+          dep_name.gsub(/\[.*?\]/, "")
         end
       end
     end

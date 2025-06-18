@@ -1,4 +1,7 @@
+using System.Text;
+
 using NuGetUpdater.Core.Updater;
+using NuGetUpdater.Core.Utilities;
 
 using Xunit;
 
@@ -6,6 +9,28 @@ namespace NuGetUpdater.Core.Test.Update;
 
 public class SpecialFilePatcherTests
 {
+    [Fact]
+    public async Task ByteOrderMarkIsMaintained()
+    {
+        // arrange
+        using var tempDir = new TemporaryDirectory();
+        var projectFilePath = Path.Join(tempDir.DirectoryPath, "project.csproj");
+        var rawContent = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes("<Project>content with BOM</Project>")).ToArray();
+        Assert.True(rawContent.HasBOM(), "Expected byte order mark after initial write");
+        await File.WriteAllBytesAsync(projectFilePath, rawContent, TestContext.Current.CancellationToken);
+
+        // act
+        using (var special = new SpecialImportsConditionPatcher(projectFilePath))
+        {
+            var rawContentDuringPatching = await File.ReadAllBytesAsync(projectFilePath, TestContext.Current.CancellationToken);
+            Assert.True(rawContentDuringPatching.HasBOM(), "Expected byte order mark during patching");
+        }
+
+        // assert
+        var rawContentAfterPatching = await File.ReadAllBytesAsync(projectFilePath, TestContext.Current.CancellationToken);
+        Assert.True(rawContentAfterPatching.HasBOM(), "Expected byte order mark after patching");
+    }
+
     [Theory]
     [MemberData(nameof(SpecialImportsConditionPatcherTestData))]
     public async Task SpecialImportsConditionPatcher(string fileContent, string expectedPatchedContent)

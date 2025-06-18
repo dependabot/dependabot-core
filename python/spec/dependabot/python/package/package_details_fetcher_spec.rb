@@ -146,5 +146,13 @@ RSpec.describe Dependabot::Python::Package::PackageDetailsFetcher do
         expect(result.releases.map(&:version)).to match_array(expected_releases.map(&:version))
       end
     end
+
+    context "with an optional dependency postfix" do
+      it "removes optional data from dependency name" do
+        expect(fetcher.send(:remove_optional, "pyvista[io]")).to eq("pyvista")
+        expect(fetcher.send(:remove_optional, "pyvista[example]")).to eq("pyvista")
+        expect(fetcher.send(:remove_optional, "pyvista-example")).to eq("pyvista-example")
+      end
+    end
   end
 end
