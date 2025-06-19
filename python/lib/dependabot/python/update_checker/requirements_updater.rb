@@ -280,14 +280,14 @@ module Dependabot
           if requirement_strings.any? { |r| requirement_class.new(r).exact? }
             # True equality match
             T.must(requirement_strings.find { |r| requirement_class.new(r).exact? })
-                               .sub(
-                                 RequirementParser::VERSION,
-                                 T.must(latest_resolvable_version).to_s
-                               )
+             .sub(
+               RequirementParser::VERSION,
+               T.must(latest_resolvable_version).to_s
+             )
           else
             # Prefix match
             T.must(requirement_strings.find { |r| r.match?(/^(=+|\d)/) })
-                               .sub(RequirementParser::VERSION) do |v|
+             .sub(RequirementParser::VERSION) do |v|
               at_same_precision(T.must(latest_resolvable_version).to_s, v)
             end
           end
@@ -396,7 +396,12 @@ module Dependabot
         end
 
         # Updates the version in a "<" constraint to allow the given version
-        sig { params(version: Dependabot::Python::Version, version_to_be_permitted: T.any(String, Dependabot::Python::Version)).returns(String) }
+        sig do
+          params(
+            version: Dependabot::Python::Version,
+            version_to_be_permitted: T.any(String, Dependabot::Python::Version)
+          ).returns(String)
+        end
         def update_greatest_version(version, version_to_be_permitted)
           if version_to_be_permitted.is_a?(String)
             version_to_be_permitted =
