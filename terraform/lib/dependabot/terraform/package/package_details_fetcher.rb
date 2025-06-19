@@ -87,13 +87,17 @@ module Dependabot
           return result_lines unless response.status == 200
 
           # Parse the JSON response
-          releases = JSON.parse(response.body).fetch("provider_versions", [])
+          releases = JSON.parse(response.body).fetch("included", [])
+                         .select { |item| item["type"] == "provider-versions" }
+          releases = releases.map { |release| release.fetch("attributes", {}) }
+          # Check if releases is an array and not empty
+          return result_lines unless releases.is_a?(Array) && !releases.empty?
 
           # Extract version names and release dates into result_lines
           releases.each do |release|
             result_lines << GitTagWithDetail.new(
               tag: release["version"],
-              release_date: release["published_at"]
+              release_date: release["published-at"]
             )
           end
           # Sort the result lines by tag in descending order
@@ -112,13 +116,15 @@ module Dependabot
           return result_lines unless response.status == 200
 
           # Parse the JSON response
-          releases = JSON.parse(response.body).fetch("module-versions", [])
+          releases = JSON.parse(response.body).fetch("included", [])
+                         .select { |item| item["type"] == "module-versions" }
+          releases = releases.map { |release| release.fetch("attributes", {}) }
 
           # Extract version names and release dates into result_lines
           releases.each do |release|
             result_lines << GitTagWithDetail.new(
               tag: release["version"],
-              release_date: release["published_at"]
+              release_date: release["published-at"]
             )
           end
           # Sort the result lines by tag in descending order
