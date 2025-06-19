@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <PackageReference Include="System.CommandLine" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" />
   </ItemGroup>
 
   <ItemGroup Label="Targeting packs required for .NET Framework in SDK-style projects">
@@ -33,7 +34,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="NuGetUpdater.Cli.Test"/>
+    <InternalsVisibleTo Include="NuGetUpdater.Cli.Test" />
   </ItemGroup>
 
 </Project>
