@@ -82,7 +82,7 @@ module Dependabot
               find_and_update_equality_match(req_strings)
             elsif req_strings.any? { |r| r.start_with?("~=", "==") }
               tw_req = req_strings.find { |r| r.start_with?("~=", "==") }
-              convert_to_range(tw_req, latest_resolvable_version)
+              convert_to_range(tw_req, T.must(latest_resolvable_version))
             else
               update_requirements_range(req_strings)
             end
@@ -172,8 +172,8 @@ module Dependabot
 
         sig { params(req_string: String).returns(String) }
         def add_new_requirement_option(req_string)
-          option_to_copy = req_string.split(PYPROJECT_OR_SEPARATOR).last
-                                     .split(PYPROJECT_SEPARATOR).first.strip
+          option_to_copy = T.must(T.must(req_string.split(PYPROJECT_OR_SEPARATOR).last)
+                                     .split(PYPROJECT_SEPARATOR).first).strip
           operator       = option_to_copy.gsub(/\d.*/, "").strip
 
           new_option =
@@ -193,6 +193,7 @@ module Dependabot
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
+        sig { params(req_string: String).returns(String) }
         def widen_requirement_range(req_string)
           requirement_strings = req_string.split(",").map(&:strip)
 
@@ -206,7 +207,7 @@ module Dependabot
             # range to include the new version
             v_req = requirement_strings
                     .find { |r| r.start_with?("~", "^") || r.include?("*") }
-            convert_to_range(v_req, latest_resolvable_version)
+            convert_to_range(T.must(v_req), T.must(latest_resolvable_version))
           else
             # Otherwise we have a range, and need to update the upper bound
             update_requirements_range(requirement_strings)
@@ -214,6 +215,7 @@ module Dependabot
         end
         # rubocop:enable Metrics/PerceivedComplexity
 
+        sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
         def updated_requirement(req)
           return req unless latest_resolvable_version
           return req unless req.fetch(:requirement)
@@ -230,12 +232,14 @@ module Dependabot
           end
         end
 
+        sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
         def update_requirement_if_needed(req)
           return req if new_version_satisfies?(req)
 
           update_requirement(req)
         end
 
+        sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
         def update_requirement(req)
           requirement_strings = req[:requirement].split(",").map(&:strip)
 
@@ -255,6 +259,7 @@ module Dependabot
           req.merge(requirement: :unfixable)
         end
 
+        sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
         def widen_requirement(req)
           return req if new_version_satisfies?(req)
 
@@ -263,29 +268,32 @@ module Dependabot
           req.merge(requirement: new_requirement)
         end
 
+        sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Boolean) }
         def new_version_satisfies?(req)
           requirement_class
             .requirements_array(req.fetch(:requirement))
             .any? { |r| r.satisfied_by?(latest_resolvable_version) }
         end
 
+        sig { params(requirement_strings: T::Array[String]).returns(String) }
         def find_and_update_equality_match(requirement_strings)
           if requirement_strings.any? { |r| requirement_class.new(r).exact? }
             # True equality match
-            requirement_strings.find { |r| requirement_class.new(r).exact? }
+            T.must(requirement_strings.find { |r| requirement_class.new(r).exact? })
                                .sub(
                                  RequirementParser::VERSION,
-                                 latest_resolvable_version.to_s
+                                 T.must(latest_resolvable_version).to_s
                                )
           else
             # Prefix match
-            requirement_strings.find { |r| r.match?(/^(=+|\d)/) }
+            T.must(requirement_strings.find { |r| r.match?(/^(=+|\d)/) })
                                .sub(RequirementParser::VERSION) do |v|
-              at_same_precision(latest_resolvable_version.to_s, v)
+              at_same_precision(T.must(latest_resolvable_version).to_s, v)
             end
           end
         end
 
+        sig { params(new_version: String, old_version: String).returns(String) }
         def at_same_precision(new_version, old_version)
           # return new_version unless old_version.include?("*")
 
@@ -299,6 +307,7 @@ module Dependabot
             .join(".")
         end
 
+        sig { params(requirement_strings: T::Array[String]).returns(String) }
         def update_requirements_range(requirement_strings)
           ruby_requirements =
             requirement_strings.map { |r| requirement_class.new(r) }
@@ -308,9 +317,9 @@ module Dependabot
 
             case op = r.requirements.first.first
             when "<"
-              "<" + update_greatest_version(r.requirements.first.last, latest_resolvable_version)
+              "<" + update_greatest_version(r.requirements.first.last, T.must(latest_resolvable_version))
             when "<="
-              "<=" + latest_resolvable_version.to_s
+              "<=" + T.must(latest_resolvable_version).to_s
             when "!=", ">", ">="
               raise UnfixableRequirement
             else
@@ -324,10 +333,11 @@ module Dependabot
         end
 
         # Updates the version in a constraint to be the given version
+        sig { params(req_string: String, version_to_be_permitted: String).returns(String) }
         def bump_version(req_string, version_to_be_permitted)
-          old_version = req_string
-                        .match(/(#{RequirementParser::VERSION})/o)
-                        .captures.first
+          old_version = T.must(T.must(req_string
+                        .match(/(#{RequirementParser::VERSION})/o))
+                        .captures.first)
 
           req_string.sub(
             old_version,
@@ -335,14 +345,15 @@ module Dependabot
           )
         end
 
+        sig { params(req_string: String, version_to_be_permitted: Dependabot::Python::Version).returns(String) }
         def convert_to_range(req_string, version_to_be_permitted)
           # Construct an upper bound at the same precision that the original
           # requirement was at (taking into account ~ dynamics)
           index_to_update = index_to_update_for(req_string)
-          ub_segments = version_to_be_permitted.segments
-          ub_segments << 0 while ub_segments.count <= index_to_update
-          ub_segments = ub_segments[0..index_to_update]
-          ub_segments[index_to_update] += 1
+          ub_segments = T.let(version_to_be_permitted.segments, T::Array[T.any(String, Integer)])
+          ub_segments << "0" while ub_segments.count <= index_to_update
+          ub_segments = T.must(ub_segments[0..index_to_update])
+          ub_segments[index_to_update] = T.must(ub_segments[index_to_update]).to_i + 1
 
           lb_segments = lower_bound_segments_for_req(req_string)
 
@@ -354,6 +365,7 @@ module Dependabot
           ">=#{lb_segments.join('.')},<#{ub_segments.join('.')}"
         end
 
+        sig { params(req_string: String).returns(T::Array[Integer]) }
         def lower_bound_segments_for_req(req_string)
           requirement = requirement_class.new(req_string)
           version = requirement.requirements.first.last
@@ -365,6 +377,7 @@ module Dependabot
           lb_segments
         end
 
+        sig { params(req_string: String).returns(Integer) }
         def index_to_update_for(req_string)
           req = requirement_class.new(req_string.split(/[.\-]\*/).first)
           version = req.requirements.first.last.release
@@ -383,6 +396,7 @@ module Dependabot
         end
 
         # Updates the version in a "<" constraint to allow the given version
+        sig { params(version: Dependabot::Python::Version, version_to_be_permitted: T.any(String, Dependabot::Python::Version)).returns(String) }
         def update_greatest_version(version, version_to_be_permitted)
           if version_to_be_permitted.is_a?(String)
             version_to_be_permitted =
@@ -391,7 +405,7 @@ module Dependabot
           version = version.release if version.prerelease?
 
           index_to_update = [
-            version.segments.map.with_index { |n, i| n.zero? ? 0 : i }.max,
+            version.segments.map.with_index { |n, i| n.to_i.zero? ? 0 : i }.max,
             version_to_be_permitted.segments.count - 1
           ].min
 
@@ -399,7 +413,7 @@ module Dependabot
             if index < index_to_update
               version_to_be_permitted.segments[index]
             elsif index == index_to_update
-              version_to_be_permitted.segments[index] + 1
+              version_to_be_permitted.segments[index].to_i + 1
             else
               0
             end
@@ -408,6 +422,7 @@ module Dependabot
           new_segments.join(".")
         end
 
+        sig { returns(T.class_of(Dependabot::Python::Requirement)) }
         def requirement_class
           Python::Requirement
         end
