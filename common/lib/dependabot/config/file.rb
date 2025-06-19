@@ -71,6 +71,7 @@ module Dependabot
         "gitsubmodule" => "submodules",
         "gomod" => "go_modules",
         "gradle" => "gradle",
+        "julia" => "julia",
         "maven" => "maven",
         "mix" => "hex",
         "helm" => "helm",

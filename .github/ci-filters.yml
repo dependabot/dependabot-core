@@ -55,6 +55,14 @@ gradle:
 hex:
   - *shared
   - 'hex/**'
+julia:
+  - 'julia/**'
+  - 'common/**'
+  - 'updater/**'
+  - '**/*julia*/**'
+  - 'Dockerfile.*'
+  - 'script/**'
+  - '.github/workflows/ci.yml'
 maven:
   - *shared
   - 'maven/**'
