@@ -130,7 +130,7 @@ module Dependabot
         end
 
         sig { params(buildfile_content: String).returns(T::Array[String]) }
-        def repository_urls_from(buildfile_content)
+        def repository_urls_from(buildfile_content) # rubocop:disable Metrics/AbcSize
           repository_urls = T.let([], T::Array[String])
 
           repository_blocks = T.let([], T::Array[String])
