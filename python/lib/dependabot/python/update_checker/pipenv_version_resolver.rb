@@ -70,7 +70,7 @@ module Dependabot
           version_string.nil? ? nil : Python::Version.new(version_string)
         end
 
-        sig { params(version: Dependabot::Version).returns(T::Boolean) }
+        sig { params(version: Gem::Version).returns(T::Boolean) }
         def resolvable?(version:)
           @resolvable ||= T.let({}, T.nilable(T::Hash[Dependabot::Version, T::Boolean]))
           return T.must(@resolvable[version]) if @resolvable.key?(version)
