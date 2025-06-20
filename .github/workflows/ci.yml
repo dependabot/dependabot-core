@@ -41,6 +41,7 @@ jobs:
           - { path: swift, name: swift, ecosystem: swift }
           - { path: terraform, name: terraform, ecosystem: terraform }
           - { path: uv, name: uv, ecosystem: uv }
+          - { path: vcpkg, name: vcpkg, ecosystem: vcpkg }
 
     steps:
       - name: Checkout code
