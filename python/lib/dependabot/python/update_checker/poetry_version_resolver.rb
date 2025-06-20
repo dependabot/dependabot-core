@@ -51,8 +51,7 @@ module Dependabot
         sig { returns(Dependabot::Python::PoetryErrorHandler) }
         attr_reader :error_handler
 
-        def initialize(dependency:, dependency_files:, credentials:,
-                       repo_contents_path:)
+        def initialize(dependency:, dependency_files:, credentials:, repo_contents_path:)
           @dependency               = dependency
           @dependency_files         = dependency_files
           @credentials              = credentials
