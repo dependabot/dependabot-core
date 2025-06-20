@@ -1,4 +1,4 @@
-# typed: strict
+# typed: true
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -71,24 +71,12 @@ module Dependabot
         def initialize(dependency:, dependency_files:, credentials:,
                        repo_contents_path:)
           @dependency = T.let(dependency, Dependabot::Dependency)
-          @dependency_files = T.let(
-            dependency_files, T::Array[Dependabot::DependencyFile]
-          )
-          @credentials = T.let(
-            credentials, T::Array[Dependabot::Credential]
-          )
-          @repo_contents_path = T.let(
-            repo_contents_path, T.nilable(String)
-          )
-          @resolvable = T.let(
-            {}, T::Hash[String, T::Boolean]
-          )
-          @latest_resolvable_version_string = T.let(
-            {}, T::Hash[String, T.nilable(String)]
-          )
-          @original_reqs_resolvable = T.let(
-            nil, T.nilable(T::Boolean)
-          )
+          @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
+          @credentials = T.let(credentials, T::Array[Dependabot::Credential])
+          @repo_contents_path = T.let(repo_contents_path, T.nilable(String))
+          @resolvable = T.let({}, T::Hash[String, T::Boolean])
+          @latest_resolvable_version_string = T.let({}, T::Hash[String, T.nilable(String)])
+          @original_reqs_resolvable = T.let(nil, T.nilable(T::Boolean))
           @error_handler = T.let(
             PoetryErrorHandler.new(
               dependencies: dependency, dependency_files: dependency_files
@@ -106,7 +94,6 @@ module Dependabot
         end
 
         def resolvable?(version:)
-          @resolvable ||= {}
           return @resolvable[version] if @resolvable.key?(version)
 
           @resolvable[version] = if fetch_latest_resolvable_version_string(requirement: "==#{version}")
@@ -123,7 +110,6 @@ module Dependabot
         private
 
         def fetch_latest_resolvable_version_string(requirement:)
-          @latest_resolvable_version_string ||= {}
           return @latest_resolvable_version_string[requirement] if @latest_resolvable_version_string.key?(requirement)
 
           @latest_resolvable_version_string[requirement] ||=

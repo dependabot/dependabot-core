@@ -74,7 +74,7 @@ module Dependabot
       end
 
       sig { override.params(version: VersionParameter).void }
-      def initialize(version)
+      def initialize(version) # rubocop:disable Metrics/AbcSize
         raise Dependabot::BadRequirementError, "Malformed version string - string is nil" if version.nil?
 
         @version_string = T.let(version.to_s, String)
