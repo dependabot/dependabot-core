@@ -47,7 +47,7 @@ module Dependabot
         sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
 
-        sig { returns(String) }
+        sig { returns(T.nilable(String)) }
         attr_reader :repo_contents_path
 
         sig { returns(PipCompileErrorHandler) }
@@ -58,14 +58,14 @@ module Dependabot
             dependency: Dependabot::Dependency,
             dependency_files: T::Array[Dependabot::DependencyFile],
             credentials: T::Array[Dependabot::Credential],
-            repo_contents_path: String
+            repo_contents_path: T.nilable(String)
           ).void
         end
         def initialize(dependency:, dependency_files:, credentials:, repo_contents_path:)
           @dependency = T.let(dependency, Dependabot::Dependency)
           @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
           @credentials = T.let(credentials, T::Array[Dependabot::Credential])
-          @repo_contents_path = T.let(repo_contents_path, String)
+          @repo_contents_path = T.let(repo_contents_path, T.nilable(String))
           @build_isolation = T.let(true, T::Boolean)
           @error_handler = T.let(PipCompileErrorHandler.new, PipCompileErrorHandler)
         end
