@@ -41,7 +41,7 @@ module Dependabot
           @updated_dependencies = T.let(nil, T.nilable(T::Array[Dependabot::Dependency]))
           @dependencies_to_update = T.let(nil, T.nilable(T::Array[Dependabot::Dependency]))
           @property_name = T.let(nil, T.nilable(String))
-          @dependency_set = T.let(nil, T.nilable(String))
+          @dependency_set = T.let(nil, T.nilable(Dependabot::FileParsers::Base::DependencySet))
           @updated_requirements = T.let(nil, T.nilable(T::Hash[String, T::Array[T::Hash[Symbol, T.untyped]]]))
         end
 
@@ -108,8 +108,9 @@ module Dependabot
               source: nil
             ).parse.select do |dep|
               dep.requirements.any? do |r|
-                tmp_p_name = r.dig(:metadata, :property_name)
-                tmp_dep_set = r.dig(:metadata, :dependency_set)
+                tmp_p_name = T.let(r.dig(:metadata, :property_name), T.nilable(String))
+                tmp_dep_set = T.let(r.dig(:metadata, :dependency_set),
+                                    T.nilable(Dependabot::FileParsers::Base::DependencySet))
                 next true if property_name && tmp_p_name == property_name
 
                 dependency_set && tmp_dep_set == dependency_set
@@ -124,7 +125,7 @@ module Dependabot
                                        &.dig(:metadata, :property_name)
         end
 
-        sig { returns(T.nilable(String)) }
+        sig { returns(T.nilable(Dependabot::FileParsers::Base::DependencySet)) }
         def dependency_set
           @dependency_set ||= dependency.requirements
                                         .find { |r| r.dig(:metadata, :dependency_set) }
