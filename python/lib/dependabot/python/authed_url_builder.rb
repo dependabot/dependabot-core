@@ -8,7 +8,7 @@ module Dependabot
     class AuthedUrlBuilder
       extend T::Sig
 
-      sig { params(credential: T::Hash[String, T.untyped]).returns(String) }
+      sig { params(credential: Credential).returns(String) }
       def self.authed_url(credential:)
         token = T.let(credential.fetch("token", nil), T.nilable(String))
         url = T.let(credential.fetch("index-url", nil), T.nilable(String))
