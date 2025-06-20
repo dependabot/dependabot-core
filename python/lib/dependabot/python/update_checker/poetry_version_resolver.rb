@@ -23,6 +23,9 @@ module Dependabot
     class UpdateChecker
       # This class does version resolution for pyproject.toml files.
       class PoetryVersionResolver
+        extend T::Sig
+        extend T::Helpers
+
         GIT_REFERENCE_NOT_FOUND_REGEX = /
           (Failed to checkout
           (?<tag>.+?)
@@ -38,17 +41,14 @@ module Dependabot
           \s+check\syour\sgit\sconfiguration
         /mx
 
-        INCOMPATIBLE_CONSTRAINTS = T.let(/Incompatible constraints in requirements of (?<dep>.+?) ((?<ver>.+?)):/,
-                                         Regexp)
+        INCOMPATIBLE_CONSTRAINTS = /Incompatible constraints in requirements of (?<dep>.+?) ((?<ver>.+?)):/
 
         attr_reader :dependency
-
         attr_reader :dependency_files
-
         attr_reader :credentials
-
         attr_reader :repo_contents_path
 
+        sig { returns(Dependabot::Python::PoetryErrorHandler) }
         attr_reader :error_handler
 
         def initialize(dependency:, dependency_files:, credentials:,

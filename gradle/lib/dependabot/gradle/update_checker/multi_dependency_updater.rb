@@ -32,7 +32,7 @@ module Dependabot
           @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
           @credentials      = T.let(credentials, T::Array[Dependabot::Credential])
           @target_version   = T.let(target_version_details&.fetch(:version), T.nilable(Dependabot::Version))
-          @source_url       = T.let(target_version_details&.fetch(:source_url), String)
+          @source_url       = T.let(target_version_details&.fetch(:source_url), T.nilable(String))
           @ignored_versions = T.let(ignored_versions, T::Array[String])
           @raise_on_ignored = T.let(raise_on_ignored, T::Boolean)
 
@@ -94,7 +94,7 @@ module Dependabot
         sig { returns(T.nilable(Dependabot::Version)) }
         attr_reader :target_version
 
-        sig { returns(String) }
+        sig { returns(T.nilable(String)) }
         attr_reader :source_url
 
         sig { returns(T::Array[String]) }
