@@ -75,8 +75,10 @@ module Dependabot
       end
 
       sig do
-        params(buildfile: Dependabot::DependencyFile,
-               dependency_files: T::Array[Dependabot::DependencyFile]).returns(T::Array[Dependabot::DependencyFile])
+        params(
+          buildfile: Dependabot::DependencyFile,
+          dependency_files: T::Array[Dependabot::DependencyFile]
+        ).returns(T::Array[Dependabot::DependencyFile])
       end
       def self.find_includes(buildfile, dependency_files)
         FileParser.find_include_names(buildfile)
@@ -122,24 +124,31 @@ module Dependabot
       end
 
       sig do
-        params(parsed_toml_file: T::Hash[String, T.untyped],
-               toml_file: Dependabot::DependencyFile).returns(DependencySet)
+        params(
+          parsed_toml_file: T::Hash[String, T.untyped],
+          toml_file: Dependabot::DependencyFile
+        ).returns(DependencySet)
       end
       def version_catalog_library_dependencies(parsed_toml_file, toml_file)
         dependencies_for_declarations(parsed_toml_file["libraries"], toml_file, :details_for_library_dependency)
       end
 
       sig do
-        params(parsed_toml_file: T::Hash[String, T.untyped],
-               toml_file: Dependabot::DependencyFile).returns(DependencySet)
+        params(
+          parsed_toml_file: T::Hash[String, T.untyped],
+          toml_file: Dependabot::DependencyFile
+        ).returns(DependencySet)
       end
       def version_catalog_plugin_dependencies(parsed_toml_file, toml_file)
         dependencies_for_declarations(parsed_toml_file["plugins"], toml_file, :details_for_plugin_dependency)
       end
 
       sig do
-        params(declarations: T.untyped, toml_file: Dependabot::DependencyFile,
-               details_getter: Symbol).returns(DependencySet)
+        params(
+          declarations: T.untyped,
+          toml_file: Dependabot::DependencyFile,
+          details_getter: Symbol
+        ).returns(DependencySet)
       end
       def dependencies_for_declarations(declarations, toml_file, details_getter)
         dependency_set = DependencySet.new
