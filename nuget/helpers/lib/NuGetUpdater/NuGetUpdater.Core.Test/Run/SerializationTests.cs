@@ -316,13 +316,13 @@ public class SerializationTests : TestBase
 
         Assert.Equal("Package.1", jobWrapper.Job.IgnoreConditions[0].DependencyName);
         Assert.Equal("some-file", jobWrapper.Job.IgnoreConditions[0].Source);
-        Assert.Equal("version-update:semver-major", jobWrapper.Job.IgnoreConditions[0].UpdateTypes.Single());
+        Assert.Equal(ConditionUpdateType.SemVerMajor, jobWrapper.Job.IgnoreConditions[0].UpdateTypes!.Single());
         Assert.Null(jobWrapper.Job.IgnoreConditions[0].UpdatedAt);
         Assert.Equal("> 1.2.3", jobWrapper.Job.IgnoreConditions[0].VersionRequirement?.ToString());
 
         Assert.Equal("Package.2", jobWrapper.Job.IgnoreConditions[1].DependencyName);
         Assert.Null(jobWrapper.Job.IgnoreConditions[1].Source);
-        Assert.Empty(jobWrapper.Job.IgnoreConditions[1].UpdateTypes);
+        Assert.Null(jobWrapper.Job.IgnoreConditions[1].UpdateTypes);
         Assert.Equal(new DateTime(2024, 12, 5, 15, 47, 12), jobWrapper.Job.IgnoreConditions[1].UpdatedAt);
         Assert.Null(jobWrapper.Job.IgnoreConditions[1].VersionRequirement);
     }
