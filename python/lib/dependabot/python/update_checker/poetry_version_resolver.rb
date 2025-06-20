@@ -5,6 +5,7 @@ require "excon"
 require "toml-rb"
 require "open3"
 require "uri"
+require "sorbet-runtime"
 require "dependabot/dependency"
 require "dependabot/errors"
 require "dependabot/shared_helpers"
@@ -21,8 +22,11 @@ require "dependabot/python/name_normaliser"
 module Dependabot
   module Python
     class UpdateChecker
+      extend T::Sig
       # This class does version resolution for pyproject.toml files.
       class PoetryVersionResolver
+        extend T::Sig
+
         GIT_REFERENCE_NOT_FOUND_REGEX = /
           (Failed to checkout
           (?<tag>.+?)
