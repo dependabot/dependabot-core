@@ -1,19 +1,23 @@
 # typed: strict
 # frozen_string_literal: true
 
-require "json"
-require "time"
 require "cgi"
-require "excon"
+require "json"
 require "nokogiri"
 require "sorbet-runtime"
-require "dependabot/registry_client"
+require "time"
+
+require "dependabot/errors"
+require "dependabot/github_actions/requirement"
+require "dependabot/github_actions/update_checker"
 require "dependabot/github_actions/version"
-require "dependabot/package/package_release"
 require "dependabot/package/package_details"
+require "dependabot/package/package_release"
+require "dependabot/registry_client"
+require "dependabot/shared_helpers"
 
 module Dependabot
-  module GitHubActions
+  module GithubActions
     module Package
       class PackageDetailsFetcher
         extend T::Sig
@@ -50,32 +54,7 @@ module Dependabot
         sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
         attr_reader :security_advisories
 
-        # sig { returns(T.nilable(T::Array[Dependabot::Package::PackageRelease])) }
-        # def fetch_package_releases
-        #   releases = T.let([], T::Array[Dependabot::Package::PackageRelease])
-        #   begin
-        #     response = Dependabot::RegistryClient.get(
-        #       url: T.must(@provider_url)
-        #     )
-
-        #     return [] unless response.status == 200
-
-        #     package_metadata = JSON.parse(response.body)
-
-        #     package_metadata.each do |version, release_date|
-        #       releases << Dependabot::Package::PackageRelease.new(
-        #         version: Elm::Version.new(version),
-        #         released_at: release_date ? Time.at(release_date).to_time : nil
-        #       )
-        #     end
-
-        #     releases
-        #   rescue StandardError => e
-        #     Dependabot.logger.error("Error while fetching package info for elm packages: #{e.message}")
-        #     releases
-        #   end
-        # end
-
+        # rubocop:disable Metrics/PerceivedComplexity
         sig { returns(T.nilable(T.any(Dependabot::Version, String))) }
         def release_list_for_git_dependency
           # TODO: Support Docker sources
@@ -102,6 +81,7 @@ module Dependabot
           # version or a commit SHA then there's nothing we can do.
           nil
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
         def lowest_security_fix_version_tag
