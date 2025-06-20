@@ -11,6 +11,7 @@ module Dependabot
   module Python
     class Version < Dependabot::Version
       extend T::Sig
+
       sig { returns(Integer) }
       attr_reader :epoch
 

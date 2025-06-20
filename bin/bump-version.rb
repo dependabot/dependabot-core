@@ -15,10 +15,6 @@ version_path = File.join(__dir__, "..", "common", "lib", "dependabot.rb")
 version_contents = File.read(version_path)
 
 version = version_contents.scan(/\d+.\d+.\d+/).first
-unless version
-  puts "Could not find version in #{version_path}"
-  exit 1
-end
 
 segments = Gem::Version.new(version).segments
 new_version =

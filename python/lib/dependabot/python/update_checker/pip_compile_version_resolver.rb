@@ -21,10 +21,13 @@ require "dependabot/python/authed_url_builder"
 module Dependabot
   module Python
     class UpdateChecker
+      extend T::Sig
       # This class does version resolution for pip-compile. Its approach is:
       # - Unlock the dependency we're checking in the requirements.in file
       # - Run `pip-compile` and see what the result is
       class PipCompileVersionResolver
+        extend T::Sig
+
         GIT_DEPENDENCY_UNREACHABLE_REGEX = /git clone --filter=blob:none --quiet (?<url>[^\s]+).* /
         GIT_REFERENCE_NOT_FOUND_REGEX = /Did not find branch or tag '(?<tag>[^\n"]+)'/m
         NATIVE_COMPILATION_ERROR =

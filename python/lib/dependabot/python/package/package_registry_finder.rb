@@ -112,53 +112,55 @@ module Dependabot
 
         sig { returns(UrlHash) }
         def pipfile_index_urls
-          urls = { main: nil, extra: [] }
+          urls = T.let({ main: nil, extra: [] }, UrlHash)
+          begin
+            return urls unless pipfile
 
-          return urls unless pipfile
+            pipfile_object = TomlRB.parse(T.must(pipfile).content)
 
-          pipfile_object = TomlRB.parse(T.must(pipfile).content)
+            urls[:main] = pipfile_object["source"]&.first&.fetch("url", nil)
 
-          urls[:main] = pipfile_object["source"]&.first&.fetch("url", nil)
+            pipfile_object["source"]&.each do |source|
+              urls[:extra] << source.fetch("url") if source["url"]
+            end
+            urls[:extra] = urls[:extra].uniq
 
-          pipfile_object["source"]&.each do |source|
-            urls[:extra] << source.fetch("url") if source["url"]
+            urls
+          rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
+            urls
           end
-          urls[:extra] = urls[:extra].uniq
-
-          urls
-        rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
-          { main: nil, extra: [] }
         end
 
         sig { returns(UrlHash) }
         def pyproject_index_urls
           urls = { main: nil, extra: [] }
+          begin
+            return urls unless pyproject
 
-          return urls unless pyproject
+            sources =
+              TomlRB.parse(T.must(pyproject).content).dig("tool", "poetry", "source") ||
+              []
 
-          sources =
-            TomlRB.parse(T.must(pyproject).content).dig("tool", "poetry", "source") ||
-            []
+            sources.each do |source|
+              # If source is PyPI, skip it, and let it pick the default URI
+              next if source["name"].casecmp?("PyPI")
 
-          sources.each do |source|
-            # If source is PyPI, skip it, and let it pick the default URI
-            next if source["name"].casecmp?("PyPI")
-
-            if @dependency.all_sources.include?(source["name"])
-              # If dependency has specified this source, use it
-              return { main: source["url"], extra: [] }
-            elsif source["default"]
-              urls[:main] = source["url"]
-            elsif source["priority"] != "explicit"
-              # if source is not explicit, add it to extra
-              urls[:extra] << source["url"]
+              if @dependency.all_sources.include?(source["name"])
+                # If dependency has specified this source, use it
+                return { main: source["url"], extra: [] }
+              elsif source["default"]
+                urls[:main] = source["url"]
+              elsif source["priority"] != "explicit"
+                # if source is not explicit, add it to extra
+                urls[:extra] << source["url"]
+              end
             end
-          end
-          urls[:extra] = urls[:extra].uniq
+            urls[:extra] = urls[:extra].uniq
 
-          urls
-        rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
-          { main: nil, extra: [] }
+            urls
+          rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
+            urls
+          end
         end
 
         sig { returns(UrlHash) }
