@@ -16,10 +16,12 @@ module Dependabot
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       extend T::Sig
 
+      require_relative "update_checker/latest_version_finder"
+
       sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
       def latest_version
         @latest_version ||= T.let(
-          fetch_latest_version,
+          T.must(latest_version_finder).latest_release,
           T.nilable(T.any(String, Gem::Version))
         )
       end
@@ -37,17 +39,17 @@ module Dependabot
       end
 
       sig { override.returns(T.nilable(Dependabot::Version)) }
-      def lowest_security_fix_version
-        @lowest_security_fix_version ||= T.let(
-          fetch_lowest_security_fix_version,
-          T.nilable(Dependabot::Version)
-        )
-      end
-
-      sig { override.returns(T.nilable(Dependabot::Version)) }
       def lowest_resolvable_security_fix_version
         # Resolvability isn't an issue for GitHub Actions.
         lowest_security_fix_version
+      end
+
+      sig { override.returns(T.nilable(Dependabot::Version)) }
+      def lowest_security_fix_version
+        @lowest_security_fix_version ||= T.let(
+          T.must(latest_version_finder).lowest_security_fix_release&.fetch(:version),
+          T.nilable(Dependabot::Version)
+        )
       end
 
       sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
@@ -74,6 +76,21 @@ module Dependabot
 
       private
 
+      sig { returns(T.nilable(Dependabot::GithubActions::UpdateChecker::LatestVersionFinder)) }
+      def latest_version_finder
+        @latest_version_finder ||=
+          T.let(LatestVersionFinder.new(
+                  dependency: dependency,
+                  credentials: credentials,
+                  dependency_files: dependency_files,
+                  security_advisories: security_advisories,
+                  ignored_versions: ignored_versions,
+                  raise_on_ignored: raise_on_ignored,
+                  cooldown_options: update_cooldown
+                ),
+                T.nilable(Dependabot::GithubActions::UpdateChecker::LatestVersionFinder))
+      end
+
       sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
       def active_advisories
         security_advisories.select do |advisory|
@@ -91,82 +108,6 @@ module Dependabot
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def updated_dependencies_after_full_unlock
         raise NotImplementedError
-      end
-
-      sig { returns(T.nilable(T.any(Dependabot::Version, String))) }
-      def fetch_latest_version
-        # TODO: Support Docker sources
-        return unless git_dependency?
-
-        fetch_latest_version_for_git_dependency
-      end
-
-      sig { returns(T.nilable(T.any(Dependabot::Version, String))) }
-      def fetch_latest_version_for_git_dependency
-        return current_commit unless git_commit_checker.pinned?
-
-        # If the dependency is pinned to a tag that looks like a version then
-        # we want to update that tag.
-        if git_commit_checker.pinned_ref_looks_like_version? && latest_version_tag
-          latest_version = latest_version_tag&.fetch(:version)
-          return current_version if shortened_semver_eq?(dependency.version, latest_version.to_s)
-
-          return latest_version
-        end
-
-        if git_commit_checker.pinned_ref_looks_like_commit_sha? && latest_version_tag
-          latest_version = latest_version_tag&.fetch(:version)
-          return latest_commit_for_pinned_ref unless git_commit_checker.local_tag_for_pinned_sha
-
-          return latest_version
-        end
-
-        # If the dependency is pinned to a tag that doesn't look like a
-        # version or a commit SHA then there's nothing we can do.
-        nil
-      end
-
-      sig { returns(T.nilable(Dependabot::Version)) }
-      def fetch_lowest_security_fix_version
-        # TODO: Support Docker sources
-        return unless git_dependency?
-
-        fetch_lowest_security_fix_version_for_git_dependency
-      end
-
-      sig { returns(T.nilable(Dependabot::Version)) }
-      def fetch_lowest_security_fix_version_for_git_dependency
-        lowest_security_fix_version_tag&.fetch(:version)
-      end
-
-      sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
-      def lowest_security_fix_version_tag
-        @lowest_security_fix_version_tag ||= T.let(
-          begin
-            tags_matching_precision = git_commit_checker.local_tags_for_allowed_versions_matching_existing_precision
-            lowest_fixed_version = find_lowest_secure_version(tags_matching_precision)
-            if lowest_fixed_version
-              lowest_fixed_version
-            else
-              tags = git_commit_checker.local_tags_for_allowed_versions
-              find_lowest_secure_version(tags)
-            end
-          end,
-          T.nilable(T::Hash[Symbol, String])
-        )
-      end
-
-      sig do
-        params(
-          tags: T::Array[T::Hash[Symbol, T.untyped]]
-        )
-          .returns(T.nilable(T::Hash[Symbol, T.untyped]))
-      end
-      def find_lowest_secure_version(tags)
-        relevant_tags = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(tags, security_advisories)
-        relevant_tags = filter_lower_tags(relevant_tags)
-
-        relevant_tags.min_by { |tag| tag.fetch(:version) }
       end
 
       sig { returns(T.nilable(String)) }
@@ -196,41 +137,12 @@ module Dependabot
         )
       end
 
-      sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
-      def latest_version_tag
-        @latest_version_tag ||= T.let(
-          begin
-            return git_commit_checker.local_tag_for_latest_version if dependency.version.nil?
-
-            ref = git_commit_checker.local_ref_for_latest_version_matching_existing_precision
-            return ref if ref && ref.fetch(:version) > current_version
-
-            git_commit_checker.local_ref_for_latest_version_lower_precision
-          end,
-          T.nilable(T::Hash[Symbol, T.untyped])
-        )
-      end
-
-      sig do
-        params(
-          tags_array: T::Array[T::Hash[Symbol, T.untyped]]
-        )
-          .returns(T::Array[T::Hash[Symbol, T.untyped]])
-      end
-      def filter_lower_tags(tags_array)
-        return tags_array unless current_version
-
-        tags_array
-          .select { |tag| tag.fetch(:version) > current_version }
-      end
-
       sig { params(source: T.nilable(T::Hash[Symbol, String])).returns(T.nilable(String)) }
       def updated_ref(source)
         # TODO: Support Docker sources
-        return unless git_dependency?
+        return unless git_commit_checker.git_dependency?
 
-        if vulnerable? &&
-           (new_tag = lowest_security_fix_version_tag)
+        if vulnerable? && (new_tag = T.must(latest_version_finder).lowest_security_fix_release)
           return new_tag.fetch(:tag)
         end
 
@@ -238,7 +150,7 @@ module Dependabot
 
         # Return the git tag if updating a pinned version
         if source_git_commit_checker.pinned_ref_looks_like_version? &&
-           (new_tag = latest_version_tag)
+           (new_tag = T.must(latest_version_finder).latest_version_tag)
           return new_tag.fetch(:tag)
         end
 
@@ -254,7 +166,7 @@ module Dependabot
 
       sig { returns(T.nilable(String)) }
       def latest_commit_sha
-        new_tag = latest_version_tag
+        new_tag = T.must(latest_version_finder).latest_version_tag
         return unless new_tag
 
         if git_commit_checker.local_tag_for_pinned_sha
@@ -262,16 +174,6 @@ module Dependabot
         else
           latest_commit_for_pinned_ref
         end
-      end
-
-      sig { returns(T.nilable(String)) }
-      def current_commit
-        git_commit_checker.head_commit_for_current_branch
-      end
-
-      sig { returns(T::Boolean) }
-      def git_dependency?
-        git_commit_checker.git_dependency?
       end
 
       sig { returns(Dependabot::GitCommitChecker) }
@@ -297,17 +199,6 @@ module Dependabot
           consider_version_branches_pinned: true,
           dependency_source_details: source
         )
-      end
-
-      sig { params(base: T.nilable(String), other: String).returns(T::Boolean) }
-      def shortened_semver_eq?(base, other)
-        return false unless base
-
-        base_split = base.split(".")
-        other_split = other.split(".")
-        return false unless base_split.length <= other_split.length
-
-        other_split[0..base_split.length - 1] == base_split
       end
 
       sig { params(sha: String).returns(T.nilable(String)) }
