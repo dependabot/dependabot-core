@@ -1,7 +1,6 @@
 # typed: true
 # frozen_string_literal: true
 
-require "sorbet-runtime"
 require "excon"
 require "toml-rb"
 require "open3"
@@ -24,9 +23,6 @@ module Dependabot
     class UpdateChecker
       # This class does version resolution for pyproject.toml files.
       class PoetryVersionResolver
-        extend T::Sig
-        extend T::Helpers
-
         GIT_REFERENCE_NOT_FOUND_REGEX = /
           (Failed to checkout
           (?<tag>.+?)

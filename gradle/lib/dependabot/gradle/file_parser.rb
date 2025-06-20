@@ -21,7 +21,7 @@ require "dependabot/gradle/package_manager"
 # - https://docs.gradle.org/current/userguide/plugins.html
 module Dependabot
   module Gradle
-    class FileParser < Dependabot::FileParsers::Base
+    class FileParser < Dependabot::FileParsers::Base # rubocop:disable Metrics/ClassLength
       extend T::Sig
 
       require "dependabot/file_parsers/base/dependency_set"
@@ -348,7 +348,7 @@ module Dependabot
           in_dependency_set: T::Boolean
         ).returns(T.nilable(Dependabot::Dependency))
       end
-      def dependency_from(details_hash:, buildfile:, in_dependency_set: false)
+      def dependency_from(details_hash:, buildfile:, in_dependency_set: false) # rubocop:disable Metrics/PerceivedComplexity
         group   = evaluated_value(T.cast(details_hash[:group], T.nilable(String)), buildfile)
         name    = evaluated_value(T.cast(details_hash[:name], T.nilable(String)), buildfile)
         version = evaluated_value(T.cast(details_hash[:version], T.nilable(String)), buildfile)
