@@ -18,7 +18,7 @@ module Dependabot
         extend T::Sig
         LOCKFILE_ENTRY_REGEX = /
           \[\[package\]\]\n
-          (?:(?!^\[(\[package|metadata)).)+
+          (?:(?!^\[(?:\[package|metadata)).)+
         /mx
 
         LOCKFILE_CHECKSUM_REGEX = /^"checksum .*$/
@@ -59,6 +59,18 @@ module Dependabot
             updated_lockfile = post_process_lockfile(updated_lockfile)
 
             next updated_lockfile if updated_lockfile.include?(desired_lockfile_content)
+
+            # If exact version match fails, accept any update
+            if dependency_updated?(updated_lockfile, dependency)
+              actual_version = extract_actual_version(updated_lockfile, dependency.name)
+              if actual_version && actual_version != dependency.version
+                Dependabot.logger.info(
+                  "Cargo selected version #{actual_version} instead of #{dependency.version} for #{dependency.name} " \
+                  "due to dependency constraints"
+                )
+              end
+              next updated_lockfile
+            end
 
             raise "Failed to update #{dependency.name}!"
           end
@@ -468,6 +480,43 @@ module Dependabot
         sig { returns(T.class_of(Gem::Version)) }
         def version_class
           dependency.version_class
+        end
+
+        def dependency_updated?(lockfile_content, dependency)
+          return false unless dependency.previous_version
+
+          # For multiple versions case, we need to check the specific entry
+          # that corresponds to our dependency (the one used by our package)
+          entries = lockfile_content.scan(LOCKFILE_ENTRY_REGEX).select do |entry|
+            entry.include?("name = \"#{dependency.name}\"")
+          end
+
+          # Check if any entry has a version newer than the previous version
+          entries.any? do |entry|
+            version_match = entry.match(/version = "([^"]+)"/)
+            next false unless version_match
+
+            new_version = version_match[1]
+            # Only consider it updated if it's newer than the previous version
+            # and either matches our expected version or is at least newer than previous
+            dependency.version_class.new(new_version) > dependency.version_class.new(dependency.previous_version)
+          end
+        end
+
+        def extract_actual_version(lockfile_content, dependency_name)
+          entries = lockfile_content.scan(LOCKFILE_ENTRY_REGEX).select do |entry|
+            entry.include?("name = \"#{dependency_name}\"")
+          end
+
+          # Get the highest version from matching entries
+          versions = entries.filter_map do |entry|
+            version_match = entry.match(/version = "([^"]+)"/)
+            version_match&.captures&.first
+          end
+
+          return nil if versions.empty?
+
+          versions.max_by { |v| version_class.new(v) }
         end
       end
       # rubocop:enable Metrics/ClassLength
