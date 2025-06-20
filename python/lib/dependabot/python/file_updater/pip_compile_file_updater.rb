@@ -1,7 +1,6 @@
 # typed: strict
 # frozen_string_literal: true
 
-require "sorbet-runtime"
 require "open3"
 require "dependabot/dependency"
 require "dependabot/python/requirement_parser"
@@ -20,7 +19,6 @@ module Dependabot
       # rubocop:disable Metrics/ClassLength
       class PipCompileFileUpdater
         extend T::Sig
-
         require_relative "requirement_replacer"
         require_relative "requirement_file_updater"
         require_relative "setup_file_sanitizer"
@@ -50,13 +48,13 @@ module Dependabot
             dependencies: T::Array[Dependabot::Dependency],
             dependency_files: T::Array[Dependabot::DependencyFile],
             credentials: T::Array[Dependabot::Credential],
-            index_urls: T.nilable(T::Array[T.nilable(String)])
+            index_urls: T.nilable(T::Array[String])
           ).void
         end
-        def initialize(dependencies:, dependency_files:, credentials:, index_urls: nil) # rubocop:disable Metrics/AbcSize
+        def initialize(dependencies:, dependency_files:, credentials:, index_urls: nil)
           @dependencies = T.let(dependencies, T::Array[Dependabot::Dependency])
           @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
-          @index_urls = T.let(index_urls, T.nilable(T::Array[T.nilable(String)]))
+          @index_urls = T.let(index_urls, T.nilable(T::Array[String]))
           @build_isolation = T.let(true, T::Boolean)
           @sanitized_setup_file_content = T.let({}, T::Hash[String, String])
           @requirement_map = T.let(nil, T.nilable(T::Hash[String, T::Array[String]]))
@@ -551,7 +549,7 @@ module Dependabot
           credentials
             .select { |cred| cred["type"] == "python_index" }
             .map do |cred|
-              authed_url = AuthedUrlBuilder.authed_url(credential: cred.to_h)
+              authed_url = AuthedUrlBuilder.authed_url(credential: cred)
 
               if cred.replaces_base?
                 "--index-url=#{authed_url}"

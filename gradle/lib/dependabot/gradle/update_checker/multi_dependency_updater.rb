@@ -46,7 +46,7 @@ module Dependabot
 
           @updated_dependencies ||=
             dependencies_to_update.map do |dep|
-              Dependabot::Dependency.new(
+              Dependency.new(
                 name: dep.name,
                 version: target_version.to_s,
                 requirements: updated_requirements(dep),
