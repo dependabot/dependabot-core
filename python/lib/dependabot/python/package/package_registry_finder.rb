@@ -9,8 +9,8 @@ module Dependabot
   module Python
     module Package
       class PackageRegistryFinder
-        PYPI_BASE_URL = T.let("https://pypi.org/simple/", String)
-        ENVIRONMENT_VARIABLE_REGEX = T.let(/\$\{.+\}/, Regexp)
+        PYPI_BASE_URL = "https://pypi.org/simple/"
+        ENVIRONMENT_VARIABLE_REGEX = /\$\{.+\}/
 
         def initialize(dependency_files:, credentials:, dependency:)
           @dependency_files = dependency_files
@@ -56,20 +56,19 @@ module Dependabot
         end
 
         def requirement_file_index_urls
-          urls = T.let({ main: nil, extra: [] }, T::Hash[Symbol, T.untyped])
+          urls = { main: nil, extra: [] }
 
           requirements_files.each do |file|
-            content = T.must(file.content)
-            if content.match?(/^--index-url\s+['"]?([^\s'"]+)['"]?/)
+            if file.content.match?(/^--index-url\s+['"]?([^\s'"]+)['"]?/)
               urls[:main] =
-                T.must(content.match(/^--index-url\s+['"]?([^\s'"]+)['"]?/))
-                 .captures.first&.strip
+                file.content.match(/^--index-url\s+['"]?([^\s'"]+)['"]?/)
+                    .captures.first&.strip
             end
             urls[:extra] +=
-              content
-              .scan(/^--extra-index-url\s+['"]?([^\s'"]+)['"]?/)
-              .flatten
-              .map(&:strip)
+              file.content
+                  .scan(/^--extra-index-url\s+['"]?([^\s'"]+)['"]?/)
+                  .flatten
+                  .map(&:strip)
           end
 
           urls
@@ -93,53 +92,51 @@ module Dependabot
 
         def pipfile_index_urls
           urls = { main: nil, extra: [] }
-          begin
-            return urls unless pipfile
 
-            pipfile_object = TomlRB.parse(pipfile.content)
+          return urls unless pipfile
 
-            urls[:main] = pipfile_object["source"]&.first&.fetch("url", nil)
+          pipfile_object = TomlRB.parse(pipfile.content)
 
-            pipfile_object["source"]&.each do |source|
-              urls[:extra] << source.fetch("url") if source["url"]
-            end
-            urls[:extra] = urls[:extra].uniq
+          urls[:main] = pipfile_object["source"]&.first&.fetch("url", nil)
 
-            urls
-          rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
-            urls
+          pipfile_object["source"]&.each do |source|
+            urls[:extra] << source.fetch("url") if source["url"]
           end
+          urls[:extra] = urls[:extra].uniq
+
+          urls
+        rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
+          urls
         end
 
         def pyproject_index_urls
           urls = { main: nil, extra: [] }
-          begin
-            return urls unless pyproject
 
-            sources =
-              TomlRB.parse(pyproject.content).dig("tool", "poetry", "source") ||
-              []
+          return urls unless pyproject
 
-            sources.each do |source|
-              # If source is PyPI, skip it, and let it pick the default URI
-              next if source["name"].casecmp?("PyPI")
+          sources =
+            TomlRB.parse(pyproject.content).dig("tool", "poetry", "source") ||
+            []
 
-              if @dependency.all_sources.include?(source["name"])
-                # If dependency has specified this source, use it
-                return { main: source["url"], extra: [] }
-              elsif source["default"]
-                urls[:main] = source["url"]
-              elsif source["priority"] != "explicit"
-                # if source is not explicit, add it to extra
-                urls[:extra] << source["url"]
-              end
+          sources.each do |source|
+            # If source is PyPI, skip it, and let it pick the default URI
+            next if source["name"].casecmp?("PyPI")
+
+            if @dependency.all_sources.include?(source["name"])
+              # If dependency has specified this source, use it
+              return { main: source["url"], extra: [] }
+            elsif source["default"]
+              urls[:main] = source["url"]
+            elsif source["priority"] != "explicit"
+              # if source is not explicit, add it to extra
+              urls[:extra] << source["url"]
             end
-            urls[:extra] = urls[:extra].uniq
-
-            urls
-          rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
-            urls
           end
+          urls[:extra] = urls[:extra].uniq
+
+          urls
+        rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
+          urls
         end
 
         def config_variable_index_urls
