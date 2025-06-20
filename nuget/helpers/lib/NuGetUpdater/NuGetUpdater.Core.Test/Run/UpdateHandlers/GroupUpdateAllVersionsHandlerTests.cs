@@ -795,4 +795,133 @@ public class GroupUpdateAllVersionsHandlerTests : UpdateHandlersTestsBase
             ]
         );
     }
+
+    [Fact]
+    public async Task IgnoredVersionUpdateTypesAreHonored()
+    {
+        await TestAsync(
+            job: new()
+            {
+                Source = CreateJobSource("/src"),
+                IgnoreConditions = [
+                    new Condition()
+                    {
+                        DependencyName = "Some.Dependency",
+                        UpdateTypes = [ConditionUpdateType.SemVerMajor],
+                    }
+                ]
+            },
+            files: [("src/project.csproj", "initial contents")],
+            discoveryWorker: TestDiscoveryWorker.FromResults(
+                ("/src", new WorkspaceDiscoveryResult()
+                {
+                    Path = "/src",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "project.csproj",
+                            Dependencies = [
+                                new("Some.Dependency", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"]),
+                            ],
+                            ImportedFiles = [],
+                            AdditionalFiles = [],
+                        }
+                    ],
+                })
+            ),
+            analyzeWorker: new TestAnalyzeWorker(input =>
+            {
+                var repoRoot = input.Item1;
+                var discovery = input.Item2;
+                var dependencyInfo = input.Item3;
+                if (dependencyInfo.IgnoredUpdateTypes.Length != 1 || !dependencyInfo.IgnoredUpdateTypes.Contains(ConditionUpdateType.SemVerMajor))
+                {
+                    throw new InvalidOperationException($"Expected to see ignored update type of {nameof(ConditionUpdateType.SemVerMajor)} but found [{string.Join(", ", dependencyInfo.IgnoredUpdateTypes)}]");
+                }
+                var newVersion = dependencyInfo.Name switch
+                {
+                    "Some.Dependency" => "1.1.0",
+                    _ => throw new NotImplementedException($"Test didn't expect to update dependency {dependencyInfo.Name}"),
+                };
+                return Task.FromResult(new AnalysisResult()
+                {
+                    CanUpdate = true,
+                    UpdatedVersion = newVersion,
+                    UpdatedDependencies = [],
+                });
+            }),
+            updaterWorker: new TestUpdaterWorker(async input =>
+            {
+                var repoRoot = input.Item1;
+                var workspacePath = input.Item2;
+                var dependencyName = input.Item3;
+                var previousVersion = input.Item4;
+                var newVersion = input.Item5;
+                var isTransitive = input.Item6;
+
+                await File.WriteAllTextAsync(Path.Join(repoRoot, workspacePath), "updated contents");
+
+                return new UpdateOperationResult()
+                {
+                    UpdateOperations = [new DirectUpdate() { DependencyName = dependencyName, NewVersion = NuGetVersion.Parse(newVersion), UpdatedFiles = [workspacePath] }],
+                };
+            }),
+            expectedUpdateHandler: GroupUpdateAllVersionsHandler.Instance,
+            expectedApiMessages: [
+                new IncrementMetric()
+                {
+                    Metric = "updater.started",
+                    Tags = new()
+                    {
+                        ["operation"] = "group_update_all_versions",
+                    }
+                },
+                new UpdatedDependencyList()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "Some.Dependency",
+                            Version = "1.0.0",
+                            Requirements = [
+                                new() { Requirement = "1.0.0", File = "/src/project.csproj", Groups = ["dependencies"] },
+                            ],
+                        },
+                    ],
+                    DependencyFiles = ["/src/project.csproj"],
+                },
+                new CreatePullRequest()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "Some.Dependency",
+                            Version = "1.1.0",
+                            Requirements = [
+                                new() { Requirement = "1.1.0", File = "/src/project.csproj", Groups = ["dependencies"], Source = new() { SourceUrl = null } },
+                            ],
+                            PreviousVersion = "1.0.0",
+                            PreviousRequirements = [
+                                new() { Requirement = "1.0.0", File = "/src/project.csproj", Groups = ["dependencies"] },
+                            ],
+                        },
+                    ],
+                    UpdatedDependencyFiles = [
+                        new()
+                        {
+                            Directory = "/src",
+                            Name = "project.csproj",
+                            Content = "updated contents",
+                        },
+                    ],
+                    BaseCommitSha = "TEST-COMMIT-SHA",
+                    CommitMessage = RunWorkerTests.TestPullRequestCommitMessage,
+                    PrTitle = RunWorkerTests.TestPullRequestTitle,
+                    PrBody = RunWorkerTests.TestPullRequestBody,
+                    DependencyGroup = null,
+                },
+                new MarkAsProcessed("TEST-COMMIT-SHA"),
+            ]
+        );
+    }
 }

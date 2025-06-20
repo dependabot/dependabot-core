@@ -61,7 +61,7 @@ module Dependabot
 
         sig { returns(Dependabot::DependencyFile) }
         def declaring_pom
-          filename = declaring_requirement.fetch(:file)
+          filename = declaring_requirement.fetch(:file) || declaring_requirement.dig(:metadata, :pom_file)
           declaring_pom = dependency_files.find { |f| f.name == filename }
           return declaring_pom if declaring_pom
 
