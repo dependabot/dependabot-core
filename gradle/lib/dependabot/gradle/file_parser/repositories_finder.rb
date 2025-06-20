@@ -134,8 +134,8 @@ module Dependabot
           repository_urls = T.let([], T::Array[String])
 
           repository_blocks = T.let([], T::Array[String])
-          mtch = T.must(Regexp.last_match)
           buildfile_content.scan(REPOSITORIES_BLOCK_START) do
+            mtch = T.must(Regexp.last_match)
             repository_blocks <<
               T.must(mtch.post_match[0..closing_bracket_index(mtch.post_match)])
           end
@@ -150,7 +150,7 @@ module Dependabot
             repository_urls << GRADLE_PLUGINS_REPO if block.match?(/\sgradlePluginPortal\(/)
 
             block.scan(MAVEN_REPO_REGEX) do
-              repository_urls << T.must(mtch.named_captures.fetch("url"))
+              repository_urls << T.must(T.must(Regexp.last_match).named_captures.fetch("url"))
             end
           end
 

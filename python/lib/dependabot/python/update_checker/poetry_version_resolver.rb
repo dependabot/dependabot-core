@@ -5,7 +5,6 @@ require "excon"
 require "toml-rb"
 require "open3"
 require "uri"
-require "sorbet-runtime"
 require "dependabot/dependency"
 require "dependabot/errors"
 require "dependabot/shared_helpers"
@@ -22,11 +21,8 @@ require "dependabot/python/name_normaliser"
 module Dependabot
   module Python
     class UpdateChecker
-      extend T::Sig
       # This class does version resolution for pyproject.toml files.
       class PoetryVersionResolver
-        extend T::Sig
-
         GIT_REFERENCE_NOT_FOUND_REGEX = /
           (Failed to checkout
           (?<tag>.+?)
@@ -45,29 +41,16 @@ module Dependabot
         INCOMPATIBLE_CONSTRAINTS = T.let(/Incompatible constraints in requirements of (?<dep>.+?) ((?<ver>.+?)):/,
                                          Regexp)
 
-        sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
 
-        sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
 
-        sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
 
-        sig { returns(T.nilable(String)) }
         attr_reader :repo_contents_path
 
-        sig { returns(Dependabot::Python::PoetryErrorHandler) }
         attr_reader :error_handler
 
-        sig do
-          params(
-            dependency: Dependabot::Dependency,
-            dependency_files: T::Array[Dependabot::DependencyFile],
-            credentials: T::Array[Dependabot::Credential],
-            repo_contents_path: T.nilable(String)
-          ).void
-        end
         def initialize(dependency:, dependency_files:, credentials:,
                        repo_contents_path:)
           @dependency = T.let(dependency, Dependabot::Dependency)
@@ -85,7 +68,6 @@ module Dependabot
           )
         end
 
-        sig { params(requirement: T.nilable(String)).returns(T.nilable(Dependabot::Python::Version)) }
         def latest_resolvable_version(requirement: nil)
           version_string =
             fetch_latest_resolvable_version_string(requirement: requirement)
