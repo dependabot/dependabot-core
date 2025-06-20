@@ -15,7 +15,7 @@ require "dependabot/errors"
 
 module Dependabot
   module Python
-    class FileFetcher < Dependabot::FileFetchers::Base
+    class FileFetcher < Dependabot::FileFetchers::Base # rubocop:disable Metrics/ClassLength
       extend T::Sig
       extend T::Helpers
 
@@ -27,7 +27,7 @@ module Dependabot
         override.params(source: T.untyped, credentials: T.untyped, repo_contents_path: T.untyped,
                         options: T.untyped).void
       end
-      def initialize(source:, credentials:, repo_contents_path: nil, options: {})
+      def initialize(source:, credentials:, repo_contents_path: nil, options: {}) # rubocop:disable Metrics/AbcSize
         super
         @setup_file = T.let(nil, T.nilable(Dependabot::DependencyFile))
         @setup_cfg_file = T.let(nil, T.nilable(Dependabot::DependencyFile))
