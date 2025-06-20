@@ -24,7 +24,7 @@ module Dependabot
             content: String,
             dependency_name: String,
             old_requirement: T.nilable(String),
-            new_requirement: String,
+            new_requirement: T.nilable(String),
             new_hash_version: T.nilable(String),
             index_urls: T.nilable(T::Array[T.nilable(String)])
           ).void
@@ -34,7 +34,7 @@ module Dependabot
           @content = T.let(content, String)
           @dependency_name = T.let(normalise(dependency_name), String)
           @old_requirement = T.let(old_requirement, T.nilable(String))
-          @new_requirement = T.let(new_requirement, String)
+          @new_requirement = T.let(new_requirement, T.nilable(String))
           @new_hash_version = T.let(new_hash_version, T.nilable(String))
           @index_urls = T.let(index_urls, T.nilable(T::Array[T.nilable(String)]))
         end
@@ -66,7 +66,7 @@ module Dependabot
         sig { returns(T.nilable(String)) }
         attr_reader :old_requirement
 
-        sig { returns(String) }
+        sig { returns(T.nilable(String)) }
         attr_reader :new_requirement
 
         sig { returns(T.nilable(String)) }
@@ -77,16 +77,16 @@ module Dependabot
           !new_hash_version.nil?
         end
 
-        sig { returns(String) }
+        sig { returns(T.nilable(String)) }
         def updated_requirement_string
           new_req_string = new_requirement
 
-          new_req_string = new_req_string.gsub(/,\s*/, ", ") if add_space_after_commas?
+          new_req_string = new_req_string&.gsub(/,\s*/, ", ") if add_space_after_commas?
 
           if add_space_after_operators?
             new_req_string =
               new_req_string
-              .gsub(/(#{RequirementParser::COMPARISON})\s*(?=\d)/o, '\1 ')
+              &.gsub(/(#{RequirementParser::COMPARISON})\s*(?=\d)/o, '\1 ')
           end
 
           new_req_string
@@ -98,11 +98,11 @@ module Dependabot
           updated_string =
             if old_req
               original_dependency_declaration_string(old_req)
-                .sub(RequirementParser::REQUIREMENTS, updated_requirement_string)
+                .sub(RequirementParser::REQUIREMENTS, updated_requirement_string || "")
             else
               original_dependency_declaration_string(old_req)
                 .sub(RequirementParser::NAME_WITH_EXTRAS) do |nm|
-                  nm + updated_requirement_string
+                  (nm + (updated_requirement_string || ""))
                 end
             end
 

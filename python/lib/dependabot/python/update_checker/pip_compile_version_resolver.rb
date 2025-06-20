@@ -1,6 +1,7 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
+require "sorbet-runtime"
 require "open3"
 require "dependabot/dependency"
 require "dependabot/python/requirement_parser"
@@ -23,33 +24,58 @@ module Dependabot
       # This class does version resolution for pip-compile. Its approach is:
       # - Unlock the dependency we're checking in the requirements.in file
       # - Run `pip-compile` and see what the result is
-      class PipCompileVersionResolver
-        GIT_DEPENDENCY_UNREACHABLE_REGEX = /git clone --filter=blob:none --quiet (?<url>[^\s]+).* /
-        GIT_REFERENCE_NOT_FOUND_REGEX = /Did not find branch or tag '(?<tag>[^\n"]+)'/m
-        NATIVE_COMPILATION_ERROR =
-          "pip._internal.exceptions.InstallationSubprocessError: Getting requirements to build wheel exited with 1"
-        # See https://packaging.python.org/en/latest/tutorials/packaging-projects/#configuring-metadata
-        PYTHON_PACKAGE_NAME_REGEX = /[A-Za-z0-9_\-]+/
-        RESOLUTION_IMPOSSIBLE_ERROR = "ResolutionImpossible"
-        ERROR_REGEX = /(?<=ERROR\:\W).*$/
+      class PipCompileVersionResolver # rubocop:disable Metrics/ClassLength
+        extend T::Sig
 
+        GIT_DEPENDENCY_UNREACHABLE_REGEX = T.let(/git clone --filter=blob:none --quiet (?<url>[^\s]+).* /, Regexp)
+        GIT_REFERENCE_NOT_FOUND_REGEX = T.let(/Did not find branch or tag '(?<tag>[^\n"]+)'/m, Regexp)
+        NATIVE_COMPILATION_ERROR = T.let(
+          "pip._internal.exceptions.InstallationSubprocessError: Getting requirements to build wheel exited with 1",
+          String
+        )
+        # See https://packaging.python.org/en/latest/tutorials/packaging-projects/#configuring-metadata
+        PYTHON_PACKAGE_NAME_REGEX = T.let(/[A-Za-z0-9_\-]+/, Regexp)
+        RESOLUTION_IMPOSSIBLE_ERROR = T.let("ResolutionImpossible", String)
+        ERROR_REGEX = T.let(/(?<=ERROR\:\W).*$/, Regexp)
+
+        sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
+
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
+
+        sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
+
+        sig { returns(String) }
         attr_reader :repo_contents_path
+
+        sig { returns(PipCompileErrorHandler) }
         attr_reader :error_handler
 
+        sig do
+          params(
+            dependency: Dependabot::Dependency,
+            dependency_files: T::Array[Dependabot::DependencyFile],
+            credentials: T::Array[Dependabot::Credential],
+            repo_contents_path: String
+          ).void
+        end
         def initialize(dependency:, dependency_files:, credentials:, repo_contents_path:)
-          @dependency               = dependency
-          @dependency_files         = dependency_files
-          @credentials              = credentials
-          @repo_contents_path       = repo_contents_path
-          @build_isolation = true
-          @error_handler = PipCompileErrorHandler.new
+          @dependency = T.let(dependency, Dependabot::Dependency)
+          @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
+          @credentials = T.let(credentials, T::Array[Dependabot::Credential])
+          @repo_contents_path = T.let(repo_contents_path, String)
+          @build_isolation = T.let(true, T::Boolean)
+          @error_handler = T.let(PipCompileErrorHandler.new, PipCompileErrorHandler)
         end
 
+        sig { params(requirement: T.nilable(String)).returns(T.nilable(Dependabot::Python::Version)) }
         def latest_resolvable_version(requirement: nil)
-          @latest_resolvable_version_string ||= {}
+          @latest_resolvable_version_string ||= T.let(
+            {},
+            T.nilable(T::Hash[T.nilable(String), T.nilable(Dependabot::Python::Version)])
+          )
           return @latest_resolvable_version_string[requirement] if @latest_resolvable_version_string.key?(requirement)
 
           version_string =
@@ -59,9 +85,10 @@ module Dependabot
             version_string.nil? ? nil : Python::Version.new(version_string)
         end
 
+        sig { params(version: Dependabot::Version).returns(T::Boolean) }
         def resolvable?(version:)
-          @resolvable ||= {}
-          return @resolvable[version] if @resolvable.key?(version)
+          @resolvable ||= T.let({}, T.nilable(T::Hash[Dependabot::Version, T::Boolean]))
+          return T.must(@resolvable[version]) if @resolvable.key?(version)
 
           @resolvable[version] = if latest_resolvable_version(requirement: "==#{version}")
                                    true
@@ -72,6 +99,7 @@ module Dependabot
 
         private
 
+        sig { params(requirement: T.nilable(String)).returns(T.nilable(String)) }
         def fetch_latest_resolvable_version_string(requirement:)
           SharedHelpers.in_a_temporary_directory do
             SharedHelpers.with_git_configured(credentials: credentials) do
@@ -90,6 +118,7 @@ module Dependabot
           end
         end
 
+        sig { params(filename: String).returns(T::Boolean) }
         def compile_file(filename)
           # Shell out to pip-compile.
           # This is slow, as pip-compile needs to do installs.
@@ -126,15 +155,18 @@ module Dependabot
           end
 
           handle_pip_compile_errors(e.message)
+          false
         end
 
+        sig { params(error: Dependabot::SharedHelpers::HelperSubprocessFailed).returns(T::Boolean) }
         def compilation_error?(error)
           error.message.include?(NATIVE_COMPILATION_ERROR)
         end
 
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/PerceivedComplexity
-        def handle_pip_compile_errors(message)
+        sig { params(message: String).returns(T.nilable(String)) }
+        def handle_pip_compile_errors(message) # rubocop:disable Metrics/MethodLength
           if message.include?(RESOLUTION_IMPOSSIBLE_ERROR)
             check_original_requirements_resolvable
             # If the original requirements are resolvable but we get an
@@ -167,21 +199,24 @@ module Dependabot
           end
 
           if message.match?(GIT_REFERENCE_NOT_FOUND_REGEX)
-            tag = message.match(GIT_REFERENCE_NOT_FOUND_REGEX).named_captures.fetch("tag")
-            constraints_section = message.split("Finding the best candidates:").first
+            tag = T.must(T.must(message.match(GIT_REFERENCE_NOT_FOUND_REGEX)).named_captures.fetch("tag"))
+            constraints_section = T.must(message.split("Finding the best candidates:").first)
             egg_regex = /#{Regexp.escape(tag)}#egg=(#{PYTHON_PACKAGE_NAME_REGEX})/
             name_match = constraints_section.scan(egg_regex)
 
             # We can determine the name of the package from another part of the logger output if it has a unique tag
-            raise GitDependencyReferenceNotFound, name_match.first.first if name_match.length == 1
+            if name_match.length == 1 && name_match.first.is_a?(Array)
+              raise GitDependencyReferenceNotFound,
+                    T.must(T.cast(T.must(name_match.first), T::Array[String]).first)
+            end
 
             raise GitDependencyReferenceNotFound, "(unknown package at #{tag})"
           end
 
           if message.match?(GIT_DEPENDENCY_UNREACHABLE_REGEX)
-            url = message.match(GIT_DEPENDENCY_UNREACHABLE_REGEX)
-                         .named_captures.fetch("url")
-            raise GitDependenciesNotReachable, url
+            url = T.must(message.match(GIT_DEPENDENCY_UNREACHABLE_REGEX))
+                   .named_captures.fetch("url")
+            raise GitDependenciesNotReachable, T.must(url)
           end
 
           raise Dependabot::OutOfDisk if message.end_with?("[Errno 28] No space left on device")
@@ -199,6 +234,7 @@ module Dependabot
         # Note: We raise errors from this method, rather than returning a
         # boolean, so that all deps for this repo will raise identical
         # errors when failing to update
+        sig { returns(T::Boolean) }
         def check_original_requirements_resolvable
           SharedHelpers.in_a_temporary_directory do
             SharedHelpers.with_git_configured(credentials: credentials) do
@@ -230,10 +266,12 @@ module Dependabot
           end
         end
 
-        def run_command(command, env: python_env, fingerprint:)
+        sig { params(command: String, fingerprint: String, env: T::Hash[String, String]).returns(String) }
+        def run_command(command, fingerprint:, env: python_env)
           SharedHelpers.run_shell_command(command, env: env, fingerprint: fingerprint, stderr_to_stdout: true)
         end
 
+        sig { params(options: String).returns(String) }
         def pip_compile_options_fingerprint(options)
           options.sub(
             /--output-file=\S+/, "--output-file=<output_file>"
@@ -244,6 +282,7 @@ module Dependabot
           )
         end
 
+        sig { params(filename: String).returns(String) }
         def pip_compile_options(filename)
           options = @build_isolation ? ["--build-isolation"] : ["--no-build-isolation"]
           options += pip_compile_index_options
@@ -258,6 +297,7 @@ module Dependabot
           options.join(" ")
         end
 
+        sig { returns(T::Array[String]) }
         def pip_compile_index_options
           credentials
             .select { |cred| cred["type"] == "python_index" }
@@ -272,6 +312,7 @@ module Dependabot
             end
         end
 
+        sig { params(command: String, fingerprint: String).void }
         def run_pip_compile_command(command, fingerprint:)
           run_command(
             "pyenv local #{language_version_manager.python_major_minor}",
@@ -281,12 +322,13 @@ module Dependabot
           run_command(command, fingerprint: fingerprint)
         end
 
+        sig { returns(T::Hash[String, String]) }
         def python_env
           env = {}
 
           # Handle Apache Airflow 1.10.x installs
-          if dependency_files.any? { |f| f.content.include?("apache-airflow") }
-            if dependency_files.any? { |f| f.content.include?("unidecode") }
+          if dependency_files.any? { |f| T.must(f.content).include?("apache-airflow") }
+            if dependency_files.any? { |f| T.must(f.content).include?("unidecode") }
               env["AIRFLOW_GPL_UNIDECODE"] = "yes"
             else
               env["SLUGIFY_USES_TEXT_UNIDECODE"] = "yes"
@@ -296,8 +338,11 @@ module Dependabot
           env
         end
 
-        def write_temporary_dependency_files(updated_req: nil,
-                                             update_requirement: true)
+        sig do
+          params(updated_req: T.nilable(String), update_requirement: T::Boolean)
+            .returns(T::Array[Dependabot::DependencyFile])
+        end
+        def write_temporary_dependency_files(updated_req: nil, update_requirement: true)
           dependency_files.each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
@@ -325,6 +370,7 @@ module Dependabot
           end
         end
 
+        sig { void }
         def write_original_manifest_files
           pip_compile_files.each do |file|
             FileUtils.mkdir_p(Pathname.new(file.name).dirname)
@@ -332,9 +378,10 @@ module Dependabot
           end
         end
 
+        sig { params(file: Dependabot::DependencyFile).returns(String) }
         def sanitized_setup_file_content(file)
-          @sanitized_setup_file_content ||= {}
-          return @sanitized_setup_file_content[file.name] if @sanitized_setup_file_content[file.name]
+          @sanitized_setup_file_content ||= T.let({}, T.nilable(T::Hash[String, String]))
+          return T.must(@sanitized_setup_file_content[file.name]) if @sanitized_setup_file_content[file.name]
 
           @sanitized_setup_file_content[file.name] =
             Python::FileUpdater::SetupFileSanitizer
@@ -342,35 +389,40 @@ module Dependabot
             .sanitized_content
         end
 
+        sig { params(file: Dependabot::DependencyFile).returns(T.nilable(Dependabot::DependencyFile)) }
         def setup_cfg(file)
           dependency_files.find do |f|
             f.name == file.name.sub(/\.py$/, ".cfg")
           end
         end
 
+        sig { params(file: Dependabot::DependencyFile, updated_req: T.nilable(String)).returns(String) }
         def update_req_file(file, updated_req)
-          return file.content unless file.name.end_with?(".in")
+          return T.must(file.content) unless file.name.end_with?(".in")
 
           req = dependency.requirements.find { |r| r[:file] == file.name }
 
-          return file.content + "\n#{dependency.name} #{updated_req}" unless req&.fetch(:requirement)
+          return T.must(file.content) + "\n#{dependency.name} #{updated_req}" unless req&.fetch(:requirement)
 
           Python::FileUpdater::RequirementReplacer.new(
-            content: file.content,
+            content: T.must(file.content),
             dependency_name: dependency.name,
             old_requirement: req[:requirement],
             new_requirement: updated_req
           ).updated_content
         end
 
+        sig { params(name: String).returns(String) }
         def normalise(name)
           NameNormaliser.normalise(name)
         end
 
+        sig { params(message: String).returns(String) }
         def clean_error_message(message)
-          message.scan(ERROR_REGEX).last
+          T.must(T.cast(message.scan(ERROR_REGEX), T::Array[String]).last)
         end
 
+        sig { returns(T::Array[String]) }
         def filenames_to_compile
           files_from_reqs =
             dependency.requirements
@@ -388,10 +440,11 @@ module Dependabot
           order_filenames_for_compilation(filenames)
         end
 
+        sig { params(filename: String).returns(T.nilable(Dependabot::DependencyFile)) }
         def compiled_file_for_filename(filename)
           compiled_file =
             compiled_files
-            .find { |f| f.content.match?(output_file_regex(filename)) }
+            .find { |f| T.must(f.content).match?(output_file_regex(filename)) }
 
           compiled_file ||=
             compiled_files
@@ -400,22 +453,25 @@ module Dependabot
           compiled_file
         end
 
+        sig { params(filename: String).returns(String) }
         def output_file_regex(filename)
           "--output-file[=\s]+.*\s#{Regexp.escape(filename)}\s*$"
         end
 
+        sig { params(compiled_file: T.nilable(Dependabot::DependencyFile)).returns(T::Boolean) }
         def compiled_file_includes_dependency?(compiled_file)
           return false unless compiled_file
 
           regex = RequirementParser::INSTALL_REQ_WITH_REQUIREMENT
 
           matches = []
-          compiled_file.content.scan(regex) { matches << Regexp.last_match }
+          T.must(compiled_file.content).scan(regex) { matches << Regexp.last_match }
           matches.any? { |m| normalise(m[:name]) == dependency.name }
         end
 
         # If the files we need to update require one another then we need to
         # update them in the right order
+        sig { params(filenames: T::Array[String]).returns(T::Array[String]) }
         def order_filenames_for_compilation(filenames)
           ordered_filenames = T.let([], T::Array[String])
 
@@ -423,7 +479,7 @@ module Dependabot
             ordered_filenames +=
               remaining_filenames
               .reject do |fn|
-                unupdated_reqs = requirement_map[fn] - ordered_filenames
+                unupdated_reqs = T.must(requirement_map[fn]) - ordered_filenames
                 unupdated_reqs.intersect?(filenames)
               end
           end
@@ -431,11 +487,12 @@ module Dependabot
           ordered_filenames
         end
 
+        sig { returns(T::Hash[String, T::Array[String]]) }
         def requirement_map
           child_req_regex = Python::FileFetcher::CHILD_REQUIREMENT_REGEX
-          @requirement_map ||=
+          @requirement_map ||= T.let(
             pip_compile_files.each_with_object({}) do |file, req_map|
-              paths = file.content.scan(child_req_regex).flatten
+              paths = T.must(file.content).scan(child_req_regex).flatten
               current_dir = File.dirname(file.name)
 
               req_map[file.name] =
@@ -447,9 +504,12 @@ module Dependabot
 
                   path
                 end.uniq.compact
-            end
+            end,
+            T.nilable(T::Hash[String, T::Array[String]])
+          )
         end
 
+        sig { returns(T.nilable(String)) }
         def parse_updated_files
           updated_files =
             dependency_files.map do |file|
@@ -467,32 +527,40 @@ module Dependabot
           ).parse.find { |d| d.name == dependency.name }&.version
         end
 
+        sig { returns(Dependabot::Python::FileParser::PythonRequirementParser) }
         def python_requirement_parser
-          @python_requirement_parser ||=
+          @python_requirement_parser ||= T.let(
             FileParser::PythonRequirementParser.new(
               dependency_files: dependency_files
-            )
+            ), T.nilable(FileParser::PythonRequirementParser)
+          )
         end
 
+        sig { returns(Dependabot::Python::LanguageVersionManager) }
         def language_version_manager
-          @language_version_manager ||=
+          @language_version_manager ||= T.let(
             LanguageVersionManager.new(
               python_requirement_parser: python_requirement_parser
-            )
+            ), T.nilable(LanguageVersionManager)
+          )
         end
 
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
         def setup_files
           dependency_files.select { |f| f.name.end_with?("setup.py") }
         end
 
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
         def pip_compile_files
           dependency_files.select { |f| f.name.end_with?(".in") }
         end
 
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
         def compiled_files
           dependency_files.select { |f| f.name.end_with?(".txt") }
         end
 
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
         def setup_cfg_files
           dependency_files.select { |f| f.name.end_with?("setup.cfg") }
         end
@@ -500,14 +568,17 @@ module Dependabot
     end
 
     class PipCompileErrorHandler
-      SUBPROCESS_ERROR = /subprocess-exited-with-error/
+      extend T::Sig
 
-      INSTALLATION_ERROR = /InstallationError/
+      SUBPROCESS_ERROR = T.let(/subprocess-exited-with-error/, Regexp)
 
-      INSTALLATION_SUBPROCESS_ERROR = /InstallationSubprocessError/
+      INSTALLATION_ERROR = T.let(/InstallationError/, Regexp)
 
-      HASH_MISMATCH = /HashMismatch/
+      INSTALLATION_SUBPROCESS_ERROR = T.let(/InstallationSubprocessError/, Regexp)
 
+      HASH_MISMATCH = T.let(/HashMismatch/, Regexp)
+
+      sig { params(error: String).void }
       def handle_pipcompile_error(error)
         return unless error.match?(SUBPROCESS_ERROR) || error.match?(INSTALLATION_ERROR) ||
                       error.match?(INSTALLATION_SUBPROCESS_ERROR) || error.match?(HASH_MISMATCH)
