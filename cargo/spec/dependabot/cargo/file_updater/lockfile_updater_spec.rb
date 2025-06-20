@@ -515,6 +515,98 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
           )
         end
       end
+
+      context "when cargo selects a different version due to dependency constraints" do
+        subject(:result) { updated_lockfile_content }
+
+        let(:previous_version) { Gem::Version.new(dependency_previous_version) }
+        let(:time_entry_regex) { /\[\[package\]\].*?name = "time".*?version = "(.*?)"/m }
+
+        context "when cargo selects a newer but different version" do
+          it "updates the dependency successfully" do
+            expect { result }.not_to raise_error
+
+            version_str = result.match(time_entry_regex)[1]
+            expect(Gem::Version.new(version_str)).to be > previous_version
+          end
+
+          # This test would fail without our implementation when cargo selects
+          # a different version than expected (e.g., 0.1.39 instead of 0.1.40)
+          context "when simulating version constraint scenario" do
+            let(:test_updater) do
+              described_class.new(
+                dependencies: [dependency],
+                dependency_files: dependency_files,
+                credentials: [{
+                  "type" => "git_source",
+                  "host" => "github.com"
+                }]
+              )
+            end
+
+            before do
+              # Mock the cargo update to return a different version
+              allow(test_updater).to receive(:run_cargo_command) do |command, _fingerprint|
+                if command.include?("cargo update")
+                  # Write a lockfile with 0.1.39 instead of expected 0.1.40
+                  constrained_lockfile = lockfile_body
+                                         .gsub("0.1.38", "0.1.39")
+                                         .gsub("d5d788d3aa77bc0ef3e9621256885555368b47bd495c13dd2e7413c89f845520",
+                                               "a36d7c4b3b2b3bb5f51754f7b778dcbf88e99cd3")
+                  File.write("Cargo.lock", constrained_lockfile)
+                end
+              end
+            end
+
+            it "still accepts the update when version differs from expected" do
+              # This would raise "Failed to update time!" without our fix
+              result = test_updater.updated_lockfile_content
+              expect(result).to include('version = "0.1.39"')
+            end
+          end
+        end
+
+        describe ".LOCKFILE_ENTRY_REGEX" do
+          let(:sample) do
+            <<~LOCK
+              [[package]]
+              name = "time"
+              version = "0.1.39"
+              source = "registry+https://github.com/rust-lang/crates.io-index"
+              checksum = "abc123"
+            LOCK
+          end
+
+          it "matches a package stanza" do
+            expect(sample).to match(described_class::LOCKFILE_ENTRY_REGEX)
+          end
+
+          it "captures multiple package entries" do
+            double_sample = sample + "\n" + sample.gsub("time", "other").gsub("0.1.39", "1.0.0")
+            matches = double_sample.scan(described_class::LOCKFILE_ENTRY_REGEX)
+            expect(matches.size).to eq(2)
+          end
+        end
+
+        describe "version comparison behavior" do
+          it "correctly identifies newer versions" do
+            expect(Gem::Version.new("0.1.39")).to be > previous_version
+            expect(Gem::Version.new("0.1.40")).to be > previous_version
+            expect(Gem::Version.new("0.1.37")).not_to be > previous_version
+          end
+        end
+
+        context "when an impossible version is requested" do
+          let(:dependency_version) { "99.0.0" }
+          let(:requirements) do
+            [{ file: "Cargo.toml", requirement: "99.0.0", groups: [], source: nil }]
+          end
+
+          it "raises HelperSubprocessFailed" do
+            expect { result }.to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
+          end
+        end
+      end
     end
   end
 end
