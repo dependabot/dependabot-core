@@ -32,3 +32,5 @@ spoom_report.html
 .vs/
 # Ignore VSCode C# Dev Kit
 **/.mono/**/values.xml
+# Ignore Vim swap files
+*.swp

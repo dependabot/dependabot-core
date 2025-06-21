@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 require "pathname"
-require "parser/current"
+require "prism"
 require "dependabot/bundler/file_fetcher"
 require "dependabot/errors"
 require "sorbet-runtime"
@@ -22,10 +22,10 @@ module Dependabot
 
         sig { returns(T::Array[String]) }
         def child_gemfile_paths
-          ast = Parser::CurrentRuby.parse(gemfile&.content)
-          find_child_gemfile_paths(ast)
-        rescue Parser::SyntaxError
-          raise Dependabot::DependencyFileNotParseable, T.must(gemfile&.path)
+          result = Prism.parse(gemfile&.content)
+          raise Dependabot::DependencyFileNotParseable, T.must(gemfile&.path) if result.failure?
+
+          find_child_gemfile_paths(result.value)
         end
 
         private
@@ -35,24 +35,24 @@ module Dependabot
 
         sig { params(node: T.untyped).returns(T::Array[String]) }
         def find_child_gemfile_paths(node)
-          return [] unless node.is_a?(Parser::AST::Node)
+          return [] if node.nil?
 
           if declares_eval_gemfile?(node)
-            path_node = node.children[2]
-            unless path_node.type == :str
+            path_node = node.arguments&.arguments&.first
+            unless path_node.is_a?(Prism::StringNode)
               path = gemfile&.path
               msg = "Dependabot only supports uninterpolated string arguments " \
                     "to eval_gemfile. Got " \
-                    "`#{path_node.loc.expression.source}`"
+                    "`#{path_node.slice}`"
               raise Dependabot::DependencyFileNotParseable.new(T.must(path), msg)
             end
 
-            path = path_node.loc.expression.source.gsub(/['"]/, "")
+            path = path_node.unescaped
             path = File.join(current_dir, path) unless current_dir.nil?
             return [Pathname.new(path).cleanpath.to_path]
           end
 
-          node.children.flat_map do |child_node|
+          node.child_nodes.flat_map do |child_node|
             find_child_gemfile_paths(child_node)
           end
         end
@@ -64,11 +64,11 @@ module Dependabot
           @current_dir
         end
 
-        sig { params(node: Parser::AST::Node).returns(T::Boolean) }
+        sig { params(node: Prism::Node).returns(T::Boolean) }
         def declares_eval_gemfile?(node)
-          return false unless node.is_a?(Parser::AST::Node)
+          return false unless node.is_a?(Prism::CallNode)
 
-          node.children[1] == :eval_gemfile
+          node.name == :eval_gemfile
         end
       end
     end
