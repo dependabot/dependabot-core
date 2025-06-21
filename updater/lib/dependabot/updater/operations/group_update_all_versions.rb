@@ -23,6 +23,7 @@ module Dependabot
 
         sig { params(job: Dependabot::Job).returns(T::Boolean) }
         def self.applies_to?(job:)
+          return true if job.multi_ecosystem_update?
           return false if job.updating_a_pull_request?
           if Dependabot::Experiments.enabled?(:grouped_security_updates_disabled) && job.security_updates_only?
             return false
