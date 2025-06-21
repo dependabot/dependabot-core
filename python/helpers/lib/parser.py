@@ -27,7 +27,8 @@ def parse_pep621_dependencies(pyproject_path):
     with open(pyproject_path, "rb") as file:
         project_toml = tomli.load(file)
 
-    def parse_toml_section_pep621_dependencies(pyproject_path, dependencies):
+    def parse_toml_section_pep621_dependencies(
+            pyproject_path, dependencies, group=None):
         requirement_packages = []
 
         def version_from_req(specifier_set):
@@ -48,7 +49,8 @@ def parse_pep621_dependencies(pyproject_path):
                     "markers": str(req.marker) or None,
                     "file": pyproject_path,
                     "requirement": str(req.specifier),
-                    "extras": sorted(list(req.extras))
+                    "extras": sorted(list(req.extras)),
+                    "requirement_type": group
                 })
 
         return requirement_packages
@@ -62,7 +64,7 @@ def parse_pep621_dependencies(pyproject_path):
             dependencies_toml = project_section['dependencies']
             runtime_dependencies = parse_toml_section_pep621_dependencies(
                 pyproject_path,
-                dependencies_toml
+                dependencies_toml,
             )
             dependencies.extend(runtime_dependencies)
 
@@ -73,9 +75,30 @@ def parse_pep621_dependencies(pyproject_path):
             for group in optional_dependencies_toml:
                 group_dependencies = parse_toml_section_pep621_dependencies(
                     pyproject_path,
-                    optional_dependencies_toml[group]
+                    optional_dependencies_toml[group],
+                    group,
                 )
                 dependencies.extend(group_dependencies)
+
+    if 'dependency-groups' in project_toml:
+        dependency_groups = project_toml["dependency-groups"]
+        for group in dependency_groups:
+            group_dependencies = parse_toml_section_pep621_dependencies(
+                pyproject_path,
+                dependency_groups[group],
+                group,
+            )
+            dependencies.extend(group_dependencies)
+
+    if 'dev-dependencies' in project_toml.get('tool', {}).get('pdm', {}):
+        dev_dependencies_toml = project_toml['tool']['pdm']['dev-dependencies']
+        for group in dev_dependencies_toml:
+            group_dependencies = parse_toml_section_pep621_dependencies(
+                pyproject_path,
+                dev_dependencies_toml[group],
+                group,
+            )
+            dependencies.extend(group_dependencies)
 
     if 'build-system' in project_toml:
         build_system_section = project_toml['build-system']
