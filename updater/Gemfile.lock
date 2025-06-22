@@ -24,7 +24,7 @@ PATH
       aws-sdk-codecommit (~> 1.28)
       aws-sdk-ecr (~> 1.5)
       bundler (>= 1.16, < 3.0.0)
-      commonmarker (~> 0.23)
+      commonmarker (>= 0.23, < 3.0)
       docker_registry2 (~> 1.18)
       excon (>= 0.109, < 2.0)
       faraday (~> 2.7)
@@ -199,7 +199,8 @@ GEM
     base64 (0.2.0)
     bigdecimal (3.2.2)
     citrus (3.0.2)
-    commonmarker (0.23.10)
+    commonmarker (2.3.0)
+      rb_sys (~> 0.9)
     concurrent-ruby (1.3.5)
     crack (1.0.0)
       bigdecimal
@@ -367,6 +368,9 @@ GEM
     racc (1.8.1)
     rainbow (3.1.1)
     rake (13.3.0)
+    rake-compiler-dock (1.9.1)
+    rb_sys (0.9.116)
+      rake-compiler-dock (= 1.9.1)
     rdoc (6.14.1)
       erb
       psych (>= 4.0.0)
@@ -544,7 +548,7 @@ CHECKSUMS
   base64 (0.2.0) sha256=0f25e9b21a02a0cc0cea8ef92b2041035d39350946e8789c562b2d1a3da01507
   bigdecimal (3.2.2) sha256=39085f76b495eb39a79ce07af716f3a6829bc35eb44f2195e2753749f2fa5adc
   citrus (3.0.2) sha256=4ec2412fc389ad186735f4baee1460f7900a8e130ffe3f216b30d4f9c684f650
-  commonmarker (0.23.10) sha256=fdd312ae2bb4071b2f3085d4d7533cb9f8d9057a2eaa0760228a65bc3ed565d1
+  commonmarker (2.3.0) sha256=74fb85e4ae59a9fc166dd1813ad791805d09dec1a4e79c81a7be0a6a8dc5dc63
   concurrent-ruby (1.3.5) sha256=813b3e37aca6df2a21a3b9f1d497f8cbab24a2b94cab325bffe65ee0f6cbebc6
   crack (1.0.0) sha256=c83aefdb428cdc7b66c7f287e488c796f055c0839e6e545fec2c7047743c4a49
   csv (3.3.0) sha256=0bbd1defdc31134abefed027a639b3723c2753862150f4c3ee61cab71b20d67d
@@ -643,6 +647,8 @@ CHECKSUMS
   racc (1.8.1) sha256=4a7f6929691dbec8b5209a0b373bc2614882b55fc5d2e447a21aaa691303d62f
   rainbow (3.1.1) sha256=039491aa3a89f42efa1d6dec2fc4e62ede96eb6acd95e52f1ad581182b79bc6a
   rake (13.3.0) sha256=96f5092d786ff412c62fde76f793cc0541bd84d2eb579caa529aa8a059934493
+  rake-compiler-dock (1.9.1) sha256=e73720a29aba9c114728ce39cc0d8eef69ba61d88e7978c57bac171724cd4d53
+  rb_sys (0.9.116) sha256=c879891018535d4362455197065ea580541b10ffdfa940bec512ec1dd9a7def4
   rdoc (6.14.1) sha256=905efa796cd296ef252af4fb31fe41c073dee894de6aad715821f335c632516b
   regexp_parser (2.10.0) sha256=cb6f0ddde88772cd64bff1dbbf68df66d376043fe2e66a9ef77fcb1b0c548c61
   reline (0.6.1) sha256=1afcc9d7cb1029cdbe780d72f2f09251ce46d3780050f3ec39c3ccc6b60675fb
