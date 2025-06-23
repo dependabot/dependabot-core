@@ -296,4 +296,43 @@ public class VersionFinderTests : TestBase
         var actualJson = JsonSerializer.Serialize(error, RunWorker.SerializerOptions);
         Assert.Equal(expectedJson, actualJson);
     }
+
+    [Theory]
+    [InlineData(null, "1.0.1", "1.1.0", "2.0.0")]
+    [InlineData(ConditionUpdateType.SemVerMajor, "1.0.1", "1.1.0")]
+    [InlineData(ConditionUpdateType.SemVerMinor, "1.0.1")]
+    [InlineData(ConditionUpdateType.SemVerPatch)]
+    public async Task VersionFinder_IgnoredUpdateTypesIsHonored(ConditionUpdateType? ignoredUpdateType, params string[] expectedVersions)
+    {
+        // arrange
+        using var tempDir = new TemporaryDirectory();
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory([
+            MockNuGetPackage.CreateSimplePackage("Some.Dependency", "1.0.1", "net9.0"),
+            MockNuGetPackage.CreateSimplePackage("Some.Dependency", "1.1.0", "net9.0"),
+            MockNuGetPackage.CreateSimplePackage("Some.Dependency", "2.0.0", "net9.0"),
+        ], tempDir.DirectoryPath);
+        var tfm = NuGetFramework.Parse("net9.0");
+        var ignoredUpdateTypes = ignoredUpdateType is not null
+            ? new ConditionUpdateType[] { ignoredUpdateType.Value }
+            : [];
+        var dependencyInfo = new DependencyInfo()
+        {
+            Name = "Some.Dependency",
+            Version = "1.0.0",
+            IsVulnerable = false,
+            IgnoredVersions = [],
+            Vulnerabilities = [],
+            IgnoredUpdateTypes = [.. ignoredUpdateTypes],
+        };
+        var logger = new TestLogger();
+        var nugetContext = new NuGetContext(tempDir.DirectoryPath);
+
+        // act
+        var versionResult = await VersionFinder.GetVersionsAsync([tfm], dependencyInfo, nugetContext, logger, CancellationToken.None);
+        var versions = versionResult.GetVersions();
+
+        // assert
+        var actualVersions = versions.Select(v => v.ToString()).OrderBy(v => v).ToArray();
+        AssertEx.Equal(expectedVersions, actualVersions);
+    }
 }

@@ -11,9 +11,21 @@ public sealed record Condition
     [JsonPropertyName("source")]
     public string? Source { get; init; } = null;
     [JsonPropertyName("update-types")]
-    public string[] UpdateTypes { get; init; } = [];
+    public ConditionUpdateType[]? UpdateTypes { get; init; } = null;
     [JsonPropertyName("updated-at")]
     public DateTime? UpdatedAt { get; init; } = null;
     [JsonPropertyName("version-requirement")]
     public Requirement? VersionRequirement { get; init; } = null;
+}
+
+public enum ConditionUpdateType
+{
+    [JsonStringEnumMemberName("version-update:semver-major")]
+    SemVerMajor,
+
+    [JsonStringEnumMemberName("version-update:semver-minor")]
+    SemVerMinor,
+
+    [JsonStringEnumMemberName("version-update:semver-patch")]
+    SemVerPatch,
 }

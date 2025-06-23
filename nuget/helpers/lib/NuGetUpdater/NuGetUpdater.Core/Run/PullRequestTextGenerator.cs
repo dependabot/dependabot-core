@@ -97,7 +97,12 @@ public class PullRequestTextGenerator
         var fromText = dependencySet.Versions.Length == 1 && dependencySet.Versions[0].OldVersion is not null
             ? $"from {dependencySet.Versions[0].OldVersion} "
             : string.Empty;
-        return $"Bump{bumpSuffix} {dependencySet.Name} {fromText}to {string.Join(", ", dependencySet.Versions.Select(v => v.NewVersion.ToString()))}";
+        var newVersions = dependencySet.Versions
+            .Select(v => v.NewVersion)
+            .Distinct()
+            .OrderBy(v => v)
+            .ToArray();
+        return $"Bump{bumpSuffix} {dependencySet.Name} {fromText}to {string.Join(", ", newVersions.Select(v => v.ToString()))}";
     }
 
     private static DependencySet[] GetDependencySets(ImmutableArray<UpdateOperationBase> updateOperationsPerformed)

@@ -109,8 +109,11 @@ if [ "$#" -gt "1" ]; then
   CONTAINER_ARGS=("${@:2}")
 fi
 
-# Use Docker Desktop's special SSH agent path
-export SSH_AUTH_SOCK=/run/host-services/ssh-auth.sock
+# for Mac with Docker Desktop or Rancher Desktop
+if [[ "$(uname)" == "Darwin" ]]; then
+  # Use Docker Desktop's special SSH agent path
+  export SSH_AUTH_SOCK=/run/host-services/ssh-auth.sock
+fi
 
 # for Mac with Docker Desktop or Rancher Desktop, use:Add commentMore actions
 # SSH_AUTH_SOCK=/run/host-services/ssh-auth.sock ./bin/docker-dev-shell go_modules -r

@@ -1,0 +1,24 @@
+{
+    "schemaVersion": "2",
+    "mediaType": "application/vnd.oci.image.manifest.v1+json",
+    "config": {
+        "mediaType": "application/vnd.devcontainers",
+        "digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size": 0
+    },
+    "layers": [
+        {
+            "mediaType": "application/vnd.devcontainers.layer.v1+tar",
+            "digest": "sha256:fff404c206cf70793f5d86a9d76df99d92cff81f14ee3b317604127b0f6ca14a",
+            "size": 4608,
+            "annotations": {
+                "org.opencontainers.image.title": "devcontainer-feature-foo.tgz",
+                "org.opencontainers.image.created": "2024-01-01T17:30:00.000Z"
+            }
+        }
+    ],
+    "annotations": {
+        "dev.containers.metadata": "{\"name\":\"My Feature Foo\",\"id\":\"foo\",\"version\":\"2.11.1\",\"description\":\"Foo!\",\"installsAfter\":[\"ghcr.io/devcontainers/features/common-utils\"]}",
+        "com.github.package.type": "devcontainer_feature"
+    }
+}
