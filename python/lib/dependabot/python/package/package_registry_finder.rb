@@ -77,9 +77,7 @@ module Dependabot
           urls = T.let({ main: nil, extra: [] }, UrlsHash)
 
           requirements_files.each do |file|
-            content = file.content
-            next unless content
-
+            content = T.must(file.content)
             if content.match?(/^--index-url\s+['"]?([^\s'"]+)['"]?/)
               urls[:main] =
                 T.must(content.match(/^--index-url\s+['"]?([^\s'"]+)['"]?/))

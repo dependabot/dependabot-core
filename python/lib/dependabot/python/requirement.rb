@@ -28,9 +28,9 @@ module Dependabot
       PATTERN = T.let(/\A#{PATTERN_RAW}\z/, Regexp)
       PARENS_PATTERN = T.let(/\A\(([^)]+)\)\z/, Regexp)
 
-      sig { params(obj: T.untyped).returns([String, Dependabot::Python::Version]) }
+      sig { params(obj: T.untyped).returns([String, Gem::Version]) }
       def self.parse(obj)
-        return ["=", Python::Version.new(obj.to_s)] if obj.is_a?(Gem::Version)
+        return ["=", obj] if obj.is_a?(Gem::Version)
 
         line = obj.to_s
         if (matches = PARENS_PATTERN.match(line))
@@ -44,7 +44,7 @@ module Dependabot
 
         return DefaultRequirement if matches[:op] == ">=" && matches[:version] == "0"
 
-        [matches[:op] || "=", Python::Version.new(T.must(matches[:version]))]
+        [matches[:op] || "=", Gem::Version.new(T.must(matches[:version]))]
       end
 
       # Returns an array of requirements. At least one requirement from the
