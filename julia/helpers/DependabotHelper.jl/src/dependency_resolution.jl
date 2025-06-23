@@ -6,11 +6,21 @@
 Check if updating a package to a target version is compatible with the project
 """
 function check_update_compatibility(project_path::String, package_name::String, target_version::String)
+    # Validate inputs first
+    project_file = joinpath(project_path, "Project.toml")
+    if !isfile(project_file)
+        return Dict(
+            "compatible" => false,
+            "package_name" => package_name,
+            "target_version" => target_version,
+            "error" => "Project file not found at: $project_file"
+        )
+    end
+
     try
         # Create a temporary copy of the project for testing
         mktempdir() do temp_dir
             # Copy project files
-            project_file = joinpath(project_path, "Project.toml")
             manifest_file = joinpath(project_path, "Manifest.toml")
 
             temp_project = joinpath(temp_dir, "Project.toml")
@@ -47,6 +57,7 @@ function check_update_compatibility(project_path::String, package_name::String, 
                             "resolved_versions" => resolved_versions
                         )
                     catch e
+                        @error "Compatibility check failed for package update" package_name target_version exception=(e, catch_backtrace())
                         return Dict(
                             "compatible" => false,
                             "package_name" => package_name,
@@ -58,6 +69,7 @@ function check_update_compatibility(project_path::String, package_name::String, 
             end
         end
     catch e
+        @error "Compatibility check failed" project_path package_name target_version exception=(e, catch_backtrace())
         return Dict(
             "compatible" => false,
             "package_name" => package_name,
@@ -73,11 +85,20 @@ end
 Resolve dependencies with multiple package updates and constraints
 """
 function resolve_dependencies_with_constraints(project_path::String, target_updates::Dict)
+    # Validate inputs first
+    project_file = joinpath(project_path, "Project.toml")
+    if !isfile(project_file)
+        return Dict(
+            "success" => false,
+            "target_updates" => target_updates,
+            "error" => "Project.toml not found at: $project_file"
+        )
+    end
+
     try
         # Create a temporary copy for resolution testing
         mktempdir() do temp_dir
             # Copy project files
-            project_file = joinpath(project_path, "Project.toml")
             manifest_file = joinpath(project_path, "Manifest.toml")
 
             temp_project = joinpath(temp_dir, "Project.toml")
@@ -107,6 +128,7 @@ function resolve_dependencies_with_constraints(project_path::String, target_upda
                             )
                         end
                     catch e
+                        @error "Failed to add package specifications during dependency resolution" pkg_specs exception=(e, catch_backtrace())
                         for (package_name, target_version) in target_updates
                             resolution_results[package_name] = Dict(
                                 "requested" => target_version,
@@ -139,6 +161,7 @@ function resolve_dependencies_with_constraints(project_path::String, target_upda
                             "final_versions" => final_versions
                         )
                     catch e
+                        @error "Failed to get final resolved versions after dependency resolution" exception=(e, catch_backtrace())
                         return Dict(
                             "success" => false,
                             "target_updates" => target_updates,
@@ -150,6 +173,7 @@ function resolve_dependencies_with_constraints(project_path::String, target_upda
             end
         end
     catch e
+        @error "Dependency resolution with constraints failed" project_path target_updates exception=(e, catch_backtrace())
         return Dict(
             "success" => false,
             "target_updates" => target_updates,

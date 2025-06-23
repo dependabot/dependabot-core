@@ -148,7 +148,7 @@ using DependabotHelper
         @test result["constraint"] == ">=1.0"
 
         # Test invalid constraints
-        result = @test_nowarn DependabotHelper.parse_julia_version_constraint("invalid-version")
+        result = @test_logs (:error, r"parse_julia_version_constraint: Failed to parse constraint") DependabotHelper.parse_julia_version_constraint("invalid-version")
         @test result["type"] == "error"
         @test haskey(result, "error")
     end
@@ -168,8 +168,8 @@ using DependabotHelper
         @test DependabotHelper.check_version_satisfies_constraint("0.9.0", ">=1.0") == false
 
         # Test invalid version/constraint combinations
-        @test DependabotHelper.check_version_satisfies_constraint("invalid", ">=1.0") == false
-        @test DependabotHelper.check_version_satisfies_constraint("1.0.0", "invalid") == false
+        @test_logs (:error, r"check_version_satisfies_constraint: Failed to check version constraint") DependabotHelper.check_version_satisfies_constraint("invalid", ">=1.0") == false
+        @test_logs (:error, r"check_version_satisfies_constraint: Failed to check version constraint") DependabotHelper.check_version_satisfies_constraint("1.0.0", "invalid") == false
     end
 
     @testset "Version Constraint Expansion Tests" begin
@@ -190,7 +190,7 @@ using DependabotHelper
         @test haskey(result, "ranges")
 
         # Test error handling
-        result = @test_nowarn DependabotHelper.expand_version_constraint("invalid")
+        result = @test_logs (:error, r"expand_version_constraint: Failed to expand constraint") DependabotHelper.expand_version_constraint("invalid")
         @test result["type"] == "error"
         @test haskey(result, "error")
     end

@@ -51,7 +51,8 @@ function convert_to_julia_constraint(constraint::String)
     try
         version_spec = Pkg.Types.semver_spec(constraint)
         return constraint  # Return original constraint if semver_spec can parse it
-    catch e
+    catch ex
+        @error "convert_to_julia_constraint: Failed to convert constraint" constraint=constraint exception=(ex, catch_backtrace())
         # If semver_spec fails, try some fallback handling
 
         # Handle exact match with equals
@@ -109,10 +110,11 @@ function parse_julia_version_constraint(constraint::String)
             "type" => "parsed",
             "constraint" => constraint
         )
-    catch e
+    catch ex
+        @error "parse_julia_version_constraint: Failed to parse constraint" constraint=constraint exception=(ex, catch_backtrace())
         return Dict(
             "type" => "error",
-            "error" => sprint(showerror, e)
+            "error" => sprint(showerror, ex)
         )
     end
 end
@@ -153,7 +155,8 @@ function check_version_satisfies_constraint(version::String, constraint::String)
         satisfies = parsed_version in version_spec
 
         return satisfies
-    catch e
+    catch ex
+        @error "check_version_satisfies_constraint: Failed to check version constraint" version=version constraint=constraint exception=(ex, catch_backtrace())
         return false
     end
 end
@@ -210,10 +213,11 @@ function expand_version_constraint(constraint::String)
             "original" => constraint,
             "ranges" => examples
         )
-    catch e
+    catch ex
+        @error "expand_version_constraint: Failed to expand constraint" constraint=constraint exception=(ex, catch_backtrace())
         return Dict(
             "type" => "error",
-            "error" => sprint(showerror, e)
+            "error" => sprint(showerror, ex)
         )
     end
 end

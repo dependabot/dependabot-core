@@ -35,8 +35,9 @@ function get_latest_version(package_name::String, package_uuid::String)
 
         uuid_info = " [$package_uuid]"
         return Dict("error" => "Package $package_name$uuid_info not found in registry")
-    catch e
-        return Dict("error" => "Failed to get latest version: $(sprint(showerror, e))")
+    catch ex
+        @error "get_latest_version: Failed to get latest version" package_name=package_name package_uuid=package_uuid exception=(ex, catch_backtrace())
+        return Dict("error" => "Failed to get latest version: $(sprint(showerror, ex))")
     end
 end
 
@@ -84,8 +85,9 @@ function get_package_metadata(package_name::String, package_uuid::String)
         end
 
         return Dict("error" => "Package $package_name [$package_uuid] not found in registry")
-    catch e
-        return Dict("error" => "Failed to get package metadata: $(sprint(showerror, e))")
+    catch ex
+        @error "get_package_metadata: Failed to get package metadata" package_name=package_name package_uuid=package_uuid exception=(ex, catch_backtrace())
+        return Dict("error" => "Failed to get package metadata: $(sprint(showerror, ex))")
     end
 end
 
@@ -148,8 +150,9 @@ function fetch_package_versions(package_name::String, package_uuid::String)
             "latest_version" => last(versions),
             "total_versions" => length(versions)
         )
-    catch e
-        return Dict("error" => "Failed to fetch package versions: $(sprint(showerror, e))")
+    catch ex
+        @error "fetch_package_versions: Failed to fetch package versions" package_name=package_name package_uuid=package_uuid exception=(ex, catch_backtrace())
+        return Dict("error" => "Failed to fetch package versions: $(sprint(showerror, ex))")
     end
 end
 
@@ -211,8 +214,9 @@ function fetch_package_info(package_name::String, package_uuid::String)
         end
 
         return Dict("error" => "Package $package_name [$package_uuid] not found in registry")
-    catch e
-        return Dict("error" => "Failed to fetch package info: $(sprint(showerror, e))")
+    catch ex
+        @error "fetch_package_info: Failed to fetch package info" package_name=package_name package_uuid=package_uuid exception=(ex, catch_backtrace())
+        return Dict("error" => "Failed to fetch package info: $(sprint(showerror, ex))")
     end
 end
 
@@ -244,8 +248,9 @@ function find_package_source_url(package_name::String, package_uuid::String)
         end
 
         return Dict("error" => "Could not find source URL for package $package_name [$package_uuid]")
-    catch e
-        return Dict("error" => "Failed to find source URL: $(sprint(showerror, e))")
+    catch ex
+        @error "find_package_source_url: Failed to find source URL" package_name=package_name package_uuid=package_uuid exception=(ex, catch_backtrace())
+        return Dict("error" => "Failed to find source URL: $(sprint(showerror, ex))")
     end
 end
 
@@ -299,8 +304,9 @@ function source_url_from_registry(package_name::String, package_uuid::String)
 
         uuid_info = " [$package_uuid]"
         return Dict("error" => "No registry source URL found for $package_name$uuid_info")
-    catch e
-        return Dict("error" => "Registry lookup failed: $(sprint(showerror, e))")
+    catch ex
+        @error "source_url_from_registry: Failed to get source URL from registry" package_name=package_name package_uuid=package_uuid exception=(ex, catch_backtrace())
+        return Dict("error" => "Registry lookup failed: $(sprint(showerror, ex))")
     end
 end
 
@@ -356,8 +362,9 @@ function extract_package_metadata_from_url(package_name::String, source_url::Str
         end
 
         return metadata
-    catch e
-        return Dict("error" => "Failed to extract metadata from URL: $(sprint(showerror, e))")
+    catch ex
+        @error "extract_package_metadata_from_url: Failed to extract metadata from URL" package_name=package_name source_url=source_url exception=(ex, catch_backtrace())
+        return Dict("error" => "Failed to extract metadata from URL: $(sprint(showerror, ex))")
     end
 end
 
@@ -402,8 +409,9 @@ function get_available_versions(package_name::String, package_uuid::String)
         end
 
         return Dict("versions" => versions)
-    catch e
-        return Dict("error" => "Failed to fetch available versions: $(sprint(showerror, e))")
+    catch ex
+        @error "get_available_versions: Failed to fetch available versions" package_name=package_name package_uuid=package_uuid exception=(ex, catch_backtrace())
+        return Dict("error" => "Failed to fetch available versions: $(sprint(showerror, ex))")
     end
 end
 

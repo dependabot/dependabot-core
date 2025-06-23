@@ -129,8 +129,9 @@ function parse_project(project_path::String, manifest_path::Union{String,Nothing
                 "manifest_path" => manifest_file_path
             )
         end
-    catch e
-        return Dict("error" => "Failed to parse project: $(sprint(showerror, e))")
+    catch ex
+        @error "parse_project: Failed to parse project" exception=(ex, catch_backtrace())
+        return Dict("error" => "Failed to parse project: $(sprint(showerror, ex))")
     end
 end
 
@@ -199,8 +200,9 @@ function parse_manifest(manifest_path::String)
                 "manifest_path" => manifest_path
             )
         end
-    catch e
-        return Dict("error" => "Failed to parse manifest: $(sprint(showerror, e))")
+    catch ex
+        @error "parse_manifest: Failed to parse manifest" exception=(ex, catch_backtrace())
+        return Dict("error" => "Failed to parse manifest: $(sprint(showerror, ex))")
     end
 end
 
@@ -235,8 +237,9 @@ function get_version_from_manifest(manifest_path::String, name::String, uuid::St
         end
 
         return Dict("error" => "Package $name not found in manifest")
-    catch e
-        return Dict("error" => "Failed to get version from manifest: $(sprint(showerror, e))")
+    catch ex
+        @error "get_version_from_manifest: Failed to get version from manifest" exception=(ex, catch_backtrace())
+        return Dict("error" => "Failed to get version from manifest: $(sprint(showerror, ex))")
     end
 end
 
@@ -306,8 +309,9 @@ function update_manifest(project_path::String, updates::Dict)
                 end
             end
         end
-    catch e
-        return Dict("error" => "Failed to update manifest: $(sprint(showerror, e))")
+    catch ex
+        @error "update_manifest: Failed to update manifest" exception=(ex, catch_backtrace())
+        return Dict("error" => "Failed to update manifest: $(sprint(showerror, ex))")
     end
 end
 
