@@ -398,7 +398,7 @@ module Dependabot
         # Updates the version in a "<" constraint to allow the given version
         sig do
           params(
-            version: Dependabot::Python::Version,
+            version: Gem::Version,
             version_to_be_permitted: T.any(String, Dependabot::Python::Version)
           ).returns(String)
         end

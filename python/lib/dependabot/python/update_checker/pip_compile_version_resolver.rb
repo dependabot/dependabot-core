@@ -266,7 +266,7 @@ module Dependabot
           end
         end
 
-        sig { params(command: String, fingerprint: String, env: T::Hash[String, String]).returns(String) }
+        sig { params(command: String, fingerprint: String, env: T::Hash[String, String]).void }
         def run_command(command, fingerprint:, env: python_env)
           SharedHelpers.run_shell_command(command, env: env, fingerprint: fingerprint, stderr_to_stdout: true)
         end
