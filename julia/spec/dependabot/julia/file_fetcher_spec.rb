@@ -41,6 +41,11 @@ RSpec.describe Dependabot::Julia::FileFetcher do
   describe "#fetch_files" do
     subject(:fetched_files) { file_fetcher_instance.fetch_files }
 
+    before do
+      # Enable beta ecosystems for all tests
+      allow(file_fetcher_instance).to receive(:allow_beta_ecosystems?).and_return(true)
+    end
+
     context "with empty repository (no files)" do
       before do
         allow(file_fetcher_instance).to receive(:fetch_file_if_present).and_return(nil)
@@ -58,6 +63,9 @@ RSpec.describe Dependabot::Julia::FileFetcher do
     subject(:fetched_files) { file_fetcher_instance.fetch_files }
 
     before do
+      # Enable beta ecosystems for all tests
+      allow(file_fetcher_instance).to receive(:allow_beta_ecosystems?).and_return(true)
+      
       # Mock the repository content responses
       allow(file_fetcher_instance).to receive(:fetch_file_if_present)
         .with("Project.toml")
@@ -98,6 +106,16 @@ RSpec.describe Dependabot::Julia::FileFetcher do
 
       it "fetches only Project.toml" do
         expect(fetched_files.map(&:name)).to eq(["Project.toml"])
+      end
+    end
+
+    context "when beta ecosystems are disabled" do
+      before do
+        allow(file_fetcher_instance).to receive(:allow_beta_ecosystems?).and_return(false)
+      end
+
+      it "returns empty array without fetching files" do
+        expect(fetched_files).to eq([])
       end
     end
   end

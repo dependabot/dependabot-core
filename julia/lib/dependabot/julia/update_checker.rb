@@ -63,8 +63,24 @@ module Dependabot
                                            credentials: credentials,
                                            ignored_versions: ignored_versions,
                                            security_advisories: security_advisories,
-                                           raise_on_ignored: raise_on_ignored
+                                           raise_on_ignored: raise_on_ignored,
+                                           cooldown_config: cooldown_config
                                          ), T.nilable(Dependabot::Julia::LatestVersionFinder))
+      end
+
+      sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      def cooldown_config
+        return nil unless update_cooldown
+
+        # Convert the ReleaseCooldownOptions to a hash for compatibility
+        {
+          default_days: update_cooldown.default_days,
+          semver_major_days: update_cooldown.semver_major_days,
+          semver_minor_days: update_cooldown.semver_minor_days,
+          semver_patch_days: update_cooldown.semver_patch_days,
+          include: update_cooldown.include,
+          exclude: update_cooldown.exclude
+        }
       end
 
       sig { returns(T.class_of(Dependabot::Julia::Requirement)) }

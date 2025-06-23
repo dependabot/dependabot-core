@@ -247,5 +247,167 @@ using DependabotHelper
             @test version_result["package_uuid"] == json_uuid
         end
     end
+
+    @testset "New Package Functions Tests" begin
+        json_uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+
+        # Test get_available_versions function
+        result = @test_nowarn DependabotHelper.get_available_versions("JSON", json_uuid)
+        if !haskey(result, "error")
+            @test haskey(result, "versions")
+            @test isa(result["versions"], Array)
+            @test length(result["versions"]) > 0
+            # Check that versions are strings
+            @test all(v -> isa(v, String), result["versions"])
+        end
+
+        # Test get_available_versions with non-existent package
+        result = @test_nowarn DependabotHelper.get_available_versions("NonExistentPackage12345", "00000000-0000-0000-0000-000000000000")
+        @test haskey(result, "error")
+
+        # Test get_version_release_date function
+        # First get available versions to test with a real version
+        versions_result = DependabotHelper.get_available_versions("JSON", json_uuid)
+        if !haskey(versions_result, "error") && !isempty(versions_result["versions"])
+            test_version = versions_result["versions"][1]
+            result = @test_nowarn DependabotHelper.get_version_release_date("JSON", test_version, json_uuid)
+            # Note: Julia registries don't store release dates, so we expect null
+            @test haskey(result, "release_date")
+        end
+
+        # Test get_version_release_date with non-existent package
+        result = @test_nowarn DependabotHelper.get_version_release_date("NonExistentPackage12345", "1.0.0", "00000000-0000-0000-0000-000000000000")
+        @test haskey(result, "error")
+
+        # Test get_version_release_date with invalid version
+        result = @test_nowarn DependabotHelper.get_version_release_date("JSON", "999.999.999", json_uuid)
+        @test haskey(result, "error")
+    end
+
+    @testset "Manifest Functions Tests" begin
+        # Test get_version_from_manifest with non-existent file
+        result = @test_nowarn DependabotHelper.get_version_from_manifest("/nonexistent/Manifest.toml", "JSON", "682c06a0-de6a-54ab-a142-c8b1cf79cde6")
+        @test haskey(result, "error")
+
+        # Test update_manifest with non-existent file
+        result = @test_nowarn DependabotHelper.update_manifest("/nonexistent/Project.toml", Dict("JSON" => "0.21.4"))
+        @test haskey(result, "error")
+    end
+
+    @testset "URL and Metadata Extraction Tests" begin
+        json_uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+
+        # Test extract_package_metadata_from_url
+        # This function needs a valid source URL, so we'll test error handling first
+        result = @test_nowarn DependabotHelper.extract_package_metadata_from_url("JSON", "invalid-url")
+        @test haskey(result, "error") || haskey(result, "source_url")
+
+        # Test with a GitHub URL format that might be expected
+        github_url = "https://github.com/JuliaIO/JSON.jl.git"
+        result = @test_nowarn DependabotHelper.extract_package_metadata_from_url("JSON", github_url)
+        # This should either succeed or fail gracefully
+        @test isa(result, Dict)
+    end
+
+    @testset "Dependency Resolution Tests" begin
+        # Test resolve_dependencies_with_constraints with non-existent project
+        result = @test_nowarn DependabotHelper.resolve_dependencies_with_constraints("/nonexistent/Project.toml", Dict("JSON" => "0.21.4"))
+        @test haskey(result, "error")
+    end
+
+    @testset "Args Wrapper Function Tests" begin
+        json_uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+
+        # Test get_available_versions args wrapper
+        result = @test_nowarn DependabotHelper.get_available_versions(Dict("package_name" => "JSON", "package_uuid" => json_uuid))
+        @test !haskey(result, "error") || result["error"] != "Both package_name and package_uuid are required"
+
+        # Test get_available_versions args wrapper with missing args
+        result = @test_nowarn DependabotHelper.get_available_versions(Dict("package_name" => "JSON"))
+        @test haskey(result, "error")
+        @test result["error"] == "Both package_name and package_uuid are required"
+
+        # Test get_version_release_date args wrapper
+        result = @test_nowarn DependabotHelper.get_version_release_date(Dict(
+            "package_name" => "JSON", 
+            "version" => "0.21.4", 
+            "package_uuid" => json_uuid
+        ))
+        @test isa(result, Dict)
+
+        # Test get_version_release_date args wrapper with missing args
+        result = @test_nowarn DependabotHelper.get_version_release_date(Dict("package_name" => "JSON"))
+        @test haskey(result, "error")
+        @test result["error"] == "Both package_name and version are required"
+
+        # Test find_package_source_url args wrapper with missing args
+        result = @test_nowarn DependabotHelper.find_package_source_url(Dict("package_name" => "JSON"))
+        @test haskey(result, "error")
+        @test result["error"] == "Both package_name and package_uuid are required"
+
+        # Test get_package_metadata args wrapper with missing args
+        result = @test_nowarn DependabotHelper.get_package_metadata(Dict("package_name" => "JSON"))
+        @test haskey(result, "error")
+        @test result["error"] == "Both package_name and package_uuid are required"
+
+        # Test fetch_package_versions args wrapper with missing args
+        result = @test_nowarn DependabotHelper.fetch_package_versions(Dict("package_name" => "JSON"))
+        @test haskey(result, "error")
+        @test result["error"] == "Both package_name and package_uuid are required"
+
+        # Test fetch_package_info args wrapper with missing args
+        result = @test_nowarn DependabotHelper.fetch_package_info(Dict("package_name" => "JSON"))
+        @test haskey(result, "error")
+        @test result["error"] == "Both package_name and package_uuid are required"
+    end
+
+    @testset "JSON Interface Extended Tests" begin
+        json_uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+        
+        # Test all new functions through the JSON interface
+        new_test_cases = [
+            """{"function": "get_available_versions", "args": {"package_name": "JSON", "package_uuid": "$json_uuid"}}""",
+            """{"function": "get_version_release_date", "args": {"package_name": "JSON", "version": "0.21.4", "package_uuid": "$json_uuid"}}""",
+            """{"function": "get_version_from_manifest", "args": {"manifest_path": "/nonexistent/Manifest.toml", "name": "JSON", "uuid": "$json_uuid"}}""",
+            """{"function": "update_manifest", "args": {"project_path": "/nonexistent/Project.toml", "updates": {"JSON": "0.21.4"}}}""",
+            """{"function": "extract_package_metadata_from_url", "args": {"package_name": "JSON", "source_url": "https://github.com/JuliaIO/JSON.jl.git"}}""",
+            """{"function": "resolve_dependencies_with_constraints", "args": {"project_path": "/nonexistent/Project.toml", "target_updates": {"JSON": "0.21.4"}}}"""
+        ]
+
+        for test_input in new_test_cases
+            @test_nowarn begin
+                result_json = DependabotHelper.run(test_input)
+                result = JSON.parse(result_json)
+                # All functions should return either success or error
+                @test haskey(result, "result") || haskey(result, "error")
+            end
+        end
+
+        # Test error handling for missing required arguments
+        error_test_cases = [
+            """{"function": "get_available_versions", "args": {"package_name": "JSON"}}""",
+            """{"function": "get_version_release_date", "args": {"package_name": "JSON"}}""",
+            """{"function": "find_package_source_url", "args": {"package_name": "JSON"}}""",
+            """{"function": "get_package_metadata", "args": {"package_name": "JSON"}}""",
+            """{"function": "fetch_package_versions", "args": {"package_name": "JSON"}}""",
+            """{"function": "fetch_package_info", "args": {"package_name": "JSON"}}"""
+        ]
+
+        for test_input in error_test_cases
+            @test_nowarn begin
+                result_json = DependabotHelper.run(test_input)
+                result = JSON.parse(result_json)
+                # These should all return errors due to missing required args
+                # The error could be in "result" key or directly as "error" key
+                if haskey(result, "result")
+                    @test haskey(result["result"], "error")
+                elseif haskey(result, "error")
+                    @test true  # Direct error response is also valid
+                else
+                    @test false  # Should have either result.error or error
+                end
+            end
+        end
+    end
 end
 

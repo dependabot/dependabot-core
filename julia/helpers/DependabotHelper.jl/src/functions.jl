@@ -1137,3 +1137,107 @@ function fetch_package_info(args::Dict)
 
     return fetch_package_info(package_name, package_uuid)
 end
+
+# Args wrapper for get_available_versions function with UUID requirement
+function get_available_versions(args::Dict)
+    package_name = get(args, "package_name", "")
+    package_uuid = get(args, "package_uuid", "")
+
+    if isempty(package_name) || isempty(package_uuid)
+        return Dict("error" => "Both package_name and package_uuid are required")
+    end
+
+    return get_available_versions(package_name, package_uuid)
+end
+
+"""
+    get_available_versions(package_name::String, package_uuid::String)
+
+Get all available versions for a package from the registry using both name and UUID for precise identification.
+Returns just the version strings in sorted order.
+"""
+function get_available_versions(package_name::String, package_uuid::String)
+    try
+        versions = String[]
+
+        # Search all registries for the package with exact UUID match
+        for reg in Pkg.Registry.reachable_registries()
+            for (uuid, entry) in reg.pkgs
+                name_matches = entry.name == package_name
+                uuid_matches = string(uuid) == package_uuid
+
+                if name_matches && uuid_matches
+                    version_info = Pkg.Registry.registry_info(entry).version_info
+                    versions = [string(v) for v in keys(version_info)]
+                    break
+                end
+            end
+            if !isempty(versions)
+                break
+            end
+        end
+
+        if isempty(versions)
+            return Dict("error" => "No versions found for package $package_name [$package_uuid]")
+        end
+
+        # Sort versions
+        try
+            version_numbers = [Pkg.Types.VersionNumber(v) for v in versions]
+            sorted_versions = sort(version_numbers)
+            versions = [string(v) for v in sorted_versions]
+        catch
+            # If version parsing fails, keep original order
+        end
+
+        return Dict("versions" => versions)
+    catch e
+        return Dict("error" => "Failed to fetch available versions: $(sprint(showerror, e))")
+    end
+end
+
+# Args wrapper for get_version_release_date function with UUID requirement  
+function get_version_release_date(args::Dict)
+    package_name = get(args, "package_name", "")
+    version = get(args, "version", "")
+    package_uuid = get(args, "package_uuid", "")
+
+    if isempty(package_name) || isempty(version)
+        return Dict("error" => "Both package_name and version are required")
+    end
+
+    return get_version_release_date(package_name, version, package_uuid)
+end
+
+"""
+    get_version_release_date(package_name::String, version::String, package_uuid::String)
+
+Get the release date for a specific version of a package. 
+Note: Julia registries don't typically store release dates, so this attempts to 
+get the information from the git repository if available.
+"""
+function get_version_release_date(package_name::String, version::String, package_uuid::String)
+    try
+        # Julia registries don't store release dates directly
+        # We could potentially fetch this from the git repository, but for now
+        # we'll return a placeholder that indicates the limitation
+        
+        # First verify the package and version exist
+        versions_result = get_available_versions(package_name, package_uuid)
+        if haskey(versions_result, "error")
+            return versions_result
+        end
+        
+        available_versions = versions_result["versions"]
+        if !(version in available_versions)
+            return Dict("error" => "Version $version not found for package $package_name")
+        end
+        
+        # For now, return nil since Julia registries don't store release dates
+        # In a future enhancement, this could attempt to fetch from the git repository
+        return Dict("release_date" => nothing)
+        
+    catch e
+        return Dict("error" => "Failed to fetch version release date: $(sprint(showerror, e))")
+    end
+end

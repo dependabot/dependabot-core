@@ -19,6 +19,9 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def fetch_files
+        # Julia is currently in beta - only fetch files if beta ecosystems are enabled
+        return [] unless allow_beta_ecosystems?
+
         fetched_files = []
 
         # Fetch the main project file (Project.toml or JuliaProject.toml)

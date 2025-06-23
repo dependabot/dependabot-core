@@ -2,6 +2,7 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "time"
 require "dependabot/credential"
 require "dependabot/julia/version"
 require "dependabot/shared_helpers"
@@ -154,6 +155,54 @@ module Dependabot
             updates: updates
           }
         )
+      end
+
+      sig { params(package_name: String, version: String, package_uuid: T.nilable(String)).returns(T.nilable(Time)) }
+      def fetch_version_release_date(package_name, version, package_uuid = nil)
+        result = call_julia_helper(
+          function: "get_version_release_date",
+          args: { 
+            package_name: package_name, 
+            version: version,
+            package_uuid: package_uuid
+          }
+        )
+        
+        # Check if the result contains an error
+        return nil if result["error"]
+        
+        # Parse the release date if available
+        return nil unless result["release_date"]
+        
+        Time.parse(result["release_date"])
+      rescue StandardError => e
+        Dependabot.logger.warn("Failed to fetch release date for #{package_name} v#{version}: #{e.message}")
+        nil
+      end
+
+      sig { params(package_name: String, package_uuid: T.nilable(String)).returns(T::Array[String]) }
+      def fetch_available_versions(package_name, package_uuid = nil)
+        args = { package_name: package_name }
+        args[:package_uuid] = package_uuid if package_uuid
+
+        result = call_julia_helper(
+          function: "get_available_versions",
+          args: args
+        )
+
+        # Check if the result contains an error
+        return [] if result["error"]
+
+        # Extract versions array from the result
+        # rubocop:disable Style/RedundantSelf
+        versions = result["versions"]
+        # rubocop:enable Style/RedundantSelf
+        return [] unless versions.is_a?(Array)
+
+        versions.map(&:to_s)
+      rescue StandardError => e
+        Dependabot.logger.warn("Failed to fetch available versions for #{package_name}: #{e.message}")
+        []
       end
 
       private

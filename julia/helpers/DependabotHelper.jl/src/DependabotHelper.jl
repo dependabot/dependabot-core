@@ -48,6 +48,10 @@ function run(input::String)
             get_latest_version(args)
         elseif func_name == "get_package_metadata"
             get_package_metadata(args)
+        elseif func_name == "get_available_versions"
+            get_available_versions(args)
+        elseif func_name == "get_version_release_date"
+            get_version_release_date(args)
         elseif func_name == "fetch_package_versions"
             fetch_package_versions(args)
         elseif func_name == "fetch_package_info"
