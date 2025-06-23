@@ -4,7 +4,12 @@ import JSON
 import Pkg
 using PrecompileTools
 
-include("functions.jl")
+# Include all the logical function modules
+include("utilities.jl")
+include("project_parsing.jl")
+include("version_constraints.jl")
+include("package_discovery.jl")
+include("dependency_resolution.jl")
 
 # Main entry point that processes the input JSON and calls the appropriate function
 function run()
