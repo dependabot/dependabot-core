@@ -9,7 +9,7 @@
 Welcome to the public home of Dependabot :dependabot:.
 
 # Table of Contents
-
+Romeo Rosete
 - [What is Dependabot-Core?](#what-is-dependabot-core)
 - [How to run Dependabot](#how-to-run-dependabot)
 - [Contributing to Dependabot](#contributing-to-dependabot)
