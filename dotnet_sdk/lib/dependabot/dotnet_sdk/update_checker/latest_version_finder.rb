@@ -46,6 +46,11 @@ module Dependabot
         protected
 
         sig { override.returns(T::Boolean) }
+        def cooldown_enabled?
+          Dependabot::Experiments.enabled?(:enable_cooldown_for_dotnet_sdk)
+        end
+
+        sig { override.returns(T::Boolean) }
         def wants_prerelease?
           !!dependency.metadata[:allow_prerelease]
         end
