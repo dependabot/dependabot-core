@@ -1,9 +1,16 @@
 # Project and manifest parsing functions for DependabotHelper.jl
+#
+# NOTE: Terminology clarification for Julia vs Dependabot:
+# - This module uses Julia terminology: "project file" = Project.toml, "manifest file" = Manifest.toml  
+# - Dependabot terminology: "manifest file" = Project.toml, "lockfile" = Manifest.toml
+# - Function names and documentation use Julia terminology for consistency with the ecosystem
 
 """
     parse_project(project_path::String, manifest_path::Union{String,Nothing}=nothing)
 
-Parse a Julia project file and return comprehensive project information.
+Parse a Julia project file (Project.toml) and return comprehensive project information.
+
+Note: In Dependabot terminology, this would be called parsing a "manifest file" or "dependency manifest".
 """
 function parse_project(project_path::String, manifest_path::Union{String,Nothing}=nothing)
     try
@@ -147,7 +154,9 @@ end
 """
     parse_manifest(manifest_path::String)
 
-Parse a Julia manifest file and return comprehensive dependency information.
+Parse a Julia manifest file (Manifest.toml) and return comprehensive dependency information.
+
+Note: In Dependabot terminology, this would be called parsing a "lockfile".
 Enhanced version with better error handling and comprehensive metadata.
 """
 function parse_manifest(manifest_path::String)

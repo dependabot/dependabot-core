@@ -33,6 +33,21 @@ For more information about Julia package management, see:
 - `Manifest.toml` / `JuliaManifest.toml` - Lock files
 - `Manifest-vX.Y.toml` / `JuliaManifest-vX.Y.toml` - Version-specific lock files
 
+### Terminology: Julia vs Dependabot
+
+**Important**: There is a terminology difference between Julia and Dependabot ecosystems:
+
+| File | Julia Terminology | Dependabot Terminology |
+|------|-------------------|-------------------------|
+| `Project.toml` | "Project file" | "Manifest file" / "Package manifest" / "Dependency manifest" |
+| `Manifest.toml` | "Manifest file" | "Lockfile" |
+
+**Implications for development:**
+
+- This Julia helper maintains Julia terminology internally (e.g., `parse_project`, `parse_manifest`)
+- When interfacing with Dependabot Ruby code, be aware that they use different terms for the same files
+- Documentation and error messages use Julia terminology for consistency with the ecosystem
+
 ## Implementation Approach
 
 The Julia ecosystem implementation follows a hybrid approach where the Ruby infrastructure handles Dependabot's core workflow, while the complex Julia-specific logic is implemented in Julia itself via the `DependabotHelper.jl` package.
