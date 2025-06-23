@@ -8,7 +8,7 @@ if [ -z "$DEPENDABOT_NATIVE_HELPERS_PATH" ]; then
 fi
 
 helpers_dir=$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-install_dir="$DEPENDABOT_NATIVE_HELPERS_PATH/julia"
+install_dir="${DEPENDABOT_NATIVE_HELPERS_PATH:?}/julia"
 
 mkdir -p "$install_dir"
 
@@ -17,7 +17,7 @@ cp -r "$helpers_dir"/* "$install_dir"
 
 # Set Julia depot path to ensure packages are compiled to a shared location
 # Trailing : is intentional. It automatically includes the bundled stdlibs
-export JULIA_DEPOT_PATH="$HOME/.julia:"
+export JULIA_DEPOT_PATH="${HOME:?}/.julia:"
 
 # Set up Julia package environment
 julia --project="$install_dir" -e 'import Pkg; Pkg.instantiate()'
