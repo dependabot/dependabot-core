@@ -233,7 +233,7 @@ module Dependabot
 
         public
 
-        sig { params(error: StandardError).void }
+        sig { params(error: Exception).void }
         def requirement_error_handler(error)
           Dependabot.logger.warn(error.message)
 
