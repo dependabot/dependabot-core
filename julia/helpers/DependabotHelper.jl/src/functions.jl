@@ -35,10 +35,8 @@ function parse_project(project_path::String, manifest_path::Union{String,Nothing
             return Dict("error" => "Invalid project path: $project_path")
         end
 
-        # Use Pkg to load the project
-        original_env = Base.active_project()
-        try
-            Pkg.activate(project_dir; io=devnull)
+        # Use Pkg to load the project with proper environment management
+        Pkg.activate(project_dir) do
             ctx = Pkg.Types.Context()
 
             if !samefile(ctx.env.project_file, project_path)
@@ -149,11 +147,6 @@ function parse_project(project_path::String, manifest_path::Union{String,Nothing
                 "project_path" => ctx.env.project_file,
                 "manifest_path" => manifest_file_path
             )
-        finally
-            # Restore original environment
-            if !isnothing(original_env)
-                Pkg.activate(original_env; io=devnull)
-            end
         end
     catch e
         return Dict("error" => "Failed to parse project: $(sprint(showerror, e))")
@@ -184,10 +177,8 @@ function parse_manifest(manifest_path::String)
         # Determine the project directory from manifest path
         project_dir = dirname(manifest_path)
 
-        # Use Pkg to load the manifest
-        original_env = Base.active_project()
-        try
-            Pkg.activate(project_dir; io=devnull)
+        # Use Pkg to load the manifest with proper environment management
+        Pkg.activate(project_dir) do
             ctx = Pkg.Types.Context()
 
             if !samefile(ctx.env.manifest_file, manifest_path)
@@ -226,11 +217,6 @@ function parse_manifest(manifest_path::String)
                 "dependencies" => dependencies,
                 "manifest_path" => manifest_path
             )
-        finally
-            # Restore original environment
-            if !isnothing(original_env)
-                Pkg.activate(original_env; io=devnull)
-            end
         end
     catch e
         return Dict("error" => "Failed to parse manifest: $(sprint(showerror, e))")
@@ -1196,7 +1182,7 @@ function get_available_versions(package_name::String, package_uuid::String)
     end
 end
 
-# Args wrapper for get_version_release_date function with UUID requirement  
+# Args wrapper for get_version_release_date function with UUID requirement
 function get_version_release_date(args::Dict)
     package_name = get(args, "package_name", "")
     version = get(args, "version", "")
@@ -1212,8 +1198,8 @@ end
 """
     get_version_release_date(package_name::String, version::String, package_uuid::String)
 
-Get the release date for a specific version of a package. 
-Note: Julia registries don't typically store release dates, so this attempts to 
+Get the release date for a specific version of a package.
+Note: Julia registries don't typically store release dates, so this attempts to
 get the information from the git repository if available.
 """
 function get_version_release_date(package_name::String, version::String, package_uuid::String)
@@ -1221,22 +1207,22 @@ function get_version_release_date(package_name::String, version::String, package
         # Julia registries don't store release dates directly
         # We could potentially fetch this from the git repository, but for now
         # we'll return a placeholder that indicates the limitation
-        
+
         # First verify the package and version exist
         versions_result = get_available_versions(package_name, package_uuid)
         if haskey(versions_result, "error")
             return versions_result
         end
-        
+
         available_versions = versions_result["versions"]
         if !(version in available_versions)
             return Dict("error" => "Version $version not found for package $package_name")
         end
-        
+
         # For now, return nil since Julia registries don't store release dates
         # In a future enhancement, this could attempt to fetch from the git repository
         return Dict("release_date" => nothing)
-        
+
     catch e
         return Dict("error" => "Failed to fetch version release date: $(sprint(showerror, e))")
     end
