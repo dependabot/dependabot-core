@@ -89,9 +89,9 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def exact?
-        return false unless @requirements.size == 1
+        return false unless requirements.size == 1
 
-        %w(= == ===).include?(@requirements[0][0])
+        %w(= == ===).include?(requirements[0][0])
       end
 
       private
