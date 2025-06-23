@@ -44,7 +44,7 @@ module Dependabot
 
         return DefaultRequirement if matches[:op] == ">=" && matches[:version] == "0"
 
-        [matches[:op] || "=", Gem::Version.new(T.must(matches[:version]))]
+        [matches[:op] || "=", Python::Version.new(T.must(matches[:version]))]
       end
 
       # Returns an array of requirements. At least one requirement from the
@@ -89,9 +89,9 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def exact?
-        return false unless requirements.size == 1
+        return false unless @requirements.size == 1
 
-        %w(= == ===).include?(requirements[0][0])
+        %w(= == ===).include?(@requirements[0][0])
       end
 
       private
