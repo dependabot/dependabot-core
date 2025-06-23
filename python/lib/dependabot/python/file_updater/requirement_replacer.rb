@@ -155,7 +155,7 @@ module Dependabot
 
         sig { params(requirement: T.nilable(String)).returns(String) }
         def hash_separator(requirement)
-          return " " unless requirement_includes_hashes?(requirement)
+          return "" unless requirement_includes_hashes?(requirement)
 
           hash_regex = RequirementParser::HASH
           matches = T.must(original_dependency_declaration_string(requirement)
@@ -167,7 +167,7 @@ module Dependabot
           default_separator = hash_matches
                               .named_captures.fetch("separator")
 
-          current_separator || default_separator || " "
+          current_separator || default_separator || ""
         end
 
         sig { params(name: String, version: T.nilable(String), algorithm: T.nilable(String)).returns(T::Array[String]) }

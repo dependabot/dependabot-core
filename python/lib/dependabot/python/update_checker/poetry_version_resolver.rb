@@ -80,7 +80,7 @@ module Dependabot
           @repo_contents_path       = T.let(repo_contents_path, T.nilable(String))
           @error_handler = T.let(PoetryErrorHandler.new(dependencies: dependency, dependency_files: dependency_files),
                                  Dependabot::Python::PoetryErrorHandler)
-          @resolvable = T.let({}, T::Hash[String, T::Boolean])
+          @resolvable = T.let({}, T::Hash[Gem::Version, T::Boolean])
           @latest_resolvable_version_string = T.let({}, T::Hash[T.nilable(String), T.nilable(String)])
           @original_reqs_resolvable = T.let(nil, T.nilable(T::Boolean))
           @python_requirement_parser = T.let(nil, T.nilable(FileParser::PythonRequirementParser))
@@ -95,7 +95,7 @@ module Dependabot
           version_string.nil? ? nil : Python::Version.new(version_string)
         end
 
-        sig { params(version: String).returns(T::Boolean) }
+        sig { params(version: Gem::Version).returns(T::Boolean) }
         def resolvable?(version:)
           return T.must(@resolvable[version]) if @resolvable.key?(version)
 
