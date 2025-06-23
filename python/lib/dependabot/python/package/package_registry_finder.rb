@@ -33,10 +33,10 @@ module Dependabot
         sig { returns(T::Array[String]) }
         def registry_urls
           extra_index_urls =
-            config_variable_index_urls[:extra] ||
-            pipfile_index_urls[:extra] ||
-            requirement_file_index_urls[:extra] ||
-            pip_conf_index_urls[:extra] ||
+            config_variable_index_urls[:extra] +
+            pipfile_index_urls[:extra] +
+            requirement_file_index_urls[:extra] +
+            pip_conf_index_urls[:extra] +
             pyproject_index_urls[:extra]
 
           extra_index_urls = extra_index_urls.map do |url|
