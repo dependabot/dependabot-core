@@ -13,12 +13,13 @@ module Dependabot
       extend T::Sig
       # This list must match the versions specified at the top of `python/Dockerfile`
       # ARG PY_3_13=3.13.2
+      # When updating this list, also update python/lib/dependabot/python/language.rb
       PRE_INSTALLED_PYTHON_VERSIONS_RAW = %w(
-        3.13.2
-        3.12.9
-        3.11.11
-        3.10.16
-        3.9.21
+        3.13.3
+        3.12.10
+        3.11.12
+        3.10.17
+        3.9.22
       ).freeze
 
       PRE_INSTALLED_PYTHON_VERSIONS = T.let(PRE_INSTALLED_PYTHON_VERSIONS_RAW.map do |v|
