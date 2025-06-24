@@ -21,6 +21,7 @@ module Dependabot
   class Updater
     extend T::Sig
 
+    # rubocop:disable Metrics/ModuleLength
     module GroupUpdateCreation
       extend T::Sig
       extend T::Helpers
@@ -58,6 +59,7 @@ module Dependabot
       # rubocop:disable Metrics/AbcSize
       # rubocop:disable Metrics/MethodLength
       # rubocop:disable Metrics/PerceivedComplexity
+      # rubocop:disable Metrics/CyclomaticComplexity
       sig { params(group: Dependabot::DependencyGroup).returns(T.nilable(Dependabot::DependencyChange)) }
       def compile_all_dependency_changes_for(group)
         prepare_workspace
@@ -186,6 +188,7 @@ module Dependabot
         false
       end
 
+      # rubocop:enable Metrics/CyclomaticComplexity
       # rubocop:enable Metrics/PerceivedComplexity
       # rubocop:enable Metrics/AbcSize
       # rubocop:enable Metrics/MethodLength
@@ -228,7 +231,8 @@ module Dependabot
       end
       def create_change_for(lead_dependency, updated_dependencies, dependency_files, dependency_group)
         Dependabot.logger.info(
-          "Creating dependency change for #{lead_dependency.name} (#{lead_dependency.version}) in group #{dependency_group.name}"
+          "Creating dependency change for #{lead_dependency.name} (#{lead_dependency.version}) " \
+          "in group #{dependency_group.name}"
         )
 
         Dependabot::DependencyChangeBuilder.create_from(
@@ -538,7 +542,13 @@ module Dependabot
 
       # Records appropriate security update errors when vulnerability auditor
       # reports that fixes are unavailable in group updates
-      sig { params(dependency: Dependabot::Dependency, checker: Dependabot::UpdateCheckers::Base, group: Dependabot::DependencyGroup).void }
+      sig do
+        params(
+          dependency: Dependabot::Dependency,
+          checker: Dependabot::UpdateCheckers::Base,
+          group: Dependabot::DependencyGroup
+        ).void
+      end
       def record_security_update_error_if_applicable(dependency, checker, group)
         # Only record errors for dependencies with security advisories
         security_advisories = job.security_advisories_for(dependency)
@@ -573,20 +583,33 @@ module Dependabot
       end
 
       # Records security update not found error for up-to-date dependencies with advisories
-      sig { params(dependency: Dependabot::Dependency, checker: Dependabot::UpdateCheckers::Base, group: Dependabot::DependencyGroup).void }
+      sig do
+        params(
+          dependency: Dependabot::Dependency,
+          checker: Dependabot::UpdateCheckers::Base,
+          group: Dependabot::DependencyGroup
+        ).void
+      end
       def record_security_update_not_found_if_applicable(dependency, checker, group)
         # Only record errors for dependencies with security advisories
         security_advisories = job.security_advisories_for(dependency)
         return unless security_advisories.any?
 
         Dependabot.logger.info(
-          "Security update not found for #{dependency.name} in group #{group.name} - dependency is up to date but still vulnerable"
+          "Security update not found for #{dependency.name} in group #{group.name} - " \
+          "dependency is up to date but still vulnerable"
         )
         record_security_update_not_found(checker)
       end
 
       # Records security update ignored error for dependencies with all versions ignored
-      sig { params(dependency: Dependabot::Dependency, checker: Dependabot::UpdateCheckers::Base, group: Dependabot::DependencyGroup).void }
+      sig do
+        params(
+          dependency: Dependabot::Dependency,
+          checker: Dependabot::UpdateCheckers::Base,
+          group: Dependabot::DependencyGroup
+        ).void
+      end
       def record_security_update_ignored_if_applicable(dependency, checker, group)
         # Only record errors for dependencies with security advisories
         security_advisories = job.security_advisories_for(dependency)
@@ -598,5 +621,6 @@ module Dependabot
         record_security_update_ignored(checker)
       end
     end
+    # rubocop:enable Metrics/ModuleLength
   end
 end
