@@ -121,9 +121,11 @@ module Dependabot
 
         sig { params(buildfile: Dependabot::DependencyFile).returns(T::Hash[String, T::Hash[Symbol, String]]) }
         def properties(buildfile)
-          @properties[buildfile.name] ||= {}
-          buildfile_props = T.must(@properties[buildfile.name])
+          return T.must(@properties[buildfile.name]) if @properties[buildfile.name]
 
+          @properties[buildfile.name] = {}
+
+          buildfile_props = T.must(@properties[buildfile.name])
           buildfile_props.merge!(fetch_single_property_declarations(buildfile))
 
           buildfile_props.merge!(fetch_kotlin_block_property_declarations(buildfile))
