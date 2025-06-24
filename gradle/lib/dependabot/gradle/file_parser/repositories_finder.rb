@@ -70,7 +70,7 @@ module Dependabot
 
         sig { params(dependency_file: T.nilable(Dependabot::DependencyFile)).returns(T::Array[String]) }
         def inherited_repository_urls(dependency_file)
-          return T.let([], T::Array[String]) unless dependency_file
+          return [] unless dependency_file
 
           buildfile_content = comment_free_content(dependency_file)
           subproject_blocks = T.let([], T::Array[String])
@@ -94,7 +94,7 @@ module Dependabot
 
         sig { returns(T::Array[String]) }
         def own_buildfile_repository_urls
-          return T.let([], T::Array[String]) unless top_level_buildfile
+          return [] unless top_level_buildfile
 
           buildfile_content = comment_free_content(T.must(top_level_buildfile))
 
@@ -115,7 +115,7 @@ module Dependabot
 
         sig { params(settings_file: T.nilable(Dependabot::DependencyFile)).returns(T::Array[String]) }
         def settings_file_repository_urls(settings_file)
-          return T.let([], T::Array[String]) unless settings_file
+          return [] unless settings_file
 
           settings_file_content = comment_free_content(settings_file)
           dependency_resolution_management_repositories = T.let([], T::Array[String])
