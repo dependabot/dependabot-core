@@ -10,7 +10,7 @@ ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
     jq \
-    libicu-dev=70.1-2 \
+    libicu-dev \
  && rm -rf /var/lib/apt/lists/*
 
 # install libssl 1.0 for .NET 2.0
