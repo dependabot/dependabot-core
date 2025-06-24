@@ -153,24 +153,10 @@ module Dependabot
 
       sig { params(version: Gem::Version, current_version: Gem::Version).returns(Symbol) }
       def determine_version_bump_type(version, current_version)
-        # Get version segments, defaulting to 0 if missing, and ensure they're integers
-        v_major = (version.segments[0] || 0).to_i
-        v_minor = (version.segments[1] || 0).to_i
-        v_patch = (version.segments[2] || 0).to_i
+        v_segments = normalize_version_segments(version)
+        c_segments = normalize_version_segments(current_version)
 
-        c_major = (current_version.segments[0] || 0).to_i
-        c_minor = (current_version.segments[1] || 0).to_i
-        c_patch = (current_version.segments[2] || 0).to_i
-
-        if v_major > c_major
-          :major
-        elsif v_minor > c_minor
-          :minor
-        elsif v_patch > c_patch
-          :patch
-        else
-          :default
-        end
+        compare_version_segments(v_segments, c_segments)
       end
 
       sig { params(bump_type: Symbol).returns(T.nilable(Integer)) }
@@ -190,6 +176,31 @@ module Dependabot
             T.cast(config[:default_days], T.nilable(Integer))
         else
           T.cast(config[:default_days], T.nilable(Integer))
+        end
+      end
+
+      sig { params(version: Gem::Version).returns([Integer, Integer, Integer]) }
+      def normalize_version_segments(version)
+        [
+          (version.segments[0] || 0).to_i,
+          (version.segments[1] || 0).to_i,
+          (version.segments[2] || 0).to_i
+        ]
+      end
+
+      sig { params(v_segments: [Integer, Integer, Integer], c_segments: [Integer, Integer, Integer]).returns(Symbol) }
+      def compare_version_segments(v_segments, c_segments)
+        v_major, v_minor, v_patch = v_segments
+        c_major, c_minor, c_patch = c_segments
+
+        if v_major > c_major
+          :major
+        elsif v_minor > c_minor
+          :minor
+        elsif v_patch > c_patch
+          :patch
+        else
+          :default
         end
       end
     end
