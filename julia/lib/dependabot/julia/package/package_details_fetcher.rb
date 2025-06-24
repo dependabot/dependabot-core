@@ -35,51 +35,85 @@ module Dependabot
         sig { returns(T::Array[Dependabot::Package::PackageRelease]) }
         def fetch_package_releases
           releases = T.let([], T::Array[Dependabot::Package::PackageRelease])
-          
+
           begin
             registry_client = RegistryClient.new(credentials: credentials)
             uuid = T.cast(dependency.metadata[:julia_uuid], T.nilable(String))
-            
+
             # Fetch all available versions
             available_versions = registry_client.fetch_available_versions(dependency.name, uuid)
             return releases if available_versions.empty?
 
-            available_versions.each do |version_string|
-              version = Julia::Version.new(version_string)
-              
-              # Fetch release date for this version
-              release_date = registry_client.fetch_version_release_date(dependency.name, version_string, uuid)
-              
-              releases << Dependabot::Package::PackageRelease.new(
-                version: version,
-                released_at: release_date,
-                latest: false, # Will be determined later
-                yanked: false, # Julia registries don't support yanked packages
-                language: Dependabot::Package::PackageLanguage.new(name: PACKAGE_LANGUAGE)
-              )
-            rescue StandardError => e
-              Dependabot.logger.warn("Failed to fetch release info for #{dependency.name} version #{version_string}: #{e.message}")
-              # Create release without date if we can't fetch it
-              releases << Dependabot::Package::PackageRelease.new(
-                version: version,
-                released_at: nil,
-                latest: false,
-                yanked: false,
-                language: Dependabot::Package::PackageLanguage.new(name: PACKAGE_LANGUAGE)
-              )
-            end
-
-            # Mark the latest version
-            unless releases.empty?
-              latest_release = releases.max_by(&:version)
-              latest_release.instance_variable_set(:@latest, true) if latest_release
-            end
+            releases = build_releases_for_versions(registry_client, available_versions, uuid)
+            mark_latest_release(releases)
 
             releases
           rescue StandardError => e
             Dependabot.logger.error("Error while fetching package releases for #{dependency.name}: #{e.message}")
             releases
           end
+        end
+
+        private
+
+        sig do
+          params(
+            registry_client: RegistryClient,
+            available_versions: T::Array[String],
+            uuid: T.nilable(String)
+          ).returns(T::Array[Dependabot::Package::PackageRelease])
+        end
+        def build_releases_for_versions(registry_client, available_versions, uuid)
+          releases = T.let([], T::Array[Dependabot::Package::PackageRelease])
+
+          available_versions.each do |version_string|
+            version = Julia::Version.new(version_string)
+            release_date = fetch_release_date_safely(registry_client, version_string, uuid)
+
+            releases << create_package_release(version, release_date)
+          end
+
+          releases
+        end
+
+        sig do
+          params(
+            registry_client: RegistryClient,
+            version_string: String,
+            uuid: T.nilable(String)
+          ).returns(T.nilable(Time))
+        end
+        def fetch_release_date_safely(registry_client, version_string, uuid)
+          registry_client.fetch_version_release_date(dependency.name, version_string, uuid)
+        rescue StandardError => e
+          Dependabot.logger.warn(
+            "Failed to fetch release info for #{dependency.name} version #{version_string}: #{e.message}"
+          )
+          nil
+        end
+
+        sig do
+          params(
+            version: Julia::Version,
+            release_date: T.nilable(Time)
+          ).returns(Dependabot::Package::PackageRelease)
+        end
+        def create_package_release(version, release_date)
+          Dependabot::Package::PackageRelease.new(
+            version: version,
+            released_at: release_date,
+            latest: false, # Will be determined later
+            yanked: false, # Julia registries don't support yanked packages
+            language: Dependabot::Package::PackageLanguage.new(name: PACKAGE_LANGUAGE)
+          )
+        end
+
+        sig { params(releases: T::Array[Dependabot::Package::PackageRelease]).void }
+        def mark_latest_release(releases)
+          return if releases.empty?
+
+          latest_release = releases.max_by(&:version)
+          latest_release&.instance_variable_set(:@latest, true)
         end
       end
     end

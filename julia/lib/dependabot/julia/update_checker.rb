@@ -73,13 +73,14 @@ module Dependabot
         return nil unless update_cooldown
 
         # Convert the ReleaseCooldownOptions to a hash for compatibility
+        cooldown = T.must(update_cooldown) # We know it's not nil due to guard above
         {
-          default_days: update_cooldown.default_days,
-          semver_major_days: update_cooldown.semver_major_days,
-          semver_minor_days: update_cooldown.semver_minor_days,
-          semver_patch_days: update_cooldown.semver_patch_days,
-          include: update_cooldown.include,
-          exclude: update_cooldown.exclude
+          default_days: cooldown.default_days,
+          semver_major_days: cooldown.semver_major_days,
+          semver_minor_days: cooldown.semver_minor_days,
+          semver_patch_days: cooldown.semver_patch_days,
+          include: cooldown.include,
+          exclude: cooldown.exclude
         }
       end
 

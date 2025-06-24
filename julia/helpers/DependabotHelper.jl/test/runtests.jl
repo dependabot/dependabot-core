@@ -329,8 +329,8 @@ using DependabotHelper
 
         # Test get_version_release_date args wrapper
         result = @test_nowarn DependabotHelper.get_version_release_date(Dict(
-            "package_name" => "JSON", 
-            "version" => "0.21.4", 
+            "package_name" => "JSON",
+            "version" => "0.21.4",
             "package_uuid" => json_uuid
         ))
         @test isa(result, Dict)
@@ -363,7 +363,7 @@ using DependabotHelper
 
     @testset "JSON Interface Extended Tests" begin
         json_uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
-        
+
         # Test all new functions through the JSON interface
         new_test_cases = [
             """{"function": "get_available_versions", "args": {"package_name": "JSON", "package_uuid": "$json_uuid"}}""",

@@ -1,7 +1,7 @@
 # Project and manifest parsing functions for DependabotHelper.jl
 #
 # NOTE: Terminology clarification for Julia vs Dependabot:
-# - This module uses Julia terminology: "project file" = Project.toml, "manifest file" = Manifest.toml  
+# - This module uses Julia terminology: "project file" = Project.toml, "manifest file" = Manifest.toml
 # - Dependabot terminology: "manifest file" = Project.toml, "lockfile" = Manifest.toml
 # - Function names and documentation use Julia terminology for consistency with the ecosystem
 

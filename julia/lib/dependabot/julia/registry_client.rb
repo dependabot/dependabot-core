@@ -161,19 +161,19 @@ module Dependabot
       def fetch_version_release_date(package_name, version, package_uuid = nil)
         result = call_julia_helper(
           function: "get_version_release_date",
-          args: { 
-            package_name: package_name, 
+          args: {
+            package_name: package_name,
             version: version,
             package_uuid: package_uuid
           }
         )
-        
+
         # Check if the result contains an error
         return nil if result["error"]
-        
+
         # Parse the release date if available
         return nil unless result["release_date"]
-        
+
         Time.parse(result["release_date"])
       rescue StandardError => e
         Dependabot.logger.warn("Failed to fetch release date for #{package_name} v#{version}: #{e.message}")
@@ -194,9 +194,7 @@ module Dependabot
         return [] if result["error"]
 
         # Extract versions array from the result
-        # rubocop:disable Style/RedundantSelf
         versions = result["versions"]
-        # rubocop:enable Style/RedundantSelf
         return [] unless versions.is_a?(Array)
 
         versions.map(&:to_s)

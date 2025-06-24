@@ -65,7 +65,7 @@ RSpec.describe Dependabot::Julia::FileFetcher do
     before do
       # Enable beta ecosystems for all tests
       allow(file_fetcher_instance).to receive(:allow_beta_ecosystems?).and_return(true)
-      
+
       # Mock the repository content responses
       allow(file_fetcher_instance).to receive(:fetch_file_if_present)
         .with("Project.toml")

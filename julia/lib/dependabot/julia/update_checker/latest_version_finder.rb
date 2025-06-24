@@ -68,7 +68,7 @@ module Dependabot
           dependency: dependency,
           credentials: credentials
         )
-        
+
         releases = package_fetcher.fetch_package_releases
         return nil if releases.empty?
 
@@ -97,9 +97,11 @@ module Dependabot
         filtered_versions.max
       end
 
-      private
-
-      sig { params(releases: T::Array[Dependabot::Package::PackageRelease]).returns(T::Array[Dependabot::Package::PackageRelease]) }
+      sig do
+        params(
+          releases: T::Array[Dependabot::Package::PackageRelease]
+        ).returns(T::Array[Dependabot::Package::PackageRelease])
+      end
       def filter_releases_by_cooldown(releases)
         return releases unless cooldown_config
         return releases unless dependency_in_cooldown_scope?
@@ -116,25 +118,24 @@ module Dependabot
         return false unless release.released_at
 
         # Check if enough time has passed since release
-        Time.now - release.released_at < cooldown_days * 24 * 60 * 60 # Convert days to seconds
+        seconds_since_release = T.cast(Time.now - release.released_at, Float)
+        cooldown_seconds = cooldown_days * 24 * 60 * 60 # Convert days to seconds
+        seconds_since_release < cooldown_seconds
       end
 
       sig { returns(T::Boolean) }
       def dependency_in_cooldown_scope?
         return true unless cooldown_config
 
-        includes = T.cast(cooldown_config[:include], T.nilable(T::Array[String]))
-        excludes = T.cast(cooldown_config[:exclude], T.nilable(T::Array[String]))
+        config = T.must(cooldown_config) # We know it's not nil due to guard above
+        includes = T.cast(config[:include], T.nilable(T::Array[String]))
+        excludes = T.cast(config[:exclude], T.nilable(T::Array[String]))
 
         # Check exclusions first
-        if excludes&.any? { |pattern| dependency.name.match?(Regexp.new(pattern.gsub("*", ".*"))) }
-          return false
-        end
+        return false if excludes&.any? { |pattern| dependency.name.match?(Regexp.new(pattern.gsub("*", ".*"))) }
 
         # Check inclusions (if specified, dependency must match)
-        if includes&.any?
-          return includes.any? { |pattern| dependency.name.match?(Regexp.new(pattern.gsub("*", ".*"))) }
-        end
+        return includes.any? { |pattern| dependency.name.match?(Regexp.new(pattern.gsub("*", ".*"))) } if includes&.any?
 
         true # Include by default if no include patterns specified
       end
@@ -146,22 +147,49 @@ module Dependabot
         current_version = dependency.version ? Gem::Version.new(dependency.version) : nil
         return nil unless current_version
 
-        # Determine semantic version difference
-        if version.segments[0] > current_version.segments[0]
-          # Major version bump
-          T.cast(cooldown_config[:semver_major_days], T.nilable(Integer)) || 
-            T.cast(cooldown_config[:default_days], T.nilable(Integer))
-        elsif version.segments[1] > current_version.segments[1]
-          # Minor version bump
-          T.cast(cooldown_config[:semver_minor_days], T.nilable(Integer)) || 
-            T.cast(cooldown_config[:default_days], T.nilable(Integer))
-        elsif version.segments[2] > current_version.segments[2]
-          # Patch version bump
-          T.cast(cooldown_config[:semver_patch_days], T.nilable(Integer)) || 
-            T.cast(cooldown_config[:default_days], T.nilable(Integer))
+        version_bump_type = determine_version_bump_type(version, current_version)
+        cooldown_days_for_bump_type(version_bump_type)
+      end
+
+      sig { params(version: Gem::Version, current_version: Gem::Version).returns(Symbol) }
+      def determine_version_bump_type(version, current_version)
+        # Get version segments, defaulting to 0 if missing, and ensure they're integers
+        v_major = (version.segments[0] || 0).to_i
+        v_minor = (version.segments[1] || 0).to_i
+        v_patch = (version.segments[2] || 0).to_i
+
+        c_major = (current_version.segments[0] || 0).to_i
+        c_minor = (current_version.segments[1] || 0).to_i
+        c_patch = (current_version.segments[2] || 0).to_i
+
+        if v_major > c_major
+          :major
+        elsif v_minor > c_minor
+          :minor
+        elsif v_patch > c_patch
+          :patch
         else
-          # Default cooldown
-          T.cast(cooldown_config[:default_days], T.nilable(Integer))
+          :default
+        end
+      end
+
+      sig { params(bump_type: Symbol).returns(T.nilable(Integer)) }
+      def cooldown_days_for_bump_type(bump_type)
+        return nil unless cooldown_config
+
+        config = T.must(cooldown_config) # We know it's not nil due to guard above
+        case bump_type
+        when :major
+          T.cast(config[:semver_major_days], T.nilable(Integer)) ||
+            T.cast(config[:default_days], T.nilable(Integer))
+        when :minor
+          T.cast(config[:semver_minor_days], T.nilable(Integer)) ||
+            T.cast(config[:default_days], T.nilable(Integer))
+        when :patch
+          T.cast(config[:semver_patch_days], T.nilable(Integer)) ||
+            T.cast(config[:default_days], T.nilable(Integer))
+        else
+          T.cast(config[:default_days], T.nilable(Integer))
         end
       end
     end
