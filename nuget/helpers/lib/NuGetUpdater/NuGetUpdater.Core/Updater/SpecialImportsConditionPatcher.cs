@@ -2,6 +2,8 @@ using System.Collections.Immutable;
 
 using Microsoft.Language.Xml;
 
+using NuGetUpdater.Core.Utilities;
+
 namespace NuGetUpdater.Core.Updater
 {
     internal class SpecialImportsConditionPatcher : IDisposable
@@ -24,9 +26,20 @@ namespace NuGetUpdater.Core.Updater
 
         public SpecialImportsConditionPatcher(string projectFilePath)
         {
+            var hasBOM = false;
             _processor = new XmlFilePreAndPostProcessor(
-                getContent: () => File.ReadAllText(projectFilePath),
-                setContent: s => File.WriteAllText(projectFilePath, s),
+                getContent: () =>
+                {
+                    var content = File.ReadAllText(projectFilePath);
+                    var rawContent = File.ReadAllBytes(projectFilePath);
+                    hasBOM = rawContent.HasBOM();
+                    return content;
+                },
+                setContent: content =>
+                {
+                    var rawContent = content.SetBOM(hasBOM);
+                    File.WriteAllBytes(projectFilePath, rawContent);
+                },
                 nodeFinder: doc => doc.Descendants()
                     .Where(e => e.Name == "Import")
                     .Where(e =>

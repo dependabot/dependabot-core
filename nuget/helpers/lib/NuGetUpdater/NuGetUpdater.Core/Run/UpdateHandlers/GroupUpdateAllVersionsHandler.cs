@@ -57,6 +57,13 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
     {
         foreach (var group in job.DependencyGroups)
         {
+            var existingGroupPr = job.ExistingGroupPullRequests.FirstOrDefault(pr => pr.DependencyGroupName == group.Name);
+            if (existingGroupPr is not null)
+            {
+                logger.Info($"Existing pull request found for group {group.Name}.  Skipping pull request creation.");
+                continue;
+            }
+
             logger.Info($"Starting update for group {group.Name}");
             var groupMatcher = group.GetGroupMatcher();
             var updateOperationsPerformed = new List<UpdateOperationBase>();
@@ -91,9 +98,9 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                         continue;
                     }
 
-                    if (job.IsDependencyIgnored(dependency.Name, dependency.Version!))
+                    if (job.IsDependencyIgnoredByNameOnly(dependency.Name))
                     {
-                        logger.Info($"Skipping ignored dependency {dependency.Name}/{dependency.Version}.");
+                        logger.Info($"Skipping ignored dependency {dependency.Name}.");
                         continue;
                     }
 
@@ -109,12 +116,6 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                     if (!analysisResult.CanUpdate)
                     {
                         logger.Info($"No updatable version found for {dependency.Name} in {projectPath}.");
-                        continue;
-                    }
-
-                    if (dependencyInfo.IgnoredVersions.Any(ignored => ignored.IsSatisfiedBy(NuGetVersion.Parse(analysisResult.UpdatedVersion))))
-                    {
-                        logger.Info($"Cannot update {dependency.Name} for {projectPath} because all versions are ignored.");
                         continue;
                     }
 
@@ -196,9 +197,9 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                     continue;
                 }
 
-                if (job.IsDependencyIgnored(dependency.Name, dependency.Version!))
+                if (job.IsDependencyIgnoredByNameOnly(dependency.Name))
                 {
-                    logger.Info($"Skipping ignored dependency {dependency.Name}/{dependency.Version}.");
+                    logger.Info($"Skipping ignored dependency {dependency.Name}.");
                     continue;
                 }
 
@@ -214,12 +215,6 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                 if (!analysisResult.CanUpdate)
                 {
                     logger.Info($"No updatable version found for {dependency.Name} in {projectPath}.");
-                    continue;
-                }
-
-                if (dependencyInfo.IgnoredVersions.Any(ignored => ignored.IsSatisfiedBy(NuGetVersion.Parse(analysisResult.UpdatedVersion))))
-                {
-                    logger.Info($"Cannot update {dependency.Name} for {projectPath} because all versions are ignored.");
                     continue;
                 }
 

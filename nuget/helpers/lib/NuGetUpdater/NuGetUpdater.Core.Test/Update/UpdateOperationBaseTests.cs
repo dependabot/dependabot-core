@@ -161,6 +161,7 @@ public class UpdateOperationBaseTests
 
     public static IEnumerable<object[]> ToReportedDependencyTestData()
     {
+        // direct mapping
         yield return
         [
             // updateOperation
@@ -198,6 +199,44 @@ public class UpdateOperationBaseTests
                 PreviousVersion = "1.0.0",
                 PreviousRequirements = [
                     new() { Requirement = "1.0.0", File = "project.csproj" }
+                ],
+            },
+        ];
+
+        // updated dependency brought in new package not previously known
+        yield return
+        [
+            // updateOperation
+            new DirectUpdate()
+            {
+                DependencyName = "Transitive.Package",
+                NewVersion = NuGetVersion.Parse("3.0.0"),
+                UpdatedFiles = ["project.csproj"]
+            },
+            // previouslyReportedDependencies
+            new ReportedDependency[]
+            {
+                new()
+                {
+                    Name = "Some.Package",
+                    Version = "1.0.0",
+                    Requirements = [
+                        new() { Requirement = "1.0.0", File = "project.csproj" }
+                    ]
+                }
+            },
+            // updatedDependencies
+            new Dependency[]
+            {
+                new("Transitive.Package", "3.0.0", DependencyType.Unknown),
+            },
+            // expectedReportedDependency
+            new ReportedDependency()
+            {
+                Name = "Transitive.Package",
+                Version = "3.0.0",
+                Requirements = [
+                    new() { Requirement = "3.0.0", File = "project.csproj", Source = new() { SourceUrl = null } }
                 ],
             },
         ];

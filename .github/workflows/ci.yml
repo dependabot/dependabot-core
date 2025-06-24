@@ -16,12 +16,14 @@ jobs:
       matrix:
         suite:
           - { path: bin, name: dry_run, ecosystem: common }
+          - { path: bun, name: bun, ecosystem: bun }
           - { path: bundler, name: bundler, ecosystem: bundler }
           - { path: cargo, name: cargo, ecosystem: cargo }
           - { path: common, name: common, ecosystem: common}
           - { path: composer, name: composer, ecosystem: composer }
-          - { path: docker, name: docker, ecosystem: docker }
+          - { path: devcontainers, name: devcontainers, ecosystem: devcontainers }
           - { path: docker_compose, name: docker_compose, ecosystem: docker-compose }
+          - { path: docker, name: docker, ecosystem: docker }
           - { path: dotnet_sdk, name: dotnet_sdk, ecosystem: dotnet-sdk }
           - { path: elm, name: elm, ecosystem: elm }
           - { path: git_submodules, name: git_submodules, ecosystem: gitsubmodule }
@@ -34,12 +36,10 @@ jobs:
           - { path: npm_and_yarn, name: npm_and_yarn, ecosystem: npm }
           - { path: nuget, name: nuget, ecosystem: nuget }
           - { path: pub, name: pub, ecosystem: pub }
-          - { path: python, name: python, ecosystem: pip }
           - { path: python, name: python_slow, ecosystem: pip }
+          - { path: python, name: python, ecosystem: pip }
           - { path: swift, name: swift, ecosystem: swift }
-          - { path: devcontainers, name: devcontainers, ecosystem: devcontainers }
           - { path: terraform, name: terraform, ecosystem: terraform }
-          - { path: bun, name: bun, ecosystem: bun }
           - { path: uv, name: uv, ecosystem: uv }
 
     steps:
@@ -116,7 +116,7 @@ jobs:
         run: script/build silent
 
       - name: Setup Go
-        uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5.3.0
+        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
           go-version-file: 'silent/tests/go.mod'
 

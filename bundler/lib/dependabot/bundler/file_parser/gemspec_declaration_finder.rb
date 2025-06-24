@@ -1,7 +1,7 @@
 # typed: strict
 # frozen_string_literal: true
 
-require "parser/current"
+require "prism"
 require "sorbet-runtime"
 
 require "dependabot/file_parsers/base"
@@ -16,7 +16,7 @@ module Dependabot
         sig { params(gemspec: Dependabot::DependencyFile).void }
         def initialize(gemspec:)
           @gemspec = gemspec
-          @declaration_nodes = T.let({}, T::Hash[T::Hash[String, String], T.nilable(Parser::AST::Node)])
+          @declaration_nodes = T.let({}, T::Hash[T::Hash[String, String], T.nilable(Prism::Node)])
         end
 
         sig { params(dependency: T::Hash[String, String]).returns(T::Boolean) }
@@ -29,30 +29,30 @@ module Dependabot
         sig { returns(Dependabot::DependencyFile) }
         attr_reader :gemspec
 
-        sig { returns(T.nilable(Parser::AST::Node)) }
+        sig { returns(T.nilable(Prism::Node)) }
         def parsed_gemspec
-          @parsed_gemspec ||= T.let(Parser::CurrentRuby.parse(gemspec.content), T.nilable(Parser::AST::Node))
+          @parsed_gemspec ||= T.let(Prism.parse(gemspec.content).value, T.nilable(Prism::Node))
         end
 
-        sig { params(dependency: T::Hash[String, String]).returns(T.nilable(Parser::AST::Node)) }
+        sig { params(dependency: T::Hash[String, String]).returns(T.nilable(Prism::Node)) }
         def declaration_node(dependency)
           return @declaration_nodes[dependency] if @declaration_nodes.key?(dependency)
           return unless parsed_gemspec
 
           @declaration_nodes[dependency] = nil
-          T.must(parsed_gemspec).children.any? do |node|
+          T.must(parsed_gemspec).child_nodes.any? do |node|
             @declaration_nodes[dependency] = deep_search_for_gem(node, dependency)
           end
           @declaration_nodes[dependency]
         end
 
-        sig { params(node: T.untyped, dependency: T::Hash[String, String]).returns(T.nilable(Parser::AST::Node)) }
+        sig { params(node: T.untyped, dependency: T::Hash[String, String]).returns(T.nilable(Prism::Node)) }
         def deep_search_for_gem(node, dependency)
-          return T.cast(node, Parser::AST::Node) if declares_targeted_gem?(node, dependency)
-          return unless node.is_a?(Parser::AST::Node)
+          return unless node.is_a?(Prism::Node)
+          return T.cast(node, Prism::CallNode) if declares_targeted_gem?(node, dependency)
 
-          declaration_node = T.let(nil, T.nilable(Parser::AST::Node))
-          node.children.find do |child_node|
+          declaration_node = T.let(nil, T.nilable(Prism::Node))
+          node.child_nodes.find do |child_node|
             declaration_node = deep_search_for_gem(child_node, dependency)
           end
           declaration_node
@@ -60,13 +60,16 @@ module Dependabot
 
         sig { params(node: T.untyped, dependency: T::Hash[String, String]).returns(T::Boolean) }
         def declares_targeted_gem?(node, dependency)
-          return false unless node.is_a?(Parser::AST::Node)
+          return false unless node.is_a?(Prism::CallNode)
 
-          second_child = node.children[1]
+          second_child = node.name
           allowed_declarations = %i(add_dependency add_runtime_dependency add_development_dependency)
           return false unless allowed_declarations.include?(second_child)
 
-          node.children[2].children.first == dependency.fetch("name")
+          gem_name_node = node.arguments&.child_nodes&.first
+          return false unless gem_name_node.is_a?(Prism::StringNode)
+
+          gem_name_node.unescaped == dependency.fetch("name")
         end
       end
     end

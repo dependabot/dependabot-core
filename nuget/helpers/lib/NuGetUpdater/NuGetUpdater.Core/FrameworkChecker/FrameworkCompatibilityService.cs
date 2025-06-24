@@ -24,7 +24,7 @@ public class FrameworkCompatibilityService
 
         foreach (var packageFramework in packageFrameworks)
         {
-            if (packageFrameworks == null || packageFramework.IsUnsupported || packageFramework.IsPCL)
+            if (packageFrameworks == null || packageFramework.IsUnsupported)
             {
                 continue;
             }
@@ -76,6 +76,30 @@ public class FrameworkCompatibilityService
             {
                 var compatibleWindowsTargetWithoutVersion = new NuGetFramework(compatibleVersion.Framework, compatibleVersion.Version, "windows", FrameworkConstants.EmptyVersion);
                 matrix[packageFrameworkWithWindowsVersion].Add(compatibleWindowsTargetWithoutVersion);
+            }
+        }
+
+        // portable profiles
+        var portableMappings = new DefaultPortableFrameworkMappings();
+        var portableFrameworks = portableMappings.ProfileFrameworks.ToDictionary(p => p.Key, p => p.Value);
+        foreach (var (profileNumber, frameworkRange) in portableMappings.CompatibilityMappings)
+        {
+            var profileFramework = new NuGetFramework(FrameworkConstants.FrameworkIdentifiers.Portable, new Version(0, 0, 0, 0), $"Profile{profileNumber}");
+            var compatibleFrameworks = new HashSet<NuGetFramework>();
+            matrix.Add(profileFramework, compatibleFrameworks);
+
+            foreach (var packageFramework in AllSupportedFrameworks)
+            {
+                if (frameworkRange.Satisfies(packageFramework))
+                {
+                    foreach (var projectFramework in AllSupportedFrameworks)
+                    {
+                        if (CompatibilityProvider.IsCompatible(projectFramework, packageFramework))
+                        {
+                            compatibleFrameworks.Add(projectFramework);
+                        }
+                    }
+                }
             }
         }
 

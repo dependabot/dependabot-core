@@ -65,13 +65,29 @@ internal class CreateSecurityUpdatePullRequestHandler : IUpdateHandler
             foreach (var dependencyGroupToUpdate in groupedUpdateOperationsToPerform)
             {
                 var dependencyName = dependencyGroupToUpdate.Key;
-                var vulnerableDependenciesToUpdate = dependencyGroupToUpdate.Value
+                var vulnerableCandidateDependenciesToUpdate = dependencyGroupToUpdate.Value
                     .Select(o => (o.ProjectPath, o.Dependency, RunWorker.GetDependencyInfo(job, o.Dependency)))
                     .Where(set => set.Item3.IsVulnerable)
                     .ToArray();
+                var vulnerableDependenciesToUpdate = vulnerableCandidateDependenciesToUpdate
+                    .Where(o => !job.IsDependencyIgnoredByNameOnly(o.Dependency.Name))
+                    .ToArray();
                 if (vulnerableDependenciesToUpdate.Length == 0)
                 {
-                    await apiHandler.RecordUpdateJobError(new SecurityUpdateNotNeeded(dependencyName));
+                    // no update possible, check backwards to see if it's because of ignore conditions
+                    var ignoredUpdates = vulnerableCandidateDependenciesToUpdate
+                        .Where(set => set.Dependency.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase))
+                        .ToArray();
+                    if (ignoredUpdates.Length > 0)
+                    {
+                        logger.Error($"Cannot update {dependencyName} because all versions are ignored.");
+                        await apiHandler.RecordUpdateJobError(new SecurityUpdateIgnored(dependencyName));
+                    }
+                    else
+                    {
+                        await apiHandler.RecordUpdateJobError(new SecurityUpdateNotNeeded(dependencyName));
+                    }
+
                     continue;
                 }
 
@@ -92,14 +108,6 @@ internal class CreateSecurityUpdatePullRequestHandler : IUpdateHandler
                         continue;
                     }
 
-                    if (dependencyInfo.IgnoredVersions.Any(ignored => ignored.IsSatisfiedBy(NuGetVersion.Parse(analysisResult.UpdatedVersion))) ||
-                        job.IsDependencyIgnored(dependency.Name, dependency.Version!))
-                    {
-                        logger.Error($"Cannot update {dependency.Name} for {projectPath} because all versions are ignored.");
-                        await apiHandler.RecordUpdateJobError(new SecurityUpdateIgnored(dependencyName));
-                        continue;
-                    }
-
                     logger.Info($"Attempting update of {dependency.Name} from {dependency.Version} to {analysisResult.UpdatedVersion} for {projectPath}.");
                     var projectDiscovery = discoveryResult.GetProjectDiscoveryFromPath(projectPath);
                     var updaterResult = await updaterWorker.RunAsync(repoContentsPath.FullName, projectPath, dependency.Name, dependency.Version!, analysisResult.UpdatedVersion, dependency.IsTransitive);
@@ -112,9 +120,14 @@ internal class CreateSecurityUpdatePullRequestHandler : IUpdateHandler
 
                     if (updaterResult.UpdateOperations.Length == 0)
                     {
-                        logger.Error($"Update of {dependency.Name} in {projectPath} not possible.");
-                        await apiHandler.RecordUpdateJobError(new SecurityUpdateNotPossible(dependencyName, analysisResult.UpdatedVersion, analysisResult.UpdatedVersion, []));
-                        return;
+                        // nothing was done, but we may have already handled it
+                        var alreadyHandled = updatedDependencies.Where(updated => updated.Name == dependencyName && updated.Version == analysisResult.UpdatedVersion).Any();
+                        if (!alreadyHandled)
+                        {
+                            logger.Error($"Update of {dependency.Name} in {projectPath} not possible.");
+                            await apiHandler.RecordUpdateJobError(new SecurityUpdateNotPossible(dependencyName, analysisResult.UpdatedVersion, analysisResult.UpdatedVersion, []));
+                            return;
+                        }
                     }
 
                     var patchedUpdateOperations = RunWorker.PatchInOldVersions(updaterResult.UpdateOperations, projectDiscovery);

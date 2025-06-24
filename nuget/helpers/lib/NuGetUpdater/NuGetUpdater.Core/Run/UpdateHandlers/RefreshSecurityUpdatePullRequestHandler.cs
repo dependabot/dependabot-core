@@ -35,6 +35,7 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
             logger.ReportDiscovery(discoveryResult);
             if (discoveryResult.Error is not null)
             {
+                logger.Error($"Reporting error: {discoveryResult.Error.GetReport()}");
                 await apiHandler.RecordUpdateJobError(discoveryResult.Error);
                 return;
             }
@@ -55,7 +56,9 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
 
             if (groupedUpdateOperationsToPerform.Count == 0)
             {
-                await apiHandler.ClosePullRequest(new ClosePullRequest() { DependencyNames = job.Dependencies, Reason = "dependencies_removed" });
+                var close = ClosePullRequest.WithDependenciesRemoved(job);
+                logger.Info(close.GetReport());
+                await apiHandler.ClosePullRequest(close);
                 continue;
             }
 
@@ -65,7 +68,9 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
                 .ToImmutableArray();
             if (missingDependencies.Length > 0)
             {
-                await apiHandler.ClosePullRequest(new ClosePullRequest() { DependencyNames = missingDependencies, Reason = "dependency_removed" });
+                var close = ClosePullRequest.WithDependencyRemoved(job);
+                logger.Info(close.GetReport());
+                await apiHandler.ClosePullRequest(close);
                 continue;
             }
 
@@ -75,14 +80,16 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
             {
                 var dependencyName = dependencyGroupToUpdate.Key;
                 var vulnerableDependenciesToUpdate = dependencyGroupToUpdate.Value
+                    .Where(o => !job.IsDependencyIgnoredByNameOnly(o.Dependency.Name))
                     .Select(o => (o.ProjectPath, o.Dependency, RunWorker.GetDependencyInfo(job, o.Dependency)))
-                    .Where(set => !job.IsDependencyIgnored(set.Dependency.Name, set.Dependency.Version!))
                     .Where(set => set.Item3.IsVulnerable)
                     .ToArray();
 
                 if (vulnerableDependenciesToUpdate.Length < dependencyGroupToUpdate.Value.Length)
                 {
-                    await apiHandler.ClosePullRequest(new ClosePullRequest() { DependencyNames = [dependencyName], Reason = "up_to_date" });
+                    var close = ClosePullRequest.WithUpToDate(job);
+                    logger.Info(close.GetReport());
+                    await apiHandler.ClosePullRequest(close);
                     return;
                 }
 
@@ -99,8 +106,7 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
                     if (!analysisResult.CanUpdate)
                     {
                         logger.Info($"No updatable version found for {dependency.Name} in {projectPath}.");
-                        await apiHandler.ClosePullRequest(new ClosePullRequest() { DependencyNames = [dependencyName], Reason = "update_no_longer_possible" });
-                        return;
+                        continue;
                     }
 
                     logger.Info($"Attempting update of {dependency.Name} from {dependency.Version} to {analysisResult.UpdatedVersion} for {projectPath}.");
@@ -115,8 +121,8 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
 
                     if (updaterResult.UpdateOperations.Length == 0)
                     {
-                        await apiHandler.ClosePullRequest(new ClosePullRequest() { DependencyNames = [dependencyName], Reason = "update_no_longer_possible" });
-                        return;
+                        logger.Info($"No update operations performed for {dependency.Name}/{dependency.Version} in project {projectPath}.");
+                        continue;
                     }
 
                     var patchedUpdateOperations = RunWorker.PatchInOldVersions(updaterResult.UpdateOperations, projectDiscovery);
@@ -133,6 +139,21 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
                 }
             }
 
+            // ensure we did something
+            var updatesNotPerformed = jobDependencies
+                .Except(updatedDependencies.Select(d => d.Name), StringComparer.OrdinalIgnoreCase)
+                .Distinct()
+                .OrderBy(d => d, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+
+            if (updatesNotPerformed.Length > 0)
+            {
+                logger.Info($"No updates performed for: {string.Join(", ", updatesNotPerformed)}");
+                await apiHandler.ClosePullRequest(ClosePullRequest.WithUpdateNoLongerPossible(job));
+                continue;
+            }
+
+            // update or create
             var updatedDependencyFiles = await tracker.StopTrackingAsync();
             var rawDependencies = updatedDependencies.Select(d => new Dependency(d.Name, d.Version, DependencyType.Unknown)).ToArray();
             if (rawDependencies.Length > 0)
@@ -146,7 +167,7 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
                 {
                     await apiHandler.UpdatePullRequest(new UpdatePullRequest()
                     {
-                        DependencyNames = [.. updatedDependencies.Select(d => d.Name)],
+                        DependencyNames = [.. jobDependencies.OrderBy(n => n, StringComparer.OrdinalIgnoreCase)],
                         DependencyGroup = null,
                         UpdatedDependencyFiles = [.. updatedDependencyFiles],
                         BaseCommitSha = baseCommitSha,
@@ -161,11 +182,7 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
                     var existingPrButDifferent = job.GetExistingPullRequestForDependencies(rawDependencies, considerVersions: false);
                     if (existingPrButDifferent is not null)
                     {
-                        await apiHandler.ClosePullRequest(new ClosePullRequest()
-                        {
-                            DependencyNames = [.. rawDependencies.Select(d => d.Name)],
-                            Reason = "dependencies_changed",
-                        });
+                        await apiHandler.ClosePullRequest(ClosePullRequest.WithDependenciesChanged(job));
                     }
 
                     await apiHandler.CreatePullRequest(new CreatePullRequest()
