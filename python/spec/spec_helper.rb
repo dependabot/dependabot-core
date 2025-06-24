@@ -1,10 +1,8 @@
-# typed: strict
+# typed: true
 # frozen_string_literal: true
 
-require "sorbet-runtime"
-
 def common_dir
-  @common_dir ||= T.let(Gem::Specification.find_by_name("dependabot-common").gem_dir, T.nilable(String))
+  @common_dir ||= Gem::Specification.find_by_name("dependabot-common").gem_dir
 end
 
 def require_common_spec(path)
@@ -14,9 +12,6 @@ end
 require "#{common_dir}/spec/spec_helper.rb"
 
 module SlowTestHelper
-  extend T::Sig
-
-  sig { returns(T::Boolean) }
   def self.slow_tests?
     ENV["SUITE_NAME"] == "python_slow"
   end
