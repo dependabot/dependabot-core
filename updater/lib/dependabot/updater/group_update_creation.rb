@@ -77,9 +77,10 @@ module Dependabot
         Dependabot.logger.info("Job specified dependencies: #{job_dependencies.join(', ')}")
 
         # If there are job dependencies not present in the dependency snapshot, record an error.
+        # Skip this check for pull request updates as dependencies may have changed since the original PR.
         dependency_names = original_dependencies.map(&:name)
         missing_dependencies = job_dependencies - dependency_names
-        if missing_dependencies.any?
+        if missing_dependencies.any? && !job.updating_a_pull_request?
           error_handler.handle_job_error(
             error: Dependabot::DependencyNotFound.new(
               "Job dependencies not found in the dependency snapshot: #{missing_dependencies.join(', ')}"
