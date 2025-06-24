@@ -20,5 +20,7 @@
   "rubocop.autocorrect": true,
   "sorbet.enabled": true,
   "rubocop.layoutMode": true,
-  "rubocop.lintMode": true
+  "rubocop.lintMode": true,
+  "rubyLsp.enabled": false,
+  "ruby.interpreter.commandPath": "/opt/homebrew/opt/ruby@3.3/bin/ruby"
 }

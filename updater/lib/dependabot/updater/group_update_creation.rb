@@ -69,15 +69,16 @@ module Dependabot
         )
 
         # deduplicate the dependencies.
-        original_dependencies = Set.new(dependency_snapshot.dependencies)
-        job_dependencies = Set.new(job.dependencies)
+        original_dependencies = dependency_snapshot.dependencies
+        job_dependencies = job.dependencies || []
 
         # log the original dependencies and job specified dependencies.
         Dependabot.logger.info("Dependency Snapshot: #{original_dependencies.map(&:name).join(', ')}")
         Dependabot.logger.info("Job specified dependencies: #{job_dependencies.join(', ')}")
 
         # If there are job dependencies not present in the dependency snapshot, record an error.
-        missing_dependencies = job_dependencies - original_dependencies.map(&:name)
+        dependency_names = original_dependencies.map(&:name)
+        missing_dependencies = job_dependencies - dependency_names
         if missing_dependencies.any?
           error_handler.handle_job_error(
             error: Dependabot::DependencyNotFound.new(
