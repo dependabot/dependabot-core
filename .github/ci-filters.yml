@@ -82,3 +82,6 @@ uv:
 helm:
   - *shared
   - 'helm/**'
+vcpkg:
+  - *shared
+  - 'vcpkg/**'

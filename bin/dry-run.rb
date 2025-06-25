@@ -40,6 +40,7 @@
 # - dotnet_sdk
 # - bun
 # - helm
+# - vcpkg
 
 # rubocop:disable Style/GlobalVars
 
@@ -77,6 +78,7 @@ $LOAD_PATH << "./pub/lib"
 $LOAD_PATH << "./swift/lib"
 $LOAD_PATH << "./terraform/lib"
 $LOAD_PATH << "./uv/lib"
+$LOAD_PATH << "./vcpkg/lib"
 
 updater_image_gemfile = File.expand_path("../dependabot-updater/Gemfile", __dir__)
 updater_repo_gemfile = File.expand_path("../updater/Gemfile", __dir__)
@@ -127,6 +129,7 @@ require "dependabot/python"
 require "dependabot/swift"
 require "dependabot/terraform"
 require "dependabot/uv"
+require "dependabot/vcpkg"
 
 # GitHub credentials with write permission to the repo you want to update
 # (so that you can create a new branch, commit and pull request).
@@ -330,7 +333,7 @@ end
 valid_package_managers = %w(
   bundler pip npm_and_yarn maven gradle cargo hex composer nuget go_modules elm
   git_submodules docker docker_compose terraform pub swift devcontainers dotnet_sdk
-  bun helm uv python github_actions
+  bun helm uv python github_actions vcpkg
 )
 unless valid_package_managers.include?(ARGV[0])
   puts "Invalid package manager: #{ARGV[0]}"
