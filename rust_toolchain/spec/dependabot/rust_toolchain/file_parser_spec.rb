@@ -156,7 +156,7 @@ RSpec.describe Dependabot::RustToolchain::FileParser do
       let(:dependency_files) { [] }
 
       it "raises an error" do
-        expect { parser.parse }.to raise_error("No dependency files!")
+        expect { parser.parse }.to raise_error(/Could not find any dependency files to parse/)
       end
     end
   end
@@ -179,7 +179,7 @@ RSpec.describe Dependabot::RustToolchain::FileParser do
       let(:dependency_files) { [] }
 
       it "raises an error" do
-        expect { parser.send(:check_required_files) }.to raise_error("No dependency files!")
+        expect { parser.send(:check_required_files) }.to raise_error(/Could not find any dependency files to parse/)
       end
     end
   end

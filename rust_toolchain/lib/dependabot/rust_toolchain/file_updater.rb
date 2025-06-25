@@ -45,7 +45,8 @@ module Dependabot
       def check_required_files
         return if dependency_files.any?
 
-        raise "No global.json configuration!"
+        raise "Could not find any dependency files to update. " \
+              "Expected to find a file named 'rust-toolchain' or 'rust-toolchain.toml'."
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
