@@ -48,43 +48,49 @@ Create a new top-level ecosystem directory. Your ecosystem should be implemented
 
 You must implement these four core classes for your ecosystem:
 
-- **FileFetcher** (`file_fetcher.rb`): Handles fetching manifest and lockfiles from repositories
-- **FileParser** (`file_parser.rb`): Parses manifest files to extract dependency information  
-- **UpdateChecker** (`update_checker.rb`): Checks for available updates to dependencies
-- **FileUpdater** (`file_updater.rb`): Updates manifest and lockfiles with new dependency versions
+- FileFetcher (`file_fetcher.rb`): Handles fetching manifest and lockfiles from repositories, inherits from `Dependabot::FileFetchers::Base`
+- FileParser (`file_parser.rb`): Parses manifest files to extract dependency information, inherits from `Dependabot::FileParsers::Base`
+- UpdateChecker (`update_checker.rb`): Checks for available updates to dependencies, inherits from `Dependabot::UpdateCheckers::Base`
+- FileUpdater (`file_updater.rb`): Updates manifest and lockfiles with new dependency versions, inherits from `Dependabot::FileUpdaters::Base`
 
 #### Optional Classes
 
 You may also implement these additional classes based on your ecosystem's needs:
 
-- **MetadataFinder**: Finds metadata about packages (changelogs, release notes, etc.)
-- **RequirementsUpdater**: Updates version requirements in manifest files
-- **Version**: Handles version parsing and comparison logic
+- **MetadataFinder**: Finds metadata about packages (changelogs, release notes, etc.), inherits from `Dependabot::MetadataFinders::Base`
+- **Requirements**: Updates version requirements in manifest files, inherits from `Dependabot::Requirement`
+- **Version**: Handles version parsing and comparison logic, inherits from `Dependabot::Version`
 - **Helper classes**: Any additional utilities your ecosystem requires
 
 #### File Structure Example
 
 ```
-new_ecosystem/lib/dependabot/new_ecosystem/
-├── file_fetcher.rb          # Required
-├── file_parser.rb           # Required
-├── update_checker.rb        # Required
-├── file_updater.rb          # Required
-├── metadata_finder.rb       # Optional
-├── requirements_updater.rb  # Optional
-├── version.rb              # Optional
-└── helpers/
-    └── (any helper classes)
+new_ecosystem/lib/dependabot/
+├── new_ecosystem.rb         # Main registration file
+└── new_ecosystem/
+    ├── file_fetcher.rb          # Required
+    ├── file_parser.rb           # Required
+    ├── update_checker.rb        # Required
+    ├── file_updater.rb          # Required
+    ├── metadata_finder.rb       # Optional
+    ├── requirements_updater.rb  # Optional
+    ├── version.rb              # Optional
+    ├── requirement.rb          # Optional
+    └── helpers/
+        └── (any helper classes)
 ```
 
 ### 3. Register Your Ecosystem
 
-Add your ecosystem to the main Dependabot configuration:
+**Main Registration File**
 
-1. **Add to ECOSYSTEMS constant**: Register your ecosystem in the appropriate configuration file
-2. **Update file fetcher mapping**: Ensure your file fetcher is properly mapped
-3. **Add configuration schema**: Define the configuration options for your ecosystem
-4. **Implement beta feature flag**: Hide file fetching behind the `allow_beta_ecosystems?` feature flag function to ensure your ecosystem only operates when beta ecosystems are enabled
+Create a main registration file at `new_ecosystem/lib/dependabot/new_ecosystem.rb` that requires all your classes and registers them with Dependabot. For an example, see the [Docker ecosystem registration file](https://github.com/dependabot/dependabot-core/blob/main/docker/lib/dependabot/docker.rb).
+
+This file serves as the entry point for your ecosystem and ensures all classes are properly loaded and registered with Dependabot's internal lookup systems.
+
+**Beta Feature Flag Implementation**
+
+Implement beta feature flag: Hide file fetching behind the `allow_beta_ecosystems?` feature flag function to ensure your ecosystem only operates when beta ecosystems are enabled. This method will be available in your `FileFetcher` class since it inherits from `Dependabot::FileFetchers::Base`.
 
 ### 4. Add Comprehensive Unit Tests
 
