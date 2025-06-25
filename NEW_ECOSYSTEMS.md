@@ -15,7 +15,7 @@ Before you begin, research and decide on the following:
 
 ### Create an Issue First
 
-**Before starting any implementation work**, create an issue in the [dependabot-core](https://github.com/dependabot/dependabot-core) repository describing:
+**Before starting any implementation work**, check if there's already an [existing issue](https://github.com/dependabot/dependabot-core/issues) in the dependabot-core repository for the ecosystem you want to add. If there is an existing issue, you can use that issue to coordinate your contribution instead of creating a new one, since all interested users are likely already following the existing issue.
 
 - The ecosystem you want to add
 - Your implementation plan (including cooldown support)
