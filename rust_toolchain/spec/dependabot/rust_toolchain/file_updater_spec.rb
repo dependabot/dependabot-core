@@ -183,7 +183,7 @@ RSpec.describe Dependabot::RustToolchain::FileUpdater do
       let(:dependency_files) { [] }
 
       it "raises an error" do
-        expect { updater.send(:check_required_files) }.to raise_error("No global.json configuration!")
+        expect { updater.send(:check_required_files) }.to raise_error(/Could not find any dependency files to update/)
       end
     end
   end

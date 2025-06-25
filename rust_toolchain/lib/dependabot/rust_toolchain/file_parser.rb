@@ -48,7 +48,8 @@ module Dependabot
       def check_required_files
         return if dependency_files.any?
 
-        raise "No dependency files!"
+        raise "Could not find any dependency files to parse. " \
+              "Expected to find a file named 'rust-toolchain' or 'rust-toolchain.toml'."
       end
 
       sig { params(dependency_file: Dependabot::DependencyFile).returns(T.nilable(Dependabot::Dependency)) }
