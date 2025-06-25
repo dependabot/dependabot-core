@@ -26,8 +26,9 @@ internal class RefreshVersionUpdatePullRequestHandler : IUpdateHandler
         return job.UpdatingAPullRequest;
     }
 
-    public async Task HandleAsync(Job job, DirectoryInfo repoContentsPath, string baseCommitSha, IDiscoveryWorker discoveryWorker, IAnalyzeWorker analyzeWorker, IUpdaterWorker updaterWorker, IApiHandler apiHandler, ExperimentsManager experimentsManager, ILogger logger)
+    public async Task HandleAsync(Job job, DirectoryInfo originalRepoContentsPath, DirectoryInfo? caseInsensitiveRepoContentsPath, string baseCommitSha, IDiscoveryWorker discoveryWorker, IAnalyzeWorker analyzeWorker, IUpdaterWorker updaterWorker, IApiHandler apiHandler, ExperimentsManager experimentsManager, ILogger logger)
     {
+        var repoContentsPath = caseInsensitiveRepoContentsPath ?? originalRepoContentsPath;
         var jobDependencies = job.Dependencies.ToHashSet(StringComparer.OrdinalIgnoreCase);
         foreach (var directory in job.GetAllDirectories())
         {
@@ -39,7 +40,7 @@ internal class RefreshVersionUpdatePullRequestHandler : IUpdateHandler
                 return;
             }
 
-            var updatedDependencyList = RunWorker.GetUpdatedDependencyListFromDiscovery(discoveryResult);
+            var updatedDependencyList = RunWorker.GetUpdatedDependencyListFromDiscovery(discoveryResult, originalRepoContentsPath.FullName);
             await apiHandler.UpdateDependencyList(updatedDependencyList);
             await this.ReportUpdaterStarted(apiHandler);
 
@@ -73,12 +74,12 @@ internal class RefreshVersionUpdatePullRequestHandler : IUpdateHandler
 
             logger.Info($"Updating dependencies: {string.Join(", ", relevantUpdateOperationsToPerform.Select(g => g.Key).Distinct().OrderBy(d => d, StringComparer.OrdinalIgnoreCase))}");
 
-            var tracker = new ModifiedFilesTracker(repoContentsPath);
+            var tracker = new ModifiedFilesTracker(originalRepoContentsPath);
             await tracker.StartTrackingAsync(discoveryResult);
-            foreach (var dependencyUpdatesToPeform in relevantUpdateOperationsToPerform)
+            foreach (var dependencyUpdatesToPerform in relevantUpdateOperationsToPerform)
             {
-                var dependencyName = dependencyUpdatesToPeform.Key;
-                var dependencyInfosToUpdate = dependencyUpdatesToPeform.Value
+                var dependencyName = dependencyUpdatesToPerform.Key;
+                var dependencyInfosToUpdate = dependencyUpdatesToPerform.Value
                     .Where(o => !job.IsDependencyIgnoredByNameOnly(o.Dependency.Name))
                     .Select(o => (o.ProjectPath, o.Dependency, RunWorker.GetDependencyInfo(job, o.Dependency)))
                     .ToArray();
