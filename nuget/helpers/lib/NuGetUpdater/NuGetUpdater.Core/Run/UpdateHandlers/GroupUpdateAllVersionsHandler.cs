@@ -38,23 +38,24 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
         return true;
     }
 
-    public async Task HandleAsync(Job job, DirectoryInfo repoContentsPath, string baseCommitSha, IDiscoveryWorker discoveryWorker, IAnalyzeWorker analyzeWorker, IUpdaterWorker updaterWorker, IApiHandler apiHandler, ExperimentsManager experimentsManager, ILogger logger)
+    public async Task HandleAsync(Job job, DirectoryInfo originalRepoContentsPath, DirectoryInfo? caseInsensitiveRepoContentsPath, string baseCommitSha, IDiscoveryWorker discoveryWorker, IAnalyzeWorker analyzeWorker, IUpdaterWorker updaterWorker, IApiHandler apiHandler, ExperimentsManager experimentsManager, ILogger logger)
     {
         // group update, do all directories and merge
         // ungrouped update, do each dir separate
         await this.ReportUpdaterStarted(apiHandler);
         if (job.DependencyGroups.Length > 0)
         {
-            await RunGroupedDependencyUpdates(job, repoContentsPath, baseCommitSha, discoveryWorker, analyzeWorker, updaterWorker, apiHandler, experimentsManager, logger);
+            await RunGroupedDependencyUpdates(job, originalRepoContentsPath, caseInsensitiveRepoContentsPath, baseCommitSha, discoveryWorker, analyzeWorker, updaterWorker, apiHandler, experimentsManager, logger);
         }
         else
         {
-            await RunUngroupedDependencyUpdates(job, repoContentsPath, baseCommitSha, discoveryWorker, analyzeWorker, updaterWorker, apiHandler, experimentsManager, logger);
+            await RunUngroupedDependencyUpdates(job, originalRepoContentsPath, caseInsensitiveRepoContentsPath, baseCommitSha, discoveryWorker, analyzeWorker, updaterWorker, apiHandler, experimentsManager, logger);
         }
     }
 
-    private async Task RunGroupedDependencyUpdates(Job job, DirectoryInfo repoContentsPath, string baseCommitSha, IDiscoveryWorker discoveryWorker, IAnalyzeWorker analyzeWorker, IUpdaterWorker updaterWorker, IApiHandler apiHandler, ExperimentsManager experimentsManager, ILogger logger)
+    private async Task RunGroupedDependencyUpdates(Job job, DirectoryInfo originalRepoContentsPath, DirectoryInfo? caseInsensitiveRepoContentsPath, string baseCommitSha, IDiscoveryWorker discoveryWorker, IAnalyzeWorker analyzeWorker, IUpdaterWorker updaterWorker, IApiHandler apiHandler, ExperimentsManager experimentsManager, ILogger logger)
     {
+        var repoContentsPath = caseInsensitiveRepoContentsPath ?? originalRepoContentsPath;
         foreach (var group in job.DependencyGroups)
         {
             var existingGroupPr = job.ExistingGroupPullRequests.FirstOrDefault(pr => pr.DependencyGroupName == group.Name);
@@ -79,10 +80,10 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                     return;
                 }
 
-                var tracker = new ModifiedFilesTracker(repoContentsPath);
+                var tracker = new ModifiedFilesTracker(originalRepoContentsPath);
                 await tracker.StartTrackingAsync(discoveryResult);
 
-                var updatedDependencyList = RunWorker.GetUpdatedDependencyListFromDiscovery(discoveryResult);
+                var updatedDependencyList = RunWorker.GetUpdatedDependencyListFromDiscovery(discoveryResult, originalRepoContentsPath.FullName);
                 await apiHandler.UpdateDependencyList(updatedDependencyList);
 
                 var updateOperationsToPerform = RunWorker.GetUpdateOperations(discoveryResult).ToArray();
@@ -169,8 +170,9 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
         }
     }
 
-    private async Task RunUngroupedDependencyUpdates(Job job, DirectoryInfo repoContentsPath, string baseCommitSha, IDiscoveryWorker discoveryWorker, IAnalyzeWorker analyzeWorker, IUpdaterWorker updaterWorker, IApiHandler apiHandler, ExperimentsManager experimentsManager, ILogger logger)
+    private async Task RunUngroupedDependencyUpdates(Job job, DirectoryInfo originalRepoContentsPath, DirectoryInfo? caseInsensitiveRepoContentsPath, string baseCommitSha, IDiscoveryWorker discoveryWorker, IAnalyzeWorker analyzeWorker, IUpdaterWorker updaterWorker, IApiHandler apiHandler, ExperimentsManager experimentsManager, ILogger logger)
     {
+        var repoContentsPath = caseInsensitiveRepoContentsPath ?? originalRepoContentsPath;
         foreach (var directory in job.GetAllDirectories())
         {
             var discoveryResult = await discoveryWorker.RunAsync(repoContentsPath.FullName, directory);
@@ -181,10 +183,10 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                 return;
             }
 
-            var tracker = new ModifiedFilesTracker(repoContentsPath);
+            var tracker = new ModifiedFilesTracker(originalRepoContentsPath);
             await tracker.StartTrackingAsync(discoveryResult);
 
-            var updatedDependencyList = RunWorker.GetUpdatedDependencyListFromDiscovery(discoveryResult);
+            var updatedDependencyList = RunWorker.GetUpdatedDependencyListFromDiscovery(discoveryResult, originalRepoContentsPath.FullName);
             await apiHandler.UpdateDependencyList(updatedDependencyList);
 
             var updateOperationsPerformed = new List<UpdateOperationBase>();
