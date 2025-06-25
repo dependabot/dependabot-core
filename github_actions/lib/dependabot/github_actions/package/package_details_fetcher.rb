@@ -8,6 +8,7 @@ require "sorbet-runtime"
 require "time"
 
 require "dependabot/errors"
+require "dependabot/github_actions/helpers"
 require "dependabot/github_actions/requirement"
 require "dependabot/github_actions/update_checker"
 require "dependabot/github_actions/version"
@@ -41,6 +42,8 @@ module Dependabot
           @raise_on_ignored = raise_on_ignored
           @ignored_versions = ignored_versions
           @security_advisories = security_advisories
+
+          @git_helper = T.let(git_helper, Dependabot::GithubActions::Helpers::Githelper)
         end
 
         sig { returns(Dependabot::Dependency) }
@@ -123,7 +126,7 @@ module Dependabot
         sig { returns(Dependabot::GitCommitChecker) }
         def git_commit_checker
           @git_commit_checker ||= T.let(
-            git_commit_checker_for(nil),
+            @git_helper.git_commit_checker,
             T.nilable(Dependabot::GitCommitChecker)
           )
         end
@@ -144,30 +147,9 @@ module Dependabot
           other_split[0..base_split.length - 1] == base_split
         end
 
-        sig { params(source: T.nilable(T::Hash[Symbol, String])).returns(Dependabot::GitCommitChecker) }
-        def git_commit_checker_for(source)
-          @git_commit_checkers ||= T.let(
-            {},
-            T.nilable(T::Hash[T.nilable(T::Hash[Symbol, String]), Dependabot::GitCommitChecker])
-          )
-
-          @git_commit_checkers[source] ||= Dependabot::GitCommitChecker.new(
-            dependency: dependency,
-            credentials: credentials,
-            ignored_versions: ignored_versions,
-            raise_on_ignored: raise_on_ignored,
-            consider_version_branches_pinned: true,
-            dependency_source_details: source
-          )
-        end
-
         sig { returns(T.nilable(Dependabot::Version)) }
         def current_version
-          @current_version ||=
-            T.let(
-              dependency.numeric_version,
-              T.nilable(Dependabot::Version)
-            )
+          @current_version ||= T.let(dependency.numeric_version, T.nilable(Dependabot::Version))
         end
 
         sig { returns(T.nilable(String)) }
@@ -241,6 +223,13 @@ module Dependabot
         sig { returns(T::Boolean) }
         def git_dependency?
           git_commit_checker.git_dependency?
+        end
+
+        sig { returns(Dependabot::GithubActions::Helpers::Githelper) }
+        def git_helper
+          Helpers::Githelper.new(dependency: dependency, credentials: credentials,
+                                 ignored_versions: ignored_versions, raise_on_ignored: raise_on_ignored,
+                                 consider_version_branches_pinned: false, dependency_source_details: nil)
         end
       end
     end

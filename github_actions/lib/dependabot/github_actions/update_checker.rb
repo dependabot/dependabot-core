@@ -146,7 +146,7 @@ module Dependabot
           return new_tag.fetch(:tag)
         end
 
-        source_git_commit_checker = git_commit_checker_for(source)
+        source_git_commit_checker = git_helper.git_commit_checker_for(source)
 
         # Return the git tag if updating a pinned version
         if source_git_commit_checker.pinned_ref_looks_like_version? &&
@@ -178,27 +178,14 @@ module Dependabot
 
       sig { returns(Dependabot::GitCommitChecker) }
       def git_commit_checker
-        @git_commit_checker ||= T.let(
-          git_commit_checker_for(nil),
-          T.nilable(Dependabot::GitCommitChecker)
-        )
+        @git_commit_checker ||= T.let(git_helper.git_commit_checker, T.nilable(Dependabot::GitCommitChecker))
       end
 
-      sig { params(source: T.nilable(T::Hash[Symbol, String])).returns(Dependabot::GitCommitChecker) }
-      def git_commit_checker_for(source)
-        @git_commit_checkers ||= T.let(
-          {},
-          T.nilable(T::Hash[T.nilable(T::Hash[Symbol, String]), Dependabot::GitCommitChecker])
-        )
-
-        @git_commit_checkers[source] ||= Dependabot::GitCommitChecker.new(
-          dependency: dependency,
-          credentials: credentials,
-          ignored_versions: ignored_versions,
-          raise_on_ignored: raise_on_ignored,
-          consider_version_branches_pinned: true,
-          dependency_source_details: source
-        )
+      sig { returns(Dependabot::GithubActions::Helpers::Githelper) }
+      def git_helper
+        Helpers::Githelper.new(dependency: dependency, credentials: credentials,
+                               ignored_versions: ignored_versions, raise_on_ignored: raise_on_ignored,
+                               consider_version_branches_pinned: false, dependency_source_details: nil)
       end
 
       sig { params(sha: String).returns(T.nilable(String)) }
