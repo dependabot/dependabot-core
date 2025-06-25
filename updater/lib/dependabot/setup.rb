@@ -16,41 +16,43 @@ Dependabot.logger = Logger.new($stdout).tap do |logger|
   logger.formatter = Dependabot::Logger::BasicFormatter.new
 end
 
+# Pattern for Sentry app directories
+SENTRY_APP_DIRS_PATTERN = %r{(
+  dependabot-updater/bin|
+  dependabot-updater/config|
+  dependabot-updater/lib|
+  common|
+  bundler|
+  cargo|
+  composer|
+  devcontainers|
+  docker_compose|
+  docker|
+  dotnet_sdk|
+  elm|
+  git_submodules|
+  github_actions|
+  go_modules|
+  gradle|
+  helm|
+  hex|
+  julia|
+  maven|
+  npm_and_yarn|
+  nuget|
+  pub|
+  python|
+  silent|
+  swift|
+  terraform|
+  uv
+)}x
+
 Sentry.init do |config|
   config.release = ENV.fetch("DEPENDABOT_UPDATER_VERSION")
   config.logger = Dependabot.logger
   config.project_root = File.expand_path("../../..", __dir__)
-
-  config.app_dirs_pattern = %r{(
-    dependabot-updater/bin|
-    dependabot-updater/config|
-    dependabot-updater/lib|
-    common|
-    bundler|
-    cargo|
-    composer|
-    devcontainers
-    docker_compose|
-    docker|
-    dotnet_sdk|
-    elm|
-    git_submodules|
-    github_actions|
-    go_modules|
-    gradle|
-    helm|
-    hex|
-    maven|
-    npm_and_yarn|
-    nuget|
-    pub|
-    python|
-    silent|
-    swift|
-    terraform|
-    uv|
-  )}x
-
+  config.app_dirs_pattern = SENTRY_APP_DIRS_PATTERN
   config.before_send = ->(event, hint) { Dependabot::Sentry.process_chain(event, hint) }
   config.propagate_traces = false
   config.instrumenter = ::Dependabot::OpenTelemetry.should_configure? ? :otel : :sentry
@@ -75,6 +77,7 @@ require "dependabot/go_modules"
 require "dependabot/gradle"
 require "dependabot/helm"
 require "dependabot/hex"
+require "dependabot/julia"
 require "dependabot/maven"
 require "dependabot/npm_and_yarn"
 require "dependabot/nuget"

@@ -72,6 +72,7 @@ module Dependabot
         "gomod" => "go_modules",
         "gradle" => "gradle",
         "helm" => "helm",
+        "julia" => "julia",
         "maven" => "maven",
         "mix" => "hex",
         "npm" => "npm_and_yarn",
