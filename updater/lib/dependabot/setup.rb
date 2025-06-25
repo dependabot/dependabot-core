@@ -16,6 +16,7 @@ Dependabot.logger = Logger.new($stdout).tap do |logger|
   logger.formatter = Dependabot::Logger::BasicFormatter.new
 end
 
+# rubocop:disable Metrics/BlockLength
 Sentry.init do |config|
   config.release = ENV.fetch("DEPENDABOT_UPDATER_VERSION")
   config.logger = Dependabot.logger
@@ -45,6 +46,7 @@ Sentry.init do |config|
     nuget|
     pub|
     python|
+    rust_toolchain|
     silent|
     swift|
     terraform|
@@ -55,6 +57,7 @@ Sentry.init do |config|
   config.propagate_traces = false
   config.instrumenter = ::Dependabot::OpenTelemetry.should_configure? ? :otel : :sentry
 end
+# rubocop:enable Metrics/BlockLength
 
 Dependabot::OpenTelemetry.configure
 Dependabot::Sorbet::Runtime.silently_report_errors!
@@ -80,6 +83,7 @@ require "dependabot/npm_and_yarn"
 require "dependabot/nuget"
 require "dependabot/pub"
 require "dependabot/python"
+require "dependabot/rust_toolchain"
 require "dependabot/silent"
 require "dependabot/swift"
 require "dependabot/terraform"
