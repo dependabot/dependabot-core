@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "nokogiri"
+require "rexml/document"
 require "sorbet-runtime"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
@@ -141,6 +142,9 @@ module Dependabot
         updated_file(file: file, content: updated_content)
       end
 
+      # rubocop:disable Metrics/AbcSize
+      # rubocop:disable Metrics/CyclomaticComplexity
+      # rubocop:disable Metrics/PerceivedComplexity
       sig do
         params(
           content: String,
@@ -148,45 +152,62 @@ module Dependabot
           requirement: T::Hash[Symbol, T.untyped]
         ).returns(String)
       end
-      def add_new_declaration(content, dependency, requirement) # rubocop:disable Metrics/AbcSize
-        doc = Nokogiri::XML(content) { |config| config.default_xml.noblanks }
-        doc.remove_namespaces!
+      def add_new_declaration(content, dependency, requirement) # rubocop:disable Metrics/PerceivedComplexity
+        doc = REXML::Document.new(content)
 
-        project = doc.at_xpath("//project")
+        project = doc.get_elements("//project").first
         raise "<project> element not found in the XML content" unless project
 
-        dependency_management = project.at_xpath("dependencyManagement")
+        # Detect indentation of the file from indentation of the project tag children
+        base_indentation = project.children.find { |child| child.to_s.start_with?("\n") }&.to_s || "\n  "
+        indent = base_indentation.to_s.scan(/ +$/).last&.length || 2
+        dependency_management_indentation = base_indentation + (" " * indent)
+        dependencies_indentation = dependency_management_indentation + (" " * indent)
+        dependency_indentation = dependencies_indentation + (" " * indent)
+
+        dependency_management = project.get_elements("dependencyManagement").first
+        dependency_management_created = false
         unless dependency_management
-          dependency_management = Nokogiri::XML::Node.new("dependencyManagement", doc)
-          dependencies = Nokogiri::XML::Node.new("dependencies", doc)
-          dependency_management.add_child(dependencies)
-          project.add_child(dependency_management)
+          # If there's no dependencyManagement element, create one
+          project.add_text(base_indentation)
+          dependency_management = REXML::Element.new("dependencyManagement", project)
+          dependency_management_created = true
         end
 
-        dependencies = dependency_management.at_xpath("dependencies")
+        dependencies = dependency_management.get_elements("dependencies").first
+        dependencies_created = false
         unless dependencies
-          dependencies = Nokogiri::XML::Node.new("dependencies", doc)
-          dependency_management.add_child(dependencies)
+          # If there's no dependencies element, create one
+          dependency_management.add_text(dependency_management_indentation)
+          dependencies = REXML::Element.new("dependencies", dependency_management)
+          dependencies_created = true
         end
 
-        dependency_node = Nokogiri::XML::Node.new("dependency", doc)
+        # Narrow down the indentation of the dependency node by looking at other children in the dependencies element
+        # in case indentation is not consistent with parent elements or if no items are present use default indentation
+        dependencies_indentation = dependencies.children.find do |child|
+          child.to_s.start_with?("\n")
+        end&.to_s || dependencies_indentation
 
-        group_id = Nokogiri::XML::Node.new("groupId", doc)
-        group_id.content = dependency.name.split(":").first
-        dependency_node.add_child(group_id)
+        if dependencies.children.last&.to_s&.start_with?("\n")
+          dependencies.children.last.value = dependencies_indentation
+        else
+          dependencies.add_text(dependencies_indentation)
+        end
 
-        artifact_id = Nokogiri::XML::Node.new("artifactId", doc)
-        artifact_id.content = dependency.name.split(":").last
-        dependency_node.add_child(artifact_id)
+        # Create the dependency element with the required fields, adding the appropriate indentation as text nodes
+        add_dependency_entry(dependency, requirement, dependencies, dependency_indentation, dependencies_indentation)
+        dependencies.add_text(dependency_management_indentation)
 
-        version = Nokogiri::XML::Node.new("version", doc)
-        version.content = requirement.fetch(:requirement)
-        dependency_node.add_child(version)
+        dependency_management.add_text(base_indentation) if dependencies_created
+        project.add_text("\n") if dependency_management_created
 
-        dependencies.add_child(dependency_node)
-
-        doc.to_xml
+        doc.to_s
       end
+
+      # rubocop:enable Metrics/AbcSize
+      # rubocop:enable Metrics/CyclomaticComplexity
+      # rubocop:enable Metrics/PerceivedComplexity
 
       sig do
         params(
@@ -266,6 +287,26 @@ module Dependabot
           dependency_files.select { |f| f.name.end_with?("pom.xml") },
           T.nilable(T::Array[Dependabot::DependencyFile])
         )
+      end
+
+      sig do
+        params(dependency: Dependabot::Dependency, requirement: T::Hash[Symbol, T.untyped],
+               dependencies_node: REXML::Element, current_indentation_level: String,
+               parent_indentation_level: String).void
+      end
+      def add_dependency_entry(dependency, requirement, dependencies_node, current_indentation_level,
+                               parent_indentation_level)
+        dependency_node = REXML::Element.new("dependency", dependencies_node)
+        dependency_node.add_text(current_indentation_level)
+        group_id = REXML::Element.new("groupId", dependency_node)
+        group_id.text = dependency.name.split(":").first
+        dependency_node.add_text(current_indentation_level)
+        artifact_id = REXML::Element.new("artifactId", dependency_node)
+        artifact_id.text = dependency.name.split(":").last
+        dependency_node.add_text(current_indentation_level)
+        version = REXML::Element.new("version", dependency_node)
+        version.text = requirement.fetch(:requirement)
+        dependency_node.add_text(parent_indentation_level)
       end
     end
   end
