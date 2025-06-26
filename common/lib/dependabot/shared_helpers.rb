@@ -443,7 +443,7 @@ module Dependabot
         output_observer: CommandHelpers::OutputObserver
       ).returns(String)
     end
-    def self.run_shell_command(command, # rubocop:disable Metrics/MethodLength
+    def self.run_shell_command(command,
                                allow_unsafe_shell_command: false,
                                cwd: nil,
                                env: {},
@@ -467,17 +467,9 @@ module Dependabot
         }
         kwargs[:output_observer] = output_observer if output_observer
 
-        CommandHelpers.capture3_with_timeout(
-          env_cmd,
-          **kwargs
-        )
-
-        # If the command is a string, we need to convert it to an array
         stdout, stderr, process = CommandHelpers.capture3_with_timeout(
           env_cmd,
-          stderr_to_stdout: stderr_to_stdout,
-          timeout: timeout,
-          output_observer: output_observer
+          **kwargs
         )
       elsif stderr_to_stdout
         stdout, process = Open3.capture2e(env || {}, cmd, opts)
