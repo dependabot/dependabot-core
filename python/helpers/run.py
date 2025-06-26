@@ -1,7 +1,7 @@
-import sys
 import json
+import sys
 
-from lib import parser, hasher
+from lib import hasher, parser
 
 if __name__ == "__main__":
     args = json.loads(sys.stdin.read())
@@ -20,3 +20,5 @@ if __name__ == "__main__":
         print(hasher.get_pipfile_hash(*args["args"]))
     elif args["function"] == "get_pyproject_hash":
         print(hasher.get_pyproject_hash(*args["args"]))
+    elif args["function"] == "get_pdm_project_hash":
+        print(hasher.get_pdm_project_hash(*args["args"]))

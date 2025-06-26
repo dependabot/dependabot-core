@@ -929,4 +929,84 @@ RSpec.describe Dependabot::Python::UpdateChecker do
       end
     end
   end
+
+  describe "PDM support" do
+    let(:dependency_files) { [pyproject, pdm_lock] }
+    let(:pyproject) do
+      Dependabot::DependencyFile.new(
+        name: "pyproject.toml",
+        content: fixture("projects/pdm", "pyproject.toml")
+      )
+    end
+    let(:pdm_lock) do
+      Dependabot::DependencyFile.new(
+        name: "pdm.lock",
+        content: fixture("projects/pdm", "pdm.lock")
+      )
+    end
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "requests",
+        version: "2.25.0",
+        requirements: [{
+          file: "pyproject.toml",
+          requirement: "~=2.25",
+          groups: ["dependencies"],
+          source: nil
+        }],
+        package_manager: "pip"
+      )
+    end
+
+    before do
+      stub_request(:get, "https://pypi.org/pypi/requests/json")
+        .to_return(
+          status: 200,
+          body: fixture("pypi", "pypi_response_requests.json")
+        )
+    end
+
+    describe "#pdm_based" do
+      it "returns true for PDM projects with lock files" do
+        expect(checker.send(:pdm_based?)).to be(true)
+      end
+
+      context "without a lock file" do
+        let(:dependency_files) { [pyproject] }
+
+        it "returns true for PDM projects without lock files" do
+          expect(checker.send(:pdm_based?)).to be(true)
+        end
+      end
+    end
+
+    describe "#resolver_type" do
+      subject(:resolver_type) { checker.send(:resolver_type) }
+
+      context "with pdm.lock" do
+        let(:dependency_files) { [pyproject, pdm_lock] }
+
+        it { is_expected.to eq(:pdm) }
+      end
+
+      context "without pdm.lock" do
+        let(:dependency_files) { [pyproject] }
+
+        it { is_expected.to eq(:pdm) }
+      end
+    end
+
+    describe "#latest_resolvable_version" do
+      subject(:latest_resolvable_version) { checker.latest_resolvable_version }
+
+      it "uses PDM version resolver" do
+        dummy_resolver = instance_double(described_class::PdmVersionResolver)
+        allow(described_class::PdmVersionResolver).to receive(:new)
+          .and_return(dummy_resolver)
+        allow(dummy_resolver).to receive(:latest_resolvable_version)
+          .and_return(Gem::Version.new("2.30.0"))
+        expect(latest_resolvable_version).to eq(Gem::Version.new("2.30.0"))
+      end
+    end
+  end
 end

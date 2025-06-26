@@ -16,6 +16,7 @@ module Dependabot
       require_relative "file_updater/pip_compile_file_updater"
       require_relative "file_updater/poetry_file_updater"
       require_relative "file_updater/requirement_file_updater"
+      require_relative "file_updater/pdm_file_updater"
 
       sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
@@ -28,7 +29,8 @@ module Dependabot
           /^.*setup\.cfg$/,          # Match setup.cfg at any level
           /^.*pyproject\.toml$/,     # Match pyproject.toml at any level
           /^.*pyproject\.lock$/,     # Match pyproject.lock at any level
-          /^.*poetry\.lock$/ # Match poetry.lock at any level
+          /^.*poetry\.lock$/,        # Match poetry.lock at any level
+          /^.*pdm\.lock$/            # Match pdm.lock at any level
         ]
       end
 
@@ -38,6 +40,7 @@ module Dependabot
           case resolver_type
           when :pipfile then updated_pipfile_based_files
           when :poetry then updated_poetry_based_files
+          when :pdm then updated_pdm_based_files
           when :pip_compile then updated_pip_compile_based_files
           when :requirements then updated_requirement_based_files
           else raise "Unexpected resolver type: #{resolver_type}"
@@ -64,7 +67,7 @@ module Dependabot
         changed_req_files = changed_reqs.map { |r| r.fetch(:file) }
 
         # If there are no requirements then this is a sub-dependency. It
-        # must come from one of Pipenv, Poetry or pip-tools, and can't come
+        # must come from one of Pipenv, Poetry, PDM or pip-tools, and can't come
         # from the first two unless they have a lockfile.
         return subdependency_resolver if changed_reqs.none?
 
@@ -74,6 +77,7 @@ module Dependabot
 
         if changed_req_files.any?("pyproject.toml")
           return :poetry if poetry_based?
+          return :pdm if pdm_based?
 
           return :requirements
         end
@@ -88,6 +92,7 @@ module Dependabot
       def subdependency_resolver
         return :pipfile if pipfile_lock
         return :poetry if poetry_lock
+        return :pdm if pdm_lock
         return :pip_compile if pip_compile_files.any?
 
         raise "Claimed to be a sub-dependency, but no lockfile exists!"
@@ -106,6 +111,15 @@ module Dependabot
       sig { returns(T::Array[DependencyFile]) }
       def updated_poetry_based_files
         PoetryFileUpdater.new(
+          dependencies: dependencies,
+          dependency_files: dependency_files,
+          credentials: credentials
+        ).updated_dependency_files
+      end
+
+      sig { returns(T::Array[DependencyFile]) }
+      def updated_pdm_based_files
+        PdmFileUpdater.new(
           dependencies: dependencies,
           dependency_files: dependency_files,
           credentials: credentials
@@ -163,6 +177,13 @@ module Dependabot
         !TomlRB.parse(pyproject&.content).dig("tool", "poetry").nil?
       end
 
+      sig { returns(T::Boolean) }
+      def pdm_based?
+        return false unless pyproject
+
+        !TomlRB.parse(pyproject&.content).dig("tool", "pdm").nil? || !pdm_lock.nil?
+      end
+
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def pipfile
         @pipfile ||= T.let(get_original_file("Pipfile"), T.nilable(Dependabot::DependencyFile))
@@ -181,6 +202,11 @@ module Dependabot
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def poetry_lock
         @poetry_lock ||= T.let(get_original_file("poetry.lock"), T.nilable(Dependabot::DependencyFile))
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def pdm_lock
+        @pdm_lock ||= T.let(get_original_file("pdm.lock"), T.nilable(Dependabot::DependencyFile))
       end
 
       sig { returns(T::Array[DependencyFile]) }
