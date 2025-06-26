@@ -60,9 +60,11 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       credentials: github_credentials,
       security_advisories: security_advisories,
       ignored_versions: ignored_versions,
-      raise_on_ignored: raise_on_ignored
+      raise_on_ignored: raise_on_ignored,
+      update_cooldown: update_cooldown
     )
   end
+  let(:update_cooldown) { nil }
 
   before do
     stub_request(:get, service_pack_url)
@@ -425,6 +427,34 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       end
     end
 
+    context "when a git commit SHA pointing to the tip of a version tag with cooldown" do
+      let(:upload_pack_fixture) { "setup-node" }
+      let(:v1_0_1_tag) { "v1.0.1" }
+
+      context "when there's a higher version tag with cooldown disabled" do
+        let(:reference) { v1_0_1_tag }
+
+        it { is_expected.to eq(Gem::Version.new("1.1.0")) }
+      end
+
+      context "when there's a higher version tag with cooldown enabled" do
+        let(:reference) { v1_0_1_tag }
+        let(:update_cooldown) do
+          Dependabot::Package::ReleaseCooldownOptions.new(default_days: 90)
+        end
+
+        before do
+          allow(Time).to receive(:now).and_return(Time.parse("2019-08-06 18:29:44 -0400"))
+          allow(Dependabot::Experiments).to receive(:enabled?)
+            .with(:enable_shared_helpers_command_timeout).and_return(true)
+          allow(Dependabot::Experiments).to receive(:enabled?)
+            .with(:enable_cooldown_for_github_actions).and_return(true)
+        end
+
+        it { is_expected.to eq(Gem::Version.new("1.0.1")) }
+      end
+    end
+
     context "when using a dependency with multiple git refs" do
       include_context "with multiple git sources"
 
@@ -441,8 +471,27 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       let(:latest_commit_in_main) { "9e487f29582587eeb4837c0552c886bb0644b6b9" }
       let(:latest_commit_in_devel) { "c7563454dd4fbe0ea69095188860a62a19658a04" }
 
+      before do
+        allow(Time).to receive(:now).and_return(Time.parse("2022-09-07 23:33:35 +0100"))
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:enable_shared_helpers_command_timeout).and_return(true)
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:enable_cooldown_for_github_actions).and_return(true)
+      end
+
       context "when pinned to an up to date commit in the default branch" do
         let(:reference) { latest_commit_in_main }
+
+        it "returns the expected value" do
+          expect(latest_version).to eq(latest_commit_in_main)
+        end
+      end
+
+      context "when pinned to an up to date commit in the default branch with cooldown enabled" do
+        let(:reference) { latest_commit_in_main }
+        let(:update_cooldown) do
+          Dependabot::Package::ReleaseCooldownOptions.new(default_days: 90)
+        end
 
         it "returns the expected value" do
           expect(latest_version).to eq(latest_commit_in_main)
@@ -457,6 +506,17 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         end
       end
 
+      context "when pinned to an out of date commit in the default branch with cooldown enabled" do
+        let(:reference) { "f4b9c90516ad3bdcfdc6f4fcf8ba937d0bd40465" }
+        let(:update_cooldown) do
+          Dependabot::Package::ReleaseCooldownOptions.new(default_days: 90)
+        end
+
+        it "returns the current version" do
+          expect(latest_version).to eq("f4b9c90516ad3bdcfdc6f4fcf8ba937d0bd40465")
+        end
+      end
+
       context "when pinned to an up to date commit in a non default branch" do
         let(:reference) { latest_commit_in_devel }
 
@@ -465,11 +525,44 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         end
       end
 
+      context "when pinned to an up to date commit in a non default branch with cooldown enabled" do
+        let(:reference) { latest_commit_in_devel }
+        let(:update_cooldown) do
+          Dependabot::Package::ReleaseCooldownOptions.new(default_days: 90)
+        end
+
+        it "returns the expected value" do
+          expect(latest_version).to eq(latest_commit_in_devel)
+        end
+      end
+
+      context "when pinned to an out of date commit in a non default branch with cooldown enabled" do
+        let(:update_cooldown) do
+          Dependabot::Package::ReleaseCooldownOptions.new(default_days: 90)
+        end
+        let(:reference) { "96e7dec17bbeed08477b9edab6c3a573614b829d" }
+
+        it "returns the expected value" do
+          expect(latest_version).to eq("96e7dec17bbeed08477b9edab6c3a573614b829d")
+        end
+      end
+
       context "when pinned to an out of date commit in a non default branch" do
         let(:reference) { "96e7dec17bbeed08477b9edab6c3a573614b829d" }
 
         it "returns the expected value" do
           expect(latest_version).to eq(latest_commit_in_devel)
+        end
+      end
+
+      context "when pinned to an out of date commit in a non default branch with cooldown enabled" do
+        let(:reference) { "96e7dec17bbeed08477b9edab6c3a573614b829d" }
+        let(:update_cooldown) do
+          Dependabot::Package::ReleaseCooldownOptions.new(default_days: 90)
+        end
+
+        it "returns the expected value" do
+          expect(latest_version).to eq("96e7dec17bbeed08477b9edab6c3a573614b829d")
         end
       end
     end

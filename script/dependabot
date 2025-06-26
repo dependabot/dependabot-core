@@ -7,6 +7,7 @@ dependabot \
   -v "$(pwd)"/updater/bin:/home/dependabot/dependabot-updater/bin \
   -v "$(pwd)"/updater/lib:/home/dependabot/dependabot-updater/lib \
   -v "$(pwd)"/bin:/home/dependabot/bin \
+  -v "$(pwd)"/bun:/home/dependabot/bun \
   -v "$(pwd)"/bundler:/home/dependabot/bundler \
   -v "$(pwd)"/cargo:/home/dependabot/cargo \
   -v "$(pwd)"/common:/home/dependabot/common \
@@ -28,6 +29,5 @@ dependabot \
   -v "$(pwd)"/python:/home/dependabot/python \
   -v "$(pwd)"/swift:/home/dependabot/swift \
   -v "$(pwd)"/terraform:/home/dependabot/terraform \
-  -v "$(pwd)"/bun:/home/dependabot/bun \
   -v "$(pwd)"/uv:/home/dependabot/uv \
   "$@"

@@ -126,6 +126,19 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer::DependencyGroupStrat
 
         expect(forward_namer.new_branch_name).to eql(backward_namer.new_branch_name)
       end
+
+      it "does not raise if files is empty" do
+        expect do
+          described_class.new(
+            dependencies: [dependency],
+            files: [],
+            target_branch: target_branch,
+            separator: separator,
+            dependency_group: dependency_group,
+            includes_security_fixes: includes_security_fixes
+          ).new_branch_name
+        end.not_to raise_error
+      end
     end
 
     context "with a grouped security update" do

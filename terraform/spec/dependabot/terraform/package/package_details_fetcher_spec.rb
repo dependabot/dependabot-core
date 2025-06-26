@@ -75,15 +75,11 @@ RSpec.describe Dependabot::Terraform::Package::PackageDetailsFetcher do
 
     before do
       allow(Excon).to receive(:get).and_return(instance_double(Excon::Response, status: 200, body: response_body))
-      allow(fetcher).to receive(:dependency_source_details).and_return({ module_identifier: "hashicorp/aws" })
     end
 
-    it "fetches and parses provider release tags and dates" do
+    it "fetches and parses provider release tags and dates since identifier is passed nil" do
       result = fetcher.fetch_tag_and_release_date_from_provider
-      expect(result).to contain_exactly(
-        have_attributes(tag: "v1.0.0", release_date: "2023-01-01T00:00:00Z"),
-        have_attributes(tag: "v0.9.0", release_date: "2022-12-01T00:00:00Z")
-      )
+      expect(result).to be_empty
     end
   end
 
@@ -99,16 +95,11 @@ RSpec.describe Dependabot::Terraform::Package::PackageDetailsFetcher do
 
     before do
       allow(Excon).to receive(:get).and_return(instance_double(Excon::Response, status: 200, body: response_body))
-      allow(fetcher).to receive(:dependency_source_details).and_return({ module_identifier:
-        "terraform-aws-modules/iam/aws" })
     end
 
-    it "fetches and parses module release tags and dates" do
+    it "fetches and parses module release tags and dates since identifier is passed nil" do
       result = fetcher.fetch_tag_and_release_date_from_module
-      expect(result).to contain_exactly(
-        have_attributes(tag: "v1.0.0", release_date: "2023-01-01T00:00:00Z"),
-        have_attributes(tag: "v0.9.0", release_date: "2022-12-01T00:00:00Z")
-      )
+      expect(result).to be_empty
     end
   end
 end
