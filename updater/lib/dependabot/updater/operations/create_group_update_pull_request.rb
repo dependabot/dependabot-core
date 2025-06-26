@@ -63,7 +63,10 @@ module Dependabot
             Dependabot.logger.info("Creating a pull request for '#{group.name}'")
 
             # Report any failed dependency updates before creating the PR
-            report_failed_dependency_updates_for_security_updates
+            if Dependabot::Experiments.enabled?(:enhanced_grouped_security_error_reporting)
+              report_failed_dependency_updates_for_security_updates
+            end
+
             begin
               service.create_pull_request(T.must(dependency_change), dependency_snapshot.base_commit_sha)
             rescue StandardError => e
@@ -76,7 +79,9 @@ module Dependabot
             Dependabot.logger.info("Nothing to update for Dependency Group: '#{group.name}'")
 
             # If there are no updates, we still want to report them as failed updates
-            report_failed_dependency_updates_for_security_updates
+            if Dependabot::Experiments.enabled?(:enhanced_grouped_security_error_reporting)
+              report_failed_dependency_updates_for_security_updates
+            end
           end
 
           dependency_change

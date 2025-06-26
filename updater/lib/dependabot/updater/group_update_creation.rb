@@ -62,6 +62,9 @@ module Dependabot
       # rubocop:disable Metrics/CyclomaticComplexity
       sig { params(group: Dependabot::DependencyGroup).returns(T.nilable(Dependabot::DependencyChange)) }
       def compile_all_dependency_changes_for(group)
+        # Check feature flag once for all enhanced security error reporting in this method
+        enhanced_security_reporting = Dependabot::Experiments.enabled?(:enhanced_grouped_security_error_reporting)
+
         prepare_workspace
 
         group_changes = Dependabot::Updater::DependencyGroupChangeBatch.new(
@@ -78,14 +81,16 @@ module Dependabot
 
         # If there are job dependencies not present in the dependency snapshot, record an error.
         # Skip this check for pull request updates as dependencies may have changed since the original PR.
-        dependency_names = original_dependencies.map(&:name)
-        missing_dependencies = job_dependencies - dependency_names
-        if missing_dependencies.any? && !job.updating_a_pull_request?
-          error_handler.handle_job_error(
-            error: Dependabot::DependencyNotFound.new(
-              "Job dependencies not found in the dependency snapshot: #{missing_dependencies.join(', ')}"
+        if enhanced_security_reporting
+          dependency_names = original_dependencies.map(&:name)
+          missing_dependencies = job_dependencies - dependency_names
+          if missing_dependencies.any? && !job.updating_a_pull_request?
+            error_handler.handle_job_error(
+              error: Dependabot::DependencyNotFound.new(
+                "Job dependencies not found in the dependency snapshot: #{missing_dependencies.join(', ')}"
+              )
             )
-          )
+          end
         end
 
         # A list of notices that will be used in PR messages and/or sent to the dependabot github alerts.
@@ -275,6 +280,9 @@ module Dependabot
           .returns(T::Array[Dependabot::Dependency])
       end
       def compile_updates_for(dependency, dependency_files, group) # rubocop:disable Metrics/MethodLength
+        # Check feature flag once for all enhanced security error reporting in this method
+        enhanced_security_reporting = Dependabot::Experiments.enabled?(:enhanced_grouped_security_error_reporting)
+
         checker = update_checker_for(
           dependency,
           dependency_files,
@@ -285,7 +293,7 @@ module Dependabot
         log_checking_for_update(dependency)
 
         if all_versions_ignored?(dependency, checker)
-          record_security_update_ignored_if_applicable(dependency, checker, group)
+          record_security_update_ignored_if_applicable(dependency, checker, group) if enhanced_security_reporting
           return []
         end
         return [] unless semver_rules_allow_grouping?(group, dependency, checker)
@@ -298,7 +306,7 @@ module Dependabot
           log_up_to_date(dependency)
 
           # Check if this up-to-date dependency has security advisories but no fix
-          record_security_update_not_found_if_applicable(dependency, checker, group)
+          record_security_update_not_found_if_applicable(dependency, checker, group) if enhanced_security_reporting
           return []
         end
 
@@ -311,7 +319,7 @@ module Dependabot
           )
 
           # Check if this is a security update with vulnerability audit explanation
-          record_security_update_error_if_applicable(dependency, checker, group)
+          record_security_update_error_if_applicable(dependency, checker, group) if enhanced_security_reporting
           return []
         end
 
