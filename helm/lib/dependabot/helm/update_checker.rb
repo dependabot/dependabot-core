@@ -356,7 +356,7 @@ module Dependabot
         LatestVersionResolver.new(
           dependency: dependency,
           credentials: credentials,
-          cooldown_options: update_cooldown,
+          cooldown_options: update_cooldown
         )
       end
     end
