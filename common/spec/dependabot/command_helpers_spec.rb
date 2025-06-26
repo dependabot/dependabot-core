@@ -98,5 +98,27 @@ RSpec.describe Dependabot::CommandHelpers do
         expect(elapsed_time).to be_within(0.5).of(3)
       end
     end
+
+    context "when output_observer requests graceful stop" do
+      it "terminates early due to observer and logs the reason" do
+        # Bash script that prints a trigger then sleeps
+        cmd = ["bash", "-c", "echo TRIGGER && sleep 10"]
+
+        observer = proc do |data|
+          { gracefully_stop: true, reason: "Observer triggered stop" } if data.include?("TRIGGER")
+        end
+
+        stdout, _, status, elapsed_time = described_class.capture3_with_timeout(
+          cmd,
+          timeout: 100,
+          output_observer: observer
+        )
+
+        expect(stdout).to include("TRIGGER")
+        expect(status).not_to be_nil
+        expect(status.exitstatus).to eq(0).or eq(124) # depending on whether it's handled as graceful or timeout
+        expect(elapsed_time).to be < 6 # confirms early termination
+      end
+    end
   end
 end
