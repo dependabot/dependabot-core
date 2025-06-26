@@ -6,22 +6,22 @@ require "time"
 require "cgi"
 require "excon"
 require "sorbet-runtime"
-require "dependabot/terraform"
+require "dependabot/helm"
 
 module Dependabot
-  module Terraform
+  module Helm
     module Package
       class PackageDetailsFetcher
         extend T::Sig
 
         RELEASES_URL_GIT = "https://api.github.com/repos/"
-        RELEASE_URL_FOR_PROVIDER = "https://registry.terraform.io/v2/providers/"
-        RELEASE_URL_FOR_MODULE = "https://registry.terraform.io/v2/modules/"
+        RELEASE_URL_FOR_PROVIDER = "https://registry..io/v2/providers/"
+        RELEASE_URL_FOR_MODULE = "https://registry..io/v2/modules/"
         APPLICATION_JSON = "JSON"
         INCLUDE_FOR_PROVIDER = "?include=provider-versions"
         INCLUDE_FOR_MODULE = "?include=module-versions"
-        # https://registry.terraform.io/v2/providers/hashicorp/aws?include=provider-versions
-        # https://registry.terraform.io/v2/modules/terraform-aws-modules/iam/aws?include=module-versions
+        # https://registry..io/v2/providers/hashicorp/aws?include=provider-versions
+        # https://registry..io/v2/modules/-aws-modules/iam/aws?include=module-versions
 
         ELIGIBLE_SOURCE_TYPES = T.let(
           %w(git provider registry).freeze,
@@ -31,21 +31,19 @@ module Dependabot
         sig do
           params(
             dependency: Dependency,
-            credentials: T::Array[Dependabot::Credential],
-            git_commit_checker: Dependabot::GitCommitChecker
+            credentials: T::Array[Dependabot::Credential]
           ).void
         end
-        def initialize(dependency:, credentials:, git_commit_checker:)
+        def initialize(dependency:, credentials:)
           @dependency = dependency
           @credentials = credentials
-          @git_commit_checker = git_commit_checker
         end
-
-        sig { returns(Dependabot::GitCommitChecker) }
-        attr_reader :git_commit_checker
 
         sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
+
+        sig { returns(Dependabot::Dependency) }
+        attr_reader :dependency
 
         sig { returns(T::Array[GitTagWithDetail]) }
         def fetch_tag_and_release_date
@@ -76,7 +74,7 @@ module Dependabot
         end
 
         sig { returns(T::Array[GitTagWithDetail]) }
-        def fetch_tag_and_release_date_from_provider # rubocop:disable Metrics/AbcSize,Metrics/PerceivedComplexity
+        def fetch_tag_and_release_date_from_chart # rubocop:disable Metrics/AbcSize,Metrics/PerceivedComplexity
           return [] unless dependency_source_details
 
           url = RELEASE_URL_FOR_PROVIDER + dependency_source_details&.fetch(:module_identifier) +
