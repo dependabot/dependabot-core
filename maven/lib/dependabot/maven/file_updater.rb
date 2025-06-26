@@ -143,8 +143,8 @@ module Dependabot
       end
 
       # rubocop:disable Metrics/AbcSize
-      # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/PerceivedComplexity
+      # rubocop:disable Metrics/MethodLength
       sig do
         params(
           content: String,
@@ -152,7 +152,7 @@ module Dependabot
           requirement: T::Hash[Symbol, T.untyped]
         ).returns(String)
       end
-      def add_new_declaration(content, dependency, requirement) # rubocop:disable Metrics/PerceivedComplexity
+      def add_new_declaration(content, dependency, requirement)
         doc = REXML::Document.new(content)
 
         project = doc.get_elements("//project").first
@@ -160,10 +160,14 @@ module Dependabot
 
         # Detect indentation of the file from indentation of the project tag children
         base_indentation = project.children.find { |child| child.to_s.start_with?("\n") }&.to_s || "\n  "
-        indent = base_indentation.to_s.scan(/ +$/).last&.length || 2
-        dependency_management_indentation = base_indentation + (" " * indent)
-        dependencies_indentation = dependency_management_indentation + (" " * indent)
-        dependency_indentation = dependencies_indentation + (" " * indent)
+        is_tabs = !base_indentation.to_s.scan(/\t+$/).length.zero? # rubocop:disable Style/ZeroLengthPredicate
+
+        indent_size = get_indent_size(base_indentation, is_tabs)
+        indent_level = get_indent_level(indent_size, is_tabs)
+
+        dependency_management_indentation = base_indentation + indent_level
+        dependencies_indentation = dependency_management_indentation + indent_level
+        dependency_indentation = dependencies_indentation + indent_level
 
         dependency_management = project.get_elements("dependencyManagement").first
         dependency_management_created = false
@@ -206,8 +210,8 @@ module Dependabot
       end
 
       # rubocop:enable Metrics/AbcSize
-      # rubocop:enable Metrics/CyclomaticComplexity
       # rubocop:enable Metrics/PerceivedComplexity
+      # rubocop:enable Metrics/MethodLength
 
       sig do
         params(
@@ -307,6 +311,25 @@ module Dependabot
         version = REXML::Element.new("version", dependency_node)
         version.text = requirement.fetch(:requirement)
         dependency_node.add_text(parent_indentation_level)
+      end
+
+      sig { params(base_indentation: String, is_tabs: T::Boolean).returns(Integer) }
+      def get_indent_size(base_indentation, is_tabs)
+        if is_tabs
+          indent_size = base_indentation.to_s.scan(/\t+$/).length
+          indent_size.positive? ? indent_size : 1
+        else
+          base_indentation.to_s.scan(/ +$/).last&.length || 2
+        end
+      end
+
+      sig { params(indent_size: Integer, is_tabs: T::Boolean).returns(String) }
+      def get_indent_level(indent_size, is_tabs)
+        if is_tabs
+          "\t" * indent_size
+        else
+          " " * indent_size
+        end
       end
     end
   end
