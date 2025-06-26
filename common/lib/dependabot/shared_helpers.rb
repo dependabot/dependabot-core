@@ -439,16 +439,18 @@ module Dependabot
         env: T.nilable(T::Hash[String, String]),
         fingerprint: T.nilable(String),
         stderr_to_stdout: T::Boolean,
-        timeout: Integer
+        timeout: Integer,
+        output_observer: CommandHelpers::OutputObserver
       ).returns(String)
     end
-    def self.run_shell_command(command,
+    def self.run_shell_command(command, # rubocop:disable Metrics/MethodLength
                                allow_unsafe_shell_command: false,
                                cwd: nil,
                                env: {},
                                fingerprint: nil,
                                stderr_to_stdout: true,
-                               timeout: CommandHelpers::TIMEOUTS::DEFAULT)
+                               timeout: CommandHelpers::TIMEOUTS::DEFAULT,
+                               output_observer: nil)
       start = Time.now
       cmd = allow_unsafe_shell_command ? command : escape_command(command)
 
@@ -459,10 +461,23 @@ module Dependabot
 
       env_cmd = [env || {}, cmd, opts].compact
       if Experiments.enabled?(:enable_shared_helpers_command_timeout)
+        kwargs = {
+          stderr_to_stdout: stderr_to_stdout,
+          timeout: timeout
+        }
+        kwargs[:output_observer] = output_observer if output_observer
+
+        CommandHelpers.capture3_with_timeout(
+          env_cmd,
+          **kwargs
+        )
+
+        # If the command is a string, we need to convert it to an array
         stdout, stderr, process = CommandHelpers.capture3_with_timeout(
           env_cmd,
           stderr_to_stdout: stderr_to_stdout,
-          timeout: timeout
+          timeout: timeout,
+          output_observer: output_observer
         )
       elsif stderr_to_stdout
         stdout, process = Open3.capture2e(env || {}, cmd, opts)
