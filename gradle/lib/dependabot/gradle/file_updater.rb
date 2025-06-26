@@ -238,7 +238,7 @@ module Dependabot
         result = string.dup
 
         string.scan(Gradle::FileParser::PROPERTY_REGEX) do
-          prop_name = T.must(Regexp.last_match).named_captures.fetch("property_name")
+          prop_name = T.must(T.must(Regexp.last_match).named_captures.fetch("property_name"))
           property_value = T.let(
             property_value_finder.property_value(property_name: prop_name, callsite_buildfile: buildfile),
             T.nilable(String)
