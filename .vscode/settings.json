@@ -20,10 +20,5 @@
   "rubocop.autocorrect": true,
   "sorbet.enabled": true,
   "rubocop.layoutMode": true,
-  "rubocop.lintMode": true,
-  "rubyLsp.enabled": true,
-  "rubyLsp.bundleGemfile": "${workspaceFolder}/Gemfile",
-  "ruby.interpreter.commandPath": "/opt/homebrew/opt/ruby@3.3/bin/ruby",
-  "rubyLsp.rubyExecutablePath": "/opt/homebrew/opt/ruby@3.3/bin/ruby",
-  "rubyLsp.bundlerPath": "/opt/homebrew/opt/ruby@3.3/bin/bundle",
+  "rubocop.lintMode": true
 }
