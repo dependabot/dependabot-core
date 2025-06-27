@@ -30,10 +30,15 @@ module Dependabot
       attr_reader :dependency
 
       # To filter versions in cooldown period based on version tags from registry call
-      sig { params(versions: T::Array[String]).returns(T::Array[String]) }
-      def filter_versions_in_cooldown_period_from_chart(versions)
+      sig { params(versions: T::Array[String], repo_name: String).returns(T::Array[String]) }
+      def filter_versions_in_cooldown_period_from_chart(versions, repo_name)
+        return versions unless cooldown_enabled?
+
+        Dependabot.logger.info("Filtering versions in cooldown period from chart: #{repo_name}")
+        return versions unless select_tags_which_in_cooldown_from_chart(repo_name).nil?
+
         # sort the allowed version tags by name in descending order
-        select_tags_which_in_cooldown_from_chart&.each do |tag_name|
+        select_tags_which_in_cooldown_from_chart(repo_name)&.each do |tag_name|
           # Iterate through versions and filter out those matching the tag_name
           versions.reject! do |version|
             version == tag_name
@@ -45,42 +50,6 @@ module Dependabot
       rescue StandardError => e
         Dependabot.logger.error("Error filter_versions_in_cooldown_period_from_chart(versions): #{e.message}")
         versions
-      end
-
-      # To filter versions in cooldown period based on version tags from registry call
-      sig { params(versions: T::Array[Dependabot::Version]).returns(T::Array[Dependabot::Version]) }
-      def filter_versions_in_cooldown_period_from_module(versions)
-        # to make call for registry to get the versions
-        # step one fetch allowed version tags and
-
-        # sort the allowed version tags by name in descending order
-        select_tags_which_in_cooldown_from_module&.each do |tag_name|
-          # Iterate through versions and filter out those matching the tag_name
-          versions.reject! do |version|
-            version.to_s == tag_name
-          end
-        end
-        Dependabot.logger.info("filter_versions_in_cooldown_period_from_module::
-            Allowed version tags after filtering versions in cooldown:#{versions.map(&:to_s).join(', ')}")
-        versions
-      rescue StandardError => e
-        Dependabot.logger.error("Error fetching latest version tag: #{e.message}")
-        versions
-      end
-
-      sig { returns(T.nilable(T::Array[String])) }
-      def select_version_tags_in_cooldown_period
-        version_tags_in_cooldown_period = T.let([], T::Array[String])
-
-        package_details_fetcher.fetch_tag_and_release_date.each do |git_tag_with_detail|
-          if check_if_version_in_cooldown_period?(T.must(git_tag_with_detail.release_date))
-            version_tags_in_cooldown_period << git_tag_with_detail.tag
-          end
-        end
-        version_tags_in_cooldown_period
-      rescue StandardError => e
-        Dependabot.logger.error("Error checking if version is in cooldown: #{e.message}")
-        version_tags_in_cooldown_period
       end
 
       sig { params(release_date: String).returns(T::Boolean) }
@@ -110,34 +79,21 @@ module Dependabot
         0 # Default to 360 days in seconds if parsing fails, so that it will not be in cooldown
       end
 
-      sig { returns(T.nilable(T::Array[String])) }
-      def select_tags_which_in_cooldown_from_chart
+      sig { params(repo_name: String).returns(T.nilable(T::Array[String])) }
+      def select_tags_which_in_cooldown_from_chart(repo_name)
         version_tags_in_cooldown_from_chart = T.let([], T::Array[String])
 
-        package_details_fetcher.fetch_tag_and_release_date_from_chart.each do |git_tag_with_detail|
-          if check_if_version_in_cooldown_period?(T.must(git_tag_with_detail.release_date))
-            version_tags_in_cooldown_from_chart << git_tag_with_detail.tag
+        begin
+          package_details_fetcher.fetch_tag_and_release_date_from_chart(repo_name).each do |git_tag_with_detail|
+            if check_if_version_in_cooldown_period?(T.must(git_tag_with_detail.release_date))
+              version_tags_in_cooldown_from_chart << git_tag_with_detail.tag
+            end
           end
+          version_tags_in_cooldown_from_chart
+        rescue StandardError => e
+          Dependabot.logger.error("Error checking if version is in cooldown: #{e.message}")
+          version_tags_in_cooldown_from_chart
         end
-        version_tags_in_cooldown_from_chart
-      rescue StandardError => e
-        Dependabot.logger.error("Error checking if version is in cooldown: #{e.message}")
-        version_tags_in_cooldown_from_chart
-      end
-
-      sig { returns(T.nilable(T::Array[String])) }
-      def select_tags_which_in_cooldown_from_module
-        version_tags_in_cooldown_from_module = T.let([], T::Array[String])
-
-        package_details_fetcher.fetch_tag_and_release_date_from_module.each do |git_tag_with_detail|
-          if check_if_version_in_cooldown_period?(T.must(git_tag_with_detail.release_date))
-            version_tags_in_cooldown_from_module << git_tag_with_detail.tag
-          end
-        end
-        version_tags_in_cooldown_from_module
-      rescue StandardError => e
-        Dependabot.logger.error("Error checking if version is in cooldown: #{e.message}")
-        version_tags_in_cooldown_from_module
       end
 
       sig { returns(Package::PackageDetailsFetcher) }
@@ -152,7 +108,7 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def cooldown_enabled?
-        Dependabot::Experiments.enabled?(:enable_cooldown_for_swift)
+        Dependabot::Experiments.enabled?(:enable_cooldown_for_helm)
       end
 
       sig { returns(T::Array[Dependabot::Credential]) }
