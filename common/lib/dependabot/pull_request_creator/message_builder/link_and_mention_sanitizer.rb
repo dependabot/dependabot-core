@@ -37,6 +37,7 @@ module Dependabot
           {
             autolink: true,
             header_ids: nil,
+            shortcodes: false,
             strikethrough: true,
             table: true,
             tagfilter: true,
