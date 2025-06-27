@@ -47,12 +47,11 @@ RSpec.describe Dependabot::Helm::LatestVersionResolver do
 
   describe "#select_tags_which_in_cooldown_from_chart" do
     let(:repo_name) { "prometheus-community/helm-charts" }
-    let(:git_tag_with_details) do # Rubocop:disable RSpec/VerifiedDoubles
+    let(:git_tag_with_details) do
       [
-        double("GitTagWithDetail", tag: "v1.0.0", release_date: (Time.now - (100 * 24 * 60 * 60)).iso8601), # 10 days
-        double("GitTagWithDetail", tag: "v1.1.0", release_date: (Time.now - (40 * 24 * 60 * 60)).iso8601) # 40 days ago
+        instance_double("GitTagWithDetail", tag: "v1.0.0", release_date: (Time.now - (100 * 24 * 60 * 60)).iso8601), # 10 days
+        instance_double("GitTagWithDetail", tag: "v1.1.0", release_date: (Time.now - (40 * 24 * 60 * 60)).iso8601) # 40 days ago
       ]
-      # Rubocop:disable RSpec/VerifiedDoubles
     end
 
     before do
