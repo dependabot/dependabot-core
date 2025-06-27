@@ -22,22 +22,6 @@ RSpec.describe Dependabot::Helm::LatestVersionResolver do
       semver_patch_days: 15
     )
   end
-  let(:resolver) do
-    described_class.new(
-      dependency: dependency,
-      credentials: credentials,
-      cooldown_options: cooldown_options
-    )
-  end
-
-  let(:dependency) do
-    Dependabot::Dependency.new(
-      name: "test-dependency",
-      version: "v1.0.0",
-      requirements: [],
-      package_manager: "helm"
-    )
-  end
 
   let(:credentials) { [Dependabot::Credential.new(type: "git_source", token: "test-token")] }
 

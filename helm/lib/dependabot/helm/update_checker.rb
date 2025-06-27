@@ -201,7 +201,6 @@ module Dependabot
                                                      .credentials_for_registry(repo_url)
         return unless repo_creds
 
-        Dependabot.logger.info("Authenticating OCI registry source: #{repo_creds["username"]} #{repo_creds["password"]} for #{repo_url}")
         Helpers.oci_registry_login(T.must(repo_creds["username"]), T.must(repo_creds["password"]), repo_url)
       rescue StandardError
         raise PrivateSourceAuthenticationFailure, repo_url
