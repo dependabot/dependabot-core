@@ -149,9 +149,8 @@ module Dependabot
           requirement: T::Hash[Symbol, T.untyped]
         ).returns(String)
       end
-      def add_new_declaration(content, dependency, requirement)
+      def add_new_declaration(content, dependency, requirement) # rubocop:disable Metrics/AbcSize
         doc = REXML::Document.new(content)
-
         project = doc.get_elements("//project").first
         raise "<project> element not found in the XML content" unless project
 
@@ -171,12 +170,20 @@ module Dependabot
         # Create the dependency element with the required fields, adding the appropriate indentation as text nodes
         add_dependency_entry(dependency, requirement, dependencies, indentation_config[:levels][:dependency],
                              indentation_config[:levels][:dependencies])
-        dependencies.add_text("\n#{indentation_config[:levels][:dependency_management]}")
 
+        # Close all sections with appropriate indentation
+        dependencies.add_text("\n#{indentation_config[:levels][:dependency_management]}")
         dependency_management.add_text("\n#{indentation_config[:levels][:base]}") if dependencies_created
         project.add_text("\n") if dependency_management_created
 
-        doc.to_s
+        # If dependencyManagement was created, replace entire document content with parser output
+        # Unfortunately, this might include unrelated formatting changes sometimes
+        return doc.to_s if dependency_management_created
+
+        # If dependencyManagement was not created, we just replace the existing dependencyManagement element
+        # with the updated one, preserving the rest of the document
+        content.gsub(%r{\<dependencyManagement\>[\s\S]*\</dependencyManagement\>},
+                     dependency_management.to_s)
       end
 
       sig do
