@@ -1,3 +1,6 @@
+# typed: false
+# frozen_string_literal: true
+
 require "dependabot/helm/package/package_details_fetcher"
 require "excon"
 
