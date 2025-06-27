@@ -230,7 +230,10 @@ module Dependabot
 
         valid_tags = filter_valid_versions(tags)
         # Filter out tags are not in cooldown period
-        valid_tags = latest_version_resolver.filter_versions_in_cooldown_period_from_chart(valid_tags)
+        valid_tags = latest_version_resolver.filter_versions_in_cooldown_period_from_chart(
+          valid_tags,
+          T.must(extract_repo_name(repo_url))
+        )
         return nil if valid_tags.empty?
 
         highest_tag = valid_tags.map { |v| version_class.new(v) }.max
