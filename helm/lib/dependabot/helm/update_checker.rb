@@ -19,6 +19,8 @@ module Dependabot
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       extend T::Sig
 
+      require_relative "update_checker/latest_version_resolver"
+
       sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
       def latest_version
         @latest_version ||= T.let(fetch_latest_version, T.nilable(T.any(String, Gem::Version)))
@@ -226,6 +228,11 @@ module Dependabot
         return nil unless tags && !tags.empty?
 
         valid_tags = filter_valid_versions(tags)
+        # Filter out tags are not in cooldown period
+        valid_tags = latest_version_resolver.filter_versions_in_cooldown_period_from_chart(
+          valid_tags,
+          T.must(extract_repo_name(repo_url))
+        )
         return nil if valid_tags.empty?
 
         highest_tag = valid_tags.map { |v| version_class.new(v) }.max
@@ -247,6 +254,7 @@ module Dependabot
       def extract_repo_name(repo_url)
         return nil unless repo_url
 
+        Dependabot.logger.info("Extracting repo name from URL: #{repo_url}")
         name = repo_url.gsub(%r{^https?://}, "")
         name = name.chomp("/")
         name = name.gsub(/[^a-zA-Z0-9-]/, "-")
@@ -344,8 +352,16 @@ module Dependabot
           package_manager: "helm"
         )
       end
+
+      sig { returns(LatestVersionResolver) }
+      def latest_version_resolver
+        LatestVersionResolver.new(
+          dependency: dependency,
+          credentials: credentials,
+          cooldown_options: update_cooldown
+        )
+      end
     end
   end
 end
-
 Dependabot::UpdateCheckers.register("helm", Dependabot::Helm::UpdateChecker)
