@@ -62,17 +62,15 @@ function Update-Files {
         # ensure the updater gets this optional path
         $arguments += "--case-insensitive-repo-contents-path `"$env:DEPENDABOT_CASE_INSENSITIVE_REPO_CONTENTS_PATH`""
 
-        # redirect the local package cache to the case-insensitive path
+        # redirect the local package cache to the case-insensitive path...
         $caseInsensitiveRoot = Join-Path $env:DEPENDABOT_CASE_INSENSITIVE_REPO_CONTENTS_PATH ".."
         $env:NUGET_PACKAGES = "$caseInsensitiveRoot/.nuget/packages"
         $env:NUGET_HTTP_CACHE_PATH = "$caseInsensitiveRoot/.nuget/http-cache"
         $env:NUGET_SCRATCH = "$caseInsensitiveRoot/.nuget/scratch"
         $env:NUGET_PLUGINS_CACHE_PATH = "$caseInsensitiveRoot/.nuget/plugins-cache"
 
-        # migrate local package cache from the local image
-        Write-Host "Copying NuGet packages to case-inseensitive cache path: $env:NUGET_PACKAGES"
-        New-Item -ItemType Directory -Path $env:NUGET_PACKAGES | Out-Null
-        Copy-Item -Path "$env:DEPENDABOT_HOME/.nuget/packages/*" -Destination $env:NUGET_PACKAGES -Recurse -Force
+        # ...but still allow read access to the pre-populated packages
+        $env:NUGET_FALLBACK_PACKAGES = "$env:DEPENDABOT_HOME/.nuget/packages"
     }
 
     Invoke-Expression -Command "$updaterTool run $arguments"
