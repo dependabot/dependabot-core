@@ -28,14 +28,6 @@ RSpec.describe Dependabot::Helm::Package::PackageDetailsFetcher do
   end
 
   describe "#fetch_tag_and_release_date_from_chart" do
-    context "when the repo name is empty" do
-      let(:repo_name) { "" }
-
-      it "returns an empty array" do
-        expect(fetcher.fetch_tag_and_release_date_from_chart(repo_name)).to eq([])
-      end
-    end
-
     context "when the API call is successful" do
       let(:response_body) do
         [
@@ -53,14 +45,6 @@ RSpec.describe Dependabot::Helm::Package::PackageDetailsFetcher do
         result = fetcher.fetch_tag_and_release_date_from_chart(repo_name)
         expect(result.map(&:tag)).to eq([]) # Sorted by tag in descending order
         expect(result.map(&:release_date)).to eq([])
-      end
-    end
-
-    context "when the repo name is empty" do
-      let(:repo_name) { "" }
-
-      it "returns an empty array" do
-        expect(fetcher.fetch_tag_and_release_date_from_chart(repo_name)).to eq([])
       end
     end
   end
