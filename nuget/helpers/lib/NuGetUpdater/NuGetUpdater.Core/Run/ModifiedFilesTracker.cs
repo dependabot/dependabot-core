@@ -39,7 +39,7 @@ public class ModifiedFilesTracker
         // track original contents for later handling
         async Task TrackOriginalContentsAsync(string directory, string fileName)
         {
-            var repoFullPath = Path.Join(directory, fileName).FullyNormalizedRootedPath();
+            var repoFullPath = CorrectRepoRelativePathCasing(directory, fileName);
             var localFullPath = Path.Join(RepoContentsPath.FullName, repoFullPath);
             var content = await File.ReadAllTextAsync(localFullPath);
             var rawContent = await File.ReadAllBytesAsync(localFullPath);
@@ -80,7 +80,7 @@ public class ModifiedFilesTracker
         var updatedDependencyFiles = new Dictionary<string, DependencyFile>();
         async Task AddUpdatedFileIfDifferentAsync(string directory, string fileName)
         {
-            var repoFullPath = Path.Join(directory, fileName).FullyNormalizedRootedPath();
+            var repoFullPath = CorrectRepoRelativePathCasing(directory, fileName);
             var localFullPath = Path.GetFullPath(Path.Join(RepoContentsPath.FullName, repoFullPath));
             var originalContent = _originalDependencyFileContents[repoFullPath];
             var updatedContent = await File.ReadAllTextAsync(localFullPath);
@@ -132,6 +132,13 @@ public class ModifiedFilesTracker
             .Select(kvp => kvp.Value)
             .ToImmutableArray();
         return updatedDependencyFileList;
+    }
+
+    private string CorrectRepoRelativePathCasing(string directory, string fileName)
+    {
+        var repoFullPath = Path.Join(directory, fileName).FullyNormalizedRootedPath();
+        var correctedRepoFullPath = RunWorker.EnsureCorrectFileCasing(repoFullPath, RepoContentsPath.FullName);
+        return correctedRepoFullPath;
     }
 
     public static ImmutableArray<DependencyFile> MergeUpdatedFileSet(ImmutableArray<DependencyFile> setA, ImmutableArray<DependencyFile> setB)

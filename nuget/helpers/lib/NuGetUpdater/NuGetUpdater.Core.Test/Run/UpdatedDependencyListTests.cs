@@ -89,7 +89,7 @@ public class UpdatedDependencyListTests
                 ]
             }
         };
-        var updatedDependencyList = RunWorker.GetUpdatedDependencyListFromDiscovery(discovery);
+        var updatedDependencyList = RunWorker.GetUpdatedDependencyListFromDiscovery(discovery, repoRoot: temp.DirectoryPath);
         var expectedDependencyList = new UpdatedDependencyList()
         {
             Dependencies =
@@ -213,7 +213,7 @@ public class UpdatedDependencyListTests
         };
 
         // act
-        var updatedDependencyList = RunWorker.GetUpdatedDependencyListFromDiscovery(discovery);
+        var updatedDependencyList = RunWorker.GetUpdatedDependencyListFromDiscovery(discovery, repoRoot: tempDir.DirectoryPath);
         var expectedDependencyList = new UpdatedDependencyList()
         {
             Dependencies = [],
