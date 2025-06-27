@@ -36,7 +36,7 @@ module Dependabot
         attr_reader :dependency
 
         sig { params(repo_name: String).returns(T::Array[GitTagWithDetail]) }
-        def fetch_tag_and_release_date_from_chart(repo_name) # rubocop:disable Metrics/AbcSize,Metrics/PerceivedComplexity
+        def fetch_tag_and_release_date_from_chart(repo_name)
           return [] unless repo_name.empty?
 
           url = RELEASES_URL_GIT + repo_name + HELM_CHART_RELEASE
