@@ -142,9 +142,6 @@ module Dependabot
         updated_file(file: file, content: updated_content)
       end
 
-      # rubocop:disable Metrics/AbcSize
-      # rubocop:disable Metrics/PerceivedComplexity
-      # rubocop:disable Metrics/MethodLength
       sig do
         params(
           content: String,
@@ -159,59 +156,28 @@ module Dependabot
         raise "<project> element not found in the XML content" unless project
 
         # Detect indentation of the file from indentation of the project tag children
-        base_indentation = project.children.find { |child| child.to_s.start_with?("\n") }&.to_s || "\n  "
-        is_tabs = !base_indentation.to_s.scan(/\t+$/).length.zero? # rubocop:disable Style/ZeroLengthPredicate
+        indentation_config = detect_indentation_config(project)
 
-        indent_size = get_indent_size(base_indentation, is_tabs)
-        indent_level = get_indent_level(indent_size, is_tabs)
-
-        dependency_management_indentation = base_indentation + indent_level
-        dependencies_indentation = dependency_management_indentation + indent_level
-        dependency_indentation = dependencies_indentation + indent_level
-
-        dependency_management = project.get_elements("dependencyManagement").first
-        dependency_management_created = false
-        unless dependency_management
-          # If there's no dependencyManagement element, create one
-          project.add_text(base_indentation)
-          dependency_management = REXML::Element.new("dependencyManagement", project)
-          dependency_management_created = true
-        end
-
-        dependencies = dependency_management.get_elements("dependencies").first
-        dependencies_created = false
-        unless dependencies
-          # If there's no dependencies element, create one
-          dependency_management.add_text(dependency_management_indentation)
-          dependencies = REXML::Element.new("dependencies", dependency_management)
-          dependencies_created = true
-        end
-
-        # Narrow down the indentation of the dependency node by looking at other children in the dependencies element
-        # in case indentation is not consistent with parent elements or if no items are present use default indentation
-        dependencies_indentation = dependencies.children.find do |child|
-          child.to_s.start_with?("\n")
-        end&.to_s || dependencies_indentation
+        dependency_management, dependency_management_created = ensure_dependency_management_element(project,
+                                                                                                    indentation_config)
+        dependencies, dependencies_created = ensure_dependencies_element(dependency_management, indentation_config)
 
         if dependencies.children.last&.to_s&.start_with?("\n")
-          dependencies.children.last.value = dependencies_indentation
+          dependencies.children.last.value = "\n#{indentation_config[:levels][:dependencies]}"
         else
-          dependencies.add_text(dependencies_indentation)
+          dependencies.add_text("\n#{indentation_config[:levels][:dependencies]}")
         end
 
         # Create the dependency element with the required fields, adding the appropriate indentation as text nodes
-        add_dependency_entry(dependency, requirement, dependencies, dependency_indentation, dependencies_indentation)
-        dependencies.add_text(dependency_management_indentation)
+        add_dependency_entry(dependency, requirement, dependencies, indentation_config[:levels][:dependency],
+                             indentation_config[:levels][:dependencies])
+        dependencies.add_text("\n#{indentation_config[:levels][:dependency_management]}")
 
-        dependency_management.add_text(base_indentation) if dependencies_created
+        dependency_management.add_text("\n#{indentation_config[:levels][:base]}") if dependencies_created
         project.add_text("\n") if dependency_management_created
 
         doc.to_s
       end
-
-      # rubocop:enable Metrics/AbcSize
-      # rubocop:enable Metrics/PerceivedComplexity
-      # rubocop:enable Metrics/MethodLength
 
       sig do
         params(
@@ -294,6 +260,40 @@ module Dependabot
       end
 
       sig do
+        params(project: REXML::Element,
+               indent_config: T::Hash[Symbol, T.untyped]).returns([REXML::Element, T::Boolean])
+      end
+      def ensure_dependency_management_element(project, indent_config)
+        dependency_management = project.get_elements("dependencyManagement").first
+        is_created = false
+
+        unless dependency_management
+          project.add_text("\n#{indent_config[:levels][:base]}")
+          dependency_management = REXML::Element.new("dependencyManagement", project)
+          is_created = true
+        end
+
+        [dependency_management, is_created]
+      end
+
+      sig do
+        params(dependency_management: REXML::Element,
+               indent_config: T::Hash[Symbol, T.untyped]).returns([REXML::Element, T::Boolean])
+      end
+      def ensure_dependencies_element(dependency_management, indent_config)
+        dependencies = dependency_management.get_elements("dependencies").first
+        is_created = false
+
+        unless dependencies
+          dependency_management.add_text("\n#{indent_config[:levels][:dependency_management]}")
+          dependencies = REXML::Element.new("dependencies", dependency_management)
+          is_created = true
+        end
+
+        [dependencies, is_created]
+      end
+
+      sig do
         params(dependency: Dependabot::Dependency, requirement: T::Hash[Symbol, T.untyped],
                dependencies_node: REXML::Element, current_indentation_level: String,
                parent_indentation_level: String).void
@@ -301,16 +301,16 @@ module Dependabot
       def add_dependency_entry(dependency, requirement, dependencies_node, current_indentation_level,
                                parent_indentation_level)
         dependency_node = REXML::Element.new("dependency", dependencies_node)
-        dependency_node.add_text(current_indentation_level)
+        dependency_node.add_text("\n#{current_indentation_level}")
         group_id = REXML::Element.new("groupId", dependency_node)
         group_id.text = dependency.name.split(":").first
-        dependency_node.add_text(current_indentation_level)
+        dependency_node.add_text("\n#{current_indentation_level}")
         artifact_id = REXML::Element.new("artifactId", dependency_node)
         artifact_id.text = dependency.name.split(":").last
-        dependency_node.add_text(current_indentation_level)
+        dependency_node.add_text("\n#{current_indentation_level}")
         version = REXML::Element.new("version", dependency_node)
         version.text = requirement.fetch(:requirement)
-        dependency_node.add_text(parent_indentation_level)
+        dependency_node.add_text("\n#{parent_indentation_level}")
       end
 
       sig { params(base_indentation: String, is_tabs: T::Boolean).returns(Integer) }
@@ -323,13 +323,24 @@ module Dependabot
         end
       end
 
-      sig { params(indent_size: Integer, is_tabs: T::Boolean).returns(String) }
-      def get_indent_level(indent_size, is_tabs)
-        if is_tabs
-          "\t" * indent_size
-        else
-          " " * indent_size
-        end
+      sig { params(project: REXML::Element).returns(T::Hash[Symbol, T.untyped]) }
+      def detect_indentation_config(project)
+        sample_indent = project.children.find do |child|
+          child.to_s.match?(/\n[\t\s]+/)
+        end&.to_s&.match(/\n([\t\s]+)/)&.[](1)
+
+        base_indent = sample_indent || "  "
+
+        {
+          base: base_indent,
+          is_tabs: base_indent.include?("\t"),
+          levels: {
+            base: base_indent,
+            dependency_management: base_indent + base_indent,
+            dependencies: base_indent + base_indent + base_indent,
+            dependency: base_indent + base_indent + base_indent + base_indent
+          }
+        }
       end
     end
   end
