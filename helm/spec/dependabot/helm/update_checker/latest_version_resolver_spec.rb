@@ -3,6 +3,7 @@
 
 require "dependabot/helm/update_checker/latest_version_resolver"
 require "dependabot/helm/package/package_details_fetcher"
+require "dependabot/helm/package/git_tag_with_detail"
 
 RSpec.describe Dependabot::Helm::LatestVersionResolver do
   let(:dependency) do
@@ -64,7 +65,7 @@ RSpec.describe Dependabot::Helm::LatestVersionResolver do
   end
 
   describe "#check_if_version_in_cooldown_period?" do
-    let(:release_date) { (Time.now - (10 * 24 * 60 * 60)).iso8601 } # 10 days ago
+    let(:release_date) { (Time.now - (10 * 24 * 60 * 60)).iso8601 }
 
     it "returns true if the release is within the cooldown period" do
       expect(resolver.check_if_version_in_cooldown_period?(release_date)).to be true
@@ -75,8 +76,8 @@ RSpec.describe Dependabot::Helm::LatestVersionResolver do
     let(:repo_name) { "prometheus-community/helm-charts" }
     let(:git_tag_with_details) do
       [
-        instance_double("GitTagWithDetail", tag: "v1.0.0", release_date: (Time.now - (10 * 24 * 60 * 60)).iso8601), # 10 days ago
-        instance_double("GitTagWithDetail", tag: "v1.1.0", release_date: (Time.now - (40 * 24 * 60 * 60)).iso8601) # 40 days ago
+        instance_double("GitTagWithDetail", tag: "v1.0.0", release_date: (Time.now - (10 * 24 * 60 * 60)).iso8601), # rubocop:disable RSpec/VerifiedDoubleReference
+        instance_double("GitTagWithDetail", tag: "v1.1.0", release_date: (Time.now - (40 * 24 * 60 * 60)).iso8601) # rubocop:disable RSpec/VerifiedDoubleReference
       ]
     end
 
