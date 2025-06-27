@@ -3,7 +3,6 @@
 
 require "dependabot/helm/update_checker/latest_version_resolver"
 require "dependabot/helm/package/package_details_fetcher"
-require "dependabot/helm/package/git_tag_with_detail"
 
 RSpec.describe Dependabot::Helm::LatestVersionResolver do
   let(:dependency) do
