@@ -196,9 +196,8 @@ module Dependabot
     def organization
       case provider
       when "azure"
-        prefix = T.must(repo.split("/#{project}/").first)
-        parts = prefix.split("/")
-        repo.end_with?(project) ? T.must(parts.first) : T.must(parts.last)
+        parts = repo.split("/_git/")
+        T.must(T.must(parts.first).split("/").last(2).first)
       else
         T.must(repo.split("/").first)
       end
