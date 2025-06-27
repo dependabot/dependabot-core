@@ -280,9 +280,6 @@ module Dependabot
           .returns(T::Array[Dependabot::Dependency])
       end
       def compile_updates_for(dependency, dependency_files, group) # rubocop:disable Metrics/MethodLength
-        # Check feature flag once for all enhanced security error reporting in this method
-        enhanced_security_reporting = Dependabot::Experiments.enabled?(:enhanced_grouped_security_error_reporting)
-
         checker = update_checker_for(
           dependency,
           dependency_files,
@@ -293,7 +290,7 @@ module Dependabot
         log_checking_for_update(dependency)
 
         if all_versions_ignored?(dependency, checker)
-          record_security_update_ignored_if_applicable(dependency, checker, group) if enhanced_security_reporting
+          record_security_update_ignored_if_applicable(dependency, checker, group)
           return []
         end
         return [] unless semver_rules_allow_grouping?(group, dependency, checker)
@@ -306,7 +303,7 @@ module Dependabot
           log_up_to_date(dependency)
 
           # Check if this up-to-date dependency has security advisories but no fix
-          record_security_update_not_found_if_applicable(dependency, checker, group) if enhanced_security_reporting
+          record_security_update_not_found_if_applicable(dependency, checker, group)
           return []
         end
 
@@ -319,7 +316,7 @@ module Dependabot
           )
 
           # Check if this is a security update with vulnerability audit explanation
-          record_security_update_error_if_applicable(dependency, checker, group) if enhanced_security_reporting
+          record_security_update_error_if_applicable(dependency, checker, group)
           return []
         end
 
@@ -560,6 +557,8 @@ module Dependabot
         ).void
       end
       def record_security_update_error_if_applicable(dependency, checker, group)
+        return unless Dependabot::Experiments.enabled?(:enhanced_grouped_security_error_reporting)
+
         # Only record errors for dependencies with security advisories
         security_advisories = job.security_advisories_for(dependency)
         return unless security_advisories.any?
@@ -601,6 +600,8 @@ module Dependabot
         ).void
       end
       def record_security_update_not_found_if_applicable(dependency, checker, group)
+        return unless Dependabot::Experiments.enabled?(:enhanced_grouped_security_error_reporting)
+
         # Only record errors for dependencies with security advisories
         security_advisories = job.security_advisories_for(dependency)
         return unless security_advisories.any?
@@ -621,6 +622,8 @@ module Dependabot
         ).void
       end
       def record_security_update_ignored_if_applicable(dependency, checker, group)
+        return unless Dependabot::Experiments.enabled?(:enhanced_grouped_security_error_reporting)
+
         # Only record errors for dependencies with security advisories
         security_advisories = job.security_advisories_for(dependency)
         return unless security_advisories.any?
