@@ -271,13 +271,33 @@ module Dependabot
       sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
       def self.run_npm_command(command, fingerprint: command)
         if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
-          package_manager_run_command(NpmPackageManager::NAME, command, fingerprint: fingerprint)
+          package_manager_run_command(
+            NpmPackageManager::NAME,
+            command,
+            fingerprint: fingerprint,
+            output_observer: ->(output) { command_observer(output) }
+          )
         else
           Dependabot::SharedHelpers.run_shell_command(
             "npm #{command}",
-            fingerprint: "npm #{fingerprint}"
+            fingerprint: "npm #{fingerprint}",
+            output_observer: ->(output) { command_observer(output) }
           )
         end
+      end
+
+      sig do
+        params(output: String)
+          .returns(T::Hash[Symbol, T.untyped])
+      end
+      def self.command_observer(output)
+        # Observe the output for specific error
+        return {} unless output.include?("npm ERR! ERESOLVE")
+
+        {
+          gracefully_stop: true, # value must be a String
+          reason: "NPM Resolution Error"
+        }
       end
 
       sig { returns(T.nilable(String)) }
@@ -486,20 +506,30 @@ module Dependabot
         params(
           name: String,
           command: String,
-          fingerprint: T.nilable(String)
+          fingerprint: T.nilable(String),
+          output_observer: CommandHelpers::OutputObserver
         ).returns(String)
       end
-      def self.package_manager_run_command(name, command, fingerprint: nil)
+      def self.package_manager_run_command(
+        name,
+        command,
+        fingerprint: nil,
+        output_observer: nil
+      )
         return run_bun_command(command, fingerprint: fingerprint) if name == BunPackageManager::NAME
 
         full_command = "corepack #{name} #{command}"
+        fingerprint =  "corepack #{name} #{fingerprint || command}"
 
-        result = Dependabot::SharedHelpers.run_shell_command(
-          full_command,
-          fingerprint: "corepack #{name} #{fingerprint || command}"
-        ).strip
-
-        result
+        if output_observer
+          return Dependabot::SharedHelpers.run_shell_command(
+            full_command,
+            fingerprint: fingerprint,
+            output_observer: output_observer
+          ).strip
+        else
+          Dependabot::SharedHelpers.run_shell_command(full_command, fingerprint: fingerprint)
+        end.strip
       rescue StandardError => e
         Dependabot.logger.error("Error running package manager command: #{full_command}, Error: #{e.message}")
         if e.message.match?(/Response Code.*:.*404.*\(Not Found\)/) &&
