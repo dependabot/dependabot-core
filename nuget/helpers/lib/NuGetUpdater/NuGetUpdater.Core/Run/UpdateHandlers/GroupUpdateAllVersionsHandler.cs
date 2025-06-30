@@ -80,10 +80,10 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                     return;
                 }
 
-                var tracker = new ModifiedFilesTracker(originalRepoContentsPath);
+                var tracker = new ModifiedFilesTracker(originalRepoContentsPath, logger);
                 await tracker.StartTrackingAsync(discoveryResult);
 
-                var updatedDependencyList = RunWorker.GetUpdatedDependencyListFromDiscovery(discoveryResult, originalRepoContentsPath.FullName);
+                var updatedDependencyList = RunWorker.GetUpdatedDependencyListFromDiscovery(discoveryResult, originalRepoContentsPath.FullName, logger);
                 await apiHandler.UpdateDependencyList(updatedDependencyList);
 
                 var updateOperationsToPerform = RunWorker.GetUpdateOperations(discoveryResult).ToArray();
@@ -183,10 +183,10 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                 return;
             }
 
-            var tracker = new ModifiedFilesTracker(originalRepoContentsPath);
+            var tracker = new ModifiedFilesTracker(originalRepoContentsPath, logger);
             await tracker.StartTrackingAsync(discoveryResult);
 
-            var updatedDependencyList = RunWorker.GetUpdatedDependencyListFromDiscovery(discoveryResult, originalRepoContentsPath.FullName);
+            var updatedDependencyList = RunWorker.GetUpdatedDependencyListFromDiscovery(discoveryResult, originalRepoContentsPath.FullName, logger);
             await apiHandler.UpdateDependencyList(updatedDependencyList);
 
             var updateOperationsPerformed = new List<UpdateOperationBase>();

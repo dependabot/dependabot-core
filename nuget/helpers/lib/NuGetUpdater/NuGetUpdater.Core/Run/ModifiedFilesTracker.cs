@@ -12,6 +12,7 @@ public class ModifiedFilesTracker
 {
     public readonly DirectoryInfo RepoContentsPath;
     private WorkspaceDiscoveryResult? _currentDiscoveryResult = null;
+    private readonly ILogger _logger;
 
     private readonly Dictionary<string, string> _originalDependencyFileContents = [];
     private readonly Dictionary<string, EOLType> _originalDependencyFileEOFs = [];
@@ -22,9 +23,10 @@ public class ModifiedFilesTracker
     //public IReadOnlyDictionary<string, EOLType> OriginalDependencyFileEOFs => _originalDependencyFileEOFs;
     public IReadOnlyDictionary<string, bool> OriginalDependencyFileBOMs => _originalDependencyFileBOMs;
 
-    public ModifiedFilesTracker(DirectoryInfo repoContentsPath)
+    public ModifiedFilesTracker(DirectoryInfo repoContentsPath, ILogger logger)
     {
         RepoContentsPath = repoContentsPath;
+        _logger = logger;
     }
 
     public async Task StartTrackingAsync(WorkspaceDiscoveryResult discoveryResult)
@@ -137,7 +139,7 @@ public class ModifiedFilesTracker
     private string CorrectRepoRelativePathCasing(string directory, string fileName)
     {
         var repoFullPath = Path.Join(directory, fileName).FullyNormalizedRootedPath();
-        var correctedRepoFullPath = RunWorker.EnsureCorrectFileCasing(repoFullPath, RepoContentsPath.FullName);
+        var correctedRepoFullPath = RunWorker.EnsureCorrectFileCasing(repoFullPath, RepoContentsPath.FullName, _logger);
         return correctedRepoFullPath;
     }
 

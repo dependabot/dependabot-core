@@ -41,7 +41,7 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
                 return;
             }
 
-            var updatedDependencyList = RunWorker.GetUpdatedDependencyListFromDiscovery(discoveryResult, originalRepoContentsPath.FullName);
+            var updatedDependencyList = RunWorker.GetUpdatedDependencyListFromDiscovery(discoveryResult, originalRepoContentsPath.FullName, logger);
             await apiHandler.UpdateDependencyList(updatedDependencyList);
             await this.ReportUpdaterStarted(apiHandler);
 
@@ -75,7 +75,7 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
                 continue;
             }
 
-            var tracker = new ModifiedFilesTracker(originalRepoContentsPath);
+            var tracker = new ModifiedFilesTracker(originalRepoContentsPath, logger);
             await tracker.StartTrackingAsync(discoveryResult);
             foreach (var dependencyGroupToUpdate in groupedUpdateOperationsToPerform)
             {

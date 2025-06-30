@@ -181,7 +181,7 @@ public class RunWorker
         }
 
         // report dependencies
-        var discoveredUpdatedDependencies = GetUpdatedDependencyListFromDiscovery(discoveryResult, originalRepoContentsPath.FullName);
+        var discoveredUpdatedDependencies = GetUpdatedDependencyListFromDiscovery(discoveryResult, originalRepoContentsPath.FullName, _logger);
         await _apiHandler.UpdateDependencyList(discoveredUpdatedDependencies);
 
         var incrementMetric = GetIncrementMetric(job);
@@ -191,7 +191,7 @@ public class RunWorker
         var actualUpdatedDependencies = new List<ReportedDependency>();
 
         // track original contents for later handling
-        var tracker = new ModifiedFilesTracker(originalRepoContentsPath);
+        var tracker = new ModifiedFilesTracker(originalRepoContentsPath, _logger);
         await tracker.StartTrackingAsync(discoveryResult);
 
         // do update
@@ -709,20 +709,28 @@ public class RunWorker
         return dependencyInfo;
     }
 
-    internal static string EnsureCorrectFileCasing(string repoRelativePath, string repoRoot)
+    internal static string EnsureCorrectFileCasing(string repoRelativePath, string repoRoot, ILogger logger)
     {
         var fullPath = Path.Join(repoRoot, repoRelativePath);
-        var resolvedName = PathHelper.ResolveCaseInsensitivePathsInsideRepoRoot(fullPath, repoRoot)?.FirstOrDefault();
-        if (resolvedName is null)
+        var resolvedNames = PathHelper.ResolveCaseInsensitivePathsInsideRepoRoot(fullPath, repoRoot);
+        if (resolvedNames is null)
         {
+            logger.Info($"Unable to resolve correct case for file [{repoRelativePath}]; returning original.");
             return repoRelativePath;
         }
 
+        if (resolvedNames.Count != 1)
+        {
+            logger.Info($"Expected exactly 1 normalized file path for [{repoRelativePath}], instead found {resolvedNames.Count}: {string.Join(", ", resolvedNames)}");
+            return repoRelativePath;
+        }
+
+        var resolvedName = resolvedNames[0];
         var relativeResolvedName = Path.GetRelativePath(repoRoot, resolvedName).FullyNormalizedRootedPath();
         return relativeResolvedName;
     }
 
-    internal static UpdatedDependencyList GetUpdatedDependencyListFromDiscovery(WorkspaceDiscoveryResult discoveryResult, string repoRoot)
+    internal static UpdatedDependencyList GetUpdatedDependencyListFromDiscovery(WorkspaceDiscoveryResult discoveryResult, string repoRoot, ILogger logger)
     {
         string GetFullRepoPath(string path)
         {
@@ -807,7 +815,7 @@ public class RunWorker
         var dependencyFiles = discoveryResult.Projects
             .Select(p => GetFullRepoPath(p.FilePath))
             .Concat(auxiliaryFiles)
-            .Select(p => EnsureCorrectFileCasing(p, repoRoot))
+            .Select(p => EnsureCorrectFileCasing(p, repoRoot, logger))
             .Distinct()
             .OrderBy(p => p)
             .ToArray();

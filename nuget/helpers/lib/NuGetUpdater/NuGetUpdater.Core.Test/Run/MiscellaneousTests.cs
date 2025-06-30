@@ -567,7 +567,7 @@ public class MiscellaneousTests
     public async Task EnsureCorrectFileCasing(string filePathOnDisk, string candidatePath)
     {
         using var tempDir = await TemporaryDirectory.CreateWithContentsAsync((filePathOnDisk, "contents unimportant"));
-        var actualRepoRelativePath = RunWorker.EnsureCorrectFileCasing(candidatePath, tempDir.DirectoryPath);
+        var actualRepoRelativePath = RunWorker.EnsureCorrectFileCasing(candidatePath, tempDir.DirectoryPath, new TestLogger());
         Assert.Equal(filePathOnDisk, actualRepoRelativePath);
     }
 
