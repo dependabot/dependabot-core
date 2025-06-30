@@ -41,7 +41,8 @@ module Dependabot
         end
         UpdateConfig.new(
           ignore_conditions: ignore_conditions(cfg),
-          commit_message_options: commit_message_options(cfg)
+          commit_message_options: commit_message_options(cfg),
+          exclude_directories: exclude_directories(cfg)
         )
       end
 
@@ -107,6 +108,11 @@ module Dependabot
           prefix_development: commit_message[:"prefix-development"] || commit_message[:prefix],
           include: commit_message[:include]
         )
+      end
+
+      sig { params(cfg: T.nilable(T::Hash[Symbol, T.untyped])).returns(T::Array[String]) }
+      def exclude_directories(cfg)
+        Array(cfg&.dig(:"exclude-directories") || [])
       end
     end
   end

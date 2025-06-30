@@ -1,0 +1,143 @@
+require "dependabot/file_fetchers/base"
+require "dependabot/config/update_config"
+
+# Command to run this test: rspec common/spec/dependabot/file_fetchers/base_exclude_spec.rb
+RSpec.describe Dependabot::FileFetchers::Base do
+  let(:source) { Dependabot::Source.new(provider: "github", repo: "some/random-repo", directory: "/", branch: "main") }
+  let(:creds)  { [] }
+  let(:opts)   { {} }
+
+  let(:update_config) do
+    Dependabot::Config::UpdateConfig.new(
+      ignore_conditions:     [],
+      commit_message_options: nil,
+      exclude_directories:   ["src/test/assets", "vendor/**"]
+    )
+  end
+
+  subject(:fetcher) do
+    Class.new(Dependabot::FileFetchers::Base) do
+      def fetch_files; []; end
+    end.new(
+      source:            source,
+      credentials:       creds,
+      repo_contents_path: nil,
+      options:           opts,
+      update_config:     update_config
+    )
+  end
+
+  before do
+    # Prevent Dependabot from hitting real GitHub and default-branch logic
+    allow(fetcher).to receive(:commit).and_return("dummy-sha")
+    allow(fetcher)
+      .to receive(:_full_specification_for)
+      .and_wrap_original { |_, path, **| { provider: "github", repo: source.repo, path: path, commit: "dummy-sha" } }
+
+    # Stub the lowest-level fetch, but return *all* immediate children
+    allow(fetcher)
+      .to receive(:_fetch_repo_contents_fully_specified) do |_, _, path, _|
+      case path
+      when "", "/"
+        [
+          OpenStruct.new(name: "foo.rb", path: "foo.rb", type: "file"),
+          OpenStruct.new(name: "vendor", path: "vendor", type: "dir"),
+          OpenStruct.new(name: "src", path: "src", type: "dir")
+        ]
+      when "src"
+        [
+          OpenStruct.new(name: "bar.rb",    path: "src/bar.rb",    type: "file"),
+          OpenStruct.new(name: "test",      path: "src/test",      type: "dir"),
+          OpenStruct.new(name: "assets",    path: "src/test/assets",type: "dir")
+        ]
+      when "src/test"
+        [
+          OpenStruct.new(name: "assets", path: "src/test/assets", type: "dir"),
+          OpenStruct.new(name: "helper.rb", path: "src/test/helper.rb", type: "file")
+        ]
+      when "src/test/assets"
+        [
+          OpenStruct.new(name: "go.mod", path: "src/test/assets/go.mod", type: "file")
+        ]
+      when "vendor"
+        [
+          OpenStruct.new(name: "gemA", path: "vendor/gemA", type: "dir")
+        ]
+      when "vendor/gemA"
+        [
+          OpenStruct.new(name: "nested.txt", path: "vendor/gemA/nested.txt", type: "file")
+        ]
+      else
+        []
+      end
+    end
+  end
+
+  describe "_fetch_repo_contents" do
+    it "completely blocks a directory if its path is exactly excluded" do
+      expect(fetcher.send(:_fetch_repo_contents, "src/test/assets")).to eq([])
+    end
+
+    it "filters out excluded children after fetching" do
+      paths = fetcher.send(:_fetch_repo_contents, "src").map(&:path)
+      expect(paths).to include("src/bar.rb", "src/test")
+      expect(paths).not_to include("src/test/assets")
+    end
+
+    it "skips any subpaths under vendor/ but retains the vendor folder itself" do
+      paths = fetcher.send(:_fetch_repo_contents, "").map(&:path)
+      expect(paths).to include("src", "foo.rb", "vendor")
+      expect(fetcher.send(:_fetch_repo_contents, "vendor")).to eq([])
+    end
+
+    it "fetches and filters children under non-excluded parent" do
+      paths = fetcher.send(:_fetch_repo_contents, "src/test").map(&:path)
+      # stub returned two entries, assets should be excluded leaving helper.rb
+      expect(paths).to match_array(["src/test/helper.rb"])
+    end
+
+    it "lets other top-level entries through" do
+      paths = fetcher.send(:_fetch_repo_contents, "src").map(&:path)
+      expect(paths).to match_array(["src/bar.rb", "src/test"])
+    end
+
+    it "glob-excludes vendor deeper paths" do
+      # direct fetch of vendor/gemA should be blocked
+      expect(fetcher.send(:_fetch_repo_contents, "vendor/gemA")).to eq([])
+    end
+  end
+
+  describe "repo_contents" do
+    it "completely blocks a directory if its path is exactly excluded" do
+      expect(fetcher.send(:repo_contents, dir: "src/test/assets")).to eq([])
+    end
+
+    it "filters out excluded children after fetching" do
+      paths = fetcher.send(:repo_contents, dir: "src").map(&:path)
+      expect(paths).to include("src/bar.rb", "src/test")
+      expect(paths).not_to include("src/test/assets")
+    end
+
+    it "skips any subpaths under vendor/ but retains the vendor folder itself" do
+      paths = fetcher.send(:repo_contents, dir: "").map(&:path)
+      expect(paths).to include("src", "foo.rb", "vendor")
+      expect(fetcher.send(:repo_contents, dir: "vendor")).to eq([])
+    end
+
+    it "fetches and filters children under non-excluded parent" do
+      paths = fetcher.send(:repo_contents, dir: "src/test").map(&:path)
+      # stub returned two entries, assets should be excluded leaving helper.rb
+      expect(paths).to match_array(["src/test/helper.rb"])
+    end
+
+    it "lets other top-level entries through" do
+      paths = fetcher.send(:repo_contents, dir: "src").map(&:path)
+      expect(paths).to match_array(["src/bar.rb", "src/test"])
+    end
+
+    it "glob-excludes vendor deeper paths" do
+      # direct fetch of vendor/gemA should be blocked
+      expect(fetcher.send(:repo_contents, dir: "vendor/gemA")).to eq([])
+    end
+  end
+end

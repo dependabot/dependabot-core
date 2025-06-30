@@ -13,18 +13,23 @@ module Dependabot
       sig { returns(T.nilable(CommitMessageOptions)) }
       attr_reader :commit_message_options
 
-      sig { returns(T::Array[IgnoreCondition]) }
+      sig { returns(T::Array[IgnoreCondition]) } # TODO: Shouldn't here also be T.nilable(...)?
       attr_reader :ignore_conditions
+
+      sig { returns(T.nilable(T::Array[String])) }
+      attr_reader :exclude_directories
 
       sig do
         params(
           ignore_conditions: T.nilable(T::Array[IgnoreCondition]),
-          commit_message_options: T.nilable(CommitMessageOptions)
+          commit_message_options: T.nilable(CommitMessageOptions),
+          exclude_directories:  T.nilable(T::Array[String])
         ).void
       end
-      def initialize(ignore_conditions: nil, commit_message_options: nil)
+      def initialize(ignore_conditions: nil, commit_message_options: nil, exclude_directories: nil)
         @ignore_conditions = T.let(ignore_conditions || [], T::Array[IgnoreCondition])
         @commit_message_options = commit_message_options
+        @exclude_directories = exclude_directories
       end
 
       sig { params(dependency: Dependency, security_updates_only: T::Boolean).returns(T::Array[String]) }
