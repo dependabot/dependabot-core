@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "set"
 
 require "dependabot/dependency_change_builder"
 require "dependabot/updater/dependency_group_change_batch"
@@ -73,7 +74,7 @@ module Dependabot
 
         # deduplicate the dependencies.
         original_dependencies = dependency_snapshot.dependencies
-        job_dependencies = job.dependencies || []
+        job_dependencies = Set.new(job.dependencies || []).to_a
 
         # log the original dependencies and job specified dependencies.
         Dependabot.logger.info("Dependency Snapshot: #{original_dependencies.map(&:name).join(', ')}")
