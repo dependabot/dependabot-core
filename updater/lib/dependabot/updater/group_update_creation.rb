@@ -2,7 +2,6 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
-require "set"
 
 require "dependabot/dependency_change_builder"
 require "dependabot/updater/dependency_group_change_batch"
