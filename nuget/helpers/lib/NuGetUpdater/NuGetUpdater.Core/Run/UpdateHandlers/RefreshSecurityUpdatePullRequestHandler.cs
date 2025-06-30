@@ -86,7 +86,7 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
                     .Where(set => set.Item3.IsVulnerable)
                     .ToArray();
 
-                if (vulnerableDependenciesToUpdate.Length < dependencyGroupToUpdate.Value.Length)
+                if (vulnerableDependenciesToUpdate.Length == 0)
                 {
                     var close = ClosePullRequest.WithUpToDate(job);
                     logger.Info(close.GetReport());
