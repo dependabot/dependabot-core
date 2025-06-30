@@ -100,14 +100,16 @@ module Dependabot
             source: Dependabot::Source,
             credentials: T::Array[Dependabot::Credential],
             repo_contents_path: T.nilable(String),
-            options: T::Hash[String, String]
+            options: T::Hash[String, String],
+            update_config: T.nilable(Dependabot::Config::UpdateConfig)
           )
           .void
       end
-      def initialize(source:, credentials:, repo_contents_path: nil, options: {})
+      def initialize(source:, credentials:, repo_contents_path: nil, options: {}, update_config: nil)
         @source = source
         @credentials = credentials
         @repo_contents_path = repo_contents_path
+        @exclude_directories = T.let(update_config&.exclude_directories || [], T::Array[String])
         @linked_paths = T.let({}, T::Hash[T.untyped, T.untyped])
         @submodules = T.let([], T::Array[T.untyped])
         @options = options
@@ -460,7 +462,9 @@ module Dependabot
           _full_specification_for(path, fetch_submodules: fetch_submodules)
           .values_at(:provider, :repo, :path, :commit)
 
-        _fetch_repo_contents_fully_specified(provider, repo, tmp_path, commit)
+        entries = _fetch_repo_contents_fully_specified(provider, repo, tmp_path, commit)
+
+        filter_excluded(entries)
       rescue *CLIENT_NOT_FOUND_ERRORS
         raise Dependabot::DirectoryNotFound, directory if path == directory.gsub(%r{^/*}, "")
 
@@ -522,7 +526,7 @@ module Dependabot
         repo_path = File.join(clone_repo_contents, relative_path)
         return [] unless Dir.exist?(repo_path)
 
-        Dir.entries(repo_path).sort.filter_map do |name|
+        entries = Dir.entries(repo_path).sort.filter_map do |name|
           next if name == "." || name == ".."
 
           absolute_path = File.join(repo_path, name)
@@ -540,6 +544,19 @@ module Dependabot
             type: type,
             size: 0 # NOTE: added for parity with github contents API
           )
+        end
+
+        filter_excluded(entries)
+      end
+
+      # Filters out any entries whose paths match one of the exclude_directories globs.
+      sig { params(entries: T::Array[OpenStruct]).returns(T::Array[OpenStruct]) }
+      def filter_excluded(entries)
+        entries.reject do |entry|
+          full_entry_path = entry.path
+          @exclude_directories.any? do |ex|
+            File.fnmatch?(ex, full_entry_path, File::FNM_EXTGLOB) || full_entry_path.start_with?(ex)
+          end
         end
       end
 

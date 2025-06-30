@@ -89,6 +89,23 @@ module Dependabot
         options: job.experiments
       }
       args[:repo_contents_path] = Environment.repo_contents_path if job.clone? || already_cloned?
+
+      # Load & parse dependabot.yaml from the repo
+      parsed_cfg = begin
+        config_file = Dependabot::Config::FileFetcher.new(**args).config_file
+        Dependabot::Config::File.parse(config_file.content)
+      rescue Dependabot::RepoNotFound, Dependabot::DependencyFileNotFound
+        # No config ⇒ use an empty File (updates: [] ⇒ default UpdateConfig)
+        Dependabot::Config::File.new(updates: [])
+      end
+
+      update_cfg = parsed_cfg.update_config(
+        job.package_manager,
+        directory:     directory_to_use,
+        target_branch: job.source.branch
+      )
+
+      args[:update_config] = update_cfg
       Dependabot::FileFetchers.for_package_manager(job.package_manager).new(**args)
     end
 
