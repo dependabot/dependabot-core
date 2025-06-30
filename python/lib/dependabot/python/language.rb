@@ -13,6 +13,7 @@ module Dependabot
       extend T::Sig
       # This list must match the versions specified at the top of `python/Dockerfile`
       # ARG PY_3_13=3.13.2
+      # When updating this list, also update uv/lib/dependabot/uv/language.rb
       PRE_INSTALLED_PYTHON_VERSIONS_RAW = %w(
         3.13.3
         3.12.10
