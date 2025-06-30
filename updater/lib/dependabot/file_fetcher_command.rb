@@ -6,6 +6,7 @@ require "dependabot/base_command"
 require "dependabot/errors"
 require "dependabot/opentelemetry"
 require "dependabot/updater"
+require "dependabot/config/file_fetcher"
 require "octokit"
 
 module Dependabot
