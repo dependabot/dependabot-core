@@ -52,6 +52,7 @@ module Dependabot
       dependency_group_to_refresh
       cooldown
       repo_private
+      multi_ecosystem_update
     ).freeze, T::Array[Symbol])
 
     sig { returns(T::Array[T::Hash[String, T.untyped]]) }
@@ -185,6 +186,7 @@ module Dependabot
         build_cooldown(attributes.fetch(:cooldown, nil)),
         T.nilable(Dependabot::Package::ReleaseCooldownOptions)
       )
+      @multi_ecosystem_update         = T.let(attributes.fetch(:multi_ecosystem_update, false), T::Boolean)
       # TODO: Make this hash required
       #
       # We will need to do a pass updating the CLI and smoke tests before this is possible,
@@ -228,6 +230,11 @@ module Dependabot
     sig { returns(T::Boolean) }
     def updating_a_pull_request?
       @updating_a_pull_request
+    end
+
+    sig { returns(T::Boolean) }
+    def multi_ecosystem_update?
+      @multi_ecosystem_update
     end
 
     sig { returns(T::Boolean) }
