@@ -194,7 +194,13 @@ module Dependabot
 
     sig { returns(String) }
     def organization
-      T.must(repo.split("/").first)
+      case provider
+      when "azure"
+        parts = repo.split("/_git/")
+        T.must(T.must(parts.first).split("/").last(2).first)
+      else
+        T.must(repo.split("/").first)
+      end
     end
 
     sig { returns(String) }
@@ -202,7 +208,7 @@ module Dependabot
       raise "Project is an Azure DevOps concept only" unless provider == "azure"
 
       parts = repo.split("/_git/")
-      return T.must(T.must(parts.first).split("/").last) if parts.first&.split("/")&.count == 2
+      return T.must(T.must(parts.first).split("/").last) if parts.first&.split("/")&.count&.>=(2)
 
       T.must(parts.last)
     end

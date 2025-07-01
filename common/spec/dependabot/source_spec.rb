@@ -50,6 +50,22 @@ RSpec.describe Dependabot::Source do
 
       specify { expect { source }.to raise_error(/hostname and api_endpoint/) }
     end
+
+    context "with an OnPrem Azure DevOps" do
+      let(:attrs) do
+        {
+          provider: "azure",
+          repo: "tfs/CollectionName/ProjectName/_git/RepositoryName",
+          hostname: "azure-onprem-url.domain.org",
+          api_endpoint: "https://azure-onprem-url.domain.org:/tfs/"
+        }
+      end
+
+      its(:url) { is_expected.to eq("https://azure-onprem-url.domain.org/tfs/CollectionName/ProjectName/_git/RepositoryName") }
+      its(:unscoped_repo) { is_expected.to eq("RepositoryName") }
+      its(:organization) { is_expected.to eq("CollectionName") }
+      its(:project) { is_expected.to eq("ProjectName") }
+    end
   end
 
   describe ".from_url" do
