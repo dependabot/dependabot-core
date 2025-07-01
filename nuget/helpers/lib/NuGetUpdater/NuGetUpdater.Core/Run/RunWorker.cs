@@ -44,12 +44,12 @@ public class RunWorker
         _updaterWorker = updateWorker;
     }
 
-    public async Task RunAsync(FileInfo jobFilePath, DirectoryInfo repoContentsPath, string baseCommitSha, FileInfo outputFilePath)
+    public async Task RunAsync(FileInfo jobFilePath, DirectoryInfo repoContentsPath, DirectoryInfo? caseInsensitiveRepoContentsPath, string baseCommitSha, FileInfo outputFilePath)
     {
         var jobFileContent = await File.ReadAllTextAsync(jobFilePath.FullName);
         var jobWrapper = Deserialize(jobFileContent);
         var experimentsManager = ExperimentsManager.GetExperimentsManager(jobWrapper.Job.Experiments);
-        var result = await RunAsync(jobWrapper.Job, repoContentsPath, baseCommitSha, experimentsManager);
+        var result = await RunAsync(jobWrapper.Job, repoContentsPath, caseInsensitiveRepoContentsPath, baseCommitSha, experimentsManager);
         if (experimentsManager.UseLegacyUpdateHandler)
         {
             // only the legacy handler writes this file
@@ -58,16 +58,16 @@ public class RunWorker
         }
     }
 
-    public async Task<RunResult> RunAsync(Job job, DirectoryInfo repoContentsPath, string baseCommitSha, ExperimentsManager experimentsManager)
+    public async Task<RunResult> RunAsync(Job job, DirectoryInfo repoContentsPath, DirectoryInfo? caseInsensitiveRepoContentsPath, string baseCommitSha, ExperimentsManager experimentsManager)
     {
         RunResult result;
         if (experimentsManager.UseLegacyUpdateHandler)
         {
-            result = await RunWithErrorHandlingAsync(job, repoContentsPath, baseCommitSha, experimentsManager);
+            result = await RunWithErrorHandlingAsync(job, repoContentsPath, caseInsensitiveRepoContentsPath, baseCommitSha, experimentsManager);
         }
         else
         {
-            await RunScenarioHandlersWithErrorHandlingAsync(job, repoContentsPath, baseCommitSha, experimentsManager);
+            await RunScenarioHandlersWithErrorHandlingAsync(job, repoContentsPath, caseInsensitiveRepoContentsPath, baseCommitSha, experimentsManager);
 
             // the group updater doesn't return this, so we provide an empty object
             result = new RunResult()
@@ -92,7 +92,7 @@ public class RunWorker
     public static IUpdateHandler GetUpdateHandler(Job job) =>
         UpdateHandlers.FirstOrDefault(h => h.CanHandle(job)) ?? throw new InvalidOperationException("Unable to find appropriate update handler.");
 
-    private async Task RunScenarioHandlersWithErrorHandlingAsync(Job job, DirectoryInfo repoContentsPath, string baseCommitSha, ExperimentsManager experimentsManager)
+    private async Task RunScenarioHandlersWithErrorHandlingAsync(Job job, DirectoryInfo repoContentsPath, DirectoryInfo? caseInsensitiveRepoContentsPath, string baseCommitSha, ExperimentsManager experimentsManager)
     {
         JobErrorBase? error = null;
 
@@ -100,7 +100,7 @@ public class RunWorker
         {
             var handler = GetUpdateHandler(job);
             _logger.Info($"Starting update job of type {handler.TagName}");
-            await handler.HandleAsync(job, repoContentsPath, baseCommitSha, _discoveryWorker, _analyzeWorker, _updaterWorker, _apiHandler, experimentsManager, _logger);
+            await handler.HandleAsync(job, repoContentsPath, caseInsensitiveRepoContentsPath, baseCommitSha, _discoveryWorker, _analyzeWorker, _updaterWorker, _apiHandler, experimentsManager, _logger);
         }
         catch (Exception ex)
         {
@@ -115,7 +115,7 @@ public class RunWorker
         await _apiHandler.MarkAsProcessed(new(baseCommitSha));
     }
 
-    private async Task<RunResult> RunWithErrorHandlingAsync(Job job, DirectoryInfo repoContentsPath, string baseCommitSha, ExperimentsManager experimentsManager)
+    private async Task<RunResult> RunWithErrorHandlingAsync(Job job, DirectoryInfo repoContentsPath, DirectoryInfo? caseInsensitiveRepoContentsPath, string baseCommitSha, ExperimentsManager experimentsManager)
     {
         JobErrorBase? error = null;
         var currentDirectory = repoContentsPath.FullName; // used for error reporting below
@@ -134,7 +134,7 @@ public class RunWorker
             {
                 var localPath = PathHelper.JoinPath(repoContentsPath.FullName, directory);
                 currentDirectory = localPath;
-                var result = await RunForDirectory(job, repoContentsPath, directory, baseCommitSha, experimentsManager);
+                var result = await RunForDirectory(job, repoContentsPath, caseInsensitiveRepoContentsPath, directory, baseCommitSha, experimentsManager);
                 foreach (var dependencyFile in result.Base64DependencyFiles)
                 {
                     var uniqueKey = Path.GetFullPath(Path.Join(dependencyFile.Directory, dependencyFile.Name)).NormalizePathToUnix().EnsurePrefix("/");
@@ -163,8 +163,9 @@ public class RunWorker
         return runResult;
     }
 
-    private async Task<RunResult> RunForDirectory(Job job, DirectoryInfo repoContentsPath, string repoDirectory, string baseCommitSha, ExperimentsManager experimentsManager)
+    private async Task<RunResult> RunForDirectory(Job job, DirectoryInfo originalRepoContentsPath, DirectoryInfo? caseInsensitiveRepoContentsPath, string repoDirectory, string baseCommitSha, ExperimentsManager experimentsManager)
     {
+        var repoContentsPath = caseInsensitiveRepoContentsPath ?? originalRepoContentsPath;
         var discoveryResult = await _discoveryWorker.RunAsync(repoContentsPath.FullName, repoDirectory);
         _logger.ReportDiscovery(discoveryResult);
 
@@ -180,7 +181,7 @@ public class RunWorker
         }
 
         // report dependencies
-        var discoveredUpdatedDependencies = GetUpdatedDependencyListFromDiscovery(discoveryResult);
+        var discoveredUpdatedDependencies = GetUpdatedDependencyListFromDiscovery(discoveryResult, originalRepoContentsPath.FullName, _logger);
         await _apiHandler.UpdateDependencyList(discoveredUpdatedDependencies);
 
         var incrementMetric = GetIncrementMetric(job);
@@ -190,7 +191,7 @@ public class RunWorker
         var actualUpdatedDependencies = new List<ReportedDependency>();
 
         // track original contents for later handling
-        var tracker = new ModifiedFilesTracker(repoContentsPath);
+        var tracker = new ModifiedFilesTracker(originalRepoContentsPath, _logger);
         await tracker.StartTrackingAsync(discoveryResult);
 
         // do update
@@ -708,7 +709,28 @@ public class RunWorker
         return dependencyInfo;
     }
 
-    internal static UpdatedDependencyList GetUpdatedDependencyListFromDiscovery(WorkspaceDiscoveryResult discoveryResult)
+    internal static string EnsureCorrectFileCasing(string repoRelativePath, string repoRoot, ILogger logger)
+    {
+        var fullPath = Path.Join(repoRoot, repoRelativePath);
+        var resolvedNames = PathHelper.ResolveCaseInsensitivePathsInsideRepoRoot(fullPath, repoRoot);
+        if (resolvedNames is null)
+        {
+            logger.Info($"Unable to resolve correct case for file [{repoRelativePath}]; returning original.");
+            return repoRelativePath;
+        }
+
+        if (resolvedNames.Count != 1)
+        {
+            logger.Info($"Expected exactly 1 normalized file path for [{repoRelativePath}], instead found {resolvedNames.Count}: {string.Join(", ", resolvedNames)}");
+            return repoRelativePath;
+        }
+
+        var resolvedName = resolvedNames[0];
+        var relativeResolvedName = Path.GetRelativePath(repoRoot, resolvedName).FullyNormalizedRootedPath();
+        return relativeResolvedName;
+    }
+
+    internal static UpdatedDependencyList GetUpdatedDependencyListFromDiscovery(WorkspaceDiscoveryResult discoveryResult, string repoRoot, ILogger logger)
     {
         string GetFullRepoPath(string path)
         {
@@ -793,6 +815,7 @@ public class RunWorker
         var dependencyFiles = discoveryResult.Projects
             .Select(p => GetFullRepoPath(p.FilePath))
             .Concat(auxiliaryFiles)
+            .Select(p => EnsureCorrectFileCasing(p, repoRoot, logger))
             .Distinct()
             .OrderBy(p => p)
             .ToArray();

@@ -545,6 +545,141 @@ public class RefreshSecurityUpdatePullRequestHandlerTests : UpdateHandlersTestsB
     }
 
     [Fact]
+    public async Task GeneratesUpdatePullRequest_OneDependencyUpToDate_OneOtherVulnerable()
+    {
+        await TestAsync(
+            job: new Job()
+            {
+                Dependencies = ["Some.Dependency"],
+                ExistingPullRequests = [
+                    new() { Dependencies = [new() { DependencyName = "Some.Dependency", DependencyVersion = NuGetVersion.Parse("2.0.0") }] }
+                ],
+                SecurityAdvisories = [
+                    new() { DependencyName = "Some.Dependency", AffectedVersions = [Requirement.Parse(">= 1.0.0, < 2.0.0")] }
+                ],
+                SecurityUpdatesOnly = true,
+                Source = CreateJobSource("/src"),
+                UpdatingAPullRequest = true,
+            },
+            files: [
+                ("src/project1.csproj", "initial contents"),
+                ("src/project2.csproj", "initial contents")
+            ],
+            discoveryWorker: TestDiscoveryWorker.FromResults(
+                ("/src", new WorkspaceDiscoveryResult()
+                {
+                    Path = "/src",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "project1.csproj",
+                            Dependencies = [new("Some.Dependency", "2.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"])],
+                            ImportedFiles = [],
+                            AdditionalFiles = [],
+                        },
+                        new()
+                        {
+                            FilePath = "project2.csproj",
+                            Dependencies = [new("Some.Dependency", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"])],
+                            ImportedFiles = [],
+                            AdditionalFiles = [],
+                        }
+                    ]
+                })
+            ),
+            analyzeWorker: new TestAnalyzeWorker(input =>
+            {
+                var repoRoot = input.Item1;
+                var discovery = input.Item2;
+                var dependencyInfo = input.Item3;
+                if (dependencyInfo.Name != "Some.Dependency")
+                {
+                    throw new NotImplementedException($"Test didn't expect to update dependency {dependencyInfo.Name}");
+                }
+
+                if (dependencyInfo.Version != "1.0.0")
+                {
+                    throw new NotImplementedException($"Only expected to update version 1.0.0, but found {dependencyInfo.Version}");
+                }
+
+                return Task.FromResult(new AnalysisResult()
+                {
+                    CanUpdate = true,
+                    UpdatedVersion = "2.0.0",
+                    UpdatedDependencies = [],
+                });
+            }),
+            updaterWorker: new TestUpdaterWorker(async input =>
+            {
+                var repoRoot = input.Item1;
+                var workspacePath = input.Item2;
+                var dependencyName = input.Item3;
+                var previousVersion = input.Item4;
+                var newVersion = input.Item5;
+                var isTransitive = input.Item6;
+
+                await File.WriteAllTextAsync(Path.Join(repoRoot, workspacePath), "updated contents");
+
+                return new UpdateOperationResult()
+                {
+                    UpdateOperations = [new DirectUpdate() { DependencyName = "Some.Dependency", NewVersion = NuGetVersion.Parse("2.0.0"), UpdatedFiles = ["/src/project2.csproj"] }],
+                };
+            }),
+            expectedUpdateHandler: RefreshSecurityUpdatePullRequestHandler.Instance,
+            expectedApiMessages: [
+                new UpdatedDependencyList()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "Some.Dependency",
+                            Version = "2.0.0",
+                            Requirements = [
+                                new() { Requirement = "2.0.0", File = "/src/project1.csproj", Groups = ["dependencies"] },
+                            ],
+                        },
+                        new()
+                        {
+                            Name = "Some.Dependency",
+                            Version = "1.0.0",
+                            Requirements = [
+                                new() { Requirement = "1.0.0", File = "/src/project2.csproj", Groups = ["dependencies"] },
+                            ],
+                        },
+                    ],
+                    DependencyFiles = ["/src/project1.csproj", "/src/project2.csproj"],
+                },
+                new IncrementMetric()
+                {
+                    Metric = "updater.started",
+                    Tags = new()
+                    {
+                        ["operation"] = "update_security_pr",
+                    }
+                },
+                new UpdatePullRequest()
+                {
+                    DependencyNames = ["Some.Dependency"],
+                    DependencyGroup = null,
+                    UpdatedDependencyFiles = [
+                        new()
+                        {
+                            Directory = "/src",
+                            Name = "project2.csproj",
+                            Content = "updated contents",
+                        }
+                    ],
+                    BaseCommitSha = "TEST-COMMIT-SHA",
+                    CommitMessage = RunWorkerTests.TestPullRequestCommitMessage,
+                    PrTitle = RunWorkerTests.TestPullRequestTitle,
+                    PrBody = RunWorkerTests.TestPullRequestBody,
+                },
+                new MarkAsProcessed("TEST-COMMIT-SHA"),
+            ]
+        );
+    }
+
+    [Fact]
     public async Task GeneratesClosePullRequest_DependenciesRemoved()
     {
         await TestAsync(

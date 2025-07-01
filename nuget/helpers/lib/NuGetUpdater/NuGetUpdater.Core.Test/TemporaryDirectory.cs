@@ -29,7 +29,13 @@ public sealed class TemporaryDirectory : IDisposable
     public void Dispose()
     {
         _environment.Dispose();
-        Directory.Delete(_rootDirectory, true);
+        try
+        {
+            Directory.Delete(_rootDirectory, true);
+        }
+        catch
+        {
+        }
     }
 
     public async Task<TestFile[]> ReadFileContentsAsync(HashSet<string> filePaths)
