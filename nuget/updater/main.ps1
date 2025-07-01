@@ -29,8 +29,8 @@ function Get-Files {
         $script:operationExitCode = $LASTEXITCODE
     }
 
-    if ($script:operationExitCode -eq 0) {
-        # this only makes sense if the native clone operation succeeded
+    if ($script:operationExitCode -eq 0 && "$env:DEPENDABOT_CASE_INSENSITIVE_REPO_CONTENTS_PATH" -eq "") {
+        # this only makes sense if the native clone operation succeeded and we're not running in case-insensitive mode
         Repair-FileCasing
     }
 }
@@ -49,14 +49,31 @@ function Update-Files {
     Push-Location $env:DEPENDABOT_REPO_CONTENTS_PATH
     $baseCommitSha = git rev-parse HEAD
     Pop-Location
+    Write-Host "Base commit SHA: $baseCommitSha"
 
-    & $updaterTool run `
-        --job-path $env:DEPENDABOT_JOB_PATH `
-        --repo-contents-path $env:DEPENDABOT_REPO_CONTENTS_PATH `
-        --api-url $env:DEPENDABOT_API_URL `
-        --job-id $env:DEPENDABOT_JOB_ID `
-        --output-path $env:DEPENDABOT_OUTPUT_PATH `
-        --base-commit-sha $baseCommitSha
+    $arguments = @()
+    $arguments += "--job-path `"$env:DEPENDABOT_JOB_PATH`""
+    $arguments += "--repo-contents-path `"$env:DEPENDABOT_REPO_CONTENTS_PATH`""
+    $arguments += "--api-url `"$env:DEPENDABOT_API_URL`""
+    $arguments += "--job-id `"$env:DEPENDABOT_JOB_ID`""
+    $arguments += "--output-path `"$env:DEPENDABOT_OUTPUT_PATH`""
+    $arguments += "--base-commit-sha `"$baseCommitSha`""
+    if ("$env:DEPENDABOT_CASE_INSENSITIVE_REPO_CONTENTS_PATH" -ne "") {
+        # ensure the updater gets this optional path
+        $arguments += "--case-insensitive-repo-contents-path `"$env:DEPENDABOT_CASE_INSENSITIVE_REPO_CONTENTS_PATH`""
+
+        # redirect the local package cache to the case-insensitive path...
+        $caseInsensitiveRoot = Join-Path $env:DEPENDABOT_CASE_INSENSITIVE_REPO_CONTENTS_PATH ".."
+        $env:NUGET_PACKAGES = "$caseInsensitiveRoot/.nuget/packages"
+        $env:NUGET_HTTP_CACHE_PATH = "$caseInsensitiveRoot/.nuget/http-cache"
+        $env:NUGET_SCRATCH = "$caseInsensitiveRoot/.nuget/scratch"
+        $env:NUGET_PLUGINS_CACHE_PATH = "$caseInsensitiveRoot/.nuget/plugins-cache"
+
+        # ...but still allow read access to the pre-populated packages
+        $env:NUGET_FALLBACK_PACKAGES = "$env:DEPENDABOT_HOME/.nuget/packages"
+    }
+
+    Invoke-Expression -Command "$updaterTool run $arguments"
     $script:operationExitCode = $LASTEXITCODE
 }
 
