@@ -35,30 +35,115 @@ module Dependabot
         sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
 
-        sig { params(repo_name: String).returns(T::Array[GitTagWithDetail]) }
+        sig { params(repo_name: String).returns(T.any(T::Array[GitTagWithDetail], NilClass)) }
         def fetch_tag_and_release_date_from_chart(repo_name)
           return [] unless repo_name.empty?
 
-          url = RELEASES_URL_GIT + repo_name + HELM_CHART_RELEASE
-          Dependabot.logger.info("Fetching graph release details from URL: #{url}")
-          result_lines = T.let([], T::Array[GitTagWithDetail])
-          # Fetch the releases from the provider API
-          response = Excon.get(url, headers: { "Accept" => "application/vnd.github.v3+json" })
-          Dependabot.logger.error("Failed call details: #{response.body}") unless response.status == 200
-          return result_lines unless response.status == 200
+          begin
+            url = RELEASES_URL_GIT + repo_name + HELM_CHART_RELEASE
+            Dependabot.logger.info("Fetching graph release details from URL: #{url}")
 
-          # Parse the JSON response
-          releases = JSON.parse(response.body)
-          # Extract tag_name and published_at from each release
-          result_lines = releases.map do |release|
-            GitTagWithDetail.new({
-              tag: release["tag_name"],
-              release_date: release["published_at"]
-            })
+            # Fetch the releases from the provider API
+            response = Excon.get(url, headers: { "Accept" => "application/vnd.github.v3+json" })
+            Dependabot.logger.error("Failed call details: #{response.body}") unless response.status == 200
+
+            parse_github_response(response) if response.status == 200 # rubocop(Layout/IndentationConsistency)
+          rescue Excon::Error => e
+            Dependabot.logger.error("Failed to fetch releases from #{url}: #{e.message}")
+            Dependabot.logger.error("Returning an empty array due to failure.")
+            []
           end
-          Dependabot.logger.info("Extracted release details: #{result_lines}")
-          # Sort the result lines by tag in descending order
-          result_lines.sort_by(&:tag).reverse
+
+          # If not successful then test using helm history chart command
+          begin
+            response = Helpers.chart_history_with_release_details(repo_name)
+            # rubocop(Layout/IndentationConsistency)
+            parse_chart_history_response(response) if response.include?("updated")
+          rescue StandardError => e
+            Dependabot.logger.error("Failed to parse JSON response from helm history command: #{e.message}")
+            Dependabot.logger.error("Response body: #{response}")
+            [] # Return an empty array if parsing fails
+          end
+
+          # If the response is not empty, parse it
+        end
+
+        sig { params(response: Excon::Response).returns(T::Array[GitTagWithDetail]) }
+        def parse_github_response(response)
+          Dependabot.logger.info("Parsing GitHub response body")
+          begin
+            # Parse the JSON response
+            releases = JSON.parse(response.body)
+            # Extract tag_name and published_at from each release
+            result_lines = releases.map do |release|
+              GitTagWithDetail.new({
+                tag: release["tag_name"],
+                release_date: release["published_at"]
+              })
+            end
+            Dependabot.logger.info("Extracted release details: #{result_lines}")
+            # Sort the result lines by tag in descending order
+            result_lines.sort_by(&:tag).reverse
+            result_lines
+          rescue JSON::ParserError => e
+            Dependabot.logger.error("Failed to parse JSON response: #{e.message}")
+            Dependabot.logger.error("Response body: #{response.body}")
+            [] # Ensure an empty array is returned on failure
+          end
+        end
+
+        # https://v3-1-0.helm.sh/docs/helm/helm_history/ reference
+        sig { params(response: String).returns(T::Array[GitTagWithDetail]) }
+        def parse_chart_history_response(response)
+          Dependabot.logger.info("Parsing GitHub response body")
+          begin
+            # Parse the JSON response
+            releases = JSON.parse(response)
+            # Extract tag_name and published_at from each release
+            result_lines = releases.map do |release|
+              GitTagWithDetail.new({
+                tag: release["app_version"],
+                release_date: release["updated"]
+              })
+            end
+            Dependabot.logger.info("Extracted release details: #{result_lines}")
+            # Sort the result lines by tag in descending order
+            result_lines.sort_by(&:tag).reverse
+            result_lines
+          rescue JSON::ParserError => e
+            Dependabot.logger.error("Failed to parse JSON response: #{e.message}")
+            Dependabot.logger.error("Response body: #{response}")
+            [] # Ensure an empty array is returned on failure
+          end
+        end
+
+        sig { params(index_url: String).returns(T::Array[GitTagWithDetail]) }
+        def fetch_tag_and_release_date_helm_chart_index(index_url)
+          Dependabot.logger.info("Fetching fetch_tag_and_release_date_helm_chart_index:: #{index_url}")
+          begin
+            response = Excon.get(
+              index_url,
+              idempotent: true,
+              middlewares: Excon.defaults[:middlewares] + [Excon::Middleware::RedirectFollower]
+            )
+
+            Dependabot.logger.info("Received response from #{index_url} with status #{response.status}")
+            parsed_result = YAML.safe_load(response.body)
+            result_lines = parsed_result.map do |release|
+              GitTagWithDetail.new({
+                tag: release["version"], # Extract the version field
+                release_date: release["created"] # Extract the created field
+              })
+            end
+
+            result_lines
+          rescue Excon::Error => e
+            Dependabot.logger.error("Error fetching Helm index from #{index_url}: #{e.message}")
+            nil
+          rescue StandardError => e
+            Dependabot.logger.error("Error parsing Helm index: #{e.message}")
+            nil
+          end
         end
         # RuboCop:enable Metrics/AbcSize, Metrics/MethodLength
       end

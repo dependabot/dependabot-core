@@ -52,6 +52,29 @@ module Dependabot
         versions
       end
 
+      # To filter versions in cooldown period based on version tags from registry call
+      sig { params(index_url: String, versions: T::Array[String]).returns(T::Array[String]) }
+      def fetch_tag_and_release_date_helm_chart_index(index_url, versions)
+        return versions unless cooldown_enabled?
+
+        Dependabot.logger.info("Filtering versions in cooldown period from chart: #{index_url}")
+        return versions unless select_tags_which_in_cooldown_from_chart_index(index_url).nil?
+
+        # sort the allowed version tags by name in descending order
+        select_tags_which_in_cooldown_from_chart_index(index_url)&.each do |tag_name|
+          # Iterate through versions and filter out those matching the tag_name
+          versions.reject! do |version|
+            version == tag_name
+          end
+        end
+        Dependabot.logger.info("Allowed version tags after filtering versions in cooldown:
+              #{versions.map(&:to_s).join(', ')}")
+        versions
+      rescue StandardError => e
+        Dependabot.logger.error("Error filter_versions_in_cooldown_period_from_chart(versions): #{e.message}")
+        versions
+      end
+
       sig { params(release_date: String).returns(T::Boolean) }
       def check_if_version_in_cooldown_period?(release_date)
         return false unless release_date.length.positive?
@@ -84,7 +107,7 @@ module Dependabot
         version_tags_in_cooldown_from_chart = T.let([], T::Array[String])
 
         begin
-          package_details_fetcher.fetch_tag_and_release_date_from_chart(repo_name).each do |git_tag_with_detail|
+          T.must(package_details_fetcher.fetch_tag_and_release_date_from_chart(repo_name)).each do |git_tag_with_detail|
             if check_if_version_in_cooldown_period?(T.must(git_tag_with_detail.release_date))
               version_tags_in_cooldown_from_chart << git_tag_with_detail.tag
             end
@@ -93,6 +116,23 @@ module Dependabot
         rescue StandardError => e
           Dependabot.logger.error("Error checking if version is in cooldown: #{e.message}")
           version_tags_in_cooldown_from_chart
+        end
+      end
+
+      sig { params(index_url: String).returns(T.nilable(T::Array[String])) }
+      def select_tags_which_in_cooldown_from_chart_index(index_url)
+        fetch_tag_and_release_date_helm_chart_index = T.let([], T::Array[String])
+
+        begin
+          package_details_fetcher.fetch_tag_and_release_date_helm_chart_index(index_url).each do |git_tag_with_detail|
+            if check_if_version_in_cooldown_period?(T.must(git_tag_with_detail.release_date))
+              fetch_tag_and_release_date_helm_chart_index << git_tag_with_detail.tag
+            end
+          end
+          fetch_tag_and_release_date_helm_chart_index
+        rescue StandardError => e
+          Dependabot.logger.error("Error checking if version is in cooldown: #{e.message}")
+          fetch_tag_and_release_date_helm_chart_index
         end
       end
 
