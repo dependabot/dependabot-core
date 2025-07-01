@@ -67,6 +67,24 @@ module Dependabot
         raise
       end
 
+      sig { params(chart_name: String).returns(String) }
+      def self.chart_history_with_release_details(chart_name)
+        Dependabot.logger.info("Chart History for the given chart name \"#{chart_name}\"")
+
+        chart_name = chart_name.split("/").last
+        release_date_json = Dependabot::SharedHelpers.run_shell_command(
+          "helm history #{chart_name}  --output=json",
+          fingerprint: "helm history <chart_name> --output=json"
+        )
+        Dependabot.logger.info("Fetching release date for the chart: #{release_date_json}")
+        release_date_json.strip
+      rescue StandardError => e
+        Dependabot.logger.error(
+          "Failed to exceute helm history #{chart_name}  --output=json, error message: #{e.message}"
+        )
+        raise
+      end
+
       sig { params(username: String, password: String, repository_url: String).returns(String) }
       def self.oci_registry_login(username, password, repository_url)
         Dependabot.logger.info("Logging into OCI registry \"#{repository_url}\"")
