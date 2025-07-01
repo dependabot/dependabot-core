@@ -80,7 +80,7 @@ module Dependabot
         release_date_json.strip
       rescue StandardError => e
         Dependabot.logger.error(
-          "Failed to exceute helm history #{chart_name}  --output=json, error message: #{e.message}"
+          "Failed to execute helm history #{chart_name}  --output=json, error message: #{e.message}"
         )
         raise
       end
