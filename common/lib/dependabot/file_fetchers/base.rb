@@ -117,6 +117,13 @@ module Dependabot
         @files = T.let([], T::Array[DependencyFile])
       end
 
+      # rubocop:disable Style/TrivialAccessors
+      sig { params(excludes: T::Array[String]).void }
+      def exclude_directories=(excludes)
+        @exclude_directories = excludes
+      end
+      # rubocop:enable Style/TrivialAccessors
+
       sig { returns(String) }
       def repo
         source.repo

@@ -73,6 +73,16 @@ module Dependabot
                                        ))
     end
 
+    def apply_update_config(fetcher)
+      raw           = fetcher.config_file&.content.to_s
+      parsed_cfg    = Dependabot::Config::File.parse(raw)
+      update_cfg    = parsed_cfg.update_config(job.package_manager)
+
+      fetcher.exclude_directories = update_cfg.exclude_directories
+    rescue Dependabot::RepoNotFound, Dependabot::DependencyFileNotFound, StandardError
+      # swallow—no config
+    end
+
     # A method that abstracts the file fetcher creation logic and applies the same settings across all instances
     def create_file_fetcher(directory: nil)
       # Use the provided directory or fallback to job.source.directory if directory is nil.
@@ -92,22 +102,9 @@ module Dependabot
       args[:repo_contents_path] = Environment.repo_contents_path if job.clone? || already_cloned?
 
       # Load & parse dependabot.yaml from the repo
-      parsed_cfg = begin
-        config_file = Dependabot::Config::FileFetcher.new(**args).config_file
-        Dependabot::Config::File.parse(config_file.content)
-      rescue Dependabot::RepoNotFound, Dependabot::DependencyFileNotFound
-        # No config ⇒ use an empty File (updates: [] ⇒ default UpdateConfig)
-        Dependabot::Config::File.new(updates: [])
-      end
-
-      update_cfg = parsed_cfg.update_config(
-        job.package_manager,
-        directory:     directory_to_use,
-        target_branch: job.source.branch
-      )
-
-      args[:update_config] = update_cfg
-      Dependabot::FileFetchers.for_package_manager(job.package_manager).new(**args)
+      file_fetcher = Dependabot::FileFetchers.for_package_manager(job.package_manager).new(**args)
+      apply_update_config(file_fetcher)
+      file_fetcher
     end
 
     # The main file fetcher method that now calls the create_file_fetcher method

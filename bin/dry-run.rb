@@ -590,7 +590,7 @@ begin
   $config_file = begin
     cfg_file = Dependabot::Config::FileFetcher.new(**config_fetcher_args).config_file
     Dependabot::Config::File.parse(cfg_file.content)
-  rescue Dependabot::RepoNotFound, Dependabot::DependencyFileNotFound
+  rescue Dependabot::RepoNotFound, Dependabot::DependencyFileNotFound, StandardError
     Dependabot::Config::File.new(updates: [])
   end
   $update_config = begin

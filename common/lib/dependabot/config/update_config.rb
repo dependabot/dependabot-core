@@ -23,7 +23,7 @@ module Dependabot
         params(
           ignore_conditions: T.nilable(T::Array[IgnoreCondition]),
           commit_message_options: T.nilable(CommitMessageOptions),
-          exclude_directories:  T.nilable(T::Array[String])
+          exclude_directories: T.nilable(T::Array[String])
         ).void
       end
       def initialize(ignore_conditions: nil, commit_message_options: nil, exclude_directories: nil)
