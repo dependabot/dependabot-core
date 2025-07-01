@@ -12,6 +12,7 @@ public class ModifiedFilesTracker
 {
     public readonly DirectoryInfo RepoContentsPath;
     private WorkspaceDiscoveryResult? _currentDiscoveryResult = null;
+    private readonly ILogger _logger;
 
     private readonly Dictionary<string, string> _originalDependencyFileContents = [];
     private readonly Dictionary<string, EOLType> _originalDependencyFileEOFs = [];
@@ -22,9 +23,10 @@ public class ModifiedFilesTracker
     //public IReadOnlyDictionary<string, EOLType> OriginalDependencyFileEOFs => _originalDependencyFileEOFs;
     public IReadOnlyDictionary<string, bool> OriginalDependencyFileBOMs => _originalDependencyFileBOMs;
 
-    public ModifiedFilesTracker(DirectoryInfo repoContentsPath)
+    public ModifiedFilesTracker(DirectoryInfo repoContentsPath, ILogger logger)
     {
         RepoContentsPath = repoContentsPath;
+        _logger = logger;
     }
 
     public async Task StartTrackingAsync(WorkspaceDiscoveryResult discoveryResult)
@@ -39,7 +41,7 @@ public class ModifiedFilesTracker
         // track original contents for later handling
         async Task TrackOriginalContentsAsync(string directory, string fileName)
         {
-            var repoFullPath = Path.Join(directory, fileName).FullyNormalizedRootedPath();
+            var repoFullPath = CorrectRepoRelativePathCasing(directory, fileName);
             var localFullPath = Path.Join(RepoContentsPath.FullName, repoFullPath);
             var content = await File.ReadAllTextAsync(localFullPath);
             var rawContent = await File.ReadAllBytesAsync(localFullPath);
@@ -80,7 +82,7 @@ public class ModifiedFilesTracker
         var updatedDependencyFiles = new Dictionary<string, DependencyFile>();
         async Task AddUpdatedFileIfDifferentAsync(string directory, string fileName)
         {
-            var repoFullPath = Path.Join(directory, fileName).FullyNormalizedRootedPath();
+            var repoFullPath = CorrectRepoRelativePathCasing(directory, fileName);
             var localFullPath = Path.GetFullPath(Path.Join(RepoContentsPath.FullName, repoFullPath));
             var originalContent = _originalDependencyFileContents[repoFullPath];
             var updatedContent = await File.ReadAllTextAsync(localFullPath);
@@ -132,6 +134,13 @@ public class ModifiedFilesTracker
             .Select(kvp => kvp.Value)
             .ToImmutableArray();
         return updatedDependencyFileList;
+    }
+
+    private string CorrectRepoRelativePathCasing(string directory, string fileName)
+    {
+        var repoFullPath = Path.Join(directory, fileName).FullyNormalizedRootedPath();
+        var correctedRepoFullPath = RunWorker.EnsureCorrectFileCasing(repoFullPath, RepoContentsPath.FullName, _logger);
+        return correctedRepoFullPath;
     }
 
     public static ImmutableArray<DependencyFile> MergeUpdatedFileSet(ImmutableArray<DependencyFile> setA, ImmutableArray<DependencyFile> setB)
