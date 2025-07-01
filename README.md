@@ -215,7 +215,7 @@ Each language/ecosystem sits on top of the core image. You need to rebuild which
 - Once inside the shell, you can run tests, e.g.:
 
   ```shell
-  rspec common/spec/dependabot/file_fetchers/base_exclude_spec.rb
+  rspec common/lib/dependabot/file_fetchers/base_exclude_spec.rb
   ```
 
 ### Making Changes to native Package Manager helpers
