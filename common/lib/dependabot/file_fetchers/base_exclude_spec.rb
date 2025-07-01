@@ -1,3 +1,6 @@
+# typed: strict
+# frozen_string_literal: true
+
 require "dependabot/file_fetchers/base"
 require "dependabot/config/update_config"
 
@@ -9,21 +12,21 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
   let(:update_config) do
     Dependabot::Config::UpdateConfig.new(
-      ignore_conditions:     [],
+      ignore_conditions: [],
       commit_message_options: nil,
-      exclude_directories:   ["src/test/assets", "vendor/**"]
+      exclude_directories: ["src/test/assets", "vendor/**"]
     )
   end
 
   subject(:fetcher) do
     Class.new(Dependabot::FileFetchers::Base) do
-      def fetch_files; []; end
+      def fetch_files = []
     end.new(
-      source:            source,
-      credentials:       creds,
+      source: source,
+      credentials: creds,
       repo_contents_path: nil,
-      options:           opts,
-      update_config:     update_config
+      options: opts,
+      update_config: update_config
     )
   end
 
@@ -31,8 +34,8 @@ RSpec.describe Dependabot::FileFetchers::Base do
     # Prevent Dependabot from hitting real GitHub and default-branch logic
     allow(fetcher).to receive(:commit).and_return("dummy-sha")
     allow(fetcher)
-      .to receive(:_full_specification_for)
-      .and_wrap_original { |_, path, **| { provider: "github", repo: source.repo, path: path, commit: "dummy-sha" } }
+      .to(receive(:_full_specification_for)
+      .and_wrap_original { |_, path, **| { provider: "github", repo: source.repo, path: path, commit: "dummy-sha" } })
 
     # Stub the lowest-level fetch, but return *all* immediate children
     allow(fetcher)
@@ -48,7 +51,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
         [
           OpenStruct.new(name: "bar.rb",    path: "src/bar.rb",    type: "file"),
           OpenStruct.new(name: "test",      path: "src/test",      type: "dir"),
-          OpenStruct.new(name: "assets",    path: "src/test/assets",type: "dir")
+          OpenStruct.new(name: "assets",    path: "src/test/assets", type: "dir")
         ]
       when "src/test"
         [

@@ -34,7 +34,7 @@ module Dependabot
       end
       def update_config(package_manager, directory: nil, target_branch: nil)
         dir = directory || "/"
-        package_ecosystem = PACKAGE_MANAGER_LOOKUP.invert.fetch(package_manager)
+        package_ecosystem = REVERSE_PACKAGE_MANAGER_LOOKUP.fetch(package_manager, "dummy")
         cfg = updates.find do |u|
           u[:"package-ecosystem"] == package_ecosystem && u[:directory] == dir &&
             (target_branch.nil? || u[:"target-branch"] == target_branch)
@@ -85,6 +85,8 @@ module Dependabot
         "uv" => "uv",
         "vcpkg" => "vcpkg"
       }.freeze, T::Hash[String, String])
+
+      REVERSE_PACKAGE_MANAGER_LOOKUP = PACKAGE_MANAGER_LOOKUP.invert.freeze
 
       sig { params(cfg: T.nilable(T::Hash[Symbol, T.untyped])).returns(T::Array[IgnoreCondition]) }
       def ignore_conditions(cfg)
