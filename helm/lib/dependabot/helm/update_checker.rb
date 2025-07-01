@@ -89,6 +89,11 @@ module Dependabot
         Dependabot.logger.info("Found #{all_versions.length} versions for #{chart_name} in index.yaml")
 
         valid_versions = filter_valid_versions(all_versions)
+        # Filter out versions that are in cooldown period
+        latest_version_resolver.fetch_tag_and_release_date_helm_chart_index(
+          index_url,
+          valid_versions
+        )
         Dependabot.logger.info("After filtering, found #{valid_versions.length} valid versions for #{chart_name}")
 
         return nil if valid_versions.empty?
