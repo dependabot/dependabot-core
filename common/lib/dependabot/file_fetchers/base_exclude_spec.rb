@@ -4,7 +4,7 @@
 require "dependabot/file_fetchers/base"
 require "dependabot/config/update_config"
 
-# Command to run this test: rspec common/spec/dependabot/file_fetchers/base_exclude_spec.rb
+# Command to run this test: rspec common/lib/dependabot/file_fetchers/base_exclude_spec.rb
 RSpec.describe Dependabot::FileFetchers::Base do
   let(:source) { Dependabot::Source.new(provider: "github", repo: "some/random-repo", directory: "/", branch: "main") }
   let(:creds)  { [] }
@@ -14,7 +14,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
     Dependabot::Config::UpdateConfig.new(
       ignore_conditions: [],
       commit_message_options: nil,
-      exclude_directories: ["src/test/assets", "vendor/**"]
+      exclude_paths: ["src/test/assets", "vendor/**"]
     )
   end
 
@@ -50,6 +50,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
       when "src"
         [
           OpenStruct.new(name: "bar.rb",    path: "src/bar.rb",    type: "file"),
+          OpenStruct.new(name: "zoo.rb",    path: "src/zoo.rb",    type: "file"),
           OpenStruct.new(name: "test",      path: "src/test",      type: "dir"),
           OpenStruct.new(name: "assets",    path: "src/test/assets", type: "dir")
         ]
@@ -101,12 +102,32 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
     it "lets other top-level entries through" do
       paths = fetcher.send(:_fetch_repo_contents, "src").map(&:path)
-      expect(paths).to match_array(["src/bar.rb", "src/test"])
+      expect(paths).to match_array(["src/bar.rb", "src/zoo.rb", "src/test"])
     end
 
     it "glob-excludes vendor deeper paths" do
       # direct fetch of vendor/gemA should be blocked
       expect(fetcher.send(:_fetch_repo_contents, "vendor/gemA")).to eq([])
+    end
+
+    it "excludes a single file without dropping its parent directory" do
+      fetcher.instance_variable_set(:@exclude_paths, %w(vendor/** src/test/helper.rb))
+
+      paths = fetcher.send(:_fetch_repo_contents, "src/test").map(&:path)
+      expect(paths).not_to include("src/test/helper.rb")
+      expect(paths).to include("src/test/assets")
+    end
+
+    it "filters out individual files by glob but still descends into the folder" do
+      fetcher.instance_variable_set(:@exclude_paths, %w(src/*.rb))
+
+      entries = fetcher.send(:_fetch_repo_contents, "src")
+      paths   = entries.map(&:path)
+
+      expect(paths).not_to include("src/bar.rb")
+      expect(entries.map(&:type)).to include("dir")
+      expect(paths).to include("src/test")
+      expect(paths).to include("src/test/assets")
     end
   end
 
@@ -135,12 +156,32 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
     it "lets other top-level entries through" do
       paths = fetcher.send(:repo_contents, dir: "src").map(&:path)
-      expect(paths).to match_array(["src/bar.rb", "src/test"])
+      expect(paths).to match_array(["src/bar.rb", "src/zoo.rb", "src/test"])
     end
 
     it "glob-excludes vendor deeper paths" do
       # direct fetch of vendor/gemA should be blocked
       expect(fetcher.send(:repo_contents, dir: "vendor/gemA")).to eq([])
+    end
+
+    it "excludes a single file without dropping its parent directory" do
+      fetcher.instance_variable_set(:@exclude_paths, %w(vendor/** src/test/helper.rb))
+
+      paths = fetcher.send(:repo_contents, dir: "src/test").map(&:path)
+      expect(paths).not_to include("src/test/helper.rb")
+      expect(paths).to include("src/test/assets")
+    end
+
+    it "filters out individual files by glob but still descends into the folder" do
+      fetcher.instance_variable_set(:@exclude_paths, %w(src/*.rb))
+
+      entries = fetcher.send(:repo_contents, dir: "src")
+      paths   = entries.map(&:path)
+
+      expect(paths).not_to include("src/bar.rb")
+      expect(entries.map(&:type)).to include("dir")
+      expect(paths).to include("src/test")
+      expect(paths).to include("src/test/assets")
     end
   end
 end
