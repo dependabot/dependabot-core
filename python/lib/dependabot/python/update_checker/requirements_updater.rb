@@ -272,7 +272,7 @@ module Dependabot
         def new_version_satisfies?(req)
           requirement_class
             .requirements_array(req.fetch(:requirement))
-            .any? { |r| r.satisfied_by?(latest_resolvable_version) }
+            .any? { |r| r.satisfied_by?(T.must(latest_resolvable_version)) }
         end
 
         sig { params(requirement_strings: T::Array[String]).returns(String) }
@@ -308,12 +308,12 @@ module Dependabot
         end
 
         sig { params(requirement_strings: T::Array[String]).returns(String) }
-        def update_requirements_range(requirement_strings)
+        def update_requirements_range(requirement_strings) # rubocop:disable Metrics/AbcSize
           ruby_requirements =
             requirement_strings.map { |r| requirement_class.new(r) }
 
           updated_requirement_strings = ruby_requirements.flat_map do |r|
-            next r.to_s if r.satisfied_by?(latest_resolvable_version)
+            next r.to_s if r.satisfied_by?(T.must(latest_resolvable_version))
 
             case op = r.requirements.first.first
             when "<"

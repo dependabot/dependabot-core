@@ -28,11 +28,11 @@ module Dependabot
       PATTERN = T.let(/\A#{PATTERN_RAW}\z/, Regexp)
       PARENS_PATTERN = T.let(/\A\(([^)]+)\)\z/, Regexp)
 
-      sig { params(obj: T.untyped).returns([String, Gem::Version]) }
+      sig { params(obj: T.any(Gem::Version, String)).returns([String, Gem::Version]) }
       def self.parse(obj)
         return ["=", obj] if obj.is_a?(Gem::Version)
 
-        line = obj.to_s
+        line = obj
         if (matches = PARENS_PATTERN.match(line))
           line = matches[1]
         end
@@ -64,7 +64,7 @@ module Dependabot
         end
       end
 
-      sig { params(requirements: T.untyped).void }
+      sig { params(requirements: T.nilable(T.any(String, T::Array[String]))).void }
       def initialize(*requirements)
         requirements = requirements.flatten.flat_map do |req_string|
           next if req_string.nil?
@@ -80,7 +80,7 @@ module Dependabot
         super(requirements)
       end
 
-      sig { params(version: T.untyped).returns(T::Boolean) }
+      sig { params(version: T.any(Python::Version, String)).returns(T::Boolean) }
       def satisfied_by?(version)
         version = Python::Version.new(version.to_s)
 

@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -130,7 +130,11 @@ module Dependabot
         ).returns(DependencySet)
       end
       def version_catalog_library_dependencies(parsed_toml_file, toml_file)
-        dependencies_for_declarations(parsed_toml_file["libraries"], toml_file, :details_for_library_dependency)
+        dependencies_for_declarations(
+          T.cast(parsed_toml_file["libraries"], T.nilable(T::Hash[String, T.any(String, T::Hash[String, String])])),
+          toml_file,
+          :details_for_library_dependency
+        )
       end
 
       sig do
@@ -140,12 +144,16 @@ module Dependabot
         ).returns(DependencySet)
       end
       def version_catalog_plugin_dependencies(parsed_toml_file, toml_file)
-        dependencies_for_declarations(parsed_toml_file["plugins"], toml_file, :details_for_plugin_dependency)
+        dependencies_for_declarations(
+          T.cast(parsed_toml_file["plugins"], T.nilable(T::Hash[String, T.any(String, T::Hash[String, String])])),
+          toml_file,
+          :details_for_plugin_dependency
+        )
       end
 
       sig do
         params(
-          declarations: T.untyped,
+          declarations: T.nilable(T::Hash[String, T.any(String, T::Hash[String, String])]),
           toml_file: Dependabot::DependencyFile,
           details_getter: Symbol
         ).returns(DependencySet)
@@ -155,14 +163,23 @@ module Dependabot
         return dependency_set unless declarations
 
         declarations.each do |_mod, declaration|
-          group, name, version = send(details_getter, declaration)
+          group, name, version = T.cast(
+            send(details_getter, declaration),
+            [String, String, T.any(String, T::Hash[String, String])]
+          )
 
           # Only support basic version and reference formats for now,
           # refrain from updating anything else as it's likely to be a very deliberate choice.
           next unless Gradle::Version.correct?(version) || (version.is_a?(Hash) && version.key?("ref"))
 
-          version_details = Gradle::Version.correct?(version) ? version : "$" + version["ref"]
-          details = { group: group, name: name, version: version_details }
+          if version.is_a?(Hash)
+            version_details = "$" + T.must(version["ref"])
+          elsif Gradle::Version.correct?(version)
+            version_details = version
+          else
+            raise ArgumentError, "Unexpected version format: #{version.inspect}"
+          end
+          details = T.let({ group: group, name: name, version: version_details }, T::Hash[Symbol, String])
           dependency = dependency_from(details_hash: details, buildfile: toml_file)
           next unless dependency
 
@@ -171,33 +188,37 @@ module Dependabot
         dependency_set
       end
 
-      sig { params(declaration: T.untyped).returns([String, String, T.untyped]) }
+      sig do
+        params(
+          declaration: T.any(String, T::Hash[String, T.any(String, T::Hash[String, String])])
+        ).returns([String, String, T.any(String, T::Hash[String, String])])
+      end
       def details_for_library_dependency(declaration)
-        return T.cast(declaration.split(":"), [String, String, T.untyped]) if declaration.is_a?(String)
+        return T.cast(declaration.split(":"), [String, String, String]) if declaration.is_a?(String)
 
-        hash = T.cast(declaration, T::Hash[String, T.untyped])
+        hash = declaration
         if hash["module"]
-          parts = hash["module"].split(":")
-          [parts[0], parts[1], hash["version"]]
+          parts = T.cast(hash["module"], String).split(":")
+          [T.must(parts[0]), T.must(parts[1]), T.must(hash["version"])]
         else
-          [hash["group"], hash["name"], hash["version"]]
+          [T.cast(hash["group"], String), T.cast(hash["name"], String), T.must(hash["version"])]
         end
       end
 
-      sig { params(declaration: T.untyped).returns([String, T.untyped, T.untyped]) }
+      sig { params(declaration: T.any(String, T::Hash[String, String])).returns([String, String, String]) }
       def details_for_plugin_dependency(declaration)
         if declaration.is_a?(String)
           parts = declaration.split(":")
-          ["plugins", parts[0], parts[1]]
+          ["plugins", T.must(parts[0]), T.must(parts[1])]
         else
-          decl_hash = T.cast(declaration, T::Hash[String, T.untyped])
-          ["plugins", decl_hash["id"], decl_hash["version"]]
+          decl_hash = declaration
+          ["plugins", T.must(decl_hash["id"]), T.must(decl_hash["version"])]
         end
       end
 
       sig { params(file: Dependabot::DependencyFile).returns(T::Hash[String, T.untyped]) }
       def parsed_toml_file(file)
-        TomlRB.parse(file.content)
+        T.cast(TomlRB.parse(file.content), T::Hash[String, T.untyped])
       rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
         raise Dependabot::DependencyFileNotParseable, file.path
       end
@@ -343,7 +364,7 @@ module Dependabot
 
       sig do
         params(
-          details_hash: T::Hash[Symbol, T.untyped],
+          details_hash: T::Hash[Symbol, T.any(String, T::Array[String])],
           buildfile: Dependabot::DependencyFile,
           in_dependency_set: T::Boolean
         ).returns(T.nilable(Dependabot::Dependency))
@@ -393,7 +414,7 @@ module Dependabot
           group: String,
           name: String,
           version: String
-        ).returns(T.nilable(T::Hash[Symbol, T.untyped]))
+        ).returns(T.nilable(T::Hash[Symbol, T.nilable(String)]))
       end
       def source_from(group, name, version)
         return nil unless group.start_with?("com.github") && version.match?(/\A[0-9a-f]{40}\Z/)
@@ -410,25 +431,25 @@ module Dependabot
 
       sig do
         params(
-          details_hash: T::Hash[Symbol, T.untyped],
+          details_hash: T::Hash[Symbol, T.any(String, T::Array[String])],
           in_dependency_set: T::Boolean
-        ).returns(T.nilable(T::Hash[Symbol, T.untyped]))
+        ).returns(T.nilable(T::Hash[Symbol, T.any(String, T::Hash[Symbol, String])]))
       end
       def dependency_metadata(details_hash, in_dependency_set)
         version_property_name =
-          details_hash[:version]
-          .match(PROPERTY_REGEX)
-          &.named_captures&.fetch("property_name")
+          T.cast(details_hash[:version], String)
+           .match(PROPERTY_REGEX)
+           &.named_captures&.fetch("property_name")
 
         return unless version_property_name || in_dependency_set
 
-        metadata = {}
+        metadata = T.let({}, T::Hash[Symbol, T.any(String, T::Hash[Symbol, String])])
         metadata[:property_name] = version_property_name if version_property_name
         if in_dependency_set
-          metadata[:dependency_set] = {
+          metadata[:dependency_set] = T.let({
             group: details_hash[:group],
             version: details_hash[:version]
-          }
+          }, T::Hash[Symbol, String])
         end
         metadata
       end
