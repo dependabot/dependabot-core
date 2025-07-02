@@ -205,7 +205,10 @@ module Dependabot
         end
       end
 
-      sig { params(declaration: T.any(String, T::Hash[String, String])).returns([String, String, String]) }
+      sig do
+        params(declaration: T.any(String, T::Hash[String, String]))
+          .returns([String, String, T.any(String, T::Hash[String, String])])
+      end
       def details_for_plugin_dependency(declaration)
         if declaration.is_a?(String)
           parts = declaration.split(":")
