@@ -41,7 +41,7 @@ USER dependabot
 COPY --chown=dependabot:dependabot hex/helpers /opt/hex/helpers
 ENV MIX_HOME="/opt/hex/mix"
 # https://github.com/hexpm/hex/releases
-ENV HEX_VERSION="2.0.6"
+ENV HEX_VERSION="2.2.1"
 ENV HEX_CACERTS_PATH /etc/ssl/certs/ca-certificates.crt
 RUN bash /opt/hex/helpers/build
 
