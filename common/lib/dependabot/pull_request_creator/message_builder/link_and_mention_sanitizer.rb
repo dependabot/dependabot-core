@@ -56,7 +56,7 @@ module Dependabot
 
         sig { params(text: String, unsafe: T::Boolean, format_html: T::Boolean).returns(String) }
         def sanitize_links_and_mentions(text:, unsafe: false, format_html: true)
-          doc = Commonmarker.parse(text, options: { render: COMMONMARKER_OPTIONS })
+          doc = Commonmarker.parse(text, options: { extension: COMMONMARKER_EXTENSIONS, render: COMMONMARKER_OPTIONS })
 
           sanitize_team_mentions(doc)
           sanitize_mentions(doc)
