@@ -30,9 +30,9 @@ public class FileWriterWorker
     )
     {
         var updateOperations = new List<UpdateOperationBase>();
+        var projectDirectory = Path.GetDirectoryName(projectPath.FullName)!;
 
         // first try non-project updates
-        var projectDirectory = Path.GetDirectoryName(projectPath.FullName)!;
         var updatedDotNetToolsPath = await DotNetToolsJsonUpdater.UpdateDependencyAsync(
             repoContentsPath.FullName,
             projectDirectory,
@@ -52,7 +52,24 @@ public class FileWriterWorker
             });
         }
 
-        // TODO: global.json
+        var updatedGlobalJsonPath = await GlobalJsonUpdater.UpdateDependencyAsync(
+            repoContentsPath.FullName,
+            projectDirectory,
+            dependencyName,
+            oldDependencyVersion.ToString(),
+            newDependencyVersion.ToString(),
+            _logger
+        );
+        if (updatedGlobalJsonPath is not null)
+        {
+            updateOperations.Add(new DirectUpdate()
+            {
+                DependencyName = dependencyName,
+                OldVersion = oldDependencyVersion,
+                NewVersion = newDependencyVersion,
+                UpdatedFiles = [Path.GetRelativePath(repoContentsPath.FullName, updatedGlobalJsonPath).FullyNormalizedRootedPath()]
+            });
+        }
 
         // then try project updates
         var initialProjectDiscovery = await GetProjectDiscoveryResult(repoContentsPath, projectPath);

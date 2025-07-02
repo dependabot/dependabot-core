@@ -142,6 +142,73 @@ public class FileWriterWorkerTests : TestBase
         );
     }
 
+    [Fact]
+    public async Task EndToEnd_GlobalJson()
+    {
+        // project is unchanged but `global.json` is updated
+        await TestAsync(
+            dependencyName: "Some.MSBuild.Sdk",
+            oldDependencyVersion: "1.0.0",
+            newDependencyVersion: "1.1.0",
+            projectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net9.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Some.Dependency" Version="1.0.0" />
+                  </ItemGroup>
+                </Project>
+                """,
+            additionalFiles: [
+                ("global.json", """
+                    {
+                      "sdk": {
+                        "version": "6.0.405",
+                        "rollForward": "latestPatch"
+                      },
+                      "msbuild-sdks": {
+                        "Some.MSBuild.Sdk": "1.0.0"
+                      }
+                    }
+                    """)
+            ],
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Some.Dependency", "1.0.0", "net9.0"),
+                MockNuGetPackage.CreateMSBuildSdkPackage("Some.MSBuild.Sdk", "1.0.0"),
+                MockNuGetPackage.CreateMSBuildSdkPackage("Some.MSBuild.Sdk", "1.1.0"),
+            ],
+            discoveryWorker: null, // use real worker
+            dependencySolver: null, // use real worker
+            fileWriter: null, // use real worker
+            expectedProjectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net9.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Some.Dependency" Version="1.0.0" />
+                  </ItemGroup>
+                </Project>
+                """,
+            expectedAdditionalFiles: [
+                ("global.json", """
+                    {
+                      "sdk": {
+                        "version": "6.0.405",
+                        "rollForward": "latestPatch"
+                      },
+                      "msbuild-sdks": {
+                        "Some.MSBuild.Sdk": "1.1.0"
+                      }
+                    }
+                    """)],
+            expectedOperations: [
+                new DirectUpdate() { DependencyName = "Some.MSBuild.Sdk", OldVersion = NuGetVersion.Parse("1.0.0"), NewVersion = NuGetVersion.Parse("1.1.0"), UpdatedFiles = ["/global.json"] }
+            ]
+        );
+    }
+
     private static async Task TestAsync(
         string dependencyName,
         string oldDependencyVersion,
