@@ -88,6 +88,7 @@ public class UpdaterWorker : IUpdaterWorker
                 new DirectoryInfo(repoRootPath),
                 new FileInfo(workspacePath),
                 dependencyName,
+                NuGetVersion.Parse(previousDependencyVersion),
                 NuGetVersion.Parse(newDependencyVersion)
             );
             return new UpdateOperationResult()

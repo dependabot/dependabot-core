@@ -15,10 +15,12 @@ namespace NuGetUpdater.Core.Test.Update.FileWriters;
 public class FileWriterWorkerTests : TestBase
 {
     [Fact]
-    public async Task EndToEnd()
+    public async Task EndToEnd_ProjectReference()
     {
+        // project is directly changed
         await TestAsync(
             dependencyName: "Some.Dependency",
+            oldDependencyVersion: "1.0.0",
             newDependencyVersion: "2.0.0",
             projectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
@@ -55,8 +57,94 @@ public class FileWriterWorkerTests : TestBase
         );
     }
 
+    [Fact]
+    public async Task EndToEnd_DotNetTools()
+    {
+        // project is unchanged but `.config/dotnet-tools.json` is updated
+        await TestAsync(
+            dependencyName: "Some.DotNet.Tool",
+            oldDependencyVersion: "1.0.0",
+            newDependencyVersion: "1.1.0",
+            projectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net9.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Some.Dependency" Version="1.0.0" />
+                  </ItemGroup>
+                </Project>
+                """,
+            additionalFiles: [
+                (".config/dotnet-tools.json", """
+                    {
+                      "version": 1,
+                      "isRoot": true,
+                      "tools": {
+                        "some.dotnet.tool": {
+                          "version": "1.0.0",
+                          "commands": [
+                            "some.dotnet.tool"
+                          ]
+                        },
+                        "some-other-tool": {
+                          "version": "2.1.3",
+                          "commands": [
+                            "some-other-tool"
+                          ]
+                        }
+                      }
+                    }
+                    """)
+            ],
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Some.Dependency", "1.0.0", "net9.0"),
+                MockNuGetPackage.CreateDotNetToolPackage("Some.DotNet.Tool", "1.0.0", "net9.0"),
+                MockNuGetPackage.CreateDotNetToolPackage("Some.DotNet.Tool", "1.1.0", "net9.0"),
+            ],
+            discoveryWorker: null, // use real worker
+            dependencySolver: null, // use real worker
+            fileWriter: null, // use real worker
+            expectedProjectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net9.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Some.Dependency" Version="1.0.0" />
+                  </ItemGroup>
+                </Project>
+                """,
+            expectedAdditionalFiles: [
+                (".config/dotnet-tools.json", """
+                    {
+                      "version": 1,
+                      "isRoot": true,
+                      "tools": {
+                        "some.dotnet.tool": {
+                          "version": "1.1.0",
+                          "commands": [
+                            "some.dotnet.tool"
+                          ]
+                        },
+                        "some-other-tool": {
+                          "version": "2.1.3",
+                          "commands": [
+                            "some-other-tool"
+                          ]
+                        }
+                      }
+                    }
+                    """)],
+            expectedOperations: [
+                new DirectUpdate() { DependencyName = "Some.DotNet.Tool", OldVersion = NuGetVersion.Parse("1.0.0"), NewVersion = NuGetVersion.Parse("1.1.0"), UpdatedFiles = ["/.config/dotnet-tools.json"] }
+            ]
+        );
+    }
+
     private static async Task TestAsync(
         string dependencyName,
+        string oldDependencyVersion,
         string newDependencyVersion,
         string projectContents,
         (string name, string contents)[] additionalFiles,
@@ -93,6 +181,7 @@ public class FileWriterWorkerTests : TestBase
             repoContentsPath,
             projectPath,
             dependencyName,
+            NuGetVersion.Parse(oldDependencyVersion),
             NuGetVersion.Parse(newDependencyVersion)
         );
 

@@ -1,5 +1,4 @@
 using System.Collections.Immutable;
-using System.Linq;
 
 using NuGet.Versioning;
 
@@ -26,29 +25,56 @@ public class FileWriterWorker
         DirectoryInfo repoContentsPath,
         FileInfo projectPath,
         string dependencyName,
+        NuGetVersion oldDependencyVersion,
         NuGetVersion newDependencyVersion
     )
     {
+        var updateOperations = new List<UpdateOperationBase>();
+
+        // first try non-project updates
+        var projectDirectory = Path.GetDirectoryName(projectPath.FullName)!;
+        var updatedDotNetToolsPath = await DotNetToolsJsonUpdater.UpdateDependencyAsync(
+            repoContentsPath.FullName,
+            projectDirectory,
+            dependencyName,
+            oldDependencyVersion.ToString(),
+            newDependencyVersion.ToString(),
+            _logger
+        );
+        if (updatedDotNetToolsPath is not null)
+        {
+            updateOperations.Add(new DirectUpdate()
+            {
+                DependencyName = dependencyName,
+                OldVersion = oldDependencyVersion,
+                NewVersion = newDependencyVersion,
+                UpdatedFiles = [Path.GetRelativePath(repoContentsPath.FullName, updatedDotNetToolsPath).FullyNormalizedRootedPath()]
+            });
+        }
+
+        // TODO: global.json
+
+        // then try project updates
         var initialProjectDiscovery = await GetProjectDiscoveryResult(repoContentsPath, projectPath);
         if (initialProjectDiscovery is null)
         {
-            _logger.Warn($"Unable to find project discovery for project {projectPath}.");
-            return [];
+            _logger.Info($"Unable to find project discovery for project {projectPath}.");
+            return [.. updateOperations];
         }
 
         var initialRequestedDependency = initialProjectDiscovery.Dependencies
             .FirstOrDefault(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase));
         if (initialRequestedDependency is null || initialRequestedDependency.Version is null)
         {
-            _logger.Warn($"Dependency {dependencyName} not found in initial project discovery.");
-            return [];
+            _logger.Info($"Dependency {dependencyName} not found in initial project discovery.");
+            return [.. updateOperations];
         }
 
         var initialDependencyVersion = NuGetVersion.Parse(initialRequestedDependency.Version);
         if (initialDependencyVersion >= newDependencyVersion)
         {
             _logger.Info($"Dependency {dependencyName} is already at version {initialDependencyVersion}, no update needed.");
-            return [];
+            return [.. updateOperations];
         }
 
         var initialTopLevelDependencies = initialProjectDiscovery.Dependencies
@@ -59,14 +85,13 @@ public class FileWriterWorker
             ? initialTopLevelDependencies.Select(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase) ? newDependency : d).ToImmutableArray()
             : initialTopLevelDependencies.Concat([newDependency]).ToImmutableArray();
 
-        var updateOperations = new List<UpdateOperationBase>();
         foreach (var targetFramework in initialProjectDiscovery.TargetFrameworks)
         {
             var resolvedDependencies = await _dependencySolver.SolveAsync(initialTopLevelDependencies, desiredDependencies, targetFramework);
             if (resolvedDependencies is null)
             {
-                _logger.Warn("Unable to solve dependency conflicts.");
-                return [];
+                _logger.Warn($"Unable to solve dependency conflicts for target framework {targetFramework}.");
+                continue;
             }
 
             var resolvedRequestedDependency = resolvedDependencies.Value
@@ -74,31 +99,30 @@ public class FileWriterWorker
             if (resolvedRequestedDependency is null || resolvedRequestedDependency.Version is null)
             {
                 _logger.Warn($"Dependency resolution failed to include {dependencyName}.");
-                return [];
+                continue;
             }
 
             var resolvedRequestedDependencyVersion = NuGetVersion.Parse(resolvedRequestedDependency.Version);
             if (resolvedRequestedDependencyVersion != newDependencyVersion)
             {
                 _logger.Warn($"Requested dependency resolution to include {dependencyName}/{newDependencyVersion} but it was instead resolved to {resolvedRequestedDependencyVersion}.");
-                return [];
+                continue;
             }
 
-            // TODO: global.json and dotnet-tools.json
             // TODO: packages.config
 
             var updatedFiles = await TryPerformFileWritesAsync(repoContentsPath, initialProjectDiscovery, resolvedDependencies.Value);
             if (updatedFiles.Length == 0)
             {
                 _logger.Warn("Failed to write new dependency versions.");
-                return [];
+                continue;
             }
 
             var finalProjectDiscovery = await GetProjectDiscoveryResult(repoContentsPath, projectPath);
             if (finalProjectDiscovery is null)
             {
                 _logger.Warn($"Unable to find final project discovery for project {projectPath}.");
-                return [];
+                continue;
             }
 
             var finalRequestedDependency = finalProjectDiscovery.Dependencies
@@ -106,14 +130,14 @@ public class FileWriterWorker
             if (finalRequestedDependency is null || finalRequestedDependency.Version is null)
             {
                 _logger.Warn($"Dependency {dependencyName} not found in final project discovery.");
-                return [];
+                continue;
             }
 
             var resolvedVersion = NuGetVersion.Parse(finalRequestedDependency.Version);
             if (resolvedVersion != newDependencyVersion)
             {
                 _logger.Warn($"Final dependency version for {dependencyName} is {resolvedVersion}, expected {newDependencyVersion}.");
-                return [];
+                continue;
             }
 
             var computedUpdateOperations = await PackageReferenceUpdater.ComputeUpdateOperations(
