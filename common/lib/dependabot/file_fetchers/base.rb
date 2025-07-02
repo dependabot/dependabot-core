@@ -109,7 +109,7 @@ module Dependabot
         @source = source
         @credentials = credentials
         @repo_contents_path = repo_contents_path
-        @exclude_directories = T.let(update_config&.exclude_directories || [], T::Array[String])
+        @exclude_paths = T.let(update_config&.exclude_paths || [], T::Array[String])
         @linked_paths = T.let({}, T::Hash[T.untyped, T.untyped])
         @submodules = T.let([], T::Array[T.untyped])
         @options = options
@@ -119,8 +119,8 @@ module Dependabot
 
       # rubocop:disable Style/TrivialAccessors
       sig { params(excludes: T::Array[String]).void }
-      def exclude_directories=(excludes)
-        @exclude_directories = excludes
+      def exclude_paths=(excludes)
+        @exclude_paths = excludes
       end
       # rubocop:enable Style/TrivialAccessors
 
@@ -556,12 +556,12 @@ module Dependabot
         filter_excluded(entries)
       end
 
-      # Filters out any entries whose paths match one of the exclude_directories globs.
+      # Filters out any entries whose paths match one of the exclude_paths globs.
       sig { params(entries: T::Array[OpenStruct]).returns(T::Array[OpenStruct]) }
       def filter_excluded(entries)
         entries.reject do |entry|
           full_entry_path = entry.path
-          @exclude_directories.any? do |ex|
+          @exclude_paths.any? do |ex|
             File.fnmatch?(ex, full_entry_path, File::FNM_EXTGLOB) || full_entry_path.start_with?(ex)
           end
         end
