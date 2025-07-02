@@ -50,6 +50,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "dependabot-swift", Dependabot::VERSION
   spec.add_dependency "dependabot-terraform", Dependabot::VERSION
   spec.add_dependency "dependabot-uv", Dependabot::VERSION
+  spec.add_dependency "dependabot-vcpkg", Dependabot::VERSION
 
   common_gemspec.development_dependencies.each do |dep|
     spec.add_development_dependency dep.name, *dep.requirement.as_list

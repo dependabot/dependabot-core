@@ -268,6 +268,11 @@ docker run --rm -ti \
   -v "$(pwd)/uv/lib:$CODE_DIR/uv/lib" \
   -v "$(pwd)/uv/script:$CODE_DIR/uv/script" \
   -v "$(pwd)/uv/spec:$CODE_DIR/uv/spec" \
+  -v "$(pwd)/vcpkg/.rubocop.yml:$CODE_DIR/vcpkg/.rubocop.yml" \
+  -v "$(pwd)/vcpkg/dependabot-vcpkg.gemspec:$CODE_DIR/vcpkg/dependabot-vcpkg.gemspec" \
+  -v "$(pwd)/vcpkg/lib:$CODE_DIR/vcpkg/lib" \
+  -v "$(pwd)/vcpkg/script:$CODE_DIR/vcpkg/script" \
+  -v "$(pwd)/vcpkg/spec:$CODE_DIR/vcpkg/spec" \
   -v "$(pwd)/tmp:/$CODE_DIR/tmp" \
   -v "$(pwd)/updater/.rubocop.yml:$CODE_DIR/dependabot-updater/.rubocop.yml" \
   -v "$(pwd)/updater/bin:$CODE_DIR/dependabot-updater/bin" \

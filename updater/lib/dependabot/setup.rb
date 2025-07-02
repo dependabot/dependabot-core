@@ -16,7 +16,7 @@ Dependabot.logger = Logger.new($stdout).tap do |logger|
   logger.formatter = Dependabot::Logger::BasicFormatter.new
 end
 
-Sentry.init do |config|
+Sentry.init do |config| # rubocop:disable Metrics/BlockLength
   config.release = ENV.fetch("DEPENDABOT_UPDATER_VERSION")
   config.logger = Dependabot.logger
   config.project_root = File.expand_path("../../..", __dir__)
@@ -49,6 +49,7 @@ Sentry.init do |config|
     swift|
     terraform|
     uv|
+    vcpkg|
   )}x
 
   config.before_send = ->(event, hint) { Dependabot::Sentry.process_chain(event, hint) }
@@ -84,3 +85,4 @@ require "dependabot/silent"
 require "dependabot/swift"
 require "dependabot/terraform"
 require "dependabot/uv"
+require "dependabot/vcpkg"
