@@ -1,0 +1,186 @@
+using System.Collections.Immutable;
+using System.Linq;
+
+using NuGet.Versioning;
+
+using NuGetUpdater.Core.Discover;
+
+namespace NuGetUpdater.Core.Updater.FileWriters;
+
+public class FileWriterWorker
+{
+    private readonly IDiscoveryWorker _discoveryWorker;
+    private readonly IDependencySolver _dependencySolver;
+    private readonly IFileWriter _fileWriter;
+    private readonly ILogger _logger;
+
+    public FileWriterWorker(IDiscoveryWorker discoveryWorker, IDependencySolver dependencySolver, IFileWriter fileWriter, ILogger logger)
+    {
+        _discoveryWorker = discoveryWorker;
+        _dependencySolver = dependencySolver;
+        _fileWriter = fileWriter;
+        _logger = logger;
+    }
+
+    public async Task<ImmutableArray<UpdateOperationBase>> RunAsync(
+        DirectoryInfo repoContentsPath,
+        FileInfo projectPath,
+        string dependencyName,
+        NuGetVersion newDependencyVersion
+    )
+    {
+        var initialProjectDiscovery = await GetProjectDiscoveryResult(repoContentsPath, projectPath);
+        if (initialProjectDiscovery is null)
+        {
+            _logger.Warn($"Unable to find project discovery for project {projectPath}.");
+            return [];
+        }
+
+        var initialRequestedDependency = initialProjectDiscovery.Dependencies
+            .FirstOrDefault(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase));
+        if (initialRequestedDependency is null || initialRequestedDependency.Version is null)
+        {
+            _logger.Warn($"Dependency {dependencyName} not found in initial project discovery.");
+            return [];
+        }
+
+        var initialDependencyVersion = NuGetVersion.Parse(initialRequestedDependency.Version);
+        if (initialDependencyVersion >= newDependencyVersion)
+        {
+            _logger.Info($"Dependency {dependencyName} is already at version {initialDependencyVersion}, no update needed.");
+            return [];
+        }
+
+        var initialTopLevelDependencies = initialProjectDiscovery.Dependencies
+            .Where(d => !d.IsTransitive)
+            .ToImmutableArray();
+        var newDependency = new Dependency(dependencyName, newDependencyVersion.ToString(), DependencyType.Unknown);
+        var desiredDependencies = initialTopLevelDependencies.Any(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase))
+            ? initialTopLevelDependencies.Select(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase) ? newDependency : d).ToImmutableArray()
+            : initialTopLevelDependencies.Concat([newDependency]).ToImmutableArray();
+
+        var updateOperations = new List<UpdateOperationBase>();
+        foreach (var targetFramework in initialProjectDiscovery.TargetFrameworks)
+        {
+            var resolvedDependencies = await _dependencySolver.SolveAsync(initialTopLevelDependencies, desiredDependencies, targetFramework);
+            if (resolvedDependencies is null)
+            {
+                _logger.Warn("Unable to solve dependency conflicts.");
+                return [];
+            }
+
+            var resolvedRequestedDependency = resolvedDependencies.Value
+                .SingleOrDefault(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase));
+            if (resolvedRequestedDependency is null || resolvedRequestedDependency.Version is null)
+            {
+                _logger.Warn($"Dependency resolution failed to include {dependencyName}.");
+                return [];
+            }
+
+            var resolvedRequestedDependencyVersion = NuGetVersion.Parse(resolvedRequestedDependency.Version);
+            if (resolvedRequestedDependencyVersion != newDependencyVersion)
+            {
+                _logger.Warn($"Requested dependency resolution to include {dependencyName}/{newDependencyVersion} but it was instead resolved to {resolvedRequestedDependencyVersion}.");
+                return [];
+            }
+
+            // TODO: global.json and dotnet-tools.json
+            // TODO: packages.config
+
+            var updatedFiles = await TryPerformFileWritesAsync(repoContentsPath, initialProjectDiscovery, resolvedDependencies.Value);
+            if (updatedFiles.Length == 0)
+            {
+                _logger.Warn("Failed to write new dependency versions.");
+                return [];
+            }
+
+            var finalProjectDiscovery = await GetProjectDiscoveryResult(repoContentsPath, projectPath);
+            if (finalProjectDiscovery is null)
+            {
+                _logger.Warn($"Unable to find final project discovery for project {projectPath}.");
+                return [];
+            }
+
+            var finalRequestedDependency = finalProjectDiscovery.Dependencies
+                .FirstOrDefault(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase));
+            if (finalRequestedDependency is null || finalRequestedDependency.Version is null)
+            {
+                _logger.Warn($"Dependency {dependencyName} not found in final project discovery.");
+                return [];
+            }
+
+            var resolvedVersion = NuGetVersion.Parse(finalRequestedDependency.Version);
+            if (resolvedVersion != newDependencyVersion)
+            {
+                _logger.Warn($"Final dependency version for {dependencyName} is {resolvedVersion}, expected {newDependencyVersion}.");
+                return [];
+            }
+
+            var computedUpdateOperations = await PackageReferenceUpdater.ComputeUpdateOperations(
+                repoContentsPath.FullName,
+                projectPath.FullName,
+                targetFramework,
+                initialTopLevelDependencies,
+                desiredDependencies,
+                resolvedDependencies.Value,
+                new ExperimentsManager() { UseDirectDiscovery = true },
+                _logger);
+            var computedOperationsWithUpdatedFiles = computedUpdateOperations
+                .Select(op => op with { UpdatedFiles = [.. updatedFiles] })
+                .ToImmutableArray();
+            updateOperations.AddRange(computedOperationsWithUpdatedFiles);
+        }
+
+        return [.. updateOperations];
+    }
+
+    private async Task<ImmutableArray<string>> TryPerformFileWritesAsync(DirectoryInfo repoContentsPath, ProjectDiscoveryResult projectDiscovery, ImmutableArray<Dependency> requiredPackageVersions)
+    {
+        // track original contents
+        var originalFileContents = new Dictionary<string, string>();
+        var projectFilePath = Path.Join(repoContentsPath.FullName, projectDiscovery.FilePath);
+        var projectContents = await File.ReadAllTextAsync(projectFilePath);
+        originalFileContents[projectFilePath] = projectContents;
+
+        foreach (var file in projectDiscovery.ImportedFiles.Concat(projectDiscovery.AdditionalFiles))
+        {
+            var filePath = Path.Join(repoContentsPath.FullName, file);
+            var fileContents = await File.ReadAllTextAsync(filePath);
+            originalFileContents[filePath] = fileContents;
+        }
+
+        // try update
+        var success = await _fileWriter.UpdatePackageVersionsAsync(repoContentsPath, projectDiscovery, requiredPackageVersions);
+        var updatedFiles = new List<string>();
+        foreach (var (filePath, originalContents) in originalFileContents)
+        {
+            var currentContents = await File.ReadAllTextAsync(filePath);
+            if (currentContents != originalContents)
+            {
+                var relativeUpdatedPath = Path.GetRelativePath(repoContentsPath.FullName, filePath).FullyNormalizedRootedPath();
+                updatedFiles.Add(relativeUpdatedPath);
+            }
+        }
+
+        if (!success)
+        {
+            // restore contents
+            foreach (var (filePath, originalContents) in originalFileContents)
+            {
+                await File.WriteAllTextAsync(filePath, originalContents);
+            }
+        }
+
+        var sortedUpdatedFiles = updatedFiles.OrderBy(p => p, StringComparer.Ordinal);
+        return [.. sortedUpdatedFiles];
+    }
+
+    private async Task<ProjectDiscoveryResult?> GetProjectDiscoveryResult(DirectoryInfo repoContentsPath, FileInfo projectPath)
+    {
+        var relativeProjectPath = Path.GetRelativePath(repoContentsPath.FullName, projectPath.FullName);
+        var relativeProjectDirectory = Path.GetDirectoryName(relativeProjectPath)!;
+        var initialDiscoveryResult = await _discoveryWorker.RunAsync(repoContentsPath.FullName, relativeProjectDirectory);
+        var projectDiscovery = initialDiscoveryResult.Projects.FirstOrDefault(p => p.FilePath.Equals(relativeProjectPath, StringComparison.OrdinalIgnoreCase));
+        return projectDiscovery;
+    }
+}
