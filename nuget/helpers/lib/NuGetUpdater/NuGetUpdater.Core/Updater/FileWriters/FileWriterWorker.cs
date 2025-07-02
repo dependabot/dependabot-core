@@ -3,6 +3,7 @@ using System.Collections.Immutable;
 using NuGet.Versioning;
 
 using NuGetUpdater.Core.Discover;
+using NuGetUpdater.Core.Utilities;
 
 namespace NuGetUpdater.Core.Updater.FileWriters;
 
@@ -104,6 +105,25 @@ public class FileWriterWorker
 
         foreach (var targetFramework in initialProjectDiscovery.TargetFrameworks)
         {
+            var additionalFiles = ProjectHelper.GetAllAdditionalFilesFromProject(projectPath.FullName, ProjectHelper.PathFormat.Full);
+            var packagesConfigFullPath = additionalFiles.Where(p => Path.GetFileName(p).Equals(ProjectHelper.PackagesConfigFileName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+            if (packagesConfigFullPath is not null)
+            {
+                var packagesConfigOperations = await PackagesConfigUpdater.UpdateDependencyAsync(
+                    repoContentsPath.FullName,
+                    projectPath.FullName,
+                    dependencyName,
+                    oldDependencyVersion.ToString(),
+                    newDependencyVersion.ToString(),
+                    packagesConfigFullPath,
+                    _logger
+                );
+                var packagesConfigOperationsWithNormalizedPaths = packagesConfigOperations
+                    .Select(op => op with { UpdatedFiles = [.. op.UpdatedFiles.Select(f => Path.GetRelativePath(repoContentsPath.FullName, f).FullyNormalizedRootedPath())] })
+                    .ToArray();
+                updateOperations.AddRange(packagesConfigOperationsWithNormalizedPaths);
+            }
+
             var resolvedDependencies = await _dependencySolver.SolveAsync(initialTopLevelDependencies, desiredDependencies, targetFramework);
             if (resolvedDependencies is null)
             {
@@ -125,8 +145,6 @@ public class FileWriterWorker
                 _logger.Warn($"Requested dependency resolution to include {dependencyName}/{newDependencyVersion} but it was instead resolved to {resolvedRequestedDependencyVersion}.");
                 continue;
             }
-
-            // TODO: packages.config
 
             var updatedFiles = await TryPerformFileWritesAsync(repoContentsPath, initialProjectDiscovery, resolvedDependencies.Value);
             if (updatedFiles.Length == 0)
