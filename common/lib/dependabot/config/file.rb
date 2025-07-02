@@ -42,7 +42,7 @@ module Dependabot
         UpdateConfig.new(
           ignore_conditions: ignore_conditions(cfg),
           commit_message_options: commit_message_options(cfg),
-          exclude_directories: exclude_directories(cfg)
+          exclude_paths: exclude_paths(cfg)
         )
       end
 
@@ -113,8 +113,8 @@ module Dependabot
       end
 
       sig { params(cfg: T.nilable(T::Hash[Symbol, T.untyped])).returns(T::Array[String]) }
-      def exclude_directories(cfg)
-        Array(cfg&.dig(:"exclude-directories") || [])
+      def exclude_paths(cfg)
+        Array(cfg&.dig(:"exclude-paths") || [])
       end
     end
   end

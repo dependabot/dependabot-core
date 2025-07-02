@@ -78,7 +78,7 @@ module Dependabot
       parsed_cfg    = Dependabot::Config::File.parse(raw)
       update_cfg    = parsed_cfg.update_config(job.package_manager)
 
-      fetcher.exclude_directories = update_cfg.exclude_directories
+      fetcher.exclude_paths = update_cfg.exclude_paths
     rescue Dependabot::RepoNotFound, Dependabot::DependencyFileNotFound, StandardError
       # swallow—no config
     end
