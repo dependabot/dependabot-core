@@ -8,6 +8,7 @@ require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 
 require "dependabot/vcpkg"
+require "dependabot/vcpkg/language"
 require "dependabot/vcpkg/package_manager"
 
 module Dependabot
