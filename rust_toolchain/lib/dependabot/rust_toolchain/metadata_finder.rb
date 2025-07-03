@@ -8,6 +8,8 @@ require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
 require "dependabot/registry_client"
 
+require "dependabot/rust_toolchain"
+
 module Dependabot
   module RustToolchain
     class MetadataFinder < Dependabot::MetadataFinders::Base
@@ -17,7 +19,7 @@ module Dependabot
 
       sig { override.returns(T.nilable(Dependabot::Source)) }
       def look_up_source
-        Dependabot::Source.from_url("https://github.com/rust-lang/rust")
+        Dependabot::Source.from_url(RUST_GITHUB_URL)
       end
     end
   end

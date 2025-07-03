@@ -8,6 +8,7 @@ require "dependabot/package/package_details"
 require "dependabot/registry_client"
 require "dependabot/update_checkers/base"
 
+require "dependabot/rust_toolchain"
 require "dependabot/rust_toolchain/channel"
 require "dependabot/rust_toolchain/channel_parser"
 require "dependabot/rust_toolchain/version"
@@ -77,12 +78,12 @@ module Dependabot
           channel_part = match[2]
 
           case channel_part
-          when "stable"
-            Version.new("stable-#{date}")
-          when "beta"
-            Version.new("beta-#{date}")
-          when "nightly"
-            Version.new("nightly-#{date}")
+          when STABLE_CHANNEL
+            Version.new("#{STABLE_CHANNEL}-#{date}")
+          when BETA_CHANNEL
+            Version.new("#{BETA_CHANNEL}-#{date}")
+          when NIGHTLY_CHANNEL
+            Version.new("#{NIGHTLY_CHANNEL}-#{date}")
           when /^\d+\.\d+(\.\d+)?$/
             Version.new(channel_part)
           end

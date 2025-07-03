@@ -23,6 +23,14 @@ module Dependabot
 
     RUST_TOOLCHAIN_FILENAME = "rust-toolchain"
 
+    STABLE_CHANNEL = "stable"
+
+    BETA_CHANNEL = "beta"
+
+    NIGHTLY_CHANNEL = "nightly"
+
+    RUST_GITHUB_URL = "https://github.com/rust-lang/rust"
+
     ECOSYSTEM = "rust"
 
     PACKAGE_MANAGER = "rustup"

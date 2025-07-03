@@ -4,6 +4,7 @@
 require "dependabot/requirement"
 require "dependabot/utils"
 
+require "dependabot/rust_toolchain"
 require "dependabot/rust_toolchain/version"
 require "dependabot/rust_toolchain/channel_parser"
 require "dependabot/rust_toolchain/channel_type"
@@ -219,9 +220,9 @@ module Dependabot
       sig { params(stability: T.nilable(String)).returns(Integer) }
       def stability_order(stability)
         case stability
-        when "stable" then 3
-        when "beta" then 2
-        when "nightly" then 1
+        when STABLE_CHANNEL then 3
+        when BETA_CHANNEL then 2
+        when NIGHTLY_CHANNEL then 1
         else 0
         end
       end

@@ -3,6 +3,7 @@
 
 require "sorbet-runtime"
 
+require "dependabot/rust_toolchain"
 require "dependabot/rust_toolchain/channel"
 
 module Dependabot
@@ -38,8 +39,8 @@ module Dependabot
             date: ::Regexp.last_match(2),
             version: nil
           )
-        # Without date: nightly, beta, stable
-        when "nightly", "beta", "stable"
+        # Without date: stable, beta, nightly
+        when STABLE_CHANNEL, BETA_CHANNEL, NIGHTLY_CHANNEL
           Channel.new(
             stability: toolchain,
             date: nil,
