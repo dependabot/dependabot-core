@@ -26,6 +26,11 @@ public class XmlFileWriter : IFileWriter
             var oldVersion = NuGetVersion.Parse(oldVersionString);
             var requiredVersion = NuGetVersion.Parse(requiredPackageVersion.Version!);
 
+            // version numbers can be in attributes or elements and we may need to do some complicated navigation
+            // this object is used to perform the update once we've walked back as far as necessary
+            string? currentVersionString = null;
+            Action<NuGetVersion>? updateVersionLocation = null;
+
             var packageReferenceElements = filesAndContents.Values
                 .SelectMany(doc => doc.Descendants().Where(e => e.Name.LocalName == "PackageReference"))
                 .Where(e => (e.Attribute("Include")?.Value ?? string.Empty).Trim().Equals(requiredPackageVersion.Name, StringComparison.OrdinalIgnoreCase))
@@ -38,28 +43,18 @@ public class XmlFileWriter : IFileWriter
                 var versionAttribute = packageReferenceElement.Attribute("Version");
                 if (versionAttribute is not null)
                 {
-                    var parsedVersion = NuGetVersion.Parse(versionAttribute.Value);
-                    if (parsedVersion < requiredVersion)
-                    {
-                        // found inline version attribute; do direct update
-                        versionAttribute.Value = requiredVersion.ToString();
-                        updatesPerformed[requiredPackageVersion.Name] = true;
-                        continue;
-                    }
+                    currentVersionString = versionAttribute.Value;
+                    updateVersionLocation = (version) => versionAttribute.Value = version.ToString();
+                    goto doVersionUpdate;
                 }
 
                 // next check for `Version` child element
                 var versionElement = packageReferenceElement.Elements().FirstOrDefault(e => e.Name.LocalName == "Version");
                 if (versionElement is not null)
                 {
-                    var parsedVersion = NuGetVersion.Parse(versionElement.Value);
-                    if (parsedVersion < requiredVersion)
-                    {
-                        // found inline version element; do direct update
-                        versionElement.Value = requiredVersion.ToString();
-                        updatesPerformed[requiredPackageVersion.Name] = true;
-                        continue;
-                    }
+                    currentVersionString = versionElement.Value;
+                    updateVersionLocation = (version) => versionElement.Value = version.ToString();
+                    goto doVersionUpdate;
                 }
 
                 // check for matching `<PackageVersion>` element
@@ -70,29 +65,46 @@ public class XmlFileWriter : IFileWriter
                 {
                     if (packageVersionElement.Attribute("Version") is { } packageVersionAttribute)
                     {
-                        var parsedVersion = NuGetVersion.Parse(packageVersionAttribute.Value);
-                        if (parsedVersion == oldVersion)
-                        {
-                            // found the correct elemtnt to update
-                            packageVersionAttribute.Value = requiredVersion.ToString();
-                            updatesPerformed[requiredPackageVersion.Name] = true;
-                            continue;
-                        }
+                        currentVersionString = packageVersionAttribute.Value;
+                        updateVersionLocation = (version) => packageVersionAttribute.Value = version.ToString();
+                        goto doVersionUpdate;
                     }
                     else
                     {
                         var cpmVersionElement = packageVersionElement.Elements().FirstOrDefault(e => e.Name.LocalName == "Version");
                         if (cpmVersionElement is not null)
                         {
-                            var parsedVersion = NuGetVersion.Parse(cpmVersionElement.Value);
-                            if (parsedVersion == oldVersion)
-                            {
-                                // found the correct element to update
-                                cpmVersionElement.Value = requiredVersion.ToString();
-                                updatesPerformed[requiredPackageVersion.Name] = true;
-                                continue;
-                            }
+                            currentVersionString = cpmVersionElement.Value;
+                            updateVersionLocation = (version) => cpmVersionElement.Value = version.ToString();
+                            goto doVersionUpdate;
                         }
+                    }
+                }
+
+            doVersionUpdate:
+                if (currentVersionString is not null && updateVersionLocation is not null)
+                {
+                    // we found a potential location to update
+                    // if it looks like a propery, walk backwards
+                    while (currentVersionString is not null
+                        && currentVersionString.StartsWith("$(")
+                        && currentVersionString.EndsWith(")"))
+                    {
+                        var propertyName = currentVersionString[2..^1];
+                        var propertyDefinition = filesAndContents.Values
+                            .SelectMany(doc => doc.Descendants().Where(e => e.Name.LocalName.Equals(propertyName, StringComparison.OrdinalIgnoreCase)))
+                            .FirstOrDefault(e => e.Parent?.Name.LocalName.Equals("PropertyGroup", StringComparison.OrdinalIgnoreCase) == true);
+                        currentVersionString = propertyDefinition?.Value;
+                        updateVersionLocation = (version) => propertyDefinition!.Value = version.ToString();
+                    }
+
+                    // if it's the correct old version, update it
+                    if (currentVersionString is not null &&
+                        NuGetVersion.TryParse(currentVersionString, out var currentVersion) &&
+                        currentVersion == oldVersion)
+                    {
+                        updateVersionLocation(requiredVersion);
+                        updatesPerformed[requiredPackageVersion.Name] = true;
                     }
                 }
             }
