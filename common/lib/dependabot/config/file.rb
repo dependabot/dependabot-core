@@ -81,7 +81,8 @@ module Dependabot
         "pub" => "pub",
         "swift" => "swift",
         "terraform" => "terraform",
-        "uv" => "uv"
+        "uv" => "uv",
+        "vcpkg" => "vcpkg"
       }.freeze, T::Hash[String, String])
 
       REVERSE_PACKAGE_MANAGER_LOOKUP = T.let(
