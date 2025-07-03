@@ -77,6 +77,7 @@ jobs:
           - { name: nuget, ecosystem: nuget }
           - { name: pub, ecosystem: pub }
           - { name: python, ecosystem: pip }
+          - { name: rust_toolchain, ecosystem: rust-toolchain }
           - { name: swift, ecosystem: swift }
           - { name: terraform, ecosystem: terraform }
           - { name: uv, ecosystem: uv }
