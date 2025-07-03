@@ -86,7 +86,10 @@ module Dependabot
         "vcpkg" => "vcpkg"
       }.freeze, T::Hash[String, String])
 
-      REVERSE_PACKAGE_MANAGER_LOOKUP = PACKAGE_MANAGER_LOOKUP.invert.freeze
+      REVERSE_PACKAGE_MANAGER_LOOKUP = T.let(
+        PACKAGE_MANAGER_LOOKUP.invert.freeze,
+        T::Hash[String, String]
+      )
 
       sig { params(cfg: T.nilable(T::Hash[Symbol, T.untyped])).returns(T::Array[IgnoreCondition]) }
       def ignore_conditions(cfg)

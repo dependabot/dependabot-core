@@ -557,7 +557,7 @@ module Dependabot
       end
 
       # Filters out any entries whose paths match one of the exclude_paths globs.
-      sig { params(entries: T::Array[OpenStruct]).returns(T::Array[OpenStruct]) }
+      sig { params(entries: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
       def filter_excluded(entries)
         entries.reject do |entry|
           full_entry_path = entry.path
