@@ -128,7 +128,7 @@ public class CloneWorkerTests
         // arrange
         var testApiHandler = new TestApiHandler();
         var testGitCommandHandler = new TestGitCommandHandler();
-        var cloneWorker = new CloneWorker("JOB-ID", testApiHandler, testGitCommandHandler);
+        var cloneWorker = new CloneWorker("JOB-ID", testApiHandler, testGitCommandHandler, new TestLogger());
         using var testDirectory = new TemporaryDirectory();
         var jobFilePath = Path.Combine(testDirectory.DirectoryPath, "job.json");
         await File.WriteAllTextAsync(jobFilePath, "not json");
@@ -149,7 +149,7 @@ public class CloneWorkerTests
         // arrange
         var testApiHandler = new TestApiHandler();
         var testGitCommandHandler = new TestGitCommandHandler();
-        var cloneWorker = new CloneWorker("JOB-ID", testApiHandler, testGitCommandHandler);
+        var cloneWorker = new CloneWorker("JOB-ID", testApiHandler, testGitCommandHandler, new TestLogger());
         using var testDirectory = new TemporaryDirectory();
         var jobFilePath = Path.Combine(testDirectory.DirectoryPath, "job.json");
 
@@ -221,7 +221,7 @@ public class CloneWorkerTests
         // arrange
         var testApiHandler = new TestApiHandler();
         testGitCommandHandler ??= new TestGitCommandHandler();
-        var worker = new CloneWorker("TEST-JOB-ID", testApiHandler, testGitCommandHandler);
+        var worker = new CloneWorker("TEST-JOB-ID", testApiHandler, testGitCommandHandler, new TestLogger());
 
         // act
         var job = new Job()
