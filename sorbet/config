@@ -33,4 +33,5 @@
 --ignore=terraform/spec/
 --ignore=updater/spec/
 --ignore=uv/spec/
+--ignore=vcpkg/spec/
 --ignore=.git

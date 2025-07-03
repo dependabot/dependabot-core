@@ -63,24 +63,25 @@ module Dependabot
         "cargo" => "cargo",
         "composer" => "composer",
         "devcontainer" => "devcontainers",
-        "docker" => "docker",
         "docker-compose" => "docker_compose",
+        "docker" => "docker",
         "dotnet-sdk" => "dotnet_sdk",
         "elm" => "elm",
         "github-actions" => "github_actions",
         "gitsubmodule" => "submodules",
         "gomod" => "go_modules",
         "gradle" => "gradle",
+        "helm" => "helm",
         "maven" => "maven",
         "mix" => "hex",
-        "helm" => "helm",
-        "nuget" => "nuget",
         "npm" => "npm_and_yarn",
+        "nuget" => "nuget",
         "pip" => "pip",
         "pub" => "pub",
         "swift" => "swift",
         "terraform" => "terraform",
-        "uv" => "uv"
+        "uv" => "uv",
+        "vcpkg" => "vcpkg"
       }.freeze, T::Hash[String, String])
 
       sig { params(cfg: T.nilable(T::Hash[Symbol, T.untyped])).returns(T::Array[IgnoreCondition]) }

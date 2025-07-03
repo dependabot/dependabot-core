@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 require "pathname"
-require "parser/current"
+require "prism"
 require "dependabot/bundler/file_fetcher"
 require "dependabot/errors"
 require "sorbet-runtime"
@@ -22,10 +22,10 @@ module Dependabot
 
         sig { returns(T::Array[String]) }
         def path_gemspec_paths
-          ast = Parser::CurrentRuby.parse(gemfile&.content)
-          find_path_gemspec_paths(ast)
-        rescue Parser::SyntaxError
-          raise Dependabot::DependencyFileNotParseable, T.must(gemfile).path
+          result = Prism.parse(gemfile&.content)
+          raise Dependabot::DependencyFileNotParseable, T.must(gemfile).path if result.failure?
+
+          find_path_gemspec_paths(result.value)
         end
 
         private
@@ -35,24 +35,24 @@ module Dependabot
 
         sig { params(node: T.untyped).returns(T::Array[T.untyped]) }
         def find_path_gemspec_paths(node)
-          return [] unless node.is_a?(Parser::AST::Node)
+          return [] unless node.is_a?(Prism::Node)
 
           if declares_path_dependency?(node)
             path_node = path_node_for_gem_declaration(node)
 
-            unless path_node&.type == :str
+            unless path_node.is_a?(Prism::StringNode)
               path = gemfile&.path
               msg = "Dependabot only supports uninterpolated string arguments " \
                     "for path dependencies. Got " \
-                    "`#{path_node&.loc&.expression&.source}`"
+                    "`#{path_node&.slice}`"
               raise Dependabot::DependencyFileNotParseable.new(T.must(path), msg)
             end
 
-            path = T.must(path_node).loc.expression.source.gsub(/['"]/, "")
+            path = path_node.unescaped
             return [clean_path(path)]
           end
 
-          node.children.flat_map do |child_node|
+          node.child_nodes.flat_map do |child_node|
             find_path_gemspec_paths(child_node)
           end
         end
@@ -64,10 +64,10 @@ module Dependabot
           @current_dir
         end
 
-        sig { params(node: Parser::AST::Node).returns(T::Boolean) }
+        sig { params(node: Prism::Node).returns(T::Boolean) }
         def declares_path_dependency?(node)
-          return false unless node.is_a?(Parser::AST::Node)
-          return false unless node.children[1] == :gem
+          return false unless node.is_a?(Prism::CallNode)
+          return false unless node.name == :gem
 
           !path_node_for_gem_declaration(node).nil?
         end
@@ -82,24 +82,31 @@ module Dependabot
           Pathname.new(path).cleanpath
         end
 
-        sig { params(node: Parser::AST::Node).returns(T.nilable(Parser::AST::Node)) }
+        sig { params(node: Prism::Node).returns(T.nilable(Prism::Node)) }
         def path_node_for_gem_declaration(node)
-          return unless node.children.last.type == :hash
+          return unless node.is_a?(Prism::CallNode)
 
-          kwargs_node = node.children.last
+          kwargs_node = node.arguments&.arguments&.last
+
+          return unless kwargs_node.is_a?(Prism::Node)
 
           path_hash_pair =
-            kwargs_node.children
+            kwargs_node.child_nodes
                        .find { |hash_pair| key_from_hash_pair(hash_pair) == :path }
 
           return unless path_hash_pair
 
-          path_hash_pair.children.last
+          T.cast(path_hash_pair, Prism::AssocNode).value
         end
 
-        sig { params(node: Parser::AST::Node).returns(Symbol) }
+        sig { params(node: T.nilable(Prism::Node)).returns(T.nilable(Symbol)) }
         def key_from_hash_pair(node)
-          node.children.first.children.first.to_sym
+          return unless node.is_a?(Prism::AssocNode)
+
+          key_node = node.key
+          return unless key_node.is_a?(Prism::StringNode) || key_node.is_a?(Prism::SymbolNode)
+
+          key_node.unescaped.to_sym
         end
       end
     end

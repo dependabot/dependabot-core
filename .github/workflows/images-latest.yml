@@ -38,8 +38,9 @@ jobs:
           - { name: bundler, ecosystem: bundler }
           - { name: cargo, ecosystem: cargo }
           - { name: composer, ecosystem: composer }
-          - { name: docker, ecosystem: docker }
+          - { name: devcontainers, ecosystem: devcontainers }
           - { name: docker_compose, ecosystem: docker-compose }
+          - { name: docker, ecosystem: docker }
           - { name: dotnet_sdk, ecosystem: dotnet-sdk }
           - { name: elm, ecosystem: elm }
           - { name: git_submodules, ecosystem: gitsubmodule }
@@ -54,9 +55,9 @@ jobs:
           - { name: pub, ecosystem: pub }
           - { name: python, ecosystem: pip }
           - { name: swift, ecosystem: swift }
-          - { name: devcontainers, ecosystem: devcontainers }
           - { name: terraform, ecosystem: terraform }
           - { name: uv, ecosystem: uv }
+          - { name: vcpkg, ecosystem: vcpkg }
     env:
       COMMIT_SHA: ${{ github.sha }}
       NAME: ${{ matrix.suite.name }}

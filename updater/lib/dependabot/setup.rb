@@ -16,7 +16,7 @@ Dependabot.logger = Logger.new($stdout).tap do |logger|
   logger.formatter = Dependabot::Logger::BasicFormatter.new
 end
 
-Sentry.init do |config|
+Sentry.init do |config| # rubocop:disable Metrics/BlockLength
   config.release = ENV.fetch("DEPENDABOT_UPDATER_VERSION")
   config.logger = Dependabot.logger
   config.project_root = File.expand_path("../../..", __dir__)
@@ -26,29 +26,30 @@ Sentry.init do |config|
     dependabot-updater/config|
     dependabot-updater/lib|
     common|
-    python|
-    terraform|
-    elm|
-    docker|
+    bundler|
+    cargo|
+    composer|
+    devcontainers
     docker_compose|
+    docker|
     dotnet_sdk|
+    elm|
     git_submodules|
     github_actions|
-    composer|
-    nuget|
+    go_modules|
     gradle|
-    maven|
     helm|
     hex|
-    cargo|
-    go_modules|
+    maven|
     npm_and_yarn|
-    bundler|
+    nuget|
     pub|
+    python|
     silent|
     swift|
+    terraform|
     uv|
-    devcontainers
+    vcpkg|
   )}x
 
   config.before_send = ->(event, hint) { Dependabot::Sentry.process_chain(event, hint) }
@@ -60,27 +61,28 @@ Dependabot::OpenTelemetry.configure
 Dependabot::Sorbet::Runtime.silently_report_errors!
 
 # Ecosystems
-require "dependabot/python"
-require "dependabot/terraform"
-require "dependabot/elm"
-require "dependabot/docker"
+require "dependabot/bun"
+require "dependabot/bundler"
+require "dependabot/cargo"
+require "dependabot/composer"
+require "dependabot/devcontainers"
 require "dependabot/docker_compose"
+require "dependabot/docker"
 require "dependabot/dotnet_sdk"
+require "dependabot/elm"
 require "dependabot/git_submodules"
 require "dependabot/github_actions"
-require "dependabot/composer"
-require "dependabot/nuget"
-require "dependabot/gradle"
-require "dependabot/maven"
-require "dependabot/hex"
-require "dependabot/helm"
-require "dependabot/cargo"
 require "dependabot/go_modules"
+require "dependabot/gradle"
+require "dependabot/helm"
+require "dependabot/hex"
+require "dependabot/maven"
 require "dependabot/npm_and_yarn"
-require "dependabot/bundler"
+require "dependabot/nuget"
 require "dependabot/pub"
+require "dependabot/python"
 require "dependabot/silent"
 require "dependabot/swift"
-require "dependabot/devcontainers"
-require "dependabot/bun"
+require "dependabot/terraform"
 require "dependabot/uv"
+require "dependabot/vcpkg"

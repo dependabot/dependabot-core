@@ -14,31 +14,32 @@ require "yaml"
 # because it's an empty gem as a placeholder to prevent namesquatting.
 GEMSPECS = %w(
   common/dependabot-common.gemspec
-  go_modules/dependabot-go_modules.gemspec
-  terraform/dependabot-terraform.gemspec
+  bun/dependabot-bun.gemspec
+  bundler/dependabot-bundler.gemspec
+  cargo/dependabot-cargo.gemspec
+  composer/dependabot-composer.gemspec
+  devcontainers/dependabot-devcontainers.gemspec
+  docker_compose/dependabot-docker_compose.gemspec
   docker/dependabot-docker.gemspec
+  dotnet_sdk/dependabot-dotnet_sdk.gemspec
+  elm/dependabot-elm.gemspec
   git_submodules/dependabot-git_submodules.gemspec
   github_actions/dependabot-github_actions.gemspec
-  nuget/dependabot-nuget.gemspec
+  go_modules/dependabot-go_modules.gemspec
   gradle/dependabot-gradle.gemspec
-  maven/dependabot-maven.gemspec
-  bundler/dependabot-bundler.gemspec
-  elm/dependabot-elm.gemspec
-  cargo/dependabot-cargo.gemspec
-  npm_and_yarn/dependabot-npm_and_yarn.gemspec
-  composer/dependabot-composer.gemspec
+  helm/dependabot-helm.gemspec
   hex/dependabot-hex.gemspec
-  python/dependabot-python.gemspec
-  pub/dependabot-pub.gemspec
+  maven/dependabot-maven.gemspec
+  npm_and_yarn/dependabot-npm_and_yarn.gemspec
+  nuget/dependabot-nuget.gemspec
   omnibus/dependabot-omnibus.gemspec
+  pub/dependabot-pub.gemspec
+  python/dependabot-python.gemspec
   silent/dependabot-silent.gemspec
   swift/dependabot-swift.gemspec
-  devcontainers/dependabot-devcontainers.gemspec
-  dotnet_sdk/dependabot-dotnet_sdk.gemspec
-  bun/dependabot-bun.gemspec
-  docker_compose/dependabot-docker_compose.gemspec
+  terraform/dependabot-terraform.gemspec
   uv/dependabot-uv.gemspec
-  helm/dependabot-helm.gemspec
+  vcpkg/dependabot-vcpkg.gemspec
 ).freeze
 
 def run_command(command)

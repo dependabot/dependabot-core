@@ -16,12 +16,14 @@ jobs:
       matrix:
         suite:
           - { path: bin, name: dry_run, ecosystem: common }
+          - { path: bun, name: bun, ecosystem: bun }
           - { path: bundler, name: bundler, ecosystem: bundler }
           - { path: cargo, name: cargo, ecosystem: cargo }
           - { path: common, name: common, ecosystem: common}
           - { path: composer, name: composer, ecosystem: composer }
-          - { path: docker, name: docker, ecosystem: docker }
+          - { path: devcontainers, name: devcontainers, ecosystem: devcontainers }
           - { path: docker_compose, name: docker_compose, ecosystem: docker-compose }
+          - { path: docker, name: docker, ecosystem: docker }
           - { path: dotnet_sdk, name: dotnet_sdk, ecosystem: dotnet-sdk }
           - { path: elm, name: elm, ecosystem: elm }
           - { path: git_submodules, name: git_submodules, ecosystem: gitsubmodule }
@@ -34,13 +36,12 @@ jobs:
           - { path: npm_and_yarn, name: npm_and_yarn, ecosystem: npm }
           - { path: nuget, name: nuget, ecosystem: nuget }
           - { path: pub, name: pub, ecosystem: pub }
-          - { path: python, name: python, ecosystem: pip }
           - { path: python, name: python_slow, ecosystem: pip }
+          - { path: python, name: python, ecosystem: pip }
           - { path: swift, name: swift, ecosystem: swift }
-          - { path: devcontainers, name: devcontainers, ecosystem: devcontainers }
           - { path: terraform, name: terraform, ecosystem: terraform }
-          - { path: bun, name: bun, ecosystem: bun }
           - { path: uv, name: uv, ecosystem: uv }
+          - { path: vcpkg, name: vcpkg, ecosystem: vcpkg }
 
     steps:
       - name: Checkout code
