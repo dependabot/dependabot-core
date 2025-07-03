@@ -9,8 +9,10 @@ public interface IApiHandler
 
 public static class IApiHandlerExtensions
 {
-    public static async Task RecordUpdateJobError(this IApiHandler handler, JobErrorBase error)
+    public static async Task RecordUpdateJobError(this IApiHandler handler, JobErrorBase error, ILogger logger)
     {
+        var errorReport = error.GetReport();
+        logger.Error(errorReport);
         await handler.PostAsJson("record_update_job_error", error);
         if (error is UnknownError unknown)
         {
