@@ -43,7 +43,7 @@ module Dependabot
           @config = T.let(nil, T.nilable(Dependabot::DependencyFile))
         end
 
-        sig { returns(String) }
+        sig { returns(T.any(String, T.noreturn)) }
         def updated_lockfile_content
           base_directory = T.must(dependency_files.first).directory
           SharedHelpers.in_a_temporary_directory(base_directory) do
@@ -65,7 +65,6 @@ module Dependabot
         rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
           retry if better_specification_needed?(e)
           handle_cargo_error(e)
-          "" # This line is never reached because handle_cargo_error always raises
         end
 
         private
