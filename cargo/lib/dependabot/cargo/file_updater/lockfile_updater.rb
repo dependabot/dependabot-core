@@ -84,7 +84,7 @@ module Dependabot
           T.must(dependencies.first)
         end
 
-        sig { params(error: StandardError).void }
+        sig { params(error: StandardError).returns(T.noreturn) }
         def handle_cargo_error(error)
           raise unless error.message.include?("failed to select a version") ||
                        error.message.include?("no matching version") ||
