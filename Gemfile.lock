@@ -180,6 +180,12 @@ PATH
     dependabot-uv (0.320.0)
       dependabot-common (= 0.320.0)
 
+PATH
+  remote: vcpkg
+  specs:
+    dependabot-vcpkg (0.320.0)
+      dependabot-common (= 0.320.0)
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -432,6 +438,7 @@ DEPENDENCIES
   dependabot-swift!
   dependabot-terraform!
   dependabot-uv!
+  dependabot-vcpkg!
   gpgme (~> 2.0)
   rake (~> 13.2)
   rspec-its (~> 1.3)
@@ -492,6 +499,7 @@ CHECKSUMS
   dependabot-swift (0.320.0)
   dependabot-terraform (0.320.0)
   dependabot-uv (0.320.0)
+  dependabot-vcpkg (0.320.0)
   diff-lcs (1.5.0) sha256=49b934001c8c6aedb37ba19daec5c634da27b318a7a3c654ae979d6ba1929b67
   docile (1.4.0) sha256=5f1734bde23721245c20c3d723e76c104208e1aa01277a69901ce770f0ebb8d3
   docker_registry2 (1.18.2) sha256=2ace909110fbca29d69dd1cdec99f555024aa6f6577798638139c8e8e556910f
