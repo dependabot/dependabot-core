@@ -27,13 +27,13 @@ module Dependabot
           params(
             dependencies: T::Array[Dependabot::Dependency],
             dependency_files: T::Array[Dependabot::DependencyFile],
-            credentials: T::Array[T.untyped]
+            credentials: T::Array[Dependabot::Credential]
           ).void
         end
         def initialize(dependencies:, dependency_files:, credentials:)
           @dependencies = T.let(dependencies, T::Array[Dependabot::Dependency])
           @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
-          @credentials = T.let(credentials, T::Array[T.untyped])
+          @credentials = T.let(credentials, T::Array[Dependabot::Credential])
           @custom_specification = T.let(nil, T.nilable(String))
           @git_ssh_requirements_to_swap = T.let(nil, T.nilable(T::Hash[String, String]))
           @manifest_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
