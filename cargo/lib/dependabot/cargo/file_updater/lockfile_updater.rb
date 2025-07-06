@@ -308,7 +308,7 @@ module Dependabot
           TomlRB.dump(parsed_manifest)
         end
 
-        sig { params(parsed_manifest: T::Hash[T.untyped, T.untyped]).void }
+        sig { params(parsed_manifest: T::Hash[String, T.untyped]).void }
         def pin_target_specific_dependencies!(parsed_manifest)
           parsed_manifest.fetch("target", {}).each do |target, t_details|
             Cargo::FileParser::DEPENDENCY_TYPES.each do |type|
