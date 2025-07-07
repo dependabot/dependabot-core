@@ -312,7 +312,7 @@ public class FileWriterWorkerTests : TestBase
         var repoContentsPath = new DirectoryInfo(tempDir.DirectoryPath);
         var projectPath = new FileInfo(Path.Combine(tempDir.DirectoryPath, projectName));
         dependencySolver ??= new MSBuildDependencySolver(repoContentsPath, projectPath, experimentsManager, logger);
-        fileWriter ??= new XmlFileWriter();
+        fileWriter ??= new XmlFileWriter(logger);
 
         var fileWriterWorker = new FileWriterWorker(discoveryWorker, dependencySolver, fileWriter, logger);
 

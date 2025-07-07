@@ -9,6 +9,13 @@ namespace NuGetUpdater.Core.Updater.FileWriters;
 
 public class XmlFileWriter : IFileWriter
 {
+    private readonly ILogger _logger;
+
+    public XmlFileWriter(ILogger logger)
+    {
+        _logger = logger;
+    }
+
     public Task<bool> UpdatePackageVersionsAsync(DirectoryInfo repoContentsPath, ProjectDiscoveryResult projectDiscovery, ImmutableArray<Dependency> requiredPackageVersions)
     {
         var updatesPerformed = requiredPackageVersions.ToDictionary(d => d.Name, _ => false, StringComparer.OrdinalIgnoreCase);
@@ -19,7 +26,7 @@ public class XmlFileWriter : IFileWriter
             var oldVersionString = projectDiscovery.Dependencies.FirstOrDefault(d => d.Name.Equals(requiredPackageVersion.Name, StringComparison.OrdinalIgnoreCase))?.Version;
             if (oldVersionString is null)
             {
-                // TODO: log?
+                _logger.Warn($"Unable to find project dependency with name {requiredPackageVersion.Name}; skipping XML update.");
                 continue;
             }
 
@@ -100,6 +107,7 @@ public class XmlFileWriter : IFileWriter
                             candidateUpdater(requiredVersion);
                             updatesPerformed[requiredPackageVersion.Name] = true;
                             performedUpdate = true;
+                            _logger.Info($"Updated dependency {requiredPackageVersion.Name} from version {oldVersion} to {requiredVersion}.");
                             break;
                         }
 
@@ -120,7 +128,7 @@ public class XmlFileWriter : IFileWriter
 
                     if (!performedUpdate)
                     {
-                        // TODO: log?
+                        _logger.Warn($"Unable to find appropriate location to update package {requiredPackageVersion.Name} to version {requiredPackageVersion.Version}; no update performed");
                     }
                 }
             }
