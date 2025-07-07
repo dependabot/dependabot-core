@@ -84,27 +84,43 @@ public class XmlFileWriter : IFileWriter
             doVersionUpdate:
                 if (currentVersionString is not null && updateVersionLocation is not null)
                 {
-                    // we found a potential location to update
-                    // if it looks like a propery, walk backwards
-                    while (currentVersionString is not null
-                        && currentVersionString.StartsWith("$(")
-                        && currentVersionString.EndsWith(")"))
+                    var performedUpdate = false;
+                    var candidateUpdateLocations = new Queue<(string VersionString, Action<NuGetVersion> Updater)>();
+                    candidateUpdateLocations.Enqueue((currentVersionString, updateVersionLocation));
+
+                    while (candidateUpdateLocations.TryDequeue(out var candidateUpdateLocation))
                     {
-                        var propertyName = currentVersionString[2..^1];
-                        var propertyDefinition = filesAndContents.Values
-                            .SelectMany(doc => doc.Descendants().Where(e => e.Name.LocalName.Equals(propertyName, StringComparison.OrdinalIgnoreCase)))
-                            .FirstOrDefault(e => e.Parent?.Name.LocalName.Equals("PropertyGroup", StringComparison.OrdinalIgnoreCase) == true);
-                        currentVersionString = propertyDefinition?.Value;
-                        updateVersionLocation = (version) => propertyDefinition!.Value = version.ToString();
+                        var candidateUpdateVersionString = candidateUpdateLocation.VersionString;
+                        var candidateUpdater = candidateUpdateLocation.Updater;
+
+                        if (NuGetVersion.TryParse(candidateUpdateVersionString, out var candidateUpdateVersion) &&
+                            candidateUpdateVersion == oldVersion)
+                        {
+                            // do the update here and call it good
+                            candidateUpdater(requiredVersion);
+                            updatesPerformed[requiredPackageVersion.Name] = true;
+                            performedUpdate = true;
+                            break;
+                        }
+
+                        if (candidateUpdateVersionString.StartsWith("$(") && candidateUpdateVersionString.EndsWith(")"))
+                        {
+                            // this looks like a property; keep walking backwards with all possible elements
+                            var propertyName = candidateUpdateVersionString[2..^1];
+                            var propertyDefinitions = filesAndContents.Values
+                                .SelectMany(doc => doc.Descendants().Where(e => e.Name.LocalName.Equals(propertyName, StringComparison.OrdinalIgnoreCase)))
+                                .Where(e => e.Parent?.Name.LocalName.Equals("PropertyGroup", StringComparison.OrdinalIgnoreCase) == true)
+                                .ToArray();
+                            foreach (var propertyDefinition in propertyDefinitions)
+                            {
+                                candidateUpdateLocations.Enqueue((propertyDefinition.Value, (version) => propertyDefinition.Value = version.ToString()));
+                            }
+                        }
                     }
 
-                    // if it's the correct old version, update it
-                    if (currentVersionString is not null &&
-                        NuGetVersion.TryParse(currentVersionString, out var currentVersion) &&
-                        currentVersion == oldVersion)
+                    if (!performedUpdate)
                     {
-                        updateVersionLocation(requiredVersion);
-                        updatesPerformed[requiredPackageVersion.Name] = true;
+                        // TODO: log?
                     }
                 }
             }
