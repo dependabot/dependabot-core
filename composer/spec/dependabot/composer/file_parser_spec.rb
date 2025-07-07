@@ -411,12 +411,12 @@ RSpec.describe Dependabot::Composer::FileParser do
 
     it "returns package manager with version" do
       expect(parser.ecosystem.package_manager).to be_a(Dependabot::Composer::PackageManager)
-      expect(parser.ecosystem.package_manager.version).to eq("2.7.7")
+      expect(parser.ecosystem.package_manager.version).to eq("2.8.9")
     end
 
     it "returns language with version" do
       expect(parser.ecosystem.language).to be_a(Dependabot::Composer::Language)
-      expect(parser.ecosystem.language.version.to_s).to eq("8.2.28")
+      expect(parser.ecosystem.language.version.to_s).to eq("8.4.8")
     end
   end
 
