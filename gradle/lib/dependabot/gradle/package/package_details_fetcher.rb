@@ -44,10 +44,10 @@ module Dependabot
         sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
 
-        sig { returns(T::Array[T.untyped]) }
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
 
-        sig { returns(T::Array[T.untyped]) }
+        sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
 
         sig { returns(T.nilable(T::Array[String])) }
@@ -137,11 +137,9 @@ module Dependabot
           return @repositories if @repositories
 
           details = if plugin?
-                      T.must(plugin_repository_details) +
-                        credentials_repository_details
+                      plugin_repository_details + credentials_repository_details
                     else
-                      dependency_repository_details +
-                        credentials_repository_details
+                      dependency_repository_details + credentials_repository_details
                     end
 
           @repositories =
@@ -153,7 +151,7 @@ module Dependabot
             end
         end
 
-        sig { returns(T.any(T::Array[T::Hash[String, T.untyped]], NilClass)) }
+        sig { returns(T.nilable(T::Array[T::Hash[String, T.untyped]])) }
         def google_version_details
           url = Gradle::FileParser::RepositoriesFinder::GOOGLE_MAVEN_REPO
           group_id, artifact_id = group_and_artifact_ids
@@ -205,7 +203,7 @@ module Dependabot
 
         sig { params(repository_details: T::Hash[T.untyped, T.untyped]).returns(T.untyped) }
         def release_info_metadata(repository_details)
-          @release_info_metadata ||= T.let({}, T.nilable(T::Hash[T.untyped, T.untyped]))
+          @release_info_metadata ||= T.let({}, T.nilable(T::Hash[Integer, T.untyped]))
           @release_info_metadata[repository_details.hash] ||=
             begin
               response = Dependabot::RegistryClient.get(
@@ -225,7 +223,7 @@ module Dependabot
             end
         end
 
-        sig { returns(T.untyped) }
+        sig { returns(T::Array[T::Hash[String, String]]) }
         def repository_urls
           plugin? ? plugin_repository_details : dependency_repository_details
         end
@@ -239,7 +237,7 @@ module Dependabot
           T.must(@forbidden_urls) << repository_url
         end
 
-        sig { returns(T::Array[T.untyped]) }
+        sig { returns(T::Array[T::Hash[String, String]]) }
         def credentials_repository_details
           credentials
             .select { |cred| cred["type"] == "maven_repository" }
@@ -251,7 +249,7 @@ module Dependabot
           end
         end
 
-        sig { returns(T::Array[T.untyped]) }
+        sig { returns(T::Array[T::Hash[String, String]]) }
         def dependency_repository_details
           requirement_files =
             dependency.requirements
@@ -270,7 +268,7 @@ module Dependabot
             end.uniq
         end
 
-        sig { returns(T.nilable(T::Array[T::Hash[String, T.untyped]])) }
+        sig { returns(T::Array[T::Hash[String, String]]) }
         def plugin_repository_details
           [{
             "url" => Gradle::FileParser::RepositoriesFinder::GRADLE_PLUGINS_REPO,
@@ -299,7 +297,7 @@ module Dependabot
           current_type == version_type
         end
 
-        sig { returns(T::Array[T.untyped]) }
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def pom
           filename = T.must(dependency.requirements.first).fetch(:file)
           dependency_files.find { |f| f.name == filename }

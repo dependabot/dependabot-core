@@ -378,7 +378,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
         let(:dependency_files) { [manifest_file] }
         let(:dependency_name) { "boto3" }
         let(:dependency_version) { nil }
-        let(:version) { "1.9.28" }
+        let(:version) { Gem::Version.new("1.9.28") }
         let(:dependency_requirements) do
           [{
             file: "requirements/test.in",
