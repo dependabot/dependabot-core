@@ -482,14 +482,17 @@ module Dependabot
           dependency.version_class
         end
 
+        sig { params(lockfile_content: String, dependency: Dependabot::Dependency).returns(T::Boolean) }
         def dependency_updated?(lockfile_content, dependency)
           return false unless dependency.previous_version
 
           # For multiple versions case, we need to check the specific entry
           # that corresponds to our dependency (the one used by our package)
-          entries = lockfile_content.scan(LOCKFILE_ENTRY_REGEX).select do |entry|
-            entry.include?("name = \"#{dependency.name}\"")
+          entries = T.let([], T::Array[String])
+          lockfile_content.scan(LOCKFILE_ENTRY_REGEX) do
+            entries << Regexp.last_match.to_s
           end
+          entries.select! { |entry| entry.include?("name = \"#{dependency.name}\"") }
 
           # Check if any entry has a version newer than the previous version
           entries.any? do |entry|
@@ -503,10 +506,13 @@ module Dependabot
           end
         end
 
+        sig { params(lockfile_content: String, dependency_name: String).returns(T.nilable(String)) }
         def extract_actual_version(lockfile_content, dependency_name)
-          entries = lockfile_content.scan(LOCKFILE_ENTRY_REGEX).select do |entry|
-            entry.include?("name = \"#{dependency_name}\"")
+          entries = T.let([], T::Array[String])
+          lockfile_content.scan(LOCKFILE_ENTRY_REGEX) do
+            entries << Regexp.last_match.to_s
           end
+          entries.select! { |entry| entry.include?("name = \"#{dependency_name}\"") }
 
           # Get the highest version from matching entries
           versions = entries.filter_map do |entry|
