@@ -79,4 +79,58 @@ RSpec.describe Dependabot::DotnetSdk::FileParser do
 
     it_behaves_like "parse"
   end
+
+  context "with a global.json containing UTF-8 BOM" do
+    let(:project_name) { "config_in_root" }
+    let(:directory) { "/" }
+    let(:files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "global.json",
+          content: "\uFEFF" + <<~JSON,
+            {
+              "sdk": {
+                "version": "8.0.300",
+                "rollForward": "latestMinor",
+                "allowPrerelease": true
+              }
+            }
+          JSON
+          directory: directory
+        )
+      ]
+    end
+
+    let(:expectations) do
+      [
+        {
+          name: "dotnet-sdk",
+          version: "8.0.300",
+          requirements: [{
+            file: "global.json",
+            groups: [],
+            requirement: "8.0.300",
+            source: nil
+          }],
+          metadata: {
+            allow_prerelease: true,
+            roll_forward: "latestMinor"
+          }
+        }
+      ].freeze
+    end
+
+    it_behaves_like "parse"
+
+    it "handles UTF-8 BOM correctly" do
+      expect { dependencies }.not_to raise_error
+      expect(dependencies.size).to eq(1)
+
+      dependency = dependencies.first
+      expect(dependency.name).to eq("dotnet-sdk")
+      expect(dependency.version).to eq("8.0.300")
+      expect(dependency.metadata[:allow_prerelease]).to be true
+      expect(dependency.metadata[:roll_forward]).to eq("latestMinor")
+    end
+  end
 end
