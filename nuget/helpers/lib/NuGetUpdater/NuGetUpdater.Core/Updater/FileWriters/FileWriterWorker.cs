@@ -153,6 +153,7 @@ public class FileWriterWorker
                 continue;
             }
 
+            // this final call to discover has the benefit of also updating the lock file if it exists
             var finalProjectDiscovery = await GetProjectDiscoveryResult(repoContentsPath, projectPath);
             if (finalProjectDiscovery is null)
             {

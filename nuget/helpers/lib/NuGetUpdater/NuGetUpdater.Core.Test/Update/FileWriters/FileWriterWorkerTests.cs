@@ -58,6 +58,58 @@ public class FileWriterWorkerTests : TestBase
     }
 
     [Fact]
+    public async Task EndToEnd_ProjectReferenceWithPackageLockJson()
+    {
+        // project is directly changed
+        await TestAsync(
+            dependencyName: "Some.Dependency",
+            oldDependencyVersion: "1.0.0",
+            newDependencyVersion: "2.0.0",
+            projectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net9.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Some.Dependency" Version="1.0.0" />
+                  </ItemGroup>
+                </Project>
+                """,
+            additionalFiles: [
+                ("packages.lock.json", "{}")
+            ],
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Some.Dependency", "1.0.0", "net9.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Dependency", "2.0.0", "net9.0"),
+            ],
+            discoveryWorker: null, // use real worker
+            dependencySolver: null, // use real worker
+            fileWriter: null, // use real worker
+            expectedProjectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net9.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Some.Dependency" Version="2.0.0" />
+                  </ItemGroup>
+                </Project>
+                """,
+            expectedAdditionalFiles: [],
+            expectedOperations: [
+                new DirectUpdate() { DependencyName = "Some.Dependency", NewVersion = NuGetVersion.Parse("2.0.0"), UpdatedFiles = ["/project.csproj"] }
+            ],
+            additionalChecks: (repoContentsPath) =>
+            {
+                // ensure the lock file was updated; we don't care how, just that it was
+                var lockFilePath = Path.Join(repoContentsPath.FullName, "packages.lock.json");
+                var lockFileContent = File.ReadAllText(lockFilePath);
+                Assert.NotEqual("{}", lockFileContent);
+            }
+        );
+    }
+
+    [Fact]
     public async Task EndToEnd_PackagesConfig()
     {
         // project is directly changed
@@ -296,7 +348,8 @@ public class FileWriterWorkerTests : TestBase
         UpdateOperationBase[] expectedOperations,
         string projectName = "project.csproj",
         MockNuGetPackage[]? packages = null,
-        ExperimentsManager? experimentsManager = null
+        ExperimentsManager? experimentsManager = null,
+        Action<DirectoryInfo>? additionalChecks = null
     )
     {
         // arrange
@@ -338,5 +391,7 @@ public class FileWriterWorkerTests : TestBase
             var actualContents = await File.ReadAllTextAsync(fullPath);
             Assert.Equal(expectedContents.Replace("\r", ""), actualContents.Replace("\r", ""));
         }
+
+        additionalChecks?.Invoke(repoContentsPath);
     }
 }
