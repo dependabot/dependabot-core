@@ -2,6 +2,7 @@ using System.Text.Json;
 
 using NuGet.Versioning;
 
+using NuGetUpdater.Core.DependencySolver;
 using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Run;
 using NuGetUpdater.Core.Test.Utilities;

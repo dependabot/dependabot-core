@@ -1,6 +1,6 @@
 using System.Collections.Immutable;
 
-namespace NuGetUpdater.Core.Updater.FileWriters;
+namespace NuGetUpdater.Core.DependencySolver;
 
 public class MSBuildDependencySolver : IDependencySolver
 {

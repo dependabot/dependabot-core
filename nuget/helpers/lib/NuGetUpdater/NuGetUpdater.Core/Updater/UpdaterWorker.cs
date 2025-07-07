@@ -5,6 +5,7 @@ using System.Text.Json.Serialization;
 using NuGet.Versioning;
 
 using NuGetUpdater.Core.Analyze;
+using NuGetUpdater.Core.DependencySolver;
 using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Run.ApiModel;
 using NuGetUpdater.Core.Updater;

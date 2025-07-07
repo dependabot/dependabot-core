@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 
 using NuGet.Versioning;
 
+using NuGetUpdater.Core.DependencySolver;
 using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Utilities;
 
