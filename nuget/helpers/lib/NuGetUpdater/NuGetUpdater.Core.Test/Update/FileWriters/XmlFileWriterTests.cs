@@ -6,7 +6,7 @@ namespace NuGetUpdater.Core.Test.Update.FileWriters;
 
 public class XmlFileWriterTests : FileWriterTestsBase
 {
-    public override IFileWriter FileWriter => new XmlFileWriter();
+    public override IFileWriter FileWriter => new XmlFileWriter(new TestLogger());
 
     [Fact]
     public async Task SingleDependency_SingleFile_AttributeDirectUpdate()
