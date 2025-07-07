@@ -1,6 +1,7 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
+require "sorbet-runtime"
 require "toml-rb"
 require "open3"
 require "dependabot/git_commit_checker"
@@ -12,7 +13,9 @@ require "dependabot/shared_helpers"
 module Dependabot
   module Cargo
     class FileUpdater
+      # rubocop:disable Metrics/ClassLength
       class LockfileUpdater
+        extend T::Sig
         LOCKFILE_ENTRY_REGEX = /
           \[\[package\]\]\n
           (?:(?!^\[(\[package|metadata)).)+
@@ -20,14 +23,29 @@ module Dependabot
 
         LOCKFILE_CHECKSUM_REGEX = /^"checksum .*$/
 
+        sig do
+          params(
+            dependencies: T::Array[Dependabot::Dependency],
+            dependency_files: T::Array[Dependabot::DependencyFile],
+            credentials: T::Array[Dependabot::Credential]
+          ).void
+        end
         def initialize(dependencies:, dependency_files:, credentials:)
-          @dependencies = dependencies
-          @dependency_files = dependency_files
-          @credentials = credentials
+          @dependencies = T.let(dependencies, T::Array[Dependabot::Dependency])
+          @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
+          @credentials = T.let(credentials, T::Array[Dependabot::Credential])
+          @custom_specification = T.let(nil, T.nilable(String))
+          @git_ssh_requirements_to_swap = T.let(nil, T.nilable(T::Hash[String, String]))
+          @manifest_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
+          @path_dependency_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
+          @lockfile = T.let(nil, T.nilable(Dependabot::DependencyFile))
+          @toolchain = T.let(nil, T.nilable(Dependabot::DependencyFile))
+          @config = T.let(nil, T.nilable(Dependabot::DependencyFile))
         end
 
+        sig { returns(T.any(String, T.noreturn)) }
         def updated_lockfile_content
-          base_directory = dependency_files.first.directory
+          base_directory = T.must(dependency_files.first).directory
           SharedHelpers.in_a_temporary_directory(base_directory) do
             write_temporary_dependency_files
 
@@ -51,15 +69,22 @@ module Dependabot
 
         private
 
+        sig { returns(T::Array[Dependabot::Dependency]) }
         attr_reader :dependencies
+
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
+
+        sig { returns(T::Array[T.untyped]) }
         attr_reader :credentials
 
         # Currently, there will only be a single updated dependency
+        sig { returns(Dependabot::Dependency) }
         def dependency
-          dependencies.first
+          T.must(dependencies.first)
         end
 
+        sig { params(error: StandardError).returns(T.noreturn) }
         def handle_cargo_error(error)
           raise unless error.message.include?("failed to select a version") ||
                        error.message.include?("no matching version") ||
@@ -72,6 +97,7 @@ module Dependabot
         # rubocop:disable Metrics/PerceivedComplexity
         # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/AbcSize
+        sig { params(error: StandardError).returns(T::Boolean) }
         def better_specification_needed?(error)
           return false if @custom_specification
           return false unless error.message.match?(/specification .* is ambigu/)
@@ -85,16 +111,16 @@ module Dependabot
                   dependency.version
                 end
 
-          if spec_options.count { |s| s.end_with?(ver) } == 1
+          if ver && spec_options.count { |s| s.end_with?(ver) } == 1
             @custom_specification = spec_options.find { |s| s.end_with?(ver) }
             return true
-          elsif spec_options.count { |s| s.end_with?(ver) } > 1
+          elsif ver && spec_options.count { |s| s.end_with?(ver) } > 1
             spec_options.select! { |s| s.end_with?(ver) }
           end
 
           if git_dependency? && git_source_url &&
-             spec_options.count { |s| s.include?(git_source_url) } >= 1
-            spec_options.select! { |s| s.include?(git_source_url) }
+             spec_options.count { |s| s.include?(T.must(git_source_url)) } >= 1
+            spec_options.select! { |s| s.include?(T.must(git_source_url)) }
           end
 
           @custom_specification = spec_options.first
@@ -104,6 +130,7 @@ module Dependabot
         # rubocop:enable Metrics/CyclomaticComplexity
         # rubocop:enable Metrics/PerceivedComplexity
 
+        sig { returns(String) }
         def dependency_spec
           return @custom_specification if @custom_specification
 
@@ -118,26 +145,30 @@ module Dependabot
           spec
         end
 
+        sig { returns(T.nilable(String)) }
         def git_previous_version
           TomlRB.parse(lockfile.content)
                 .fetch("package", [])
                 .select { |p| p["name"] == dependency.name }
                 .find { |p| p["source"].end_with?(dependency.previous_version) }
-                .fetch("version")
+                &.fetch("version")
         end
 
+        sig { returns(T.nilable(String)) }
         def git_source_url
           dependency.previous_requirements
-                    .find { |r| r.dig(:source, :type) == "git" }
+                    &.find { |r| r.dig(:source, :type) == "git" }
                     &.dig(:source, :url)
         end
 
+        sig { returns(String) }
         def desired_lockfile_content
-          return dependency.version if git_dependency?
+          return T.must(dependency.version) if git_dependency?
 
           %(name = "#{dependency.name}"\nversion = "#{dependency.version}")
         end
 
+        sig { params(command: String, fingerprint: String).void }
         def run_cargo_command(command, fingerprint:)
           start = Time.now
           command = SharedHelpers.escape_command(command)
@@ -176,6 +207,7 @@ module Dependabot
           )
         end
 
+        sig { params(message: String).returns(T::Boolean) }
         def using_old_toolchain?(message)
           return true if message.include?("usage of sparse registries requires `-Z sparse-registry`")
 
@@ -185,18 +217,20 @@ module Dependabot
           version_class.new(version_log[:version]) < version_class.new("1.68")
         end
 
+        sig { void }
         def write_temporary_dependency_files
           write_temporary_manifest_files
           write_temporary_path_dependency_files
 
           File.write(lockfile.name, lockfile.content)
-          File.write(toolchain.name, toolchain.content) if toolchain
+          File.write(T.must(toolchain).name, T.must(toolchain).content) if toolchain
           return unless config
 
-          FileUtils.mkdir_p(File.dirname(config.name))
-          File.write(config.name, config.content)
+          FileUtils.mkdir_p(File.dirname(T.must(config).name))
+          File.write(T.must(config).name, T.must(config).content)
         end
 
+        sig { void }
         def write_temporary_manifest_files
           manifest_files.each do |file|
             path = file.name
@@ -214,6 +248,7 @@ module Dependabot
           end
         end
 
+        sig { void }
         def write_temporary_path_dependency_files
           path_dependency_files.each do |file|
             path = file.name
@@ -227,6 +262,7 @@ module Dependabot
           end
         end
 
+        sig { params(file: Dependabot::DependencyFile).returns(String) }
         def prepared_manifest_content(file)
           content = updated_manifest_content(file)
           content = pin_version(content) unless git_dependency?
@@ -236,12 +272,14 @@ module Dependabot
           content
         end
 
+        sig { params(file: Dependabot::DependencyFile).returns(String) }
         def prepared_path_dependency_content(file)
-          content = file.content.dup
+          content = T.must(file.content).dup
           content = replace_ssh_urls(content)
           content
         end
 
+        sig { params(file: Dependabot::DependencyFile).returns(String) }
         def updated_manifest_content(file)
           ManifestUpdater.new(
             dependencies: dependencies,
@@ -249,6 +287,7 @@ module Dependabot
           ).updated_manifest_content
         end
 
+        sig { params(content: String).returns(String) }
         def pin_version(content)
           parsed_manifest = TomlRB.parse(content)
 
@@ -269,6 +308,7 @@ module Dependabot
           TomlRB.dump(parsed_manifest)
         end
 
+        sig { params(parsed_manifest: T::Hash[String, T.untyped]).void }
         def pin_target_specific_dependencies!(parsed_manifest)
           parsed_manifest.fetch("target", {}).each do |target, t_details|
             Cargo::FileParser::DEPENDENCY_TYPES.each do |type|
@@ -288,6 +328,7 @@ module Dependabot
           end
         end
 
+        sig { params(content: String).returns(String) }
         def replace_ssh_urls(content)
           git_ssh_requirements_to_swap.each do |ssh_url, https_url|
             content = content.gsub(ssh_url, https_url)
@@ -295,18 +336,21 @@ module Dependabot
           content
         end
 
+        sig { params(content: String).returns(String) }
         def remove_binary_specifications(content)
           parsed_manifest = TomlRB.parse(content)
           parsed_manifest.delete("bin")
           TomlRB.dump(parsed_manifest)
         end
 
+        sig { params(content: String).returns(String) }
         def remove_default_run_specification(content)
           parsed_manifest = TomlRB.parse(content)
           parsed_manifest["package"].delete("default-run") if parsed_manifest.dig("package", "default-run")
           TomlRB.dump(parsed_manifest)
         end
 
+        sig { params(content: String).returns(String) }
         def post_process_lockfile(content)
           git_ssh_requirements_to_swap.each do |ssh_url, https_url|
             content = content.gsub(https_url, ssh_url)
@@ -316,6 +360,7 @@ module Dependabot
           content
         end
 
+        sig { returns(T::Hash[String, String]) }
         def git_ssh_requirements_to_swap
           return @git_ssh_requirements_to_swap if @git_ssh_requirements_to_swap
 
@@ -338,6 +383,7 @@ module Dependabot
           @git_ssh_requirements_to_swap
         end
 
+        sig { params(lockfile_content: String).returns(String) }
         def remove_duplicate_lockfile_entries(lockfile_content)
           # Loop through the lockfile entries looking for duplicates. Replace
           # any that are found
@@ -368,10 +414,12 @@ module Dependabot
           lockfile_content
         end
 
+        sig { returns(String) }
         def dummy_app_content
           %{fn main() {\nprintln!("Hello, world!");\n}}
         end
 
+        sig { returns(T::Boolean) }
         def git_dependency?
           GitCommitChecker.new(
             dependency: dependency,
@@ -379,6 +427,7 @@ module Dependabot
           ).git_dependency?
         end
 
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
         def manifest_files
           @manifest_files ||=
             dependency_files
@@ -386,6 +435,7 @@ module Dependabot
             .reject(&:support_file?)
         end
 
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
         def path_dependency_files
           @path_dependency_files ||=
             dependency_files
@@ -393,27 +443,34 @@ module Dependabot
             .select(&:support_file?)
         end
 
+        sig { returns(Dependabot::DependencyFile) }
         def lockfile
           @lockfile ||= dependency_files.find { |f| f.name == "Cargo.lock" }
+          T.must(@lockfile)
         end
 
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def toolchain
           @toolchain ||=
             dependency_files.find { |f| f.name == "rust-toolchain" }
         end
 
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def config
           @config ||= dependency_files.find { |f| f.name == ".cargo/config.toml" }
         end
 
+        sig { params(file: Dependabot::DependencyFile).returns(T::Boolean) }
         def virtual_manifest?(file)
-          !file.content.include?("[package]")
+          !T.must(file.content).include?("[package]")
         end
 
+        sig { returns(T.class_of(Gem::Version)) }
         def version_class
           dependency.version_class
         end
       end
+      # rubocop:enable Metrics/ClassLength
     end
   end
 end
