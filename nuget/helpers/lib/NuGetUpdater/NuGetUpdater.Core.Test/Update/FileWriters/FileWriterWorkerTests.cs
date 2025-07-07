@@ -110,6 +110,51 @@ public class FileWriterWorkerTests : TestBase
     }
 
     [Fact]
+    public async Task EndToEnd_ProjectReference_PinnedTransitiveDependency()
+    {
+        // project is directly changed
+        await TestAsync(
+            dependencyName: "Transitive.Dependency",
+            oldDependencyVersion: "2.0.0",
+            newDependencyVersion: "3.0.0",
+            projectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net9.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Some.Dependency" Version="1.0.0" />
+                  </ItemGroup>
+                </Project>
+                """,
+            additionalFiles: [],
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Some.Dependency", "1.0.0", "net9.0", [(null, [("Transitive.Dependency", "2.0.0")])]),
+                MockNuGetPackage.CreateSimplePackage("Transitive.Dependency", "2.0.0", "net9.0"),
+                MockNuGetPackage.CreateSimplePackage("Transitive.Dependency", "3.0.0", "net9.0"),
+            ],
+            discoveryWorker: null, // use real worker
+            dependencySolver: null, // use real worker
+            fileWriter: null, // use real worker
+            expectedProjectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net9.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Some.Dependency" Version="1.0.0" />
+                    <PackageReference Include="Transitive.Dependency" Version="3.0.0" />
+                  </ItemGroup>
+                </Project>
+                """,
+            expectedAdditionalFiles: [],
+            expectedOperations: [
+                new PinnedUpdate() { DependencyName = "Transitive.Dependency", NewVersion = NuGetVersion.Parse("3.0.0"), UpdatedFiles = ["/project.csproj"] }
+            ]
+        );
+    }
+
+    [Fact]
     public async Task EndToEnd_PackagesConfig()
     {
         // project is directly changed

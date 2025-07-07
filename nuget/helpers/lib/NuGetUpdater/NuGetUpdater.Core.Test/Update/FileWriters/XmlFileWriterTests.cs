@@ -291,4 +291,306 @@ public class XmlFileWriterTests : FileWriterTestsBase
             ]
         );
     }
+
+    [Fact]
+    public async Task SingleDependency_SingleFile_TransitiveIsPinnedAtFront()
+    {
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="Some.Dependency" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            projectDiscovery: new()
+            {
+                FilePath = "project.csproj",
+                Dependencies = [
+                    new Dependency("A.Transitive.Dependency", "2.0.0", DependencyType.PackageReference, IsTransitive: true),
+                    new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
+                ],
+                ImportedFiles = [],
+                AdditionalFiles = [],
+            },
+            requiredDependencies: [
+                new Dependency("A.Transitive.Dependency", "3.0.0", DependencyType.PackageReference),
+                new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
+            ],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="A.Transitive.Dependency" Version="3.0.0" />
+                        <PackageReference Include="Some.Dependency" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task SingleDependency_SingleFile_TransitiveIsPinnedInMiddle()
+    {
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="Some.Dependency" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            projectDiscovery: new()
+            {
+                FilePath = "project.csproj",
+                Dependencies = [
+                    new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
+                    new Dependency("Transitive.Dependency", "2.0.0", DependencyType.PackageReference, IsTransitive: true),
+                ],
+                ImportedFiles = [],
+                AdditionalFiles = [],
+            },
+            requiredDependencies: [
+                new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
+                new Dependency("Transitive.Dependency", "3.0.0", DependencyType.PackageReference),
+            ],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="Some.Dependency" Version="1.0.0" />
+                        <PackageReference Include="Transitive.Dependency" Version="3.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task SingleDependency_CentralPackageManagement_TransitiveIsPinned_ExistingPackageVersionElement_AlreadyCorrect()
+    {
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="Some.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Directory.Packages.props", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageVersion Include="Some.Dependency" Version="1.0.0" />
+                        <PackageVersion Include="Transitive.Dependency" Version="3.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            projectDiscovery: new()
+            {
+                FilePath = "project.csproj",
+                Dependencies = [
+                    new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
+                    new Dependency("Transitive.Dependency", "2.0.0", DependencyType.PackageReference, IsTransitive: true),
+                ],
+                ImportedFiles = ["Directory.Packages.props"],
+                AdditionalFiles = [],
+            },
+            requiredDependencies: [
+                new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
+                new Dependency("Transitive.Dependency", "3.0.0", DependencyType.PackageReference),
+            ],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="Some.Dependency" />
+                        <PackageReference Include="Transitive.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Directory.Packages.props", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageVersion Include="Some.Dependency" Version="1.0.0" />
+                        <PackageVersion Include="Transitive.Dependency" Version="3.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task SingleDependency_CentralPackageManagement_TransitiveIsPinned_ExistingPackageVersionElement_VersionOverrideNeeded()
+    {
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="Some.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Directory.Packages.props", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageVersion Include="Some.Dependency" Version="1.0.0" />
+                        <PackageVersion Include="Transitive.Dependency" Version="9.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            projectDiscovery: new()
+            {
+                FilePath = "project.csproj",
+                Dependencies = [
+                    new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
+                    new Dependency("Transitive.Dependency", "2.0.0", DependencyType.PackageReference, IsTransitive: true),
+                ],
+                ImportedFiles = ["Directory.Packages.props"],
+                AdditionalFiles = [],
+            },
+            requiredDependencies: [
+                new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
+                new Dependency("Transitive.Dependency", "3.0.0", DependencyType.PackageReference),
+            ],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="Some.Dependency" />
+                        <PackageReference Include="Transitive.Dependency" VersionOverride="3.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Directory.Packages.props", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageVersion Include="Some.Dependency" Version="1.0.0" />
+                        <PackageVersion Include="Transitive.Dependency" Version="9.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task SingleDependency_CentralPackageManagement_TransitiveIsPinned_NoExistingPackageVersionElement_VersionElementAddedAtFront()
+    {
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="Some.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Directory.Packages.props", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageVersion Include="Some.Dependency" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            projectDiscovery: new()
+            {
+                FilePath = "project.csproj",
+                Dependencies = [
+                    new Dependency("A.Transitive.Dependency", "2.0.0", DependencyType.PackageReference, IsTransitive: true),
+                    new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
+                ],
+                ImportedFiles = ["Directory.Packages.props"],
+                AdditionalFiles = [],
+            },
+            requiredDependencies: [
+                new Dependency("A.Transitive.Dependency", "3.0.0", DependencyType.PackageReference),
+                new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
+            ],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="A.Transitive.Dependency" />
+                        <PackageReference Include="Some.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Directory.Packages.props", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageVersion Include="A.Transitive.Dependency" Version="3.0.0" />
+                        <PackageVersion Include="Some.Dependency" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task SingleDependency_CentralPackageManagement_TransitiveIsPinned_NoExistingPackageVersionElement_VersionElementAddedInMiddle()
+    {
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="Some.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Directory.Packages.props", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageVersion Include="Some.Dependency" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            projectDiscovery: new()
+            {
+                FilePath = "project.csproj",
+                Dependencies = [
+                    new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
+                    new Dependency("Transitive.Dependency", "2.0.0", DependencyType.PackageReference, IsTransitive: true),
+                ],
+                ImportedFiles = ["Directory.Packages.props"],
+                AdditionalFiles = [],
+            },
+            requiredDependencies: [
+                new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
+                new Dependency("Transitive.Dependency", "3.0.0", DependencyType.PackageReference),
+            ],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="Some.Dependency" />
+                        <PackageReference Include="Transitive.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Directory.Packages.props", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageVersion Include="Some.Dependency" Version="1.0.0" />
+                        <PackageVersion Include="Transitive.Dependency" Version="3.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
 }
