@@ -48,13 +48,13 @@ module Dependabot
             dependencies: T::Array[Dependabot::Dependency],
             dependency_files: T::Array[Dependabot::DependencyFile],
             credentials: T::Array[Dependabot::Credential],
-            index_urls: T.nilable(T::Array[String])
+            index_urls: T.nilable(T::Array[T.nilable(String)])
           ).void
         end
-        def initialize(dependencies:, dependency_files:, credentials:, index_urls: nil)
+        def initialize(dependencies:, dependency_files:, credentials:, index_urls: nil) # rubocop:disable Metrics/AbcSize
           @dependencies = T.let(dependencies, T::Array[Dependabot::Dependency])
           @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
-          @index_urls = T.let(index_urls, T.nilable(T::Array[String]))
+          @index_urls = T.let(index_urls, T.nilable(T::Array[T.nilable(String)]))
           @build_isolation = T.let(true, T::Boolean)
           @sanitized_setup_file_content = T.let({}, T::Hash[String, String])
           @requirement_map = T.let(nil, T.nilable(T::Hash[String, T::Array[String]]))
@@ -312,7 +312,7 @@ module Dependabot
           return file.content if old_req == "==#{T.must(dependency).version}"
 
           RequirementReplacer.new(
-            content: file.content,
+            content: T.must(file.content),
             dependency_name: T.must(dependency).name,
             old_requirement: old_req[:requirement],
             new_requirement: "==#{T.must(dependency).version}",
@@ -332,7 +332,7 @@ module Dependabot
           return file.content if old_req == new_req
 
           RequirementReplacer.new(
-            content: file.content,
+            content: T.must(file.content),
             dependency_name: T.must(dependency).name,
             old_requirement: old_req[:requirement],
             new_requirement: T.must(new_req)[:requirement],

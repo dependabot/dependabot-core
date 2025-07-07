@@ -109,7 +109,7 @@ public class RunWorker
 
         if (error is not null)
         {
-            await _apiHandler.RecordUpdateJobError(error);
+            await _apiHandler.RecordUpdateJobError(error, _logger);
         }
 
         await _apiHandler.MarkAsProcessed(new(baseCommitSha));
@@ -155,7 +155,7 @@ public class RunWorker
 
         if (error is not null)
         {
-            await _apiHandler.RecordUpdateJobError(error);
+            await _apiHandler.RecordUpdateJobError(error, _logger);
         }
 
         await _apiHandler.MarkAsProcessed(new(baseCommitSha));
@@ -172,7 +172,7 @@ public class RunWorker
         if (discoveryResult.Error is not null)
         {
             // this is unrecoverable
-            await _apiHandler.RecordUpdateJobError(discoveryResult.Error);
+            await _apiHandler.RecordUpdateJobError(discoveryResult.Error, _logger);
             return new()
             {
                 Base64DependencyFiles = [],
@@ -238,7 +238,7 @@ public class RunWorker
 
             if (analysisResult.Error is not null)
             {
-                await _apiHandler.RecordUpdateJobError(analysisResult.Error);
+                await _apiHandler.RecordUpdateJobError(analysisResult.Error, _logger);
                 continue;
             }
 
@@ -288,7 +288,7 @@ public class RunWorker
                 var updateResult = await _updaterWorker.RunAsync(repoContentsPath.FullName, updateOperation.ProjectPath, dependency.Name, dependency.Version!, analysisResult.UpdatedVersion, isTransitive: dependency.IsTransitive);
                 if (updateResult.Error is not null)
                 {
-                    await _apiHandler.RecordUpdateJobError(updateResult.Error);
+                    await _apiHandler.RecordUpdateJobError(updateResult.Error, _logger);
                 }
                 else
                 {
@@ -389,7 +389,7 @@ public class RunWorker
         switch (message)
         {
             case JobErrorBase error:
-                await _apiHandler.RecordUpdateJobError(error);
+                await _apiHandler.RecordUpdateJobError(error, _logger);
                 break;
             case CreatePullRequest create:
                 await _apiHandler.CreatePullRequest(create);

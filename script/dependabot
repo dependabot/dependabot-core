@@ -27,7 +27,9 @@ dependabot \
   -v "$(pwd)"/nuget:/home/dependabot/nuget \
   -v "$(pwd)"/pub:/home/dependabot/pub \
   -v "$(pwd)"/python:/home/dependabot/python \
+  -v "$(pwd)"/rust_toolchain:/home/dependabot/rust_toolchain \
   -v "$(pwd)"/swift:/home/dependabot/swift \
   -v "$(pwd)"/terraform:/home/dependabot/terraform \
   -v "$(pwd)"/uv:/home/dependabot/uv \
+  -v "$(pwd)"/vcpkg:/home/dependabot/vcpkg \
   "$@"

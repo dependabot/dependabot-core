@@ -19,27 +19,29 @@
 #   ruby bin/dry-run.rb go_modules zonedb/zonedb
 #
 # Package managers:
+# - bun
 # - bundler
-# - pip (includes pipenv)
-# - npm_and_yarn
-# - maven
-# - gradle
 # - cargo
-# - hex
 # - composer
-# - nuget
-# - go_modules
-# - elm
-# - submodules
+# - devcontainers
 # - docker
 # - docker_compose
-# - terraform
-# - pub
-# - swift
-# - devcontainers
 # - dotnet_sdk
-# - bun
+# - elm
+# - go_modules
+# - gradle
 # - helm
+# - hex
+# - maven
+# - npm_and_yarn
+# - nuget
+# - pip (includes pipenv)
+# - pub
+# - rust_toolchain
+# - submodules
+# - swift
+# - terraform
+# - vcpkg
 
 # rubocop:disable Style/GlobalVars
 
@@ -59,8 +61,8 @@ $LOAD_PATH << "./cargo/lib"
 $LOAD_PATH << "./common/lib"
 $LOAD_PATH << "./composer/lib"
 $LOAD_PATH << "./devcontainers/lib"
-$LOAD_PATH << "./docker/lib"
 $LOAD_PATH << "./docker_compose/lib"
+$LOAD_PATH << "./docker/lib"
 $LOAD_PATH << "./dotnet_sdk/lib"
 $LOAD_PATH << "./elm/lib"
 $LOAD_PATH << "./git_submodules/lib"
@@ -72,11 +74,13 @@ $LOAD_PATH << "./hex/lib"
 $LOAD_PATH << "./maven/lib"
 $LOAD_PATH << "./npm_and_yarn/lib"
 $LOAD_PATH << "./nuget/lib"
-$LOAD_PATH << "./python/lib"
 $LOAD_PATH << "./pub/lib"
+$LOAD_PATH << "./python/lib"
+$LOAD_PATH << "./rust_toolchain/lib"
 $LOAD_PATH << "./swift/lib"
 $LOAD_PATH << "./terraform/lib"
 $LOAD_PATH << "./uv/lib"
+$LOAD_PATH << "./vcpkg/lib"
 
 updater_image_gemfile = File.expand_path("../dependabot-updater/Gemfile", __dir__)
 updater_repo_gemfile = File.expand_path("../updater/Gemfile", __dir__)
@@ -127,6 +131,7 @@ require "dependabot/python"
 require "dependabot/swift"
 require "dependabot/terraform"
 require "dependabot/uv"
+require "dependabot/vcpkg"
 
 # GitHub credentials with write permission to the repo you want to update
 # (so that you can create a new branch, commit and pull request).
@@ -328,9 +333,32 @@ end
 
 # Validate package manager
 valid_package_managers = %w(
-  bundler pip npm_and_yarn maven gradle cargo hex composer nuget go_modules elm
-  git_submodules docker docker_compose terraform pub swift devcontainers dotnet_sdk
-  bun helm uv python github_actions
+  bun
+  bundler
+  cargo
+  composer
+  devcontainers
+  docker
+  docker_compose
+  dotnet_sdk
+  elm
+  git_submodules
+  github_actions
+  go_modules
+  gradle
+  helm
+  hex
+  maven
+  npm_and_yarn
+  nuget
+  pip
+  pub
+  python
+  rust_toolchain
+  swift
+  terraform
+  uv
+  vcpkg
 )
 unless valid_package_managers.include?(ARGV[0])
   puts "Invalid package manager: #{ARGV[0]}"

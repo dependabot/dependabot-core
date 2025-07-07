@@ -38,9 +38,11 @@ jobs:
           - { path: pub, name: pub, ecosystem: pub }
           - { path: python, name: python_slow, ecosystem: pip }
           - { path: python, name: python, ecosystem: pip }
+          - { path: rust_toolchain, name: rust_toolchain, ecosystem: rust-toolchain }
           - { path: swift, name: swift, ecosystem: swift }
           - { path: terraform, name: terraform, ecosystem: terraform }
           - { path: uv, name: uv, ecosystem: uv }
+          - { path: vcpkg, name: vcpkg, ecosystem: vcpkg }
 
     steps:
       - name: Checkout code

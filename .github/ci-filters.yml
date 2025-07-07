@@ -70,6 +70,9 @@ pub:
 python:
   - *shared
   - 'python/**'
+rust_toolchain:
+  - *shared
+  - 'rust_toolchain/**'
 swift:
   - *shared
   - 'swift/**'
@@ -82,3 +85,6 @@ uv:
 helm:
   - *shared
   - 'helm/**'
+vcpkg:
+  - *shared
+  - 'vcpkg/**'
