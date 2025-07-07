@@ -33,6 +33,13 @@ public class XmlFileWriter : IFileWriter
             var oldVersion = NuGetVersion.Parse(oldVersionString);
             var requiredVersion = NuGetVersion.Parse(requiredPackageVersion.Version!);
 
+            if (oldVersion == requiredVersion)
+            {
+                _logger.Info($"Dependency {requiredPackageVersion.Name} is already at version {requiredVersion}; no update needed.");
+                updatesPerformed[requiredPackageVersion.Name] = true;
+                continue;
+            }
+
             // version numbers can be in attributes or elements and we may need to do some complicated navigation
             // this object is used to perform the update once we've walked back as far as necessary
             string? currentVersionString = null;
@@ -42,8 +49,107 @@ public class XmlFileWriter : IFileWriter
                 .SelectMany(doc => doc.Descendants().Where(e => e.Name.LocalName == "PackageReference"))
                 .Where(e => (e.Attribute("Include")?.Value ?? string.Empty).Trim().Equals(requiredPackageVersion.Name, StringComparison.OrdinalIgnoreCase))
                 .ToArray();
-            if (packageReferenceElements.Length == 1)
+
+            if (packageReferenceElements.Length == 0)
             {
+                // no matching `<PackageReference>` elements found; pin it as a transitive dependency
+
+                // find last `<ItemGroup>` in the project...
+                var projectDocument = filesAndContents[projectDiscovery.FilePath];
+                var lastItemGroup = projectDocument.Root!.Elements()
+                    .LastOrDefault(e => e.Name.LocalName.Equals("ItemGroup", StringComparison.OrdinalIgnoreCase));
+                if (lastItemGroup is null)
+                {
+                    _logger.Info($"No `<ItemGroup>` element found in project; adding one.");
+                    lastItemGroup = new XElement(XName.Get("ItemGroup", projectDocument.Root.Name.NamespaceName));
+                    projectDocument.Root.Add(lastItemGroup);
+                }
+
+                // ...find where the new item should go...
+                var packageReferencesBeforeNew = lastItemGroup.Elements()
+                    .Where(e => e.Name.LocalName.Equals("PackageReference", StringComparison.OrdinalIgnoreCase))
+                    .TakeWhile(e => (e.Attribute("Include")?.Value ?? e.Attribute("Update")?.Value ?? string.Empty).CompareTo(requiredPackageVersion.Name) < 0)
+                    .ToArray();
+
+                // ...add a new `<PackageReference>` element...
+                var newElement = new XElement(
+                    XName.Get("PackageReference", projectDocument.Root.Name.NamespaceName),
+                    new XAttribute("Include", requiredPackageVersion.Name));
+                var lastPriorPackageReference = packageReferencesBeforeNew.LastOrDefault();
+                if (lastPriorPackageReference is not null)
+                {
+                    lastPriorPackageReference.AddAfterSelf(newElement);
+                }
+                else
+                {
+                    // no prior package references; add to the front
+                    lastItemGroup.AddFirst(newElement);
+                }
+
+                // ...find the best place to add the version...
+                var matchingPackageVersionElement = filesAndContents.Values
+                    .SelectMany(doc => doc.Descendants().Where(e => e.Name.LocalName.Equals("PackageVersion", StringComparison.OrdinalIgnoreCase)))
+                    .FirstOrDefault(e => (e.Attribute("Include")?.Value ?? string.Empty).Trim().Equals(requiredPackageVersion.Name, StringComparison.OrdinalIgnoreCase));
+                if (matchingPackageVersionElement is not null)
+                {
+                    // found matching `<PackageVersion>` element; if `Version` attribute is appropriate we're done, otherwise set `VersionOverride` attribute on new element
+                    var versionAttribute = matchingPackageVersionElement.Attribute("Version");
+                    if (versionAttribute is not null &&
+                        NuGetVersion.TryParse(versionAttribute.Value, out var existingVersion) &&
+                        existingVersion == requiredVersion)
+                    {
+                        // version matches; no update needed
+                        _logger.Info($"Dependency {requiredPackageVersion.Name} already set to {requiredVersion}; no override needed.");
+                        updatesPerformed[requiredPackageVersion.Name] = true;
+                    }
+                    else
+                    {
+                        // version doesn't match; use `VersionOverride` attribute on new element
+                        _logger.Info($"Dependency {requiredPackageVersion.Name} set to {requiredVersion}; using `VersionOverride` attribute on new element.");
+                        newElement.SetAttributeValue("VersionOverride", requiredVersion.ToString());
+                        updatesPerformed[requiredPackageVersion.Name] = true;
+                    }
+                }
+                else
+                {
+                    // no matching `<PackageVersion>` element; either add a new one, or directly set the `Version` attribute on the new element
+                    var allPackageVersionElements = filesAndContents.Values
+                        .SelectMany(doc => doc.Descendants().Where(e => e.Name.LocalName.Equals("PackageVersion", StringComparison.OrdinalIgnoreCase)))
+                        .ToArray();
+                    if (allPackageVersionElements.Length > 0)
+                    {
+                        // add a new `<PackageVersion>` element
+                        var newVersionElement = new XElement(XName.Get("PackageVersion", projectDocument.Root.Name.NamespaceName),
+                            new XAttribute("Include", requiredPackageVersion.Name),
+                            new XAttribute("Version", requiredVersion.ToString()));
+                        var lastPriorPackageVersionElement = allPackageVersionElements
+                            .TakeWhile(e => (e.Attribute("Include")?.Value ?? string.Empty).Trim().CompareTo(requiredPackageVersion.Name) < 0)
+                            .LastOrDefault();
+                        if (lastPriorPackageVersionElement is not null)
+                        {
+                            _logger.Info($"Adding new `<PackageVersion>` element for {requiredPackageVersion.Name} with version {requiredVersion}.");
+                            lastPriorPackageVersionElement.AddAfterSelf(newVersionElement);
+                            updatesPerformed[requiredPackageVersion.Name] = true;
+                        }
+                        else
+                        {
+                            // no prior package versions; add to the front of the document
+                            _logger.Info($"Adding new `<PackageVersion>` element for {requiredPackageVersion.Name} with version {requiredVersion} at the start of the document.");
+                            allPackageVersionElements.First().AddBeforeSelf(newVersionElement);
+                            updatesPerformed[requiredPackageVersion.Name] = true;
+                        }
+                    }
+                    else
+                    {
+                        // add a direct `Version` attribute
+                        newElement.SetAttributeValue("Version", requiredVersion.ToString());
+                        updatesPerformed[requiredPackageVersion.Name] = true;
+                    }
+                }
+            }
+            else if (packageReferenceElements.Length == 1)
+            {
+                // found single matching `<PackageReference>` element to update
                 var packageReferenceElement = packageReferenceElements[0];
 
                 // first check for matching `Version` attribute

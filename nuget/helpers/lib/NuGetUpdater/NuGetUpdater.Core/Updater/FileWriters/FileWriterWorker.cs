@@ -185,7 +185,16 @@ public class FileWriterWorker
                 resolvedDependencies.Value,
                 new ExperimentsManager() { UseDirectDiscovery = true },
                 _logger);
-            var computedOperationsWithUpdatedFiles = computedUpdateOperations
+            var filteredUpdateOperations = computedUpdateOperations
+                .Where(op =>
+                {
+                    var initialDependency = initialProjectDiscovery.Dependencies.FirstOrDefault(d => d.Name.Equals(op.DependencyName, StringComparison.OrdinalIgnoreCase));
+                    return initialDependency is not null
+                        && initialDependency.Version is not null
+                        && NuGetVersion.Parse(initialDependency.Version) < op.NewVersion;
+                })
+                .ToImmutableArray();
+            var computedOperationsWithUpdatedFiles = filteredUpdateOperations
                 .Select(op => op with { UpdatedFiles = [.. updatedFiles] })
                 .ToImmutableArray();
             updateOperations.AddRange(computedOperationsWithUpdatedFiles);
