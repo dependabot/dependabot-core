@@ -43,7 +43,7 @@ public class XmlFileWriter : IFileWriter
             // version numbers can be in attributes or elements and we may need to do some complicated navigation
             // this object is used to perform the update once we've walked back as far as necessary
             string? currentVersionString = null;
-            Action<NuGetVersion>? updateVersionLocation = null;
+            Action<string>? updateVersionLocation = null;
 
             var packageReferenceElements = filesAndContents.Values
                 .SelectMany(doc => doc.Descendants().Where(e => e.Name.LocalName == "PackageReference"))
@@ -153,7 +153,7 @@ public class XmlFileWriter : IFileWriter
                     if (versionAttribute is not null)
                     {
                         currentVersionString = versionAttribute.Value;
-                        updateVersionLocation = (version) => versionAttribute.Value = version.ToString();
+                        updateVersionLocation = (version) => versionAttribute.Value = version;
                         goto doVersionUpdate;
                     }
 
@@ -162,7 +162,7 @@ public class XmlFileWriter : IFileWriter
                     if (versionElement is not null)
                     {
                         currentVersionString = versionElement.Value;
-                        updateVersionLocation = (version) => versionElement.Value = version.ToString();
+                        updateVersionLocation = (version) => versionElement.Value = version;
                         goto doVersionUpdate;
                     }
 
@@ -175,7 +175,7 @@ public class XmlFileWriter : IFileWriter
                         if (packageVersionElement.Attribute("Version") is { } packageVersionAttribute)
                         {
                             currentVersionString = packageVersionAttribute.Value;
-                            updateVersionLocation = (version) => packageVersionAttribute.Value = version.ToString();
+                            updateVersionLocation = (version) => packageVersionAttribute.Value = version;
                             goto doVersionUpdate;
                         }
                         else
@@ -184,7 +184,7 @@ public class XmlFileWriter : IFileWriter
                             if (cpmVersionElement is not null)
                             {
                                 currentVersionString = cpmVersionElement.Value;
-                                updateVersionLocation = (version) => cpmVersionElement.Value = version.ToString();
+                                updateVersionLocation = (version) => cpmVersionElement.Value = version;
                                 goto doVersionUpdate;
                             }
                         }
@@ -194,7 +194,7 @@ public class XmlFileWriter : IFileWriter
                     if (currentVersionString is not null && updateVersionLocation is not null)
                     {
                         var performedUpdate = false;
-                        var candidateUpdateLocations = new Queue<(string VersionString, Action<NuGetVersion> Updater)>();
+                        var candidateUpdateLocations = new Queue<(string VersionString, Action<string> Updater)>();
                         candidateUpdateLocations.Enqueue((currentVersionString, updateVersionLocation));
 
                         while (candidateUpdateLocations.TryDequeue(out var candidateUpdateLocation))
@@ -204,6 +204,7 @@ public class XmlFileWriter : IFileWriter
 
                             if (NuGetVersion.TryParse(candidateUpdateVersionString, out var candidateUpdateVersion))
                             {
+                                // most common: direct update
                                 if (candidateUpdateVersion == requiredVersion)
                                 {
                                     // already up to date from a previous pass
@@ -215,10 +216,31 @@ public class XmlFileWriter : IFileWriter
                                 else if (candidateUpdateVersion == oldVersion)
                                 {
                                     // do the update here and call it good
-                                    candidateUpdater(requiredVersion);
+                                    candidateUpdater(requiredVersion.ToString());
                                     updatesPerformed[requiredPackageVersion.Name] = true;
                                     performedUpdate = true;
                                     _logger.Info($"Updated dependency {requiredPackageVersion.Name} from version {oldVersion} to {requiredVersion}.");
+                                    break;
+                                }
+                            }
+                            else if (VersionRange.TryParse(candidateUpdateVersionString, out var candidateUpdateVersionRange))
+                            {
+                                // less common: version range
+                                if (candidateUpdateVersionRange.Satisfies(oldVersion))
+                                {
+                                    var updatedVersionRange = CreateUpdatedVersionRangeString(candidateUpdateVersionRange, oldVersion, requiredVersion);
+                                    candidateUpdater(updatedVersionRange);
+                                    updatesPerformed[requiredPackageVersion.Name] = true;
+                                    performedUpdate = true;
+                                    _logger.Info($"Updated dependency {requiredPackageVersion.Name} from version {oldVersion} to {requiredVersion}.");
+                                    break;
+                                }
+                                else if (candidateUpdateVersionRange.Satisfies(requiredVersion))
+                                {
+                                    // already up to date from a previous pass
+                                    updatesPerformed[requiredPackageVersion.Name] = true;
+                                    performedUpdate = true;
+                                    _logger.Info($"Dependency {requiredPackageVersion.Name} version range '{candidateUpdateVersionRange}' already includes {requiredVersion}; no update needed.");
                                     break;
                                 }
                             }
@@ -270,5 +292,41 @@ public class XmlFileWriter : IFileWriter
     {
         var fullPath = Path.Join(repoContentsPath.FullName, path);
         File.WriteAllText(fullPath, contents);
+    }
+
+    public static string CreateUpdatedVersionRangeString(VersionRange existingRange, NuGetVersion existingVersion, NuGetVersion requiredVersion)
+    {
+        var newMinVersion = requiredVersion;
+        Func<NuGetVersion, NuGetVersion, bool> maxVersionComparer = existingRange.IsMaxInclusive
+            ? (a, b) => a >= b
+            : (a, b) => a > b;
+        var newMaxVersion = existingVersion == existingRange.MaxVersion
+            ? requiredVersion
+            : existingRange.MaxVersion is not null && maxVersionComparer(existingRange.MaxVersion, requiredVersion)
+                ? existingRange.MaxVersion
+                : null;
+        var newRange = new VersionRange(
+            minVersion: newMinVersion,
+            includeMinVersion: true,
+            maxVersion: newMaxVersion,
+            includeMaxVersion: newMaxVersion is not null && existingRange.IsMaxInclusive
+        );
+
+        // special case common scenarios
+
+        // e.g., "[2.0.0, 2.0.0]" => "[2.0.0]"
+        if (newRange.MinVersion == newRange.MaxVersion &&
+            newRange.IsMaxInclusive)
+        {
+            return $"[{newRange.MinVersion}]";
+        }
+
+        // e.g., "[2.0.0, )" => "2.0.0"
+        if (newRange.MaxVersion is null)
+        {
+            return requiredVersion.ToString();
+        }
+
+        return newRange.ToString();
     }
 }
