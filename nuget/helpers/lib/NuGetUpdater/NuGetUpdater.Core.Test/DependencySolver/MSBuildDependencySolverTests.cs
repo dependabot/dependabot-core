@@ -537,6 +537,32 @@ public class MSBuildDependencySolverTests : TestBase
         );
     }
 
+    [Fact]
+
+    public async Task DependencyConflictsCanBeResolvedAndUnnecessaryUpdatesAreNotPerformed()
+    {
+        await TestAsync(
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Some.Dependency", "1.0.0", "net8.0", [(null, [("Transitive.Dependency", "1.0.0")])]), // update from this...
+                MockNuGetPackage.CreateSimplePackage("Some.Dependency", "2.0.0", "net8.0", [(null, [("Transitive.Dependency", "1.0.0")])]), // ...to this...
+                MockNuGetPackage.CreateSimplePackage("Transitive.Dependency", "1.0.0", "net8.0"), // ...which depends on this...
+                MockNuGetPackage.CreateSimplePackage("Transitive.Dependency", "2.0.0", "net8.0"), // ...but don't update this because it's not necessary
+            ],
+            existingTopLevelDependencies: [
+                "Some.Dependency/1.0.0",
+                "Transitive.Dependency/1.0.0",
+            ],
+            desiredDependencies: [
+                "Some.Dependency/2.0.0",
+            ],
+            targetFramework: "net8.0",
+            expectedResolvedDependencies: [
+                "Some.Dependency/2.0.0",
+                "Transitive.Dependency/1.0.0",
+            ]
+        );
+    }
+
     [Fact(Timeout = 120_000)] // 2m
     public async Task DependencyConflictsCanBeResolved_TopLevelDependencyHasNewerVersionsThatDoNotPullUpTransitive()
     {
