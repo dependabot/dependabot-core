@@ -89,6 +89,47 @@ public class XmlFileWriterTests : FileWriterTestsBase
     }
 
     [Fact]
+    public async Task MultiDependency_SingleFile_SomeAlreadyUpToDate()
+    {
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="Some.Dependency" Version="1.0.0" />
+                        <PackageReference Include="Transitive.Dependency" Version="3.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            projectDiscovery: new()
+            {
+                FilePath = "project.csproj",
+                Dependencies = [
+                    new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
+                    new Dependency("Transitive.Dependency", "3.0.0", DependencyType.PackageReference),
+                ],
+                ImportedFiles = [],
+                AdditionalFiles = [],
+            },
+            requiredDependencies: [
+                new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
+                new Dependency("Transitive.Dependency", "4.0.0", DependencyType.PackageReference),
+            ],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="Some.Dependency" Version="1.0.0" />
+                        <PackageReference Include="Transitive.Dependency" Version="4.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
     public async Task SingleDependency_SingleFile_ElementDirectUpdate()
     {
         await TestAsync(
