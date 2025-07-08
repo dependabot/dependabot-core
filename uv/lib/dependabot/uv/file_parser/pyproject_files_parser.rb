@@ -80,7 +80,7 @@ module Dependabot
           # undesirable. Leave PDM alone until properly supported
           return dependencies if using_pdm?
 
-          parsed_pep621_dependencies.each do |dep|
+          parse_pep621_pep735_dependencies.each do |dep|
             # If a requirement has a `<` or `<=` marker then updating it is
             # probably blocked. Ignore it.
             next if dep["markers"].include?("<")
@@ -287,13 +287,13 @@ module Dependabot
         end
 
         sig { returns(T.untyped) }
-        def parsed_pep621_dependencies
+        def parse_pep621_pep735_dependencies
           SharedHelpers.in_a_temporary_directory do
             write_temporary_pyproject
 
             SharedHelpers.run_helper_subprocess(
               command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
-              function: "parse_pep621_dependencies",
+              function: "parse_pep621_pep735_dependencies",
               args: [T.must(pyproject).name]
             )
           end
