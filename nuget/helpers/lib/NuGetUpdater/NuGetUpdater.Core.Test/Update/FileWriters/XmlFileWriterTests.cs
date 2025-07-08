@@ -794,6 +794,138 @@ public class XmlFileWriterTests : FileWriterTestsBase
     }
 
     [Fact]
+    public async Task SingleDependency_CentralPackageManagement_UpdateThroughPropertyWithExactMatch()
+    {
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="Ignored.Dependency" />
+                        <PackageReference Include="Some.Dependency" />
+                        <PackageReference Include="Some.Other.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Directory.Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <SomeDependencyVersion>[1.0.0]</SomeDependencyVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageVersion Include="Ignored.Dependency" Version="7.0.0" />
+                        <PackageVersion Include="Some.Dependency" Version="$(SomeDependencyVersion)" />
+                        <PackageVersion Include="Some.Other.Dependency" Version="8.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            projectDiscovery: new()
+            {
+                FilePath = "project.csproj",
+                Dependencies = [new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference)],
+                ImportedFiles = ["Directory.Packages.props"],
+                AdditionalFiles = [],
+            },
+            requiredDependencies: [new Dependency("Some.Dependency", "2.0.0", DependencyType.PackageReference)],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="Ignored.Dependency" />
+                        <PackageReference Include="Some.Dependency" />
+                        <PackageReference Include="Some.Other.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Directory.Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <SomeDependencyVersion>[2.0.0]</SomeDependencyVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageVersion Include="Ignored.Dependency" Version="7.0.0" />
+                        <PackageVersion Include="Some.Dependency" Version="$(SomeDependencyVersion)" />
+                        <PackageVersion Include="Some.Other.Dependency" Version="8.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task SingleDependency_CentralPackageManagement_UpdateThroughPropertyInDifferentFile()
+    {
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="Ignored.Dependency" />
+                        <PackageReference Include="Some.Dependency" />
+                        <PackageReference Include="Some.Other.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Directory.Packages.props", """
+                    <Project>
+                      <Import Project="Versions.props" />
+                      <ItemGroup>
+                        <PackageVersion Include="Ignored.Dependency" Version="7.0.0" />
+                        <PackageVersion Include="Some.Dependency" Version="$(SomeDependencyVersion)" />
+                        <PackageVersion Include="Some.Other.Dependency" Version="8.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Versions.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <SomeDependencyVersion>1.0.0</SomeDependencyVersion>
+                      </PropertyGroup>
+                    </Project>
+                    """)
+            ],
+            projectDiscovery: new()
+            {
+                FilePath = "project.csproj",
+                Dependencies = [new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference)],
+                ImportedFiles = ["Directory.Packages.props", "Versions.props"],
+                AdditionalFiles = [],
+            },
+            requiredDependencies: [new Dependency("Some.Dependency", "2.0.0", DependencyType.PackageReference)],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="Ignored.Dependency" />
+                        <PackageReference Include="Some.Dependency" />
+                        <PackageReference Include="Some.Other.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Directory.Packages.props", """
+                    <Project>
+                      <Import Project="Versions.props" />
+                      <ItemGroup>
+                        <PackageVersion Include="Ignored.Dependency" Version="7.0.0" />
+                        <PackageVersion Include="Some.Dependency" Version="$(SomeDependencyVersion)" />
+                        <PackageVersion Include="Some.Other.Dependency" Version="8.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Versions.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <SomeDependencyVersion>2.0.0</SomeDependencyVersion>
+                      </PropertyGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
     public async Task SingleDependency_SingleFile_AttributePropertyUpdate()
     {
         await TestAsync(
