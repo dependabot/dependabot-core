@@ -451,6 +451,32 @@ public class XmlFileWriterTests : FileWriterTestsBase
     }
 
     [Fact]
+    public async Task SingleDependency_SingleFile_NoChangeForNonReferencedPackage()
+    {
+        await TestNoChangeAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="Some.Dependency" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            projectDiscovery: new()
+            {
+                FilePath = "project.csproj",
+                Dependencies = [
+                    new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
+                ],
+                ImportedFiles = [],
+                AdditionalFiles = [],
+            },
+            requiredDependencies: [new Dependency("Unrelated.Dependency", "2.0.0", DependencyType.PackageReference)]
+        );
+    }
+
+    [Fact]
     public async Task MultiDependency_SingleFile_AttributeDirectUpdate()
     {
         await TestAsync(
