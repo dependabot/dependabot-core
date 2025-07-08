@@ -1,0 +1,16 @@
+<Project>
+  <!-- 
+    This Directory.Build.props prevents NuGet restore for test fixture projects 
+    during CI/GitHub Actions to avoid failures from intentionally fake dependencies.
+    
+    Test fixtures in Dependabot use fake packages/SDKs by design for testing purposes.
+    The dependency submission action tries to restore all .csproj files, causing failures.
+  -->
+  <PropertyGroup>
+    <!-- Skip restore during CI environments -->
+    <SkipRestore Condition="'$(CI)' == 'true' OR '$(GITHUB_ACTIONS)' == 'true'">true</SkipRestore>
+    
+    <!-- Also prevent SDK resolution for fake SDKs -->
+    <EnableMSBuildSdkResolver Condition="'$(GITHUB_ACTIONS)' == 'true'">false</EnableMSBuildSdkResolver>
+  </PropertyGroup>
+</Project>
