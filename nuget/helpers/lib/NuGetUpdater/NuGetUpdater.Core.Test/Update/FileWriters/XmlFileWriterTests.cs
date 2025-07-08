@@ -88,6 +88,69 @@ public class XmlFileWriterTests : FileWriterTestsBase
         );
     }
 
+    [Theory]
+    [InlineData("$(SomeDependencyVersion")] // missing close paren
+    [InlineData("$SomeDependencyVersion)")] // missing open paren
+    [InlineData("$SomeDependencyVersion")] // missing both parens
+    [InlineData("SomeDependencyVersion)")] // missing expansion and open paren
+    public async Task SingleDependency_SingleFile_InvalidPropertyExpansionFailsGracefully(string versionString)
+    {
+        await TestNoChangeAsync(
+            files: [
+                ("project.csproj", $"""
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                        <SomeDependencyVersion>9.0.1</SomeDependencyVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Dependency" Version="{versionString}" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            projectDiscovery: new()
+            {
+                FilePath = "project.csproj",
+                Dependencies = [
+                    new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
+                ],
+                ImportedFiles = [],
+                AdditionalFiles = [],
+            },
+            requiredDependencies: [new Dependency("Some.Dependency", "2.0.0", DependencyType.PackageReference)]
+        );
+    }
+
+    [Fact]
+    public async Task SingleDependency_SingleFile_MissingPropertyFailsGracefully()
+    {
+        await TestNoChangeAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Dependency" Version="$(SomeDependencyVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            projectDiscovery: new()
+            {
+                FilePath = "project.csproj",
+                Dependencies = [
+                    new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
+                ],
+                ImportedFiles = [],
+                AdditionalFiles = [],
+            },
+            requiredDependencies: [new Dependency("Some.Dependency", "2.0.0", DependencyType.PackageReference)]
+        );
+    }
+
     [Fact]
     public async Task MultiDependency_SingleFile_AttributeDirectUpdate()
     {
