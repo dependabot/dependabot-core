@@ -105,7 +105,7 @@ public class XmlFileWriter : IFileWriter
                 if (matchingPackageVersionElement is not null)
                 {
                     // found matching `<PackageVersion>` element; if `Version` attribute is appropriate we're done, otherwise set `VersionOverride` attribute on new element
-                    var versionAttribute = matchingPackageVersionElement.Attribute(VersionMetadataName);
+                    var versionAttribute = matchingPackageVersionElement.Attributes().FirstOrDefault(a => a.Name.LocalName.Equals(VersionMetadataName, StringComparison.OrdinalIgnoreCase));
                     if (versionAttribute is not null &&
                         NuGetVersion.TryParse(versionAttribute.Value, out var existingVersion) &&
                         existingVersion == requiredVersion)
@@ -160,7 +160,7 @@ public class XmlFileWriter : IFileWriter
                 foreach (var packageReferenceElement in packageReferenceElements)
                 {
                     // first check for matching `Version` attribute
-                    var versionAttribute = packageReferenceElement.Attribute(VersionMetadataName);
+                    var versionAttribute = packageReferenceElement.Attributes().FirstOrDefault(a => a.Name.LocalName.Equals(VersionMetadataName, StringComparison.OrdinalIgnoreCase));
                     if (versionAttribute is not null)
                     {
                         currentVersionString = versionAttribute.Value;
@@ -169,7 +169,7 @@ public class XmlFileWriter : IFileWriter
                     }
 
                     // next check for `Version` child element
-                    var versionElement = packageReferenceElement.Elements().FirstOrDefault(e => e.Name.LocalName == VersionMetadataName);
+                    var versionElement = packageReferenceElement.Elements().FirstOrDefault(e => e.Name.LocalName.Equals(VersionMetadataName, StringComparison.OrdinalIgnoreCase));
                     if (versionElement is not null)
                     {
                         currentVersionString = versionElement.Value;
@@ -183,7 +183,8 @@ public class XmlFileWriter : IFileWriter
                         .FirstOrDefault(e => (e.Attribute(IncludeAttributeName)?.Value ?? string.Empty).Trim().Equals(requiredPackageVersion.Name, StringComparison.OrdinalIgnoreCase));
                     if (packageVersionElement is not null)
                     {
-                        if (packageVersionElement.Attribute(VersionMetadataName) is { } packageVersionAttribute)
+                        var packageVersionAttribute = packageVersionElement.Attributes().FirstOrDefault(a => a.Name.LocalName.Equals(VersionMetadataName, StringComparison.OrdinalIgnoreCase));
+                        if (packageVersionAttribute is not null)
                         {
                             currentVersionString = packageVersionAttribute.Value;
                             updateVersionLocation = (version) => packageVersionAttribute.Value = version;
@@ -191,7 +192,7 @@ public class XmlFileWriter : IFileWriter
                         }
                         else
                         {
-                            var cpmVersionElement = packageVersionElement.Elements().FirstOrDefault(e => e.Name.LocalName == VersionMetadataName);
+                            var cpmVersionElement = packageVersionElement.Elements().FirstOrDefault(e => e.Name.LocalName.Equals(VersionMetadataName, StringComparison.OrdinalIgnoreCase));
                             if (cpmVersionElement is not null)
                             {
                                 currentVersionString = cpmVersionElement.Value;
