@@ -143,104 +143,105 @@ public class XmlFileWriter : IFileWriter
                     }
                 }
             }
-            else if (packageReferenceElements.Length == 1)
+            else
             {
-                // found single matching `<PackageReference>` element to update
-                var packageReferenceElement = packageReferenceElements[0];
-
-                // first check for matching `Version` attribute
-                var versionAttribute = packageReferenceElement.Attribute("Version");
-                if (versionAttribute is not null)
+                // found matching `<PackageReference>` elements to update
+                foreach (var packageReferenceElement in packageReferenceElements)
                 {
-                    currentVersionString = versionAttribute.Value;
-                    updateVersionLocation = (version) => versionAttribute.Value = version.ToString();
-                    goto doVersionUpdate;
-                }
-
-                // next check for `Version` child element
-                var versionElement = packageReferenceElement.Elements().FirstOrDefault(e => e.Name.LocalName == "Version");
-                if (versionElement is not null)
-                {
-                    currentVersionString = versionElement.Value;
-                    updateVersionLocation = (version) => versionElement.Value = version.ToString();
-                    goto doVersionUpdate;
-                }
-
-                // check for matching `<PackageVersion>` element
-                var packageVersionElement = filesAndContents.Values
-                    .SelectMany(doc => doc.Descendants().Where(e => e.Name.LocalName == "PackageVersion"))
-                    .FirstOrDefault(e => (e.Attribute("Include")?.Value ?? string.Empty).Trim().Equals(requiredPackageVersion.Name, StringComparison.OrdinalIgnoreCase));
-                if (packageVersionElement is not null)
-                {
-                    if (packageVersionElement.Attribute("Version") is { } packageVersionAttribute)
+                    // first check for matching `Version` attribute
+                    var versionAttribute = packageReferenceElement.Attribute("Version");
+                    if (versionAttribute is not null)
                     {
-                        currentVersionString = packageVersionAttribute.Value;
-                        updateVersionLocation = (version) => packageVersionAttribute.Value = version.ToString();
+                        currentVersionString = versionAttribute.Value;
+                        updateVersionLocation = (version) => versionAttribute.Value = version.ToString();
                         goto doVersionUpdate;
                     }
-                    else
+
+                    // next check for `Version` child element
+                    var versionElement = packageReferenceElement.Elements().FirstOrDefault(e => e.Name.LocalName == "Version");
+                    if (versionElement is not null)
                     {
-                        var cpmVersionElement = packageVersionElement.Elements().FirstOrDefault(e => e.Name.LocalName == "Version");
-                        if (cpmVersionElement is not null)
+                        currentVersionString = versionElement.Value;
+                        updateVersionLocation = (version) => versionElement.Value = version.ToString();
+                        goto doVersionUpdate;
+                    }
+
+                    // check for matching `<PackageVersion>` element
+                    var packageVersionElement = filesAndContents.Values
+                        .SelectMany(doc => doc.Descendants().Where(e => e.Name.LocalName == "PackageVersion"))
+                        .FirstOrDefault(e => (e.Attribute("Include")?.Value ?? string.Empty).Trim().Equals(requiredPackageVersion.Name, StringComparison.OrdinalIgnoreCase));
+                    if (packageVersionElement is not null)
+                    {
+                        if (packageVersionElement.Attribute("Version") is { } packageVersionAttribute)
                         {
-                            currentVersionString = cpmVersionElement.Value;
-                            updateVersionLocation = (version) => cpmVersionElement.Value = version.ToString();
+                            currentVersionString = packageVersionAttribute.Value;
+                            updateVersionLocation = (version) => packageVersionAttribute.Value = version.ToString();
                             goto doVersionUpdate;
                         }
-                    }
-                }
-
-            doVersionUpdate:
-                if (currentVersionString is not null && updateVersionLocation is not null)
-                {
-                    var performedUpdate = false;
-                    var candidateUpdateLocations = new Queue<(string VersionString, Action<NuGetVersion> Updater)>();
-                    candidateUpdateLocations.Enqueue((currentVersionString, updateVersionLocation));
-
-                    while (candidateUpdateLocations.TryDequeue(out var candidateUpdateLocation))
-                    {
-                        var candidateUpdateVersionString = candidateUpdateLocation.VersionString;
-                        var candidateUpdater = candidateUpdateLocation.Updater;
-
-                        if (NuGetVersion.TryParse(candidateUpdateVersionString, out var candidateUpdateVersion))
+                        else
                         {
-                            if (candidateUpdateVersion == requiredVersion)
+                            var cpmVersionElement = packageVersionElement.Elements().FirstOrDefault(e => e.Name.LocalName == "Version");
+                            if (cpmVersionElement is not null)
                             {
-                                // already up to date from a previous pass
-                                updatesPerformed[requiredPackageVersion.Name] = true;
-                                performedUpdate = true;
-                                _logger.Info($"Dependency {requiredPackageVersion.Name} already set to {requiredVersion}; no update needed.");
-                                break;
-                            }
-                            else if (candidateUpdateVersion == oldVersion)
-                            {
-                                // do the update here and call it good
-                                candidateUpdater(requiredVersion);
-                                updatesPerformed[requiredPackageVersion.Name] = true;
-                                performedUpdate = true;
-                                _logger.Info($"Updated dependency {requiredPackageVersion.Name} from version {oldVersion} to {requiredVersion}.");
-                                break;
-                            }
-                        }
-
-                        if (candidateUpdateVersionString.StartsWith("$(") && candidateUpdateVersionString.EndsWith(")"))
-                        {
-                            // this looks like a property; keep walking backwards with all possible elements
-                            var propertyName = candidateUpdateVersionString[2..^1];
-                            var propertyDefinitions = filesAndContents.Values
-                                .SelectMany(doc => doc.Descendants().Where(e => e.Name.LocalName.Equals(propertyName, StringComparison.OrdinalIgnoreCase)))
-                                .Where(e => e.Parent?.Name.LocalName.Equals("PropertyGroup", StringComparison.OrdinalIgnoreCase) == true)
-                                .ToArray();
-                            foreach (var propertyDefinition in propertyDefinitions)
-                            {
-                                candidateUpdateLocations.Enqueue((propertyDefinition.Value, (version) => propertyDefinition.Value = version.ToString()));
+                                currentVersionString = cpmVersionElement.Value;
+                                updateVersionLocation = (version) => cpmVersionElement.Value = version.ToString();
+                                goto doVersionUpdate;
                             }
                         }
                     }
 
-                    if (!performedUpdate)
+                doVersionUpdate:
+                    if (currentVersionString is not null && updateVersionLocation is not null)
                     {
-                        _logger.Warn($"Unable to find appropriate location to update package {requiredPackageVersion.Name} to version {requiredPackageVersion.Version}; no update performed");
+                        var performedUpdate = false;
+                        var candidateUpdateLocations = new Queue<(string VersionString, Action<NuGetVersion> Updater)>();
+                        candidateUpdateLocations.Enqueue((currentVersionString, updateVersionLocation));
+
+                        while (candidateUpdateLocations.TryDequeue(out var candidateUpdateLocation))
+                        {
+                            var candidateUpdateVersionString = candidateUpdateLocation.VersionString;
+                            var candidateUpdater = candidateUpdateLocation.Updater;
+
+                            if (NuGetVersion.TryParse(candidateUpdateVersionString, out var candidateUpdateVersion))
+                            {
+                                if (candidateUpdateVersion == requiredVersion)
+                                {
+                                    // already up to date from a previous pass
+                                    updatesPerformed[requiredPackageVersion.Name] = true;
+                                    performedUpdate = true;
+                                    _logger.Info($"Dependency {requiredPackageVersion.Name} already set to {requiredVersion}; no update needed.");
+                                    break;
+                                }
+                                else if (candidateUpdateVersion == oldVersion)
+                                {
+                                    // do the update here and call it good
+                                    candidateUpdater(requiredVersion);
+                                    updatesPerformed[requiredPackageVersion.Name] = true;
+                                    performedUpdate = true;
+                                    _logger.Info($"Updated dependency {requiredPackageVersion.Name} from version {oldVersion} to {requiredVersion}.");
+                                    break;
+                                }
+                            }
+
+                            if (candidateUpdateVersionString.StartsWith("$(") && candidateUpdateVersionString.EndsWith(")"))
+                            {
+                                // this looks like a property; keep walking backwards with all possible elements
+                                var propertyName = candidateUpdateVersionString[2..^1];
+                                var propertyDefinitions = filesAndContents.Values
+                                    .SelectMany(doc => doc.Descendants().Where(e => e.Name.LocalName.Equals(propertyName, StringComparison.OrdinalIgnoreCase)))
+                                    .Where(e => e.Parent?.Name.LocalName.Equals("PropertyGroup", StringComparison.OrdinalIgnoreCase) == true)
+                                    .ToArray();
+                                foreach (var propertyDefinition in propertyDefinitions)
+                                {
+                                    candidateUpdateLocations.Enqueue((propertyDefinition.Value, (version) => propertyDefinition.Value = version.ToString()));
+                                }
+                            }
+                        }
+
+                        if (!performedUpdate)
+                        {
+                            _logger.Warn($"Unable to find appropriate location to update package {requiredPackageVersion.Name} to version {requiredPackageVersion.Version}; no update performed");
+                        }
                     }
                 }
             }

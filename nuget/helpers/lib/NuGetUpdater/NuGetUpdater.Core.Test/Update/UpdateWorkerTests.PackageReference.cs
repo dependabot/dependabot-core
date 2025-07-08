@@ -16,47 +16,6 @@ public partial class UpdateWorkerTests
     public class PackageReference : UpdateWorkerTestBase
     {
         [Fact]
-        public async Task UpdateVersions_InProjectFile_ForDuplicatePackageReferenceInclude()
-        {
-            // update Some.Package from 9.0.1 to 13.0.1
-            await TestUpdateForProject("Some.Package", "9.0.1", "13.0.1",
-                packages:
-                [
-                    MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
-                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net8.0"),
-                ],
-                // initial
-                projectContents: $"""
-                    <Project Sdk="Microsoft.NET.Sdk">
-                      <PropertyGroup>
-                        <TargetFramework>net8.0</TargetFramework>
-                      </PropertyGroup>
-                      <ItemGroup>
-                        <PackageReference Include="Some.Package" Version="9.0.1" />
-                        <PackageReference Include="Some.Package">
-                            <Version>9.0.1</Version>
-                        </PackageReference>
-                      </ItemGroup>
-                    </Project>
-                    """,
-                // expected
-                expectedProjectContents: $"""
-                    <Project Sdk="Microsoft.NET.Sdk">
-                      <PropertyGroup>
-                        <TargetFramework>net8.0</TargetFramework>
-                      </PropertyGroup>
-                      <ItemGroup>
-                        <PackageReference Include="Some.Package" Version="13.0.1" />
-                        <PackageReference Include="Some.Package">
-                            <Version>13.0.1</Version>
-                        </PackageReference>
-                      </ItemGroup>
-                    </Project>
-                    """
-            );
-        }
-
-        [Fact]
         public async Task PartialUpdate_InMultipleProjectFiles_ForVersionConstraint()
         {
             // update Some.Package from 12.0.1 to 13.0.1
