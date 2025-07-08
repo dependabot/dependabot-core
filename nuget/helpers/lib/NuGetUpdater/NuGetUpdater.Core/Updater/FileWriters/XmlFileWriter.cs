@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 
 using NuGet.Versioning;
@@ -245,17 +246,21 @@ public class XmlFileWriter : IFileWriter
                                 }
                             }
 
-                            if (candidateUpdateVersionString.StartsWith("$(") && candidateUpdateVersionString.EndsWith(")"))
+                            // find something that looks like it contains a property expansion, even if it's surrounded by other text
+                            var propertyInSubstringPattern = new Regex(@"(?<Prefix>[^$]*)\$\((?<PropertyName>[A-Za-z0-9_]+)\)(?<Suffix>.*$)");
+                            // e.g.,                                    not-a-dollar-sign $ ( alphanumeric-or-underscore    ) everything-else
+                            var propertyMatch = propertyInSubstringPattern.Match(candidateUpdateVersionString);
+                            if (propertyMatch.Success)
                             {
                                 // this looks like a property; keep walking backwards with all possible elements
-                                var propertyName = candidateUpdateVersionString[2..^1];
+                                var propertyName = propertyMatch.Groups["PropertyName"].Value;
                                 var propertyDefinitions = filesAndContents.Values
                                     .SelectMany(doc => doc.Descendants().Where(e => e.Name.LocalName.Equals(propertyName, StringComparison.OrdinalIgnoreCase)))
                                     .Where(e => e.Parent?.Name.LocalName.Equals("PropertyGroup", StringComparison.OrdinalIgnoreCase) == true)
                                     .ToArray();
                                 foreach (var propertyDefinition in propertyDefinitions)
                                 {
-                                    candidateUpdateLocations.Enqueue((propertyDefinition.Value, (version) => propertyDefinition.Value = version.ToString()));
+                                    candidateUpdateLocations.Enqueue((propertyDefinition.Value, (version) => propertyDefinition.Value = version));
                                 }
                             }
                         }
