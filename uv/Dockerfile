@@ -144,8 +144,8 @@ RUN apt-get update \
 
 # Install uv using the official installation script
 RUN curl -LsSf https://astral.sh/uv/0.7.19/install.sh | sh && \
-    cp /home/uvuser/.local/bin/uv /usr/local/bin/uv && \
-    cp /home/uvuser/.local/bin/uvx /usr/local/bin/uvx
+    cp /root/.local/bin/uv /usr/local/bin/uv && \
+    cp /root/.local/bin/uvx /usr/local/bin/uvx
 
 USER dependabot
 
