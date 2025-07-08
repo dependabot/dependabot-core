@@ -46,6 +46,49 @@ public class XmlFileWriterTests : FileWriterTestsBase
     }
 
     [Fact]
+    public async Task MultiDependency_SingleFile_AttributeDirectUpdate()
+    {
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="Some.Dependency" Version="1.0.0" />
+                        <PackageReference Include="Transitive.Dependency" Version="3.0.0" />
+                        <PackageReference Include="Unrelated.Dependency" Version="5.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            projectDiscovery: new()
+            {
+                FilePath = "project.csproj",
+                Dependencies = [
+                    new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
+                    new Dependency("Transitive.Dependency", "3.0.0", DependencyType.PackageReference),
+                ],
+                ImportedFiles = [],
+                AdditionalFiles = [],
+            },
+            requiredDependencies: [
+                new Dependency("Some.Dependency", "2.0.0", DependencyType.PackageReference),
+                new Dependency("Transitive.Dependency", "4.0.0", DependencyType.PackageReference),
+            ],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="Some.Dependency" Version="2.0.0" />
+                        <PackageReference Include="Transitive.Dependency" Version="4.0.0" />
+                        <PackageReference Include="Unrelated.Dependency" Version="5.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
     public async Task SingleDependency_SingleFile_ElementDirectUpdate()
     {
         await TestAsync(
@@ -134,6 +177,68 @@ public class XmlFileWriterTests : FileWriterTestsBase
                         <PackageVersion Include="Ignored.Dependency" Version="7.0.0" />
                         <PackageVersion Include="Some.Dependency" Version="2.0.0" />
                         <PackageVersion Include="Some.Other.Dependency" Version="8.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task MultiDependency_CentralPackageManagement_AttributeDirectUpdate()
+    {
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="Some.Dependency" />
+                        <PackageReference Include="Transitive.Dependency" />
+                        <PackageReference Include="Unrelated.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Directory.Packages.props", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageVersion Include="Some.Dependency" Version="1.0.0" />
+                        <PackageVersion Include="Transitive.Dependency" Version="3.0.0" />
+                        <PackageVersion Include="Unrelated.Dependency" Version="5.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            projectDiscovery: new()
+            {
+                FilePath = "project.csproj",
+                Dependencies = [
+                    new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
+                    new Dependency("Transitive.Dependency", "3.0.0", DependencyType.PackageReference),
+                    new Dependency("Unrelated.Dependency", "5.0.0", DependencyType.PackageReference),
+                ],
+                ImportedFiles = ["Directory.Packages.props"],
+                AdditionalFiles = [],
+            },
+            requiredDependencies: [
+                new Dependency("Some.Dependency", "2.0.0", DependencyType.PackageReference),
+                new Dependency("Transitive.Dependency", "4.0.0", DependencyType.PackageReference),
+            ],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="Some.Dependency" />
+                        <PackageReference Include="Transitive.Dependency" />
+                        <PackageReference Include="Unrelated.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Directory.Packages.props", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageVersion Include="Some.Dependency" Version="2.0.0" />
+                        <PackageVersion Include="Transitive.Dependency" Version="4.0.0" />
+                        <PackageVersion Include="Unrelated.Dependency" Version="5.0.0" />
                       </ItemGroup>
                     </Project>
                     """)
