@@ -20,7 +20,7 @@ public abstract class FileWriterTestsBase
     {
         using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(files);
         var repoContentsPath = new DirectoryInfo(tempDir.DirectoryPath);
-        var success = await FileWriter.UpdatePackageVersionsAsync(repoContentsPath, projectDiscovery, requiredDependencies);
+        var success = await FileWriter.UpdatePackageVersionsAsync(repoContentsPath, [.. files.Select(f => f.path)], projectDiscovery.Dependencies, requiredDependencies);
         Assert.True(success);
 
         var expectedFileNames = expectedFiles.Select(f => f.path).ToHashSet();
@@ -40,7 +40,7 @@ public abstract class FileWriterTestsBase
     {
         using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(files);
         var repoContentsPath = new DirectoryInfo(tempDir.DirectoryPath);
-        var success = await FileWriter.UpdatePackageVersionsAsync(repoContentsPath, projectDiscovery, requiredDependencies);
+        var success = await FileWriter.UpdatePackageVersionsAsync(repoContentsPath, [.. files.Select(f => f.path)], projectDiscovery.Dependencies, requiredDependencies);
         Assert.False(success);
 
         var expectedFileNames = files.Select(f => f.path).ToHashSet();
