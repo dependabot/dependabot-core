@@ -142,6 +142,11 @@ RUN apt-get update \
     libkrb5-dev \
   && rm -rf /var/lib/apt/lists/*
 
+# Install uv using the official installation script
+RUN curl -LsSf https://astral.sh/uv/0.7.19/install.sh | sh && \
+    cp /home/uvuser/.local/bin/uv /usr/local/bin/uv && \
+    cp /home/uvuser/.local/bin/uvx /usr/local/bin/uvx
+
 USER dependabot
 
 COPY --chown=dependabot:dependabot uv $DEPENDABOT_HOME/uv
@@ -176,9 +181,6 @@ COPY --from=rust /usr/local/cargo $CARGO_HOME
 
 # Configure cargo to use Git CLI so the Git shim works
 RUN mkdir -p ~/.cargo && printf "[net]\ngit-fetch-with-cli = true\n" >> ~/.cargo/config.toml
-
-# Install uv by copying from the official image
-COPY --from=ghcr.io/astral-sh/uv:0.7.1 /uv /uvx /usr/local/bin/
 
 COPY --chown=dependabot:dependabot cargo $DEPENDABOT_HOME/cargo
 COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
