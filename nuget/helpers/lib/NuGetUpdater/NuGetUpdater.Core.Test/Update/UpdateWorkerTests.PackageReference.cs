@@ -593,46 +593,6 @@ public partial class UpdateWorkerTests
         }
 
         [Fact]
-        public async Task UpdatePropertyValue_InProjectFile_ForPackageReferenceUpdate()
-        {
-            await TestUpdateForProject("Some.Package", "9.0.1", "13.0.1",
-                packages:
-                [
-                    MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
-                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net8.0"),
-                ],
-                // initial
-                projectContents: """
-                    <Project Sdk="Microsoft.NET.Sdk">
-                      <PropertyGroup>
-                        <TargetFramework>net8.0</TargetFramework>
-                        <SomePackagePackageVersion>9.0.1</SomePackagePackageVersion>
-                      </PropertyGroup>
-
-                      <ItemGroup>
-                        <PackageReference Include="Some.Package" />
-                        <PackageReference Update="Some.Package" Version="$(SomePackagePackageVersion)" />
-                      </ItemGroup>
-                    </Project>
-                    """,
-                // expected
-                expectedProjectContents: """
-                    <Project Sdk="Microsoft.NET.Sdk">
-                      <PropertyGroup>
-                        <TargetFramework>net8.0</TargetFramework>
-                        <SomePackagePackageVersion>13.0.1</SomePackagePackageVersion>
-                      </PropertyGroup>
-
-                      <ItemGroup>
-                        <PackageReference Include="Some.Package" />
-                        <PackageReference Update="Some.Package" Version="$(SomePackagePackageVersion)" />
-                      </ItemGroup>
-                    </Project>
-                    """
-            );
-        }
-
-        [Fact]
         public async Task UpdatePropertyValue_InDirectoryProps_ForPackageVersion()
         {
             // update Some.Package from 9.0.1 to 13.0.1

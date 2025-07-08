@@ -58,7 +58,7 @@ public class XmlFileWriter : IFileWriter
 
             var packageReferenceElements = filesAndContents.Values
                 .SelectMany(doc => doc.Descendants().Where(e => e.Name.LocalName == PackageReferenceElementName))
-                .Where(e => (e.Attribute(IncludeAttributeName)?.Value ?? string.Empty).Trim().Equals(requiredPackageVersion.Name, StringComparison.OrdinalIgnoreCase))
+                .Where(e => (e.Attribute(IncludeAttributeName)?.Value ?? e.Attribute(UpdateAttributeName)?.Value ?? string.Empty).Trim().Equals(requiredPackageVersion.Name, StringComparison.OrdinalIgnoreCase))
                 .ToArray();
 
             if (packageReferenceElements.Length == 0)
