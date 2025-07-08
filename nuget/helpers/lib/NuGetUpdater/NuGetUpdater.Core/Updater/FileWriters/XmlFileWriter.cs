@@ -53,6 +53,7 @@ public class XmlFileWriter : IFileWriter
             if (packageReferenceElements.Length == 0)
             {
                 // no matching `<PackageReference>` elements found; pin it as a transitive dependency
+                updatesPerformed[requiredPackageVersion.Name] = true; // all cases below add the dependency
 
                 // find last `<ItemGroup>` in the project...
                 var projectDocument = filesAndContents[projectDiscovery.FilePath];
@@ -100,14 +101,12 @@ public class XmlFileWriter : IFileWriter
                     {
                         // version matches; no update needed
                         _logger.Info($"Dependency {requiredPackageVersion.Name} already set to {requiredVersion}; no override needed.");
-                        updatesPerformed[requiredPackageVersion.Name] = true;
                     }
                     else
                     {
                         // version doesn't match; use `VersionOverride` attribute on new element
                         _logger.Info($"Dependency {requiredPackageVersion.Name} set to {requiredVersion}; using `VersionOverride` attribute on new element.");
                         newElement.SetAttributeValue("VersionOverride", requiredVersion.ToString());
-                        updatesPerformed[requiredPackageVersion.Name] = true;
                     }
                 }
                 else
@@ -129,21 +128,18 @@ public class XmlFileWriter : IFileWriter
                         {
                             _logger.Info($"Adding new `<PackageVersion>` element for {requiredPackageVersion.Name} with version {requiredVersion}.");
                             lastPriorPackageVersionElement.AddAfterSelf(newVersionElement);
-                            updatesPerformed[requiredPackageVersion.Name] = true;
                         }
                         else
                         {
                             // no prior package versions; add to the front of the document
                             _logger.Info($"Adding new `<PackageVersion>` element for {requiredPackageVersion.Name} with version {requiredVersion} at the start of the document.");
                             allPackageVersionElements.First().AddBeforeSelf(newVersionElement);
-                            updatesPerformed[requiredPackageVersion.Name] = true;
                         }
                     }
                     else
                     {
                         // add a direct `Version` attribute
                         newElement.SetAttributeValue("Version", requiredVersion.ToString());
-                        updatesPerformed[requiredPackageVersion.Name] = true;
                     }
                 }
             }
