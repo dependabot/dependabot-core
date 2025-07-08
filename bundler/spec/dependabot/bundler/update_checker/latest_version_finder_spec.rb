@@ -56,13 +56,9 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
   let(:rubygems_url) { "https://rubygems.org/api/v1/" }
 
   let(:cooldown_options) { nil }
-  let(:enable_cooldown_for_bundler) { false }
 
   before do
     allow(Dependabot::Experiments).to receive(:enabled?).and_call_original
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_cooldown_for_bundler)
-      .and_return(enable_cooldown_for_bundler)
   end
 
   after do
@@ -274,7 +270,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
     end
 
     context "with cooldown enabled" do
-      let(:enable_cooldown_for_bundler) { true }
       let(:cooldown_options) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 60) }
 
       before do
@@ -335,7 +330,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
       end
 
       let(:private_registry_url) { "https://repo.fury.io/greysteil/api/v1/" }
-      let(:enable_cooldown_for_bundler) { true }
       let(:cooldown_options) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 60) }
 
       before do
