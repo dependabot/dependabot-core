@@ -399,7 +399,6 @@ public class XmlFileWriterTests : FileWriterTestsBase
                 ("project.csproj", $"""
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
-                        <TargetFramework>net8.0</TargetFramework>
                         <SomeDependencyVersion>9.0.1</SomeDependencyVersion>
                       </PropertyGroup>
                       <ItemGroup>
@@ -428,9 +427,6 @@ public class XmlFileWriterTests : FileWriterTestsBase
             files: [
                 ("project.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
-                      <PropertyGroup>
-                        <TargetFramework>net8.0</TargetFramework>
-                      </PropertyGroup>
                       <ItemGroup>
                         <PackageReference Include="Some.Dependency" Version="$(SomeDependencyVersion)" />
                       </ItemGroup>
