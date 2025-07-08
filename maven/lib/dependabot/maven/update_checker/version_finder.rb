@@ -68,7 +68,7 @@ module Dependabot
 
         sig { returns(T::Boolean) }
         def cooldown_enabled?
-          Dependabot::Experiments.enabled?(:enable_cooldown_for_maven)
+          true
         end
 
         sig do
