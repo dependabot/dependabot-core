@@ -202,15 +202,25 @@ public class XmlFileWriter : IFileWriter
                         var candidateUpdateVersionString = candidateUpdateLocation.VersionString;
                         var candidateUpdater = candidateUpdateLocation.Updater;
 
-                        if (NuGetVersion.TryParse(candidateUpdateVersionString, out var candidateUpdateVersion) &&
-                            candidateUpdateVersion == oldVersion)
+                        if (NuGetVersion.TryParse(candidateUpdateVersionString, out var candidateUpdateVersion))
                         {
-                            // do the update here and call it good
-                            candidateUpdater(requiredVersion);
-                            updatesPerformed[requiredPackageVersion.Name] = true;
-                            performedUpdate = true;
-                            _logger.Info($"Updated dependency {requiredPackageVersion.Name} from version {oldVersion} to {requiredVersion}.");
-                            break;
+                            if (candidateUpdateVersion == requiredVersion)
+                            {
+                                // already up to date from a previous pass
+                                updatesPerformed[requiredPackageVersion.Name] = true;
+                                performedUpdate = true;
+                                _logger.Info($"Dependency {requiredPackageVersion.Name} already set to {requiredVersion}; no update needed.");
+                                break;
+                            }
+                            else if (candidateUpdateVersion == oldVersion)
+                            {
+                                // do the update here and call it good
+                                candidateUpdater(requiredVersion);
+                                updatesPerformed[requiredPackageVersion.Name] = true;
+                                performedUpdate = true;
+                                _logger.Info($"Updated dependency {requiredPackageVersion.Name} from version {oldVersion} to {requiredVersion}.");
+                                break;
+                            }
                         }
 
                         if (candidateUpdateVersionString.StartsWith("$(") && candidateUpdateVersionString.EndsWith(")"))
