@@ -10,6 +10,16 @@ namespace NuGetUpdater.Core.Updater.FileWriters;
 
 public class XmlFileWriter : IFileWriter
 {
+    private const string IncludeAttributeName = "Include";
+    private const string UpdateAttributeName = "Update";
+    private const string VersionMetadataName = "Version";
+    private const string VersionOverrideMetadataName = "VersionOverride";
+
+    private const string ItemGroupElementName = "ItemGroup";
+    private const string PackageReferenceElementName = "PackageReference";
+    private const string PackageVersionElementName = "PackageVersion";
+    private const string PropertyGroupElementName = "PropertyGroup";
+
     private readonly ILogger _logger;
 
     public XmlFileWriter(ILogger logger)
@@ -47,8 +57,8 @@ public class XmlFileWriter : IFileWriter
             Action<string>? updateVersionLocation = null;
 
             var packageReferenceElements = filesAndContents.Values
-                .SelectMany(doc => doc.Descendants().Where(e => e.Name.LocalName == "PackageReference"))
-                .Where(e => (e.Attribute("Include")?.Value ?? string.Empty).Trim().Equals(requiredPackageVersion.Name, StringComparison.OrdinalIgnoreCase))
+                .SelectMany(doc => doc.Descendants().Where(e => e.Name.LocalName == PackageReferenceElementName))
+                .Where(e => (e.Attribute(IncludeAttributeName)?.Value ?? string.Empty).Trim().Equals(requiredPackageVersion.Name, StringComparison.OrdinalIgnoreCase))
                 .ToArray();
 
             if (packageReferenceElements.Length == 0)
@@ -59,24 +69,24 @@ public class XmlFileWriter : IFileWriter
                 // find last `<ItemGroup>` in the project...
                 var projectDocument = filesAndContents[projectDiscovery.FilePath];
                 var lastItemGroup = projectDocument.Root!.Elements()
-                    .LastOrDefault(e => e.Name.LocalName.Equals("ItemGroup", StringComparison.OrdinalIgnoreCase));
+                    .LastOrDefault(e => e.Name.LocalName.Equals(ItemGroupElementName, StringComparison.OrdinalIgnoreCase));
                 if (lastItemGroup is null)
                 {
-                    _logger.Info($"No `<ItemGroup>` element found in project; adding one.");
-                    lastItemGroup = new XElement(XName.Get("ItemGroup", projectDocument.Root.Name.NamespaceName));
+                    _logger.Info($"No `<{ItemGroupElementName}>` element found in project; adding one.");
+                    lastItemGroup = new XElement(XName.Get(ItemGroupElementName, projectDocument.Root.Name.NamespaceName));
                     projectDocument.Root.Add(lastItemGroup);
                 }
 
                 // ...find where the new item should go...
                 var packageReferencesBeforeNew = lastItemGroup.Elements()
-                    .Where(e => e.Name.LocalName.Equals("PackageReference", StringComparison.OrdinalIgnoreCase))
-                    .TakeWhile(e => (e.Attribute("Include")?.Value ?? e.Attribute("Update")?.Value ?? string.Empty).CompareTo(requiredPackageVersion.Name) < 0)
+                    .Where(e => e.Name.LocalName.Equals(PackageReferenceElementName, StringComparison.OrdinalIgnoreCase))
+                    .TakeWhile(e => (e.Attribute(IncludeAttributeName)?.Value ?? e.Attribute(UpdateAttributeName)?.Value ?? string.Empty).CompareTo(requiredPackageVersion.Name) < 0)
                     .ToArray();
 
                 // ...add a new `<PackageReference>` element...
                 var newElement = new XElement(
-                    XName.Get("PackageReference", projectDocument.Root.Name.NamespaceName),
-                    new XAttribute("Include", requiredPackageVersion.Name));
+                    XName.Get(PackageReferenceElementName, projectDocument.Root.Name.NamespaceName),
+                    new XAttribute(IncludeAttributeName, requiredPackageVersion.Name));
                 var lastPriorPackageReference = packageReferencesBeforeNew.LastOrDefault();
                 if (lastPriorPackageReference is not null)
                 {
@@ -90,12 +100,12 @@ public class XmlFileWriter : IFileWriter
 
                 // ...find the best place to add the version...
                 var matchingPackageVersionElement = filesAndContents.Values
-                    .SelectMany(doc => doc.Descendants().Where(e => e.Name.LocalName.Equals("PackageVersion", StringComparison.OrdinalIgnoreCase)))
-                    .FirstOrDefault(e => (e.Attribute("Include")?.Value ?? string.Empty).Trim().Equals(requiredPackageVersion.Name, StringComparison.OrdinalIgnoreCase));
+                    .SelectMany(doc => doc.Descendants().Where(e => e.Name.LocalName.Equals(PackageVersionElementName, StringComparison.OrdinalIgnoreCase)))
+                    .FirstOrDefault(e => (e.Attribute(IncludeAttributeName)?.Value ?? string.Empty).Trim().Equals(requiredPackageVersion.Name, StringComparison.OrdinalIgnoreCase));
                 if (matchingPackageVersionElement is not null)
                 {
                     // found matching `<PackageVersion>` element; if `Version` attribute is appropriate we're done, otherwise set `VersionOverride` attribute on new element
-                    var versionAttribute = matchingPackageVersionElement.Attribute("Version");
+                    var versionAttribute = matchingPackageVersionElement.Attribute(VersionMetadataName);
                     if (versionAttribute is not null &&
                         NuGetVersion.TryParse(versionAttribute.Value, out var existingVersion) &&
                         existingVersion == requiredVersion)
@@ -106,41 +116,41 @@ public class XmlFileWriter : IFileWriter
                     else
                     {
                         // version doesn't match; use `VersionOverride` attribute on new element
-                        _logger.Info($"Dependency {requiredPackageVersion.Name} set to {requiredVersion}; using `VersionOverride` attribute on new element.");
-                        newElement.SetAttributeValue("VersionOverride", requiredVersion.ToString());
+                        _logger.Info($"Dependency {requiredPackageVersion.Name} set to {requiredVersion}; using `{VersionOverrideMetadataName}` attribute on new element.");
+                        newElement.SetAttributeValue(VersionOverrideMetadataName, requiredVersion.ToString());
                     }
                 }
                 else
                 {
                     // no matching `<PackageVersion>` element; either add a new one, or directly set the `Version` attribute on the new element
                     var allPackageVersionElements = filesAndContents.Values
-                        .SelectMany(doc => doc.Descendants().Where(e => e.Name.LocalName.Equals("PackageVersion", StringComparison.OrdinalIgnoreCase)))
+                        .SelectMany(doc => doc.Descendants().Where(e => e.Name.LocalName.Equals(PackageVersionElementName, StringComparison.OrdinalIgnoreCase)))
                         .ToArray();
                     if (allPackageVersionElements.Length > 0)
                     {
                         // add a new `<PackageVersion>` element
-                        var newVersionElement = new XElement(XName.Get("PackageVersion", projectDocument.Root.Name.NamespaceName),
-                            new XAttribute("Include", requiredPackageVersion.Name),
-                            new XAttribute("Version", requiredVersion.ToString()));
+                        var newVersionElement = new XElement(XName.Get(PackageVersionElementName, projectDocument.Root.Name.NamespaceName),
+                            new XAttribute(IncludeAttributeName, requiredPackageVersion.Name),
+                            new XAttribute(VersionMetadataName, requiredVersion.ToString()));
                         var lastPriorPackageVersionElement = allPackageVersionElements
-                            .TakeWhile(e => (e.Attribute("Include")?.Value ?? string.Empty).Trim().CompareTo(requiredPackageVersion.Name) < 0)
+                            .TakeWhile(e => (e.Attribute(IncludeAttributeName)?.Value ?? string.Empty).Trim().CompareTo(requiredPackageVersion.Name) < 0)
                             .LastOrDefault();
                         if (lastPriorPackageVersionElement is not null)
                         {
-                            _logger.Info($"Adding new `<PackageVersion>` element for {requiredPackageVersion.Name} with version {requiredVersion}.");
+                            _logger.Info($"Adding new `<{PackageVersionElementName}>` element for {requiredPackageVersion.Name} with version {requiredVersion}.");
                             lastPriorPackageVersionElement.AddAfterSelf(newVersionElement);
                         }
                         else
                         {
                             // no prior package versions; add to the front of the document
-                            _logger.Info($"Adding new `<PackageVersion>` element for {requiredPackageVersion.Name} with version {requiredVersion} at the start of the document.");
+                            _logger.Info($"Adding new `<{PackageVersionElementName}>` element for {requiredPackageVersion.Name} with version {requiredVersion} at the start of the document.");
                             allPackageVersionElements.First().AddBeforeSelf(newVersionElement);
                         }
                     }
                     else
                     {
                         // add a direct `Version` attribute
-                        newElement.SetAttributeValue("Version", requiredVersion.ToString());
+                        newElement.SetAttributeValue(VersionMetadataName, requiredVersion.ToString());
                     }
                 }
             }
@@ -150,7 +160,7 @@ public class XmlFileWriter : IFileWriter
                 foreach (var packageReferenceElement in packageReferenceElements)
                 {
                     // first check for matching `Version` attribute
-                    var versionAttribute = packageReferenceElement.Attribute("Version");
+                    var versionAttribute = packageReferenceElement.Attribute(VersionMetadataName);
                     if (versionAttribute is not null)
                     {
                         currentVersionString = versionAttribute.Value;
@@ -159,7 +169,7 @@ public class XmlFileWriter : IFileWriter
                     }
 
                     // next check for `Version` child element
-                    var versionElement = packageReferenceElement.Elements().FirstOrDefault(e => e.Name.LocalName == "Version");
+                    var versionElement = packageReferenceElement.Elements().FirstOrDefault(e => e.Name.LocalName == VersionMetadataName);
                     if (versionElement is not null)
                     {
                         currentVersionString = versionElement.Value;
@@ -169,11 +179,11 @@ public class XmlFileWriter : IFileWriter
 
                     // check for matching `<PackageVersion>` element
                     var packageVersionElement = filesAndContents.Values
-                        .SelectMany(doc => doc.Descendants().Where(e => e.Name.LocalName == "PackageVersion"))
-                        .FirstOrDefault(e => (e.Attribute("Include")?.Value ?? string.Empty).Trim().Equals(requiredPackageVersion.Name, StringComparison.OrdinalIgnoreCase));
+                        .SelectMany(doc => doc.Descendants().Where(e => e.Name.LocalName == PackageVersionElementName))
+                        .FirstOrDefault(e => (e.Attribute(IncludeAttributeName)?.Value ?? string.Empty).Trim().Equals(requiredPackageVersion.Name, StringComparison.OrdinalIgnoreCase));
                     if (packageVersionElement is not null)
                     {
-                        if (packageVersionElement.Attribute("Version") is { } packageVersionAttribute)
+                        if (packageVersionElement.Attribute(VersionMetadataName) is { } packageVersionAttribute)
                         {
                             currentVersionString = packageVersionAttribute.Value;
                             updateVersionLocation = (version) => packageVersionAttribute.Value = version;
@@ -181,7 +191,7 @@ public class XmlFileWriter : IFileWriter
                         }
                         else
                         {
-                            var cpmVersionElement = packageVersionElement.Elements().FirstOrDefault(e => e.Name.LocalName == "Version");
+                            var cpmVersionElement = packageVersionElement.Elements().FirstOrDefault(e => e.Name.LocalName == VersionMetadataName);
                             if (cpmVersionElement is not null)
                             {
                                 currentVersionString = cpmVersionElement.Value;
@@ -256,7 +266,7 @@ public class XmlFileWriter : IFileWriter
                                 var propertyName = propertyMatch.Groups["PropertyName"].Value;
                                 var propertyDefinitions = filesAndContents.Values
                                     .SelectMany(doc => doc.Descendants().Where(e => e.Name.LocalName.Equals(propertyName, StringComparison.OrdinalIgnoreCase)))
-                                    .Where(e => e.Parent?.Name.LocalName.Equals("PropertyGroup", StringComparison.OrdinalIgnoreCase) == true)
+                                    .Where(e => e.Parent?.Name.LocalName.Equals(PropertyGroupElementName, StringComparison.OrdinalIgnoreCase) == true)
                                     .ToArray();
                                 foreach (var propertyDefinition in propertyDefinitions)
                                 {
