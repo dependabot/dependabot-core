@@ -83,7 +83,7 @@ public class XmlFileWriterTests : FileWriterTestsBase
     }
 
     [Fact]
-    public async Task SingleDependency_SingleFile_AttributeDirectUpdate_ExactMatchVersionRangeFromProperty()
+    public async Task SingleDependency_SingleFile_AttributeDirectUpdate_ExactMatchVersionRangeFromPropertyEvaluation()
     {
         await TestAsync(
             files: [
@@ -126,7 +126,50 @@ public class XmlFileWriterTests : FileWriterTestsBase
     }
 
     [Fact]
-    public async Task SingleDependency_SingleFile_DuplicateEntry_DirectUpdate()
+    public async Task SingleDependency_SingleFile_AttributeDirectUpdate_ExactMatchVersionRangeFromPropertyValue()
+    {
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <SomeDependencyVersion>[1.0.0]</SomeDependencyVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Ignored.Dependency" Version="7.0.0" />
+                        <PackageReference Include="Some.Dependency" Version="$(SomeDependencyVersion)" />
+                        <PackageReference Include="Some.Other.Dependency" Version="8.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            projectDiscovery: new()
+            {
+                FilePath = "project.csproj",
+                Dependencies = [new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference)],
+                ImportedFiles = [],
+                AdditionalFiles = [],
+            },
+            requiredDependencies: [new Dependency("Some.Dependency", "2.0.0", DependencyType.PackageReference)],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <SomeDependencyVersion>[2.0.0]</SomeDependencyVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Ignored.Dependency" Version="7.0.0" />
+                        <PackageReference Include="Some.Dependency" Version="$(SomeDependencyVersion)" />
+                        <PackageReference Include="Some.Other.Dependency" Version="8.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task SingleDependency_SingleFile_DuplicateEntry_DirectUpdateForBoth()
     {
         await TestAsync(
             files: [
@@ -159,6 +202,55 @@ public class XmlFileWriterTests : FileWriterTestsBase
                         <PackageReference Include="Some.Dependency" Version="2.0.0" />
                         <PackageReference Include="Some.Dependency">
                           <Version>2.0.0</Version>
+                        </PackageReference>
+                        <PackageReference Include="Some.Other.Dependency" Version="8.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task SingleDependency_SingleFile_DuplicateEntry_DirectUpdateAndPropertyUpdate()
+    {
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <SomeDependencyVersion>1.0.0</SomeDependencyVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Ignored.Dependency" Version="7.0.0" />
+                        <PackageReference Include="Some.Dependency" Version="1.0.0" />
+                        <PackageReference Include="Some.Dependency">
+                          <Version>$(SomeDependencyVersion)</Version>
+                        </PackageReference>
+                        <PackageReference Include="Some.Other.Dependency" Version="8.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            projectDiscovery: new()
+            {
+                FilePath = "project.csproj",
+                Dependencies = [new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference)],
+                ImportedFiles = [],
+                AdditionalFiles = [],
+            },
+            requiredDependencies: [new Dependency("Some.Dependency", "2.0.0", DependencyType.PackageReference)],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <SomeDependencyVersion>2.0.0</SomeDependencyVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Ignored.Dependency" Version="7.0.0" />
+                        <PackageReference Include="Some.Dependency" Version="2.0.0" />
+                        <PackageReference Include="Some.Dependency">
+                          <Version>$(SomeDependencyVersion)</Version>
                         </PackageReference>
                         <PackageReference Include="Some.Other.Dependency" Version="8.0.0" />
                       </ItemGroup>
@@ -575,7 +667,7 @@ public class XmlFileWriterTests : FileWriterTestsBase
     }
 
     [Fact]
-    public async Task SingleDependency_SingleFile_AttributeVariableUpdate()
+    public async Task SingleDependency_SingleFile_AttributePropertyUpdate()
     {
         await TestAsync(
             files: [
@@ -611,6 +703,51 @@ public class XmlFileWriterTests : FileWriterTestsBase
                       <ItemGroup>
                         <PackageReference Include="Ignored.Dependency" Version="7.0.0" />
                         <PackageReference Include="Some.Dependency" Version="$(SomeDependencyVersion)" />
+                        <PackageReference Include="Some.Other.Dependency" Version="8.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task SingleDependency_SingleFile_AttributePropertyUpdate_PropertyNameDoesNotMatchCase()
+    {
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <UnrelatedProperty>1.0.0</UnrelatedProperty>
+                        <SomeDependencyVersion>$(unrelatedPROPERTY)</SomeDependencyVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Ignored.Dependency" Version="7.0.0" />
+                        <PackageReference Include="Some.Dependency" Version="$(someDEPENDENCYversion)" />
+                        <PackageReference Include="Some.Other.Dependency" Version="8.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            projectDiscovery: new()
+            {
+                FilePath = "project.csproj",
+                Dependencies = [new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference)],
+                ImportedFiles = [],
+                AdditionalFiles = [],
+            },
+            requiredDependencies: [new Dependency("Some.Dependency", "2.0.0", DependencyType.PackageReference)],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <UnrelatedProperty>2.0.0</UnrelatedProperty>
+                        <SomeDependencyVersion>$(unrelatedPROPERTY)</SomeDependencyVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Ignored.Dependency" Version="7.0.0" />
+                        <PackageReference Include="Some.Dependency" Version="$(someDEPENDENCYversion)" />
                         <PackageReference Include="Some.Other.Dependency" Version="8.0.0" />
                       </ItemGroup>
                     </Project>
