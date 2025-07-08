@@ -73,6 +73,31 @@ public class FileWriterWorker
             });
         }
 
+        // then try packages.config updates
+        var additionalFiles = ProjectHelper.GetAllAdditionalFilesFromProject(projectPath.FullName, ProjectHelper.PathFormat.Full);
+        var packagesConfigFullPath = additionalFiles.Where(p => Path.GetFileName(p).Equals(ProjectHelper.PackagesConfigFileName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+        if (packagesConfigFullPath is not null)
+        {
+            var packagesConfigOperations = await PackagesConfigUpdater.UpdateDependencyAsync(
+                repoContentsPath.FullName,
+                projectPath.FullName,
+                dependencyName,
+                oldDependencyVersion.ToString(),
+                newDependencyVersion.ToString(),
+                packagesConfigFullPath,
+                _logger
+            );
+            var packagesConfigOperationsWithNormalizedPaths = packagesConfigOperations
+                .Select(op => op with { UpdatedFiles = [.. op.UpdatedFiles.Select(f => Path.GetRelativePath(repoContentsPath.FullName, f).FullyNormalizedRootedPath())] })
+                .ToArray();
+            updateOperations.AddRange(packagesConfigOperationsWithNormalizedPaths);
+            if (packagesConfigOperationsWithNormalizedPaths.Any(o => o.DependencyName.Equals(dependencyName, StringComparison.OrdinalIgnoreCase) && o.NewVersion == newDependencyVersion))
+            {
+                // if we updated what we wanted, we can't do a direct xml update
+                return [.. updateOperations];
+            }
+        }
+
         // then try project updates
         var initialProjectDiscovery = await GetProjectDiscoveryResult(repoContentsPath, projectPath);
         if (initialProjectDiscovery is null)
@@ -106,25 +131,6 @@ public class FileWriterWorker
 
         foreach (var targetFramework in initialProjectDiscovery.TargetFrameworks)
         {
-            var additionalFiles = ProjectHelper.GetAllAdditionalFilesFromProject(projectPath.FullName, ProjectHelper.PathFormat.Full);
-            var packagesConfigFullPath = additionalFiles.Where(p => Path.GetFileName(p).Equals(ProjectHelper.PackagesConfigFileName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
-            if (packagesConfigFullPath is not null)
-            {
-                var packagesConfigOperations = await PackagesConfigUpdater.UpdateDependencyAsync(
-                    repoContentsPath.FullName,
-                    projectPath.FullName,
-                    dependencyName,
-                    oldDependencyVersion.ToString(),
-                    newDependencyVersion.ToString(),
-                    packagesConfigFullPath,
-                    _logger
-                );
-                var packagesConfigOperationsWithNormalizedPaths = packagesConfigOperations
-                    .Select(op => op with { UpdatedFiles = [.. op.UpdatedFiles.Select(f => Path.GetRelativePath(repoContentsPath.FullName, f).FullyNormalizedRootedPath())] })
-                    .ToArray();
-                updateOperations.AddRange(packagesConfigOperationsWithNormalizedPaths);
-            }
-
             var resolvedDependencies = await _dependencySolver.SolveAsync(initialTopLevelDependencies, desiredDependencies, targetFramework);
             if (resolvedDependencies is null)
             {
@@ -147,7 +153,7 @@ public class FileWriterWorker
                 continue;
             }
 
-            var updatedFiles = await TryPerformFileWritesAsync(repoContentsPath, initialProjectDiscovery, resolvedDependencies.Value);
+            var updatedFiles = await TryPerformFileWritesAsync(repoContentsPath, projectPath, initialProjectDiscovery, resolvedDependencies.Value);
             if (updatedFiles.Length == 0)
             {
                 _logger.Warn("Failed to write new dependency versions.");
@@ -204,23 +210,24 @@ public class FileWriterWorker
         return [.. updateOperations];
     }
 
-    private async Task<ImmutableArray<string>> TryPerformFileWritesAsync(DirectoryInfo repoContentsPath, ProjectDiscoveryResult projectDiscovery, ImmutableArray<Dependency> requiredPackageVersions)
+    private async Task<ImmutableArray<string>> TryPerformFileWritesAsync(DirectoryInfo repoContentsPath, FileInfo projectPath, ProjectDiscoveryResult projectDiscovery, ImmutableArray<Dependency> requiredPackageVersions)
     {
         // track original contents
+        var relativeFilePaths = new List<string>() { Path.GetRelativePath(repoContentsPath.FullName, projectPath.FullName) };
         var originalFileContents = new Dictionary<string, string>();
-        var projectFilePath = Path.Join(repoContentsPath.FullName, projectDiscovery.FilePath);
-        var projectContents = await File.ReadAllTextAsync(projectFilePath);
-        originalFileContents[projectFilePath] = projectContents;
+        var projectContents = await File.ReadAllTextAsync(projectPath.FullName);
+        originalFileContents[projectPath.FullName] = projectContents;
 
         foreach (var file in projectDiscovery.ImportedFiles.Concat(projectDiscovery.AdditionalFiles))
         {
-            var filePath = Path.Join(repoContentsPath.FullName, file);
+            var filePath = Path.Join(Path.GetDirectoryName(projectPath.FullName), file).FullyNormalizedRootedPath();
             var fileContents = await File.ReadAllTextAsync(filePath);
             originalFileContents[filePath] = fileContents;
+            relativeFilePaths.Add(Path.GetRelativePath(repoContentsPath.FullName, filePath));
         }
 
         // try update
-        var success = await _fileWriter.UpdatePackageVersionsAsync(repoContentsPath, projectDiscovery, requiredPackageVersions);
+        var success = await _fileWriter.UpdatePackageVersionsAsync(repoContentsPath, [.. relativeFilePaths], projectDiscovery.Dependencies, requiredPackageVersions);
         var updatedFiles = new List<string>();
         foreach (var (filePath, originalContents) in originalFileContents)
         {
@@ -247,10 +254,10 @@ public class FileWriterWorker
 
     private async Task<ProjectDiscoveryResult?> GetProjectDiscoveryResult(DirectoryInfo repoContentsPath, FileInfo projectPath)
     {
-        var relativeProjectPath = Path.GetRelativePath(repoContentsPath.FullName, projectPath.FullName);
+        var relativeProjectPath = Path.GetRelativePath(repoContentsPath.FullName, projectPath.FullName).NormalizePathToUnix();
         var relativeProjectDirectory = Path.GetDirectoryName(relativeProjectPath)!;
         var initialDiscoveryResult = await _discoveryWorker.RunAsync(repoContentsPath.FullName, relativeProjectDirectory);
-        var projectDiscovery = initialDiscoveryResult.Projects.FirstOrDefault(p => p.FilePath.Equals(relativeProjectPath, StringComparison.OrdinalIgnoreCase));
+        var projectDiscovery = initialDiscoveryResult.Projects.FirstOrDefault(p => relativeProjectPath.Equals(Path.Join(initialDiscoveryResult.Path, p.FilePath).NormalizePathToUnix(), StringComparison.OrdinalIgnoreCase));
         return projectDiscovery;
     }
 }

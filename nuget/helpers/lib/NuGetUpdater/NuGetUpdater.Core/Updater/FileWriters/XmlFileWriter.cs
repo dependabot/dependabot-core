@@ -4,8 +4,6 @@ using System.Xml.Linq;
 
 using NuGet.Versioning;
 
-using NuGetUpdater.Core.Discover;
-
 namespace NuGetUpdater.Core.Updater.FileWriters;
 
 public class XmlFileWriter : IFileWriter
@@ -22,19 +20,37 @@ public class XmlFileWriter : IFileWriter
 
     private readonly ILogger _logger;
 
+    // these file extensions are XML and can be updated; everything else is ignored
+    private static readonly HashSet<string> SupportedFileExtensions =
+    [
+        ".csproj",
+        ".vbproj",
+        ".fsproj",
+        ".props",
+        ".targets",
+    ];
+
     public XmlFileWriter(ILogger logger)
     {
         _logger = logger;
     }
 
-    public Task<bool> UpdatePackageVersionsAsync(DirectoryInfo repoContentsPath, ProjectDiscoveryResult projectDiscovery, ImmutableArray<Dependency> requiredPackageVersions)
+    public Task<bool> UpdatePackageVersionsAsync(DirectoryInfo repoContentsPath, ImmutableArray<string> relativeFilePaths, ImmutableArray<Dependency> originalDependencies, ImmutableArray<Dependency> requiredPackageVersions)
     {
+        if (relativeFilePaths.IsDefaultOrEmpty)
+        {
+            _logger.Warn("No files to update; skipping XML update.");
+            return Task.FromResult(false);
+        }
+
         var updatesPerformed = requiredPackageVersions.ToDictionary(d => d.Name, _ => false, StringComparer.OrdinalIgnoreCase);
-        var filesAndContents = new[] { projectDiscovery.FilePath }.Concat(projectDiscovery.ImportedFiles)
+        var projectRelativePath = relativeFilePaths[0];
+        var filesAndContents = relativeFilePaths
+            .Where(path => SupportedFileExtensions.Contains(Path.GetExtension(path)))
             .ToDictionary(path => path, path => XDocument.Parse(ReadFileContents(repoContentsPath, path)));
         foreach (var requiredPackageVersion in requiredPackageVersions)
         {
-            var oldVersionString = projectDiscovery.Dependencies.FirstOrDefault(d => d.Name.Equals(requiredPackageVersion.Name, StringComparison.OrdinalIgnoreCase))?.Version;
+            var oldVersionString = originalDependencies.FirstOrDefault(d => d.Name.Equals(requiredPackageVersion.Name, StringComparison.OrdinalIgnoreCase))?.Version;
             if (oldVersionString is null)
             {
                 _logger.Warn($"Unable to find project dependency with name {requiredPackageVersion.Name}; skipping XML update.");
@@ -67,7 +83,7 @@ public class XmlFileWriter : IFileWriter
                 updatesPerformed[requiredPackageVersion.Name] = true; // all cases below add the dependency
 
                 // find last `<ItemGroup>` in the project...
-                var projectDocument = filesAndContents[projectDiscovery.FilePath];
+                var projectDocument = filesAndContents[projectRelativePath];
                 var lastItemGroup = projectDocument.Root!.Elements()
                     .LastOrDefault(e => e.Name.LocalName.Equals(ItemGroupElementName, StringComparison.OrdinalIgnoreCase));
                 if (lastItemGroup is null)

@@ -4,13 +4,15 @@ using NuGetUpdater.Core.Run.ApiModel;
 using NuGetUpdater.Core.Run;
 using Xunit;
 using NuGetUpdater.Core.Analyze;
+using NuGetUpdater.Core.Discover;
+using System.Collections.Immutable;
 
 namespace NuGetUpdater.Core.Test.Run;
 
 public class EndToEndTests
 {
     [Fact]
-    public async Task WithNewFileWriter()
+    public async Task WithNewFileWriter_PackageReference()
     {
         await RunWorkerTests.RunAsync(
             experimentsManager: new ExperimentsManager() { UseDirectDiscovery = true, UseNewFileUpdater = true },
@@ -133,6 +135,349 @@ public class EndToEndTests
                                   <ItemGroup>
                                     <PackageReference Include="Some.Package" Version="2.0.0" />
                                   </ItemGroup>
+                                </Project>
+                                """
+                        },
+                    ],
+                    BaseCommitSha = "TEST-COMMIT-SHA",
+                    CommitMessage = RunWorkerTests.TestPullRequestCommitMessage,
+                    PrTitle = RunWorkerTests.TestPullRequestTitle,
+                    PrBody = RunWorkerTests.TestPullRequestBody,
+                    DependencyGroup = null,
+                },
+                new MarkAsProcessed("TEST-COMMIT-SHA")
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task WithNewFileWriter_PackagesConfig()
+    {
+        await RunWorkerTests.RunAsync(
+            experimentsManager: new ExperimentsManager() { UseDirectDiscovery = true, UseNewFileUpdater = true },
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net45"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net45"),
+            ],
+            job: new()
+            {
+                Source = new()
+                {
+                    Provider = "github",
+                    Repo = "test/repo",
+                    Directory = "/src",
+                }
+            },
+            files: [
+                ("src/packages.config", """
+                    <?xml version="1.0" encoding="utf-8"?>
+                    <packages>
+                      <package id="Some.Package" version="1.0.0" targetFramework="net45" />
+                    </packages>
+                    """),
+                ("src/project.csproj", """
+                    <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                      <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                      <PropertyGroup>
+                        <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <None Include="packages.config" />
+                      </ItemGroup>
+                      <ItemGroup>
+                        <Reference Include="Some.Package">
+                          <HintPath>packages\Some.Package.1.0.0\lib\net45\Some.Package.dll</HintPath>
+                          <Private>True</Private>
+                        </Reference>
+                      </ItemGroup>
+                      <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                    </Project>
+                    """),
+                // due to weirdness in the testing setup, we need to ensure sdk-style crawling doesn't escape
+                ("Directory.Build.props", "<Project />"),
+                ("Directory.Build.targets", "<Project />"),
+                ("Directory.Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+                      </PropertyGroup>
+                    </Project>
+                    """),
+            ],
+            discoveryWorker: null, // use real worker
+            analyzeWorker: null, // use real worker
+            updaterWorker: null, // use real worker
+            expectedResult: new()
+            {
+                Base64DependencyFiles = [],
+                BaseCommitSha = "TEST-COMMIT-SHA",
+            },
+            expectedApiMessages: [
+                new IncrementMetric()
+                {
+                    Metric = "updater.started",
+                    Tags = new()
+                    {
+                        ["operation"] = "group_update_all_versions"
+                    }
+                },
+                new UpdatedDependencyList()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "Some.Package",
+                            Version = "1.0.0",
+                            Requirements = [
+                                new()
+                                {
+                                    Requirement = "1.0.0",
+                                    File = "/src/project.csproj",
+                                    Groups = ["dependencies"],
+                                }
+                            ]
+                        },
+                    ],
+                    DependencyFiles = [
+                        "/src/packages.config",
+                        "/src/project.csproj",
+                    ],
+                },
+                new CreatePullRequest()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "Some.Package",
+                            Version = "2.0.0",
+                            Requirements = [
+                                new()
+                                {
+                                    Requirement = "2.0.0",
+                                    File = "/src/project.csproj",
+                                    Groups = ["dependencies"],
+                                    Source = new()
+                                    {
+                                        SourceUrl = null,
+                                        Type = "nuget_repo",
+                                    }
+                                }
+                            ],
+                            PreviousVersion = "1.0.0",
+                            PreviousRequirements = [
+                                new()
+                                {
+                                    Requirement = "1.0.0",
+                                    File = "/src/project.csproj",
+                                    Groups = ["dependencies"],
+                                }
+                            ],
+                        },
+                    ],
+                    UpdatedDependencyFiles = [
+                        new()
+                        {
+                            Directory = "/src",
+                            Name = "packages.config",
+                            Content = """
+                                <?xml version="1.0" encoding="utf-8"?>
+                                <packages>
+                                  <package id="Some.Package" version="2.0.0" targetFramework="net45" />
+                                </packages>
+                                """
+                        },
+                        new()
+                        {
+                            Directory = "/src",
+                            Name = "project.csproj",
+                            Content = """
+                                <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                                  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                                  <PropertyGroup>
+                                    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+                                  </PropertyGroup>
+                                  <ItemGroup>
+                                    <None Include="packages.config" />
+                                  </ItemGroup>
+                                  <ItemGroup>
+                                    <Reference Include="Some.Package">
+                                      <HintPath>packages\Some.Package.2.0.0\lib\net45\Some.Package.dll</HintPath>
+                                      <Private>True</Private>
+                                    </Reference>
+                                  </ItemGroup>
+                                  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                                </Project>
+                                """
+                        },
+                    ],
+                    BaseCommitSha = "TEST-COMMIT-SHA",
+                    CommitMessage = RunWorkerTests.TestPullRequestCommitMessage,
+                    PrTitle = RunWorkerTests.TestPullRequestTitle,
+                    PrBody = RunWorkerTests.TestPullRequestBody,
+                    DependencyGroup = null,
+                },
+                new MarkAsProcessed("TEST-COMMIT-SHA")
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task WithNewFileWriter_LegacyProject_With_PackageReference()
+    {
+        var experimentsManager = new ExperimentsManager() { UseDirectDiscovery = true, UseNewFileUpdater = true };
+        await RunWorkerTests.RunAsync(
+            experimentsManager: experimentsManager,
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net45"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net45"),
+            ],
+            job: new()
+            {
+                Source = new()
+                {
+                    Provider = "github",
+                    Repo = "test/repo",
+                    Directory = "/",
+                }
+            },
+            files: [
+                ("Directory.Build.props", "<Project />"),
+                ("Directory.Build.targets", "<Project />"),
+                ("Directory.Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+                      </PropertyGroup>
+                    </Project>
+                    """),
+                ("project.csproj", """
+                    <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                      <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                      <PropertyGroup>
+                        <OutputType>Library</OutputType>
+                        <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.0.0" />
+                      </ItemGroup>
+                      <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                    </Project>
+                    """),
+            ],
+            discoveryWorker: new TestDiscoveryWorker(async args =>
+            {
+                // wrap real worker, but remove ref assemblies package to make testing more deterministic
+                var (repoRootPath, workspacePath) = args;
+                var worker = new DiscoveryWorker("TEST-JOB-ID", experimentsManager, new TestLogger());
+                var discoveryResult = await worker.RunAsync(repoRootPath, workspacePath);
+                return new()
+                {
+                    DotNetToolsJson = discoveryResult.DotNetToolsJson,
+                    Error = discoveryResult.Error,
+                    GlobalJson = discoveryResult.GlobalJson,
+                    IsSuccess = discoveryResult.IsSuccess,
+                    Path = discoveryResult.Path,
+                    Projects = discoveryResult.Projects.Select(p => new ProjectDiscoveryResult()
+                    {
+                        AdditionalFiles = p.AdditionalFiles,
+                        Dependencies = [.. p.Dependencies.Where(d => d.Name != "Microsoft.NETFramework.ReferenceAssemblies")],
+                        Error = p.Error,
+                        FilePath = p.FilePath,
+                        ImportedFiles = p.ImportedFiles,
+                        IsSuccess = p.IsSuccess,
+                        Properties = p.Properties,
+                        ReferencedProjectPaths = p.ReferencedProjectPaths,
+                        TargetFrameworks = p.TargetFrameworks,
+                    }).ToImmutableArray()
+                };
+            }),
+            analyzeWorker: null, // use real worker
+            updaterWorker: null, // use real worker
+            expectedResult: new()
+            {
+                Base64DependencyFiles = [],
+                BaseCommitSha = "TEST-COMMIT-SHA",
+            },
+            expectedApiMessages: [
+                new IncrementMetric()
+                {
+                    Metric = "updater.started",
+                    Tags = new()
+                    {
+                        ["operation"] = "group_update_all_versions"
+                    }
+                },
+                new UpdatedDependencyList()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "Some.Package",
+                            Version = "1.0.0",
+                            Requirements = [
+                                new()
+                                {
+                                    Requirement = "1.0.0",
+                                    File = "/project.csproj",
+                                    Groups = ["dependencies"],
+                                }
+                            ]
+                        },
+                    ],
+                    DependencyFiles = [
+                        "/Directory.Build.props",
+                        "/Directory.Build.targets",
+                        "/Directory.Packages.props",
+                        "/project.csproj",
+                    ],
+                },
+                new CreatePullRequest()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "Some.Package",
+                            Version = "2.0.0",
+                            Requirements = [
+                                new()
+                                {
+                                    Requirement = "2.0.0",
+                                    File = "/project.csproj",
+                                    Groups = ["dependencies"],
+                                    Source = new()
+                                    {
+                                        SourceUrl = null,
+                                        Type = "nuget_repo",
+                                    }
+                                }
+                            ],
+                            PreviousVersion = "1.0.0",
+                            PreviousRequirements = [
+                                new()
+                                {
+                                    Requirement = "1.0.0",
+                                    File = "/project.csproj",
+                                    Groups = ["dependencies"],
+                                }
+                            ],
+                        },
+                    ],
+                    UpdatedDependencyFiles = [
+                        new()
+                        {
+                            Directory = "/",
+                            Name = "project.csproj",
+                            Content = """
+                                <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                                  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                                  <PropertyGroup>
+                                    <OutputType>Library</OutputType>
+                                    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+                                  </PropertyGroup>
+                                  <ItemGroup>
+                                    <PackageReference Include="Some.Package" Version="2.0.0" />
+                                  </ItemGroup>
+                                  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
                                 </Project>
                                 """
                         },
