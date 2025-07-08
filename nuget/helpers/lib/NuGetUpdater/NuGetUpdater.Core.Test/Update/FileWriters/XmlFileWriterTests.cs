@@ -23,14 +23,8 @@ public class XmlFileWriterTests : FileWriterTestsBase
                     </Project>
                     """)
             ],
-            projectDiscovery: new()
-            {
-                FilePath = "project.csproj",
-                Dependencies = [new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference)],
-                ImportedFiles = [],
-                AdditionalFiles = [],
-            },
-            requiredDependencies: [new Dependency("Some.Dependency", "2.0.0", DependencyType.PackageReference)],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/2.0.0"],
             expectedFiles: [
                 ("project.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
@@ -60,14 +54,8 @@ public class XmlFileWriterTests : FileWriterTestsBase
                     </Project>
                     """)
             ],
-            projectDiscovery: new()
-            {
-                FilePath = "project.csproj",
-                Dependencies = [new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference)],
-                ImportedFiles = [],
-                AdditionalFiles = [],
-            },
-            requiredDependencies: [new Dependency("Some.Dependency", "2.0.0", DependencyType.PackageReference)],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/2.0.0"],
             expectedFiles: [
                 ("project.csproj", """
                     <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
@@ -97,14 +85,8 @@ public class XmlFileWriterTests : FileWriterTestsBase
                     </Project>
                     """)
             ],
-            projectDiscovery: new()
-            {
-                FilePath = "project.csproj",
-                Dependencies = [new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference)],
-                ImportedFiles = [],
-                AdditionalFiles = [],
-            },
-            requiredDependencies: [new Dependency("Some.Dependency", "2.0.0", DependencyType.PackageReference)],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/2.0.0"],
             expectedFiles: [
                 ("project.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
@@ -134,14 +116,8 @@ public class XmlFileWriterTests : FileWriterTestsBase
                     </Project>
                     """)
             ],
-            projectDiscovery: new()
-            {
-                FilePath = "project.csproj",
-                Dependencies = [new Dependency("Some.Dependency", "1.0.0.0", DependencyType.PackageReference)],
-                ImportedFiles = [],
-                AdditionalFiles = [],
-            },
-            requiredDependencies: [new Dependency("Some.Dependency", "2.0.0.0", DependencyType.PackageReference)],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/2.0.0.0"],
             expectedFiles: [
                 ("project.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
@@ -171,14 +147,8 @@ public class XmlFileWriterTests : FileWriterTestsBase
                     </Project>
                     """)
             ],
-            projectDiscovery: new()
-            {
-                FilePath = "project.csproj",
-                Dependencies = [new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference)],
-                ImportedFiles = [],
-                AdditionalFiles = [],
-            },
-            requiredDependencies: [new Dependency("Some.Dependency", "2.0.0", DependencyType.PackageReference)],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/2.0.0"],
             expectedFiles: [
                 ("project.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
@@ -208,14 +178,8 @@ public class XmlFileWriterTests : FileWriterTestsBase
                     </Project>
                     """)
             ],
-            projectDiscovery: new()
-            {
-                FilePath = "project.csproj",
-                Dependencies = [new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference)],
-                ImportedFiles = [],
-                AdditionalFiles = [],
-            },
-            requiredDependencies: [new Dependency("Some.Dependency", "2.0.0", DependencyType.PackageReference)],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/2.0.0"],
             expectedFiles: [
                 ("project.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
@@ -248,14 +212,8 @@ public class XmlFileWriterTests : FileWriterTestsBase
                     </Project>
                     """)
             ],
-            projectDiscovery: new()
-            {
-                FilePath = "project.csproj",
-                Dependencies = [new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference)],
-                ImportedFiles = [],
-                AdditionalFiles = [],
-            },
-            requiredDependencies: [new Dependency("Some.Dependency", "2.0.0", DependencyType.PackageReference)],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/2.0.0"],
             expectedFiles: [
                 ("project.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
@@ -291,14 +249,8 @@ public class XmlFileWriterTests : FileWriterTestsBase
                     </Project>
                     """)
             ],
-            projectDiscovery: new()
-            {
-                FilePath = "project.csproj",
-                Dependencies = [new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference)],
-                ImportedFiles = [],
-                AdditionalFiles = [],
-            },
-            requiredDependencies: [new Dependency("Some.Dependency", "2.0.0", DependencyType.PackageReference)],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/2.0.0"],
             expectedFiles: [
                 ("project.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
@@ -332,14 +284,8 @@ public class XmlFileWriterTests : FileWriterTestsBase
                     </Project>
                     """)
             ],
-            projectDiscovery: new()
-            {
-                FilePath = "project.csproj",
-                Dependencies = [new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference)],
-                ImportedFiles = [],
-                AdditionalFiles = [],
-            },
-            requiredDependencies: [new Dependency("Some.Dependency", "2.0.0", DependencyType.PackageReference)],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/2.0.0"],
             expectedFiles: [
                 ("project.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
@@ -373,14 +319,8 @@ public class XmlFileWriterTests : FileWriterTestsBase
                     </Project>
                     """)
             ],
-            projectDiscovery: new()
-            {
-                FilePath = "project.csproj",
-                Dependencies = [new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference)],
-                ImportedFiles = [],
-                AdditionalFiles = [],
-            },
-            requiredDependencies: [new Dependency("Some.Dependency", "2.0.0", DependencyType.PackageReference)],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/2.0.0"],
             expectedFiles: [
                 ("project.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
@@ -417,14 +357,8 @@ public class XmlFileWriterTests : FileWriterTestsBase
                     </Project>
                     """)
             ],
-            projectDiscovery: new()
-            {
-                FilePath = "project.csproj",
-                Dependencies = [new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference)],
-                ImportedFiles = [],
-                AdditionalFiles = [],
-            },
-            requiredDependencies: [new Dependency("Some.Dependency", "2.0.0", DependencyType.PackageReference)],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/2.0.0"],
             expectedFiles: [
                 ("project.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
@@ -461,14 +395,8 @@ public class XmlFileWriterTests : FileWriterTestsBase
                     </Project>
                     """)
             ],
-            projectDiscovery: new()
-            {
-                FilePath = "project.csproj",
-                Dependencies = [new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference)],
-                ImportedFiles = [],
-                AdditionalFiles = [],
-            },
-            requiredDependencies: [new Dependency("Some.Dependency", "2.0.0", DependencyType.PackageReference)],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/2.0.0"],
             expectedFiles: [
                 ("project.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
@@ -507,14 +435,8 @@ public class XmlFileWriterTests : FileWriterTestsBase
                     </Project>
                     """)
             ],
-            projectDiscovery: new()
-            {
-                FilePath = "project.csproj",
-                Dependencies = [new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference)],
-                ImportedFiles = [],
-                AdditionalFiles = [],
-            },
-            requiredDependencies: [new Dependency("Some.Dependency", "2.0.0", DependencyType.PackageReference)],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/2.0.0"],
             expectedFiles: [
                 ("project.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
@@ -555,16 +477,8 @@ public class XmlFileWriterTests : FileWriterTestsBase
                     </Project>
                     """)
             ],
-            projectDiscovery: new()
-            {
-                FilePath = "project.csproj",
-                Dependencies = [
-                    new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
-                ],
-                ImportedFiles = [],
-                AdditionalFiles = [],
-            },
-            requiredDependencies: [new Dependency("Some.Dependency", "2.0.0", DependencyType.PackageReference)]
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/2.0.0"]
         );
     }
 
@@ -581,16 +495,8 @@ public class XmlFileWriterTests : FileWriterTestsBase
                     </Project>
                     """)
             ],
-            projectDiscovery: new()
-            {
-                FilePath = "project.csproj",
-                Dependencies = [
-                    new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
-                ],
-                ImportedFiles = [],
-                AdditionalFiles = [],
-            },
-            requiredDependencies: [new Dependency("Some.Dependency", "2.0.0", DependencyType.PackageReference)]
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/2.0.0"]
         );
     }
 
@@ -607,16 +513,8 @@ public class XmlFileWriterTests : FileWriterTestsBase
                     </Project>
                     """)
             ],
-            projectDiscovery: new()
-            {
-                FilePath = "project.csproj",
-                Dependencies = [
-                    new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
-                ],
-                ImportedFiles = [],
-                AdditionalFiles = [],
-            },
-            requiredDependencies: [new Dependency("Unrelated.Dependency", "2.0.0", DependencyType.PackageReference)]
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Unrelated.Dependency/2.0.0"]
         );
     }
 
@@ -635,19 +533,13 @@ public class XmlFileWriterTests : FileWriterTestsBase
                     </Project>
                     """)
             ],
-            projectDiscovery: new()
-            {
-                FilePath = "project.csproj",
-                Dependencies = [
-                    new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
-                    new Dependency("Transitive.Dependency", "3.0.0", DependencyType.PackageReference),
-                ],
-                ImportedFiles = [],
-                AdditionalFiles = [],
-            },
-            requiredDependencies: [
-                new Dependency("Some.Dependency", "2.0.0", DependencyType.PackageReference),
-                new Dependency("Transitive.Dependency", "4.0.0", DependencyType.PackageReference),
+            initialProjectDependencyStrings: [
+                "Some.Dependency/1.0.0",
+                "Transitive.Dependency/3.0.0"
+            ],
+            requiredDependencyStrings: [
+                "Some.Dependency/2.0.0",
+                "Transitive.Dependency/4.0.0",
             ],
             expectedFiles: [
                 ("project.csproj", """
@@ -677,19 +569,13 @@ public class XmlFileWriterTests : FileWriterTestsBase
                     </Project>
                     """)
             ],
-            projectDiscovery: new()
-            {
-                FilePath = "project.csproj",
-                Dependencies = [
-                    new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
-                    new Dependency("Transitive.Dependency", "3.0.0", DependencyType.PackageReference),
-                ],
-                ImportedFiles = [],
-                AdditionalFiles = [],
-            },
-            requiredDependencies: [
-                new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
-                new Dependency("Transitive.Dependency", "4.0.0", DependencyType.PackageReference),
+            initialProjectDependencyStrings: [
+                "Some.Dependency/1.0.0",
+                "Transitive.Dependency/3.0.0"
+            ],
+            requiredDependencyStrings: [
+                "Some.Dependency/1.0.0",
+                "Transitive.Dependency/4.0.0",
             ],
             expectedFiles: [
                 ("project.csproj", """
@@ -719,19 +605,13 @@ public class XmlFileWriterTests : FileWriterTestsBase
                     </Project>
                     """)
             ],
-            projectDiscovery: new()
-            {
-                FilePath = "project.csproj",
-                Dependencies = [
-                    new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
-                    new Dependency("Transitive.Dependency", "3.0.0", DependencyType.PackageReference),
-                ],
-                ImportedFiles = [],
-                AdditionalFiles = [],
-            },
-            requiredDependencies: [
-                new Dependency("Some.Dependency", "2.0.0", DependencyType.PackageReference),
-                new Dependency("Transitive.Dependency", "4.0.0", DependencyType.PackageReference),
+            initialProjectDependencyStrings: [
+                "Some.Dependency/1.0.0",
+                "Transitive.Dependency/3.0.0"
+            ],
+            requiredDependencyStrings: [
+                "Some.Dependency/2.0.0",
+                "Transitive.Dependency/4.0.0",
             ],
             expectedFiles: [
                 ("project.csproj", """
@@ -763,14 +643,8 @@ public class XmlFileWriterTests : FileWriterTestsBase
                     </Project>
                     """)
             ],
-            projectDiscovery: new()
-            {
-                FilePath = "project.csproj",
-                Dependencies = [new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference)],
-                ImportedFiles = [],
-                AdditionalFiles = [],
-            },
-            requiredDependencies: [new Dependency("Some.Dependency", "2.0.0", DependencyType.PackageReference)],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/2.0.0"],
             expectedFiles: [
                 ("project.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
@@ -811,14 +685,8 @@ public class XmlFileWriterTests : FileWriterTestsBase
                     </Project>
                     """)
             ],
-            projectDiscovery: new()
-            {
-                FilePath = "project.csproj",
-                Dependencies = [new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference)],
-                ImportedFiles = ["Directory.Packages.props"],
-                AdditionalFiles = [],
-            },
-            requiredDependencies: [new Dependency("Some.Dependency", "2.0.0", DependencyType.PackageReference)],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/2.0.0"],
             expectedFiles: [
                 ("project.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
@@ -866,20 +734,14 @@ public class XmlFileWriterTests : FileWriterTestsBase
                     </Project>
                     """)
             ],
-            projectDiscovery: new()
-            {
-                FilePath = "project.csproj",
-                Dependencies = [
-                    new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
-                    new Dependency("Transitive.Dependency", "3.0.0", DependencyType.PackageReference),
-                    new Dependency("Unrelated.Dependency", "5.0.0", DependencyType.PackageReference),
-                ],
-                ImportedFiles = ["Directory.Packages.props"],
-                AdditionalFiles = [],
-            },
-            requiredDependencies: [
-                new Dependency("Some.Dependency", "2.0.0", DependencyType.PackageReference),
-                new Dependency("Transitive.Dependency", "4.0.0", DependencyType.PackageReference),
+            initialProjectDependencyStrings: [
+                "Some.Dependency/1.0.0",
+                "Transitive.Dependency/3.0.0",
+                "Unrelated.Dependency/5.0.0",
+            ],
+            requiredDependencyStrings: [
+                "Some.Dependency/2.0.0",
+                "Transitive.Dependency/4.0.0",
             ],
             expectedFiles: [
                 ("project.csproj", """
@@ -930,14 +792,8 @@ public class XmlFileWriterTests : FileWriterTestsBase
                     </Project>
                     """)
             ],
-            projectDiscovery: new()
-            {
-                FilePath = "project.csproj",
-                Dependencies = [new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference)],
-                ImportedFiles = ["Directory.Packages.props"],
-                AdditionalFiles = [],
-            },
-            requiredDependencies: [new Dependency("Some.Dependency", "2.0.0", DependencyType.PackageReference)],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/2.0.0"],
             expectedFiles: [
                 ("project.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
@@ -990,14 +846,8 @@ public class XmlFileWriterTests : FileWriterTestsBase
                     </Project>
                     """)
             ],
-            projectDiscovery: new()
-            {
-                FilePath = "project.csproj",
-                Dependencies = [new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference)],
-                ImportedFiles = ["Directory.Packages.props"],
-                AdditionalFiles = [],
-            },
-            requiredDependencies: [new Dependency("Some.Dependency", "2.0.0", DependencyType.PackageReference)],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/2.0.0"],
             expectedFiles: [
                 ("project.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
@@ -1056,14 +906,8 @@ public class XmlFileWriterTests : FileWriterTestsBase
                     </Project>
                     """)
             ],
-            projectDiscovery: new()
-            {
-                FilePath = "project.csproj",
-                Dependencies = [new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference)],
-                ImportedFiles = ["Directory.Packages.props", "Versions.props"],
-                AdditionalFiles = [],
-            },
-            requiredDependencies: [new Dependency("Some.Dependency", "2.0.0", DependencyType.PackageReference)],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/2.0.0"],
             expectedFiles: [
                 ("project.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
@@ -1114,14 +958,8 @@ public class XmlFileWriterTests : FileWriterTestsBase
                     </Project>
                     """)
             ],
-            projectDiscovery: new()
-            {
-                FilePath = "project.csproj",
-                Dependencies = [new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference)],
-                ImportedFiles = [],
-                AdditionalFiles = [],
-            },
-            requiredDependencies: [new Dependency("Some.Dependency", "2.0.0", DependencyType.PackageReference)],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/2.0.0"],
             expectedFiles: [
                 ("project.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
@@ -1159,14 +997,8 @@ public class XmlFileWriterTests : FileWriterTestsBase
                     </Project>
                     """)
             ],
-            projectDiscovery: new()
-            {
-                FilePath = "project.csproj",
-                Dependencies = [new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference)],
-                ImportedFiles = [],
-                AdditionalFiles = [],
-            },
-            requiredDependencies: [new Dependency("Some.Dependency", "2.0.0", DependencyType.PackageReference)],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/2.0.0"],
             expectedFiles: [
                 ("project.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
@@ -1205,14 +1037,8 @@ public class XmlFileWriterTests : FileWriterTestsBase
                     </Project>
                     """)
             ],
-            projectDiscovery: new()
-            {
-                FilePath = "project.csproj",
-                Dependencies = [new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference)],
-                ImportedFiles = [],
-                AdditionalFiles = [],
-            },
-            requiredDependencies: [new Dependency("Some.Dependency", "2.0.0", DependencyType.PackageReference)],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/2.0.0"],
             expectedFiles: [
                 ("project.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
@@ -1245,19 +1071,13 @@ public class XmlFileWriterTests : FileWriterTestsBase
                     </Project>
                     """)
             ],
-            projectDiscovery: new()
-            {
-                FilePath = "project.csproj",
-                Dependencies = [
-                    new Dependency("A.Transitive.Dependency", "2.0.0", DependencyType.PackageReference, IsTransitive: true),
-                    new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
-                ],
-                ImportedFiles = [],
-                AdditionalFiles = [],
-            },
-            requiredDependencies: [
-                new Dependency("A.Transitive.Dependency", "3.0.0", DependencyType.PackageReference),
-                new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
+            initialProjectDependencyStrings: [
+                "A.Transitive.Dependency/2.0.0",
+                "Some.Dependency/1.0.0",
+            ],
+            requiredDependencyStrings: [
+                "A.Transitive.Dependency/3.0.0",
+                "Some.Dependency/1.0.0",
             ],
             expectedFiles: [
                 ("project.csproj", """
@@ -1285,19 +1105,13 @@ public class XmlFileWriterTests : FileWriterTestsBase
                     </Project>
                     """)
             ],
-            projectDiscovery: new()
-            {
-                FilePath = "project.csproj",
-                Dependencies = [
-                    new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
-                    new Dependency("Transitive.Dependency", "2.0.0", DependencyType.PackageReference, IsTransitive: true),
-                ],
-                ImportedFiles = [],
-                AdditionalFiles = [],
-            },
-            requiredDependencies: [
-                new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
-                new Dependency("Transitive.Dependency", "3.0.0", DependencyType.PackageReference),
+            initialProjectDependencyStrings: [
+                "Some.Dependency/1.0.0",
+                "Transitive.Dependency/2.0.0",
+            ],
+            requiredDependencyStrings: [
+                "Some.Dependency/1.0.0",
+                "Transitive.Dependency/3.0.0",
             ],
             expectedFiles: [
                 ("project.csproj", """
@@ -1333,19 +1147,13 @@ public class XmlFileWriterTests : FileWriterTestsBase
                     </Project>
                     """)
             ],
-            projectDiscovery: new()
-            {
-                FilePath = "project.csproj",
-                Dependencies = [
-                    new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
-                    new Dependency("Transitive.Dependency", "2.0.0", DependencyType.PackageReference, IsTransitive: true),
-                ],
-                ImportedFiles = ["Directory.Packages.props"],
-                AdditionalFiles = [],
-            },
-            requiredDependencies: [
-                new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
-                new Dependency("Transitive.Dependency", "3.0.0", DependencyType.PackageReference),
+            initialProjectDependencyStrings: [
+                "Some.Dependency/1.0.0",
+                "Transitive.Dependency/2.0.0",
+            ],
+            requiredDependencyStrings: [
+                "Some.Dependency/1.0.0",
+                "Transitive.Dependency/3.0.0",
             ],
             expectedFiles: [
                 ("project.csproj", """
@@ -1389,19 +1197,13 @@ public class XmlFileWriterTests : FileWriterTestsBase
                     </Project>
                     """)
             ],
-            projectDiscovery: new()
-            {
-                FilePath = "project.csproj",
-                Dependencies = [
-                    new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
-                    new Dependency("Transitive.Dependency", "2.0.0", DependencyType.PackageReference, IsTransitive: true),
-                ],
-                ImportedFiles = ["Directory.Packages.props"],
-                AdditionalFiles = [],
-            },
-            requiredDependencies: [
-                new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
-                new Dependency("Transitive.Dependency", "3.0.0", DependencyType.PackageReference),
+            initialProjectDependencyStrings: [
+                "Some.Dependency/1.0.0",
+                "Transitive.Dependency/2.0.0",
+            ],
+            requiredDependencyStrings: [
+                "Some.Dependency/1.0.0",
+                "Transitive.Dependency/3.0.0",
             ],
             expectedFiles: [
                 ("project.csproj", """
@@ -1444,19 +1246,13 @@ public class XmlFileWriterTests : FileWriterTestsBase
                     </Project>
                     """)
             ],
-            projectDiscovery: new()
-            {
-                FilePath = "project.csproj",
-                Dependencies = [
-                    new Dependency("A.Transitive.Dependency", "2.0.0", DependencyType.PackageReference, IsTransitive: true),
-                    new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
-                ],
-                ImportedFiles = ["Directory.Packages.props"],
-                AdditionalFiles = [],
-            },
-            requiredDependencies: [
-                new Dependency("A.Transitive.Dependency", "3.0.0", DependencyType.PackageReference),
-                new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
+            initialProjectDependencyStrings: [
+                "A.Transitive.Dependency/2.0.0",
+                "Some.Dependency/1.0.0",
+            ],
+            requiredDependencyStrings: [
+                "A.Transitive.Dependency/3.0.0",
+                "Some.Dependency/1.0.0",
             ],
             expectedFiles: [
                 ("project.csproj", """
@@ -1499,19 +1295,13 @@ public class XmlFileWriterTests : FileWriterTestsBase
                     </Project>
                     """)
             ],
-            projectDiscovery: new()
-            {
-                FilePath = "project.csproj",
-                Dependencies = [
-                    new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
-                    new Dependency("Transitive.Dependency", "2.0.0", DependencyType.PackageReference, IsTransitive: true),
-                ],
-                ImportedFiles = ["Directory.Packages.props"],
-                AdditionalFiles = [],
-            },
-            requiredDependencies: [
-                new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
-                new Dependency("Transitive.Dependency", "3.0.0", DependencyType.PackageReference),
+            initialProjectDependencyStrings: [
+                "Some.Dependency/1.0.0",
+                "Transitive.Dependency/2.0.0",
+            ],
+            requiredDependencyStrings: [
+                "Some.Dependency/1.0.0",
+                "Transitive.Dependency/3.0.0",
             ],
             expectedFiles: [
                 ("project.csproj", """
