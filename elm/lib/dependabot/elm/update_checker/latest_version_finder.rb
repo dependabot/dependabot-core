@@ -90,7 +90,7 @@ module Dependabot
 
         sig { override.returns(T::Boolean) }
         def cooldown_enabled?
-          Dependabot::Experiments.enabled?(:enable_cooldown_for_elm)
+          true
         end
       end
 
@@ -219,7 +219,7 @@ module Dependabot
 
         sig { override.returns(T::Boolean) }
         def cooldown_enabled?
-          Dependabot::Experiments.enabled?(:enable_cooldown_for_elm)
+          true
         end
 
         sig { returns(T::Hash[String, Dependabot::Elm::Version]) }

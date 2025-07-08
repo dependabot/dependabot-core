@@ -187,7 +187,7 @@ module Dependabot
 
         sig { returns(T::Boolean) }
         def cooldown_enabled?
-          Dependabot::Experiments.enabled?(:enable_cooldown_for_pub)
+          true
         end
 
         sig { returns(T.class_of(Dependabot::Version)) }

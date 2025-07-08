@@ -551,9 +551,6 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
     subject(:latest_version_details) { finder.latest_version_details }
 
     before do
-      allow(Dependabot::Experiments).to receive(:enabled?)
-        .with(:enable_cooldown_for_gradle).and_return(true)
-
       allow(Time).to receive(:now).and_return(Time.parse("2018-10-25T17:30:00.000Z"))
     end
 

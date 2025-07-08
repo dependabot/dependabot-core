@@ -1,4 +1,4 @@
-# typed: strong
+# typed: strict
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -151,6 +151,7 @@ module Dependabot
         )
       end
 
+      # rubocop:disable Metrics/PerceivedComplexity
       sig do
         params(
           declarations: T.nilable(T::Hash[String, T.any(String, T::Hash[String, String])]),
@@ -163,8 +164,11 @@ module Dependabot
         return dependency_set unless declarations
 
         declarations.each do |_mod, declaration|
+          details = send(details_getter, declaration)
+          next unless details
+
           group, name, version = T.cast(
-            send(details_getter, declaration),
+            details,
             [String, String, T.any(String, T::Hash[String, String])]
           )
 
@@ -187,27 +191,31 @@ module Dependabot
         end
         dependency_set
       end
+      # rubocop:enable Metrics/PerceivedComplexity
 
       sig do
         params(
           declaration: T.any(String, T::Hash[String, T.any(String, T::Hash[String, String])])
-        ).returns([String, String, T.any(String, T::Hash[String, String])])
+        ).returns(T.nilable([String, String, T.any(String, T::Hash[String, String])]))
       end
       def details_for_library_dependency(declaration)
         return T.cast(declaration.split(":"), [String, String, String]) if declaration.is_a?(String)
 
         hash = declaration
+        version = hash["version"]
+        return nil if version.nil?
+
         if hash["module"]
           parts = T.cast(hash["module"], String).split(":")
-          [T.must(parts[0]), T.must(parts[1]), T.must(hash["version"])]
+          [T.must(parts[0]), T.must(parts[1]), version]
         else
-          [T.cast(hash["group"], String), T.cast(hash["name"], String), T.must(hash["version"])]
+          [T.cast(hash["group"], String), T.cast(hash["name"], String), version]
         end
       end
 
       sig do
         params(declaration: T.any(String, T::Hash[String, String]))
-          .returns([String, String, T.any(String, T::Hash[String, String])])
+          .returns(T.nilable([String, String, T.any(String, T::Hash[String, String])]))
       end
       def details_for_plugin_dependency(declaration)
         if declaration.is_a?(String)
@@ -215,7 +223,10 @@ module Dependabot
           ["plugins", T.must(parts[0]), T.must(parts[1])]
         else
           decl_hash = declaration
-          ["plugins", T.must(decl_hash["id"]), T.must(decl_hash["version"])]
+          version = decl_hash["version"]
+          return nil if version.nil?
+
+          ["plugins", T.must(decl_hash["id"]), version]
         end
       end
 
