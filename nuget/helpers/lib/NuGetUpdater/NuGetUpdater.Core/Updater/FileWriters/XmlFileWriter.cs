@@ -35,19 +35,27 @@ public class XmlFileWriter : IFileWriter
         _logger = logger;
     }
 
-    public Task<bool> UpdatePackageVersionsAsync(DirectoryInfo repoContentsPath, ImmutableArray<string> relativeFilePaths, ImmutableArray<Dependency> originalDependencies, ImmutableArray<Dependency> requiredPackageVersions)
+    public async Task<bool> UpdatePackageVersionsAsync(DirectoryInfo repoContentsPath, ImmutableArray<string> relativeFilePaths, ImmutableArray<Dependency> originalDependencies, ImmutableArray<Dependency> requiredPackageVersions)
     {
         if (relativeFilePaths.IsDefaultOrEmpty)
         {
             _logger.Warn("No files to update; skipping XML update.");
-            return Task.FromResult(false);
+            return false;
         }
 
         var updatesPerformed = requiredPackageVersions.ToDictionary(d => d.Name, _ => false, StringComparer.OrdinalIgnoreCase);
         var projectRelativePath = relativeFilePaths[0];
-        var filesAndContents = relativeFilePaths
+        var filesAndContentsTasks = relativeFilePaths
             .Where(path => SupportedFileExtensions.Contains(Path.GetExtension(path)))
-            .ToDictionary(path => path, path => XDocument.Parse(ReadFileContents(repoContentsPath, path)));
+            .Select(async path =>
+            {
+                var content = await ReadFileContentsAsync(repoContentsPath, path);
+                var document = XDocument.Parse(content);
+                return KeyValuePair.Create(path, document);
+            })
+            .ToArray();
+        var filesAndContents = (await Task.WhenAll(filesAndContentsTasks))
+            .ToDictionary();
         foreach (var requiredPackageVersion in requiredPackageVersions)
         {
             var oldVersionString = originalDependencies.FirstOrDefault(d => d.Name.Equals(requiredPackageVersion.Name, StringComparison.OrdinalIgnoreCase))?.Version;
@@ -306,24 +314,24 @@ public class XmlFileWriter : IFileWriter
         {
             foreach (var (path, contents) in filesAndContents)
             {
-                WriteFileContents(repoContentsPath, path, contents.ToString());
+                await WriteFileContentsAsync(repoContentsPath, path, contents.ToString());
             }
         }
 
-        return Task.FromResult(performedAllUpdates);
+        return performedAllUpdates;
     }
 
-    private string ReadFileContents(DirectoryInfo repoContentsPath, string path)
+    private static async Task<string> ReadFileContentsAsync(DirectoryInfo repoContentsPath, string path)
     {
         var fullPath = Path.Join(repoContentsPath.FullName, path);
-        var contents = File.ReadAllText(fullPath);
+        var contents = await File.ReadAllTextAsync(fullPath);
         return contents;
     }
 
-    private void WriteFileContents(DirectoryInfo repoContentsPath, string path, string contents)
+    private static async Task WriteFileContentsAsync(DirectoryInfo repoContentsPath, string path, string contents)
     {
         var fullPath = Path.Join(repoContentsPath.FullName, path);
-        File.WriteAllText(fullPath, contents);
+        await File.WriteAllTextAsync(fullPath, contents);
     }
 
     public static string CreateUpdatedVersionRangeString(VersionRange existingRange, NuGetVersion existingVersion, NuGetVersion requiredVersion)
