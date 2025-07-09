@@ -486,6 +486,49 @@ public class XmlFileWriterTests : FileWriterTestsBase
         );
     }
 
+    [Fact]
+    public async Task SingleDependency_SingleFile_GlobalPackageReference()
+    {
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk" />
+                    """),
+                ("Directory.Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <SomeDependencyVersion>1.0.0</SomeDependencyVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <GlobalPackageReference Include="Ignored.Dependency" Version="7.0.0" />
+                        <GlobalPackageReference Include="Some.Dependency" Version="$(SomeDependencyVersion)" />
+                        <GlobalPackageReference Include="Some.Other.Dependency" Version="8.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/2.0.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk" />
+                    """),
+                ("Directory.Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <SomeDependencyVersion>2.0.0</SomeDependencyVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <GlobalPackageReference Include="Ignored.Dependency" Version="7.0.0" />
+                        <GlobalPackageReference Include="Some.Dependency" Version="$(SomeDependencyVersion)" />
+                        <GlobalPackageReference Include="Some.Other.Dependency" Version="8.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
     [Theory]
     [InlineData("$(SomeDependencyVersion")] // missing close paren
     [InlineData("$SomeDependencyVersion)")] // missing open paren

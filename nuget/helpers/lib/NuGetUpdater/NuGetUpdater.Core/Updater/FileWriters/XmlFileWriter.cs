@@ -14,6 +14,7 @@ public class XmlFileWriter : IFileWriter
     private const string VersionOverrideMetadataName = "VersionOverride";
 
     private const string ItemGroupElementName = "ItemGroup";
+    private const string GlobalPackageReferenceElementName = "GlobalPackageReference";
     private const string PackageReferenceElementName = "PackageReference";
     private const string PackageVersionElementName = "PackageVersion";
     private const string PropertyGroupElementName = "PropertyGroup";
@@ -81,7 +82,7 @@ public class XmlFileWriter : IFileWriter
             Action<string>? updateVersionLocation = null;
 
             var packageReferenceElements = filesAndContents.Values
-                .SelectMany(doc => doc.Descendants().Where(e => e.Name.LocalName == PackageReferenceElementName))
+                .SelectMany(doc => doc.Descendants().Where(e => e.Name.LocalName == PackageReferenceElementName || e.Name.LocalName == GlobalPackageReferenceElementName))
                 .Where(e =>
                 {
                     var attributeValue = e.Attribute(IncludeAttributeName)?.Value ?? e.Attribute(UpdateAttributeName)?.Value ?? string.Empty;
