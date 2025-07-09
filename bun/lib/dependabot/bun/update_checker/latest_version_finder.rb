@@ -200,11 +200,8 @@ module Dependabot
             secure_versions = filter_ignored_versions(secure_versions)
             secure_versions = filter_lower_versions(secure_versions)
 
-            # Apply lazy filtering for yanked versions (min or max logic)
-            secure_versions = lazy_filter_yanked_versions_by_min_max(secure_versions, check_max: false)
-
             # Return the lowest non-yanked version
-            secure_versions.max_by(&:version)&.version
+            secure_versions.sort_by(&:version).find { |release| !yanked_version?(release.version) }&.version
           end
         end
 
