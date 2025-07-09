@@ -120,8 +120,7 @@ public class XmlFileWriter : IFileWriter
                 var lastPriorPackageReference = packageReferencesBeforeNew.LastOrDefault();
                 if (lastPriorPackageReference is not null)
                 {
-                    var indent = GetIndentXTextFromElement(lastPriorPackageReference);
-                    lastPriorPackageReference.AddAfterSelf(indent, newElement);
+                    AddAfterSiblingElement(lastPriorPackageReference, newElement);
                 }
                 else
                 {
@@ -170,8 +169,7 @@ public class XmlFileWriter : IFileWriter
                         if (lastPriorPackageVersionElement is not null)
                         {
                             _logger.Info($"Adding new `<{PackageVersionElementName}>` element for {requiredPackageVersion.Name} with version {requiredVersion}.");
-                            var indent = GetIndentXTextFromElement(lastPriorPackageVersionElement);
-                            lastPriorPackageVersionElement.AddAfterSelf(indent, newVersionElement);
+                            AddAfterSiblingElement(lastPriorPackageVersionElement, newVersionElement);
                         }
                         else
                         {
@@ -339,6 +337,47 @@ public class XmlFileWriter : IFileWriter
             ? new XText(indentText + extraIndentationToAdd)
             : null;
         return indent;
+    }
+
+    private static void AddAfterSiblingElement(XElement siblingElement, XElement newElement, string extraIndentationToAdd = "")
+    {
+        var indent = GetIndentXTextFromElement(siblingElement, extraIndentationToAdd);
+        XNode nodeToAddAfter = siblingElement;
+        var done = false;
+        while (!done && nodeToAddAfter.NextNode is not null)
+        {
+            // skip over XText and XComment nodes until we find a newline
+            switch (nodeToAddAfter.NextNode)
+            {
+                case XText text:
+                    if (text.Value.Contains('\n'))
+                    {
+                        done = true;
+                    }
+                    else
+                    {
+                        nodeToAddAfter = nodeToAddAfter.NextNode;
+                    }
+
+                    break;
+                case XComment comment:
+                    if (comment.Value.Contains('\n'))
+                    {
+                        done = true;
+                    }
+                    else
+                    {
+                        nodeToAddAfter = nodeToAddAfter.NextNode;
+                    }
+
+                    break;
+                default:
+                    done = true;
+                    break;
+            }
+        }
+
+        nodeToAddAfter.AddAfterSelf(indent, newElement);
     }
 
     private static async Task<string> ReadFileContentsAsync(DirectoryInfo repoContentsPath, string path)
