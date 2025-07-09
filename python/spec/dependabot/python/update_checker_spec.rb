@@ -446,7 +446,9 @@ RSpec.describe Dependabot::Python::UpdateChecker do
             .twice
             .and_return(Gem::Version.new("2.5.0"), Gem::Version.new("2.6.0"))
           expect(checker.latest_resolvable_version).to eq(Gem::Version.new("2.5.0"))
-          expect(checker.latest_resolvable_version).to eq(Gem::Version.new("2.6.0"))      end
+          expect(checker.latest_resolvable_version).to eq(Gem::Version.new("2.6.0"))
+        end
+      end
     end
   end
 
