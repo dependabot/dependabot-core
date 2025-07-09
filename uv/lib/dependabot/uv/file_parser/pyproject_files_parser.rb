@@ -29,7 +29,7 @@ module Dependabot
         def dependency_set
           dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
-          dependency_set += pyproject_dependencies if using_poetry? || using_pep621?
+          dependency_set += pyproject_dependencies if using_poetry? || using_pep621?  || using_pep735?
           dependency_set += lockfile_dependencies if using_poetry? && lockfile
 
           dependency_set
@@ -45,7 +45,7 @@ module Dependabot
           if using_poetry?
             poetry_dependencies
           else
-            pep621_dependencies
+            pep621_pep735_dependencies
           end
         end
 
@@ -71,7 +71,7 @@ module Dependabot
         end
 
         sig { returns(Dependabot::FileParsers::Base::DependencySet) }
-        def pep621_dependencies
+        def pep621_pep735_dependencies
           dependencies = Dependabot::FileParsers::Base::DependencySet.new
 
           # PDM is not yet supported, so we want to ignore it for now because in
@@ -170,6 +170,11 @@ module Dependabot
           !parsed_pyproject.dig("project", "dependencies").nil? ||
             !parsed_pyproject.dig("project", "optional-dependencies").nil? ||
             !parsed_pyproject.dig("build-system", "requires").nil?
+        end
+
+        sig { returns(T::Boolean) }
+        def using_pep735?
+          !parsed_pyproject.dig("dependency-groups").nil? ||
         end
 
         sig { returns(T.nilable(T::Hash[String, T.untyped])) }
