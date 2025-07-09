@@ -1,0 +1,17 @@
+[project]
+name = "my-project"
+version = "0.1.0"
+description = "Test UV path dependencies"
+requires-python = ">=3.9"
+dependencies = [
+    "requests>=2.31.0",
+    "protos",
+]
+
+[tool.uv.sources]
+protos = { path = "../protos" }
+another-local = { path = "local-lib", editable = true }
+
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
