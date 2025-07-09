@@ -478,6 +478,15 @@ RSpec.describe Dependabot::UpdateFilesCommand do
 
         perform_job
       end
+
+      it "does not emit a create_dependency_submission call if the job is a Security update" do
+        job_definition["job"]["security_updates_only"] = true
+        job_definition["job"]["dependencies"] = ["octokit"]
+
+        expect(service).not_to receive(:create_dependency_submission)
+
+        perform_job
+      end
     end
 
     describe "#perform_job when it is disabled" do
