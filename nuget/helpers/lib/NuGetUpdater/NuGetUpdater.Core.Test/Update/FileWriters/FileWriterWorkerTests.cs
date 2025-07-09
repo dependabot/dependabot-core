@@ -351,7 +351,7 @@ public class FileWriterWorkerTests : TestBase
     }
 
     [Fact]
-    public async Task EndToEnd_DotNetTools()
+    public async Task EndToEnd_DotNetTools_UpdatePerformed()
     {
         // project is unchanged but `.config/dotnet-tools.json` is updated
         await TestAsync(
@@ -432,6 +432,77 @@ public class FileWriterWorkerTests : TestBase
             expectedOperations: [
                 new DirectUpdate() { DependencyName = "Some.DotNet.Tool", OldVersion = NuGetVersion.Parse("1.0.0"), NewVersion = NuGetVersion.Parse("1.1.0"), UpdatedFiles = ["/.config/dotnet-tools.json"] }
             ]
+        );
+    }
+
+    [Fact]
+    public async Task EndToEnd_DotNetTools_NoUpdatePerformed()
+    {
+        // `.config/dotnet-tools.json` doesn't have the requested tool, so no update is performed
+        await TestAsync(
+            dependencyName: "Some.DotNet.Tool",
+            oldDependencyVersion: "1.0.0",
+            newDependencyVersion: "1.1.0",
+            projectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net9.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Some.Dependency" Version="1.0.0" />
+                  </ItemGroup>
+                </Project>
+                """,
+            additionalFiles: [
+                (".config/dotnet-tools.json", """
+                    {
+                      "version": 1,
+                      "isRoot": true,
+                      "tools": {
+                        "some-other-tool": {
+                          "version": "2.1.3",
+                          "commands": [
+                            "some-other-tool"
+                          ]
+                        }
+                      }
+                    }
+                    """)
+            ],
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Some.Dependency", "1.0.0", "net9.0"),
+                MockNuGetPackage.CreateDotNetToolPackage("Some.DotNet.Tool", "1.0.0", "net9.0"),
+                MockNuGetPackage.CreateDotNetToolPackage("Some.DotNet.Tool", "1.1.0", "net9.0"),
+            ],
+            discoveryWorker: null, // use real worker
+            dependencySolver: null, // use real worker
+            fileWriter: null, // use real worker
+            expectedProjectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net9.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Some.Dependency" Version="1.0.0" />
+                  </ItemGroup>
+                </Project>
+                """,
+            expectedAdditionalFiles: [
+                (".config/dotnet-tools.json", """
+                    {
+                      "version": 1,
+                      "isRoot": true,
+                      "tools": {
+                        "some-other-tool": {
+                          "version": "2.1.3",
+                          "commands": [
+                            "some-other-tool"
+                          ]
+                        }
+                      }
+                    }
+                    """)],
+            expectedOperations: []
         );
     }
 
