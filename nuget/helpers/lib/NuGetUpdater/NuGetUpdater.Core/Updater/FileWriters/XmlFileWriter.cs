@@ -120,19 +120,13 @@ public class XmlFileWriter : IFileWriter
                 var lastPriorPackageReference = packageReferencesBeforeNew.LastOrDefault();
                 if (lastPriorPackageReference is not null)
                 {
-                    var indentText = (lastPriorPackageReference.PreviousNode as XText)?.Value;
-                    var indent = indentText is not null
-                        ? new XText(indentText)
-                        : null;
+                    var indent = GetIndentXTextFromElement(lastPriorPackageReference);
                     lastPriorPackageReference.AddAfterSelf(indent, newElement);
                 }
                 else
                 {
                     // no prior package references; add to the front
-                    var indentText = (lastItemGroup.PreviousNode as XText)?.Value;
-                    var indent = indentText is not null
-                        ? new XText(indentText + "  ")
-                        : null;
+                    var indent = GetIndentXTextFromElement(lastItemGroup, extraIndentationToAdd: "  ");
                     lastItemGroup.AddFirst(indent, newElement);
                 }
 
@@ -176,10 +170,7 @@ public class XmlFileWriter : IFileWriter
                         if (lastPriorPackageVersionElement is not null)
                         {
                             _logger.Info($"Adding new `<{PackageVersionElementName}>` element for {requiredPackageVersion.Name} with version {requiredVersion}.");
-                            var indentText = (lastPriorPackageVersionElement.PreviousNode as XText)?.Value;
-                            var indent = indentText is not null
-                                ? new XText(indentText)
-                                : null;
+                            var indent = GetIndentXTextFromElement(lastPriorPackageVersionElement);
                             lastPriorPackageVersionElement.AddAfterSelf(indent, newVersionElement);
                         }
                         else
@@ -187,10 +178,7 @@ public class XmlFileWriter : IFileWriter
                             // no prior package versions; add to the front of the document
                             _logger.Info($"Adding new `<{PackageVersionElementName}>` element for {requiredPackageVersion.Name} with version {requiredVersion} at the start of the document.");
                             var packageVersionGroup = allPackageVersionElements.First().Parent!;
-                            var indentText = (packageVersionGroup.PreviousNode as XText)?.Value;
-                            var indent = indentText is not null
-                                ? new XText(indentText + "  ")
-                                : null;
+                            var indent = GetIndentXTextFromElement(packageVersionGroup, extraIndentationToAdd: "  ");
                             packageVersionGroup.AddFirst(indent, newVersionElement);
                         }
                     }
@@ -342,6 +330,15 @@ public class XmlFileWriter : IFileWriter
         }
 
         return performedAllUpdates;
+    }
+
+    private static XText? GetIndentXTextFromElement(XElement element, string extraIndentationToAdd = "")
+    {
+        var indentText = (element.PreviousNode as XText)?.Value;
+        var indent = indentText is not null
+            ? new XText(indentText + extraIndentationToAdd)
+            : null;
+        return indent;
     }
 
     private static async Task<string> ReadFileContentsAsync(DirectoryInfo repoContentsPath, string path)
