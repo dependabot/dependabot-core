@@ -50,7 +50,7 @@ public class XmlFileWriter : IFileWriter
             .Select(async path =>
             {
                 var content = await ReadFileContentsAsync(repoContentsPath, path);
-                var document = XDocument.Parse(content);
+                var document = XDocument.Parse(content, LoadOptions.PreserveWhitespace);
                 return KeyValuePair.Create(path, document);
             })
             .ToArray();
@@ -119,12 +119,20 @@ public class XmlFileWriter : IFileWriter
                 var lastPriorPackageReference = packageReferencesBeforeNew.LastOrDefault();
                 if (lastPriorPackageReference is not null)
                 {
-                    lastPriorPackageReference.AddAfterSelf(newElement);
+                    var indentText = (lastPriorPackageReference.PreviousNode as XText)?.Value;
+                    var indent = indentText is not null
+                        ? new XText(indentText)
+                        : null;
+                    lastPriorPackageReference.AddAfterSelf(indent, newElement);
                 }
                 else
                 {
                     // no prior package references; add to the front
-                    lastItemGroup.AddFirst(newElement);
+                    var indentText = (lastItemGroup.PreviousNode as XText)?.Value;
+                    var indent = indentText is not null
+                        ? new XText(indentText + "  ")
+                        : null;
+                    lastItemGroup.AddFirst(indent, newElement);
                 }
 
                 // ...find the best place to add the version...
@@ -167,13 +175,22 @@ public class XmlFileWriter : IFileWriter
                         if (lastPriorPackageVersionElement is not null)
                         {
                             _logger.Info($"Adding new `<{PackageVersionElementName}>` element for {requiredPackageVersion.Name} with version {requiredVersion}.");
-                            lastPriorPackageVersionElement.AddAfterSelf(newVersionElement);
+                            var indentText = (lastPriorPackageVersionElement.PreviousNode as XText)?.Value;
+                            var indent = indentText is not null
+                                ? new XText(indentText)
+                                : null;
+                            lastPriorPackageVersionElement.AddAfterSelf(indent, newVersionElement);
                         }
                         else
                         {
                             // no prior package versions; add to the front of the document
                             _logger.Info($"Adding new `<{PackageVersionElementName}>` element for {requiredPackageVersion.Name} with version {requiredVersion} at the start of the document.");
-                            allPackageVersionElements.First().AddBeforeSelf(newVersionElement);
+                            var packageVersionGroup = allPackageVersionElements.First().Parent!;
+                            var indentText = (packageVersionGroup.PreviousNode as XText)?.Value;
+                            var indent = indentText is not null
+                                ? new XText(indentText + "  ")
+                                : null;
+                            packageVersionGroup.AddFirst(indent, newVersionElement);
                         }
                     }
                     else
