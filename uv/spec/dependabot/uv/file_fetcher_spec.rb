@@ -816,7 +816,7 @@ RSpec.describe Dependabot::Uv::FileFetcher do
           path_deps = file_fetcher_instance.send(:uv_sources_path_dependencies)
           expect(path_deps).to contain_exactly(
             { name: "protos", path: "../protos", file: "pyproject.toml" },
-            { name: "another-local", path: "./local-lib", file: "pyproject.toml" }
+            { name: "another-local", path: "local-lib", file: "pyproject.toml" }
           )
         end
 

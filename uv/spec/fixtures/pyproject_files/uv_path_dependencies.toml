@@ -10,7 +10,7 @@ dependencies = [
 
 [tool.uv.sources]
 protos = { path = "../protos" }
-another-local = { path = "./local-lib", editable = true }
+another-local = { path = "local-lib", editable = true }
 
 [build-system]
 requires = ["setuptools>=42", "wheel"]
