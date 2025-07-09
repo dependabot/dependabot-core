@@ -40,17 +40,7 @@ module Dependabot
         #
         # We only want to run this experiment on Version Updates as Security Updates are downstream of
         # Dependency Submission so this could create an unhelpful feedback loop.
-        if Dependabot::Experiments.enabled?(:enable_dependency_submission_poc) && !job.security_updates_only?
-          submission = GithubApi::DependencySubmission.new(
-            job: job,
-            snapshot: dependency_snapshot
-          )
-
-          Dependabot.logger.debug("Dependency submission payload:")
-          Dependabot.logger.debug(JSON.pretty_generate(submission.payload))
-
-          service.create_dependency_submission(submission)
-        end
+        dependency_submission_experiment(dependency_snapshot) unless job.security_updates_only?
 
         # TODO: Pull fatal error handling handling up into this class
         #
@@ -167,6 +157,20 @@ module Dependabot
         error_type: T.must(error_details).fetch(:"error-type"),
         error_details: T.must(error_details)[:"error-detail"]
       )
+    end
+
+    def dependency_submission_experiment(dependency_snapshot)
+      return unless Dependabot::Experiments.enabled?(:enable_dependency_submission_poc)
+
+      submission = GithubApi::DependencySubmission.new(
+        job: job,
+        snapshot: dependency_snapshot
+      )
+
+      Dependabot.logger.debug("Dependency submission payload:")
+      Dependabot.logger.debug(JSON.pretty_generate(submission.payload))
+
+      service.create_dependency_submission(submission)
     end
   end
 end

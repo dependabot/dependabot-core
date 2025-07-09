@@ -456,8 +456,8 @@ RSpec.describe Dependabot::UpdateFilesCommand do
   #
   # This functionality should ideally be a separate binary, we are attaching it
   # to existing updates during POC work
-  context "experiment: enable_dependency_submission_poc" do
-    describe "#perform_job when it is enabled" do
+  describe "experiment: enable_dependency_submission_poc" do
+    context "when it is enabled" do
       subject(:perform_job) { job.perform_job }
 
       before do
@@ -489,7 +489,7 @@ RSpec.describe Dependabot::UpdateFilesCommand do
       end
     end
 
-    describe "#perform_job when it is disabled" do
+    context "when it is disabled" do
       subject(:perform_job) { job.perform_job }
 
       before do
