@@ -13,6 +13,7 @@ module Dependabot
       extend T::Sig
 
       NAME = "composer"
+      PUBLIC_REGISTRY_URL = "https://packagist.org"
       MANIFEST_FILENAME = "composer.json"
       LOCKFILE_FILENAME = "composer.lock"
       AUTH_FILENAME = "auth.json"
