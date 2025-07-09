@@ -37,7 +37,10 @@ module Dependabot
         service.update_dependency_list(dependency_snapshot: dependency_snapshot)
 
         # POC: Emit the dependency data formatted for the GitHub Dependency Submission API
-        if Dependabot::Experiments.enabled?(:enable_dependency_submission_poc)
+        #
+        # We only want to run this experiment on Version Updates as Security Updates are downstream of
+        # Dependency Submission so this could create an unhelpful feedback loop.
+        if Dependabot::Experiments.enabled?(:enable_dependency_submission_poc) && !job.security_updates_only?
           submission = GithubApi::DependencySubmission.new(
             job: job,
             snapshot: dependency_snapshot
