@@ -102,6 +102,35 @@ public class XmlFileWriterTests : FileWriterTestsBase
     }
 
     [Fact]
+    public async Task SingleDependency_SingleFile_AttributeDirectUpdate_MultipleSemicolonSeparatedPackages()
+    {
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="Ignored.Dependency" Version="7.0.0" />
+                        <PackageReference Include=" Some.Dependency ; Some.Other.Dependency " Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/2.0.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="Ignored.Dependency" Version="7.0.0" />
+                        <PackageReference Include=" Some.Dependency ; Some.Other.Dependency " Version="2.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
     public async Task SingleDependency_SingleFile_AttributeDirectUpdate_FourPartVersionNumber()
     {
         await TestAsync(
