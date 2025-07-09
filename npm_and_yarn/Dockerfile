@@ -7,7 +7,7 @@ ARG COREPACK_VERSION=0.33.0
 ARG PNPM_VERSION=10.11.1
 
 # Check for updates at https://github.com/yarnpkg/berry/releases
-ARG YARN_VERSION=4.7.0
+ARG YARN_VERSION=4.9.2
 
 # Check for updates at https://github.com/oven-sh/bun/releases
 ARG BUN_VERSION=1.2.5
