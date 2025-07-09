@@ -31,7 +31,7 @@ RSpec.describe Dependabot::Bun::UpdateChecker::VersionResolver do
   let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
   let(:group) { nil }
   let(:latest_version_finder) do
-    Dependabot::Bun::UpdateChecker::LatestVersionFinder.new(
+    Dependabot::Bun::UpdateChecker::PackageLatestVersionFinder.new(
       dependency: dependency,
       dependency_files: dependency_files,
       credentials: credentials,
@@ -60,9 +60,6 @@ RSpec.describe Dependabot::Bun::UpdateChecker::VersionResolver do
     fixture("npm_responses", "opentelemetry-context-async-hooks.json")
   end
 
-  # Variable to control the enabling feature flag for the cooldown
-  let(:enable_cooldown_for_bun) { true }
-
   before do
     stub_request(:get, react_dom_registry_listing_url)
       .to_return(status: 200, body: react_dom_registry_response)
@@ -78,8 +75,6 @@ RSpec.describe Dependabot::Bun::UpdateChecker::VersionResolver do
       .to_return(status: 200, body: opentelemetry_context_async_hooks_registry_response)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_shared_helpers_command_timeout).and_return(true)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_cooldown_for_bun).and_return(enable_cooldown_for_bun)
   end
 
   after do

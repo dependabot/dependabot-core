@@ -56,9 +56,6 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
   let(:registry_listing_url) { "#{registry_base}/#{escaped_dependency_name}" }
   let(:registry_base) { "https://registry.npmjs.org" }
 
-  # Variable to control the enabling feature flag for the cooldown
-  let(:enable_cooldown_for_bun) { true }
-
   before do
     stub_request(:get, registry_listing_url)
       .to_return(status: 200, body: registry_response)
@@ -66,8 +63,6 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
       .to_return(status: 200)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_shared_helpers_command_timeout).and_return(true)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_cooldown_for_bun).and_return(enable_cooldown_for_bun)
   end
 
   after do
@@ -296,27 +291,16 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
 
     let(:dependency_files) { project_dependency_files("javascript/no_lockfile") }
 
-    it "delegates to (Package)LatestVersionFinder" do
-      if Dependabot::Experiments.enabled?(:enable_cooldown_for_bun)
-        expect(described_class::PackageLatestVersionFinder).to receive(:new).with(
-          dependency: dependency,
-          credentials: credentials,
-          dependency_files: dependency_files,
-          ignored_versions: ignored_versions,
-          raise_on_ignored: false,
-          security_advisories: security_advisories,
-          cooldown_options: nil
-        ).and_call_original
-      else
-        expect(described_class::LatestVersionFinder).to receive(:new).with(
-          dependency: dependency,
-          credentials: credentials,
-          dependency_files: dependency_files,
-          ignored_versions: ignored_versions,
-          raise_on_ignored: false,
-          security_advisories: security_advisories
-        ).and_call_original
-      end
+    it "delegates to PackageLatestVersionFinder" do
+      expect(described_class::PackageLatestVersionFinder).to receive(:new).with(
+        dependency: dependency,
+        credentials: credentials,
+        dependency_files: dependency_files,
+        ignored_versions: ignored_versions,
+        raise_on_ignored: false,
+        security_advisories: security_advisories,
+        cooldown_options: nil
+      ).and_call_original
 
       expect(checker.latest_version).to eq(Dependabot::Bun::Version.new("1.7.0"))
     end
@@ -762,27 +746,16 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
       end
       let(:req_string) { "^1.0.0" }
 
-      it "delegates to LatestVersionFinder" do
-        if Dependabot::Experiments.enabled?(:enable_cooldown_for_bun)
-          expect(described_class::PackageLatestVersionFinder).to receive(:new).with(
-            dependency: dependency,
-            credentials: credentials,
-            dependency_files: dependency_files,
-            ignored_versions: ignored_versions,
-            raise_on_ignored: false,
-            security_advisories: security_advisories,
-            cooldown_options: nil
-          ).and_call_original
-        else
-          expect(described_class::LatestVersionFinder).to receive(:new).with(
-            dependency: dependency,
-            credentials: credentials,
-            dependency_files: dependency_files,
-            ignored_versions: ignored_versions,
-            raise_on_ignored: false,
-            security_advisories: security_advisories
-          ).and_call_original
-        end
+      it "delegates to PackageLatestVersionFinder" do
+        expect(described_class::PackageLatestVersionFinder).to receive(:new).with(
+          dependency: dependency,
+          credentials: credentials,
+          dependency_files: dependency_files,
+          ignored_versions: ignored_versions,
+          raise_on_ignored: false,
+          security_advisories: security_advisories,
+          cooldown_options: nil
+        ).and_call_original
 
         expect(checker.latest_resolvable_version_with_no_unlock)
           .to eq(Dependabot::Bun::Version.new("1.7.0"))
@@ -909,14 +882,7 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
     let(:updated_version) { Dependabot::Bun::Version.new("1.7.0") }
 
     it "delegates to VersionResolver" do
-      dummy_version_resolver =
-        instance_double(described_class::VersionResolver)
-
-      latest_version_finder = if Dependabot::Experiments.enabled?(:enable_cooldown_for_bun)
-                                described_class::PackageLatestVersionFinder
-                              else
-                                described_class::LatestVersionFinder
-                              end
+      dummy_version_resolver = instance_double(described_class::VersionResolver)
 
       expect(described_class::VersionResolver)
         .to receive(:new)
@@ -924,7 +890,7 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
           dependency: dependency,
           credentials: credentials,
           dependency_files: dependency_files,
-          latest_version_finder: latest_version_finder,
+          latest_version_finder: described_class::PackageLatestVersionFinder,
           latest_allowable_version: updated_version,
           repo_contents_path: nil,
           dependency_group: nil,
@@ -1326,14 +1292,7 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
     end
 
     it "delegates to the VersionResolver" do
-      dummy_version_resolver =
-        instance_double(described_class::VersionResolver)
-
-      latest_version_finder = if Dependabot::Experiments.enabled?(:enable_cooldown_for_bun)
-                                described_class::PackageLatestVersionFinder
-                              else
-                                described_class::LatestVersionFinder
-                              end
+      dummy_version_resolver = instance_double(described_class::VersionResolver)
 
       expect(described_class::VersionResolver)
         .to receive(:new)
@@ -1341,7 +1300,7 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
           dependency: dependency,
           credentials: credentials,
           dependency_files: dependency_files,
-          latest_version_finder: latest_version_finder,
+          latest_version_finder: described_class::PackageLatestVersionFinder,
           latest_allowable_version: Dependabot::Bun::Version.new("1.7.0"),
           repo_contents_path: nil,
           dependency_group: nil,
