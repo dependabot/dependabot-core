@@ -174,7 +174,7 @@ module Dependabot
 
         sig { returns(T::Boolean) }
         def using_pep735?
-          !parsed_pyproject.dig("dependency-groups").nil? ||
+          !parsed_pyproject.dig("dependency-groups").nil?
         end
 
         sig { returns(T.nilable(T::Hash[String, T.untyped])) }
