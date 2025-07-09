@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 # This class provides a data object that can be submitted to a repository's dependency submission
@@ -14,23 +14,34 @@ module GithubApi
     SNAPSHOT_DETECTOR_NAME = "dependabot"
     SNAPSHOT_DETECTOR_URL = "https://github.com/dependabot/dependabot-core"
 
+    sig { returns(String) }
     attr_reader :job_id
+    sig { returns(String) }
     attr_reader :ref
+    sig { returns(String) }
     attr_reader :sha
+    sig { returns(String) }
     attr_reader :directory
+    sig { returns(String) }
     attr_reader :package_manager
+    sig { returns(T::Hash[String, T.untyped]) }
     attr_reader :manifests
 
+    sig { params(job: Dependabot::Job, snapshot: Dependabot::DependencySnapshot).void }
     def initialize(job:, snapshot:)
-      @job_id = job.id.to_s
-      @ref = job.source.branch
-      @sha = snapshot.base_commit_sha
-      @directory = job.source.directory
-      @package_manager = job.package_manager
+      @job_id = T.let(job.id.to_s, String)
+      @ref = T.let(T.must(job.source.branch), String)
+      @sha = T.let(snapshot.base_commit_sha, String)
+      @directory = T.let(T.must(job.source.directory), String)
+      @package_manager = T.let(job.package_manager, String)
 
-      @manifests = build_manifests(snapshot)
+      @manifests = T.let(build_manifests(snapshot), T::Hash[String, T.untyped])
     end
 
+    # TODO: Change to a typed structure?
+    #
+    # See: https://sorbet.org/docs/tstruct
+    sig { returns(T::Hash[Symbol, T.untyped]) }
     def payload
       {
         version: SNAPSHOT_VERSION,
@@ -52,14 +63,17 @@ module GithubApi
 
     private
 
+    sig { returns(String) }
     def job_correlator
       "#{SNAPSHOT_DETECTOR_NAME}-experimental"
     end
 
+    sig { returns(String) }
     def scanned
       Time.now.utc.iso8601
     end
 
+    sig { params(snapshot: Dependabot::DependencySnapshot).returns(T::Hash[String, T.untyped]) }
     def build_manifests(snapshot)
       dependencies_by_manifest = {}
 
@@ -88,7 +102,7 @@ module GithubApi
             source_location: file_path
           },
           metadata: {
-            ecosystem: snapshot.ecosystem.name
+            ecosystem: T.must(snapshot.ecosystem).name
           },
           resolved: deps.uniq.each_with_object({}) do |dep, resolved|
             resolved[dep.name] = {
@@ -128,6 +142,7 @@ module GithubApi
     #
     # It probably makes more sense to assign this to a Dependabot::Dependency
     # when it is created so the ecosystem-specific parser can own this?
+    sig { params(dependency: Dependabot::Dependency).returns(String) }
     def build_purl(dependency)
       package_manager = dependency.package_manager
       name = dependency.name
