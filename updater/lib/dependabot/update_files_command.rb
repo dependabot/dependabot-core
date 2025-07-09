@@ -2,11 +2,14 @@
 # frozen_string_literal: true
 
 require "base64"
+require "json"
 require "dependabot/base_command"
 require "dependabot/dependency_snapshot"
 require "dependabot/errors"
 require "dependabot/opentelemetry"
 require "dependabot/updater"
+
+require "github_api/dependency_submission"
 
 module Dependabot
   class UpdateFilesCommand < BaseCommand
@@ -32,6 +35,19 @@ module Dependabot
 
         # Update the service's metadata about this project
         service.update_dependency_list(dependency_snapshot: dependency_snapshot)
+
+        # POC: Emit the dependency data formatted for the GitHub Dependency Submission API
+        if Dependabot::Experiments.enabled?(:enable_dependency_submission_poc)
+          submission = GithubApi::DependencySubmission.new(
+            job: job,
+            snapshot: dependency_snapshot
+          )
+
+          Dependabot.logger.debug("Dependency submission payload:")
+          Dependabot.logger.debug(JSON.pretty_generate(submission.payload))
+
+          service.create_dependency_submission(submission)
+        end
 
         # TODO: Pull fatal error handling handling up into this class
         #
