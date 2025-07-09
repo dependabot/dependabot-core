@@ -433,6 +433,20 @@ RSpec.describe Dependabot::Python::UpdateChecker do
             .to eq(Gem::Version.new("2.5.0"))
         end
       end
+
+      context "when including pep735 dependencies" do
+        let(:pyproject_fixture_name) { "pep735_exact_requirement.toml" }
+
+        it "resolves all dependencies in the dependency-groups" do
+          dummy_resolver = instance_double(described_class::PipVersionResolver)
+          allow(described_class::PipVersionResolver).to receive(:new)
+            .and_return(dummy_resolver)
+          expect(dummy_resolver)
+            .to receive(:latest_resolvable_version)
+            .twice
+            .and_return(Gem::Version.new("2.5.0"), Gem::Version.new("2.6.0"))
+          expect(checker.latest_resolvable_version).to eq(Gem::Version.new("2.5.0"))
+          expect(checker.latest_resolvable_version).to eq(Gem::Version.new("2.6.0"))      end
     end
   end
 
