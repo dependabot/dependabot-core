@@ -33,6 +33,7 @@ public class FileWriterWorker
     {
         var updateOperations = new List<UpdateOperationBase>();
         var projectDirectory = Path.GetDirectoryName(projectPath.FullName)!;
+        var projectDirectoryRelativeToRepoRoot = Path.GetRelativePath(repoContentsPath.FullName, projectDirectory).FullyNormalizedRootedPath();
 
         // first try non-project updates
         var updatedDotNetToolsPath = await DotNetToolsJsonUpdater.UpdateDependencyAsync(
@@ -99,7 +100,8 @@ public class FileWriterWorker
         }
 
         // then try project updates
-        var initialProjectDiscovery = await GetProjectDiscoveryResult(repoContentsPath, projectPath);
+        var initialDiscoveryResult = await _discoveryWorker.RunAsync(repoContentsPath.FullName, projectDirectoryRelativeToRepoRoot);
+        var initialProjectDiscovery = initialDiscoveryResult.GetProjectDiscoveryFromFullPath(repoContentsPath, projectPath);
         if (initialProjectDiscovery is null)
         {
             _logger.Info($"Unable to find project discovery for project {projectPath}.");
@@ -153,15 +155,25 @@ public class FileWriterWorker
                 continue;
             }
 
-            var updatedFiles = await TryPerformFileWritesAsync(repoContentsPath, projectPath, initialProjectDiscovery, resolvedDependencies.Value);
-            if (updatedFiles.Length == 0)
+            // process all projects bottom up
+            var orderedProjectDiscovery = GetProjectDiscoveryEvaluationOrder(repoContentsPath, initialDiscoveryResult, projectPath, _logger);
+            var allUpdatedFiles = new List<string>();
+            foreach (var projectDiscovery in orderedProjectDiscovery)
+            {
+                var projectFullPath = Path.Join(repoContentsPath.FullName, initialDiscoveryResult.Path, projectDiscovery.FilePath).FullyNormalizedRootedPath();
+                var updatedFiles = await TryPerformFileWritesAsync(repoContentsPath, new FileInfo(projectFullPath), projectDiscovery, resolvedDependencies.Value);
+                allUpdatedFiles.AddRange(updatedFiles);
+            }
+
+            if (allUpdatedFiles.Count == 0)
             {
                 _logger.Warn("Failed to write new dependency versions.");
                 continue;
             }
 
             // this final call to discover has the benefit of also updating the lock file if it exists
-            var finalProjectDiscovery = await GetProjectDiscoveryResult(repoContentsPath, projectPath);
+            var finalDiscoveryResult = await _discoveryWorker.RunAsync(repoContentsPath.FullName, projectDirectoryRelativeToRepoRoot);
+            var finalProjectDiscovery = finalDiscoveryResult.GetProjectDiscoveryFromFullPath(repoContentsPath, projectPath);
             if (finalProjectDiscovery is null)
             {
                 _logger.Warn($"Unable to find final project discovery for project {projectPath}.");
@@ -202,12 +214,50 @@ public class FileWriterWorker
                 })
                 .ToImmutableArray();
             var computedOperationsWithUpdatedFiles = filteredUpdateOperations
-                .Select(op => op with { UpdatedFiles = [.. updatedFiles] })
+                .Select(op => op with { UpdatedFiles = [.. allUpdatedFiles] })
                 .ToImmutableArray();
             updateOperations.AddRange(computedOperationsWithUpdatedFiles);
         }
 
         return [.. updateOperations];
+    }
+
+    internal static ImmutableArray<ProjectDiscoveryResult> GetProjectDiscoveryEvaluationOrder(DirectoryInfo repoContentsPath, WorkspaceDiscoveryResult discoveryResult, FileInfo projectPath, ILogger logger)
+    {
+        var visitedProjectPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var projectsToProcess = new Queue<ProjectDiscoveryResult>();
+        var startingProjectDiscovery = discoveryResult.GetProjectDiscoveryFromFullPath(repoContentsPath, projectPath);
+        if (startingProjectDiscovery is null)
+        {
+            logger.Warn($"Unable to find project discovery for project {projectPath.FullName} in discovery result.");
+            return [];
+        }
+
+        projectsToProcess.Enqueue(startingProjectDiscovery);
+
+        var reversedProjectDiscoveryOrder = new List<ProjectDiscoveryResult>();
+        while (projectsToProcess.TryDequeue(out var projectDiscovery))
+        {
+            var projectFullPath = Path.Join(repoContentsPath.FullName, discoveryResult.Path, projectDiscovery.FilePath).FullyNormalizedRootedPath();
+            if (visitedProjectPaths.Add(projectFullPath))
+            {
+                reversedProjectDiscoveryOrder.Add(projectDiscovery);
+                foreach (var referencedProjectPath in projectDiscovery.ReferencedProjectPaths)
+                {
+                    var referencedProjectFullPath = Path.Join(repoContentsPath.FullName, discoveryResult.Path, referencedProjectPath).FullyNormalizedRootedPath();
+                    var referencedProjectDiscovery = discoveryResult.GetProjectDiscoveryFromFullPath(repoContentsPath, new FileInfo(referencedProjectFullPath));
+                    if (referencedProjectDiscovery is not null)
+                    {
+                        projectsToProcess.Enqueue(referencedProjectDiscovery);
+                    }
+                }
+            }
+        }
+
+        var projectDiscoveryOrder = ((IEnumerable<ProjectDiscoveryResult>)reversedProjectDiscoveryOrder)
+            .Reverse()
+            .ToImmutableArray();
+        return projectDiscoveryOrder;
     }
 
     private async Task<ImmutableArray<string>> TryPerformFileWritesAsync(DirectoryInfo repoContentsPath, FileInfo projectPath, ProjectDiscoveryResult projectDiscovery, ImmutableArray<Dependency> requiredPackageVersions)
@@ -250,14 +300,5 @@ public class FileWriterWorker
 
         var sortedUpdatedFiles = updatedFiles.OrderBy(p => p, StringComparer.Ordinal);
         return [.. sortedUpdatedFiles];
-    }
-
-    private async Task<ProjectDiscoveryResult?> GetProjectDiscoveryResult(DirectoryInfo repoContentsPath, FileInfo projectPath)
-    {
-        var relativeProjectPath = Path.GetRelativePath(repoContentsPath.FullName, projectPath.FullName).NormalizePathToUnix();
-        var relativeProjectDirectory = Path.GetDirectoryName(relativeProjectPath)!;
-        var initialDiscoveryResult = await _discoveryWorker.RunAsync(repoContentsPath.FullName, relativeProjectDirectory);
-        var projectDiscovery = initialDiscoveryResult.Projects.FirstOrDefault(p => relativeProjectPath.Equals(Path.Join(initialDiscoveryResult.Path, p.FilePath).NormalizePathToUnix(), StringComparison.OrdinalIgnoreCase));
-        return projectDiscovery;
     }
 }
