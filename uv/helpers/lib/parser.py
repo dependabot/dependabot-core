@@ -95,7 +95,7 @@ def parse_pep621_dependencies(pyproject_path):
         uv_sources = project_toml['tool']['uv']['sources']
         for dep_name, source_config in uv_sources.items():
             if isinstance(source_config, dict) and 'path' in source_config:
-                # Add path dependency info 
+                # Add path dependency info
                 # but don't parse as regular dependency
                 dependencies.append({
                     "name": dep_name,
