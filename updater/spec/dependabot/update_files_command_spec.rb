@@ -451,4 +451,51 @@ RSpec.describe Dependabot::UpdateFilesCommand do
       end
     end
   end
+
+  # NOTE: This experiment is currently attached to the update_files_command
+  #
+  # This functionality should ideally be a separate binary, we are attaching it
+  # to existing updates during POC work
+  context "experiment: enable_dependency_submission_poc" do
+    describe "#perform_job when it is enabled" do
+      subject(:perform_job) { job.perform_job }
+
+      before do
+        Dependabot::Experiments.register(:enable_dependency_submission_poc, true)
+      end
+
+      after do
+        Dependabot::Experiments.reset!
+      end
+
+      it "emits a create_dependency_submission call to the Dependabot service" do
+        expect(service).to receive(:create_dependency_submission) do |dependency_submission|
+          expect(dependency_submission).to be_a(GithubApi::DependencySubmission)
+
+          expect(dependency_submission.job_id).to eql(job_id)
+          expect(dependency_submission.package_manager).to eql("bundler")
+        end
+
+        perform_job
+      end
+    end
+
+    describe "#perform_job when it is disabled" do
+      subject(:perform_job) { job.perform_job }
+
+      before do
+        Dependabot::Experiments.register(:enable_dependency_submission_poc, false)
+      end
+
+      after do
+        Dependabot::Experiments.reset!
+      end
+
+      it "does not emits a create_dependency_submission call to the Dependabot service" do
+        expect(service).not_to receive(:create_dependency_submission)
+
+        perform_job
+      end
+    end
+  end
 end
