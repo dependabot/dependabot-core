@@ -58,7 +58,12 @@ def parse_pep621_pep735_dependencies(pyproject_path):
 
         return requirement_packages
 
-    def parse_toml_section_pep735_dependencies(pyproject_path, dependency_groups, group_name, visited=None):
+    def parse_toml_section_pep735_dependencies(
+        pyproject_path,
+        dependency_groups,
+        group_name,
+        visited=None,
+    ):
         requirement_packages = []
         visited = visited or set()
 
@@ -77,7 +82,10 @@ def parse_pep621_pep735_dependencies(pyproject_path):
                 included_group = entry["include-group"]
                 requirement_packages.extend(
                     parse_toml_section_pep735_dependencies(
-                        pyproject_path, dependency_groups, included_group, visited
+                        pyproject_path,
+                        dependency_groups,
+                        included_group,
+                        visited
                     )
                 )
 
