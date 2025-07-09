@@ -616,7 +616,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
 
     it "parses the npm lockfile" do
       expect(file_fetcher_instance.ecosystem_versions).to eq(
-        { package_managers: { "npm" => 8 } }
+        { package_managers: { "npm" => 10 } }
       )
     end
   end
@@ -653,7 +653,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
 
     it "parses the package manager version" do
       expect(file_fetcher_instance.ecosystem_versions).to eq(
-        { package_managers: { "npm" => 8, "yarn" => 1 } }
+        { package_managers: { "npm" => 10, "yarn" => 1 } }
       )
     end
   end

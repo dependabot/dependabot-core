@@ -46,7 +46,9 @@ module Dependabot
         return unless dependency_file.content
 
         begin
-          contents = JSON.parse(T.must(dependency_file.content))
+          # Remove UTF-8 BOM if present
+          content = T.must(dependency_file.content).delete_prefix("\uFEFF")
+          contents = JSON.parse(content)
         rescue JSON::ParserError
           raise Dependabot::DependencyFileNotParseable, T.must(dependency_files.first).path
         end
@@ -101,7 +103,9 @@ module Dependabot
       def sdk_version
         @sdk_version ||= T.let(
           config_dependency_files.filter_map do |dependency_file|
-            contents = JSON.parse(T.must(dependency_file.content))
+            # Remove UTF-8 BOM if present
+            content = T.must(dependency_file.content).delete_prefix("\uFEFF")
+            contents = JSON.parse(content)
             contents.dig("sdk", "version")
           rescue JSON::ParserError
             raise Dependabot::DependencyFileNotParseable, dependency_file.path

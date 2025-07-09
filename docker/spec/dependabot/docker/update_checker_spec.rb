@@ -1479,10 +1479,6 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       end
 
       before do
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:enable_cooldown_for_docker)
-          .and_return(true)
-
         new_headers =
           fixture("docker", "registry_manifest_headers", "generic.json")
         stub_request(:head, repo_url + "manifests/17.10")

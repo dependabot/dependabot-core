@@ -381,8 +381,6 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
       before do
         allow(Dependabot::Experiments).to receive(:enabled?)
           .with(:enable_shared_helpers_command_timeout).and_return(false)
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:enable_cooldown_for_gomodules).and_return(true)
         allow(Dependabot::SharedHelpers)
           .to receive(:run_shell_command).and_call_original
 
@@ -417,8 +415,6 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
       before do
         allow(Dependabot::Experiments).to receive(:enabled?)
           .with(:enable_shared_helpers_command_timeout).and_return(false)
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:enable_cooldown_for_gomodules).and_return(true)
         allow(Dependabot::SharedHelpers)
           .to receive(:run_shell_command).and_call_original
 
@@ -453,8 +449,6 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
       before do
         allow(Dependabot::Experiments).to receive(:enabled?)
           .with(:enable_shared_helpers_command_timeout).and_return(false)
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:enable_cooldown_for_gomodules).and_return(true)
         allow(Dependabot::SharedHelpers)
           .to receive(:run_shell_command).and_call_original
       end
