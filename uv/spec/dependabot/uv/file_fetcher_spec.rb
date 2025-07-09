@@ -822,8 +822,8 @@ RSpec.describe Dependabot::Uv::FileFetcher do
 
         it "includes UV sources in path_dependencies method" do
           # Mock other path dependency methods to return empty arrays for isolation
-          allow(file_fetcher_instance).to receive(:requirement_txt_path_dependencies).and_return([])
-          allow(file_fetcher_instance).to receive(:requirement_in_path_dependencies).and_return([])
+          allow(file_fetcher_instance).to receive_messages(requirement_txt_path_dependencies: [],
+                                                           requirement_in_path_dependencies: [])
 
           all_path_deps = file_fetcher_instance.send(:path_dependencies)
           expect(all_path_deps).to contain_exactly(
