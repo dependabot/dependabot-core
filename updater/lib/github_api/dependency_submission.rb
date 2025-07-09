@@ -30,9 +30,17 @@ module GithubApi
     sig { params(job: Dependabot::Job, snapshot: Dependabot::DependencySnapshot).void }
     def initialize(job:, snapshot:)
       @job_id = T.let(job.id.to_s, String)
-      @ref = T.let(T.must(job.source.branch), String)
+      # TODO: Ensure that the branch is always set for analysis runs
+      #
+      # For purposes of the POC, we'll assume the default branch of `main`
+      # if this is nil, but this isn't a sustainable approach
+      @ref = T.let(job.source.branch || "main", String)
       @sha = T.let(snapshot.base_commit_sha, String)
-      @directory = T.let(T.must(job.source.directory), String)
+      # TODO: Ensure that directory is always set for analysis runs
+      #
+      # We shouldn't need to default here, this is mostly for type safety
+      # but we should make sure this value is set as we proceed
+      @directory = T.let(job.source.directory || "/", String)
       @package_manager = T.let(job.package_manager, String)
 
       @manifests = T.let(build_manifests(snapshot), T::Hash[String, T.untyped])
@@ -142,45 +150,47 @@ module GithubApi
     #
     # It probably makes more sense to assign this to a Dependabot::Dependency
     # when it is created so the ecosystem-specific parser can own this?
+    #
+    # Let's let it live here for now until we start making changes to core to
+    # fill in some blanks.
     sig { params(dependency: Dependabot::Dependency).returns(String) }
     def build_purl(dependency)
-      package_manager = dependency.package_manager
-      name = dependency.name
-      version = dependency.version
+      "pkg:#{purl_pkg_for(dependency.package_manager)}/#{dependency.name}@#{dependency.version}"
+    end
 
+    sig { params(package_manager: String).returns(String) }
+    def purl_pkg_for(package_manager)
       case package_manager
       when "bundler"
-        "pkg:gem/#{name}@#{version}"
+        "gem"
       when "npm_and_yarn", "bun"
-        "pkg:npm/#{name}@#{version}"
+        "npm"
       when "maven", "gradle"
-        "pkg:maven/#{name}@#{version}"
+        "maven"
       when "pip", "uv"
-        "pkg:pypi/#{name}@#{version}"
+        "pypi"
       when "cargo"
-        "pkg:cargo/#{name}@#{version}"
+        "cargo"
       when "hex"
-        "pkg:hex/#{name}@#{version}"
+        "hex"
       when "composer"
-        "pkg:composer/#{name}@#{version}"
+        "composer"
       when "nuget"
-        "pkg:nuget/#{name}@#{version}"
+        "nuget"
       when "go_modules"
-        "pkg:golang/#{name}@#{version}"
+        "golang"
       when "docker"
-        "pkg:docker/#{name}@#{version}"
+        "docker"
       when "github_actions"
-        "pkg:github/#{name}@#{version}"
+        "github"
       when "terraform"
-        "pkg:terraform/#{name}@#{version}"
+        "terraform"
       when "pub"
-        "pkg:pub/#{name}@#{version}"
+        "pub"
       when "elm"
-        "pkg:elm/#{name}@#{version}"
-      when "submodules"                 # TODO: Verify this is correct
-        "pkg:github/#{name}@#{version}" # Use github format for submodules
+        "elm"
       else
-        "pkg:generic/#{name}@#{version}"
+        "generic"
       end
     end
   end

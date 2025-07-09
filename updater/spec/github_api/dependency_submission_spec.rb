@@ -111,12 +111,12 @@ RSpec.describe GithubApi::DependencySubmission do
       # Resolved dependencies are correct
       expect(gemfile[:resolved].length).to eq(2)
 
-      dependency_1 = gemfile[:resolved]["dummy-pkg-a"]
-      dependency_2 = gemfile[:resolved]["dummy-pkg-b"]
+      dependency1 = gemfile[:resolved]["dummy-pkg-a"]
+      dependency2 = gemfile[:resolved]["dummy-pkg-b"]
 
-      expect(dependency_1[:package_url]).to eql("pkg:gem/dummy-pkg-a@2.0.0")
+      expect(dependency1[:package_url]).to eql("pkg:gem/dummy-pkg-a@2.0.0")
 
-      expect(dependency_2[:package_url]).to eql("pkg:gem/dummy-pkg-b@1.1.0")
+      expect(dependency2[:package_url]).to eql("pkg:gem/dummy-pkg-b@1.1.0")
     end
   end
 
