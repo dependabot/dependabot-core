@@ -913,6 +913,5 @@ RSpec.describe Dependabot::Uv::FileParser do
         end
       end
     end
-
   end
 end

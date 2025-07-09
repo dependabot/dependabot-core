@@ -379,6 +379,5 @@ RSpec.describe Dependabot::Uv::FileParser::PyprojectFilesParser do
         its(:length) { is_expected.to eq(0) }
       end
     end
-
   end
 end
