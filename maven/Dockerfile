@@ -2,13 +2,7 @@ FROM ghcr.io/dependabot/dependabot-updater-core
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     openjdk-21-jdk \
-    # avoids keytool usage
     ca-certificates-java \
-    # we need to allow the dependabot user to write to these files for when update-ca-certificates is run
-    && chgrp dependabot /etc/default/cacerts  \
-    && chmod g+rw /etc/default/cacerts \
-    && chgrp dependabot /etc/ssl/certs/java/cacerts  \
-    && chmod g+rw /etc/ssl/certs/java/cacerts \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=maven:3.9.9 /usr/share/maven /usr/share/maven
