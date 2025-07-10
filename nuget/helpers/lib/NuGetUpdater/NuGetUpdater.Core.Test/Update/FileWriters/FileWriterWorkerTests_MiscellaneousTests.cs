@@ -6,7 +6,7 @@ using Xunit;
 
 namespace NuGetUpdater.Core.Test.Update.FileWriters;
 
-public class FileWriterWorkerTests_ProjectDiscoveryEvaluationOrderTests
+public class FileWriterWorkerTests_MiscellaneousTests
 {
     [Fact]
     public void GetProjectDiscoveryEvaluationOrder()
@@ -71,5 +71,39 @@ public class FileWriterWorkerTests_ProjectDiscoveryEvaluationOrderTests
             "client/client.csproj",
         ];
         AssertEx.Equal(expectedProjectPaths, actualProjectPaths);
+    }
+
+    [Fact]
+    public async Task AllProjectDiscoveryFilesCanBeReadAndRestored()
+    {
+        // arrange
+        var projectDiscoveryResults = new[]
+        {
+            new ProjectDiscoveryResult()
+            {
+                FilePath = "client.csproj",
+                ReferencedProjectPaths = ["../common/common.csproj", "../utils/utils.csproj"],
+                Dependencies = [],
+                ImportedFiles = [],
+                AdditionalFiles = ["packages.config"],
+            },
+        };
+        using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(
+            ("client/client.csproj", "initial client content"),
+            ("client/packages.config", "initial packages config content")
+        );
+        var repoContentsPath = new DirectoryInfo(tempDir.DirectoryPath);
+        var startingProjectPath = "client/client.csproj";
+        var initialStartingDirectory = new DirectoryInfo(Path.GetDirectoryName(Path.Join(repoContentsPath.FullName, startingProjectPath))!);
+
+        // act - overwrite the files with new content then revert
+        var originalFileContents = await FileWriterWorker.GetOriginalFileContentsAsync(repoContentsPath, initialStartingDirectory, projectDiscoveryResults);
+        await File.WriteAllTextAsync(Path.Join(repoContentsPath.FullName, "client/client.csproj"), "new client content", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(Path.Join(repoContentsPath.FullName, "client/packages.config"), "new packages config content", TestContext.Current.CancellationToken);
+        await FileWriterWorker.RestoreOriginalFileContentsAsync(originalFileContents);
+
+        // assert
+        Assert.Equal("initial client content", await File.ReadAllTextAsync(Path.Join(repoContentsPath.FullName, "client/client.csproj"), TestContext.Current.CancellationToken));
+        Assert.Equal("initial packages config content", await File.ReadAllTextAsync(Path.Join(repoContentsPath.FullName, "client/packages.config"), TestContext.Current.CancellationToken));
     }
 }

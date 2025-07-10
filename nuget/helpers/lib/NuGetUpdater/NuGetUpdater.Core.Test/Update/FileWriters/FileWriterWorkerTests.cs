@@ -659,6 +659,130 @@ public class FileWriterWorkerTests : TestBase
         );
     }
 
+    [Fact]
+    public async Task EndToEnd_FileEditUnsuccessful_NoFileEditsRetained()
+    {
+        // the file writer has been interrupted to make no edits and report failure
+        await TestAsync(
+            dependencyName: "Some.Dependency",
+            oldDependencyVersion: "1.0.0",
+            newDependencyVersion: "2.0.0",
+            projectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net9.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Some.Dependency" Version="1.0.0" />
+                  </ItemGroup>
+                </Project>
+                """,
+            additionalFiles: [],
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Some.Dependency", "1.0.0", "net9.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Dependency", "2.0.0", "net9.0"),
+            ],
+            discoveryWorker: null, // use real worker
+            dependencySolver: null, // use real worker
+            fileWriter: new TestFileWriterReturnsConstantResult(false), // always report failure to edit files
+            expectedProjectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net9.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Some.Dependency" Version="1.0.0" />
+                  </ItemGroup>
+                </Project>
+                """,
+            expectedAdditionalFiles: [],
+            expectedOperations: []
+        );
+    }
+
+    [Fact]
+    public async Task EndToEnd_FinalDependencyResolutionUnsuccessful_NoFileEditsRetained()
+    {
+        // the discovery worker has been interrupted to report the update didn't produce the desired result
+        // no file edits will be preserved
+        var discoveryRequestCount = 0;
+        await TestAsync(
+            dependencyName: "Some.Dependency",
+            oldDependencyVersion: "1.0.0",
+            newDependencyVersion: "2.0.0",
+            projectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net9.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Some.Dependency" Version="1.0.0" />
+                  </ItemGroup>
+                </Project>
+                """,
+            additionalFiles: [],
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Some.Dependency", "1.0.0", "net9.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Dependency", "2.0.0", "net9.0"),
+            ],
+            discoveryWorker: new TestDiscoveryWorker(args =>
+            {
+                discoveryRequestCount++;
+                var result = discoveryRequestCount switch
+                {
+                    // initial request, report 1.0.0
+                    1 => new WorkspaceDiscoveryResult()
+                    {
+                        Path = "/",
+                        Projects = [
+                            new ProjectDiscoveryResult()
+                            {
+                                FilePath = "project.csproj",
+                                Dependencies = [new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference)],
+                                TargetFrameworks = ["net9.0"],
+                                AdditionalFiles = [],
+                                ImportedFiles = [],
+                                ReferencedProjectPaths = []
+                            }
+                        ]
+                    },
+                    // post-edit request, report 1.0.0 again, indicating the file edits didn't produce the desired result
+                    2 => new WorkspaceDiscoveryResult()
+                    {
+                        Path = "/",
+                        Projects = [
+                            new ProjectDiscoveryResult()
+                            {
+                                FilePath = "project.csproj",
+                                Dependencies = [new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference)],
+                                TargetFrameworks = ["net9.0"],
+                                AdditionalFiles = [],
+                                ImportedFiles = [],
+                                ReferencedProjectPaths = []
+                            }
+                        ]
+                    },
+                    _ => throw new NotSupportedException($"Didn't expect {discoveryRequestCount} discovery requests"),
+                };
+                return Task.FromResult(result);
+            }),
+            dependencySolver: null, // use real worker
+            fileWriter: null, // use real worker
+            expectedProjectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net9.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Some.Dependency" Version="1.0.0" />
+                  </ItemGroup>
+                </Project>
+                """,
+            expectedAdditionalFiles: [],
+            expectedOperations: []
+        );
+    }
+
     private static async Task TestAsync(
         string dependencyName,
         string oldDependencyVersion,

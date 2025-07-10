@@ -4,7 +4,6 @@ using NuGet.Versioning;
 
 using NuGetUpdater.Core.DependencySolver;
 using NuGetUpdater.Core.Discover;
-using NuGetUpdater.Core.Run;
 using NuGetUpdater.Core.Utilities;
 
 namespace NuGetUpdater.Core.Updater.FileWriters;
@@ -153,6 +152,10 @@ public class FileWriterWorker
 
             // process all projects bottom up
             var orderedProjectDiscovery = GetProjectDiscoveryEvaluationOrder(repoContentsPath, initialDiscoveryResult, projectPath, _logger);
+
+            // track original contents
+            var originalFileContents = await GetOriginalFileContentsAsync(repoContentsPath, new DirectoryInfo(projectDirectory), orderedProjectDiscovery);
+
             var allUpdatedFiles = new List<string>();
             foreach (var projectDiscovery in orderedProjectDiscovery)
             {
@@ -164,6 +167,7 @@ public class FileWriterWorker
             if (allUpdatedFiles.Count == 0)
             {
                 _logger.Warn("Failed to write new dependency versions.");
+                await RestoreOriginalFileContentsAsync(originalFileContents);
                 continue;
             }
 
@@ -173,6 +177,7 @@ public class FileWriterWorker
             if (finalProjectDiscovery is null)
             {
                 _logger.Warn($"Unable to find final project discovery for project {projectPath}.");
+                await RestoreOriginalFileContentsAsync(originalFileContents);
                 continue;
             }
 
@@ -181,6 +186,7 @@ public class FileWriterWorker
             if (finalRequestedDependency is null || finalRequestedDependency.Version is null)
             {
                 _logger.Warn($"Dependency {dependencyName} not found in final project discovery.");
+                await RestoreOriginalFileContentsAsync(originalFileContents);
                 continue;
             }
 
@@ -188,6 +194,7 @@ public class FileWriterWorker
             if (resolvedVersion != newDependencyVersion)
             {
                 _logger.Warn($"Final dependency version for {dependencyName} is {resolvedVersion}, expected {newDependencyVersion}.");
+                await RestoreOriginalFileContentsAsync(originalFileContents);
                 continue;
             }
 
@@ -217,6 +224,34 @@ public class FileWriterWorker
 
         var normalizedUpdateOperations = UpdateOperationBase.NormalizeUpdateOperationCollection(repoContentsPath.FullName, updateOperations);
         return normalizedUpdateOperations;
+    }
+
+    internal static async Task<Dictionary<string, string>> GetOriginalFileContentsAsync(DirectoryInfo repoContentsPath, DirectoryInfo initialStartingDirectory, IEnumerable<ProjectDiscoveryResult> projectDiscoveryResults)
+    {
+        var filesAndContents = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var projectDiscoveryResult in projectDiscoveryResults)
+        {
+            var fullProjectPath = Path.Join(initialStartingDirectory.FullName, projectDiscoveryResult.FilePath).FullyNormalizedRootedPath();
+            var projectContents = await File.ReadAllTextAsync(fullProjectPath);
+            filesAndContents[fullProjectPath] = projectContents;
+
+            foreach (var file in projectDiscoveryResult.ImportedFiles.Concat(projectDiscoveryResult.AdditionalFiles))
+            {
+                var filePath = Path.Join(Path.GetDirectoryName(fullProjectPath)!, file).FullyNormalizedRootedPath();
+                var fileContents = await File.ReadAllTextAsync(filePath);
+                filesAndContents[filePath] = fileContents;
+            }
+        }
+
+        return filesAndContents;
+    }
+
+    internal static async Task RestoreOriginalFileContentsAsync(Dictionary<string, string> originalFilesAndContents)
+    {
+        foreach (var (path, contents) in originalFilesAndContents)
+        {
+            await File.WriteAllTextAsync(path, contents);
+        }
     }
 
     internal static ImmutableArray<ProjectDiscoveryResult> GetProjectDiscoveryEvaluationOrder(DirectoryInfo repoContentsPath, WorkspaceDiscoveryResult discoveryResult, FileInfo projectPath, ILogger logger)
@@ -259,19 +294,10 @@ public class FileWriterWorker
 
     private async Task<ImmutableArray<string>> TryPerformFileWritesAsync(DirectoryInfo repoContentsPath, FileInfo projectPath, ProjectDiscoveryResult projectDiscovery, ImmutableArray<Dependency> requiredPackageVersions)
     {
-        // track original contents
-        var relativeFilePaths = new List<string>() { Path.GetRelativePath(repoContentsPath.FullName, projectPath.FullName) };
-        var originalFileContents = new Dictionary<string, string>();
-        var projectContents = await File.ReadAllTextAsync(projectPath.FullName);
-        originalFileContents[projectPath.FullName] = projectContents;
-
-        foreach (var file in projectDiscovery.ImportedFiles.Concat(projectDiscovery.AdditionalFiles))
-        {
-            var filePath = Path.Join(Path.GetDirectoryName(projectPath.FullName), file).FullyNormalizedRootedPath();
-            var fileContents = await File.ReadAllTextAsync(filePath);
-            originalFileContents[filePath] = fileContents;
-            relativeFilePaths.Add(Path.GetRelativePath(repoContentsPath.FullName, filePath));
-        }
+        var originalFileContents = await GetOriginalFileContentsAsync(repoContentsPath, projectPath.Directory!, [projectDiscovery]);
+        var relativeFilePaths = originalFileContents.Keys
+            .Select(p => Path.GetRelativePath(repoContentsPath.FullName, p).FullyNormalizedRootedPath())
+            .ToImmutableArray();
 
         // try update
         var success = await _fileWriter.UpdatePackageVersionsAsync(repoContentsPath, [.. relativeFilePaths], projectDiscovery.Dependencies, requiredPackageVersions);
@@ -288,11 +314,7 @@ public class FileWriterWorker
 
         if (!success)
         {
-            // restore contents
-            foreach (var (filePath, originalContents) in originalFileContents)
-            {
-                await File.WriteAllTextAsync(filePath, originalContents);
-            }
+            await RestoreOriginalFileContentsAsync(originalFileContents);
         }
 
         var sortedUpdatedFiles = updatedFiles.OrderBy(p => p, StringComparer.Ordinal);
