@@ -227,6 +227,13 @@ module Dependabot
         end
 
         sig do
+          override.returns(T.nilable(T::Array[Dependabot::Package::PackageRelease]))
+        end
+        def available_versions
+          possible_releases
+        end
+
+        sig do
           params(filter_ignored: T::Boolean)
             .returns(T::Array[T::Array[T.untyped]])
         end
@@ -271,7 +278,9 @@ module Dependabot
             .returns(T::Array[Dependabot::Package::PackageRelease])
         end
         def possible_releases(filter_ignored: true)
-          releases = possible_previous_releases.reject(&:yanked?)
+          releases = possible_previous_releases.reject do |r|
+            r.details["deprecated"]
+          end
 
           return filter_releases(releases) if filter_ignored
 
