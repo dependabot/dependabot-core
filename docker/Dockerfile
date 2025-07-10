@@ -2,13 +2,13 @@ FROM ghcr.io/dependabot/dependabot-updater-core
 ARG TARGETARCH
 
 # Install regctl. See https://github.com/regclient/regclient/releases for updates
-ARG REGCTL_VERSION=0.8.2
+ARG REGCTL_VERSION=0.9.0
 
 # These are manually calculated as they are not provided by the maintainer
 # curl -sL https://github.com/regclient/regclient/releases/download/v${REGCTL_VERSION}/regctl-linux-amd64 | sha256sum
-ARG REGCTL_AMD64_CHECKSUM=43a889afdb5ba511789d5f06b3b18ce908e02a9ab04d1b93bdb53fff4988fdeb
+ARG REGCTL_AMD64_CHECKSUM=17e45fc20aacdde01634ab1a38fd33de040891821acbb62f222331ef1fb02d0d
 # curl -sL https://github.com/regclient/regclient/releases/download/v${REGCTL_VERSION}/regctl-linux-arm64 | sha256sum
-ARG REGCTL_ARM64_CHECKSUM=344e67c324230eaadc44d5576b7130423ed88664014e525ae2f11d290602fa0e
+ARG REGCTL_ARM64_CHECKSUM=2cc45379b3b21d3d2eb4cc84f32c5812a792803878d61aff85c7c6402225481a
 
 ENV PATH=/opt/bin:$PATH
 RUN cd /tmp \

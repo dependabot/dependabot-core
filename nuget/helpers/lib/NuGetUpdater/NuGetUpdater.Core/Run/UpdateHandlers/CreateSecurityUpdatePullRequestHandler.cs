@@ -27,8 +27,9 @@ internal class CreateSecurityUpdatePullRequestHandler : IUpdateHandler
         return job.SecurityUpdatesOnly;
     }
 
-    public async Task HandleAsync(Job job, DirectoryInfo repoContentsPath, string baseCommitSha, IDiscoveryWorker discoveryWorker, IAnalyzeWorker analyzeWorker, IUpdaterWorker updaterWorker, IApiHandler apiHandler, ExperimentsManager experimentsManager, ILogger logger)
+    public async Task HandleAsync(Job job, DirectoryInfo originalRepoContentsPath, DirectoryInfo? caseInsensitiveRepoContentsPath, string baseCommitSha, IDiscoveryWorker discoveryWorker, IAnalyzeWorker analyzeWorker, IUpdaterWorker updaterWorker, IApiHandler apiHandler, ExperimentsManager experimentsManager, ILogger logger)
     {
+        var repoContentsPath = caseInsensitiveRepoContentsPath ?? originalRepoContentsPath;
         var jobDependencies = job.Dependencies.ToHashSet(StringComparer.OrdinalIgnoreCase);
         foreach (var directory in job.GetAllDirectories())
         {
@@ -36,11 +37,11 @@ internal class CreateSecurityUpdatePullRequestHandler : IUpdateHandler
             logger.ReportDiscovery(discoveryResult);
             if (discoveryResult.Error is not null)
             {
-                await apiHandler.RecordUpdateJobError(discoveryResult.Error);
+                await apiHandler.RecordUpdateJobError(discoveryResult.Error, logger);
                 return;
             }
 
-            var updatedDependencyList = RunWorker.GetUpdatedDependencyListFromDiscovery(discoveryResult);
+            var updatedDependencyList = RunWorker.GetUpdatedDependencyListFromDiscovery(discoveryResult, originalRepoContentsPath.FullName, logger);
             await apiHandler.UpdateDependencyList(updatedDependencyList);
             await this.ReportUpdaterStarted(apiHandler);
 
@@ -54,13 +55,13 @@ internal class CreateSecurityUpdatePullRequestHandler : IUpdateHandler
 
             if (groupedUpdateOperationsToPerform.Count == 0)
             {
-                await apiHandler.RecordUpdateJobError(new SecurityUpdateDependencyNotFound());
+                await apiHandler.RecordUpdateJobError(new SecurityUpdateDependencyNotFound(), logger);
                 continue;
             }
 
             logger.Info($"Updating dependencies: {string.Join(", ", groupedUpdateOperationsToPerform.Select(g => g.Key).Distinct().OrderBy(d => d, StringComparer.OrdinalIgnoreCase))}");
 
-            var tracker = new ModifiedFilesTracker(repoContentsPath);
+            var tracker = new ModifiedFilesTracker(originalRepoContentsPath, logger);
             await tracker.StartTrackingAsync(discoveryResult);
             foreach (var dependencyGroupToUpdate in groupedUpdateOperationsToPerform)
             {
@@ -81,11 +82,11 @@ internal class CreateSecurityUpdatePullRequestHandler : IUpdateHandler
                     if (ignoredUpdates.Length > 0)
                     {
                         logger.Error($"Cannot update {dependencyName} because all versions are ignored.");
-                        await apiHandler.RecordUpdateJobError(new SecurityUpdateIgnored(dependencyName));
+                        await apiHandler.RecordUpdateJobError(new SecurityUpdateIgnored(dependencyName), logger);
                     }
                     else
                     {
-                        await apiHandler.RecordUpdateJobError(new SecurityUpdateNotNeeded(dependencyName));
+                        await apiHandler.RecordUpdateJobError(new SecurityUpdateNotNeeded(dependencyName), logger);
                     }
 
                     continue;
@@ -97,14 +98,14 @@ internal class CreateSecurityUpdatePullRequestHandler : IUpdateHandler
                     if (analysisResult.Error is not null)
                     {
                         logger.Error($"Error analyzing {dependency.Name} in {projectPath}: {analysisResult.Error.GetReport()}");
-                        await apiHandler.RecordUpdateJobError(analysisResult.Error);
+                        await apiHandler.RecordUpdateJobError(analysisResult.Error, logger);
                         return;
                     }
 
                     if (!analysisResult.CanUpdate)
                     {
                         logger.Info($"No updatable version found for {dependency.Name} in {projectPath}.");
-                        await apiHandler.RecordUpdateJobError(new SecurityUpdateNotFound(dependency.Name, dependency.Version!));
+                        await apiHandler.RecordUpdateJobError(new SecurityUpdateNotFound(dependency.Name, dependency.Version!), logger);
                         continue;
                     }
 
@@ -114,7 +115,7 @@ internal class CreateSecurityUpdatePullRequestHandler : IUpdateHandler
                     if (updaterResult.Error is not null)
                     {
                         logger.Error($"Error updating {dependency.Name} in {projectPath}: {updaterResult.Error.GetReport()}");
-                        await apiHandler.RecordUpdateJobError(updaterResult.Error);
+                        await apiHandler.RecordUpdateJobError(updaterResult.Error, logger);
                         continue;
                     }
 
@@ -125,7 +126,7 @@ internal class CreateSecurityUpdatePullRequestHandler : IUpdateHandler
                         if (!alreadyHandled)
                         {
                             logger.Error($"Update of {dependency.Name} in {projectPath} not possible.");
-                            await apiHandler.RecordUpdateJobError(new SecurityUpdateNotPossible(dependencyName, analysisResult.UpdatedVersion, analysisResult.UpdatedVersion, []));
+                            await apiHandler.RecordUpdateJobError(new SecurityUpdateNotPossible(dependencyName, analysisResult.UpdatedVersion, analysisResult.UpdatedVersion, []), logger);
                             return;
                         }
                     }
@@ -151,7 +152,7 @@ internal class CreateSecurityUpdatePullRequestHandler : IUpdateHandler
                 var existingPullRequest = job.GetExistingPullRequestForDependencies(rawDependencies, considerVersions: true);
                 if (existingPullRequest is not null)
                 {
-                    await apiHandler.RecordUpdateJobError(new PullRequestExistsForSecurityUpdate(rawDependencies));
+                    await apiHandler.RecordUpdateJobError(new PullRequestExistsForSecurityUpdate(rawDependencies), logger);
                     continue;
                 }
             }

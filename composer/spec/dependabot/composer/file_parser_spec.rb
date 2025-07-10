@@ -416,7 +416,7 @@ RSpec.describe Dependabot::Composer::FileParser do
 
     it "returns language with version" do
       expect(parser.ecosystem.language).to be_a(Dependabot::Composer::Language)
-      expect(parser.ecosystem.language.version.to_s).to eq("8.2.28")
+      expect(parser.ecosystem.language.version.to_s).to eq("8.2.29")
     end
   end
 

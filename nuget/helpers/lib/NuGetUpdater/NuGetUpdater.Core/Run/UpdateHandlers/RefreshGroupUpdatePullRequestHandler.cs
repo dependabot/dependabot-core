@@ -44,8 +44,9 @@ internal class RefreshGroupUpdatePullRequestHandler : IUpdateHandler
         return job.UpdatingAPullRequest;
     }
 
-    public async Task HandleAsync(Job job, DirectoryInfo repoContentsPath, string baseCommitSha, IDiscoveryWorker discoveryWorker, IAnalyzeWorker analyzeWorker, IUpdaterWorker updaterWorker, IApiHandler apiHandler, ExperimentsManager experimentsManager, ILogger logger)
+    public async Task HandleAsync(Job job, DirectoryInfo originalRepoContentsPath, DirectoryInfo? caseInsensitiveRepoContentsPath, string baseCommitSha, IDiscoveryWorker discoveryWorker, IAnalyzeWorker analyzeWorker, IUpdaterWorker updaterWorker, IApiHandler apiHandler, ExperimentsManager experimentsManager, ILogger logger)
     {
+        var repoContentsPath = caseInsensitiveRepoContentsPath ?? originalRepoContentsPath;
         if (job.DependencyGroupToRefresh is null)
         {
             throw new InvalidOperationException($"{nameof(job.DependencyGroupToRefresh)} must be non-null.");
@@ -67,11 +68,11 @@ internal class RefreshGroupUpdatePullRequestHandler : IUpdateHandler
             logger.ReportDiscovery(discoveryResult);
             if (discoveryResult.Error is not null)
             {
-                await apiHandler.RecordUpdateJobError(discoveryResult.Error);
+                await apiHandler.RecordUpdateJobError(discoveryResult.Error, logger);
                 return;
             }
 
-            var updatedDependencyList = RunWorker.GetUpdatedDependencyListFromDiscovery(discoveryResult);
+            var updatedDependencyList = RunWorker.GetUpdatedDependencyListFromDiscovery(discoveryResult, originalRepoContentsPath.FullName, logger);
             await apiHandler.UpdateDependencyList(updatedDependencyList);
             await this.ReportUpdaterStarted(apiHandler);
 
@@ -85,7 +86,7 @@ internal class RefreshGroupUpdatePullRequestHandler : IUpdateHandler
                 .ToDictionary(g => g.Key, g => g.ToArray(), StringComparer.OrdinalIgnoreCase);
             logger.Info($"Updating dependencies: {string.Join(", ", groupedUpdateOperationsToPerform.Select(g => g.Key).Distinct().OrderBy(d => d, StringComparer.OrdinalIgnoreCase))}");
 
-            var tracker = new ModifiedFilesTracker(repoContentsPath);
+            var tracker = new ModifiedFilesTracker(originalRepoContentsPath, logger);
             await tracker.StartTrackingAsync(discoveryResult);
             foreach (var dependencyGroupToUpdate in groupedUpdateOperationsToPerform)
             {
@@ -101,7 +102,7 @@ internal class RefreshGroupUpdatePullRequestHandler : IUpdateHandler
                     if (analysisResult.Error is not null)
                     {
                         logger.Error($"Error analyzing {dependency.Name} in {projectPath}: {analysisResult.Error.GetReport()}");
-                        await apiHandler.RecordUpdateJobError(analysisResult.Error);
+                        await apiHandler.RecordUpdateJobError(analysisResult.Error, logger);
                         return;
                     }
 
@@ -117,7 +118,7 @@ internal class RefreshGroupUpdatePullRequestHandler : IUpdateHandler
                     if (updaterResult.Error is not null)
                     {
                         logger.Error($"Error updating {dependency.Name} in {projectPath}: {updaterResult.Error.GetReport()}");
-                        await apiHandler.RecordUpdateJobError(updaterResult.Error);
+                        await apiHandler.RecordUpdateJobError(updaterResult.Error, logger);
                         continue;
                     }
 

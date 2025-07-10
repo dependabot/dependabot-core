@@ -516,8 +516,6 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
         allow(Time).to receive(:now).and_return(Time.parse("2024-06-13T17:30:00.000Z"))
         allow(Dependabot::Experiments).to receive(:enabled?)
           .with(:enable_shared_helpers_command_timeout).and_return(false)
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:enable_cooldown_for_pub).and_return(true)
       end
 
       it "filters out latest version from latest version list" do

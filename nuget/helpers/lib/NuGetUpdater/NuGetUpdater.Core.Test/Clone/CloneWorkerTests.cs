@@ -11,6 +11,33 @@ public class CloneWorkerTests
     private const string TestRepoPath = "TEST/REPO/PATH";
 
     [Fact]
+    public void AdoCloneCommandsAreGenerated()
+    {
+        TestCommands(
+            provider: "azure",
+            repoMoniker: "OrganizationName/ProjectName/_git/RepositoryName",
+            expectedCommands:
+            [
+                (["clone", "--no-tags", "--depth", "1", "--recurse-submodules", "--shallow-submodules", "https://dev.azure.com/OrganizationName/ProjectName/_git/RepositoryName", TestRepoPath], null)
+            ]
+        );
+    }
+
+    [Fact]
+    public void AdoOnPremCloneCommandsAreGenerated()
+    {
+        TestCommands(
+            provider: "azure",
+            hostname: "azure-onprem-url.domain.org",
+            repoMoniker: "CollectionName/ProjectName/_git/RepositoryName",
+            expectedCommands:
+            [
+                (["clone", "--no-tags", "--depth", "1", "--recurse-submodules", "--shallow-submodules", "https://azure-onprem-url.domain.org/CollectionName/ProjectName/_git/RepositoryName", TestRepoPath], null)
+            ]
+        );
+    }
+
+    [Fact]
     public void CloneCommandsAreGenerated()
     {
         TestCommands(
@@ -101,7 +128,7 @@ public class CloneWorkerTests
         // arrange
         var testApiHandler = new TestApiHandler();
         var testGitCommandHandler = new TestGitCommandHandler();
-        var cloneWorker = new CloneWorker("JOB-ID", testApiHandler, testGitCommandHandler);
+        var cloneWorker = new CloneWorker("JOB-ID", testApiHandler, testGitCommandHandler, new TestLogger());
         using var testDirectory = new TemporaryDirectory();
         var jobFilePath = Path.Combine(testDirectory.DirectoryPath, "job.json");
         await File.WriteAllTextAsync(jobFilePath, "not json");
@@ -122,7 +149,7 @@ public class CloneWorkerTests
         // arrange
         var testApiHandler = new TestApiHandler();
         var testGitCommandHandler = new TestGitCommandHandler();
-        var cloneWorker = new CloneWorker("JOB-ID", testApiHandler, testGitCommandHandler);
+        var cloneWorker = new CloneWorker("JOB-ID", testApiHandler, testGitCommandHandler, new TestLogger());
         using var testDirectory = new TemporaryDirectory();
         var jobFilePath = Path.Combine(testDirectory.DirectoryPath, "job.json");
 
@@ -172,13 +199,14 @@ public class CloneWorkerTests
         }
     }
 
-    private static void TestCommands(string provider, string repoMoniker, (string[] Args, string? WorkingDirectory)[] expectedCommands, string? branch = null, string? commit = null)
+    private static void TestCommands(string provider, string repoMoniker, (string[] Args, string? WorkingDirectory)[] expectedCommands, string? branch = null, string? commit = null, string? hostname = null)
     {
         var job = new Job()
         {
             Source = new()
             {
                 Provider = provider,
+                Hostname = hostname,
                 Repo = repoMoniker,
                 Branch = branch,
                 Commit = commit,
@@ -193,7 +221,7 @@ public class CloneWorkerTests
         // arrange
         var testApiHandler = new TestApiHandler();
         testGitCommandHandler ??= new TestGitCommandHandler();
-        var worker = new CloneWorker("TEST-JOB-ID", testApiHandler, testGitCommandHandler);
+        var worker = new CloneWorker("TEST-JOB-ID", testApiHandler, testGitCommandHandler, new TestLogger());
 
         // act
         var job = new Job()

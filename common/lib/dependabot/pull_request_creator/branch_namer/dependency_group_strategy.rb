@@ -88,8 +88,10 @@ module Dependabot
           T.must(dependencies.first).package_manager
         end
 
-        sig { returns(String) }
+        sig { returns(T.nilable(String)) }
         def directory
+          return if files.empty?
+
           T.must(files.first).directory.tr(" ", "-")
         end
       end

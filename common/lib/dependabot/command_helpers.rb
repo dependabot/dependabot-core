@@ -12,10 +12,15 @@ module Dependabot
 
     module TIMEOUTS
       NO_TIME_OUT = -1 # No timeout
+      GRARECFULLY_STOP = 5 # 5 seconds for graceful termination
       LOCAL = 30 # 30 seconds
       NETWORK = 120 # 2 minutes
       LONG_RUNNING = 300 # 5 minutes
       DEFAULT = 900 # 15 minutes
+    end
+
+    OutputObserver = T.type_alias do
+      T.nilable(T.proc.params(data: String).returns(T::Hash[Symbol, T.untyped]))
     end
 
     class ProcessStatus
@@ -70,14 +75,16 @@ module Dependabot
         env_cmd: T::Array[T.any(T::Hash[String, String], String)],
         stdin_data: T.nilable(String),
         stderr_to_stdout: T::Boolean,
-        timeout: Integer
+        timeout: Integer,
+        output_observer: OutputObserver
       ).returns([T.nilable(String), T.nilable(String), T.nilable(ProcessStatus), Float])
     end
     def self.capture3_with_timeout(
       env_cmd,
       stdin_data: nil,
       stderr_to_stdout: false,
-      timeout: TIMEOUTS::DEFAULT
+      timeout: TIMEOUTS::DEFAULT,
+      output_observer: nil
     )
 
       stdout = T.let("", String)
@@ -142,12 +149,24 @@ module Dependabot
                 stderr += data unless stderr_to_stdout
                 stdout += data if stderr_to_stdout
               end
-                                                    rescue EOFError
-                                                      # Remove the stream when EOF is reached
-                                                      ios.delete(io)
-                                                    rescue IO::WaitReadable
-                                                      # Continue when IO is not ready yet
-                                                      next
+
+              # Observe the output if an observer is provided.
+              # This allows for custom handling of process output, including early termination.
+              observation = output_observer&.call(data)
+
+              if observation&.dig(:gracefully_stop)
+                message = observation[:reason] || "Terminated by output_observer"
+                # If the observer indicates a graceful stop, terminate the process
+                # by adjusting the remaining timeout 5 seconds
+                timeout = [timeout, ((Time.now - last_output_time) + 5).to_i].min
+                Dependabot.logger.warn("Terminating process due to observer signal: #{message}")
+              end
+            rescue EOFError
+              # Remove the stream when EOF is reached
+              ios.delete(io)
+            rescue IO::WaitReadable
+              # Continue when IO is not ready yet
+              next
             end
           end
 

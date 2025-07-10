@@ -95,8 +95,6 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       .to_return(status: 200, body: maven_central_releases_mockk)
     stub_request(:head, mockk_maven_central_version_files_url)
       .to_return(status: 200)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_cooldown_for_maven).and_return(true)
   end
 
   describe "#latest_version_details when the dependency has a classifier" do

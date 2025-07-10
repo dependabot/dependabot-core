@@ -18,6 +18,7 @@ RSpec.describe Dependabot::Updater::Operations do
                             source: source,
                             security_updates_only?: false,
                             updating_a_pull_request?: false,
+                            multi_ecosystem_update?: false,
                             dependencies: [],
                             dependency_groups: [],
                             is_a?: true)
@@ -31,6 +32,7 @@ RSpec.describe Dependabot::Updater::Operations do
                             source: source,
                             security_updates_only?: false,
                             updating_a_pull_request?: false,
+                            multi_ecosystem_update?: false,
                             dependencies: [],
                             dependency_groups: [anything],
                             is_a?: true)
@@ -46,6 +48,7 @@ RSpec.describe Dependabot::Updater::Operations do
                             source: source,
                             security_updates_only?: false,
                             updating_a_pull_request?: true,
+                            multi_ecosystem_update?: false,
                             dependencies: [anything],
                             dependency_group_to_refresh: anything,
                             dependency_groups: [anything],
@@ -63,6 +66,7 @@ RSpec.describe Dependabot::Updater::Operations do
                             source: source,
                             security_updates_only?: false,
                             updating_a_pull_request?: true,
+                            multi_ecosystem_update?: false,
                             dependencies: [anything],
                             dependency_group_to_refresh: nil,
                             dependency_groups: [anything],
@@ -79,6 +83,7 @@ RSpec.describe Dependabot::Updater::Operations do
                             dependency_group_to_refresh: nil,
                             security_updates_only?: true,
                             updating_a_pull_request?: false,
+                            multi_ecosystem_update?: false,
                             dependencies: [anything],
                             dependency_groups: [],
                             is_a?: true)
@@ -93,6 +98,7 @@ RSpec.describe Dependabot::Updater::Operations do
                             source: source,
                             security_updates_only?: true,
                             updating_a_pull_request?: false,
+                            multi_ecosystem_update?: false,
                             dependencies: [anything, anything],
                             dependency_groups: [anything],
                             is_a?: true)
@@ -108,6 +114,7 @@ RSpec.describe Dependabot::Updater::Operations do
                             source: source,
                             security_updates_only?: true,
                             updating_a_pull_request?: false,
+                            multi_ecosystem_update?: false,
                             dependencies: [anything, anything],
                             dependency_groups: [anything],
                             is_a?: true)
@@ -124,6 +131,7 @@ RSpec.describe Dependabot::Updater::Operations do
                             dependency_group_to_refresh: nil,
                             security_updates_only?: true,
                             updating_a_pull_request?: false,
+                            multi_ecosystem_update?: false,
                             dependencies: [anything, anything],
                             dependency_groups: [anything],
                             is_a?: true)
@@ -139,6 +147,7 @@ RSpec.describe Dependabot::Updater::Operations do
                             source: source,
                             security_updates_only?: true,
                             updating_a_pull_request?: true,
+                            multi_ecosystem_update?: false,
                             dependencies: [anything, anything],
                             dependency_group_to_refresh: anything,
                             dependency_groups: [anything],
@@ -155,12 +164,27 @@ RSpec.describe Dependabot::Updater::Operations do
                             dependency_group_to_refresh: nil,
                             security_updates_only?: true,
                             updating_a_pull_request?: true,
+                            multi_ecosystem_update?: false,
                             dependencies: [anything],
                             dependency_groups: [anything],
                             is_a?: true)
 
       expect(described_class.class_for(job: job))
         .to be(Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest)
+    end
+
+    it "returns the GroupUpdateAllVersions class when the job is for a multi ecosystem" do
+      source = instance_double(Dependabot::Source, directory: "/.", directories: nil)
+      job = instance_double(Dependabot::Job,
+                            source: source,
+                            security_updates_only?: false,
+                            updating_a_pull_request?: false,
+                            multi_ecosystem_update?: true,
+                            dependencies: [],
+                            dependency_groups: [],
+                            is_a?: true)
+
+      expect(described_class.class_for(job: job)).to be(Dependabot::Updater::Operations::GroupUpdateAllVersions)
     end
 
     it "raises an argument error with anything other than a Dependabot::Job" do

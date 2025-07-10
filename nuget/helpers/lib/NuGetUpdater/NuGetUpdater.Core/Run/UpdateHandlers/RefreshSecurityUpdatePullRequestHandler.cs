@@ -26,8 +26,9 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
         return job.UpdatingAPullRequest;
     }
 
-    public async Task HandleAsync(Job job, DirectoryInfo repoContentsPath, string baseCommitSha, IDiscoveryWorker discoveryWorker, IAnalyzeWorker analyzeWorker, IUpdaterWorker updaterWorker, IApiHandler apiHandler, ExperimentsManager experimentsManager, ILogger logger)
+    public async Task HandleAsync(Job job, DirectoryInfo originalRepoContentsPath, DirectoryInfo? caseInsensitiveRepoContentsPath, string baseCommitSha, IDiscoveryWorker discoveryWorker, IAnalyzeWorker analyzeWorker, IUpdaterWorker updaterWorker, IApiHandler apiHandler, ExperimentsManager experimentsManager, ILogger logger)
     {
+        var repoContentsPath = caseInsensitiveRepoContentsPath ?? originalRepoContentsPath;
         var jobDependencies = job.Dependencies.ToHashSet(StringComparer.OrdinalIgnoreCase);
         foreach (var directory in job.GetAllDirectories())
         {
@@ -36,11 +37,11 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
             if (discoveryResult.Error is not null)
             {
                 logger.Error($"Reporting error: {discoveryResult.Error.GetReport()}");
-                await apiHandler.RecordUpdateJobError(discoveryResult.Error);
+                await apiHandler.RecordUpdateJobError(discoveryResult.Error, logger);
                 return;
             }
 
-            var updatedDependencyList = RunWorker.GetUpdatedDependencyListFromDiscovery(discoveryResult);
+            var updatedDependencyList = RunWorker.GetUpdatedDependencyListFromDiscovery(discoveryResult, originalRepoContentsPath.FullName, logger);
             await apiHandler.UpdateDependencyList(updatedDependencyList);
             await this.ReportUpdaterStarted(apiHandler);
 
@@ -74,7 +75,7 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
                 continue;
             }
 
-            var tracker = new ModifiedFilesTracker(repoContentsPath);
+            var tracker = new ModifiedFilesTracker(originalRepoContentsPath, logger);
             await tracker.StartTrackingAsync(discoveryResult);
             foreach (var dependencyGroupToUpdate in groupedUpdateOperationsToPerform)
             {
@@ -85,7 +86,7 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
                     .Where(set => set.Item3.IsVulnerable)
                     .ToArray();
 
-                if (vulnerableDependenciesToUpdate.Length < dependencyGroupToUpdate.Value.Length)
+                if (vulnerableDependenciesToUpdate.Length == 0)
                 {
                     var close = ClosePullRequest.WithUpToDate(job);
                     logger.Info(close.GetReport());
@@ -99,7 +100,7 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
                     if (analysisResult.Error is not null)
                     {
                         logger.Error($"Error analyzing {dependency.Name} in {projectPath}: {analysisResult.Error.GetReport()}");
-                        await apiHandler.RecordUpdateJobError(analysisResult.Error);
+                        await apiHandler.RecordUpdateJobError(analysisResult.Error, logger);
                         return;
                     }
 
@@ -115,7 +116,7 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
                     if (updaterResult.Error is not null)
                     {
                         logger.Error($"Error updating {dependency.Name} in {projectPath}: {updaterResult.Error.GetReport()}");
-                        await apiHandler.RecordUpdateJobError(updaterResult.Error);
+                        await apiHandler.RecordUpdateJobError(updaterResult.Error, logger);
                         continue;
                     }
 

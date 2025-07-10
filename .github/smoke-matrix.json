@@ -90,6 +90,11 @@
     "ecosystem": "pip"
   },
   {
+    "core": "rust_toolchain",
+    "test": "rust-toolchain",
+    "ecosystem": "rust-toolchain"
+  },
+  {
     "core": "swift",
     "test": "swift",
     "ecosystem": "swift"
@@ -98,5 +103,10 @@
     "core": "terraform",
     "test": "terraform",
     "ecosystem": "terraform"
+  },
+  {
+    "core": "vcpkg",
+    "test": "vcpkg",
+    "ecosystem": "vcpkg"
   }
 ]

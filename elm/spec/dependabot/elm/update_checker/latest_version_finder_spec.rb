@@ -102,9 +102,6 @@ RSpec.describe namespace::LatestVersionFinder do
       stub_request(:get, "https://package.elm-lang.org/packages/elm/parser/releases.json")
         .to_return(status: 200, body: fixture("elm_jsons", "elm-parser.json"))
 
-      allow(Dependabot::Experiments).to receive(:enabled?)
-        .with(:enable_cooldown_for_elm).and_return(true)
-
       allow(Time).to receive(:now).and_return(Time.parse("2018-08-30 05:29:06 +0000"))
     end
 

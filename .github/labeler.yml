@@ -76,6 +76,10 @@
 - changed-files:
   - any-glob-to-any-file: uv/**
 
+"L: rust-toolchain":
+- changed-files:
+  - any-glob-to-any-file: rust_toolchain/**
+
 "L: terraform":
 - changed-files:
   - any-glob-to-any-file: terraform/**
@@ -87,3 +91,7 @@
 "L: helm":
 - changed-files:
   - any-glob-to-any-file: helm/**
+
+"L: vcpkg":
+- changed-files:
+  - any-glob-to-any-file: vcpkg/**

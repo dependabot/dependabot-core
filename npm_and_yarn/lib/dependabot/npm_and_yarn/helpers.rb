@@ -19,7 +19,7 @@ module Dependabot
       NPM_V10 = 10
       NPM_V8 = 8
       NPM_V6 = 6
-      NPM_DEFAULT_VERSION = NPM_V8
+      NPM_DEFAULT_VERSION = NPM_V10
 
       # PNPM Version Constants
       PNPM_V9 = 9
@@ -56,26 +56,25 @@ module Dependabot
       def self.detect_npm_version(lockfile)
         lockfile_content = lockfile&.content
 
-        # Return default NPM version if there's no lockfile or it's empty
+        # Return npm 10 as the default if the lockfile is missing or empty
         return NPM_DEFAULT_VERSION if lockfile_content.nil? || lockfile_content.strip.empty?
 
         parsed_lockfile = JSON.parse(lockfile_content)
 
         lockfile_version_str = parsed_lockfile["lockfileVersion"]
 
-        # Default to npm default version if lockfileVersion is missing or empty
         return NPM_DEFAULT_VERSION if lockfile_version_str.nil? || lockfile_version_str.to_s.strip.empty?
 
         lockfile_version = lockfile_version_str.to_i
 
         # Using npm 8 as the default for lockfile_version > 2.
-        # Update needed to support npm 9+ based on lockfile version.
+        return NPM_V10 if lockfile_version >= 3
         return NPM_V8 if lockfile_version >= 2
 
         NPM_V6 if lockfile_version >= 1
         # Return nil if can't capture
       rescue JSON::ParserError
-        NPM_DEFAULT_VERSION # Fallback to default npm version if parsing fails
+        NPM_DEFAULT_VERSION # Fallback to npm 8 if the lockfile content cannot be parsed
       end
 
       private_class_method :detect_npm_version
@@ -271,13 +270,33 @@ module Dependabot
       sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
       def self.run_npm_command(command, fingerprint: command)
         if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
-          package_manager_run_command(NpmPackageManager::NAME, command, fingerprint: fingerprint)
+          package_manager_run_command(
+            NpmPackageManager::NAME,
+            command,
+            fingerprint: fingerprint,
+            output_observer: ->(output) { command_observer(output) }
+          )
         else
           Dependabot::SharedHelpers.run_shell_command(
             "npm #{command}",
-            fingerprint: "npm #{fingerprint}"
+            fingerprint: "npm #{fingerprint}",
+            output_observer: ->(output) { command_observer(output) }
           )
         end
+      end
+
+      sig do
+        params(output: String)
+          .returns(T::Hash[Symbol, T.untyped])
+      end
+      def self.command_observer(output)
+        # Observe the output for specific error
+        return {} unless output.include?("npm ERR! ERESOLVE")
+
+        {
+          gracefully_stop: true, # value must be a String
+          reason: "NPM Resolution Error"
+        }
       end
 
       sig { returns(T.nilable(String)) }
@@ -486,20 +505,30 @@ module Dependabot
         params(
           name: String,
           command: String,
-          fingerprint: T.nilable(String)
+          fingerprint: T.nilable(String),
+          output_observer: CommandHelpers::OutputObserver
         ).returns(String)
       end
-      def self.package_manager_run_command(name, command, fingerprint: nil)
+      def self.package_manager_run_command(
+        name,
+        command,
+        fingerprint: nil,
+        output_observer: nil
+      )
         return run_bun_command(command, fingerprint: fingerprint) if name == BunPackageManager::NAME
 
         full_command = "corepack #{name} #{command}"
+        fingerprint =  "corepack #{name} #{fingerprint || command}"
 
-        result = Dependabot::SharedHelpers.run_shell_command(
-          full_command,
-          fingerprint: "corepack #{name} #{fingerprint || command}"
-        ).strip
-
-        result
+        if output_observer
+          return Dependabot::SharedHelpers.run_shell_command(
+            full_command,
+            fingerprint: fingerprint,
+            output_observer: output_observer
+          ).strip
+        else
+          Dependabot::SharedHelpers.run_shell_command(full_command, fingerprint: fingerprint)
+        end.strip
       rescue StandardError => e
         Dependabot.logger.error("Error running package manager command: #{full_command}, Error: #{e.message}")
         if e.message.match?(/Response Code.*:.*404.*\(Not Found\)/) &&

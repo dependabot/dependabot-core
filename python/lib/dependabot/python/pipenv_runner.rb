@@ -25,7 +25,7 @@ module Dependabot
         @language_version_manager = language_version_manager
       end
 
-      sig { params(constraint: String).returns(String) }
+      sig { params(constraint: T.nilable(String)).returns(String) }
       def run_upgrade(constraint)
         constraint = "" if constraint == "*"
         command = "pyenv exec pipenv upgrade --verbose #{dependency_name}#{constraint}"
@@ -34,7 +34,7 @@ module Dependabot
         run(command, fingerprint: "pyenv exec pipenv upgrade --verbose <dependency_name><constraint>")
       end
 
-      sig { params(constraint: String).returns(T.nilable(String)) }
+      sig { params(constraint: T.nilable(String)).returns(T.nilable(String)) }
       def run_upgrade_and_fetch_version(constraint)
         run_upgrade(constraint)
 

@@ -239,9 +239,6 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
       allow(Time).to receive(:now).and_return(Time.parse("2017-01-23T17:30:00.000Z"))
       stub_request(:get, elm_package_url)
         .to_return(status: 200, body: elm_package_response)
-
-      allow(Dependabot::Experiments).to receive(:enabled?)
-        .with(:enable_cooldown_for_elm).and_return(true)
     end
 
     after do

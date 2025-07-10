@@ -44,13 +44,10 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
     fixture("packagist_responses", "#{sanitized_name}.json")
   end
   let(:cooldown_options) { nil }
-  let(:enable_cooldown_for_composer) { false }
 
   before do
     url = "https://repo.packagist.org/p2/#{dependency_name.downcase}.json"
     stub_request(:get, url).to_return(status: 200, body: packagist_response)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_cooldown_for_composer).and_return(enable_cooldown_for_composer)
   end
 
   describe "#latest_version" do
@@ -391,7 +388,6 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
     end
 
     context "when enable_cooldown_for_composer is enabled" do
-      let(:enable_cooldown_for_composer) { true }
       let(:dependency_name) { "illuminate/support" }
       let(:json_url) { "https://repo.packagist.org/p2/#{dependency_name}.json" }
 

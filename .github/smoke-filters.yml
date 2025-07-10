@@ -59,6 +59,9 @@ pub:
 git_submodules:
   - *common
   - 'git_submodules/**'
+rust_toolchain:
+  - *common
+  - 'rust_toolchain/**'
 swift:
   - *common
   - 'swift/**'
@@ -71,3 +74,6 @@ uv:
 helm:
   - *common
   - 'helm/**'
+vcpkg:
+  - *common
+  - 'vcpkg/**'

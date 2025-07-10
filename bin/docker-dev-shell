@@ -251,6 +251,11 @@ docker run --rm -ti \
   -v "$(pwd)/python/lib:$CODE_DIR/python/lib" \
   -v "$(pwd)/python/script:$CODE_DIR/python/script" \
   -v "$(pwd)/python/spec:$CODE_DIR/python/spec" \
+  -v "$(pwd)/rust_toolchain/.rubocop.yml:$CODE_DIR/rust_toolchain/.rubocop.yml" \
+  -v "$(pwd)/rust_toolchain/dependabot-rust_toolchain.gemspec:$CODE_DIR/rust_toolchain/dependabot-rust_toolchain.gemspec" \
+  -v "$(pwd)/rust_toolchain/lib:$CODE_DIR/rust_toolchain/lib" \
+  -v "$(pwd)/rust_toolchain/script:$CODE_DIR/rust_toolchain/script" \
+  -v "$(pwd)/rust_toolchain/spec:$CODE_DIR/rust_toolchain/spec" \
   -v "$(pwd)/swift/.rubocop.yml:$CODE_DIR/swift/.rubocop.yml" \
   -v "$(pwd)/swift/dependabot-swift.gemspec:$CODE_DIR/swift/dependabot-swift.gemspec" \
   -v "$(pwd)/swift/lib:$CODE_DIR/swift/lib" \
@@ -268,6 +273,11 @@ docker run --rm -ti \
   -v "$(pwd)/uv/lib:$CODE_DIR/uv/lib" \
   -v "$(pwd)/uv/script:$CODE_DIR/uv/script" \
   -v "$(pwd)/uv/spec:$CODE_DIR/uv/spec" \
+  -v "$(pwd)/vcpkg/.rubocop.yml:$CODE_DIR/vcpkg/.rubocop.yml" \
+  -v "$(pwd)/vcpkg/dependabot-vcpkg.gemspec:$CODE_DIR/vcpkg/dependabot-vcpkg.gemspec" \
+  -v "$(pwd)/vcpkg/lib:$CODE_DIR/vcpkg/lib" \
+  -v "$(pwd)/vcpkg/script:$CODE_DIR/vcpkg/script" \
+  -v "$(pwd)/vcpkg/spec:$CODE_DIR/vcpkg/spec" \
   -v "$(pwd)/tmp:/$CODE_DIR/tmp" \
   -v "$(pwd)/updater/.rubocop.yml:$CODE_DIR/dependabot-updater/.rubocop.yml" \
   -v "$(pwd)/updater/bin:$CODE_DIR/dependabot-updater/bin" \
