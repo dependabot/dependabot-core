@@ -4,6 +4,7 @@ using NuGet.Versioning;
 
 using NuGetUpdater.Core.DependencySolver;
 using NuGetUpdater.Core.Discover;
+using NuGetUpdater.Core.Run;
 using NuGetUpdater.Core.Utilities;
 
 namespace NuGetUpdater.Core.Updater.FileWriters;
@@ -92,11 +93,6 @@ public class FileWriterWorker
                 .Select(op => op with { UpdatedFiles = [.. op.UpdatedFiles.Select(f => Path.GetRelativePath(repoContentsPath.FullName, f).FullyNormalizedRootedPath())] })
                 .ToArray();
             updateOperations.AddRange(packagesConfigOperationsWithNormalizedPaths);
-            if (packagesConfigOperationsWithNormalizedPaths.Any(o => o.DependencyName.Equals(dependencyName, StringComparison.OrdinalIgnoreCase) && o.NewVersion == newDependencyVersion))
-            {
-                // if we updated what we wanted, we can't do a direct xml update
-                return [.. updateOperations];
-            }
         }
 
         // then try project updates
@@ -219,7 +215,8 @@ public class FileWriterWorker
             updateOperations.AddRange(computedOperationsWithUpdatedFiles);
         }
 
-        return [.. updateOperations];
+        var normalizedUpdateOperations = UpdateOperationBase.NormalizeUpdateOperationCollection(repoContentsPath.FullName, updateOperations);
+        return normalizedUpdateOperations;
     }
 
     internal static ImmutableArray<ProjectDiscoveryResult> GetProjectDiscoveryEvaluationOrder(DirectoryInfo repoContentsPath, WorkspaceDiscoveryResult discoveryResult, FileInfo projectPath, ILogger logger)
