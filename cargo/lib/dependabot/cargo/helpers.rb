@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "yaml"
@@ -6,6 +6,9 @@ require "yaml"
 module Dependabot
   module Cargo
     module Helpers
+      extend T::Sig
+
+      sig { params(credentials: T::Array[T::Hash[String, T.untyped]]).void }
       def self.setup_credentials_in_environment(credentials)
         credentials.each do |cred|
           next if cred["type"] != "cargo_registry"
