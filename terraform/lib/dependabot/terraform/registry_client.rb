@@ -16,7 +16,10 @@ module Dependabot
 
       # Archive extensions supported by Terraform for HTTP URLs
       # https://developer.hashicorp.com/terraform/language/modules/sources#http-urls
-      ARCHIVE_EXTENSIONS = T.let(%w(.zip .bz2 .tar.bz2 .tar.tbz2 .tbz2 .gz .tar.gz .tgz .xz .tar.xz .txz).freeze, T::Array[String])
+      ARCHIVE_EXTENSIONS = T.let(
+        %w(.zip .bz2 .tar.bz2 .tar.tbz2 .tbz2 .gz .tar.gz .tgz .xz .tar.xz .txz).freeze,
+        T::Array[String]
+      )
       PUBLIC_HOSTNAME = "registry.terraform.io"
 
       sig { params(hostname: String, credentials: T::Array[Dependabot::Credential]).void }
