@@ -35,10 +35,12 @@ GEMSPECS = %w(
   omnibus/dependabot-omnibus.gemspec
   pub/dependabot-pub.gemspec
   python/dependabot-python.gemspec
+  rust_toolchain/dependabot-rust_toolchain.gemspec
   silent/dependabot-silent.gemspec
   swift/dependabot-swift.gemspec
   terraform/dependabot-terraform.gemspec
   uv/dependabot-uv.gemspec
+  vcpkg/dependabot-vcpkg.gemspec
 ).freeze
 
 def run_command(command)
