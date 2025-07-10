@@ -307,7 +307,7 @@ module Dependabot
         sig { returns(T::Array[[Dependabot::Version, T::Hash[String, T.nilable(String)]]]) }
         def possible_previous_versions_with_details
           possible_previous_releases.map do |r|
-            [r.version, { "deprecated" => r.yanked? ? "yanked" : nil }]
+            [r.version, r.details]
           end
         end
 
@@ -343,13 +343,13 @@ module Dependabot
                                    .find { |r| dist_tags.include?(r[:requirement]) }
                                    &.fetch(:requirement)
 
-          releases = package_details&.releases
+          releases = available_versions
 
           releases = filter_by_cooldown(releases) if releases
 
           if dist_tag_req
             release = find_dist_tag_release(dist_tag_req, releases)
-            return release if release && !release.yanked?
+            return release unless release&.version && yanked_version?(release.version)
           end
 
           latest_release = find_dist_tag_release("latest", releases)
