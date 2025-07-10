@@ -993,7 +993,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
     end
 
     context "when the source type is an HTTP archive" do
-      %w[.zip .bz2 .tar.bz2 .tar.tbz2 .tbz2 .gz .tar.gz .tgz .xz .tar.xz .txz].each do |extension|
+      %w(.zip .bz2 .tar.bz2 .tar.tbz2 .tbz2 .gz .tar.gz .tgz .xz .tar.xz .txz).each do |extension|
         context "with #{extension} extension" do
           let(:source_string) { "https://example.com/archive#{extension}?ref=v1.0.0" }
 
