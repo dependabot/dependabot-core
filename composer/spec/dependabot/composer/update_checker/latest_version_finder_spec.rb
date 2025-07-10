@@ -49,8 +49,6 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
   before do
     url = "https://repo.packagist.org/p2/#{dependency_name.downcase}.json"
     stub_request(:get, url).to_return(status: 200, body: packagist_response)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_cooldown_for_composer).and_return(enable_cooldown_for_composer)
   end
 
   describe "#latest_version" do
