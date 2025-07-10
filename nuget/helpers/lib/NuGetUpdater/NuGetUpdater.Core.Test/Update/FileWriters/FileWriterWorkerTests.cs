@@ -224,10 +224,9 @@ public class FileWriterWorkerTests : TestBase
             ],
             additionalChecks: (repoContentsPath) =>
             {
-                // ensure the lock file was updated; we don't care how, just that it was
                 var lockFilePath = Path.Join(repoContentsPath.FullName, "packages.lock.json");
                 var lockFileContent = File.ReadAllText(lockFilePath);
-                Assert.NotEqual("{}", lockFileContent);
+                Assert.Contains("\"resolved\": \"2.0.0\"", lockFileContent);
             }
         );
     }
