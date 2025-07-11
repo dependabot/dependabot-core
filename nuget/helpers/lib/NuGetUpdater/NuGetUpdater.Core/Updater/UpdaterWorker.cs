@@ -1,11 +1,15 @@
 using System.Collections.Immutable;
-using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
+using NuGet.Versioning;
+
 using NuGetUpdater.Core.Analyze;
+using NuGetUpdater.Core.DependencySolver;
+using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Run.ApiModel;
 using NuGetUpdater.Core.Updater;
+using NuGetUpdater.Core.Updater.FileWriters;
 using NuGetUpdater.Core.Utilities;
 
 namespace NuGetUpdater.Core;
@@ -71,6 +75,27 @@ public class UpdaterWorker : IUpdaterWorker
         if (!Path.IsPathRooted(workspacePath) || !File.Exists(workspacePath))
         {
             workspacePath = Path.GetFullPath(Path.Join(repoRootPath, workspacePath));
+        }
+
+        if (_experimentsManager.UseNewFileUpdater)
+        {
+            var worker = new FileWriterWorker(
+                new DiscoveryWorker(_jobId, _experimentsManager, _logger),
+                new MSBuildDependencySolver(new DirectoryInfo(repoRootPath), new FileInfo(workspacePath), _experimentsManager, _logger),
+                new XmlFileWriter(_logger),
+                _logger
+            );
+            var updateOperations = await worker.RunAsync(
+                new DirectoryInfo(repoRootPath),
+                new FileInfo(workspacePath),
+                dependencyName,
+                NuGetVersion.Parse(previousDependencyVersion),
+                NuGetVersion.Parse(newDependencyVersion)
+            );
+            return new UpdateOperationResult()
+            {
+                UpdateOperations = updateOperations,
+            };
         }
 
         if (!isTransitive)

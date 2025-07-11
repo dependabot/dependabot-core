@@ -12,6 +12,7 @@ public record ExperimentsManager
     public bool UseLegacyDependencySolver { get; init; } = false;
     public bool UseLegacyUpdateHandler { get; init; } = false;
     public bool UseDirectDiscovery { get; init; } = false;
+    public bool UseNewFileUpdater { get; init; } = false;
 
     public Dictionary<string, object> ToDictionary()
     {
@@ -22,6 +23,7 @@ public record ExperimentsManager
             ["nuget_legacy_dependency_solver"] = UseLegacyDependencySolver,
             ["nuget_use_legacy_update_handler"] = UseLegacyUpdateHandler,
             ["nuget_use_direct_discovery"] = UseDirectDiscovery,
+            ["nuget_use_new_file_updater"] = UseNewFileUpdater,
         };
     }
 
@@ -34,6 +36,7 @@ public record ExperimentsManager
             UseLegacyDependencySolver = IsEnabled(experiments, "nuget_legacy_dependency_solver"),
             UseLegacyUpdateHandler = IsEnabled(experiments, "nuget_use_legacy_update_handler"),
             UseDirectDiscovery = IsEnabled(experiments, "nuget_use_direct_discovery"),
+            UseNewFileUpdater = IsEnabled(experiments, "nuget_use_new_file_updater"),
         };
     }
 

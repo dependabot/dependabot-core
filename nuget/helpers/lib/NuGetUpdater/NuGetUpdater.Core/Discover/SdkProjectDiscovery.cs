@@ -526,7 +526,8 @@ internal static class SdkProjectDiscovery
                 .ToImmutableArray();
 
             // others
-            var properties = resolvedProperties[projectPath]
+            var projectProperties = resolvedProperties[projectPath];
+            var properties = projectProperties
                 .Where(pkvp => projectPropertyNames.Contains(pkvp.Key))
                 .Select(pkvp => new Property(pkvp.Key, pkvp.Value, Path.GetRelativePath(repoRootPath, projectPath).NormalizePathToUnix()))
                 .OrderBy(p => p.Name)
@@ -547,6 +548,13 @@ internal static class SdkProjectDiscovery
                 .Select(p => p.NormalizePathToUnix())
                 .OrderBy(p => p)
                 .ToImmutableArray();
+            var useCpmTransitivePinning =
+                projectProperties.TryGetValue("ManagePackageVersionsCentrally", out var useCpmString) &&
+                bool.TryParse(useCpmString, out var useCpm) &&
+                useCpm &&
+                projectProperties.TryGetValue("CentralPackageTransitivePinningEnabled", out var useTransitivePinningString) &&
+                bool.TryParse(useTransitivePinningString, out var useTransitivePinning) &&
+                useTransitivePinning;
 
             var projectDiscoveryResult = new ProjectDiscoveryResult()
             {
@@ -557,6 +565,7 @@ internal static class SdkProjectDiscovery
                 ReferencedProjectPaths = referenced,
                 ImportedFiles = imported,
                 AdditionalFiles = additional,
+                CentralPackageTransitivePinningEnabled = useCpmTransitivePinning,
             };
             projectDiscoveryResults.Add(projectDiscoveryResult);
         }
