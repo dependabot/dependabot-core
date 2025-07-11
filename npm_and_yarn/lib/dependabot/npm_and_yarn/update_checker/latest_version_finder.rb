@@ -79,7 +79,8 @@ module Dependabot
             return unless valid_npm_details?
             return version_from_dist_tags&.version if specified_dist_tag_requirement?
 
-            super
+            in_range_versions = filter_out_of_range_versions(possible_releases)
+            in_range_versions.find { |r| !package_fetcher.yanked?(r.version) }&.version
           end
         end
 
@@ -96,7 +97,7 @@ module Dependabot
           params(language_version: T.nilable(T.any(String, Dependabot::Version)))
             .returns(T.nilable(Dependabot::Version))
         end
-        def fetch_latest_version(language_version: nil)
+        def fetch_latest_version(language_version: nil) # rubocop:disable Lint/UnusedMethodArgument
           with_custom_registry_rescue do
             return unless valid_npm_details?
 
@@ -105,7 +106,7 @@ module Dependabot
 
             return if specified_dist_tag_requirement?
 
-            super
+            possible_releases.find { |r| !package_fetcher.yanked?(r.version) }&.version
           end
         end
 
@@ -120,34 +121,9 @@ module Dependabot
             return version_from_dist_tags&.version if specified_dist_tag_requirement?
 
             super
+            in_range_versions = filter_out_of_range_versions(possible_releases)
+            in_range_versions.find { |r| !package_fetcher.yanked?(r.version) }&.version
           end
-        end
-
-        sig do
-          override
-            .params(releases: T::Array[Dependabot::Package::PackageRelease])
-            .returns(T::Array[Dependabot::Package::PackageRelease])
-        end
-        def apply_post_fetch_latest_versions_filter(releases)
-          # Find the latest non-yanked version (like legacy .find { |v| !yanked?(v) })
-          yanked_count = 0
-          first_valid = releases
-                        .sort_by(&:version).reverse
-                        .find do |release|
-                          yanked = yanked_version?(release.version)
-                          yanked_count += 1 if yanked
-                          !yanked
-                        end
-
-          # Log if we encountered yanked versions
-          if yanked_count.positive?
-            Dependabot.logger.info(
-              "Filtered out #{yanked_count} " \
-              "yanked (not found) versions after fetching latest versions"
-            )
-          end
-
-          first_valid ? [first_valid] : []
         end
 
         sig do
