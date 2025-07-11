@@ -13,7 +13,7 @@ internal class TestFileWriterReturnsConstantResult : IFileWriter
         Result = result;
     }
 
-    public Task<bool> UpdatePackageVersionsAsync(DirectoryInfo repoContentsPath, ImmutableArray<string> relativeFilePaths, ImmutableArray<Dependency> originalDependencies, ImmutableArray<Dependency> requiredPackageVersions)
+    public Task<bool> UpdatePackageVersionsAsync(DirectoryInfo repoContentsPath, ImmutableArray<string> relativeFilePaths, ImmutableArray<Dependency> originalDependencies, ImmutableArray<Dependency> requiredPackageVersions, bool addPackageReferenceElementForPinnedPackages)
     {
         return Task.FromResult(Result);
     }

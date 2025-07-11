@@ -14,14 +14,16 @@ public abstract class FileWriterTestsBase
         (string path, string contents)[] files,
         ImmutableArray<string> initialProjectDependencyStrings,
         ImmutableArray<string> requiredDependencyStrings,
-        (string path, string contents)[] expectedFiles
+        (string path, string contents)[] expectedFiles,
+        bool useCentralPackageTransitivePinning = false
     )
     {
         using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(files);
         var repoContentsPath = new DirectoryInfo(tempDir.DirectoryPath);
         var initialProjectDependencies = initialProjectDependencyStrings.Select(s => new Dependency(s.Split('/')[0], s.Split('/')[1], DependencyType.Unknown)).ToImmutableArray();
         var requiredDependencies = requiredDependencyStrings.Select(s => new Dependency(s.Split('/')[0], s.Split('/')[1], DependencyType.Unknown)).ToImmutableArray();
-        var success = await FileWriter.UpdatePackageVersionsAsync(repoContentsPath, [.. files.Select(f => f.path)], initialProjectDependencies, requiredDependencies);
+        var addPackageReferenceElementForPinnedPackages = !useCentralPackageTransitivePinning;
+        var success = await FileWriter.UpdatePackageVersionsAsync(repoContentsPath, [.. files.Select(f => f.path)], initialProjectDependencies, requiredDependencies, addPackageReferenceElementForPinnedPackages);
         Assert.True(success);
 
         var expectedFileNames = expectedFiles.Select(f => f.path).ToHashSet();
@@ -36,14 +38,16 @@ public abstract class FileWriterTestsBase
     protected async Task TestNoChangeAsync(
         (string path, string contents)[] files,
         ImmutableArray<string> initialProjectDependencyStrings,
-        ImmutableArray<string> requiredDependencyStrings
+        ImmutableArray<string> requiredDependencyStrings,
+        bool useCentralPackageTransitivePinning = false
     )
     {
         using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(files);
         var repoContentsPath = new DirectoryInfo(tempDir.DirectoryPath);
         var initialProjectDependencies = initialProjectDependencyStrings.Select(s => new Dependency(s.Split('/')[0], s.Split('/')[1], DependencyType.Unknown)).ToImmutableArray();
         var requiredDependencies = requiredDependencyStrings.Select(s => new Dependency(s.Split('/')[0], s.Split('/')[1], DependencyType.Unknown)).ToImmutableArray();
-        var success = await FileWriter.UpdatePackageVersionsAsync(repoContentsPath, [.. files.Select(f => f.path)], initialProjectDependencies, requiredDependencies);
+        var addPackageReferenceElementForPinnedPackages = !useCentralPackageTransitivePinning;
+        var success = await FileWriter.UpdatePackageVersionsAsync(repoContentsPath, [.. files.Select(f => f.path)], initialProjectDependencies, requiredDependencies, addPackageReferenceElementForPinnedPackages);
         Assert.False(success);
 
         var expectedFileNames = files.Select(f => f.path).ToHashSet();
