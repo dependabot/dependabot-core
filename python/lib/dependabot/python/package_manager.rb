@@ -163,5 +163,43 @@ module Dependabot
         false
       end
     end
+
+    class PdmPackageManager < Dependabot::Ecosystem::VersionManager
+      extend T::Sig
+
+      NAME = "pdm"
+
+      LOCKFILE_NAME = "pdm.lock"
+
+      SUPPORTED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
+
+      DEPRECATED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
+
+      sig do
+        params(
+          raw_version: String,
+          requirement: T.nilable(Requirement)
+        ).void
+      end
+      def initialize(raw_version, requirement = nil)
+        super(
+          name: NAME,
+          version: Version.new(raw_version),
+          deprecated_versions: DEPRECATED_VERSIONS,
+          supported_versions: SUPPORTED_VERSIONS,
+          requirement: requirement,
+        )
+      end
+
+      sig { override.returns(T::Boolean) }
+      def deprecated?
+        false
+      end
+
+      sig { override.returns(T::Boolean) }
+      def unsupported?
+        false
+      end
+    end
   end
 end
