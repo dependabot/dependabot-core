@@ -121,6 +121,11 @@ module Dependabot
       client.update_dependency_list(dependency_payload, dependency_file_paths)
     end
 
+    sig { params(dependency_submission: GithubApi::DependencySubmission).void }
+    def create_dependency_submission(dependency_submission:)
+      client.create_dependency_submission(dependency_submission.payload)
+    end
+
     # This method wraps the Sentry client as the Application error tracker
     # the service uses to notice errors.
     #
