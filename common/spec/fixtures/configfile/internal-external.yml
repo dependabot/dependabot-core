@@ -1,0 +1,5 @@
+# https://github.com/dependabot/dependabot-core/blob/261436243d0fa5dc56e5010484ad6ba481dae098/common/lib/dependabot/config/file.rb#L60-L84
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
