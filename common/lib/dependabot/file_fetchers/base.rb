@@ -562,7 +562,9 @@ module Dependabot
         entries.reject do |entry|
           full_entry_path = entry.path
           @exclude_paths.any? do |ex|
-            File.fnmatch?(ex, full_entry_path, File::FNM_EXTGLOB) || full_entry_path.start_with?(ex)
+            exclude_exact   = full_entry_path == ex
+            exclude_deeper  = full_entry_path.start_with?("#{ex}#{File::SEPARATOR}")
+            File.fnmatch?(ex, full_entry_path, File::FNM_EXTGLOB) || exclude_exact || exclude_deeper
           end
         end
       end

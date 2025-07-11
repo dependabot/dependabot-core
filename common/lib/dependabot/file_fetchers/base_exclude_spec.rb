@@ -72,6 +72,12 @@ RSpec.describe Dependabot::FileFetchers::Base do
         [
           OpenStruct.new(name: "nested.txt", path: "vendor/gemA/nested.txt", type: "file")
         ]
+      when "others"
+        [
+          OpenStruct.new(name: "abc",       path: "others/abc",       type: "dir"),
+          OpenStruct.new(name: "abcd",      path: "others/abcd",      type: "dir"),
+          OpenStruct.new(name: "abcde",     path: "others/abcde",     type: "dir"),
+        ]
       else
         []
       end
@@ -117,6 +123,15 @@ RSpec.describe Dependabot::FileFetchers::Base do
       paths = fetcher.send(:_fetch_repo_contents, "src/test").map(&:path)
       expect(paths).not_to include("src/test/helper.rb")
       expect(paths).to include("src/test/assets")
+    end
+
+    it "excludes the right folder" do
+      fetcher.instance_variable_set(:@exclude_paths, %w(others/abc))
+
+      paths = fetcher.send(:_fetch_repo_contents, "others").map(&:path)
+      expect(paths).not_to include("others/abc")
+      expect(paths).to include("others/abcd")
+      expect(paths).to include("others/abcde")
     end
 
     it "filters out individual files by glob but still descends into the folder" do
@@ -171,6 +186,15 @@ RSpec.describe Dependabot::FileFetchers::Base do
       paths = fetcher.send(:repo_contents, dir: "src/test").map(&:path)
       expect(paths).not_to include("src/test/helper.rb")
       expect(paths).to include("src/test/assets")
+    end
+
+    it "excludes the right folder" do
+      fetcher.instance_variable_set(:@exclude_paths, %w(others/abcd))
+
+      paths = fetcher.send(:repo_contents, dir: "others").map(&:path)
+      expect(paths).not_to include("others/abcd")
+      expect(paths).to include("others/abc")
+      expect(paths).to include("others/abcde")
     end
 
     it "filters out individual files by glob but still descends into the folder" do
