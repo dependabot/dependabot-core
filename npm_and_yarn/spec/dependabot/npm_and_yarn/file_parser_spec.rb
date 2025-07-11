@@ -548,7 +548,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                     type: "git",
                     url: "https://github.com/jonschlinkert/is-number.git",
                     branch: nil,
-                    ref: "master"
+                    ref: nil
                   }
                 }]
               )
@@ -641,7 +641,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                       type: "git",
                       url: "https://github.com/jonschlinkert/is-number",
                       branch: nil,
-                      ref: "master"
+                      ref: nil
                     }
                   }]
                 )
@@ -698,7 +698,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                       type: "git",
                       url: "https://github.com/jonschlinkert/is-number",
                       branch: nil,
-                      ref: "master"
+                      ref: nil
                     }
                   }]
                 )
@@ -733,7 +733,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                       type: "git",
                       url: "https://github.com/jonschlinkert/is-number",
                       branch: nil,
-                      ref: "master"
+                      ref: nil
                     }
                   }]
                 )
@@ -789,7 +789,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                       type: "git",
                       url: "https://github.com/jonschlinkert/is-number.git",
                       branch: nil,
-                      ref: "master"
+                      ref: nil
                     }
                   }]
                 )
@@ -1012,7 +1012,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                     type: "git",
                     url: "https://github.com/jonschlinkert/is-number",
                     branch: nil,
-                    ref: "master"
+                    ref: nil
                   }
                 }]
               )
@@ -1041,7 +1041,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                       type: "git",
                       url: "https://github.com/jonschlinkert/is-number",
                       branch: nil,
-                      ref: "master"
+                      ref: nil
                     }
                   }]
                 )
@@ -1181,7 +1181,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                     type: "git",
                     url: "https://github.com/jonschlinkert/is-number.git",
                     branch: nil,
-                    ref: "master"
+                    ref: nil
                   }
                 }]
               )
@@ -1207,7 +1207,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                       type: "git",
                       url: "https://github.com/jonschlinkert/is-number.git",
                       branch: nil,
-                      ref: "master"
+                      ref: nil
                     }
                   }]
                 )
@@ -1272,7 +1272,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                       url: "https://username:password@github.com/" \
                            "jonschlinkert/is-number.git",
                       branch: nil,
-                      ref: "master"
+                      ref: nil
                     }
                   }]
                 )
@@ -1296,7 +1296,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                         url: "https://username:password@github.com/" \
                              "jonschlinkert/is-number.git",
                         branch: nil,
-                        ref: "master"
+                        ref: nil
                       }
                     }]
                   )
