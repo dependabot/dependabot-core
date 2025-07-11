@@ -939,7 +939,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
       before do
         artifactory_repo_url = "http://artifactory.dependabot.com/artifactory/tf-modules/azurerm"
 
-        stub_request(:get, "#{artifactory_repo_url}/terraform-azurerm-nsg-rules.v1.1.0.tar.gz?terraform-get=1")
+        stub_request(:get, "#{artifactory_repo_url}/terraform-azurerm-nsg-rules.v1.1.0?terraform-get=1")
           .and_return(status: 401)
       end
 
@@ -993,10 +993,14 @@ RSpec.describe Dependabot::Terraform::FileParser do
     end
 
     context "when the source type is an HTTP archive" do
-      let(:source_string) { "https://example.com/archive.zip?ref=v1.0.0" }
+      %w(.zip .bz2 .tar.bz2 .tar.tbz2 .tbz2 .gz .tar.gz .tgz .xz .tar.xz .txz).each do |extension|
+        context "with #{extension} extension" do
+          let(:source_string) { "https://example.com/archive#{extension}?ref=v1.0.0" }
 
-      it "returns the correct source type" do
-        expect(source_type).to eq(:http_archive)
+          it "returns the correct source type" do
+            expect(source_type).to eq(:http_archive)
+          end
+        end
       end
     end
 
