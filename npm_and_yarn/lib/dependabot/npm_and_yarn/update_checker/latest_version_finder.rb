@@ -129,50 +129,25 @@ module Dependabot
             .returns(T::Array[Dependabot::Package::PackageRelease])
         end
         def apply_post_fetch_latest_versions_filter(releases)
-          original_count = releases.count
-          filtered_versions = lazy_filter_yanked_versions_by_min_max(releases, check_max: true)
+          # Find the latest non-yanked version (like legacy .find { |v| !yanked?(v) })
+          yanked_count = 0
+          first_valid = releases
+                        .sort_by(&:version).reverse
+                        .find do |release|
+                          yanked = yanked_version?(release.version)
+                          yanked_count += 1 if yanked
+                          !yanked
+                        end
 
-          # Log the filter if any versions were removed
-          if original_count > filtered_versions.count
+          # Log if we encountered yanked versions
+          if yanked_count.positive?
             Dependabot.logger.info(
-              "Filtered out #{original_count - filtered_versions.count} " \
+              "Filtered out #{yanked_count} " \
               "yanked (not found) versions after fetching latest versions"
             )
           end
 
-          filtered_versions
-        end
-
-        sig do
-          params(
-            releases: T::Array[Dependabot::Package::PackageRelease],
-            check_max: T::Boolean
-          ).returns(T::Array[Dependabot::Package::PackageRelease])
-        end
-        def lazy_filter_yanked_versions_by_min_max(releases, check_max: true)
-          # Sort the versions based on the check_max flag (max -> descending, min -> ascending)
-          sorted_releases = if check_max
-                              releases.sort_by(&:version).reverse
-                            else
-                              releases.sort_by(&:version)
-                            end
-
-          filtered_versions = []
-
-          not_yanked = T.let(false, T::Boolean)
-
-          # Iterate through the sorted versions lazily, filtering out yanked versions
-          sorted_releases.each do |release|
-            next if !not_yanked && yanked_version?(release.version)
-
-            not_yanked = true
-
-            # Once we find a valid (non-yanked) version, add it to the filtered list
-            filtered_versions << release
-            break
-          end
-
-          filtered_versions
+          first_valid ? [first_valid] : []
         end
 
         sig do
@@ -200,11 +175,8 @@ module Dependabot
             secure_versions = filter_ignored_versions(secure_versions)
             secure_versions = filter_lower_versions(secure_versions)
 
-            # Apply lazy filtering for yanked versions (min or max logic)
-            secure_versions = lazy_filter_yanked_versions_by_min_max(secure_versions, check_max: false)
-
-            # Return the lowest non-yanked version
-            secure_versions.max_by(&:version)&.version
+            # Find the lowest non-yanked version (ascending order, then find first)
+            secure_versions.sort_by(&:version).find { |version| !yanked_version?(version.version) }&.version
           end
         end
 
