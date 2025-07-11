@@ -4,6 +4,8 @@ using System.Xml.Linq;
 
 using NuGet.Versioning;
 
+using NuGetUpdater.Core.Utilities;
+
 namespace NuGetUpdater.Core.Updater.FileWriters;
 
 public class XmlFileWriter : IFileWriter
@@ -266,6 +268,25 @@ public class XmlFileWriter : IFileWriter
                                     performedUpdate = true;
                                     _logger.Info($"Updated dependency {requiredPackageVersion.Name} from version {oldVersion} to {requiredVersion}.");
                                     break;
+                                }
+                                else
+                                {
+                                    // no exact match found, but this may be a magic SDK package
+                                    var packageMapper = DotNetPackageCorrelationManager.GetPackageMapper();
+                                    var isSdkReplacementPackage = packageMapper.IsSdkReplacementPackage(requiredPackageVersion.Name);
+                                    if (isSdkReplacementPackage &&
+                                        candidateUpdateVersion < oldVersion && // version in XML is older than what was resolved by the SDK
+                                        oldVersion < requiredVersion) // this ensures we don't downgrade the wrong one
+                                    {
+                                        // If we're updating a top level SDK replacement package, the version listed in the project file won't
+                                        // necessarily match the resolved version that caused the update because the SDK might have replaced
+                                        // the package.  To handle this scenario, we pretend the version we're searching for was actually found.
+                                        candidateUpdater(requiredVersion.ToString());
+                                        updatesPerformed[requiredPackageVersion.Name] = true;
+                                        performedUpdate = true;
+                                        _logger.Info($"Updated SDK-managed package {requiredPackageVersion.Name} from version {oldVersion} to {requiredVersion}.");
+                                        break;
+                                    }
                                 }
                             }
                             else if (VersionRange.TryParse(candidateUpdateVersionString, out var candidateUpdateVersionRange))
