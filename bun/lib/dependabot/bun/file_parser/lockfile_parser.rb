@@ -21,6 +21,8 @@ module Dependabot
         sig { params(dependency_files: T::Array[DependencyFile]).void }
         def initialize(dependency_files:)
           @dependency_files = dependency_files
+          @lockfile_cache = T.let({}, T::Hash[String, LockFile])
+          @lockfile_details_cache = T.let({}, T::Hash[[String, T.nilable(String), String], T.nilable(T::Hash[String, T.untyped])])
         end
 
         sig { returns(Dependabot::FileParsers::Base::DependencySet) }
@@ -48,6 +50,9 @@ module Dependabot
             .returns(T.nilable(T::Hash[String, T.untyped]))
         end
         def lockfile_details(dependency_name:, requirement:, manifest_name:)
+          cache_key = [dependency_name, requirement, manifest_name]
+          return @lockfile_details_cache[cache_key] if @lockfile_details_cache.key?(cache_key)
+
           details = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
           potential_lockfiles_for_manifest(manifest_name).each do |lockfile|
             details = lockfile_for(lockfile).details(dependency_name, requirement, manifest_name)
@@ -55,6 +60,7 @@ module Dependabot
             break if details
           end
 
+          @lockfile_details_cache[cache_key] = details
           details
         end
 
@@ -76,13 +82,12 @@ module Dependabot
 
         sig { params(file: DependencyFile).returns(LockFile) }
         def lockfile_for(file)
-          @lockfiles ||= T.let({}, T.nilable(T::Hash[String, LockFile]))
-          @lockfiles[file.name] ||= case file.name
-                                    when *bun_locks.map(&:name)
-                                      BunLock.new(file)
-                                    else
-                                      raise "Unexpected lockfile: #{file.name}"
-                                    end
+          @lockfile_cache[file.name] ||= case file.name
+                                         when *bun_locks.map(&:name)
+                                           BunLock.new(file)
+                                         else
+                                           raise "Unexpected lockfile: #{file.name}"
+                                         end
         end
 
         sig { params(extension: String).returns(T::Array[DependencyFile]) }
