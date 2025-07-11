@@ -1489,4 +1489,57 @@ public class XmlFileWriterTests : FileWriterTestsBase
             ]
         );
     }
+
+    [Fact]
+    public async Task UpdateOfSdkManagedPackageCanOccurDespiteVersionReplacements()
+    {
+        // To avoid a unit test that's tightly coupled to the installed SDK, A list of SDK-managed packages is faked.
+        // In this test the package `Test.Sdk.Managed.Package` is listed in the project as 1.0.0, but the SDK replaces
+        // the version with 1.0.1 during a restore operation, so that's what the file updater thinks it's starting with.
+        // The update then proceeds from 1.0.1 to 1.0.2.
+        using var tempDirectory = new TemporaryDirectory();
+        var packageCorrelationFile = Path.Combine(tempDirectory.DirectoryPath, "dotnet-package-correlation.json");
+        await File.WriteAllTextAsync(packageCorrelationFile, """
+            {
+                "Runtimes": {
+                    "1.0.0": {
+                        "Packages": {
+                            "Dependabot.App.Core.Ref": "1.0.0",
+                            "Test.Sdk.Managed.Package": "1.0.0"
+                        }
+                    },
+                    "1.0.1": {
+                        "Packages": {
+                            "Dependabot.App.Core.Ref": "1.0.1",
+                            "Test.Sdk.Managed.Package": "1.0.1"
+                        }
+                    }
+                }
+            }
+            """, TestContext.Current.CancellationToken);
+        using var tempEnvironment = new TemporaryEnvironment([("DOTNET_PACKAGE_CORRELATION_FILE_PATH", packageCorrelationFile)]);
+
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="Test.Sdk.Managed.Package" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Test.Sdk.Managed.Package/1.0.1"],
+            requiredDependencyStrings: ["Test.Sdk.Managed.Package/1.0.2"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="Test.Sdk.Managed.Package" Version="1.0.2" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
 }
