@@ -118,6 +118,28 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
           Dependabot::Helm::Version.new("1.0.124446+3123f85bdf6d8309d3d601938564a996f5cad238")
         )
       end
+
+      context "when tags include non-version tags like SHA256 hashes and metadata files" do
+        before do
+          allow(Dependabot::Helm::Helpers).to receive(:fetch_oci_tags)
+            .with("registry.sweet.security/helm/frontierchart")
+            .and_return(
+              "1.0.119807+c2277fddd003556d4982b86ef4e77fc84a41ed79\n" \
+              "1.0.124446+3123f85bdf6d8309d3d601938564a996f5cad238\n" \
+              "sha256-bbccb29e4f20037bc6c3319199138172c044d29c514431a11f0f2bfd9b694d6d\n" \
+              "sha256-bbccb29e4f20037bc6c3319199138172c044d29c514431a11f0f2bfd9b694d6d.att\n" \
+              "sha256-bbccb29e4f20037bc6c3319199138172c044d29c514431a11f0f2bfd9b694d6d.sig\n" \
+              "sha256-bbccb29e4f20037bc6c3319199138172c044d29c514431a11f0f2bfd9b694d6d.metadata\n" \
+              "1.1.0"
+            )
+        end
+
+        it "filters out non-version tags and returns the latest valid version" do
+          expect(checker.latest_version).to eq(
+            Dependabot::Helm::Version.new("1.1.0")
+          )
+        end
+      end
     end
   end
 
