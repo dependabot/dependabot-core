@@ -22,6 +22,10 @@ cp -r \
 
 cd "$install_dir"
 
+# We are skipping the PHP-CS-Fixer compatibility check as support for php 8.4+ is not available in latest version.
+# Once PHP-CS-Fixer supports 8.4+ we can remove this line - https://github.com/PHP-CS-Fixer/PHP-CS-Fixer/milestone/173
+export PHP_CS_FIXER_IGNORE_ENV=1
+
 composer validate --no-check-publish
 composer install
 composer run lint -- --dry-run
