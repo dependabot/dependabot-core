@@ -6,5 +6,7 @@
     because that's irrelevant to dependency discovery.
     -->
     <NoWarn>$(NoWarn);MSB3644</NoWarn>
+    <!-- A package downgrade warning shouldn't be lifted to an error because that would prevent discovery. -->
+    <NoWarn>$(NoWarn);NU1605</NoWarn>
   </PropertyGroup>
 </Project>
