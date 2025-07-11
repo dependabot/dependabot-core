@@ -300,12 +300,15 @@ public class FileWriterWorker
             .ToImmutableArray();
 
         // try update
-        var success = await _fileWriter.UpdatePackageVersionsAsync(repoContentsPath, [.. relativeFilePaths], projectDiscovery.Dependencies, requiredPackageVersions);
+        var addPackageReferenceElementForPinnedPackages = !projectDiscovery.CentralPackageTransitivePinningEnabled;
+        var success = await _fileWriter.UpdatePackageVersionsAsync(repoContentsPath, [.. relativeFilePaths], projectDiscovery.Dependencies, requiredPackageVersions, addPackageReferenceElementForPinnedPackages);
         var updatedFiles = new List<string>();
         foreach (var (filePath, originalContents) in originalFileContents)
         {
             var currentContents = await File.ReadAllTextAsync(filePath);
-            if (currentContents != originalContents)
+            var currentContentsNormalized = currentContents.Replace("\r", "");
+            var originalContentsNormalized = originalContents.Replace("\r", "");
+            if (currentContentsNormalized != originalContentsNormalized)
             {
                 var relativeUpdatedPath = Path.GetRelativePath(repoContentsPath.FullName, filePath).FullyNormalizedRootedPath();
                 updatedFiles.Add(relativeUpdatedPath);

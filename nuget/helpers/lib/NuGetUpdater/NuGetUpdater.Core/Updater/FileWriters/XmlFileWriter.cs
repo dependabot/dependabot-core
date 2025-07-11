@@ -38,7 +38,13 @@ public class XmlFileWriter : IFileWriter
         _logger = logger;
     }
 
-    public async Task<bool> UpdatePackageVersionsAsync(DirectoryInfo repoContentsPath, ImmutableArray<string> relativeFilePaths, ImmutableArray<Dependency> originalDependencies, ImmutableArray<Dependency> requiredPackageVersions)
+    public async Task<bool> UpdatePackageVersionsAsync(
+        DirectoryInfo repoContentsPath,
+        ImmutableArray<string> relativeFilePaths,
+        ImmutableArray<Dependency> originalDependencies,
+        ImmutableArray<Dependency> requiredPackageVersions,
+        bool addPackageReferenceElementForPinnedPackages
+    )
     {
         if (relativeFilePaths.IsDefaultOrEmpty)
         {
@@ -99,6 +105,7 @@ public class XmlFileWriter : IFileWriter
                 updatesPerformed[requiredPackageVersion.Name] = true; // all cases below add the dependency
 
                 // find last `<ItemGroup>` in the project...
+                Action addItemGroup = () => { }; // adding an ItemGroup to the project isn't always necessary, but it's much easier to prepare for it here
                 var projectDocument = filesAndContents[projectRelativePath];
                 var lastItemGroup = projectDocument.Root!.Elements()
                     .LastOrDefault(e => e.Name.LocalName.Equals(ItemGroupElementName, StringComparison.OrdinalIgnoreCase));
@@ -106,7 +113,7 @@ public class XmlFileWriter : IFileWriter
                 {
                     _logger.Info($"No `<{ItemGroupElementName}>` element found in project; adding one.");
                     lastItemGroup = new XElement(XName.Get(ItemGroupElementName, projectDocument.Root.Name.NamespaceName));
-                    projectDocument.Root.Add(lastItemGroup);
+                    addItemGroup = () => projectDocument.Root.Add(lastItemGroup);
                 }
 
                 // ...find where the new item should go...
@@ -115,20 +122,26 @@ public class XmlFileWriter : IFileWriter
                     .TakeWhile(e => (e.Attribute(IncludeAttributeName)?.Value ?? e.Attribute(UpdateAttributeName)?.Value ?? string.Empty).CompareTo(requiredPackageVersion.Name) < 0)
                     .ToArray();
 
-                // ...add a new `<PackageReference>` element...
+                // ...prepare a new `<PackageReference>` element...
                 var newElement = new XElement(
                     XName.Get(PackageReferenceElementName, projectDocument.Root.Name.NamespaceName),
                     new XAttribute(IncludeAttributeName, requiredPackageVersion.Name));
-                var lastPriorPackageReference = packageReferencesBeforeNew.LastOrDefault();
-                if (lastPriorPackageReference is not null)
+
+                // ...add the `<PackageReference>` element if and where appropriate...
+                if (addPackageReferenceElementForPinnedPackages)
                 {
-                    AddAfterSiblingElement(lastPriorPackageReference, newElement);
-                }
-                else
-                {
-                    // no prior package references; add to the front
-                    var indent = GetIndentXTextFromElement(lastItemGroup, extraIndentationToAdd: "  ");
-                    lastItemGroup.AddFirst(indent, newElement);
+                    addItemGroup();
+                    var lastPriorPackageReference = packageReferencesBeforeNew.LastOrDefault();
+                    if (lastPriorPackageReference is not null)
+                    {
+                        AddAfterSiblingElement(lastPriorPackageReference, newElement);
+                    }
+                    else
+                    {
+                        // no prior package references; add to the front
+                        var indent = GetIndentXTextFromElement(lastItemGroup, extraIndentationToAdd: "  ");
+                        lastItemGroup.AddFirst(indent, newElement);
+                    }
                 }
 
                 // ...find the best place to add the version...

@@ -15,4 +15,5 @@ public record ProjectDiscoveryResult : IDiscoveryResultWithDependencies
     public ImmutableArray<string> ReferencedProjectPaths { get; init; } = [];
     public required ImmutableArray<string> ImportedFiles { get; init; }
     public required ImmutableArray<string> AdditionalFiles { get; init; }
+    public bool CentralPackageTransitivePinningEnabled { get; init; } = false;
 }

@@ -1397,6 +1397,55 @@ public class XmlFileWriterTests : FileWriterTestsBase
     }
 
     [Fact]
+    public async Task SingleDependency_CentralPackageManagement_TransitiveIsPinned_NoExistingPackageVersionElement_TransitivePinningEnabled_OnlyPackagesPropsIsUpdated()
+    {
+        await TestAsync(
+            useCentralPackageTransitivePinning: true,
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="Some.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Directory.Packages.props", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageVersion Include="Some.Dependency" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: [
+                "Some.Dependency/1.0.0",
+                "Transitive.Dependency/2.0.0",
+            ],
+            requiredDependencyStrings: [
+                "Some.Dependency/1.0.0",
+                "Transitive.Dependency/3.0.0",
+            ],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="Some.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Directory.Packages.props", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageVersion Include="Some.Dependency" Version="1.0.0" />
+                        <PackageVersion Include="Transitive.Dependency" Version="3.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
     public async Task FormattingIsPreserved_UpdateAttribute()
     {
         // the formatting of the XML is weird and should be kept
