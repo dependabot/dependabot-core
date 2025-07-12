@@ -64,8 +64,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::PackageLatestVersionFinder
       .to_return(status: 200, body: registry_response)
     stub_request(:head, "#{registry_base}/#{dependency_name}/-/#{unscoped_dependency_name}-#{target_version}.tgz")
       .to_return(status: 200)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_cooldown_for_npm_and_yarn).and_return(true)
   end
 
   describe "#latest_version_from_registry" do
