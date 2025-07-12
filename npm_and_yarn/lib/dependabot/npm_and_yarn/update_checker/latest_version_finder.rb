@@ -120,7 +120,6 @@ module Dependabot
             return unless valid_npm_details?
             return version_from_dist_tags&.version if specified_dist_tag_requirement?
 
-            super
             in_range_versions = filter_out_of_range_versions(possible_releases)
             in_range_versions.find { |r| !package_fetcher.yanked?(r.version) }&.version
           end
