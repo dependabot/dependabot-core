@@ -7,18 +7,18 @@ ARG COREPACK_VERSION=0.33.0
 ARG PNPM_VERSION=10.11.1
 
 # Check for updates at https://github.com/yarnpkg/berry/releases
-ARG YARN_VERSION=4.7.0
+ARG YARN_VERSION=4.9.2
 
 # Check for updates at https://github.com/oven-sh/bun/releases
 ARG BUN_VERSION=1.2.5
 
 # See https://github.com/nodesource/distributions#installation-instructions
-ARG NODEJS_VERSION=20
+ARG NODEJS_VERSION=22
 
 # Check for updates at https://github.com/npm/cli/releases
 # This version should be compatible with the Node.js version declared above. See https://nodejs.org/en/download/releases as well
 # TODO: Upgrade to 9.6.7 depending on the outcome of https://github.com/npm/cli/issues/6742
-ARG NPM_VERSION=9.6.5
+ARG NPM_VERSION=10.5.0
 
 # Install Node and npm
 RUN mkdir -p /etc/apt/keyrings \

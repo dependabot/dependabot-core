@@ -70,13 +70,9 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
   end
   let(:pypi_response) { fixture("pypi", "pypi_simple_response.html") }
   let(:pypi_url) { "https://pypi.org/simple/luigi/" }
-  let(:enable_cooldown_for_uv) { false }
 
   before do
     stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_cooldown_for_uv)
-      .and_return(true)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_shared_helpers_command_timeout)
       .and_return(true)
