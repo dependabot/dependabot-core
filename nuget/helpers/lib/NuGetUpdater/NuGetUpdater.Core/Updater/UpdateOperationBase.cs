@@ -21,7 +21,18 @@ public abstract record UpdateOperationBase
     public required NuGetVersion NewVersion { get; init; }
     public required ImmutableArray<string> UpdatedFiles { get; init; }
 
-    public abstract string GetReport();
+    protected abstract string GetReportText();
+
+    public string GetReport(bool includeFileNames)
+    {
+        var report = GetReportText();
+        if (includeFileNames)
+        {
+            report += $" in {string.Join(", ", UpdatedFiles)}";
+        }
+
+        return report;
+    }
 
     public ReportedDependency ToReportedDependency(string projectPath, IEnumerable<ReportedDependency> previouslyReportedDependencies, IEnumerable<Dependency> updatedDependencies)
     {
@@ -49,9 +60,9 @@ public abstract record UpdateOperationBase
         };
     }
 
-    internal static string GenerateUpdateOperationReport(IEnumerable<UpdateOperationBase> updateOperations)
+    internal static string GenerateUpdateOperationReport(IEnumerable<UpdateOperationBase> updateOperations, bool includeFileNames = true)
     {
-        var updateMessages = updateOperations.Select(u => u.GetReport()).ToImmutableArray();
+        var updateMessages = updateOperations.Select(u => u.GetReport(includeFileNames)).ToImmutableArray();
         if (updateMessages.Length == 0)
         {
             return string.Empty;
@@ -144,12 +155,12 @@ public abstract record UpdateOperationBase
 public record DirectUpdate : UpdateOperationBase
 {
     public override string Type => nameof(DirectUpdate);
-    public override string GetReport()
+    protected override string GetReportText()
     {
         var fromText = OldVersion is null
             ? string.Empty
             : $"from {OldVersion} ";
-        return $"Updated {DependencyName} {fromText}to {NewVersion} in {string.Join(", ", UpdatedFiles)}";
+        return $"Updated {DependencyName} {fromText}to {NewVersion}";
     }
 
     public sealed override string ToString() => GetString();
@@ -158,7 +169,7 @@ public record DirectUpdate : UpdateOperationBase
 public record PinnedUpdate : UpdateOperationBase
 {
     public override string Type => nameof(PinnedUpdate);
-    public override string GetReport() => $"Pinned {DependencyName} at {NewVersion} in {string.Join(", ", UpdatedFiles)}";
+    protected override string GetReportText() => $"Pinned {DependencyName} at {NewVersion}";
     public sealed override string ToString() => GetString();
 }
 
@@ -168,7 +179,7 @@ public record ParentUpdate : UpdateOperationBase, IEquatable<UpdateOperationBase
     public required string ParentDependencyName { get; init; }
     public required NuGetVersion ParentNewVersion { get; init; }
 
-    public override string GetReport() => $"Updated {DependencyName} to {NewVersion} indirectly via {ParentDependencyName}/{ParentNewVersion} in {string.Join(", ", UpdatedFiles)}";
+    protected override string GetReportText() => $"Updated {DependencyName} to {NewVersion} indirectly via {ParentDependencyName}/{ParentNewVersion}";
 
     bool IEquatable<UpdateOperationBase>.Equals(UpdateOperationBase? other)
     {
