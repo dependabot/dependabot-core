@@ -8,7 +8,7 @@ module Dependabot
     module Helpers
       extend T::Sig
 
-      sig { params(credentials: T::Array[T::Hash[String, T.untyped]]).void }
+      sig { params(credentials: T::Array[T::Hash[String, Credential]]).void }
       def self.setup_credentials_in_environment(credentials)
         credentials.each do |cred|
           next if cred["type"] != "cargo_registry"
