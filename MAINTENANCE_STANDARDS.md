@@ -10,7 +10,7 @@ We should try to align with the ideas of [SemVer2](https://semver.org/spec/v2.0.
 * New features, e.g. a new lockfile type - Support within 2-4 quarters  
   * Rationale: This allows time for users to transition to using it. Not jumping on it immediately will also let the community gauge adoption so we don’t waste time on features nobody uses.
     * Exception: if it’s a **breaking** change that forces users to use the new thing - support that within 1 quarter (if it’s Semver, that should be a major version - but 🤷)  
-
+This is an open source project, and its continued success depends on active community involvement. Community support is essential for maintaining and evolving the ecosystems over time.
 **Deprecation principles**
 
 * Once a version is deprecated by upstream, we do not guarantee to support it with additional bugfixes. However, typically we delay removing existing support for that version for a minimum of 3-6 months after upstream deprecates it.
