@@ -12,7 +12,6 @@ module Dependabot
       def self.setup_credentials_in_environment(credentials)
         credentials.each do |cred|
           next if cred["type"] != "cargo_registry"
-          next unless cred["registry"]
 
           # If there is a 'token' property, then apply it.
           # If there is not, it probably means we are running under dependabot-cli which stripped
