@@ -5,6 +5,7 @@ on: # yamllint disable-line rule:truthy
     # bumping the Gem version, RubyGems will reject it with an error that the
     # version is already live.
     types: [published]
+  workflow_dispatch:
 
 jobs:
   release-gems:
