@@ -1,6 +1,7 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
+require "sorbet-runtime"
 require "excon"
 require "open3"
 require "dependabot/dependency"
@@ -19,12 +20,14 @@ module Dependabot
   module Python
     class UpdateChecker
       class PipenvVersionResolver
+        extend T::Sig
+
         GIT_DEPENDENCY_UNREACHABLE_REGEX = /git clone --filter=blob:none --quiet (?<url>[^\s]+).*/
         GIT_REFERENCE_NOT_FOUND_REGEX = /git checkout -q (?<tag>[^\s]+).*/
         PIPENV_INSTALLATION_ERROR_NEW = "Getting requirements to build wheel exited with 1"
 
         # Can be removed when Python 3.11 support is dropped
-        PIPENV_INSTALLATION_ERROR_OLD = Regexp.quote("python setup.py egg_info exited with 1")
+        PIPENV_INSTALLATION_ERROR_OLD = T.let(Regexp.quote("python setup.py egg_info exited with 1"), String)
 
         PIPENV_INSTALLATION_ERROR = /#{PIPENV_INSTALLATION_ERROR_NEW}|#{PIPENV_INSTALLATION_ERROR_OLD}/
         PIPENV_INSTALLATION_ERROR_REGEX =
@@ -32,18 +35,34 @@ module Dependabot
 
         PIPENV_RANGE_WARNING = /Python version range specifier '(?<ver>.*)' is not supported/
 
+        sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
+
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
+
+        sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
+
+        sig { returns(T.nilable(String)) }
         attr_reader :repo_contents_path
 
+        sig do
+          params(
+            dependency: Dependabot::Dependency,
+            dependency_files: T::Array[Dependabot::DependencyFile],
+            credentials: T::Array[Dependabot::Credential],
+            repo_contents_path: T.nilable(String)
+          ).void
+        end
         def initialize(dependency:, dependency_files:, credentials:, repo_contents_path:)
-          @dependency               = dependency
-          @dependency_files         = dependency_files
-          @credentials              = credentials
-          @repo_contents_path       = repo_contents_path
+          @dependency = T.let(dependency, Dependabot::Dependency)
+          @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
+          @credentials = T.let(credentials, T::Array[Dependabot::Credential])
+          @repo_contents_path = T.let(repo_contents_path, T.nilable(String))
         end
 
+        sig { params(requirement: T.nilable(String)).returns(T.nilable(Dependabot::Python::Version)) }
         def latest_resolvable_version(requirement: nil)
           version_string =
             fetch_latest_resolvable_version_string(requirement: requirement)
@@ -51,17 +70,19 @@ module Dependabot
           version_string.nil? ? nil : Python::Version.new(version_string)
         end
 
+        sig { params(version: Gem::Version).returns(T::Boolean) }
         def resolvable?(version:)
-          @resolvable ||= {}
-          return @resolvable[version] if @resolvable.key?(version)
+          @resolvable ||= T.let({}, T.nilable(T::Hash[Gem::Version, T::Boolean]))
+          return T.must(@resolvable[version]) if @resolvable.key?(version)
 
           @resolvable[version] = !!fetch_latest_resolvable_version_string(requirement: "==#{version}")
         end
 
         private
 
+        sig { params(requirement: T.nilable(String)).returns(T.nilable(String)) }
         def fetch_latest_resolvable_version_string(requirement:)
-          @latest_resolvable_version_string ||= {}
+          @latest_resolvable_version_string ||= T.let({}, T.nilable(T::Hash[T.nilable(String), T.nilable(String)]))
           return @latest_resolvable_version_string[requirement] if @latest_resolvable_version_string.key?(requirement)
 
           @latest_resolvable_version_string[requirement] ||=
@@ -81,6 +102,7 @@ module Dependabot
         # rubocop:disable Metrics/PerceivedComplexity
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/MethodLength
+        sig { params(error: Dependabot::SharedHelpers::HelperSubprocessFailed).returns(T.nilable(String)) }
         def handle_pipenv_errors(error)
           if error.message.include?("no version found at all") ||
              error.message.include?("Invalid specifier:") ||
@@ -99,16 +121,17 @@ module Dependabot
           end
 
           if error.message.match?(GIT_REFERENCE_NOT_FOUND_REGEX)
-            tag = error.message.match(GIT_REFERENCE_NOT_FOUND_REGEX).named_captures.fetch("tag")
+            match_result = error.message.match(GIT_REFERENCE_NOT_FOUND_REGEX)
+            tag = T.must(match_result).named_captures.fetch("tag")
             # Unfortunately the error message doesn't include the package name.
             # TODO: Talk with pipenv maintainers about exposing the package name, it used to be part of the error output
             raise GitDependencyReferenceNotFound, "(unknown package at #{tag})"
           end
 
           if error.message.match?(GIT_DEPENDENCY_UNREACHABLE_REGEX)
-            url = error.message.match(GIT_DEPENDENCY_UNREACHABLE_REGEX)
-                       .named_captures.fetch("url")
-            raise GitDependenciesNotReachable, url
+            match_result = error.message.match(GIT_DEPENDENCY_UNREACHABLE_REGEX)
+            url = T.must(match_result).named_captures.fetch("url")
+            raise GitDependenciesNotReachable, T.must(url)
           end
 
           if error.message.include?("Could not find a version") || error.message.include?("ResolutionFailure")
@@ -151,6 +174,7 @@ module Dependabot
         # Note: We raise errors from this method, rather than returning a
         # boolean, so that all deps for this repo will raise identical
         # errors when failing to update
+        sig { returns(T::Boolean) }
         def check_original_requirements_resolvable
           SharedHelpers.in_a_temporary_repo_directory(base_directory, repo_contents_path) do
             write_temporary_dependency_files(update_pipfile: false)
@@ -160,13 +184,16 @@ module Dependabot
             true
           rescue SharedHelpers::HelperSubprocessFailed => e
             handle_pipenv_errors_resolving_original_reqs(e)
+            false
           end
         end
 
+        sig { returns(String) }
         def base_directory
-          dependency_files.first.directory
+          T.must(dependency_files.first).directory
         end
 
+        sig { params(error: Dependabot::SharedHelpers::HelperSubprocessFailed).void }
         def handle_pipenv_errors_resolving_original_reqs(error)
           if error.message.include?("Could not find a version") ||
              error.message.include?("package versions have conflicting dependencies")
@@ -193,6 +220,7 @@ module Dependabot
           raise
         end
 
+        sig { params(message: String).returns(String) }
         def clean_error_message(message)
           # Pipenv outputs a lot of things to STDERR, so we need to clean
           # up the error message
@@ -213,9 +241,11 @@ module Dependabot
           msg.gsub(/http.*?(?=\s)/, "<redacted>")
         end
 
+        sig { params(error_message: String).void }
         def handle_pipenv_installation_error(error_message)
           # Find the dependency that's causing resolution to fail
-          dependency_name = error_message.match(PIPENV_INSTALLATION_ERROR_REGEX).named_captures["name"]
+          match_result = error_message.match(PIPENV_INSTALLATION_ERROR_REGEX)
+          dependency_name = T.must(match_result).named_captures["name"]
           raise unless dependency_name
 
           msg = "Pipenv failed to install \"#{dependency_name}\". This could be caused by missing system " \
@@ -226,6 +256,7 @@ module Dependabot
           raise DependencyFileNotResolvable, msg
         end
 
+        sig { params(update_pipfile: T::Boolean).void }
         def write_temporary_dependency_files(update_pipfile: true)
           dependency_files.each do |file|
             path = file.name
@@ -256,6 +287,7 @@ module Dependabot
           )
         end
 
+        sig { void }
         def install_required_python
           # Initialize a git repo to appease pip-tools
           begin
@@ -267,7 +299,12 @@ module Dependabot
           language_version_manager.install_required_python
         end
 
+        sig { params(file: Dependabot::DependencyFile).returns(String) }
         def sanitized_setup_file_content(file)
+          @sanitized_setup_file_content = T.let(
+            @sanitized_setup_file_content,
+            T.nilable(T::Hash[String, String])
+          )
           @sanitized_setup_file_content ||= {}
           @sanitized_setup_file_content[file.name] ||=
             Python::FileUpdater::SetupFileSanitizer
@@ -275,77 +312,97 @@ module Dependabot
             .sanitized_content
         end
 
+        sig { params(file: Dependabot::DependencyFile).returns(T.nilable(Dependabot::DependencyFile)) }
         def setup_cfg(file)
           config_name = file.name.sub(/\.py$/, ".cfg")
           dependency_files.find { |f| f.name == config_name }
         end
 
+        sig { returns(String) }
         def pipfile_content
-          content = pipfile.content
+          pipfile_obj = T.must(pipfile)
+          content = T.must(pipfile_obj.content)
           content = add_private_sources(content)
           content = update_python_requirement(content)
-          content = update_ssl_requirement(content, pipfile.content)
+          content = update_ssl_requirement(content, T.must(pipfile_obj.content))
 
           content
         end
 
+        sig { params(pipfile_content: String).returns(String) }
         def update_python_requirement(pipfile_content)
           Python::FileUpdater::PipfilePreparer
             .new(pipfile_content: pipfile_content)
             .update_python_requirement(language_version_manager.python_major_minor)
         end
 
+        sig { params(pipfile_content: String, parsed_file: String).returns(String) }
         def update_ssl_requirement(pipfile_content, parsed_file)
           Python::FileUpdater::PipfilePreparer
             .new(pipfile_content: pipfile_content)
             .update_ssl_requirement(parsed_file)
         end
 
+        sig { params(pipfile_content: String).returns(String) }
         def add_private_sources(pipfile_content)
           Python::FileUpdater::PipfilePreparer
             .new(pipfile_content: pipfile_content)
             .replace_sources(credentials)
         end
 
+        sig { params(command: String).returns(String) }
         def run_command(command)
           SharedHelpers.run_shell_command(command, stderr_to_stdout: true)
         end
 
+        sig { returns(Dependabot::Python::FileParser::PythonRequirementParser) }
         def python_requirement_parser
-          @python_requirement_parser ||=
+          @python_requirement_parser ||= T.let(
             FileParser::PythonRequirementParser.new(
               dependency_files: dependency_files
-            )
+            ),
+            T.nilable(Dependabot::Python::FileParser::PythonRequirementParser)
+          )
         end
 
+        sig { returns(Dependabot::Python::LanguageVersionManager) }
         def language_version_manager
-          @language_version_manager ||=
+          @language_version_manager ||= T.let(
             LanguageVersionManager.new(
               python_requirement_parser: python_requirement_parser
-            )
+            ),
+            T.nilable(Dependabot::Python::LanguageVersionManager)
+          )
         end
 
+        sig { returns(Dependabot::Python::PipenvRunner) }
         def pipenv_runner
-          @pipenv_runner ||=
+          @pipenv_runner ||= T.let(
             PipenvRunner.new(
               dependency: dependency,
               lockfile: lockfile,
               language_version_manager: language_version_manager
-            )
+            ),
+            T.nilable(Dependabot::Python::PipenvRunner)
+          )
         end
 
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def pipfile
           dependency_files.find { |f| f.name == "Pipfile" }
         end
 
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def lockfile
           dependency_files.find { |f| f.name == "Pipfile.lock" }
         end
 
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
         def setup_files
           dependency_files.select { |f| f.name.end_with?("setup.py") }
         end
 
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
         def setup_cfg_files
           dependency_files.select { |f| f.name.end_with?("setup.cfg") }
         end

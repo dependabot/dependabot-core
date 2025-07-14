@@ -1,4 +1,4 @@
-# typed: true
+# typed: strong
 # frozen_string_literal: true
 
 require "yaml"
@@ -6,6 +6,9 @@ require "yaml"
 module Dependabot
   module Cargo
     module Helpers
+      extend T::Sig
+
+      sig { params(credentials: T::Array[Dependabot::Credential]).void }
       def self.setup_credentials_in_environment(credentials)
         credentials.each do |cred|
           next if cred["type"] != "cargo_registry"
@@ -17,7 +20,7 @@ module Dependabot
           # (We must add these environment variables here, or 'cargo update' will not think it is
           # configured properly for the private registries.)
 
-          token_env_var = "CARGO_REGISTRIES_#{cred['registry'].upcase.tr('-', '_')}_TOKEN"
+          token_env_var = "CARGO_REGISTRIES_#{T.must(cred['registry']).upcase.tr('-', '_')}_TOKEN"
 
           token = "placeholder_token"
           if cred["token"].nil?

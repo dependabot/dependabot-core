@@ -76,7 +76,7 @@ module Dependabot
 
         sig { override.returns(T::Boolean) }
         def cooldown_enabled?
-          Dependabot::Experiments.enabled?(:enable_cooldown_for_gradle)
+          true
         end
 
         sig { returns(T.nilable(T::Hash[T.untyped, T.untyped])) }

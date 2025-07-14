@@ -265,6 +265,47 @@ RSpec.describe Dependabot::Maven::FileUpdater do
         end
       end
 
+      context "with a transitive dependency not added to dependencyManagement with mixed indentation" do
+        let(:pom_body) do
+          fixture("poms", "transitive_dependency_pom_version_not_defined_mixed_indentation.xml")
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "org.apache.zookeeper:zookeeper",
+            version: "3.7.2",
+            requirements: [{
+              file: "pom.xml",
+              requirement: "3.7.2",
+              groups: [],
+              source: nil,
+              metadata: { packaging_type: "jar" }
+            }],
+            previous_requirements: [{
+              file: "pom.xml",
+              requirement: "3.4.6",
+              groups: [],
+              source: nil,
+              metadata: { packaging_type: "jar" }
+            }],
+            package_manager: "maven"
+          )
+        end
+
+        its(:content) do
+          is_expected.to include(
+            "  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.apache.zookeeper</groupId>
+        <artifactId>zookeeper</artifactId>
+        <version>3.7.2</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>"
+          )
+        end
+      end
+
       context "with a transitive dependency not in dependencyManagement and pom file doesn't have XML namespace" do
         let(:pom_body) do
           fixture("poms", "transitive_dependency_pom_version_not_defined_no_namespace.xml")

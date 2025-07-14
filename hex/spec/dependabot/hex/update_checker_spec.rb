@@ -235,9 +235,6 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
 
       allow(checker).to receive(:latest_resolvable_version)
         .and_return(Gem::Version.new("1.3.5"))
-
-      allow(Dependabot::Experiments).to receive(:enabled?)
-        .with(:enable_cooldown_for_hex).and_return(true)
     end
 
     after do

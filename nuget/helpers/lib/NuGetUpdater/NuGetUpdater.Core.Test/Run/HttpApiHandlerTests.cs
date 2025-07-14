@@ -117,7 +117,7 @@ public class HttpApiHandlerTests
         var handler = new HttpApiHandler(http.BaseUrl, "TEST-ID");
 
         // act
-        await handler.RecordUpdateJobError(error);
+        await handler.RecordUpdateJobError(error, new TestLogger());
 
         // assert
         AssertEx.Equal(expectedEndpoints, actualEndpoints);

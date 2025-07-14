@@ -37,7 +37,7 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
             if (discoveryResult.Error is not null)
             {
                 logger.Error($"Reporting error: {discoveryResult.Error.GetReport()}");
-                await apiHandler.RecordUpdateJobError(discoveryResult.Error);
+                await apiHandler.RecordUpdateJobError(discoveryResult.Error, logger);
                 return;
             }
 
@@ -100,7 +100,7 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
                     if (analysisResult.Error is not null)
                     {
                         logger.Error($"Error analyzing {dependency.Name} in {projectPath}: {analysisResult.Error.GetReport()}");
-                        await apiHandler.RecordUpdateJobError(analysisResult.Error);
+                        await apiHandler.RecordUpdateJobError(analysisResult.Error, logger);
                         return;
                     }
 
@@ -116,7 +116,7 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
                     if (updaterResult.Error is not null)
                     {
                         logger.Error($"Error updating {dependency.Name} in {projectPath}: {updaterResult.Error.GetReport()}");
-                        await apiHandler.RecordUpdateJobError(updaterResult.Error);
+                        await apiHandler.RecordUpdateJobError(updaterResult.Error, logger);
                         continue;
                     }
 

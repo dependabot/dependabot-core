@@ -184,11 +184,6 @@ module Dependabot
           )
         end
 
-        sig { returns(T::Boolean) }
-        def cooldown_enabled?
-          Dependabot::Experiments.enabled?(:enable_cooldown_for_swift)
-        end
-
         sig { returns(Dependabot::GitCommitChecker) }
         attr_reader :git_commit_checker
 

@@ -12,12 +12,14 @@ public class CloneWorker
     private readonly string _jobId;
     private readonly IApiHandler _apiHandler;
     private readonly IGitCommandHandler _gitCommandHandler;
+    private readonly ILogger _logger;
 
-    public CloneWorker(string jobId, IApiHandler apiHandler, IGitCommandHandler gitCommandHandler)
+    public CloneWorker(string jobId, IApiHandler apiHandler, IGitCommandHandler gitCommandHandler, ILogger logger)
     {
         _jobId = jobId;
         _apiHandler = apiHandler;
         _gitCommandHandler = gitCommandHandler;
+        _logger = logger;
     }
 
     // entrypoint for cli
@@ -89,7 +91,7 @@ public class CloneWorker
 
     private async Task ReportError(JobErrorBase error)
     {
-        await _apiHandler.RecordUpdateJobError(error);
+        await _apiHandler.RecordUpdateJobError(error, _logger);
         await _apiHandler.MarkAsProcessed(new("unknown"));
     }
 

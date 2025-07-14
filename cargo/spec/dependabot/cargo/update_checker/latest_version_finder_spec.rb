@@ -474,8 +474,6 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
       subject(:latest_version) { finder.latest_version }
 
       before do
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:enable_cooldown_for_cargo).and_return(true)
         stub_request(:get, sparse_registry_url).to_return(status: 200, body: sparse_registry_response)
       end
 

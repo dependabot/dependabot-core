@@ -333,8 +333,8 @@ module Dependabot
       sig { params(project: REXML::Element).returns(T::Hash[Symbol, T.untyped]) }
       def detect_indentation_config(project)
         sample_indent = project.children.find do |child|
-          child.to_s.match?(/\n[\t\s]+/)
-        end&.to_s&.match(/\n([\t\s]+)/)&.[](1)
+          child.to_s.match?(/\n(\t+| +)$/)
+        end&.to_s&.match(/\n(\t+| +)$/)&.[](1)
 
         base_indent = sample_indent || "  "
 

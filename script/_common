@@ -29,6 +29,9 @@ function set_tag() {
       github_actions)
         TAG=github-actions
         ;;
+      rust_toolchain)
+        TAG=rust-toolchain
+        ;;
       *)
         TAG=$ECOSYSTEM
         ;;

@@ -89,7 +89,7 @@ module Dependabot
 
         sig { override.returns(T::Boolean) }
         def cooldown_enabled?
-          Dependabot::Experiments.enabled?(:enable_cooldown_for_hex)
+          true
         end
 
         sig { returns(T::Boolean) }

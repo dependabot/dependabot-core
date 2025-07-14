@@ -86,12 +86,7 @@ RSpec.describe Dependabot::GitSubmodules::UpdateChecker::LatestVersionFinder do
     subject { checker.latest_tag }
 
     before do
-      Dependabot::Experiments.register(:enable_cooldown_for_gitsubmodules, true)
       allow(Time).to receive(:now).and_return(Time.parse("2025-06-30T17:30:00.000Z"))
-    end
-
-    after do
-      Dependabot::Experiments.register(:enable_cooldown_for_gitsubmodules, false)
     end
 
     let(:git_url) { "https://github.com/NuGet/NuGet.Client.git" }

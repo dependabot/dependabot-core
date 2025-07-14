@@ -38,7 +38,6 @@ RSpec.describe Dependabot::Python::Package::PackageDetailsFetcher do
   let(:json_url) { "https://pypi.org/pypi/#{dependency_name}/json" }
 
   let(:expected_versions) { ["2.32.3", "2.27.0"] }
-  let(:enable_cooldown_for_python) { false }
 
   let(:expected_releases) do
     [
@@ -74,74 +73,42 @@ RSpec.describe Dependabot::Python::Package::PackageDetailsFetcher do
     ]
   end
 
-  before do
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_cooldown_for_python)
-      .and_return(enable_cooldown_for_python)
-  end
-
-  after do
-    Dependabot::Experiments.reset!
-  end
-
   describe "#fetch" do
     subject(:fetch) { fetcher.fetch }
 
-    context "when enable_cooldown_for_python is enabled" do
-      let(:enable_cooldown_for_python) { true }
-
-      context "with a valid JSON response" do
-        before do
-          stub_request(:get, json_url).to_return(status: 200,
-                                                 body: fixture("releases_api", "pypi", "pypi_json_response.json"))
-          stub_request(:get, registry_url).to_return(status: 200,
-                                                     body: fixture("releases_api", "simple", "simple_index.html"))
-        end
-
-        it "fetches data from JSON registry first and returns correct package releases" do
-          result = fetch
-
-          expect(result.releases).not_to be_empty
-          expect(a_request(:get, json_url)).to have_been_made.once
-          expect(a_request(:get, registry_url)).not_to have_been_made
-
-          expect(result.releases.map(&:version)).to match_array(expected_releases.map(&:version))
-        end
+    context "with a valid JSON response" do
+      before do
+        stub_request(:get, json_url).to_return(status: 200,
+                                               body: fixture("releases_api", "pypi", "pypi_json_response.json"))
+        stub_request(:get, registry_url).to_return(status: 200,
+                                                   body: fixture("releases_api", "simple", "simple_index.html"))
       end
 
-      context "when JSON response is empty" do
-        before do
-          stub_request(:get, json_url).to_return(status: 200,
-                                                 body: fixture("releases_api", "pypi", "pypi_json_response_empty.json"))
-          stub_request(:get, registry_url).to_return(status: 200,
-                                                     body: fixture("releases_api", "simple", "simple_index.html"))
-        end
-
-        it "falls back to HTML registry and fetches versions correctly" do
-          result = fetch
-
-          expect(result.releases).not_to be_empty
-          expect(a_request(:get, json_url)).to have_been_made.once
-          expect(a_request(:get, registry_url)).to have_been_made.once
-
-          expect(result.releases.map(&:version)).to match_array(expected_releases.map(&:version))
-        end
-      end
-    end
-
-    context "when enable_cooldown_for_python is disabled" do
-      let(:enable_cooldown_for_python) { false }
-
-      it "fetches data from the HTML registry and returns package releases" do
-        stub_request(:get, registry_url).to_return(
-          status: 200, body: fixture("releases_api", "simple", "simple_index.html")
-        )
-
+      it "fetches data from JSON registry first and returns correct package releases" do
         result = fetch
 
         expect(result.releases).not_to be_empty
+        expect(a_request(:get, json_url)).to have_been_made.once
+        expect(a_request(:get, registry_url)).not_to have_been_made
+
+        expect(result.releases.map(&:version)).to match_array(expected_releases.map(&:version))
+      end
+    end
+
+    context "when JSON response is empty" do
+      before do
+        stub_request(:get, json_url).to_return(status: 200,
+                                               body: fixture("releases_api", "pypi", "pypi_json_response_empty.json"))
+        stub_request(:get, registry_url).to_return(status: 200,
+                                                   body: fixture("releases_api", "simple", "simple_index.html"))
+      end
+
+      it "falls back to HTML registry and fetches versions correctly" do
+        result = fetch
+
+        expect(result.releases).not_to be_empty
+        expect(a_request(:get, json_url)).to have_been_made.once
         expect(a_request(:get, registry_url)).to have_been_made.once
-        expect(a_request(:get, json_url)).not_to have_been_made
 
         expect(result.releases.map(&:version)).to match_array(expected_releases.map(&:version))
       end

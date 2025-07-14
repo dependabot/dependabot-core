@@ -90,13 +90,11 @@ module Dependabot
             .returns(T.nilable(T::Array[Dependabot::Package::PackageRelease]))
         end
         def fetch_from_registry(index_url)
-          if Dependabot::Experiments.enabled?(:enable_cooldown_for_python)
-            metadata = fetch_from_json_registry(index_url)
+          metadata = fetch_from_json_registry(index_url)
 
-            return metadata if metadata&.any?
+          return metadata if metadata&.any?
 
-            Dependabot.logger.warn("No valid versions found via JSON API. Falling back to HTML.")
-          end
+          Dependabot.logger.warn("No valid versions found via JSON API. Falling back to HTML.")
           fetch_from_html_registry(index_url)
         rescue StandardError => e
           Dependabot.logger.warn("Unexpected error in JSON fetch: #{e.message}. Falling back to HTML.")

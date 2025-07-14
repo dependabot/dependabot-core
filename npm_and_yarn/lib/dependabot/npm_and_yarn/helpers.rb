@@ -19,7 +19,7 @@ module Dependabot
       NPM_V10 = 10
       NPM_V8 = 8
       NPM_V6 = 6
-      NPM_DEFAULT_VERSION = NPM_V8
+      NPM_DEFAULT_VERSION = NPM_V10
 
       # PNPM Version Constants
       PNPM_V9 = 9
@@ -56,26 +56,25 @@ module Dependabot
       def self.detect_npm_version(lockfile)
         lockfile_content = lockfile&.content
 
-        # Return default NPM version if there's no lockfile or it's empty
+        # Return npm 10 as the default if the lockfile is missing or empty
         return NPM_DEFAULT_VERSION if lockfile_content.nil? || lockfile_content.strip.empty?
 
         parsed_lockfile = JSON.parse(lockfile_content)
 
         lockfile_version_str = parsed_lockfile["lockfileVersion"]
 
-        # Default to npm default version if lockfileVersion is missing or empty
         return NPM_DEFAULT_VERSION if lockfile_version_str.nil? || lockfile_version_str.to_s.strip.empty?
 
         lockfile_version = lockfile_version_str.to_i
 
         # Using npm 8 as the default for lockfile_version > 2.
-        # Update needed to support npm 9+ based on lockfile version.
+        return NPM_V10 if lockfile_version >= 3
         return NPM_V8 if lockfile_version >= 2
 
         NPM_V6 if lockfile_version >= 1
         # Return nil if can't capture
       rescue JSON::ParserError
-        NPM_DEFAULT_VERSION # Fallback to default npm version if parsing fails
+        NPM_DEFAULT_VERSION # Fallback to npm 8 if the lockfile content cannot be parsed
       end
 
       private_class_method :detect_npm_version

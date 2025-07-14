@@ -35,6 +35,11 @@ module Dependabot
       )
       FAILED_GIT_CLONE = T.let(/^Failed to clone (?<url>.*?)/, Regexp)
 
+      GIT_REPO_URL = T.let(
+        %r{((git|ssh|http(s)?)|(git@[\w\.]+))(:(//)?)([\w\.@\:/\-~]+)(/)?},
+        Regexp
+      )
+
       sig do
         params(
           composer_json: T::Hash[String, T.untyped],
@@ -78,8 +83,8 @@ module Dependabot
 
       sig { params(message: String, regex: Regexp).returns(T.nilable(String)) }
       def self.extract_and_clean_dependency_url(message, regex)
-        if (match_data = message.match(regex))
-          dependency_url = match_data.named_captures.fetch("url")
+        if message.match(regex)
+          dependency_url = message[GIT_REPO_URL]
           if dependency_url.nil? || dependency_url.empty?
             raise "Could not parse dependency_url from git clone error: #{message}"
           end
