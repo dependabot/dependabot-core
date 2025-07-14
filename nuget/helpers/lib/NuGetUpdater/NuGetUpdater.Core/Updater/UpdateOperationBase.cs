@@ -62,7 +62,7 @@ public abstract record UpdateOperationBase
 
     internal static string GenerateUpdateOperationReport(IEnumerable<UpdateOperationBase> updateOperations, bool includeFileNames = true)
     {
-        var updateMessages = updateOperations.Select(u => u.GetReport(includeFileNames)).ToImmutableArray();
+        var updateMessages = updateOperations.Select(u => u.GetReport(includeFileNames)).Distinct(StringComparer.OrdinalIgnoreCase).ToImmutableArray();
         if (updateMessages.Length == 0)
         {
             return string.Empty;

@@ -438,7 +438,6 @@ public class PullRequestTextTests
             """
             Performed the following updates:
             - Updated Some.Package from 1.0.0 to 1.2.3
-            - Updated Some.Package from 1.0.0 to 1.2.3
             """
         ];
     }
