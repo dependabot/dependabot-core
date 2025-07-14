@@ -24,7 +24,7 @@ module Dependabot
         require_relative "setup_file_sanitizer"
 
         UNSAFE_PACKAGES = T.let(%w(setuptools distribute pip).freeze, T::Array[String])
-        INCOMPATIBLE_VERSIONS_REGEX = T.let(/There are incompatible versions in the resolved dependencies:.*\z/m,
+        INCOMPATIBLE_VERSIONS_REGEX = T.let(/not supported between instances of 'InstallationCandidate'.*\z/m,
                                             Regexp)
         WARNINGS = T.let(/\s*# WARNING:.*\Z/m, Regexp)
         UNSAFE_NOTE = T.let(/\s*# The following packages are considered to be unsafe.*\Z/m, Regexp)
