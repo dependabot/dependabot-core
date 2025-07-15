@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Text.Json.Nodes;
 
 namespace NuGetUpdater.Core;
@@ -12,28 +13,19 @@ internal sealed class GlobalJsonBuildFile : JsonBuildFile
     {
     }
 
-    public JsonObject? Sdk => Node.Value is JsonObject root ? root["sdk"]?.AsObject() : null;
-
     public JsonObject? MSBuildSdks => Node.Value is JsonObject root ? root["msbuild-sdks"]?.AsObject() : null;
 
     public IEnumerable<Dependency> GetDependencies()
     {
-        List<Dependency> dependencies = [];
-        if (Sdk is not null
-            && Sdk.TryGetPropertyValue("version", out var version))
-        {
-            dependencies.Add(GetSdkDependency("Microsoft.NET.Sdk", version));
-        }
-
         if (MSBuildSdks is null)
         {
-            return dependencies;
+            return [];
         }
 
         var msBuildDependencies = MSBuildSdks
-            .Select(t => GetSdkDependency(t.Key, t.Value));
-        dependencies.AddRange(msBuildDependencies);
-        return dependencies;
+            .Select(t => GetSdkDependency(t.Key, t.Value))
+            .ToImmutableArray();
+        return msBuildDependencies;
     }
 
     private Dependency GetSdkDependency(string name, JsonNode? version)
