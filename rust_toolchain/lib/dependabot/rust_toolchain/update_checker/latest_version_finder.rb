@@ -44,9 +44,7 @@ module Dependabot
         end
 
         sig { override.returns(T::Boolean) }
-        def cooldown_enabled?
-          Dependabot::Experiments.enabled?(:enable_cooldown_for_rust_toolchain)
-        end
+        def cooldown_enabled? = true
 
         private
 
