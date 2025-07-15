@@ -106,4 +106,49 @@ public class FileWriterWorkerTests_MiscellaneousTests
         Assert.Equal("initial client content", await File.ReadAllTextAsync(Path.Join(repoContentsPath.FullName, "client/client.csproj"), TestContext.Current.CancellationToken));
         Assert.Equal("initial packages config content", await File.ReadAllTextAsync(Path.Join(repoContentsPath.FullName, "client/packages.config"), TestContext.Current.CancellationToken));
     }
+
+    [Fact]
+    public async Task TryPerformFileWrites_ReportsAppropriateUpdatedFilePaths_WhenStartingFromDifferentProjectDirectory()
+    {
+        // discovery was initiated from the "tests" directory, but we're now evaluating the "client" project for file writes
+        // arrange
+        using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(
+            ("tests/tests.csproj", """
+                <Project>
+                  <ItemGroup>
+                    <PackageReference Include="Some.Package" Version="1.0.0" />
+                  </ItemGroup>
+                </Project>
+                """),
+            ("client/client.csproj", """
+                <Project>
+                  <ItemGroup>
+                    <PackageReference Include="Some.Package" Version="1.0.0" />
+                  </ItemGroup>
+                </Project>
+                """)
+        );
+        var logger = new TestLogger();
+        var fileWriter = new XmlFileWriter(logger);
+        var originalDiscoveryDirectory = new DirectoryInfo(Path.Join(tempDir.DirectoryPath, "tests"));
+        var projectDiscovery = new ProjectDiscoveryResult()
+        {
+            FilePath = "../client/client.csproj",
+            Dependencies = [new("Some.Package", "1.0.0", DependencyType.PackageReference)],
+            ImportedFiles = [],
+            AdditionalFiles = [],
+        };
+
+        // act
+        var updatedFilePaths = await FileWriterWorker.TryPerformFileWritesAsync(
+            fileWriter,
+            new DirectoryInfo(tempDir.DirectoryPath),
+            originalDiscoveryDirectory,
+            projectDiscovery,
+            [new("Some.Package", "1.0.1", DependencyType.PackageReference)]
+        );
+
+        // assert
+        AssertEx.Equal(["/client/client.csproj"], updatedFilePaths);
+    }
 }
