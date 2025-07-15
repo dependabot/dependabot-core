@@ -36,7 +36,7 @@ module Dependabot
         private
 
         sig { override.returns(T::Boolean) }
-        def cooldown_enabled? = Dependabot::Experiments.enabled?(:enable_cooldown_for_vcpkg)
+        def cooldown_enabled? = true
       end
     end
   end
