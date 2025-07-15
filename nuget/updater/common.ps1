@@ -15,6 +15,13 @@ function Get-SdkVersionsToInstall([string] $repoRoot, [string[]] $updateDirector
         }
 
         $sdkVersion = $globalJson.sdk.version
+        if ($null -ne $sdkVersion) {
+            $versionParts = $sdkVersion.Split(".")
+            if (($versionParts.Length -eq 3) -and ($versionParts[2].Length -eq 1) -and ($null -eq ($versionParts[2] -as [int]))) {
+                # non-integer single character third part, e.g. 9.0.x => report 9.0 for channel install
+                $sdkVersion = "$($versionParts[0]).$($versionParts[1])"
+            }
+        }
         if (($null -ne $sdkVersion) -and (-not ($sdkVersion -in $installedSdks)) -and (-not ($sdkVersion -in $installedSdks))) {
             $installedSdks += $sdkVersion
             $sdksToInstall += $sdkVersion
