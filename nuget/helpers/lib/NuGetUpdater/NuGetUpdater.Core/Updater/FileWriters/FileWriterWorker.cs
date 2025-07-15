@@ -32,13 +32,13 @@ public class FileWriterWorker
     )
     {
         var updateOperations = new List<UpdateOperationBase>();
-        var projectDirectory = Path.GetDirectoryName(projectPath.FullName)!;
-        var projectDirectoryRelativeToRepoRoot = Path.GetRelativePath(repoContentsPath.FullName, projectDirectory).FullyNormalizedRootedPath();
+        var initialProjectDirectory = new DirectoryInfo(Path.GetDirectoryName(projectPath.FullName)!);
+        var initialProjectDirectoryRelativeToRepoRoot = Path.GetRelativePath(repoContentsPath.FullName, initialProjectDirectory.FullName).FullyNormalizedRootedPath();
 
         // first try non-project updates
         var updatedDotNetToolsPath = await DotNetToolsJsonUpdater.UpdateDependencyAsync(
             repoContentsPath.FullName,
-            projectDirectory,
+            initialProjectDirectory.FullName,
             dependencyName,
             oldDependencyVersion.ToString(),
             newDependencyVersion.ToString(),
@@ -57,7 +57,7 @@ public class FileWriterWorker
 
         var updatedGlobalJsonPath = await GlobalJsonUpdater.UpdateDependencyAsync(
             repoContentsPath.FullName,
-            projectDirectory,
+            initialProjectDirectory.FullName,
             dependencyName,
             oldDependencyVersion.ToString(),
             newDependencyVersion.ToString(),
@@ -95,7 +95,7 @@ public class FileWriterWorker
         }
 
         // then try project updates
-        var initialDiscoveryResult = await _discoveryWorker.RunAsync(repoContentsPath.FullName, projectDirectoryRelativeToRepoRoot);
+        var initialDiscoveryResult = await _discoveryWorker.RunAsync(repoContentsPath.FullName, initialProjectDirectoryRelativeToRepoRoot);
         var initialProjectDiscovery = initialDiscoveryResult.GetProjectDiscoveryFromFullPath(repoContentsPath, projectPath);
         if (initialProjectDiscovery is null)
         {
@@ -154,13 +154,13 @@ public class FileWriterWorker
             var orderedProjectDiscovery = GetProjectDiscoveryEvaluationOrder(repoContentsPath, initialDiscoveryResult, projectPath, _logger);
 
             // track original contents
-            var originalFileContents = await GetOriginalFileContentsAsync(repoContentsPath, new DirectoryInfo(projectDirectory), orderedProjectDiscovery);
+            var originalFileContents = await GetOriginalFileContentsAsync(repoContentsPath, initialProjectDirectory, orderedProjectDiscovery);
 
             var allUpdatedFiles = new List<string>();
             foreach (var projectDiscovery in orderedProjectDiscovery)
             {
                 var projectFullPath = Path.Join(repoContentsPath.FullName, initialDiscoveryResult.Path, projectDiscovery.FilePath).FullyNormalizedRootedPath();
-                var updatedFiles = await TryPerformFileWritesAsync(repoContentsPath, new FileInfo(projectFullPath), projectDiscovery, resolvedDependencies.Value);
+                var updatedFiles = await TryPerformFileWritesAsync(_fileWriter, repoContentsPath, initialProjectDirectory, projectDiscovery, resolvedDependencies.Value);
                 allUpdatedFiles.AddRange(updatedFiles);
             }
 
@@ -172,7 +172,7 @@ public class FileWriterWorker
             }
 
             // this final call to discover has the benefit of also updating the lock file if it exists
-            var finalDiscoveryResult = await _discoveryWorker.RunAsync(repoContentsPath.FullName, projectDirectoryRelativeToRepoRoot);
+            var finalDiscoveryResult = await _discoveryWorker.RunAsync(repoContentsPath.FullName, initialProjectDirectoryRelativeToRepoRoot);
             var finalProjectDiscovery = finalDiscoveryResult.GetProjectDiscoveryFromFullPath(repoContentsPath, projectPath);
             if (finalProjectDiscovery is null)
             {
@@ -292,16 +292,22 @@ public class FileWriterWorker
         return projectDiscoveryOrder;
     }
 
-    private async Task<ImmutableArray<string>> TryPerformFileWritesAsync(DirectoryInfo repoContentsPath, FileInfo projectPath, ProjectDiscoveryResult projectDiscovery, ImmutableArray<Dependency> requiredPackageVersions)
+    internal static async Task<ImmutableArray<string>> TryPerformFileWritesAsync(
+        IFileWriter fileWriter,
+        DirectoryInfo repoContentsPath,
+        DirectoryInfo originalDiscoveryDirectory,
+        ProjectDiscoveryResult projectDiscovery,
+        ImmutableArray<Dependency> requiredPackageVersions
+    )
     {
-        var originalFileContents = await GetOriginalFileContentsAsync(repoContentsPath, projectPath.Directory!, [projectDiscovery]);
+        var originalFileContents = await GetOriginalFileContentsAsync(repoContentsPath, originalDiscoveryDirectory, [projectDiscovery]);
         var relativeFilePaths = originalFileContents.Keys
             .Select(p => Path.GetRelativePath(repoContentsPath.FullName, p).FullyNormalizedRootedPath())
             .ToImmutableArray();
 
         // try update
         var addPackageReferenceElementForPinnedPackages = !projectDiscovery.CentralPackageTransitivePinningEnabled;
-        var success = await _fileWriter.UpdatePackageVersionsAsync(repoContentsPath, [.. relativeFilePaths], projectDiscovery.Dependencies, requiredPackageVersions, addPackageReferenceElementForPinnedPackages);
+        var success = await fileWriter.UpdatePackageVersionsAsync(repoContentsPath, [.. relativeFilePaths], projectDiscovery.Dependencies, requiredPackageVersions, addPackageReferenceElementForPinnedPackages);
         var updatedFiles = new List<string>();
         foreach (var (filePath, originalContents) in originalFileContents)
         {
