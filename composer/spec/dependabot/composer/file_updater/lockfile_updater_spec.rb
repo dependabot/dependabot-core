@@ -186,14 +186,6 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       end
     end
 
-    context "with a plugin that would cause errors (composer v1)" do
-      let(:project_name) { "v1/plugin" }
-
-      it "has details of the updated item" do
-        expect(updated_lockfile_content).to include("\"version\":\"1.22.1\"")
-      end
-    end
-
     context "with a plugin that would cause errors (composer v2)" do
       let(:project_name) { "plugin" }
 
@@ -205,11 +197,6 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
         end
       end
     end
-
-    # We stopped testing/handling errors for plugins that conflict with the current version of composer v1
-    # because composer v1 was deprecated before PHP 8.2 was released, which Dependabot now runs on.
-    # So any plugins that are new enough to support PHP 8 will definitely support the newest version
-    # of composer v1.
 
     context "with a plugin that conflicts with the current composer version v2" do
       let(:project_name) { "outdated_flex" }
