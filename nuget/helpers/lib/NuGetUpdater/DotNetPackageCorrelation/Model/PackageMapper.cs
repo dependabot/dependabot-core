@@ -46,6 +46,15 @@ public class PackageMapper
         return null;
     }
 
+    public bool IsSdkReplacementPackage(string packageName)
+    {
+        var isSdkReplacementPackage = RuntimePackages.Runtimes.Any(r =>
+        {
+            return r.Value.Packages.Any(p => packageName.Equals(p.Key, StringComparison.Ordinal));
+        });
+        return isSdkReplacementPackage;
+    }
+
     private SemVersion? GetRuntimeVersionFromPackage(string packageName, SemVersion packageVersion)
     {
         // TODO: linear search is slow

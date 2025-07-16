@@ -173,13 +173,11 @@ module Dependabot
 
             package_type = infer_package_type(details)
 
-            deprecated = fetch_value_from_hash(details, RELEASE_DEPRECATION_KEY)
-
             Dependabot::Package::PackageRelease.new(
               version: Version.new(version),
               released_at: time_data[version] ? Time.parse(time_data[version]) : nil,
-              yanked: deprecated ? true : false,
-              yanked_reason: deprecated.is_a?(String) ? deprecated : nil,
+              yanked: false,
+              yanked_reason: nil,
               downloads: nil,
               latest: latest_version.to_s == version,
               url: package_version_url(version),

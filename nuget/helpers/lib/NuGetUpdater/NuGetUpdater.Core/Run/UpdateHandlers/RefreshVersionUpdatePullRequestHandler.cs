@@ -125,7 +125,7 @@ internal class RefreshVersionUpdatePullRequestHandler : IUpdateHandler
                     updateOperationsPerformed.AddRange(patchedUpdateOperations);
                     foreach (var o in patchedUpdateOperations)
                     {
-                        logger.Info($"Update operation performed: {o.GetReport()}");
+                        logger.Info($"Update operation performed: {o.GetReport(includeFileNames: true)}");
                     }
                 }
             }

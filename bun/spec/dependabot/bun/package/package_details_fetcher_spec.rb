@@ -63,10 +63,9 @@ RSpec.describe Dependabot::Bun::Package::PackageDetailsFetcher do
     end
 
     context "when version is deprecated" do
-      it "marks it as yanked and includes a reason" do
+      it "marks it as deprecated and includes a reason" do
         release = details.releases.find { |r| r.version.to_s == "0.7.1" }
-        expect(release.yanked).to be(true)
-        expect(release.yanked_reason).to be_a(String)
+        expect(release.details["deprecated"]).to be_a(String)
       end
     end
 

@@ -122,19 +122,8 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker::LatestVersionFinder do
   describe "#cooldown_enabled?" do
     subject(:cooldown_enabled) { finder.send(:cooldown_enabled?) }
 
-    it "returns false by default" do
-      expect(cooldown_enabled).to be(false)
-    end
-
-    context "when the experiment is enabled" do
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:enable_cooldown_for_vcpkg).and_return(true)
-      end
-
-      it "returns true" do
-        expect(cooldown_enabled).to be(true)
-      end
+    it "returns true by default" do
+      expect(cooldown_enabled).to be(true)
     end
   end
 

@@ -22,7 +22,7 @@
 - changed-files:
   - any-glob-to-any-file: docker_compose/**
 
-"L: dotnet-sdk":
+"L: dotnet:dotnet-sdk":
 - changed-files:
   - any-glob-to-any-file: dotnet_sdk/**
 
@@ -76,7 +76,7 @@
 - changed-files:
   - any-glob-to-any-file: uv/**
 
-"L: rust-toolchain":
+"L: rust:rust-toolchain":
 - changed-files:
   - any-glob-to-any-file: rust_toolchain/**
 
@@ -92,6 +92,6 @@
 - changed-files:
   - any-glob-to-any-file: helm/**
 
-"L: vcpkg":
+"L: cpp:vcpkg":
 - changed-files:
   - any-glob-to-any-file: vcpkg/**

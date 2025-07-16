@@ -97,7 +97,7 @@ module Dependabot
             dependency_files: T::Array[Dependabot::DependencyFile],
             credentials: T::Array[Dependabot::Credential],
             latest_allowable_version: T.nilable(T.any(String, Gem::Version)),
-            latest_version_finder: T.any(LatestVersionFinder, PackageLatestVersionFinder),
+            latest_version_finder: PackageLatestVersionFinder,
             repo_contents_path: T.nilable(String),
             dependency_group: T.nilable(Dependabot::DependencyGroup),
             raise_on_ignored: T::Boolean,
@@ -116,11 +116,7 @@ module Dependabot
           @latest_allowable_version = latest_allowable_version
           @dependency_group = dependency_group
 
-          @latest_version_finder = T.let(
-            {},
-            T::Hash[Dependabot::Dependency, T.any(LatestVersionFinder, PackageLatestVersionFinder)
-          ]
-          )
+          @latest_version_finder = T.let({}, T::Hash[Dependabot::Dependency, PackageLatestVersionFinder])
           @latest_version_finder[dependency] = latest_version_finder
           @repo_contents_path = repo_contents_path
           @raise_on_ignored = raise_on_ignored
@@ -228,34 +224,18 @@ module Dependabot
         sig { returns(T::Boolean) }
         attr_reader :raise_on_ignored
 
-        sig { params(dep: Dependabot::Dependency) .returns(T.any(LatestVersionFinder, PackageLatestVersionFinder)) }
+        sig { params(dep: Dependabot::Dependency) .returns(PackageLatestVersionFinder) }
         def latest_version_finder(dep)
           @latest_version_finder[dep] ||=
-            if enable_cooldown?
-              PackageLatestVersionFinder.new(
-                dependency: dep,
-                dependency_files: dependency_files,
-                credentials: credentials,
-                cooldown_options: update_cooldown,
-                ignored_versions: [],
-                security_advisories: [],
-                raise_on_ignored: raise_on_ignored
-              )
-            else
-              LatestVersionFinder.new(
-                dependency: dep,
-                credentials: credentials,
-                dependency_files: dependency_files,
-                ignored_versions: [],
-                security_advisories: [],
-                raise_on_ignored: raise_on_ignored
-              )
-            end
-        end
-
-        sig { returns(T::Boolean) }
-        def enable_cooldown?
-          Dependabot::Experiments.enabled?(:enable_cooldown_for_npm_and_yarn)
+            PackageLatestVersionFinder.new(
+              dependency: dep,
+              dependency_files: dependency_files,
+              credentials: credentials,
+              cooldown_options: update_cooldown,
+              ignored_versions: [],
+              security_advisories: [],
+              raise_on_ignored: raise_on_ignored
+            )
         end
 
         # rubocop:disable Metrics/PerceivedComplexity

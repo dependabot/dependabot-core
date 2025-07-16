@@ -41,7 +41,7 @@ module Dependabot
                      requirements_update_strategy: nil, dependency_group: nil,
                      update_cooldown: nil, options: {})
         @latest_version = T.let(nil, T.nilable(T.any(String, Gem::Version)))
-        @latest_resolvable_version = T.let(nil, T.nilable(T.any(String, Gem::Version)))
+        @latest_resolvable_version = T.let(nil, T.nilable(T.any(String, Dependabot::Version)))
         @updated_requirements = T.let(nil, T.nilable(T::Array[T::Hash[Symbol, T.untyped]]))
         @vulnerability_audit = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
         @vulnerable_versions = T.let(nil, T.nilable(T::Array[T.any(String, Gem::Version)]))
@@ -49,9 +49,7 @@ module Dependabot
         @latest_version_for_git_dependency = T.let(nil, T.nilable(T.any(String, Gem::Version)))
         @latest_released_version = T.let(nil, T.nilable(Gem::Version))
         @latest_version_details = T.let(nil, T.nilable(T::Hash[Symbol, T.untyped]))
-        @latest_version_finder = T.let(
-          nil, T.nilable(T.any(LatestVersionFinder, PackageLatestVersionFinder))
-        )
+        @latest_version_finder = T.let(nil, T.nilable(PackageLatestVersionFinder))
         @version_resolver = T.let(nil, T.nilable(VersionResolver))
         @subdependency_version_resolver = T.let(nil, T.nilable(SubdependencyVersionResolver))
         @library = T.let(nil, T.nilable(T::Boolean))
@@ -86,17 +84,23 @@ module Dependabot
           end
       end
 
-      sig { override.returns(T.nilable(T.any(String, Dependabot::Version))) }
+      sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
       def latest_resolvable_version
         return unless latest_version
 
         @latest_resolvable_version ||=
           if dependency.top_level?
-            version_resolver.latest_resolvable_version
+            T.cast(
+              version_resolver.latest_resolvable_version,
+              T.nilable(T.any(String, Dependabot::Version))
+            )
           else
             # If the dependency is indirect its version is constrained  by the
             # requirements placed on it by dependencies lower down the tree
-            subdependency_version_resolver.latest_resolvable_version
+            T.cast(
+              subdependency_version_resolver.latest_resolvable_version,
+              T.nilable(T.any(String, Dependabot::Version))
+            )
           end
       end
 
@@ -131,7 +135,9 @@ module Dependabot
 
       sig { override.returns(T.nilable(T.any(String, Dependabot::Version))) }
       def latest_resolvable_version_with_no_unlock
-        return latest_resolvable_version unless dependency.top_level?
+        unless dependency.top_level?
+          return T.cast(latest_resolvable_version, T.nilable(T.any(String, Dependabot::Version)))
+        end
 
         return latest_resolvable_version_with_no_unlock_for_git_dependency if git_dependency?
 
@@ -165,7 +171,7 @@ module Dependabot
             requirements: dependency.requirements,
             updated_source: updated_source,
             latest_resolvable_version: resolvable_version,
-            update_strategy: requirements_update_strategy
+            update_strategy: T.must(requirements_update_strategy)
           ).updated_requirements
       end
 
@@ -324,7 +330,7 @@ module Dependabot
             requirements: original_dep.requirements,
             updated_source: original_dep == dependency ? updated_source : original_source(original_dep),
             latest_resolvable_version: version,
-            update_strategy: requirements_update_strategy
+            update_strategy: T.must(requirements_update_strategy)
           ).updated_requirements,
           previous_version: previous_version,
           previous_requirements: original_dep.requirements,
@@ -401,34 +407,17 @@ module Dependabot
           end
       end
 
-      sig { returns(T.any(LatestVersionFinder, PackageLatestVersionFinder)) }
+      sig { returns(PackageLatestVersionFinder) }
       def latest_version_finder
-        @latest_version_finder ||=
-          if enable_cooldown?
-            PackageLatestVersionFinder.new(
-              dependency: dependency,
-              credentials: credentials,
-              dependency_files: dependency_files,
-              ignored_versions: ignored_versions,
-              raise_on_ignored: raise_on_ignored,
-              security_advisories: security_advisories,
-              cooldown_options: @update_cooldown
-            )
-          else
-            LatestVersionFinder.new(
-              dependency: dependency,
-              credentials: credentials,
-              dependency_files: dependency_files,
-              ignored_versions: ignored_versions,
-              raise_on_ignored: raise_on_ignored,
-              security_advisories: security_advisories
-            )
-          end
-      end
-
-      sig { returns(T::Boolean) }
-      def enable_cooldown?
-        Dependabot::Experiments.enabled?(:enable_cooldown_for_bun)
+        @latest_version_finder ||= PackageLatestVersionFinder.new(
+          dependency: dependency,
+          credentials: credentials,
+          dependency_files: dependency_files,
+          ignored_versions: ignored_versions,
+          raise_on_ignored: raise_on_ignored,
+          security_advisories: security_advisories,
+          cooldown_options: @update_cooldown
+        )
       end
 
       sig { returns(VersionResolver) }
@@ -514,7 +503,7 @@ module Dependabot
 
         @library =
           LibraryDetector.new(
-            package_json_file: package_json,
+            package_json_file: T.must(package_json),
             credentials: credentials,
             dependency_files: dependency_files
           ).library?

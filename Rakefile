@@ -83,8 +83,13 @@ namespace :gems do
           puts "> Releasing #{gem_path}"
           attempts += 1
           begin
-            sh "gem exec sigstore-cli:0.2.1 sign #{gem_path} --bundle #{gem_attestation_path}"
-            sh "gem push #{gem_path} --attestation #{gem_attestation_path}"
+            if ENV["GITHUB_ACTIONS"] == "true"
+              sh "gem exec sigstore-cli:0.2.1 sign #{gem_path} --bundle #{gem_attestation_path}"
+              sh "gem push #{gem_path} --attestation #{gem_attestation_path}"
+            else
+              puts "- Skipping sigstore signing (not in GitHub Actions environment, so no OIDC token available)"
+              sh "gem push #{gem_path}"
+            end
             break
           rescue StandardError => e
             puts "! `gem push` failed with error: #{e}"

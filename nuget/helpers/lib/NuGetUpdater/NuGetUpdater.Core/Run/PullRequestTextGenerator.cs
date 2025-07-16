@@ -126,7 +126,7 @@ public class PullRequestTextGenerator
 
     public static string GetPullRequestBody(Job job, ImmutableArray<UpdateOperationBase> updateOperationsPerformed, string? dependencyGroupName)
     {
-        var report = UpdateOperationBase.GenerateUpdateOperationReport(updateOperationsPerformed);
+        var report = UpdateOperationBase.GenerateUpdateOperationReport(updateOperationsPerformed, includeFileNames: false);
         return report;
     }
 }
