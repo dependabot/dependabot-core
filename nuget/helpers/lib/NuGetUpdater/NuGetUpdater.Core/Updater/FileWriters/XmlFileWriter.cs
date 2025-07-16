@@ -23,15 +23,20 @@ public class XmlFileWriter : IFileWriter
 
     private readonly ILogger _logger;
 
-    // these file extensions are XML and can be updated; everything else is ignored
-    private static readonly HashSet<string> SupportedFileExtensions =
-    [
+    // these file extensions are valid project entrypoints; everything else is ignored
+    private static readonly HashSet<string> SupportedProjectFileExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
         ".csproj",
         ".vbproj",
         ".fsproj",
+    };
+
+    // these file extensions are valid additional files and can be updated; everything else is ignored
+    private static readonly HashSet<string> SupportedAdditionalFileExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
         ".props",
         ".targets",
-    ];
+    };
 
     public XmlFileWriter(ILogger logger)
     {
@@ -54,8 +59,15 @@ public class XmlFileWriter : IFileWriter
 
         var updatesPerformed = requiredPackageVersions.ToDictionary(d => d.Name, _ => false, StringComparer.OrdinalIgnoreCase);
         var projectRelativePath = relativeFilePaths[0];
+        var projectExtension = Path.GetExtension(projectRelativePath);
+        if (!SupportedProjectFileExtensions.Contains(projectExtension))
+        {
+            _logger.Warn($"Project extension '{projectExtension}' not supported; skipping XML update.");
+            return false;
+        }
+
         var filesAndContentsTasks = relativeFilePaths
-            .Where(path => SupportedFileExtensions.Contains(Path.GetExtension(path)))
+            .Where(path => SupportedProjectFileExtensions.Contains(Path.GetExtension(path)) || SupportedAdditionalFileExtensions.Contains(Path.GetExtension(path)))
             .Select(async path =>
             {
                 var content = await ReadFileContentsAsync(repoContentsPath, path);

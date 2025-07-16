@@ -1591,4 +1591,30 @@ public class XmlFileWriterTests : FileWriterTestsBase
             ]
         );
     }
+
+    [Fact]
+    public async Task NoChangesForUnsupportedInitialFile()
+    {
+        // the extension `.xyproj` is not supported by the file writer; it is immediately rejected
+        await TestNoChangeAsync(
+            files: [
+                ("unsupported.xyproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="$(SomePackageVersion)" />
+                      </ItemGroup>
+                    </Project
+                    """),
+                ("versions.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <SomePackageVersion>1.0.0</SomePackageVersion>
+                      </PropertyGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Some.Package/1.0.0"],
+            requiredDependencyStrings: ["Some.Package/2.0.0"]
+        );
+    }
 }
