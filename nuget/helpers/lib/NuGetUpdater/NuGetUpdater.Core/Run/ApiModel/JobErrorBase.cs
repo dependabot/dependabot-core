@@ -70,6 +70,8 @@ public abstract record JobErrorBase : MessageBase
 
                         return new UnknownError(ex, jobId);
                 }
+            case InvalidDataException invalidData when invalidData.Message == "Central Directory corrupt.":
+                return new PrivateSourceBadResponse(NuGetContext.GetPackageSourceUrls(currentDirectory));
             case InvalidProjectFileException invalidProjectFile:
                 return new DependencyFileNotParseable(invalidProjectFile.ProjectFile);
             case MissingFileException missingFile:

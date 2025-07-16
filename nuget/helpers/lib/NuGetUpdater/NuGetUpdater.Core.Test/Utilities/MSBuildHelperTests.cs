@@ -837,6 +837,14 @@ public class MSBuildHelperTests : TestBase
         yield return
         [
             // output
+            "Unable to resolve dependency 'Some.Package'. Source(s) used: 'nuget.org'.",
+            // expectedError
+            new DependencyNotFound("Some.Package"),
+        ];
+
+        yield return
+        [
+            // output
             "Unable to resolve dependencies. 'Some.Package 1.2.3' is not compatible with",
             // expectedError
             new UpdateNotPossible(["Some.Package.1.2.3"]),
