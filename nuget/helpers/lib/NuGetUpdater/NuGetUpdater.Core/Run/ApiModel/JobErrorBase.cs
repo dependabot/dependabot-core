@@ -74,6 +74,8 @@ public abstract record JobErrorBase : MessageBase
                 return new DependencyFileNotParseable(invalidProjectFile.ProjectFile);
             case MissingFileException missingFile:
                 return new DependencyFileNotFound(missingFile.FilePath, missingFile.Message);
+            case PrivateSourceTimedOutException timeout:
+                return new PrivateSourceTimedOut(timeout.Url);
             case UnparseableFileException unparseableFile:
                 return new DependencyFileNotParseable(unparseableFile.FilePath, unparseableFile.Message);
             case UpdateNotPossibleException updateNotPossible:

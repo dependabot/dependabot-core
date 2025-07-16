@@ -781,6 +781,14 @@ public class MSBuildHelperTests : TestBase
         yield return
         [
             // output
+            "  The HTTP request to 'GET some-source' has timed out after 100000ms.",
+            // expectedError
+            new PrivateSourceTimedOut("some-source"),
+        ];
+
+        yield return
+        [
+            // output
             "The imported file \"some.file\" does not exist",
             // expectedError
             new DependencyFileNotFound("some.file", "test message"),
