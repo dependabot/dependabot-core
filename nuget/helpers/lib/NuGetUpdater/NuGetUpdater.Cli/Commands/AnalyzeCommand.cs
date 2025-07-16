@@ -7,12 +7,12 @@ namespace NuGetUpdater.Cli.Commands;
 
 internal static class AnalyzeCommand
 {
-    internal static readonly Option<string> JobIdOption = new("--job-id") { IsRequired = true };
-    internal static readonly Option<FileInfo> JobPathOption = new("--job-path") { IsRequired = true };
-    internal static readonly Option<DirectoryInfo> RepoRootOption = new("--repo-root") { IsRequired = true };
-    internal static readonly Option<FileInfo> DependencyFilePathOption = new("--dependency-file-path") { IsRequired = true };
-    internal static readonly Option<FileInfo> DiscoveryFilePathOption = new("--discovery-file-path") { IsRequired = true };
-    internal static readonly Option<DirectoryInfo> AnalysisFolderOption = new("--analysis-folder-path") { IsRequired = true };
+    internal static readonly Option<string> JobIdOption = new("--job-id") { Required = true };
+    internal static readonly Option<FileInfo> JobPathOption = new("--job-path") { Required = true };
+    internal static readonly Option<DirectoryInfo> RepoRootOption = new("--repo-root") { Required = true };
+    internal static readonly Option<FileInfo> DependencyFilePathOption = new("--dependency-file-path") { Required = true };
+    internal static readonly Option<FileInfo> DiscoveryFilePathOption = new("--discovery-file-path") { Required = true };
+    internal static readonly Option<DirectoryInfo> AnalysisFolderOption = new("--analysis-folder-path") { Required = true };
 
     internal static Command GetCommand(Action<int> setExitCode)
     {
@@ -28,13 +28,21 @@ internal static class AnalyzeCommand
 
         command.TreatUnmatchedTokensAsErrors = true;
 
-        command.SetHandler(async (jobId, jobPath, repoRoot, discoveryPath, dependencyPath, analysisDirectory) =>
+        command.SetAction(async (parseResult, cancellationToken) =>
         {
+            var jobId = parseResult.GetValue(JobIdOption);
+            var jobPath = parseResult.GetValue(JobPathOption);
+            var repoRoot = parseResult.GetValue(RepoRootOption);
+            var discoveryPath = parseResult.GetValue(DiscoveryFilePathOption);
+            var dependencyPath = parseResult.GetValue(DependencyFilePathOption);
+            var analysisDirectory = parseResult.GetValue(AnalysisFolderOption);
+
             var logger = new OpenTelemetryLogger();
-            var (experimentsManager, _errorResult) = await ExperimentsManager.FromJobFileAsync(jobId, jobPath.FullName);
-            var worker = new AnalyzeWorker(jobId, experimentsManager, logger);
-            await worker.RunAsync(repoRoot.FullName, discoveryPath.FullName, dependencyPath.FullName, analysisDirectory.FullName);
-        }, JobIdOption, JobPathOption, RepoRootOption, DiscoveryFilePathOption, DependencyFilePathOption, AnalysisFolderOption);
+            var (experimentsManager, _errorResult) = await ExperimentsManager.FromJobFileAsync(jobId!, jobPath!.FullName);
+            var worker = new AnalyzeWorker(jobId!, experimentsManager, logger);
+            await worker.RunAsync(repoRoot!.FullName, discoveryPath!.FullName, dependencyPath!.FullName, analysisDirectory!.FullName);
+            return 0;
+        });
 
         return command;
     }
