@@ -95,26 +95,25 @@ internal class DetailedPullRequestBodyGenerator : IPullRequestBodyGenerator, IDi
                         var releasesUrlPath = packageDetailFinder.GetReleasesUrlPath();
                         if (releasesUrlPath is not null)
                         {
-                            sb.AppendLine($"<em>Sourced from <a href=\"{sourceUrl}/{releasesUrlPath}\">{updateOperation.DependencyName}'s releases</a>.</em>");
+                            sb.AppendLine();
+                            sb.AppendLine($"_Sourced from [{updateOperation.DependencyName}'s releases]({sourceUrl}/{releasesUrlPath})._");
                         }
 
                         foreach (var (version, (tagName, body)) in ordered)
                         {
-                            sb.AppendLine($"<h2>{version}</h2>");
+                            sb.AppendLine();
+                            sb.AppendLine($"## {version}");
                             if (body is not null)
                             {
                                 sb.AppendLine();
                                 sb.AppendLine(body);
                             }
-
-                            sb.AppendLine();
                         }
 
                         if (ordered.Count == 0)
                         {
                             sb.AppendLine();
                             sb.AppendLine("No release notes found for this version range.");
-                            sb.AppendLine();
                         }
 
                         string? oldTag = null;
@@ -130,7 +129,8 @@ internal class DetailedPullRequestBodyGenerator : IPullRequestBodyGenerator, IDi
                         }
 
                         var compareUrlPath = packageDetailFinder.GetCompareUrlPath(oldTag, newTag);
-                        sb.AppendLine($"Commits viewable in <a href=\"{sourceUrl}/{compareUrlPath}\">compare view</a>.");
+                        sb.AppendLine();
+                        sb.AppendLine($"Commits viewable in [compare view]({sourceUrl}/{compareUrlPath}).");
                         sb.AppendLine("</details>");
                     }
                 }

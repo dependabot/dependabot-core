@@ -44,11 +44,12 @@ public class DetailedPullRequestBodyGeneratorTests
 
                 <details>
                 <summary>Release notes</summary>
-                <em>Sourced from <a href="https://dev.azure.com/Some.Organization/Some.Owner/_git/Some.Dependency/tags">Some.Dependency's releases</a>.</em>
+
+                _Sourced from [Some.Dependency's releases](https://dev.azure.com/Some.Organization/Some.Owner/_git/Some.Dependency/tags)._
 
                 No release notes found for this version range.
 
-                Commits viewable in <a href="https://dev.azure.com/Some.Organization/Some.Owner/_git/Some.Dependency/commits">compare view</a>.
+                Commits viewable in [compare view](https://dev.azure.com/Some.Organization/Some.Owner/_git/Some.Dependency/commits).
                 </details>
                 """
         );
@@ -86,11 +87,12 @@ public class DetailedPullRequestBodyGeneratorTests
 
                 <details>
                 <summary>Release notes</summary>
-                <em>Sourced from <a href="https://example-org.visualstudio.com/Some.Owner/_git/Some.Dependency/tags">Some.Dependency's releases</a>.</em>
+
+                _Sourced from [Some.Dependency's releases](https://example-org.visualstudio.com/Some.Owner/_git/Some.Dependency/tags)._
 
                 No release notes found for this version range.
 
-                Commits viewable in <a href="https://example-org.visualstudio.com/Some.Owner/_git/Some.Dependency/commits">compare view</a>.
+                Commits viewable in [compare view](https://example-org.visualstudio.com/Some.Owner/_git/Some.Dependency/commits).
                 </details>
                 """
         );
@@ -148,18 +150,20 @@ public class DetailedPullRequestBodyGeneratorTests
 
                 <details>
                 <summary>Release notes</summary>
-                <em>Sourced from <a href="https://github.com/Some.Owner/Some.Dependency/releases">Some.Dependency's releases</a>.</em>
-                <h2>2.0.0</h2>
+
+                _Sourced from [Some.Dependency's releases](https://github.com/Some.Owner/Some.Dependency/releases)._
+
+                ## 2.0.0
 
                 * point 5
                 * point 6
 
-                <h2>1.0.1</h2>
+                ## 1.0.1
 
                 * point 3
                 * point 4
 
-                Commits viewable in <a href="https://github.com/Some.Owner/Some.Dependency/compare/1.0.0...2.0.0">compare view</a>.
+                Commits viewable in [compare view](https://github.com/Some.Owner/Some.Dependency/compare/1.0.0...2.0.0).
                 </details>
                 """
         );
@@ -197,11 +201,12 @@ public class DetailedPullRequestBodyGeneratorTests
 
                 <details>
                 <summary>Release notes</summary>
-                <em>Sourced from <a href="https://github.com/Some.Owner/Some.Dependency/releases">Some.Dependency's releases</a>.</em>
+
+                _Sourced from [Some.Dependency's releases](https://github.com/Some.Owner/Some.Dependency/releases)._
 
                 No release notes found for this version range.
 
-                Commits viewable in <a href="https://github.com/Some.Owner/Some.Dependency/commits">compare view</a>.
+                Commits viewable in [compare view](https://github.com/Some.Owner/Some.Dependency/commits).
                 </details>
                 """
         );
@@ -243,11 +248,12 @@ public class DetailedPullRequestBodyGeneratorTests
 
                 <details>
                 <summary>Release notes</summary>
-                <em>Sourced from <a href="https://github.com/Some.Owner/Some.Dependency/releases">Some.Dependency's releases</a>.</em>
+
+                _Sourced from [Some.Dependency's releases](https://github.com/Some.Owner/Some.Dependency/releases)._
 
                 No release notes found for this version range.
 
-                Commits viewable in <a href="https://github.com/Some.Owner/Some.Dependency/commits">compare view</a>.
+                Commits viewable in [compare view](https://github.com/Some.Owner/Some.Dependency/commits).
                 </details>
                 """
         );
@@ -305,15 +311,17 @@ public class DetailedPullRequestBodyGeneratorTests
 
                 <details>
                 <summary>Release notes</summary>
-                <em>Sourced from <a href="https://gitlab.com/Some.Owner/Some.Dependency/-/releases">Some.Dependency's releases</a>.</em>
-                <h2>2.0.0</h2>
+
+                _Sourced from [Some.Dependency's releases](https://gitlab.com/Some.Owner/Some.Dependency/-/releases)._
+
+                ## 2.0.0
 
                 * point 5
                 * point 6
 
-                <h2>1.0.1</h2>
+                ## 1.0.1
 
-                Commits viewable in <a href="https://gitlab.com/Some.Owner/Some.Dependency/-/compare/1.0.0...2.0.0">compare view</a>.
+                Commits viewable in [compare view](https://gitlab.com/Some.Owner/Some.Dependency/-/compare/1.0.0...2.0.0).
                 </details>
                 """
         );
@@ -351,11 +359,12 @@ public class DetailedPullRequestBodyGeneratorTests
 
                 <details>
                 <summary>Release notes</summary>
-                <em>Sourced from <a href="https://gitlab.com/Some.Owner/Some.Dependency/-/releases">Some.Dependency's releases</a>.</em>
+
+                _Sourced from [Some.Dependency's releases](https://gitlab.com/Some.Owner/Some.Dependency/-/releases)._
 
                 No release notes found for this version range.
 
-                Commits viewable in <a href="https://gitlab.com/Some.Owner/Some.Dependency/-/commits">compare view</a>.
+                Commits viewable in [compare view](https://gitlab.com/Some.Owner/Some.Dependency/-/commits).
                 </details>
                 """
         );
@@ -397,11 +406,12 @@ public class DetailedPullRequestBodyGeneratorTests
 
                 <details>
                 <summary>Release notes</summary>
-                <em>Sourced from <a href="https://gitlab.com/Some.Owner/Some.Dependency/-/releases">Some.Dependency's releases</a>.</em>
+
+                _Sourced from [Some.Dependency's releases](https://gitlab.com/Some.Owner/Some.Dependency/-/releases)._
 
                 No release notes found for this version range.
 
-                Commits viewable in <a href="https://gitlab.com/Some.Owner/Some.Dependency/-/commits">compare view</a>.
+                Commits viewable in [compare view](https://gitlab.com/Some.Owner/Some.Dependency/-/commits).
                 </details>
                 """
         );
