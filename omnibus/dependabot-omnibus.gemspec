@@ -47,11 +47,11 @@ Gem::Specification.new do |spec|
   spec.add_dependency "dependabot-nuget", Dependabot::VERSION
   spec.add_dependency "dependabot-pub", Dependabot::VERSION
   spec.add_dependency "dependabot-python", Dependabot::VERSION
-  spec.add_dependency "dependabot-rust_toolchain", Dependabot::VERSION
+  spec.add_dependency "dependabot-rust_toolchain", "0.321.2"
   spec.add_dependency "dependabot-swift", Dependabot::VERSION
   spec.add_dependency "dependabot-terraform", Dependabot::VERSION
   spec.add_dependency "dependabot-uv", Dependabot::VERSION
-  spec.add_dependency "dependabot-vcpkg", Dependabot::VERSION
+  spec.add_dependency "dependabot-vcpkg", "0.321.2"
 
   common_gemspec.development_dependencies.each do |dep|
     spec.add_development_dependency dep.name, *dep.requirement.as_list
