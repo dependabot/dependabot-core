@@ -8,6 +8,7 @@ module Dependabot
   module Maven
     module NativeHelpers
       extend T::Sig
+      DEPENDENCY_PLUGIN_VERSION = "3.7.0"
 
       sig do
         params(file_name: String).void
@@ -17,7 +18,7 @@ module Dependabot
         stdout, _, status = Open3.capture3(
           { "PROXY_HOST" => proxy_url.host },
           "mvn",
-          "dependency:tree",
+          "dependency:#{DEPENDENCY_PLUGIN_VERSION}:tree",
           "-DoutputFile=#{file_name}",
           "-DoutputType=json",
           "-e"
