@@ -25,8 +25,20 @@ internal class DetailedPullRequestBodyGenerator : IPullRequestBodyGenerator, IDi
     public async Task<string> GeneratePullRequestBodyTextAsync(Job job, ImmutableArray<UpdateOperationBase> updateOperationsPerformed, ImmutableArray<ReportedDependency> updatedDependencies)
     {
         var sb = new StringBuilder();
-        foreach (var updateOperation in updateOperationsPerformed)
+        var dedupedUpdateOperations = updateOperationsPerformed
+            .DistinctBy(u => $"{u.DependencyName}/{u.OldVersion}/{u.NewVersion}", StringComparer.OrdinalIgnoreCase)
+            .OrderBy(u => u.DependencyName, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(u => u.OldVersion, NullableNuGetVersionComparer.Instance)
+            .ThenBy(u => u.NewVersion)
+            .ToImmutableArray();
+        foreach (var updateOperation in dedupedUpdateOperations)
         {
+            if (sb.Length > 0)
+            {
+                // ensure a blank line between entries
+                sb.AppendLine();
+            }
+
             var reportText = $"{updateOperation.GetReport(includeFileNames: false)}.";
             var updatedDependency = updatedDependencies
                 .Where(d => d.Name.Equals(updateOperation.DependencyName, StringComparison.OrdinalIgnoreCase))
@@ -127,5 +139,30 @@ internal class DetailedPullRequestBodyGenerator : IPullRequestBodyGenerator, IDi
 
         var prBody = sb.ToString().Replace("\r", "").TrimEnd();
         return prBody;
+    }
+
+    private class NullableNuGetVersionComparer : IComparer<NuGetVersion?>
+    {
+        public static readonly NullableNuGetVersionComparer Instance = new();
+
+        public int Compare(NuGetVersion? x, NuGetVersion? y)
+        {
+            if (x is null && y is null)
+            {
+                return 0;
+            }
+
+            if (x is null)
+            {
+                return -1;
+            }
+
+            if (y is null)
+            {
+                return 1;
+            }
+
+            return x.CompareTo(y);
+        }
     }
 }

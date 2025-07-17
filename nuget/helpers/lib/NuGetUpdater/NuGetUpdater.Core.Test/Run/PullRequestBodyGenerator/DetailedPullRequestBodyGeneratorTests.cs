@@ -437,6 +437,81 @@ public class DetailedPullRequestBodyGeneratorTests
     }
 
     [Fact]
+    public async Task GeneratePrBody_NoSource_DuplicateUpdateOperations()
+    {
+        await TestAsync(
+            updateOperationsPerformed: [
+                new DirectUpdate() { DependencyName = "Some.Dependency", OldVersion = NuGetVersion.Parse("1.0.0"), NewVersion = NuGetVersion.Parse("2.0.0"), UpdatedFiles = [] },
+                new DirectUpdate() { DependencyName = "Some.Dependency", OldVersion = NuGetVersion.Parse("1.0.0"), NewVersion = NuGetVersion.Parse("2.0.0"), UpdatedFiles = [] },
+            ],
+            updatedDependencies: [
+                new ReportedDependency()
+                {
+                    Name = "Some.Dependency",
+                    PreviousVersion = "1.0.0",
+                    Version = "2.0.0",
+                    Requirements = [
+                        new ReportedRequirement()
+                        {
+                            File = "",
+                            Requirement = "2.0.0",
+                        }
+                    ],
+                }
+            ],
+            httpResponses: [],
+            expectedBody: """
+                Updated Some.Dependency from 1.0.0 to 2.0.0.
+                """
+        );
+    }
+
+    [Fact]
+    public async Task GeneratePrBody_NoSource_MultipleUpdates()
+    {
+        await TestAsync(
+            updateOperationsPerformed: [
+                new DirectUpdate() { DependencyName = "Some.Dependency", OldVersion = NuGetVersion.Parse("1.0.0"), NewVersion = NuGetVersion.Parse("2.0.0"), UpdatedFiles = [] },
+                new DirectUpdate() { DependencyName = "Other.Dependency", OldVersion = NuGetVersion.Parse("3.0.0"), NewVersion = NuGetVersion.Parse("4.0.0"), UpdatedFiles = [] },
+            ],
+            updatedDependencies: [
+                new ReportedDependency()
+                {
+                    Name = "Some.Dependency",
+                    PreviousVersion = "1.0.0",
+                    Version = "2.0.0",
+                    Requirements = [
+                        new ReportedRequirement()
+                        {
+                            File = "",
+                            Requirement = "2.0.0",
+                        }
+                    ],
+                },
+                new ReportedDependency()
+                {
+                    Name = "Other.Dependency",
+                    PreviousVersion = "3.0.0",
+                    Version = "4.0.0",
+                    Requirements = [
+                        new ReportedRequirement()
+                        {
+                            File = "",
+                            Requirement = "4.0.0",
+                        }
+                    ],
+                },
+            ],
+            httpResponses: [],
+            expectedBody: """
+                Updated Other.Dependency from 3.0.0 to 4.0.0.
+
+                Updated Some.Dependency from 1.0.0 to 2.0.0.
+                """
+        );
+    }
+
+    [Fact]
     public async Task GeneratePrBody_UnsupportedSource()
     {
         await TestAsync(
