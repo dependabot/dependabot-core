@@ -6,6 +6,7 @@ require "dependabot/base_command"
 require "dependabot/errors"
 require "dependabot/opentelemetry"
 require "dependabot/updater"
+require "dependabot/config/file_fetcher"
 require "octokit"
 
 module Dependabot
@@ -72,6 +73,16 @@ module Dependabot
                                        ))
     end
 
+    def apply_update_config(fetcher)
+      raw           = fetcher.config_file&.content.to_s
+      parsed_cfg    = Dependabot::Config::File.parse(raw)
+      update_cfg    = parsed_cfg.update_config(job.package_manager)
+
+      fetcher.exclude_paths = update_cfg.exclude_paths
+    rescue Dependabot::RepoNotFound, Dependabot::DependencyFileNotFound, StandardError
+      # swallow—no config
+    end
+
     # A method that abstracts the file fetcher creation logic and applies the same settings across all instances
     def create_file_fetcher(directory: nil)
       # Use the provided directory or fallback to job.source.directory if directory is nil.
@@ -89,7 +100,11 @@ module Dependabot
         options: job.experiments
       }
       args[:repo_contents_path] = Environment.repo_contents_path if job.clone? || already_cloned?
-      Dependabot::FileFetchers.for_package_manager(job.package_manager).new(**args)
+
+      # Load & parse dependabot.yaml from the repo
+      file_fetcher = Dependabot::FileFetchers.for_package_manager(job.package_manager).new(**args)
+      apply_update_config(file_fetcher)
+      file_fetcher
     end
 
     # The main file fetcher method that now calls the create_file_fetcher method
