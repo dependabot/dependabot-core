@@ -701,6 +701,77 @@ public class DetailedPullRequestBodyGeneratorTests
         );
     }
 
+    [Fact]
+    public async Task GeneratePrBody_PrLengthIsTruncated()
+    {
+        // azure source provider has the shortest PR limit of 3999 characters
+        var sourceProvider = "azure";
+        var longReleaseNote = new string('x', 5000);
+
+        var expectedHeader = """
+            Updated [Some.Dependency](https://github.com/Some.Owner/Some.Dependency) from 1.0.0 to 2.0.0.
+
+            # Release notes
+
+            _Sourced from [Some.Dependency's releases](https://github.com/Some.Owner/Some.Dependency/releases)._
+
+            ## 2.0.0
+
+            """.Replace("\r", "");
+        var extraCharacterCount = DetailedPullRequestBodyGenerator.GetMaxPrLength(sourceProvider)!.Value
+            - expectedHeader.Length
+            - DetailedPullRequestBodyGenerator.TruncatedMessage.Length
+            - 1; // this `1` accounts for a newline
+        var expectedReleaseNote = new string('x', extraCharacterCount);
+        await TestAsync(
+            sourceProvider: sourceProvider,
+            updateOperationsPerformed: [
+                new DirectUpdate() { DependencyName = "Some.Dependency", OldVersion = NuGetVersion.Parse("1.0.0"), NewVersion = NuGetVersion.Parse("2.0.0"), UpdatedFiles = [] },
+            ],
+            updatedDependencies: [
+                new ReportedDependency()
+                {
+                    Name = "Some.Dependency",
+                    PreviousVersion = "1.0.0",
+                    Version = "2.0.0",
+                    Requirements = [
+                        new ReportedRequirement()
+                        {
+                            File = "",
+                            Requirement = "2.0.0",
+                            Source = new()
+                            {
+                                SourceUrl = "https://github.com/Some.Owner/Some.Dependency",
+                            },
+                        }
+                    ],
+                }
+            ],
+            httpResponses: [
+                ("https://api.github.com/repos/Some.Owner/Some.Dependency/releases?per_page=100", $$"""
+                    [
+                      {
+                        "name": "2.0.0",
+                        "tag_name": "2.0.0",
+                        "body": "{{longReleaseNote}}"
+                      },
+                      {
+                        "name": "1.0.0",
+                        "tag_name": "1.0.0",
+                        "body": "* line 1\n* line 2"
+                      }
+                    ]
+                    """)
+            ],
+            expectedBody: $"""
+                {expectedHeader}
+                {expectedReleaseNote}...
+
+                _Description has been truncated_
+                """
+        );
+    }
+
     private static async Task TestAsync(
         ImmutableArray<UpdateOperationBase> updateOperationsPerformed,
         ImmutableArray<ReportedDependency> updatedDependencies,
