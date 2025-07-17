@@ -108,6 +108,7 @@ module Dependabot
         sig { params(index_url: String, chart_name: String).returns(T::Array[GitTagWithDetail]) }
         def fetch_tag_and_release_date_helm_chart_index(index_url, chart_name)
           Dependabot.logger.info("Fetching fetch_tag_and_release_date_helm_chart_index:: #{index_url}")
+          result_lines = T.let([], T::Array[GitTagWithDetail])
           begin
             response = Excon.get(
               index_url,
@@ -117,9 +118,8 @@ module Dependabot
 
             Dependabot.logger.info("Received response from #{index_url} with status #{response.status}")
             parsed_result = YAML.safe_load(response.body)
-            return [] unless parsed_result && parsed_result["entries"] && parsed_result["entries"][chart_name]
+            return result_lines unless parsed_result && parsed_result["entries"] && parsed_result["entries"][chart_name]
 
-            result_lines = T.let([], T::Array[GitTagWithDetail])
             parsed_result["entries"][chart_name].map do |release|
               result_lines << GitTagWithDetail.new(
                 tag: release["version"], # Extract the version field
@@ -130,10 +130,10 @@ module Dependabot
             result_lines
           rescue Excon::Error => e
             Dependabot.logger.error("Error fetching Helm index from #{index_url}: #{e.message}")
-            nil
+            result_lines
           rescue StandardError => e
             Dependabot.logger.error("Error parsing Helm index: #{e.message}")
-            nil
+            result_lines
           end
         end
 
