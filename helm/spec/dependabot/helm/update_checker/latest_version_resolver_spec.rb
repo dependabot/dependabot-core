@@ -34,17 +34,32 @@ RSpec.describe Dependabot::Helm::LatestVersionResolver do
     )
   end
 
-  describe "#filter_versions_in_cooldown_period_from_chart" do
-    let(:versions) { ["v1.0.0", "v1.1.0", "v2.0.0"] }
-    let(:repo_name) { "prometheus-community" }
+  describe "#fetch_tag_and_release_date_helm_chart" do
+    let(:versions) { [{ "version" => "1.0.0" }, { "version" => "1.1.0" }, { "version" => "2.0.0" }] }
+    let(:repo_name) { "myrepo" }
 
     before do
-      allow(resolver).to receive(:select_tags_which_in_cooldown_from_chart).with(repo_name).and_return(["v1.0.0"])
+      allow(resolver).to receive(:select_tags_which_in_cooldown_from_chart).with(repo_name).and_return(["1.0.0"])
     end
 
-    it "filters out versions in the cooldown period" do
-      result = resolver.filter_versions_in_cooldown_period_from_chart(versions, repo_name)
-      expect(result).to eq(["v1.0.0", "v1.1.0", "v2.0.0"])
+    it "removes versions in cooldown" do
+      filtered = resolver.fetch_tag_and_release_date_helm_chart(versions.dup, repo_name)
+      expect(filtered).to eq([{ "version" => "1.0.0" }, { "version" => "1.1.0" }, { "version" => "2.0.0" }])
+    end
+  end
+
+  describe "#filter_versions_in_cooldown_period_using_oci" do
+    let(:tags) { ["1.0.0", "1.1.0", "2.0.0"] }
+    let(:repo_name) { "oci://registry.example.com/myartifact" }
+
+    before do
+      allow(resolver).to receive(:cooldown_enabled?).and_return(true)
+      allow(resolver).to receive(:select_tags_which_in_cooldown_using_oci).with(tags, repo_name).and_return(["1.0.0"])
+    end
+
+    it "removes tags in cooldown" do
+      filtered = resolver.filter_versions_in_cooldown_period_using_oci(tags.dup, repo_name)
+      expect(filtered).to eq(["1.0.0", "1.1.0", "2.0.0"])
     end
   end
 
