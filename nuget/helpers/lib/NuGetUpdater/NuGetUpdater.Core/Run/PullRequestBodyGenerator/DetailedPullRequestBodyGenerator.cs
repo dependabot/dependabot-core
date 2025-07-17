@@ -89,8 +89,10 @@ internal class DetailedPullRequestBodyGenerator : IPullRequestBodyGenerator, IDi
                             .ToList();
 
                         sb.AppendLine();
-                        sb.AppendLine("<details>");
-                        sb.AppendLine("<summary>Release notes</summary>");
+                        var detailsLineTemplate = IsHtmlSupported(job.Source.Provider)
+                            ? "<details>\n<summary>{0}</summary>"
+                            : "# {0}";
+                        sb.AppendLine(string.Format(detailsLineTemplate, "Release notes"));
 
                         var releasesUrlPath = packageDetailFinder.GetReleasesUrlPath();
                         if (releasesUrlPath is not null)
@@ -131,7 +133,10 @@ internal class DetailedPullRequestBodyGenerator : IPullRequestBodyGenerator, IDi
                         var compareUrlPath = packageDetailFinder.GetCompareUrlPath(oldTag, newTag);
                         sb.AppendLine();
                         sb.AppendLine($"Commits viewable in [compare view]({sourceUrl}/{compareUrlPath}).");
-                        sb.AppendLine("</details>");
+                        if (IsHtmlSupported(job.Source.Provider))
+                        {
+                            sb.AppendLine("</details>");
+                        }
                     }
                 }
             }
@@ -139,6 +144,17 @@ internal class DetailedPullRequestBodyGenerator : IPullRequestBodyGenerator, IDi
 
         var prBody = sb.ToString().Replace("\r", "").TrimEnd();
         return prBody;
+    }
+
+    private static bool IsHtmlSupported(string sourceProvider)
+    {
+        return sourceProvider switch
+        {
+            "azure" or
+            "bitbucket" or
+            "codecommit" => false,
+            _ => true,
+        };
     }
 
     private class NullableNuGetVersionComparer : IComparer<NuGetVersion?>
