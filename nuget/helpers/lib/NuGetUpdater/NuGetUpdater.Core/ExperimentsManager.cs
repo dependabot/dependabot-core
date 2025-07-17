@@ -7,6 +7,7 @@ namespace NuGetUpdater.Core;
 
 public record ExperimentsManager
 {
+    public bool GenerateSimplePrBody { get; init; } = false;
     public bool InstallDotnetSdks { get; init; } = false;
     public bool NativeUpdater { get; init; } = false;
     public bool UseLegacyDependencySolver { get; init; } = false;
@@ -18,6 +19,7 @@ public record ExperimentsManager
     {
         return new()
         {
+            ["nuget_generate_simple_pr_body"] = GenerateSimplePrBody,
             ["nuget_install_dotnet_sdks"] = InstallDotnetSdks,
             ["nuget_native_updater"] = NativeUpdater,
             ["nuget_legacy_dependency_solver"] = UseLegacyDependencySolver,
@@ -31,6 +33,7 @@ public record ExperimentsManager
     {
         return new ExperimentsManager()
         {
+            GenerateSimplePrBody = IsEnabled(experiments, "nuget_generate_simple_pr_body"),
             InstallDotnetSdks = IsEnabled(experiments, "nuget_install_dotnet_sdks"),
             NativeUpdater = IsEnabled(experiments, "nuget_native_updater"),
             UseLegacyDependencySolver = IsEnabled(experiments, "nuget_legacy_dependency_solver"),
