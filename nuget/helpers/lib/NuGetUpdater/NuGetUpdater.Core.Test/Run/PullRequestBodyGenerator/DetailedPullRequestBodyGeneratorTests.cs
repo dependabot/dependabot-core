@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Text;
 
 using NuGet.Versioning;
 
@@ -619,6 +620,81 @@ public class DetailedPullRequestBodyGeneratorTests
 
                 * point 3
                 * point 4
+
+                Commits viewable in [compare view](https://github.com/Some.Owner/Some.Dependency/compare/1.0.0...2.0.0).
+                """
+        );
+    }
+
+    [Fact]
+    public async Task GeneratePrBody_ReleaseNotesAreTruncated()
+    {
+        // individual release notes are truncated by lines
+        var longReleaseNote = new StringBuilder();
+        for (int i = 1; i <= 60; i++)
+        {
+            longReleaseNote.AppendLine($"* line {i}");
+        }
+
+        // only generating 49 lines so we can manually verify the 50th
+        var expectedReleaseNote = new StringBuilder();
+        for (int i = 1; i <= 49; i++)
+        {
+            expectedReleaseNote.AppendLine($"* line {i}");
+        }
+
+        await TestAsync(
+            sourceProvider: "azure",
+            updateOperationsPerformed: [
+                new DirectUpdate() { DependencyName = "Some.Dependency", OldVersion = NuGetVersion.Parse("1.0.0"), NewVersion = NuGetVersion.Parse("2.0.0"), UpdatedFiles = [] },
+            ],
+            updatedDependencies: [
+                new ReportedDependency()
+                {
+                    Name = "Some.Dependency",
+                    PreviousVersion = "1.0.0",
+                    Version = "2.0.0",
+                    Requirements = [
+                        new ReportedRequirement()
+                        {
+                            File = "",
+                            Requirement = "2.0.0",
+                            Source = new()
+                            {
+                                SourceUrl = "https://github.com/Some.Owner/Some.Dependency",
+                            },
+                        }
+                    ],
+                }
+            ],
+            httpResponses: [
+                ("https://api.github.com/repos/Some.Owner/Some.Dependency/releases?per_page=100", $$"""
+                    [
+                      {
+                        "name": "2.0.0",
+                        "tag_name": "2.0.0",
+                        "body": "{{longReleaseNote.ToString().Replace("\r", "").Trim().Replace("\n", "\\n")}}"
+                      },
+                      {
+                        "name": "1.0.0",
+                        "tag_name": "1.0.0",
+                        "body": "* line 1\n* line 2"
+                      }
+                    ]
+                    """)
+            ],
+            expectedBody: $"""
+                Updated [Some.Dependency](https://github.com/Some.Owner/Some.Dependency) from 1.0.0 to 2.0.0.
+
+                # Release notes
+
+                _Sourced from [Some.Dependency's releases](https://github.com/Some.Owner/Some.Dependency/releases)._
+
+                ## 2.0.0
+
+                {expectedReleaseNote.ToString().Replace("\r", "").Trim()}
+                * line 50
+                 ... (truncated)
 
                 Commits viewable in [compare view](https://github.com/Some.Owner/Some.Dependency/compare/1.0.0...2.0.0).
                 """

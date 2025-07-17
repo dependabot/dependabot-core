@@ -107,8 +107,9 @@ internal class DetailedPullRequestBodyGenerator : IPullRequestBodyGenerator, IDi
                             sb.AppendLine($"## {version}");
                             if (body is not null)
                             {
+                                var truncatedBody = TruncateLineCount(body);
                                 sb.AppendLine();
-                                sb.AppendLine(body);
+                                sb.AppendLine(truncatedBody);
                             }
                         }
 
@@ -155,6 +156,18 @@ internal class DetailedPullRequestBodyGenerator : IPullRequestBodyGenerator, IDi
             "codecommit" => false,
             _ => true,
         };
+    }
+
+    private static string TruncateLineCount(string text, int maxLines = 50)
+    {
+        var lines = text.Replace("\r", "").Split('\n');
+        if (lines.Length <= maxLines)
+        {
+            return text;
+        }
+
+        var truncatedText = string.Join("\n", lines.Take(maxLines)) + "\n ... (truncated)";
+        return truncatedText;
     }
 
     private class NullableNuGetVersionComparer : IComparer<NuGetVersion?>
