@@ -94,7 +94,8 @@ module Dependabot
         # Filter out versions that are in cooldown period
         latest_version_resolver.fetch_tag_and_release_date_helm_chart_index(
           index_url,
-          valid_versions
+          valid_versions,
+          chart_name
         )
         Dependabot.logger.info("After filtering, found #{valid_versions.length} valid versions for #{chart_name}")
 

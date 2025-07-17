@@ -104,13 +104,13 @@ module Dependabot
       end
 
       # To filter versions in cooldown period based on version tags from registry call
-      sig { params(index_url: String, versions: T::Array[String]).returns(T::Array[String]) }
-      def fetch_tag_and_release_date_helm_chart_index(index_url, versions)
+      sig { params(index_url: String, versions: T::Array[String], chart_name: String).returns(T::Array[String]) }
+      def fetch_tag_and_release_date_helm_chart_index(index_url, versions, chart_name)
         Dependabot.logger.info("Filtering versions in cooldown period from chart: #{index_url}")
-        return versions if select_tags_which_in_cooldown_from_chart_index(index_url).nil?
+        return versions if select_tags_which_in_cooldown_from_chart_index(index_url, chart_name).nil?
 
         # sort the allowed version tags by name in descending order
-        select_tags_which_in_cooldown_from_chart_index(index_url)&.each do |tag_name|
+        select_tags_which_in_cooldown_from_chart_index(index_url, chart_name)&.each do |tag_name|
           # Iterate through versions and filter out those matching the tag_name
           versions.reject! do |version|
             version == tag_name
@@ -124,12 +124,12 @@ module Dependabot
         versions
       end
 
-      sig { params(index_url: String).returns(T.nilable(T::Array[String])) }
-      def select_tags_which_in_cooldown_from_chart_index(index_url)
+      sig { params(index_url: String, chart_name: String).returns(T.nilable(T::Array[String])) }
+      def select_tags_which_in_cooldown_from_chart_index(index_url, chart_name)
         fetch_tag_and_release_date_helm_chart_index = T.let([], T::Array[String])
 
         begin
-          package_details_fetcher.fetch_tag_and_release_date_helm_chart_index(index_url).each do |git_tag_with_detail|
+          package_details_fetcher.fetch_tag_and_release_date_helm_chart_index(index_url, chart_name).each do |git_tag_with_detail|
             if check_if_version_in_cooldown_period?(T.must(git_tag_with_detail.release_date))
               fetch_tag_and_release_date_helm_chart_index << git_tag_with_detail.tag
             end

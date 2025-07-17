@@ -105,8 +105,8 @@ module Dependabot
           end
         end
 
-        sig { params(index_url: String).returns(T::Array[GitTagWithDetail]) }
-        def fetch_tag_and_release_date_helm_chart_index(index_url)
+        sig { params(index_url: String, chart_name: String).returns(T::Array[GitTagWithDetail]) }
+        def fetch_tag_and_release_date_helm_chart_index(index_url, chart_name)
           Dependabot.logger.info("Fetching fetch_tag_and_release_date_helm_chart_index:: #{index_url}")
           begin
             response = Excon.get(
@@ -117,11 +117,14 @@ module Dependabot
 
             Dependabot.logger.info("Received response from #{index_url} with status #{response.status}")
             parsed_result = YAML.safe_load(response.body)
-            result_lines = parsed_result.map do |release|
-              GitTagWithDetail.new({
+            return [] unless parsed_result && parsed_result["entries"] && parsed_result["entries"][chart_name]
+
+            result_lines = T.let([], T::Array[GitTagWithDetail])
+            parsed_result["entries"][chart_name].map do |release|
+              result_lines << GitTagWithDetail.new(
                 tag: release["version"], # Extract the version field
                 release_date: release["created"] # Extract the created field
-              })
+              )
             end
 
             result_lines
