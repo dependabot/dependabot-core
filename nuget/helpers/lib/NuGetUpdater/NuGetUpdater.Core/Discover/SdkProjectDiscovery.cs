@@ -854,7 +854,8 @@ internal static class SdkProjectDiscovery
                         .Where(p => !p.SourceFilePath.StartsWith(".."))
                         .OrderBy(p => p.Name)
                         .ToImmutableArray();
-                    var referencedProjectPaths = MSBuildHelper.GetProjectPathsFromProject(projectPath)
+                    var referencedProjectPaths = await MSBuildHelper.GetProjectPathsFromProject(projectPath, experimentsManager, logger);
+                    var orderedReferencedProjectPaths = referencedProjectPaths
                         .Select(path => Path.GetRelativePath(workspacePath, path).NormalizePathToUnix())
                         .OrderBy(p => p)
                         .ToImmutableArray();
@@ -883,7 +884,7 @@ internal static class SdkProjectDiscovery
                         FilePath = Path.GetRelativePath(workspacePath, buildFile.Path).NormalizePathToUnix(),
                         Properties = properties,
                         TargetFrameworks = tfms,
-                        ReferencedProjectPaths = referencedProjectPaths,
+                        ReferencedProjectPaths = orderedReferencedProjectPaths,
                         Dependencies = allDependencies,
                         ImportedFiles = buildFiles.Where(b =>
                             {
