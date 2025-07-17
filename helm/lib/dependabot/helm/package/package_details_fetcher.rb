@@ -37,7 +37,7 @@ module Dependabot
 
         sig { params(repo_name: String).returns(T.any(T::Array[GitTagWithDetail], NilClass)) }
         def fetch_tag_and_release_date_from_chart(repo_name)
-          return [] unless repo_name.empty?
+          return [] if repo_name.empty?
 
           # If not successful then test using helm history chart command
           begin
@@ -139,7 +139,7 @@ module Dependabot
         def fetch_tags_with_release_date_using_oci(tags, repo_url)
           Dependabot.logger.info("Searching OCI tags for: #{tags.join(', ')} #{repo_url}")
           git_tag_with_release_date = T.let([], T::Array[GitTagWithDetail])
-          return git_tag_with_release_date unless tags.empty?
+          return git_tag_with_release_date if tags.empty?
 
           tags.each do |tag|
             response = Dependabot::SharedHelpers.run_shell_command(
