@@ -69,6 +69,8 @@ module Dependabot
         valid_releases = filter_valid_releases(releases)
         return nil if valid_releases.empty?
 
+        # To add cooldown check here.
+        valid_releases =  latest_version_resolver.fetch_tag_and_release_date_helm_chart(valid_releases, repo_name)
         highest_release = valid_releases.max_by { |release| version_class.new(release["version"]) }
         Dependabot.logger.info(
           "Found latest version #{T.must(highest_release)['version']} for #{chart_name} using helm search"
@@ -217,7 +219,7 @@ module Dependabot
         source = dependency.requirements.first&.dig(:source)
         repo_url = source&.dig(:registry)
         repo_name = extract_repo_name(repo_url)
-
+        # use index.yaml if repo_url is provided
         releases = fetch_releases_with_helm_cli(chart_name, repo_name, repo_url)
         return releases if releases
 
@@ -234,7 +236,7 @@ module Dependabot
 
         valid_tags = filter_valid_versions(tags)
         # Filter out tags are not in cooldown period
-        valid_tags = latest_version_resolver.filter_versions_in_cooldown_period_from_chart(
+        valid_tags = latest_version_resolver.filter_versions_in_cooldown_period_using_oci(
           valid_tags,
           T.must(extract_repo_name(repo_url))
         )

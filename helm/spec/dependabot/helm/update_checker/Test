@@ -1,0 +1,115 @@
+require "dependabot/helm/update_checker/latest_version_resolver"
+require "dependabot/helm/package/package_details_fetcher"
+
+RSpec.describe Dependabot::Helm::LatestVersionResolver do
+  let(:dependency) do
+    Dependabot::Dependency.new(
+      name: "test-dependency",
+      version: "1.0.0",
+      requirements: [],
+      package_manager: "helm"
+    )
+  end
+  let(:credentials) { [Dependabot::Credential.new(type: "git_source", token: "test-token")] }
+  let(:cooldown_options) do
+    Dependabot::Package::ReleaseCooldownOptions.new(
+      default_days: 30,
+      semver_major_days: 60,
+      semver_minor_days: 45,
+      semver_patch_days: 15
+    )
+  end
+  let(:resolver) do
+    described_class.new(
+      dependency: dependency,
+      credentials: credentials,
+      cooldown_options: cooldown_options
+    )
+  end
+
+  describe "#filter_versions_in_cooldown_period_using_oci" do
+    let(:tags) { ["1.0.0", "1.1.0", "2.0.0"] }
+    let(:repo_name) { "oci://registry.example.com/myartifact" }
+
+    before do
+      allow(resolver).to receive(:cooldown_enabled?).and_return(true)
+      allow(resolver).to receive(:select_tags_which_in_cooldown_using_oci).with(tags, repo_name).and_return(["1.0.0"])
+    end
+
+    it "removes tags in cooldown" do
+      filtered = resolver.filter_versions_in_cooldown_period_using_oci(tags.dup, repo_name)
+      expect(filtered).to eq(["1.1.0", "2.0.0"])
+    end
+  end
+
+  describe "#fetch_tag_and_release_date_helm_chart" do
+    let(:versions) { [{ "version" => "1.0.0" }, { "version" => "1.1.0" }, { "version" => "2.0.0" }] }
+    let(:repo_name) { "myrepo" }
+
+    before do
+      allow(resolver).to receive(:select_tags_which_in_cooldown_from_chart).with(repo_name).and_return(["1.0.0"])
+    end
+
+    it "removes versions in cooldown" do
+      filtered = resolver.fetch_tag_and_release_date_helm_chart(versions.dup, repo_name)
+      expect(filtered).to eq([{ "version" => "1.1.0" }, { "version" => "2.0.0" }])
+    end
+  end
+
+  describe "#select_tags_which_in_cooldown_from_chart" do
+    let(:repo_name) { "myrepo" }
+    let(:git_tag_with_details) do
+      [
+        instance_double(
+          Dependabot::Helm::Package::GitTagWithDetail,
+          tag: "1.0.0",
+          release_date: (Time.now - (10 * 24 * 60 * 60)).iso8601 # 10 days ago
+        ),
+        instance_double(
+          Dependabot::Helm::Package::GitTagWithDetail,
+          tag: "2.0.0",
+          release_date: (Time.now - (40 * 24 * 60 * 60)).iso8601 # 40 days ago
+        )
+      ]
+    end
+
+    before do
+      allow_any_instance_of(Dependabot::Helm::Package::PackageDetailsFetcher)
+        .to receive(:fetch_tag_and_release_date_from_chart)
+        .with(repo_name)
+        .and_return(git_tag_with_details)
+    end
+
+    it "returns only tags within the cooldown period" do
+      tags = resolver.select_tags_which_in_cooldown_from_chart(repo_name)
+      expect(tags).to eq(["1.0.0"])
+    end
+  end
+
+  describe "#check_if_version_in_cooldown_period?" do
+    it "returns true if release is within cooldown" do
+      recent_date = (Time.now - (10 * 24 * 60 * 60)).iso8601
+      expect(resolver.check_if_version_in_cooldown_period?(recent_date)).to be true
+    end
+
+    it "returns false if release is outside cooldown" do
+      old_date = (Time.now - (100 * 24 * 60 * 60)).iso8601
+      expect(resolver.check_if_version_in_cooldown_period?(old_date)).to be false
+    end
+
+    it "returns false for invalid date" do
+      expect(resolver.check_if_version_in_cooldown_period?("not-a-date")).to be false
+    end
+  end
+
+  describe "#release_date_to_seconds" do
+    it "parses a valid date" do
+      date = "2025-07-01T10:00:00Z"
+      expect(resolver.release_date_to_seconds(date)).to eq(Time.parse(date).to_i)
+    end
+
+    it "returns 0 for invalid date" do
+      expect(resolver.release_date_to_seconds("bad-date")).to eq(0)
+    end
+  end
+end
