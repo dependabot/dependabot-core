@@ -976,6 +976,7 @@ internal static partial class MSBuildHelper
         ThrowOnMissingPackages(output);
         ThrowOnUpdateNotPossible(output);
         ThrowOnRateLimitExceeded(output);
+        ThrowOnTimeout(output);
         ThrowOnBadResponse(output);
         ThrowOnUnparseableFile(output);
     }
@@ -1006,6 +1007,19 @@ internal static partial class MSBuildHelper
         if (rateLimitMessageSnippets.Any(stdout.Contains))
         {
             throw new HttpRequestException(message: stdout, inner: null, statusCode: System.Net.HttpStatusCode.TooManyRequests);
+        }
+    }
+
+    private static void ThrowOnTimeout(string stdout)
+    {
+        var patterns = new[]
+        {
+            new Regex(@"The HTTP request to 'GET (?<Source>[^']+)' has timed out after \d+ms"),
+        };
+        var match = patterns.Select(p => p.Match(stdout)).Where(m => m.Success).FirstOrDefault();
+        if (match is not null)
+        {
+            throw new PrivateSourceTimedOutException(match.Groups["Source"].Value);
         }
     }
 
@@ -1043,6 +1057,7 @@ internal static partial class MSBuildHelper
             new Regex(@"Unable to find package (?<PackageName>[^ ]+)\. No packages exist with this id in source\(s\): (?<PackageSource>.*)$", RegexOptions.Multiline),
             new Regex(@"Unable to find package (?<PackageName>[^ ]+) with version \((?<PackageVersion>[^)]+)\)"),
             new Regex(@"Unable to find package '(?<PackageName>[^ ]+)'\."),
+            new Regex(@"Unable to resolve dependency '(?<PackageName>[^']+)'\. Source\(s\) used"),
             new Regex(@"Could not resolve SDK ""(?<PackageName>[^ ]+)""\."),
             new Regex(@"Failed to fetch results from V2 feed at '.*FindPackagesById\(\)\?id='(?<PackageName>[^']+)'&semVerLevel=2\.0\.0' with following message : Response status code does not indicate success: 404\."),
         };

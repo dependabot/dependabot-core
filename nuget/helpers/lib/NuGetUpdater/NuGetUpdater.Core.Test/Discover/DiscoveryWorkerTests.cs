@@ -690,7 +690,6 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                 {
                     FilePath = "global.json",
                     Dependencies = [
-                        new("Microsoft.NET.Sdk", "6.0.405", DependencyType.MSBuildSdk),
                         new("My.Custom.Sdk", "5.0.0", DependencyType.MSBuildSdk),
                         new("My.Other.Sdk", "1.0.0-beta", DependencyType.MSBuildSdk),
                     ]
@@ -1044,7 +1043,6 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                 {
                     FilePath = "global.json",
                     Dependencies = [
-                        new("Microsoft.NET.Sdk", "6.0.405", DependencyType.MSBuildSdk),
                         new("My.Custom.Sdk", "5.0.0", DependencyType.MSBuildSdk),
                         new("My.Other.Sdk", "1.0.0-beta", DependencyType.MSBuildSdk),
                     ]

@@ -84,6 +84,12 @@ try {
         -installedSdks @("8.0.404", "9.0.101") `
         -expectedSdksToInstall @()
 
+    Test-GlobalJsonVersions `
+        -testDirectory "global-json-unsupported-version" `
+        -directories @("/") `
+        -installedSdks @("8.0.404") `
+        -expectedSdksToInstall @("9.0")
+
     Test-RequiredTargetingPacks `
         -testDirectory "targeting-packs" `
         -expectedTargetingPacks @("Some.Targeting.Pack.Ref/1.0.1", "Some.Other.Targeting.Pack.Ref/1.0.2", "Some.Targeting.Pack.Ref/4.0.1", "Some.Other.Targeting.Pack.Ref/4.0.2")

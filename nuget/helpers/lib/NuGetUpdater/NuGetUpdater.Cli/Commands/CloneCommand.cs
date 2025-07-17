@@ -8,10 +8,14 @@ namespace NuGetUpdater.Cli.Commands;
 
 internal static class CloneCommand
 {
-    internal static readonly Option<FileInfo> JobPathOption = new("--job-path") { IsRequired = true };
-    internal static readonly Option<DirectoryInfo> RepoContentsPathOption = new("--repo-contents-path") { IsRequired = true };
-    internal static readonly Option<Uri> ApiUrlOption = new("--api-url") { IsRequired = true };
-    internal static readonly Option<string> JobIdOption = new("--job-id") { IsRequired = true };
+    internal static readonly Option<FileInfo> JobPathOption = new("--job-path") { Required = true };
+    internal static readonly Option<DirectoryInfo> RepoContentsPathOption = new("--repo-contents-path") { Required = true };
+    internal static readonly Option<Uri> ApiUrlOption = new("--api-url")
+    {
+        Required = true,
+        CustomParser = (argumentResult) => Uri.TryCreate(argumentResult.Tokens.Single().Value, UriKind.Absolute, out var uri) ? uri : throw new ArgumentException("Invalid API URL format.")
+    };
+    internal static readonly Option<string> JobIdOption = new("--job-id") { Required = true };
 
     internal static Command GetCommand(Action<int> setExitCode)
     {
@@ -25,15 +29,21 @@ internal static class CloneCommand
 
         command.TreatUnmatchedTokensAsErrors = true;
 
-        command.SetHandler(async (jobPath, repoContentsPath, apiUrl, jobId) =>
+        command.SetAction(async (parseResult, cancellationToken) =>
         {
-            var apiHandler = new HttpApiHandler(apiUrl.ToString(), jobId);
+            var jobPath = parseResult.GetValue(JobPathOption);
+            var repoContentsPath = parseResult.GetValue(RepoContentsPathOption);
+            var apiUrl = parseResult.GetValue(ApiUrlOption);
+            var jobId = parseResult.GetValue(JobIdOption);
+
+            var apiHandler = new HttpApiHandler(apiUrl!.ToString(), jobId!);
             var logger = new OpenTelemetryLogger();
             var gitCommandHandler = new ShellGitCommandHandler(logger);
-            var worker = new CloneWorker(jobId, apiHandler, gitCommandHandler, logger);
-            var exitCode = await worker.RunAsync(jobPath, repoContentsPath);
+            var worker = new CloneWorker(jobId!, apiHandler, gitCommandHandler, logger);
+            var exitCode = await worker.RunAsync(jobPath!, repoContentsPath!);
             setExitCode(exitCode);
-        }, JobPathOption, RepoContentsPathOption, ApiUrlOption, JobIdOption);
+            return exitCode;
+        });
 
         return command;
     }
