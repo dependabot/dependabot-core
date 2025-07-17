@@ -12,6 +12,8 @@ internal class DetailedPullRequestBodyGenerator : IPullRequestBodyGenerator, IDi
 {
     private readonly IHttpFetcher _httpFetcher;
 
+    public const string TruncatedMessage = "...\n\n_Description has been truncated_";
+
     public DetailedPullRequestBodyGenerator(IHttpFetcher httpFetcher)
     {
         _httpFetcher = httpFetcher;
@@ -144,7 +146,8 @@ internal class DetailedPullRequestBodyGenerator : IPullRequestBodyGenerator, IDi
         }
 
         var prBody = sb.ToString().Replace("\r", "").TrimEnd();
-        return prBody;
+        var truncatedPrBody = TruncateCharacterCount(prBody, GetMaxPrLength(job.Source.Provider));
+        return truncatedPrBody;
     }
 
     private static bool IsHtmlSupported(string sourceProvider)
@@ -167,6 +170,31 @@ internal class DetailedPullRequestBodyGenerator : IPullRequestBodyGenerator, IDi
         }
 
         var truncatedText = string.Join("\n", lines.Take(maxLines)) + "\n ... (truncated)";
+        return truncatedText;
+    }
+
+    internal static int? GetMaxPrLength(string sourceProvider)
+    {
+        // values from, e.g., https://github.com/dependabot/dependabot-core/blob/5109e3e63925469ca0d6e7fa9449470d22c1847b/common/lib/dependabot/pull_request_creator/github.rb#L20
+        return sourceProvider switch
+        {
+            "azure" => 3999,
+            "bitbucket" => 262143,
+            "codecommit" => 10239,
+            "github" => 65535,
+            _ => null, // default case, no specific limit
+        };
+    }
+
+    private static string TruncateCharacterCount(string text, int? maxLength)
+    {
+        if (maxLength is null || text.Length <= maxLength)
+        {
+            return text;
+        }
+
+        var adjustedMaxLength = maxLength.Value - TruncatedMessage.Length;
+        var truncatedText = text[..adjustedMaxLength] + TruncatedMessage;
         return truncatedText;
     }
 
