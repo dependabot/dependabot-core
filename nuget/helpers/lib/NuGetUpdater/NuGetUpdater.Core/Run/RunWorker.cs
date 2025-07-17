@@ -307,7 +307,7 @@ public class RunWorker
         _logger.Info(report);
 
         var sortedUpdatedDependencies = actualUpdatedDependencies.OrderBy(d => d.Name, StringComparer.OrdinalIgnoreCase).ToArray();
-        var resultMessage = GetPullRequestApiMessage(job, [.. updatedDependencyFiles], sortedUpdatedDependencies, normalizedUpdateOperationsPerformed, baseCommitSha);
+        var resultMessage = await GetPullRequestApiMessageAsync(job, [.. updatedDependencyFiles], sortedUpdatedDependencies, normalizedUpdateOperationsPerformed, baseCommitSha, experimentsManager);
         switch (resultMessage)
         {
             case ClosePullRequest close:
@@ -405,12 +405,13 @@ public class RunWorker
         }
     }
 
-    internal static MessageBase? GetPullRequestApiMessage(
+    internal static async Task<MessageBase?> GetPullRequestApiMessageAsync(
         Job job,
         DependencyFile[] updatedFiles,
         ReportedDependency[] updatedDependencies,
         ImmutableArray<UpdateOperationBase> updateOperationsPerformed,
-        string baseCommitSha
+        string baseCommitSha,
+        ExperimentsManager experimentsManager
     )
     {
         var updatedDependencyNames = updateOperationsPerformed.Select(u => u.DependencyName).OrderBy(d => d, StringComparer.OrdinalIgnoreCase).ToArray();
@@ -433,6 +434,7 @@ public class RunWorker
         {
             if (job.UpdatingAPullRequest)
             {
+                var prBody = await PullRequestTextGenerator.GetPullRequestBodyAsync(job, updateOperationsPerformed, [.. updatedDependencies], experimentsManager);
                 return new UpdatePullRequest()
                 {
                     DependencyGroup = existingPullRequest.Item1,
@@ -441,7 +443,7 @@ public class RunWorker
                     BaseCommitSha = baseCommitSha,
                     CommitMessage = PullRequestTextGenerator.GetPullRequestCommitMessage(job, updateOperationsPerformed, existingPullRequest.Item1),
                     PrTitle = PullRequestTextGenerator.GetPullRequestTitle(job, updateOperationsPerformed, existingPullRequest.Item1),
-                    PrBody = PullRequestTextGenerator.GetPullRequestBody(job, updateOperationsPerformed, existingPullRequest.Item1),
+                    PrBody = prBody,
                 };
             }
             else
@@ -470,6 +472,7 @@ public class RunWorker
         {
             if (updatedDependencyNames.Any())
             {
+                var prBody = await PullRequestTextGenerator.GetPullRequestBodyAsync(job, updateOperationsPerformed, [.. updatedDependencies], experimentsManager);
                 return new CreatePullRequest()
                 {
                     Dependencies = updatedDependencies,
@@ -477,7 +480,7 @@ public class RunWorker
                     BaseCommitSha = baseCommitSha,
                     CommitMessage = PullRequestTextGenerator.GetPullRequestCommitMessage(job, updateOperationsPerformed, dependencyGroupName: null),
                     PrTitle = PullRequestTextGenerator.GetPullRequestTitle(job, updateOperationsPerformed, dependencyGroupName: null),
-                    PrBody = PullRequestTextGenerator.GetPullRequestBody(job, updateOperationsPerformed, dependencyGroupName: null),
+                    PrBody = prBody,
                     DependencyGroup = null,
                 };
             }
