@@ -431,7 +431,7 @@ module Dependabot
           type: "git",
           url: "https://#{host}/#{details['username']}/#{details['repo']}",
           branch: nil,
-          ref: details["ref"] || "master"
+          ref: details["ref"]
         }
       end
 
