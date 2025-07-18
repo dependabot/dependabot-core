@@ -47,7 +47,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "dependabot-nuget", Dependabot::VERSION
   spec.add_dependency "dependabot-pub", Dependabot::VERSION
   spec.add_dependency "dependabot-python", Dependabot::VERSION
-  spec.add_dependency "dependabot-rust_toolchain", "0.321.2"
+  spec.add_dependency "dependabot-rust_toolchain", "0.321.2" # TODO: flip to `Dependabot::VERSION` once https://github.com/rubygems/rubygems/issues/8836 is resolved
   spec.add_dependency "dependabot-swift", Dependabot::VERSION
   spec.add_dependency "dependabot-terraform", Dependabot::VERSION
   spec.add_dependency "dependabot-uv", Dependabot::VERSION
