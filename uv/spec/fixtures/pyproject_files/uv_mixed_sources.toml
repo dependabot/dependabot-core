@@ -1,0 +1,28 @@
+[project]
+name = "mixed-sources-project"
+version = "0.1.0"
+description = "Test UV mixed source types"
+requires-python = ">=3.9"
+dependencies = [
+    "requests>=2.31.0",
+    "local-package",
+    "git-package",
+    "registry-package",
+]
+
+[tool.uv.sources]
+# Path dependency - should be detected
+local-package = { path = "./local-package" }
+
+# Git dependency - should NOT be detected as path dependency
+git-package = { git = "https://github.com/example/package.git" }
+
+# Registry dependency with custom index - should NOT be detected as path dependency
+registry-package = { index = "https://custom-pypi.example.com/simple" }
+
+# URL dependency - should NOT be detected as path dependency
+url-package = { url = "https://example.com/package.whl" }
+
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
