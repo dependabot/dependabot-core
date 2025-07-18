@@ -32,22 +32,13 @@ internal class GitHubPackageDetailFinder : IPackageDetailFinder
     {
         var result = new Dictionary<NuGetVersion, (string TagName, string? Details)>();
         var url = $"https://api.github.com/repos/{repoName}/releases?per_page=100";
-        var jsonString = await _httpFetcher.GetStringAsync(url);
-        if (jsonString is null)
+        var jsonOption = await _httpFetcher.GetJsonElementAsync(url);
+        if (jsonOption is null)
         {
             return result;
         }
 
-        JsonElement json;
-        try
-        {
-            json = JsonSerializer.Deserialize<JsonElement>(jsonString);
-        }
-        catch (JsonException)
-        {
-            return result;
-        }
-
+        var json = jsonOption.Value;
         if (json.ValueKind != JsonValueKind.Array)
         {
             return result;
