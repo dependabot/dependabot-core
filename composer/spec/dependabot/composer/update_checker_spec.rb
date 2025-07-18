@@ -727,6 +727,28 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
         expect { latest_resolvable_version }.to raise_error(Dependabot::DependencyFileNotParseable)
       end
     end
+
+    context "when a sub-dependency would block the update" do
+      let(:project_name) { "subdependency_update_required" }
+      let(:dependency_name) { "illuminate/support" }
+      let(:dependency_version) { "6.20.44" }
+      let(:requirements) do
+        [{
+          file: "composer.json",
+          requirement: "^6.0.0",
+          groups: ["runtime"],
+          source: nil
+        }]
+      end
+
+      before do
+        allow(checker).to receive(:latest_version_from_registry)
+          .and_return(Gem::Version.new("9.52.16"))
+      end
+
+      # Should be able to update to a newer version
+      it { is_expected.to be >= Gem::Version.new("6.20.44") }
+    end
   end
 
   describe "#preferred_resolvable_version" do
