@@ -7,6 +7,7 @@ require "cgi"
 require "excon"
 require "sorbet-runtime"
 require "dependabot/helm"
+require "dependabot/helm/helpers"
 
 module Dependabot
   module Helm
@@ -15,9 +16,8 @@ module Dependabot
         extend T::Sig
         # https://api.github.com/repos/prometheus-community/helm-charts/releases
         RELEASES_URL_GIT = "https://api.github.com/repos/"
-        APPLICATION_JSON = "JSON"
         HELM_CHART_RELEASE = "/helm-charts/releases"
-        HELM_INDEX_URL = "https://repo.broadcom.com/bitnami-files/index.yaml"
+
         sig do
           params(
             dependency: Dependency,
@@ -39,7 +39,6 @@ module Dependabot
         def fetch_tag_and_release_date_from_chart(repo_name)
           return [] if repo_name.empty?
 
-          # If not successful then test using helm history chart command
           begin
             url = RELEASES_URL_GIT + repo_name + HELM_CHART_RELEASE
             Dependabot.logger.info("Fetching graph release details from URL: #{url}")
@@ -48,7 +47,7 @@ module Dependabot
             response = Excon.get(url, headers: { "Accept" => "application/vnd.github.v3+json" })
             Dependabot.logger.error("Failed call details: #{response.body}") unless response.status == 200
 
-            parse_github_response(response) if response.status == 200 # rubocop(Layout/IndentationConsistency)
+            parse_github_response(response) if response.status == 200
           rescue Excon::Error => e
             Dependabot.logger.error("Failed to fetch releases from #{url}: #{e.message}")
             Dependabot.logger.error("Returning an empty array due to failure.")
@@ -60,9 +59,7 @@ module Dependabot
         def parse_github_response(response)
           Dependabot.logger.info("Parsing GitHub response body")
           begin
-            # Parse the JSON response
             releases = JSON.parse(response.body)
-            # Extract tag_name and published_at from each release
             result_lines = releases.map do |release|
               GitTagWithDetail.new(
                 tag: release["tag_name"],
@@ -76,31 +73,6 @@ module Dependabot
           rescue JSON::ParserError => e
             Dependabot.logger.error("Failed to parse JSON response: #{e.message}")
             Dependabot.logger.error("Response body: #{response.body}")
-            [] # Ensure an empty array is returned on failure
-          end
-        end
-
-        # https://v3-1-0.helm.sh/docs/helm/helm_history/ reference
-        sig { params(response: String).returns(T::Array[GitTagWithDetail]) }
-        def parse_chart_history_response(response)
-          Dependabot.logger.info("Parsing GitHub response body")
-          begin
-            # Parse the JSON response
-            releases = JSON.parse(response)
-            # Extract tag_name and published_at from each release
-            result_lines = releases.map do |release|
-              GitTagWithDetail.new(
-                tag: release["app_version"],
-                release_date: release["updated"]
-              )
-            end
-            Dependabot.logger.info("Extracted release details: #{result_lines}")
-            # Sort the result lines by tag in descending order
-            result_lines.sort_by(&:tag).reverse
-            result_lines
-          rescue JSON::ParserError => e
-            Dependabot.logger.error("Failed to parse JSON response: #{e.message}")
-            Dependabot.logger.error("Response body: #{response}")
             [] # Ensure an empty array is returned on failure
           end
         end
@@ -145,29 +117,7 @@ module Dependabot
           return git_tag_with_release_date if tags.empty?
 
           tags.each do |tag|
-            response = Dependabot::SharedHelpers.run_shell_command(
-              "oras manifest fetch docker.io/library/nginx:#{tag} --output json",
-              fingerprint: "docker.io/library/nginx:{tag} --output json"
-            ).strip
-
-            parsed_response = JSON.parse(response)
-            git_tag_with_release_date << GitTagWithDetail.new({
-              tag: tag,
-              release_date: parsed_response.dig("annotations", "org.opencontainers.image.created")
-            })
-          rescue JSON::ParserError => e
-            Dependabot.logger.error("Failed to parse JSON response for tag #{tag}: #{e.message}")
-          rescue StandardError => e
-            Dependabot.logger.error("Error in using command oras manifest fetch docker.io/library/nginx:#{tag}
-               --output, and the error message is #{e.message}")
-          end
-          return git_tag_with_release_date if git_tag_with_release_date.size.positive?
-
-          tags.each do |tag|
-            response = Dependabot::SharedHelpers.run_shell_command(
-              "oras manifest fetch #{repo_url}:#{tag} --output json",
-              fingerprint: "oras manifest fetch <repo_url>:<tag> --output json"
-            ).strip
+            response = Helpers.fetch_tags_with_release_date_using_oci(repo_url, tag)
 
             parsed_response = JSON.parse(response)
             git_tag_with_release_date << GitTagWithDetail.new({

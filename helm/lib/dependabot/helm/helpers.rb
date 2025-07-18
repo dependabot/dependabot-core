@@ -67,24 +67,6 @@ module Dependabot
         raise
       end
 
-      sig { params(chart_name: String).returns(String) }
-      def self.chart_history_with_release_details(chart_name)
-        Dependabot.logger.info("Chart History for the given chart name \"#{chart_name}\"")
-
-        chart_name = chart_name.split("/").last
-        release_date_json = Dependabot::SharedHelpers.run_shell_command(
-          "helm history #{chart_name}  --output=json",
-          fingerprint: "helm history <chart_name> --output=json"
-        )
-        Dependabot.logger.info("Fetching release date for the chart: #{release_date_json}")
-        release_date_json.strip
-      rescue StandardError => e
-        Dependabot.logger.error(
-          "Failed to execute helm history #{chart_name}  --output=json, error message: #{e.message}"
-        )
-        raise
-      end
-
       sig { params(username: String, password: String, repository_url: String).returns(String) }
       def self.oci_registry_login(username, password, repository_url)
         Dependabot.logger.info("Logging into OCI registry \"#{repository_url}\"")
@@ -107,6 +89,15 @@ module Dependabot
         Dependabot::SharedHelpers.run_shell_command(
           "oras repo tags #{name}",
           fingerprint: "oras repo tags <name>"
+        ).strip
+      end
+
+      sig { params(repo_url: String, tag: String).returns(String) }
+      def self.fetch_tags_with_release_date_using_oci(repo_url, tag)
+        Dependabot.logger.info("Searching OCI tags with release date for: #{repo_url} and tag: #{tag}")
+        Dependabot::SharedHelpers.run_shell_command(
+          "oras manifest fetch #{repo_url}:#{tag} --output json",
+          fingerprint: "oras manifest fetch <repo_url>:<tag> --output json"
         ).strip
       end
     end
