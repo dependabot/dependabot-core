@@ -64,10 +64,10 @@ module Dependabot
             releases = JSON.parse(response.body)
             # Extract tag_name and published_at from each release
             result_lines = releases.map do |release|
-              GitTagWithDetail.new({
+              GitTagWithDetail.new(
                 tag: release["tag_name"],
                 release_date: release["published_at"]
-              })
+              )
             end
             Dependabot.logger.info("Extracted release details: #{result_lines}")
             # Sort the result lines by tag in descending order
@@ -89,10 +89,10 @@ module Dependabot
             releases = JSON.parse(response)
             # Extract tag_name and published_at from each release
             result_lines = releases.map do |release|
-              GitTagWithDetail.new({
+              GitTagWithDetail.new(
                 tag: release["app_version"],
                 release_date: release["updated"]
-              })
+              )
             end
             Dependabot.logger.info("Extracted release details: #{result_lines}")
             # Sort the result lines by tag in descending order
