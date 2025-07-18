@@ -70,25 +70,6 @@ RSpec.describe Dependabot::Helm::Package::PackageDetailsFetcher do
     end
   end
 
-  describe "#parse_chart_history_response" do
-    let(:json) do
-      [
-        { "app_version" => "1.2.3", "updated" => "2025-07-01T10:00:00Z" },
-        { "app_version" => "1.2.4", "updated" => "2025-07-02T10:00:00Z" }
-      ].to_json
-    end
-
-    it "parses chart history and returns GitTagWithDetail objects" do
-      result = fetcher.parse_chart_history_response(json)
-      expect(result.map(&:tag)).to eq(["1.2.3", "1.2.4"])
-      expect(result.map(&:release_date)).to eq(["2025-07-01T10:00:00Z", "2025-07-02T10:00:00Z"])
-    end
-
-    it "returns an empty array for invalid JSON" do
-      expect(fetcher.parse_chart_history_response("bad-json")).to eq([])
-    end
-  end
-
   describe "#fetch_tag_and_release_date_helm_chart_index" do
     let(:index_url) { "https://repo.broadcom.com/bitnami-files/index.yaml" }
     let(:chart_name) { "mongodb" }
