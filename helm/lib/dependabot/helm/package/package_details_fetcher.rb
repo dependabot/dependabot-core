@@ -17,7 +17,7 @@ module Dependabot
         RELEASES_URL_GIT = "https://api.github.com/repos/"
         APPLICATION_JSON = "JSON"
         HELM_CHART_RELEASE = "/helm-charts/releases"
-
+        HELM_INDEX_URL = "https://repo.broadcom.com/bitnami-files/index.yaml"
         sig do
           params(
             dependency: Dependency,
