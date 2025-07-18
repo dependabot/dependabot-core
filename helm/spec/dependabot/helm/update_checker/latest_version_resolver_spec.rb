@@ -44,7 +44,7 @@ RSpec.describe Dependabot::Helm::LatestVersionResolver do
 
     it "removes versions in cooldown" do
       filtered = resolver.fetch_tag_and_release_date_helm_chart(versions.dup, repo_name)
-      expect(filtered).to eq([{ "version" => "1.0.0" }, { "version" => "1.1.0" }, { "version" => "2.0.0" }])
+      expect(filtered).to eq([{ "version" => "1.1.0" }, { "version" => "2.0.0" }])
     end
   end
 
@@ -59,7 +59,7 @@ RSpec.describe Dependabot::Helm::LatestVersionResolver do
 
     it "removes tags in cooldown" do
       filtered = resolver.filter_versions_in_cooldown_period_using_oci(tags.dup, repo_name)
-      expect(filtered).to eq(["1.0.0", "1.1.0", "2.0.0"])
+      expect(filtered).to eq(["1.1.0", "2.0.0"])
     end
   end
 
