@@ -34,8 +34,8 @@ RSpec.describe Dependabot::Helm::Package::PackageDetailsFetcher do
     context "when the API call is successful" do
       let(:response_body) do
         [
-          { "tag_name" => "v1.0.0", "published_at" => "2023-01-01T00:00:00Z" },
-          { "tag_name" => "v1.1.0", "published_at" => "2023-02-01T00:00:00Z" }
+          { "tag" => "v1.0.0", "release_date" => "2023-01-01T00:00:00Z" },
+          { "tag" => "v1.1.0", "release_date" => "2023-02-01T00:00:00Z" }
         ].to_json
       end
 
@@ -46,8 +46,9 @@ RSpec.describe Dependabot::Helm::Package::PackageDetailsFetcher do
 
       it "returns an array of GitTagWithDetail objects" do
         result = fetcher.fetch_tag_and_release_date_from_chart(repo_name)
-        expect(result.map(&:tag)).to eq([]) # Sorted by tag in descending order
-        expect(result.map(&:release_date)).to eq([])
+        expect(result.map(&:tag)).to eq(["v1.1.0", "v1.0.0"]) # Sorted by tag in descending order
+        expect(result.map(&:release_date)).to eq(["2023-02-01T00:00:00Z", "2023-01-01T00:00:00Z"])
+        expect(result.all? { |obj| obj.is_a?(Dependabot::Helm::Package::GitTagWithDetail) }).to be true
       end
     end
   end
