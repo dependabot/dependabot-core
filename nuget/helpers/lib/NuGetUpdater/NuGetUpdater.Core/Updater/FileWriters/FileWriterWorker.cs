@@ -33,9 +33,32 @@ public class FileWriterWorker
     {
         var updateOperations = new List<UpdateOperationBase>();
         var initialProjectDirectory = new DirectoryInfo(Path.GetDirectoryName(projectPath.FullName)!);
-        var initialProjectDirectoryRelativeToRepoRoot = Path.GetRelativePath(repoContentsPath.FullName, initialProjectDirectory.FullName).FullyNormalizedRootedPath();
 
         // first try non-project updates
+        var nonProjectUpdates = await ProcessNonProjectUpdatesAsync(repoContentsPath, initialProjectDirectory, dependencyName, oldDependencyVersion, newDependencyVersion);
+        updateOperations.AddRange(nonProjectUpdates);
+
+        // then try packages.config updates
+        var packagesConfigUpdates = await ProcessPackagesConfigUpdatesAsync(repoContentsPath, projectPath, dependencyName, oldDependencyVersion, newDependencyVersion);
+        updateOperations.AddRange(packagesConfigUpdates);
+
+        // then try project updates
+        var packageReferenceUpdates = await ProcessPackageReferenceUpdatesAsync(repoContentsPath, initialProjectDirectory, projectPath, dependencyName, newDependencyVersion);
+        updateOperations.AddRange(packageReferenceUpdates);
+
+        var normalizedUpdateOperations = UpdateOperationBase.NormalizeUpdateOperationCollection(repoContentsPath.FullName, updateOperations);
+        return normalizedUpdateOperations;
+    }
+
+    private async Task<ImmutableArray<UpdateOperationBase>> ProcessNonProjectUpdatesAsync(
+        DirectoryInfo repoContentsPath,
+        DirectoryInfo initialProjectDirectory,
+        string dependencyName,
+        NuGetVersion oldDependencyVersion,
+        NuGetVersion newDependencyVersion
+    )
+    {
+        var updateOperations = new List<UpdateOperationBase>();
         var updatedDotNetToolsPath = await DotNetToolsJsonUpdater.UpdateDependencyAsync(
             repoContentsPath.FullName,
             initialProjectDirectory.FullName,
@@ -74,33 +97,54 @@ public class FileWriterWorker
             });
         }
 
-        // then try packages.config updates
+        return [.. updateOperations];
+    }
+
+    private async Task<ImmutableArray<UpdateOperationBase>> ProcessPackagesConfigUpdatesAsync(
+        DirectoryInfo repoContentsPath,
+        FileInfo projectPath,
+        string dependencyName,
+        NuGetVersion oldDependencyVersion,
+        NuGetVersion newDependencyVersion
+    )
+    {
         var additionalFiles = ProjectHelper.GetAllAdditionalFilesFromProject(projectPath.FullName, ProjectHelper.PathFormat.Full);
         var packagesConfigFullPath = additionalFiles.Where(p => Path.GetFileName(p).Equals(ProjectHelper.PackagesConfigFileName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
-        if (packagesConfigFullPath is not null)
+        if (packagesConfigFullPath is null)
         {
-            var packagesConfigOperations = await PackagesConfigUpdater.UpdateDependencyAsync(
-                repoContentsPath.FullName,
-                projectPath.FullName,
-                dependencyName,
-                oldDependencyVersion.ToString(),
-                newDependencyVersion.ToString(),
-                packagesConfigFullPath,
-                _logger
-            );
-            var packagesConfigOperationsWithNormalizedPaths = packagesConfigOperations
-                .Select(op => op with { UpdatedFiles = [.. op.UpdatedFiles.Select(f => Path.GetRelativePath(repoContentsPath.FullName, f).FullyNormalizedRootedPath())] })
-                .ToArray();
-            updateOperations.AddRange(packagesConfigOperationsWithNormalizedPaths);
+            return [];
         }
 
-        // then try project updates
+        var packagesConfigOperations = await PackagesConfigUpdater.UpdateDependencyAsync(
+            repoContentsPath.FullName,
+            projectPath.FullName,
+            dependencyName,
+            oldDependencyVersion.ToString(),
+            newDependencyVersion.ToString(),
+            packagesConfigFullPath,
+            _logger
+        );
+        var packagesConfigOperationsWithNormalizedPaths = packagesConfigOperations
+            .Select(op => op with { UpdatedFiles = [.. op.UpdatedFiles.Select(f => Path.GetRelativePath(repoContentsPath.FullName, f).FullyNormalizedRootedPath())] })
+            .ToImmutableArray();
+        return packagesConfigOperationsWithNormalizedPaths;
+    }
+
+    private async Task<ImmutableArray<UpdateOperationBase>> ProcessPackageReferenceUpdatesAsync(
+        DirectoryInfo repoContentsPath,
+        DirectoryInfo initialProjectDirectory,
+        FileInfo projectPath,
+        string dependencyName,
+        NuGetVersion newDependencyVersion
+    )
+    {
+        var initialProjectDirectoryRelativeToRepoRoot = Path.GetRelativePath(repoContentsPath.FullName, initialProjectDirectory.FullName).FullyNormalizedRootedPath();
         var initialDiscoveryResult = await _discoveryWorker.RunAsync(repoContentsPath.FullName, initialProjectDirectoryRelativeToRepoRoot);
         var initialProjectDiscovery = initialDiscoveryResult.GetProjectDiscoveryFromFullPath(repoContentsPath, projectPath);
         if (initialProjectDiscovery is null)
         {
             _logger.Info($"Unable to find project discovery for project {projectPath}.");
-            return [.. updateOperations];
+            return [];
         }
 
         var initialRequestedDependency = initialProjectDiscovery.Dependencies
@@ -108,14 +152,14 @@ public class FileWriterWorker
         if (initialRequestedDependency is null || initialRequestedDependency.Version is null)
         {
             _logger.Info($"Dependency {dependencyName} not found in initial project discovery.");
-            return [.. updateOperations];
+            return [];
         }
 
         var initialDependencyVersion = NuGetVersion.Parse(initialRequestedDependency.Version);
         if (initialDependencyVersion >= newDependencyVersion)
         {
             _logger.Info($"Dependency {dependencyName} is already at version {initialDependencyVersion}, no update needed.");
-            return [.. updateOperations];
+            return [];
         }
 
         var initialTopLevelDependencies = initialProjectDiscovery.Dependencies
@@ -126,6 +170,7 @@ public class FileWriterWorker
             ? initialTopLevelDependencies.Select(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase) ? newDependency : d).ToImmutableArray()
             : initialTopLevelDependencies.Concat([newDependency]).ToImmutableArray();
 
+        var updateOperations = new List<UpdateOperationBase>();
         foreach (var targetFramework in initialProjectDiscovery.TargetFrameworks)
         {
             var resolvedDependencies = await _dependencySolver.SolveAsync(initialTopLevelDependencies, desiredDependencies, targetFramework);
@@ -222,8 +267,7 @@ public class FileWriterWorker
             updateOperations.AddRange(computedOperationsWithUpdatedFiles);
         }
 
-        var normalizedUpdateOperations = UpdateOperationBase.NormalizeUpdateOperationCollection(repoContentsPath.FullName, updateOperations);
-        return normalizedUpdateOperations;
+        return [.. updateOperations];
     }
 
     internal static async Task<Dictionary<string, string>> GetOriginalFileContentsAsync(DirectoryInfo repoContentsPath, DirectoryInfo initialStartingDirectory, IEnumerable<ProjectDiscoveryResult> projectDiscoveryResults)
@@ -307,7 +351,7 @@ public class FileWriterWorker
 
         // try update
         var addPackageReferenceElementForPinnedPackages = !projectDiscovery.CentralPackageTransitivePinningEnabled;
-        var success = await fileWriter.UpdatePackageVersionsAsync(repoContentsPath, [.. relativeFilePaths], projectDiscovery.Dependencies, requiredPackageVersions, addPackageReferenceElementForPinnedPackages);
+        var success = await fileWriter.UpdatePackageVersionsAsync(repoContentsPath, relativeFilePaths, projectDiscovery.Dependencies, requiredPackageVersions, addPackageReferenceElementForPinnedPackages);
         var updatedFiles = new List<string>();
         foreach (var (filePath, originalContents) in originalFileContents)
         {
@@ -326,7 +370,7 @@ public class FileWriterWorker
             await RestoreOriginalFileContentsAsync(originalFileContents);
         }
 
-        var sortedUpdatedFiles = updatedFiles.OrderBy(p => p, StringComparer.Ordinal);
-        return [.. sortedUpdatedFiles];
+        var sortedUpdatedFiles = updatedFiles.OrderBy(p => p, StringComparer.Ordinal).ToImmutableArray();
+        return sortedUpdatedFiles;
     }
 }

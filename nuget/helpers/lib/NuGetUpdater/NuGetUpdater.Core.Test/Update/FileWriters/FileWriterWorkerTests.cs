@@ -415,7 +415,7 @@ public class FileWriterWorkerTests : TestBase
                     """)
             ],
             expectedOperations: [
-                new DirectUpdate() { DependencyName = "Some.Dependency", NewVersion = NuGetVersion.Parse("2.0.0"), UpdatedFiles = ["/project.csproj", "/packages.config"] }
+                new DirectUpdate() { DependencyName = "Some.Dependency", NewVersion = NuGetVersion.Parse("2.0.0"), UpdatedFiles = ["/packages.config", "/project.csproj"] }
             ]
         );
     }

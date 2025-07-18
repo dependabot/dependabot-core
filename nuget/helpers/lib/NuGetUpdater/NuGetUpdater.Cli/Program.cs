@@ -27,7 +27,8 @@ internal sealed class Program
         };
         command.TreatUnmatchedTokensAsErrors = true;
 
-        var result = await command.InvokeAsync(args);
+        var parseResult = command.Parse(args);
+        var result = await parseResult.InvokeAsync();
 
         return result == 0
             ? exitCode

@@ -163,6 +163,17 @@ public class MessageReportTests
         yield return
         [
             // message
+            new PrivateSourceTimedOut("url"),
+            // expected
+            """
+            Error type: private_source_timed_out
+            - source: url
+            """
+        ];
+
+        yield return
+        [
+            // message
             new PullRequestExistsForLatestVersion("Some.Dependency", "1.2.3"),
             // expected
             """

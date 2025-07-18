@@ -7,8 +7,8 @@ namespace NuGetUpdater.Cli.Commands;
 
 internal static class FrameworkCheckCommand
 {
-    internal static readonly Option<string[]> ProjectTfmsOption = new("--project-tfms") { IsRequired = true, AllowMultipleArgumentsPerToken = true };
-    internal static readonly Option<string[]> PackageTfmsOption = new("--package-tfms") { IsRequired = true, AllowMultipleArgumentsPerToken = true };
+    internal static readonly Option<string[]> ProjectTfmsOption = new("--project-tfms") { Required = true, AllowMultipleArgumentsPerToken = true };
+    internal static readonly Option<string[]> PackageTfmsOption = new("--package-tfms") { Required = true, AllowMultipleArgumentsPerToken = true };
 
     internal static Command GetCommand(Action<int> setExitCode)
     {
@@ -20,12 +20,15 @@ internal static class FrameworkCheckCommand
 
         command.TreatUnmatchedTokensAsErrors = true;
 
-        command.SetHandler((projectTfms, packageTfms) =>
+        command.SetAction((parseResult) =>
         {
-            setExitCode(CompatibilityChecker.IsCompatible(projectTfms, packageTfms, new ConsoleLogger())
+            var projectTfms = parseResult.GetValue(ProjectTfmsOption);
+            var packageTfms = parseResult.GetValue(PackageTfmsOption);
+
+            setExitCode(CompatibilityChecker.IsCompatible(projectTfms!, packageTfms!, new ConsoleLogger())
                 ? 0
                 : 1);
-        }, ProjectTfmsOption, PackageTfmsOption);
+        });
 
         return command;
     }

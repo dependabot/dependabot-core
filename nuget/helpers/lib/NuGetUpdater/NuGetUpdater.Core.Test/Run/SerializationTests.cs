@@ -709,6 +709,14 @@ public class SerializationTests : TestBase
 
         yield return
         [
+            new PrivateSourceTimedOut("url"),
+            """
+            {"data":{"error-type":"private_source_timed_out","error-details":{"source":"url"}}}
+            """
+        ];
+
+        yield return
+        [
             new PullRequestExistsForLatestVersion("dep", "ver"),
             """
             {"data":{"error-type":"pull_request_exists_for_latest_version","error-details":{"dependency-name":"dep","dependency-version":"ver"}}}

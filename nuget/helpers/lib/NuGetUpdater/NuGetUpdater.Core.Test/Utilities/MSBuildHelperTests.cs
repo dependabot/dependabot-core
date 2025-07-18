@@ -781,6 +781,14 @@ public class MSBuildHelperTests : TestBase
         yield return
         [
             // output
+            "  The HTTP request to 'GET some-source' has timed out after 100000ms.",
+            // expectedError
+            new PrivateSourceTimedOut("some-source"),
+        ];
+
+        yield return
+        [
+            // output
             "The imported file \"some.file\" does not exist",
             // expectedError
             new DependencyFileNotFound("some.file", "test message"),
@@ -822,6 +830,14 @@ public class MSBuildHelperTests : TestBase
         [
             // output
             "Unable to find package 'Some.Package'. Existing packages must be restored before performing an install or update",
+            // expectedError
+            new DependencyNotFound("Some.Package"),
+        ];
+
+        yield return
+        [
+            // output
+            "Unable to resolve dependency 'Some.Package'. Source(s) used: 'nuget.org'.",
             // expectedError
             new DependencyNotFound("Some.Package"),
         ];
