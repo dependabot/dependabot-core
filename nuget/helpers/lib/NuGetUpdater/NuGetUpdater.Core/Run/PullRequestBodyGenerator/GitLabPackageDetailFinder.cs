@@ -32,22 +32,13 @@ internal class GitLabPackageDetailFinder : IPackageDetailFinder
     {
         var result = new Dictionary<NuGetVersion, (string TagName, string? Details)>();
         var url = $"https://gitlab.com/api/v4/projects/{Uri.EscapeDataString(repoName)}/repository/tags";
-        var jsonString = await _httpFetcher.GetStringAsync(url);
-        if (jsonString is null)
+        var jsonOption = await _httpFetcher.GetJsonElementAsync(url);
+        if (jsonOption is null)
         {
             return result;
         }
 
-        JsonElement json;
-        try
-        {
-            json = JsonSerializer.Deserialize<JsonElement>(jsonString);
-        }
-        catch (JsonException)
-        {
-            return result;
-        }
-
+        var json = jsonOption.Value;
         if (json.ValueKind != JsonValueKind.Array)
         {
             return result;
