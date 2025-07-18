@@ -44,7 +44,15 @@ module Dependabot
             )
           end
         else
-          versions = engine_versions.select do |engine, value|
+          cleaned_versions = {}
+          engine_versions.each do |engine, value|
+            next unless engine.to_s.match(name)
+
+            # Handle common leading version specifiers (^, ~, >=) in engine constraints
+            cleaned_value = value.to_s.strip.gsub(/^(?:\^|~|>=|>)/, "")
+            cleaned_versions[engine] = cleaned_value
+          end
+          versions = cleaned_versions.select do |engine, value|
             engine.to_s.match(name) && valid_extracted_version?(value)
           end
         end

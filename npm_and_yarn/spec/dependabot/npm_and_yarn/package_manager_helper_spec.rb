@@ -347,6 +347,48 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
     end
   end
 
+  describe "#raise_if_unsupported!" do
+    let(:helper) { described_class.new({}, {}, {}, []) }
+
+    context "when version contains special characters (^) (~) (>=)" do
+      it "doesn't raise for supported pnpm version with caret" do
+        expect { helper.send(:raise_if_unsupported!, "pnpm", "^7") }
+          .not_to raise_error
+      end
+
+      it "doesn't raise for supported pnpm version with tilde" do
+        expect { helper.send(:raise_if_unsupported!, "pnpm", "~7") }
+          .not_to raise_error
+      end
+
+      it "raises for unsupported pnpm version with >=" do
+        expect { helper.send(:raise_if_unsupported!, "pnpm", ">=6") }
+          .to raise_error(Dependabot::ToolVersionNotSupported)
+      end
+
+      it "doesn't raise for supported pnpm version with >=" do
+        expect { helper.send(:raise_if_unsupported!, "pnpm", ">=7") }
+          .not_to raise_error
+      end
+
+      it "handles major-only versions" do
+        expect { helper.send(:raise_if_unsupported!, "pnpm", "6") }
+          .to raise_error(Dependabot::ToolVersionNotSupported)
+
+        expect { helper.send(:raise_if_unsupported!, "pnpm", "7") }
+          .not_to raise_error
+      end
+
+      it "handles major.minor versions" do
+        expect { helper.send(:raise_if_unsupported!, "pnpm", "6.9") }
+          .to raise_error(Dependabot::ToolVersionNotSupported)
+
+        expect { helper.send(:raise_if_unsupported!, "pnpm", "7.1") }
+          .not_to raise_error
+      end
+    end
+  end
+
   describe "#installed_version" do
     before do
       allow(Dependabot::NpmAndYarn::Helpers).to receive_messages(
