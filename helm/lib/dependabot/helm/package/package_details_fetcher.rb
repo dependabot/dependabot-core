@@ -109,7 +109,6 @@ module Dependabot
           end
         end
 
-        # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
         sig { params(tags: T::Array[String], repo_url: String).returns(T.any(T::Array[GitTagWithDetail], NilClass)) }
         def fetch_tags_with_release_date_using_oci(tags, repo_url)
           Dependabot.logger.info("Searching OCI tags for: #{tags.join(', ')} #{repo_url}")
@@ -132,7 +131,6 @@ module Dependabot
           git_tag_with_release_date
         end
       end
-      # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
     end
   end
 end
