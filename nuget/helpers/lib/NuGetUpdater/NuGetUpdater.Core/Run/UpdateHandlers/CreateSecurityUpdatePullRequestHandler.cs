@@ -161,7 +161,7 @@ internal class CreateSecurityUpdatePullRequestHandler : IUpdateHandler
             {
                 var commitMessage = PullRequestTextGenerator.GetPullRequestCommitMessage(job, [.. updateOperationsPerformed], null);
                 var prTitle = PullRequestTextGenerator.GetPullRequestTitle(job, [.. updateOperationsPerformed], null);
-                var prBody = PullRequestTextGenerator.GetPullRequestBody(job, [.. updateOperationsPerformed], null);
+                var prBody = await PullRequestTextGenerator.GetPullRequestBodyAsync(job, [.. updateOperationsPerformed], [.. updatedDependencies], experimentsManager);
                 await apiHandler.CreatePullRequest(new CreatePullRequest()
                 {
                     Dependencies = [.. updatedDependencies],

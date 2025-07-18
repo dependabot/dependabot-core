@@ -34,7 +34,7 @@ public class PullRequestTextTests
 
     [Theory]
     [MemberData(nameof(GetPullRequestTextTestData))]
-    public void PullRequestText(
+    public async Task PullRequestText(
         Job job,
         UpdateOperationBase[] updateOperationsPerformed,
         string? dependencyGroupName,
@@ -43,10 +43,11 @@ public class PullRequestTextTests
         string expectedBody
     )
     {
+        var experimentsManager = new ExperimentsManager() { GenerateSimplePrBody = true };
         var updateOperationsPerformedImmutable = updateOperationsPerformed.ToImmutableArray();
         var actualTitle = PullRequestTextGenerator.GetPullRequestTitle(job, updateOperationsPerformedImmutable, dependencyGroupName);
         var actualCommitMessage = PullRequestTextGenerator.GetPullRequestCommitMessage(job, updateOperationsPerformedImmutable, dependencyGroupName).Replace("\r", "");
-        var actualBody = PullRequestTextGenerator.GetPullRequestBody(job, updateOperationsPerformedImmutable, dependencyGroupName).Replace("\r", "");
+        var actualBody = (await PullRequestTextGenerator.GetPullRequestBodyAsync(job, updateOperationsPerformedImmutable, [], experimentsManager)).Replace("\r", "");
         Assert.Equal(expectedTitle, actualTitle);
         Assert.Equal(expectedCommitMessage.Replace("\r", ""), actualCommitMessage);
         Assert.Equal(expectedBody.Replace("\r", ""), actualBody);

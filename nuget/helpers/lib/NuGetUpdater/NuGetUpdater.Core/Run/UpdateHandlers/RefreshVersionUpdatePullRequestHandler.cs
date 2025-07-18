@@ -151,7 +151,7 @@ internal class RefreshVersionUpdatePullRequestHandler : IUpdateHandler
             {
                 var commitMessage = PullRequestTextGenerator.GetPullRequestCommitMessage(job, [.. updateOperationsPerformed], null);
                 var prTitle = PullRequestTextGenerator.GetPullRequestTitle(job, [.. updateOperationsPerformed], null);
-                var prBody = PullRequestTextGenerator.GetPullRequestBody(job, [.. updateOperationsPerformed], null);
+                var prBody = await PullRequestTextGenerator.GetPullRequestBodyAsync(job, [.. updateOperationsPerformed], [.. updatedDependencies], experimentsManager);
 
                 var existingPullRequest = job.GetExistingPullRequestForDependencies(rawDependencies, considerVersions: true);
                 if (existingPullRequest is not null)
