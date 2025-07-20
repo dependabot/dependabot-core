@@ -220,7 +220,6 @@ module Dependabot
         source = dependency.requirements.first&.dig(:source)
         repo_url = source&.dig(:registry)
         repo_name = extract_repo_name(repo_url)
-        # use index.yaml if repo_url is provided
         releases = fetch_releases_with_helm_cli(chart_name, repo_name, repo_url)
         return releases if releases
 
@@ -236,7 +235,7 @@ module Dependabot
         return nil unless tags && !tags.empty?
 
         valid_tags = filter_valid_versions(tags)
-        # Filter out tags are not in cooldown period
+        # Filter out versions that are in cooldown period
         valid_tags = latest_version_resolver.filter_versions_in_cooldown_period_using_oci(
           valid_tags,
           T.must(extract_repo_name(repo_url))
@@ -262,7 +261,6 @@ module Dependabot
       def extract_repo_name(repo_url)
         return nil unless repo_url
 
-        Dependabot.logger.info("Extracting repo name from URL: #{repo_url}")
         name = repo_url.gsub(%r{^https?://}, "")
         name = name.chomp("/")
         name = name.gsub(/[^a-zA-Z0-9-]/, "-")

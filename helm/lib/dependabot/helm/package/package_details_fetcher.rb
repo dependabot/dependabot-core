@@ -40,18 +40,18 @@ module Dependabot
         def fetch_tag_and_release_date_from_chart(repo_name)
           return [] if repo_name.empty?
 
+          response = T.let(nil, T.nilable(Excon::Response))
           begin
             url = RELEASES_URL_GIT + repo_name + HELM_CHART_RELEASE
             Dependabot.logger.info("Fetching graph release details from URL: #{url}")
 
             response = Excon.get(url, headers: { "Accept" => "application/vnd.github.v3+json" })
             Dependabot.logger.error("Failed call details: #{response.body}") unless response.status == 200
-
-            parse_github_response(response) if response.status == 200
           rescue Excon::Error => e
-            Dependabot.logger.error("Failed to fetch releases from #{url}: #{e.message}")
+            Dependabot.logger.error("Failed to fetch releases from #{url}: #{e.message} ")
             []
           end
+          parse_github_response(T.must(response)) if response&.status == 200
         end
 
         sig { params(response: Excon::Response).returns(T::Array[GitTagWithDetail]) }

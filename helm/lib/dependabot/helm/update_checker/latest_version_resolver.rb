@@ -35,22 +35,18 @@ module Dependabot
         Dependabot.logger.info("Filtering versions in cooldown period from chart: #{repo_name}")
         return tags if select_tags_which_in_cooldown_using_oci(tags, repo_name).nil?
 
-        # sort the allowed version tags by name in descending order
         select_tags_which_in_cooldown_using_oci(tags, repo_name)&.each do |tag_name|
           # Iterate through versions and filter out those matching the tag_name
           tags.reject! do |version|
             version == tag_name
           end
         end
-        Dependabot.logger.info("Allowed version tags after filtering versions in cooldown:
-              #{tags.map(&:to_s).join(', ')}")
         tags
       rescue StandardError => e
         Dependabot.logger.error("Error filter_versions_in_cooldown_period_for_oci:: #{e.message}")
         tags
       end
 
-      # To filter versions in cooldown period based on version tags from registry call
       sig do
         params(
           versions: T::Array[T::Hash[String, T.untyped]],
@@ -71,8 +67,6 @@ module Dependabot
         versions.reject! do |release|
           tags.any?(release["version"])
         end
-        Dependabot.logger.info("Allowed version tags after filtering versions in cooldown:
-              #{versions.map(&:to_s).join(', ')}")
         versions
       rescue StandardError => e
         Dependabot.logger.error("Error fetch_tag_and_release_date_helm_chart(versions): #{e.message}")
@@ -96,13 +90,11 @@ module Dependabot
         end
       end
 
-      # To filter versions in cooldown period based on version tags from registry call
       sig { params(index_url: String, versions: T::Array[String], chart_name: String).returns(T::Array[String]) }
       def fetch_tag_and_release_date_helm_chart_index(index_url, versions, chart_name)
         Dependabot.logger.info("Filtering versions in cooldown period from chart: #{index_url}")
         return versions if select_tags_which_in_cooldown_from_chart_index(index_url, chart_name).nil?
 
-        # sort the allowed version tags by name in descending order
         select_tags_which_in_cooldown_from_chart_index(index_url, chart_name)&.each do |tag_name|
           # Iterate through versions and filter out those matching the tag_name
           versions.reject! do |version|

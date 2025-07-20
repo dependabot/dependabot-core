@@ -6,7 +6,7 @@ require "time"
 require "cgi"
 require "excon"
 require "sorbet-runtime"
-require "dependabot/terraform"
+require "dependabot/swift"
 
 module Dependabot
   module Terraform
