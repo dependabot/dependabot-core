@@ -60,15 +60,11 @@ module Dependabot
           .returns(T::Array[T::Hash[String, T.untyped]])
       end
       def fetch_tag_and_release_date_helm_chart(versions, repo_name, chart_name)
-        return versions if repo_name.nil? || repo_name.empty?
-
         Dependabot.logger.info("Filtering versions in cooldown period from chart: #{repo_name}")
-        return versions if select_tags_which_in_cooldown_from_chart(repo_name).nil?
-
         # Using index URL to fetch tags in cooldown period"
         tags = select_tags_which_in_cooldown_from_chart_index("", T.must(chart_name))
         # If no tags in result then check from github api.
-        tags = select_tags_which_in_cooldown_from_chart(repo_name) if tags.nil? || tags.empty?
+        tags = select_tags_which_in_cooldown_from_chart(T.must(repo_name)) if tags.nil? || tags.empty?
 
         return versions if tags.nil? || tags.empty?
 
