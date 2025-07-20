@@ -36,11 +36,10 @@ module Dependabot
         sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
 
-        sig { params(repo_name: String).returns(T.any(T::Array[GitTagWithDetail], NilClass)) }
+        sig { params(repo_name: String).returns(T::Array[GitTagWithDetail]) }
         def fetch_tag_and_release_date_from_chart(repo_name)
           return [] if repo_name.empty?
 
-          response = T.let(nil, T.nilable(Excon::Response))
           begin
             url = RELEASES_URL_GIT + repo_name + HELM_CHART_RELEASE
             Dependabot.logger.info("Fetching graph release details from URL: #{url}")
@@ -51,7 +50,9 @@ module Dependabot
             Dependabot.logger.error("Failed to fetch releases from #{url}: #{e.message} ")
             []
           end
-          parse_github_response(T.must(response)) if response&.status == 200
+          return [] if response.nil? || response.status != 200
+
+          parse_github_response(response)
         end
 
         sig { params(response: Excon::Response).returns(T::Array[GitTagWithDetail]) }
@@ -86,9 +87,13 @@ module Dependabot
               idempotent: true,
               middlewares: Excon.defaults[:middlewares] + [Excon::Middleware::RedirectFollower]
             )
-
-            Dependabot.logger.info("Received response from #{index_url} with status #{response.status}")
-            parsed_result = YAML.safe_load(response.body)
+          rescue Excon::Error => e
+            Dependabot.logger.error("Error fetching Helm index from #{index_url}: #{e.message}")
+            result_lines
+          end
+          Dependabot.logger.info("Received response from #{index_url} with status #{response&.status}")
+          begin
+            parsed_result = YAML.safe_load(response&.body)
             return result_lines unless parsed_result && parsed_result["entries"] && parsed_result["entries"][chart_name]
 
             parsed_result["entries"][chart_name].map do |release|
@@ -97,10 +102,6 @@ module Dependabot
                 release_date: release["created"] # Extract the created field
               )
             end
-
-            result_lines
-          rescue Excon::Error => e
-            Dependabot.logger.error("Error fetching Helm index from #{index_url}: #{e.message}")
             result_lines
           rescue StandardError => e
             Dependabot.logger.error("Error parsing Helm index: #{e.message}")
