@@ -54,27 +54,26 @@ module Dependabot
       sig do
         params(
           versions: T::Array[T::Hash[String, T.untyped]],
-          repo_name: T.nilable(String)
+          repo_name: T.nilable(String),
+          chart_name: T.nilable(String)
         )
           .returns(T::Array[T::Hash[String, T.untyped]])
       end
-      def fetch_tag_and_release_date_helm_chart(versions, repo_name)
+      def fetch_tag_and_release_date_helm_chart(versions, repo_name, chart_name)
         return versions if repo_name.nil? || repo_name.empty?
 
         Dependabot.logger.info("Filtering versions in cooldown period from chart: #{repo_name}")
         return versions if select_tags_which_in_cooldown_from_chart(repo_name).nil?
 
-        # Get the tags in cooldown once
-        cooldown_tags = select_tags_which_in_cooldown_from_chart(repo_name)
-        return versions if cooldown_tags.nil? || cooldown_tags.empty?
+        # Using index URL to fetch tags in cooldown period"
+        tags = select_tags_which_in_cooldown_from_chart_index("", T.must(chart_name))
+        # If no tags in result then check from github api.
+        tags = select_tags_which_in_cooldown_from_chart(repo_name) if tags.nil? || tags.empty?
 
-        # Filter out versions that are in the cooldown period
-        # releases.reject do |release|
-        # version_class.new(release["version"]) <= version_class.new(dependency.version) ||
-        # ignore_requirements.any? { |r| r.satisfied_by?(version_class.new(release["version"])) }
-        #  end
+        return versions if tags.nil? || tags.empty?
+
         versions.reject! do |release|
-          cooldown_tags.any?(release["version"])
+          tags.any?(release["version"])
         end
         Dependabot.logger.info("Allowed version tags after filtering versions in cooldown:
               #{versions.map(&:to_s).join(', ')}")

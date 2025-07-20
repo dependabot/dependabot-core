@@ -37,13 +37,14 @@ RSpec.describe Dependabot::Helm::LatestVersionResolver do
   describe "#fetch_tag_and_release_date_helm_chart" do
     let(:versions) { [{ "version" => "1.0.0" }, { "version" => "1.1.0" }, { "version" => "2.0.0" }] }
     let(:repo_name) { "myrepo" }
+    let(:chart_name) { "mychart" }
 
     before do
       allow(resolver).to receive(:select_tags_which_in_cooldown_from_chart).with(repo_name).and_return(["1.0.0"])
     end
 
     it "removes versions in cooldown" do
-      filtered = resolver.fetch_tag_and_release_date_helm_chart(versions.dup, repo_name)
+      filtered = resolver.fetch_tag_and_release_date_helm_chart(versions.dup, repo_name, chart_name)
       expect(filtered).to eq([{ "version" => "1.1.0" }, { "version" => "2.0.0" }])
     end
   end

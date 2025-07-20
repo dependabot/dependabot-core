@@ -17,6 +17,7 @@ module Dependabot
         # https://api.github.com/repos/prometheus-community/helm-charts/releases
         RELEASES_URL_GIT = "https://api.github.com/repos/"
         HELM_CHART_RELEASE = "/helm-charts/releases"
+        HELM_CHART_INDEX_URL = "https://repo.broadcom.com/bitnami-files/index.yaml"
 
         sig do
           params(
@@ -43,14 +44,12 @@ module Dependabot
             url = RELEASES_URL_GIT + repo_name + HELM_CHART_RELEASE
             Dependabot.logger.info("Fetching graph release details from URL: #{url}")
 
-            # Fetch the releases from the provider API
             response = Excon.get(url, headers: { "Accept" => "application/vnd.github.v3+json" })
             Dependabot.logger.error("Failed call details: #{response.body}") unless response.status == 200
 
             parse_github_response(response) if response.status == 200
           rescue Excon::Error => e
             Dependabot.logger.error("Failed to fetch releases from #{url}: #{e.message}")
-            Dependabot.logger.error("Returning an empty array due to failure.")
             []
           end
         end
@@ -67,19 +66,19 @@ module Dependabot
               )
             end
             Dependabot.logger.info("Extracted release details: #{result_lines}")
-            # Sort the result lines by tag in descending order
             result_lines.sort_by(&:tag).reverse
             result_lines
           rescue JSON::ParserError => e
             Dependabot.logger.error("Failed to parse JSON response: #{e.message}")
             Dependabot.logger.error("Response body: #{response.body}")
-            [] # Ensure an empty array is returned on failure
+            []
           end
         end
 
-        sig { params(index_url: String, chart_name: String).returns(T::Array[GitTagWithDetail]) }
+        sig { params(index_url: T.nilable(String), chart_name: String).returns(T::Array[GitTagWithDetail]) }
         def fetch_tag_and_release_date_helm_chart_index(index_url, chart_name)
           Dependabot.logger.info("Fetching fetch_tag_and_release_date_helm_chart_index:: #{index_url}")
+          index_url = HELM_CHART_INDEX_URL if index_url.nil? || index_url.empty?
           result_lines = T.let([], T::Array[GitTagWithDetail])
           begin
             response = Excon.get(

@@ -69,7 +69,8 @@ module Dependabot
         valid_releases = filter_valid_releases(releases)
         return nil if valid_releases.empty?
 
-        valid_releases =  latest_version_resolver.fetch_tag_and_release_date_helm_chart(valid_releases, repo_name)
+        valid_releases =  latest_version_resolver
+                          .fetch_tag_and_release_date_helm_chart(valid_releases, repo_name, chart_name)
         highest_release = valid_releases.max_by { |release| version_class.new(release["version"]) }
         Dependabot.logger.info(
           "Found latest version #{T.must(highest_release)['version']} for #{chart_name} using helm search"
