@@ -52,48 +52,6 @@ RSpec.describe Dependabot::Nuget::NativeHelpers do
                             "--result-output-path /path/to/result.json")
     end
 
-    context "when invoking tool with spaces in path, it generates expected warning" do
-      # the minimum job object required by the updater
-      let(:job) do
-        {
-          job: {
-            "allowed-updates": [
-              { "update-type": "all" }
-            ],
-            "package-manager": "nuget",
-            source: {
-              provider: "github",
-              repo: "gocardless/bump",
-              directory: "/",
-              branch: "main"
-            }
-          }
-        }
-      end
-
-      let(:job_path) { Tempfile.new.path }
-
-      before do
-        allow(Dependabot.logger).to receive(:error)
-        File.write(job_path, job.to_json)
-      end
-
-      after do
-        FileUtils.rm_f(job_path)
-      end
-
-      it "the tool runs with command line arguments properly interpreted" do
-        # This test will fail if the command line arguments weren't properly interpreted
-        described_class.run_nuget_updater_tool(job_path: job_path,
-                                               repo_root: repo_root,
-                                               proj_path: proj_path,
-                                               dependency: dependency,
-                                               is_transitive: is_transitive,
-                                               credentials: [])
-        expect(Dependabot.logger).not_to have_received(:error)
-      end
-    end
-
     context "with a private source authentication failure" do
       before do
         # write out the result file

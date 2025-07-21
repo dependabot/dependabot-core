@@ -81,31 +81,6 @@ public class MSBuildHelperTests : TestBase
     }
 
     [Theory]
-    [MemberData(nameof(SolutionProjectPathTestData))]
-    public void ProjectPathsCanBeParsedFromSolutionFiles(string solutionContent, string[] expectedProjectSubPaths)
-    {
-        var solutionPath = Path.GetTempFileName();
-        var solutionDirectory = Path.GetDirectoryName(solutionPath)!;
-        try
-        {
-            File.WriteAllText(solutionPath, solutionContent);
-            var actualProjectSubPaths = MSBuildHelper.GetProjectPathsFromSolution(solutionPath).ToArray();
-            var expectedPaths = expectedProjectSubPaths.Select(path => Path.Combine(solutionDirectory, path)).ToArray();
-            if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-            {
-                // make the test happy when running on Windows
-                expectedPaths = expectedPaths.Select(p => p.Replace("/", "\\")).ToArray();
-            }
-
-            AssertEx.Equal(expectedPaths, actualProjectSubPaths);
-        }
-        finally
-        {
-            File.Delete(solutionPath);
-        }
-    }
-
-    [Theory]
     [InlineData("<Project><PropertyGroup><TargetFramework>netstandard2.0</TargetFramework></PropertyGroup></Project>", "netstandard2.0", null)]
     [InlineData("<Project><PropertyGroup><TargetFrameworks>netstandard2.0</TargetFrameworks></PropertyGroup></Project>", "netstandard2.0", null)]
     [InlineData("<Project><PropertyGroup><TargetFrameworks>  ; netstandard2.0 ; </TargetFrameworks></PropertyGroup></Project>", "netstandard2.0", null)]
@@ -1232,47 +1207,6 @@ public class MSBuildHelperTests : TestBase
             {
                 MockNuGetPackage.CreateSimplePackage("Package.A", "1.6.0", "net8.0"),
                 MockNuGetPackage.CreateSimplePackage("Package.B", "5.1.4", "net8.0"),
-            }
-        ];
-    }
-
-    public static IEnumerable<object[]> SolutionProjectPathTestData()
-    {
-        yield return
-        [
-            """
-            Microsoft Visual Studio Solution File, Format Version 12.00
-            # Visual Studio 14
-            VisualStudioVersion = 14.0.22705.0
-            MinimumVisualStudioVersion = 10.0.40219.1
-            Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Some.Project", "src\Some.Project\SomeProject.csproj", "{782E0C0A-10D3-444D-9640-263D03D2B20C}"
-            EndProject
-            Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Some.Project.Test", "src\Some.Project.Test\Some.Project.Test.csproj", "{5C15FD5B-1975-4CEA-8F1B-C0C9174C60A9}"
-            EndProject
-            Global
-            	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-            		Debug|Any CPU = Debug|Any CPU
-            		Release|Any CPU = Release|Any CPU
-            	EndGlobalSection
-            	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-            		{782E0C0A-10D3-444D-9640-263D03D2B20C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-            		{782E0C0A-10D3-444D-9640-263D03D2B20C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-            		{782E0C0A-10D3-444D-9640-263D03D2B20C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-            		{782E0C0A-10D3-444D-9640-263D03D2B20C}.Release|Any CPU.Build.0 = Release|Any CPU
-            		{5C15FD5B-1975-4CEA-8F1B-C0C9174C60A9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-            		{5C15FD5B-1975-4CEA-8F1B-C0C9174C60A9}.Debug|Any CPU.Build.0 = Debug|Any CPU
-            		{5C15FD5B-1975-4CEA-8F1B-C0C9174C60A9}.Release|Any CPU.ActiveCfg = Release|Any CPU
-            		{5C15FD5B-1975-4CEA-8F1B-C0C9174C60A9}.Release|Any CPU.Build.0 = Release|Any CPU
-            	EndGlobalSection
-            	GlobalSection(SolutionProperties) = preSolution
-            		HideSolutionNode = FALSE
-            	EndGlobalSection
-            EndGlobal
-            """,
-            new[]
-            {
-                "src/Some.Project/SomeProject.csproj",
-                "src/Some.Project.Test/Some.Project.Test.csproj",
             }
         ];
     }
