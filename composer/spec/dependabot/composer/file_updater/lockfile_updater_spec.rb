@@ -579,6 +579,40 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       end
     end
 
+    context "when there are patches" do
+      let(:project_name) { "patches" }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "ehime/hello-world",
+          version: "1.0.5",
+          requirements: [{
+            file: "composer.json",
+            requirement: "1.0.5",
+            groups: [],
+            source: nil
+          }],
+          previous_version: "1.0.4",
+          previous_requirements: [{
+            file: "composer.json",
+            requirement: "1.0.4",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "composer"
+        )
+      end
+
+      it "doesn't strip the patches" do
+        lockfile_data = JSON.parse(updated_lockfile_content)
+
+        updated_dep = lockfile_data.fetch("packages").find { |p| p["name"] == "ehime/hello-world" }
+
+        patches_applied = updated_dep.dig("extra", "patches_applied")
+        expect(patches_applied).to include("[PATCH] markdown modified")
+      end
+    end
+
     context "when testing regression spec for media-organizer" do
       let(:project_name) { "media_organizer" }
 
