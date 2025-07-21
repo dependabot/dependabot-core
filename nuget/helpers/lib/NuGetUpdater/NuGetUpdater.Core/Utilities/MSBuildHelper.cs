@@ -104,12 +104,6 @@ internal static partial class MSBuildHelper
         }
     }
 
-    public static IEnumerable<string> GetProjectPathsFromSolution(string solutionPath)
-    {
-        var solution = SolutionFile.Parse(solutionPath);
-        return solution.ProjectsInOrder.Select(p => p.AbsolutePath);
-    }
-
     public static IEnumerable<string> GetProjectPathsFromProject(string projFilePath)
     {
         var projectStack = new Stack<(string folderPath, ProjectRootElement)>();
@@ -1122,12 +1116,6 @@ internal static partial class MSBuildHelper
     {
         dotnetToolsJsonJsonPath = PathHelper.GetFileInDirectoryOrParent(workspacePath, repoRootPath, "./.config/dotnet-tools.json", caseSensitive: false);
         return dotnetToolsJsonJsonPath is not null;
-    }
-
-    internal static bool TryGetDirectoryPackagesPropsPath(string repoRootPath, string workspacePath, [NotNullWhen(returnValue: true)] out string? directoryPackagesPropsPath)
-    {
-        directoryPackagesPropsPath = PathHelper.GetFileInDirectoryOrParent(workspacePath, repoRootPath, "./Directory.Packages.props", caseSensitive: false);
-        return directoryPackagesPropsPath is not null;
     }
 
     internal static async Task<(ImmutableArray<ProjectBuildFile> ProjectBuildFiles, string[] TargetFrameworks)> LoadBuildFilesAndTargetFrameworksAsync(string repoRootPath, string projectPath)

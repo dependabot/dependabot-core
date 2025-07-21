@@ -12,10 +12,10 @@ namespace NuGetUpdater.Core.Test.Run;
 public class EndToEndTests
 {
     [Fact]
-    public async Task WithNewFileWriter_PackageReference()
+    public async Task WithPackageReference()
     {
         await RunWorkerTests.RunAsync(
-            experimentsManager: new ExperimentsManager() { UseDirectDiscovery = true, UseNewFileUpdater = true },
+            experimentsManager: new ExperimentsManager() { UseDirectDiscovery = true },
             packages: [
                 MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net9.0"),
                 MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net9.0"),
@@ -151,10 +151,10 @@ public class EndToEndTests
     }
 
     [Fact]
-    public async Task WithNewFileWriter_PackagesConfig()
+    public async Task WithPackagesConfig()
     {
         await RunWorkerTests.RunAsync(
-            experimentsManager: new ExperimentsManager() { UseDirectDiscovery = true, UseNewFileUpdater = true },
+            experimentsManager: new ExperimentsManager() { UseDirectDiscovery = true },
             packages: [
                 MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net45"),
                 MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net45"),
@@ -322,9 +322,9 @@ public class EndToEndTests
     }
 
     [Fact]
-    public async Task WithNewFileWriter_LegacyProject_With_PackageReference()
+    public async Task LegacyProject_With_PackageReference()
     {
-        var experimentsManager = new ExperimentsManager() { UseDirectDiscovery = true, UseNewFileUpdater = true };
+        var experimentsManager = new ExperimentsManager() { UseDirectDiscovery = true };
         await RunWorkerTests.RunAsync(
             experimentsManager: experimentsManager,
             packages: [
