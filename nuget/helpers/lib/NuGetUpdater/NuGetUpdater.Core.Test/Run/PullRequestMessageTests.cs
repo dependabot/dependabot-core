@@ -12,9 +12,9 @@ public class PullRequestMessageTests
 {
     [Theory]
     [MemberData(nameof(GetPullRequestApiMessageData))]
-    public void GetPullRequestApiMessage(Job job, DependencyFile[] updatedFiles, ReportedDependency[] updatedDependencies, UpdateOperationBase[] updateOperationsPerformed, MessageBase expectedMessage)
+    public async Task GetPullRequestApiMessage(Job job, DependencyFile[] updatedFiles, ReportedDependency[] updatedDependencies, UpdateOperationBase[] updateOperationsPerformed, MessageBase expectedMessage)
     {
-        var actualMessage = RunWorker.GetPullRequestApiMessage(job, updatedFiles, updatedDependencies, [.. updateOperationsPerformed], "TEST-COMMIT-SHA");
+        var actualMessage = await RunWorker.GetPullRequestApiMessageAsync(job, updatedFiles, updatedDependencies, [.. updateOperationsPerformed], "TEST-COMMIT-SHA", new ExperimentsManager());
         Assert.NotNull(actualMessage);
         actualMessage = actualMessage switch
         {
