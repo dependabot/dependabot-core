@@ -10,10 +10,10 @@ RUN apt-get update \
     zip \
     tar \
     pkg-config \
-  && git clone --depth 1 --branch $VCPKG_VERSION https://github.com/microsoft/vcpkg.git /opt/vcpkg \
+  && git clone https://github.com/microsoft/vcpkg.git /opt/vcpkg \
   && cd /opt/vcpkg \
+  && git checkout $VCPKG_VERSION \
   && ./bootstrap-vcpkg.sh \
-  && rm -rf .git \
   && chown -R dependabot:dependabot /opt/vcpkg \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*

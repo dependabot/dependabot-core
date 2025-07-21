@@ -20,8 +20,8 @@ module Dependabot
       def look_up_source
         Dependabot::Source.new(
           provider: "example",
-          hostname: "example.com",
-          api_endpoint: "https://example.com/api/v3",
+          hostname: "127.0.0.1",
+          api_endpoint: "http://127.0.0.1/api/v3",
           repo: dependency.name,
           directory: nil,
           branch: nil
