@@ -1617,4 +1617,55 @@ public class XmlFileWriterTests : FileWriterTestsBase
             requiredDependencyStrings: ["Some.Package/2.0.0"]
         );
     }
+
+    [Fact]
+    public async Task XmlDeclarationIsRetained()
+    {
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <?xml version="1.0" encoding="utf-8"?>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <Import Project="versions.props" />
+                      <ItemGroup>
+                        <PackageReference Include="Ignored.Dependency" Version="7.0.0" />
+                        <PackageReference Include="Some.Dependency" Version="$(SomeDependencyVersion)" />
+                        <PackageReference Include="Some.Other.Dependency" Version="8.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("versions.props", """
+                    <?xml version="1.0" encoding="utf-8"?>
+                    <Project>
+                      <PropertyGroup>
+                        <SomeDependencyVersion>1.0.0</SomeDependencyVersion>
+                      </PropertyGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/2.0.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <?xml version="1.0" encoding="utf-8"?>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <Import Project="versions.props" />
+                      <ItemGroup>
+                        <PackageReference Include="Ignored.Dependency" Version="7.0.0" />
+                        <PackageReference Include="Some.Dependency" Version="$(SomeDependencyVersion)" />
+                        <PackageReference Include="Some.Other.Dependency" Version="8.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("versions.props", """
+                    <?xml version="1.0" encoding="utf-8"?>
+                    <Project>
+                      <PropertyGroup>
+                        <SomeDependencyVersion>2.0.0</SomeDependencyVersion>
+                      </PropertyGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
 }

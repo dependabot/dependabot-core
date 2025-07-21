@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Text.RegularExpressions;
+using System.Xml;
 using System.Xml.Linq;
 
 using NuGet.Versioning;
@@ -369,7 +370,7 @@ public class XmlFileWriter : IFileWriter
         {
             foreach (var (path, contents) in filesAndContents)
             {
-                await WriteFileContentsAsync(repoContentsPath, path, contents.ToString());
+                await WriteFileContentsAsync(repoContentsPath, path, contents);
             }
         }
 
@@ -433,10 +434,16 @@ public class XmlFileWriter : IFileWriter
         return contents;
     }
 
-    private static async Task WriteFileContentsAsync(DirectoryInfo repoContentsPath, string path, string contents)
+    private static async Task WriteFileContentsAsync(DirectoryInfo repoContentsPath, string path, XDocument document)
     {
         var fullPath = Path.Join(repoContentsPath.FullName, path);
-        await File.WriteAllTextAsync(fullPath, contents);
+        var writerSettings = new XmlWriterSettings()
+        {
+            Async = true,
+            OmitXmlDeclaration = document.Declaration is null,
+        };
+        using var writer = XmlWriter.Create(fullPath, writerSettings);
+        await document.SaveAsync(writer, CancellationToken.None);
     }
 
     public static string CreateUpdatedVersionRangeString(VersionRange existingRange, NuGetVersion existingVersion, NuGetVersion requiredVersion)
