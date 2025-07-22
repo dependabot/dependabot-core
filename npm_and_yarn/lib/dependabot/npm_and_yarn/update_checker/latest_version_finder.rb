@@ -74,15 +74,8 @@ module Dependabot
           override.params(language_version: T.nilable(T.any(String, Dependabot::Version)))
                   .returns(T.nilable(Dependabot::Version))
         end
-        def latest_version_with_no_unlock(language_version: nil) # rubocop:disable Lint/UnusedMethodArgument
-          with_custom_registry_rescue do
-            return unless valid_npm_details?
-            return version_from_dist_tags&.version if specified_dist_tag_requirement?
-
-            releases = possible_releases
-            in_range_versions = filter_out_of_range_versions(releases)
-            in_range_versions.find { |r| !yanked_version?(r.version) }&.version
-          end
+        def latest_version_with_no_unlock(language_version: nil)
+          fetch_latest_version_with_no_unlock(language_version: language_version)
         end
 
         sig do
@@ -107,7 +100,8 @@ module Dependabot
 
             return if specified_dist_tag_requirement?
 
-            possible_releases.find { |r| !yanked_version?(r.version) }&.version
+            filtered_releases = filter_by_cooldown(possible_releases)
+            filtered_releases.find { |r| !yanked_version?(r.version) }&.version
           end
         end
 
@@ -121,9 +115,9 @@ module Dependabot
             return unless valid_npm_details?
             return version_from_dist_tags&.version if specified_dist_tag_requirement?
 
-            releases = possible_releases
+            filtered_releases = filter_by_cooldown(possible_releases)
 
-            in_range_versions = filter_out_of_range_versions(releases)
+            in_range_versions = filter_out_of_range_versions(filtered_releases)
             in_range_versions.find { |r| !yanked_version?(r.version) }&.version
           end
         end
