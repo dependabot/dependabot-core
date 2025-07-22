@@ -250,7 +250,7 @@ public class FileWriterWorker
                 initialTopLevelDependencies,
                 desiredDependencies,
                 resolvedDependencies.Value,
-                new ExperimentsManager() { UseDirectDiscovery = true },
+                new ExperimentsManager(),
                 _logger);
             var filteredUpdateOperations = computedUpdateOperations
                 .Where(op =>

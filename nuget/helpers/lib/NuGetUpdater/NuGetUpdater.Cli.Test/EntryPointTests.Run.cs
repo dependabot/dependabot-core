@@ -28,6 +28,15 @@ public partial class EntryPointTests
                 ],
                 files:
                 [
+                    ("Directory.Build.props", "<Project />"),
+                    ("Directory.Build.targets", "<Project />"),
+                    ("Directory.Packages.props", """
+                        <Project>
+                          <PropertyGroup>
+                            <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+                          </PropertyGroup>
+                        </Project>
+                        """),
                     ("src/project.csproj", """
                         <Project Sdk="Microsoft.NET.Sdk">
                           <PropertyGroup>
