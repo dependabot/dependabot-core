@@ -21,7 +21,6 @@ public class EndToEndTests
     public async Task WithPackageReference()
     {
         await RunAsync(
-            experimentsManager: new ExperimentsManager() { UseDirectDiscovery = true },
             packages: [
                 MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net9.0"),
                 MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net9.0"),
@@ -155,7 +154,6 @@ public class EndToEndTests
     public async Task WithPackagesConfig()
     {
         await RunAsync(
-            experimentsManager: new ExperimentsManager() { UseDirectDiscovery = true },
             packages: [
                 MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net45"),
                 MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net45"),
@@ -320,7 +318,7 @@ public class EndToEndTests
     [Fact]
     public async Task LegacyProject_With_PackageReference()
     {
-        var experimentsManager = new ExperimentsManager() { UseDirectDiscovery = true };
+        var experimentsManager = new ExperimentsManager();
         await RunAsync(
             experimentsManager: experimentsManager,
             packages: [
@@ -494,7 +492,6 @@ public class EndToEndTests
         //   library2.csproj - top level dependency, needs direct update
         //   library3.csproj - transitive dependency, needs pin
         await RunAsync(
-            experimentsManager: new ExperimentsManager() { UseDirectDiscovery = true },
             packages: [
                 MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0"),
                 MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net8.0"),

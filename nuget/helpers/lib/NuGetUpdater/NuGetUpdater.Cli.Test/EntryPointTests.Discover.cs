@@ -18,10 +18,8 @@ public partial class EntryPointTests
 {
     public class Discover : DiscoveryWorkerTestBase
     {
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task PathWithSpaces(bool useDirectDiscovery)
+        [Fact]
+        public async Task PathWithSpaces()
         {
             await RunAsync(path =>
                 [
@@ -37,7 +35,6 @@ public partial class EntryPointTests
                     "--output",
                     Path.Combine(path, DiscoveryWorker.DiscoveryResultFileName),
                 ],
-                experimentsManager: new ExperimentsManager() { UseDirectDiscovery = useDirectDiscovery },
                 packages:
                 [
                     MockNuGetPackage.CreateSimplePackage("Some.Package", "1.2.3", "net8.0"),
@@ -78,10 +75,8 @@ public partial class EntryPointTests
             );
         }
 
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task WithSolution(bool useDirectDiscovery)
+        [Fact]
+        public async Task WithSolution()
         {
             await RunAsync(path =>
                 [
@@ -97,7 +92,6 @@ public partial class EntryPointTests
                     "--output",
                     Path.Combine(path, DiscoveryWorker.DiscoveryResultFileName),
                 ],
-                experimentsManager: new ExperimentsManager() { UseDirectDiscovery = useDirectDiscovery },
                 packages:
                 [
                     MockNuGetPackage.CreateSimplePackage("Some.Package", "7.0.1", "net45"),
@@ -175,10 +169,8 @@ public partial class EntryPointTests
             );
         }
 
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task WithProject(bool useDirectDiscovery)
+        [Fact]
+        public async Task WithProject()
         {
             await RunAsync(path =>
                 [
@@ -194,7 +186,6 @@ public partial class EntryPointTests
                     "--output",
                     Path.Combine(path, DiscoveryWorker.DiscoveryResultFileName),
                 ],
-                experimentsManager: new ExperimentsManager() { UseDirectDiscovery = useDirectDiscovery },
                 packages:
                 [
                     MockNuGetPackage.CreateSimplePackage("Some.Package", "7.0.1", "net45"),
@@ -249,10 +240,8 @@ public partial class EntryPointTests
             );
         }
 
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task WithDirectory(bool useDirectDiscovery)
+        [Fact]
+        public async Task WithDirectory()
         {
             var workspacePath = "path/to/";
             await RunAsync(path =>
@@ -269,7 +258,6 @@ public partial class EntryPointTests
                     "--output",
                     Path.Combine(path, DiscoveryWorker.DiscoveryResultFileName),
                 ],
-                experimentsManager: new ExperimentsManager() { UseDirectDiscovery = useDirectDiscovery },
                 packages:
                 [
                     MockNuGetPackage.CreateSimplePackage("Some.Package", "7.0.1", "net45"),
@@ -365,7 +353,6 @@ public partial class EntryPointTests
                         </Project>
                         """)
                 },
-                experimentsManager: new ExperimentsManager() { UseDirectDiscovery = true },
                 packages:
                 [
                     MockNuGetPackage.CreateSimplePackage("Package.A", "1.2.3", "net8.0"),
@@ -405,7 +392,7 @@ public partial class EntryPointTests
             using var testDirectory = new TemporaryDirectory();
             var jobFilePath = Path.Combine(testDirectory.DirectoryPath, "job.json");
             var resultFilePath = Path.Combine(testDirectory.DirectoryPath, DiscoveryWorker.DiscoveryResultFileName);
-            await File.WriteAllTextAsync(jobFilePath, "not json");
+            await File.WriteAllTextAsync(jobFilePath, "not json", TestContext.Current.CancellationToken);
             await RunAsync(path =>
                 [
                     "discover",
@@ -453,7 +440,7 @@ public partial class EntryPointTests
                         ]
                     }
                 }
-                """);
+                """, TestContext.Current.CancellationToken);
             await RunAsync(path =>
                 [
                     "discover",

@@ -123,9 +123,9 @@ public partial class EntryPointTests
                   }
                 }
                 """;
-            await File.WriteAllTextAsync(globalJsonPath, globalJsonContent);
+            await File.WriteAllTextAsync(globalJsonPath, globalJsonContent, TestContext.Current.CancellationToken);
             Directory.CreateDirectory(Path.Join(tempDir.DirectoryPath, "src"));
-            await File.WriteAllTextAsync(srcGlobalJsonPath, globalJsonContent);
+            await File.WriteAllTextAsync(srcGlobalJsonPath, globalJsonContent, TestContext.Current.CancellationToken);
             var projectPath = Path.Join(tempDir.DirectoryPath, "src", "project.csproj");
             await File.WriteAllTextAsync(projectPath, """
                 <Project Sdk="Microsoft.NET.Sdk">
@@ -136,7 +136,16 @@ public partial class EntryPointTests
                     <PackageReference Include="Some.Package" Version="7.0.1" />
                   </ItemGroup>
                 </Project>
-                """);
+                """, TestContext.Current.CancellationToken);
+            await File.WriteAllTextAsync(Path.Join(Path.GetDirectoryName(projectPath)!, "Directory.Build.props"), "<Project />", TestContext.Current.CancellationToken);
+            await File.WriteAllTextAsync(Path.Join(Path.GetDirectoryName(projectPath)!, "Directory.Build.targets"), "<Project />", TestContext.Current.CancellationToken);
+            await File.WriteAllTextAsync(Path.Join(Path.GetDirectoryName(projectPath)!, "Directory.Packages.props"), """
+                <Project>
+                  <PropertyGroup>
+                    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+                  </PropertyGroup>
+                </Project>
+                """, TestContext.Current.CancellationToken);
             var executableName = Path.Join(Path.GetDirectoryName(GetType().Assembly.Location), "NuGetUpdater.Cli.dll");
             IEnumerable<string> executableArgs = [
                 executableName,
@@ -168,15 +177,15 @@ public partial class EntryPointTests
             Assert.True(exitCode == 0, $"Error running update on unsupported SDK.\nSTDOUT:\n{output}\nSTDERR:\n{error}");
 
             // verify project update
-            var updatedProjectContents = await File.ReadAllTextAsync(projectPath);
+            var updatedProjectContents = await File.ReadAllTextAsync(projectPath, TestContext.Current.CancellationToken);
             Assert.Contains("13.0.1", updatedProjectContents);
 
             // verify `global.json` untouched
-            var updatedGlobalJsonContents = await File.ReadAllTextAsync(globalJsonPath);
+            var updatedGlobalJsonContents = await File.ReadAllTextAsync(globalJsonPath, TestContext.Current.CancellationToken);
             Assert.Contains("99.99.99", updatedGlobalJsonContents);
 
             // verify `src/global.json` untouched
-            var updatedSrcGlobalJsonContents = await File.ReadAllTextAsync(srcGlobalJsonPath);
+            var updatedSrcGlobalJsonContents = await File.ReadAllTextAsync(srcGlobalJsonPath, TestContext.Current.CancellationToken);
             Assert.Contains("99.99.99", updatedGlobalJsonContents);
         }
 
