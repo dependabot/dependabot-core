@@ -157,7 +157,6 @@ public class SerializationTests : TestBase
                   "directory": "some-dir"
                 },
                 "experiments": {
-                  "nuget_legacy_dependency_solver": true,
                   "nuget_use_direct_discovery": true,
                   "unexpected_bool": true,
                   "unexpected_number": 42,
@@ -173,7 +172,6 @@ public class SerializationTests : TestBase
             }
             """);
         var experimentsManager = ExperimentsManager.GetExperimentsManager(jobWrapper.Job.Experiments);
-        Assert.True(experimentsManager.UseLegacyDependencySolver);
         Assert.True(experimentsManager.UseDirectDiscovery);
     }
 
@@ -200,7 +198,6 @@ public class SerializationTests : TestBase
             }
             """);
         var experimentsManager = ExperimentsManager.GetExperimentsManager(jobWrapper.Job.Experiments);
-        Assert.False(experimentsManager.UseLegacyDependencySolver);
         Assert.False(experimentsManager.UseDirectDiscovery);
     }
 
@@ -225,7 +222,6 @@ public class SerializationTests : TestBase
             }
             """);
         var experimentsManager = ExperimentsManager.GetExperimentsManager(jobWrapper.Job.Experiments);
-        Assert.False(experimentsManager.UseLegacyDependencySolver);
         Assert.False(experimentsManager.UseDirectDiscovery);
     }
 
@@ -248,14 +244,12 @@ public class SerializationTests : TestBase
                   "directory": "some-dir"
                 },
                 "experiments": {
-                  "nuget-legacy-dependency-solver": true,
                   "nuget-use-direct-discovery": true
                 }
               }
             }
             """);
         var experimentsManager = ExperimentsManager.GetExperimentsManager(jobWrapper.Job.Experiments);
-        Assert.True(experimentsManager.UseLegacyDependencySolver);
         Assert.True(experimentsManager.UseDirectDiscovery);
     }
 
