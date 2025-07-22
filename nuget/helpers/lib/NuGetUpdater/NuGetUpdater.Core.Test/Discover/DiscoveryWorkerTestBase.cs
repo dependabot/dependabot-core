@@ -1,13 +1,9 @@
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.InteropServices;
-using System.Text.Json;
 
 using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Test.Update;
-using NuGetUpdater.Core.Test.Updater;
 using NuGetUpdater.Core.Test.Utilities;
-using NuGetUpdater.Core.Updater;
 using NuGetUpdater.Core.Utilities;
 
 using Xunit;
@@ -98,31 +94,16 @@ public class DiscoveryWorkerTestBase : TestBase
             Assert.True(actualProject is not null, $"Unable to find project with path `{expectedProject.FilePath.NormalizePathToUnix()}` in collection [{string.Join(", ", actualProjects.Select(p => p.FilePath))}]");
             Assert.Equal(expectedProject.FilePath.NormalizePathToUnix(), actualProject.FilePath.NormalizePathToUnix());
 
-            // some properties are byproducts of the older temporary project discovery process and shouldn't be returned
             var actualProperties = actualProject.Properties;
-            if (!experimentsManager.UseDirectDiscovery)
-            {
-                var forbiddenProperties = new HashSet<string>(["TargetFrameworkVersion"], StringComparer.OrdinalIgnoreCase);
-                actualProperties = actualProperties.Where(p => !forbiddenProperties.Contains(p.Name)).ToImmutableArray();
-            }
-
             AssertEx.Equal(expectedProject.Properties, actualProperties, PropertyComparer.Instance);
             AssertEx.Equal(expectedProject.TargetFrameworks, actualProject.TargetFrameworks);
             AssertEx.Equal(expectedProject.ReferencedProjectPaths, actualProject.ReferencedProjectPaths);
             AssertEx.Equal(expectedProject.ImportedFiles, actualProject.ImportedFiles);
             AssertEx.Equal(expectedProject.AdditionalFiles, actualProject.AdditionalFiles);
 
-            // some dependencies are byproducts of the older temporary project discovery process and shouldn't be returned
-            var actualDependencies = actualProject.Dependencies;
-            if (!experimentsManager.UseDirectDiscovery)
-            {
-                var forbiddenDependencies = new HashSet<string>(["Microsoft.NET.Sdk"], StringComparer.OrdinalIgnoreCase);
-                actualDependencies = actualDependencies.Where(d => !forbiddenDependencies.Contains(d.Name)).ToImmutableArray();
-            }
-
             // some dependencies are byproducts of the test framework and shouldn't be returned to make the tests more deterministic
             var forbiddenTestDependencies = new HashSet<string>(["Microsoft.NETFramework.ReferenceAssemblies"], StringComparer.OrdinalIgnoreCase);
-            actualDependencies = actualDependencies.Where(d => !forbiddenTestDependencies.Contains(d.Name)).ToImmutableArray();
+            var actualDependencies = actualProject.Dependencies.Where(d => !forbiddenTestDependencies.Contains(d.Name)).ToImmutableArray();
 
             ValidateDependencies(expectedProject.Dependencies, actualDependencies);
             Assert.Equal(expectedProject.ExpectedDependencyCount ?? expectedProject.Dependencies.Length, actualDependencies.Length);
