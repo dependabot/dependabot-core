@@ -55,7 +55,7 @@ public partial class DiscoveryWorkerTests
                             Properties = [
                                 new("TargetFrameworks", "net7.0;net8.0", "myproj.csproj"),
                             ],
-                            TargetFrameworks = ["net7.0"], // net8.0 has no packages and is not reported
+                            TargetFrameworks = ["net7.0", "net8.0"],
                             ReferencedProjectPaths = [],
                             ImportedFiles = [
                                 "Directory.Build.props",
@@ -786,7 +786,6 @@ public partial class DiscoveryWorkerTests
             // `@(References)` item group in the `_HandlePackageFileConflicts` target.  Since we don't want to involve
             // the real SDK, we fake some required targets.
             await TestDiscoveryAsync(
-                experimentsManager: new ExperimentsManager() { InstallDotnetSdks = true },
                 packages: [],
                 workspacePath: "",
                 files:

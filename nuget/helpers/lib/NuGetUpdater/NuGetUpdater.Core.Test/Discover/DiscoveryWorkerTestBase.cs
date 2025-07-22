@@ -41,7 +41,7 @@ public class DiscoveryWorkerTestBase : TestBase
         Assert.Equal(expectedResult.Path.NormalizePathToUnix(), actualResult.Path.NormalizePathToUnix());
         ValidateResultWithDependencies(expectedResult.GlobalJson, actualResult.GlobalJson);
         ValidateResultWithDependencies(expectedResult.DotNetToolsJson, actualResult.DotNetToolsJson);
-        ValidateProjectResults(expectedResult.Projects, actualResult.Projects, experimentsManager);
+        ValidateProjectResults(expectedResult.Projects, actualResult.Projects);
         Assert.Equal(expectedResult.ExpectedProjectCount ?? expectedResult.Projects.Length, actualResult.Projects.Length);
         ValidateDiscoveryOperationResult(expectedResult, actualResult);
 
@@ -81,7 +81,7 @@ public class DiscoveryWorkerTestBase : TestBase
         }
     }
 
-    internal static void ValidateProjectResults(ImmutableArray<ExpectedSdkProjectDiscoveryResult> expectedProjects, ImmutableArray<ProjectDiscoveryResult> actualProjects, ExperimentsManager experimentsManager)
+    internal static void ValidateProjectResults(ImmutableArray<ExpectedSdkProjectDiscoveryResult> expectedProjects, ImmutableArray<ProjectDiscoveryResult> actualProjects)
     {
         if (expectedProjects.IsDefaultOrEmpty)
         {

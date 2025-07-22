@@ -12,10 +12,8 @@ using TestFile = (string Path, string Content);
 
 public class MSBuildHelperTests : TestBase
 {
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task AllPackageDependenciesCanBeTraversed(bool useExistingSdks)
+    [Fact]
+    public async Task AllPackageDependenciesCanBeTraversed()
     {
         using var temp = new TemporaryDirectory();
         MockNuGetPackage[] testPackages =
@@ -39,16 +37,13 @@ public class MSBuildHelperTests : TestBase
             temp.DirectoryPath,
             "netstandard2.0",
             [new Dependency("Package.A", "1.0.0", DependencyType.Unknown)],
-            new ExperimentsManager() { InstallDotnetSdks = useExistingSdks },
             new TestLogger()
         );
         AssertEx.Equal(expectedDependencies, actualDependencies);
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task AllPackageDependencies_DoNotTruncateLongDependencyLists(bool useExistingSdks)
+    [Fact]
+    public async Task AllPackageDependencies_DoNotTruncateLongDependencyLists()
     {
         using var temp = new TemporaryDirectory();
         MockNuGetPackage[] testPackages =
@@ -175,7 +170,6 @@ public class MSBuildHelperTests : TestBase
             temp.DirectoryPath,
             "net8.0",
             packages,
-            new ExperimentsManager() { InstallDotnetSdks = useExistingSdks },
             new TestLogger()
         );
         for (int i = 0; i < actualDependencies.Length; i++)
@@ -188,10 +182,8 @@ public class MSBuildHelperTests : TestBase
         AssertEx.Equal(expectedDependencies, actualDependencies);
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task AllPackageDependencies_DoNotIncludeUpdateOnlyPackages(bool useExistingSdks)
+    [Fact]
+    public async Task AllPackageDependencies_DoNotIncludeUpdateOnlyPackages()
     {
         using var temp = new TemporaryDirectory();
         MockNuGetPackage[] testPackages =
@@ -218,16 +210,13 @@ public class MSBuildHelperTests : TestBase
             temp.DirectoryPath,
             "net8.0",
             packages,
-            new ExperimentsManager() { InstallDotnetSdks = useExistingSdks },
             new TestLogger()
         );
         AssertEx.Equal(expectedDependencies, actualDependencies);
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task GetAllPackageDependencies_NugetConfigInvalid_DoesNotThrow(bool useExistingSdks)
+    [Fact]
+    public async Task GetAllPackageDependencies_NugetConfigInvalid_DoesNotThrow()
     {
         using var temp = new TemporaryDirectory();
 
@@ -249,15 +238,12 @@ public class MSBuildHelperTests : TestBase
             temp.DirectoryPath,
             "net8.0",
             [new Dependency("Some.Package", "4.5.11", DependencyType.Unknown)],
-            new ExperimentsManager() { InstallDotnetSdks = useExistingSdks },
             new TestLogger()
         );
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task LocalPackageSourcesAreHonored(bool useExistingSdks)
+    [Fact]
+    public async Task LocalPackageSourcesAreHonored()
     {
         using var temp = new TemporaryDirectory();
 
@@ -292,7 +278,6 @@ public class MSBuildHelperTests : TestBase
             temp.DirectoryPath,
             "net8.0",
             [new Dependency("Package.A", "1.0.0", DependencyType.Unknown)],
-            new ExperimentsManager() { InstallDotnetSdks = useExistingSdks },
             new TestLogger()
         );
 
@@ -310,9 +295,8 @@ public class MSBuildHelperTests : TestBase
             ("project.csproj", projectContents)
         ]);
         var projectPath = Path.Combine(tempDir.DirectoryPath, "project.csproj");
-        var experimentsManager = new ExperimentsManager();
         var logger = new TestLogger();
-        var actualTfms = await MSBuildHelper.GetTargetFrameworkValuesFromProject(tempDir.DirectoryPath, projectPath, experimentsManager, logger);
+        var actualTfms = await MSBuildHelper.GetTargetFrameworkValuesFromProject(tempDir.DirectoryPath, projectPath, logger);
         AssertEx.Equal(expectedTfms, actualTfms);
     }
 

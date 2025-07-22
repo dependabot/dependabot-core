@@ -53,7 +53,7 @@ internal static class SdkProjectDiscovery
         "web.config",
     };
 
-    public static async Task<ImmutableArray<ProjectDiscoveryResult>> DiscoverAsync(string repoRootPath, string workspacePath, string startingProjectPath, ExperimentsManager experimentsManager, ILogger logger)
+    public static async Task<ImmutableArray<ProjectDiscoveryResult>> DiscoverAsync(string repoRootPath, string workspacePath, string startingProjectPath, ILogger logger)
     {
         // N.b., there are many paths used in this function.  The MSBuild binary log always reports fully qualified paths, so that's what will be used
         // throughout until the very end when the appropriate kind of relative path is returned.
@@ -91,45 +91,40 @@ internal static class SdkProjectDiscovery
         //    projectPath  additionalFiles
 
         var requiresManualPackageResolution = false;
-        var tfms = await MSBuildHelper.GetTargetFrameworkValuesFromProject(repoRootPath, startingProjectPath, experimentsManager, logger);
+        var tfms = await MSBuildHelper.GetTargetFrameworkValuesFromProject(repoRootPath, startingProjectPath, logger);
         foreach (var tfm in tfms)
         {
             // create a binlog
             var binLogPath = Path.Combine(Path.GetTempPath(), $"msbuild_{Guid.NewGuid():d}.binlog");
             try
             {
-                // TODO: once the updater image has all relevant SDKs installed, we won't have to sideline global.json anymore
-                var (exitCode, stdOut, stdErr) = await MSBuildHelper.HandleGlobalJsonAsync(startingProjectDirectory, repoRootPath, experimentsManager, async () =>
+                // the built-in target `GenerateBuildDependencyFile` forces resolution of all NuGet packages, but doesn't invoke a full build
+                var dependencyDiscoveryTargetingPacksPropsPath = MSBuildHelper.GetFileFromRuntimeDirectory("DependencyDiscoveryTargetingPacks.props");
+                var dependencyDiscoveryTargetsPath = MSBuildHelper.GetFileFromRuntimeDirectory("DependencyDiscovery.targets");
+                var args = new List<string>()
                 {
-                    // the built-in target `GenerateBuildDependencyFile` forces resolution of all NuGet packages, but doesn't invoke a full build
-                    var dependencyDiscoveryTargetingPacksPropsPath = MSBuildHelper.GetFileFromRuntimeDirectory("DependencyDiscoveryTargetingPacks.props");
-                    var dependencyDiscoveryTargetsPath = MSBuildHelper.GetFileFromRuntimeDirectory("DependencyDiscovery.targets");
-                    var args = new List<string>()
-                    {
-                        "build",
-                        startingProjectPath,
-                        "/t:_DiscoverDependencies",
-                        $"/p:TargetFramework={tfm}",
-                        $"/p:CustomBeforeMicrosoftCommonProps={dependencyDiscoveryTargetingPacksPropsPath}",
-                        $"/p:CustomAfterMicrosoftCommonCrossTargetingTargets={dependencyDiscoveryTargetsPath}",
-                        $"/p:CustomAfterMicrosoftCommonTargets={dependencyDiscoveryTargetsPath}",
-                        "/p:TreatWarningsAsErrors=false", // if using CPM and a project also sets TreatWarningsAsErrors to true, this can cause discovery to fail; explicitly don't allow that
-                        "/p:MSBuildTreatWarningsAsErrors=false",
-                        $"/bl:{binLogPath}"
-                    };
-                    var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(args, startingProjectDirectory, experimentsManager);
-                    if (exitCode != 0 && stdOut.Contains("error : Object reference not set to an instance of an object."))
-                    {
-                        // https://github.com/NuGet/Home/issues/11761#issuecomment-1105218996
-                        // Due to a bug in NuGet, there can be a null reference exception thrown and adding this command line argument will work around it,
-                        // but this argument can't always be added; it can cause problems in other instances, so we're taking the approach of not using it
-                        // unless we have to.
-                        args.Add("/RestoreProperty:__Unused__=__Unused__");
-                        (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(args, startingProjectDirectory, experimentsManager);
-                    }
+                    "build",
+                    startingProjectPath,
+                    "/t:_DiscoverDependencies",
+                    $"/p:TargetFramework={tfm}",
+                    $"/p:CustomBeforeMicrosoftCommonProps={dependencyDiscoveryTargetingPacksPropsPath}",
+                    $"/p:CustomAfterMicrosoftCommonCrossTargetingTargets={dependencyDiscoveryTargetsPath}",
+                    $"/p:CustomAfterMicrosoftCommonTargets={dependencyDiscoveryTargetsPath}",
+                    "/p:TreatWarningsAsErrors=false", // if using CPM and a project also sets TreatWarningsAsErrors to true, this can cause discovery to fail; explicitly don't allow that
+                    "/p:MSBuildTreatWarningsAsErrors=false",
+                    $"/bl:{binLogPath}"
+                };
+                var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(args, startingProjectDirectory);
+                if (exitCode != 0 && stdOut.Contains("error : Object reference not set to an instance of an object."))
+                {
+                    // https://github.com/NuGet/Home/issues/11761#issuecomment-1105218996
+                    // Due to a bug in NuGet, there can be a null reference exception thrown and adding this command line argument will work around it,
+                    // but this argument can't always be added; it can cause problems in other instances, so we're taking the approach of not using it
+                    // unless we have to.
+                    args.Add("/RestoreProperty:__Unused__=__Unused__");
+                    (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(args, startingProjectDirectory);
+                }
 
-                    return (exitCode, stdOut, stdErr);
-                }, logger, retainMSBuildSdks: true);
                 MSBuildHelper.ThrowOnError(stdOut);
                 if (stdOut.Contains("_DependencyDiscovery_LegacyProjects::UseTemporaryProject"))
                 {
@@ -185,7 +180,7 @@ internal static class SdkProjectDiscovery
                             }
                             break;
                         case NamedNode namedNode when namedNode is AddItem or RemoveItem:
-                            ProcessResolvedPackageReference(namedNode, packagesPerProject, topLevelPackagesPerProject, explicitPackageVersionsPerProject, experimentsManager);
+                            ProcessResolvedPackageReference(namedNode, packagesPerProject, topLevelPackagesPerProject, explicitPackageVersionsPerProject);
 
                             if (namedNode is AddItem addItem)
                             {
@@ -247,8 +242,6 @@ internal static class SdkProjectDiscovery
                             }
                             break;
                         case Target target when target.Name == "_HandlePackageFileConflicts":
-                            // this only works if we've installed the exact SDK required
-                            if (experimentsManager.InstallDotnetSdks)
                             {
                                 var projectEvaluation = GetNearestProjectEvaluation(target);
                                 if (projectEvaluation is null)
@@ -340,7 +333,6 @@ internal static class SdkProjectDiscovery
                 tfms,
                 packagesPerProject,
                 explicitPackageVersionsPerProject,
-                experimentsManager,
                 logger
             );
         }
@@ -565,7 +557,6 @@ internal static class SdkProjectDiscovery
         ImmutableArray<string> targetFrameworks,
         Dictionary<string, Dictionary<string, Dictionary<string, string>>> packagesPerProject,
         Dictionary<string, Dictionary<string, Dictionary<string, string>>> explicitPackageVersionsPerProject,
-        ExperimentsManager experimentsManager,
         ILogger logger
     )
     {
@@ -580,9 +571,9 @@ internal static class SdkProjectDiscovery
                 .Select(kvp => new Dependency(kvp.Key, kvp.Value, DependencyType.PackageReference, TargetFrameworks: targetFrameworks))
                 .ToImmutableArray();
 
-            var tempProjectPath = await MSBuildHelper.CreateTempProjectAsync(tempDirectory, repoRootPath, projectPath, targetFrameworks, topLevelDependencies, experimentsManager, logger);
+            var tempProjectPath = await MSBuildHelper.CreateTempProjectAsync(tempDirectory, repoRootPath, projectPath, targetFrameworks, topLevelDependencies, logger);
             var tempProjectDirectory = Path.GetDirectoryName(tempProjectPath)!;
-            var rediscoveredDependencies = await DiscoverAsync(tempProjectDirectory, tempProjectDirectory, tempProjectPath, experimentsManager, logger);
+            var rediscoveredDependencies = await DiscoverAsync(tempProjectDirectory, tempProjectDirectory, tempProjectPath, logger);
             var rediscoveredDependenciesForThisProject = rediscoveredDependencies.Single(); // we started with a single temp project, this will be the only result
 
             // re-build packagesPerProject
@@ -612,8 +603,7 @@ internal static class SdkProjectDiscovery
         NamedNode node,
         Dictionary<string, Dictionary<string, Dictionary<string, string>>> packagesPerProject, // projectPath -> tfm -> (packageName, packageVersion)
         Dictionary<string, Dictionary<string, HashSet<string>>> topLevelPackagesPerProject, // projectPath -> tfm -> packageName
-        Dictionary<string, Dictionary<string, Dictionary<string, string>>> packageVersionsPerProject, // projectPath -> tfm -> (packageName, packageVersion)
-        ExperimentsManager experimentsManager
+        Dictionary<string, Dictionary<string, Dictionary<string, string>>> packageVersionsPerProject // projectPath -> tfm -> (packageName, packageVersion)
     )
     {
         var doRemoveOperation = node is RemoveItem;
