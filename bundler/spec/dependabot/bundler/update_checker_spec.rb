@@ -178,9 +178,13 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           .and_return(
             ["1.5.0", "1.9.0", "1.10.0.beta"]
           )
+
+        rubygems_response = fixture("ruby", "rubygems_response_versions.json")
+        stub_request(:get, rubygems_url + "versions/business.json")
+          .to_return(status: 200, body: rubygems_response)
       end
 
-      it { is_expected.to eq(Dependabot::Bundler::Version.new("1.9.0")) }
+      it { is_expected.to eq(Dependabot::Bundler::Version.new("1.5.0")) }
     end
 
     context "when given a git source" do
@@ -189,6 +193,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
       before do
         rubygems_response = fixture("ruby", "rubygems_response_versions.json")
         stub_request(:get, rubygems_url + "versions/business.json")
+          .to_return(status: 200, body: rubygems_response)
+        stub_request(:get, "https://github.com/dependabot-fixtures/business/api/v1/versions/business.json")
           .to_return(status: 200, body: rubygems_response)
       end
 
@@ -216,7 +222,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
               .and_return(true)
           end
 
-          it { is_expected.to eq(Dependabot::Bundler::Version.new("1.5.0")) }
+          it { is_expected.to eq("2.2.1") }
         end
 
         context "when head of the gem's branch is not included in a release" do
@@ -261,7 +267,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
 
           context "when the gem isn't on Rubygems" do
             before do
-              stub_request(:get, rubygems_url + "versions/business.json")
+              stub_request(:get, rubygems_url + "gems/business.json")
                 .to_return(status: 404, body: "This rubygem could not be found.")
             end
 
@@ -289,7 +295,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
                 .and_return(true)
             end
 
-            it { is_expected.to eq(Dependabot::Bundler::Version.new("1.5.0")) }
+            it { is_expected.to eq("2.2.1") }
           end
 
           context "when the pin looks like a version" do
@@ -309,7 +315,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             let(:upload_pack_fixture) { "business" }
 
             before do
-              stub_request(:get, rubygems_url + "versions/business.json")
+              stub_request(:get, rubygems_url + "gems/business.json")
                 .to_return(status: 404, body: "This rubygem could not be found.")
               url = "https://github.com/dependabot-fixtures/business.git"
               git_header = {
@@ -346,7 +352,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
 
       before do
         rubygems_response = fixture("ruby", "rubygems_response_versions.json")
-        stub_request(:get, rubygems_url + "versions/business.json")
+        stub_request(:get, rubygems_url + "versions/example.json")
           .to_return(status: 200, body: rubygems_response)
       end
 
@@ -737,6 +743,11 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         end
 
         context "when that is the gem we're checking" do
+          before do
+            rubygems_response = fixture("ruby", "rubygems_response_versions.json")
+            stub_request(:get, rubygems_url + "versions/example.json").to_return(status: 200, body: rubygems_response)
+          end
+
           let(:dependency_name) { "example" }
           let(:current_version) { "0.9.3" }
 
@@ -811,7 +822,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
               .and_return(true)
           end
 
-          it { is_expected.to eq(Dependabot::Bundler::Version.new("1.13.0")) }
+          it { is_expected.to eq("799cd60c8cd51c9f379b423d506fc02c3a68e895") }
         end
 
         context "when the dependency has never been released" do
@@ -895,7 +906,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
                 .and_return(true)
             end
 
-            it { is_expected.to eq(Dependabot::Bundler::Version.new("1.13.0")) }
+            it { is_expected.to eq("a1b78a929dac93a52f08db4f2847d76d6cfe39bd") }
           end
 
           context "when the release appears to be a version" do
@@ -915,7 +926,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             let(:upload_pack_fixture) { "business" }
 
             before do
-              stub_request(:get, rubygems_url + "versions/business.json")
+              stub_request(:get, rubygems_url + "gems/business.json")
                 .to_return(status: 404, body: "This rubygem could not be found.")
               url = "https://github.com/dependabot-fixtures/business.git"
               git_header = {
@@ -959,7 +970,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
 
               before do
                 stub_request(
-                  :get, rubygems_url + "versions/dummy-git-dependency.json"
+                  :get, rubygems_url + "gems/dummy-git-dependency.json"
                 ).to_return(status: 404)
                 url = "https://github.com/dependabot-fixtures/" \
                       "ruby-dummy-git-dependency.git"

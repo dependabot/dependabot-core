@@ -130,6 +130,13 @@ module Dependabot
 
           def source_type
             return @source_type if defined? @source_type
+
+            # Prefer explicit source type from dependency metadata if available
+            source_details =
+              dependency.requirements.filter_map { |r| r[:source] }.first ||
+              (dependency.respond_to?(:source_details) && dependency.source_details)
+            return @source_type = GIT if source_details && source_details[:type].to_s == "git"
+
             return @source_type = RUBYGEMS unless gemfile
 
             @source_type = in_a_native_bundler_context do |tmp_dir|
