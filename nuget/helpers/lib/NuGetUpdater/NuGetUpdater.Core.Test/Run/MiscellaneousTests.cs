@@ -514,25 +514,6 @@ public class MiscellaneousTests
     }
 
     [Theory]
-    [MemberData(nameof(RequirementsFromIgnoredVersionsData))]
-    public void RequirementsFromIgnoredVersions(string dependencyName, Condition[] ignoreConditions, Requirement[] expectedRequirements)
-    {
-        var job = new Job()
-        {
-            Source = new()
-            {
-                Provider = "github",
-                Repo = "some/repo"
-            },
-            IgnoreConditions = ignoreConditions
-        };
-        var actualRequirements = RunWorker.GetIgnoredRequirementsForDependency(job, dependencyName);
-        var actualRequirementsStrings = string.Join("|", actualRequirements.Select(r => r.ToString()));
-        var expectedRequirementsStrings = string.Join("|", expectedRequirements.Select(r => r.ToString()));
-        Assert.Equal(expectedRequirementsStrings, actualRequirementsStrings);
-    }
-
-    [Theory]
     [MemberData(nameof(DependencyInfoFromJobData))]
     public void DependencyInfoFromJob(Job job, Dependency dependency, DependencyInfo expectedDependencyInfo)
     {
@@ -540,16 +521,6 @@ public class MiscellaneousTests
         var expectedString = JsonSerializer.Serialize(expectedDependencyInfo, AnalyzeWorker.SerializerOptions);
         var actualString = JsonSerializer.Serialize(actualDependencyInfo, AnalyzeWorker.SerializerOptions);
         Assert.Equal(expectedString, actualString);
-    }
-
-    [Theory]
-    [MemberData(nameof(GetIncrementMetricData))]
-    public void GetIncrementMetric(Job job, IncrementMetric expected)
-    {
-        var actual = RunWorker.GetIncrementMetric(job);
-        var actualJson = HttpApiHandler.Serialize(actual);
-        var expectedJson = HttpApiHandler.Serialize(expected);
-        Assert.Equal(expectedJson, actualJson);
     }
 
     [Theory]
@@ -629,60 +600,6 @@ public class MiscellaneousTests
             {
                 ("/.config/dotnet-tools.json", "some-tool"),
                 ("/global.json", "Some.MSBuild.Sdk"),
-            }
-        ];
-    }
-
-    public static IEnumerable<object?[]> RequirementsFromIgnoredVersionsData()
-    {
-        yield return
-        [
-            // dependencyName
-            "Some.Package",
-            // ignoredConditions
-            new Condition[]
-            {
-                new()
-                {
-                    DependencyName = "SOME.PACKAGE",
-                    VersionRequirement = Requirement.Parse("> 1.2.3")
-                },
-                new()
-                {
-                    DependencyName = "some.package",
-                    VersionRequirement = Requirement.Parse("<= 2.0.0")
-                },
-                new()
-                {
-                    DependencyName = "Unrelated.Package",
-                    VersionRequirement = Requirement.Parse("= 3.4.5")
-                }
-            },
-            // expectedRequirements
-            new Requirement[]
-            {
-                new IndividualRequirement(">", NuGetVersion.Parse("1.2.3")),
-                new IndividualRequirement("<=", NuGetVersion.Parse("2.0.0")),
-            }
-        ];
-
-        // version requirement is null => ignore all
-        yield return
-        [
-            // dependencyName
-            "Some.Package",
-            // ignoredConditions
-            new Condition[]
-            {
-                new()
-                {
-                    DependencyName = "Some.Package"
-                }
-            },
-            // expectedRequirements
-            new Requirement[]
-            {
-                new IndividualRequirement(">", NuGetVersion.Parse("0.0.0"))
             }
         ];
     }
@@ -771,126 +688,6 @@ public class MiscellaneousTests
                 IgnoredVersions = [],
                 Vulnerabilities = [],
                 IgnoredUpdateTypes = [ConditionUpdateType.SemVerMajor],
-            }
-        ];
-    }
-
-    public static IEnumerable<object?[]> GetIncrementMetricData()
-    {
-        static Job GetJob(AllowedUpdate[] allowed, bool securityUpdatesOnly, bool updatingAPullRequest)
-        {
-            return new Job()
-            {
-                AllowedUpdates = allowed.ToImmutableArray(),
-                Source = new()
-                {
-                    Provider = "github",
-                    Repo = "some/repo"
-                },
-                SecurityUpdatesOnly = securityUpdatesOnly,
-                UpdatingAPullRequest = updatingAPullRequest,
-            };
-        }
-
-        // version update
-        yield return
-        [
-            GetJob(
-                allowed: [new AllowedUpdate() { UpdateType = UpdateType.All }],
-                securityUpdatesOnly: false,
-                updatingAPullRequest: false),
-            new IncrementMetric()
-            {
-                Metric = "updater.started",
-                Tags =
-                {
-                    ["operation"] = "group_update_all_versions"
-                }
-            }
-        ];
-
-        // version update - existing pr
-        yield return
-        [
-            GetJob(
-                allowed: [new AllowedUpdate() { UpdateType = UpdateType.All }],
-                securityUpdatesOnly: false,
-                updatingAPullRequest: true),
-            new IncrementMetric()
-            {
-                Metric = "updater.started",
-                Tags =
-                {
-                    ["operation"] = "update_version_pr"
-                }
-            }
-        ];
-
-        // create security pr - allowed security update
-        yield return
-        [
-            GetJob(
-                allowed: [new AllowedUpdate() { UpdateType = UpdateType.All }, new AllowedUpdate() { UpdateType = UpdateType.Security }],
-                securityUpdatesOnly: false,
-                updatingAPullRequest: false),
-            new IncrementMetric()
-            {
-                Metric = "updater.started",
-                Tags =
-                {
-                    ["operation"] = "create_security_pr"
-                }
-            }
-        ];
-
-        // create security pr - security only
-        yield return
-        [
-            GetJob(
-                allowed: [new AllowedUpdate() { UpdateType = UpdateType.All } ],
-                securityUpdatesOnly: true,
-                updatingAPullRequest: false),
-            new IncrementMetric()
-            {
-                Metric = "updater.started",
-                Tags =
-                {
-                    ["operation"] = "create_security_pr"
-                }
-            }
-        ];
-
-        // update security pr - allowed security update
-        yield return
-        [
-            GetJob(
-                allowed: [new AllowedUpdate() { UpdateType = UpdateType.All }, new AllowedUpdate() { UpdateType = UpdateType.Security } ],
-                securityUpdatesOnly: false,
-                updatingAPullRequest: true),
-            new IncrementMetric()
-            {
-                Metric = "updater.started",
-                Tags =
-                {
-                    ["operation"] = "update_security_pr"
-                }
-            }
-        ];
-
-        // update security pr - security only
-        yield return
-        [
-            GetJob(
-                allowed: [new AllowedUpdate() { UpdateType = UpdateType.All } ],
-                securityUpdatesOnly: true,
-                updatingAPullRequest: true),
-            new IncrementMetric()
-            {
-                Metric = "updater.started",
-                Tags =
-                {
-                    ["operation"] = "update_security_pr"
-                }
             }
         ];
     }

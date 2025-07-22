@@ -10,7 +10,6 @@ public record ExperimentsManager
     public bool GenerateSimplePrBody { get; init; } = false;
     public bool InstallDotnetSdks { get; init; } = false;
     public bool NativeUpdater { get; init; } = false;
-    public bool UseLegacyUpdateHandler { get; init; } = false;
     public bool UseDirectDiscovery { get; init; } = false;
 
     public Dictionary<string, object> ToDictionary()
@@ -20,7 +19,6 @@ public record ExperimentsManager
             ["nuget_generate_simple_pr_body"] = GenerateSimplePrBody,
             ["nuget_install_dotnet_sdks"] = InstallDotnetSdks,
             ["nuget_native_updater"] = NativeUpdater,
-            ["nuget_use_legacy_update_handler"] = UseLegacyUpdateHandler,
             ["nuget_use_direct_discovery"] = UseDirectDiscovery,
         };
     }
@@ -32,7 +30,6 @@ public record ExperimentsManager
             GenerateSimplePrBody = IsEnabled(experiments, "nuget_generate_simple_pr_body"),
             InstallDotnetSdks = IsEnabled(experiments, "nuget_install_dotnet_sdks"),
             NativeUpdater = IsEnabled(experiments, "nuget_native_updater"),
-            UseLegacyUpdateHandler = IsEnabled(experiments, "nuget_use_legacy_update_handler"),
             UseDirectDiscovery = IsEnabled(experiments, "nuget_use_direct_discovery"),
         };
     }

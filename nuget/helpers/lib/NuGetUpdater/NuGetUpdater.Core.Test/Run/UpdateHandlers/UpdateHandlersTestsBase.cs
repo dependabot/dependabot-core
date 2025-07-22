@@ -30,14 +30,7 @@ public class UpdateHandlersTestsBase : TestBase
         var actualUpdateHandler = RunWorker.GetUpdateHandler(job);
         Assert.Equal(actualUpdateHandler.GetType(), expectedUpdateHandler.GetType());
 
-        // the new runner doesn't report this result object so we can expect an empty one
-        var expectedResult = new RunResult()
-        {
-            Base64DependencyFiles = [],
-            BaseCommitSha = "TEST-COMMIT-SHA",
-        };
         experimentsManager ??= new ExperimentsManager();
-        experimentsManager = experimentsManager with { UseLegacyUpdateHandler = false };
-        return RunWorkerTests.RunAsync(job, files, discoveryWorker, analyzeWorker, updaterWorker, expectedResult, expectedApiMessages, packages, experimentsManager);
+        return EndToEndTests.RunAsync(job, files, discoveryWorker, analyzeWorker, updaterWorker, expectedApiMessages, packages, experimentsManager);
     }
 }
