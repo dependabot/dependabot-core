@@ -8,6 +8,8 @@ module Dependabot
   module Maven
     module NativeHelpers
       extend T::Sig
+      # Latest version of the plugin can be found here - https://mvnrepository.com/artifact/org.apache.maven.plugins/maven-dependency-plugin
+      DEPENDENCY_PLUGIN_VERSION = "3.8.1"
 
       sig do
         params(file_name: String).void
@@ -17,7 +19,7 @@ module Dependabot
         stdout, _, status = Open3.capture3(
           { "PROXY_HOST" => proxy_url.host },
           "mvn",
-          "dependency:tree",
+          "dependency:#{DEPENDENCY_PLUGIN_VERSION}:tree",
           "-DoutputFile=#{file_name}",
           "-DoutputType=json",
           "-e"

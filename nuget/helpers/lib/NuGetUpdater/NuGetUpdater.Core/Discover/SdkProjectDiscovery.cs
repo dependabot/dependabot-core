@@ -6,7 +6,6 @@ using System.Xml.XPath;
 using Microsoft.Build.Logging.StructuredLogger;
 
 using NuGet.Frameworks;
-using NuGet.Versioning;
 
 using NuGetUpdater.Core.Utilities;
 
@@ -55,18 +54,6 @@ internal static class SdkProjectDiscovery
     };
 
     public static async Task<ImmutableArray<ProjectDiscoveryResult>> DiscoverAsync(string repoRootPath, string workspacePath, string startingProjectPath, ExperimentsManager experimentsManager, ILogger logger)
-    {
-        if (experimentsManager.UseDirectDiscovery)
-        {
-            return await DiscoverWithBinLogAsync(repoRootPath, workspacePath, startingProjectPath, experimentsManager, logger);
-        }
-        else
-        {
-            return await DiscoverWithTempProjectAsync(repoRootPath, workspacePath, startingProjectPath, experimentsManager, logger);
-        }
-    }
-
-    public static async Task<ImmutableArray<ProjectDiscoveryResult>> DiscoverWithBinLogAsync(string repoRootPath, string workspacePath, string startingProjectPath, ExperimentsManager experimentsManager, ILogger logger)
     {
         // N.b., there are many paths used in this function.  The MSBuild binary log always reports fully qualified paths, so that's what will be used
         // throughout until the very end when the appropriate kind of relative path is returned.
@@ -595,7 +582,7 @@ internal static class SdkProjectDiscovery
 
             var tempProjectPath = await MSBuildHelper.CreateTempProjectAsync(tempDirectory, repoRootPath, projectPath, targetFrameworks, topLevelDependencies, experimentsManager, logger);
             var tempProjectDirectory = Path.GetDirectoryName(tempProjectPath)!;
-            var rediscoveredDependencies = await DiscoverWithBinLogAsync(tempProjectDirectory, tempProjectDirectory, tempProjectPath, experimentsManager, logger);
+            var rediscoveredDependencies = await DiscoverAsync(tempProjectDirectory, tempProjectDirectory, tempProjectPath, experimentsManager, logger);
             var rediscoveredDependenciesForThisProject = rediscoveredDependencies.Single(); // we started with a single temp project, this will be the only result
 
             // re-build packagesPerProject
@@ -797,145 +784,5 @@ internal static class SdkProjectDiscovery
         }
 
         return property.Value;
-    }
-
-    public static async Task<ImmutableArray<ProjectDiscoveryResult>> DiscoverWithTempProjectAsync(string repoRootPath, string workspacePath, string projectPath, ExperimentsManager experimentsManager, ILogger logger)
-    {
-        // Determine which targets and props files contribute to the build.
-        var (buildFiles, projectTargetFrameworks) = await MSBuildHelper.LoadBuildFilesAndTargetFrameworksAsync(repoRootPath, projectPath);
-        var tfms = projectTargetFrameworks.Order().ToImmutableArray();
-
-        // Get all the dependencies which are directly referenced from the project file or indirectly referenced from
-        // targets and props files.
-        var topLevelDependencies = MSBuildHelper.GetTopLevelPackageDependencyInfos(buildFiles);
-
-        var results = ImmutableArray.CreateBuilder<ProjectDiscoveryResult>();
-        if (tfms.Length > 0)
-        {
-            foreach (var buildFile in buildFiles)
-            {
-                // Only include build files that exist beneath the RepoRootPath.
-                if (buildFile.IsOutsideBasePath)
-                {
-                    continue;
-                }
-
-                // The build file dependencies have the correct DependencyType and the TopLevelDependencies have the evaluated version.
-                // Combine them to have the set of dependencies that are directly referenced from the build file.
-                var fileDependencies = BuildFile.GetDependencies(buildFile).ToImmutableArray();
-
-                // this is new-ish behavior; don't ever report this dependency because there's no meaningful way to update it
-                fileDependencies = fileDependencies.Where(d => !d.Name.Equals("Microsoft.NET.Sdk", StringComparison.OrdinalIgnoreCase)).ToImmutableArray();
-
-                var fileDependencyLookup = fileDependencies
-                    .ToLookup(d => d.Name, StringComparer.OrdinalIgnoreCase);
-                var sdkDependencies = fileDependencies
-                    .Where(d => d.Type == DependencyType.MSBuildSdk)
-                    .ToImmutableArray();
-                var indirectDependencies = topLevelDependencies
-                    .Where(d => !fileDependencyLookup.Contains(d.Name))
-                    .ToImmutableArray();
-                var directDependencies = topLevelDependencies
-                    .Where(d => fileDependencyLookup.Contains(d.Name))
-                    .SelectMany(d =>
-                    {
-                        var dependencies = fileDependencyLookup[d.Name];
-                        return dependencies.Select(fileDependency => d with
-                        {
-                            Type = fileDependency.Type,
-                            IsDirect = true
-                        });
-                    }).ToImmutableArray();
-
-                if (buildFile.GetFileType() == ProjectBuildFileType.Project)
-                {
-                    // Collect information that is specific to the project file.
-                    var properties = MSBuildHelper.GetProperties(buildFiles).Values
-                        .Where(p => !p.SourceFilePath.StartsWith(".."))
-                        .OrderBy(p => p.Name)
-                        .ToImmutableArray();
-                    var referencedProjectPaths = MSBuildHelper.GetProjectPathsFromProject(projectPath)
-                        .Select(path => Path.GetRelativePath(workspacePath, path).NormalizePathToUnix())
-                        .OrderBy(p => p)
-                        .ToImmutableArray();
-
-                    // Get the complete set of dependencies including transitive dependencies.
-                    var dependencies = indirectDependencies.Concat(directDependencies).ToImmutableArray();
-                    dependencies = dependencies
-                        .Select(d => d with { TargetFrameworks = tfms })
-                        .ToImmutableArray();
-                    var transitiveDependencies = await GetTransitiveDependencies(repoRootPath, projectPath, tfms, dependencies, experimentsManager, logger);
-                    ImmutableArray<Dependency> allDependencies = dependencies.Concat(transitiveDependencies).Concat(sdkDependencies)
-                        .OrderBy(d => d.Name)
-                        .ToImmutableArray();
-
-                    // for the temporary project, these directories correspond to $(OutputPath) and $(IntermediateOutputPath) and files from
-                    // these directories should not be reported
-                    var intermediateDirectories = new string[]
-                    {
-                        Path.Join(Path.GetDirectoryName(buildFile.Path), "bin"),
-                        Path.Join(Path.GetDirectoryName(buildFile.Path), "obj"),
-                    };
-                    var projectDirectory = Path.GetDirectoryName(buildFile.Path)!;
-                    var additionalFiles = ProjectHelper.GetAllAdditionalFilesFromProject(buildFile.Path, ProjectHelper.PathFormat.Relative);
-                    results.Add(new()
-                    {
-                        FilePath = Path.GetRelativePath(workspacePath, buildFile.Path).NormalizePathToUnix(),
-                        Properties = properties,
-                        TargetFrameworks = tfms,
-                        ReferencedProjectPaths = referencedProjectPaths,
-                        Dependencies = allDependencies,
-                        ImportedFiles = buildFiles.Where(b =>
-                            {
-                                var fileType = b.GetFileType();
-                                return fileType == ProjectBuildFileType.Props || fileType == ProjectBuildFileType.Targets;
-                            })
-                            .Where(b => !intermediateDirectories.Any(i => PathHelper.IsFileUnderDirectory(new DirectoryInfo(i), new FileInfo(b.Path))))
-                            .Select(b => Path.GetRelativePath(projectDirectory, b.Path).NormalizePathToUnix())
-                            .ToImmutableArray(),
-                        AdditionalFiles = additionalFiles,
-                    });
-                }
-            }
-        }
-
-        return results.ToImmutable();
-    }
-
-    private static async Task<ImmutableArray<Dependency>> GetTransitiveDependencies(
-        string repoRootPath,
-        string projectPath,
-        ImmutableArray<string> tfms,
-        ImmutableArray<Dependency> directDependencies,
-        ExperimentsManager experimentsManager,
-        ILogger logger
-    )
-    {
-        Dictionary<string, Dependency> transitiveDependencies = new(StringComparer.OrdinalIgnoreCase);
-        foreach (var tfm in tfms)
-        {
-            var tfmDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(repoRootPath, projectPath, tfm, directDependencies, experimentsManager, logger);
-            foreach (var dependency in tfmDependencies.Where(d => d.IsTransitive))
-            {
-                if (!transitiveDependencies.TryGetValue(dependency.Name, out var existingDependency))
-                {
-                    transitiveDependencies[dependency.Name] = dependency;
-                    continue;
-                }
-
-                transitiveDependencies[dependency.Name] = existingDependency with
-                {
-                    // Revisit this logic. We may want to return each dependency instead of merging them.
-                    Version = NuGetVersion.Parse(existingDependency.Version!) > NuGetVersion.Parse(dependency.Version!)
-                        ? existingDependency.Version
-                        : dependency.Version,
-                    TargetFrameworks = existingDependency.TargetFrameworks is not null && dependency.TargetFrameworks is not null
-                        ? existingDependency.TargetFrameworks.Value.AddRange(dependency.TargetFrameworks)
-                        : existingDependency.TargetFrameworks ?? dependency.TargetFrameworks,
-                };
-            }
-        }
-
-        return [.. transitiveDependencies.Values];
     }
 }
