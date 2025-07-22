@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Text;
+using System.Text.RegularExpressions;
 
 using NuGet.Versioning;
 
@@ -146,7 +147,8 @@ internal class DetailedPullRequestBodyGenerator : IPullRequestBodyGenerator, IDi
         }
 
         var prBody = sb.ToString().Replace("\r", "").TrimEnd();
-        var truncatedPrBody = TruncateCharacterCount(prBody, GetMaxPrLength(job.Source.Provider));
+        var scrubbedBody = ScrubLinksAndMentions(prBody);
+        var truncatedPrBody = TruncateCharacterCount(scrubbedBody, GetMaxPrLength(job.Source.Provider));
         return truncatedPrBody;
     }
 
@@ -196,6 +198,16 @@ internal class DetailedPullRequestBodyGenerator : IPullRequestBodyGenerator, IDi
         var adjustedMaxLength = maxLength.Value - TruncatedMessage.Length;
         var truncatedText = text[..adjustedMaxLength] + TruncatedMessage;
         return truncatedText;
+    }
+
+    private static string ScrubLinksAndMentions(string text)
+    {
+        var mentionPattern = new Regex(@"(?<AtSymbol>@)(?<Name>[a-z0-9]+(-[a-z0-9]+)*)", RegexOptions.IgnoreCase);
+        var scrubbedOfMentions = mentionPattern.Replace(text, match => $"@\u200B{match.Groups["Name"].Value}");
+
+        var issuePattern = new Regex(@"(?<NumberSign>#)(?<Number>\d+)", RegexOptions.IgnoreCase);
+        var scrubbedOfIssues = issuePattern.Replace(scrubbedOfMentions, match => $"#\u200B{match.Groups["Number"].Value}");
+        return scrubbedOfIssues;
     }
 
     private class NullableNuGetVersionComparer : IComparer<NuGetVersion?>
