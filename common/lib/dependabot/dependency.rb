@@ -8,18 +8,20 @@ module Dependabot
   class Dependency
     extend T::Sig
 
-    @production_checks = T.let(
+    # rubocop:disable Style/ClassVars
+    @@production_checks = T.let(
       {},
       T::Hash[String, T.proc.params(arg0: T::Array[T.untyped]).returns(T::Boolean)]
     )
-    @display_name_builders = T.let({}, T::Hash[String, T.proc.params(arg0: String).returns(String)])
-    @name_normalisers = T.let({}, T::Hash[String, T.proc.params(arg0: String).returns(String)])
+    @@display_name_builders = T.let({}, T::Hash[String, T.proc.params(arg0: String).returns(String)])
+    @@name_normalisers = T.let({}, T::Hash[String, T.proc.params(arg0: String).returns(String)])
+    # rubocop:enable Style/ClassVars
 
     sig do
       params(package_manager: String).returns(T.proc.params(arg0: T::Array[T.untyped]).returns(T::Boolean))
     end
     def self.production_check_for_package_manager(package_manager)
-      production_check = @production_checks[package_manager]
+      production_check = @@production_checks[package_manager]
       return production_check if production_check
 
       raise "Unsupported package_manager #{package_manager}"
@@ -33,22 +35,22 @@ module Dependabot
         .returns(T.proc.params(arg0: T::Array[T.untyped]).returns(T::Boolean))
     end
     def self.register_production_check(package_manager, production_check)
-      @production_checks[package_manager] = production_check
+      @@production_checks[package_manager] = production_check
     end
 
     sig { params(package_manager: String).returns(T.nilable(T.proc.params(arg0: String).returns(String))) }
     def self.display_name_builder_for_package_manager(package_manager)
-      @display_name_builders[package_manager]
+      @@display_name_builders[package_manager]
     end
 
     sig { params(package_manager: String, name_builder: T.proc.params(arg0: String).returns(String)).void }
     def self.register_display_name_builder(package_manager, name_builder)
-      @display_name_builders[package_manager] = name_builder
+      @@display_name_builders[package_manager] = name_builder
     end
 
     sig { params(package_manager: String).returns(T.nilable(T.proc.params(arg0: String).returns(String))) }
     def self.name_normaliser_for_package_manager(package_manager)
-      @name_normalisers[package_manager] || ->(name) { name }
+      @@name_normalisers[package_manager] || ->(name) { name }
     end
 
     sig do
@@ -58,7 +60,7 @@ module Dependabot
       ).void
     end
     def self.register_name_normaliser(package_manager, name_builder)
-      @name_normalisers[package_manager] = name_builder
+      @@name_normalisers[package_manager] = name_builder
     end
 
     sig { returns(String) }
@@ -202,7 +204,7 @@ module Dependabot
       display_name_builder.call(name)
     end
 
-    sig { returns(T.nilable(String)) }
+    sig { overridable.returns(T.nilable(String)) }
     def humanized_previous_version
       # If we don't have a previous version, we *may* still be able to figure
       # one out if a ref was provided and has been changed (in which case the
@@ -224,7 +226,7 @@ module Dependabot
       end
     end
 
-    sig { returns(T.nilable(String)) }
+    sig { overridable.returns(T.nilable(String)) }
     def humanized_version
       return "removed" if removed?
 
