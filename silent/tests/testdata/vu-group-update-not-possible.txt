@@ -38,8 +38,8 @@ job:
   source:
     directory: "/up-to-date"
     provider: example
-    hostname: example.com
-    api-endpoint: https://example.com/api/v3
+    hostname: 127.0.0.1
+    api-endpoint: http://127.0.0.1/api/v3
     repo: dependabot/smoke-tests
   dependency-groups:
     - name: all-group
@@ -79,8 +79,8 @@ job:
   source:
     directory: "/errors"
     provider: example
-    hostname: example.com
-    api-endpoint: https://example.com/api/v3
+    hostname: 127.0.0.1
+    api-endpoint: http://127.0.0.1/api/v3
     repo: dependabot/smoke-tests
   dependency-groups:
     - name: all-group
