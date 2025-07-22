@@ -95,7 +95,7 @@ module Dependabot
           with_custom_registry_rescue do
             return unless valid_npm_details?
 
-            tag_release = version_from_dist_tags
+            tag_release = version_from_dist_tags(cooldown: true)
             return tag_release.version if tag_release
 
             return if specified_dist_tag_requirement?
@@ -113,7 +113,7 @@ module Dependabot
         def fetch_latest_version_with_no_unlock(language_version: nil) # rubocop:disable Lint/UnusedMethodArgument
           with_custom_registry_rescue do
             return unless valid_npm_details?
-            return version_from_dist_tags&.version if specified_dist_tag_requirement?
+            return version_from_dist_tags(cooldown: true)&.version if specified_dist_tag_requirement?
 
             filtered_releases = filter_by_cooldown(possible_releases)
 
@@ -272,8 +272,11 @@ module Dependabot
           !!package_details&.releases&.any?
         end
 
-        sig { returns(T.nilable(Dependabot::Package::PackageRelease)) }
-        def version_from_dist_tags # rubocop:disable Metrics/PerceivedComplexity
+        sig do
+          params(cooldown: T::Boolean)
+            .returns(T.nilable(Dependabot::Package::PackageRelease))
+        end
+        def version_from_dist_tags(cooldown: false) # rubocop:disable Metrics/PerceivedComplexity
           dist_tags = package_details&.dist_tags
           return nil unless dist_tags
 
@@ -284,7 +287,7 @@ module Dependabot
           # For cooldown filtering, use filtered releases
           releases = available_versions
 
-          releases = filter_by_cooldown(releases) if releases
+          releases = filter_by_cooldown(releases) if cooldown && releases
 
           if dist_tag_req
             release = find_dist_tag_release(dist_tag_req, releases)
@@ -297,7 +300,9 @@ module Dependabot
 
           if wants_latest_dist_tag?(latest_version)
             # Find the release object for this version, even if deprecated
-            return possible_previous_releases.find { |r| r.version == latest_version }
+            releases = possible_previous_releases
+            releases = filter_by_cooldown(releases) if cooldown
+            return releases.find { |r| r.version == latest_version }
           end
 
           nil
