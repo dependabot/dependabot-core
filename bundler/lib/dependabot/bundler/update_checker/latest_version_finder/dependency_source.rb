@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/registry_client"
@@ -22,20 +22,38 @@ module Dependabot
           GIT = "git"
           OTHER = "other"
 
+          sig { returns(Dependabot::Dependency) }
           attr_reader :dependency
+          sig { returns(T::Array[Dependabot::DependencyFile]) }
           attr_reader :dependency_files
+          sig { returns(T.nilable(String)) }
           attr_reader :repo_contents_path
+          sig { returns(T::Array[T.untyped]) }
           attr_reader :credentials
+          sig { returns(T::Hash[Symbol, T.untyped]) }
           attr_reader :options
 
+          sig do
+            params(
+              dependency: Dependabot::Dependency,
+              dependency_files: T::Array[Dependabot::DependencyFile],
+              credentials: T::Array[T.untyped],
+              options: T::Hash[Symbol, T.untyped]
+            ).void
+          end
           def initialize(dependency:,
                          dependency_files:,
                          credentials:,
                          options:)
-            @dependency          = dependency
-            @dependency_files    = dependency_files
-            @credentials         = credentials
-            @options             = options
+            @dependency = T.let(dependency, Dependabot::Dependency)
+            @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
+            @credentials = T.let(credentials, T::Array[T.untyped])
+            @options = T.let(options, T::Hash[Symbol, T.untyped])
+            @repo_contents_path = T.let(nil, T.nilable(String))
+            @rubygems_versions = T.let(nil, T.nilable(T::Array[Dependabot::Bundler::Version]))
+            @private_registry_versions = T.let(nil, T.nilable(T::Array[Dependabot::Bundler::Version]))
+            @source_type = T.let(nil, T.nilable(String))
+            @bundler_version = T.let(nil, T.nilable(String))
           end
 
           # The latest version details for the dependency from a registry
@@ -58,6 +76,7 @@ module Dependabot
           # The latest version details for the dependency from a git repo
           #
           # @return [Hash{Symbol => String}, nil]
+          sig { returns(T.nilable(T::Hash[Symbol, String])) }
           def latest_git_version_details
             return unless git?
 
@@ -73,7 +92,7 @@ module Dependabot
                   options: options,
                   args: {
                     dir: tmp_dir,
-                    gemfile_name: gemfile.name,
+                    gemfile_name: T.must(gemfile).name,
                     dependency_name: dependency.name,
                     credentials: credentials,
                     dependency_source_url: source_details[:url],
@@ -84,12 +103,14 @@ module Dependabot
             end.transform_keys(&:to_sym)
           end
 
+          sig { returns(T::Boolean) }
           def git?
             source_type == GIT
           end
 
           private
 
+          sig { returns(T.any(T::Array[Dependabot::Bundler::Version], T.noreturn)) }
           def rubygems_versions
             @rubygems_versions ||=
               begin
@@ -105,10 +126,12 @@ module Dependabot
             @rubygems_versions = []
           end
 
+          sig { returns(String) }
           def dependency_rubygems_uri
             "https://rubygems.org/api/v1/versions/#{dependency.name}.json"
           end
 
+          sig { returns(T::Array[Dependabot::Bundler::Version]) }
           def private_registry_versions
             @private_registry_versions ||=
               in_a_native_bundler_context do |tmp_dir|
@@ -118,7 +141,7 @@ module Dependabot
                   options: options,
                   args: {
                     dir: tmp_dir,
-                    gemfile_name: gemfile.name,
+                    gemfile_name: T.must(gemfile).name,
                     dependency_name: dependency.name,
                     credentials: credentials
                   }
@@ -128,6 +151,7 @@ module Dependabot
               end
           end
 
+          sig { returns(T.nilable(String)) }
           def source_type
             return @source_type if defined? @source_type
 
@@ -146,7 +170,7 @@ module Dependabot
                 options: options,
                 args: {
                   dir: tmp_dir,
-                  gemfile_name: gemfile.name,
+                  gemfile_name: T.must(gemfile).name,
                   dependency_name: dependency.name,
                   credentials: credentials
                 }
@@ -154,16 +178,19 @@ module Dependabot
             end
           end
 
+          sig { returns(T.nilable(Dependabot::DependencyFile)) }
           def gemfile
             dependency_files.find { |f| f.name == "Gemfile" } ||
               dependency_files.find { |f| f.name == "gems.rb" }
           end
 
+          sig { returns(T.nilable(Dependabot::DependencyFile)) }
           def lockfile
             dependency_files.find { |f| f.name == "Gemfile.lock" } ||
               dependency_files.find { |f| f.name == "gems.locked" }
           end
 
+          sig { override.returns(String) }
           def bundler_version
             @bundler_version ||= Helpers.bundler_version(lockfile)
           end
