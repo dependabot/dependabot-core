@@ -135,7 +135,7 @@ public partial class EntryPointTests
                     VersionComesFromMultiDependencyProperty = false,
                     UpdatedDependencies =
                     [
-                        new Dependency("Some.Package", "1.0.1", DependencyType.Unknown, TargetFrameworks: ["net8.0"], InfoUrl: "https://nuget.example.com/some.package")
+                        new Dependency("Some.Package", "1.0.1", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true, InfoUrl: "https://nuget.example.com/some.package")
                     ],
                 }
             );

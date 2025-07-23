@@ -18,6 +18,8 @@ module Dependabot
 
       sig { override.returns(Dependabot::Source) }
       def look_up_source
+        # Use 127.0.0.1 as a non-routable hostname to avoid network requests
+        # This ensures the silent package manager remains truly "silent"
         Dependabot::Source.new(
           provider: "example",
           hostname: "127.0.0.1",

@@ -880,7 +880,7 @@ public class FileWriterWorkerTests : TestBase
 
         var jobId = "TEST-JOB-ID";
         var logger = new TestLogger();
-        experimentsManager ??= new ExperimentsManager() { UseDirectDiscovery = true };
+        experimentsManager ??= new ExperimentsManager();
         discoveryWorker ??= new DiscoveryWorker(jobId, experimentsManager, logger);
         var repoContentsPath = new DirectoryInfo(tempDir.DirectoryPath);
         var projectPath = new FileInfo(Path.Combine(tempDir.DirectoryPath, projectName));
