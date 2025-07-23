@@ -27,6 +27,8 @@ module Dependabot
         PACKAGE_LANGUAGE = "ruby"
         APPLICATION_JSON = "application/json"
         RUBYGEMS = "rubygems"
+        GIT = "git"
+        OTHER = "other"
 
         sig do
           params(
@@ -162,7 +164,10 @@ module Dependabot
           first_requirement = dependency.requirements.first
           return nil unless first_requirement && first_requirement[:source]
 
-          url = T.let(first_requirement[:source][:url], T.nilable(String))
+          source = first_requirement[:source]
+          return nil if source[:type] == GIT || source[:type] == OTHER
+
+          url = T.let(source[:url], T.nilable(String))
           return nil unless url
 
           url.end_with?("/") ? url.chop : url
