@@ -40,6 +40,7 @@ public sealed record Job
     public CommitOptions? CommitMessageOptions { get; init; } = null;
     public ImmutableArray<Dictionary<string, object>>? CredentialsMetadata { get; init; } = null;
     public int MaxUpdaterRunTime { get; init; } = 0;
+    public Cooldown? Cooldown { get; init; } = null;
 
     public ImmutableArray<string> GetAllDirectories()
     {
