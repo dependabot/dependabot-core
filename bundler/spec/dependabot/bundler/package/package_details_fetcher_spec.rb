@@ -64,30 +64,26 @@ RSpec.describe Dependabot::Bundler::Package::PackageDetailsFetcher do
           )
       end
 
-      shared_examples_for "fetches the latest version" do
-        it "fetches the latest version" do
-          result = fetch
+      it "fetches the latest version" do
+        result = fetch
 
-          expect(result).to be_a(Dependabot::Package::PackageDetails)
-          expect(result.releases).not_to be_empty
-          expect(a_request(:get, json_url)).to have_been_made.once
+        expect(result).to be_a(Dependabot::Package::PackageDetails)
+        expect(result.releases).not_to be_empty
+        expect(a_request(:get, json_url)).to have_been_made.once
 
-          expect(result.releases.size).to be(882)
+        expect(result.releases.size).to be(882)
 
-          first_result = result.releases.first
-          expect(first_result.version).to eq(latest_release.version)
-          expect(first_result.released_at).to eq(latest_release.released_at)
-          expect(first_result.yanked).to eq(latest_release.yanked)
-          expect(first_result.yanked_reason).to eq(latest_release.yanked_reason)
-          expect(first_result.downloads).to eq(latest_release.downloads)
-          expect(first_result.url).to eq(latest_release.url)
-          expect(first_result.package_type).to eq(latest_release.package_type)
-          expect(first_result.language.name).to eq(latest_release.language.name)
-          expect(first_result.language.requirement).to eq(latest_release.language.requirement)
-        end
+        first_result = result.releases.first
+        expect(first_result.version).to eq(latest_release.version)
+        expect(first_result.released_at).to eq(latest_release.released_at)
+        expect(first_result.yanked).to eq(latest_release.yanked)
+        expect(first_result.yanked_reason).to eq(latest_release.yanked_reason)
+        expect(first_result.downloads).to eq(latest_release.downloads)
+        expect(first_result.url).to eq(latest_release.url)
+        expect(first_result.package_type).to eq(latest_release.package_type)
+        expect(first_result.language.name).to eq(latest_release.language.name)
+        expect(first_result.language.requirement).to eq(latest_release.language.requirement)
       end
-
-      it_behaves_like "fetches the latest version"
 
       context "when dependency uses a git source" do
         let(:source) do
@@ -97,7 +93,13 @@ RSpec.describe Dependabot::Bundler::Package::PackageDetailsFetcher do
           }
         end
 
-        it_behaves_like "fetches the latest version"
+        it "returns an empty result" do
+          result = fetch
+
+          expect(result).to be_a(Dependabot::Package::PackageDetails)
+          expect(result.releases).to be_empty
+          expect(a_request(:get, json_url)).not_to have_been_made
+        end
       end
     end
   end

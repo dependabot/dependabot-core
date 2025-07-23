@@ -56,7 +56,12 @@ module Dependabot
 
         sig { returns(Dependabot::Package::PackageDetails) }
         def fetch
-          rubygems_versions
+          case source_type
+          when GIT, OTHER
+            package_details([])
+          else
+            rubygems_versions
+          end
         end
 
         private
@@ -164,10 +169,7 @@ module Dependabot
           first_requirement = dependency.requirements.first
           return nil unless first_requirement && first_requirement[:source]
 
-          source = first_requirement[:source]
-          return nil if source[:type] == GIT || source[:type] == OTHER
-
-          url = T.let(source[:url], T.nilable(String))
+          url = T.let(first_requirement[:source][:url], T.nilable(String))
           return nil unless url
 
           url.end_with?("/") ? url.chop : url
@@ -186,6 +188,16 @@ module Dependabot
         sig { params(req_string: String).returns(Requirement) }
         def language_requirement(req_string)
           Requirement.new(req_string)
+        end
+
+        sig { returns(T.nilable(String)) }
+        def source_type
+          return nil unless dependency.requirements.any?
+
+          first_requirement = dependency.requirements.first
+          return nil unless first_requirement && first_requirement[:source]
+
+          first_requirement[:source][:type]
         end
 
         sig { override.returns(String) }
