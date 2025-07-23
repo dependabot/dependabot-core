@@ -114,7 +114,7 @@ module Dependabot
           )
         end
 
-        # Since base class is returning false, we need to override it
+        # Since base class is returning false, we need to override it.
         sig { returns(T::Boolean) }
         def cooldown_enabled?
           true
