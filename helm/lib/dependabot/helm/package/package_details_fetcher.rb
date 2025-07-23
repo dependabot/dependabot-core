@@ -40,10 +40,10 @@ module Dependabot
         def fetch_tag_and_release_date_from_chart(repo_name)
           return [] if repo_name.empty?
 
-          begin
-            url = RELEASES_URL_GIT + repo_name + HELM_CHART_RELEASE
-            Dependabot.logger.info("Fetching graph release details from URL: #{url}")
+          url = RELEASES_URL_GIT + repo_name + HELM_CHART_RELEASE
+          Dependabot.logger.info("Fetching graph release details from URL: #{url}")
 
+          begin
             response = Excon.get(url, headers: { "Accept" => "application/vnd.github.v3+json" })
             Dependabot.logger.error("Failed call details: #{response.body}") unless response.status == 200
           rescue Excon::Error => e
@@ -107,28 +107,6 @@ module Dependabot
             Dependabot.logger.error("Error parsing Helm index: #{e.message}")
             result_lines
           end
-        end
-
-        sig { params(tags: T::Array[String], repo_url: String).returns(T.any(T::Array[GitTagWithDetail], NilClass)) }
-        def fetch_tags_with_release_date_using_oci(tags, repo_url)
-          Dependabot.logger.info("Searching OCI tags for: #{tags.join(', ')} #{repo_url}")
-          git_tag_with_release_date = T.let([], T::Array[GitTagWithDetail])
-          return git_tag_with_release_date if tags.empty?
-
-          tags.each do |tag|
-            response = Helpers.fetch_tags_with_release_date_using_oci(repo_url, tag)
-
-            parsed_response = JSON.parse(response)
-            git_tag_with_release_date << GitTagWithDetail.new({
-              tag: tag,
-              release_date: parsed_response.dig("annotations", "org.opencontainers.image.created")
-            })
-          rescue JSON::ParserError => e
-            Dependabot.logger.error("Failed to parse JSON response for tag #{tag}: #{e.message}")
-          rescue StandardError => e
-            Dependabot.logger.error("Error fetching details for tag #{tag}: #{e.message}")
-          end
-          git_tag_with_release_date
         end
       end
     end

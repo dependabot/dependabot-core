@@ -94,10 +94,9 @@ module Dependabot
 
       sig { params(repo_url: String, tag: String).returns(String) }
       def self.fetch_tags_with_release_date_using_oci(repo_url, tag)
-        Dependabot.logger.info("Searching OCI tags with release date for: #{repo_url} and tag: #{tag}")
         Dependabot::SharedHelpers.run_shell_command(
-          "oras manifest fetch #{repo_url}:#{tag} --output json",
-          fingerprint: "oras manifest fetch <repo_url>:<tag> --output json"
+          "oras manifest fetch #{repo_url}:#{tag}",
+          fingerprint: "oras manifest fetch <repo_url>:<tag>"
         ).strip
       end
     end

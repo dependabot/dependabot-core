@@ -322,5 +322,53 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
         latest_chart_version
       end
     end
+
+    describe "#fetch_tags_with_release_date_using_oci" do
+      let(:tags) { ["1.0.0", "1.1.0", "2.0.0+build.123", "latest"] }
+      let(:oci_response) do
+        {
+          "annotations" => {
+            "org.opencontainers.image.created" => "2024-01-15T10:00:00Z"
+          }
+        }.to_json
+      end
+
+      before do
+        allow(Dependabot::Helm::Helpers).to receive(:fetch_tags_with_release_date_using_oci)
+          .and_return(oci_response)
+      end
+
+      context "when OCI response is empty" do
+        let(:tags) { ["1.0.0", "1.1.0"] }
+
+        before do
+          allow(Dependabot::Helm::Helpers).to receive(:fetch_tags_with_release_date_using_oci)
+            .with(repo_url, "1.0.0").and_return("")
+          allow(Dependabot::Helm::Helpers).to receive(:fetch_tags_with_release_date_using_oci)
+            .with(repo_url, "1.1.0").and_return({ "annotations" => {} }.to_json)
+        end
+
+        it "skips tags with empty responses" do
+          result = checker.send(:fetch_tags_with_release_date_using_oci, tags, repo_url)
+
+          expect(result.length).to eq(1)
+          expect(result.first.tag).to eq("1.1.0")
+        end
+      end
+
+      it "fetches release dates for each tag" do
+        result = checker.send(:fetch_tags_with_release_date_using_oci, tags, repo_url)
+
+        expect(result).to be_an(Array)
+        expect(result.length).to eq(4)
+        # expect(result).to all(be_a(Dependabot::Helm::GitTagWithDetail))
+      end
+
+      it "extracts release date from OCI annotations" do
+        result = checker.send(:fetch_tags_with_release_date_using_oci, tags, repo_url)
+
+        expect(result.first.release_date).to eq("2024-01-15T10:00:00Z")
+      end
+    end
   end
 end

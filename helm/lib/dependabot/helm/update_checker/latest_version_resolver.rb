@@ -30,12 +30,12 @@ module Dependabot
       attr_reader :dependency
 
       # To filter versions in cooldown period based on version tags from registry call
-      sig { params(tags: T::Array[String], repo_name: String).returns(T::Array[String]) }
-      def filter_versions_in_cooldown_period_using_oci(tags, repo_name)
-        Dependabot.logger.info("Filtering versions in cooldown period from chart: #{repo_name}")
-        return tags if select_tags_which_in_cooldown_using_oci(tags, repo_name).nil?
-
-        select_tags_which_in_cooldown_using_oci(tags, repo_name)&.each do |tag_name|
+      sig do
+        params(tags: T::Array[String], tags_with_release_date: T::Array[GitTagWithDetail])
+          .returns(T::Array[String])
+      end
+      def filter_versions_in_cooldown_period_using_oci(tags, tags_with_release_date)
+        select_tags_which_in_cooldown_using_oci(tags_with_release_date)&.each do |tag_name|
           # Iterate through versions and filter out those matching the tag_name
           tags.reject! do |version|
             version == tag_name
@@ -153,12 +153,12 @@ module Dependabot
         0 # Default to 360 days in seconds if parsing fails, so that it will not be in cooldown
       end
 
-      sig { params(tags: T::Array[String], index_url: String).returns(T.nilable(T::Array[String])) }
-      def select_tags_which_in_cooldown_using_oci(tags, index_url)
+      sig { params(tags_with_release_date: T::Array[GitTagWithDetail]).returns(T.nilable(T::Array[String])) }
+      def select_tags_which_in_cooldown_using_oci(tags_with_release_date)
         fetch_tag_and_release_date_helm_using_oci = T.let([], T::Array[String])
 
         begin
-          package_details_fetcher.fetch_tags_with_release_date_using_oci(tags, index_url)&.each do |git_tag_with_detail|
+          tags_with_release_date.each do |git_tag_with_detail|
             if check_if_version_in_cooldown_period?(T.must(git_tag_with_detail.release_date))
               fetch_tag_and_release_date_helm_using_oci << git_tag_with_detail.tag
             end

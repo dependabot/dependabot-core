@@ -98,30 +98,4 @@ RSpec.describe Dependabot::Helm::Package::PackageDetailsFetcher do
       expect(fetcher.fetch_tag_and_release_date_helm_chart_index(index_url, "notfound")).to eq([])
     end
   end
-
-  describe "#fetch_tags_with_release_date_using_oci" do
-    let(:tags) { [] }
-    let(:repo_url) { "oci://registry.example.com/myartifact" }
-    let(:oras_response) do
-      {
-        "annotations" => {
-          "org.opencontainers.image.created" => "2025-07-01T10:00:00Z"
-        }
-      }.to_json
-    end
-
-    before do
-      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return(oras_response)
-    end
-
-    it "returns GitTagWithDetail objects for each tag" do
-      result = fetcher.fetch_tags_with_release_date_using_oci(tags, repo_url)
-      expect(result.map(&:tag)).to eq(tags)
-      expect(result.map(&:release_date)).to all(eq("2025-07-01T10:00:00Z"))
-    end
-
-    it "returns an empty array if tags is empty" do
-      expect(fetcher.fetch_tags_with_release_date_using_oci([], repo_url)).to eq([])
-    end
-  end
 end

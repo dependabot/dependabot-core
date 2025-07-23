@@ -236,10 +236,15 @@ module Dependabot
 
         valid_tags = filter_valid_versions(tags)
         # Filter out versions that are in cooldown period
+        repo_url = repo_url.gsub("oci://", "")
+        repo_url = repo_url + "/" + chart_name
+        tags_with_release_date = fetch_tags_with_release_date_using_oci(valid_tags, repo_url)
+
         valid_tags = latest_version_resolver.filter_versions_in_cooldown_period_using_oci(
           valid_tags,
-          T.must(extract_repo_name(repo_url))
+          tags_with_release_date
         )
+
         return nil if valid_tags.empty?
 
         highest_tag = valid_tags.map { |v| version_class.new(v) }.max
@@ -325,6 +330,30 @@ module Dependabot
         return unless docker_checker.can_update?(requirements_to_unlock: :none)
 
         version_class.new(latest_version)
+      end
+
+      sig { params(tags: T::Array[String], repo_url: String).returns(T::Array[GitTagWithDetail]) }
+      def fetch_tags_with_release_date_using_oci(tags, repo_url)
+        git_tag_with_release_date = T.let([], T::Array[GitTagWithDetail])
+        return git_tag_with_release_date if tags.empty?
+
+        tags = tags.sort.reverse.take(150) # Limit to 150 tags for performance
+        tags.each do |tag|
+          tag = tag.tr("+", "_") # For OCI compatible
+          response = Helpers.fetch_tags_with_release_date_using_oci(repo_url, tag)
+          next if response.strip.empty?
+
+          parsed_response = JSON.parse(response)
+          git_tag_with_release_date << GitTagWithDetail.new(
+            tag: tag.tr("_", "+"), # Convert '_' back to '+' for consistency
+            release_date: parsed_response.dig("annotations", "org.opencontainers.image.created")
+          )
+        rescue JSON::ParserError => e
+          Dependabot.logger.error("Failed to parse JSON response for tag #{tag}: #{e.message}")
+        rescue StandardError => e
+          Dependabot.logger.error("Error in fetching details for tag #{tag}: #{e.message}")
+        end
+        git_tag_with_release_date
       end
 
       sig { returns(Dependabot::Dependency) }
