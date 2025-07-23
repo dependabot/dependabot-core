@@ -67,6 +67,11 @@ module Dependabot
                                       end
         end
 
+        sig { override.returns(T::Boolean) }
+        def cooldown_enabled?
+          true
+        end
+
         sig { override.returns(T.nilable(T::Array[Dependabot::Package::PackageRelease])) }
         def available_versions
           return nil if package_details&.releases.nil?
