@@ -45,11 +45,12 @@ module Dependabot
 
           begin
             response = Excon.get(url, headers: { "Accept" => "application/vnd.github.v3+json" })
-            Dependabot.logger.error("Failed call details: #{response.body}") unless response.status == 200
           rescue Excon::Error => e
             Dependabot.logger.error("Failed to fetch releases from #{url}: #{e.message} ")
             []
           end
+
+          Dependabot.logger.error("Failed call details: #{response&.body}") unless response&.status == 200
           return [] if response.nil? || response.status != 200
 
           parse_github_response(response)
@@ -57,23 +58,18 @@ module Dependabot
 
         sig { params(response: Excon::Response).returns(T::Array[GitTagWithDetail]) }
         def parse_github_response(response)
-          Dependabot.logger.info("Parsing GitHub response body")
-          begin
-            releases = JSON.parse(response.body)
-            result_lines = releases.map do |release|
-              GitTagWithDetail.new(
-                tag: release["tag_name"],
-                release_date: release["published_at"]
-              )
-            end
-            Dependabot.logger.info("Extracted release details: #{result_lines}")
-            result_lines.sort_by(&:tag).reverse
-            result_lines
-          rescue JSON::ParserError => e
-            Dependabot.logger.error("Failed to parse JSON response: #{e.message}")
-            Dependabot.logger.error("Response body: #{response.body}")
-            []
+          releases = JSON.parse(response.body)
+          result_lines = releases.map do |release|
+            GitTagWithDetail.new(
+              tag: release["tag_name"],
+              release_date: release["published_at"]
+            )
           end
+          result_lines.sort_by(&:tag).reverse
+          result_lines
+          rescue JSON::ParserError => e
+            Dependabot.logger.error("Failed to parse JSON response: #{e.message} response body #{response.body}")
+            []
         end
 
         sig { params(index_url: T.nilable(String), chart_name: String).returns(T::Array[GitTagWithDetail]) }

@@ -69,8 +69,10 @@ module Dependabot
         valid_releases = filter_valid_releases(releases)
         return nil if valid_releases.empty?
 
-        valid_releases =  latest_version_resolver
-                          .fetch_tag_and_release_date_helm_chart(valid_releases, repo_name, chart_name)
+        if should_skip_cooldown?
+          valid_releases =  latest_version_resolver
+                            .fetch_tag_and_release_date_helm_chart(valid_releases, repo_name, chart_name)
+        end
         highest_release = valid_releases.max_by { |release| version_class.new(release["version"]) }
         Dependabot.logger.info(
           "Found latest version #{T.must(highest_release)['version']} for #{chart_name} using helm search"
@@ -91,12 +93,14 @@ module Dependabot
         Dependabot.logger.info("Found #{all_versions.length} versions for #{chart_name} in index.yaml")
 
         valid_versions = filter_valid_versions(all_versions)
-        # Filter out versions that are in cooldown period
-        latest_version_resolver.fetch_tag_and_release_date_helm_chart_index(
-          index_url,
-          valid_versions,
-          chart_name
-        )
+        if should_skip_cooldown?
+          # Filter out versions that are in cooldown period
+          valid_versions = latest_version_resolver.fetch_tag_and_release_date_helm_chart_index(
+            index_url,
+            valid_versions,
+            chart_name
+          )
+        end
         Dependabot.logger.info("After filtering, found #{valid_versions.length} valid versions for #{chart_name}")
 
         return nil if valid_versions.empty?
@@ -235,16 +239,16 @@ module Dependabot
         return nil unless tags && !tags.empty?
 
         valid_tags = filter_valid_versions(tags)
-        # Filter out versions that are in cooldown period
-        repo_url = repo_url.gsub("oci://", "")
-        repo_url = repo_url + "/" + chart_name
-        tags_with_release_date = fetch_tags_with_release_date_using_oci(valid_tags, repo_url)
-
-        valid_tags = latest_version_resolver.filter_versions_in_cooldown_period_using_oci(
-          valid_tags,
-          tags_with_release_date
-        )
-
+        if should_skip_cooldown?
+          # Filter out versions that are in cooldown period
+          repo_url = repo_url.gsub("oci://", "")
+          repo_url = repo_url + "/" + chart_name
+          tags_with_release_date = fetch_tags_with_release_date_using_oci(valid_tags, repo_url)
+          valid_tags = latest_version_resolver.filter_versions_in_cooldown_period_using_oci(
+            valid_tags,
+            tags_with_release_date
+          )
+        end
         return nil if valid_tags.empty?
 
         highest_tag = valid_tags.map { |v| version_class.new(v) }.max
@@ -339,13 +343,17 @@ module Dependabot
 
         tags = tags.sort.reverse.take(150) # Limit to 150 tags for performance
         tags.each do |tag|
-          tag = tag.tr("+", "_") # For OCI compatible
-          response = Helpers.fetch_tags_with_release_date_using_oci(repo_url, tag)
+          # Since the oras registry uses "_" instead of "+", this is a workaround
+          # to ensure the tag is correctly formatted for the OCI registry.
+          # This is necessary because some tags may contain "+" which is not valid in OCI tags.
+
+          temp_tag = tag.tr("+", "_")
+          response = Helpers.fetch_tags_with_release_date_using_oci(repo_url, temp_tag)
           next if response.strip.empty?
 
           parsed_response = JSON.parse(response)
           git_tag_with_release_date << GitTagWithDetail.new(
-            tag: tag.tr("_", "+"), # Convert '_' back to '+' for consistency
+            tag: tag,
             release_date: parsed_response.dig("annotations", "org.opencontainers.image.created")
           )
         rescue JSON::ParserError => e
@@ -386,6 +394,16 @@ module Dependabot
           }],
           package_manager: "helm"
         )
+      end
+
+      sig { returns(T::Boolean) }
+      def should_skip_cooldown?
+        @update_cooldown.nil? || !cooldown_enabled? || !@update_cooldown.included?(dependency.name)
+      end
+
+      sig { returns(T::Boolean) }
+      def cooldown_enabled?
+        true
       end
 
       sig { returns(LatestVersionResolver) }
