@@ -16,6 +16,7 @@ RSpec.describe Dependabot::Bundler::Package::PackageDetailsFetcher do
   end
 
   let(:dependency_name) { "dependabot-common" }
+  let(:source) { nil }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -24,7 +25,7 @@ RSpec.describe Dependabot::Bundler::Package::PackageDetailsFetcher do
         requirement: "==0.302.0",
         file: "Gemfile",
         groups: ["dependencies"],
-        source: nil
+        source: source
       }],
       package_manager: "bundler"
     )
@@ -63,25 +64,40 @@ RSpec.describe Dependabot::Bundler::Package::PackageDetailsFetcher do
           )
       end
 
-      it "fetches the latest version" do
-        result = fetch
+      shared_examples_for "fetches the latest version" do
+        it "fetches the latest version" do
+          result = fetch
 
-        expect(result).to be_a(Dependabot::Package::PackageDetails)
-        expect(result.releases).not_to be_empty
-        expect(a_request(:get, json_url)).to have_been_made.once
+          expect(result).to be_a(Dependabot::Package::PackageDetails)
+          expect(result.releases).not_to be_empty
+          expect(a_request(:get, json_url)).to have_been_made.once
 
-        expect(result.releases.size).to be(882)
+          expect(result.releases.size).to be(882)
 
-        first_result = result.releases.first
-        expect(first_result.version).to eq(latest_release.version)
-        expect(first_result.released_at).to eq(latest_release.released_at)
-        expect(first_result.yanked).to eq(latest_release.yanked)
-        expect(first_result.yanked_reason).to eq(latest_release.yanked_reason)
-        expect(first_result.downloads).to eq(latest_release.downloads)
-        expect(first_result.url).to eq(latest_release.url)
-        expect(first_result.package_type).to eq(latest_release.package_type)
-        expect(first_result.language.name).to eq(latest_release.language.name)
-        expect(first_result.language.requirement).to eq(latest_release.language.requirement)
+          first_result = result.releases.first
+          expect(first_result.version).to eq(latest_release.version)
+          expect(first_result.released_at).to eq(latest_release.released_at)
+          expect(first_result.yanked).to eq(latest_release.yanked)
+          expect(first_result.yanked_reason).to eq(latest_release.yanked_reason)
+          expect(first_result.downloads).to eq(latest_release.downloads)
+          expect(first_result.url).to eq(latest_release.url)
+          expect(first_result.package_type).to eq(latest_release.package_type)
+          expect(first_result.language.name).to eq(latest_release.language.name)
+          expect(first_result.language.requirement).to eq(latest_release.language.requirement)
+        end
+      end
+
+      it_behaves_like "fetches the latest version"
+
+      context "when dependency uses a git source" do
+        let(:source) do
+          {
+            type: "git",
+            url: "git@github.com/dependabot/dependabot-common"
+          }
+        end
+
+        it_behaves_like "fetches the latest version"
       end
     end
   end
