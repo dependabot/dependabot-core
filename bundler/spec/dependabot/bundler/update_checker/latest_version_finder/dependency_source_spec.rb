@@ -15,7 +15,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder::Dependen
       "password" => "token"
     }]
   end
-  let(:source) { described_class.new(dependency: nil, dependency_files: files, credentials: credentials, options: {}) }
+  let(:source) { described_class.new(dependency: "irrelevant", dependency_files: files, credentials: credentials, options: {}) }
 
   describe "#inaccessible_git_dependencies", :vcr do
     subject(:inaccessible_git_dependencies) { source.inaccessible_git_dependencies }
