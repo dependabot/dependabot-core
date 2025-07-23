@@ -53,7 +53,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
   end
 
   before do
-    stub_request(:get, %r{.*}).to_return(status: 404)
+    stub_request(:get, /.*/).to_return(status: 404)
   end
 
   it_behaves_like "an update checker"
