@@ -238,6 +238,7 @@ public partial class AnalyzeWorker : IAnalyzeWorker
         var versionResult = await VersionFinder.GetVersionsAsync(
             projectFrameworks,
             dependencyInfo,
+            DateTimeOffset.UtcNow,
             nugetContext,
             logger,
             cancellationToken);
@@ -248,34 +249,6 @@ public partial class AnalyzeWorker : IAnalyzeWorker
             versionResult,
             projectFrameworks,
             findLowestVersion: dependencyInfo.IsVulnerable,
-            nugetContext,
-            logger,
-            cancellationToken);
-    }
-
-    internal static async Task<NuGetVersion?> FindUpdatedVersionAsync(
-        ImmutableHashSet<string> packageIds,
-        ImmutableArray<NuGetFramework> projectFrameworks,
-        NuGetVersion version,
-        bool findLowestVersion,
-        NuGetContext nugetContext,
-        ILogger logger,
-        CancellationToken cancellationToken)
-    {
-        var versionResult = await VersionFinder.GetVersionsAsync(
-            projectFrameworks,
-            packageIds.First(),
-            version,
-            nugetContext,
-            logger,
-            cancellationToken);
-
-        return await FindUpdatedVersionAsync(
-            packageIds,
-            version.ToNormalizedString(),
-            versionResult,
-            projectFrameworks,
-            findLowestVersion,
             nugetContext,
             logger,
             cancellationToken);

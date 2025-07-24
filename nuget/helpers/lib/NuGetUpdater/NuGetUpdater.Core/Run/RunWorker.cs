@@ -152,7 +152,7 @@ public class RunWorker
         }
     }
 
-    internal static DependencyInfo GetDependencyInfo(Job job, Dependency dependency)
+    internal static DependencyInfo GetDependencyInfo(Job job, Dependency dependency, bool allowCooldown)
     {
         var dependencyVersion = NuGetVersion.Parse(dependency.Version!);
         var securityAdvisories = job.SecurityAdvisories.Where(s => s.DependencyName.Equals(dependency.Name, StringComparison.OrdinalIgnoreCase)).ToArray();
@@ -175,6 +175,12 @@ public class RunWorker
             .SelectMany(c => c.UpdateTypes ?? [])
             .Distinct()
             .ToImmutableArray();
+
+        // while it would be nice to lift the cooldown options into the IgnoredUpdateTypes field, we don't know the
+        // publish date of the packages, so we have to pass along the whole object for the version finder to sort out
+        var includeCooldown = allowCooldown &&
+            job.Cooldown is not null &&
+            job.Cooldown.AppliesToPackage(dependency.Name);
         var dependencyInfo = new DependencyInfo()
         {
             Name = dependency.Name,
@@ -183,6 +189,7 @@ public class RunWorker
             IgnoredVersions = ignoredVersions,
             Vulnerabilities = vulnerabilities,
             IgnoredUpdateTypes = ignoredUpdateTypes,
+            Cooldown = includeCooldown ? job.Cooldown : null,
         };
         return dependencyInfo;
     }

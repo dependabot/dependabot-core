@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 using NuGet.Versioning;
 
 using NuGetUpdater.Core.Run;
@@ -61,6 +63,26 @@ public class SerializationTests : TestBase
         Assert.Equal("github", jobWrapper.Job.Source.Provider);
         Assert.Equal("some-org/some-repo", jobWrapper.Job.Source.Repo);
         Assert.Equal("specific-sdk", jobWrapper.Job.Source.Directory);
+        Assert.Null(jobWrapper.Job.Cooldown);
+    }
+
+    [Fact]
+    public void DeserializeJob_Cooldown()
+    {
+        var jobWrapper = RunWorker.Deserialize("""
+            {
+              "job": {
+                "package-manager": "nuget",
+                "source": {
+                  "provider": "github",
+                  "repo": "test/repo",
+                  "directory": "/"
+                },
+                "cooldown": {}
+              }
+            }
+            """);
+        Assert.NotNull(jobWrapper.Job.Cooldown);
     }
 
     [Fact]
@@ -534,6 +556,55 @@ public class SerializationTests : TestBase
         Assert.Equal("[SECURITY] ", jobWrapper.Job.CommitMessageOptions!.Prefix);
         Assert.Null(jobWrapper.Job.CommitMessageOptions!.PrefixDevelopment);
         Assert.Equal(expectedIncludeScopeValue, jobWrapper.Job.CommitMessageOptions!.IncludeScope);
+    }
+
+    [Fact]
+    public void DeserializeCooldown_DefaultValues()
+    {
+        var cooldown = JsonSerializer.Deserialize<Cooldown>("{}", RunWorker.SerializerOptions);
+        Assert.NotNull(cooldown);
+        Assert.Equal(0, cooldown.DefaultDays);
+        Assert.Equal(0, cooldown.SemVerMajorDays);
+        Assert.Equal(0, cooldown.SemVerMinorDays);
+        Assert.Equal(0, cooldown.SemVerPatchDays);
+        Assert.Null(cooldown.Include);
+        Assert.Null(cooldown.Exclude);
+    }
+
+    [Fact]
+    public void DeserializeCooldown_ExplicitlyNullIncudeAndExclude()
+    {
+        var cooldown = JsonSerializer.Deserialize<Cooldown>("""
+            {
+              "include": null,
+              "exclude": null
+            }
+            """, RunWorker.SerializerOptions);
+        Assert.NotNull(cooldown);
+        Assert.Null(cooldown.Include);
+        Assert.Null(cooldown.Exclude);
+    }
+
+    [Fact]
+    public void DeserializeCooldown_SpecificValues()
+    {
+        var cooldown = JsonSerializer.Deserialize<Cooldown>("""
+            {
+              "default-days": 1,
+              "semver-major-days": 2,
+              "semver-minor-days": 3,
+              "semver-patch-days": 4,
+              "include": ["dependency-1"],
+              "exclude": ["dependency-2"]
+            }
+            """, RunWorker.SerializerOptions);
+        Assert.NotNull(cooldown);
+        Assert.Equal(1, cooldown.DefaultDays);
+        Assert.Equal(2, cooldown.SemVerMajorDays);
+        Assert.Equal(3, cooldown.SemVerMinorDays);
+        Assert.Equal(4, cooldown.SemVerPatchDays);
+        AssertEx.Equal(["dependency-1"], cooldown.Include);
+        AssertEx.Equal(["dependency-2"], cooldown.Exclude);
     }
 
     [Fact]
