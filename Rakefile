@@ -12,11 +12,6 @@ require "yaml"
 
 # ./dependabot-core.gemspec is purposefully excluded from this list
 # because it's an empty gem as a placeholder to prevent namesquatting.
-
-# disabling the following gemspecs until upstream fixes "https://github.com/rubygems/rubygems/issues/8836"
-# rust_toolchain/dependabot-rust_toolchain.gemspec
-# vcpkg/dependabot-vcpkg.gemspec
-
 GEMSPECS = %w(
   common/dependabot-common.gemspec
   bun/dependabot-bun.gemspec
@@ -40,10 +35,12 @@ GEMSPECS = %w(
   omnibus/dependabot-omnibus.gemspec
   pub/dependabot-pub.gemspec
   python/dependabot-python.gemspec
+  rust_toolchain/dependabot-rust_toolchain.gemspec
   silent/dependabot-silent.gemspec
   swift/dependabot-swift.gemspec
   terraform/dependabot-terraform.gemspec
   uv/dependabot-uv.gemspec
+  vcpkg/dependabot-vcpkg.gemspec
 ).freeze
 
 def run_command(command)
