@@ -89,7 +89,7 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                 var updateOperationsToPerform = RunWorker.GetUpdateOperations(discoveryResult).ToArray();
                 foreach (var (projectPath, dependency) in updateOperationsToPerform)
                 {
-                    if (!job.IsUpdatePermitted(dependency))
+                    if (!job.IsUpdatePermitted(dependency, experimentsManager))
                     {
                         continue;
                     }
@@ -105,7 +105,7 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                         continue;
                     }
 
-                    var dependencyInfo = RunWorker.GetDependencyInfo(job, dependency);
+                    var dependencyInfo = RunWorker.GetDependencyInfo(job, dependency, experimentsManager);
                     var analysisResult = await analyzeWorker.RunAsync(repoContentsPath.FullName, discoveryResult, dependencyInfo);
                     if (analysisResult.Error is not null)
                     {
@@ -194,7 +194,7 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
             var updateOperationsToPerform = RunWorker.GetUpdateOperations(discoveryResult).ToArray();
             foreach (var (projectPath, dependency) in updateOperationsToPerform)
             {
-                if (!job.IsUpdatePermitted(dependency))
+                if (!job.IsUpdatePermitted(dependency, experimentsManager))
                 {
                     continue;
                 }
@@ -205,7 +205,7 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                     continue;
                 }
 
-                var dependencyInfo = RunWorker.GetDependencyInfo(job, dependency);
+                var dependencyInfo = RunWorker.GetDependencyInfo(job, dependency, experimentsManager);
                 var analysisResult = await analyzeWorker.RunAsync(repoContentsPath.FullName, discoveryResult, dependencyInfo);
                 if (analysisResult.Error is not null)
                 {

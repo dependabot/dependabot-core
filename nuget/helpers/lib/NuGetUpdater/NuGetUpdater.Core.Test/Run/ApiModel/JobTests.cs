@@ -17,7 +17,8 @@ public class JobTests
     [MemberData(nameof(IsUpdatePermittedTestData))]
     public void IsUpdatePermitted(Job job, Dependency dependency, bool expectedResult)
     {
-        var actualResult = job.IsUpdatePermitted(dependency);
+        var experimentsManager = new ExperimentsManager() { EnableCooldown = false }; // not tested here
+        var actualResult = job.IsUpdatePermitted(dependency, experimentsManager);
         Assert.Equal(expectedResult, actualResult);
     }
 

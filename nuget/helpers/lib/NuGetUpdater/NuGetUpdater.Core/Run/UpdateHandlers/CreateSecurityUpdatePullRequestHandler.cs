@@ -67,7 +67,7 @@ internal class CreateSecurityUpdatePullRequestHandler : IUpdateHandler
             {
                 var dependencyName = dependencyGroupToUpdate.Key;
                 var vulnerableCandidateDependenciesToUpdate = dependencyGroupToUpdate.Value
-                    .Select(o => (o.ProjectPath, o.Dependency, RunWorker.GetDependencyInfo(job, o.Dependency)))
+                    .Select(o => (o.ProjectPath, o.Dependency, RunWorker.GetDependencyInfo(job, o.Dependency, experimentsManager)))
                     .Where(set => set.Item3.IsVulnerable)
                     .ToArray();
                 var vulnerableDependenciesToUpdate = vulnerableCandidateDependenciesToUpdate

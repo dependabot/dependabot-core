@@ -112,7 +112,7 @@ public sealed record Job
         return isIgnored;
     }
 
-    public bool IsUpdatePermitted(Dependency dependency)
+    public bool IsUpdatePermitted(Dependency dependency, ExperimentsManager experimentsManager)
     {
         if (dependency.Version is null)
         {
@@ -121,7 +121,7 @@ public sealed record Job
         }
 
         var version = NuGetVersion.Parse(dependency.Version);
-        var dependencyInfo = RunWorker.GetDependencyInfo(this, dependency);
+        var dependencyInfo = RunWorker.GetDependencyInfo(this, dependency, experimentsManager);
         var isVulnerable = dependencyInfo.Vulnerabilities.Any(v => v.IsVulnerable(version));
 
         bool IsAllowed(AllowedUpdate allowedUpdate)
