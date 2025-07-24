@@ -59,9 +59,7 @@ module Dependabot
 
         sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
         def latest_version_details
-          @latest_version_details ||= if dependency_source.git?
-                                        dependency_source.latest_git_version_details
-                                      else
+          @latest_version_details ||= begin
                                         latest_version = fetch_latest_version(language_version: nil)
                                         latest_version ? { version: latest_version } : nil
                                       end
