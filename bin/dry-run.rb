@@ -42,6 +42,7 @@
 # - swift
 # - terraform
 # - vcpkg
+# - clojure
 
 # rubocop:disable Style/GlobalVars
 
@@ -81,6 +82,7 @@ $LOAD_PATH << "./swift/lib"
 $LOAD_PATH << "./terraform/lib"
 $LOAD_PATH << "./uv/lib"
 $LOAD_PATH << "./vcpkg/lib"
+$LOAD_PATH << "./clojure/lib"
 
 updater_image_gemfile = File.expand_path("../dependabot-updater/Gemfile", __dir__)
 updater_repo_gemfile = File.expand_path("../updater/Gemfile", __dir__)
@@ -132,6 +134,7 @@ require "dependabot/swift"
 require "dependabot/terraform"
 require "dependabot/uv"
 require "dependabot/vcpkg"
+require "dependabot/clojure"
 
 # GitHub credentials with write permission to the repo you want to update
 # (so that you can create a new branch, commit and pull request).
@@ -359,6 +362,7 @@ valid_package_managers = %w(
   terraform
   uv
   vcpkg
+  clojure
 )
 unless valid_package_managers.include?(ARGV[0])
   puts "Invalid package manager: #{ARGV[0]}"

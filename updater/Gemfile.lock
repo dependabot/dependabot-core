@@ -186,6 +186,12 @@ PATH
     dependabot-vcpkg (0.322.0)
       dependabot-common (= 0.322.0)
 
+PATH
+  remote: ../clojure
+  specs:
+    dependabot-clojure (0.322.0)
+      dependabot-common (= 0.322.0)
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -561,6 +567,7 @@ DEPENDENCIES
   dependabot-terraform!
   dependabot-uv!
   dependabot-vcpkg!
+  dependabot-clojure!
   flamegraph (~> 0.9)
   gpgme (~> 2.0)
   http (~> 5.1)
@@ -643,6 +650,7 @@ CHECKSUMS
   dependabot-terraform (0.322.0)
   dependabot-uv (0.322.0)
   dependabot-vcpkg (0.322.0)
+  dependabot-clojure (0.322.0)
   diff-lcs (1.5.1) sha256=273223dfb40685548436d32b4733aa67351769c7dea621da7d9dd4813e63ddfe
   docile (1.4.0) sha256=5f1734bde23721245c20c3d723e76c104208e1aa01277a69901ce770f0ebb8d3
   docker_registry2 (1.18.2) sha256=2ace909110fbca29d69dd1cdec99f555024aa6f6577798638139c8e8e556910f

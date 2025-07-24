@@ -278,6 +278,11 @@ docker run --rm -ti \
   -v "$(pwd)/vcpkg/lib:$CODE_DIR/vcpkg/lib" \
   -v "$(pwd)/vcpkg/script:$CODE_DIR/vcpkg/script" \
   -v "$(pwd)/vcpkg/spec:$CODE_DIR/vcpkg/spec" \
+  -v "$(pwd)/clojure/.rubocop.yml:$CODE_DIR/clojure/.rubocop.yml" \
+  -v "$(pwd)/clojure/dependabot-clojure.gemspec:$CODE_DIR/clojure/dependabot-clojure.gemspec" \
+  -v "$(pwd)/clojure/lib:$CODE_DIR/clojure/lib" \
+  -v "$(pwd)/clojure/script:$CODE_DIR/clojure/script" \
+  -v "$(pwd)/clojure/spec:$CODE_DIR/clojure/spec" \
   -v "$(pwd)/tmp:/$CODE_DIR/tmp" \
   -v "$(pwd)/updater/.rubocop.yml:$CODE_DIR/dependabot-updater/.rubocop.yml" \
   -v "$(pwd)/updater/bin:$CODE_DIR/dependabot-updater/bin" \

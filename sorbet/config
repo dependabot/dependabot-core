@@ -35,4 +35,5 @@
 --ignore=updater/spec/
 --ignore=uv/spec/
 --ignore=vcpkg/spec/
+--ignore=clojure/spec/
 --ignore=.git
