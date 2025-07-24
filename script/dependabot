@@ -41,4 +41,5 @@ dependabot \
   -v "$(pwd)"/pre_commit:/home/dependabot/pre_commit \
   -v "$(pwd)"/uv:/home/dependabot/uv \
   -v "$(pwd)"/vcpkg:/home/dependabot/vcpkg \
+  -v "$(pwd)"/clojure:/home/dependabot/clojure \
   "$@"

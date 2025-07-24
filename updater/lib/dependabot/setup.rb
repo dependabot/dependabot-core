@@ -60,6 +60,7 @@ Sentry.init do |config|
     opentofu|
     uv|
     vcpkg|
+    clojure|
   )}x
 
   config.before_send = ->(event, hint) { Dependabot::Sentry.process_chain(event, hint) }
@@ -106,3 +107,4 @@ require "dependabot/terraform"
 require "dependabot/opentofu"
 require "dependabot/uv"
 require "dependabot/vcpkg"
+require "dependabot/clojure"
