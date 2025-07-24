@@ -60,9 +60,9 @@ module Dependabot
         sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
         def latest_version_details
           @latest_version_details ||= begin
-                                        latest_version = fetch_latest_version(language_version: nil)
-                                        latest_version ? { version: latest_version } : nil
-                                      end
+            latest_version = fetch_latest_version(language_version: nil)
+            latest_version ? { version: latest_version } : nil
+          end
         end
 
         sig { override.returns(T::Boolean) }

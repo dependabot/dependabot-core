@@ -516,9 +516,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
       end
     end
 
-    xcontext "when given a git source" do
-      # skipping as this fails after removing a feature flag that is rolled out to 100%
-      # TODO: we are going to investigate this behaviour in a seperate PR
+    context "when given a git source" do
       let(:dependency_files) { bundler_project_dependency_files("git_source") }
 
       context "when that is the gem we're checking for" do
@@ -535,6 +533,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         end
 
         it "fetches the latest SHA-1 hash" do
+          skip "Skipping as this fails after removing a feature flag that is rolled out to 100%"
           commit_sha = finder.latest_version_details[:commit_sha]
           expect(commit_sha).to match(/^[0-9a-f]{40}$/)
           expect(commit_sha).not_to eq(current_version)
@@ -552,6 +551,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
           end
 
           it "raises a helpful error" do
+            skip "Skipping as this fails after removing a feature flag that is rolled out to 100%"
             expect { finder.latest_version_details }
               .to raise_error do |error|
                 expect(error).to be_a Dependabot::GitDependencyReferenceNotFound
