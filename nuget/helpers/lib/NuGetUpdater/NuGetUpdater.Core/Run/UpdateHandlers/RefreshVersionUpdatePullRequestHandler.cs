@@ -81,7 +81,7 @@ internal class RefreshVersionUpdatePullRequestHandler : IUpdateHandler
                 var dependencyName = dependencyUpdatesToPerform.Key;
                 var dependencyInfosToUpdate = dependencyUpdatesToPerform.Value
                     .Where(o => !job.IsDependencyIgnoredByNameOnly(o.Dependency.Name))
-                    .Select(o => (o.ProjectPath, o.Dependency, RunWorker.GetDependencyInfo(job, o.Dependency, experimentsManager)))
+                    .Select(o => (o.ProjectPath, o.Dependency, RunWorker.GetDependencyInfo(job, o.Dependency, allowCooldown: experimentsManager.EnableCooldown)))
                     .ToArray();
 
                 foreach (var (projectPath, dependency, dependencyInfo) in dependencyInfosToUpdate)

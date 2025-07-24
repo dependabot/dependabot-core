@@ -517,8 +517,7 @@ public class MiscellaneousTests
     [MemberData(nameof(DependencyInfoFromJobData))]
     public void DependencyInfoFromJob(Job job, Dependency dependency, bool enableCooldown, DependencyInfo expectedDependencyInfo)
     {
-        var experimentsManager = new ExperimentsManager() { EnableCooldown = enableCooldown };
-        var actualDependencyInfo = RunWorker.GetDependencyInfo(job, dependency, experimentsManager);
+        var actualDependencyInfo = RunWorker.GetDependencyInfo(job, dependency, enableCooldown);
         var expectedString = JsonSerializer.Serialize(expectedDependencyInfo, AnalyzeWorker.SerializerOptions);
         var actualString = JsonSerializer.Serialize(actualDependencyInfo, AnalyzeWorker.SerializerOptions);
         Assert.Equal(expectedString, actualString);
