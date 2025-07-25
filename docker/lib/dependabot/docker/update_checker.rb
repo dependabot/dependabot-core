@@ -224,7 +224,7 @@ module Dependabot
 
         blob_info = with_retries(max_attempts: 3, errors: transient_docker_errors) do
           client = docker_registry_client
-          client.blob(docker_repo_name, first_digest)
+          client.dohead "v2/#{docker_repo_name}/blobs/#{first_digest}"
         end
 
         last_modified = blob_info.headers[:last_modified]
