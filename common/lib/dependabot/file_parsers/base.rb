@@ -54,6 +54,11 @@ module Dependabot
       sig { abstract.returns(T::Array[Dependabot::Dependency]) }
       def parse; end
 
+      sig { returns(T::Hash[String, Dependabot::DependencyGraph]) }
+      def parse_for_dependency_graph
+        {}
+      end
+
       sig { returns(T.nilable(Ecosystem)) }
       def ecosystem
         nil
