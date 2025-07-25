@@ -132,13 +132,6 @@ PATH
       dependabot-common (= 0.323.0)
 
 PATH
-  remote: nuget
-  specs:
-    dependabot-nuget (0.323.0)
-      dependabot-common (= 0.323.0)
-      rubyzip (>= 2.3.2, < 3.0)
-
-PATH
   remote: pub
   specs:
     dependabot-pub (0.323.0)
@@ -435,7 +428,6 @@ DEPENDENCIES
   dependabot-hex!
   dependabot-maven!
   dependabot-npm_and_yarn!
-  dependabot-nuget!
   dependabot-pub!
   dependabot-python!
   dependabot-rust_toolchain!
@@ -497,7 +489,6 @@ CHECKSUMS
   dependabot-hex (0.323.0)
   dependabot-maven (0.323.0)
   dependabot-npm_and_yarn (0.323.0)
-  dependabot-nuget (0.323.0)
   dependabot-pub (0.323.0)
   dependabot-python (0.323.0)
   dependabot-rust_toolchain (0.323.0)

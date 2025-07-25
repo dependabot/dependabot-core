@@ -15,7 +15,3 @@ dotnet test --configuration Release --no-restore --no-build --logger "console;ve
 dotnet test --configuration Release --no-restore --no-build --logger "console;verbosity=normal" --blame-hang-timeout 5m ./NuGetUpdater.Cli.Test/NuGetUpdater.Cli.Test.csproj
 dotnet test --configuration Release --no-restore --no-build --logger "console;verbosity=normal" --blame-hang-timeout 5m ./NuGetUpdater.Core.Test/NuGetUpdater.Core.Test.csproj
 popd
-
-# Ruby unit tests
-bundle install
-bundle exec rspec spec
