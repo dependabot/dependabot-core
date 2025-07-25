@@ -29,7 +29,6 @@ internal static class PackageReferenceUpdater
         ImmutableArray<Dependency> topLevelDependencies,
         ImmutableArray<Dependency> requestedUpdates,
         ImmutableArray<Dependency> resolvedDependencies,
-        ExperimentsManager experimentsManager,
         ILogger logger
     )
     {
@@ -41,7 +40,7 @@ internal static class PackageReferenceUpdater
             .Where(d => d.Item2)
             .ToDictionary(d => d.Item1, d => d.Item3!, StringComparer.OrdinalIgnoreCase);
 
-        var (packageParents, packageVersions) = await GetPackageGraphForDependencies(repoRoot, projectPath, targetFramework, resolvedDependencies, experimentsManager, logger);
+        var (packageParents, packageVersions) = await GetPackageGraphForDependencies(repoRoot, projectPath, targetFramework, resolvedDependencies, logger);
         var updateOperations = new List<UpdateOperationBase>();
         foreach (var (requestedDependencyName, requestedDependencyVersion) in requestedVersions)
         {
@@ -109,7 +108,7 @@ internal static class PackageReferenceUpdater
         return [.. updateOperations];
     }
 
-    private static async Task<(Dictionary<string, HashSet<string>> PackageParents, Dictionary<string, NuGetVersion> PackageVersions)> GetPackageGraphForDependencies(string repoRoot, string projectPath, string targetFramework, ImmutableArray<Dependency> topLevelDependencies, ExperimentsManager experimentsManager, ILogger logger)
+    private static async Task<(Dictionary<string, HashSet<string>> PackageParents, Dictionary<string, NuGetVersion> PackageVersions)> GetPackageGraphForDependencies(string repoRoot, string projectPath, string targetFramework, ImmutableArray<Dependency> topLevelDependencies, ILogger logger)
     {
         var packageParents = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
         var packageVersions = new Dictionary<string, NuGetVersion>(StringComparer.OrdinalIgnoreCase);
@@ -118,8 +117,8 @@ internal static class PackageReferenceUpdater
         {
             // generate project.assets.json
             var parsedTargetFramework = NuGetFramework.Parse(targetFramework);
-            var tempProject = await MSBuildHelper.CreateTempProjectAsync(tempDir, repoRoot, projectPath, targetFramework, topLevelDependencies, experimentsManager, logger, importDependencyTargets: false);
-            var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(["build", tempProject, "/t:_ReportDependencies"], tempDir.FullName, experimentsManager);
+            var tempProject = await MSBuildHelper.CreateTempProjectAsync(tempDir, repoRoot, projectPath, targetFramework, topLevelDependencies, logger, importDependencyTargets: false);
+            var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(["build", tempProject, "/t:_ReportDependencies"], tempDir.FullName);
             var assetsJsonPath = Path.Join(tempDir.FullName, "obj", "project.assets.json");
             var assetsJsonContent = await File.ReadAllTextAsync(assetsJsonPath);
 

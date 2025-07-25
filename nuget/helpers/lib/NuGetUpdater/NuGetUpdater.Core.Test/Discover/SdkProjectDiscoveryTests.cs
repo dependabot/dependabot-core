@@ -637,8 +637,7 @@ public class SdkProjectDiscoveryTests : DiscoveryWorkerTestBase
 
         var logger = new TestLogger();
         var fullProjectPath = Path.Combine(testDirectory.DirectoryPath, projectPath);
-        var experimentsManager = new ExperimentsManager();
-        var projectDiscovery = await SdkProjectDiscovery.DiscoverAsync(testDirectory.DirectoryPath, Path.GetDirectoryName(fullProjectPath)!, fullProjectPath, experimentsManager, logger);
-        ValidateProjectResults(expectedProjects, projectDiscovery, experimentsManager);
+        var projectDiscovery = await SdkProjectDiscovery.DiscoverAsync(testDirectory.DirectoryPath, Path.GetDirectoryName(fullProjectPath)!, fullProjectPath, logger);
+        ValidateProjectResults(expectedProjects, projectDiscovery);
     }
 }

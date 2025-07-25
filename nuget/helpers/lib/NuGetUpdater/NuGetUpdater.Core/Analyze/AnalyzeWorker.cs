@@ -143,7 +143,6 @@ public partial class AnalyzeWorker : IAnalyzeWorker
                     dependenciesToUpdate,
                     updatedVersion,
                     nugetContext,
-                    _experimentsManager,
                     _logger,
                     CancellationToken.None);
             }
@@ -370,7 +369,6 @@ public partial class AnalyzeWorker : IAnalyzeWorker
         ImmutableHashSet<string> packageIds,
         NuGetVersion updatedVersion,
         NuGetContext nugetContext,
-        ExperimentsManager experimentsManager,
         ILogger logger,
         CancellationToken cancellationToken)
     {
@@ -411,7 +409,6 @@ public partial class AnalyzeWorker : IAnalyzeWorker
             packageIds,
             updatedVersion,
             nugetContext,
-            experimentsManager,
             logger,
             cancellationToken);
 
