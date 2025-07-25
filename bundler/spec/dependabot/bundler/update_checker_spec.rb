@@ -226,7 +226,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
               .and_return(true)
           end
 
-          it { is_expected.to eq(Gem::Version.new("1.5.0")) }
+          it { is_expected.to eq("799cd60c8cd51c9f379b423d506fc02c3a68e895") }
         end
 
         context "when head of the gem's branch is not included in a release" do
@@ -299,7 +299,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
                 .and_return(true)
             end
 
-            it { is_expected.to eq(Gem::Version.new("1.5.0")) }
+            it { is_expected.to eq("a1b78a929dac93a52f08db4f2847d76d6cfe39bd") }
           end
 
           context "when the pin looks like a version" do
