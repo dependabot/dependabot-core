@@ -16,39 +16,67 @@ namespace NuGetUpdater.Core.Analyze;
 
 internal static class VersionFinder
 {
+    public static Task<VersionResult> GetVersionsByNameAsync(
+        ImmutableArray<NuGetFramework> projectTfms,
+        string dependencyName,
+        NuGetVersion currentVersion,
+        NuGetContext nugetContext,
+        ILogger logger,
+        CancellationToken cancellationToken
+    )
+    {
+        var dependencyInfo = new DependencyInfo()
+        {
+            Name = dependencyName,
+            Version = currentVersion.ToString(),
+            IsVulnerable = false,
+        };
+        return GetVersionsAsync(
+            projectTfms,
+            dependencyInfo,
+            currentVersion,
+            DateTime.UtcNow,
+            nugetContext,
+            logger,
+            cancellationToken
+        );
+    }
+
     public static Task<VersionResult> GetVersionsAsync(
         ImmutableArray<NuGetFramework> projectTfms,
-        string packageId,
+        DependencyInfo dependencyInfo,
         NuGetVersion currentVersion,
+        DateTimeOffset currentTime,
         NuGetContext nugetContext,
         ILogger logger,
         CancellationToken cancellationToken)
     {
         var versionFilter = CreateVersionFilter(currentVersion);
 
-        return GetVersionsAsync(projectTfms, packageId, currentVersion, versionFilter, nugetContext, logger, cancellationToken);
+        return GetVersionsAsync(projectTfms, dependencyInfo, currentVersion, versionFilter, currentTime, nugetContext, logger, cancellationToken);
     }
 
     public static Task<VersionResult> GetVersionsAsync(
         ImmutableArray<NuGetFramework> projectTfms,
         DependencyInfo dependencyInfo,
+        DateTimeOffset currentTime,
         NuGetContext nugetContext,
         ILogger logger,
         CancellationToken cancellationToken)
     {
-        var packageId = dependencyInfo.Name;
         var versionRange = VersionRange.Parse(dependencyInfo.Version);
         var currentVersion = versionRange.MinVersion!;
         var versionFilter = CreateVersionFilter(dependencyInfo, versionRange);
 
-        return GetVersionsAsync(projectTfms, packageId, currentVersion, versionFilter, nugetContext, logger, cancellationToken);
+        return GetVersionsAsync(projectTfms, dependencyInfo, currentVersion, versionFilter, currentTime, nugetContext, logger, cancellationToken);
     }
 
     public static async Task<VersionResult> GetVersionsAsync(
         ImmutableArray<NuGetFramework> projectTfms,
-        string packageId,
+        DependencyInfo dependencyInfo,
         NuGetVersion currentVersion,
         Func<NuGetVersion, bool> versionFilter,
+        DateTimeOffset currentTime,
         NuGetContext nugetContext,
         ILogger logger,
         CancellationToken cancellationToken)
@@ -57,7 +85,7 @@ internal static class VersionFinder
         VersionResult result = new(currentVersion);
 
         var sourceMapping = PackageSourceMapping.GetPackageSourceMapping(nugetContext.Settings);
-        var packageSources = sourceMapping.GetConfiguredPackageSources(packageId).ToHashSet();
+        var packageSources = sourceMapping.GetConfiguredPackageSources(dependencyInfo.Name).ToHashSet();
         var sources = packageSources.Count == 0
             ? nugetContext.PackageSources
             : nugetContext.PackageSources
@@ -67,6 +95,7 @@ internal static class VersionFinder
         foreach (var source in sources)
         {
             MetadataResource? feed = null;
+            PackageMetadataResource? metadataResource = null;
             try
             {
                 var sourceRepository = Repository.Factory.GetCoreV3(source);
@@ -84,9 +113,19 @@ internal static class VersionFinder
                     continue;
                 }
 
+                if (dependencyInfo.Cooldown is not null)
+                {
+                    metadataResource = await sourceRepository.GetResourceAsync<PackageMetadataResource>();
+                    if (metadataResource is null)
+                    {
+                        logger.Warn($"Failed to get {nameof(PackageMetadataResource)} for [{source.Source}]");
+                        continue;
+                    }
+                }
+
                 // a non-compliant v2 API returning 404 can cause this to throw
                 var existsInFeed = await feed.Exists(
-                    packageId,
+                    dependencyInfo.Name,
                     includePrerelease,
                     includeUnlisted: false,
                     nugetContext.SourceCacheContext,
@@ -109,7 +148,7 @@ internal static class VersionFinder
             }
 
             var feedVersions = (await feed.GetVersions(
-                packageId,
+                dependencyInfo.Name,
                 includePrerelease,
                 includeUnlisted: false,
                 nugetContext.SourceCacheContext,
@@ -124,15 +163,30 @@ internal static class VersionFinder
             var versions = feedVersions.Where(versionFilter).ToArray();
             foreach (var version in versions)
             {
+                var packageIdentity = new PackageIdentity(dependencyInfo.Name, version);
+
+                // check tfm
                 var isTfmCompatible = await CompatibilityChecker.CheckAsync(
-                    new PackageIdentity(packageId, version),
+                    packageIdentity,
                     projectTfms,
                     nugetContext,
                     logger,
                     CancellationToken.None);
+
+                // dotnet-tools.json and global.json packages won't specify a TFM, so they're always compatible
                 if (isTfmCompatible || projectTfms.IsEmpty)
                 {
-                    // dotnet-tools.json and global.json packages won't specify a TFM, so they're always compatible
+                    // check date
+                    if (dependencyInfo.Cooldown is not null)
+                    {
+                        var metadata = await metadataResource!.GetMetadataAsync(packageIdentity, nugetContext.SourceCacheContext, NullLogger.Instance, CancellationToken.None);
+                        if (!dependencyInfo.Cooldown.IsVersionUpdateAllowed(currentTime, metadata?.Published, currentVersion, version))
+                        {
+                            logger.Info($"Skipping update of {dependencyInfo.Name} from {currentVersion} to {version} due to cooldown settings.  Package publish date: {metadata?.Published}");
+                            continue;
+                        }
+                    }
+
                     result.Add(source, version);
                 }
             }

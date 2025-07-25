@@ -7,16 +7,16 @@ namespace NuGetUpdater.Core;
 
 public record ExperimentsManager
 {
+    public bool EnableCooldown { get; init; } = false;
     public bool GenerateSimplePrBody { get; init; } = false;
-    public bool InstallDotnetSdks { get; init; } = false;
     public bool NativeUpdater { get; init; } = false;
 
     public Dictionary<string, object> ToDictionary()
     {
         return new()
         {
+            ["enable_cooldown_for_nuget"] = EnableCooldown,
             ["nuget_generate_simple_pr_body"] = GenerateSimplePrBody,
-            ["nuget_install_dotnet_sdks"] = InstallDotnetSdks,
             ["nuget_native_updater"] = NativeUpdater,
         };
     }
@@ -25,8 +25,8 @@ public record ExperimentsManager
     {
         return new ExperimentsManager()
         {
+            EnableCooldown = IsEnabled(experiments, "enable_cooldown_for_nuget"),
             GenerateSimplePrBody = IsEnabled(experiments, "nuget_generate_simple_pr_body"),
-            InstallDotnetSdks = IsEnabled(experiments, "nuget_install_dotnet_sdks"),
             NativeUpdater = IsEnabled(experiments, "nuget_native_updater"),
         };
     }

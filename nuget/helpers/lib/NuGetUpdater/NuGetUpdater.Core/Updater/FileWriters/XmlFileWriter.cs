@@ -25,7 +25,7 @@ public class XmlFileWriter : IFileWriter
     private readonly ILogger _logger;
 
     // these file extensions are valid project entrypoints; everything else is ignored
-    private static readonly HashSet<string> SupportedProjectFileExtensions = new(StringComparer.OrdinalIgnoreCase)
+    internal static readonly HashSet<string> SupportedProjectFileExtensions = new(StringComparer.OrdinalIgnoreCase)
     {
         ".csproj",
         ".vbproj",
@@ -33,7 +33,7 @@ public class XmlFileWriter : IFileWriter
     };
 
     // these file extensions are valid additional files and can be updated; everything else is ignored
-    private static readonly HashSet<string> SupportedAdditionalFileExtensions = new(StringComparer.OrdinalIgnoreCase)
+    internal static readonly HashSet<string> SupportedAdditionalFileExtensions = new(StringComparer.OrdinalIgnoreCase)
     {
         ".props",
         ".targets",

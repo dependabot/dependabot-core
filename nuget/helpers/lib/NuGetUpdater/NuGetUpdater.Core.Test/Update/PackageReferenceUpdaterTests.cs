@@ -24,7 +24,6 @@ public class PackageReferenceUpdaterTests
         // arrange
         using var repoRoot = await TemporaryDirectory.CreateWithContentsAsync(("project.csproj", "<Project Sdk=\"Microsoft.NET.Sdk\" />"));
         var projectPath = Path.Combine(repoRoot.DirectoryPath, "project.csproj");
-        var experimentsManager = new ExperimentsManager();
         await UpdateWorkerTestBase.MockNuGetPackagesInDirectory([
             MockNuGetPackage.CreateSimplePackage("Parent.Package", "1.0.0", "net9.0", [(null, [("Transitive.Package", "1.0.0")])]),
             MockNuGetPackage.CreateSimplePackage("Parent.Package", "2.0.0", "net9.0", [(null, [("Transitive.Package", "2.0.0")])]),
@@ -43,7 +42,6 @@ public class PackageReferenceUpdaterTests
             topLevelDependencies,
             requestedUpdates,
             resolvedDependencies,
-            experimentsManager,
             new TestLogger());
 
         // assert
