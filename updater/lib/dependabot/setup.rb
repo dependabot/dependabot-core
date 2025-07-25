@@ -43,7 +43,6 @@ Sentry.init do |config|
     hex|
     maven|
     npm_and_yarn|
-    nuget|
     pub|
     python|
     rust_toolchain|
@@ -81,7 +80,6 @@ require "dependabot/helm"
 require "dependabot/hex"
 require "dependabot/maven"
 require "dependabot/npm_and_yarn"
-require "dependabot/nuget"
 require "dependabot/pub"
 require "dependabot/python"
 require "dependabot/rust_toolchain"
