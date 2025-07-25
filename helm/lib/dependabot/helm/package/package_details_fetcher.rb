@@ -47,11 +47,11 @@ module Dependabot
             response = Excon.get(url, headers: { "Accept" => "application/vnd.github.v3+json" })
           rescue Excon::Error => e
             Dependabot.logger.error("Failed to fetch releases from #{url}: #{e.message} ")
-            []
+            return []
           end
 
-          Dependabot.logger.error("Failed call details: #{response&.body}") unless response&.status == 200
-          return [] if response.nil? || response.status != 200
+          Dependabot.logger.error("Failed call details: #{response.body}") unless response.status == 200
+          return [] if response.status != 200
 
           parse_github_response(response)
         end
@@ -66,7 +66,6 @@ module Dependabot
             )
           end
           result_lines.sort_by(&:tag).reverse
-          result_lines
           rescue JSON::ParserError => e
             Dependabot.logger.error("Failed to parse JSON response: #{e.message} response body #{response.body}")
             []
@@ -85,24 +84,24 @@ module Dependabot
             )
           rescue Excon::Error => e
             Dependabot.logger.error("Error fetching Helm index from #{index_url}: #{e.message}")
-            result_lines
+            return result_lines
           end
-          Dependabot.logger.info("Received response from #{index_url} with status #{response&.status}")
+          Dependabot.logger.info("Received response from #{index_url} with status #{response.status}")
           begin
-            parsed_result = YAML.safe_load(response&.body)
-            return result_lines unless parsed_result && parsed_result["entries"] && parsed_result["entries"][chart_name]
-
-            parsed_result["entries"][chart_name].map do |release|
-              result_lines << GitTagWithDetail.new(
-                tag: release["version"], # Extract the version field
-                release_date: release["created"] # Extract the created field
-              )
-            end
-            result_lines
-          rescue StandardError => e
+            parsed_result = YAML.safe_load(response.body)
+          rescue Psych::SyntaxError => e
             Dependabot.logger.error("Error parsing Helm index: #{e.message}")
-            result_lines
+            return result_lines
           end
+          return result_lines unless parsed_result && parsed_result["entries"] && parsed_result["entries"][chart_name]
+
+          parsed_result["entries"][chart_name].map do |release|
+            result_lines << GitTagWithDetail.new(
+              tag: release["version"], # Extract the version field
+              release_date: release["created"] # Extract the created field
+            )
+          end
+          result_lines
         end
       end
     end

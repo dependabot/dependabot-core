@@ -166,7 +166,7 @@ RSpec.describe Dependabot::Helm::LatestVersionResolver do
 
     it "returns tags within the cooldown period" do
       result = resolver.select_tags_which_in_cooldown_from_chart(repo_name)
-      expect(result).to eq(["v1.0.0", "v1.1.0"])
+      expect(result).to eq(["v1.0.0"])
     end
 
     it "logs an error if an exception occurs" do
