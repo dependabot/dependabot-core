@@ -68,7 +68,7 @@ module Dependabot
           result_lines.sort_by(&:tag).reverse
           rescue JSON::ParserError => e
             Dependabot.logger.error("Failed to parse JSON response: #{e.message} response body #{response.body}")
-            return []
+            []
         end
 
         sig { params(index_url: T.nilable(String), chart_name: String).returns(T::Array[GitTagWithDetail]) }
