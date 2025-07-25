@@ -38,13 +38,17 @@ public class FileWriterWorker
         var nonProjectUpdates = await ProcessNonProjectUpdatesAsync(repoContentsPath, initialProjectDirectory, dependencyName, oldDependencyVersion, newDependencyVersion);
         updateOperations.AddRange(nonProjectUpdates);
 
-        // then try packages.config updates
-        var packagesConfigUpdates = await ProcessPackagesConfigUpdatesAsync(repoContentsPath, projectPath, dependencyName, oldDependencyVersion, newDependencyVersion);
-        updateOperations.AddRange(packagesConfigUpdates);
+        var projectExtension = projectPath.Extension.ToLowerInvariant();
+        if (XmlFileWriter.SupportedProjectFileExtensions.Contains(projectExtension))
+        {
+            // then try packages.config updates
+            var packagesConfigUpdates = await ProcessPackagesConfigUpdatesAsync(repoContentsPath, projectPath, dependencyName, oldDependencyVersion, newDependencyVersion);
+            updateOperations.AddRange(packagesConfigUpdates);
 
-        // then try project updates
-        var packageReferenceUpdates = await ProcessPackageReferenceUpdatesAsync(repoContentsPath, initialProjectDirectory, projectPath, dependencyName, newDependencyVersion);
-        updateOperations.AddRange(packageReferenceUpdates);
+            // then try project updates
+            var packageReferenceUpdates = await ProcessPackageReferenceUpdatesAsync(repoContentsPath, initialProjectDirectory, projectPath, dependencyName, newDependencyVersion);
+            updateOperations.AddRange(packageReferenceUpdates);
+        }
 
         var normalizedUpdateOperations = UpdateOperationBase.NormalizeUpdateOperationCollection(repoContentsPath.FullName, updateOperations);
         return normalizedUpdateOperations;
@@ -250,7 +254,6 @@ public class FileWriterWorker
                 initialTopLevelDependencies,
                 desiredDependencies,
                 resolvedDependencies.Value,
-                new ExperimentsManager(),
                 _logger);
             var filteredUpdateOperations = computedUpdateOperations
                 .Where(op =>

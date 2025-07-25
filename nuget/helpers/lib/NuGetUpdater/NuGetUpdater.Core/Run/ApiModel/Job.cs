@@ -40,6 +40,7 @@ public sealed record Job
     public CommitOptions? CommitMessageOptions { get; init; } = null;
     public ImmutableArray<Dictionary<string, object>>? CredentialsMetadata { get; init; } = null;
     public int MaxUpdaterRunTime { get; init; } = 0;
+    public Cooldown? Cooldown { get; init; } = null;
 
     public ImmutableArray<string> GetAllDirectories()
     {
@@ -120,7 +121,7 @@ public sealed record Job
         }
 
         var version = NuGetVersion.Parse(dependency.Version);
-        var dependencyInfo = RunWorker.GetDependencyInfo(this, dependency);
+        var dependencyInfo = RunWorker.GetDependencyInfo(this, dependency, allowCooldown: false);
         var isVulnerable = dependencyInfo.Vulnerabilities.Any(v => v.IsVulnerable(version));
 
         bool IsAllowed(AllowedUpdate allowedUpdate)

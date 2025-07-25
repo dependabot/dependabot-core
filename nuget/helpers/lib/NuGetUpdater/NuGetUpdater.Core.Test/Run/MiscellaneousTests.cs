@@ -515,9 +515,9 @@ public class MiscellaneousTests
 
     [Theory]
     [MemberData(nameof(DependencyInfoFromJobData))]
-    public void DependencyInfoFromJob(Job job, Dependency dependency, DependencyInfo expectedDependencyInfo)
+    public void DependencyInfoFromJob(Job job, Dependency dependency, bool enableCooldown, DependencyInfo expectedDependencyInfo)
     {
-        var actualDependencyInfo = RunWorker.GetDependencyInfo(job, dependency);
+        var actualDependencyInfo = RunWorker.GetDependencyInfo(job, dependency, enableCooldown);
         var expectedString = JsonSerializer.Serialize(expectedDependencyInfo, AnalyzeWorker.SerializerOptions);
         var actualString = JsonSerializer.Serialize(actualDependencyInfo, AnalyzeWorker.SerializerOptions);
         Assert.Equal(expectedString, actualString);
@@ -634,6 +634,8 @@ public class MiscellaneousTests
             },
             // dependency
             new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
+            // enableCooldown
+            true,
             // expectedDependencyInfo
             new DependencyInfo()
             {
@@ -651,7 +653,7 @@ public class MiscellaneousTests
                     }
                 ],
                 IgnoredUpdateTypes = [],
-            }
+            },
         ];
 
         yield return
@@ -679,6 +681,8 @@ public class MiscellaneousTests
             },
             // dependency
             new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
+            // enableCooldown
+            true,
             // expectedDependencyInfo
             new DependencyInfo()
             {
@@ -688,7 +692,167 @@ public class MiscellaneousTests
                 IgnoredVersions = [],
                 Vulnerabilities = [],
                 IgnoredUpdateTypes = [ConditionUpdateType.SemVerMajor],
-            }
+            },
+        ];
+
+        // with cooldown object when `include` and `exclude` are empty
+        yield return
+        [
+            // job
+            new Job()
+            {
+                Source = new()
+                {
+                    Provider = "github",
+                    Repo = "some/repo",
+                },
+                Cooldown = new()
+                {
+                    DefaultDays = 4,
+                    SemVerMajorDays = 3,
+                    SemVerMinorDays = 2,
+                    SemVerPatchDays = 1,
+                }
+            },
+            // dependency
+            new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
+            // enableCooldown
+            true,
+            // expectedDependencyInfo
+            new DependencyInfo()
+            {
+                Name = "Some.Dependency",
+                Version = "1.0.0",
+                IsVulnerable = false,
+                IgnoredVersions = [],
+                Vulnerabilities = [],
+                IgnoredUpdateTypes = [],
+                Cooldown = new()
+                {
+                    DefaultDays = 4,
+                    SemVerMajorDays = 3,
+                    SemVerMinorDays = 2,
+                    SemVerPatchDays = 1,
+                }
+            },
+        ];
+
+        // with cooldown object when `include` matches and `exclude` is empty
+        yield return
+        [
+            // job
+            new Job()
+            {
+                Source = new()
+                {
+                    Provider = "github",
+                    Repo = "some/repo",
+                },
+                Cooldown = new()
+                {
+                    DefaultDays = 4,
+                    SemVerMajorDays = 3,
+                    SemVerMinorDays = 2,
+                    SemVerPatchDays = 1,
+                    Include = ["Some.*"],
+                }
+            },
+            // dependency
+            new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
+            // enableCooldown
+            true,
+            // expectedDependencyInfo
+            new DependencyInfo()
+            {
+                Name = "Some.Dependency",
+                Version = "1.0.0",
+                IsVulnerable = false,
+                IgnoredVersions = [],
+                Vulnerabilities = [],
+                IgnoredUpdateTypes = [],
+                Cooldown = new()
+                {
+                    DefaultDays = 4,
+                    SemVerMajorDays = 3,
+                    SemVerMinorDays = 2,
+                    SemVerPatchDays = 1,
+                    Include = ["Some.*"],
+                }
+            },
+        ];
+
+        // without cooldown object `exclude` matches
+        yield return
+        [
+            // job
+            new Job()
+            {
+                Source = new()
+                {
+                    Provider = "github",
+                    Repo = "some/repo",
+                },
+                Cooldown = new()
+                {
+                    DefaultDays = 4,
+                    SemVerMajorDays = 3,
+                    SemVerMinorDays = 2,
+                    SemVerPatchDays = 1,
+                    Exclude = ["Some.*"],
+                }
+            },
+            // dependency
+            new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
+            // enableCooldown
+            true,
+            // expectedDependencyInfo
+            new DependencyInfo()
+            {
+                Name = "Some.Dependency",
+                Version = "1.0.0",
+                IsVulnerable = false,
+                IgnoredVersions = [],
+                Vulnerabilities = [],
+                IgnoredUpdateTypes = [],
+                Cooldown = null,
+            },
+        ];
+
+        // with cooldown object when `include` matches but experiment flag is false
+        yield return
+        [
+            // job
+            new Job()
+            {
+                Source = new()
+                {
+                    Provider = "github",
+                    Repo = "some/repo",
+                },
+                Cooldown = new()
+                {
+                    DefaultDays = 4,
+                    SemVerMajorDays = 3,
+                    SemVerMinorDays = 2,
+                    SemVerPatchDays = 1,
+                    Include = ["Some.*"],
+                }
+            },
+            // dependency
+            new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
+            // enableCooldown
+            false,
+            // expectedDependencyInfo
+            new DependencyInfo()
+            {
+                Name = "Some.Dependency",
+                Version = "1.0.0",
+                IsVulnerable = false,
+                IgnoredVersions = [],
+                Vulnerabilities = [],
+                IgnoredUpdateTypes = [],
+                Cooldown = null
+            },
         ];
     }
 }

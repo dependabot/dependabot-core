@@ -548,10 +548,6 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                     """),
                 ("global.json", """
                     {
-                      "sdk": {
-                        "version": "6.0.405",
-                        "rollForward": "latestPatch"
-                      },
                       "msbuild-sdks": {
                         "My.Custom.Sdk": "5.0.0",
                         "My.Other.Sdk": "1.0.0-beta"
@@ -1216,7 +1212,6 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
         // this test mimics a package feed that doesn't have the common Microsoft.Windows.App.Ref package; common in Azure DevOps
         // Windows machines always have the package, so this test only makes sense on Linux
         await TestDiscoveryAsync(
-            experimentsManager: new ExperimentsManager() { InstallDotnetSdks = true },
             includeCommonPackages: false,
             packages: [
                 MockNuGetPackage.CreateSimplePackage("Some.Package", "1.2.3", "net8.0"),
@@ -1321,7 +1316,6 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
     {
         await TestDiscoveryAsync(
             packages: [],
-            experimentsManager: new ExperimentsManager() { InstallDotnetSdks = true },
             workspacePath: "",
             files: [
                 ("project.csproj", """
