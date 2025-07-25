@@ -69,7 +69,7 @@ module Dependabot
         valid_releases = filter_valid_releases(releases)
         return nil if valid_releases.empty?
 
-        if should_skip_cooldown?
+        if cooldown_enabled?
           valid_releases =  latest_version_resolver
                             .fetch_tag_and_release_date_helm_chart(valid_releases, repo_name, chart_name)
         end
@@ -93,7 +93,7 @@ module Dependabot
         Dependabot.logger.info("Found #{all_versions.length} versions for #{chart_name} in index.yaml")
 
         valid_versions = filter_valid_versions(all_versions)
-        if should_skip_cooldown?
+        if cooldown_enabled?
           # Filter out versions that are in cooldown period
           valid_versions = latest_version_resolver.fetch_tag_and_release_date_helm_chart_index(
             index_url,
@@ -239,7 +239,7 @@ module Dependabot
         return nil unless tags && !tags.empty?
 
         valid_tags = filter_valid_versions(tags)
-        if should_skip_cooldown?
+        if cooldown_enabled?
           # Filter out versions that are in cooldown period
           repo_url = repo_url.gsub("oci://", "")
           repo_url = repo_url + "/" + chart_name
@@ -318,14 +318,26 @@ module Dependabot
 
         Dependabot.logger.info("Delegating to Docker UpdateChecker for image: #{docker_dependency.name}")
 
-        docker_checker = Dependabot::UpdateCheckers.for_package_manager("docker").new(
-          dependency: docker_dependency,
-          dependency_files: dependency_files,
-          credentials: credentials,
-          ignored_versions: ignored_versions,
-          security_advisories: security_advisories,
-          raise_on_ignored: raise_on_ignored
-        )
+        docker_checker = if cooldown_enabled?
+                           Dependabot::UpdateCheckers.for_package_manager("docker").new(
+                             dependency: docker_dependency,
+                             dependency_files: dependency_files,
+                             credentials: credentials,
+                             ignored_versions: ignored_versions,
+                             security_advisories: security_advisories,
+                             raise_on_ignored: raise_on_ignored,
+                             update_cooldown: update_cooldown
+                           )
+                         else
+                           Dependabot::UpdateCheckers.for_package_manager("docker").new(
+                             dependency: docker_dependency,
+                             dependency_files: dependency_files,
+                             credentials: credentials,
+                             ignored_versions: ignored_versions,
+                             security_advisories: security_advisories,
+                             raise_on_ignored: raise_on_ignored
+                           )
+                         end
 
         latest_version = docker_checker.latest_version
 
@@ -349,15 +361,17 @@ module Dependabot
 
           temp_tag = tag.tr("+", "_")
           response = Helpers.fetch_tags_with_release_date_using_oci(repo_url, temp_tag)
-          next if response.strip.empty?
 
-          parsed_response = JSON.parse(response)
+          begin
+            parsed_response = JSON.parse(response)
+          rescue JSON::ParserError => e
+            Dependabot.logger.error("Failed to parse JSON response for tag #{tag}: #{e.message}")
+            next
+          end
           git_tag_with_release_date << GitTagWithDetail.new(
             tag: tag,
             release_date: parsed_response.dig("annotations", "org.opencontainers.image.created")
           )
-        rescue JSON::ParserError => e
-          Dependabot.logger.error("Failed to parse JSON response for tag #{tag}: #{e.message}")
         rescue StandardError => e
           Dependabot.logger.error("Error in fetching details for tag #{tag}: #{e.message}")
         end
@@ -397,13 +411,8 @@ module Dependabot
       end
 
       sig { returns(T::Boolean) }
-      def should_skip_cooldown?
-        @update_cooldown.nil? || !cooldown_enabled? || !@update_cooldown.included?(dependency.name)
-      end
-
-      sig { returns(T::Boolean) }
       def cooldown_enabled?
-        true
+        Dependabot::Experiments.enabled?(:enable_cooldown_for_helm)
       end
 
       sig { returns(LatestVersionResolver) }

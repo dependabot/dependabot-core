@@ -90,19 +90,19 @@ module Dependabot
           Dependabot.logger.info("Received response from #{index_url} with status #{response&.status}")
           begin
             parsed_result = YAML.safe_load(response&.body)
-            return result_lines unless parsed_result && parsed_result["entries"] && parsed_result["entries"][chart_name]
-
-            parsed_result["entries"][chart_name].map do |release|
-              result_lines << GitTagWithDetail.new(
-                tag: release["version"], # Extract the version field
-                release_date: release["created"] # Extract the created field
-              )
-            end
-            result_lines
-          rescue StandardError => e
+          rescue Psych::SyntaxError => e
             Dependabot.logger.error("Error parsing Helm index: #{e.message}")
             result_lines
           end
+          return result_lines unless parsed_result && parsed_result["entries"] && parsed_result["entries"][chart_name]
+
+          parsed_result["entries"][chart_name].map do |release|
+            result_lines << GitTagWithDetail.new(
+              tag: release["version"], # Extract the version field
+              release_date: release["created"] # Extract the created field
+            )
+          end
+          result_lines
         end
       end
     end

@@ -135,14 +135,10 @@ module Dependabot
 
         return false if cooldown.nil?
 
-        # Get maximum cooldown days based on semver parts
-        days = [cooldown.default_days, cooldown.semver_major_days].max
-        days = cooldown.semver_minor_days unless days > cooldown.semver_minor_days
-        days = cooldown.semver_patch_days unless days > cooldown.semver_patch_days
         # Calculate the number of seconds passed since the release
         passed_seconds = Time.now.to_i - release_date_to_seconds(release_date)
         # Check if the release is within the cooldown period
-        passed_seconds < days * DAY_IN_SECONDS
+        passed_seconds < cooldown.default_days * DAY_IN_SECONDS
       end
 
       sig { params(release_date: String).returns(Integer) }
