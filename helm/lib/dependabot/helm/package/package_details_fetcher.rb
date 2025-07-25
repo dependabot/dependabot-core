@@ -86,9 +86,9 @@ module Dependabot
             Dependabot.logger.error("Error fetching Helm index from #{index_url}: #{e.message}")
             return result_lines
           end
-          Dependabot.logger.info("Received response from #{index_url} with status #{response&.status}")
+          Dependabot.logger.info("Received response from #{index_url} with status #{response.status}")
           begin
-            parsed_result = YAML.safe_load(response&.body)
+            parsed_result = YAML.safe_load(response.body)
           rescue Psych::SyntaxError => e
             Dependabot.logger.error("Error parsing Helm index: #{e.message}")
             return result_lines
