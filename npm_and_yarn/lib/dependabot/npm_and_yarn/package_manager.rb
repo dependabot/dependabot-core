@@ -399,6 +399,10 @@ module Dependabot
       sig { params(name: String, version: String).void }
       def raise_if_unsupported!(name, version)
         return unless name == PNPMPackageManager::NAME
+
+        # Remove common leading version specifiers (^, ~, >=)
+        version = version.gsub(/^(?:\^|~|>=|>)/, "")
+
         return unless Version.new(version) < Version.new("7")
 
         raise ToolVersionNotSupported.new(PNPMPackageManager::NAME.upcase, version, "7.*, 8.*, 9.*")
