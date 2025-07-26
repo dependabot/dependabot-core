@@ -1,0 +1,14 @@
+[project]
+name = "PackageTest"
+authors = [{name = "Sample", email = "sample.project@example.org"}]
+license = {file = "LICENSE"}
+classifiers = ["License :: OSI Approved :: MIT License"]
+dynamic = ["version", "description"]
+
+dependencies = []
+
+[dependency-groups]
+test = [
+    "pytest==8.0.0",
+]
+dev = ["requests==2.18.0", {include-group = "test"}]
