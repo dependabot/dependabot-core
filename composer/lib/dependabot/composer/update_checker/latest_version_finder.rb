@@ -36,7 +36,7 @@ module Dependabot
           @package_details ||= fetcher.fetch
         end
 
-        private
+        protected
 
         sig do
           override
@@ -50,6 +50,8 @@ module Dependabot
           releases = filter_by_cooldown(releases)
           releases.max_by(&:version)&.version
         end
+
+        private
 
         sig do
           override
