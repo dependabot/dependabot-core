@@ -482,6 +482,88 @@ RSpec.describe Dependabot::ApiClient do
     end
   end
 
+  describe "create_dependency_submission" do
+    let(:url) { "http://example.com/update_jobs/1/create_dependency_submission" }
+    let(:dependency_submission_payload) do
+      {
+        version: 0,
+        sha: "mock-sha",
+        ref: "main",
+        job: {
+          correlator: "dependabot-experimental",
+          id: "9999"
+        },
+        detector: {
+          name: "dependabot",
+          version: "1.0.0",
+          url: "https://github.com/dependabot/dependabot-core"
+        },
+        scanned: "2025-07-09T12:00:00Z",
+        manifests: {
+          "Gemfile" => {
+            name: "Gemfile",
+            file: {
+              source_location: "Gemfile"
+            },
+            resolved: {
+              "dummy-pkg-a" => {
+                package_url: "pkg:gem/dummy-pkg-a@2.0.0"
+              }
+            }
+          }
+        }
+      }
+    end
+
+    before { stub_request(:post, url).to_return(status: 204) }
+
+    it "hits the correct endpoint" do
+      client.create_dependency_submission(dependency_submission_payload)
+
+      expect(WebMock)
+        .to have_requested(:post, url)
+        .with(headers: { "Authorization" => "token" })
+    end
+
+    it "encodes the payload correctly" do
+      client.create_dependency_submission(dependency_submission_payload)
+
+      expect(WebMock).to(have_requested(:post, url).with do |req|
+        data = JSON.parse(req.body)["data"]
+
+        expect(data["version"]).to eq(0)
+        expect(data["sha"]).to eq("mock-sha")
+        expect(data["ref"]).to eq("main")
+        expect(data["job"]["correlator"]).to eq("dependabot-experimental")
+        expect(data["job"]["id"]).to eq("9999")
+        expect(data["detector"]["name"]).to eq("dependabot")
+        expect(data["manifests"]["Gemfile"]["name"]).to eq("Gemfile")
+      end)
+    end
+
+    context "when API returns a 400 Bad Request" do
+      let(:body) do
+        <<~ERROR
+          { "errors": [{
+            "status": 400,
+            "title": "Bad Request",
+            "detail": "The request contains invalid or unauthorized changes"}]
+          }
+        ERROR
+      end
+
+      before do
+        stub_request(:post, url).to_return(status: 400, body: body)
+      end
+
+      it "raises the correct error" do
+        expect do
+          client.create_dependency_submission(dependency_submission_payload)
+        end.to raise_error(Dependabot::ApiError)
+      end
+    end
+  end
+
   describe "ecosystem_versions" do
     let(:url) { "http://example.com/update_jobs/1/record_ecosystem_versions" }
 
