@@ -68,6 +68,11 @@ module Dependabot
           Gradle::Version
         end
 
+        sig { override.returns(T::Class[Requirement]) }
+        def requirement_class
+          Gradle::Requirement
+        end
+
         private
 
         sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
@@ -113,11 +118,6 @@ module Dependabot
           else
             version_parts.join(".") + "+"
           end
-        end
-
-        sig { override.returns(T::Class[Requirement]) }
-        def requirement_class
-          Gradle::Requirement
         end
 
         sig { returns(T::Hash[Symbol, String]) }
