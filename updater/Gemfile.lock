@@ -279,7 +279,7 @@ GEM
       rake (>= 13)
     googleapis-common-protos-types (1.20.0)
       google-protobuf (>= 3.18, < 5.a)
-    gpgme (2.0.24)
+    gpgme (2.0.25)
       mini_portile2 (~> 2.7)
     hashdiff (1.1.1)
     http (5.1.1)
@@ -665,7 +665,7 @@ CHECKSUMS
   google-protobuf (4.31.1-x86_64-linux-gnu) sha256=7def6dbf996dab289dd541a3ee8b201e2c3e35911c274325ad9b483ebffb6dcd
   google-protobuf (4.31.1-x86_64-linux-musl) sha256=7d99d7728d9d7a6fda36130acac2a9947b868e28fe3f4aec4131cebce0d420f9
   googleapis-common-protos-types (1.20.0) sha256=5e374b06bcfc7e13556e7c0d87b99f1fa3d42de6396a1de3d8fc13aefb4dd07f
-  gpgme (2.0.24) sha256=53eccd7042abb4fd5c78f30bc9ed075b1325e6450eab207f2f6a1e7e28ae3b64
+  gpgme (2.0.25) sha256=9242408b28720513145deb6150f25f5fe5149f3728ebaea635050cc3fc84dc34
   hashdiff (1.1.1) sha256=c7966316726e0ceefe9f5c6aef107ebc3ccfef8b6db55fe3934f046b2cf0936a
   http (5.1.1) sha256=fcaec14a4f82de6d2f9cb978c07326814c6c2b42b8974f6ec166ff19c645ebaf
   http-accept (1.7.0) sha256=c626860682bfbb3b46462f8c39cd470fd7b0584f61b3cc9df5b2e9eb9972a126
