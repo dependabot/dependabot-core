@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 
 using NuGetUpdater.Core.Run.ApiModel;
+using NuGetUpdater.Core.Run.PullRequestBodyGenerator;
 using NuGetUpdater.Core.Updater;
 
 using DependencySet = (string Name, (NuGet.Versioning.NuGetVersion? OldVersion, NuGet.Versioning.NuGetVersion NewVersion)[] Versions);
@@ -124,9 +125,12 @@ public class PullRequestTextGenerator
         return dependencySets;
     }
 
-    public static string GetPullRequestBody(Job job, ImmutableArray<UpdateOperationBase> updateOperationsPerformed, string? dependencyGroupName)
+    public static async Task<string> GetPullRequestBodyAsync(Job job, ImmutableArray<UpdateOperationBase> updateOperationsPerformed, ImmutableArray<ReportedDependency> updatedDependencies, ExperimentsManager experimentsManager)
     {
-        var report = UpdateOperationBase.GenerateUpdateOperationReport(updateOperationsPerformed);
-        return report;
+        var bodyGenerator = experimentsManager.GenerateSimplePrBody
+            ? (IPullRequestBodyGenerator)new SimplePullRequestBodyGenerator()
+            : new DetailedPullRequestBodyGenerator(new HttpFetcher());
+        var prBody = await bodyGenerator.GeneratePullRequestBodyTextAsync(job, updateOperationsPerformed, updatedDependencies);
+        return prBody;
     }
 }

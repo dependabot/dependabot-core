@@ -1,4 +1,4 @@
-FROM docker.io/library/ubuntu:22.04
+FROM docker.io/library/ubuntu:24.04
 
 ARG TARGETARCH
 
@@ -43,10 +43,32 @@ RUN apt-get update \
 ARG USER_UID=1000
 ARG USER_GID=$USER_UID
 
-RUN if ! getent group "$USER_GID"; then groupadd --gid "$USER_GID" dependabot ; \
-     else GROUP_NAME=$(getent group $USER_GID | awk -F':' '{print $1}'); groupmod -n dependabot "$GROUP_NAME" ; fi \
-  && useradd --uid "${USER_UID}" --gid "${USER_GID}" -m dependabot \
-  && mkdir -p /opt && chown dependabot:dependabot /opt && chgrp dependabot /etc/ssl/certs && chmod g+w /etc/ssl/certs
+RUN <<EOT
+  # Check if the group and user already exist, if not create them
+  if ! getent group "$USER_GID"; then
+    groupadd --gid "$USER_GID" dependabot
+  else
+    GROUP_NAME=$(getent group "$USER_GID" | awk -F':' '{print $1}')
+    groupmod -n dependabot "$GROUP_NAME"
+  fi
+
+  if ! getent passwd "$USER_UID"; then
+    useradd --uid "$USER_UID" --gid "$USER_GID" -m dependabot
+  else
+    USER_NAME=$(getent passwd "$USER_UID" | awk -F':' '{print $1}')
+    OLD_HOME=$(getent passwd "$USER_UID" | awk -F':' '{print $6}')
+    usermod -l dependabot "$USER_NAME"
+    # Rename the home directory if it exists and isn't already /home/dependabot
+    if [ -d "$OLD_HOME" ] && [ "$OLD_HOME" != "/home/dependabot" ]; then
+      usermod -d /home/dependabot -m dependabot
+    fi
+  fi
+
+  mkdir -p /opt
+  chown dependabot:dependabot /opt
+  chgrp dependabot /etc/ssl/certs
+  chmod g+w /etc/ssl/certs
+EOT
 
 USER dependabot
 ENV DEPENDABOT_HOME="/home/dependabot"
@@ -56,7 +78,7 @@ COPY --chown=dependabot:dependabot LICENSE $DEPENDABOT_HOME
 
 # Install Ruby from official Docker image
 # When bumping Ruby minor, need to also add the previous version to `bundler/helpers/v2/monkey_patches/definition_ruby_version_patch.rb`
-COPY --from=docker.io/library/ruby:3.4.4-bookworm --chown=dependabot:dependabot /usr/local /usr/local
+COPY --from=docker.io/library/ruby:3.4.5-bookworm --chown=dependabot:dependabot /usr/local /usr/local
 
 # We had to explicitly bump this as the bundled version `0.2.2` in ubuntu 22.04 has a bug.
 # Once Ubuntu base image pulls in a new enough yaml version, we may not need to

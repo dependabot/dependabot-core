@@ -10,7 +10,7 @@ ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
     jq \
-    libicu-dev=70.1-2 \
+    libicu-dev \
  && rm -rf /var/lib/apt/lists/*
 
 # install libssl 1.0 for .NET 2.0
@@ -42,8 +42,8 @@ RUN ARCH=$([ $TARGETARCH = "arm64" ] && echo "arm64" || echo "x64") \
  && pwsh --version
 
 # Install .NET SDK
-ARG DOTNET_LTS_SDK_VERSION=8.0.408
-ARG DOTNET_STS_SDK_VERSION=9.0.203
+ARG DOTNET_LTS_SDK_VERSION=8.0.412
+ARG DOTNET_STS_SDK_VERSION=9.0.302
 ARG DOTNET_SDK_INSTALL_URL=https://builds.dotnet.microsoft.com/dotnet/scripts/v1/dotnet-install.sh
 ENV DOTNET_INSTALL_DIR=/usr/local/dotnet/current
 ENV DOTNET_INSTALL_SCRIPT_PATH=/tmp/dotnet-install.sh

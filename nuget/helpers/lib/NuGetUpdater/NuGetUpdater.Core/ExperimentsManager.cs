@@ -7,21 +7,17 @@ namespace NuGetUpdater.Core;
 
 public record ExperimentsManager
 {
-    public bool InstallDotnetSdks { get; init; } = false;
+    public bool EnableCooldown { get; init; } = false;
+    public bool GenerateSimplePrBody { get; init; } = false;
     public bool NativeUpdater { get; init; } = false;
-    public bool UseLegacyDependencySolver { get; init; } = false;
-    public bool UseLegacyUpdateHandler { get; init; } = false;
-    public bool UseDirectDiscovery { get; init; } = false;
 
     public Dictionary<string, object> ToDictionary()
     {
         return new()
         {
-            ["nuget_install_dotnet_sdks"] = InstallDotnetSdks,
+            ["enable_cooldown_for_nuget"] = EnableCooldown,
+            ["nuget_generate_simple_pr_body"] = GenerateSimplePrBody,
             ["nuget_native_updater"] = NativeUpdater,
-            ["nuget_legacy_dependency_solver"] = UseLegacyDependencySolver,
-            ["nuget_use_legacy_update_handler"] = UseLegacyUpdateHandler,
-            ["nuget_use_direct_discovery"] = UseDirectDiscovery,
         };
     }
 
@@ -29,11 +25,9 @@ public record ExperimentsManager
     {
         return new ExperimentsManager()
         {
-            InstallDotnetSdks = IsEnabled(experiments, "nuget_install_dotnet_sdks"),
+            EnableCooldown = IsEnabled(experiments, "enable_cooldown_for_nuget"),
+            GenerateSimplePrBody = IsEnabled(experiments, "nuget_generate_simple_pr_body"),
             NativeUpdater = IsEnabled(experiments, "nuget_native_updater"),
-            UseLegacyDependencySolver = IsEnabled(experiments, "nuget_legacy_dependency_solver"),
-            UseLegacyUpdateHandler = IsEnabled(experiments, "nuget_use_legacy_update_handler"),
-            UseDirectDiscovery = IsEnabled(experiments, "nuget_use_direct_discovery"),
         };
     }
 

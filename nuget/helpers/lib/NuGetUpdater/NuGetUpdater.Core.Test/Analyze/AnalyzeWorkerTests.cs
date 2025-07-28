@@ -53,7 +53,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                 CanUpdate = true,
                 VersionComesFromMultiDependencyProperty = false,
                 UpdatedDependencies = [
-                    new("Some.Package", "1.1.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
+                    new("Some.Package", "1.1.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect : true),
                 ],
             }
         );
@@ -104,70 +104,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                 CanUpdate = true,
                 VersionComesFromMultiDependencyProperty = false,
                 UpdatedDependencies = [
-                    new("Some.Package", "4.9.2", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
-                    new("Some.Transitive.Dependency", "4.9.2", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
-                ],
-            }
-        );
-    }
-
-    [Fact]
-    public async Task DeterminesMultiPropertyVersion()
-    {
-        var evaluationResult = new EvaluationResult(EvaluationResultType.Success, "$(SomePackageVersion)", "4.0.1", "SomePackageVersion", ErrorMessage: null);
-        await TestAnalyzeAsync(
-            packages:
-            [
-                MockNuGetPackage.CreateSimplePackage("Some.Package", "4.0.1", "net8.0", [(null, [("Some.Transitive.Dependency", "[4.0.1]")])]), // initially this
-                MockNuGetPackage.CreateSimplePackage("Some.Package", "4.9.2", "net8.0", [(null, [("Some.Transitive.Dependency", "[4.9.2]")])]), // should update to this
-                MockNuGetPackage.CreateSimplePackage("Some.Package", "4.9.3", "net8.0", [(null, [("Some.Transitive.Dependency", "[4.9.3]")])]), // will not update this far
-                MockNuGetPackage.CreateSimplePackage("Some.Transitive.Dependency", "4.0.1", "net8.0"),
-                MockNuGetPackage.CreateSimplePackage("Some.Transitive.Dependency", "4.9.2", "net8.0"),
-                MockNuGetPackage.CreateSimplePackage("Some.Transitive.Dependency", "4.9.3", "net8.0"),
-            ],
-            discovery: new()
-            {
-                Path = "/",
-                Projects = [
-                    new()
-                    {
-                        FilePath = "./project.csproj",
-                        TargetFrameworks = ["net8.0"],
-                        Dependencies = [
-                            new("Some.Transitive.Dependency", "4.0.1", DependencyType.PackageReference, EvaluationResult: evaluationResult, TargetFrameworks: ["net8.0"]),
-                        ],
-                        ReferencedProjectPaths = [],
-                        ImportedFiles = [],
-                        AdditionalFiles = [],
-                    },
-                    new()
-                    {
-                        FilePath = "./project2.csproj",
-                        TargetFrameworks = ["net8.0"],
-                        Dependencies = [
-                            new("Some.Package", "4.0.1", DependencyType.PackageReference, EvaluationResult: evaluationResult, TargetFrameworks: ["net8.0"]),
-                        ],
-                        ReferencedProjectPaths = [],
-                        ImportedFiles = [],
-                        AdditionalFiles = [],
-                    },
-                ],
-            },
-            dependencyInfo: new()
-            {
-                Name = "Some.Transitive.Dependency",
-                Version = "4.0.1",
-                IgnoredVersions = [Requirement.Parse("> 4.9.2")],
-                IsVulnerable = false,
-                Vulnerabilities = [],
-            },
-            expectedResult: new()
-            {
-                UpdatedVersion = "4.9.2",
-                CanUpdate = true,
-                VersionComesFromMultiDependencyProperty = true,
-                UpdatedDependencies = [
-                    new("Some.Package", "4.9.2", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
+                    new("Some.Package", "4.9.2", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
                     new("Some.Transitive.Dependency", "4.9.2", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
                 ],
             }
@@ -425,7 +362,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                 UpdatedVersion = "1.1.0",
                 CanUpdate = true,
                 UpdatedDependencies = [
-                    new("Some.Package", "1.1.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
+                    new("Some.Package", "1.1.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
                 ],
             }
         );
@@ -472,7 +409,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                 CanUpdate = true,
                 VersionComesFromMultiDependencyProperty = false,
                 UpdatedDependencies = [
-                    new("Some.Package", "1.1.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
+                    new("Some.Package", "1.1.0", DependencyType.PackageReference, TargetFrameworks :["net8.0"], IsDirect : true),
                 ],
             }
         );
@@ -527,7 +464,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                 CanUpdate = true,
                 VersionComesFromMultiDependencyProperty = false,
                 UpdatedDependencies = [
-                    new("Some.Package", "1.1.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
+                    new("Some.Package", "1.1.0", DependencyType.PackageReference, TargetFrameworks :["net8.0"], IsDirect : true),
                 ],
             }
         );
@@ -537,7 +474,6 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
     public async Task WindowsSpecificProjectAndWindowsSpecificDependency()
     {
         await TestAnalyzeAsync(
-            experimentsManager: new ExperimentsManager() { UseDirectDiscovery = true },
             packages: [
                 MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net6.0-windows7.0"),
                 MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.1", "net6.0-windows7.0"),
@@ -610,6 +546,8 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                 _ => (404, Encoding.UTF8.GetBytes("{}")), // nothing else is found
             };
         }
+        var aspNetCoreAppRefPackage = MockNuGetPackage.WellKnownReferencePackage("Microsoft.AspNetCore.App", "net8.0");
+        var netCoreAppRefPackage = MockNuGetPackage.WellKnownReferencePackage("Microsoft.NETCore.App", "net8.0");
         var desktopAppRefPackage = MockNuGetPackage.WellKnownReferencePackage("Microsoft.WindowsDesktop.App", "net8.0");
         (int, byte[]) TestHttpHandler2(string uriString)
         {
@@ -674,6 +612,46 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                     return (200, MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0").GetZipStream().ReadAllBytes());
                 case "/api/v2/package/Some.Package/1.2.3":
                     return (200, MockNuGetPackage.CreateSimplePackage("Some.Package", "1.2.3", "net8.0").GetZipStream().ReadAllBytes());
+                case "/api/v2/FindPackagesById()?id='Microsoft.AspNetCore.App.Ref'&semVerLevel=2.0.0":
+                    return (200, Encoding.UTF8.GetBytes($"""
+                        <feed xml:base="{baseUrl}/api/v2" xmlns="http://www.w3.org/2005/Atom"
+                            xmlns:d="http://schemas.microsoft.com/ado/2007/08/dataservices"
+                            xmlns:m="http://schemas.microsoft.com/ado/2007/08/dataservices/metadata"
+                            xmlns:georss="http://www.georss.org/georss" xmlns:gml="http://www.opengis.net/gml">
+                            <m:count>1</m:count>
+                            <id>http://schemas.datacontract.org/2004/07/</id>
+                            <title />
+                            <updated>{DateTime.UtcNow:O}</updated>
+                            <link rel="self" href="{baseUrl}/api/v2/Packages" />
+                            <entry>
+                                <id>{baseUrl}/api/v2/Packages(Id='Microsoft.AspNetCore.App.Ref',Version='{aspNetCoreAppRefPackage.Version}')</id>
+                                <content type="application/zip" src="{baseUrl}/api/v2/package/Microsoft.AspNetCore.App.Ref/{aspNetCoreAppRefPackage.Version}" />
+                                <m:properties>
+                                    <d:Version>{aspNetCoreAppRefPackage.Version}</d:Version>
+                                </m:properties>
+                            </entry>
+                        </feed>
+                        """));
+                case "/api/v2/FindPackagesById()?id='Microsoft.NETCore.App.Ref'&semVerLevel=2.0.0":
+                    return (200, Encoding.UTF8.GetBytes($"""
+                        <feed xml:base="{baseUrl}/api/v2" xmlns="http://www.w3.org/2005/Atom"
+                            xmlns:d="http://schemas.microsoft.com/ado/2007/08/dataservices"
+                            xmlns:m="http://schemas.microsoft.com/ado/2007/08/dataservices/metadata"
+                            xmlns:georss="http://www.georss.org/georss" xmlns:gml="http://www.opengis.net/gml">
+                            <m:count>1</m:count>
+                            <id>http://schemas.datacontract.org/2004/07/</id>
+                            <title />
+                            <updated>{DateTime.UtcNow:O}</updated>
+                            <link rel="self" href="{baseUrl}/api/v2/Packages" />
+                            <entry>
+                                <id>{baseUrl}/api/v2/Packages(Id='Microsoft.NETCore.App.Ref',Version='{netCoreAppRefPackage.Version}')</id>
+                                <content type="application/zip" src="{baseUrl}/api/v2/package/Microsoft.NETCore.App.Ref/{netCoreAppRefPackage.Version}" />
+                                <m:properties>
+                                    <d:Version>{netCoreAppRefPackage.Version}</d:Version>
+                                </m:properties>
+                            </entry>
+                        </feed>
+                        """));
                 case "/api/v2/FindPackagesById()?id='Microsoft.WindowsDesktop.App.Ref'&semVerLevel=2.0.0":
                     return (200, Encoding.UTF8.GetBytes($"""
                         <feed xml:base="{baseUrl}/api/v2" xmlns="http://www.w3.org/2005/Atom"
@@ -695,7 +673,15 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                         </feed>
                         """));
                 default:
-                    if (uri.PathAndQuery == $"/api/v2/package/Microsoft.WindowsDesktop.App.Ref/{desktopAppRefPackage.Version}")
+                    if (uri.PathAndQuery == $"/api/v2/package/Microsoft.AspNetCore.App.Ref/{aspNetCoreAppRefPackage.Version}")
+                    {
+                        return (200, aspNetCoreAppRefPackage.GetZipStream().ReadAllBytes());
+                    }
+                    else if (uri.PathAndQuery == $"/api/v2/package/Microsoft.NETCore.App.Ref/{netCoreAppRefPackage.Version}")
+                    {
+                        return (200, netCoreAppRefPackage.GetZipStream().ReadAllBytes());
+                    }
+                    else if (uri.PathAndQuery == $"/api/v2/package/Microsoft.WindowsDesktop.App.Ref/{desktopAppRefPackage.Version}")
                     {
                         return (200, desktopAppRefPackage.GetZipStream().ReadAllBytes());
                     }
@@ -753,7 +739,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                 VersionComesFromMultiDependencyProperty = false,
                 UpdatedDependencies =
                 [
-                    new("Some.Package", "1.2.3", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
+                    new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks :["net8.0"], IsDirect : true),
                 ],
             }
         );
@@ -791,6 +777,8 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                 _ => (404, Encoding.UTF8.GetBytes("{}")), // nothing else is found
             };
         }
+        var aspNetCoreAppRefPackage = MockNuGetPackage.WellKnownReferencePackage("Microsoft.AspNetCore.App", "net8.0");
+        var netCoreAppRefPackage = MockNuGetPackage.WellKnownReferencePackage("Microsoft.NETCore.App", "net8.0");
         var desktopAppRefPackage = MockNuGetPackage.WellKnownReferencePackage("Microsoft.WindowsDesktop.App", "net8.0");
         (int, byte[]) TestHttpHandler2(string uriString)
         {
@@ -854,6 +842,22 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                             ]
                         }
                         """));
+                case "/download/microsoft.aspnetcore.app.ref/index.json":
+                    return (200, Encoding.UTF8.GetBytes($$"""
+                        {
+                            "versions": [
+                                "{{aspNetCoreAppRefPackage.Version}}"
+                            ]
+                        }
+                        """));
+                case "/download/microsoft.netcore.app.ref/index.json":
+                    return (200, Encoding.UTF8.GetBytes($$"""
+                        {
+                            "versions": [
+                                "{{netCoreAppRefPackage.Version}}"
+                            ]
+                        }
+                        """));
                 case "/download/microsoft.windowsdesktop.app.ref/index.json":
                     return (200, Encoding.UTF8.GetBytes($$"""
                         {
@@ -867,7 +871,15 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                 case "/download/some.package/1.2.3/some.package.1.2.3.nupkg":
                     return (200, MockNuGetPackage.CreateSimplePackage("Some.Package", "1.2.3", "net8.0").GetZipStream().ReadAllBytes());
                 default:
-                    if (uri.PathAndQuery == $"/download/microsoft.windowsdesktop.app.ref/{desktopAppRefPackage.Version}/microsoft.windowsdesktop.app.ref.{desktopAppRefPackage.Version}.nupkg")
+                    if (uri.PathAndQuery == $"/download/microsoft.aspnetcore.app.ref/{aspNetCoreAppRefPackage.Version}/microsoft.aspnetcore.app.ref.{aspNetCoreAppRefPackage.Version}.nupkg")
+                    {
+                        return (200, aspNetCoreAppRefPackage.GetZipStream().ReadAllBytes());
+                    }
+                    else if (uri.PathAndQuery == $"/download/microsoft.netcore.app.ref/{netCoreAppRefPackage.Version}/microsoft.netcore.app.ref.{netCoreAppRefPackage.Version}.nupkg")
+                    {
+                        return (200, netCoreAppRefPackage.GetZipStream().ReadAllBytes());
+                    }
+                    else if (uri.PathAndQuery == $"/download/microsoft.windowsdesktop.app.ref/{desktopAppRefPackage.Version}/microsoft.windowsdesktop.app.ref.{desktopAppRefPackage.Version}.nupkg")
                     {
                         return (200, desktopAppRefPackage.GetZipStream().ReadAllBytes());
                     }
@@ -925,7 +937,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                 VersionComesFromMultiDependencyProperty = false,
                 UpdatedDependencies =
                 [
-                    new("Some.Package", "1.2.3", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
+                    new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks :["net8.0"], IsDirect : true),
                 ],
             }
         );
@@ -1113,7 +1125,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                 VersionComesFromMultiDependencyProperty = false,
                 UpdatedDependencies =
                 [
-                    new("Some.Package", "1.1.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
+                    new("Some.Package", "1.1.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
                 ],
             }
         );
@@ -1129,7 +1141,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
             UpdatedVersion = "",
             UpdatedDependencies = [],
         }, new TestLogger());
-        var discoveryContents = await File.ReadAllTextAsync(Path.Combine(temporaryDirectory.DirectoryPath, "Some.Dependency.json"));
+        var discoveryContents = await File.ReadAllTextAsync(Path.Combine(temporaryDirectory.DirectoryPath, "Some.Dependency.json"), TestContext.Current.CancellationToken);
 
         // raw result file should look like this:
         // {

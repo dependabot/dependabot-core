@@ -27,6 +27,8 @@ module Dependabot
         PACKAGE_LANGUAGE = "ruby"
         APPLICATION_JSON = "application/json"
         RUBYGEMS = "rubygems"
+        GIT = "git"
+        OTHER = "other"
 
         sig do
           params(
@@ -54,7 +56,12 @@ module Dependabot
 
         sig { returns(Dependabot::Package::PackageDetails) }
         def fetch
-          rubygems_versions
+          case source_type
+          when GIT, OTHER
+            package_details([])
+          else
+            rubygems_versions
+          end
         end
 
         private
@@ -181,6 +188,16 @@ module Dependabot
         sig { params(req_string: String).returns(Requirement) }
         def language_requirement(req_string)
           Requirement.new(req_string)
+        end
+
+        sig { returns(T.nilable(String)) }
+        def source_type
+          return nil unless dependency.requirements.any?
+
+          first_requirement = dependency.requirements.first
+          return nil unless first_requirement && first_requirement[:source]
+
+          first_requirement[:source][:type]
         end
 
         sig { override.returns(String) }

@@ -61,6 +61,13 @@ public class JobErrorBaseTests : TestBase
             new PrivateSourceBadResponse(["http://nuget.example.com/v3/index.json"]),
         ];
 
+        // service returned corrupt package
+        yield return
+        [
+            new InvalidDataException("Central Directory corrupt."),
+            new PrivateSourceBadResponse(["http://nuget.example.com/v3/index.json"]),
+        ];
+
         // top-level exception turns into private_source_authentication_failure
         yield return
         [

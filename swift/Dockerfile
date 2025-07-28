@@ -8,13 +8,14 @@ RUN apt-get update \
   && apt-get install -y --no-install-recommends \
     binutils \
     libc6-dev \
-    libcurl4 \
+    libcurl4-openssl-dev \
     libedit2 \
-    libgcc-9-dev \
-    libpython2.7 \
+    libgcc-13-dev \
+    libpython3-dev \
     libsqlite3-0 \
-    libstdc++-9-dev \
+    libstdc++-13-dev \
     libxml2 \
+    libncurses-dev \
     libz3-dev \
     pkg-config \
     tzdata \
@@ -26,7 +27,7 @@ USER dependabot
 # https://www.swift.org/download/
 # https://github.com/apple/swift-org-website/blob/main/_data/builds/swift_releases.yml
 ARG SWIFT_VERSION=6.1.2
-ARG SWIFT_UBUNTU_VERSION=ubuntu22.04
+ARG SWIFT_UBUNTU_VERSION=ubuntu24.04
 
 RUN if [ "$TARGETARCH" = "arm64" ]; then SWIFT_UBUNTU_VERSION="${SWIFT_UBUNTU_VERSION}-aarch64"; fi \
   && SWIFT_SHORT_UBUNTU_VERSION=$(echo $SWIFT_UBUNTU_VERSION | tr -d .) \

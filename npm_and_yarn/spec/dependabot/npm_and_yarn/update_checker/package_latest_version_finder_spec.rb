@@ -64,8 +64,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::PackageLatestVersionFinder
       .to_return(status: 200, body: registry_response)
     stub_request(:head, "#{registry_base}/#{dependency_name}/-/#{unscoped_dependency_name}-#{target_version}.tgz")
       .to_return(status: 200)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_cooldown_for_npm_and_yarn).and_return(true)
   end
 
   describe "#latest_version_from_registry" do
@@ -938,6 +936,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::PackageLatestVersionFinder
           .to_return(status: 200)
         stub_request(:head, "#{registry_base}/etag/-/etag-1.6.3.tgz")
           .to_return(status: 200)
+        stub_request(:head, "#{registry_base}/etag/-/etag-1.7.0.tgz")
+          .to_return(status: 404)
       end
 
       let(:registry_response) do

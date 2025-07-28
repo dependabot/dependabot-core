@@ -12,4 +12,5 @@ public sealed record DependencyInfo
     public ImmutableArray<Requirement> IgnoredVersions { get; init; }
     public ImmutableArray<SecurityVulnerability> Vulnerabilities { get; init; }
     public ImmutableArray<ConditionUpdateType> IgnoredUpdateTypes { get; init; } = [];
+    public Cooldown? Cooldown { get; init; } = null;
 }

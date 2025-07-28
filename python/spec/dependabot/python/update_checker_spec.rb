@@ -77,16 +77,12 @@ RSpec.describe Dependabot::Python::UpdateChecker do
   end
   let(:pypi_response) { fixture("pypi", "pypi_simple_response.html") }
   let(:pypi_url) { "https://pypi.org/simple/luigi/" }
-  let(:enable_cooldown_for_python) { false }
 
   before do
     stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_file_parser_python_local)
       .and_return(false)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_cooldown_for_python)
-      .and_return(true)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_shared_helpers_command_timeout)
       .and_return(true)

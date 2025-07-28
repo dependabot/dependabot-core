@@ -34,7 +34,7 @@ public class PullRequestTextTests
 
     [Theory]
     [MemberData(nameof(GetPullRequestTextTestData))]
-    public void PullRequestText(
+    public async Task PullRequestText(
         Job job,
         UpdateOperationBase[] updateOperationsPerformed,
         string? dependencyGroupName,
@@ -43,10 +43,11 @@ public class PullRequestTextTests
         string expectedBody
     )
     {
+        var experimentsManager = new ExperimentsManager() { GenerateSimplePrBody = true };
         var updateOperationsPerformedImmutable = updateOperationsPerformed.ToImmutableArray();
         var actualTitle = PullRequestTextGenerator.GetPullRequestTitle(job, updateOperationsPerformedImmutable, dependencyGroupName);
         var actualCommitMessage = PullRequestTextGenerator.GetPullRequestCommitMessage(job, updateOperationsPerformedImmutable, dependencyGroupName).Replace("\r", "");
-        var actualBody = PullRequestTextGenerator.GetPullRequestBody(job, updateOperationsPerformedImmutable, dependencyGroupName).Replace("\r", "");
+        var actualBody = (await PullRequestTextGenerator.GetPullRequestBodyAsync(job, updateOperationsPerformedImmutable, [], experimentsManager)).Replace("\r", "");
         Assert.Equal(expectedTitle, actualTitle);
         Assert.Equal(expectedCommitMessage.Replace("\r", ""), actualCommitMessage);
         Assert.Equal(expectedBody.Replace("\r", ""), actualBody);
@@ -79,7 +80,7 @@ public class PullRequestTextTests
             // expectedBody
             """
             Performed the following updates:
-            - Updated Some.Package from 1.0.0 to 1.2.3 in a.txt
+            - Updated Some.Package from 1.0.0 to 1.2.3
             """
         ];
 
@@ -108,7 +109,7 @@ public class PullRequestTextTests
             // expectedBody
             """
             Performed the following updates:
-            - Updated Some.Package from 1.0.0 to 1.2.3 in a.txt
+            - Updated Some.Package from 1.0.0 to 1.2.3
             """
         ];
 
@@ -137,7 +138,7 @@ public class PullRequestTextTests
             // expectedBody
             """
             Performed the following updates:
-            - Updated Some.Package from 1.0.0 to 1.2.3 in a.txt
+            - Updated Some.Package from 1.0.0 to 1.2.3
             """
         ];
 
@@ -173,8 +174,8 @@ public class PullRequestTextTests
             // expectedBody
             """
             Performed the following updates:
-            - Updated Some.Package from 1.0.0 to 1.2.3 in a.txt
-            - Updated Some.Package from 4.0.0 to 4.5.6 in b.txt
+            - Updated Some.Package from 1.0.0 to 1.2.3
+            - Updated Some.Package from 4.0.0 to 4.5.6
             """
         ];
 
@@ -229,10 +230,10 @@ public class PullRequestTextTests
             // expectedBody
             """
             Performed the following updates:
-            - Updated Package.A from 0.1.0 to 1.0.0 in a1.txt
-            - Updated Package.A from 0.2.0 to 2.0.0 in a2.txt
-            - Updated Package.B from 0.3.0 to 3.0.0 in b1.txt
-            - Updated Package.B from 0.4.0 to 4.0.0 in b2.txt
+            - Updated Package.A from 0.1.0 to 1.0.0
+            - Updated Package.A from 0.2.0 to 2.0.0
+            - Updated Package.B from 0.3.0 to 3.0.0
+            - Updated Package.B from 0.4.0 to 4.0.0
             """
         ];
 
@@ -317,14 +318,14 @@ public class PullRequestTextTests
             // expectedBody
             """
             Performed the following updates:
-            - Updated Package.A from 0.1.0 to 1.0.0 in a1.txt
-            - Updated Package.A from 0.2.0 to 2.0.0 in a2.txt
-            - Updated Package.B from 0.3.0 to 3.0.0 in b1.txt
-            - Updated Package.B from 0.4.0 to 4.0.0 in b2.txt
-            - Updated Package.C from 0.5.0 to 5.0.0 in c1.txt
-            - Updated Package.C from 0.6.0 to 6.0.0 in c2.txt
-            - Updated Package.D from 0.7.0 to 7.0.0 in d1.txt
-            - Updated Package.D from 0.8.0 to 8.0.0 in d2.txt
+            - Updated Package.A from 0.1.0 to 1.0.0
+            - Updated Package.A from 0.2.0 to 2.0.0
+            - Updated Package.B from 0.3.0 to 3.0.0
+            - Updated Package.B from 0.4.0 to 4.0.0
+            - Updated Package.C from 0.5.0 to 5.0.0
+            - Updated Package.C from 0.6.0 to 6.0.0
+            - Updated Package.D from 0.7.0 to 7.0.0
+            - Updated Package.D from 0.8.0 to 8.0.0
             """
         ];
 
@@ -357,7 +358,7 @@ public class PullRequestTextTests
             // expectedBody
             """
             Performed the following updates:
-            - Updated Some.Package from 1.0.0 to 1.2.3 in a.txt
+            - Updated Some.Package from 1.0.0 to 1.2.3
             """
         ];
 
@@ -398,8 +399,8 @@ public class PullRequestTextTests
             // expectedBody
             """
             Performed the following updates:
-            - Updated Package.A from 1.0.0 to 1.2.3 in a.txt
-            - Updated Package.B from 4.0.0 to 4.5.6 in a.txt
+            - Updated Package.A from 1.0.0 to 1.2.3
+            - Updated Package.B from 4.0.0 to 4.5.6
             """
         ];
 
@@ -437,8 +438,7 @@ public class PullRequestTextTests
             // expectedBody
             """
             Performed the following updates:
-            - Updated Some.Package from 1.0.0 to 1.2.3 in a.txt
-            - Updated Some.Package from 1.0.0 to 1.2.3 in b.txt
+            - Updated Some.Package from 1.0.0 to 1.2.3
             """
         ];
     }

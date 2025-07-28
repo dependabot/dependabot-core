@@ -2,7 +2,7 @@ namespace NuGetUpdater.Core;
 
 internal static class DotNetToolsJsonUpdater
 {
-    public static async Task UpdateDependencyAsync(
+    public static async Task<string?> UpdateDependencyAsync(
         string repoRootPath,
         string workspacePath,
         string dependencyName,
@@ -13,7 +13,7 @@ internal static class DotNetToolsJsonUpdater
         if (!MSBuildHelper.TryGetDotNetToolsJsonPath(repoRootPath, workspacePath, out var dotnetToolsJsonPath))
         {
             logger.Info("  No dotnet-tools.json file found.");
-            return;
+            return null;
         }
 
         var dotnetToolsJsonFile = DotNetToolsJsonBuildFile.Open(repoRootPath, dotnetToolsJsonPath, logger);
@@ -24,7 +24,7 @@ internal static class DotNetToolsJsonUpdater
         if (!containsDependency)
         {
             logger.Info($"    Dependency [{dependencyName}] not found.");
-            return;
+            return null;
         }
 
         var tool = dotnetToolsJsonFile.Tools
@@ -40,7 +40,10 @@ internal static class DotNetToolsJsonUpdater
             if (await dotnetToolsJsonFile.SaveAsync())
             {
                 logger.Info($"    Saved [{dotnetToolsJsonFile.RelativePath}].");
+                return dotnetToolsJsonFile.Path;
             }
         }
+
+        return null;
     }
 }

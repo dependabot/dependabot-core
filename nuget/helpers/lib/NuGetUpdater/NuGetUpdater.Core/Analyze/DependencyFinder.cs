@@ -1,6 +1,5 @@
 using System.Collections.Immutable;
 
-using NuGet.Frameworks;
 using NuGet.Versioning;
 
 namespace NuGetUpdater.Core.Analyze;
@@ -14,7 +13,6 @@ internal static class DependencyFinder
         ImmutableHashSet<string> packageIds,
         NuGetVersion version,
         NuGetContext nugetContext,
-        ExperimentsManager experimentsManager,
         ILogger logger,
         CancellationToken cancellationToken)
     {
@@ -31,7 +29,6 @@ internal static class DependencyFinder
                 projectPath,
                 framework,
                 packages,
-                experimentsManager,
                 logger);
             var updatedDependencies = new List<Dependency>();
             foreach (var dependency in dependencies)
