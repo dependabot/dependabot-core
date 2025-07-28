@@ -69,7 +69,7 @@ module Dependabot
         valid_releases = filter_valid_releases(releases)
         return nil if valid_releases.empty?
 
-        if is_cooldown_request_added?
+        if cooldown_request_added?
           valid_releases =  latest_version_resolver
                             .fetch_tag_and_release_date_helm_chart(valid_releases, repo_name, chart_name)
         end
@@ -93,7 +93,7 @@ module Dependabot
         Dependabot.logger.info("Found #{all_versions.length} versions for #{chart_name} in index.yaml")
 
         valid_versions = filter_valid_versions(all_versions)
-        if is_cooldown_request_added?
+        if cooldown_request_added?
           # Filter out versions that are in cooldown period
           valid_versions = latest_version_resolver.fetch_tag_and_release_date_helm_chart_index(
             index_url,
@@ -239,7 +239,7 @@ module Dependabot
         return nil unless tags && !tags.empty?
 
         valid_tags = filter_valid_versions(tags)
-        if is_cooldown_request_added?
+        if cooldown_request_added?
           # Filter out versions that are in cooldown period
           repo_url = repo_url.gsub("oci://", "")
           repo_url = repo_url + "/" + chart_name
@@ -318,7 +318,7 @@ module Dependabot
 
         Dependabot.logger.info("Delegating to Docker UpdateChecker for image: #{docker_dependency.name}")
 
-        docker_checker = if is_cooldown_request_added?
+        docker_checker = if cooldown_request_added?
                            Dependabot::UpdateCheckers.for_package_manager("docker").new(
                              dependency: docker_dependency,
                              dependency_files: dependency_files,
@@ -411,14 +411,14 @@ module Dependabot
       end
 
       sig { returns(T::Boolean) }
-      def is_cooldown_request_added?
+      def cooldown_request_added?
         # This is a simple check to see if user has put cooldown days.
         # If not set, then we aassume user does not want cooldown.
         # Since Helm does not support Semver versioning, So option left
         # for the user is to set cooldown default days.
         return false if update_cooldown.nil?
 
-        T.must(update_cooldown&.default_days) > 0
+        T.must(update_cooldown&.default_days).positive?
       end
 
       sig { returns(LatestVersionResolver) }
