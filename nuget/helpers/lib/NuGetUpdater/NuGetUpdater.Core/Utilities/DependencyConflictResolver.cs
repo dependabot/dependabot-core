@@ -460,7 +460,7 @@ public class PackageManager
                             string currentVersionString = parent.CurrentVersion;
                             NuGetVersion currentVersionParent = NuGetVersion.Parse(currentVersionString);
 
-                            var result = await VersionFinder.GetVersionsAsync([projectFramework], parent.PackageName, currentVersionParent, nugetContext, logger, CancellationToken.None);
+                            var result = await VersionFinder.GetVersionsByNameAsync([projectFramework], parent.PackageName, currentVersionParent, nugetContext, logger, CancellationToken.None);
                             var versions = result.GetVersions();
                             NuGetVersion latestVersion = versions.Where(v => !v.IsPrerelease).Max();
 
@@ -550,7 +550,7 @@ public class PackageManager
         NuGetContext nugetContext = new NuGetContext(Path.GetDirectoryName(projectPath));
         var projectFramework = NuGetFramework.Parse(targetFramework);
 
-        var result = await VersionFinder.GetVersionsAsync([projectFramework], possibleParent.PackageName, CurrentVersion, nugetContext, logger, CancellationToken.None);
+        var result = await VersionFinder.GetVersionsByNameAsync([projectFramework], possibleParent.PackageName, CurrentVersion, nugetContext, logger, CancellationToken.None);
         var versions = result.GetVersions();
 
         // If there are no versions

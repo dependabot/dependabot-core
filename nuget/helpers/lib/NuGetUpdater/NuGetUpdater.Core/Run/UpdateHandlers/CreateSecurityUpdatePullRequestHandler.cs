@@ -67,7 +67,7 @@ internal class CreateSecurityUpdatePullRequestHandler : IUpdateHandler
             {
                 var dependencyName = dependencyGroupToUpdate.Key;
                 var vulnerableCandidateDependenciesToUpdate = dependencyGroupToUpdate.Value
-                    .Select(o => (o.ProjectPath, o.Dependency, RunWorker.GetDependencyInfo(job, o.Dependency)))
+                    .Select(o => (o.ProjectPath, o.Dependency, RunWorker.GetDependencyInfo(job, o.Dependency, allowCooldown: false)))
                     .Where(set => set.Item3.IsVulnerable)
                     .ToArray();
                 var vulnerableDependenciesToUpdate = vulnerableCandidateDependenciesToUpdate
@@ -161,7 +161,7 @@ internal class CreateSecurityUpdatePullRequestHandler : IUpdateHandler
             {
                 var commitMessage = PullRequestTextGenerator.GetPullRequestCommitMessage(job, [.. updateOperationsPerformed], null);
                 var prTitle = PullRequestTextGenerator.GetPullRequestTitle(job, [.. updateOperationsPerformed], null);
-                var prBody = PullRequestTextGenerator.GetPullRequestBody(job, [.. updateOperationsPerformed], null);
+                var prBody = await PullRequestTextGenerator.GetPullRequestBodyAsync(job, [.. updateOperationsPerformed], [.. updatedDependencies], experimentsManager);
                 await apiHandler.CreatePullRequest(new CreatePullRequest()
                 {
                     Dependencies = [.. updatedDependencies],

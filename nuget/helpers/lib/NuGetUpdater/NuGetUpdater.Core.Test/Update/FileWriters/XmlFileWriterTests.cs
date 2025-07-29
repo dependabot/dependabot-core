@@ -663,6 +663,40 @@ public class XmlFileWriterTests : FileWriterTestsBase
     }
 
     [Fact]
+    public async Task MultiDependency_SingleFile_UpdateOnePackage_PinAnotherPackage()
+    {
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="Some.Dependency" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: [
+                "Some.Dependency/1.0.0",
+                "Transitive.Dependency/3.0.0"
+            ],
+            requiredDependencyStrings: [
+                "Some.Dependency/2.0.0",
+                "Transitive.Dependency/4.0.0",
+            ],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="Some.Dependency" Version="2.0.0" />
+                        <PackageReference Include="Transitive.Dependency" Version="4.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
     public async Task MultiDependency_SingleFile_SomeAlreadyUpToDate_FromXml()
     {
         // this test simulates a previous pass that updated `Some.Dependency` and now a subsequent pass is attempting that again without up-to-date discovery
@@ -1615,6 +1649,57 @@ public class XmlFileWriterTests : FileWriterTestsBase
             ],
             initialProjectDependencyStrings: ["Some.Package/1.0.0"],
             requiredDependencyStrings: ["Some.Package/2.0.0"]
+        );
+    }
+
+    [Fact]
+    public async Task XmlDeclarationIsRetained()
+    {
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <?xml version="1.0" encoding="utf-8"?>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <Import Project="versions.props" />
+                      <ItemGroup>
+                        <PackageReference Include="Ignored.Dependency" Version="7.0.0" />
+                        <PackageReference Include="Some.Dependency" Version="$(SomeDependencyVersion)" />
+                        <PackageReference Include="Some.Other.Dependency" Version="8.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("versions.props", """
+                    <?xml version="1.0" encoding="utf-8"?>
+                    <Project>
+                      <PropertyGroup>
+                        <SomeDependencyVersion>1.0.0</SomeDependencyVersion>
+                      </PropertyGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/2.0.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <?xml version="1.0" encoding="utf-8"?>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <Import Project="versions.props" />
+                      <ItemGroup>
+                        <PackageReference Include="Ignored.Dependency" Version="7.0.0" />
+                        <PackageReference Include="Some.Dependency" Version="$(SomeDependencyVersion)" />
+                        <PackageReference Include="Some.Other.Dependency" Version="8.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("versions.props", """
+                    <?xml version="1.0" encoding="utf-8"?>
+                    <Project>
+                      <PropertyGroup>
+                        <SomeDependencyVersion>2.0.0</SomeDependencyVersion>
+                      </PropertyGroup>
+                    </Project>
+                    """)
+            ]
         );
     }
 }

@@ -126,9 +126,9 @@ public class RefreshGroupUpdatePullRequestHandlerTests : UpdateHandlersTestsBase
                         }
                     ],
                     BaseCommitSha = "TEST-COMMIT-SHA",
-                    CommitMessage = RunWorkerTests.TestPullRequestCommitMessage,
-                    PrTitle = RunWorkerTests.TestPullRequestTitle,
-                    PrBody = RunWorkerTests.TestPullRequestBody,
+                    CommitMessage = EndToEndTests.TestPullRequestCommitMessage,
+                    PrTitle = EndToEndTests.TestPullRequestTitle,
+                    PrBody = EndToEndTests.TestPullRequestBody,
                 },
                 new MarkAsProcessed("TEST-COMMIT-SHA"),
             ]
@@ -280,9 +280,9 @@ public class RefreshGroupUpdatePullRequestHandlerTests : UpdateHandlersTestsBase
                         }
                     ],
                     BaseCommitSha = "TEST-COMMIT-SHA",
-                    CommitMessage = RunWorkerTests.TestPullRequestCommitMessage,
-                    PrTitle = RunWorkerTests.TestPullRequestTitle,
-                    PrBody = RunWorkerTests.TestPullRequestBody,
+                    CommitMessage = EndToEndTests.TestPullRequestCommitMessage,
+                    PrTitle = EndToEndTests.TestPullRequestTitle,
+                    PrBody = EndToEndTests.TestPullRequestBody,
                 },
                 new MarkAsProcessed("TEST-COMMIT-SHA"),
             ]
@@ -435,9 +435,9 @@ public class RefreshGroupUpdatePullRequestHandlerTests : UpdateHandlersTestsBase
                         }
                     ],
                     BaseCommitSha = "TEST-COMMIT-SHA",
-                    CommitMessage = RunWorkerTests.TestPullRequestCommitMessage,
-                    PrTitle = RunWorkerTests.TestPullRequestTitle,
-                    PrBody = RunWorkerTests.TestPullRequestBody,
+                    CommitMessage = EndToEndTests.TestPullRequestCommitMessage,
+                    PrTitle = EndToEndTests.TestPullRequestTitle,
+                    PrBody = EndToEndTests.TestPullRequestBody,
                 },
                 new MarkAsProcessed("TEST-COMMIT-SHA"),
             ]
@@ -672,9 +672,9 @@ public class RefreshGroupUpdatePullRequestHandlerTests : UpdateHandlersTestsBase
                         }
                     ],
                     BaseCommitSha = "TEST-COMMIT-SHA",
-                    CommitMessage = RunWorkerTests.TestPullRequestCommitMessage,
-                    PrTitle = RunWorkerTests.TestPullRequestTitle,
-                    PrBody = RunWorkerTests.TestPullRequestBody,
+                    CommitMessage = EndToEndTests.TestPullRequestCommitMessage,
+                    PrTitle = EndToEndTests.TestPullRequestTitle,
+                    PrBody = EndToEndTests.TestPullRequestBody,
                     DependencyGroup = "test_group",
                 },
                 new MarkAsProcessed("TEST-COMMIT-SHA"),
@@ -806,9 +806,9 @@ public class RefreshGroupUpdatePullRequestHandlerTests : UpdateHandlersTestsBase
                         }
                     ],
                     BaseCommitSha = "TEST-COMMIT-SHA",
-                    CommitMessage = RunWorkerTests.TestPullRequestCommitMessage,
-                    PrTitle = RunWorkerTests.TestPullRequestTitle,
-                    PrBody = RunWorkerTests.TestPullRequestBody,
+                    CommitMessage = EndToEndTests.TestPullRequestCommitMessage,
+                    PrTitle = EndToEndTests.TestPullRequestTitle,
+                    PrBody = EndToEndTests.TestPullRequestBody,
                     DependencyGroup = "test_group",
                 },
                 new MarkAsProcessed("TEST-COMMIT-SHA"),

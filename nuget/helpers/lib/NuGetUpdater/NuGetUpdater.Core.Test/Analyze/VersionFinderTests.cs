@@ -1,6 +1,8 @@
 using System.Collections.Immutable;
+using System.Text;
 using System.Text.Json;
 
+using NuGet;
 using NuGet.Frameworks;
 using NuGet.Versioning;
 
@@ -218,7 +220,7 @@ public class VersionFinderTests : TestBase
         var currentVersion = NuGetVersion.Parse("1.0.0");
         var logger = new TestLogger();
         var nugetContext = new NuGetContext(tempDir.DirectoryPath);
-        var versionResult = await VersionFinder.GetVersionsAsync(projectTfms, packageId, currentVersion, nugetContext, logger, CancellationToken.None);
+        var versionResult = await VersionFinder.GetVersionsByNameAsync(projectTfms, packageId, currentVersion, nugetContext, logger, CancellationToken.None);
         var versions = versionResult.GetVersions();
 
         // assert
@@ -286,7 +288,7 @@ public class VersionFinderTests : TestBase
         var nugetContext = new NuGetContext(tempDir.DirectoryPath);
         var exception = await Assert.ThrowsAsync<BadResponseException>(async () =>
         {
-            await VersionFinder.GetVersionsAsync([tfm], dependencyInfo, nugetContext, logger, CancellationToken.None);
+            await VersionFinder.GetVersionsAsync([tfm], dependencyInfo, DateTimeOffset.UtcNow, nugetContext, logger, CancellationToken.None);
         });
         var error = JobErrorBase.ErrorFromException(exception, "TEST-JOB-ID", tempDir.DirectoryPath);
 
@@ -328,11 +330,132 @@ public class VersionFinderTests : TestBase
         var nugetContext = new NuGetContext(tempDir.DirectoryPath);
 
         // act
-        var versionResult = await VersionFinder.GetVersionsAsync([tfm], dependencyInfo, nugetContext, logger, CancellationToken.None);
+        var versionResult = await VersionFinder.GetVersionsAsync([tfm], dependencyInfo, DateTimeOffset.UtcNow, nugetContext, logger, CancellationToken.None);
         var versions = versionResult.GetVersions();
 
         // assert
         var actualVersions = versions.Select(v => v.ToString()).OrderBy(v => v).ToArray();
         AssertEx.Equal(expectedVersions, actualVersions);
+    }
+
+    [Fact]
+    public async Task CooldownValuesAreHonored()
+    {
+        // updating from version 1.0.0 only to 1.2.0 because the cooldown settings prohibit major updates
+
+        // arrange
+        var tfm = "net8.0";
+        var packageVersionsAndDates = new[]
+        {
+            // major = month, minor = day, patch = hour
+            ("1.1.0", "\"2025-01-01T00:00:00.00+00:00\""),
+            ("1.1.1", "\"2025-01-01T01:00:00.00+00:00\""),
+            ("1.2.0", "\"2025-01-02T00:00:00.00+00:00\""),
+            ("1.3.0", "null"),
+            ("2.1.0", "\"2025-02-01T00:00:00.00+00:00\""),
+        };
+        var cooldown = new Cooldown()
+        {
+            DefaultDays = 1,
+            SemVerMajorDays = 10,
+            SemVerMinorDays = 1,
+            SemVerPatchDays = 1,
+            Include = ["Some.Package"],
+        };
+        // can only update a major version if 10 days have passed since the publish date, but it's currently only 7 days after the publish date
+        var currentTime = DateTimeOffset.Parse(packageVersionsAndDates.Last().Item2.Trim('"')).AddDays(7);
+        using var http = TestHttpServer.CreateTestServer(url =>
+        {
+            var uri = new Uri(url, UriKind.Absolute);
+            var baseUrl = $"{uri.Scheme}://{uri.Host}:{uri.Port}";
+            return uri.PathAndQuery switch
+            {
+                "/index.json" => (200, Encoding.UTF8.GetBytes($$"""
+                    {
+                        "version": "3.0.0",
+                        "resources": [
+                            {
+                                "@id": "{{baseUrl}}/base",
+                                "@type": "PackageBaseAddress/3.0.0"
+                            },
+                            {
+                                "@id": "{{baseUrl}}/query",
+                                "@type": "SearchQueryService"
+                            },
+                            {
+                                "@id": "{{baseUrl}}/registrations",
+                                "@type": "RegistrationsBaseUrl/3.6.0"
+                            }
+                        ]
+                    }
+                    """)),
+                "/base/some.package/index.json" => (200, Encoding.UTF8.GetBytes($$"""
+                    {
+                      "versions": [{{string.Join(", ", packageVersionsAndDates.Select(d => $"\"{d.Item1}\""))}}]
+                    }
+                    """)),
+                "/base/some.package/1.1.0/some.package.1.1.0.nupkg" => (200, MockNuGetPackage.CreateSimplePackage("Some.Package", "1.1.0", tfm).GetZipStream().ReadAllBytes()),
+                "/base/some.package/1.1.1/some.package.1.1.1.nupkg" => (200, MockNuGetPackage.CreateSimplePackage("Some.Package", "1.1.1", tfm).GetZipStream().ReadAllBytes()),
+                "/base/some.package/1.2.0/some.package.1.2.0.nupkg" => (200, MockNuGetPackage.CreateSimplePackage("Some.Package", "1.2.0", tfm).GetZipStream().ReadAllBytes()),
+                "/base/some.package/1.3.0/some.package.1.3.0.nupkg" => (200, MockNuGetPackage.CreateSimplePackage("Some.Package", "1.3.0", tfm).GetZipStream().ReadAllBytes()),
+                "/base/some.package/2.1.0/some.package.2.1.0.nupkg" => (200, MockNuGetPackage.CreateSimplePackage("Some.Package", "2.1.0", tfm).GetZipStream().ReadAllBytes()),
+                "/registrations/some.package/index.json" => (200, Encoding.UTF8.GetBytes($$"""
+                    {
+                      "count": 1,
+                      "items": [
+                        {
+                          "count": {{packageVersionsAndDates.Length}},
+                          "lower": "{{packageVersionsAndDates.First().Item1}}",
+                          "upper": "{{packageVersionsAndDates.Last().Item1}}",
+                          "items": [
+                            {{string.Join(", ", packageVersionsAndDates.Select(d => $$"""
+                                {
+                                  "catalogEntry": {
+                                    "id": "Some.Package",
+                                    "version": "{{d.Item1}}",
+                                    "published": {{d.Item2}}
+                                  }
+                                }
+                                """))}}
+                          ]
+                        }
+                      ]
+                    }
+                    """)),
+                _ => (404, Encoding.UTF8.GetBytes("{}"))
+            };
+        });
+        var feedUrl = $"{http.BaseUrl.TrimEnd('/')}/index.json";
+        using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(
+            ("NuGet.Config", $"""
+                <configuration>
+                  <packageSources>
+                    <clear />
+                    <add key="private_feed" value="{feedUrl}" allowInsecureConnections="true" />
+                  </packageSources>
+                </configuration>
+                """)
+        );
+
+        // act
+        var currentVersion = NuGetVersion.Parse("1.0.0");
+        var dependencyInfo = new DependencyInfo()
+        {
+            Name = "Some.Package",
+            Version = currentVersion.ToString(),
+            IsVulnerable = false,
+            Cooldown = cooldown,
+        };
+        var logger = new TestLogger();
+        var nugetContext = new NuGetContext(tempDir.DirectoryPath);
+        var versionResult = await VersionFinder.GetVersionsAsync([NuGetFramework.Parse(tfm)], dependencyInfo, currentVersion, currentTime, nugetContext, logger, CancellationToken.None);
+        var versions = versionResult.GetVersions();
+
+        // assert
+        // including 1.3.0 because the publish date was null
+        // not including 2.1.0 because the major update isn't allowed yet
+        var expected = new[] { "1.1.0", "1.1.1", "1.2.0", "1.3.0" };
+        var actual = versions.Select(v => v.ToString()).ToArray();
+        AssertEx.Equal(expected, actual);
     }
 }

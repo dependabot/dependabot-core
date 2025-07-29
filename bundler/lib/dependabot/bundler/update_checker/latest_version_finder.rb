@@ -59,17 +59,15 @@ module Dependabot
 
         sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
         def latest_version_details
-          @latest_version_details ||= if cooldown_enabled?
-                                        latest_version = fetch_latest_version(language_version: nil)
-                                        latest_version ? { version: latest_version } : nil
-                                      else
-                                        fetch_latest_version_details
-                                      end
+          @latest_version_details ||= begin
+            latest_version = fetch_latest_version(language_version: nil)
+            latest_version ? { version: latest_version } : nil
+          end
         end
 
         sig { override.returns(T::Boolean) }
         def cooldown_enabled?
-          Dependabot::Experiments.enabled?(:enable_cooldown_for_bundler)
+          true
         end
 
         sig { override.returns(T.nilable(T::Array[Dependabot::Package::PackageRelease])) }
@@ -85,21 +83,6 @@ module Dependabot
         end
 
         private
-
-        sig { returns(T.nilable(T::Hash[Symbol, Dependabot::Version])) }
-        def fetch_latest_version_details
-          return dependency_source.latest_git_version_details if dependency_source.git?
-
-          relevant_versions = releases_from_dependency_source
-          relevant_versions = filter_prerelease_versions(relevant_versions)
-          relevant_versions = filter_ignored_versions(relevant_versions)
-
-          return if relevant_versions.empty?
-
-          release = relevant_versions.max_by(&:version)
-
-          { version: release&.version }
-        end
 
         sig do
           params(language_version: T.nilable(T.any(String, Dependabot::Version)))
