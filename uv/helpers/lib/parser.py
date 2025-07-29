@@ -77,15 +77,15 @@ def parse_pep621_dependencies(pyproject_path):
                 )
                 dependencies.extend(group_dependencies)
 
-        if 'build-system' in project_toml:
-            build_system_section = project_toml['build-system']
-            if 'requires' in build_system_section:
-                build_system_dependencies = parse_toml_section_pep621_dependencies(
-                    pyproject_path,
-                    build_system_section['requires']
-                )
-                dependencies.extend(build_system_dependencies)
-                
+    if 'build-system' in project_toml:
+        build_system_section = project_toml['build-system']
+        if 'requires' in build_system_section:
+            build_system_dependencies = parse_toml_section_pep621_dependencies(
+                pyproject_path,
+                build_system_section['requires']
+            )
+            dependencies.extend(build_system_dependencies)
+            
         # Parse UV sources for path dependencies
         if (
             'tool' in project_toml
