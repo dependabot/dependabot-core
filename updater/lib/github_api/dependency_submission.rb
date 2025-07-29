@@ -123,21 +123,14 @@ module GithubApi
               # This should be set in the parsers when we add capabilities to track immediate
               # dependencies.
               relationship: "direct",
-              # TODO: Replace scope placeholder
-              #
-              # Dependabot::Dependency objects do include the `groups` a dependency is included in
-              # that we could derive this from, but since group conventions vary by ecosystem
-              # we should probably determine this in the parser and set the scope there.
-              scope: "runtime",
+              scope: scope_for(dep),
               dependencies: [
                 # TODO: Populate direct child dependencies
                 #
                 # Dependabot::Dependency objects do not include immediate dependencies,
                 # this is a capability each parser will need to have added.
               ],
-              metadata: {
-                groups: dep.requirements.map { |r| r[:groups] }.flatten.join(", ")
-              }
+              metadata: { }
             }
           end
         }
@@ -191,6 +184,14 @@ module GithubApi
         "elm"
       else
         "generic"
+      end
+    end
+
+    def scope_for(dep)
+      if dep.production?
+        "runtime"
+      else
+        "development"
       end
     end
   end
