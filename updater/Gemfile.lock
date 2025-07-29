@@ -132,13 +132,6 @@ PATH
       dependabot-common (= 0.323.0)
 
 PATH
-  remote: ../nuget
-  specs:
-    dependabot-nuget (0.323.0)
-      dependabot-common (= 0.323.0)
-      rubyzip (>= 2.3.2, < 3.0)
-
-PATH
   remote: ../pub
   specs:
     dependabot-pub (0.323.0)
@@ -477,7 +470,6 @@ GEM
       rubocop (>= 1)
     ruby-progressbar (1.13.0)
     ruby2_keywords (0.0.5)
-    rubyzip (2.3.2)
     sawyer (0.9.2)
       addressable (>= 2.3.5)
       faraday (>= 0.17.3, < 3)
@@ -552,7 +544,6 @@ DEPENDENCIES
   dependabot-hex!
   dependabot-maven!
   dependabot-npm_and_yarn!
-  dependabot-nuget!
   dependabot-pub!
   dependabot-python!
   dependabot-rust_toolchain!
@@ -634,7 +625,6 @@ CHECKSUMS
   dependabot-hex (0.323.0)
   dependabot-maven (0.323.0)
   dependabot-npm_and_yarn (0.323.0)
-  dependabot-nuget (0.323.0)
   dependabot-pub (0.323.0)
   dependabot-python (0.323.0)
   dependabot-rust_toolchain (0.323.0)
@@ -746,7 +736,6 @@ CHECKSUMS
   rubocop-sorbet (0.8.7) sha256=670b7478425543e808558c5aa9acafeb5c9137af9ac8d3541b69d3d18ea4726b
   ruby-progressbar (1.13.0) sha256=80fc9c47a9b640d6834e0dc7b3c94c9df37f08cb072b7761e4a71e22cff29b33
   ruby2_keywords (0.0.5) sha256=ffd13740c573b7301cf7a2e61fc857b2a8e3d3aff32545d6f8300d8bae10e3ef
-  rubyzip (2.3.2) sha256=3f57e3935dc2255c414484fbf8d673b4909d8a6a57007ed754dde39342d2373f
   sawyer (0.9.2) sha256=fa3a72d62a4525517b18857ddb78926aab3424de0129be6772a8e2ba240e7aca
   sentry-opentelemetry (5.23.0) sha256=0d22925fecc1d248e293c5a2b2a97db9da2ab40d55e14f333f9148a855241ca3
   sentry-ruby (5.23.0) sha256=8e8bb2f9a56a267a50fcba947f2ae131b6542f45fc3bb5764c2c25ba68f385cc
