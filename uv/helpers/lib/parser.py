@@ -77,14 +77,36 @@ def parse_pep621_dependencies(pyproject_path):
                 )
                 dependencies.extend(group_dependencies)
 
-    if 'build-system' in project_toml:
-        build_system_section = project_toml['build-system']
-        if 'requires' in build_system_section:
-            build_system_dependencies = parse_toml_section_pep621_dependencies(
-                pyproject_path,
-                build_system_section['requires']
-            )
-            dependencies.extend(build_system_dependencies)
+        if 'build-system' in project_toml:
+            build_system_section = project_toml['build-system']
+            if 'requires' in build_system_section:
+                build_system_dependencies = parse_toml_section_pep621_dependencies(
+                    pyproject_path,
+                    build_system_section['requires']
+                )
+                dependencies.extend(build_system_dependencies)
+                
+        # Parse UV sources for path dependencies
+        if (
+            'tool' in project_toml
+            and 'uv' in project_toml['tool']
+            and 'sources' in project_toml['tool']['uv']
+        ):
+            uv_sources = project_toml['tool']['uv']['sources']
+            for dep_name, source_config in uv_sources.items():
+                if isinstance(source_config, dict) and 'path' in source_config:
+                    # Add path dependency info
+                    # but don't parse as regular dependency
+                    dependencies.append({
+                        "name": dep_name,
+                        "version": None,
+                        "markers": None,
+                        "file": pyproject_path,
+                        "requirement": None,
+                        "extras": [],
+                        "path_dependency": True,
+                        "path": source_config['path']
+                    })
 
     return json.dumps({"result": dependencies})
 

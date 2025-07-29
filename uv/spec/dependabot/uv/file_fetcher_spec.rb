@@ -797,5 +797,73 @@ RSpec.describe Dependabot::Uv::FileFetcher do
           .to raise_error(Dependabot::DependencyFileNotFound)
       end
     end
+
+
+    context "with UV sources path dependencies" do
+      describe "#uv_sources_path_dependencies" do
+        let(:pyproject_content) { fixture("pyproject_files", "uv_path_dependencies.toml") }
+        let(:pyproject_file) do
+          Dependabot::DependencyFile.new(
+            name: "pyproject.toml",
+            content: pyproject_content
+          )
+        end
+
+        before do
+          allow(file_fetcher_instance).to receive(:pyproject).and_return(pyproject_file)
+        end
+
+        it "detects UV sources path dependencies" do
+          path_deps = file_fetcher_instance.send(:uv_sources_path_dependencies)
+          expect(path_deps).to contain_exactly(
+            { name: "protos", path: "../protos", file: "pyproject.toml" },
+            { name: "another-local", path: "local-lib", file: "pyproject.toml" }
+          )
+        end
+
+        it "includes UV sources in path_dependencies method" do
+          # Mock other path dependency methods to return empty arrays for isolation
+          allow(file_fetcher_instance).to receive_messages(requirement_txt_path_dependencies: [],
+                                                           requirement_in_path_dependencies: [])
+
+          all_path_deps = file_fetcher_instance.send(:path_dependencies)
+          expect(all_path_deps).to contain_exactly(
+            { name: "protos", path: "../protos", file: "pyproject.toml" },
+            { name: "another-local", path: "local-lib", file: "pyproject.toml" }
+          )
+        end
+
+        context "when pyproject.toml has no UV sources" do
+          let(:pyproject_content) { fixture("pyproject_files", "uv_simple.toml") }
+
+          it "returns empty array for UV sources path dependencies" do
+            path_deps = file_fetcher_instance.send(:uv_sources_path_dependencies)
+            expect(path_deps).to be_empty
+          end
+        end
+
+        context "when UV sources contain non-path dependencies" do
+          let(:pyproject_content) { fixture("pyproject_files", "uv_mixed_sources.toml") }
+
+          it "only detects path-based UV sources" do
+            path_deps = file_fetcher_instance.send(:uv_sources_path_dependencies)
+            expect(path_deps).to contain_exactly(
+              { name: "local-package", path: "./local-package", file: "pyproject.toml" }
+            )
+          end
+        end
+
+        context "when pyproject.toml is nil" do
+          before do
+            allow(file_fetcher_instance).to receive(:pyproject).and_return(nil)
+          end
+
+          it "returns empty array" do
+            path_deps = file_fetcher_instance.send(:uv_sources_path_dependencies)
+            expect(path_deps).to be_empty
+          end
+        end
+      end
+    end
   end
 end
