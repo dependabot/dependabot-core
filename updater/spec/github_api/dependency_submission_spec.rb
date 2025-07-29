@@ -160,11 +160,11 @@ RSpec.describe GithubApi::DependencySubmission do
       expect(rspec[:package_url]).to eql("pkg:gem/rspec@3.13.1")
       expect(capybara[:package_url]).to eql("pkg:gem/capybara@3.40.0")
 
-      # Check we are surfacing any groups assigned as metadata
-      expect(sinatra[:metadata][:groups]).to eq("default")
-      expect(pry[:metadata][:groups]).to eq("development")
-      expect(rspec[:metadata][:groups]).to eq("test")
-      expect(capybara[:metadata][:groups]).to eq("development, test")
+      # Check we are surfacing groups as runtime/development scope
+      expect(sinatra[:scope]).to eq("runtime")
+      expect(pry[:scope]).to eq("development")
+      expect(rspec[:scope]).to eq("development")
+      expect(capybara[:scope]).to eq("development")
     end
   end
 end
