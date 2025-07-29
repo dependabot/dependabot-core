@@ -187,7 +187,7 @@ module Dependabot
           error.message.include?("Content-Length mismatch")
         end
 
-        sig { returns(String) }
+        sig { returns(T.nilable(String)) }
         def run_update_checker
           SharedHelpers.with_git_configured(credentials: credentials) do
             SharedHelpers.run_helper_subprocess(
