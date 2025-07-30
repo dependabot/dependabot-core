@@ -62,8 +62,7 @@ module Dependabot
       def go_env
         return @go_env if defined?(@go_env)
 
-        @go_env = T.let(fetch_file_if_present("go.env"), T.nilable(Dependabot::DependencyFile))
-        @go_env.support_file = true if @go_env
+        @go_env = T.let(fetch_support_file("go.env"), T.nilable(Dependabot::DependencyFile))
         @go_env
       end
     end
