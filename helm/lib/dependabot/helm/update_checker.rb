@@ -412,7 +412,13 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def cooldown_enabled?
-        Dependabot::Experiments.enabled?(:enable_cooldown_for_helm)
+        # This is a simple check to see if user has put cooldown days.
+        # If not set, then we aassume user does not want cooldown.
+        # Since Helm does not support Semver versioning, So option left
+        # for the user is to set cooldown default days.
+        return false if update_cooldown.nil?
+
+        T.must(update_cooldown&.default_days).positive?
       end
 
       sig { returns(LatestVersionResolver) }
