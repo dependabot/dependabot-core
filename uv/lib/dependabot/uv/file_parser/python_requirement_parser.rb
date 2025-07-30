@@ -107,7 +107,7 @@ module Dependabot
         end
 
         def requirements_in_file_matcher
-          @requirements_in_file_matcher ||= RequiremenstFileMatcher.new(pip_compile_files)
+          @requirements_in_file_matcher ||= RequirementsFileMatcher.new(pip_compile_files)
         end
 
         def requirement_class
