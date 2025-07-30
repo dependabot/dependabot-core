@@ -48,9 +48,9 @@ module Dependabot
                    .select { |l| l.include?(";") && l.include?("python") }
                    .filter_map do |line|
                      match = line.match(/python_version\s*[<>=!]+\s*["']([^"']+)["']/)
-                     match&.captures&.first
+                     version = match&.captures&.first
+                     version if version && valid_requirement?(version)
                    end
-                   .select { |r| valid_requirement?(r) }
           end
         end
 
