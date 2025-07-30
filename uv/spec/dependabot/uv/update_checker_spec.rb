@@ -317,7 +317,7 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
             instance_double(described_class::PipVersionResolver)
           allow(described_class::PipVersionResolver).to receive(:new)
             .and_return(dummy_resolver)
-          allow(dummy_resolver)
+          expect(dummy_resolver) # rubocop:disable RSpec/StubbedMock
             .to receive(:latest_resolvable_version)
             .and_return(Gem::Version.new("2.5.0"))
           expect(checker.latest_resolvable_version)
@@ -333,7 +333,7 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
             instance_double(described_class::PipVersionResolver)
           allow(described_class::PipVersionResolver).to receive(:new)
             .and_return(dummy_resolver)
-          allow(dummy_resolver)
+          expect(dummy_resolver) # rubocop:disable RSpec/StubbedMock
             .to receive(:latest_resolvable_version)
             .and_return(Gem::Version.new("2.5.0"))
           expect(checker.latest_resolvable_version)
