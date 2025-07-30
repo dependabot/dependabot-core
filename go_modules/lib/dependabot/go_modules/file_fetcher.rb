@@ -41,6 +41,7 @@ module Dependabot
           fetched_files = go_mod ? [go_mod] : []
           # Fetch the (optional) go.sum
           fetched_files << T.must(go_sum) if go_sum
+          fetched_files << T.must(go_env) if go_env
           fetched_files
         end
       end
@@ -55,6 +56,15 @@ module Dependabot
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def go_sum
         @go_sum ||= T.let(fetch_file_if_present("go.sum"), T.nilable(Dependabot::DependencyFile))
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def go_env
+        return @go_env if defined?(@go_env)
+
+        @go_env = T.let(fetch_file_if_present("go.env"), T.nilable(Dependabot::DependencyFile))
+        @go_env.support_file = true if @go_env
+        @go_env
       end
     end
   end

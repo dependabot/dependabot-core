@@ -20,6 +20,18 @@ module Dependabot
     class FileParser < Dependabot::FileParsers::Base
       extend T::Sig
 
+      sig do
+        params(dependency_files: T::Array[Dependabot::DependencyFile], source: T.nilable(Dependabot::Source),
+               repo_contents_path: T.nilable(String), credentials: T::Array[Dependabot::Credential],
+               reject_external_code: T::Boolean, options: T::Hash[Symbol, T.untyped]).void
+      end
+      def initialize(dependency_files:, source: nil, repo_contents_path: nil,
+                     credentials: [], reject_external_code: false, options: {})
+        super
+
+        set_go_environment_variables
+      end
+
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
         dependency_set = Dependabot::FileParsers::Base::DependencySet.new
@@ -49,6 +61,36 @@ module Dependabot
       end
 
       private
+
+      sig { void }
+      def set_go_environment_variables
+        # If a go.env file is present, we set the GOENV environment variable
+        # so that the Go toolchain can use it, this is useful for setting
+        # GOPRIVATE and GONOSUMDB for example.
+        if go_env
+          T.must(go_env)
+          File.write(T.must(go_env).name, T.must(go_env).content)
+          go_env_path = Pathname.new(T.must(go_env).name).realpath.to_s
+          ENV["GOENV"] = go_env_path
+        end
+
+        # We set the GOPROXY environment variable if there are any
+        # goproxy_server credentials, from here the Go toolchain will
+        # use the configured proxy to fetch dependencies.
+        goproxy_credentials = T.let(
+          credentials.select { |cred| cred["type"] == "goproxy_server" },
+          T::Array[Dependabot::Credential]
+        )
+
+        # if there are no goproxy credentials, or if the go.env file already
+        # contains a GOPROXY variable, we don't set it, because otherwise this
+        # would override the value in the go.env file.
+        return if goproxy_credentials.empty?
+        return if go_env && T.must(go_env).content&.include?("GOPROXY")
+
+        urls = goproxy_credentials.filter_map { |cred| cred["url"] }
+        ENV["GOPROXY"] = "#{urls.join(',')},direct"
+      end
 
       sig { returns(Ecosystem::VersionManager) }
       def package_manager
@@ -83,6 +125,11 @@ module Dependabot
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def go_mod
         @go_mod ||= T.let(get_original_file("go.mod"), T.nilable(Dependabot::DependencyFile))
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def go_env
+        @go_env ||= T.let(get_original_file("go.env"), T.nilable(Dependabot::DependencyFile))
       end
 
       sig { override.void }

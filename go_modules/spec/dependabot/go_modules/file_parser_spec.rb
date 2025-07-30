@@ -30,12 +30,60 @@ RSpec.describe Dependabot::GoModules::FileParser do
   let(:files) { [go_mod] }
   let(:parser) { described_class.new(dependency_files: files, source: source, repo_contents_path: repo_contents_path) }
 
+  after do
+    # Reset the environment variable after each test to avoid side effects
+    ENV.delete("GOENV")
+    ENV.delete("GOPROXY")
+  end
+
   it_behaves_like "a dependency file parser"
 
   it "requires a go.mod to be present" do
     expect do
       described_class.new(dependency_files: [], source: source)
     end.to raise_error(RuntimeError)
+  end
+
+  describe "#initialize" do
+    it "configures the Go toolchain with the values from the go.env file" do
+      go_env = Dependabot::DependencyFile.new(
+        name: "go.env",
+        content: "GOPRIVATE=github.com/dependabot-fixtures",
+        directory: directory
+      )
+      described_class.new(dependency_files: [go_mod, go_env], source: source)
+      expect(`go env GOPRIVATE`.strip).to eq("github.com/dependabot-fixtures")
+    end
+
+    it "does not set the GOENV environment variable if no go.env file is present" do
+      expect(ENV.fetch("GOENV", nil)).to be_nil
+    end
+
+    it "sets the GOPROXY environment variable if there are any goproxy_server credentials passed" do
+      credentials = [
+        Dependabot::Credential.new({
+          "type" => "goproxy_server",
+          "url" => "https://proxy.example.com"
+        })
+      ]
+      described_class.new(dependency_files: [go_mod], source: source, credentials: credentials)
+      expect(`go env GOPROXY`.strip).to eq("https://proxy.example.com,direct")
+    end
+
+    it "does not set the GOPROXY environment variable if there are no goproxy_server credentials" do
+      described_class.new(dependency_files: [go_mod], source: source)
+      expect(`go env GOPROXY`.strip).to eq("https://proxy.golang.org,direct")
+    end
+
+    it "does not override the GOPROXY environment variable if it is already set in the go.env file" do
+      go_env = Dependabot::DependencyFile.new(
+        name: "go.env",
+        content: "GOPROXY=https://proxy.example.com",
+        directory: directory
+      )
+      described_class.new(dependency_files: [go_mod, go_env], source: source)
+      expect(`go env GOPROXY`.strip).to eq("https://proxy.example.com")
+    end
   end
 
   describe "parse" do
