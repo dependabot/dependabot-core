@@ -26,7 +26,6 @@
 --ignore=hex/spec/
 --ignore=maven/spec/
 --ignore=npm_and_yarn/spec/
---ignore=nuget/spec/
 --ignore=pub/spec/
 --ignore=python/spec/
 --ignore=rust_toolchain/spec/
