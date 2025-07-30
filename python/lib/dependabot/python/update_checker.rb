@@ -20,6 +20,7 @@ module Dependabot
       require_relative "update_checker/poetry_version_resolver"
       require_relative "update_checker/pipenv_version_resolver"
       require_relative "update_checker/pip_compile_version_resolver"
+      require_relative "update_checker/pdm_version_resolver"
       require_relative "update_checker/pip_version_resolver"
       require_relative "update_checker/requirements_updater"
       require_relative "update_checker/latest_version_finder"
@@ -76,7 +77,7 @@ module Dependabot
           requirements: requirements,
           latest_resolvable_version: preferred_resolvable_version&.to_s,
           update_strategy: requirements_update_strategy,
-          has_lockfile: !(pipfile_lock || poetry_lock).nil?
+          has_lockfile: !(pipfile_lock || poetry_lock || pdm_lock).nil?
         ).updated_requirements
       end
 
@@ -121,6 +122,7 @@ module Dependabot
         when :pip_compile then pip_compile_version_resolver
         when :pipenv then pipenv_version_resolver
         when :poetry then poetry_version_resolver
+        when :pdm then pdm_version_resolver
         when :requirements then pip_version_resolver
         else raise "Unexpected resolver type #{resolver_type}"
         end
@@ -130,7 +132,7 @@ module Dependabot
         reqs = requirements
 
         # If there are no requirements then this is a sub-dependency. It
-        # must come from one of Pipenv, Poetry or pip-tools, and can't come
+        # must come from one of Pipenv, Poetry, PDM or pip-tools, and can't come
         # from the first two unless they have a lockfile.
         return subdependency_resolver if reqs.none?
 
@@ -150,6 +152,7 @@ module Dependabot
       def subdependency_resolver
         return :pipenv if pipfile_lock
         return :poetry if poetry_lock
+        return :pdm if pdm_lock
         return :pip_compile if pip_compile_files.any?
 
         raise "Claimed to be a sub-dependency, but no lockfile exists!"
@@ -157,6 +160,7 @@ module Dependabot
 
       def pyproject_resolver
         return :poetry if poetry_based?
+        return :pdm if pdm_based?
 
         :requirements
       end
@@ -179,6 +183,10 @@ module Dependabot
 
       def poetry_version_resolver
         @poetry_version_resolver ||= PoetryVersionResolver.new(**resolver_args)
+      end
+
+      def pdm_version_resolver
+        @pdm_version_resolver ||= PdmVersionResolver.new(**resolver_args)
       end
 
       def pip_version_resolver
@@ -265,6 +273,10 @@ module Dependabot
         updating_pyproject? && !poetry_details.nil?
       end
 
+      def pdm_based?
+        updating_pyproject? && !pdm_details.nil?
+      end
+
       def library?
         return false unless updating_pyproject?
 
@@ -330,12 +342,20 @@ module Dependabot
         dependency_files.find { |f| f.name == "poetry.lock" }
       end
 
+      def pdm_lock
+        dependency_files.find { |f| f.name == "pdm.lock" }
+      end
+
       def library_details
         @library_details ||= poetry_details || standard_details || build_system_details
       end
 
       def poetry_details
         @poetry_details ||= toml_content.dig("tool", "poetry")
+      end
+
+      def pdm_details
+        @pdm_details ||= toml_content.dig("tool", "pdm")
       end
 
       def standard_details

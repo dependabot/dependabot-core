@@ -1,0 +1,24 @@
+[project]
+name = "demo"
+version = "0.1.0"
+description = "Fixture project from https://github.com/pdm-project/tox-pdm"
+authors = [
+    {name = "Frost Ming", email = "mianghong@gmail.com"},
+]
+dependencies = [
+    "requests~=2.25",
+]
+requires-python = ">=3.8"
+license = {text = "MIT"}
+
+[project.optional-dependencies]
+lint = [
+    "flake8~=3.8",
+]
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+[tool.pdm.scripts]
+lint = "flake8 demo.py"
+lint-shell = {shell = "flake8 demo.py"}

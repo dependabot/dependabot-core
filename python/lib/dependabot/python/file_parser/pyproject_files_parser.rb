@@ -30,7 +30,8 @@ module Dependabot
           dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
           dependency_set += pyproject_dependencies if using_poetry? || using_pep621?
-          dependency_set += lockfile_dependencies if using_poetry? && lockfile
+          dependency_set += poetry_lock_dependencies if using_poetry? && poetry_lock
+          dependency_set += pdm_lock_dependencies if pdm_lock
 
           dependency_set
         end
@@ -73,12 +74,6 @@ module Dependabot
         sig { returns(Dependabot::FileParsers::Base::DependencySet) }
         def pep621_dependencies
           dependencies = Dependabot::FileParsers::Base::DependencySet.new
-
-          # PDM is not yet supported, so we want to ignore it for now because in
-          # the current state of things, going on would result in updating
-          # pyproject.toml but leaving pdm.lock out of sync, which is
-          # undesirable. Leave PDM alone until properly supported
-          return dependencies if using_pdm?
 
           parsed_pep621_dependencies.each do |dep|
             # If a requirement has a `<` or `<=` marker then updating it is
@@ -186,7 +181,34 @@ module Dependabot
         # requirements will be added when combining the DependencySet with
         # other DependencySets.
         sig { returns(Dependabot::FileParsers::Base::DependencySet) }
-        def lockfile_dependencies
+        def pdm_lock_dependencies
+          dependencies = Dependabot::FileParsers::Base::DependencySet.new
+
+          parsed_lockfile.fetch("package", []).each do |details|
+            next if details["url"]
+
+            name = normalise(details.fetch("name"))
+            req = "#{name}==#{details.fetch('version')}"
+            req << " ; #{details.fetch('marker')}" if details.key?("marker")
+            dependencies <<
+              Dependency.new(
+                name: name,
+                version: details.fetch("version"),
+                requirements: [],
+                package_manager: "pip",
+                subdependency_metadata: [{
+                  production: details.fetch("groups").include?("default"),
+                  groups: details.fetch("groups", []),
+                  req: req
+                }]
+              )
+          end
+
+          dependencies
+        end
+
+        sig { returns(Dependabot::FileParsers::Base::DependencySet) }
+        def poetry_lock_dependencies
           dependencies = Dependabot::FileParsers::Base::DependencySet.new
 
           source_types = %w(directory git url)
@@ -220,7 +242,7 @@ module Dependabot
         def parse_production_dependency_names
           SharedHelpers.in_a_temporary_directory do
             File.write(T.must(pyproject).name, T.must(pyproject).content)
-            File.write(lockfile.name, lockfile.content)
+            File.write(T.must(lockfile).name, T.must(lockfile).content)
 
             begin
               output = SharedHelpers.run_shell_command("pyenv exec poetry show --only main")
@@ -269,10 +291,10 @@ module Dependabot
         end
 
         sig { returns(T.untyped) }
-        def parsed_poetry_lock
-          @parsed_poetry_lock ||= T.let(TomlRB.parse(T.must(poetry_lock).content), T.untyped)
+        def parsed_lockfile
+          @parsed_lockfile ||= T.let(TomlRB.parse(lockfile&.content), T.untyped) if lockfile
         rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
-          raise Dependabot::DependencyFileNotParseable, T.must(poetry_lock).path
+          raise Dependabot::DependencyFileNotParseable, T.must(lockfile).path
         end
 
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
@@ -281,9 +303,13 @@ module Dependabot
                                T.nilable(Dependabot::DependencyFile))
         end
 
-        sig { returns(T.untyped) }
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def lockfile
-          poetry_lock
+          if using_poetry? && poetry_lock
+            poetry_lock
+          else
+            pdm_lock
+          end
         end
 
         sig { returns(T.untyped) }
@@ -304,11 +330,6 @@ module Dependabot
           path = T.must(pyproject).name
           FileUtils.mkdir_p(Pathname.new(path).dirname)
           File.write(path, T.must(pyproject).content)
-        end
-
-        sig { returns(T.untyped) }
-        def parsed_lockfile
-          parsed_poetry_lock if poetry_lock
         end
 
         sig { returns(T.nilable(Dependabot::DependencyFile)) }

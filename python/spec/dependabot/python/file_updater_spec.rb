@@ -79,6 +79,7 @@ RSpec.describe Dependabot::Python::FileUpdater do
           "pyproject.toml",
           "pyproject.lock",
           "poetry.lock",
+          "pdm.lock",
           "subdirectory/Pipfile",
           "subdirectory/requirements.txt",
           "requirements/test.in",
@@ -348,6 +349,50 @@ RSpec.describe Dependabot::Python::FileUpdater do
 
       it "delegates to PoetryFileUpdater" do
         expect(described_class::PoetryFileUpdater)
+          .to receive(:new).and_call_original
+        expect { updated_files }.not_to(change { Dir.entries(tmp_path) })
+        updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
+      end
+    end
+
+    context "with a pyproject.toml and pdm.lock" do
+      let(:dependency_files) { [pyproject, lockfile] }
+      let(:pyproject) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: fixture("projects/pdm", "pyproject.toml")
+        )
+      end
+      let(:lockfile) do
+        Dependabot::DependencyFile.new(
+          name: "pdm.lock",
+          content: fixture("projects/pdm", "pdm.lock")
+        )
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: "2.28.0",
+          previous_version: "2.25.0",
+          package_manager: "pip",
+          requirements: [{
+            requirement: "~=2.28",
+            file: "pyproject.toml",
+            source: nil,
+            groups: []
+          }],
+          previous_requirements: [{
+            requirement: "~=2.25",
+            file: "pyproject.toml",
+            source: nil,
+            groups: []
+          }]
+        )
+      end
+
+      it "delegates to PdmFileUpdater" do
+        expect(described_class::PdmFileUpdater)
           .to receive(:new).and_call_original
         expect { updated_files }.not_to(change { Dir.entries(tmp_path) })
         updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }

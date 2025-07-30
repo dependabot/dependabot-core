@@ -306,7 +306,10 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
     context "with a PDM project" do
       subject(:dependencies) { parser.dependency_set.dependencies }
 
-      let(:pyproject_fixture_name) { "pdm_example.toml" }
+      let(:pyproject_body) do
+        fixture("projects", pyproject_fixture_name)
+      end
+      let(:pyproject_fixture_name) { "pdm/pyproject.toml" }
       let(:pdm_lock) do
         Dependabot::DependencyFile.new(
           name: "pdm.lock",
@@ -314,12 +317,12 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
         )
       end
       let(:pdm_lock_body) do
-        fixture("poetry_locks", poetry_lock_fixture_name)
+        fixture("projects", pdm_lock_fixture_name)
       end
-      let(:poetry_lock_fixture_name) { "pdm_example.lock" }
+      let(:pdm_lock_fixture_name) { "pdm/pdm.lock" }
       let(:files) { [pyproject, pdm_lock] }
 
-      its(:length) { is_expected.to eq(0) }
+      its(:length) { is_expected.to eq(9) }
 
       context "when a leftover poetry.lock is present" do
         let(:poetry_lock) do
@@ -335,7 +338,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
 
         let(:files) { [pyproject, pdm_lock, poetry_lock] }
 
-        its(:length) { is_expected.to eq(0) }
+        its(:length) { is_expected.to eq(9) }
       end
     end
 
