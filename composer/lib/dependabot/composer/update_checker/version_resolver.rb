@@ -450,8 +450,10 @@ module Dependabot
             write_temporary_dependency_files(unlock_requirement: false)
 
             result = run_update_checker
-            # If run_update_checker returns nil, it means the requirements are not resolvable
-            return false if result.nil?
+            unless result
+              Dependabot.logger.info("run_update_checker returned nil, requirements are not resolvable")
+              return false
+            end
           end
 
           true
