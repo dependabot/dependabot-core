@@ -449,7 +449,9 @@ module Dependabot
           SharedHelpers.in_a_temporary_directory(base_directory) do
             write_temporary_dependency_files(unlock_requirement: false)
 
-            run_update_checker
+            result = run_update_checker
+            # If run_update_checker returns nil, it means the requirements are not resolvable
+            return false if result.nil?
           end
 
           true
