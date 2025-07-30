@@ -798,7 +798,6 @@ RSpec.describe Dependabot::Uv::FileFetcher do
       end
     end
 
-
     context "with UV sources path dependencies" do
       describe "#uv_sources_path_dependencies" do
         let(:pyproject_content) { fixture("pyproject_files", "uv_path_dependencies.toml") }
