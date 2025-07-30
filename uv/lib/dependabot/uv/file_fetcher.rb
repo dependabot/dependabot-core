@@ -27,14 +27,12 @@ module Dependabot
         filenames: ["uv.lock"]
       }.freeze, T::Hash[Symbol, T::Array[String]])
       MAX_FILE_SIZE = 500_000
-
-      # rubocop:disable Metrics/AbcSize
       sig do
         override.params(
           source: Dependabot::Source,
           credentials: T::Array[Dependabot::Credential],
           repo_contents_path: T.nilable(String),
-          options: T::Hash[String, String],
+          options: T::Hash[String, String]
         ).void
       end
       def initialize(source:, credentials:, repo_contents_path: nil, options: {})
@@ -318,7 +316,7 @@ module Dependabot
         return false unless file.content&.valid_encoding?
         return true if file.name.match?(/requirements/x)
 
-        return T.must(file.content&.lines&.all? do |line|
+        T.must(file.content&.lines&.all? do |line|
           next true if line.strip.empty?
           next true if line.strip.start_with?("#", "-r ", "-c ", "-e ", "--")
 

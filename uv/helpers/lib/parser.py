@@ -84,8 +84,7 @@ def parse_pep621_dependencies(pyproject_path):
                 pyproject_path,
                 build_system_section['requires']
             )
-            dependencies.extend(build_system_dependencies)
-            
+            dependencies.extend(build_system_dependencies)   
         # Parse UV sources for path dependencies
         if (
             'tool' in project_toml

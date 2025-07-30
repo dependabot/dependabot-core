@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "toml-rb"
@@ -13,12 +13,20 @@ module Dependabot
   module Uv
     class FileParser
       class PythonRequirementParser
+        extend T::Sig
+
+        sig { returns(T::Array[DependencyFile]) }
         attr_reader :dependency_files
 
+        sig { params(dependency_files: T::Array[DependencyFile]).void }
         def initialize(dependency_files:)
           @dependency_files = dependency_files
+          @requirements_in_file_matcher = T.let(nil, T.nilable(RequirementsFileMatcher))
+          @pyproject = T.let(nil, T.nilable(DependencyFile))
+          @pyenv_versions = T.let(nil, T.nilable(String))
         end
 
+        sig { returns(T::Array[T.any(String, Dependabot::DependencyFile)]) }
         def user_specified_requirements
           [
             pyproject_python_requirement,
@@ -30,22 +38,29 @@ module Dependabot
 
         # TODO: Add better Python version detection using dependency versions
         # (e.g., Django 2.x implies Python 3)
+        sig { returns(T::Array[String]) }
         def imputed_requirements
           requirement_files.flat_map do |file|
-            file.content.lines
-                .select { |l| l.include?(";") && l.include?("python") }
-                .filter_map { |l| l.match(/python_version(?<req>.*?["'].*?['"])/) }
-                .map { |re| re.named_captures.fetch("req").gsub(/['"]/, "") }
-                .select { |r| valid_requirement?(r) }
+            content = file.content
+            next [] unless content
+
+            content.lines
+                   .select { |l| l.include?(";") && l.include?("python") }
+                   .filter_map do |line|
+                     match = line.match(/python_version\s*[<>=!]+\s*["']([^"']+)["']/)
+                     match&.captures&.first
+                   end
+                   .select { |r| valid_requirement?(r) }
           end
         end
 
         private
 
+        sig { returns(T.nilable(DependencyFile)) }
         def pyproject_python_requirement
           return unless pyproject
 
-          pyproject_object = TomlRB.parse(pyproject.content)
+          pyproject_object = TomlRB.parse(pyproject&.content)
 
           # Check for PEP621 requires-python
           pep621_python = pyproject_object.dig("project", "requires-python")
@@ -58,6 +73,7 @@ module Dependabot
             poetry_object&.dig("dev-dependencies", "python")
         end
 
+        sig { returns(T.nilable(String)) }
         def pip_compile_python_requirement
           requirement_files.each do |file|
             next unless requirements_in_file_matcher.compiled_file?(file)
@@ -72,48 +88,54 @@ module Dependabot
           nil
         end
 
+        sig { returns(T.nilable(String)) }
         def python_version_file_version
           return unless python_version_file
 
           # read the content, split into lines and remove any lines with '#'
-          content_lines = python_version_file.content.each_line.map do |line|
+          content_lines = python_version_file&.content&.each_line&.map do |line|
             line.sub(/#.*$/, " ").strip
-          end.reject(&:empty?)
+          end&.reject(&:empty?)
 
-          file_version = content_lines.first
+          file_version = content_lines&.first
           return if file_version&.empty?
-          return unless pyenv_versions.include?("#{file_version}\n")
+          return unless pyenv_versions&.include?("#{file_version}\n")
 
           file_version
         end
 
+        sig { returns(T.nilable(String)) }
         def runtime_file_python_version
           return unless runtime_file
 
-          file_version = runtime_file.content
-                                     .match(/(?<=python-).*/)&.to_s&.strip
+          file_version = runtime_file&.content&.match(/(?<=python-).*/)&.to_s&.strip
           return if file_version&.empty?
-          return unless pyenv_versions.include?("#{file_version}\n")
+          return unless pyenv_versions&.include?("#{file_version}\n")
 
           file_version
         end
 
+        sig { returns(T.nilable(String)) }
         def pyenv_versions
-          @pyenv_versions ||= run_command("pyenv install --list")
+          @pyenv_versions = run_command("pyenv install --list")
         end
 
+        sig { params(command: String, env: T::Hash[String, String]).returns(String) }
         def run_command(command, env: {})
           SharedHelpers.run_shell_command(command, env: env, stderr_to_stdout: true)
         end
 
+        sig { returns(RequirementsFileMatcher) }
         def requirements_in_file_matcher
           @requirements_in_file_matcher ||= RequirementsFileMatcher.new(pip_compile_files)
         end
 
+        sig { returns(T::Class[Dependabot::Uv::Requirement]) }
         def requirement_class
           Dependabot::Uv::Requirement
         end
 
+        sig { params(req_string: String).returns(T::Boolean) }
         def valid_requirement?(req_string)
           requirement_class.new(req_string)
           true
@@ -121,22 +143,27 @@ module Dependabot
           false
         end
 
+        sig { returns(T.nilable(DependencyFile)) }
         def pyproject
           dependency_files.find { |f| f.name == "pyproject.toml" }
         end
 
+        sig { returns(T.nilable(DependencyFile)) }
         def python_version_file
           dependency_files.find { |f| f.name == ".python-version" }
         end
 
+        sig { returns(T.nilable(DependencyFile)) }
         def runtime_file
           dependency_files.find { |f| f.name.end_with?("runtime.txt") }
         end
 
+        sig { returns(T::Array[DependencyFile]) }
         def requirement_files
           dependency_files.select { |f| f.name.end_with?(".txt") }
         end
 
+        sig { returns(T::Array[T.untyped]) }
         def pip_compile_files
           dependency_files.select { |f| f.name.end_with?(".in") }
         end
