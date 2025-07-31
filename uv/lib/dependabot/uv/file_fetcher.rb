@@ -45,7 +45,7 @@ module Dependabot
         @options = options
         @files = T.let([], T::Array[DependencyFile])
         @python_version_file = T.let(nil, T.nilable(Dependabot::DependencyFile))
-        # @pyproject = T.let(nil, T.nilable(Dependabot::DependencyFile))
+        @pyproject = T.let(nil, T.untyped)
         @parsed_pyproject = T.let({}, T::Hash[String, T.untyped])
         @req_txt_and_in_files = T.let([], T::Array[Dependabot::DependencyFile])
         @requirements_in_file_matcher = T.let(nil, T.nilable(Dependabot::Uv::RequirementsFileMatcher))
@@ -149,9 +149,8 @@ module Dependabot
           &.tap { |f| f.name = ".python-version" }
       end
 
-      sig { returns(T.nilable(DependencyFile)) }
+      sig { returns(T.untyped) }
       def pyproject
-        @pyproject = T.let(nil, T.nilable(DependencyFile))
         return @pyproject if defined?(@pyproject)
 
         @pyproject = fetch_file_if_present("pyproject.toml")
@@ -180,7 +179,7 @@ module Dependabot
 
         @parsed_pyproject = TomlRB.parse(pyproject&.content)
       rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
-        raise Dependabot::DependencyFileNotParseable, T.must(pyproject).path
+        raise Dependabot::DependencyFileNotParseable, pyproject.path
       end
 
       sig { returns(T::Array[DependencyFile]) }
