@@ -392,7 +392,7 @@ module Dependabot
             {
               name: name,
               path: source_config["path"],
-              file: T.must(pyproject).name
+              file: pyproject.name
             }
           end
         end
