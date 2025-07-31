@@ -93,6 +93,8 @@ module Dependabot
       end
 
       def gemfile_dependencies
+        return @gemfile_dependencies if defined?(@gemfile_dependencies)
+
         dependencies = DependencySet.new
 
         return dependencies unless gemfile
@@ -118,7 +120,7 @@ module Dependabot
           end
         end
 
-        dependencies
+        @gemfile_dependencies = dependencies
       end
 
       def gemspec_dependencies # rubocop:disable Metrics/PerceivedComplexity
