@@ -390,10 +390,10 @@ module Dependabot
         @requirements_in_files ||= T.let(dependency_files.select { |f| f.name.end_with?(".in") }, T.untyped)
       end
 
-      sig { returns(RequiremenstFileMatcher) }
+      sig { returns(RequirementsFileMatcher) }
       def requirements_in_file_matcher
-        @requirements_in_file_matcher ||= T.let(RequiremenstFileMatcher.new(requirements_in_files),
-                                                T.nilable(RequiremenstFileMatcher))
+        @requirements_in_file_matcher ||= T.let(RequirementsFileMatcher.new(requirements_in_files),
+                                                T.nilable(RequirementsFileMatcher))
       end
     end
   end

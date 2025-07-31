@@ -3,7 +3,7 @@
 
 module Dependabot
   module Uv
-    class RequiremenstFileMatcher
+    class RequirementsFileMatcher
       extend T::Sig
 
       sig { params(requirements_in_files: T::Array[Requirement]).void }
