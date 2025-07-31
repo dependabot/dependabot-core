@@ -94,7 +94,7 @@ jobs:
         with:
           submodules: recursive
 
-      - uses: sigstore/cosign-installer@3454372f43399081ed03b604cb2d021dabca52bb # v3.8.2
+      - uses: sigstore/cosign-installer@d58896d6a1865668819e1d91763c7751a165e159 # v3.9.2
 
       - name: Prepare tag
         run: echo "DEPENDABOT_UPDATER_VERSION=${{ github.sha }}" >> $GITHUB_ENV
@@ -135,4 +135,12 @@ jobs:
           echo "updater uploaded with tag \`$DEPENDABOT_UPDATER_VERSION\`" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:$DEPENDABOT_UPDATER_VERSION" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "deploy for ${{ matrix.suite.ecosystem }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo ".dependabot set-ecosystem-version staging ${{ matrix.suite.ecosystem }} $DEPENDABOT_UPDATER_VERSION" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "deploy for all ecosystems" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo ".dependabot set-ecosystem-version staging * $DEPENDABOT_UPDATER_VERSION" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

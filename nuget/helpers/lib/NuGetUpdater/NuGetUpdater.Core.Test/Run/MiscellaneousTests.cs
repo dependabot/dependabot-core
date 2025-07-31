@@ -514,42 +514,13 @@ public class MiscellaneousTests
     }
 
     [Theory]
-    [MemberData(nameof(RequirementsFromIgnoredVersionsData))]
-    public void RequirementsFromIgnoredVersions(string dependencyName, Condition[] ignoreConditions, Requirement[] expectedRequirements)
-    {
-        var job = new Job()
-        {
-            Source = new()
-            {
-                Provider = "github",
-                Repo = "some/repo"
-            },
-            IgnoreConditions = ignoreConditions
-        };
-        var actualRequirements = RunWorker.GetIgnoredRequirementsForDependency(job, dependencyName);
-        var actualRequirementsStrings = string.Join("|", actualRequirements.Select(r => r.ToString()));
-        var expectedRequirementsStrings = string.Join("|", expectedRequirements.Select(r => r.ToString()));
-        Assert.Equal(expectedRequirementsStrings, actualRequirementsStrings);
-    }
-
-    [Theory]
     [MemberData(nameof(DependencyInfoFromJobData))]
-    public void DependencyInfoFromJob(Job job, Dependency dependency, DependencyInfo expectedDependencyInfo)
+    public void DependencyInfoFromJob(Job job, Dependency dependency, bool enableCooldown, DependencyInfo expectedDependencyInfo)
     {
-        var actualDependencyInfo = RunWorker.GetDependencyInfo(job, dependency);
+        var actualDependencyInfo = RunWorker.GetDependencyInfo(job, dependency, enableCooldown);
         var expectedString = JsonSerializer.Serialize(expectedDependencyInfo, AnalyzeWorker.SerializerOptions);
         var actualString = JsonSerializer.Serialize(actualDependencyInfo, AnalyzeWorker.SerializerOptions);
         Assert.Equal(expectedString, actualString);
-    }
-
-    [Theory]
-    [MemberData(nameof(GetIncrementMetricData))]
-    public void GetIncrementMetric(Job job, IncrementMetric expected)
-    {
-        var actual = RunWorker.GetIncrementMetric(job);
-        var actualJson = HttpApiHandler.Serialize(actual);
-        var expectedJson = HttpApiHandler.Serialize(expected);
-        Assert.Equal(expectedJson, actualJson);
     }
 
     [Theory]
@@ -633,60 +604,6 @@ public class MiscellaneousTests
         ];
     }
 
-    public static IEnumerable<object?[]> RequirementsFromIgnoredVersionsData()
-    {
-        yield return
-        [
-            // dependencyName
-            "Some.Package",
-            // ignoredConditions
-            new Condition[]
-            {
-                new()
-                {
-                    DependencyName = "SOME.PACKAGE",
-                    VersionRequirement = Requirement.Parse("> 1.2.3")
-                },
-                new()
-                {
-                    DependencyName = "some.package",
-                    VersionRequirement = Requirement.Parse("<= 2.0.0")
-                },
-                new()
-                {
-                    DependencyName = "Unrelated.Package",
-                    VersionRequirement = Requirement.Parse("= 3.4.5")
-                }
-            },
-            // expectedRequirements
-            new Requirement[]
-            {
-                new IndividualRequirement(">", NuGetVersion.Parse("1.2.3")),
-                new IndividualRequirement("<=", NuGetVersion.Parse("2.0.0")),
-            }
-        ];
-
-        // version requirement is null => ignore all
-        yield return
-        [
-            // dependencyName
-            "Some.Package",
-            // ignoredConditions
-            new Condition[]
-            {
-                new()
-                {
-                    DependencyName = "Some.Package"
-                }
-            },
-            // expectedRequirements
-            new Requirement[]
-            {
-                new IndividualRequirement(">", NuGetVersion.Parse("0.0.0"))
-            }
-        ];
-    }
-
     public static IEnumerable<object[]> DependencyInfoFromJobData()
     {
         // with security advisory
@@ -717,6 +634,8 @@ public class MiscellaneousTests
             },
             // dependency
             new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
+            // enableCooldown
+            true,
             // expectedDependencyInfo
             new DependencyInfo()
             {
@@ -734,7 +653,7 @@ public class MiscellaneousTests
                     }
                 ],
                 IgnoredUpdateTypes = [],
-            }
+            },
         ];
 
         yield return
@@ -762,6 +681,8 @@ public class MiscellaneousTests
             },
             // dependency
             new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
+            // enableCooldown
+            true,
             // expectedDependencyInfo
             new DependencyInfo()
             {
@@ -771,127 +692,167 @@ public class MiscellaneousTests
                 IgnoredVersions = [],
                 Vulnerabilities = [],
                 IgnoredUpdateTypes = [ConditionUpdateType.SemVerMajor],
-            }
+            },
         ];
-    }
 
-    public static IEnumerable<object?[]> GetIncrementMetricData()
-    {
-        static Job GetJob(AllowedUpdate[] allowed, bool securityUpdatesOnly, bool updatingAPullRequest)
-        {
-            return new Job()
+        // with cooldown object when `include` and `exclude` are empty
+        yield return
+        [
+            // job
+            new Job()
             {
-                AllowedUpdates = allowed.ToImmutableArray(),
                 Source = new()
                 {
                     Provider = "github",
-                    Repo = "some/repo"
+                    Repo = "some/repo",
                 },
-                SecurityUpdatesOnly = securityUpdatesOnly,
-                UpdatingAPullRequest = updatingAPullRequest,
-            };
-        }
-
-        // version update
-        yield return
-        [
-            GetJob(
-                allowed: [new AllowedUpdate() { UpdateType = UpdateType.All }],
-                securityUpdatesOnly: false,
-                updatingAPullRequest: false),
-            new IncrementMetric()
-            {
-                Metric = "updater.started",
-                Tags =
+                Cooldown = new()
                 {
-                    ["operation"] = "group_update_all_versions"
+                    DefaultDays = 4,
+                    SemVerMajorDays = 3,
+                    SemVerMinorDays = 2,
+                    SemVerPatchDays = 1,
                 }
-            }
+            },
+            // dependency
+            new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
+            // enableCooldown
+            true,
+            // expectedDependencyInfo
+            new DependencyInfo()
+            {
+                Name = "Some.Dependency",
+                Version = "1.0.0",
+                IsVulnerable = false,
+                IgnoredVersions = [],
+                Vulnerabilities = [],
+                IgnoredUpdateTypes = [],
+                Cooldown = new()
+                {
+                    DefaultDays = 4,
+                    SemVerMajorDays = 3,
+                    SemVerMinorDays = 2,
+                    SemVerPatchDays = 1,
+                }
+            },
         ];
 
-        // version update - existing pr
+        // with cooldown object when `include` matches and `exclude` is empty
         yield return
         [
-            GetJob(
-                allowed: [new AllowedUpdate() { UpdateType = UpdateType.All }],
-                securityUpdatesOnly: false,
-                updatingAPullRequest: true),
-            new IncrementMetric()
+            // job
+            new Job()
             {
-                Metric = "updater.started",
-                Tags =
+                Source = new()
                 {
-                    ["operation"] = "update_version_pr"
+                    Provider = "github",
+                    Repo = "some/repo",
+                },
+                Cooldown = new()
+                {
+                    DefaultDays = 4,
+                    SemVerMajorDays = 3,
+                    SemVerMinorDays = 2,
+                    SemVerPatchDays = 1,
+                    Include = ["Some.*"],
                 }
-            }
+            },
+            // dependency
+            new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
+            // enableCooldown
+            true,
+            // expectedDependencyInfo
+            new DependencyInfo()
+            {
+                Name = "Some.Dependency",
+                Version = "1.0.0",
+                IsVulnerable = false,
+                IgnoredVersions = [],
+                Vulnerabilities = [],
+                IgnoredUpdateTypes = [],
+                Cooldown = new()
+                {
+                    DefaultDays = 4,
+                    SemVerMajorDays = 3,
+                    SemVerMinorDays = 2,
+                    SemVerPatchDays = 1,
+                    Include = ["Some.*"],
+                }
+            },
         ];
 
-        // create security pr - allowed security update
+        // without cooldown object `exclude` matches
         yield return
         [
-            GetJob(
-                allowed: [new AllowedUpdate() { UpdateType = UpdateType.All }, new AllowedUpdate() { UpdateType = UpdateType.Security }],
-                securityUpdatesOnly: false,
-                updatingAPullRequest: false),
-            new IncrementMetric()
+            // job
+            new Job()
             {
-                Metric = "updater.started",
-                Tags =
+                Source = new()
                 {
-                    ["operation"] = "create_security_pr"
+                    Provider = "github",
+                    Repo = "some/repo",
+                },
+                Cooldown = new()
+                {
+                    DefaultDays = 4,
+                    SemVerMajorDays = 3,
+                    SemVerMinorDays = 2,
+                    SemVerPatchDays = 1,
+                    Exclude = ["Some.*"],
                 }
-            }
+            },
+            // dependency
+            new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
+            // enableCooldown
+            true,
+            // expectedDependencyInfo
+            new DependencyInfo()
+            {
+                Name = "Some.Dependency",
+                Version = "1.0.0",
+                IsVulnerable = false,
+                IgnoredVersions = [],
+                Vulnerabilities = [],
+                IgnoredUpdateTypes = [],
+                Cooldown = null,
+            },
         ];
 
-        // create security pr - security only
+        // with cooldown object when `include` matches but experiment flag is false
         yield return
         [
-            GetJob(
-                allowed: [new AllowedUpdate() { UpdateType = UpdateType.All } ],
-                securityUpdatesOnly: true,
-                updatingAPullRequest: false),
-            new IncrementMetric()
+            // job
+            new Job()
             {
-                Metric = "updater.started",
-                Tags =
+                Source = new()
                 {
-                    ["operation"] = "create_security_pr"
+                    Provider = "github",
+                    Repo = "some/repo",
+                },
+                Cooldown = new()
+                {
+                    DefaultDays = 4,
+                    SemVerMajorDays = 3,
+                    SemVerMinorDays = 2,
+                    SemVerPatchDays = 1,
+                    Include = ["Some.*"],
                 }
-            }
-        ];
-
-        // update security pr - allowed security update
-        yield return
-        [
-            GetJob(
-                allowed: [new AllowedUpdate() { UpdateType = UpdateType.All }, new AllowedUpdate() { UpdateType = UpdateType.Security } ],
-                securityUpdatesOnly: false,
-                updatingAPullRequest: true),
-            new IncrementMetric()
+            },
+            // dependency
+            new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
+            // enableCooldown
+            false,
+            // expectedDependencyInfo
+            new DependencyInfo()
             {
-                Metric = "updater.started",
-                Tags =
-                {
-                    ["operation"] = "update_security_pr"
-                }
-            }
-        ];
-
-        // update security pr - security only
-        yield return
-        [
-            GetJob(
-                allowed: [new AllowedUpdate() { UpdateType = UpdateType.All } ],
-                securityUpdatesOnly: true,
-                updatingAPullRequest: true),
-            new IncrementMetric()
-            {
-                Metric = "updater.started",
-                Tags =
-                {
-                    ["operation"] = "update_security_pr"
-                }
-            }
+                Name = "Some.Dependency",
+                Version = "1.0.0",
+                IsVulnerable = false,
+                IgnoredVersions = [],
+                Vulnerabilities = [],
+                IgnoredUpdateTypes = [],
+                Cooldown = null
+            },
         ];
     }
 }

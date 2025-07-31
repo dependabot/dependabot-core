@@ -31,7 +31,6 @@ public partial class DiscoveryWorkerTests
                     {
                         FilePath = "global.json",
                         Dependencies = [
-                            new("Microsoft.NET.Sdk", "2.2.104", DependencyType.MSBuildSdk),
                             new("Microsoft.Build.Traversal", "1.0.45", DependencyType.MSBuildSdk),
                         ]
                     },
@@ -65,7 +64,6 @@ public partial class DiscoveryWorkerTests
                     {
                         FilePath = "global.json",
                         Dependencies = [
-                            new("Microsoft.NET.Sdk", "2.2.104", DependencyType.MSBuildSdk),
                             new("Microsoft.Build.Traversal", "1.0.45", DependencyType.MSBuildSdk),
                         ]
                     },

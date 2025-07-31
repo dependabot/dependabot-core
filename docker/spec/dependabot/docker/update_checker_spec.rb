@@ -1489,9 +1489,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         blob_headers =
           fixture("docker", "image_blobs_headers", "ubuntu_17.10_38d6c1.json")
 
-        stub_request(:get, repo_url + "blobs/sha256:9c4bf7dbb981591d4a1169138471afe4bf5ff5418841d00e30a7ba372e38d6c1")
-          .and_return(status: 200, body: fixture("docker", "image_blobs", "ubuntu_17.10_38d6c1.json"),
-                      headers: JSON.parse(blob_headers))
+        stub_request(:head, repo_url + "blobs/sha256:9c4bf7dbb981591d4a1169138471afe4bf5ff5418841d00e30a7ba372e38d6c1")
+          .and_return(status: 200, headers: JSON.parse(blob_headers))
       end
 
       it { is_expected.to eq("17.10") }

@@ -1,5 +1,6 @@
 FROM ghcr.io/dependabot/dependabot-updater-core
-ARG COMPOSER_V2_VERSION=2.7.7
+ARG COMPOSER_V2_VERSION=2.8.9
+ARG PHP_VERSION=8.4
 ENV COMPOSER_ALLOW_SUPERUSER=1
 RUN apt-get update \
   && apt-get upgrade -y \
@@ -8,31 +9,31 @@ RUN apt-get update \
 RUN add-apt-repository ppa:ondrej/php \
   && apt-get update \
   && apt-get install -y --no-install-recommends \
-    php8.2 \
-    php8.2-apcu \
-    php8.2-bcmath \
-    php8.2-cli \
-    php8.2-common \
-    php8.2-curl \
-    php8.2-gd \
-    php8.2-gettext \
-    php8.2-gmp \
-    php8.2-imagick \
-    php8.2-imap \
-    php8.2-intl \
-    php8.2-ldap \
-    php8.2-mbstring \
-    php8.2-memcached \
-    php8.2-mongodb \
-    php8.2-mysql \
-    php8.2-redis \
-    php8.2-soap \
-    php8.2-sqlite3 \
-    php8.2-tidy \
-    php8.2-xml \
-    php8.2-zip \
-    php8.2-zmq \
-    php8.2-mcrypt \
+    php${PHP_VERSION} \
+    php${PHP_VERSION}-apcu \
+    php${PHP_VERSION}-bcmath \
+    php${PHP_VERSION}-cli \
+    php${PHP_VERSION}-common \
+    php${PHP_VERSION}-curl \
+    php${PHP_VERSION}-gd \
+    php${PHP_VERSION}-gettext \
+    php${PHP_VERSION}-gmp \
+    php${PHP_VERSION}-imagick \
+    php${PHP_VERSION}-imap \
+    php${PHP_VERSION}-intl \
+    php${PHP_VERSION}-ldap \
+    php${PHP_VERSION}-mbstring \
+    php${PHP_VERSION}-memcached \
+    php${PHP_VERSION}-mongodb \
+    php${PHP_VERSION}-mysql \
+    php${PHP_VERSION}-redis \
+    php${PHP_VERSION}-soap \
+    php${PHP_VERSION}-sqlite3 \
+    php${PHP_VERSION}-tidy \
+    php${PHP_VERSION}-xml \
+    php${PHP_VERSION}-zip \
+    php${PHP_VERSION}-zmq \
+    php${PHP_VERSION}-mcrypt \
   && rm -rf /var/lib/apt/lists/*
 
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer --version=${COMPOSER_V2_VERSION}

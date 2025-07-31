@@ -81,7 +81,7 @@ internal class RefreshVersionUpdatePullRequestHandler : IUpdateHandler
                 var dependencyName = dependencyUpdatesToPerform.Key;
                 var dependencyInfosToUpdate = dependencyUpdatesToPerform.Value
                     .Where(o => !job.IsDependencyIgnoredByNameOnly(o.Dependency.Name))
-                    .Select(o => (o.ProjectPath, o.Dependency, RunWorker.GetDependencyInfo(job, o.Dependency)))
+                    .Select(o => (o.ProjectPath, o.Dependency, RunWorker.GetDependencyInfo(job, o.Dependency, allowCooldown: experimentsManager.EnableCooldown)))
                     .ToArray();
 
                 foreach (var (projectPath, dependency, dependencyInfo) in dependencyInfosToUpdate)
@@ -125,7 +125,7 @@ internal class RefreshVersionUpdatePullRequestHandler : IUpdateHandler
                     updateOperationsPerformed.AddRange(patchedUpdateOperations);
                     foreach (var o in patchedUpdateOperations)
                     {
-                        logger.Info($"Update operation performed: {o.GetReport()}");
+                        logger.Info($"Update operation performed: {o.GetReport(includeFileNames: true)}");
                     }
                 }
             }
@@ -151,7 +151,7 @@ internal class RefreshVersionUpdatePullRequestHandler : IUpdateHandler
             {
                 var commitMessage = PullRequestTextGenerator.GetPullRequestCommitMessage(job, [.. updateOperationsPerformed], null);
                 var prTitle = PullRequestTextGenerator.GetPullRequestTitle(job, [.. updateOperationsPerformed], null);
-                var prBody = PullRequestTextGenerator.GetPullRequestBody(job, [.. updateOperationsPerformed], null);
+                var prBody = await PullRequestTextGenerator.GetPullRequestBodyAsync(job, [.. updateOperationsPerformed], [.. updatedDependencies], experimentsManager);
 
                 var existingPullRequest = job.GetExistingPullRequestForDependencies(rawDependencies, considerVersions: true);
                 if (existingPullRequest is not null)

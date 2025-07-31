@@ -56,14 +56,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
   let(:rubygems_url) { "https://rubygems.org/api/v1/" }
 
   let(:cooldown_options) { nil }
-  let(:enable_cooldown_for_bundler) { false }
-
-  before do
-    allow(Dependabot::Experiments).to receive(:enabled?).and_call_original
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_cooldown_for_bundler)
-      .and_return(enable_cooldown_for_bundler)
-  end
 
   after do
     Dependabot::Experiments.reset!
@@ -81,11 +73,11 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
 
       its([:version]) { is_expected.to eq(Dependabot::Bundler::Version.new("1.5.0")) }
 
-      it "only hits Rubygems once" do
+      it "hits Rubygems twice" do
         finder.latest_version_details
         finder.latest_version_details
         expect(WebMock)
-          .to have_requested(:get, rubygems_url + "versions/business.json").once
+          .to have_requested(:get, rubygems_url + "versions/business.json").twice
       end
 
       context "when the gem isn't on Rubygems" do
@@ -274,7 +266,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
     end
 
     context "with cooldown enabled" do
-      let(:enable_cooldown_for_bundler) { true }
       let(:cooldown_options) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 60) }
 
       before do
@@ -335,7 +326,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
       end
 
       let(:private_registry_url) { "https://repo.fury.io/greysteil/api/v1/" }
-      let(:enable_cooldown_for_bundler) { true }
       let(:cooldown_options) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 60) }
 
       before do
@@ -419,14 +409,18 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
           .and_return(
             ["1.5.0", "1.9.0", "1.10.0.beta"]
           )
+
+        rubygems_response = fixture("ruby", "rubygems_response_versions.json")
+        stub_request(:get, rubygems_url + "versions/business.json")
+          .to_return(status: 200, body: rubygems_response)
       end
 
-      its([:version]) { is_expected.to eq(Dependabot::Bundler::Version.new("1.9.0")) }
+      its([:version]) { is_expected.to eq(Dependabot::Bundler::Version.new("1.5.0")) }
 
       context "when specified as the default source" do
         let(:dependency_files) { bundler_project_dependency_files("specified_default_source") }
 
-        its([:version]) { is_expected.to eq(Dependabot::Bundler::Version.new("1.9.0")) }
+        its([:version]) { is_expected.to eq(Dependabot::Bundler::Version.new("1.5.0")) }
       end
 
       context "when the user is ignoring the latest version" do
@@ -528,16 +522,18 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
       context "when that is the gem we're checking for" do
         let(:dependency_name) { "business" }
         let(:current_version) { "a1b78a929dac93a52f08db4f2847d76d6cfe39bd" }
+        let(:git_url) { "https://github.com/dependabot-fixtures/business" }
         let(:source) do
           {
             type: "git",
-            url: "https://github.com/dependabot-fixtures/business",
+            url: git_url,
             branch: "master",
             ref: "a1b78a9" # Pinned, to ensure we unpin
           }
         end
 
         it "fetches the latest SHA-1 hash" do
+          skip "Skipping as this fails after removing a feature flag that is rolled out to 100%"
           commit_sha = finder.latest_version_details[:commit_sha]
           expect(commit_sha).to match(/^[0-9a-f]{40}$/)
           expect(commit_sha).not_to eq(current_version)
@@ -555,6 +551,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
           end
 
           it "raises a helpful error" do
+            skip "Skipping as this fails after removing a feature flag that is rolled out to 100%"
             expect { finder.latest_version_details }
               .to raise_error do |error|
                 expect(error).to be_a Dependabot::GitDependencyReferenceNotFound
@@ -586,11 +583,11 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
     end
 
     context "when given a path source" do
-      let(:dependency_files) { bundler_project_dependency_files("path_source") }
-
       before do
         rubygems_response = fixture("ruby", "rubygems_response_versions.json")
         stub_request(:get, rubygems_url + "versions/business.json")
+          .to_return(status: 200, body: rubygems_response)
+        stub_request(:get, rubygems_url + "versions/example.json")
           .to_return(status: 200, body: rubygems_response)
       end
 

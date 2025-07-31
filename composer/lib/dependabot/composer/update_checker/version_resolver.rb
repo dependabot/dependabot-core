@@ -187,7 +187,7 @@ module Dependabot
           error.message.include?("Content-Length mismatch")
         end
 
-        sig { returns(String) }
+        sig { returns(T.nilable(String)) }
         def run_update_checker
           SharedHelpers.with_git_configured(credentials: credentials) do
             SharedHelpers.run_helper_subprocess(
@@ -449,7 +449,11 @@ module Dependabot
           SharedHelpers.in_a_temporary_directory(base_directory) do
             write_temporary_dependency_files(unlock_requirement: false)
 
-            run_update_checker
+            result = run_update_checker
+            unless result
+              Dependabot.logger.info("run_update_checker returned nil, requirements are not resolvable")
+              return false
+            end
           end
 
           true

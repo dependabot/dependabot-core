@@ -3,5 +3,5 @@ terraform {
 }
 
 module "nsg_rules" {
-  source = "http://artifactory.dependabot.com/artifactory/tf-modules/azurerm/terraform-azurerm-nsg-rules.v1.1.0.tar.gz"
+  source = "http://artifactory.dependabot.com/artifactory/tf-modules/azurerm/terraform-azurerm-nsg-rules.v1.1.0"
 }

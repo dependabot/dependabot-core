@@ -77,16 +77,12 @@ RSpec.describe Dependabot::Python::UpdateChecker do
   end
   let(:pypi_response) { fixture("pypi", "pypi_simple_response.html") }
   let(:pypi_url) { "https://pypi.org/simple/luigi/" }
-  let(:enable_cooldown_for_python) { false }
 
   before do
     stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_file_parser_python_local)
       .and_return(false)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_cooldown_for_python)
-      .and_return(true)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_shared_helpers_command_timeout)
       .and_return(true)
@@ -420,6 +416,22 @@ RSpec.describe Dependabot::Python::UpdateChecker do
 
       context "when including pep621 dependencies" do
         let(:pyproject_fixture_name) { "pep621_exact_requirement.toml" }
+
+        it "delegates to PipVersionResolver" do
+          dummy_resolver =
+            instance_double(described_class::PipVersionResolver)
+          allow(described_class::PipVersionResolver).to receive(:new)
+            .and_return(dummy_resolver)
+          expect(dummy_resolver)
+            .to receive(:latest_resolvable_version)
+            .and_return(Gem::Version.new("2.5.0"))
+          expect(checker.latest_resolvable_version)
+            .to eq(Gem::Version.new("2.5.0"))
+        end
+      end
+
+      context "when including pep735 dependencies" do
+        let(:pyproject_fixture_name) { "pep735_exact_requirement.toml" }
 
         it "delegates to PipVersionResolver" do
           dummy_resolver =

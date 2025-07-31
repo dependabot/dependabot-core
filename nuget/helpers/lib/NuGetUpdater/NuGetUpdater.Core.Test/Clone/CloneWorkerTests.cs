@@ -242,12 +242,12 @@ public class CloneWorkerTests
         var actualApiMessages = testApiHandler.ReceivedMessages.ToArray();
         if (actualApiMessages.Length > expectedApiMessages.Length)
         {
-            var extraApiMessages = actualApiMessages.Skip(expectedApiMessages.Length).Select(m => RunWorkerTests.SerializeObjectAndType(m.Object)).ToArray();
+            var extraApiMessages = actualApiMessages.Skip(expectedApiMessages.Length).Select(m => EndToEndTests.SerializeObjectAndType(m.Object)).ToArray();
             Assert.Fail($"Expected {expectedApiMessages.Length} API messages, but got {extraApiMessages.Length} extra:\n\t{string.Join("\n\t", extraApiMessages)}");
         }
         if (expectedApiMessages.Length > actualApiMessages.Length)
         {
-            var missingApiMessages = expectedApiMessages.Skip(actualApiMessages.Length).Select(m => RunWorkerTests.SerializeObjectAndType(m)).ToArray();
+            var missingApiMessages = expectedApiMessages.Skip(actualApiMessages.Length).Select(m => EndToEndTests.SerializeObjectAndType(m)).ToArray();
             Assert.Fail($"Expected {expectedApiMessages.Length} API messages, but only got {actualApiMessages.Length}; missing:\n\t{string.Join("\n\t", missingApiMessages)}");
         }
     }

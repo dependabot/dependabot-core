@@ -70,13 +70,9 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
   end
   let(:pypi_response) { fixture("pypi", "pypi_simple_response.html") }
   let(:pypi_url) { "https://pypi.org/simple/luigi/" }
-  let(:enable_cooldown_for_uv) { false }
 
   before do
     stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_cooldown_for_uv)
-      .and_return(true)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_shared_helpers_command_timeout)
       .and_return(true)
@@ -298,6 +294,50 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
             expect(checker.latest_resolvable_version)
               .to eq(Gem::Version.new("1.24.2"))
           end
+        end
+      end
+    end
+
+    context "with a pyproject.toml" do
+      let(:dependency_files) { [pyproject] }
+      let(:dependency_requirements) do
+        [{
+          file: "pyproject.toml",
+          requirement: "2.18.0",
+          groups: [],
+          source: nil
+        }]
+      end
+
+      context "when including pep621 dependencies" do
+        let(:pyproject_fixture_name) { "pep621_exact_requirement.toml" }
+
+        it "delegates to PipVersionResolver" do
+          dummy_resolver =
+            instance_double(described_class::PipVersionResolver)
+          allow(described_class::PipVersionResolver).to receive(:new)
+            .and_return(dummy_resolver)
+          expect(dummy_resolver)
+            .to receive(:latest_resolvable_version)
+            .and_return(Gem::Version.new("2.5.0"))
+          expect(checker.latest_resolvable_version)
+            .to eq(Gem::Version.new("2.5.0"))
+        end
+      end
+
+      context "when including pep735 dependencies" do
+        let(:pyproject_fixture_name) { "pep735_exact_requirement.toml" }
+
+        it "delegates to PipVersionResolver" do
+          dummy_resolver =
+            instance_double(described_class::PipVersionResolver)
+          allow(described_class::PipVersionResolver).to receive(:new)
+            .and_return(dummy_resolver)
+          expect(dummy_resolver)
+            .to receive(:latest_resolvable_version)
+            .and_return(Gem::Version.new("2.5.0"))
+          expect(checker.latest_resolvable_version)
+            .to eq(Gem::Version.new("2.5.0"))
         end
       end
     end

@@ -186,30 +186,17 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       end
     end
 
-    context "with a plugin that would cause errors (composer v1)" do
-      let(:project_name) { "v1/plugin" }
-
-      it "has details of the updated item" do
-        expect(updated_lockfile_content).to include("\"version\":\"1.22.1\"")
-      end
-    end
-
     context "with a plugin that would cause errors (composer v2)" do
       let(:project_name) { "plugin" }
 
       it "raises a helpful error" do
         expect { updated_lockfile_content }.to raise_error do |error|
           expect(error.message).to include("Your requirements could not be resolved to an installable set of packages.")
-          expect(error.message).to include("requires composer-plugin-api ^1.0 -> found composer-plugin-api[2.3.0]")
+          expect(error.message).to include("requires composer-plugin-api ^1.0 -> found composer-plugin-api[2.6.0]")
           expect(error).to be_a Dependabot::DependencyFileNotResolvable
         end
       end
     end
-
-    # We stopped testing/handling errors for plugins that conflict with the current version of composer v1
-    # because composer v1 was deprecated before PHP 8.2 was released, which Dependabot now runs on.
-    # So any plugins that are new enough to support PHP 8 will definitely support the newest version
-    # of composer v1.
 
     context "with a plugin that conflicts with the current composer version v2" do
       let(:project_name) { "outdated_flex" }
@@ -237,7 +224,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       it "raises a helpful error" do
         expect { updated_lockfile_content }.to raise_error do |error|
           expect(error.message).to include("Your requirements could not be resolved to an installable set of packages.")
-          expect(error.message).to include("requires composer-plugin-api ^1.0 -> found composer-plugin-api[2.3.0]")
+          expect(error.message).to include("requires composer-plugin-api ^1.0 -> found composer-plugin-api[2.6.0]")
           expect(error).to be_a Dependabot::DependencyFileNotResolvable
         end
       end
@@ -589,6 +576,40 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
           expect(error.dependency_urls)
             .to eq(["https://github.com/no-exist-sorry/monolog.git"])
         end
+      end
+    end
+
+    context "when there are patches" do
+      let(:project_name) { "patches" }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "ehime/hello-world",
+          version: "1.0.5",
+          requirements: [{
+            file: "composer.json",
+            requirement: "1.0.5",
+            groups: [],
+            source: nil
+          }],
+          previous_version: "1.0.4",
+          previous_requirements: [{
+            file: "composer.json",
+            requirement: "1.0.4",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "composer"
+        )
+      end
+
+      it "doesn't strip the patches" do
+        lockfile_data = JSON.parse(updated_lockfile_content)
+
+        updated_dep = lockfile_data.fetch("packages").find { |p| p["name"] == "ehime/hello-world" }
+
+        patches_applied = updated_dep.dig("extra", "patches_applied")
+        expect(patches_applied).to include("[PATCH] markdown modified")
       end
     end
 
