@@ -1491,7 +1491,9 @@ public class XmlFileWriterTests : FileWriterTestsBase
                             <ItemGroup>
 
 
-                          <PackageReference Include="Some.Dependency" Version="1.0.0" />
+                          <PackageReference
+                            Include="Some.Dependency"
+                              Version="1.0.0" UnrelatedAttribute="arrow->is->not->replaced" />
 
                         </ItemGroup>
                     </Project>
@@ -1506,11 +1508,58 @@ public class XmlFileWriterTests : FileWriterTestsBase
                             <ItemGroup>
 
 
-                          <PackageReference Include="Some.Dependency" Version="2.0.0" />
+                          <PackageReference
+                            Include="Some.Dependency"
+                              Version="2.0.0" UnrelatedAttribute="arrow->is->not->replaced" />
 
                         </ItemGroup>
                     </Project>
                     """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task FormattingIsPreserved_WhenNoChangesAreMade()
+    {
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="Some.Dependency" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("UnrelatedFile.props", """
+                    <Project>
+                      <Target Name="MyTarget"
+                              BeforeTargets="SomeBeforeTargets"
+                              AfterTargets="SomeAfterTargets">
+                        <Message Text="no space before tag close->"/>
+                      </Target>
+                    </Project>
+                    """),
+            ],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/2.0.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="Some.Dependency" Version="2.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("UnrelatedFile.props", """
+                    <Project>
+                      <Target Name="MyTarget"
+                              BeforeTargets="SomeBeforeTargets"
+                              AfterTargets="SomeAfterTargets">
+                        <Message Text="no space before tag close->"/>
+                      </Target>
+                    </Project>
+                    """),
             ]
         );
     }
@@ -1535,8 +1584,8 @@ public class XmlFileWriterTests : FileWriterTestsBase
                 ("project.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <ItemGroup>
-                        <PackageReference Include="Some.Dependency" Version="2.0.0" />
                         <!-- some comment -->
+                        <PackageReference Include="Some.Dependency" Version="2.0.0" />
                         <PackageReference Include="Unrelated.Dependency" Version="3.0.0" />
                       </ItemGroup>
                     </Project>
