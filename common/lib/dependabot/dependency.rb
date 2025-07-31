@@ -88,6 +88,9 @@ module Dependabot
     sig { returns(T::Hash[Symbol, T.untyped]) }
     attr_reader :metadata
 
+    sig { returns(Dependabot::DependencyFile) }
+    attr_reader :dependency_file
+
     # rubocop:disable Metrics/AbcSize
     # rubocop:disable Metrics/PerceivedComplexity
     sig do
@@ -102,12 +105,13 @@ module Dependabot
         directory: T.nilable(String),
         subdependency_metadata: T.nilable(T::Array[T::Hash[T.any(Symbol, String), String]]),
         removed: T::Boolean,
-        metadata: T.nilable(T::Hash[T.any(Symbol, String), String])
+        metadata: T.nilable(T::Hash[T.any(Symbol, String), String]),
+        dependency_file: T.nilable(Dependabot::DependencyFile)
       ).void
     end
     def initialize(name:, requirements:, package_manager:, version: nil,
                    previous_version: nil, previous_requirements: nil, directory: nil,
-                   subdependency_metadata: [], removed: false, metadata: {})
+                   subdependency_metadata: [], removed: false, metadata: {}, dependency_file: nil)
       @name = name
       @version = T.let(
         case version
@@ -134,6 +138,8 @@ module Dependabot
       end
       @removed = removed
       @metadata = T.let(symbolize_keys(metadata || {}), T::Hash[Symbol, T.untyped])
+
+      @dependency_file = dependency_file
 
       check_values
     end
@@ -168,7 +174,7 @@ module Dependabot
         "directory" => directory,
         "package_manager" => package_manager,
         "subdependency_metadata" => subdependency_metadata,
-        "removed" => removed? ? true : nil
+        "removed" => removed? ? true : nil,
       }.compact
     end
 
