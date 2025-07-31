@@ -90,11 +90,12 @@ module GithubApi
       # It would require deep changes to the Dependabot::Snapshot and parsers,
       # but it might eventually be worth retaining this information from the
       # source files in order to avoid reconstructing it here?
+      # TODO (PMV): Adding dep files to deps was easy in bundler, investigate
+      # other ecosystems
       snapshot.dependencies.each do |dependency|
-        dependency.requirements.each do |requirement|
-          dependencies_by_manifest[requirement[:file]] ||= []
-          dependencies_by_manifest[requirement[:file]] << dependency
-        end
+        path = dependency.dependency_file&.path || ""
+        dependencies_by_manifest[path] ||= []
+        dependencies_by_manifest[path] << dependency
       end
 
       dependencies_by_manifest.each_with_object({}) do |(file, deps), manifests|
@@ -102,12 +103,13 @@ module GithubApi
         #
         # For now it is tolerable to omit this and limit our testing accordingly, but we
         # should behave sensibly in a multi-directory context as well
-        file_path = File.join(directory, file).gsub(%r{^/}, "")
+        # TODO (PMV): Is this necessary if we have the dependency file directly? (probably yes, but i don't fully grok multi-dir jobs yet)
+        # file_path = File.join(directory, file).gsub(%r{^/}, "")
 
         manifests[file] = {
           name: file,
           file: {
-            source_location: file_path
+            source_location: file
           },
           metadata: {
             ecosystem: T.must(snapshot.ecosystem).name
@@ -122,7 +124,9 @@ module GithubApi
               #
               # This should be set in the parsers when we add capabilities to track immediate
               # dependencies.
-              relationship: "direct",
+              # TODO (PMV): Depbot::Dep seems to already understand if a pkg is "top_level?", investigate
+              # how deep this support is across ecosystems
+              relationship: relationship_for(dep),
               scope: scope_for(dep),
               dependencies: [
                 # TODO: Populate direct child dependencies
@@ -193,6 +197,14 @@ module GithubApi
         "runtime"
       else
         "development"
+      end
+    end
+
+    def relationship_for(dep)
+      if dep.top_level?
+        "direct"
+      else
+        "indirect"
       end
     end
   end

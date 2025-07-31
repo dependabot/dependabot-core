@@ -132,7 +132,8 @@ module Dependabot
                   source: dep.fetch("source")&.transform_keys(&:to_sym),
                   file: file.name
                 }],
-                package_manager: "bundler"
+                package_manager: "bundler",
+                dependency_file: file,
               )
           end
         end
@@ -169,7 +170,8 @@ module Dependabot
                   source: dependency.fetch("source")&.transform_keys(&:to_sym),
                   file: gemspec.name
                 }],
-                package_manager: "bundler"
+                package_manager: "bundler",
+                dependency_file: gemspec,
               )
             end
           end
@@ -200,7 +202,8 @@ module Dependabot
               package_manager: "bundler",
               subdependency_metadata: [{
                 production: production_dep_names.include?(dependency.name)
-              }]
+              }],
+              dependency_file: lockfile
             )
         end
 

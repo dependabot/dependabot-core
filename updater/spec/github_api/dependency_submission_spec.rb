@@ -139,32 +139,51 @@ RSpec.describe GithubApi::DependencySubmission do
     it "generates a valid manifest list" do
       payload = dependency_submission.payload
 
-      expect(payload[:manifests].length).to eq(1)
+      expect(payload[:manifests].length).to eq(2)
 
       # File data is correct
-      gemfile = payload[:manifests].fetch("Gemfile")
-      expect(gemfile[:name]).to eq("Gemfile")
-      expect(gemfile[:file][:source_location]).to eq("Gemfile")
+      gemfile = payload[:manifests].fetch("/Gemfile")
+      expect(gemfile[:name]).to eq("/Gemfile")
+      expect(gemfile[:file][:source_location]).to eq("/Gemfile")
+
+
+      lockfile = payload[:manifests].fetch("/Gemfile.lock")
+      expect(lockfile[:name]).to eq("/Gemfile.lock")
+      expect(lockfile[:file][:source_location]).to eq("/Gemfile.lock")
 
       # Resolved dependencies are correct
       expect(gemfile[:resolved].length).to eq(4)
 
-      # NOTE: For bundler, we only surface top-level dependencies for now
+      # TODO: one issue is this isn't 1:1 with the gems listed in the gemfile
+      # but instead is the disambiguated set of all dependencies across both files
+      # is this going to be a problem?
+      # (i.e. lockfile[:resolved]["sinatra"] is nil
+      expect(lockfile[:resolved].length).to eq(24)
+
+
       sinatra = gemfile[:resolved]["sinatra"]
       pry = gemfile[:resolved]["pry"]
       rspec = gemfile[:resolved]["rspec"]
       capybara = gemfile[:resolved]["capybara"]
 
+      rack = lockfile[:resolved]["rack"]
+
+
       expect(sinatra[:package_url]).to eql("pkg:gem/sinatra@4.1.1")
       expect(pry[:package_url]).to eql("pkg:gem/pry@0.15.2")
       expect(rspec[:package_url]).to eql("pkg:gem/rspec@3.13.1")
       expect(capybara[:package_url]).to eql("pkg:gem/capybara@3.40.0")
+      expect(rack[:package_url]).to eql("pkg:gem/rack@3.1.16")
 
       # Check we are surfacing groups as runtime/development scope
       expect(sinatra[:scope]).to eq("runtime")
       expect(pry[:scope]).to eq("development")
       expect(rspec[:scope]).to eq("development")
       expect(capybara[:scope]).to eq("development")
+
+      # some are direct, some are indirect
+      expect(sinatra[:relationship]).to eq("direct")
+      expect(rack[:relationship]).to eq("indirect")
     end
   end
 end
