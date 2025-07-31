@@ -1,6 +1,0 @@
-<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <ItemGroup>
-    <ProjectFile Include="..\src\LibraryA\LibraryA.csproj" />
-    <ProjectFile Include="..\src\LibraryB\LibraryB.csproj" />
-  </ItemGroup>
-</Project>
