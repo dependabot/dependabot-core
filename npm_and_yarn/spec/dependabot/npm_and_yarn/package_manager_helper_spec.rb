@@ -121,6 +121,16 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
       end
     end
 
+    context "with engines field for pnpm >=10" do
+      let(:lockfiles) { {} }
+      let(:package_json) { { "engines" => { "pnpm" => ">=10" } } }
+
+      it "returns a PNPMPackageManager instance from engines field" do
+        expect(helper.package_manager).to be_a(Dependabot::NpmAndYarn::PNPMPackageManager)
+        expect(helper.package_manager.detected_version).to eq("10")
+      end
+    end
+
     context "when neither lockfile, packageManager, nor engines field exists" do
       let(:lockfiles) { {} }
       let(:package_json) { {} }
@@ -443,6 +453,24 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
           expect(requirement).to be_a(Dependabot::NpmAndYarn::Requirement)
           expect(requirement.constraints).to eq([">= 6.0.0", "< 8.0.0"])
         end
+      end
+    end
+
+    context "when the engines field contains valid constraints with pnpm" do
+      let(:package_json) do
+        {
+          "name" => "example",
+          "version" => "1.0.0",
+          "engines" => {
+            "pnpm" => ">=10"
+          }
+        }
+      end
+
+      it "returns a requirement for pnpm with the correct fixed version" do
+        requirement = helper.find_engine_constraints_as_requirement("pnpm")
+        expect(requirement).to be_a(Dependabot::NpmAndYarn::Requirement)
+        expect(requirement.constraints).to eq([">= 10"])
       end
     end
 
