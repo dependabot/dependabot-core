@@ -15,7 +15,7 @@ public class GroupUpdateAllVersionsHandlerTests : UpdateHandlersTestsBase
     [Fact]
     public async Task GeneratesCreatePullRequest_NoGroups()
     {
-        // no groups specified; create 1 PR for each directory
+        // no groups specified; create 1 PR for each directory for each dependency
         await TestAsync(
             job: new Job()
             {
@@ -34,8 +34,8 @@ public class GroupUpdateAllVersionsHandlerTests : UpdateHandlersTestsBase
                         {
                             FilePath = "project.csproj",
                             Dependencies = [
-                                new("Some.Dependency", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"]),
-                                new("Some.Other.Dependency", "3.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"]),
+                                new("Production.Dependency.1", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"]),
+                                new("Production.Dependency.2", "3.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"]),
                             ],
                             ImportedFiles = [],
                             AdditionalFiles = [],
@@ -50,8 +50,7 @@ public class GroupUpdateAllVersionsHandlerTests : UpdateHandlersTestsBase
                         {
                             FilePath = "project.csproj",
                             Dependencies = [
-                                new("Some.Dependency", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"]),
-                                new("Some.Other.Dependency", "3.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"]),
+                                new("Test.Dependency", "5.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"]),
                             ],
                             ImportedFiles = [],
                             AdditionalFiles = [],
@@ -66,8 +65,9 @@ public class GroupUpdateAllVersionsHandlerTests : UpdateHandlersTestsBase
                 var dependencyInfo = input.Item3;
                 var newVersion = dependencyInfo.Name switch
                 {
-                    "Some.Dependency" => "2.0.0",
-                    "Some.Other.Dependency" => "4.0.0",
+                    "Production.Dependency.1" => "2.0.0",
+                    "Production.Dependency.2" => "4.0.0",
+                    "Test.Dependency" => "6.0.0",
                     _ => throw new NotImplementedException($"Test didn't expect to update dependency {dependencyInfo.Name}"),
                 };
                 return Task.FromResult(new AnalysisResult()
@@ -109,7 +109,7 @@ public class GroupUpdateAllVersionsHandlerTests : UpdateHandlersTestsBase
                     Dependencies = [
                         new()
                         {
-                            Name = "Some.Dependency",
+                            Name = "Production.Dependency.1",
                             Version = "1.0.0",
                             Requirements = [
                                 new() { Requirement = "1.0.0", File = "/src/project.csproj", Groups = ["dependencies"] },
@@ -117,7 +117,7 @@ public class GroupUpdateAllVersionsHandlerTests : UpdateHandlersTestsBase
                         },
                         new()
                         {
-                            Name = "Some.Other.Dependency",
+                            Name = "Production.Dependency.2",
                             Version = "3.0.0",
                             Requirements = [
                                 new() { Requirement = "3.0.0", File = "/src/project.csproj", Groups = ["dependencies"] },
@@ -126,12 +126,13 @@ public class GroupUpdateAllVersionsHandlerTests : UpdateHandlersTestsBase
                     ],
                     DependencyFiles = ["/src/project.csproj"],
                 },
+                // for "/src" and Production.Dependency.1
                 new CreatePullRequest()
                 {
                     Dependencies = [
                         new()
                         {
-                            Name = "Some.Dependency",
+                            Name = "Production.Dependency.1",
                             Version = "2.0.0",
                             Requirements = [
                                 new() { Requirement = "2.0.0", File = "/src/project.csproj", Groups = ["dependencies"], Source = new() { SourceUrl = null } },
@@ -141,9 +142,28 @@ public class GroupUpdateAllVersionsHandlerTests : UpdateHandlersTestsBase
                                 new() { Requirement = "1.0.0", File = "/src/project.csproj", Groups = ["dependencies"] },
                             ],
                         },
+                    ],
+                    UpdatedDependencyFiles = [
                         new()
                         {
-                            Name = "Some.Other.Dependency",
+                            Directory = "/src",
+                            Name = "project.csproj",
+                            Content = "updated contents",
+                        },
+                    ],
+                    BaseCommitSha = "TEST-COMMIT-SHA",
+                    CommitMessage = EndToEndTests.TestPullRequestCommitMessage,
+                    PrTitle = EndToEndTests.TestPullRequestTitle,
+                    PrBody = EndToEndTests.TestPullRequestBody,
+                    DependencyGroup = null,
+                },
+                // for "/src" and Production.Dependency.2
+                new CreatePullRequest()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "Production.Dependency.2",
                             Version = "4.0.0",
                             Requirements = [
                                 new() { Requirement = "4.0.0", File = "/src/project.csproj", Groups = ["dependencies"], Source = new() { SourceUrl = null } },
@@ -174,18 +194,10 @@ public class GroupUpdateAllVersionsHandlerTests : UpdateHandlersTestsBase
                     Dependencies = [
                         new()
                         {
-                            Name = "Some.Dependency",
-                            Version = "1.0.0",
+                            Name = "Test.Dependency",
+                            Version = "5.0.0",
                             Requirements = [
-                                new() { Requirement = "1.0.0", File = "/test/project.csproj", Groups = ["dependencies"] },
-                            ],
-                        },
-                        new()
-                        {
-                            Name = "Some.Other.Dependency",
-                            Version = "3.0.0",
-                            Requirements = [
-                                new() { Requirement = "3.0.0", File = "/test/project.csproj", Groups = ["dependencies"] },
+                                new() { Requirement = "5.0.0", File = "/test/project.csproj", Groups = ["dependencies"] },
                             ],
                         },
                     ],
@@ -196,26 +208,14 @@ public class GroupUpdateAllVersionsHandlerTests : UpdateHandlersTestsBase
                     Dependencies = [
                         new()
                         {
-                            Name = "Some.Dependency",
-                            Version = "2.0.0",
+                            Name = "Test.Dependency",
+                            Version = "6.0.0",
                             Requirements = [
-                                new() { Requirement = "2.0.0", File = "/test/project.csproj", Groups = ["dependencies"], Source = new() { SourceUrl = null } },
+                                new() { Requirement = "6.0.0", File = "/test/project.csproj", Groups = ["dependencies"], Source = new() { SourceUrl = null } },
                             ],
-                            PreviousVersion = "1.0.0",
+                            PreviousVersion = "5.0.0",
                             PreviousRequirements = [
-                                new() { Requirement = "1.0.0", File = "/test/project.csproj", Groups = ["dependencies"] },
-                            ],
-                        },
-                        new()
-                        {
-                            Name = "Some.Other.Dependency",
-                            Version = "4.0.0",
-                            Requirements = [
-                                new() { Requirement = "4.0.0", File = "/test/project.csproj", Groups = ["dependencies"], Source = new() { SourceUrl = null } },
-                            ],
-                            PreviousVersion = "3.0.0",
-                            PreviousRequirements = [
-                                new() { Requirement = "3.0.0", File = "/test/project.csproj", Groups = ["dependencies"] },
+                                new() { Requirement = "5.0.0", File = "/test/project.csproj", Groups = ["dependencies"] },
                             ],
                         },
                     ],
