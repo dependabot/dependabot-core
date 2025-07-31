@@ -18,10 +18,12 @@ module Dependabot
           @dependency_files = dependency_files
           @repo_contents_path = repo_contents_path
           @credentials = credentials
+          @updated_bun_lock_content = {}
+          @lockfile_dependencies = {}
+          @updated_package_json_content = {}
         end
 
         def updated_bun_lock_content(bun_lock)
-          @updated_bun_lock_content ||= {}
           return @updated_bun_lock_content[bun_lock.name] if @updated_bun_lock_content[bun_lock.name]
 
           new_content = run_bun_update(bun_lock: bun_lock)
@@ -79,7 +81,6 @@ module Dependabot
         end
 
         def lockfile_dependencies(lockfile)
-          @lockfile_dependencies ||= {}
           @lockfile_dependencies[lockfile.name] ||=
             Bun::FileParser.new(
               dependency_files: [lockfile, *package_files],
@@ -107,7 +108,8 @@ module Dependabot
         end
 
         def npmrc_content(bun_lock)
-          NpmrcBuilder.new(
+          @npmrc_content_cache ||= {}
+          @npmrc_content_cache[bun_lock.name] ||= NpmrcBuilder.new(
             credentials: credentials,
             dependency_files: dependency_files,
             dependencies: lockfile_dependencies(bun_lock)
@@ -115,7 +117,6 @@ module Dependabot
         end
 
         def updated_package_json_content(file)
-          @updated_package_json_content ||= {}
           @updated_package_json_content[file.name] ||=
             PackageJsonUpdater.new(
               package_json: file,
