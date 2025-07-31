@@ -4,20 +4,25 @@ FROM ghcr.io/dependabot/dependabot-updater-core
 ARG COREPACK_VERSION=0.33.0
 
 # Check for updates at https://github.com/pnpm/pnpm/releases
+# With every major release update, also update npm_and_yarn/lib/dependabot/npm_and_yarn/pnpm_package_manager.rb (Section : Update instructions)
 ARG PNPM_VERSION=10.11.1
 
 # Check for updates at https://github.com/yarnpkg/berry/releases
+# With every major release update, also update npm_and_yarn/lib/dependabot/npm_and_yarn/yarn_package_manager.rb (Section : Update instructions)
 ARG YARN_VERSION=4.9.2
 
 # Check for updates at https://github.com/oven-sh/bun/releases
 ARG BUN_VERSION=1.2.5
 
 # See https://github.com/nodesource/distributions#installation-instructions
+# Always update NODEJS_VERSION with a compatible NPM_VERSION 
+# See https://nodejs.org/en/about/previous-releases#looking-for-the-latest-release-of-a-version-branch for more information
+# Note : Always use the Active LTS version
 ARG NODEJS_VERSION=22
 
 # Check for updates at https://github.com/npm/cli/releases
-# This version should be compatible with the Node.js version declared above. See https://nodejs.org/en/download/releases as well
-# TODO: Upgrade to 9.6.7 depending on the outcome of https://github.com/npm/cli/issues/6742
+# This version should be compatible with the NODEJS_VERSION version declared above. See https://nodejs.org/en/download/releases as well
+# With every major release update, also update npm_and_yarn/lib/dependabot/npm_and_yarn/npm_package_manager.rb (Section : Update instructions)
 ARG NPM_VERSION=10.5.0
 
 # Install Node and npm
