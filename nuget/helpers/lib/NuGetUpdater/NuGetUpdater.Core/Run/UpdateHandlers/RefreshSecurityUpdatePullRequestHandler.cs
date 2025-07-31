@@ -82,7 +82,7 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
                 var dependencyName = dependencyGroupToUpdate.Key;
                 var vulnerableDependenciesToUpdate = dependencyGroupToUpdate.Value
                     .Where(o => !job.IsDependencyIgnoredByNameOnly(o.Dependency.Name))
-                    .Select(o => (o.ProjectPath, o.Dependency, RunWorker.GetDependencyInfo(job, o.Dependency)))
+                    .Select(o => (o.ProjectPath, o.Dependency, RunWorker.GetDependencyInfo(job, o.Dependency, allowCooldown: false)))
                     .Where(set => set.Item3.IsVulnerable)
                     .ToArray();
 
@@ -161,7 +161,7 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
             {
                 var commitMessage = PullRequestTextGenerator.GetPullRequestCommitMessage(job, [.. updateOperationsPerformed], null);
                 var prTitle = PullRequestTextGenerator.GetPullRequestTitle(job, [.. updateOperationsPerformed], null);
-                var prBody = PullRequestTextGenerator.GetPullRequestBody(job, [.. updateOperationsPerformed], null);
+                var prBody = await PullRequestTextGenerator.GetPullRequestBodyAsync(job, [.. updateOperationsPerformed], [.. updatedDependencies], experimentsManager);
 
                 var existingPullRequest = job.GetExistingPullRequestForDependencies(rawDependencies, considerVersions: true);
                 if (existingPullRequest is not null)

@@ -666,22 +666,12 @@ public class FileWriterWorkerTests : TestBase
     [Fact]
     public async Task EndToEnd_GlobalJson()
     {
-        // project is unchanged but `global.json` is updated
+        // `global.json` is updated
         await TestAsync(
             dependencyName: "Some.MSBuild.Sdk",
             oldDependencyVersion: "1.0.0",
             newDependencyVersion: "1.1.0",
-            projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>net9.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Some.Dependency" Version="1.0.0" />
-                  </ItemGroup>
-                </Project>
-                """,
-            additionalFiles: [
+            files: [
                 ("global.json", """
                     {
                       "sdk": {
@@ -702,17 +692,7 @@ public class FileWriterWorkerTests : TestBase
             discoveryWorker: null, // use real worker
             dependencySolver: null, // use real worker
             fileWriter: null, // use real worker
-            expectedProjectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>net9.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Some.Dependency" Version="1.0.0" />
-                  </ItemGroup>
-                </Project>
-                """,
-            expectedAdditionalFiles: [
+            expectedFiles: [
                 ("global.json", """
                     {
                       "sdk": {
@@ -872,19 +852,54 @@ public class FileWriterWorkerTests : TestBase
         Action<DirectoryInfo>? additionalChecks = null
     )
     {
+        var files = new List<(string name, string contents)> { (projectName, projectContents) };
+        files.AddRange(additionalFiles);
+
+        var expectedFiles = new List<(string Path, string Contents)>() { (projectName, expectedProjectContents) };
+        expectedFiles.AddRange(expectedAdditionalFiles);
+
+        await TestAsync(
+            dependencyName,
+            oldDependencyVersion,
+            newDependencyVersion,
+            [.. files],
+            discoveryWorker,
+            dependencySolver,
+            fileWriter,
+            [.. expectedFiles],
+            expectedOperations,
+            packages,
+            experimentsManager,
+            additionalChecks
+        );
+    }
+
+    private static async Task TestAsync(
+        string dependencyName,
+        string oldDependencyVersion,
+        string newDependencyVersion,
+        (string name, string contents)[] files,
+        IDiscoveryWorker? discoveryWorker,
+        IDependencySolver? dependencySolver,
+        IFileWriter? fileWriter,
+        (string name, string contents)[] expectedFiles,
+        UpdateOperationBase[] expectedOperations,
+        MockNuGetPackage[]? packages = null,
+        ExperimentsManager? experimentsManager = null,
+        Action<DirectoryInfo>? additionalChecks = null
+    )
+    {
         // arrange
-        var allFiles = new List<(string Path, string Contents)>() { (projectName, projectContents) };
-        allFiles.AddRange(additionalFiles);
-        using var tempDir = await TemporaryDirectory.CreateWithContentsAsync([.. allFiles]);
+        using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(files);
         await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(packages, tempDir.DirectoryPath);
 
         var jobId = "TEST-JOB-ID";
         var logger = new TestLogger();
-        experimentsManager ??= new ExperimentsManager() { UseDirectDiscovery = true };
+        experimentsManager ??= new ExperimentsManager();
         discoveryWorker ??= new DiscoveryWorker(jobId, experimentsManager, logger);
         var repoContentsPath = new DirectoryInfo(tempDir.DirectoryPath);
-        var projectPath = new FileInfo(Path.Combine(tempDir.DirectoryPath, projectName));
-        dependencySolver ??= new MSBuildDependencySolver(repoContentsPath, projectPath, experimentsManager, logger);
+        var projectPath = new FileInfo(Path.Combine(tempDir.DirectoryPath, files.First().name));
+        dependencySolver ??= new MSBuildDependencySolver(repoContentsPath, projectPath, logger);
         fileWriter ??= new XmlFileWriter(logger);
 
         var fileWriterWorker = new FileWriterWorker(discoveryWorker, dependencySolver, fileWriter, logger);
@@ -903,8 +918,6 @@ public class FileWriterWorkerTests : TestBase
         var expectedUpdateOperationsJson = expectedOperations.Select(o => JsonSerializer.Serialize(o, RunWorker.SerializerOptions)).ToArray();
         AssertEx.Equal(expectedUpdateOperationsJson, actualUpdateOperationsJson);
 
-        var expectedFiles = new List<(string Path, string Contents)>() { (projectName, expectedProjectContents) };
-        expectedFiles.AddRange(expectedAdditionalFiles);
         foreach (var (path, expectedContents) in expectedFiles)
         {
             var fullPath = Path.Join(tempDir.DirectoryPath, path);

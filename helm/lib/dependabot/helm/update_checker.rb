@@ -19,6 +19,8 @@ module Dependabot
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       extend T::Sig
 
+      require_relative "update_checker/latest_version_resolver"
+
       sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
       def latest_version
         @latest_version ||= T.let(fetch_latest_version, T.nilable(T.any(String, Gem::Version)))
@@ -67,6 +69,10 @@ module Dependabot
         valid_releases = filter_valid_releases(releases)
         return nil if valid_releases.empty?
 
+        if cooldown_enabled?
+          valid_releases =  latest_version_resolver
+                            .fetch_tag_and_release_date_helm_chart(valid_releases, repo_name, chart_name)
+        end
         highest_release = valid_releases.max_by { |release| version_class.new(release["version"]) }
         Dependabot.logger.info(
           "Found latest version #{T.must(highest_release)['version']} for #{chart_name} using helm search"
@@ -87,6 +93,14 @@ module Dependabot
         Dependabot.logger.info("Found #{all_versions.length} versions for #{chart_name} in index.yaml")
 
         valid_versions = filter_valid_versions(all_versions)
+        if cooldown_enabled?
+          # Filter out versions that are in cooldown period
+          valid_versions = latest_version_resolver.fetch_tag_and_release_date_helm_chart_index(
+            index_url,
+            valid_versions,
+            chart_name
+          )
+        end
         Dependabot.logger.info("After filtering, found #{valid_versions.length} valid versions for #{chart_name}")
 
         return nil if valid_versions.empty?
@@ -153,7 +167,6 @@ module Dependabot
         Dependabot.logger.info("Fetching releases for Helm chart: #{chart_name}")
 
         if repo_name && repo_url
-          authenticate_registry_source(repo_url)
           begin
             Helpers.add_repo(repo_name, repo_url)
             Helpers.update_repo
@@ -178,39 +191,12 @@ module Dependabot
         end
       end
 
-      sig { params(repo_url: T.nilable(String)).returns(T.nilable(String)) }
-      def authenticate_registry_source(repo_url)
-        return unless repo_url
-
-        repo_creds = Shared::Utils::CredentialsFinder.new(@credentials, private_repository_type: "helm_registry")
-                                                     .credentials_for_registry(repo_url)
-        return unless repo_creds
-
-        Helpers.registry_login(T.must(repo_creds["username"]), T.must(repo_creds["password"]), repo_url)
-      rescue StandardError
-        raise PrivateSourceAuthenticationFailure, repo_url
-      end
-
-      sig { params(repo_url: T.nilable(String)).returns(T.nilable(String)) }
-      def authenticate_oci_registry_source(repo_url)
-        return unless repo_url
-
-        repo_creds = Shared::Utils::CredentialsFinder.new(@credentials, private_repository_type: "helm_registry")
-                                                     .credentials_for_registry(repo_url)
-        return unless repo_creds
-
-        Helpers.oci_registry_login(T.must(repo_creds["username"]), T.must(repo_creds["password"]), repo_url)
-      rescue StandardError
-        raise PrivateSourceAuthenticationFailure, repo_url
-      end
-
       sig { returns(T.nilable(Gem::Version)) }
       def fetch_latest_chart_version
         chart_name = dependency.name
         source = dependency.requirements.first&.dig(:source)
         repo_url = source&.dig(:registry)
         repo_name = extract_repo_name(repo_url)
-
         releases = fetch_releases_with_helm_cli(chart_name, repo_name, repo_url)
         return releases if releases
 
@@ -226,6 +212,16 @@ module Dependabot
         return nil unless tags && !tags.empty?
 
         valid_tags = filter_valid_versions(tags)
+        if cooldown_enabled?
+          # Filter out versions that are in cooldown period
+          repo_url = repo_url.gsub("oci://", "")
+          repo_url = repo_url + "/" + chart_name
+          tags_with_release_date = fetch_tags_with_release_date_using_oci(valid_tags, repo_url)
+          valid_tags = latest_version_resolver.filter_versions_in_cooldown_period_using_oci(
+            valid_tags,
+            tags_with_release_date
+          )
+        end
         return nil if valid_tags.empty?
 
         highest_tag = valid_tags.map { |v| version_class.new(v) }.max
@@ -237,7 +233,6 @@ module Dependabot
       def fetch_oci_tags(chart_name, repo_url)
         Dependabot.logger.info("Fetching OCI tags for #{repo_url}")
         oci_registry = repo_url.gsub("oci://", "")
-        authenticate_oci_registry_source(repo_url)
 
         release_tags = Helpers.fetch_oci_tags("#{oci_registry}/#{chart_name}").split("\n")
         release_tags.map { |tag| tag.tr("_", "+") }
@@ -295,14 +290,26 @@ module Dependabot
 
         Dependabot.logger.info("Delegating to Docker UpdateChecker for image: #{docker_dependency.name}")
 
-        docker_checker = Dependabot::UpdateCheckers.for_package_manager("docker").new(
-          dependency: docker_dependency,
-          dependency_files: dependency_files,
-          credentials: credentials,
-          ignored_versions: ignored_versions,
-          security_advisories: security_advisories,
-          raise_on_ignored: raise_on_ignored
-        )
+        docker_checker = if cooldown_enabled?
+                           Dependabot::UpdateCheckers.for_package_manager("docker").new(
+                             dependency: docker_dependency,
+                             dependency_files: dependency_files,
+                             credentials: credentials,
+                             ignored_versions: ignored_versions,
+                             security_advisories: security_advisories,
+                             raise_on_ignored: raise_on_ignored,
+                             update_cooldown: update_cooldown
+                           )
+                         else
+                           Dependabot::UpdateCheckers.for_package_manager("docker").new(
+                             dependency: docker_dependency,
+                             dependency_files: dependency_files,
+                             credentials: credentials,
+                             ignored_versions: ignored_versions,
+                             security_advisories: security_advisories,
+                             raise_on_ignored: raise_on_ignored
+                           )
+                         end
 
         latest_version = docker_checker.latest_version
 
@@ -311,6 +318,36 @@ module Dependabot
         return unless docker_checker.can_update?(requirements_to_unlock: :none)
 
         version_class.new(latest_version)
+      end
+
+      sig { params(tags: T::Array[String], repo_url: String).returns(T::Array[GitTagWithDetail]) }
+      def fetch_tags_with_release_date_using_oci(tags, repo_url)
+        git_tag_with_release_date = T.let([], T::Array[GitTagWithDetail])
+        return git_tag_with_release_date if tags.empty?
+
+        tags = tags.sort.reverse.take(150) # Limit to 150 tags for performance
+        tags.each do |tag|
+          # Since the oras registry uses "_" instead of "+", this is a workaround
+          # to ensure the tag is correctly formatted for the OCI registry.
+          # This is necessary because some tags may contain "+" which is not valid in OCI tags.
+
+          temp_tag = tag.tr("+", "_")
+          response = Helpers.fetch_tags_with_release_date_using_oci(repo_url, temp_tag)
+
+          begin
+            parsed_response = JSON.parse(response)
+          rescue JSON::ParserError => e
+            Dependabot.logger.error("Failed to parse JSON response for tag #{tag}: #{e.message}")
+            next
+          end
+          git_tag_with_release_date << GitTagWithDetail.new(
+            tag: tag,
+            release_date: parsed_response.dig("annotations", "org.opencontainers.image.created")
+          )
+        rescue StandardError => e
+          Dependabot.logger.error("Error in fetching details for tag #{tag}: #{e.message}")
+        end
+        git_tag_with_release_date
       end
 
       sig { returns(Dependabot::Dependency) }
@@ -344,8 +381,27 @@ module Dependabot
           package_manager: "helm"
         )
       end
+
+      sig { returns(T::Boolean) }
+      def cooldown_enabled?
+        # This is a simple check to see if user has put cooldown days.
+        # If not set, then we aassume user does not want cooldown.
+        # Since Helm does not support Semver versioning, So option left
+        # for the user is to set cooldown default days.
+        return false if update_cooldown.nil?
+
+        T.must(update_cooldown&.default_days).positive?
+      end
+
+      sig { returns(LatestVersionResolver) }
+      def latest_version_resolver
+        LatestVersionResolver.new(
+          dependency: dependency,
+          credentials: credentials,
+          cooldown_options: update_cooldown
+        )
+      end
     end
   end
 end
-
 Dependabot::UpdateCheckers.register("helm", Dependabot::Helm::UpdateChecker)

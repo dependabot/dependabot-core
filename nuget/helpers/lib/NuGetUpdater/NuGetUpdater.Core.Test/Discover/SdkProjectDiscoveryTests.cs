@@ -637,8 +637,7 @@ public class SdkProjectDiscoveryTests : DiscoveryWorkerTestBase
 
         var logger = new TestLogger();
         var fullProjectPath = Path.Combine(testDirectory.DirectoryPath, projectPath);
-        var experimentsManager = new ExperimentsManager() { UseDirectDiscovery = true }; // the following method is direct discovery; this just makes the call to Validate... happy
-        var projectDiscovery = await SdkProjectDiscovery.DiscoverWithBinLogAsync(testDirectory.DirectoryPath, Path.GetDirectoryName(fullProjectPath)!, fullProjectPath, experimentsManager, logger);
-        ValidateProjectResults(expectedProjects, projectDiscovery, experimentsManager);
+        var projectDiscovery = await SdkProjectDiscovery.DiscoverAsync(testDirectory.DirectoryPath, Path.GetDirectoryName(fullProjectPath)!, fullProjectPath, logger);
+        ValidateProjectResults(expectedProjects, projectDiscovery);
     }
 }

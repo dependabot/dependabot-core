@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using System.Text.RegularExpressions;
-using System.Xml.Linq;
+
+using Microsoft.Language.Xml;
 
 using NuGet.Versioning;
 
@@ -24,7 +25,7 @@ public class XmlFileWriter : IFileWriter
     private readonly ILogger _logger;
 
     // these file extensions are valid project entrypoints; everything else is ignored
-    private static readonly HashSet<string> SupportedProjectFileExtensions = new(StringComparer.OrdinalIgnoreCase)
+    internal static readonly HashSet<string> SupportedProjectFileExtensions = new(StringComparer.OrdinalIgnoreCase)
     {
         ".csproj",
         ".vbproj",
@@ -32,7 +33,7 @@ public class XmlFileWriter : IFileWriter
     };
 
     // these file extensions are valid additional files and can be updated; everything else is ignored
-    private static readonly HashSet<string> SupportedAdditionalFileExtensions = new(StringComparer.OrdinalIgnoreCase)
+    internal static readonly HashSet<string> SupportedAdditionalFileExtensions = new(StringComparer.OrdinalIgnoreCase)
     {
         ".props",
         ".targets",
@@ -70,8 +71,7 @@ public class XmlFileWriter : IFileWriter
             .Where(path => SupportedProjectFileExtensions.Contains(Path.GetExtension(path)) || SupportedAdditionalFileExtensions.Contains(Path.GetExtension(path)))
             .Select(async path =>
             {
-                var content = await ReadFileContentsAsync(repoContentsPath, path);
-                var document = XDocument.Parse(content, LoadOptions.PreserveWhitespace);
+                var document = await ReadFileContentsAsync(repoContentsPath, path);
                 return KeyValuePair.Create(path, document);
             })
             .ToArray();
@@ -101,17 +101,46 @@ public class XmlFileWriter : IFileWriter
             string? currentVersionString = null;
             Action<string>? updateVersionLocation = null;
 
-            var packageReferenceElements = filesAndContents.Values
-                .SelectMany(doc => doc.Descendants().Where(e => e.Name.LocalName == PackageReferenceElementName || e.Name.LocalName == GlobalPackageReferenceElementName))
-                .Where(e =>
+            var packageReferenceElementsAndPaths = filesAndContents
+                .SelectMany(kvp =>
                 {
-                    var attributeValue = e.Attribute(IncludeAttributeName)?.Value ?? e.Attribute(UpdateAttributeName)?.Value ?? string.Empty;
+                    var path = kvp.Key;
+                    var doc = kvp.Value;
+                    var elements = doc.Descendants().Where(e => e.Name == PackageReferenceElementName || e.Name == GlobalPackageReferenceElementName);
+                    var pair = elements.Select(element => KeyValuePair.Create(element, path));
+                    return pair;
+                })
+                .Where(pair =>
+                {
+                    var element = pair.Key;
+                    var attributeValue = element.GetAttributeValue(IncludeAttributeName) ?? element.GetAttributeValue(UpdateAttributeName) ?? string.Empty;
                     var packageNames = attributeValue.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
                     return packageNames.Any(name => name.Equals(requiredPackageVersion.Name, StringComparison.OrdinalIgnoreCase));
                 })
                 .ToArray();
 
-            if (packageReferenceElements.Length == 0)
+            SyntaxNode ReplaceNode(string filePath, SyntaxNode original, SyntaxNode replacement)
+            {
+                var doc = filesAndContents[filePath];
+
+#if DEBUG
+                if (!doc.DescendantNodes().OfType<XmlNodeSyntax>().Any(n => n == original))
+                {
+                    throw new NotSupportedException("original node was not found");
+                }
+#endif
+
+                var updatedDoc = doc.ReplaceNode(original, replacement);
+#if DEBUG
+                var docFullString = doc.ToFullString();
+                var updatedDocFullString = updatedDoc.ToFullString();
+#endif
+                filesAndContents[filePath] = updatedDoc;
+                var newlyAddedNode = updatedDoc.DescendantNodes().OfType<XmlNodeSyntax>().First(d => d.FullSpan.Start == original.FullSpan.Start);
+                return newlyAddedNode;
+            }
+
+            if (packageReferenceElementsAndPaths.Length == 0)
             {
                 // no matching `<PackageReference>` elements found; pin it as a transitive dependency
                 updatesPerformed[requiredPackageVersion.Name] = true; // all cases below add the dependency
@@ -119,51 +148,88 @@ public class XmlFileWriter : IFileWriter
                 // find last `<ItemGroup>` in the project...
                 Action addItemGroup = () => { }; // adding an ItemGroup to the project isn't always necessary, but it's much easier to prepare for it here
                 var projectDocument = filesAndContents[projectRelativePath];
-                var lastItemGroup = projectDocument.Root!.Elements()
-                    .LastOrDefault(e => e.Name.LocalName.Equals(ItemGroupElementName, StringComparison.OrdinalIgnoreCase));
+                var lastItemGroup = projectDocument.RootSyntax.Elements
+                    .LastOrDefault(e => e.Name.Equals(ItemGroupElementName, StringComparison.OrdinalIgnoreCase));
                 if (lastItemGroup is null)
                 {
                     _logger.Info($"No `<{ItemGroupElementName}>` element found in project; adding one.");
-                    lastItemGroup = new XElement(XName.Get(ItemGroupElementName, projectDocument.Root.Name.NamespaceName));
-                    addItemGroup = () => projectDocument.Root.Add(lastItemGroup);
+                    lastItemGroup = XmlExtensions.CreateOpenCloseXmlElementSyntax(ItemGroupElementName, []);
+                    addItemGroup = () =>
+                    {
+                        projectDocument = (XmlDocumentSyntax)((IXmlElementSyntax)projectDocument).AddChild(lastItemGroup);
+                        filesAndContents[projectRelativePath] = projectDocument;
+                    };
                 }
 
                 // ...find where the new item should go...
-                var packageReferencesBeforeNew = lastItemGroup.Elements()
-                    .Where(e => e.Name.LocalName.Equals(PackageReferenceElementName, StringComparison.OrdinalIgnoreCase))
-                    .TakeWhile(e => (e.Attribute(IncludeAttributeName)?.Value ?? e.Attribute(UpdateAttributeName)?.Value ?? string.Empty).CompareTo(requiredPackageVersion.Name) < 0)
-                    .ToArray();
+                var elementsBeforeNew = GetOrderedElementsBeforeSpecified(lastItemGroup, PackageReferenceElementName, [IncludeAttributeName, UpdateAttributeName], requiredPackageVersion.Name);
 
                 // ...prepare a new `<PackageReference>` element...
-                var newElement = new XElement(
-                    XName.Get(PackageReferenceElementName, projectDocument.Root.Name.NamespaceName),
-                    new XAttribute(IncludeAttributeName, requiredPackageVersion.Name));
+                var newElement = XmlExtensions.CreateSingleLineXmlElementSyntax(PackageReferenceElementName, leadingTrivia: new SyntaxList<SyntaxNode>())
+                    .WithAttribute(IncludeAttributeName, requiredPackageVersion.Name);
 
                 // ...add the `<PackageReference>` element if and where appropriate...
                 if (addPackageReferenceElementForPinnedPackages)
                 {
                     addItemGroup();
-                    var lastPriorPackageReference = packageReferencesBeforeNew.LastOrDefault();
-                    if (lastPriorPackageReference is not null)
+                    var lastPriorElement = elementsBeforeNew.LastOrDefault();
+                    if (lastPriorElement is not null)
                     {
-                        AddAfterSiblingElement(lastPriorPackageReference, newElement);
+                        var lastPriorElementLineNumber = filesAndContents[projectRelativePath].ToFullString().Take(lastPriorElement.SpanStart).Count(c => c == '\n');
+                        var lastElementAtStartOfLine = lastPriorElement.Parent.ChildNodes
+                            .First(n => filesAndContents[projectRelativePath].ToFullString().Take(n.SpanStart).Count(c => c == '\n') == lastPriorElementLineNumber);
+                        var trivia = lastElementAtStartOfLine.GetLeadingTrivia().ToList();
+                        var priorEolIndex = trivia.FindLastIndex(t => t.Kind == SyntaxKind.EndOfLineTrivia);
+                        var indentTrivia = trivia
+                            .Skip(priorEolIndex + 1)
+                            .Select(t => SyntaxFactory.WhitespaceTrivia(t.ToFullString()))
+                            .ToArray();
+                        var newTrivia = new SyntaxTriviaList([SyntaxFactory.EndOfLineTrivia("\n"), .. indentTrivia]);
+                        newElement = (IXmlElementSyntax)newElement.AsNode.WithLeadingTrivia(newTrivia);
+                        var replacementParent = lastPriorElement.Parent.InsertNodesAfter(lastPriorElement, [newElement.AsNode]);
+                        var actualReplacementParent = ReplaceNode(projectRelativePath, lastPriorElement.Parent, replacementParent);
+                        var insertionIndex = elementsBeforeNew.Length;
+                        var actualNewElement = ((IXmlElementSyntax)actualReplacementParent).Content[insertionIndex];
+                        newElement = (IXmlElementSyntax)actualNewElement;
                     }
                     else
                     {
                         // no prior package references; add to the front
-                        var indent = GetIndentXTextFromElement(lastItemGroup, extraIndentationToAdd: "  ");
-                        lastItemGroup.AddFirst(indent, newElement);
+                        var itemGroupTrivia = lastItemGroup.AsNode.GetLeadingTrivia().ToList();
+                        var priorEolIndex = itemGroupTrivia.FindLastIndex(t => t.Kind == SyntaxKind.EndOfLineTrivia);
+                        var indentTrivia = itemGroupTrivia
+                            .Skip(priorEolIndex + 1)
+                            .Select(t => SyntaxFactory.WhitespaceTrivia(t.ToFullString()))
+                            .ToArray();
+                        var newTrivia = new SyntaxTriviaList([SyntaxFactory.EndOfLineTrivia("\n"), SyntaxFactory.WhitespaceTrivia("  "), .. indentTrivia]);
+                        newElement = (IXmlElementSyntax)newElement.AsNode.WithLeadingTrivia(newTrivia);
+                        var updatedItemGroup = (IXmlElementSyntax)ReplaceNode(
+                            projectRelativePath,
+                            lastItemGroup.AsNode,
+                            lastItemGroup.InsertChild(newElement, 0).AsNode
+                        );
+                        newElement = (IXmlElementSyntax)updatedItemGroup.Content[0];
                     }
                 }
 
                 // ...find the best place to add the version...
-                var matchingPackageVersionElement = filesAndContents.Values
-                    .SelectMany(doc => doc.Descendants().Where(e => e.Name.LocalName.Equals(PackageVersionElementName, StringComparison.OrdinalIgnoreCase)))
-                    .FirstOrDefault(e => (e.Attribute(IncludeAttributeName)?.Value ?? string.Empty).Trim().Equals(requiredPackageVersion.Name, StringComparison.OrdinalIgnoreCase));
-                if (matchingPackageVersionElement is not null)
+                var matchingPackageVersionElementsAndPaths = filesAndContents
+                    .SelectMany(kvp =>
+                    {
+                        var path = kvp.Key;
+                        var doc = kvp.Value;
+                        var packageVersionElements = doc.Descendants()
+                            .Where(e => e.Name.Equals(PackageVersionElementName, StringComparison.OrdinalIgnoreCase))
+                            .Where(element => (element.GetAttributeValue(IncludeAttributeName) ?? string.Empty).Trim().Equals(requiredPackageVersion.Name, StringComparison.OrdinalIgnoreCase))
+                            .ToArray();
+                        return packageVersionElements.Select(element => KeyValuePair.Create(element, path));
+                    })
+                    .ToArray();
+                if (matchingPackageVersionElementsAndPaths.Length > 0)
                 {
                     // found matching `<PackageVersion>` element; if `Version` attribute is appropriate we're done, otherwise set `VersionOverride` attribute on new element
-                    var versionAttribute = matchingPackageVersionElement.Attributes().FirstOrDefault(a => a.Name.LocalName.Equals(VersionMetadataName, StringComparison.OrdinalIgnoreCase));
+                    var (matchingPackageVersionElement, filePath) = matchingPackageVersionElementsAndPaths.First();
+                    var versionAttribute = matchingPackageVersionElement.GetAttributeCaseInsensitive(VersionMetadataName);
                     if (versionAttribute is not null &&
                         NuGetVersion.TryParse(versionAttribute.Value, out var existingVersion) &&
                         existingVersion == requiredVersion)
@@ -175,88 +241,152 @@ public class XmlFileWriter : IFileWriter
                     {
                         // version doesn't match; use `VersionOverride` attribute on new element
                         _logger.Info($"Dependency {requiredPackageVersion.Name} set to {requiredVersion}; using `{VersionOverrideMetadataName}` attribute on new element.");
-                        newElement.SetAttributeValue(VersionOverrideMetadataName, requiredVersion.ToString());
+                        newElement = (IXmlElementSyntax)ReplaceNode(
+                            projectRelativePath,
+                            newElement.AsNode,
+                            newElement.WithAttribute(VersionOverrideMetadataName, requiredVersion.ToString()).AsNode
+                        );
                     }
                 }
                 else
                 {
                     // no matching `<PackageVersion>` element; either add a new one, or directly set the `Version` attribute on the new element
-                    var allPackageVersionElements = filesAndContents.Values
-                        .SelectMany(doc => doc.Descendants().Where(e => e.Name.LocalName.Equals(PackageVersionElementName, StringComparison.OrdinalIgnoreCase)))
+                    var allPackageVersionElementsAndPaths = filesAndContents
+                        .SelectMany(kvp =>
+                        {
+                            var path = kvp.Key;
+                            var doc = kvp.Value;
+                            return doc.Descendants()
+                                .Where(e => e.Name.Equals(PackageVersionElementName, StringComparison.OrdinalIgnoreCase))
+                                .Select(element => KeyValuePair.Create(element, path));
+                        })
                         .ToArray();
-                    if (allPackageVersionElements.Length > 0)
+                    if (allPackageVersionElementsAndPaths.Length > 0)
                     {
                         // add a new `<PackageVersion>` element
-                        var newVersionElement = new XElement(XName.Get(PackageVersionElementName, projectDocument.Root.Name.NamespaceName),
-                            new XAttribute(IncludeAttributeName, requiredPackageVersion.Name),
-                            new XAttribute(VersionMetadataName, requiredVersion.ToString()));
-                        var lastPriorPackageVersionElement = allPackageVersionElements
-                            .TakeWhile(e => (e.Attribute(IncludeAttributeName)?.Value ?? string.Empty).Trim().CompareTo(requiredPackageVersion.Name) < 0)
-                            .LastOrDefault();
-                        if (lastPriorPackageVersionElement is not null)
+                        var newVersionElement = XmlExtensions.CreateSingleLineXmlElementSyntax(PackageVersionElementName)
+                            .WithAttribute(IncludeAttributeName, requiredPackageVersion.Name)
+                            .WithAttribute(VersionMetadataName, requiredVersion.ToString());
+                        var priorPackageVersionElementsAndPaths = allPackageVersionElementsAndPaths
+                            .TakeWhile(pair => (pair.Key.GetAttributeValue(IncludeAttributeName) ?? string.Empty).Trim().CompareTo(requiredPackageVersion.Name) < 0)
+                            .ToArray();
+                        if (priorPackageVersionElementsAndPaths.Length > 0)
                         {
                             _logger.Info($"Adding new `<{PackageVersionElementName}>` element for {requiredPackageVersion.Name} with version {requiredVersion}.");
-                            AddAfterSiblingElement(lastPriorPackageVersionElement, newVersionElement);
+                            var (lastPriorPackageVersionElement, filePath) = priorPackageVersionElementsAndPaths.Last();
+                            var trivia = lastPriorPackageVersionElement.AsNode.GetLeadingTrivia().ToList();
+                            var priorEolIndex = trivia.FindLastIndex(t => t.Kind == SyntaxKind.EndOfLineTrivia);
+                            var indentTrivia = trivia
+                                .Skip(priorEolIndex + 1)
+                                .Select(t => SyntaxFactory.WhitespaceTrivia(t.ToFullString()))
+                                .ToArray();
+                            var newTrivia = new SyntaxTriviaList([SyntaxFactory.EndOfLineTrivia("\n"), .. indentTrivia]);
+                            newVersionElement = (IXmlElementSyntax)newVersionElement.AsNode.WithLeadingTrivia(newTrivia).WithoutTrailingTrivia();
+                            var insertionIndex = lastPriorPackageVersionElement.Parent.Content.IndexOf(lastPriorPackageVersionElement.AsNode) + 1;
+                            var replacementParent = lastPriorPackageVersionElement.Parent
+                                .InsertChild(newVersionElement, insertionIndex);
+                            var actualReplacementParent = ReplaceNode(filePath, lastPriorPackageVersionElement.Parent.AsNode, replacementParent.AsNode);
+                            var actualNewElement = ((IXmlElementSyntax)actualReplacementParent).Content[insertionIndex];
+                            newVersionElement = (IXmlElementSyntax)actualNewElement;
                         }
                         else
                         {
                             // no prior package versions; add to the front of the document
                             _logger.Info($"Adding new `<{PackageVersionElementName}>` element for {requiredPackageVersion.Name} with version {requiredVersion} at the start of the document.");
-                            var packageVersionGroup = allPackageVersionElements.First().Parent!;
-                            var indent = GetIndentXTextFromElement(packageVersionGroup, extraIndentationToAdd: "  ");
-                            packageVersionGroup.AddFirst(indent, newVersionElement);
+                            var (packageVersionGroup, filePath) = allPackageVersionElementsAndPaths.First();
+                            packageVersionGroup = packageVersionGroup.Parent;
+                            var itemGroupTrivia = packageVersionGroup.AsNode.GetLeadingTrivia().ToList();
+                            var priorEolIndex = itemGroupTrivia.FindLastIndex(t => t.Kind == SyntaxKind.EndOfLineTrivia);
+                            var indentTrivia = itemGroupTrivia
+                                .Skip(priorEolIndex + 1)
+                                .Select(t => SyntaxFactory.WhitespaceTrivia(t.ToFullString()))
+                                .ToArray();
+                            var newTrivia = new SyntaxTriviaList([SyntaxFactory.EndOfLineTrivia("\n"), SyntaxFactory.WhitespaceTrivia("  "), .. indentTrivia]);
+                            newVersionElement = (IXmlElementSyntax)newVersionElement.AsNode.WithLeadingTrivia(newTrivia).WithoutTrailingTrivia();
+                            var insertionIndex = 0;
+                            var replacementPackageVersionGroup = packageVersionGroup
+                                .InsertChild(newVersionElement, insertionIndex);
+                            ReplaceNode(
+                                filePath,
+                                packageVersionGroup.AsNode,
+                                replacementPackageVersionGroup.AsNode
+                            );
                         }
                     }
                     else
                     {
                         // add a direct `Version` attribute
-                        newElement.SetAttributeValue(VersionMetadataName, requiredVersion.ToString());
+                        var newElementWithVersion = newElement.WithAttribute(VersionMetadataName, requiredVersion.ToString());
+                        newElement = (IXmlElementSyntax)ReplaceNode(projectRelativePath, newElement.AsNode, newElementWithVersion.AsNode);
                     }
                 }
             }
             else
             {
                 // found matching `<PackageReference>` elements to update
-                foreach (var packageReferenceElement in packageReferenceElements)
+                foreach (var (packageReferenceElement, filePath) in packageReferenceElementsAndPaths)
                 {
                     // first check for matching `Version` attribute
-                    var versionAttribute = packageReferenceElement.Attributes().FirstOrDefault(a => a.Name.LocalName.Equals(VersionMetadataName, StringComparison.OrdinalIgnoreCase));
+                    var versionAttribute = packageReferenceElement.GetAttribute(VersionMetadataName, StringComparison.OrdinalIgnoreCase);
                     if (versionAttribute is not null)
                     {
                         currentVersionString = versionAttribute.Value;
-                        updateVersionLocation = (version) => versionAttribute.Value = version;
+                        updateVersionLocation = version =>
+                        {
+                            var refoundVersionAttribute = filesAndContents[filePath]
+                                .DescendantNodes()
+                                .OfType<XmlAttributeSyntax>()
+                                .First(a => a.FullSpan.Start == versionAttribute.FullSpan.Start);
+                            ReplaceNode(filePath, refoundVersionAttribute, refoundVersionAttribute.WithValue(version));
+                        };
                         goto doVersionUpdate;
                     }
 
                     // next check for `Version` child element
-                    var versionElement = packageReferenceElement.Elements().FirstOrDefault(e => e.Name.LocalName.Equals(VersionMetadataName, StringComparison.OrdinalIgnoreCase));
+                    var versionElement = packageReferenceElement.Elements.FirstOrDefault(e => e.Name.Equals(VersionMetadataName, StringComparison.OrdinalIgnoreCase));
                     if (versionElement is not null)
                     {
-                        currentVersionString = versionElement.Value;
-                        updateVersionLocation = (version) => versionElement.Value = version;
+                        currentVersionString = versionElement.GetContentValue();
+                        updateVersionLocation = version =>
+                        {
+                            var refoundVersionElement = filesAndContents[filePath]
+                                .DescendantNodes()
+                                .OfType<IXmlElementSyntax>()
+                                .First(e => e.AsNode.FullSpan.Start == versionElement.AsNode.FullSpan.Start);
+                            ReplaceNode(filePath, refoundVersionElement.AsNode, refoundVersionElement.WithContent(version).AsNode);
+                        };
                         goto doVersionUpdate;
                     }
 
                     // check for matching `<PackageVersion>` element
-                    var packageVersionElement = filesAndContents.Values
-                        .SelectMany(doc => doc.Descendants().Where(e => e.Name.LocalName == PackageVersionElementName))
-                        .FirstOrDefault(e => (e.Attribute(IncludeAttributeName)?.Value ?? string.Empty).Trim().Equals(requiredPackageVersion.Name, StringComparison.OrdinalIgnoreCase));
-                    if (packageVersionElement is not null)
+                    var packageVersionElementsAndPaths = filesAndContents
+                        .SelectMany(kvp =>
+                        {
+                            var path = kvp.Key;
+                            var doc = kvp.Value;
+                            return doc.Descendants()
+                                .Where(e => e.Name.Equals(PackageVersionElementName, StringComparison.OrdinalIgnoreCase))
+                                .Where(e => (e.GetAttributeValue(IncludeAttributeName) ?? string.Empty).Trim().Equals(requiredPackageVersion.Name, StringComparison.OrdinalIgnoreCase))
+                                .Select(element => KeyValuePair.Create(element, path));
+                        })
+                        .ToArray();
+                    if (packageVersionElementsAndPaths.Length > 0)
                     {
-                        var packageVersionAttribute = packageVersionElement.Attributes().FirstOrDefault(a => a.Name.LocalName.Equals(VersionMetadataName, StringComparison.OrdinalIgnoreCase));
+                        var (packageVersionElement, packageVersionFilePath) = packageVersionElementsAndPaths.First();
+                        var packageVersionAttribute = packageVersionElement.GetAttributeCaseInsensitive(VersionMetadataName);
                         if (packageVersionAttribute is not null)
                         {
                             currentVersionString = packageVersionAttribute.Value;
-                            updateVersionLocation = (version) => packageVersionAttribute.Value = version;
+                            updateVersionLocation = version => ReplaceNode(packageVersionFilePath, packageVersionAttribute, packageVersionAttribute.WithValue(version));
                             goto doVersionUpdate;
                         }
                         else
                         {
-                            var cpmVersionElement = packageVersionElement.Elements().FirstOrDefault(e => e.Name.LocalName.Equals(VersionMetadataName, StringComparison.OrdinalIgnoreCase));
+                            var cpmVersionElement = packageVersionElement.GetElements(VersionMetadataName, StringComparison.OrdinalIgnoreCase).FirstOrDefault();
                             if (cpmVersionElement is not null)
                             {
-                                currentVersionString = cpmVersionElement.Value;
-                                updateVersionLocation = (version) => cpmVersionElement.Value = version;
+                                currentVersionString = cpmVersionElement.GetContentValue();
+                                updateVersionLocation = version => ReplaceNode(packageVersionFilePath, cpmVersionElement.AsNode, cpmVersionElement.WithContent(version).AsNode);
                                 goto doVersionUpdate;
                             }
                         }
@@ -344,13 +474,21 @@ public class XmlFileWriter : IFileWriter
                             {
                                 // this looks like a property; keep walking backwards with all possible elements
                                 var propertyName = propertyMatch.Groups["PropertyName"].Value;
-                                var propertyDefinitions = filesAndContents.Values
-                                    .SelectMany(doc => doc.Descendants().Where(e => e.Name.LocalName.Equals(propertyName, StringComparison.OrdinalIgnoreCase)))
-                                    .Where(e => e.Parent?.Name.LocalName.Equals(PropertyGroupElementName, StringComparison.OrdinalIgnoreCase) == true)
+                                var propertyDefinitionsAndPaths = filesAndContents
+                                    .SelectMany(kvp =>
+                                    {
+                                        var path = kvp.Key;
+                                        var doc = kvp.Value;
+                                        return doc.Descendants()
+                                            .Where(e => e.Name.Equals(propertyName, StringComparison.OrdinalIgnoreCase))
+                                            .Where(e => e.Parent?.Name.Equals(PropertyGroupElementName, StringComparison.OrdinalIgnoreCase) == true)
+                                            .Select(element => KeyValuePair.Create(element, path));
+                                    })
                                     .ToArray();
-                                foreach (var propertyDefinition in propertyDefinitions)
+                                foreach (var (propertyDefinition, propertyFilePath) in propertyDefinitionsAndPaths)
                                 {
-                                    candidateUpdateLocations.Enqueue((propertyDefinition.Value, (version) => propertyDefinition.Value = version));
+                                    var updateAction = new Action<string>(version => ReplaceNode(propertyFilePath, propertyDefinition.AsNode, propertyDefinition.WithContent(version).AsNode));
+                                    candidateUpdateLocations.Enqueue((propertyDefinition.GetContentValue(), updateAction));
                                 }
                             }
                         }
@@ -369,74 +507,39 @@ public class XmlFileWriter : IFileWriter
         {
             foreach (var (path, contents) in filesAndContents)
             {
-                await WriteFileContentsAsync(repoContentsPath, path, contents.ToString());
+                await WriteFileContentsAsync(repoContentsPath, path, contents);
             }
         }
 
         return performedAllUpdates;
     }
 
-    private static XText? GetIndentXTextFromElement(XElement element, string extraIndentationToAdd = "")
+    private static ImmutableArray<SyntaxNode> GetOrderedElementsBeforeSpecified(IXmlElementSyntax parentElement, string elementName, IEnumerable<string> attributeNamesToCheck, string attributeValue)
     {
-        var indentText = (element.PreviousNode as XText)?.Value;
-        var indent = indentText is not null
-            ? new XText(indentText + extraIndentationToAdd)
-            : null;
-        return indent;
+        var elementsBeforeNew = parentElement.Content
+            .TakeWhile(
+                e => e is XmlCommentSyntax ||
+                (e is IXmlElementSyntax element &&
+                    element.Name.Equals(elementName, StringComparison.OrdinalIgnoreCase) &&
+                    (attributeNamesToCheck.Select(attributeName => element.GetAttributeValue(attributeName)).FirstOrDefault(value => value is not null) ?? string.Empty)
+                    .CompareTo(attributeValue) < 0))
+            .ToImmutableArray();
+        return elementsBeforeNew;
     }
 
-    private static void AddAfterSiblingElement(XElement siblingElement, XElement newElement, string extraIndentationToAdd = "")
-    {
-        var indent = GetIndentXTextFromElement(siblingElement, extraIndentationToAdd);
-        XNode nodeToAddAfter = siblingElement;
-        var done = false;
-        while (!done && nodeToAddAfter.NextNode is not null)
-        {
-            // skip over XText and XComment nodes until we find a newline
-            switch (nodeToAddAfter.NextNode)
-            {
-                case XText text:
-                    if (text.Value.Contains('\n'))
-                    {
-                        done = true;
-                    }
-                    else
-                    {
-                        nodeToAddAfter = nodeToAddAfter.NextNode;
-                    }
-
-                    break;
-                case XComment comment:
-                    if (comment.Value.Contains('\n'))
-                    {
-                        done = true;
-                    }
-                    else
-                    {
-                        nodeToAddAfter = nodeToAddAfter.NextNode;
-                    }
-
-                    break;
-                default:
-                    done = true;
-                    break;
-            }
-        }
-
-        nodeToAddAfter.AddAfterSelf(indent, newElement);
-    }
-
-    private static async Task<string> ReadFileContentsAsync(DirectoryInfo repoContentsPath, string path)
+    private static async Task<XmlDocumentSyntax> ReadFileContentsAsync(DirectoryInfo repoContentsPath, string path)
     {
         var fullPath = Path.Join(repoContentsPath.FullName, path);
         var contents = await File.ReadAllTextAsync(fullPath);
-        return contents;
+        var document = Parser.ParseText(contents);
+        return document;
     }
 
-    private static async Task WriteFileContentsAsync(DirectoryInfo repoContentsPath, string path, string contents)
+    private static async Task WriteFileContentsAsync(DirectoryInfo repoContentsPath, string path, XmlDocumentSyntax document)
     {
         var fullPath = Path.Join(repoContentsPath.FullName, path);
-        await File.WriteAllTextAsync(fullPath, contents);
+        var content = document.ToFullString();
+        await File.WriteAllTextAsync(fullPath, content);
     }
 
     public static string CreateUpdatedVersionRangeString(VersionRange existingRange, NuGetVersion existingVersion, NuGetVersion requiredVersion)

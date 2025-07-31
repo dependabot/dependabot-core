@@ -313,5 +313,19 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
           end
       end
     end
+
+    context "when run_update_checker returns nil" do
+      let(:project_name) { "check_original_requirements_resolvable" }
+
+      before do
+        # Mock run_update_checker to return nil
+        allow(resolver).to receive(:run_update_checker).and_return(nil) # rubocop:disable RSpec/SubjectStub
+      end
+
+      it "returns false when run_update_checker returns nil" do
+        result = resolver.send(:check_original_requirements_resolvable)
+        expect(result).to be(false)
+      end
+    end
   end
 end

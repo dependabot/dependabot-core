@@ -8,21 +8,20 @@ public static class ProcessEx
     /// <summary>
     /// Run the `dotnet` command with the given values.  This will exclude all `MSBuild*` environment variables from the execution.
     /// </summary>
-    public static Task<(int ExitCode, string Output, string Error)> RunDotnetWithoutMSBuildEnvironmentVariablesAsync(IEnumerable<string> arguments, string workingDirectory, ExperimentsManager experimentsManager)
+    public static Task<(int ExitCode, string Output, string Error)> RunDotnetWithoutMSBuildEnvironmentVariablesAsync(IEnumerable<string> arguments, string workingDirectory)
     {
-        var environmentVariablesToUnset = new List<string>();
-        if (experimentsManager.InstallDotnetSdks)
+        // When using the SDK specified by a `global.json` file, these environment variables need to be unset to
+        // allow the new process to discover the correct MSBuild binaries to load, and not load the ones that
+        // this process is using.
+        var environmentVariablesToUnset = new List<string>
         {
-            // If using the SDK specified by a `global.json` file, these environment variables need to be unset to
-            // allow the new process to discover the correct MSBuild binaries to load, and not load the ones that
-            // this process is using.
-            environmentVariablesToUnset.Add("MSBuildExtensionsPath");
-            environmentVariablesToUnset.Add("MSBuildLoadMicrosoftTargetsReadOnly");
-            environmentVariablesToUnset.Add("MSBUILDLOGIMPORTS");
-            environmentVariablesToUnset.Add("MSBuildSDKsPath");
-            environmentVariablesToUnset.Add("MSBUILDTARGETOUTPUTLOGGING");
-            environmentVariablesToUnset.Add("MSBUILD_EXE_PATH");
-        }
+            "MSBuildExtensionsPath",
+            "MSBuildLoadMicrosoftTargetsReadOnly",
+            "MSBUILDLOGIMPORTS",
+            "MSBuildSDKsPath",
+            "MSBUILDTARGETOUTPUTLOGGING",
+            "MSBUILD_EXE_PATH"
+        };
 
         var environmentVariableOverrides = environmentVariablesToUnset.Select(name => (name, (string?)null));
         return RunAsync("dotnet",

@@ -78,7 +78,7 @@ COPY --chown=dependabot:dependabot LICENSE $DEPENDABOT_HOME
 
 # Install Ruby from official Docker image
 # When bumping Ruby minor, need to also add the previous version to `bundler/helpers/v2/monkey_patches/definition_ruby_version_patch.rb`
-COPY --from=docker.io/library/ruby:3.4.4-bookworm --chown=dependabot:dependabot /usr/local /usr/local
+COPY --from=docker.io/library/ruby:3.4.5-bookworm --chown=dependabot:dependabot /usr/local /usr/local
 
 # We had to explicitly bump this as the bundled version `0.2.2` in ubuntu 22.04 has a bug.
 # Once Ubuntu base image pulls in a new enough yaml version, we may not need to
@@ -123,7 +123,6 @@ COPY --chown=dependabot:dependabot helm/.bundle helm/dependabot-helm.gemspec hel
 COPY --chown=dependabot:dependabot hex/.bundle hex/dependabot-hex.gemspec hex/
 COPY --chown=dependabot:dependabot maven/.bundle maven/dependabot-maven.gemspec maven/
 COPY --chown=dependabot:dependabot npm_and_yarn/.bundle npm_and_yarn/dependabot-npm_and_yarn.gemspec npm_and_yarn/
-COPY --chown=dependabot:dependabot nuget/.bundle nuget/dependabot-nuget.gemspec nuget/
 COPY --chown=dependabot:dependabot pub/.bundle pub/dependabot-pub.gemspec pub/
 COPY --chown=dependabot:dependabot python/.bundle python/dependabot-python.gemspec python/
 COPY --chown=dependabot:dependabot rust_toolchain/.bundle rust_toolchain/dependabot-rust_toolchain.gemspec rust_toolchain/
@@ -134,7 +133,7 @@ COPY --chown=dependabot:dependabot uv/.bundle uv/dependabot-uv.gemspec uv/
 COPY --chown=dependabot:dependabot vcpkg/.bundle vcpkg/dependabot-vcpkg.gemspec vcpkg/
 
 # prevent having all the source in every ecosystem image
-RUN for ecosystem in git_submodules terraform github_actions hex elm docker docker_compose nuget maven gradle cargo composer go_modules python pub npm_and_yarn bundler silent swift devcontainers dotnet_sdk bun uv helm vcpkg rust_toolchain; do \
+RUN for ecosystem in git_submodules terraform github_actions hex elm docker docker_compose maven gradle cargo composer go_modules python pub npm_and_yarn bundler silent swift devcontainers dotnet_sdk bun uv helm vcpkg rust_toolchain; do \
     mkdir -p $ecosystem/lib/dependabot; \
     touch $ecosystem/lib/dependabot/$ecosystem.rb; \
   done
@@ -150,14 +149,16 @@ WORKDIR $DEPENDABOT_HOME/dependabot-updater
 # RubyGems version is one major ahead. So when bumping to RubyGems 3.y.z, Bundler
 # version will jump to 2.y.z
 ARG RUBYGEMS_VERSION=3.6.9
-RUN gem update --system $RUBYGEMS_VERSION
-
-RUN bundle config set --global build.psych --with-libyaml-source-dir=$DEPENDABOT_HOME/src/libyaml/yaml-$LIBYAML_VERSION && \
- bundle config set --local path 'vendor' && \
- bundle config set --local frozen 'true' && \
- bundle config set --local without 'development' && \
- bundle install && \
- rm -rf ~/.bundle/cache
+ARG GEM_ENABLED=true
+RUN if [[ "$GEM_ENABLED" == "true" ]]; then \
+    gem update --system $RUBYGEMS_VERSION; \
+    bundle config set --global build.psych --with-libyaml-source-dir=$DEPENDABOT_HOME/src/libyaml/yaml-$LIBYAML_VERSION; \
+    bundle config set --local path 'vendor'; \
+    bundle config set --local frozen 'true'; \
+    bundle config set --local without 'development'; \
+    bundle install; \
+    rm -rf ~/.bundle/cache; \
+  fi
 
 
 ENV PATH="$DEPENDABOT_HOME/bin:$PATH"

@@ -105,7 +105,7 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                         continue;
                     }
 
-                    var dependencyInfo = RunWorker.GetDependencyInfo(job, dependency);
+                    var dependencyInfo = RunWorker.GetDependencyInfo(job, dependency, allowCooldown: experimentsManager.EnableCooldown);
                     var analysisResult = await analyzeWorker.RunAsync(repoContentsPath.FullName, discoveryResult, dependencyInfo);
                     if (analysisResult.Error is not null)
                     {
@@ -155,7 +155,7 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
             {
                 var commitMessage = PullRequestTextGenerator.GetPullRequestCommitMessage(job, [.. updateOperationsPerformed], group.Name);
                 var prTitle = PullRequestTextGenerator.GetPullRequestTitle(job, [.. updateOperationsPerformed], group.Name);
-                var prBody = PullRequestTextGenerator.GetPullRequestBody(job, [.. updateOperationsPerformed], group.Name);
+                var prBody = await PullRequestTextGenerator.GetPullRequestBodyAsync(job, [.. updateOperationsPerformed], [.. updatedDependencies], experimentsManager);
                 await apiHandler.CreatePullRequest(new CreatePullRequest()
                 {
                     Dependencies = [.. updatedDependencies],
@@ -205,7 +205,7 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                     continue;
                 }
 
-                var dependencyInfo = RunWorker.GetDependencyInfo(job, dependency);
+                var dependencyInfo = RunWorker.GetDependencyInfo(job, dependency, allowCooldown: experimentsManager.EnableCooldown);
                 var analysisResult = await analyzeWorker.RunAsync(repoContentsPath.FullName, discoveryResult, dependencyInfo);
                 if (analysisResult.Error is not null)
                 {
@@ -251,7 +251,7 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
             {
                 var commitMessage = PullRequestTextGenerator.GetPullRequestCommitMessage(job, [.. updateOperationsPerformed], null);
                 var prTitle = PullRequestTextGenerator.GetPullRequestTitle(job, [.. updateOperationsPerformed], null);
-                var prBody = PullRequestTextGenerator.GetPullRequestBody(job, [.. updateOperationsPerformed], null);
+                var prBody = await PullRequestTextGenerator.GetPullRequestBodyAsync(job, [.. updateOperationsPerformed], [.. updatedDependencies], experimentsManager);
                 await apiHandler.CreatePullRequest(new CreatePullRequest()
                 {
                     Dependencies = [.. updatedDependencies],

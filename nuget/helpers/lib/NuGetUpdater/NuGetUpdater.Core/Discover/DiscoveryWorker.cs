@@ -160,7 +160,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
 
         _logger.Info($"  Restoring MSBuild SDKs: {string.Join(", ", keys)}");
 
-        return await NuGetHelper.DownloadNuGetPackagesAsync(repoRootPath, workspacePath, msbuildSdks, _experimentsManager, logger);
+        return await NuGetHelper.DownloadNuGetPackagesAsync(repoRootPath, workspacePath, msbuildSdks, logger);
     }
 
     private async Task<ImmutableArray<ProjectDiscoveryResult>> RunForDirectoryAsync(string repoRootPath, string workspacePath)
@@ -335,8 +335,8 @@ public partial class DiscoveryWorker : IDiscoveryWorker
                 _processedProjectPaths.Add(projectPath);
 
                 var relativeProjectPath = Path.GetRelativePath(workspacePath, projectPath).NormalizePathToUnix();
-                var packagesConfigResult = await PackagesConfigDiscovery.Discover(repoRootPath, workspacePath, projectPath, _experimentsManager, _logger);
-                var projectResults = await SdkProjectDiscovery.DiscoverAsync(repoRootPath, workspacePath, projectPath, _experimentsManager, _logger);
+                var packagesConfigResult = await PackagesConfigDiscovery.Discover(repoRootPath, workspacePath, projectPath, _logger);
+                var projectResults = await SdkProjectDiscovery.DiscoverAsync(repoRootPath, workspacePath, projectPath, _logger);
 
                 // Determine if there were unrestored MSBuildSdks
                 var msbuildSdks = projectResults.SelectMany(p => p.Dependencies.Where(d => d.Type == DependencyType.MSBuildSdk)).ToImmutableArray();
@@ -345,7 +345,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
                     // If new SDKs were restored, then we need to rerun SdkProjectDiscovery.
                     if (await TryRestoreMSBuildSdksAsync(repoRootPath, workspacePath, msbuildSdks, _logger))
                     {
-                        projectResults = await SdkProjectDiscovery.DiscoverAsync(repoRootPath, workspacePath, projectPath, _experimentsManager, _logger);
+                        projectResults = await SdkProjectDiscovery.DiscoverAsync(repoRootPath, workspacePath, projectPath, _logger);
                     }
                 }
 

@@ -16,6 +16,7 @@ RSpec.describe Dependabot::Bundler::Package::PackageDetailsFetcher do
   end
 
   let(:dependency_name) { "dependabot-common" }
+  let(:source) { nil }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -24,7 +25,7 @@ RSpec.describe Dependabot::Bundler::Package::PackageDetailsFetcher do
         requirement: "==0.302.0",
         file: "Gemfile",
         groups: ["dependencies"],
-        source: nil
+        source: source
       }],
       package_manager: "bundler"
     )
@@ -82,6 +83,23 @@ RSpec.describe Dependabot::Bundler::Package::PackageDetailsFetcher do
         expect(first_result.package_type).to eq(latest_release.package_type)
         expect(first_result.language.name).to eq(latest_release.language.name)
         expect(first_result.language.requirement).to eq(latest_release.language.requirement)
+      end
+
+      context "when dependency uses a git source" do
+        let(:source) do
+          {
+            type: "git",
+            url: "git@github.com/dependabot/dependabot-common"
+          }
+        end
+
+        it "returns an empty result" do
+          result = fetch
+
+          expect(result).to be_a(Dependabot::Package::PackageDetails)
+          expect(result.releases).to be_empty
+          expect(a_request(:get, json_url)).not_to have_been_made
+        end
       end
     end
   end

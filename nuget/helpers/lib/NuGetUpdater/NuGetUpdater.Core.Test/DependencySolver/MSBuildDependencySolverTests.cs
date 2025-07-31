@@ -614,9 +614,8 @@ public class MSBuildDependencySolverTests : TestBase
         await Update.UpdateWorkerTestBase.MockNuGetPackagesInDirectory(packages, tempDir.DirectoryPath);
         var repoContentsPath = new DirectoryInfo(tempDir.DirectoryPath);
         var projectPath = new FileInfo(Path.Combine(repoContentsPath.FullName, projectName));
-        var experimentsManager = new ExperimentsManager() { UseDirectDiscovery = true };
         var logger = new TestLogger();
-        var msbuildDepSolver = new MSBuildDependencySolver(repoContentsPath, projectPath, experimentsManager, logger);
+        var msbuildDepSolver = new MSBuildDependencySolver(repoContentsPath, projectPath, logger);
 
         // act
         var resolvedDependencies = await msbuildDepSolver.SolveAsync(

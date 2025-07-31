@@ -52,36 +52,6 @@ module Dependabot
         )
       end
 
-      sig { params(username: String, password: String, repository_url: String).returns(String) }
-      def self.registry_login(username, password, repository_url)
-        Dependabot.logger.info("Logging into Helm registry \"#{repository_url}\"")
-
-        Dependabot::SharedHelpers.run_shell_command(
-          "helm registry login --username #{username} --password #{password} #{repository_url}",
-          fingerprint: "helm registry login --username <username> --password <password> <repository_url>"
-        )
-      rescue StandardError => e
-        Dependabot.logger.error(
-          "Failed to authenticate for #{repository_url}: #{e.message}"
-        )
-        raise
-      end
-
-      sig { params(username: String, password: String, repository_url: String).returns(String) }
-      def self.oci_registry_login(username, password, repository_url)
-        Dependabot.logger.info("Logging into OCI registry \"#{repository_url}\"")
-
-        Dependabot::SharedHelpers.run_shell_command(
-          "oras login --username #{username} --password #{password} #{repository_url}",
-          fingerprint: "oras login --username <username> --password <password> <repository_url>"
-        )
-      rescue StandardError => e
-        Dependabot.logger.error(
-          "Failed to authenticate for #{repository_url}: #{e.message}"
-        )
-        raise
-      end
-
       sig { params(name: String).returns(String) }
       def self.fetch_oci_tags(name)
         Dependabot.logger.info("Searching OCI tags for: #{name}")
@@ -89,6 +59,14 @@ module Dependabot
         Dependabot::SharedHelpers.run_shell_command(
           "oras repo tags #{name}",
           fingerprint: "oras repo tags <name>"
+        ).strip
+      end
+
+      sig { params(repo_url: String, tag: String).returns(String) }
+      def self.fetch_tags_with_release_date_using_oci(repo_url, tag)
+        Dependabot::SharedHelpers.run_shell_command(
+          "oras manifest fetch #{repo_url}:#{tag}",
+          fingerprint: "oras manifest fetch <repo_url>:<tag>"
         ).strip
       end
     end
