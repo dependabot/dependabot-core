@@ -27,6 +27,7 @@ module Dependabot
         filenames: ["uv.lock"]
       }.freeze, T::Hash[Symbol, T::Array[String]])
       MAX_FILE_SIZE = 500_000
+
       sig do
         override.params(
           source: Dependabot::Source,
@@ -39,20 +40,24 @@ module Dependabot
         @source = source
         @credentials = credentials
         @repo_contents_path = repo_contents_path
+        @linked_paths = T.let({}, T::Hash[T.untyped, T.untyped])
+        @submodules = T.let([], T::Array[T.untyped])
         @options = options
-        @python_version_file = T.let(python_version_file, T.nilable(Dependabot::DependencyFile))
-        @pyproject = T.let(pyproject, T.nilable(Dependabot::DependencyFile))
+        @files = T.let([], T::Array[DependencyFile])
+        @python_version_file = T.let(nil, T.nilable(Dependabot::DependencyFile))
+        # @pyproject = T.let(nil, T.nilable(Dependabot::DependencyFile))
         @parsed_pyproject = T.let({}, T::Hash[String, T.untyped])
         @req_txt_and_in_files = T.let([], T::Array[Dependabot::DependencyFile])
-        @requirements_in_file_matcher = T.let(requirements_in_file_matcher, Dependabot::Uv::RequirementsFileMatcher)
+        @requirements_in_file_matcher = T.let(nil, T.nilable(Dependabot::Uv::RequirementsFileMatcher))
         @child_requirement_files = T.let([], T::Array[Dependabot::DependencyFile])
       end
 
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
-        filenames.each do |name|
-          return true if REQUIREMENT_FILE_PATTERNS[:filenames]&.include?(name)
+        return true if filenames.any? do |name|
+          REQUIREMENT_FILE_PATTERNS[:extensions]&.any? { |ext| name.end_with?(ext) }
         end
+
         # If there is a directory of requirements return true
         return true if filenames.include?("requirements")
 
@@ -146,6 +151,7 @@ module Dependabot
 
       sig { returns(T.nilable(DependencyFile)) }
       def pyproject
+        @pyproject = T.let(nil, T.nilable(DependencyFile))
         return @pyproject if defined?(@pyproject)
 
         @pyproject = fetch_file_if_present("pyproject.toml")
@@ -174,13 +180,11 @@ module Dependabot
 
         @parsed_pyproject = TomlRB.parse(pyproject&.content)
       rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
-        raise Dependabot::DependencyFileNotParseable, T.must(pyproject&.path)
+        raise Dependabot::DependencyFileNotParseable, T.must(pyproject).path
       end
 
       sig { returns(T::Array[DependencyFile]) }
       def req_txt_and_in_files
-        # return @req_txt_and_in_files if @req_txt_and_in_files
-
         @req_txt_and_in_files = []
         @req_txt_and_in_files += fetch_requirement_files_from_path
         @req_txt_and_in_files += fetch_requirement_files_from_dirs
@@ -188,7 +192,7 @@ module Dependabot
         @req_txt_and_in_files
       end
 
-      sig { params(requirements_dir: DependencyFile).returns(T::Array[DependencyFile]) }
+      sig { params(requirements_dir: T.untyped).returns(T::Array[DependencyFile]) }
       def req_files_for_dir(requirements_dir)
         dir = directory.gsub(%r{(^/|/$)}, "")
         relative_reqs_dir =
@@ -230,16 +234,14 @@ module Dependabot
       end
 
       sig do
-        params(
-          file: DependencyFile,
-          previously_fetched_files: T::Array[DependencyFile]
-        ).returns(T::Array[DependencyFile])
+        params(file: T.untyped, previously_fetched_files: T::Array[DependencyFile])
+          .returns(T::Array[DependencyFile])
       end
       def fetch_child_requirement_files(file:, previously_fetched_files:)
-        paths = file.content&.scan(CHILD_REQUIREMENT_REGEX)&.flatten
+        paths = file.content.scan(CHILD_REQUIREMENT_REGEX).flatten
         current_dir = File.dirname(file.name)
 
-        T.must(paths&.flat_map do |path|
+        paths.flat_map do |path|
           path = File.join(current_dir, path) unless current_dir == "."
           path = cleanpath(path)
 
@@ -252,7 +254,7 @@ module Dependabot
             previously_fetched_files: previously_fetched_files + [file]
           )
           [fetched_file, *grandchild_requirement_files]
-        end).compact
+        end.compact
       end
 
       sig { returns(T::Array[DependencyFile]) }
@@ -262,15 +264,15 @@ module Dependabot
 
         constraints_paths = all_requirement_files.map do |req_file|
           current_dir = File.dirname(req_file.name)
-          paths = req_file.content&.scan(CONSTRAINT_REGEX)&.flatten
+          paths = T.must(req_file.content).scan(CONSTRAINT_REGEX).flatten
 
-          paths&.map do |path|
+          paths.map do |path|
             path = File.join(current_dir, path) unless current_dir == "."
             cleanpath(path)
           end
         end.flatten.uniq
 
-        constraints_paths.map { |path| fetch_file_from_host(T.must(path)) }
+        constraints_paths.map { |path| fetch_file_from_host(path) }
       end
 
       sig { returns(T::Array[DependencyFile]) }
@@ -280,7 +282,7 @@ module Dependabot
 
         path_dependencies.each do |dep|
           path = dep[:path]
-          project_files += fetch_project_file(T.must(path))
+          project_files += fetch_project_file(path)
         rescue Dependabot::DependencyFileNotFound
           unfetchable_deps << "\"#{dep[:name]}\" at #{cleanpath(File.join(directory, dep[:file]))}"
         end
@@ -316,15 +318,15 @@ module Dependabot
         return false unless file.content&.valid_encoding?
         return true if file.name.match?(/requirements/x)
 
-        T.must(file.content&.lines&.all? do |line|
+        T.must(file.content).lines.all? do |line|
           next true if line.strip.empty?
           next true if line.strip.start_with?("#", "-r ", "-c ", "-e ", "--")
 
           line.match?(RequirementParser::VALID_REQ_TXT_REQUIREMENT)
-        end)
+        end
       end
 
-      sig { returns(T::Array[T::Hash[Symbol, String]]) }
+      sig { returns(T::Array[T.untyped]) }
       def path_dependencies
         [
           *requirement_txt_path_dependencies,
@@ -350,12 +352,12 @@ module Dependabot
       sig { params(req_file: T.untyped).returns(T::Array[T::Hash[Symbol, String]]) }
       def parse_requirement_path_dependencies(req_file)
         # If this is a pip-compile lockfile, rely on whatever path dependencies we found in the main manifest
-        return [] if requirements_in_file_matcher.compiled_file?(req_file) || req_file.content.nil?
+        return [] if requirements_in_file_matcher.compiled_file?(req_file)
 
         uneditable_reqs =
           req_file.content
-                  &.scan(/(?<name>^['"]?(?:file:)?(?<path>\..*?)(?=\[|#|'|"|$))/)
-                  &.filter_map do |n, p|
+                  .scan(/(?<name>^['"]?(?:file:)?(?<path>\..*?)(?=\[|#|'|"|$))/)
+                  .filter_map do |n, p|
                     { name: n.strip, path: p.strip, file: req_file.name } unless p.include?("://")
                   end
 
@@ -376,10 +378,10 @@ module Dependabot
 
       sig { returns(Dependabot::Uv::RequirementsFileMatcher) }
       def requirements_in_file_matcher
-        @requirements_in_file_matcher = RequirementsFileMatcher.new(requirements_in_files)
+        @requirements_in_file_matcher ||= RequirementsFileMatcher.new(requirements_in_files)
       end
 
-      sig { returns(T::Array[T::Hash[Symbol, String]]) }
+      sig { returns(T::Array[T::Hash[String, String]]) }
       def uv_sources_path_dependencies
         return [] unless pyproject
 
@@ -391,7 +393,7 @@ module Dependabot
             {
               name: name,
               path: source_config["path"],
-              file: pyproject&.name
+              file: T.must(pyproject).name
             }
           end
         end
@@ -410,7 +412,10 @@ module Dependabot
           .flat_map { |dir| req_files_for_dir(dir) }
       end
 
-      sig { params(contents: T::Array[T.untyped], base_path: T.nilable(String)).returns(T::Array[DependencyFile]) }
+      sig do
+        params(contents: T::Array[T.untyped],
+               base_path: T.nilable(String)).returns(T::Array[DependencyFile])
+      end
       def filter_requirement_files(contents, base_path: nil)
         contents
           .select { |f| f.type == "file" }
@@ -420,10 +425,10 @@ module Dependabot
           .select { |f| REQUIREMENT_FILE_PATTERNS[:filenames]&.include?(f.name) || requirements_file?(f) }
       end
 
-      sig { params(filename: String).returns(T::Boolean) }
+      sig { params(filename: String).returns(T.nilable(T::Boolean)) }
       def file_matches_requirement_pattern?(filename)
-        T.must(REQUIREMENT_FILE_PATTERNS[:extensions]&.any? { |ext| filename.end_with?(ext) } ||
-          REQUIREMENT_FILE_PATTERNS[:filenames]&.any?(filename))
+        REQUIREMENT_FILE_PATTERNS[:extensions]&.any? { |ext| filename.end_with?(ext) } ||
+          REQUIREMENT_FILE_PATTERNS[:filenames]&.any?(filename)
       end
 
       sig { params(filename: String, base_path: T.nilable(String)).returns(DependencyFile) }
