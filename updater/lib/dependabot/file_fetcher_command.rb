@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "base64"
@@ -7,16 +7,20 @@ require "dependabot/errors"
 require "dependabot/opentelemetry"
 require "dependabot/updater"
 require "octokit"
+require "sorbet-runtime"
 
 module Dependabot
   class FileFetcherCommand < BaseCommand
+    extend T::Sig
     # BaseCommand does not implement this method, so we should expose
     # the instance variable for error handling to avoid raising a
     # NotImplementedError if it is referenced
+    sig { returns(T.nilable(String)) }
     attr_reader :base_commit_sha
 
-    def perform_job # rubocop:disable Metrics/PerceivedComplexity,Metrics/AbcSize
-      @base_commit_sha = nil
+    sig { returns(T.nilable(Integer)) }
+    def perform_job # rubocop:disable Metrics/PerceivedComplexity,Metrics/AbcSize,Metrics/MethodLength
+      @base_commit_sha = T.let(nil, T.nilable(String))
 
       Dependabot.logger.info("Job definition: #{File.read(Environment.job_path)}") if Environment.job_path
       ::Dependabot::OpenTelemetry.tracer.in_span("file_fetcher", kind: :internal) do |span|
@@ -50,10 +54,13 @@ module Dependabot
         end
 
         Dependabot.logger.info("Base commit SHA: #{@base_commit_sha}")
-        File.write(Environment.output_path, JSON.dump(
-                                              base64_dependency_files: base64_dependency_files.map(&:to_h),
-                                              base_commit_sha: @base_commit_sha
-                                            ))
+        File.write(
+          Environment.output_path,
+          JSON.dump(
+            base64_dependency_files: base64_dependency_files&.map(&:to_h),
+            base_commit_sha: @base_commit_sha
+          )
+        )
 
         save_job_details
       end
@@ -61,18 +68,23 @@ module Dependabot
 
     private
 
+    sig { returns(T.nilable(Integer)) }
     def save_job_details
       # TODO: Use the Dependabot::Environment helper for this
       return unless ENV["UPDATER_ONE_CONTAINER"]
 
-      File.write(Environment.job_path, JSON.dump(
-                                         base64_dependency_files: base64_dependency_files.map(&:to_h),
-                                         base_commit_sha: @base_commit_sha,
-                                         job: Environment.job_definition["job"]
-                                       ))
+      File.write(
+        Environment.job_path,
+        JSON.dump(
+          base64_dependency_files: base64_dependency_files&.map(&:to_h),
+          base_commit_sha: @base_commit_sha,
+          job: Environment.job_definition["job"]
+        )
+      )
     end
 
-    # A method that abstracts the file fetcher creation logic and applies the same settings across all instances
+    # # A method that abstracts the file fetcher creation logic and applies the same settings across all instances
+    sig { params(directory: T.nilable(String)).returns(Dependabot::FileFetchers::Base) }
     def create_file_fetcher(directory: nil)
       # Use the provided directory or fallback to job.source.directory if directory is nil.
       directory_to_use = directory || job.source.directory
@@ -94,33 +106,42 @@ module Dependabot
 
     # The main file fetcher method that now calls the create_file_fetcher method
     # and ensures it uses the same repo_contents_path setting as others.
+    sig { returns(Dependabot::FileFetchers::Base) }
     def file_fetcher
-      @file_fetcher ||= create_file_fetcher
+      @file_fetcher ||= T.let(create_file_fetcher, T.nilable(Dependabot::FileFetchers::Base))
     end
 
     # This method is responsible for creating or retrieving a file fetcher
     # from a cache (@file_fetchers) for the given directory.
+    sig { params(directory: String).returns(Dependabot::FileFetchers::Base) }
     def file_fetcher_for_directory(directory)
+      @file_fetchers = T.let(@file_fetchers, T.nilable(T::Hash[String, Dependabot::FileFetchers::Base]))
       @file_fetchers ||= {}
       @file_fetchers[directory] ||= create_file_fetcher(directory: directory)
     end
 
     # rubocop:disable Metrics/PerceivedComplexity
-    def dependency_files_for_multi_directories
-      return @dependency_files_for_multi_directories if defined?(@dependency_files_for_multi_directories)
+    sig { returns(T.nilable(T::Array[Dependabot::DependencyFile])) }
+    def dependency_files_for_multi_directories # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity
+      @dependency_files_for_multi_directories = T.let(
+        @dependency_files_for_multi_directories,
+        T.nilable(T::Array[Dependabot::DependencyFile])
+      )
+      return @dependency_files_for_multi_directories if @dependency_files_for_multi_directories
 
       has_glob = T.let(false, T::Boolean)
-      directories = Dir.chdir(job.repo_contents_path) do
-        job.source.directories.map do |dir|
+      path = T.must(job.repo_contents_path)
+      directories = Dir.chdir(path) do
+        job.source.directories&.map do |dir|
           next dir unless glob?(dir)
 
           has_glob = true
           dir = dir.delete_prefix("/")
           Dir.glob(dir, File::FNM_DOTMATCH).select { |d| File.directory?(d) }.map { |d| "/#{d}" }
-        end.flatten
-      end.uniq
+        end&.flatten
+      end&.uniq
 
-      @dependency_files_for_multi_directories = directories.flat_map do |dir|
+      @dependency_files_for_multi_directories = directories&.flat_map do |dir|
         ff = with_retries { file_fetcher_for_directory(dir) }
 
         begin
@@ -134,35 +155,43 @@ module Dependabot
 
         post_ecosystem_versions(ff) if should_record_ecosystem_versions?
         files
-      end.compact
+      end&.compact
 
-      if @dependency_files_for_multi_directories.empty?
-        raise Dependabot::DependencyFileNotFound, job.source.directories.join(", ")
+      if @dependency_files_for_multi_directories&.empty?
+        raise Dependabot::DependencyFileNotFound, job.source.directories&.join(", ")
       end
 
       @dependency_files_for_multi_directories
     end
     # rubocop:enable Metrics/PerceivedComplexity
 
+    sig { returns(T.nilable(T::Array[Dependabot::DependencyFile])) }
     def dependency_files
-      return @dependency_files if defined?(@dependency_files)
+      @dependency_files = T.let(
+        @dependency_files,
+        T.nilable(T::Array[Dependabot::DependencyFile])
+      )
+      return @dependency_files if @dependency_files
 
       @dependency_files = with_retries { file_fetcher.files }
       post_ecosystem_versions(file_fetcher) if should_record_ecosystem_versions?
       @dependency_files
     end
 
+    sig { returns(T::Boolean) }
     def should_record_ecosystem_versions?
       # We don't set this flag in GHES because there's no point in recording versions since we can't access that data.
       Experiments.enabled?(:record_ecosystem_versions)
     end
 
+    sig { params(file_fetcher: Dependabot::FileFetchers::Base).void }
     def post_ecosystem_versions(file_fetcher)
       ecosystem_versions = file_fetcher.ecosystem_versions
       api_client.record_ecosystem_versions(ecosystem_versions) unless ecosystem_versions.nil?
     end
 
-    def with_retries(max_retries: 2)
+    sig { params(max_retries: Integer, _block: T.proc.returns(T.untyped)).returns(T.untyped) }
+    def with_retries(max_retries: 2, &_block)
       retries ||= 0
       begin
         yield
@@ -173,57 +202,72 @@ module Dependabot
       end
     end
 
+    sig { void }
     def clone_repo_contents
       return unless job.clone?
 
       file_fetcher.clone_repo_contents
     end
 
+    sig { returns(T.nilable(T::Array[Dependabot::DependencyFile])) }
     def base64_dependency_files
       files = job.source.directories ? dependency_files_for_multi_directories : dependency_files
-      files.map do |file|
+      files&.map do |file|
         base64_file = file.dup
-        base64_file.content = Base64.encode64(file.content) unless file.binary?
+        base64_file.content = Base64.encode64(T.must(file.content)) unless file.binary?
         base64_file
       end
     end
 
+    sig { returns(Dependabot::Job) }
     def job
-      @job ||= Job.new_fetch_job(
-        job_id: job_id,
-        job_definition: Environment.job_definition,
-        repo_contents_path: Environment.repo_contents_path
+      @job ||= T.let(
+        Job.new_fetch_job(
+          job_id: job_id,
+          job_definition: Environment.job_definition,
+          repo_contents_path: Environment.repo_contents_path
+        ), T.nilable(Dependabot::Job)
       )
     end
 
+    sig { returns(T::Boolean) }
     def already_cloned?
       return false unless Environment.repo_contents_path
 
       # For testing, the source repo may already be mounted.
-      @already_cloned ||= File.directory?(File.join(Environment.repo_contents_path, ".git"))
+      @already_cloned ||= T.let(
+        File.directory?(
+          File.join(
+            Environment.repo_contents_path, ".git"
+          )
+        ),
+        T.nilable(T::Boolean)
+      )
     end
 
-    def handle_file_fetcher_error(error)
-      error_details = Dependabot.fetcher_error_details(error)
+    sig { params(error: StandardError).void }
+    def handle_file_fetcher_error(error) # rubocop:disable Metrics/AbcSize
+      error_details = T.let(Dependabot.fetcher_error_details(error), T.nilable(T::Hash[Symbol, T.untyped]))
 
       if error_details.nil?
         log_error(error)
 
-        unknown_error_details = {
+        unknown_error_details = T.let({
           ErrorAttributes::CLASS => error.class.to_s,
           ErrorAttributes::MESSAGE => error.message,
-          ErrorAttributes::BACKTRACE => error.backtrace.join("\n"),
-          ErrorAttributes::FINGERPRINT => error.respond_to?(:sentry_context) ? error.sentry_context[:fingerprint] : nil,
+          ErrorAttributes::BACKTRACE => error.backtrace&.join("\n"),
+          ErrorAttributes::FINGERPRINT =>
+          (T.unsafe(error).sentry_context[:fingerprint] if error.respond_to?(:sentry_context)),
           ErrorAttributes::PACKAGE_MANAGER => job.package_manager,
           ErrorAttributes::JOB_ID => job.id,
           ErrorAttributes::DEPENDENCIES => job.dependencies,
           ErrorAttributes::DEPENDENCY_GROUPS => job.dependency_groups
-        }.compact
+        }.compact, T::Hash[Symbol, T.untyped])
 
-        error_details = {
+        error_details = T.let({
           "error-type": "file_fetcher_error",
           "error-detail": unknown_error_details
-        }
+        }, T::Hash[Symbol, T.untyped])
       end
 
       service.record_update_job_error(
@@ -236,18 +280,21 @@ module Dependabot
       service.capture_exception(error: error, job: job)
     end
 
+    sig { params(error: StandardError).returns(T.any(Integer, Float)) }
     def rate_limit_error_remaining(error)
       # Time at which the current rate limit window resets in UTC epoch secs.
-      expires_at = error.response_headers["X-RateLimit-Reset"].to_i
+      expires_at = T.unsafe(error).response_headers["X-RateLimit-Reset"].to_i
       remaining = Time.at(expires_at) - Time.now
       remaining.positive? ? remaining : 0
     end
 
+    sig { params(error: StandardError).void }
     def log_error(error)
       Dependabot.logger.error(error.message)
-      error.backtrace.each { |line| Dependabot.logger.error line }
+      error.backtrace&.each { |line| Dependabot.logger.error line }
     end
 
+    sig { params(error_details: T::Hash[Symbol, T.untyped]).void }
     def record_error(error_details)
       service.record_update_job_error(
         error_type: error_details.fetch(:"error-type"),
@@ -267,6 +314,7 @@ module Dependabot
     # Perform a debug check of connectivity to GitHub/GHES. This also ensures
     # connectivity through the proxy is established which can take 10-15s on
     # the first request in some customer's environments.
+    sig { void }
     def connectivity_check
       Dependabot.logger.info("Connectivity check starting")
       github_connectivity_client(job).repository(job.source.repo)
@@ -275,6 +323,7 @@ module Dependabot
       Dependabot.logger.error("Connectivity check failed: #{e.message}")
     end
 
+    sig { params(job: Dependabot::Job).returns(Octokit::Client) }
     def github_connectivity_client(job)
       Octokit::Client.new({
         api_endpoint: job.source.api_endpoint,
@@ -287,6 +336,7 @@ module Dependabot
       })
     end
 
+    sig { params(directory: String).returns(T::Boolean) }
     def glob?(directory)
       # We could tighten this up, but it's probably close enough.
       directory.include?("*") || directory.include?("?") || (directory.include?("[") && directory.include?("]"))

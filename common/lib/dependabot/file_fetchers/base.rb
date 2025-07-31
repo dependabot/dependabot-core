@@ -35,7 +35,7 @@ module Dependabot
       sig { returns(T.nilable(String)) }
       attr_reader :repo_contents_path
 
-      sig { returns(T::Hash[String, String]) }
+      sig { returns(T::Hash[T.any(String, Symbol), String]) }
       attr_reader :options
 
       CLIENT_NOT_FOUND_ERRORS = T.let(
@@ -100,7 +100,7 @@ module Dependabot
             source: Dependabot::Source,
             credentials: T::Array[Dependabot::Credential],
             repo_contents_path: T.nilable(String),
-            options: T::Hash[String, String]
+            options: T::Hash[T.any(String, Symbol), String]
           )
           .void
       end
