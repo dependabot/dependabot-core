@@ -26,7 +26,8 @@ RSpec.describe Dependabot::Service do
       close_pull_request: nil,
       record_update_job_error: nil,
       record_update_job_unknown_error: nil,
-      record_update_job_warning: nil
+      record_update_job_warning: nil,
+      create_dependency_submission: nil
     })
     allow(api_client).to receive(:is_a?).with(Dependabot::ApiClient).and_return(true)
     api_client
@@ -525,6 +526,30 @@ RSpec.describe Dependabot::Service do
       expect(mock_client).to receive(:update_dependency_list).with(expected_dependency_payload, expected_file_paths)
 
       service.update_dependency_list(dependency_snapshot: dependency_snapshot)
+    end
+  end
+
+  describe "#create_dependency_submission" do
+    let(:mock_payload) do
+      {
+        detector: {
+          name: "mock-detector"
+        }
+      }
+    end
+
+    let(:dependency_submission) do
+      instance_double(
+        GithubApi::DependencySubmission,
+        payload: mock_payload
+      )
+    end
+
+    it "delegates to @client with the dependency submission payload" do
+      service.create_dependency_submission(dependency_submission: dependency_submission)
+
+      expect(mock_client)
+        .to have_received(:create_dependency_submission).with(mock_payload)
     end
   end
 
