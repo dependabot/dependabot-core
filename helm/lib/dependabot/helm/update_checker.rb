@@ -167,7 +167,6 @@ module Dependabot
         Dependabot.logger.info("Fetching releases for Helm chart: #{chart_name}")
 
         if repo_name && repo_url
-          authenticate_registry_source(repo_url)
           begin
             Helpers.add_repo(repo_name, repo_url)
             Helpers.update_repo
@@ -190,32 +189,6 @@ module Dependabot
           Dependabot.logger.error("Error fetching chart releases: #{e.message}")
           nil
         end
-      end
-
-      sig { params(repo_url: T.nilable(String)).returns(T.nilable(String)) }
-      def authenticate_registry_source(repo_url)
-        return unless repo_url
-
-        repo_creds = Shared::Utils::CredentialsFinder.new(@credentials, private_repository_type: "helm_registry")
-                                                     .credentials_for_registry(repo_url)
-        return unless repo_creds
-
-        Helpers.registry_login(T.must(repo_creds["username"]), T.must(repo_creds["password"]), repo_url)
-      rescue StandardError
-        raise PrivateSourceAuthenticationFailure, repo_url
-      end
-
-      sig { params(repo_url: T.nilable(String)).returns(T.nilable(String)) }
-      def authenticate_oci_registry_source(repo_url)
-        return unless repo_url
-
-        repo_creds = Shared::Utils::CredentialsFinder.new(@credentials, private_repository_type: "helm_registry")
-                                                     .credentials_for_registry(repo_url)
-        return unless repo_creds
-
-        Helpers.oci_registry_login(T.must(repo_creds["username"]), T.must(repo_creds["password"]), repo_url)
-      rescue StandardError
-        raise PrivateSourceAuthenticationFailure, repo_url
       end
 
       sig { returns(T.nilable(Gem::Version)) }
@@ -260,7 +233,6 @@ module Dependabot
       def fetch_oci_tags(chart_name, repo_url)
         Dependabot.logger.info("Fetching OCI tags for #{repo_url}")
         oci_registry = repo_url.gsub("oci://", "")
-        authenticate_oci_registry_source(repo_url)
 
         release_tags = Helpers.fetch_oci_tags("#{oci_registry}/#{chart_name}").split("\n")
         release_tags.map { |tag| tag.tr("_", "+") }
@@ -412,7 +384,13 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def cooldown_enabled?
-        Dependabot::Experiments.enabled?(:enable_cooldown_for_helm)
+        # This is a simple check to see if user has put cooldown days.
+        # If not set, then we aassume user does not want cooldown.
+        # Since Helm does not support Semver versioning, So option left
+        # for the user is to set cooldown default days.
+        return false if update_cooldown.nil?
+
+        T.must(update_cooldown&.default_days).positive?
       end
 
       sig { returns(LatestVersionResolver) }

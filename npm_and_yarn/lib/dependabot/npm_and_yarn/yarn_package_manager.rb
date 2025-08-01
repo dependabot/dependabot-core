@@ -12,14 +12,21 @@ module Dependabot
       RC_YML_FILENAME = ".yarnrc.yml"
       LOCKFILE_NAME = "yarn.lock"
 
+      # Section : Update instructions
+      # With every major release update
+      # - Add new YARN_Vx , i.e. YARN_V5 = "5"
+      # - Add to SUPPORTED_VERSIONS
+
       YARN_V1 = "1"
       YARN_V2 = "2"
       YARN_V3 = "3"
+      YARN_V4 = "4"
 
       SUPPORTED_VERSIONS = T.let([
         Version.new(YARN_V1),
         Version.new(YARN_V2),
-        Version.new(YARN_V3)
+        Version.new(YARN_V3),
+        Version.new(YARN_V4)
       ].freeze, T::Array[Dependabot::Version])
 
       DEPRECATED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])

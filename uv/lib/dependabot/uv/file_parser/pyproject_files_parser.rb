@@ -29,7 +29,7 @@ module Dependabot
         def dependency_set
           dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
-          dependency_set += pyproject_dependencies if using_poetry? || using_pep621?
+          dependency_set += pyproject_dependencies if using_poetry? || using_pep621? || using_pep735?
           dependency_set += lockfile_dependencies if using_poetry? && lockfile
 
           dependency_set
@@ -45,7 +45,7 @@ module Dependabot
           if using_poetry?
             poetry_dependencies
           else
-            pep621_dependencies
+            pep621_pep735_dependencies
           end
         end
 
@@ -71,7 +71,7 @@ module Dependabot
         end
 
         sig { returns(Dependabot::FileParsers::Base::DependencySet) }
-        def pep621_dependencies
+        def pep621_pep735_dependencies
           dependencies = Dependabot::FileParsers::Base::DependencySet.new
 
           # PDM is not yet supported, so we want to ignore it for now because in
@@ -80,7 +80,7 @@ module Dependabot
           # undesirable. Leave PDM alone until properly supported
           return dependencies if using_pdm?
 
-          parsed_pep621_dependencies.each do |dep|
+          parse_pep621_pep735_dependencies.each do |dep|
             # If a requirement has a `<` or `<=` marker then updating it is
             # probably blocked. Ignore it.
             next if dep["markers"].include?("<")
@@ -175,6 +175,11 @@ module Dependabot
         sig { returns(T.nilable(T::Hash[String, T.untyped])) }
         def poetry_root
           parsed_pyproject.dig("tool", "poetry")
+        end
+
+        sig { returns(T::Boolean) }
+        def using_pep735?
+          parsed_pyproject.key?("dependency-groups")
         end
 
         sig { returns(T.untyped) }
@@ -287,13 +292,13 @@ module Dependabot
         end
 
         sig { returns(T.untyped) }
-        def parsed_pep621_dependencies
+        def parse_pep621_pep735_dependencies
           SharedHelpers.in_a_temporary_directory do
             write_temporary_pyproject
 
             SharedHelpers.run_helper_subprocess(
               command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
-              function: "parse_pep621_dependencies",
+              function: "parse_pep621_pep735_dependencies",
               args: [T.must(pyproject).name]
             )
           end

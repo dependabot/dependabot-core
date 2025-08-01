@@ -9,7 +9,6 @@ public record ExperimentsManager
 {
     public bool EnableCooldown { get; init; } = false;
     public bool GenerateSimplePrBody { get; init; } = false;
-    public bool NativeUpdater { get; init; } = false;
 
     public Dictionary<string, object> ToDictionary()
     {
@@ -17,7 +16,6 @@ public record ExperimentsManager
         {
             ["enable_cooldown_for_nuget"] = EnableCooldown,
             ["nuget_generate_simple_pr_body"] = GenerateSimplePrBody,
-            ["nuget_native_updater"] = NativeUpdater,
         };
     }
 
@@ -27,7 +25,6 @@ public record ExperimentsManager
         {
             EnableCooldown = IsEnabled(experiments, "enable_cooldown_for_nuget"),
             GenerateSimplePrBody = IsEnabled(experiments, "nuget_generate_simple_pr_body"),
-            NativeUpdater = IsEnabled(experiments, "nuget_native_updater"),
         };
     }
 

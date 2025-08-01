@@ -57,6 +57,12 @@ internal class DetailedPullRequestBodyGenerator : IPullRequestBodyGenerator, IDi
             }
             else
             {
+                if (sourceUrl.EndsWith(".git"))
+                {
+                    // remove the trailing .git if present
+                    sourceUrl = sourceUrl[..^4];
+                }
+
                 // build detailed report
                 var packageNameIndex = reportText.IndexOf(updateOperation.DependencyName, StringComparison.OrdinalIgnoreCase);
                 if (packageNameIndex >= 0)
