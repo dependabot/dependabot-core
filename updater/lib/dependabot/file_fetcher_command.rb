@@ -83,7 +83,6 @@ module Dependabot
       )
     end
 
-    # # A method that abstracts the file fetcher creation logic and applies the same settings across all instances
     sig { params(directory: T.nilable(String)).returns(Dependabot::FileFetchers::Base) }
     def create_file_fetcher(directory: nil)
       # Use the provided directory or fallback to job.source.directory if directory is nil.
@@ -95,10 +94,16 @@ module Dependabot
       # prefer credentials directly from the root of the file (will contain secrets) but if not specified, fall back to
       # the job's credentials-metadata that has no secrets
       credentials = job_definition.fetch("credentials", job_credentials_metadata)
+
+      # prefer credentials directly from the root of the file (will contain secrets) but if not specified, fall back to
+      # the job's credentials-metadata that has no secrets
+      # Convert experiments hash to have string keys and string values
+      experiments_options = job.experiments.transform_keys(&:to_s).transform_values(&:to_s)
+
       args = {
         source: job.source.clone.tap { |s| s.directory = directory_to_use },
         credentials: credentials,
-        options: T.unsafe(job.experiments)
+        options: experiments_options
       }
       args[:repo_contents_path] = Environment.repo_contents_path if job.clone? || already_cloned?
       Dependabot::FileFetchers.for_package_manager(job.package_manager).new(**args)
