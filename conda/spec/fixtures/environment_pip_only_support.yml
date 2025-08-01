@@ -1,0 +1,6 @@
+dependencies:
+  - python=3.9.7=h60c2a47_0_cpython
+  - numpy=1.21.0=py39h20f2e39_0
+  - pip:
+    - requests==2.25.1
+    - flask>=1.1.0

@@ -1,0 +1,13 @@
+[
+  {
+    "name": "environment.yml",
+    "path": "environment.yml",
+    "sha": "abc123",
+    "size": 1024,
+    "url": "https://api.github.com/repos/gocardless/bump/contents/environment.yml?ref=sha",
+    "html_url": "https://github.com/gocardless/bump/blob/sha/environment.yml",
+    "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/abc123",
+    "download_url": "https://raw.githubusercontent.com/gocardless/bump/sha/environment.yml",
+    "type": "file"
+  }
+]

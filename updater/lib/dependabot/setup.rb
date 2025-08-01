@@ -30,7 +30,8 @@ Sentry.init do |config|
     bundler|
     cargo|
     composer|
-    devcontainers
+    conda|
+    devcontainers|
     docker_compose|
     docker|
     dotnet_sdk|
@@ -67,6 +68,7 @@ require "dependabot/bun"
 require "dependabot/bundler"
 require "dependabot/cargo"
 require "dependabot/composer"
+require "dependabot/conda"
 require "dependabot/devcontainers"
 require "dependabot/docker_compose"
 require "dependabot/docker"

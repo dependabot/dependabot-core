@@ -1,0 +1,50 @@
+name: xcube
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  # Python
+  - python >=3.8
+  # Required
+  - affine >=2.2
+  - click >=8.0
+  - cmocean >=2.0
+  - dask >=2021.6
+  - dask-image >=0.6
+  - distributed >=2021.6
+  - fiona >=1.8
+  - fsspec >=2021.6
+  - gdal >=3.0
+  - geopandas >=0.8
+  - jdcal >=1.4.1
+  - jsonschema >=3.2.0
+  - matplotlib-base >=3.0
+  - netcdf4 >=1.5.0
+  - numba >=0.52
+  - numpy >=1.16
+  - pandas >=1.3
+  - pillow >=6.0
+  - pyjwt >=1.7
+  - pyproj >=3.0,<3.3  # tests fail with 3.3.0
+  - pyyaml >=5.4
+  - rasterio >=1.2
+  - requests >=2.25
+  - requests-oauthlib >=1.3
+  - s3fs >=2021.6
+  - scipy >=1.6.0
+  - setuptools >=41.0
+  - shapely >=1.6
+  - strict-rfc3339 >=0.7  # for python-jsonschema date-time format validation
+  - tornado >=6.0
+  - urllib3 >=1.26
+  - xarray >=0.19
+  - zarr >=2.8
+  # Testing
+  - flake8 >=3.7
+  - moto >=1.3
+  - pytest >=4.4
+  - pytest-cov >=2.6
+  - requests-mock >=1.8.0
+  - pip
+  - pip:
+    - rfc3339-validator

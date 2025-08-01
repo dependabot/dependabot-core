@@ -1,0 +1,29 @@
+# Bundler
+.bundle/
+vendor/
+
+# RSpec
+coverage/
+.rspec_status
+
+# Temporary files
+tmp/
+*.tmp
+
+# Log files
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Conda specific
+.conda/
+.condarc
