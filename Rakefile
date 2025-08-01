@@ -31,7 +31,6 @@ GEMSPECS = %w(
   hex/dependabot-hex.gemspec
   maven/dependabot-maven.gemspec
   npm_and_yarn/dependabot-npm_and_yarn.gemspec
-  nuget/dependabot-nuget.gemspec
   omnibus/dependabot-omnibus.gemspec
   pub/dependabot-pub.gemspec
   python/dependabot-python.gemspec
