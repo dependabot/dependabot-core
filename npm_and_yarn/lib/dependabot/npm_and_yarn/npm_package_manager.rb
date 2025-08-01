@@ -12,6 +12,11 @@ module Dependabot
       LOCKFILE_NAME = "package-lock.json"
       SHRINKWRAP_LOCKFILE_NAME = "npm-shrinkwrap.json"
 
+      # Section : Update instructions
+      # With every major release update
+      # - Add new NPM_Vx , i.e. NPM_V11 = "11"
+      # - Add to SUPPORTED_VERSIONS
+
       NPM_V6 = "6"
       NPM_V7 = "7"
       NPM_V8 = "8"

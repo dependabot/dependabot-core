@@ -277,7 +277,8 @@ module Dependabot
       def path_dependencies
         [
           *requirement_txt_path_dependencies,
-          *requirement_in_path_dependencies
+          *requirement_in_path_dependencies,
+          *uv_sources_path_dependencies
         ]
       end
 
@@ -320,6 +321,23 @@ module Dependabot
 
       def requirements_in_file_matcher
         @requirements_in_file_matcher ||= RequiremenstFileMatcher.new(requirements_in_files)
+      end
+
+      def uv_sources_path_dependencies
+        return [] unless pyproject
+
+        uv_sources = parsed_pyproject.dig("tool", "uv", "sources")
+        return [] unless uv_sources
+
+        uv_sources.filter_map do |name, source_config|
+          if source_config.is_a?(Hash) && source_config["path"]
+            {
+              name: name,
+              path: source_config["path"],
+              file: pyproject.name
+            }
+          end
+        end
       end
 
       def fetch_requirement_files_from_path(path = nil)

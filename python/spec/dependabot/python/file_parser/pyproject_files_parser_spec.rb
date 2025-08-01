@@ -395,5 +395,34 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
         its(:length) { is_expected.to be > 0 }
       end
     end
+
+    describe "with pep 735" do
+      subject(:dependencies) { parser.dependency_set.dependencies }
+
+      let(:pyproject_fixture_name) { "pep735_exact_requirement.toml" }
+
+      # looks like this:
+
+      ###
+      # dependencies = []
+      #
+      # [dependency-groups]
+      # test = [
+      #   "pytest==8.0.0",
+      # ]
+      # dev = ["requests==2.18.0", {include-group = "test"}]
+
+      its(:length) { is_expected.to eq(2) }
+
+      it "has both dependencies" do
+        expected_deps = [
+          { name: "pytest", version: "8.0.0" },
+          { name: "requests", version: "2.18.0" }
+        ]
+
+        actual_deps = dependencies.map { |dep| { name: dep.name, version: dep.version } }
+        expect(actual_deps).to match_array(expected_deps)
+      end
+    end
   end
 end

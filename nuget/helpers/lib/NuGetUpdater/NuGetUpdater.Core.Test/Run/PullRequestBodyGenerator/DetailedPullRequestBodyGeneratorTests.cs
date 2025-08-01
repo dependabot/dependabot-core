@@ -841,6 +841,77 @@ public class DetailedPullRequestBodyGeneratorTests
         );
     }
 
+    [Fact]
+    public async Task GeneratePrBody_GitSuffixIsHandled()
+    {
+        await TestAsync(
+            updateOperationsPerformed: [
+                new DirectUpdate() { DependencyName = "Some.Dependency", OldVersion = NuGetVersion.Parse("1.0.0"), NewVersion = NuGetVersion.Parse("2.0.0"), UpdatedFiles = [] },
+            ],
+            updatedDependencies: [
+                new ReportedDependency()
+                {
+                    Name = "Some.Dependency",
+                    PreviousVersion = "1.0.0",
+                    Version = "2.0.0",
+                    Requirements = [
+                        new ReportedRequirement()
+                        {
+                            File = "",
+                            Requirement = "2.0.0",
+                            Source = new()
+                            {
+                                SourceUrl = "https://github.com/Some.Owner/Some.Dependency.git",
+                            },
+                        }
+                    ],
+                }
+            ],
+            httpResponses: [
+                ("https://api.github.com/repos/Some.Owner/Some.Dependency/releases?per_page=100", """
+                    [
+                      {
+                        "name": "2.0.0",
+                        "tag_name": "2.0.0",
+                        "body": "* point 5\n* point 6"
+                      },
+                      {
+                        "name": "1.0.1",
+                        "tag_name": "1.0.1",
+                        "body": "* point 3\n* point 4"
+                      },
+                      {
+                        "name": "1.0.0",
+                        "tag_name": "1.0.0",
+                        "body": "* point 1\n* point 2"
+                      }
+                    ]
+                    """)
+            ],
+            expectedBody: $"""
+                Updated [Some.Dependency](https://github.com/Some.Owner/Some.Dependency) from 1.0.0 to 2.0.0.
+
+                <details>
+                <summary>Release notes</summary>
+
+                _Sourced from [Some.Dependency's releases](https://github.com/Some.Owner/Some.Dependency/releases)._
+
+                ## 2.0.0
+
+                * point 5
+                * point 6
+
+                ## 1.0.1
+
+                * point 3
+                * point 4
+
+                Commits viewable in [compare view](https://github.com/Some.Owner/Some.Dependency/compare/1.0.0...2.0.0).
+                </details>
+                """
+        );
+    }
+
     private static async Task TestAsync(
         ImmutableArray<UpdateOperationBase> updateOperationsPerformed,
         ImmutableArray<ReportedDependency> updatedDependencies,
