@@ -100,8 +100,6 @@ module Dependabot
       # the job's credentials-metadata that has no secrets
       credentials = job_definition.fetch("credentials", job_credentials_metadata)
 
-      # prefer credentials directly from the root of the file (will contain secrets) but if not specified, fall back to
-      # the job's credentials-metadata that has no secrets
       # Convert experiments hash to have string keys and string values
       experiments_options = job.experiments.transform_keys(&:to_s).transform_values(&:to_s)
 
