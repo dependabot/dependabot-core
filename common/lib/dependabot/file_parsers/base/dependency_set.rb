@@ -151,8 +151,6 @@ module Dependabot
               (new_dep.subdependency_metadata || [])
             ).uniq
 
-            dep_file = combined_dependency_file(old_dep, new_dep)
-
             Dependency.new(
               name: old_dep.name,
               version: version,
@@ -160,7 +158,6 @@ module Dependabot
               package_manager: old_dep.package_manager,
               metadata: old_dep.metadata,
               subdependency_metadata: subdependency_metadata,
-              dependency_file: dep_file,
             )
           end
 
@@ -193,25 +190,6 @@ module Dependabot
               T.must(@combined).version_class,
               T.nilable(T.class_of(Gem::Version))
             )
-          end
-
-          sig do
-            params(
-              old_dep: Dependabot::Dependency,
-              new_dep: Dependabot::Dependency
-            )
-              .returns(Dependabot::DependencyFile)
-          end
-          def combined_dependency_file(old_dep, new_dep)
-            # prefer files from top level deps, or else
-            # stick to the first one
-            if old_dep.top_level? && !new_dep.top_level?
-              old_dep.dependency_file
-            elsif new_dep.top_level? && !old_dep.top_level?
-              new_dep.dependency_file
-            else
-              old_dep.dependency_file
-            end
           end
         end
         private_constant :DependencySlot
