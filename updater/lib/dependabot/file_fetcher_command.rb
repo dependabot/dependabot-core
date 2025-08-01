@@ -19,7 +19,7 @@ module Dependabot
     attr_reader :base_commit_sha
 
     sig { returns(T.nilable(Integer)) }
-    def perform_job # rubocop:disable Metrics/PerceivedComplexity,Metrics/AbcSize,Metrics/MethodLength
+    def perform_job # rubocop:disable Metrics/AbcSize
       @base_commit_sha = T.let(nil, T.nilable(String))
 
       Dependabot.logger.info("Job definition: #{File.read(Environment.job_path)}") if Environment.job_path
@@ -54,19 +54,24 @@ module Dependabot
         end
 
         Dependabot.logger.info("Base commit SHA: #{@base_commit_sha}")
-        File.write(
-          Environment.output_path,
-          JSON.dump(
-            base64_dependency_files: base64_dependency_files&.map(&:to_h),
-            base_commit_sha: @base_commit_sha
-          )
-        )
+        save_output_path
 
         save_job_details
       end
     end
 
     private
+
+    sig { returns(T.nilable(Integer)) }
+    def save_output_path
+      File.write(
+        Environment.output_path,
+        JSON.dump(
+          base64_dependency_files: base64_dependency_files&.map(&:to_h),
+          base_commit_sha: @base_commit_sha
+        )
+      )
+    end
 
     sig { returns(T.nilable(Integer)) }
     def save_job_details
@@ -125,15 +130,23 @@ module Dependabot
       @file_fetchers[directory] ||= create_file_fetcher(directory: directory)
     end
 
-    # rubocop:disable Metrics/PerceivedComplexity
     sig { returns(T.nilable(T::Array[Dependabot::DependencyFile])) }
-    def dependency_files_for_multi_directories # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity
+    def dependency_files_for_multi_directories
       @dependency_files_for_multi_directories = T.let(
-        @dependency_files_for_multi_directories,
-        T.nilable(T::Array[Dependabot::DependencyFile])
+        @dependency_files_for_multi_directories, T.nilable(T::Array[Dependabot::DependencyFile])
       )
       return @dependency_files_for_multi_directories if @dependency_files_for_multi_directories
 
+      @dependency_files_for_multi_directories = files_from_multidirectories
+      if @dependency_files_for_multi_directories&.empty?
+        raise Dependabot::DependencyFileNotFound, job.source.directories&.join(", ")
+      end
+
+      @dependency_files_for_multi_directories
+    end
+
+    sig { returns(T.nilable(T::Array[Dependabot::DependencyFile])) }
+    def files_from_multidirectories
       has_glob = T.let(false, T::Boolean)
       path = T.must(job.repo_contents_path)
       directories = Dir.chdir(path) do
@@ -145,30 +158,28 @@ module Dependabot
           Dir.glob(dir, File::FNM_DOTMATCH).select { |d| File.directory?(d) }.map { |d| "/#{d}" }
         end&.flatten
       end&.uniq
+      list_files_in_directory(directories, has_glob)
+    end
 
-      @dependency_files_for_multi_directories = directories&.flat_map do |dir|
+    sig do
+      params(directories: T.nilable(T::Array[String]), has_glob: T::Boolean)
+        .returns(T.nilable(T::Array[Dependabot::DependencyFile]))
+    end
+    def list_files_in_directory(directories, has_glob)
+      directories&.flat_map do |dir|
         ff = with_retries { file_fetcher_for_directory(dir) }
 
         begin
           files = ff.files
         rescue Dependabot::DependencyFileNotFound
-          # skip directories that don't contain manifests if globbing is used
           next if has_glob
 
           raise
         end
-
         post_ecosystem_versions(ff) if should_record_ecosystem_versions?
         files
       end&.compact
-
-      if @dependency_files_for_multi_directories&.empty?
-        raise Dependabot::DependencyFileNotFound, job.source.directories&.join(", ")
-      end
-
-      @dependency_files_for_multi_directories
     end
-    # rubocop:enable Metrics/PerceivedComplexity
 
     sig { returns(T.nilable(T::Array[Dependabot::DependencyFile])) }
     def dependency_files
