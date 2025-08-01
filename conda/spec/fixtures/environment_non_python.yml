@@ -1,0 +1,4 @@
+dependencies:
+  - r-base=4.0.3
+  - git=2.30.0
+  - cmake=3.20.0

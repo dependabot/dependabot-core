@@ -50,6 +50,12 @@ PATH
       dependabot-common (= 0.323.0)
 
 PATH
+  remote: ../conda
+  specs:
+    dependabot-conda (0.323.0)
+      dependabot-common (= 0.323.0)
+
+PATH
   remote: ../devcontainers
   specs:
     dependabot-devcontainers (0.323.0)
@@ -501,7 +507,7 @@ GEM
     toml-rb (4.0.0)
       citrus (~> 3.0, > 3.0)
       racc (~> 1.7)
-    turbo_tests (2.2.4)
+    turbo_tests (2.2.5)
       parallel_tests (>= 3.3.0, < 5)
       rspec (>= 3.10)
     unf (0.1.4)
@@ -539,6 +545,7 @@ DEPENDENCIES
   dependabot-cargo!
   dependabot-common!
   dependabot-composer!
+  dependabot-conda!
   dependabot-devcontainers!
   dependabot-docker!
   dependabot-docker_compose!
@@ -587,7 +594,7 @@ DEPENDENCIES
   sentry-ruby (~> 5.23)
   simplecov (~> 0.22)
   terminal-table (~> 3.0)
-  turbo_tests (~> 2.2)
+  turbo_tests (~> 2.2.5)
   vcr (~> 6.1)
   webmock (~> 3.18)
   webrick (~> 1.9)
@@ -621,6 +628,7 @@ CHECKSUMS
   dependabot-cargo (0.323.0)
   dependabot-common (0.323.0)
   dependabot-composer (0.323.0)
+  dependabot-conda (0.323.0)
   dependabot-devcontainers (0.323.0)
   dependabot-docker (0.323.0)
   dependabot-docker_compose (0.323.0)
@@ -758,7 +766,7 @@ CHECKSUMS
   stringio (3.1.0) sha256=c1f6263ae03a15025e51194ab19b06b15e06adcaaedb7f5f6c06ab60f5d67718
   terminal-table (3.0.2) sha256=f951b6af5f3e00203fb290a669e0a85c5dd5b051b3b023392ccfd67ba5abae91
   toml-rb (4.0.0) sha256=bc997a4114c94a65dd5287aa4784ef36cff2c80ec2ecb5980fe7d674f8ed37ea
-  turbo_tests (2.2.4) sha256=d2ae747391ad59253d45b8dfae045cef9ae4126c78d1174caf82c898a3bb9c0c
+  turbo_tests (2.2.5) sha256=3fa31497d12976d11ccc298add29107b92bda94a90d8a0a5783f06f05102509f
   unf (0.1.4) sha256=4999517a531f2a955750f8831941891f6158498ec9b6cb1c81ce89388e63022e
   unf_ext (0.0.8.2) sha256=90b9623ee359cc4878461c5d2eab7d3d3ce5801a680a9e7ac83b8040c5b742fa
   unicode-display_width (2.6.0) sha256=12279874bba6d5e4d2728cef814b19197dbb10d7a7837a869bab65da943b7f5a
