@@ -102,7 +102,7 @@ module Dependabot
         directory: T.nilable(String),
         subdependency_metadata: T.nilable(T::Array[T::Hash[T.any(Symbol, String), String]]),
         removed: T::Boolean,
-        metadata: T.nilable(T::Hash[T.any(Symbol, String), String]),
+        metadata: T.nilable(T::Hash[T.any(Symbol, String), String])
       ).void
     end
     def initialize(name:, requirements:, package_manager:, version: nil,
@@ -168,7 +168,7 @@ module Dependabot
         "directory" => directory,
         "package_manager" => package_manager,
         "subdependency_metadata" => subdependency_metadata,
-        "removed" => removed? ? true : nil,
+        "removed" => removed? ? true : nil
       }.compact
     end
 
