@@ -17,8 +17,8 @@ require "dependabot/pull_request_creator/labeler"
 Dependabot::PullRequestCreator::Labeler
   .register_label_details("vcpkg", name: "vcpkg_package_manager", colour: "512BD4")
 
-require "dependabot/dependency"
-Dependabot::Dependency.register_production_check("vcpkg", ->(_) { true })
+require "dependabot/vcpkg/dependency"
+Dependabot::Vcpkg::Dependency.register_production_check("vcpkg", ->(_) { true })
 
 module Dependabot
   module Vcpkg
