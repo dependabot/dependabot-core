@@ -50,6 +50,12 @@ PATH
       dependabot-common (= 0.324.1)
 
 PATH
+  remote: conda
+  specs:
+    dependabot-conda (0.324.1)
+      dependabot-common (= 0.324.1)
+
+PATH
   remote: devcontainers
   specs:
     dependabot-devcontainers (0.324.1)
@@ -415,6 +421,7 @@ DEPENDENCIES
   dependabot-cargo!
   dependabot-common!
   dependabot-composer!
+  dependabot-conda!
   dependabot-devcontainers!
   dependabot-docker!
   dependabot-docker_compose!
@@ -476,6 +483,7 @@ CHECKSUMS
   dependabot-cargo (0.324.1)
   dependabot-common (0.324.1)
   dependabot-composer (0.324.1)
+  dependabot-conda (0.324.1)
   dependabot-devcontainers (0.324.1)
   dependabot-docker (0.324.1)
   dependabot-docker_compose (0.324.1)
