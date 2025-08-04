@@ -8,5 +8,5 @@ dependencies:
   - pandas>=1.3.0
   - pip
   - pip:
-    - requests==2.25.1
-    - flask>=1.0.0
+      - requests==2.25.1
+      - flask>=1.0.0

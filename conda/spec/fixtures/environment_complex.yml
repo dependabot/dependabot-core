@@ -47,4 +47,4 @@ dependencies:
   - requests-mock >=1.8.0
   - pip
   - pip:
-    - rfc3339-validator
+      - rfc3339-validator

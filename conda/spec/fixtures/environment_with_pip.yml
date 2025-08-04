@@ -13,15 +13,15 @@ dependencies:
   - python=3.8
   - pytorch=1.4
   - pip:
-    - hmmlearn==0.2
-    - librosa==0.6
-    - matplotlib==3.0
-    - numpy==1.16
-    - pyannote-core==4.1
-    - pyannote-database==4.0
-    - pyannote-metrics==3.0
-    - scikit-learn==0.22
-    - scipy==1.1
-    - sklearn
-    - tqdm==4.28
-    - wandb==0.9
+      - hmmlearn==0.2
+      - librosa==0.6
+      - matplotlib==3.0
+      - numpy==1.16
+      - pyannote-core==4.1
+      - pyannote-database==4.0
+      - pyannote-metrics==3.0
+      - scikit-learn==0.22
+      - scipy==1.1
+      - sklearn
+      - tqdm==4.28
+      - wandb==0.9
