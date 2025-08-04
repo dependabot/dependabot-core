@@ -38,6 +38,7 @@ jobs:
           - { name: bundler, ecosystem: bundler }
           - { name: cargo, ecosystem: cargo }
           - { name: composer, ecosystem: composer }
+          - { name: conda, ecosystem: conda }
           - { name: devcontainers, ecosystem: devcontainers }
           - { name: docker_compose, ecosystem: docker-compose }
           - { name: docker, ecosystem: docker }
