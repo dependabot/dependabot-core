@@ -18,17 +18,17 @@ module Dependabot
       VERSION_CONSTRAINT_PATTERN = '(\s*[=<>!~]=?\s*[^#\s]\S*(?:\s*,\s*[=<>!~]=?\s*[^#\s]\S*)*)?'
 
       # Regex patterns for dependency matching
-      CONDA_CHANNEL_PATTERN = lambda do |name|
+      CONDA_CHANNEL_PATTERN = T.let(lambda do |name|
         /^(\s{2,4}-\s+[a-zA-Z0-9_.-]+::)(#{Regexp.escape(name)})#{VERSION_CONSTRAINT_PATTERN}(\s*)(#.*)?$/
-      end
+      end, T.proc.params(arg0: T.untyped).returns(Regexp))
 
-      CONDA_SIMPLE_PATTERN = lambda do |name|
+      CONDA_SIMPLE_PATTERN = T.let(lambda do |name|
         /^(\s{2,4}-\s+)(#{Regexp.escape(name)})#{VERSION_CONSTRAINT_PATTERN}(\s*)(#.*)?$/
-      end
+      end, T.proc.params(arg0: T.untyped).returns(Regexp))
 
-      PIP_PATTERN = lambda do |name|
+      PIP_PATTERN = T.let(lambda do |name|
         /^(\s{5,}-\s+)(#{Regexp.escape(name)})#{VERSION_CONSTRAINT_PATTERN}(\s*)(#.*)?$/
-      end
+      end, T.proc.params(arg0: T.untyped).returns(Regexp))
 
       sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
@@ -87,7 +87,7 @@ module Dependabot
 
       sig { params(content: String, filename: String).returns(T::Boolean) }
       def update_dependencies_in_content(content, filename)
-        content_updated = false
+        content_updated = T.let(false, T::Boolean)
 
         dependencies.each do |dependency|
           dependency_updated = update_dependency_in_content(content, dependency)

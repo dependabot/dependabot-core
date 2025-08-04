@@ -36,6 +36,8 @@ module Dependabot
                      update_cooldown: nil, options: {})
         super
         @latest_version = T.let(nil, T.nilable(T.any(String, Dependabot::Version)))
+        @lowest_resolvable_security_fix_version = T.let(nil, T.nilable(Dependabot::Version))
+        @lowest_resolvable_security_fix_version_fetched = T.let(false, T::Boolean)
       end
 
       sig { override.returns(T.nilable(T.any(String, Dependabot::Version))) }
@@ -64,7 +66,7 @@ module Dependabot
         # we can't determine if it's up-to-date, so assume it needs checking
         return false if dependency.version.nil?
 
-        latest_version <= Dependabot::Conda::Version.new(dependency.version)
+        T.must(latest_version) <= Dependabot::Conda::Version.new(dependency.version)
       end
 
       sig { override.returns(T::Boolean) }
@@ -83,10 +85,11 @@ module Dependabot
       def lowest_resolvable_security_fix_version
         raise "Dependency not vulnerable!" unless vulnerable?
 
-        return @lowest_resolvable_security_fix_version if defined?(@lowest_resolvable_security_fix_version)
+        return @lowest_resolvable_security_fix_version if @lowest_resolvable_security_fix_version_fetched
 
-        @lowest_resolvable_security_fix_version =
-          fetch_lowest_resolvable_security_fix_version
+        @lowest_resolvable_security_fix_version = fetch_lowest_resolvable_security_fix_version
+        @lowest_resolvable_security_fix_version_fetched = true
+        @lowest_resolvable_security_fix_version
       end
 
       sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }

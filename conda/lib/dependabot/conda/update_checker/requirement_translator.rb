@@ -41,7 +41,7 @@ module Dependabot
           return wildcard_requirement unless version_match
 
           base_version = version_match[1]
-          version_parts = base_version.split(".")
+          version_parts = T.must(base_version).split(".")
 
           # Calculate next version for upper bound
           next_version_parts = version_parts.dup

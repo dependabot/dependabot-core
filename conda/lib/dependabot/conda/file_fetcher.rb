@@ -75,7 +75,7 @@ module Dependabot
       end
 
       # Parse YAML content and return parsed hash or nil
-      sig { params(content: String).returns(T.nilable(Hash)) }
+      sig { params(content: String).returns(T.nilable(T::Hash[T.untyped, T.untyped])) }
       def parse_yaml_content(content)
         require "yaml"
         parsed = YAML.safe_load(content)
@@ -83,7 +83,7 @@ module Dependabot
       end
 
       # Check if the parsed YAML contains manageable conda packages
-      sig { params(parsed_yaml: Hash).returns(T::Boolean) }
+      sig { params(parsed_yaml: T::Hash[T.untyped, T.untyped]).returns(T::Boolean) }
       def manageable_conda_packages?(parsed_yaml)
         dependencies = parsed_yaml["dependencies"]
         return false unless dependencies.is_a?(Array)
@@ -96,7 +96,7 @@ module Dependabot
       end
 
       # Check if the parsed YAML contains manageable pip packages
-      sig { params(parsed_yaml: Hash).returns(T::Boolean) }
+      sig { params(parsed_yaml: T::Hash[T.untyped, T.untyped]).returns(T::Boolean) }
       def manageable_pip_packages?(parsed_yaml)
         dependencies = parsed_yaml["dependencies"]
         return false unless dependencies.is_a?(Array)
