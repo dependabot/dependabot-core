@@ -6,24 +6,6 @@ require "dependabot/conda/file_updater"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::Conda::FileUpdater do
-  it_behaves_like "a dependency file updater"
-
-  let(:updater) do
-    described_class.new(
-      dependency_files: dependency_files,
-      dependencies: dependencies,
-      credentials: github_credentials
-    )
-  end
-
-  let(:dependency_files) { [environment_file] }
-  let(:environment_file) do
-    Dependabot::DependencyFile.new(
-      name: "environment.yml",
-      content: environment_content
-    )
-  end
-
   let(:github_credentials) do
     [{
       "type" => "git_source",
@@ -32,9 +14,25 @@ RSpec.describe Dependabot::Conda::FileUpdater do
       "password" => "token"
     }]
   end
+  let(:environment_file) do
+    Dependabot::DependencyFile.new(
+      name: "environment.yml",
+      content: environment_content
+    )
+  end
+  let(:dependency_files) { [environment_file] }
+  let(:updater) do
+    described_class.new(
+      dependency_files: dependency_files,
+      dependencies: dependencies,
+      credentials: github_credentials
+    )
+  end
+
+  it_behaves_like "a dependency file updater"
 
   describe "#updated_dependency_files" do
-    context "updating a conda dependency" do
+    context "when updating a conda dependency" do
       let(:environment_content) { fixture("environment_simple.yml") }
       let(:dependencies) do
         [Dependabot::Dependency.new(
@@ -73,7 +71,7 @@ RSpec.describe Dependabot::Conda::FileUpdater do
       end
     end
 
-    context "updating a pip dependency" do
+    context "when updating a pip dependency" do
       let(:environment_content) { fixture("environment_simple.yml") }
       let(:dependencies) do
         [Dependabot::Dependency.new(
@@ -111,7 +109,7 @@ RSpec.describe Dependabot::Conda::FileUpdater do
       end
     end
 
-    context "updating dependency with channel specification" do
+    context "when updating dependency with channel specification" do
       let(:environment_content) do
         <<~YAML
           dependencies:
@@ -150,7 +148,7 @@ RSpec.describe Dependabot::Conda::FileUpdater do
       end
     end
 
-    context "updating multiple dependencies" do
+    context "when updating multiple dependencies" do
       let(:environment_content) { fixture("environment_with_pip.yml") }
       let(:dependencies) do
         [
@@ -199,7 +197,7 @@ RSpec.describe Dependabot::Conda::FileUpdater do
         expect(updated_files.first.content).to include("python=3.9")
         expect(updated_files.first.content).not_to include("python=3.8")
 
-        # Note: The pip dependencies in the fixture don't include requests,
+        # NOTE: The pip dependencies in the fixture don't include requests,
         # but this tests the logic for multiple updates
       end
     end

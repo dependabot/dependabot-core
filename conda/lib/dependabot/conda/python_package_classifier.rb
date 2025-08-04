@@ -59,7 +59,7 @@ module Dependabot
 
         # Block obvious binary/system files
         return false if normalized_name.match?(/\.(exe|dll|so|dylib)$/i)
-        return false if normalized_name.match?(/^lib.+\.a$/i)             # Static libraries
+        return false if normalized_name.match?(/^lib.+\.a$/i) # Static libraries
 
         # Block system mutexes
         return false if normalized_name.match?(/^_[a-z0-9]+_mutex$/i)

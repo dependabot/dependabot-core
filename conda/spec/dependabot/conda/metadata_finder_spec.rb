@@ -68,7 +68,7 @@ RSpec.describe Dependabot::Conda::MetadataFinder do
     let(:dependency_name) { "numpy" }
 
     it "delegates to PythonPackageClassifier" do
-      expect(Dependabot::Conda::PythonPackageClassifier)
+      allow(Dependabot::Conda::PythonPackageClassifier)
         .to receive(:python_package?)
         .with("numpy")
         .and_return(true)

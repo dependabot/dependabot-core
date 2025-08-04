@@ -132,53 +132,66 @@ module Dependabot
         return nil if dep_string.nil?
 
         # Handle channel specifications: conda-forge::numpy=1.21.0
-        if dep_string.include?("::")
-          parts = dep_string.split("::", 2)
-          dep_string = parts[1]
-          return nil if dep_string.nil?
-        end
+        normalized_dep_string = normalize_conda_dependency_string(dep_string)
+        return nil if normalized_dep_string.nil?
 
         # Parse conda-style version specifications
         # Examples: numpy=1.21.0, scipy>=1.7.0, pandas, python=3.9, python>=3.8,<3.11
-        match = dep_string.match(/^([a-zA-Z0-9_.-]+)(?:\s*(.+))?$/)
+        match = normalized_dep_string.match(/^([a-zA-Z0-9_.-]+)(?:\s*(.+))?$/)
         return nil unless match
 
         name = match[1]
         constraint = match[2]&.strip
 
-        # Extract version if it's a simple equality constraint or meaningful range
-        version = nil
-        if constraint
-          case constraint
-          when /^=([0-9][a-zA-Z0-9._+-]+)$/
-            # Exact conda version: =1.26.0
-            version = constraint[1..-1] # Remove the = prefix
-          when /^>=([0-9][a-zA-Z0-9._+-]+)$/
-            # Minimum version constraint: >=1.26.0
-            # For security purposes, treat this as the current version
-            version = constraint[2..-1] # Remove the >= prefix
-          when /^~=([0-9][a-zA-Z0-9._+-]+)$/
-            # Compatible release: ~=1.26.0
-            version = constraint[2..-1] # Remove the ~= prefix
-          end
-        end
-
-        requirements = if constraint && !constraint.empty?
-                         [{
-                           requirement: constraint,
-                           file: file.name,
-                           source: nil,
-                           groups: ["dependencies"]
-                         }]
-                       else
-                         []
-                       end
+        version = extract_conda_version(constraint)
+        requirements = build_conda_requirements(constraint, file)
 
         {
           name: name,
           version: version,
           requirements: requirements
         }
+      end
+
+      sig { params(dep_string: String).returns(T.nilable(String)) }
+      def normalize_conda_dependency_string(dep_string)
+        return dep_string unless dep_string.include?("::")
+
+        parts = dep_string.split("::", 2)
+        parts[1]
+      end
+
+      sig { params(constraint: T.nilable(String)).returns(T.nilable(String)) }
+      def extract_conda_version(constraint)
+        return nil unless constraint
+
+        case constraint
+        when /^=([0-9][a-zA-Z0-9._+-]+)$/
+          # Exact conda version: =1.26.0
+          constraint[1..-1] # Remove the = prefix
+        when /^>=([0-9][a-zA-Z0-9._+-]+)$/
+          # Minimum version constraint: >=1.26.0
+          # For security purposes, treat this as the current version
+          constraint[2..-1] # Remove the >= prefix
+        when /^~=([0-9][a-zA-Z0-9._+-]+)$/
+          # Compatible release: ~=1.26.0
+          constraint[2..-1] # Remove the ~= prefix
+        end
+      end
+
+      sig do
+        params(constraint: T.nilable(String),
+               file: Dependabot::DependencyFile).returns(T::Array[T::Hash[Symbol, T.untyped]])
+      end
+      def build_conda_requirements(constraint, file)
+        return [] unless constraint && !constraint.empty?
+
+        [{
+          requirement: constraint,
+          file: file.name,
+          source: nil,
+          groups: ["dependencies"]
+        }]
       end
 
       sig do

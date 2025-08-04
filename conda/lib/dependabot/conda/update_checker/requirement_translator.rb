@@ -34,8 +34,6 @@ module Dependabot
           end
         end
 
-        private_class_method
-
         sig { params(wildcard_requirement: String).returns(String) }
         def self.convert_wildcard_requirement(wildcard_requirement)
           # Extract version pattern: =1.21.* -> 1.21

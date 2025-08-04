@@ -5,6 +5,18 @@ require "spec_helper"
 require "dependabot/conda/update_checker"
 
 RSpec.describe Dependabot::Conda::UpdateChecker::LatestVersionFinder do
+  subject(:finder) do
+    described_class.new(
+      dependency: dependency,
+      dependency_files: dependency_files,
+      credentials: credentials,
+      ignored_versions: ignored_versions,
+      raise_on_ignored: raise_on_ignored,
+      security_advisories: security_advisories,
+      cooldown_options: cooldown_options
+    )
+  end
+
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -30,18 +42,6 @@ RSpec.describe Dependabot::Conda::UpdateChecker::LatestVersionFinder do
   let(:raise_on_ignored) { false }
   let(:security_advisories) { [] }
   let(:cooldown_options) { nil }
-
-  subject(:finder) do
-    described_class.new(
-      dependency: dependency,
-      dependency_files: dependency_files,
-      credentials: credentials,
-      ignored_versions: ignored_versions,
-      raise_on_ignored: raise_on_ignored,
-      security_advisories: security_advisories,
-      cooldown_options: cooldown_options
-    )
-  end
 
   describe "#cooldown_enabled?" do
     it "returns true" do

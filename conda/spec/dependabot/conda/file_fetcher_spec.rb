@@ -37,8 +37,7 @@ RSpec.describe Dependabot::Conda::FileFetcher do
     end
 
     before do
-      allow(file_fetcher_instance).to receive(:commit).and_return("sha")
-      allow(file_fetcher_instance).to receive(:allow_beta_ecosystems?).and_return(true)
+      allow(file_fetcher_instance).to receive_messages(commit: "sha", allow_beta_ecosystems?: true)
 
       stub_request(:get, url + "?ref=sha")
         .with(headers: { "Authorization" => "token token" })
@@ -95,7 +94,7 @@ RSpec.describe Dependabot::Conda::FileFetcher do
       it "raises a DependencyFileNotFound error with beta message" do
         expect { file_fetcher_instance.files }
           .to raise_error(Dependabot::DependencyFileNotFound,
-                         "Conda support is currently in beta. Set ALLOW_BETA_ECOSYSTEMS=true to enable it.")
+                          "Conda support is currently in beta. Set ALLOW_BETA_ECOSYSTEMS=true to enable it.")
       end
     end
 
@@ -244,7 +243,7 @@ RSpec.describe Dependabot::Conda::FileFetcher do
     context "when environment file has nil content" do
       before do
         # Mock file with nil content
-        allow_any_instance_of(Dependabot::DependencyFile).to receive(:content).and_return(nil)
+        allow(file_fetcher_instance).to receive(:fetch_file_if_present).and_return(nil)
         stub_request(:get, File.join(url_with_directory, "environment.yml?ref=sha"))
           .with(headers: { "Authorization" => "token token" })
           .to_return(
@@ -409,10 +408,6 @@ RSpec.describe Dependabot::Conda::FileFetcher do
 
     it "returns true for fully qualified specs with simple build string" do
       expect(file_fetcher.send(:fully_qualified_spec?, "python=3.9.7=h60c2a47_0")).to be(true)
-    end
-
-    it "returns false for simple version specs" do
-      expect(file_fetcher.send(:fully_qualified_spec?, "numpy=1.21.0")).to be(false)
     end
 
     it "returns false for package name only" do

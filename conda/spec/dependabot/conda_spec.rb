@@ -25,7 +25,7 @@ RSpec.describe Dependabot::Conda do
       end
 
       it "returns true even with other groups" do
-        expect(production_check.call(["dev", "default", "test"])).to be(true)
+        expect(production_check.call(%w(dev default test))).to be(true)
       end
     end
 
@@ -35,7 +35,7 @@ RSpec.describe Dependabot::Conda do
       end
 
       it "returns true even with other groups" do
-        expect(production_check.call(["test", "dependencies", "dev"])).to be(true)
+        expect(production_check.call(%w(test dependencies dev))).to be(true)
       end
     end
 
@@ -45,13 +45,13 @@ RSpec.describe Dependabot::Conda do
       end
 
       it "returns true even with other groups" do
-        expect(production_check.call(["dev", "pip", "test"])).to be(true)
+        expect(production_check.call(%w(dev pip test))).to be(true)
       end
     end
 
     context "when groups includes only non-production groups" do
       it "returns false" do
-        expect(production_check.call(["dev", "test", "lint"])).to be(false)
+        expect(production_check.call(%w(dev test lint))).to be(false)
       end
 
       it "returns false for single non-production group" do
@@ -66,7 +66,7 @@ RSpec.describe Dependabot::Conda do
     end
 
     it "normalises package names using Conda::NameNormaliser" do
-      expect(Dependabot::Conda::NameNormaliser).to receive(:normalise).with("SomePackage").and_return("somepackage")
+      allow(Dependabot::Conda::NameNormaliser).to receive(:normalise).with("SomePackage").and_return("somepackage")
 
       expect(name_normaliser.call("SomePackage")).to eq("somepackage")
     end

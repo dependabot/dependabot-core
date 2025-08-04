@@ -97,14 +97,10 @@ module Dependabot
         return nil if req_string == "*"
 
         # Handle conda wildcard patterns like "=1.2.*"
-        if req_string.match?(/=\s*\d+(\.\d+)*\.\*/)
-          return convert_wildcard_requirement(req_string)
-        end
+        return convert_wildcard_requirement(req_string) if req_string.match?(/=\s*\d+(\.\d+)*\.\*/)
 
         # Handle pip-style compatible release operator
-        if req_string.match?(/~=/)
-          req_string = req_string.gsub("~=", "~>")
-        end
+        req_string = req_string.gsub("~=", "~>") if req_string.include?("~=")
 
         # Convert conda single = to Ruby = for internal processing
         req_string

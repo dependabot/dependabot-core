@@ -6,16 +6,6 @@ require "dependabot/conda/file_parser"
 require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
 RSpec.describe Dependabot::Conda::FileParser do
-  it_behaves_like "a dependency file parser"
-
-  let(:files) { [environment_file] }
-  let(:environment_file) do
-    Dependabot::DependencyFile.new(
-      name: "environment.yml",
-      content: environment_content
-    )
-  end
-  let(:parser) { described_class.new(dependency_files: files, source: source) }
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -23,6 +13,16 @@ RSpec.describe Dependabot::Conda::FileParser do
       directory: "/"
     )
   end
+  let(:parser) { described_class.new(dependency_files: files, source: source) }
+  let(:environment_file) do
+    Dependabot::DependencyFile.new(
+      name: "environment.yml",
+      content: environment_content
+    )
+  end
+  let(:files) { [environment_file] }
+
+  it_behaves_like "a dependency file parser"
 
   describe "parse" do
     context "with a simple environment file" do
@@ -32,9 +32,9 @@ RSpec.describe Dependabot::Conda::FileParser do
         dependencies = parser.parse
 
         # Python interpreter is excluded as it's a system dependency, not a PyPI package
-        expect(dependencies.map(&:name)).to match_array(%w[
+        expect(dependencies.map(&:name)).to match_array(%w(
           numpy pandas pydantic-settings
-        ])
+        ))
       end
 
       it "extracts conda dependencies with correct attributes" do
@@ -94,8 +94,8 @@ RSpec.describe Dependabot::Conda::FileParser do
         dependencies = parser.parse
 
         # Check we have expected packages from both conda and pip sections (python excluded as system dependency)
-        expect(dependencies.map(&:name)).to include("numpy-base", "pandas")  # conda packages
-        expect(dependencies.map(&:name)).to include("hmmlearn", "librosa", "matplotlib")  # pip packages
+        expect(dependencies.map(&:name)).to include("numpy-base", "pandas") # conda packages
+        expect(dependencies.map(&:name)).to include("hmmlearn", "librosa", "matplotlib") # pip packages
       end
 
       it "correctly parses pip version constraints" do
@@ -103,7 +103,7 @@ RSpec.describe Dependabot::Conda::FileParser do
         hmmlearn_dep = dependencies.find { |dep| dep.name == "hmmlearn" }
 
         expect(hmmlearn_dep.requirements.first[:requirement]).to eq("==0.2")
-        # Note: Removed groups check since conda doesn't use groups like other ecosystems
+        # NOTE: Removed groups check since conda doesn't use groups like other ecosystems
       end
     end
 
@@ -114,8 +114,8 @@ RSpec.describe Dependabot::Conda::FileParser do
         dependencies = parser.parse
 
         # Should only include pip dependencies, not fully qualified conda packages
-        expect(dependencies.map(&:name)).to match_array(%w[requests flask])
-        # Note: Removed groups check since conda doesn't use groups like other ecosystems
+        expect(dependencies.map(&:name)).to match_array(%w(requests flask))
+        # NOTE: Removed groups check since conda doesn't use groups like other ecosystems
       end
     end
 
@@ -136,7 +136,7 @@ RSpec.describe Dependabot::Conda::FileParser do
         expect(numpy_dep.requirements.first[:requirement]).to eq("=1.21.0")
         # Channel info should be preserved in the source or elsewhere if needed
         # Note: python is excluded as it's a system dependency, so only numpy and pandas are parsed
-        expect(dependencies.map(&:name)).to match_array(%w[numpy pandas])
+        expect(dependencies.map(&:name)).to match_array(%w(numpy pandas))
       end
     end
 

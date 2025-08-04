@@ -64,39 +64,51 @@ module Dependabot
         return false unless content
 
         begin
-          require "yaml"
-          parsed = YAML.safe_load(content)
-          return false unless parsed.is_a?(Hash)
+          parsed_yaml = parse_yaml_content(content)
+          return false unless parsed_yaml
 
-          # Check main dependencies section
-          dependencies = parsed["dependencies"]
-          if dependencies.is_a?(Array)
-            # Look for simplified conda specifications (manageable)
-            simplified_packages = dependencies.select do |dep|
-              dep.is_a?(String) && !fully_qualified_spec?(dep) &&
-                PythonPackageClassifier.python_package?(PythonPackageClassifier.extract_package_name(dep))
-            end
-            return true if simplified_packages.any?
-
-            # Look for pip section
-            pip_deps = dependencies.find { |dep| dep.is_a?(Hash) && dep.key?("pip") }
-            if pip_deps && pip_deps["pip"].is_a?(Array)
-              python_pip_packages = pip_deps["pip"].select do |pip_dep|
-                pip_dep.is_a?(String) &&
-                  PythonPackageClassifier.python_package?(PythonPackageClassifier.extract_package_name(pip_dep))
-              end
-              return true if python_pip_packages.any?
-            end
-          end
-
-          false
-        rescue Psych::SyntaxError
-          # If we can't parse the YAML, assume it's not manageable
-          false
+          manageable_conda_packages?(parsed_yaml) || manageable_pip_packages?(parsed_yaml)
         rescue StandardError
-          # Handle any other parsing errors
+          # If we can't parse the YAML or encounter other errors, assume it's not manageable
           false
         end
+      end
+
+      # Parse YAML content and return parsed hash or nil
+      sig { params(content: String).returns(T.nilable(Hash)) }
+      def parse_yaml_content(content)
+        require "yaml"
+        parsed = YAML.safe_load(content)
+        parsed.is_a?(Hash) ? parsed : nil
+      end
+
+      # Check if the parsed YAML contains manageable conda packages
+      sig { params(parsed_yaml: Hash).returns(T::Boolean) }
+      def manageable_conda_packages?(parsed_yaml)
+        dependencies = parsed_yaml["dependencies"]
+        return false unless dependencies.is_a?(Array)
+
+        simplified_packages = dependencies.select do |dep|
+          dep.is_a?(String) && !fully_qualified_spec?(dep) &&
+            PythonPackageClassifier.python_package?(PythonPackageClassifier.extract_package_name(dep))
+        end
+        simplified_packages.any?
+      end
+
+      # Check if the parsed YAML contains manageable pip packages
+      sig { params(parsed_yaml: Hash).returns(T::Boolean) }
+      def manageable_pip_packages?(parsed_yaml)
+        dependencies = parsed_yaml["dependencies"]
+        return false unless dependencies.is_a?(Array)
+
+        pip_deps = dependencies.find { |dep| dep.is_a?(Hash) && dep.key?("pip") }
+        return false unless pip_deps && pip_deps["pip"].is_a?(Array)
+
+        python_pip_packages = pip_deps["pip"].select do |pip_dep|
+          pip_dep.is_a?(String) &&
+            PythonPackageClassifier.python_package?(PythonPackageClassifier.extract_package_name(pip_dep))
+        end
+        python_pip_packages.any?
       end
 
       # Check if a package specification is fully qualified (build string included)

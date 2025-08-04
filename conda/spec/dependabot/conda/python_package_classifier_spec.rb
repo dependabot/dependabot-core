@@ -8,7 +8,7 @@ RSpec.describe Dependabot::Conda::PythonPackageClassifier do
   describe ".python_package?" do
     context "with known Python packages" do
       it "identifies standard Python packages (but excludes python interpreter)" do
-        expect(described_class.python_package?("python")).to be(false)  # Python interpreter, not a PyPI package
+        expect(described_class.python_package?("python")).to be(false) # Python interpreter, not a PyPI package
         expect(described_class.python_package?("numpy")).to be(true)
         expect(described_class.python_package?("pandas")).to be(true)
         expect(described_class.python_package?("scipy")).to be(true)

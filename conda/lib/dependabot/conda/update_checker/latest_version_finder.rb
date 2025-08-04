@@ -30,15 +30,7 @@ module Dependabot
           @raise_on_ignored = T.let(raise_on_ignored, T::Boolean)
           @cooldown_options = T.let(cooldown_options, T.nilable(Dependabot::Package::ReleaseCooldownOptions))
 
-          super(
-            dependency: dependency,
-            dependency_files: dependency_files,
-            credentials: credentials,
-            ignored_versions: ignored_versions,
-            raise_on_ignored: raise_on_ignored,
-            security_advisories: security_advisories,
-            cooldown_options: cooldown_options
-          )
+          super
         end
 
         sig { override.returns(T.nilable(Dependabot::Package::PackageDetails)) }

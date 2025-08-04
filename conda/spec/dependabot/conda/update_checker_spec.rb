@@ -6,8 +6,27 @@ require "dependabot/conda/update_checker"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::Conda::UpdateChecker do
-  it_behaves_like "an update checker"
-
+  let(:mock_security_fix_version) { Dependabot::Conda::Version.new("1.22.1") }
+  let(:mock_latest_version) { Dependabot::Conda::Version.new("1.26.4") }
+  # Mock the LatestVersionFinder to avoid external calls in tests
+  let(:latest_version_finder) { instance_double(Dependabot::Conda::UpdateChecker::LatestVersionFinder) }
+  let(:security_advisories) { [] }
+  let(:ignored_versions) { [] }
+  let(:github_credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
+  end
+  let(:environment_file) do
+    Dependabot::DependencyFile.new(
+      name: "environment.yml",
+      content: fixture("environment_simple.yml")
+    )
+  end
+  let(:dependency_files) { [environment_file] }
   let(:checker) do
     described_class.new(
       dependency: dependency,
@@ -18,36 +37,14 @@ RSpec.describe Dependabot::Conda::UpdateChecker do
     )
   end
 
-  let(:dependency_files) { [environment_file] }
-  let(:environment_file) do
-    Dependabot::DependencyFile.new(
-      name: "environment.yml",
-      content: fixture("environment_simple.yml")
-    )
-  end
-
-  let(:github_credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
-  end
-  let(:ignored_versions) { [] }
-  let(:security_advisories) { [] }
-
-  # Mock the LatestVersionFinder to avoid external calls in tests
-  let(:latest_version_finder) { instance_double(Dependabot::Conda::UpdateChecker::LatestVersionFinder) }
-  let(:mock_latest_version) { Dependabot::Conda::Version.new("1.26.4") }
-  let(:mock_security_fix_version) { Dependabot::Conda::Version.new("1.22.1") }
-
   before do
     allow(Dependabot::Conda::UpdateChecker::LatestVersionFinder)
       .to receive(:new).and_return(latest_version_finder)
-    allow(latest_version_finder).to receive(:latest_version).and_return(mock_latest_version)
-    allow(latest_version_finder).to receive(:lowest_security_fix_version).and_return(mock_security_fix_version)
+    allow(latest_version_finder).to receive_messages(latest_version: mock_latest_version,
+                                                     lowest_security_fix_version: mock_security_fix_version)
   end
+
+  it_behaves_like "an update checker"
 
   describe "#can_update?" do
     context "with a conda dependency" do
@@ -355,7 +352,7 @@ RSpec.describe Dependabot::Conda::UpdateChecker do
   end
 
   describe "#vulnerable?" do
-    subject { checker.vulnerable? }
+    subject(:vulnerability_check) { checker.vulnerable? }
 
     let(:dependency) do
       Dependabot::Dependency.new(
@@ -380,7 +377,7 @@ RSpec.describe Dependabot::Conda::UpdateChecker do
       end
 
       it "returns false" do
-        expect(subject).to be(false)
+        expect(vulnerability_check).to be(false)
       end
     end
 
@@ -398,7 +395,9 @@ RSpec.describe Dependabot::Conda::UpdateChecker do
 
       before do
         allow(checker).to receive(:latest_version_finder).and_return(mock_latest_version_finder)
-        allow(mock_latest_version_finder).to receive(:lowest_security_fix_version).and_return(Dependabot::Conda::Version.new("1.24.0"))
+        allow(mock_latest_version_finder)
+          .to receive(:lowest_security_fix_version)
+          .and_return(Dependabot::Conda::Version.new("1.24.0"))
       end
 
       it "returns true and memoizes the security fix version" do
@@ -431,9 +430,8 @@ RSpec.describe Dependabot::Conda::UpdateChecker do
       end
 
       before do
-        allow(checker).to receive(:latest_version).and_return(nil)
-        allow(checker).to receive(:latest_resolvable_version).and_return(nil)
-        allow(checker).to receive(:preferred_resolvable_version).and_return(nil)
+        allow(checker).to receive_messages(latest_version: nil, latest_resolvable_version: nil,
+                                           preferred_resolvable_version: nil)
       end
 
       it "returns existing requirements when target_version is nil" do
