@@ -108,7 +108,7 @@ module Dependabot
         dependency_set
       rescue Psych::SyntaxError, Psych::DisallowedClass, Psych::BadAlias => e
         Dependabot.logger.error("Failed to parse file #{file.path}: #{e.message}")
-        raise Dependabot::DependencyFileNotParseable, file.path, e.message
+        raise Dependabot::DependencyFileNotParseable.new(file.path, e.message)
       end
 
       sig { params(json_obj: T.anything).returns(T::Array[String]) }
