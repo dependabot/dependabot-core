@@ -64,29 +64,34 @@ module Dependabot
 
       sig { void }
       def set_go_environment_variables
-        # If a go.env file is present, we set the GOENV environment variable
-        # so that the Go toolchain can use it, this is useful for setting
-        # GOPRIVATE and GONOSUMDB for example.
-        if go_env
-          T.must(go_env)
-          File.write(T.must(go_env).name, T.must(go_env).content)
-          go_env_path = Pathname.new(T.must(go_env).name).realpath.to_s
-          ENV["GOENV"] = go_env_path
-        end
+        set_goenv_variable
+        set_goprivate_variable
+        set_goproxy_variable
+      end
 
-        # We set the GOPROXY environment variable if there are any
-        # goproxy_server credentials, from here the Go toolchain will
-        # use the configured proxy to fetch dependencies.
-        goproxy_credentials = T.let(
-          credentials.select { |cred| cred["type"] == "goproxy_server" },
-          T::Array[Dependabot::Credential]
-        )
+      sig { void }
+      def set_goenv_variable
+        return unless go_env
 
-        # if there are no goproxy credentials, or if the go.env file already
-        # contains a GOPROXY variable, we don't set it, because otherwise this
-        # would override the value in the go.env file.
+        env_file = T.must(go_env)
+        File.write(env_file.name, env_file.content)
+        ENV["GOENV"] = Pathname.new(env_file.name).realpath.to_s
+      end
+
+      sig { void }
+      def set_goprivate_variable
+        return if go_env&.content&.include?("GOPRIVATE")
+
+        goprivate = options.fetch(:goprivate, "*")
+        ENV["GOPRIVATE"] = goprivate if goprivate
+      end
+
+      sig { void }
+      def set_goproxy_variable
+        return if go_env&.content&.include?("GOPROXY")
+
+        goproxy_credentials = credentials.select { |cred| cred["type"] == "goproxy_server" }
         return if goproxy_credentials.empty?
-        return if go_env && T.must(go_env).content&.include?("GOPROXY")
 
         urls = goproxy_credentials.filter_map { |cred| cred["url"] }
         ENV["GOPROXY"] = "#{urls.join(',')},direct"

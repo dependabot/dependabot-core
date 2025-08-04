@@ -10,8 +10,8 @@ module Dependabot
 
       GITHUB_REPO_REGEX = %r{github.com/[^:@ ]*}
 
-      sig { params(message: String, goprivate: T.untyped).void }
-      def self.handle(message, goprivate:)
+      sig { params(message: String).void }
+      def self.handle(message)
         mod_path = message.scan(GITHUB_REPO_REGEX).last
         unless mod_path && message.include?("If this is a private repository")
           raise Dependabot::DependencyFileNotResolvable, message
@@ -30,8 +30,7 @@ module Dependabot
                         mod_path
                       end
 
-          env = { "GOPRIVATE" => goprivate }
-          _, _, status = Open3.capture3(env, SharedHelpers.escape_command("go list -m -versions #{repo_path}"))
+          _, _, status = Open3.capture3(SharedHelpers.escape_command("go list -m -versions #{repo_path}"))
           raise Dependabot::DependencyFileNotResolvable, message if status.success?
 
           raise Dependabot::GitDependenciesNotReachable, [repo_path]
