@@ -29,7 +29,6 @@ module Dependabot
       def initialize(dependencies:, dependency_files:, credentials:, repo_contents_path: nil, options: {})
         super
 
-        @goprivate = T.let(options.fetch(:goprivate, "*"), String)
         use_repo_contents_stub if repo_contents_path.nil?
       end
 
@@ -149,7 +148,7 @@ module Dependabot
             credentials: credentials,
             repo_contents_path: repo_contents_path,
             directory: T.must(directory),
-            options: { tidy: tidy?, vendor: vendor?, goprivate: @goprivate }
+            options: { tidy: tidy?, vendor: vendor? }
           ),
           T.nilable(Dependabot::GoModules::FileUpdater::GoModUpdater)
         )

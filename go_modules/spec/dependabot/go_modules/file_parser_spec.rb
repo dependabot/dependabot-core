@@ -34,6 +34,7 @@ RSpec.describe Dependabot::GoModules::FileParser do
     # Reset the environment variable after each test to avoid side effects
     ENV.delete("GOENV")
     ENV.delete("GOPROXY")
+    ENV.delete("GOPRIVATE")
   end
 
   it_behaves_like "a dependency file parser"
