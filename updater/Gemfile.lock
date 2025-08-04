@@ -54,6 +54,7 @@ PATH
   specs:
     dependabot-conda (0.324.1)
       dependabot-common (= 0.324.1)
+      dependabot-python (= 0.324.1)
 
 PATH
   remote: ../devcontainers
