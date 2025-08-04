@@ -130,7 +130,7 @@ module GithubApi
                 # Dependabot::Dependency objects do not include immediate dependencies,
                 # this is a capability each parser will need to have added.
               ],
-              metadata: { }
+              metadata: {}
             }
           end
         }
@@ -187,8 +187,9 @@ module GithubApi
       end
     end
 
-    def scope_for(dep)
-      if dep.production?
+    sig { params(dependency: Dependabot::Dependency).returns(String) }
+    def scope_for(dependency)
+      if dependency.production?
         "runtime"
       else
         "development"
