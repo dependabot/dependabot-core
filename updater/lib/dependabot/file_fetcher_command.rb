@@ -100,13 +100,10 @@ module Dependabot
       # the job's credentials-metadata that has no secrets
       credentials = job_definition.fetch("credentials", job_credentials_metadata)
 
-      # Convert experiments hash to have string keys and string values
-      experiments_options = job.experiments.transform_keys(&:to_s).transform_values(&:to_s)
-
       args = {
         source: job.source.clone.tap { |s| s.directory = directory_to_use },
         credentials: credentials,
-        options: experiments_options
+        options: T.unsafe(job.experiments)
       }
       args[:repo_contents_path] = Environment.repo_contents_path if job.clone? || already_cloned?
       Dependabot::FileFetchers.for_package_manager(job.package_manager).new(**args)
