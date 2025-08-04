@@ -1,5 +1,6 @@
 # Bundler
-.bundle/
+.bundle/*
+!.bundle/config
 vendor/
 
 # RSpec
