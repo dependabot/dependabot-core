@@ -534,7 +534,7 @@ module Dependabot
             requirement: bundep.requirement.to_s,
             file: file_name,
             groups: groups,
-            source: "",
+            source: {},
           }
         ]
       end
