@@ -75,7 +75,7 @@ module Dependabot
         file.dup.tap { |f| f.content = updated_content }
       end
 
-      sig { params(content: String, filename: String).returns(T::Boolean) }
+      sig { params(content: String, filename: String).returns(T.any(T::Boolean, T.noreturn)) }
       def valid_yaml_content?(content, filename)
         parsed_yaml = YAML.safe_load(content)
         return false unless parsed_yaml.is_a?(Hash) && parsed_yaml["dependencies"].is_a?(Array)
