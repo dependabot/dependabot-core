@@ -405,12 +405,6 @@ RSpec.describe Dependabot::Cargo::FileParser do
                     file: "Cargo.toml",
                     groups: ["workspace.dependencies"],
                     source: nil
-                  },
-                  {
-                    requirement: nil,
-                    file: "lib/inherit_ws_dep/Cargo.toml",
-                    groups: ["dependencies"],
-                    source: nil
                   }
                 ]
               )
