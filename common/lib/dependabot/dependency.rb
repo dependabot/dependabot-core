@@ -102,12 +102,13 @@ module Dependabot
         directory: T.nilable(String),
         subdependency_metadata: T.nilable(T::Array[T::Hash[T.any(Symbol, String), String]]),
         removed: T::Boolean,
-        metadata: T.nilable(T::Hash[T.any(Symbol, String), String])
+        metadata: T.nilable(T::Hash[T.any(Symbol, String), String]),
+        top_level: T::Boolean
       ).void
     end
     def initialize(name:, requirements:, package_manager:, version: nil,
                    previous_version: nil, previous_requirements: nil, directory: nil,
-                   subdependency_metadata: [], removed: false, metadata: {})
+                   subdependency_metadata: [], removed: false, metadata: {}, top_level: false)
       @name = name
       @version = T.let(
         case version
@@ -126,7 +127,7 @@ module Dependabot
       )
       @package_manager = package_manager
       @directory = directory
-      unless top_level? || subdependency_metadata == []
+      unless @requirements.any? || subdependency_metadata == []
         @subdependency_metadata = T.let(
           subdependency_metadata&.map { |h| symbolize_keys(h) },
           T.nilable(T::Array[T::Hash[Symbol, T.untyped]])
@@ -134,6 +135,7 @@ module Dependabot
       end
       @removed = removed
       @metadata = T.let(symbolize_keys(metadata || {}), T::Hash[Symbol, T.untyped])
+      @top_level = top_level # used to support lockfile parsing/DependencySubmission
 
       check_values
     end
@@ -142,7 +144,7 @@ module Dependabot
 
     sig { returns(T::Boolean) }
     def top_level?
-      requirements.any?
+      requirements.any? || @top_level
     end
 
     sig { returns(T::Boolean) }
@@ -179,7 +181,7 @@ module Dependabot
 
     sig { returns(T::Boolean) }
     def production?
-      return subdependency_production_check unless top_level?
+      return subdependency_production_check unless requirements.any?
 
       groups = requirements.flat_map { |r| r.fetch(:groups).map(&:to_s) }
 
@@ -190,7 +192,7 @@ module Dependabot
 
     sig { returns(T::Boolean) }
     def subdependency_production_check
-      !subdependency_metadata&.all? { |h| h[:production] == false }
+      !!subdependency_metadata&.any? && !subdependency_metadata&.all? { |h| h[:production] == false }
     end
 
     sig { returns(String) }
@@ -353,7 +355,7 @@ module Dependabot
 
     sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
     def all_sources
-      if top_level?
+      if requirements.any?
         requirements.map { |requirement| requirement.fetch(:source) }
       elsif subdependency_metadata
         T.must(subdependency_metadata).filter_map { |data| data[:source] }
