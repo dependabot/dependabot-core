@@ -29,7 +29,6 @@ Dependabot::Dependency.register_production_check(
   end
 )
 
-# Use Python name normalization for conda packages since they're primarily Python packages
 Dependabot::Dependency.register_name_normaliser(
   "conda",
   ->(name) { Dependabot::Conda::NameNormaliser.normalise(name) }
