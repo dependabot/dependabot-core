@@ -61,15 +61,14 @@ module Dependabot
         content = file.content
         return false unless content
 
-        begin
-          parsed_yaml = parse_yaml_content(content)
-          return false unless parsed_yaml
-
-          manageable_conda_packages?(parsed_yaml) || manageable_pip_packages?(parsed_yaml)
-        rescue StandardError
-          # If we can't parse the YAML or encounter other errors, assume it's not manageable
-          false
+        parsed_yaml = begin
+          parse_yaml_content(content)
+        rescue Psych::SyntaxError => e
+          Dependabot.logger.error("YAML parsing error: #{e.message}")
         end
+        return false unless parsed_yaml
+
+        manageable_conda_packages?(parsed_yaml) || manageable_pip_packages?(parsed_yaml)
       end
 
       # Parse YAML content and return parsed hash or nil
