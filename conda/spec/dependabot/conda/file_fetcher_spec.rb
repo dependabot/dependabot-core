@@ -184,38 +184,6 @@ RSpec.describe Dependabot::Conda::FileFetcher do
       end
     end
 
-    # TODO: This test case needs further investigation
-    # The logic for identifying non-Python packages may need refinement
-    # context "when environment file has pip section with non-Python packages" do
-    #   before do
-    #     # Mock environment.yml with only non-Python packages and pip section with non-Python packages
-    #     pip_non_python_content = <<~YAML
-    #       dependencies:
-    #         - r-base=4.0.3
-    #         - gcc=9.3.0
-    #         - pip:
-    #           - some-system-tool==1.0.0
-    #           - another-non-python-package>=2.0
-    #     YAML
-    #
-    #     stub_request(:get, File.join(url_with_directory, "environment.yml?ref=sha"))
-    #       .with(headers: { "Authorization" => "token token" })
-    #       .to_return(
-    #         status: 200,
-    #         body: {
-    #           "content" => Base64.encode64(pip_non_python_content),
-    #           "encoding" => "base64"
-    #         }.to_json,
-    #         headers: json_header
-    #       )
-    #   end
-    #
-    #   it "raises a DependencyFileNotFound error when pip section has no Python packages" do
-    #     expect { file_fetcher_instance.files }
-    #       .to raise_error(Dependabot::DependencyFileNotFound)
-    #   end
-    # end
-
     context "when environment file has invalid YAML" do
       before do
         # Mock environment.yml with invalid YAML content
