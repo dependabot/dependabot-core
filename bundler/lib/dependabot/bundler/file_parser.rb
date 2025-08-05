@@ -132,7 +132,7 @@ module Dependabot
                   source: dep.fetch("source")&.transform_keys(&:to_sym),
                   file: file.name
                 }],
-                package_manager: "bundler",
+                package_manager: "bundler"
               )
 
             file.dependencies << dep
@@ -172,7 +172,7 @@ module Dependabot
                   source: dependency.fetch("source")&.transform_keys(&:to_sym),
                   file: gemspec.name
                 }],
-                package_manager: "bundler",
+                package_manager: "bundler"
               )
 
               gemspec.dependencies << dep
@@ -200,24 +200,53 @@ module Dependabot
 
           is_prod = production_dep_names.include?(dependency.name)
 
-          # if a dependency is listed in the lockfiles' DEPENDENCIES section,
-          # then it is a direct dependency & we want to keep track of that fact,
-          # which we accomplish by generating a requirements object.
-          bundep = parsed_lockfile.dependencies[dependency.name]
-          reqs = bundep_to_requirements(bundep, lockfile.name, is_prod)
-
-          dep = Dependency.new(
+          dependencies << Dependency.new(
               name: dependency.name,
               version: dependency_version(dependency.name)&.to_s,
-              requirements: reqs,
+              requirements: [],
               package_manager: "bundler",
               subdependency_metadata: [{
                 production: is_prod
               }],
             )
 
-          lockfile.dependencies << dep
-          dependencies << dep
+          # TODO(brrygrdn): Consider using hash for lockfile.dependencies instead of Deps array?
+          #
+          # I've separated out the list appended of dependency objects returned as part of the #parsed_dependencies
+          # method from a 'enhanced' list attached to the lockfile as promoting lockfile dependencies in the former
+          # causes significant disruption to the bundler module.
+          #
+          # While it might be feasible to smooth this out, I'm slightly reluctant to make such a disruptive change
+          # and since the list of dependency data we are attaching to the files is a brand new concept I think it
+          # might be worth trading memory for compartmentalising the file's resolved dependencies as a separate
+          # data structure.
+          #
+          # The advantages I can think of with this approach is that:
+          # - We can add a simple `from_dependabot_dependency` to create it for simple cases
+          # - For complex cases like this, we can hand construct it as required
+          # - When we come to start adding child dependencies to top-level dependencies, we don't need to start chaining
+          #   together Dependabot::Dependency objects into a graph, we can just add the data to this struct
+          # - Finally, this allows us to set a flag to disable this analysis-specific information gathering for updates
+          #   - Graph analysis might require us to make additional native helper falls in some ecosystems
+          #   - Since the file parser is also ran post-update to re-check the files limiting this work seems beneficial?
+          #
+          # The code that follows is intentially duplicating declaration of Dependency objects with our extra info for
+          # now to just make things work.
+
+          # if a dependency is listed in the lockfiles' DEPENDENCIES section,
+          # then it is a direct dependency & we want to keep track of that fact,
+          # which we accomplish by generating a requirements object.
+          bundep = parsed_lockfile.dependencies[dependency.name]
+          reqs = bundep_to_requirements(bundep, lockfile.name, is_prod)
+          lockfile.dependencies << Dependency.new(
+            name: dependency.name,
+            version: dependency_version(dependency.name)&.to_s,
+            requirements: reqs,
+            package_manager: "bundler",
+            subdependency_metadata: [{
+              production: is_prod
+            }],
+          )
         end
 
         dependencies
