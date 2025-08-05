@@ -469,11 +469,11 @@ RSpec.describe Dependabot::UpdateFilesCommand do
       end
 
       it "emits a create_dependency_submission call to the Dependabot service" do
-        expect(service).to receive(:create_dependency_submission) do |dependency_submission|
-          expect(dependency_submission).to be_a(GithubApi::DependencySubmission)
+        expect(service).to receive(:create_dependency_submission) do |args|
+          expect(args[:dependency_submission]).to be_a(GithubApi::DependencySubmission)
 
-          expect(dependency_submission.job_id).to eql(job_id)
-          expect(dependency_submission.package_manager).to eql("bundler")
+          expect(args[:dependency_submission].job_id).to eql(job_id)
+          expect(args[:dependency_submission].package_manager).to eql("bundler")
         end
 
         perform_job
