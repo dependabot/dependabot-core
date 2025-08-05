@@ -37,7 +37,6 @@ module Dependabot
 
         fetched_files = []
 
-        # Fetch main environment files
         ENVIRONMENT_FILE_NAMES.each do |filename|
           environment_file = fetch_file_if_present(filename)
           fetched_files << environment_file if environment_file
