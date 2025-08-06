@@ -24,6 +24,9 @@ common:
 composer:
   - *shared
   - 'composer/**'
+conda:
+  - *shared
+  - 'conda/**'
 devcontainers:
   - *shared
   - 'devcontainers/**'

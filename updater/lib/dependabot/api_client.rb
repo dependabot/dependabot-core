@@ -240,6 +240,27 @@ module Dependabot
       end
     end
 
+    sig { params(dependency_submission: T::Hash[Symbol, T.untyped]).void }
+    def create_dependency_submission(dependency_submission)
+      ::Dependabot::OpenTelemetry.tracer.in_span("create_dependency_submission", kind: :internal) do |span|
+        span.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id.to_s)
+
+        api_url = "#{base_url}/update_jobs/#{job_id}/create_dependency_submission"
+        body = {
+          data: dependency_submission
+        }
+        response = http_client.post(api_url, json: body)
+        raise ApiError, response.body if response.code >= 400
+      rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
+        retry_count ||= 0
+        retry_count += 1
+        raise if retry_count > MAX_REQUEST_RETRIES
+
+        sleep(rand(3.0..10.0))
+        retry
+      end
+    end
+
     sig { params(ecosystem_versions: T::Hash[Symbol, T.untyped]).void }
     def record_ecosystem_versions(ecosystem_versions)
       ::Dependabot::OpenTelemetry.tracer.in_span("record_ecosystem_versions", kind: :internal) do |_span|
