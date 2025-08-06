@@ -69,6 +69,8 @@ COPY --chown=dependabot:dependabot nuget/helpers /opt/nuget/helpers
 RUN bash /opt/nuget/helpers/build
 
 COPY --chown=dependabot:dependabot nuget $DEPENDABOT_HOME/nuget
+COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
+COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
 
 # ensure windows-style environment variables are set
 ARG TEMP_DIR=/tmp/dependabot
@@ -77,6 +79,7 @@ ENV TEMP=$TEMP_DIR
 ENV TMP=$TEMP_DIR
 
 # redirect entrypoint
+RUN mv bin/run bin/run-original
 COPY --chown=dependabot:dependabot nuget/script/* $DEPENDABOT_HOME/dependabot-updater/bin/
 COPY --chown=dependabot:dependabot nuget/updater/* $DEPENDABOT_HOME/dependabot-updater/bin/
 RUN chmod +x $DEPENDABOT_HOME/dependabot-updater/bin/run
