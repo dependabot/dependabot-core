@@ -83,16 +83,16 @@ public static class XmlExtensions
         return CreateOpenCloseXmlElementSyntax(name, new SyntaxList<SyntaxNode>(leadingTrivia));
     }
 
-    public static XmlElementSyntax CreateOpenCloseXmlElementSyntax(string name, SyntaxList<SyntaxNode> leadingTrivia)
+    public static XmlElementSyntax CreateOpenCloseXmlElementSyntax(string name, SyntaxList<SyntaxNode> leadingTrivia, bool insertIntermediateNewline = true)
     {
-        var newlineTrivia = SyntaxFactory.WhitespaceTrivia(Environment.NewLine);
+        var newlineTrivia = SyntaxFactory.EndOfLineTrivia(Environment.NewLine);
 
         return SyntaxFactory.XmlElement(
             SyntaxFactory.XmlElementStartTag(
                 SyntaxFactory.Punctuation(SyntaxKind.LessThanToken, "<", leadingTrivia, default),
                 SyntaxFactory.XmlName(null, SyntaxFactory.XmlNameToken(name, null, null)),
                 new SyntaxList<XmlAttributeSyntax>(),
-                SyntaxFactory.Punctuation(SyntaxKind.GreaterThanToken, ">", null, newlineTrivia)),
+                SyntaxFactory.Punctuation(SyntaxKind.GreaterThanToken, ">", null, insertIntermediateNewline ? newlineTrivia : null)),
             new SyntaxList<SyntaxNode>(),
             SyntaxFactory.XmlElementEndTag(
                 SyntaxFactory.Punctuation(SyntaxKind.LessThanSlashToken, "</", leadingTrivia, default),

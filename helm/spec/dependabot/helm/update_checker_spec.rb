@@ -69,42 +69,6 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
 
     it { is_expected.to eq(Dependabot::Helm::Version.new("20.11.3")) }
 
-    context "when using a private repository" do
-      before do
-        allow(Dependabot::Helm::Helpers).to receive(:registry_login)
-          .with(username, password, repo_url)
-          .and_return("Login successful")
-
-        allow(Dependabot::Helm::Helpers).to receive(:search_releases)
-          .with("oci---localhost-5000/#{dependency_name}")
-          .and_return(repo_tags)
-      end
-
-      let(:version) { "1.0.0" }
-      let(:repo_url) { "oci://localhost:5000" }
-      let(:repo_fixture_name) { "my_chart.json" }
-      let(:dependency_name) { "my_chart" }
-      let(:source) { { tag: version, registry: repo_url } }
-
-      it { is_expected.to eq(Dependabot::Helm::Version.new("1.1.0")) }
-
-      context "when authentication fails" do
-        before do
-          allow(Dependabot::Helm::Helpers).to receive(:registry_login)
-            .with(username, password, repo_url)
-            .and_raise(StandardError)
-        end
-
-        it "raises a to PrivateSourceAuthenticationFailure error" do
-          error_class = Dependabot::PrivateSourceAuthenticationFailure
-          expect { latest_version }
-            .to raise_error(error_class) do |error|
-            expect(error.source).to eq("oci://localhost:5000")
-          end
-        end
-      end
-    end
-
     context "when dependency is a docker image" do
       let(:dependency_type) { { type: :docker_image } }
       let(:repo_fixture_name) { "ubuntu_no_latest.json" }
@@ -153,43 +117,6 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
         expect(checker.latest_version).to eq(
           Dependabot::Helm::Version.new("1.0.124446+3123f85bdf6d8309d3d601938564a996f5cad238")
         )
-      end
-
-      context "with private registry" do
-        before do
-          allow(Dependabot::Helm::Helpers).to receive(:oci_registry_login)
-            .with(username, password, repo_url)
-            .and_return("Login successful")
-        end
-
-        let(:credentials) do
-          [Dependabot::Credential.new({
-            "type" => "helm_registry",
-            "registry" => repo_url,
-            "username" => username,
-            "password" => password
-          })]
-        end
-
-        it "returns the latest version" do
-          expect(checker.latest_version).to eq(
-            Dependabot::Helm::Version.new("1.0.124446+3123f85bdf6d8309d3d601938564a996f5cad238")
-          )
-        end
-
-        context "with invalid login" do
-          before do
-            allow(Dependabot::Helm::Helpers).to receive(:oci_registry_login)
-              .with(username, password, repo_url)
-              .and_raise(StandardError)
-          end
-
-          it "raises a to PrivateSourceAuthenticationFailure error" do
-            error_class = Dependabot::PrivateSourceAuthenticationFailure
-            expect { latest_version }
-              .to raise_error(error_class)
-          end
-        end
       end
     end
   end

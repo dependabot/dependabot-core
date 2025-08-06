@@ -60,6 +60,7 @@ jobs:
           - { name: bun, ecosystem: bun }
           - { name: bundler, ecosystem: bundler }
           - { name: cargo, ecosystem: cargo }
+          - { name: conda, ecosystem: conda }
           - { name: composer, ecosystem: composer }
           - { name: devcontainers, ecosystem: devcontainers }
           - { name: docker_compose, ecosystem: docker-compose }
