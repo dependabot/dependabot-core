@@ -188,7 +188,7 @@ module GithubApi
 
     # TODO: PMV is skeptical this will work for ecosystems other than Ruby
     def relationship_for(dep)
-      if dep.top_level?
+      if dep.direct?
         "direct"
       else
         "indirect"

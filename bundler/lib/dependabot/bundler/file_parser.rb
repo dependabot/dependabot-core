@@ -200,7 +200,7 @@ module Dependabot
 
           # if a dependency is listed in the lockfiles' DEPENDENCIES section,
           # then it is a direct dependency & we want to keep track of that fact
-          is_top_level = parsed_lockfile.dependencies.key?(dependency.name)
+          is_direct = parsed_lockfile.dependencies.key?(dependency.name)
 
           dep = Dependency.new(
               name: dependency.name,
@@ -210,9 +210,8 @@ module Dependabot
               subdependency_metadata: [{
                 production: production_dep_names.include?(dependency.name)
               }],
-              top_level: is_top_level
+              direct_relationship: is_direct
             )
-
 
           lockfile.dependencies << dep
           dependencies << dep
