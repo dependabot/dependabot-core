@@ -17,7 +17,7 @@ module GithubApi
     sig { returns(String) }
     attr_reader :job_id
     sig { returns(String) }
-    attr_reader :ref
+    attr_reader :branch
     sig { returns(String) }
     attr_reader :sha
     sig { returns(String) }
@@ -34,7 +34,7 @@ module GithubApi
       #
       # For purposes of the POC, we'll assume the default branch of `main`
       # if this is nil, but this isn't a sustainable approach
-      @ref = T.let(job.source.branch || "main", String)
+      @branch = T.let(job.source.branch || "main", String)
       @sha = T.let(snapshot.base_commit_sha, String)
       # TODO: Ensure that directory is always set for analysis runs
       #
@@ -54,7 +54,7 @@ module GithubApi
       {
         version: SNAPSHOT_VERSION,
         sha: sha,
-        ref: ref,
+        ref: symbolic_ref,
         job: {
           correlator: job_correlator,
           id: job_id
@@ -79,6 +79,13 @@ module GithubApi
     sig { returns(String) }
     def scanned
       Time.now.utc.iso8601
+    end
+
+    sig { returns(String) }
+    def symbolic_ref
+      return branch.gsub(%r{^/}, "") if branch.start_with?(%r{/?ref})
+
+      "refs/heads/#{branch}"
     end
 
     sig { params(snapshot: Dependabot::DependencySnapshot).returns(T::Hash[String, T.untyped]) }

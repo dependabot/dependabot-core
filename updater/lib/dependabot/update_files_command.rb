@@ -169,7 +169,7 @@ module Dependabot
 
       # TODO(brrygrdn): Drop this back down to debug logging
       Dependabot.logger.info("Dependency submission payload:")
-      Dependabot.logger.info(JSON.pretty_generate(submission.payload))
+      Dependabot.logger.info("\n#{JSON.pretty_generate(submission.payload)}")
 
       service.create_dependency_submission(dependency_submission: submission)
     end
