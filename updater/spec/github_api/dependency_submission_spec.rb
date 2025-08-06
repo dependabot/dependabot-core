@@ -127,7 +127,7 @@ RSpec.describe GithubApi::DependencySubmission do
       end
     end
 
-    it "generates a valid manifest list" do # rubocop:disable RSpec/MultipleExpectations
+    it "generates a valid manifest list" do
       payload = dependency_submission.payload
 
       expect(payload[:manifests].length).to eq(2)
@@ -181,7 +181,7 @@ RSpec.describe GithubApi::DependencySubmission do
       ]
     end
 
-    it "generates a valid manifest list" do
+    it "generates a valid manifest list" do # rubocop:disable RSpec/MultipleExpectations
       payload = dependency_submission.payload
 
       expect(payload[:manifests].length).to eq(2)

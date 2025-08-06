@@ -144,7 +144,7 @@ module Dependabot
       end
 
       sig { returns(DependencySet) }
-      def gemspec_dependencies # rubocop:disable Metrics/PerceivedComplexity Metrics/AbcSize
+      def gemspec_dependencies # rubocop:disable Metrics/PerceivedComplexity,Metrics/AbcSize
         @gemspec_dependencies = T.let(@gemspec_dependencies, T.nilable(DependencySet))
         return @gemspec_dependencies if @gemspec_dependencies
 
