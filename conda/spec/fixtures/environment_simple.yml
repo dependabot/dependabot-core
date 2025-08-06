@@ -1,0 +1,7 @@
+dependencies:
+  - python=3.11
+  - numpy=1.26
+  - pandas=2.2
+  - pip  # so pip is present if needed
+  - pip:
+      - pydantic-settings>=2.0  # only here if it isn't available on Conda
