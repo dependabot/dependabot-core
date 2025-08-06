@@ -32,7 +32,7 @@ jobs:
               echo "Skipping spec file: $file"
               continue
             fi
-            
+
             echo "Checking $file for Sorbet typing..."
             # Check if the top of the file has `# typed: strict` or `# typed: strong`
             if ! head -n 10 "$file" | grep -E -q '^# typed: (strict|strong)'; then
