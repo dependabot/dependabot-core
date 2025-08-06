@@ -40,7 +40,7 @@ module Dependabot
     sig { returns(T.nilable(String)) }
     attr_accessor :mode
 
-    sig { returns(T::Set[Dependabot::DependencyFile]) }
+    sig { returns(T::Set[T.untyped]) }
     attr_accessor :dependencies
 
     class ContentEncoding
@@ -95,7 +95,7 @@ module Dependabot
       @content_encoding = content_encoding
       @operation = operation
       @mode = mode
-      @dependencies = Set.new
+      @dependencies = T.let(Set.new, T::Set[T.untyped])
       raise ArgumentError, "Invalid Git mode: #{mode}" if mode && !VALID_MODES.include?(mode)
 
       # Make deleted override the operation. Deleted is kept when operation
@@ -155,7 +155,7 @@ module Dependabot
       end
     end
 
-    sig { returns(Integer) }
+    sig { returns(T.untyped) }
     def hash
       to_h.hash
     end
