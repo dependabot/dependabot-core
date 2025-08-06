@@ -98,6 +98,35 @@ RSpec.describe GithubApi::DependencySubmission do
       expect(payload[:scanned]).to match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/)
     end
 
+    it "generates git attributes correctly" do
+      payload = dependency_submission.payload
+
+      expect(payload[:sha]).to eq(sha)
+      expect(payload[:ref]).to eql("refs/heads/main")
+    end
+
+    context "when given a symbolic reference for the job's branch" do
+      let(:branch) { "refs/heads/release" }
+
+      it "does not add an additional refs/heads/ prefix" do
+        payload = dependency_submission.payload
+
+        expect(payload[:sha]).to eq(sha)
+        expect(payload[:ref]).to eql("refs/heads/release")
+      end
+    end
+
+    context "when given a symbolic reference for the job's branch with a leading /" do
+      let(:branch) { "/refs/heads/release" }
+
+      it "removes the leading slash" do
+        payload = dependency_submission.payload
+
+        expect(payload[:sha]).to eq(sha)
+        expect(payload[:ref]).to eql("refs/heads/release")
+      end
+    end
+
     it "generates a valid manifest list" do
       payload = dependency_submission.payload
 
