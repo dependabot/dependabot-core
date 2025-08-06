@@ -288,6 +288,7 @@ docker run --rm -ti \
   -v "$(pwd)/updater/spec:$CODE_DIR/dependabot-updater/spec" \
   -v "$(pwd)/Gemfile:$CODE_DIR/Gemfile" \
   -v "$(pwd)/Gemfile.lock:$CODE_DIR/Gemfile.lock" \
+  -v "$(pwd)/sorbet:$CODE_DIR/sorbet" \
   --name "$CONTAINER_NAME" \
   --env "LOCAL_GITHUB_ACCESS_TOKEN=$LOCAL_GITHUB_ACCESS_TOKEN" \
   --env "DEPENDABOT_TEST_ACCESS_TOKEN" \
