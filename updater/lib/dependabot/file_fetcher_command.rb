@@ -89,6 +89,7 @@ module Dependabot
       )
     end
 
+    # rubocop:disable Metrics/AbcSize
     # A method that abstracts the file fetcher creation logic and applies the same settings across all instances
     sig { params(directory: T.nilable(String)).returns(Dependabot::FileFetchers::Base) }
     def create_file_fetcher(directory: nil)
@@ -127,6 +128,7 @@ module Dependabot
 
       Dependabot::FileFetchers.for_package_manager(job.package_manager).new(**fetcher_args)
     end
+    # rubocop:enable Metrics/AbcSize
 
     # The main file fetcher method that now calls the create_file_fetcher method
     # and ensures it uses the same repo_contents_path setting as others.
