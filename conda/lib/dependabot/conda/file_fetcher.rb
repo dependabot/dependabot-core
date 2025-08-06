@@ -65,6 +65,7 @@ module Dependabot
           parse_yaml_content(content)
         rescue Psych::SyntaxError => e
           Dependabot.logger.error("YAML parsing error: #{e.message}")
+          nil
         end
         return false unless parsed_yaml
 

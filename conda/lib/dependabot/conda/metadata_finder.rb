@@ -1,4 +1,4 @@
-# typed: strong
+# typed: strict
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -47,7 +47,7 @@ module Dependabot
           ),
           T.nilable(Dependabot::Python::MetadataFinder)
         )
-        T.must(@python_metadata_finder)
+        @python_metadata_finder
       end
 
       sig { returns(Dependabot::Dependency) }

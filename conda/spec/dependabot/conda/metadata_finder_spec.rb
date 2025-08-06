@@ -41,10 +41,10 @@ RSpec.describe Dependabot::Conda::MetadataFinder do
       before do
         python_metadata_finder = instance_double(Dependabot::Python::MetadataFinder)
         allow(Dependabot::Python::MetadataFinder).to receive(:new).and_return(python_metadata_finder)
-        allow(python_metadata_finder).to receive(:look_up_source).and_return(
-          Dependabot::Source.new(provider: "github", repo: "numpy/numpy")
+        allow(python_metadata_finder).to receive_messages(
+          look_up_source: Dependabot::Source.new(provider: "github", repo: "numpy/numpy"),
+          homepage_url: "https://numpy.org"
         )
-        allow(python_metadata_finder).to receive(:homepage_url).and_return("https://numpy.org")
       end
 
       it "delegates to Python metadata finder and returns source URL" do
@@ -74,10 +74,10 @@ RSpec.describe Dependabot::Conda::MetadataFinder do
       before do
         python_metadata_finder = instance_double(Dependabot::Python::MetadataFinder)
         allow(Dependabot::Python::MetadataFinder).to receive(:new).and_return(python_metadata_finder)
-        allow(python_metadata_finder).to receive(:look_up_source).and_return(
-          Dependabot::Source.new(provider: "github", repo: "psf/requests")
+        allow(python_metadata_finder).to receive_messages(
+          look_up_source: Dependabot::Source.new(provider: "github", repo: "psf/requests"),
+          homepage_url: "https://requests.readthedocs.io"
         )
-        allow(python_metadata_finder).to receive(:homepage_url).and_return("https://requests.readthedocs.io")
       end
 
       it "delegates to Python metadata finder and returns source URL" do
