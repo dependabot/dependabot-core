@@ -1,8 +1,0 @@
-{
-  "sdk": {
-    "version": "2.2.104"
-  },
-  "msbuild-sdks": {
-    "Microsoft.Build.Traversal": "1.0.45"
-  }
-}
