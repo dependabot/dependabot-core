@@ -186,7 +186,7 @@ module GithubApi
       end
     end
 
-    # TODO: PMV is skeptical this will work for ecosystems other than Ruby
+    sig { params(dep: Dependabot::Dependency).returns(String) }
     def relationship_for(dep)
       if dep.direct?
         "direct"

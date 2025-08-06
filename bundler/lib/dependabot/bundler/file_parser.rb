@@ -213,7 +213,7 @@ module Dependabot
               direct_relationship: is_direct
             )
 
-          lockfile.dependencies << dep
+          T.must(lockfile).dependencies << dep
           dependencies << dep
         end
 
