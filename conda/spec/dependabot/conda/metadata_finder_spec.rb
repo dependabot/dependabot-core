@@ -4,7 +4,6 @@
 require "spec_helper"
 require "dependabot/conda/metadata_finder"
 require_common_spec "metadata_finders/shared_examples_for_metadata_finders"
-require_common_spec "metadata_finders/shared_examples_for_metadata_finders"
 
 RSpec.describe Dependabot::Conda::MetadataFinder do
   let(:dependency) do
