@@ -3,10 +3,12 @@ using System.Text;
 using System.Text.Json;
 
 using NuGetUpdater.Core.Analyze;
+using NuGetUpdater.Core.DependencySolver;
 using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Run;
 using NuGetUpdater.Core.Run.ApiModel;
 using NuGetUpdater.Core.Test.Update;
+using NuGetUpdater.Core.Updater.FileWriters;
 
 using Xunit;
 
@@ -779,7 +781,14 @@ public class EndToEndTests
         var jobId = "TEST-JOB-ID";
         discoveryWorker ??= new DiscoveryWorker(jobId, experimentsManager, logger);
         analyzeWorker ??= new AnalyzeWorker(jobId, experimentsManager, logger);
-        updaterWorker ??= new UpdaterWorker(jobId, experimentsManager, logger);
+        updaterWorker ??= new UpdaterWorker(
+            jobId,
+            discoveryWorker,
+            workspacePath => new MSBuildDependencySolver(new DirectoryInfo(repoContentsPath), new FileInfo(workspacePath), logger),
+            [new XmlFileWriter(logger)],
+            PackageReferenceUpdater.ComputeUpdateOperations,
+            experimentsManager,
+            logger);
 
         var worker = new RunWorker(jobId, testApiHandler, discoveryWorker, analyzeWorker, updaterWorker, logger);
         var repoContentsPathDirectoryInfo = new DirectoryInfo(repoContentsPath);

@@ -40,7 +40,7 @@ public class FileWriterWorkerTests : TestBase
             ],
             discoveryWorker: null, // use real worker
             dependencySolver: null, // use real worker
-            fileWriter: null, // use real worker
+            fileWriters: null, // use real workers
             expectedProjectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
                   <PropertyGroup>
@@ -98,7 +98,7 @@ public class FileWriterWorkerTests : TestBase
             ],
             discoveryWorker: null, // use real worker
             dependencySolver: null, // use real worker
-            fileWriter: null, // use real worker
+            fileWriters: null, // use real workers
             expectedProjectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
                   <PropertyGroup>
@@ -161,7 +161,7 @@ public class FileWriterWorkerTests : TestBase
             ],
             discoveryWorker: null, // use real worker
             dependencySolver: null, // use real worker
-            fileWriter: null, // use real worker
+            fileWriters: null, // use real workers
             expectedProjectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
                   <Import Project="Misc.props" />
@@ -207,7 +207,7 @@ public class FileWriterWorkerTests : TestBase
             ],
             discoveryWorker: null, // use real worker
             dependencySolver: null, // use real worker
-            fileWriter: null, // use real worker
+            fileWriters: null, // use real workers
             expectedProjectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
                   <PropertyGroup>
@@ -257,7 +257,7 @@ public class FileWriterWorkerTests : TestBase
             ],
             discoveryWorker: null, // use real worker
             dependencySolver: null, // use real worker
-            fileWriter: null, // use real worker
+            fileWriters: null, // use real workers
             expectedProjectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
                   <PropertyGroup>
@@ -316,7 +316,7 @@ public class FileWriterWorkerTests : TestBase
             ],
             discoveryWorker: null, // use real worker
             dependencySolver: null, // use real worker
-            fileWriter: null, // use real worker
+            fileWriters: null, // use real workers
             expectedProjectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
                   <PropertyGroup>
@@ -387,7 +387,7 @@ public class FileWriterWorkerTests : TestBase
             ],
             discoveryWorker: null, // use real worker
             dependencySolver: null, // use real worker
-            fileWriter: null, // use real worker
+            fileWriters: null, // use real workers
             expectedProjectContents: """
                 <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
                   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
@@ -467,7 +467,7 @@ public class FileWriterWorkerTests : TestBase
             ],
             discoveryWorker: null, // use real worker
             dependencySolver: null, // use real worker
-            fileWriter: null, // use real worker
+            fileWriters: null, // use real workers
             expectedProjectContents: """
                 <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
                   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
@@ -554,7 +554,7 @@ public class FileWriterWorkerTests : TestBase
             ],
             discoveryWorker: null, // use real worker
             dependencySolver: null, // use real worker
-            fileWriter: null, // use real worker
+            fileWriters: null, // use real workers
             expectedProjectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
                   <PropertyGroup>
@@ -633,7 +633,7 @@ public class FileWriterWorkerTests : TestBase
             ],
             discoveryWorker: null, // use real worker
             dependencySolver: null, // use real worker
-            fileWriter: null, // use real worker
+            fileWriters: null, // use real workers
             expectedProjectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
                   <PropertyGroup>
@@ -691,7 +691,7 @@ public class FileWriterWorkerTests : TestBase
             ],
             discoveryWorker: null, // use real worker
             dependencySolver: null, // use real worker
-            fileWriter: null, // use real worker
+            fileWriters: null, // use real workers
             expectedFiles: [
                 ("global.json", """
                     {
@@ -735,7 +735,7 @@ public class FileWriterWorkerTests : TestBase
             ],
             discoveryWorker: null, // use real worker
             dependencySolver: null, // use real worker
-            fileWriter: new TestFileWriterReturnsConstantResult(false), // always report failure to edit files
+            fileWriters: [TestFileWriterWrapper.FromConstantResult(false)], // always report failure to edit files
             expectedProjectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
                   <PropertyGroup>
@@ -818,7 +818,7 @@ public class FileWriterWorkerTests : TestBase
                 return Task.FromResult(result);
             }),
             dependencySolver: null, // use real worker
-            fileWriter: null, // use real worker
+            fileWriters: null, // use real workers
             expectedProjectContents: """
                 <Project Sdk="Microsoft.NET.Sdk">
                   <PropertyGroup>
@@ -842,7 +842,7 @@ public class FileWriterWorkerTests : TestBase
         (string name, string contents)[] additionalFiles,
         IDiscoveryWorker? discoveryWorker,
         IDependencySolver? dependencySolver,
-        IFileWriter? fileWriter,
+        IEnumerable<IFileWriter>? fileWriters,
         string expectedProjectContents,
         (string name, string contents)[] expectedAdditionalFiles,
         UpdateOperationBase[] expectedOperations,
@@ -865,7 +865,7 @@ public class FileWriterWorkerTests : TestBase
             [.. files],
             discoveryWorker,
             dependencySolver,
-            fileWriter,
+            fileWriters,
             [.. expectedFiles],
             expectedOperations,
             packages,
@@ -881,7 +881,7 @@ public class FileWriterWorkerTests : TestBase
         (string name, string contents)[] files,
         IDiscoveryWorker? discoveryWorker,
         IDependencySolver? dependencySolver,
-        IFileWriter? fileWriter,
+        IEnumerable<IFileWriter>? fileWriters,
         (string name, string contents)[] expectedFiles,
         UpdateOperationBase[] expectedOperations,
         MockNuGetPackage[]? packages = null,
@@ -900,9 +900,9 @@ public class FileWriterWorkerTests : TestBase
         var repoContentsPath = new DirectoryInfo(tempDir.DirectoryPath);
         var projectPath = new FileInfo(Path.Combine(tempDir.DirectoryPath, files.First().name));
         dependencySolver ??= new MSBuildDependencySolver(repoContentsPath, projectPath, logger);
-        fileWriter ??= new XmlFileWriter(logger);
+        fileWriters ??= [new XmlFileWriter(logger)];
 
-        var fileWriterWorker = new FileWriterWorker(discoveryWorker, dependencySolver, fileWriter, logger);
+        var fileWriterWorker = new FileWriterWorker(discoveryWorker, dependencySolver, fileWriters, PackageReferenceUpdater.ComputeUpdateOperations, logger);
 
         // act
         var actualUpdateOperations = await fileWriterWorker.RunAsync(
