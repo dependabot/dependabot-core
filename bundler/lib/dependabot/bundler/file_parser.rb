@@ -144,7 +144,7 @@ module Dependabot
       end
 
       sig { returns(DependencySet) }
-      def gemspec_dependencies # rubocop:disable Metrics/PerceivedComplexity
+      def gemspec_dependencies # rubocop:disable Metrics/PerceivedComplexity Metrics/AbcSize
         @gemspec_dependencies = T.let(@gemspec_dependencies, T.nilable(DependencySet))
         return @gemspec_dependencies if @gemspec_dependencies
 
@@ -203,15 +203,15 @@ module Dependabot
           is_direct = parsed_lockfile.dependencies.key?(dependency.name)
 
           dep = Dependency.new(
-              name: dependency.name,
-              version: dependency_version(dependency.name)&.to_s,
-              requirements: [],
-              package_manager: "bundler",
-              subdependency_metadata: [{
-                production: production_dep_names.include?(dependency.name)
-              }],
-              direct_relationship: is_direct
-            )
+            name: dependency.name,
+            version: dependency_version(dependency.name)&.to_s,
+            requirements: [],
+            package_manager: "bundler",
+            subdependency_metadata: [{
+              production: production_dep_names.include?(dependency.name)
+            }],
+            direct_relationship: is_direct
+          )
 
           T.must(lockfile).dependencies << dep
           dependencies << dep

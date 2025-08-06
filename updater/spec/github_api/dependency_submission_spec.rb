@@ -98,7 +98,7 @@ RSpec.describe GithubApi::DependencySubmission do
       expect(payload[:scanned]).to match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/)
     end
 
-    it "generates a valid manifest list" do
+    it "generates a valid manifest list" do # rubocop:disable RSpec/MultipleExpectations
       payload = dependency_submission.payload
 
       expect(payload[:manifests].length).to eq(2)
@@ -173,7 +173,7 @@ RSpec.describe GithubApi::DependencySubmission do
 
       # the following top-level packages should exist in both files with
       # the same data
-      %w{sinatra pry rspec capybara}.each do |pkg_name|
+      %w(sinatra pry rspec capybara).each do |pkg_name|
         [gemfile, lockfile].each do |depfile|
           resolved_dep = depfile[:resolved][pkg_name]
 
