@@ -1,0 +1,18 @@
+{
+  "name": "environment.yml",
+  "path": "environment.yml",
+  "sha": "4e2bc3db3a5ff55fbebabe77dfe5fe3b2ac7cf59",
+  "size": 302,
+  "url": "https://api.github.com/repos/gocardless/bump/contents/environment.yml?ref=sha",
+  "html_url": "https://github.com/gocardless/bump/blob/sha/environment.yml",
+  "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/4e2bc3db3a5ff55fbebabe77dfe5fe3b2ac7cf59",
+  "download_url": "https://raw.githubusercontent.com/gocardless/bump/sha/environment.yml",
+  "type": "file",
+  "encoding": "base64",
+  "content": "ZGVwZW5kZW5jaWVzOgogIC0gcHl0aG9uPTMuMTEKICAtIG51bXB5PTEuMjYKICAtIHBhbmRhcz0yLjIKICAtIHBpcCAgIyBzbyBwaXAgaXMgcHJlc2VudCBpZiBuZWVkZWQKICAtIHBpcDoKICAgICAgLSBweWRhbnRpYy1zZXR0aW5ncz49Mi4wICAjIG9ubHkgaGVyZSBpZiBpdCBpc24ndCBhdmFpbGFibGUgb24gQ29uZGEK",
+  "_links": {
+    "self": "https://api.github.com/repos/gocardless/bump/contents/environment.yml?ref=sha",
+    "git": "https://api.github.com/repos/gocardless/bump/git/blobs/4e2bc3db3a5ff55fbebabe77dfe5fe3b2ac7cf59",
+    "html": "https://github.com/gocardless/bump/blob/sha/environment.yml"
+  }
+}

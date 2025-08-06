@@ -23,6 +23,7 @@
 # - bundler
 # - cargo
 # - composer
+# - conda
 # - devcontainers
 # - docker
 # - docker_compose
@@ -60,6 +61,7 @@ $LOAD_PATH << "./bundler/lib"
 $LOAD_PATH << "./cargo/lib"
 $LOAD_PATH << "./common/lib"
 $LOAD_PATH << "./composer/lib"
+$LOAD_PATH << "./conda/lib"
 $LOAD_PATH << "./devcontainers/lib"
 $LOAD_PATH << "./docker_compose/lib"
 $LOAD_PATH << "./docker/lib"
@@ -112,6 +114,7 @@ require "dependabot/bun"
 require "dependabot/bundler"
 require "dependabot/cargo"
 require "dependabot/composer"
+require "dependabot/conda"
 require "dependabot/devcontainers"
 require "dependabot/docker"
 require "dependabot/docker_compose"
@@ -337,6 +340,7 @@ valid_package_managers = %w(
   bundler
   cargo
   composer
+  conda
   devcontainers
   docker
   docker_compose

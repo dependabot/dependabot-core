@@ -153,11 +153,19 @@ public class XmlFileWriter : IFileWriter
                 if (lastItemGroup is null)
                 {
                     _logger.Info($"No `<{ItemGroupElementName}>` element found in project; adding one.");
-                    lastItemGroup = XmlExtensions.CreateOpenCloseXmlElementSyntax(ItemGroupElementName, []);
+                    lastItemGroup = XmlExtensions.CreateOpenCloseXmlElementSyntax(ItemGroupElementName,
+                        new SyntaxList<SyntaxNode>([SyntaxFactory.EndOfLineTrivia("\n"), SyntaxFactory.WhitespaceTrivia("  ")]),
+                        insertIntermediateNewline: false);
                     addItemGroup = () =>
                     {
-                        projectDocument = (XmlDocumentSyntax)((IXmlElementSyntax)projectDocument).AddChild(lastItemGroup);
-                        filesAndContents[projectRelativePath] = projectDocument;
+                        // add the new element
+                        var updatedRootSyntax = projectDocument.RootSyntax.AddChild(lastItemGroup);
+                        var updatedProjectDocument = projectDocument.ReplaceNode(projectDocument.RootSyntax.AsNode, updatedRootSyntax.AsNode);
+
+                        // reset well-known variables
+                        projectDocument = updatedProjectDocument;
+                        filesAndContents[projectRelativePath] = updatedProjectDocument;
+                        lastItemGroup = updatedProjectDocument.RootSyntax.Elements.Last(e => e.Name.Equals(ItemGroupElementName, StringComparison.OrdinalIgnoreCase));
                     };
                 }
 
@@ -175,9 +183,25 @@ public class XmlFileWriter : IFileWriter
                     var lastPriorElement = elementsBeforeNew.LastOrDefault();
                     if (lastPriorElement is not null)
                     {
-                        var lastPriorElementLineNumber = filesAndContents[projectRelativePath].ToFullString().Take(lastPriorElement.SpanStart).Count(c => c == '\n');
+                        // find line number of last prior element
+                        // find the offset of the first token on each newline
+                        var firstOffsetForLine = new List<int>();
+                        foreach (var tr in filesAndContents[projectRelativePath].DescendantTrivia(descendIntoChildren: _ => true, descendIntoTrivia: true))
+                        {
+                            if (tr.Kind == SyntaxKind.EndOfLineTrivia)
+                            {
+                                firstOffsetForLine.Add(tr.SpanStart);
+                            }
+
+                            if (tr.SpanStart >= lastPriorElement.SpanStart)
+                            {
+                                break;
+                            }
+                        }
+
+                        var lastPriorElementLineNumber = firstOffsetForLine.Count(o => o < lastPriorElement.SpanStart);
                         var lastElementAtStartOfLine = lastPriorElement.Parent.ChildNodes
-                            .First(n => filesAndContents[projectRelativePath].ToFullString().Take(n.SpanStart).Count(c => c == '\n') == lastPriorElementLineNumber);
+                            .First(n => firstOffsetForLine.Count(o => o < n.SpanStart) >= lastPriorElementLineNumber);
                         var trivia = lastElementAtStartOfLine.GetLeadingTrivia().ToList();
                         var priorEolIndex = trivia.FindLastIndex(t => t.Kind == SyntaxKind.EndOfLineTrivia);
                         var indentTrivia = trivia

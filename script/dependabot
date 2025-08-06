@@ -12,6 +12,7 @@ dependabot \
   -v "$(pwd)"/cargo:/home/dependabot/cargo \
   -v "$(pwd)"/common:/home/dependabot/common \
   -v "$(pwd)"/composer:/home/dependabot/composer \
+  -v "$(pwd)"/conda:/home/dependabot/conda \
   -v "$(pwd)"/devcontainers:/home/dependabot/devcontainers \
   -v "$(pwd)"/docker:/home/dependabot/docker \
   -v "$(pwd)"/dotnet_sdk:/home/dependabot/dotnet_sdk \
