@@ -95,7 +95,7 @@ module Dependabot
       @content_encoding = content_encoding
       @operation = operation
       @mode = mode
-      @dependencies = Set.new # TODO: What if this was dependency metadata rather Dependabot::Dependencies?
+      @dependencies = Set.new
       raise ArgumentError, "Invalid Git mode: #{mode}" if mode && !VALID_MODES.include?(mode)
 
       # Make deleted override the operation. Deleted is kept when operation
