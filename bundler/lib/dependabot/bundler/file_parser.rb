@@ -192,7 +192,7 @@ module Dependabot
 
         return dependencies unless lockfile
 
-        # Create a DependencySet where transitive dependencies don't have requirement. Any
+        # Create a DependencySet where each element has no requirement. Any
         # requirements will be added when combining the DependencySet with
         # other DependencySets.
         parsed_lockfile.specs.each do |dependency|
