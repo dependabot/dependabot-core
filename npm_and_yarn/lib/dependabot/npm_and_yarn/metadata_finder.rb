@@ -240,9 +240,9 @@ module Dependabot
       sig { returns(T.nilable(String)) }
       def configured_registry_from_credentials
         # Look for a credential that replaces the base registry (global registry replacement)
-        replaces_base_cred = credentials.find { |cred|
+        replaces_base_cred = credentials.find do |cred|
           cred["type"] == "npm_registry" && cred.replaces_base?
-        }
+        end
         if replaces_base_cred
           registry = replaces_base_cred["registry"]
           registry = "https://#{registry}" unless registry&.start_with?("http")
