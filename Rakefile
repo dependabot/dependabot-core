@@ -18,6 +18,7 @@ GEMSPECS = %w(
   bundler/dependabot-bundler.gemspec
   cargo/dependabot-cargo.gemspec
   composer/dependabot-composer.gemspec
+  conda/dependabot-conda.gemspec
   devcontainers/dependabot-devcontainers.gemspec
   docker_compose/dependabot-docker_compose.gemspec
   docker/dependabot-docker.gemspec
