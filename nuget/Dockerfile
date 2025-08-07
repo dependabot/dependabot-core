@@ -79,7 +79,6 @@ ENV TEMP=$TEMP_DIR
 ENV TMP=$TEMP_DIR
 
 # redirect entrypoint
-RUN mv bin/run bin/run-original
 COPY --chown=dependabot:dependabot nuget/script/* $DEPENDABOT_HOME/dependabot-updater/bin/
 COPY --chown=dependabot:dependabot nuget/updater/* $DEPENDABOT_HOME/dependabot-updater/bin/
 RUN chmod +x $DEPENDABOT_HOME/dependabot-updater/bin/run
