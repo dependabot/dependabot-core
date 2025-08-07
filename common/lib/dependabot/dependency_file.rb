@@ -155,7 +155,7 @@ module Dependabot
       end
     end
 
-    sig { returns(T.untyped) }
+    sig { returns(Integer) }
     def hash
       to_h.hash
     end
