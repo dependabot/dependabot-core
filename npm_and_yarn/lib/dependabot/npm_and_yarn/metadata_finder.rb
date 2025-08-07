@@ -215,7 +215,9 @@ module Dependabot
       sig { returns(String) }
       def dependency_url
         registry_url =
-          if new_source.nil? then "https://registry.npmjs.org"
+          if new_source.nil?
+            # Check credentials for a configured registry before falling back to public registry
+            configured_registry_from_credentials || "https://registry.npmjs.org"
           else
             new_source&.fetch(:url)
           end
@@ -233,6 +235,29 @@ module Dependabot
         return {} unless auth_token
 
         { "Authorization" => "Bearer #{auth_token}" }
+      end
+
+      sig { returns(T.nilable(String)) }
+      def configured_registry_from_credentials
+        # Look for a credential that replaces the base registry (global registry replacement)
+        replaces_base_cred = credentials.find { |cred|
+          cred["type"] == "npm_registry" && cred.replaces_base?
+        }
+        if replaces_base_cred
+          registry = replaces_base_cred["registry"]
+          registry = "https://#{registry}" unless registry&.start_with?("http")
+          return registry.gsub(%r{/+$}, "")
+        end
+
+        # Look for any npm_registry credential as fallback
+        npm_cred = credentials.find { |cred| cred["type"] == "npm_registry" && cred["registry"] }
+        if npm_cred
+          registry = npm_cred["registry"]
+          registry = "https://#{registry}" unless registry&.start_with?("http")
+          return registry.gsub(%r{/+$}, "")
+        end
+
+        nil
       end
 
       sig { returns(String) }
