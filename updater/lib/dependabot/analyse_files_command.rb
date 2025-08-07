@@ -85,9 +85,8 @@ module Dependabot
       Environment.job_definition["base_commit_sha"]
     end
 
-    # rubocop:disable Metrics/AbcSize, Layout/LineLength, Metrics/MethodLength
     sig { params(error: StandardError).void }
-    def handle_parser_error(error)
+    def handle_parser_error(error) # rubocop:disable Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity
       # This happens if the repo gets removed after a job gets kicked off.
       # The service will handle the removal without any prompt from the updater,
       # so no need to add an error to the errors array
@@ -118,7 +117,9 @@ module Dependabot
             ErrorAttributes::CLASS => error.class.to_s,
             ErrorAttributes::MESSAGE => error.message,
             ErrorAttributes::BACKTRACE => error.backtrace&.join("\n"),
-            ErrorAttributes::FINGERPRINT => (T.unsafe(error).sentry_context[:fingerprint] if error.respond_to?(:sentry_context)),
+            ErrorAttributes::FINGERPRINT => (if error.respond_to?(:sentry_context)
+                                               T.unsafe(error).sentry_context[:fingerprint]
+                                             end),
             ErrorAttributes::PACKAGE_MANAGER => job.package_manager,
             ErrorAttributes::JOB_ID => job.id,
             ErrorAttributes::DEPENDENCIES => job.dependencies,
@@ -147,6 +148,5 @@ module Dependabot
         error_details: error_details[:"error-detail"]
       )
     end
-    # rubocop:enable Metrics/AbcSize, Layout/LineLength, Metrics/MethodLength
   end
 end

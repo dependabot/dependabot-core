@@ -37,7 +37,7 @@ RSpec.describe Dependabot::AnalyseFilesCommand do
   describe "#perform_job" do
     subject(:perform_job) { job.perform_job }
 
-    xit "sends dependency metadata to the service" do
+    it "sends dependency metadata to the service", pending: "TODO: Decide if we should submit the legacy dep list" do
       expect(service).to receive(:update_dependency_list)
         .with(dependency_snapshot: an_instance_of(Dependabot::DependencySnapshot))
 
