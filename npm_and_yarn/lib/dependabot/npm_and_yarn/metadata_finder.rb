@@ -223,7 +223,7 @@ module Dependabot
           end
 
         # spaces must be escaped in base URL
-        registry_url = registry_url.gsub(" ", "%20")
+        registry_url = registry_url.gsub(%r{/+$}, "").gsub(" ", "%20")
 
         # NPM registries expect slashes to be escaped
         escaped_dependency_name = dependency.name.gsub("/", "%2F")
@@ -266,7 +266,7 @@ module Dependabot
                          new_source&.fetch(:url)
                        end
 
-        registry_url&.gsub("https://", "")&.gsub("http://", "") || "registry.npmjs.org"
+        registry_url&.gsub(%r{/+$}, "")&.gsub("https://", "")&.gsub("http://", "") || "registry.npmjs.org"
       end
 
       sig { returns(T.nilable(String)) }
