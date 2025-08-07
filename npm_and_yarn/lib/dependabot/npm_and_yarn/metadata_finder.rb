@@ -240,32 +240,33 @@ module Dependabot
       sig { returns(T.nilable(String)) }
       def configured_registry_from_credentials
         # Look for a credential that replaces the base registry (global registry replacement)
-        replaces_base_cred = credentials.find do |cred|
-          cred["type"] == "npm_registry" && cred.replaces_base?
-        end
-        if replaces_base_cred
-          registry = replaces_base_cred["registry"]
-          registry = "https://#{registry}" unless registry&.start_with?("http")
-          return registry.gsub(%r{/+$}, "")
-        end
+        replaces_base_cred = credentials.find { |cred| cred["type"] == "npm_registry" && cred.replaces_base? }
+        return normalize_registry_url(replaces_base_cred["registry"]) if replaces_base_cred
 
         # Look for any npm_registry credential as fallback
         npm_cred = credentials.find { |cred| cred["type"] == "npm_registry" && cred["registry"] }
-        if npm_cred
-          registry = npm_cred["registry"]
-          registry = "https://#{registry}" unless registry&.start_with?("http")
-          return registry.gsub(%r{/+$}, "")
-        end
+        return normalize_registry_url(npm_cred["registry"]) if npm_cred
 
         nil
       end
 
+      sig { params(registry: T.nilable(String)).returns(T.nilable(String)) }
+      def normalize_registry_url(registry)
+        return nil unless registry
+
+        registry = "https://#{registry}" unless registry.start_with?("http")
+        registry.gsub(%r{/+$}, "") # Remove trailing slashes
+      end
+
       sig { returns(String) }
       def dependency_registry
-        if new_source.nil? then "registry.npmjs.org"
-        else
-          new_source&.fetch(:url)&.gsub("https://", "")&.gsub("http://", "")
-        end
+        registry_url = if new_source.nil?
+                         configured_registry_from_credentials || "https://registry.npmjs.org"
+                       else
+                         new_source&.fetch(:url)
+                       end
+
+        registry_url&.gsub("https://", "")&.gsub("http://", "") || "registry.npmjs.org"
       end
 
       sig { returns(T.nilable(String)) }
