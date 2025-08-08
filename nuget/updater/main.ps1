@@ -55,6 +55,10 @@ function Update-Files {
     $arguments += "--job-path `"$env:DEPENDABOT_JOB_PATH`""
     $arguments += "--repo-contents-path `"$env:DEPENDABOT_REPO_CONTENTS_PATH`""
     $arguments += "--api-url `"$env:DEPENDABOT_API_URL`""
+    if ("$env:DEPENDABOT_EXTERNAL_FILE_UPDATER_URL" -ne "") {
+        Write-Host "Using external file updater URL: $env:DEPENDABOT_EXTERNAL_FILE_UPDATER_URL"
+        $arguments += "--external-file-updater-url `"$env:DEPENDABOT_EXTERNAL_FILE_UPDATER_URL`""
+    }
     $arguments += "--job-id `"$env:DEPENDABOT_JOB_ID`""
     $arguments += "--output-path `"$env:DEPENDABOT_OUTPUT_PATH`""
     $arguments += "--base-commit-sha `"$baseCommitSha`""
