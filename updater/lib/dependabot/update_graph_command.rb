@@ -44,14 +44,6 @@ module Dependabot
           return service.mark_job_as_processed(Environment.job_definition["base_commit_sha"])
         end
 
-        # TODO(brrygrdn): Remove?
-        #
-        # We submit this for historic instrumentation reasons in the update job, but it doubles up on
-        # this command's main purpose, so I think we should remove it - but I'd appreciate a Dependabot
-        # reviewer's eye on whether keeping this has benefits I'm not thinking of.
-        #
-        # service.update_dependency_list(dependency_snapshot: dependency_snapshot)
-
         submission = GithubApi::DependencySubmission.new(
           job: job,
           snapshot: dependency_snapshot

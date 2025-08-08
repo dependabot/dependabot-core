@@ -37,13 +37,6 @@ RSpec.describe Dependabot::UpdateGraphCommand do
   describe "#perform_job" do
     subject(:perform_job) { job.perform_job }
 
-    it "sends dependency metadata to the service", pending: "TODO: Decide if we should submit the legacy dep list" do
-      expect(service).to receive(:update_dependency_list)
-        .with(dependency_snapshot: an_instance_of(Dependabot::DependencySnapshot))
-
-      perform_job
-    end
-
     describe "experiment: enable_dependency_submission_poc" do
       context "when it is enabled" do
         before do
