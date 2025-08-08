@@ -67,6 +67,9 @@ module Dependabot
         LATEST_REGEX
       ).freeze, Regexp)
 
+      # Cache for frequently used data
+      @constraint_cache = T.let({}, T::Hash[String, T::Array[String]])
+
       # Extract unique constraints from the given constraint expression.
       # @param constraint_expression [T.nilable(String)] The semver constraint expression.
       # @return [T::Array[String]] The list of unique Ruby-compatible constraints.
@@ -78,11 +81,16 @@ module Dependabot
           .returns(T.nilable(T::Array[String]))
       end
       def self.extract_ruby_constraints(constraint_expression, dependabot_versions = nil)
+        cache_key = "#{constraint_expression}-#{dependabot_versions&.hash}"
+        return @constraint_cache[cache_key] if @constraint_cache.key?(cache_key)
+
         parsed_constraints = parse_constraints(constraint_expression, dependabot_versions)
 
         return nil unless parsed_constraints
 
-        parsed_constraints.filter_map { |parsed| parsed[:constraint] }
+        constraints = parsed_constraints.filter_map { |parsed| parsed[:constraint] }
+        @constraint_cache[cache_key] = constraints
+        constraints
       end
 
       # rubocop:disable Metrics/AbcSize
