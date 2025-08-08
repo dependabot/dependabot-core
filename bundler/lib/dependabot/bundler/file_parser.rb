@@ -122,7 +122,7 @@ module Dependabot
           parsed_gemfile.each do |dep|
             next unless gemfile_declaration_finder.gemfile_includes_dependency?(dep)
 
-            dependencies <<
+            dep =
               Dependency.new(
                 name: dep.fetch("name"),
                 version: dependency_version(dep.fetch("name"))&.to_s,
@@ -134,6 +134,9 @@ module Dependabot
                 }],
                 package_manager: "bundler"
               )
+
+            file.dependencies << dep
+            dependencies << dep
           end
         end
 
@@ -141,7 +144,7 @@ module Dependabot
       end
 
       sig { returns(DependencySet) }
-      def gemspec_dependencies # rubocop:disable Metrics/PerceivedComplexity
+      def gemspec_dependencies # rubocop:disable Metrics/PerceivedComplexity,Metrics/AbcSize
         @gemspec_dependencies = T.let(@gemspec_dependencies, T.nilable(DependencySet))
         return @gemspec_dependencies if @gemspec_dependencies
 
@@ -156,7 +159,7 @@ module Dependabot
             parsed_gemspec(gemspec).each do |dependency|
               next unless gemspec_declaration_finder.gemspec_includes_dependency?(dependency)
 
-              queue << Dependency.new(
+              dep = Dependency.new(
                 name: dependency.fetch("name"),
                 version: dependency_version(dependency.fetch("name"))&.to_s,
                 requirements: [{
@@ -171,6 +174,9 @@ module Dependabot
                 }],
                 package_manager: "bundler"
               )
+
+              gemspec.dependencies << dep
+              queue << dep
             end
           end
         end
@@ -192,16 +198,23 @@ module Dependabot
         parsed_lockfile.specs.each do |dependency|
           next if dependency.source.is_a?(::Bundler::Source::Path)
 
-          dependencies <<
-            Dependency.new(
-              name: dependency.name,
-              version: dependency_version(dependency.name)&.to_s,
-              requirements: [],
-              package_manager: "bundler",
-              subdependency_metadata: [{
-                production: production_dep_names.include?(dependency.name)
-              }]
-            )
+          # if a dependency is listed in the lockfiles' DEPENDENCIES section,
+          # then it is a direct dependency & we want to keep track of that fact
+          is_direct = parsed_lockfile.dependencies.key?(dependency.name)
+
+          dep = Dependency.new(
+            name: dependency.name,
+            version: dependency_version(dependency.name)&.to_s,
+            requirements: [],
+            package_manager: "bundler",
+            subdependency_metadata: [{
+              production: production_dep_names.include?(dependency.name)
+            }],
+            direct_relationship: is_direct
+          )
+
+          T.must(lockfile).dependencies << dep
+          dependencies << dep
         end
 
         dependencies

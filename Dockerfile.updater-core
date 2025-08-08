@@ -123,6 +123,7 @@ COPY --chown=dependabot:dependabot helm/.bundle helm/dependabot-helm.gemspec hel
 COPY --chown=dependabot:dependabot hex/.bundle hex/dependabot-hex.gemspec hex/
 COPY --chown=dependabot:dependabot maven/.bundle maven/dependabot-maven.gemspec maven/
 COPY --chown=dependabot:dependabot npm_and_yarn/.bundle npm_and_yarn/dependabot-npm_and_yarn.gemspec npm_and_yarn/
+COPY --chown=dependabot:dependabot nuget/.bundle nuget/dependabot-nuget.gemspec nuget/
 COPY --chown=dependabot:dependabot pub/.bundle pub/dependabot-pub.gemspec pub/
 COPY --chown=dependabot:dependabot python/.bundle python/dependabot-python.gemspec python/
 COPY --chown=dependabot:dependabot rust_toolchain/.bundle rust_toolchain/dependabot-rust_toolchain.gemspec rust_toolchain/

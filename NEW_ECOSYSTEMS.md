@@ -148,6 +148,7 @@ Your ecosystem implementation requires updates to numerous supporting files thro
   - [updater/GemFile.lock](https://github.com/dependabot/dependabot-core/blob/main/updater/Gemfile.lock)
   - [dependabot-omnibus.gemspec](https://github.com/dependabot/dependabot-core/blob/main/omnibus/dependabot-omnibus.gemspec)
   - [omnibus.rb](https://github.com/dependabot/dependabot-core/blob/main/omnibus/lib/dependabot/omnibus.rb)
+  - [Rakefile](https://github.com/dependabot/dependabot-core/blob/main/Rakefile)
 - **Gemfile**: Update if your ecosystem introduces new Ruby dependencies
   - [GemFile](https://github.com/dependabot/dependabot-core/blob/main/Gemfile)
   - [GemFile.lock](https://github.com/dependabot/dependabot-core/blob/main/Gemfile.lock)
