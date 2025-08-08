@@ -572,7 +572,6 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
       end
 
       context "with multiple credentials" do
-
         let(:credentials) do
           [
             Dependabot::Credential.new({
