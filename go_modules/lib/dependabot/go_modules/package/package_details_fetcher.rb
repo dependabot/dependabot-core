@@ -41,15 +41,13 @@ module Dependabot
           params(
             dependency: Dependabot::Dependency,
             dependency_files: T::Array[Dependabot::DependencyFile],
-            credentials: T::Array[Dependabot::Credential],
-            goprivate: String
+            credentials: T::Array[Dependabot::Credential]
           ).void
         end
-        def initialize(dependency:, dependency_files:, credentials:, goprivate:)
+        def initialize(dependency:, dependency_files:, credentials:)
           @dependency = dependency
           @dependency_files = dependency_files
           @credentials = credentials
-          @goprivate = T.let(goprivate, String)
 
           @source_type = T.let(nil, T.nilable(String))
         end
@@ -62,9 +60,6 @@ module Dependabot
 
         sig { returns(T::Array[T.untyped]) }
         attr_reader :credentials
-
-        sig { returns(String) }
-        attr_reader :goprivate
 
         # rubocop:disable Metrics/AbcSize,Metrics/PerceivedComplexity
         sig { returns(T::Array[Dependabot::Package::PackageRelease]) }
@@ -82,12 +77,9 @@ module Dependabot
               end
 
               # Turn off the module proxy for private dependencies
-              env = { "GOPRIVATE" => @goprivate }
-
               versions_json = SharedHelpers.run_shell_command(
                 "go list -m -versions -json #{dependency.name}",
-                fingerprint: "go list -m -versions -json <dependency_name>",
-                env: env
+                fingerprint: "go list -m -versions -json <dependency_name>"
               )
               version_strings = JSON.parse(versions_json)["Versions"]
 
@@ -112,7 +104,7 @@ module Dependabot
           retry_count += 1
           retry if transitory_failure?(e) && retry_count < 2
 
-          ResolvabilityErrors.handle(e.message, goprivate: @goprivate)
+          ResolvabilityErrors.handle(e.message)
           [package_release(version: T.must(dependency.version))]
         end
         # rubocop:enable Metrics/AbcSize,Metrics/PerceivedComplexity

@@ -96,7 +96,6 @@ module Dependabot
           @directory = directory
           @tidy = T.let(options.fetch(:tidy, false), T::Boolean)
           @vendor = T.let(options.fetch(:vendor, false), T::Boolean)
-          @goprivate = T.let(options.fetch(:goprivate), T.nilable(String))
         end
 
         sig { returns(T.nilable(String)) }
@@ -188,7 +187,7 @@ module Dependabot
           # continue with an info log here. `go mod tidy` shouldn't block
           # updating versions because there are some edge cases where it's OK to fail
           # (such as generated files not available yet to us).
-          _, stderr, status = Open3.capture3(environment, command)
+          _, stderr, status = Open3.capture3(command)
           if status.success?
             Dependabot.logger.info "`go mod tidy` succeeded"
           else
@@ -201,7 +200,7 @@ module Dependabot
           return unless vendor?
 
           command = "go mod vendor"
-          _, stderr, status = Open3.capture3(environment, command)
+          _, stderr, status = Open3.capture3(command)
           handle_subprocess_error(stderr) unless status.success?
         end
 
@@ -225,7 +224,7 @@ module Dependabot
           end
           command = SharedHelpers.escape_command(command)
 
-          _, stderr, status = Open3.capture3(environment, command)
+          _, stderr, status = Open3.capture3(command)
           handle_subprocess_error(stderr) unless status.success?
         ensure
           FileUtils.rm_f(T.must(tmp_go_file))
@@ -234,7 +233,7 @@ module Dependabot
         sig { returns(T::Hash[String, T.untyped]) }
         def parse_manifest
           command = "go mod edit -json"
-          stdout, stderr, status = Open3.capture3(environment, command)
+          stdout, stderr, status = Open3.capture3(command)
           handle_subprocess_error(stderr) unless status.success?
 
           JSON.parse(stdout) || {}
@@ -305,7 +304,7 @@ module Dependabot
           end
 
           repo_error_regex = REPO_RESOLVABILITY_ERROR_REGEXES.find { |r| stderr =~ r }
-          ResolvabilityErrors.handle(stderr, goprivate: @goprivate) if repo_error_regex
+          ResolvabilityErrors.handle(stderr) if repo_error_regex
 
           path_regex = MODULE_PATH_MISMATCH_REGEXES.find { |r| stderr =~ r }
           if path_regex
@@ -365,11 +364,6 @@ module Dependabot
         sig { returns(T::Boolean) }
         def vendor?
           !!@vendor
-        end
-
-        sig { returns(T::Hash[String, T.untyped]) }
-        def environment
-          { "GOPRIVATE" => @goprivate }
         end
       end
     end

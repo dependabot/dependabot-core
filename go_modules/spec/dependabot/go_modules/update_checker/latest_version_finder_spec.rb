@@ -48,8 +48,6 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
 
   let(:raise_on_ignored) { false }
 
-  let(:goprivate) { "*" }
-
   let(:cooldown_options) { nil }
 
   let(:finder) do
@@ -60,18 +58,23 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
       ignored_versions: ignored_versions,
       security_advisories: security_advisories,
       raise_on_ignored: raise_on_ignored,
-      goprivate: goprivate,
       cooldown_options: cooldown_options
     )
   end
 
   before do
     ENV["GOTOOLCHAIN"] = "local"
+    ENV["GOPRIVATE"] = "*"
+  end
+
+  after do
+    ENV.delete("GOPRIVATE")
   end
 
   describe "#latest_version" do
     context "when there's a newer major version but not a new minor version" do
       before do
+        ENV["GOPRIVATE"] = "github.com/dependabot-fixtures"
         allow(Dependabot::SharedHelpers)
           .to receive(:run_shell_command).and_call_original
       end
@@ -90,8 +93,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
           expect(Dependabot::SharedHelpers)
             .to have_received(:run_shell_command)
             .with("go list -m -versions -json github.com/dependabot-fixtures/go-modules-lib",
-                  { env: { "GOPRIVATE" => "" },
-                    fingerprint: "go list -m -versions -json <dependency_name>" })
+                  { fingerprint: "go list -m -versions -json <dependency_name>" })
         end
       end
 
@@ -297,7 +299,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
       end
 
       context "with an unrestricted goprivate" do
-        let(:goprivate) { "" }
+        before { ENV["GOPRIVATE"] = "" }
 
         it "raises a GitDependenciesNotReachable error" do
           error_class = Dependabot::GitDependenciesNotReachable
@@ -311,7 +313,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
       end
 
       context "with an org specific goprivate" do
-        let(:goprivate) { "github.com/dependabot-fixtures/*" }
+        before { ENV["GOPRIVATE"] = "github.com/dependabot-fixtures/*" }
 
         it "raises a GitDependenciesNotReachable error" do
           error_class = Dependabot::GitDependenciesNotReachable
@@ -403,7 +405,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
       end
 
       context "with an org specific goprivate" do
-        let(:goprivate) { "github.com/dependabot-fixtures/*" }
+        before { ENV["GOPRIVATE"] = "github.com/dependabot-fixtures/*" }
 
         it "returns the latest minor version for the dependency's current major version" do
           expect(finder.latest_version).to be_nil
@@ -437,7 +439,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
       end
 
       context "with an org specific goprivate" do
-        let(:goprivate) { "github.com/dependabot-fixtures/*" }
+        before { ENV["GOPRIVATE"] = "github.com/dependabot-fixtures/*" }
 
         it "returns the latest minor version for the dependency's current major version" do
           expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("1.1.0"))
@@ -511,6 +513,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
     context "with a Git pseudo-version and releases available" do
       let(:dependency_version) { "0.0.0-20201021035429-f5854403a974" }
       let(:dependency_name) { "golang.org/x/net" }
+
       let(:security_advisories) do
         [
           Dependabot::SecurityAdvisory.new(
