@@ -1,5 +1,5 @@
-const lockfileParser = require("./lockfile-parser");
+import parse from "./lockfile-parser";
 
-module.exports = {
-  parseLockfile: lockfileParser.parse,
+export default {
+  parseLockfile: parse,
 };
