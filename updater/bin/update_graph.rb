@@ -9,7 +9,7 @@ require "dependabot/api_client"
 require "dependabot/environment"
 require "dependabot/service"
 require "dependabot/setup"
-require "dependabot/analyse_files_command"
+require "dependabot/update_graph_command"
 require "debug" if ENV["DEBUG"]
 
 flamegraph = ENV.fetch("FLAMEGRAPH", nil)
@@ -18,19 +18,21 @@ if flamegraph
   require "flamegraph"
 end
 
-class AnalysisKilledError < StandardError; end
+class UpdaterKilledError < StandardError; end
 
 trap("TERM") do
   puts "Received SIGTERM"
-  error = AnalysisKilledError.new("Analysis process killed with SIGTERM")
-  # TODO(brrygrdn): Confirm a separate id sequence for Analysis jobs
+  error = UpdaterKilledError.new("Updater process killed with SIGTERM")
+  # TODO(brrygrdn): Determine if we need a separate id sequence for these jobs
   #
-  # The current proposal is that analysis jobs should use their own sequence, so we
-  # need to avoid polluting the `gh.dependabot_api.update_job.id` tag with two sequences.
+  # One proposal is that these jobs should use their own sequence, so we might
+  # need to avoid polluting the `gh.dependabot_api.update_job.id`
+  # tag with two sequences.
   #
-  # The trade off is that analysis jobs will use observability faceted on this tag instead.
+  # For now, we will just assume that Update[Files|Graph] use the job primitive
+  # until that ceases to be true.
   #
-  tags = { "gh.dependabot_api.analysis_job.id": ENV.fetch("DEPENDABOT_JOB_ID", nil) }
+  tags = { "gh.dependabot_api.update_job.id": ENV.fetch("DEPENDABOT_JOB_ID", nil) }
 
   api_client =
     Dependabot::ApiClient.new(
@@ -45,10 +47,10 @@ end
 begin
   if flamegraph
     Flamegraph.generate("/tmp/dependabot-flamegraph.html") do
-      Dependabot::AnalyseFilesCommand.new.run
+      Dependabot::UpdateGraphCommand.new.run
     end
   else
-    Dependabot::AnalyseFilesCommand.new.run
+    Dependabot::UpdateGraphCommand.new.run
   end
 rescue Dependabot::RunFailure
   exit 1
