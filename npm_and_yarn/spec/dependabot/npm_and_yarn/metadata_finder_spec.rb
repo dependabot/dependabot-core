@@ -585,6 +585,32 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
         end
       end
 
+      context "with multiple credentials" do
+        # When multiple npm_registry credentials exist, the current implementation
+        # takes the first match based on credential priority.
+        # In real scenarios with multiple registries, package-lock.json should
+        # contain resolved URLs to determine the correct registry per package.
+
+        let(:credentials) do
+          [
+            Dependabot::Credential.new({
+              "type" => "npm_registry",
+              "registry" => "https://npm.fury.io/dependabot",
+              "token" => "secret_token"
+            }),
+            Dependabot::Credential.new({
+              "type" => "npm_registry",
+              "registry" => "another.registry.com",
+              "token" => "another_secret_token"
+            })
+          ]
+        end
+
+        it "takes precedence over other credentials" do
+          expect(dependency_url).to eq("https://npm.fury.io/dependabot/etag")
+        end
+      end
+
       context "with scoped dependency name" do
         let(:dependency_name) { "@babel/core" }
         let(:credentials) do
