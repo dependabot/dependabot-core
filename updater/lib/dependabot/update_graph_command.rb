@@ -11,28 +11,28 @@ require "dependabot/updater"
 require "github_api/dependency_submission"
 
 module Dependabot
-  class AnalyseFilesCommand < BaseCommand
+  class UpdateGraphCommand < BaseCommand
     extend T::Sig
 
-    # TODO(brrygrdn): Change label to analyse_files_error?
+    # TODO(brrygrdn): Change label to update_graph_error?
     #
     # It feels odd to return update_files_error, but Dependabot's backend service does a lot of categorisation
     # based on this label.
     #
-    # We need to ensure that the service handles a new analyse_files_error appropriately before we change this,
+    # We need to ensure that the service handles a new update_graph_error appropriately before we change this,
     # but this is something we can address later.
     ERROR_TYPE_LABEL = "update_files_error"
 
     sig { void }
     def perform_job
-      # We expect the FileFetcherCommand to have been executed beforehand to place
-      # encoded files and commit information in the environment, so let's retrieve
-      # them, decode and parse them into an object that knows the current state
-      # of the project's dependencies.
-      ::Dependabot::OpenTelemetry.tracer.in_span("analyse_files", kind: :internal) do |span|
+      ::Dependabot::OpenTelemetry.tracer.in_span("update_graph", kind: :internal) do |span|
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id.to_s)
 
         begin
+          # We expect the FileFetcherCommand to have been executed beforehand to place
+          # encoded files and commit information in the environment, so let's retrieve
+          # them, decode and parse them into an object that knows the current state
+          # of the project's dependencies.
           dependency_snapshot = Dependabot::DependencySnapshot.create_from_job_definition(
             job: job,
             job_definition: Environment.job_definition

@@ -2,11 +2,11 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/analyse_files_command"
+require "dependabot/update_graph_command"
 require "dependabot/bundler"
 require "tmpdir"
 
-RSpec.describe Dependabot::AnalyseFilesCommand do
+RSpec.describe Dependabot::UpdateGraphCommand do
   subject(:job) { described_class.new }
 
   let(:service) do
