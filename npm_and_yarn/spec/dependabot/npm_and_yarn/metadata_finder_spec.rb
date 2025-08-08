@@ -556,20 +556,6 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
         end
       end
 
-      context "with npm_registry credential (no replaces-base)" do
-        let(:credentials) do
-          [Dependabot::Credential.new({
-            "type" => "npm_registry",
-            "registry" => "npm.fury.io/dependabot",
-            "token" => "secret_token"
-          })]
-        end
-
-        it "uses private registry from credentials" do
-          expect(dependency_url).to eq("https://npm.fury.io/dependabot/etag")
-        end
-      end
-
       context "with registry URL that has no protocol" do
         let(:credentials) do
           [Dependabot::Credential.new({
@@ -586,17 +572,14 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
       end
 
       context "with multiple credentials" do
-        # When multiple npm_registry credentials exist, the current implementation
-        # takes the first match based on credential priority.
-        # In real scenarios with multiple registries, package-lock.json should
-        # contain resolved URLs to determine the correct registry per package.
 
         let(:credentials) do
           [
             Dependabot::Credential.new({
               "type" => "npm_registry",
               "registry" => "https://npm.fury.io/dependabot",
-              "token" => "secret_token"
+              "token" => "secret_token",
+              "replaces-base" => true
             }),
             Dependabot::Credential.new({
               "type" => "npm_registry",

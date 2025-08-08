@@ -243,10 +243,6 @@ module Dependabot
         replaces_base_cred = credentials.find { |cred| cred["type"] == "npm_registry" && cred.replaces_base? }
         return normalize_registry_url(replaces_base_cred["registry"]) if replaces_base_cred
 
-        # Look for any npm_registry credential as fallback
-        npm_cred = credentials.find { |cred| cred["type"] == "npm_registry" && cred["registry"] }
-        return normalize_registry_url(npm_cred["registry"]) if npm_cred
-
         nil
       end
 
