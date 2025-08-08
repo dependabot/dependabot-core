@@ -3,11 +3,11 @@
 
 require "sorbet-runtime"
 
-require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 
 require "dependabot/vcpkg"
+require "dependabot/vcpkg/dependency"
 require "dependabot/vcpkg/language"
 require "dependabot/vcpkg/package_manager"
 
@@ -74,7 +74,7 @@ module Dependabot
 
       sig { params(baseline: String, file: Dependabot::DependencyFile).returns(Dependabot::Dependency) }
       def build_baseline_dependency(baseline:, file:)
-        Dependabot::Dependency.new(
+        Dependabot::Vcpkg::Dependency.new(
           name: VCPKG_DEFAULT_BASELINE_DEPENDENCY_NAME,
           version: baseline,
           package_manager: "vcpkg",
