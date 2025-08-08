@@ -223,7 +223,7 @@ module Dependabot
           end
 
         # Remove trailing slashes and escape spaces for proper URL formatting
-        registry_url = registry_url&.gsub(%r{/+$}, "")&.gsub(" ", "%20")
+        registry_url = URI::DEFAULT_PARSER.escape(registry_url)&.gsub(%r{/+$}, "")
 
         # NPM registries expect slashes to be escaped
         escaped_dependency_name = dependency.name.gsub("/", "%2F")
