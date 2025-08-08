@@ -16,6 +16,7 @@ module Dependabot
 
       require_relative "file_updater/manifest_updater"
       require_relative "file_updater/lockfile_updater"
+      require_relative "file_updater/workspace_manifest_updater"
 
       sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
@@ -60,10 +61,18 @@ module Dependabot
 
       sig { params(file: Dependabot::DependencyFile).returns(String) }
       def updated_manifest_content(file)
-        ManifestUpdater.new(
-          dependencies: dependencies,
-          manifest: file
-        ).updated_manifest_content
+        # Use workspace updater for root workspace manifests
+        if workspace_root_manifest?(file)
+          WorkspaceManifestUpdater.new(
+            dependencies: dependencies,
+            manifest: file
+          ).updated_manifest_content
+        else
+          ManifestUpdater.new(
+            dependencies: dependencies,
+            manifest: file
+          ).updated_manifest_content
+        end
       end
 
       sig { returns(String) }
@@ -91,6 +100,16 @@ module Dependabot
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def lockfile
         @lockfile ||= T.let(get_original_file("Cargo.lock"), T.nilable(Dependabot::DependencyFile))
+      end
+
+      sig { params(file: Dependabot::DependencyFile).returns(T::Boolean) }
+      def workspace_root_manifest?(file)
+        return false unless file.name == "Cargo.toml"
+
+        parsed_file = TomlRB.parse(file.content)
+        parsed_file.key?("workspace") && parsed_file["workspace"].key?("dependencies")
+      rescue TomlRB::ParseError
+        false
       end
     end
   end
