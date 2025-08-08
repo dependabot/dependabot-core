@@ -222,7 +222,7 @@ module Dependabot
             new_source&.fetch(:url)
           end
 
-        # spaces must be escaped in base URL
+        # trailing back slash must be removed and spaces must be escaped in base URL
         registry_url = registry_url&.gsub(%r{/+$}, "")&.gsub(" ", "%20")
 
         # NPM registries expect slashes to be escaped
