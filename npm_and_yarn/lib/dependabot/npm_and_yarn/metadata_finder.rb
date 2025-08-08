@@ -223,7 +223,7 @@ module Dependabot
           end
 
         # spaces must be escaped in base URL
-        registry_url = registry_url.gsub(%r{/+$}, "").gsub(" ", "%20")
+        registry_url = registry_url&.gsub(%r{/+$}, "")&.gsub(" ", "%20")
 
         # NPM registries expect slashes to be escaped
         escaped_dependency_name = dependency.name.gsub("/", "%2F")
@@ -253,20 +253,17 @@ module Dependabot
       sig { params(registry: T.nilable(String)).returns(T.nilable(String)) }
       def normalize_registry_url(registry)
         return nil unless registry
+        return registry if registry.start_with?("http")
 
-        registry = "https://#{registry}" unless registry.start_with?("http")
-        registry.gsub(%r{/+$}, "") # Remove trailing slashes
+        "https://#{registry}"
       end
 
       sig { returns(String) }
       def dependency_registry
-        registry_url = if new_source.nil?
-                         configured_registry_from_credentials || "https://registry.npmjs.org"
-                       else
-                         new_source&.fetch(:url)
-                       end
-
-        registry_url&.gsub(%r{/+$}, "")&.gsub("https://", "")&.gsub("http://", "") || "registry.npmjs.org"
+        if new_source.nil? then "registry.npmjs.org"
+        else
+          new_source&.fetch(:url)&.gsub("https://", "")&.gsub("http://", "")
+        end
       end
 
       sig { returns(T.nilable(String)) }
