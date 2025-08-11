@@ -462,8 +462,7 @@ module Dependabot
         params(path: String, fetch_submodules: T::Boolean, raise_errors: T::Boolean)
           .returns(T::Array[OpenStruct])
       end
-      def _fetch_repo_contents(path, fetch_submodules: false,
-                               raise_errors: true)
+      def _fetch_repo_contents(path, fetch_submodules: false, raise_errors: true) # rubocop:disable Metrics/PerceivedComplexity
         path = path.gsub(" ", "%20")
         provider, repo, tmp_path, commit =
           _full_specification_for(path, fetch_submodules: fetch_submodules)
