@@ -6,7 +6,6 @@ require "dependabot/base_command"
 require "dependabot/errors"
 require "dependabot/opentelemetry"
 require "dependabot/updater"
-require "dependabot/config/file_fetcher"
 require "octokit"
 require "sorbet-runtime"
 
@@ -89,8 +88,6 @@ module Dependabot
       )
     end
 
-    # rubocop:disable Metrics/AbcSize
-    # A method that abstracts the file fetcher creation logic and applies the same settings across all instances
     sig { params(directory: T.nilable(String)).returns(Dependabot::FileFetchers::Base) }
     def create_file_fetcher(directory: nil)
       # Use the provided directory or fallback to job.source.directory if directory is nil.
@@ -109,26 +106,8 @@ module Dependabot
         options: T.unsafe(job.experiments)
       }
       args[:repo_contents_path] = Environment.repo_contents_path if job.clone? || already_cloned?
-
-      # Load & parse dependabot.yaml from the repo
-      config_file = begin
-        cfg_file = Dependabot::Config::FileFetcher.new(**args).config_file
-        non_nil_cfg_file = T.must(cfg_file)
-        Dependabot::Config::File.parse(non_nil_cfg_file.content || "")
-      rescue Dependabot::RepoNotFound, Dependabot::DependencyFileNotFound, StandardError
-        Dependabot::Config::File.new(updates: [])
-      end
-      update_config = begin
-        config_file.update_config(job.package_manager)
-      rescue KeyError
-        raise Dependabot::DependabotError, "Invalid package manager: #{job.package_manager}"
-      end
-
-      fetcher_args = args.merge(update_config: update_config)
-
-      Dependabot::FileFetchers.for_package_manager(job.package_manager).new(**fetcher_args)
+      Dependabot::FileFetchers.for_package_manager(job.package_manager).new(**args)
     end
-    # rubocop:enable Metrics/AbcSize
 
     # The main file fetcher method that now calls the create_file_fetcher method
     # and ensures it uses the same repo_contents_path setting as others.
