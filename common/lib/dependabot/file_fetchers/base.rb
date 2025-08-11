@@ -563,17 +563,17 @@ module Dependabot
 
       # Filters out any entries whose paths match one of the exclude_paths globs.
       sig { params(entries: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
-      def filter_excluded(entries) # rubocop:disable Metrics/PerceivedComplexity,Metrics/MethodLength
-        puts "DEBUG filter_excluded: entries=#{entries.length}, exclude_paths=#{@exclude_paths.inspect}"
+      def filter_excluded(entries) # rubocop:disable Metrics/PerceivedComplexity,Metrics/MethodLength,Metrics/AbcSize
+        Dependabot.logger.info("DEBUG filter_excluded: entries=#{entries.length}, exclude_paths=#{@exclude_paths.inspect}") # rubocop:disable Layout/LineLength
 
         return entries if @exclude_paths.empty?
 
         filtered_entries = entries.reject do |entry|
           full_entry_path = entry.path
-          puts "DEBUG: Checking entry path: #{full_entry_path}"
+          Dependabot.logger.info("DEBUG: Checking entry path: #{full_entry_path}")
 
           @exclude_paths.any? do |exclude_pattern|
-            puts "DEBUG: Testing pattern: #{exclude_pattern} against path: #{full_entry_path}"
+            Dependabot.logger.info("DEBUG: Testing pattern: #{exclude_pattern} against path: #{full_entry_path}")
 
             # case 1: exact match
             exclude_exact = full_entry_path == exclude_pattern
@@ -604,12 +604,12 @@ module Dependabot
             end
 
             result = exclude_exact || exclude_deeper || exclude_recursive || exclude_fnmatch_paths
-            puts "DEBUG: Pattern #{exclude_pattern} vs #{full_entry_path} -> #{result ? 'EXCLUDED' : 'INCLUDED'}"
+            Dependabot.logger.info("DEBUG: Pattern #{exclude_pattern} vs #{full_entry_path} -> #{result ? 'EXCLUDED' : 'INCLUDED'}") # rubocop:disable Layout/LineLength
             result
           end
         end
 
-        puts "DEBUG filter_excluded: Filtered from #{entries.length} to #{filtered_entries.length} entries"
+        Dependabot.logger.info("DEBUG filter_excluded: Filtered from #{entries.length} to #{filtered_entries.length} entries") # rubocop:disable Layout/LineLength
         filtered_entries
       rescue StandardError => e
         Dependabot.logger.warn("Error while filtering exclude paths patterns: #{e.message}")
