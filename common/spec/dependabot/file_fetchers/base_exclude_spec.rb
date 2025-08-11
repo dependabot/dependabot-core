@@ -6,7 +6,6 @@ require "dependabot/file_fetchers/base"
 require "dependabot/config/update_config"
 require "dependabot/experiments"
 
-# Command to run this test: rspec common/lib/dependabot/file_fetchers/base_exclude_spec.rb
 RSpec.describe Dependabot::FileFetchers::Base do
   let(:source) { Dependabot::Source.new(provider: "github", repo: "some/random-repo", directory: "/", branch: "main") }
   let(:creds)  { [] }

@@ -585,16 +585,16 @@ begin
 
   $repo_contents_path = File.expand_path(File.join("tmp", $repo_name.split("/")))
 
-  config_fetcher_args = {
+  fetcher_args = {
     source: $source,
     credentials: $options[:credentials],
     repo_contents_path: $repo_contents_path,
     options: $options[:updater_options]
   }
   $config_file = begin
-    cfg_file = Dependabot::Config::FileFetcher.new(**config_fetcher_args).config_file
+    cfg_file = Dependabot::Config::FileFetcher.new(**fetcher_args).config_file
     Dependabot::Config::File.parse(cfg_file.content)
-  rescue Dependabot::RepoNotFound, Dependabot::DependencyFileNotFound, StandardError
+  rescue Dependabot::RepoNotFound, Dependabot::DependencyFileNotFound
     Dependabot::Config::File.new(updates: [])
   end
   $update_config = begin
@@ -606,8 +606,6 @@ begin
   rescue KeyError
     raise Dependabot::DependabotError, "Invalid package manager: #{$package_manager}"
   end
-
-  fetcher_args = config_fetcher_args.merge(update_config: update_config)
 
   fetcher = Dependabot::FileFetchers.for_package_manager($package_manager).new(**fetcher_args)
   $files = fetch_files(fetcher)
