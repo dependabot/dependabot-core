@@ -1,0 +1,53 @@
+# Custom Dependabot Scanner Image
+# Extends the official dependabot-core-development-bundler image
+# Pre-installs all dependencies needed for local scanning
+
+FROM dependabot/dependabot-core-development-bundler
+
+# Switch to root for gem installation
+USER root
+
+# Install bundler gem for dependency management
+RUN gem install bundler
+
+# Switch back to dependabot user
+USER dependabot
+
+# Set working directory
+WORKDIR /home/dependabot
+
+# Set environment variables for bundle configuration
+ENV BUNDLE_PATH=/usr/local/bundle
+ENV BUNDLE_GEMFILE=/home/dependabot/updater/Gemfile
+
+# Set up Ruby environment for the scanner - include specific Ruby version path
+ENV GEM_HOME=/usr/local/bundle
+ENV GEM_PATH=/usr/local/bundle:/usr/local/bundle/ruby/3.4.0
+ENV RUBYLIB=/home/dependabot/bundler/lib:/home/dependabot/common/lib:/home/dependabot/updater/lib
+ENV RUBYOPT="-I /usr/local/bundle/ruby/3.4.0/gems -I /home/dependabot/bundler/lib -I /home/dependabot/common/lib -I /home/dependabot/updater/lib"
+
+# Copy only the essential files needed for gem installation (for better caching)
+COPY --chown=dependabot:dependabot updater/Gemfile updater/Gemfile.lock /home/dependabot/updater/
+COPY --chown=dependabot:dependabot bundler/helpers/v2/Gemfile bundler/helpers/v2/Gemfile.lock /home/dependabot/bundler/helpers/v2/
+COPY --chown=dependabot:dependabot updater/lib /home/dependabot/updater/lib
+COPY --chown=dependabot:dependabot bundler/lib /home/dependabot/bundler/lib
+COPY --chown=dependabot:dependabot common/lib /home/dependabot/common/lib
+
+# Pre-install updater dependencies (the gems that local_scan.rb needs)
+RUN cd /home/dependabot/updater && bundle install --path /usr/local/bundle
+
+# Pre-install bundler helper dependencies
+RUN cd /home/dependabot/bundler/helpers/v2 && bundle install --path /usr/local/bundle
+
+# Verify the key gems are installed
+RUN bundle list | grep -E "(http|octokit|opentelemetry|sentry|terminal-table|flamegraph|zeitwerk)"
+
+# Now copy the rest of the dependabot-core codebase (after gems are installed)
+COPY --chown=dependabot:dependabot . /home/dependabot/
+
+# Copy the local scan script last (this layer will change most often)
+# This allows script changes without rebuilding the entire image
+COPY --chown=dependabot:dependabot bin/local_ruby_scan.rb /home/dependabot/bin/local_ruby_scan.rb
+
+# Set the default command
+CMD ["ruby", "bin/local_ruby_scan.rb", "--help"]
