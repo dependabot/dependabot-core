@@ -12,7 +12,7 @@ module Dependabot
         extend T::Sig
 
         SUPPORTED_BUILD_FILE_NAMES = T.let(%w(build.gradle build.gradle.kts build.gradle.dcl).freeze, T::Array[String])
-        SUPPORTED_SETTINGS_FILE_NAMES = T.let(%w(settings.gradle settings.gradle.kts build.gradle.dcl).freeze, T::Array[String])
+        SUPPORTED_SETTINGS_FILE_NAMES = T.let(%w(settings.gradle settings.gradle.kts settings.gradle.dcl).freeze, T::Array[String])
 
         # The Central Repo doesn't have special status for Gradle, but until
         # we're confident we're selecting repos correctly it's wise to include
