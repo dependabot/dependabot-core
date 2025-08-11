@@ -470,8 +470,11 @@ module Dependabot
           .values_at(:provider, :repo, :path, :commit)
 
         entries = _fetch_repo_contents_fully_specified(provider, repo, tmp_path, commit)
-
-        filter_excluded(entries)
+        if Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files)
+          filter_excluded(entries)
+        else
+          entries
+        end
       rescue *CLIENT_NOT_FOUND_ERRORS
         raise Dependabot::DirectoryNotFound, directory if path == directory.gsub(%r{^/*}, "")
 
@@ -552,21 +555,66 @@ module Dependabot
             size: 0 # NOTE: added for parity with github contents API
           )
         end
-
-        filter_excluded(entries)
+        if Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files)
+          filter_excluded(entries)
+        else
+          entries
+        end
       end
 
       # Filters out any entries whose paths match one of the exclude_paths globs.
       sig { params(entries: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
-      def filter_excluded(entries)
-        entries.reject do |entry|
+      def filter_excluded(entries) # rubocop:disable Metrics/PerceivedComplexity,Metrics/MethodLength
+        puts "DEBUG filter_excluded: entries=#{entries.length}, exclude_paths=#{@exclude_paths.inspect}"
+
+        return entries if @exclude_paths.empty?
+
+        filtered_entries = entries.reject do |entry|
           full_entry_path = entry.path
-          @exclude_paths.any? do |ex|
-            exclude_exact   = full_entry_path == ex
-            exclude_deeper  = full_entry_path.start_with?("#{ex}#{File::SEPARATOR}")
-            File.fnmatch?(ex, full_entry_path, File::FNM_EXTGLOB) || exclude_exact || exclude_deeper
+          puts "DEBUG: Checking entry path: #{full_entry_path}"
+
+          @exclude_paths.any? do |exclude_pattern|
+            puts "DEBUG: Testing pattern: #{exclude_pattern} against path: #{full_entry_path}"
+
+            # case 1: exact match
+            exclude_exact = full_entry_path == exclude_pattern
+
+            # case 2: Directory prefix matching: check if path is inside an excluded directory
+            exclude_deeper = full_entry_path.start_with?("#{exclude_pattern}#{File::SEPARATOR}",
+                                                         "#{exclude_pattern}/")
+
+            # case 3: Explicit recursive (patterns that end with /**)
+            exclude_recursive = false
+            if exclude_pattern.end_with?("/**")
+              base_pattern = exclude_pattern[0...-3]
+              exclude_recursive = full_entry_path == base_pattern ||
+                                  full_entry_path.start_with?("#{base_pattern}/") ||
+                                  full_entry_path.start_with?("#{base_pattern}#{File::SEPARATOR}")
+            end
+
+            # case 4: Glob pattern matching with enhanced flags
+            # Use multiple fnmatch attempts with different flag combinations
+            fnmatch_flags = [
+              File::FNM_EXTGLOB,
+              File::FNM_EXTGLOB | File::FNM_PATHNAME,
+              File::FNM_EXTGLOB | File::FNM_PATHNAME | File::FNM_DOTMATCH,
+              File::FNM_PATHNAME
+            ]
+            exclude_fnmatch_paths = fnmatch_flags.any? do |flag|
+              File.fnmatch?(exclude_pattern, full_entry_path, flag)
+            end
+
+            result = exclude_exact || exclude_deeper || exclude_recursive || exclude_fnmatch_paths
+            puts "DEBUG: Pattern #{exclude_pattern} vs #{full_entry_path} -> #{result ? 'EXCLUDED' : 'INCLUDED'}"
+            result
           end
         end
+
+        puts "DEBUG filter_excluded: Filtered from #{entries.length} to #{filtered_entries.length} entries"
+        filtered_entries
+      rescue StandardError => e
+        Dependabot.logger.warn("Error while filtering exclude paths patterns: #{e.message}")
+        entries
       end
 
       sig { params(file: Sawyer::Resource).returns(OpenStruct) }

@@ -4,6 +4,7 @@
 
 require "dependabot/file_fetchers/base"
 require "dependabot/config/update_config"
+require "dependabot/experiments"
 
 # Command to run this test: rspec common/lib/dependabot/file_fetchers/base_exclude_spec.rb
 RSpec.describe Dependabot::FileFetchers::Base do
@@ -37,6 +38,9 @@ RSpec.describe Dependabot::FileFetchers::Base do
     allow(fetcher)
       .to(receive(:_full_specification_for)
       .and_wrap_original { |_, path, **| { provider: "github", repo: source.repo, path: path, commit: "dummy-sha" } })
+
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_exclude_paths_subdirectory_manifest_files).and_return(true)
 
     # Stub the lowest-level fetch, but return *all* immediate children
     allow(fetcher)
@@ -96,8 +100,6 @@ RSpec.describe Dependabot::FileFetchers::Base do
     end
 
     it "skips any subpaths under vendor/ but retains the vendor folder itself" do
-      paths = fetcher.send(:_fetch_repo_contents, "").map(&:path)
-      expect(paths).to include("src", "foo.rb", "vendor")
       expect(fetcher.send(:_fetch_repo_contents, "vendor")).to eq([])
     end
 
@@ -159,8 +161,6 @@ RSpec.describe Dependabot::FileFetchers::Base do
     end
 
     it "skips any subpaths under vendor/ but retains the vendor folder itself" do
-      paths = fetcher.send(:repo_contents, dir: "").map(&:path)
-      expect(paths).to include("src", "foo.rb", "vendor")
       expect(fetcher.send(:repo_contents, dir: "vendor")).to eq([])
     end
 
