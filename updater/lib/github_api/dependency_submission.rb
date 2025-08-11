@@ -92,29 +92,26 @@ module GithubApi
     def build_manifests(snapshot)
       dependencies_by_manifest = {}
 
-      # NOTE: This is reconstructing the manifest to dependency mapping
-      #
-      # It would require deep changes to the Dependabot::Snapshot and parsers,
-      # but it might eventually be worth retaining this information from the
-      # source files in order to avoid reconstructing it here?
-      snapshot.dependencies.each do |dependency|
-        dependency.requirements.each do |requirement|
-          dependencies_by_manifest[requirement[:file]] ||= []
-          dependencies_by_manifest[requirement[:file]] << dependency
+      snapshot.dependency_files.each do |file|
+        dependencies_by_manifest[file.path] ||= []
+        file.dependencies.each do |dependency|
+          dependencies_by_manifest[file.path] << dependency
         end
       end
 
       dependencies_by_manifest.each_with_object({}) do |(file, deps), manifests|
-        # TODO: This approach won't work properly with multi-directory job definitions
+        # TODO: Confirm whether this approach will work properly with multi-directory job definitions
         #
         # For now it is tolerable to omit this and limit our testing accordingly, but we
         # should behave sensibly in a multi-directory context as well
-        file_path = File.join(directory, file).gsub(%r{^/}, "")
+
+        # source location is relative to the root of the repo, so we strip the leading slash
+        source_location = file.gsub(%r{^/}, "")
 
         manifests[file] = {
           name: file,
           file: {
-            source_location: file_path
+            source_location: source_location
           },
           metadata: {
             ecosystem: T.must(snapshot.ecosystem).name
@@ -122,14 +119,7 @@ module GithubApi
           resolved: deps.uniq.each_with_object({}) do |dep, resolved|
             resolved[dep.name] = {
               package_url: build_purl(dep),
-              # TODO: Replace relationship placeholder
-              #
-              # Dependabot has a bias towards operating on **declared dependencies**, so
-              # we need to close gaps on transitive dependencies in a few places.
-              #
-              # This should be set in the parsers when we add capabilities to track immediate
-              # dependencies.
-              relationship: "direct",
+              relationship: relationship_for(dep),
               scope: scope_for(dep),
               dependencies: [
                 # TODO: Populate direct child dependencies
@@ -146,7 +136,7 @@ module GithubApi
 
     # Helper function to create a Package URL (purl)
     #
-    # TODO: Move out of this class?
+    # TODO: Move out of this class.
     #
     # It probably makes more sense to assign this to a Dependabot::Dependency
     # when it is created so the ecosystem-specific parser can own this?
@@ -200,6 +190,15 @@ module GithubApi
         "runtime"
       else
         "development"
+      end
+    end
+
+    sig { params(dep: Dependabot::Dependency).returns(String) }
+    def relationship_for(dep)
+      if dep.direct?
+        "direct"
+      else
+        "indirect"
       end
     end
   end
