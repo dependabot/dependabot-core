@@ -130,12 +130,8 @@ RSpec.describe GithubApi::DependencySubmission do
     it "generates a valid manifest list" do
       payload = dependency_submission.payload
 
-      expect(payload[:manifests].length).to eq(2)
-
-      # Gemfile data is correct
-      gemfile = payload[:manifests].fetch("/Gemfile")
-      expect(gemfile[:name]).to eq("/Gemfile")
-      expect(gemfile[:file][:source_location]).to eq("Gemfile")
+      # We only expect a lockfile to be returned
+      expect(payload[:manifests].length).to eq(1)
 
       # Lockfile data is correct
       lockfile = payload[:manifests].fetch("/Gemfile.lock")
@@ -143,25 +139,13 @@ RSpec.describe GithubApi::DependencySubmission do
       expect(lockfile[:file][:source_location]).to eq("Gemfile.lock")
 
       # Resolved dependencies are correct
-      expect(gemfile[:resolved].length).to eq(2)
       expect(lockfile[:resolved].length).to eq(2)
 
-      dependency1 = gemfile[:resolved]["dummy-pkg-a"]
-      dependency2 = gemfile[:resolved]["dummy-pkg-b"]
+      dependency1 = lockfile[:resolved]["dummy-pkg-a"]
+      expect(dependency1[:package_url]).to eql("pkg:gem/dummy-pkg-a@2.0.0")
 
-      [gemfile, lockfile].each do |depfile|
-        depfile[:resolved].each do |pkg_name, resolved_dep|
-          expect(resolved_dep).not_to be_empty
-          expect(resolved_dep[:relationship]).to eq("direct")
-
-          case pkg_name
-          when "dummy-pkg-a"
-            expect(dependency1[:package_url]).to eql("pkg:gem/dummy-pkg-a@2.0.0")
-          when "dummy-pkg-b"
-            expect(dependency2[:package_url]).to eql("pkg:gem/dummy-pkg-b@1.1.0")
-          end
-        end
-      end
+      dependency2 = lockfile[:resolved]["dummy-pkg-b"]
+      expect(dependency2[:package_url]).to eql("pkg:gem/dummy-pkg-b@1.1.0")
     end
   end
 
@@ -184,12 +168,8 @@ RSpec.describe GithubApi::DependencySubmission do
     it "generates a valid manifest list" do # rubocop:disable RSpec/MultipleExpectations
       payload = dependency_submission.payload
 
-      expect(payload[:manifests].length).to eq(2)
-
-      # Manifest data is correct
-      gemfile = payload[:manifests].fetch("/Gemfile")
-      expect(gemfile[:name]).to eq("/Gemfile")
-      expect(gemfile[:file][:source_location]).to eq("Gemfile")
+      # We only expect a lockfile to be returned
+      expect(payload[:manifests].length).to eq(1)
 
       # Lockfile data is correct
       lockfile = payload[:manifests].fetch("/Gemfile.lock")
@@ -197,38 +177,34 @@ RSpec.describe GithubApi::DependencySubmission do
       expect(lockfile[:file][:source_location]).to eq("Gemfile.lock")
 
       # Resolved dependencies are correct:
-      expect(gemfile[:resolved].length).to eq(4)
       expect(lockfile[:resolved].length).to eq(28)
-
-      # the following top-level packages should exist in both files with
-      # the same data
-      %w(sinatra pry rspec capybara).each do |pkg_name|
-        [gemfile, lockfile].each do |depfile|
-          resolved_dep = depfile[:resolved][pkg_name]
-
-          expect(resolved_dep).not_to be_empty
-          expect(resolved_dep[:relationship]).to eq("direct")
-
-          case pkg_name
-          when "sinatra"
-            expect(resolved_dep[:package_url]).to eql("pkg:gem/sinatra@4.1.1")
-            expect(resolved_dep[:scope]).to eq("runtime")
-          when "pry"
-            expect(resolved_dep[:package_url]).to eql("pkg:gem/pry@0.15.2")
-            expect(resolved_dep[:scope]).to eq("development")
-          when "rspec"
-            expect(resolved_dep[:package_url]).to eql("pkg:gem/rspec@3.13.1")
-            expect(resolved_dep[:scope]).to eq("development")
-          when "capybara"
-            expect(resolved_dep[:package_url]).to eql("pkg:gem/capybara@3.40.0")
-            expect(resolved_dep[:scope]).to eq("development")
-          end
-        end
-      end
 
       # the lockfile should be reporting 4 direct dependencies and 24 indirect ones
       expect(lockfile[:resolved].values.count { |dep| dep[:relationship] == "direct" }).to eq(4)
       expect(lockfile[:resolved].values.count { |dep| dep[:relationship] == "indirect" }).to eq(24)
+
+      # the following top-level packages should be defined in the right groups
+      %w(sinatra pry rspec capybara).each do |pkg_name|
+        resolved_dep = lockfile[:resolved][pkg_name]
+
+        expect(resolved_dep).not_to be_empty
+        expect(resolved_dep[:relationship]).to eq("direct")
+
+        case pkg_name
+        when "sinatra"
+          expect(resolved_dep[:package_url]).to eql("pkg:gem/sinatra@4.1.1")
+          expect(resolved_dep[:scope]).to eq("runtime")
+        when "pry"
+          expect(resolved_dep[:package_url]).to eql("pkg:gem/pry@0.15.2")
+          expect(resolved_dep[:scope]).to eq("development")
+        when "rspec"
+          expect(resolved_dep[:package_url]).to eql("pkg:gem/rspec@3.13.1")
+          expect(resolved_dep[:scope]).to eq("development")
+        when "capybara"
+          expect(resolved_dep[:package_url]).to eql("pkg:gem/capybara@3.40.0")
+          expect(resolved_dep[:scope]).to eq("development")
+        end
+      end
 
       # the direct ones were verified above.
       # let's pull out a few indirect dependencies to check

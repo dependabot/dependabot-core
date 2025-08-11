@@ -43,6 +43,14 @@ module Dependabot
     sig { returns(T::Set[T.untyped]) }
     attr_accessor :dependencies
 
+    # Dependency file precedence is used to determine which are relevant when generating a dependency graph for the
+    # project - only the highest precedent files will be graphed.
+    #
+    # This allows the file parser to flag a lockfile as being higher precedent than the corresponding manifest so we
+    # only return a manifest for a given directory if a lockfile is absent.
+    sig { returns(Integer) }
+    attr_accessor :precedence
+
     class ContentEncoding
       UTF_8 = "utf-8"
       BASE64 = "base64"
@@ -78,14 +86,15 @@ module Dependabot
         content_encoding: String,
         deleted: T::Boolean,
         operation: String,
-        mode: T.nilable(String)
+        mode: T.nilable(String),
+        precedence: Integer
       )
         .void
     end
     def initialize(name:, content:, directory: "/", type: "file",
                    support_file: false, vendored_file: false, symlink_target: nil,
                    content_encoding: ContentEncoding::UTF_8, deleted: false,
-                   operation: Operation::UPDATE, mode: nil)
+                   operation: Operation::UPDATE, mode: nil, precedence: 0)
       @name = name
       @content = content
       @directory = T.let(clean_directory(directory), String)
@@ -96,6 +105,7 @@ module Dependabot
       @operation = operation
       @mode = mode
       @dependencies = T.let(Set.new, T::Set[T.untyped])
+      @precedence = precedence
       raise ArgumentError, "Invalid Git mode: #{mode}" if mode && !VALID_MODES.include?(mode)
 
       # Make deleted override the operation. Deleted is kept when operation

@@ -217,6 +217,9 @@ module Dependabot
           dependencies << dep
         end
 
+        # If the lockfile has at least one dependency, then it should precedent over any other files
+        # for its directory when building a graph.
+        T.must(lockfile).precedence = 1 if T.must(lockfile).dependencies.any?
         dependencies
       end
 
