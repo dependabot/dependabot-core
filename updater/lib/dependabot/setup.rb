@@ -30,7 +30,8 @@ Sentry.init do |config|
     bundler|
     cargo|
     composer|
-    devcontainers
+    conda|
+    devcontainers|
     docker_compose|
     docker|
     dotnet_sdk|
@@ -43,6 +44,7 @@ Sentry.init do |config|
     hex|
     maven|
     npm_and_yarn|
+    nuget|
     pub|
     python|
     rust_toolchain|
@@ -67,6 +69,7 @@ require "dependabot/bun"
 require "dependabot/bundler"
 require "dependabot/cargo"
 require "dependabot/composer"
+require "dependabot/conda"
 require "dependabot/devcontainers"
 require "dependabot/docker_compose"
 require "dependabot/docker"
@@ -80,6 +83,7 @@ require "dependabot/helm"
 require "dependabot/hex"
 require "dependabot/maven"
 require "dependabot/npm_and_yarn"
+require "dependabot/nuget"
 require "dependabot/pub"
 require "dependabot/python"
 require "dependabot/rust_toolchain"

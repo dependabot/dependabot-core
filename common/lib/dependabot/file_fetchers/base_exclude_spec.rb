@@ -1,5 +1,5 @@
 # rubocop:disable all
-# typed: ignore
+# typed: false
 # frozen_string_literal: true
 
 require "dependabot/file_fetchers/base"

@@ -170,7 +170,7 @@ public class CloneWorker
     {
         return job.Source.Provider switch
         {
-            "azure" when !string.IsNullOrWhiteSpace(job.Source.Hostname) => $"https://{job.Source.Hostname}/{job.Source.Repo}",
+            "azure" or "github" when !string.IsNullOrWhiteSpace(job.Source.Hostname) => $"https://{job.Source.Hostname}/{job.Source.Repo}",
             "azure" => $"https://dev.azure.com/{job.Source.Repo}",
             "github" => $"https://github.com/{job.Source.Repo}",
             _ => throw new ArgumentException($"Unknown provider: {job.Source.Provider}")
