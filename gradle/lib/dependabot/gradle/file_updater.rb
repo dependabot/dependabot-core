@@ -26,7 +26,7 @@ module Dependabot
           # Matches gradle/libs.versions.toml in root or any subdirectory
           %r{(^|.*/)?gradle/libs\.versions\.toml$},
           # Matches settings.gradle or settings.gradle.kts in root or any subdirectory
-          %r{(^|.*/)settings\.gradle((\.kts)|(.\dcl))?$},
+          %r{(^|.*/)settings\.gradle((\.kts)|(\.dcl))?$},
           # Matches dependencies.gradle in root or any subdirectory
           %r{(^|.*/)dependencies\.gradle$},
           %r{(^|.*/)?gradle.lockfile$}
