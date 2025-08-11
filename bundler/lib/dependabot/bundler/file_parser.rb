@@ -351,11 +351,16 @@ module Dependabot
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def lockfile
-        @lockfile ||= T.let(
-          get_original_file("Gemfile.lock") ||
-                              get_original_file("gems.locked"),
+        return @lockfile if defined?(@lockfile)
+
+        @lockfile = T.let(
+          get_original_file("Gemfile.lock") || get_original_file("gems.locked"),
           T.nilable(Dependabot::DependencyFile)
         )
+
+        # Set the lockfile as higher priority so we know to ignore the Gemfile, etc
+        # when producing a graph.
+        @lockfile&.tap { |f| f.priority = 1 }
       end
 
       sig { returns(T.untyped) }

@@ -91,8 +91,7 @@ module GithubApi
     sig { params(snapshot: Dependabot::DependencySnapshot).returns(T::Hash[String, T.untyped]) }
     def build_manifests(snapshot)
       dependencies_by_manifest = {}
-
-      snapshot.dependency_files.each do |file|
+      relevant_manifests(snapshot).each do |file|
         dependencies_by_manifest[file.path] ||= []
         file.dependencies.each do |dependency|
           dependencies_by_manifest[file.path] << dependency
@@ -132,6 +131,24 @@ module GithubApi
           end
         }
       end
+    end
+
+    # For each distinct directory in our manifest list, we only want the highest priority manifests available,
+    # this method will filter out manifests for directories that have lockfiles and so on.
+    sig { params(snapshot: Dependabot::DependencySnapshot).returns(T::Array[Dependabot::DependencyFile]) }
+    def relevant_manifests(snapshot)
+      manifests_by_directory = snapshot.dependency_files.each_with_object({}) do |file, dirs|
+        # Build up a dictionary of unique directories...
+        dirs[file.directory] ||= {}
+        # Add a list of files for each distinct priority...
+        dirs[file.directory][file.priority] ||= []
+        dirs[file.directory][file.priority] << file
+      end
+
+      manifests_by_directory.map do |_directory, manifests_by_priority|
+        # ... and cherry pick the highest priority list for each directory
+        manifests_by_priority[manifests_by_priority.keys.max]
+      end.flatten
     end
 
     # Helper function to create a Package URL (purl)
