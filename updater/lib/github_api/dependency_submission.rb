@@ -120,12 +120,7 @@ module GithubApi
               package_url: build_purl(dep),
               relationship: relationship_for(dep),
               scope: scope_for(dep),
-              dependencies: [
-                # TODO: Populate direct child dependencies
-                #
-                # Dependabot::Dependency objects do not include immediate dependencies,
-                # this is a capability each parser will need to have added.
-              ],
+              dependencies: dep.metadata.fetch(:depends_on, []),
               metadata: {}
             }
           end
