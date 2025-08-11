@@ -1275,14 +1275,20 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           .with(
             requirements: dependency_requirements,
             updated_source: nil,
-            latest_resolvable_version: nil,
+            latest_resolvable_version: "16.3.1",
             update_strategy: Dependabot::RequirementsUpdateStrategy::WidenRanges
           )
           .and_call_original
 
-        # No change in updated_requirements
+        # With npm 10.9.3's improved peer dependency resolution,
+        # deprecated dependencies can now be successfully resolved
         expect(checker.updated_requirements)
-          .to eq(dependency_requirements)
+          .to eq([{
+            file: "package.json",
+            requirement: "^16.3.1",
+            groups: ["dependencies"],
+            source: nil
+          }])
       end
     end
 
