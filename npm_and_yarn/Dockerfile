@@ -23,7 +23,7 @@ ARG NODEJS_VERSION=22
 # Check for updates at https://github.com/npm/cli/releases
 # This version should be compatible with the NODEJS_VERSION version declared above. See https://nodejs.org/en/download/releases as well
 # With every major release update, also update npm_and_yarn/lib/dependabot/npm_and_yarn/npm_package_manager.rb (Section : Update instructions)
-ARG NPM_VERSION=10.5.0
+ARG NPM_VERSION=10.9.3
 
 # Install Node and npm
 RUN mkdir -p /etc/apt/keyrings \
