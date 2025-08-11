@@ -18,10 +18,10 @@ module Dependabot
       SUPPORTED_LOCK_FILE_NAMES = T.let(%w(gradle.lockfile).freeze, T::Array[String])
 
       SUPPORTED_BUILD_FILE_NAMES =
-        T.let(%w(build.gradle build.gradle.kts).freeze, T::Array[String])
+        T.let(%w(build.gradle build.gradle.kts build.gradle.dcl).freeze, T::Array[String])
 
       SUPPORTED_SETTINGS_FILE_NAMES =
-        T.let(%w(settings.gradle settings.gradle.kts).freeze, T::Array[String])
+        T.let(%w(settings.gradle settings.gradle.kts settings.gradle.dcl).freeze, T::Array[String])
 
       # For now Gradle only supports library .toml files in the main gradle folder
       SUPPORTED_VERSION_CATALOG_FILE_PATH =
