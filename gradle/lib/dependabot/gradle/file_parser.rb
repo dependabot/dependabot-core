@@ -27,7 +27,7 @@ module Dependabot
       require "dependabot/file_parsers/base/dependency_set"
       require_relative "file_parser/property_value_finder"
 
-      SUPPORTED_BUILD_FILE_NAMES = T.let(%w(build.gradle build.gradle.kts settings.gradle settings.gradle.kts).freeze,
+      SUPPORTED_BUILD_FILE_NAMES = T.let(%w(build.gradle build.gradle.kts build.gradle.dcl settings.gradle settings.gradle.kts settings.gradle.dcl).freeze,
                                          T::Array[String])
 
       PROPERTY_REGEX = T.let(
@@ -528,7 +528,7 @@ module Dependabot
       def buildfiles
         @buildfiles ||= T.let(
           dependency_files.select do |f|
-            f.name.end_with?("build.gradle", "build.gradle.kts", "settings.gradle", "settings.gradle.kts")
+            f.name.end_with?("build.gradle", "build.gradle.kts", "build.gradle.dcl", "settings.gradle", "settings.gradle.kts", "settings.gradle.dcl")
           end,
           T.nilable(T::Array[Dependabot::DependencyFile])
         )
@@ -557,7 +557,7 @@ module Dependabot
 
       sig { override.void }
       def check_required_files
-        raise "No build.gradle or build.gradle.kts!" if dependency_files.empty?
+        raise "No build.gradle or build.gradle.kts or build.gradle.dcl!" if dependency_files.empty?
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }

@@ -53,7 +53,7 @@ module Dependabot
 
       sig { override.returns(String) }
       def self.required_files_message
-        "Repo must contain a build.gradle / build.gradle.kts file."
+        "Repo must contain a build.gradle / build.gradle.kts / build.gradle.dcl file."
       end
 
       sig { override.returns(T::Array[DependencyFile]) }
