@@ -155,7 +155,8 @@ module Dependabot
       # rubocop:enable Metrics/PerceivedComplexity
 
       sig do
-        params(name: String, requirement: T.untyped, type: String, file: Dependabot::DependencyFile).returns(Dependency)
+        params(name: String, requirement: T.any(String, T::Hash[String, String]), type: String,
+               file: Dependabot::DependencyFile).returns(Dependency)
       end
       def build_dependency(name, requirement, type, file)
         Dependency.new(
@@ -205,39 +206,41 @@ module Dependabot
         parsed_content["patch"].values.flat_map(&:keys)
       end
 
-      sig { params(declaration: T.untyped).returns(T.nilable(String)) }
+      sig { params(declaration: T.any(String, T::Hash[String, String])).returns(T.nilable(String)) }
       def requirement_from_declaration(declaration)
         if declaration.is_a?(String)
-          return declaration == "" ? nil : declaration
+          declaration == "" ? nil : declaration
+        else
+          return declaration["version"] if declaration["version"].is_a?(String) && declaration["version"] != ""
+
+          nil
         end
-        raise "Unexpected dependency declaration: #{declaration}" unless declaration.is_a?(Hash)
-        return declaration["version"] if declaration["version"].is_a?(String) && declaration["version"] != ""
-
-        nil
       end
 
-      sig { params(name: String, declaration: T.untyped).returns(String) }
+      sig { params(name: String, declaration: T.any(String, T::Hash[String, String])).returns(String) }
       def name_from_declaration(name, declaration)
-        return name if declaration.is_a?(String)
-        raise "Unexpected dependency declaration: #{declaration}" unless declaration.is_a?(Hash)
-
-        declaration.fetch("package", name)
+        if declaration.is_a?(String)
+          name
+        else
+          declaration.fetch("package", name)
+        end
       end
 
-      sig { params(declaration: T.untyped).returns(T.nilable(T::Hash[Symbol, String])) }
+      sig { params(declaration: T.any(String, T::Hash[String, String])).returns(T.nilable(T::Hash[Symbol, String])) }
       def source_from_declaration(declaration)
-        return if declaration.is_a?(String)
-        raise "Unexpected dependency declaration: #{declaration}" unless declaration.is_a?(Hash)
+        if declaration.is_a?(String)
+          nil
+        else
+          return git_source_details(declaration) if declaration["git"]
+          return { type: "path" } if declaration["path"]
 
-        return git_source_details(declaration) if declaration["git"]
-        return { type: "path" } if declaration["path"]
-
-        registry_source_details(declaration)
+          registry_source_details(declaration)
+        end
       end
 
-      sig { params(declaration: T.untyped).returns(T.nilable(T::Hash[Symbol, String])) }
+      sig { params(declaration: T.any(String, T::Hash[String, String])).returns(T.nilable(T::Hash[Symbol, String])) }
       def registry_source_details(declaration)
-        registry_name = declaration[:registry]
+        registry_name = declaration["registry"]
         return if registry_name.nil?
 
         index_url = cargo_config_field("registries.#{registry_name}.index")
@@ -311,7 +314,7 @@ module Dependabot
         parsed_file(config_file).dig(*key_name.split("."))
       end
 
-      sig { params(name: String, declaration: T.untyped).returns(T.nilable(String)) }
+      sig { params(name: String, declaration: T.any(String, T::Hash[String, String])).returns(T.nilable(String)) }
       def version_from_lockfile(name, declaration)
         return unless lockfile
 
@@ -345,12 +348,12 @@ module Dependabot
         version_from_lockfile_details(package)
       end
 
-      sig { params(declaration: T.untyped).returns(T::Boolean) }
+      sig { params(declaration: T.any(String, T::Hash[String, String])).returns(T::Boolean) }
       def git_req?(declaration)
         source_from_declaration(declaration)&.fetch(:type, nil) == "git"
       end
 
-      sig { params(declaration: T.untyped).returns(T::Hash[Symbol, String]) }
+      sig { params(declaration: T.any(String, T::Hash[String, String])).returns(T::Hash[Symbol, String]) }
       def git_source_details(declaration)
         {
           type: "git",
@@ -372,9 +375,9 @@ module Dependabot
         raise "No Cargo.toml!" unless get_original_file("Cargo.toml")
       end
 
-      sig { params(file: DependencyFile).returns(T.untyped) }
+      sig { params(file: DependencyFile).returns(T::Hash[String, T.untyped]) }
       def parsed_file(file)
-        @parsed_file ||= T.let({}, T.nilable(T::Hash[T.untyped, T.untyped]))
+        @parsed_file ||= T.let({}, T.nilable(T::Hash[String, T.untyped]))
         @parsed_file[file.name] ||= TomlRB.parse(file.content)
       rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
         raise Dependabot::DependencyFileNotParseable, file.path
