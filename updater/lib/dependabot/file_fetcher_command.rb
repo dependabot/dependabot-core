@@ -99,11 +99,12 @@ module Dependabot
       # prefer credentials directly from the root of the file (will contain secrets) but if not specified, fall back to
       # the job's credentials-metadata that has no secrets
       credentials = job_definition.fetch("credentials", job_credentials_metadata)
-
+      # Convert experiments hash to have string keys and string values to match the expected format
+      # for the file fetcher. This is necessary because the file fetcher expects options to be in string format.
       args = {
         source: job.source.clone.tap { |s| s.directory = directory_to_use },
         credentials: credentials,
-        options: T.unsafe(job.experiments)
+        options: job.experiments.transform_keys(&:to_s).transform_values(&:to_s)
       }
       args[:repo_contents_path] = Environment.repo_contents_path if job.clone? || already_cloned?
       Dependabot::FileFetchers.for_package_manager(job.package_manager).new(**args)
