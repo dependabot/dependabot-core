@@ -90,6 +90,7 @@ module Dependabot
         rescue SharedHelpers::HelperSubprocessFailed => e
           retry if better_specification_needed?(e)
           handle_cargo_errors(e)
+          nil
         end
 
         sig { returns(T.nilable(T.any(String, Gem::Version))) }
@@ -168,7 +169,7 @@ module Dependabot
 
         # Shell out to Cargo, which handles everything for us, and does
         # so without doing an install (so it's fast).
-        sig { returns(NilClass) }
+        sig { void }
         def run_cargo_update_command
           run_cargo_command(
             "cargo update -p #{dependency_spec} -vv",
@@ -176,7 +177,7 @@ module Dependabot
           )
         end
 
-        sig { params(command: String, fingerprint: T.nilable(String)).returns(NilClass) }
+        sig { params(command: String, fingerprint: T.nilable(String)).void }
         def run_cargo_command(command, fingerprint: nil)
           start = Time.now
           command = SharedHelpers.escape_command(command)
@@ -215,7 +216,7 @@ module Dependabot
           File.write(T.must(config).name, T.must(config).content)
         end
 
-        sig { returns(NilClass) }
+        sig { void }
         def check_rust_workspace_root
           cargo_toml = original_dependency_files
                        .select { |f| f.name.end_with?("../Cargo.toml") }
@@ -234,12 +235,12 @@ module Dependabot
 
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/PerceivedComplexity
-        sig { params(error: StandardError).returns(NilClass) }
+        sig { params(error: StandardError).void }
         def handle_cargo_errors(error)
           if error.message.include?("does not have these features")
             # TODO: Ideally we should update the declaration not to ask
             # for the specified features
-            return nil
+            return
           end
 
           if error.message.include?("authenticate when downloading repo") ||
