@@ -295,7 +295,7 @@ module Dependabot
             )
             next unless checker.git_dependency?
 
-            url = dep.requirements.find { |r| r.dig(:source, :type) == "git" }
+            url = T.must(dep.requirements.find { |r| r.dig(:source, :type) == "git" })
                      .fetch(:source).fetch(:url)
 
             if checker.git_repo_reachable?
