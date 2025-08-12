@@ -382,11 +382,12 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def manifest_files
-        @manifest_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
-        @manifest_files ||=
+        @manifest_files ||= T.let(
           dependency_files
-          .select { |f| f.name.end_with?("Cargo.toml") }
-          .reject(&:support_file?)
+                  .select { |f| f.name.end_with?("Cargo.toml") }
+                  .reject(&:support_file?),
+          T.nilable(T::Array[Dependabot::DependencyFile])
+        )
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }

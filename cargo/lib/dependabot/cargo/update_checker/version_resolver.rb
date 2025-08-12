@@ -12,7 +12,7 @@ require "dependabot/errors"
 module Dependabot
   module Cargo
     class UpdateChecker
-      class VersionResolver
+      class VersionResolver # rubocop:disable Metrics/ClassLength
         extend T::Sig
         UNABLE_TO_UPDATE = /Unable to update (?<url>.*?)$/
         BRANCH_NOT_FOUND_REGEX = /#{UNABLE_TO_UPDATE}.*to find branch `(?<branch>[^`]+)`/m
@@ -140,7 +140,7 @@ module Dependabot
           end
 
           if git_dependency? && git_source_url &&
-            spec_options.count { |s| s.include?(T.must(git_source_url)) } >= 1
+             spec_options.count { |s| s.include?(T.must(git_source_url)) } >= 1
             spec_options.select! { |s| s.include?(T.must(git_source_url)) }
           end
 
@@ -218,17 +218,17 @@ module Dependabot
         sig { returns(NilClass) }
         def check_rust_workspace_root
           cargo_toml = original_dependency_files
-                         .select { |f| f.name.end_with?("../Cargo.toml") }
-                         .max_by { |f| f.name.length }
+                       .select { |f| f.name.end_with?("../Cargo.toml") }
+                       .max_by { |f| f.name.length }
           return unless TomlRB.parse(T.must(cargo_toml).content)["workspace"]
 
           msg = "This project is part of a Rust workspace but is not the " \
-            "workspace root." \
+                "workspace root." \
 
-            if T.must(cargo_toml).directory != "/"
-              msg += "Please update your settings so Dependabot points at the " \
-                "workspace root instead of #{T.must(cargo_toml).directory}."
-            end
+          if T.must(cargo_toml).directory != "/"
+            msg += "Please update your settings so Dependabot points at the " \
+                   "workspace root instead of #{T.must(cargo_toml).directory}."
+          end
           raise Dependabot::DependencyFileNotResolvable, msg
         end
 
@@ -243,7 +243,7 @@ module Dependabot
           end
 
           if error.message.include?("authenticate when downloading repo") ||
-            error.message.include?("fatal: Authentication failed for")
+             error.message.include?("fatal: Authentication failed for")
             # Check all dependencies for reachability (so that we raise a
             # consistent error)
             urls = unreachable_git_urls
@@ -380,10 +380,10 @@ module Dependabot
           true
         rescue SharedHelpers::HelperSubprocessFailed => e
           if e.message.include?("no matching version") ||
-            e.message.include?("failed to select a version") ||
-            e.message.include?("no matching package named") ||
-            e.message.include?("failed to parse manifest") ||
-            e.message.include?("failed to update submodule")
+             e.message.include?("failed to select a version") ||
+             e.message.include?("no matching package named") ||
+             e.message.include?("failed to parse manifest") ||
+             e.message.include?("failed to update submodule")
             false
           else
             :unknown
@@ -442,7 +442,7 @@ module Dependabot
         def git_source_url
           dependency.requirements
                     .find { |r| r.dig(:source, :type) == "git" }
-            &.dig(:source, :url)
+                    &.dig(:source, :url)
         end
 
         sig { returns(String) }
@@ -471,14 +471,14 @@ module Dependabot
         def prepared_manifest_files
           @prepared_manifest_files ||=
             prepared_dependency_files
-              .select { |f| f.name.end_with?("Cargo.toml") }
+            .select { |f| f.name.end_with?("Cargo.toml") }
         end
 
         sig { returns(T.nilable(T::Array[DependencyFile])) }
         def original_manifest_files
           @original_manifest_files ||=
             original_dependency_files
-              .select { |f| f.name.end_with?("Cargo.toml") }
+            .select { |f| f.name.end_with?("Cargo.toml") }
         end
 
         sig { returns(T.nilable(DependencyFile)) }
@@ -495,7 +495,9 @@ module Dependabot
 
         sig { returns(T.nilable(DependencyFile)) }
         def config
-          @config ||= T.let(original_dependency_files.find { |f| f.name == ".cargo/config.toml" }, T.nilable(Dependabot::DependencyFile))
+          @config ||= T.let(original_dependency_files.find do |f|
+            f.name == ".cargo/config.toml"
+          end, T.nilable(Dependabot::DependencyFile))
         end
 
         sig { returns(T::Boolean) }
