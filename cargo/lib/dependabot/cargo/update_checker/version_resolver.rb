@@ -199,7 +199,7 @@ module Dependabot
           )
         end
 
-        sig { params(prepared: T.untyped).returns(T.nilable(Integer)) }
+        sig { params(prepared: T::Boolean).returns(T.nilable(Integer)) }
         def write_temporary_dependency_files(prepared: true)
           write_manifest_files(prepared: prepared)
 
@@ -230,7 +230,7 @@ module Dependabot
 
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/PerceivedComplexity
-        sig { params(error: T.untyped).returns(NilClass) }
+        sig { params(error: StandardError).returns(NilClass) }
         def handle_cargo_errors(error)
           if error.message.include?("does not have these features")
             # TODO: Ideally we should update the declaration not to ask
@@ -294,7 +294,7 @@ module Dependabot
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/PerceivedComplexity
 
-        sig { params(message: T.nilable(String)).returns(T.untyped) }
+        sig { params(message: T.nilable(String)).returns(T.any(Dependabot::Version, T::Boolean)) }
         def using_old_toolchain?(message)
           return true if T.must(message).include?("usage of sparse registries requires `-Z sparse-registry`")
 
@@ -308,8 +308,8 @@ module Dependabot
         def unreachable_git_urls
           return @unreachable_git_urls if defined?(@unreachable_git_urls)
 
-          @unreachable_git_urls = T.let([], T.nilable(T::Array[T.untyped]))
-          @reachable_git_urls = T.let([], T.nilable(T::Array[T.untyped]))
+          @unreachable_git_urls = T.let([], T.nilable(T::Array[String]))
+          @reachable_git_urls = T.let([], T.nilable(T::Array[String]))
 
           dependencies = FileParser.new(
             dependency_files: original_dependency_files,
@@ -344,7 +344,7 @@ module Dependabot
           @reachable_git_urls
         end
 
-        sig { params(message: T.untyped).returns(T::Boolean) }
+        sig { params(message: String).returns(T::Boolean) }
         def resolvability_error?(message)
           return true if message.include?("failed to parse lock")
           return true if message.include?("believes it's in a workspace")
@@ -398,7 +398,7 @@ module Dependabot
           library_count >= 2
         end
 
-        sig { params(prepared: T.untyped).returns(T.untyped) }
+        sig { params(prepared: T::Boolean).returns(T.nilable(T::Array[Dependabot::DependencyFile])) }
         def write_manifest_files(prepared: true)
           manifest_files = if prepared then prepared_manifest_files
                            else
@@ -431,7 +431,7 @@ module Dependabot
                 .fetch("version")
         end
 
-        sig { returns(T.untyped) }
+        sig { returns(T.nilable(String)) }
         def git_source_url
           dependency.requirements
                     .find { |r| r.dig(:source, :type) == "git" }
@@ -443,6 +443,7 @@ module Dependabot
           %{fn main() {\nprintln!("Hello, world!");\n}}
         end
 
+        sig { params(content: String).returns(String) }
         def sanitized_manifest_content(content)
           object = TomlRB.parse(content)
 
@@ -473,18 +474,19 @@ module Dependabot
             .select { |f| f.name.end_with?("Cargo.toml") }
         end
 
+        sig { returns(T.nilable(DependencyFile)) }
         def lockfile
           @lockfile ||= prepared_dependency_files
                         .find { |f| f.name == "Cargo.lock" }
         end
 
-        sig { returns(T.nilable(T::Array[DependencyFile])) }
+        sig { returns(T.nilable(DependencyFile)) }
         def toolchain
           @toolchain ||= original_dependency_files
                          .find { |f| f.name == "rust-toolchain" }
         end
 
-        sig { returns(T.nilable(T::Array[DependencyFile])) }
+        sig { returns(T.nilable(DependencyFile)) }
         def config
           @config ||= original_dependency_files.find { |f| f.name == ".cargo/config.toml" }
         end
