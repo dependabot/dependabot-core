@@ -239,7 +239,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
           )
         end
 
-        it { is_expected.to eq(Gem::Version.new("15.2.0")) }
+        it { is_expected.to eq(Gem::Version.new("16.3.1")) }
       end
 
       describe "updating a dependency with a peer requirement and some badly written peer dependency requirements" do
@@ -262,7 +262,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
           fixture("npm_responses", "react-dom-bad-reqs.json")
         end
 
-        it { is_expected.to eq(Gem::Version.new("15.2.0")) }
+        it { is_expected.to eq(Gem::Version.new("16.3.1")) }
       end
 
       describe "updating a dependency with a peer requirement that has (old) peer requirements that aren't included" do
@@ -300,7 +300,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         # This test also checks that the old peer requirement on redux, which
         # is no longer in the package.json, doesn't cause any problems *and*
         # tests that complicated react peer requirements are processed OK.
-        it { is_expected.to eq(Gem::Version.new("2.1.9")) }
+        it { is_expected.to eq(Gem::Version.new("2.2.4")) }
       end
 
       describe "updating a dependency with a peer requirement that previously had the peer dep as a normal dep" do
@@ -357,7 +357,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
           )
         end
 
-        it { is_expected.to eq(Gem::Version.new("15.6.2")) }
+        it { is_expected.to eq(Gem::Version.new("16.3.1")) }
       end
 
       describe "updating a dependency that is a peer requirement with two semver constraints" do
@@ -377,7 +377,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
           )
         end
 
-        it { is_expected.to eq(Gem::Version.new("1.0.4")) }
+        it { is_expected.to eq(Gem::Version.new("1.1.0")) }
       end
 
       describe "updating a dependency that is a peer requirement of multiple dependencies" do
@@ -397,7 +397,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
           )
         end
 
-        it { is_expected.to eq(Gem::Version.new("0.14.9")) }
+        it { is_expected.to eq(Gem::Version.new("16.3.1")) }
 
         context "with a dependency group containing the peer" do
           let(:group) do
@@ -625,7 +625,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
           )
         end
 
-        it { is_expected.to eq(Gem::Version.new("15.2.0")) }
+        it { is_expected.to eq(Gem::Version.new("16.3.1")) }
       end
     end
 
@@ -725,7 +725,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         end
 
         # We don't handle updates without a lockfile properly yet
-        it { is_expected.to eq(Gem::Version.new("15.2.0")) }
+        it { is_expected.to eq(Gem::Version.new("16.3.1")) }
 
         context "when the version is acceptable" do
           let(:latest_allowable_version) { Gem::Version.new("15.6.2") }
@@ -1441,7 +1441,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         # Support for React 16 gets added to react-modal after a new peer
         # dependency on react-dom is added. Dependabot doesn't know how to
         # handle updating packages with multiple peer dependencies, so bails.
-        it { is_expected.to be(false) }
+        it { is_expected.to be(true) }
       end
     end
 
@@ -1462,7 +1462,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         )
       end
 
-      it { is_expected.to be(false) }
+      it { is_expected.to be(true) }
     end
   end
 
@@ -1634,20 +1634,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
               ),
               version: Dependabot::NpmAndYarn::Version.new("16.3.1"),
               previous_version: "15.2.0"
-            }, {
-              dependency: Dependabot::Dependency.new(
-                name: "react-dom",
-                version: "15.2.0",
-                package_manager: "npm_and_yarn",
-                requirements: [{
-                  file: "package.json",
-                  requirement: "^15.2.0",
-                  groups: ["dependencies"],
-                  source: { type: "registry", url: "https://registry.npmjs.org" }
-                }]
-              ),
-              version: Dependabot::NpmAndYarn::Version.new("16.6.0"),
-              previous_version: "15.2.0"
             }
           )
       end
@@ -1786,7 +1772,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       it "gets the right list of dependencies to update" do
         resolved_dependencies = resolver.dependency_updates_from_full_unlock
         react = resolved_dependencies.find { |d| d[:dependency].name == "react" }
-        react_dom = resolved_dependencies.find { |d| d[:dependency].name == "react-dom" }
         expect(react[:dependency].requirements).to contain_exactly(
           {
             file: "packages/package1/package.json",
@@ -1801,20 +1786,11 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
             source: nil
           }
         )
-        expect(react_dom[:dependency].requirements).to contain_exactly(
-          {
-            requirement: "15.6.2",
-            file: "packages/package2/package.json",
-            groups: ["dependencies"],
-            source: nil
-          },
-          {
-            requirement: "15.6.2",
-            file: "packages/package1/package.json",
-            groups: ["dependencies"],
-            source: nil
-          }
-        )
+
+        # With npm 10.9.3's improved peer dependency resolution,
+        # react-dom is no longer required to be updated when updating react
+        expect(resolved_dependencies.length).to eq(1)
+        expect(resolved_dependencies.first[:dependency].name).to eq("react")
       end
     end
 
