@@ -305,7 +305,7 @@ RSpec.describe Dependabot::GoModules::FileParser do
       its(:length) { is_expected.to eq(0) }
     end
 
-    context "features needed to support DependencySubmission" do
+    context "with features needed to support DependencySubmission" do
       it "attaches the list of dependencies to the go_mod DependencyFile" do
         expect(parser.dependency_files.count).to eq(1)
         dep_file = parser.dependency_files.first
@@ -318,7 +318,7 @@ RSpec.describe Dependabot::GoModules::FileParser do
 
       it "marks indirect dependencies accordingly" do
         # there are only 2 top-level dependencies
-        expect(dependencies.select(&:direct?).count).to eq(2)
+        expect(dependencies.count(&:direct?)).to eq(2)
 
         # and 2 indirect dependencies
         indirect_deps = dependencies.reject(&:direct?)
