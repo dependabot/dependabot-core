@@ -22,8 +22,8 @@ module Dependabot
         # array can be slow (if it's large)
         return latest_version_listing["homepage"] if latest_version_listing["homepage"]
 
-        listing = all_version_listings.find { |l| l["homepage"] }
-        listing&.fetch("homepage", nil) || super
+        listing = all_version_listings.find { |_, l| l["homepage"] }
+        listing&.last&.fetch("homepage", nil) || super
       end
 
       sig { override.returns(T.nilable(String)) }
