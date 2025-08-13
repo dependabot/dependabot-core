@@ -144,7 +144,7 @@ module Dependabot
         "https://github.com/" + url
       end
 
-      sig { params(details: T.any(String, T::Hash[String, String])).returns(T.nilable(String)) }
+      sig { params(details: T.nilable(T.any(String, T::Hash[String, String]))).returns(T.nilable(String)) }
       def get_directory(details)
         # Only return a directory if it is explicitly specified
         return unless details.is_a?(Hash)
@@ -177,7 +177,7 @@ module Dependabot
         @latest_version_listing = T.let({}, T.nilable(T::Hash[String, T.untyped]))
       end
 
-      sig { returns(T::Array[T::Hash[String, T.untyped]]) }
+      sig { returns(T::Array[[String, T::Hash[String, T.untyped]]]) }
       def all_version_listings
         return [] if npm_listing["versions"].nil?
 
