@@ -25,7 +25,7 @@ module Dependabot
         dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
         required_packages.each do |hsh|
-          if !skip_dependency?(hsh)
+          unless skip_dependency?(hsh)
             dep = dependency_from_details(hsh)
 
             T.must(go_mod).dependencies << dep
@@ -108,7 +108,7 @@ module Dependabot
           version: version,
           requirements: is_indirect ? [] : reqs,
           package_manager: "go_modules",
-          direct_relationship: !is_indirect,
+          direct_relationship: !is_indirect
         )
       end
 
