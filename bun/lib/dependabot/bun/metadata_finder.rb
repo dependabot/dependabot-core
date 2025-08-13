@@ -55,8 +55,8 @@ module Dependabot
       sig { returns(T.nilable(String)) }
       def npm_releaser
         all_version_listings
-          .find { |v| v["version"] == dependency.version }
-          &.dig("_npmUser", "name")
+          .find { |v, _| v == dependency.version }
+          &.last&.dig("_npmUser", "name")
       end
 
       sig { returns(T.nilable(T::Array[String])) }
@@ -73,7 +73,7 @@ module Dependabot
 
         all_version_listings
           .reject { |v, _| Time.parse(times[v]) > cutoff }
-          .filter_map { |d| d.fetch("_npmUser", nil)&.fetch("name", nil) }
+          .filter_map { |_, d| d.fetch("_npmUser", nil)&.fetch("name", nil) }
       end
 
       sig { returns(T.nilable(Source)) }
