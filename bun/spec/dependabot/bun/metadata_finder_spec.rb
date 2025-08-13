@@ -10,9 +10,8 @@ RSpec.describe Dependabot::Bun::MetadataFinder do
     described_class.new(dependency: dependency, credentials: credentials)
   end
 
-  it_behaves_like "a dependency metadata finder"
-
   let(:dependency_name) { "etag" }
+
   let(:credentials) do
     [Dependabot::Credential.new({
       "type" => "git_source",
@@ -21,6 +20,7 @@ RSpec.describe Dependabot::Bun::MetadataFinder do
       "password" => "token"
     })]
   end
+
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -31,6 +31,8 @@ RSpec.describe Dependabot::Bun::MetadataFinder do
       package_manager: "npm_and_yarn"
     )
   end
+
+  it_behaves_like "a dependency metadata finder"
 
   describe "#source_url" do
     subject(:source_url) { finder.source_url }
@@ -511,7 +513,7 @@ RSpec.describe Dependabot::Bun::MetadataFinder do
     end
   end
 
-   describe "#dependency_url" do
+  describe "#dependency_url" do
     subject(:dependency_url) { finder.send(:dependency_url) }
 
     context "when no source information is available" do
