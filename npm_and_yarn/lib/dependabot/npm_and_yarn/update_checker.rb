@@ -259,6 +259,7 @@ module Dependabot
       end
 
       # rubocop:disable Metrics/AbcSize
+      # rubocop:disable Metrics/PerceivedComplexity
       sig { returns(T::Array[Dependabot::Dependency]) }
       def conflicting_updated_dependencies
         top_level_dependencies = top_level_dependency_lookup
@@ -266,8 +267,11 @@ module Dependabot
         updated_deps = []
         vulnerability_audit["fix_updates"].each do |update|
           dependency_name = update["dependency_name"]
-          requirements = (top_level_dependencies[dependency_name]&.version == update["current_version"]) ?
-            top_level_dependencies[dependency_name]&.requirements || [] : []
+          requirements = if top_level_dependencies[dependency_name]&.version == update["current_version"]
+                           top_level_dependencies[dependency_name]&.requirements || []
+                         else
+                           []
+                         end
 
           updated_deps << build_updated_dependency(
             dependency: Dependency.new(
@@ -300,6 +304,7 @@ module Dependabot
         updated_deps.select { |dep| dep.name == dependency.name } +
           updated_deps.reject { |dep| dep.name == dependency.name }
       end
+      # rubocop:enable Metrics/PerceivedComplexity
 
       sig { returns(T::Hash[String, Dependabot::Dependency]) }
       def top_level_dependency_lookup
