@@ -29,7 +29,7 @@ function Get-Files {
         $script:operationExitCode = $LASTEXITCODE
     }
 
-    if ($script:operationExitCode -eq 0 && "$env:DEPENDABOT_CASE_INSENSITIVE_REPO_CONTENTS_PATH" -eq "") {
+    if (($script:operationExitCode -eq 0) -and ("$env:DEPENDABOT_CASE_INSENSITIVE_REPO_CONTENTS_PATH" -eq "")) {
         # this only makes sense if the native clone operation succeeded and we're not running in case-insensitive mode
         Repair-FileCasing
     }
