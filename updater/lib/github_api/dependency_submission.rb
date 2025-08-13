@@ -138,6 +138,9 @@ module GithubApi
     sig { params(snapshot: Dependabot::DependencySnapshot).returns(T::Array[Dependabot::DependencyFile]) }
     def relevant_manifests(snapshot)
       manifests_by_directory = snapshot.dependency_files.each_with_object({}) do |file, dirs|
+        # If the file doesn't have any dependencies assigned to it, then it isn't relevant.
+        next if file.dependencies.empty?
+
         # Build up a dictionary of unique directories...
         dirs[file.directory] ||= {}
         # Add a list of files for each distinct priority...
@@ -162,7 +165,7 @@ module GithubApi
     # fill in some blanks.
     sig { params(dependency: Dependabot::Dependency).returns(String) }
     def build_purl(dependency)
-      "pkg:#{purl_pkg_for(dependency.package_manager)}/#{dependency.name}@#{dependency.version}"
+      "pkg:#{purl_pkg_for(dependency.package_manager)}/#{dependency.name}@#{dependency.version}".chomp("@")
     end
 
     sig { params(package_manager: String).returns(String) }
