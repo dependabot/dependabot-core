@@ -90,7 +90,7 @@ module Dependabot
         return potential_sources.first if potential_sources.any?
 
         potential_sources =
-          all_version_listings.flat_map do |listing|
+          all_version_listings.flat_map do |_, listing|
             [
               get_source(listing["repository"]),
               get_source(listing["homepage"]),
@@ -110,7 +110,7 @@ module Dependabot
         sources.first
       end
 
-      sig { params(details: T.any(String, T::Hash[String, String])).returns(T.nilable(Source)) }
+      sig { params(details: T.nilable(T.any(String, T::Hash[String, String]))).returns(T.nilable(Source)) }
       def get_source(details)
         potential_url = get_url(details)
         return unless potential_url
