@@ -266,7 +266,8 @@ module Dependabot
         updated_deps = []
         vulnerability_audit["fix_updates"].each do |update|
           dependency_name = update["dependency_name"]
-          requirements = top_level_dependencies[dependency_name]&.requirements || []
+          requirements = (top_level_dependencies[dependency_name]&.version == update["current_version"]) ?
+            top_level_dependencies[dependency_name]&.requirements || [] : []
 
           updated_deps << build_updated_dependency(
             dependency: Dependency.new(

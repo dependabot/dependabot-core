@@ -1,12 +1,13 @@
 {
-  "name": "test-vulnerability-auditor-multi-version-lower-is-top-level",
+  "name": "test-vulnerability-update-needed-across-two-versions",
   "version": "1.0.0",
+  "private": true,
   "description": "",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "axios": "^1.8.2",
-    "jest": "^27.5.1"
+    "@msgpack/msgpack": "^2.7.2",
+    "wireql-client": "^1.0.3"
   }
 }
