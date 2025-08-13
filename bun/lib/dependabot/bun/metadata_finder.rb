@@ -208,14 +208,35 @@ module Dependabot
       sig { returns(String) }
       def dependency_url
         registry_url =
-          if new_source.nil? then "https://registry.npmjs.org"
+          if new_source.nil?
+            configured_registry_from_credentials || "https://registry.npmjs.org"
           else
             new_source&.fetch(:url)
           end
 
+        # Remove trailing slashes and escape spaces for proper URL formatting
+        registry_url = URI::DEFAULT_PARSER.escape(registry_url)&.gsub(%r{/+$}, "")
+
         # NPM registries expect slashes to be escaped
         escaped_dependency_name = dependency.name.gsub("/", "%2F")
         "#{registry_url}/#{escaped_dependency_name}"
+      end
+
+      sig { returns(T.nilable(String)) }
+      def configured_registry_from_credentials
+        # Look for a credential that replaces the base registry (global registry replacement)
+        replaces_base_cred = credentials.find { |cred| cred["type"] == "npm_registry" && cred.replaces_base? }
+        return normalize_registry_url(replaces_base_cred["registry"]) if replaces_base_cred
+
+        nil
+      end
+
+      sig { params(registry: T.nilable(String)).returns(T.nilable(String)) }
+      def normalize_registry_url(registry)
+        return nil unless registry
+        return registry if registry.start_with?("http")
+
+        "https://#{registry}"
       end
 
       sig { returns(T::Hash[String, String]) }
