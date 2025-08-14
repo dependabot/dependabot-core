@@ -3,6 +3,7 @@
 
 require "dependabot/updater/group_update_creation"
 require "dependabot/updater/group_update_refreshing"
+require "dependabot/updater/group_dependency_selector"
 require "sorbet-runtime"
 
 # This class implements our strategy for refreshing a single Pull Request which
@@ -161,6 +162,7 @@ module Dependabot
 
           if job.source.directories.nil?
             @dependency_change = compile_all_dependency_changes_for(job_group)
+            apply_group_membership_enforcement(@dependency_change, job_group) if @dependency_change
           else
             dependency_changes = T.let(T.must(job.source.directories).filter_map do |directory|
               job.source.directory = directory
@@ -168,11 +170,37 @@ module Dependabot
               compile_all_dependency_changes_for(job_group)
             end, T::Array[Dependabot::DependencyChange])
 
-            # merge the changes together into one
-            dependency_change = T.let(T.must(dependency_changes.first), Dependabot::DependencyChange)
-            dependency_change.merge_changes!(T.must(dependency_changes[1..-1])) if dependency_changes.count > 1
-            @dependency_change = T.let(dependency_change, T.nilable(Dependabot::DependencyChange))
+            if Dependabot::Experiments.enabled?(:group_membership_enforcement)
+              selector = group_dependency_selector(job_group)
+              merged_change = selector.merge_per_directory!(dependency_changes)
+              selector.filter_to_group!(merged_change)
+              selector.annotate_side_effects!(merged_change)
+              @dependency_change = merged_change
+            else
+              # Fallback to original behavior
+              dependency_change = T.let(T.must(dependency_changes.first), Dependabot::DependencyChange)
+              dependency_change.merge_changes!(T.must(dependency_changes[1..-1])) if dependency_changes.count > 1
+              @dependency_change = T.let(dependency_change, T.nilable(Dependabot::DependencyChange))
+            end
           end
+        end
+
+        sig { params(group: Dependabot::DependencyGroup).returns(Dependabot::Updater::GroupDependencySelector) }
+        def group_dependency_selector(group)
+          @group_dependency_selectors ||= {}
+          @group_dependency_selectors[group.name] ||= Dependabot::Updater::GroupDependencySelector.new(
+            group: group,
+            dependency_snapshot: dependency_snapshot
+          )
+        end
+
+        sig { params(change: Dependabot::DependencyChange, group: Dependabot::DependencyGroup).void }
+        def apply_group_membership_enforcement(change, group)
+          return unless Dependabot::Experiments.enabled?(:group_membership_enforcement)
+
+          selector = group_dependency_selector(group)
+          selector.filter_to_group!(change)
+          selector.annotate_side_effects!(change)
         end
       end
     end
