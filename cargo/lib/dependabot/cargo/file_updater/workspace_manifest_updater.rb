@@ -70,10 +70,17 @@ module Dependabot
 
         sig { params(section: String, dep_name: String, old_req: String, new_req: String).returns(String) }
         def update_version_in_section(section, dep_name, old_req, new_req)
-          # Try quoted version first
+          # Try double-quoted version first
           updated = section.gsub(
             /^(\s*#{Regexp.escape(dep_name)}\s*=\s*)"#{Regexp.escape(old_req)}"/m,
             "\\1\"#{new_req}\""
+          )
+          return updated if updated != section
+
+          # Try single-quoted version
+          updated = section.gsub(
+            /^(\s*#{Regexp.escape(dep_name)}\s*=\s*)'#{Regexp.escape(old_req)}'/m,
+            "\\1'#{new_req}'"
           )
           return updated if updated != section
 
@@ -84,10 +91,17 @@ module Dependabot
           )
           return updated if updated != section
 
-          # Try inline table format
-          section.gsub(
+          # Try inline table format with double quotes
+          updated = section.gsub(
             /^(\s*#{Regexp.escape(dep_name)}\s*=\s*\{[^}]*version\s*=\s*)"#{Regexp.escape(old_req)}"/m,
             "\\1\"#{new_req}\""
+          )
+          return updated if updated != section
+
+          # Try inline table format with single quotes
+          section.gsub(
+            /^(\s*#{Regexp.escape(dep_name)}\s*=\s*\{[^}]*version\s*=\s*)'#{Regexp.escape(old_req)}'/m,
+            "\\1'#{new_req}'"
           )
         end
 
@@ -97,11 +111,19 @@ module Dependabot
           table_header_regex = /\[workspace\.dependencies\.#{Regexp.escape(dep_name)}\](.*?)(?=\n\[|\n*\z)/m
 
           content.gsub(table_header_regex) do |section|
-            # Update version = "..." line within this section
+            # Update version = "..." line within this section (double quotes)
             updated = section.gsub(
               /^(\s*version\s*=\s*)"#{Regexp.escape(old_req)}"/m,
               "\\1\"#{new_req}\""
             )
+
+            # Try single quotes if double quotes didn't match
+            if updated == section
+              updated = section.gsub(
+                /^(\s*version\s*=\s*)'#{Regexp.escape(old_req)}'/m,
+                "\\1'#{new_req}'"
+              )
+            end
 
             # Also try unquoted version
             if updated == section

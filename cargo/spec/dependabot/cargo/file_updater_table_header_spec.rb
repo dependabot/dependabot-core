@@ -37,7 +37,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater do
 
               # Table header notation dependencies
               [workspace.dependencies.anyhow]
-              version = "1.0.70"
+              version = '1.0.70'
 
               [workspace.dependencies.clap]
               version = "4.2.0"
@@ -46,7 +46,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater do
               [workspace.dependencies.tokio]
               features = ["full", "tracing"]
               default-features = false
-              version = "1.25.0"
+              version = '1.25.0'
             TOML
           )
         ]
@@ -76,18 +76,56 @@ RSpec.describe Dependabot::Cargo::FileUpdater do
           ]
         end
 
-        it "updates the version in the table header section" do
+        it "updates the version in the table header section preserving quote style" do
           updated_files = updater.updated_dependency_files
           updated_content = updated_files.find { |f| f.name == "Cargo.toml" }.content
 
           expect(updated_content).to include("[workspace.dependencies.anyhow]")
-          expect(updated_content).to include('version = "1.0.80"')
-          expect(updated_content).not_to include('version = "1.0.70"')
+          # Single quotes should be preserved
+          expect(updated_content).to include("version = '1.0.80'")
+          expect(updated_content).not_to include("version = '1.0.70'")
 
           # Ensure other dependencies remain unchanged
           expect(updated_content).to include('serde = "1.0.150"')
           expect(updated_content).to include("[workspace.dependencies.clap]")
           expect(updated_content).to include('version = "4.2.0"')
+        end
+      end
+
+      context "when updating single-quoted table header dependency (tokio)" do
+        let(:dependencies) do
+          [
+            Dependabot::Dependency.new(
+              name: "tokio",
+              version: "1.26.0",
+              previous_version: "1.25.0",
+              requirements: [{
+                requirement: "1.26.0",
+                groups: ["workspace.dependencies"],
+                file: "Cargo.toml",
+                source: nil
+              }],
+              previous_requirements: [{
+                requirement: "1.25.0",
+                groups: ["workspace.dependencies"],
+                file: "Cargo.toml",
+                source: nil
+              }],
+              package_manager: "cargo"
+            )
+          ]
+        end
+
+        it "updates version preserving single quotes" do
+          updated_files = updater.updated_dependency_files
+          updated_content = updated_files.find { |f| f.name == "Cargo.toml" }.content
+
+          expect(updated_content).to include("[workspace.dependencies.tokio]")
+          # Single quotes should be preserved when version is not first field
+          expect(updated_content).to include("version = '1.26.0'")
+          expect(updated_content).not_to include("version = '1.25.0'")
+          expect(updated_content).to include('features = ["full", "tracing"]')
+          expect(updated_content).to include("default-features = false")
         end
       end
 
