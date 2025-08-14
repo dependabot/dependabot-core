@@ -207,6 +207,9 @@ module Dependabot
             version: dependency_version(dependency.name)&.to_s,
             requirements: [],
             package_manager: "bundler",
+            metadata: {
+              depends_on: dependency.dependencies.map(&:name)
+            },
             subdependency_metadata: [{
               production: production_dep_names.include?(dependency.name)
             }],
@@ -217,6 +220,9 @@ module Dependabot
           dependencies << dep
         end
 
+        # If the lockfile has at least one dependency, then it should precedent over any other files
+        # for its directory when building a graph.
+        T.must(lockfile).precedence = 1 if T.must(lockfile).dependencies.any?
         dependencies
       end
 
