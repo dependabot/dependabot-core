@@ -82,7 +82,7 @@ module Dependabot
 
         versions = all_module_versions
         # Filter versions which are in cooldown period
-        if cooldown_enabled?
+        if cooldown_enabled? # rubocop:disable Style/IfUnlessModifier
           versions = latest_version_resolver.filter_versions_in_cooldown_period_from_module(versions)
         end
         versions.reject!(&:prerelease?) unless wants_prerelease?

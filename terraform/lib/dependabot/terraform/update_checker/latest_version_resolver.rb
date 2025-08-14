@@ -62,7 +62,10 @@ module Dependabot
         end
 
         # To filter versions in cooldown period based on version tags from registry call
-        sig { params(versions: T::Array[Dependabot::Terraform::Version]).returns(T::Array[Dependabot::Terraform::Version]) }
+        sig do
+          params(versions: T::Array[Dependabot::Terraform::Version])
+            .returns(T::Array[Dependabot::Terraform::Version])
+        end
         def filter_versions_in_cooldown_period_from_provider(versions)
           # to make call for registry to get the versions
           # step one fetch allowed version tags and
@@ -83,7 +86,10 @@ module Dependabot
         end
 
         # To filter versions in cooldown period based on version tags from registry call
-        sig { params(versions: T::Array[Dependabot::Terraform::Version]).returns(T::Array[Dependabot::Terraform::Version]) }
+        sig do
+          params(versions: T::Array[Dependabot::Terraform::Version])
+            .returns(T::Array[Dependabot::Terraform::Version])
+        end
         def filter_versions_in_cooldown_period_from_module(versions)
           # to make call for registry to get the versions
           # step one fetch allowed version tags and
