@@ -43,11 +43,13 @@ module Dependabot
           # step one fetch allowed version tags and
           allowed_version_tags = git_commit_checker.allowed_version_tags
           begin
-            # sort the allowed version tags by name in descending order
-            select_version_tags_in_cooldown_period&.each do |tag_name|
-              # filter out if name is not in cooldown period
-              allowed_version_tags.reject! do |gitref_filtered|
-                true if gitref_filtered.name == tag_name
+            if cooldown_enabled?
+              # sort the allowed version tags by name in descending order
+              select_version_tags_in_cooldown_period&.each do |tag_name|
+                # filter out if name is not in cooldown period
+                allowed_version_tags.reject! do |gitref_filtered|
+                  true if gitref_filtered.name == tag_name
+                end
               end
             end
             Dependabot.logger.info("Allowed version tags after filtering versions in cooldown:
@@ -125,14 +127,10 @@ module Dependabot
 
           return false if cooldown.nil?
 
-          # Get maximum cooldown days based on semver parts
-          days = [cooldown.default_days, cooldown.semver_major_days].max
-          days = cooldown.semver_minor_days unless days > cooldown.semver_minor_days
-          days = cooldown.semver_patch_days unless days > cooldown.semver_patch_days
           # Calculate the number of seconds passed since the release
           passed_seconds = Time.now.to_i - release_date_to_seconds(release_date)
           # Check if the release is within the cooldown period
-          passed_seconds < days * DAY_IN_SECONDS
+          passed_seconds < cooldown.default_days * DAY_IN_SECONDS
         end
 
         sig { params(release_date: String).returns(Integer) }
@@ -184,10 +182,15 @@ module Dependabot
           )
         end
 
-        # Since base class is returning false, we need to override it.
         sig { returns(T::Boolean) }
         def cooldown_enabled?
-          true
+          # This is a simple check to see if user has put cooldown days.
+          # If not set, then we aassume user does not want cooldown.
+          # Since Terraform does not support Semver versioning, So option left
+          # for the user is to set cooldown default days.
+          return false if @cooldown_options.nil?
+
+          @cooldown_options.default_days.positive?
         end
 
         sig { returns(Dependabot::GitCommitChecker) }
