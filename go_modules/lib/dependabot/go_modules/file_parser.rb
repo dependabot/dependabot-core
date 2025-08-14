@@ -25,12 +25,12 @@ module Dependabot
         dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
         required_packages.each do |hsh|
-          unless skip_dependency?(hsh)
-            dep = dependency_from_details(hsh)
+          next unless skip_dependency?(hsh)
 
-            T.must(go_mod).dependencies << dep
-            dependency_set << dep
-          end
+          dep = dependency_from_details(hsh)
+
+          T.must(go_mod).dependencies << dep
+          dependency_set << dep
         end
 
         dependency_set.dependencies
