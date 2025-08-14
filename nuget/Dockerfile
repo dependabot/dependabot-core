@@ -85,3 +85,6 @@ RUN chmod +x $DEPENDABOT_HOME/dependabot-updater/bin/run
 
 # .NET install targeting packs
 RUN pwsh $DEPENDABOT_HOME/dependabot-updater/bin/install-targeting-packs.ps1
+
+# Enable MSBuild operations with a shallow clone for repos that use the Nerdbank.GitVersioning package
+ENV NBGV_GitEngine=Disabled
