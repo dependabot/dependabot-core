@@ -306,6 +306,10 @@ RSpec.describe Dependabot::GoModules::FileParser do
     end
 
     context "with features needed to support DependencySubmission" do
+      let(:go_mod_content) do
+        fixture("projects", "graphing_dependencies", "go.mod")
+      end
+
       it "attaches the list of dependencies to the go_mod DependencyFile" do
         expect(parser.dependency_files.count).to eq(1)
         dep_file = parser.dependency_files.first
@@ -317,16 +321,80 @@ RSpec.describe Dependabot::GoModules::FileParser do
       end
 
       it "marks indirect dependencies accordingly" do
-        # there are only 2 top-level dependencies
-        expect(dependencies.count(&:direct?)).to eq(2)
+        # there are 3 top-level dependencies
+        direct_deps = dependencies.select(&:direct?)
+        expect(direct_deps.count).to eq(3)
+
+        direct_deps_names = direct_deps.map(&:name)
+        expect(direct_deps_names).to include("github.com/fatih/color")
+        expect(direct_deps_names).to include("rsc.io/qr")
+        expect(direct_deps_names).to include("rsc.io/quote")
 
         # and 2 indirect dependencies
         indirect_deps = dependencies.reject(&:direct?)
-        expect(indirect_deps.count).to eq(2)
+        expect(indirect_deps.count).to eq(5)
 
         indirect_deps_names = indirect_deps.map(&:name)
-        expect(indirect_deps_names).to include("github.com/mattn/go-isatty")
         expect(indirect_deps_names).to include("github.com/mattn/go-colorable")
+        expect(indirect_deps_names).to include("github.com/mattn/go-isatty")
+        expect(indirect_deps_names).to include("golang.org/x/sys")
+        expect(indirect_deps_names).to include("golang.org/x/text")
+        expect(indirect_deps_names).to include("golang.org/x/sys")
+      end
+
+      # TODO(brrygrdn): Only do this if the experiment is enabled
+      #
+      # The experiment should be globally accessible and allows us to punt
+      # on parameterizing the FileParser until graph jobs are more mature
+      describe "assigns child dependencies using go mod graph" do
+        let(:dependency_graph_expectations) do
+          [
+            {
+              name: "github.com/fatih/color",
+              depends_on: [
+                "github.com/mattn/go-colorable",
+                "github.com/mattn/go-isatty",
+                "golang.org/x/sys"
+              ]
+            },
+            {
+              name: "github.com/mattn/go-colorable",
+              depends_on: [
+                "github.com/mattn/go-isatty",
+                "golang.org/x/sys"
+              ]
+            },
+            {
+              name: "github.com/mattn/go-isatty",
+              depends_on: [
+                "golang.org/x/sys"
+              ]
+            },
+            {
+              name: "rsc.io/quote",
+              depends_on: [
+                "rsc.io/sampler"
+              ]
+            },
+            {
+              name: "rsc.io/sampler",
+              depends_on: [
+                "golang.org/x/text"
+              ]
+            },
+            {
+              name: "golang.org/x/text",
+              depends_on: []
+            }
+          ]
+        end
+
+        it "correctly assigns depends_on for each package" do
+          dependency_graph_expectations.each do |expectation|
+            dependency = dependencies.find { |dep| dep.name == expectation[:name] }
+            expect(dependency.metadata[:depends_on]).to eql(expectation[:depends_on])
+          end
+        end
       end
     end
 

@@ -20,6 +20,8 @@ module Dependabot
     class FileParser < Dependabot::FileParsers::Base
       extend T::Sig
 
+      GO_MOD_GRAPH_LINE_REGEX = /^(?<parent>[^@\s]+)@?[^\s]*\s+(?<child>[^@\s]+)/
+
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
         dependency_set = Dependabot::FileParsers::Base::DependencySet.new
@@ -102,13 +104,17 @@ module Dependabot
         }]
 
         is_indirect = details["Indirect"]
+        depends_on = package_relationships.fetch(details["Path"], [])
 
         Dependency.new(
           name: details["Path"],
           version: version,
           requirements: is_indirect ? [] : reqs,
           package_manager: "go_modules",
-          direct_relationship: !is_indirect
+          direct_relationship: !is_indirect,
+          metadata: {
+            depends_on: depends_on
+          }
         )
       end
 
@@ -132,6 +138,38 @@ module Dependabot
             handle_parser_error(path, stderr) unless status.success?
             JSON.parse(stdout)["Require"] || []
           end, T.nilable(T::Array[T::Hash[String, T.untyped]]))
+      end
+
+      # TODO(brrygrdn): This should more closely match `actions/go-dependency-submission`
+      #
+      # This is an MVP implementation that doesn't attempt to generate purls and misses
+      # nuance around matching the versions used that the action accounts for.
+      sig { returns(T::Hash[String, T.untyped]) }
+      def package_relationships
+        @package_relationships ||= T.let(SharedHelpers.in_a_temporary_directory do |path|
+          # Create a fake empty module for each local module so that
+          # `go mod edit` works, even if some modules have been `replace`d with
+          # a local module that we don't have access to.
+          local_replacements.each do |_, stub_path|
+            FileUtils.mkdir_p(stub_path)
+            FileUtils.touch(File.join(stub_path, "go.mod"))
+          end
+
+          File.write("go.mod", go_mod_content)
+
+          command = "go mod graph"
+
+          stdout, stderr, status = Open3.capture3(command)
+          handle_parser_error(path, stderr) unless status.success?
+
+          stdout.lines.each_with_object({}) do |line, rels|
+            match = line.match(GO_MOD_GRAPH_LINE_REGEX)
+            next unless match # TODO: Warn if we get a weird line?
+
+            rels[match[:parent]] ||= []
+            rels[match[:parent]] << match[:child]
+          end
+        end, T.nilable(T::Hash[String, T.untyped]))
       end
 
       sig { returns(T::Hash[String, String]) }
