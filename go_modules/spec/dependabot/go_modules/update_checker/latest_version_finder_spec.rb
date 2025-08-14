@@ -517,7 +517,6 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
           versions = finder.send(:available_versions_details)
           version_strings = versions.map { |v| v.version.to_s }
 
-
           expect(version_strings).to include("0.21.1")
           expect(version_strings).not_to include("2.0.0+incompatible")
           expect(version_strings).not_to include("2.1.1+incompatible")
@@ -538,7 +537,6 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
 
           expect(versions_after_filter_strings).not_to include("2.0.0+incompatible")
           expect(versions_with_incompatible_strings).to include("2.0.0+incompatible")
-
         end
       end
     end
