@@ -492,6 +492,57 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
       end
     end
 
+    context "when filtering versions above Go's update recommendation for Vitess" do
+      let(:dependency_name) { "github.com/vitessio/vitess" }
+      let(:dependency_version) { "v0.21.1" }
+      let(:project_name) { "vitess_test" }
+
+      # Override dependency_files to use vitess_test fixture
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "go.mod",
+            content: fixture("projects", project_name, "go.mod")
+          )
+        ]
+      end
+
+      context "with GOPRIVATE='*', automatic filtering happens without need for a filtering function" do
+        let(:goprivate) { "*" }
+
+        it "filters out incompatible versions automatically" do
+          # With GOPRIVATE="*", Go fetches directly and filters incompatible versions
+
+          # To verify no incompatible versions are considered
+          versions = finder.send(:available_versions_details)
+          version_strings = versions.map { |v| v.version.to_s }
+
+
+          expect(version_strings).to include("0.21.1")
+          expect(version_strings).not_to include("2.0.0+incompatible")
+          expect(version_strings).not_to include("2.1.1+incompatible")
+        end
+      end
+
+      context "without GOPRIVATE='*', an additional filtering step is needed" do
+        let(:goprivate) { "" }
+
+        it "may include incompatible versions from proxy" do
+          # Without GOPRIVATE, proxy returns all versions including incompatible
+
+          versions_before_filter = finder.send(:available_versions_details)
+          versions_after_filter = finder.send(:filter_incompatible_versions, versions_before_filter)
+
+          versions_with_incompatible_strings = versions_before_filter.map { |v| v.version.to_s }
+          versions_after_filter_strings = versions_after_filter.map { |v| v.version.to_s }
+
+          expect(versions_after_filter_strings).not_to include("2.0.0+incompatible")
+          expect(versions_with_incompatible_strings).to include("2.0.0+incompatible")
+
+        end
+      end
+    end
+
     context "with a go.mod vulnerable version" do
       let(:security_advisories) do
         [

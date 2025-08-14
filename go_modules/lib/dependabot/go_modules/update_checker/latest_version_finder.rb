@@ -145,6 +145,7 @@ module Dependabot
         end
         def fetch_latest_version(language_version: nil)
           candidate_versions = available_versions_details
+          candidate_versions = filter_incompatible_versions(candidate_versions)
           candidate_versions = filter_prerelease_versions(candidate_versions)
           candidate_versions = filter_ignored_versions(candidate_versions)
           candidate_versions = lazy_filter_cooldown_versions(candidate_versions)
@@ -156,6 +157,41 @@ module Dependabot
           end
 
           candidate_versions.max_by(&:version)&.version
+        end
+
+        sig do
+          params(releases: T::Array[Dependabot::Package::PackageRelease])
+            .returns(T::Array[Dependabot::Package::PackageRelease])
+        end
+        def filter_incompatible_versions(releases)
+          # If GOPRIVATE="*", incompatible versions are already filtered by Go
+          # This method can provide additional filtering if needed
+          env = { "GOPRIVATE" => @goprivate }
+          begin
+            update_json = SharedHelpers.run_shell_command(
+              "go list -m -u -json #{dependency.name}@#{dependency.version}",
+              fingerprint: "go list -m -u -json <dependency_name>",
+              env: env
+            )
+
+            parsed_json = JSON.parse(update_json)
+            updated_version = parsed_json.dig("Update", "Version")
+
+            if updated_version
+              # Filter out versions greater than Go's recommendation
+              releases.select do |release|
+                release.version <= GoModules::Version.new(updated_version)
+              end
+
+            else
+              # If no update recommendation, return all releases
+              releases
+            end
+          rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
+            Dependabot.logger.warn("Failed to get Go update recommendation: #{e.message}")
+            # If command fails, -U may not be applicable to the dependency and return all releases
+            releases
+          end
         end
 
         sig do
