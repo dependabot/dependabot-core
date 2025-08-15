@@ -166,9 +166,11 @@ module Dependabot
         def filter_incompatible_versions(releases)
           # If GOPRIVATE="*", incompatible versions are already filtered by Go
           # This method can provide additional filtering if needed
+          env = { "GOPRIVATE" => @goprivate }
           update_json = SharedHelpers.run_shell_command(
             "go list -m -u -json #{dependency.name}@#{dependency.version}",
-            fingerprint: "go list -m -u -json <dependency_name>"
+            fingerprint: "go list -m -u -json <dependency_name>",
+            env: env
           )
           parsed_json = JSON.parse(update_json)
           updated_version = parsed_json.dig("Update", "Version")
