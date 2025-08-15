@@ -72,7 +72,7 @@ public class ModifiedFilesTracker
         }
     }
 
-    public async Task<ImmutableArray<DependencyFile>> StopTrackingAsync()
+    public async Task<ImmutableArray<DependencyFile>> StopTrackingAsync(bool restoreOriginalContents = false)
     {
         if (_currentDiscoveryResult is null)
         {
@@ -108,6 +108,14 @@ public class ModifiedFilesTracker
                     Content = reportedContent,
                     ContentEncoding = encoding,
                 };
+
+                if (restoreOriginalContents)
+                {
+                    var originalRawContent = originalContent
+                        .SetEOL(_originalDependencyFileEOFs[repoFullPath])
+                        .SetBOM(_originalDependencyFileBOMs[repoFullPath]);
+                    await File.WriteAllBytesAsync(localFullPath, originalRawContent);
+                }
             }
         }
 

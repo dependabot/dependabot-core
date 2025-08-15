@@ -18,6 +18,7 @@ GEMSPECS = %w(
   bundler/dependabot-bundler.gemspec
   cargo/dependabot-cargo.gemspec
   composer/dependabot-composer.gemspec
+  conda/dependabot-conda.gemspec
   devcontainers/dependabot-devcontainers.gemspec
   docker_compose/dependabot-docker_compose.gemspec
   docker/dependabot-docker.gemspec
@@ -31,6 +32,7 @@ GEMSPECS = %w(
   hex/dependabot-hex.gemspec
   maven/dependabot-maven.gemspec
   npm_and_yarn/dependabot-npm_and_yarn.gemspec
+  nuget/dependabot-nuget.gemspec
   omnibus/dependabot-omnibus.gemspec
   pub/dependabot-pub.gemspec
   python/dependabot-python.gemspec

@@ -34,14 +34,15 @@ module Dependabot
       end
       def update_config(package_manager, directory: nil, target_branch: nil)
         dir = directory || "/"
-        package_ecosystem = PACKAGE_MANAGER_LOOKUP.invert.fetch(package_manager)
+        package_ecosystem = REVERSE_PACKAGE_MANAGER_LOOKUP.fetch(package_manager, "dummy")
         cfg = updates.find do |u|
           u[:"package-ecosystem"] == package_ecosystem && u[:directory] == dir &&
             (target_branch.nil? || u[:"target-branch"] == target_branch)
         end
         UpdateConfig.new(
           ignore_conditions: ignore_conditions(cfg),
-          commit_message_options: commit_message_options(cfg)
+          commit_message_options: commit_message_options(cfg),
+          exclude_paths: exclude_paths(cfg)
         )
       end
 
@@ -62,6 +63,7 @@ module Dependabot
         "bundler" => "bundler",
         "cargo" => "cargo",
         "composer" => "composer",
+        "conda" => "conda",
         "devcontainer" => "devcontainers",
         "docker-compose" => "docker_compose",
         "docker" => "docker",
@@ -85,6 +87,11 @@ module Dependabot
         "vcpkg" => "vcpkg"
       }.freeze, T::Hash[String, String])
 
+      REVERSE_PACKAGE_MANAGER_LOOKUP = T.let(
+        PACKAGE_MANAGER_LOOKUP.invert.freeze,
+        T::Hash[String, String]
+      )
+
       sig { params(cfg: T.nilable(T::Hash[Symbol, T.untyped])).returns(T::Array[IgnoreCondition]) }
       def ignore_conditions(cfg)
         ignores = cfg&.dig(:ignore) || []
@@ -107,6 +114,11 @@ module Dependabot
           prefix_development: commit_message[:"prefix-development"] || commit_message[:prefix],
           include: commit_message[:include]
         )
+      end
+
+      sig { params(cfg: T.nilable(T::Hash[Symbol, T.untyped])).returns(T::Array[String]) }
+      def exclude_paths(cfg)
+        Array(cfg&.dig(:"exclude-paths") || [])
       end
     end
   end

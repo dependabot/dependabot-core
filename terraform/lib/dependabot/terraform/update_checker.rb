@@ -82,7 +82,9 @@ module Dependabot
 
         versions = all_module_versions
         # Filter versions which are in cooldown period
-        latest_version_resolver.filter_versions_in_cooldown_period_from_module(versions)
+        if cooldown_enabled? # rubocop:disable Style/IfUnlessModifier
+          versions = latest_version_resolver.filter_versions_in_cooldown_period_from_module(versions)
+        end
         versions.reject!(&:prerelease?) unless wants_prerelease?
         versions.reject! { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }
         @latest_version_for_registry_dependency = T.let(
@@ -122,7 +124,9 @@ module Dependabot
 
         versions = all_provider_versions
         # Filter versions which are in cooldown period
-        latest_version_resolver.filter_versions_in_cooldown_period_from_provider(versions)
+        if cooldown_enabled?
+          versions = latest_version_resolver.filter_versions_in_cooldown_period_from_provider(versions)
+        end
         versions.reject!(&:prerelease?) unless wants_prerelease?
         versions.reject! { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }
 
@@ -240,6 +244,17 @@ module Dependabot
           ),
           T.nilable(Dependabot::GitCommitChecker)
         )
+      end
+
+      sig { returns(T::Boolean) }
+      def cooldown_enabled?
+        # This is a simple check to see if user has put cooldown days.
+        # If not set, then we aassume user does not want cooldown.
+        # Since Terraform does not support Semver versioning, So option left
+        # for the user is to set cooldown default days.
+        return false if update_cooldown.nil?
+
+        T.must(update_cooldown&.default_days).positive?
       end
     end
   end

@@ -167,10 +167,10 @@ module Dependabot
         snapshot: dependency_snapshot
       )
 
-      Dependabot.logger.debug("Dependency submission payload:")
-      Dependabot.logger.debug(JSON.pretty_generate(submission.payload))
+      # TODO(brrygrdn): Drop this back down to debug logging
+      Dependabot.logger.info("Dependency submission payload:\n#{JSON.pretty_generate(submission.payload)}")
 
-      service.create_dependency_submission(submission)
+      service.create_dependency_submission(dependency_submission: submission)
     end
   end
 end

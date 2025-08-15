@@ -51,6 +51,20 @@ public class CloneWorkerTests
     }
 
     [Fact]
+    public void GheOnPremCloneCommandsAreGenerated()
+    {
+        TestCommands(
+            provider: "github",
+            hostname: "ghe-onprem-url.example.com",
+            repoMoniker: "OwnerName/RepoName",
+            expectedCommands:
+            [
+                (["clone", "--no-tags", "--depth", "1", "--recurse-submodules", "--shallow-submodules", "https://ghe-onprem-url.example.com/OwnerName/RepoName", TestRepoPath], null)
+            ]
+        );
+    }
+
+    [Fact]
     public void CloneCommandsAreGeneratedWhenBranchIsSpecified()
     {
         TestCommands(
