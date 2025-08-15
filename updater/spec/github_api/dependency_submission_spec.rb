@@ -130,12 +130,8 @@ RSpec.describe GithubApi::DependencySubmission do
     it "generates a valid manifest list" do
       payload = dependency_submission.payload
 
-      expect(payload[:manifests].length).to eq(2)
-
-      # Gemfile data is correct
-      gemfile = payload[:manifests].fetch("/Gemfile")
-      expect(gemfile[:name]).to eq("/Gemfile")
-      expect(gemfile[:file][:source_location]).to eq("Gemfile")
+      # We only expect a lockfile to be returned
+      expect(payload[:manifests].length).to eq(1)
 
       # Lockfile data is correct
       lockfile = payload[:manifests].fetch("/Gemfile.lock")
@@ -143,25 +139,13 @@ RSpec.describe GithubApi::DependencySubmission do
       expect(lockfile[:file][:source_location]).to eq("Gemfile.lock")
 
       # Resolved dependencies are correct
-      expect(gemfile[:resolved].length).to eq(2)
       expect(lockfile[:resolved].length).to eq(2)
 
-      dependency1 = gemfile[:resolved]["dummy-pkg-a"]
-      dependency2 = gemfile[:resolved]["dummy-pkg-b"]
+      dependency1 = lockfile[:resolved]["dummy-pkg-a"]
+      expect(dependency1[:package_url]).to eql("pkg:gem/dummy-pkg-a@2.0.0")
 
-      [gemfile, lockfile].each do |depfile|
-        depfile[:resolved].each do |pkg_name, resolved_dep|
-          expect(resolved_dep).not_to be_empty
-          expect(resolved_dep[:relationship]).to eq("direct")
-
-          case pkg_name
-          when "dummy-pkg-a"
-            expect(dependency1[:package_url]).to eql("pkg:gem/dummy-pkg-a@2.0.0")
-          when "dummy-pkg-b"
-            expect(dependency2[:package_url]).to eql("pkg:gem/dummy-pkg-b@1.1.0")
-          end
-        end
-      end
+      dependency2 = lockfile[:resolved]["dummy-pkg-b"]
+      expect(dependency2[:package_url]).to eql("pkg:gem/dummy-pkg-b@1.1.0")
     end
   end
 
@@ -184,12 +168,8 @@ RSpec.describe GithubApi::DependencySubmission do
     it "generates a valid manifest list" do # rubocop:disable RSpec/MultipleExpectations
       payload = dependency_submission.payload
 
-      expect(payload[:manifests].length).to eq(2)
-
-      # Manifest data is correct
-      gemfile = payload[:manifests].fetch("/Gemfile")
-      expect(gemfile[:name]).to eq("/Gemfile")
-      expect(gemfile[:file][:source_location]).to eq("Gemfile")
+      # We only expect a lockfile to be returned
+      expect(payload[:manifests].length).to eq(1)
 
       # Lockfile data is correct
       lockfile = payload[:manifests].fetch("/Gemfile.lock")
@@ -197,38 +177,34 @@ RSpec.describe GithubApi::DependencySubmission do
       expect(lockfile[:file][:source_location]).to eq("Gemfile.lock")
 
       # Resolved dependencies are correct:
-      expect(gemfile[:resolved].length).to eq(4)
       expect(lockfile[:resolved].length).to eq(28)
-
-      # the following top-level packages should exist in both files with
-      # the same data
-      %w(sinatra pry rspec capybara).each do |pkg_name|
-        [gemfile, lockfile].each do |depfile|
-          resolved_dep = depfile[:resolved][pkg_name]
-
-          expect(resolved_dep).not_to be_empty
-          expect(resolved_dep[:relationship]).to eq("direct")
-
-          case pkg_name
-          when "sinatra"
-            expect(resolved_dep[:package_url]).to eql("pkg:gem/sinatra@4.1.1")
-            expect(resolved_dep[:scope]).to eq("runtime")
-          when "pry"
-            expect(resolved_dep[:package_url]).to eql("pkg:gem/pry@0.15.2")
-            expect(resolved_dep[:scope]).to eq("development")
-          when "rspec"
-            expect(resolved_dep[:package_url]).to eql("pkg:gem/rspec@3.13.1")
-            expect(resolved_dep[:scope]).to eq("development")
-          when "capybara"
-            expect(resolved_dep[:package_url]).to eql("pkg:gem/capybara@3.40.0")
-            expect(resolved_dep[:scope]).to eq("development")
-          end
-        end
-      end
 
       # the lockfile should be reporting 4 direct dependencies and 24 indirect ones
       expect(lockfile[:resolved].values.count { |dep| dep[:relationship] == "direct" }).to eq(4)
       expect(lockfile[:resolved].values.count { |dep| dep[:relationship] == "indirect" }).to eq(24)
+
+      # the following top-level packages should be defined in the right groups
+      %w(sinatra pry rspec capybara).each do |pkg_name|
+        resolved_dep = lockfile[:resolved][pkg_name]
+
+        expect(resolved_dep).not_to be_empty
+        expect(resolved_dep[:relationship]).to eq("direct")
+
+        case pkg_name
+        when "sinatra"
+          expect(resolved_dep[:package_url]).to eql("pkg:gem/sinatra@4.1.1")
+          expect(resolved_dep[:scope]).to eq("runtime")
+        when "pry"
+          expect(resolved_dep[:package_url]).to eql("pkg:gem/pry@0.15.2")
+          expect(resolved_dep[:scope]).to eq("development")
+        when "rspec"
+          expect(resolved_dep[:package_url]).to eql("pkg:gem/rspec@3.13.1")
+          expect(resolved_dep[:scope]).to eq("development")
+        when "capybara"
+          expect(resolved_dep[:package_url]).to eql("pkg:gem/capybara@3.40.0")
+          expect(resolved_dep[:scope]).to eq("development")
+        end
+      end
 
       # the direct ones were verified above.
       # let's pull out a few indirect dependencies to check
@@ -241,6 +217,117 @@ RSpec.describe GithubApi::DependencySubmission do
       expect(addressable[:package_url]).to eql("pkg:gem/addressable@2.8.7")
       expect(addressable[:relationship]).to eq("indirect")
       expect(addressable[:scope]).to eq("development")
+    end
+  end
+
+  context "with vendored files" do
+    let(:dependency_files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "Gemfile",
+          content: fixture("bundler/original/Gemfile"),
+          directory: directory
+        ),
+        Dependabot::DependencyFile.new(
+          name: "Gemfile.lock",
+          content: fixture("bundler/original/Gemfile.lock"),
+          directory: directory
+        ),
+        Dependabot::DependencyFile.new(
+          name: "vendor/ruby/3.4.0/cache/addressable-2.8.7.gem",
+          content: "stuff",
+          directory: directory,
+          support_file: true,
+          vendored_file: true
+        )
+      ]
+    end
+
+    it "they are not mentioned in the dependency submission payload" do
+      payload = dependency_submission.payload
+
+      # We only expect a lockfile to be returned
+      expect(payload[:manifests].length).to eq(1)
+      expect(payload[:manifests].keys).to eq(%w(/Gemfile.lock))
+    end
+  end
+
+  # Dependabot's existing behaviour is to fail without a lockfile, which makes sense from an update perspective,
+  # but we should eventually tolerate Gemfile-only projects when we are just asked to produce a graph.
+  #
+  # For now this test covers a corner case, that an empty Gemfile.lock will not result in an empty dependency
+  # submission as we fall back to submitting the Gemfile even though it is lower resolution.
+  context "with an empty Gemfile.lock" do
+    let(:dependency_files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "Gemfile",
+          content: fixture("bundler/original/Gemfile"),
+          directory: directory
+        ),
+        Dependabot::DependencyFile.new(
+          name: "Gemfile.lock",
+          content: "",
+          directory: directory
+        )
+      ]
+    end
+
+    it "generates a valid manifest list" do
+      payload = dependency_submission.payload
+
+      # We only expect a lockfile to be returned
+      expect(payload[:manifests].length).to eq(1)
+
+      # Lockfile data is correct
+      gemfile = payload[:manifests].fetch("/Gemfile")
+      expect(gemfile[:name]).to eq("/Gemfile")
+      expect(gemfile[:file][:source_location]).to eq("Gemfile")
+
+      # Resolved dependencies are correct
+      expect(gemfile[:resolved].length).to eq(2)
+
+      dependency1 = gemfile[:resolved]["dummy-pkg-a"]
+      expect(dependency1[:package_url]).to eql("pkg:gem/dummy-pkg-a")
+
+      dependency2 = gemfile[:resolved]["dummy-pkg-b"]
+      expect(dependency2[:package_url]).to eql("pkg:gem/dummy-pkg-b")
+    end
+  end
+
+  # This is mainly for documentation purposes, an empty snapshot is useful to update a repository when a set of
+  # manifests are removed so there will be circumstances when we are generating a graph based on pushes where
+  # this probably makes sense but it will need to be fleshed out.
+  context "with a set of empty dependency files" do
+    let(:dependency_files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "Gemfile",
+          content: "",
+          directory: directory
+        ),
+        Dependabot::DependencyFile.new(
+          name: "Gemfile.lock",
+          content: "",
+          directory: directory
+        )
+      ]
+    end
+
+    it "generates a snapshot with metadata and an empty manifest list" do
+      payload = dependency_submission.payload
+
+      expect(payload[:version]).to eq(described_class::SNAPSHOT_VERSION)
+      expect(payload[:detector][:name]).to eq(described_class::SNAPSHOT_DETECTOR_NAME)
+      expect(payload[:detector][:url]).to eq(described_class::SNAPSHOT_DETECTOR_URL)
+      expect(payload[:detector][:version]).to eq(Dependabot::VERSION)
+      expect(payload[:job][:correlator]).to eq("dependabot-experimental")
+      expect(payload[:job][:id]).to eq("9999")
+
+      expect(dependency_submission.payload[:manifests]).to be_empty
+
+      expect(payload[:sha]).to eq(sha)
+      expect(payload[:ref]).to eql("refs/heads/main")
     end
   end
 end
