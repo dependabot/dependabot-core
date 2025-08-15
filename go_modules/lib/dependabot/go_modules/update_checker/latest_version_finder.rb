@@ -166,28 +166,26 @@ module Dependabot
         def filter_incompatible_versions(releases)
           # If GOPRIVATE="*", incompatible versions are already filtered by Go
           # This method can provide additional filtering if needed
-          begin
-            update_json = SharedHelpers.run_shell_command(
-              "go list -m -u -json #{dependency.name}@#{dependency.version}",
-              fingerprint: "go list -m -u -json <dependency_name>"
-            )
-            parsed_json = JSON.parse(update_json)
-            updated_version = parsed_json.dig("Update", "Version")
+          update_json = SharedHelpers.run_shell_command(
+            "go list -m -u -json #{dependency.name}@#{dependency.version}",
+            fingerprint: "go list -m -u -json <dependency_name>"
+          )
+          parsed_json = JSON.parse(update_json)
+          updated_version = parsed_json.dig("Update", "Version")
 
-            if updated_version
-              # Filter out versions greater than Go's recommendation
-              releases.select do |release|
-                release.version <= GoModules::Version.new(updated_version)
-              end
-            else
-              # If no update recommendation, return all releases
-              releases
+          if updated_version
+            # Filter out versions greater than Go's recommendation
+            releases.select do |release|
+              release.version <= GoModules::Version.new(updated_version)
             end
+          else
+            # If no update recommendation, return all releases
+            releases
+          end
           rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
             Dependabot.logger.warn("Failed to get Go update recommendation: #{e.message}")
             # If command fails, -U may not be applicable to the dependency and return all releases
             releases
-          end
         end
 
         sig do

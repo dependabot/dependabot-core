@@ -541,7 +541,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
         end
       end
 
-      context "When fetching from Go module proxy, an incompatible version is updated to an incompatible one" do
+      context "when fetching from Go module proxy, an incompatible version is updated to an incompatible one" do
         let(:goprivate) { "" }
         let(:dependency_version) { "v2.1.0+incompatible" }
 
