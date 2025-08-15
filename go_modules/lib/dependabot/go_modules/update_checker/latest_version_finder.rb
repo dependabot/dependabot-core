@@ -168,7 +168,7 @@ module Dependabot
           # This method can provide additional filtering if needed
           update_json = SharedHelpers.run_shell_command(
             "go list -m -u -json #{dependency.name}@#{dependency.version}",
-            fingerprint: "go list -m -u -json <dependency_name>",
+            fingerprint: "go list -m -u -json <dependency_name>"
           )
           parsed_json = JSON.parse(update_json)
           updated_version = parsed_json.dig("Update", "Version")
