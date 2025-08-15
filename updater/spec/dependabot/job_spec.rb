@@ -586,4 +586,35 @@ RSpec.describe Dependabot::Job do
       end
     end
   end
+
+  describe "#exclude_paths" do
+    context "when exclude_paths is provided" do
+      let(:attributes) do
+        {
+          id: "1",
+          package_manager: "bundler",
+          source: { "provider" => "github", "repo" => "test/repo" },
+          exclude_paths: ["vendor/*", "spec/fixtures/*"]
+        }
+      end
+
+      it "returns the exclude_paths array" do
+        expect(job.exclude_paths).to eq(["vendor/*", "spec/fixtures/*"])
+      end
+    end
+
+    context "when exclude_paths is not provided" do
+      let(:attributes) do
+        {
+          id: "1",
+          package_manager: "bundler",
+          source: { "provider" => "github", "repo" => "test/repo" }
+        }
+      end
+
+      it "returns an empty array as default" do
+        expect(job.exclude_paths).to eq([])
+      end
+    end
+  end
 end
