@@ -512,8 +512,8 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
 
         it "filters out incompatible versions automatically" do
           # With GOPRIVATE="*", Go fetches directly and filters incompatible versions
+         # To verify no incompatible versions are considered
 
-          # To verify no incompatible versions are considered
           versions = finder.send(:available_versions_details)
           version_strings = versions.map { |v| v.version.to_s }
 
@@ -523,13 +523,14 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
         end
       end
 
-      context "without GOPRIVATE='*', an additional filtering step is needed" do
+      context "without GOPRIVATE='*', filtering step is needed when the current version is not an incompatible one" do
         let(:goprivate) { "" }
 
         it "may include incompatible versions from proxy" do
           # Without GOPRIVATE, proxy returns all versions including incompatible
 
           versions_before_filter = finder.send(:available_versions_details)
+          # incompatible versions gets filtered out
           versions_after_filter = finder.send(:filter_incompatible_versions, versions_before_filter)
 
           versions_with_incompatible_strings = versions_before_filter.map { |v| v.version.to_s }
@@ -537,6 +538,19 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
 
           expect(versions_after_filter_strings).not_to include("2.0.0+incompatible")
           expect(versions_with_incompatible_strings).to include("2.0.0+incompatible")
+        end
+      end
+
+      context "When fetching from Go module proxy, an incompatible version is updated to an incompatible one" do
+        let(:goprivate) { "" }
+        let(:dependency_version) { "v2.1.0+incompatible" }
+
+        it "Updates to the next incompatible version" do
+          # Without GOPRIVATE, proxy returns all versions including incompatible
+          # Final version will be an incompatible one
+          final_version = finder.send(:fetch_latest_version).to_s
+
+          expect(final_version).to include("+incompatible")
         end
       end
     end
