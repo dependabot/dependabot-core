@@ -512,7 +512,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
 
         it "filters out incompatible versions automatically" do
           # With GOPRIVATE="*", Go fetches directly and filters incompatible versions
-         # To verify no incompatible versions are considered
+          # To verify no incompatible versions are considered
 
           versions = finder.send(:available_versions_details)
           version_strings = versions.map { |v| v.version.to_s }
