@@ -1275,14 +1275,20 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           .with(
             requirements: dependency_requirements,
             updated_source: nil,
-            latest_resolvable_version: nil,
+            latest_resolvable_version: "16.3.1",
             update_strategy: Dependabot::RequirementsUpdateStrategy::WidenRanges
           )
           .and_call_original
 
-        # No change in updated_requirements
+        # With npm 10.9.3's improved peer dependency resolution,
+        # deprecated dependencies can now be successfully resolved
         expect(checker.updated_requirements)
-          .to eq(dependency_requirements)
+          .to eq([{
+            file: "package.json",
+            requirement: "^16.3.1",
+            groups: ["dependencies"],
+            source: nil
+          }])
       end
     end
 
@@ -1771,6 +1777,67 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             )
           ])
         end
+      end
+    end
+
+    context "when dealing with a security update for a duplicated dependency" do
+      let(:dependency_files) { project_dependency_files("npm8/update_needed_across_two_versions") }
+      let(:registry_listing_url) { "https://registry.npmjs.org/update_needed_across_two_versions" }
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: "@msgpack/msgpack",
+            package_manager: "npm_and_yarn",
+            vulnerable_versions: [">= 2.0.0, < 2.8.0", ">= 3.0.0, < 3.1.2"]
+          )
+        ]
+      end
+      let(:dependency_version) { "2.7.2" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "@msgpack/msgpack",
+          version: dependency_version,
+          requirements: [],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      it "correctly updates the transitive dependency" do
+        expect(checker.send(:updated_dependencies_after_full_unlock))
+          .to eq_including_metadata([
+            Dependabot::Dependency.new(
+              name: "@msgpack/msgpack",
+              version: "2.8.0",
+              package_manager: "npm_and_yarn",
+              previous_version: "2.7.2",
+              requirements: [{
+                requirement: "^2.8.0",
+                file: "package.json",
+                groups: ["dependencies"],
+                source: {
+                  type: "registry",
+                  url: "https://registry.npmjs.org"
+                }
+              }],
+              previous_requirements: [{
+                requirement: "^2.7.2",
+                file: "package.json",
+                groups: ["dependencies"],
+                source: {
+                  type: "registry",
+                  url: "https://registry.npmjs.org"
+                }
+              }]
+            ),
+            Dependabot::Dependency.new(
+              name: "@msgpack/msgpack",
+              version: "3.1.2",
+              package_manager: "npm_and_yarn",
+              previous_version: "3.0.0",
+              requirements: [],
+              previous_requirements: []
+            )
+          ])
       end
     end
   end

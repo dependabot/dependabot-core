@@ -383,4 +383,23 @@ RSpec.describe Dependabot::DependencyFile do
       end
     end
   end
+
+  describe "priority" do
+    it "defaults to 0" do
+      expect(file.priority).to be_zero
+    end
+
+    it "priority may be set when created" do
+      file = described_class.new(name: "Gemfile.lock", content: "no gems here", priority: 42)
+      expect(file.priority).to be(42)
+    end
+
+    it "can be amended after creation" do
+      expect(file.priority).to be_zero
+
+      file.priority = 1
+
+      expect(file.priority).to be(1)
+    end
+  end
 end

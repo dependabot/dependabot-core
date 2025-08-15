@@ -69,6 +69,8 @@ COPY --chown=dependabot:dependabot nuget/helpers /opt/nuget/helpers
 RUN bash /opt/nuget/helpers/build
 
 COPY --chown=dependabot:dependabot nuget $DEPENDABOT_HOME/nuget
+COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
+COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
 
 # ensure windows-style environment variables are set
 ARG TEMP_DIR=/tmp/dependabot
@@ -83,3 +85,6 @@ RUN chmod +x $DEPENDABOT_HOME/dependabot-updater/bin/run
 
 # .NET install targeting packs
 RUN pwsh $DEPENDABOT_HOME/dependabot-updater/bin/install-targeting-packs.ps1
+
+# Enable MSBuild operations with a shallow clone for repos that use the Nerdbank.GitVersioning package
+ENV NBGV_GitEngine=Disabled

@@ -17,7 +17,7 @@ module GithubApi
     sig { returns(String) }
     attr_reader :job_id
     sig { returns(String) }
-    attr_reader :ref
+    attr_reader :branch
     sig { returns(String) }
     attr_reader :sha
     sig { returns(String) }
@@ -34,7 +34,7 @@ module GithubApi
       #
       # For purposes of the POC, we'll assume the default branch of `main`
       # if this is nil, but this isn't a sustainable approach
-      @ref = T.let(job.source.branch || "main", String)
+      @branch = T.let(job.source.branch || "main", String)
       @sha = T.let(snapshot.base_commit_sha, String)
       # TODO: Ensure that directory is always set for analysis runs
       #
@@ -54,7 +54,7 @@ module GithubApi
       {
         version: SNAPSHOT_VERSION,
         sha: sha,
-        ref: ref,
+        ref: symbolic_ref,
         job: {
           correlator: job_correlator,
           id: job_id
@@ -81,33 +81,36 @@ module GithubApi
       Time.now.utc.iso8601
     end
 
+    sig { returns(String) }
+    def symbolic_ref
+      return branch.gsub(%r{^/}, "") if branch.start_with?(%r{/?ref})
+
+      "refs/heads/#{branch}"
+    end
+
     sig { params(snapshot: Dependabot::DependencySnapshot).returns(T::Hash[String, T.untyped]) }
     def build_manifests(snapshot)
       dependencies_by_manifest = {}
-
-      # NOTE: This is reconstructing the manifest to dependency mapping
-      #
-      # It would require deep changes to the Dependabot::Snapshot and parsers,
-      # but it might eventually be worth retaining this information from the
-      # source files in order to avoid reconstructing it here?
-      snapshot.dependencies.each do |dependency|
-        dependency.requirements.each do |requirement|
-          dependencies_by_manifest[requirement[:file]] ||= []
-          dependencies_by_manifest[requirement[:file]] << dependency
+      relevant_manifests(snapshot).each do |file|
+        dependencies_by_manifest[file.path] ||= []
+        file.dependencies.each do |dependency|
+          dependencies_by_manifest[file.path] << dependency
         end
       end
 
       dependencies_by_manifest.each_with_object({}) do |(file, deps), manifests|
-        # TODO: This approach won't work properly with multi-directory job definitions
+        # TODO: Confirm whether this approach will work properly with multi-directory job definitions
         #
         # For now it is tolerable to omit this and limit our testing accordingly, but we
         # should behave sensibly in a multi-directory context as well
-        file_path = File.join(directory, file).gsub(%r{^/}, "")
+
+        # source location is relative to the root of the repo, so we strip the leading slash
+        source_location = file.gsub(%r{^/}, "")
 
         manifests[file] = {
           name: file,
           file: {
-            source_location: file_path
+            source_location: source_location
           },
           metadata: {
             ecosystem: T.must(snapshot.ecosystem).name
@@ -115,14 +118,7 @@ module GithubApi
           resolved: deps.uniq.each_with_object({}) do |dep, resolved|
             resolved[dep.name] = {
               package_url: build_purl(dep),
-              # TODO: Replace relationship placeholder
-              #
-              # Dependabot has a bias towards operating on **declared dependencies**, so
-              # we need to close gaps on transitive dependencies in a few places.
-              #
-              # This should be set in the parsers when we add capabilities to track immediate
-              # dependencies.
-              relationship: "direct",
+              relationship: relationship_for(dep),
               scope: scope_for(dep),
               dependencies: [
                 # TODO: Populate direct child dependencies
@@ -137,9 +133,30 @@ module GithubApi
       end
     end
 
+    # For each distinct directory in our manifest list, we only want the highest priority manifests available,
+    # this method will filter out manifests for directories that have lockfiles and so on.
+    sig { params(snapshot: Dependabot::DependencySnapshot).returns(T::Array[Dependabot::DependencyFile]) }
+    def relevant_manifests(snapshot)
+      manifests_by_directory = snapshot.dependency_files.each_with_object({}) do |file, dirs|
+        # If the file doesn't have any dependencies assigned to it, then it isn't relevant.
+        next if file.dependencies.empty?
+
+        # Build up a dictionary of unique directories...
+        dirs[file.directory] ||= {}
+        # Add a list of files for each distinct priority...
+        dirs[file.directory][file.priority] ||= []
+        dirs[file.directory][file.priority] << file
+      end
+
+      manifests_by_directory.map do |_directory, manifests_by_priority|
+        # ... and cherry pick the highest priority list for each directory
+        manifests_by_priority[manifests_by_priority.keys.max]
+      end.flatten
+    end
+
     # Helper function to create a Package URL (purl)
     #
-    # TODO: Move out of this class?
+    # TODO: Move out of this class.
     #
     # It probably makes more sense to assign this to a Dependabot::Dependency
     # when it is created so the ecosystem-specific parser can own this?
@@ -148,7 +165,7 @@ module GithubApi
     # fill in some blanks.
     sig { params(dependency: Dependabot::Dependency).returns(String) }
     def build_purl(dependency)
-      "pkg:#{purl_pkg_for(dependency.package_manager)}/#{dependency.name}@#{dependency.version}"
+      "pkg:#{purl_pkg_for(dependency.package_manager)}/#{dependency.name}@#{dependency.version}".chomp("@")
     end
 
     sig { params(package_manager: String).returns(String) }
@@ -193,6 +210,15 @@ module GithubApi
         "runtime"
       else
         "development"
+      end
+    end
+
+    sig { params(dep: Dependabot::Dependency).returns(String) }
+    def relationship_for(dep)
+      if dep.direct?
+        "direct"
+      else
+        "indirect"
       end
     end
   end
