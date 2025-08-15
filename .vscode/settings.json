@@ -6,7 +6,7 @@
   "jest.pathToConfig": "${workspaceFolder}/npm_and_yarn/helpers/jest.config.js",
   "dotnet.defaultSolution": "nuget/helpers/lib/NuGetUpdater/NuGetUpdater.sln",
   "[ruby]": {
-    "editor.defaultFormatter": "rubocop.vscode-rubocop",
+    "editor.defaultFormatter": "Shopify.ruby-lsp",
     "editor.formatOnSave": true,
     "editor.formatOnType": true,
     "editor.insertSpaces": true,
