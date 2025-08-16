@@ -594,7 +594,11 @@ RSpec.describe Dependabot::Job do
           id: "1",
           package_manager: "bundler",
           source: { "provider" => "github", "repo" => "test/repo" },
-          exclude_paths: ["vendor/*", "spec/fixtures/*"]
+          exclude_paths: ["vendor/*", "spec/fixtures/*"],
+          allowed_updates: [],
+          ignore_conditions: [],
+          security_advisories: [],
+          security_updates_only: false
         }
       end
 
@@ -608,7 +612,11 @@ RSpec.describe Dependabot::Job do
         {
           id: "1",
           package_manager: "bundler",
-          source: { "provider" => "github", "repo" => "test/repo" }
+          source: { "provider" => "github", "repo" => "test/repo" },
+          allowed_updates: [],
+          ignore_conditions: [],
+          security_advisories: [],
+          security_updates_only: false
         }
       end
 
