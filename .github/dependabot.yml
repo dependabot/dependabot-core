@@ -1,4 +1,11 @@
 version: 2
+multi-ecosystem-groups:
+  uv-ecosystem:
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "16:00"
+
 updates:
   - package-ecosystem: "bundler"
     directories:
@@ -166,3 +173,15 @@ updates:
       interval: "weekly"
       day: "sunday"
       time: "16:00"
+  - package-ecosystem: "docker"
+    directory: "/uv"
+    multi-ecosystem-group: "uv-ecosystem"
+    patterns: ["*"]
+  - package-ecosystem: "pip"
+    directory: "/uv/helpers"
+    multi-ecosystem-group: "uv-ecosystem"
+    patterns: ["*"]
+    ignore:
+      # TODO: Remove when we drop support for Python 3.10
+      - dependency-name: "tomli"
+        update-types: [ "version-update:semver-major" ]

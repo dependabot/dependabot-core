@@ -686,10 +686,11 @@ RSpec.describe Dependabot::Uv::FileParser do
 
           it "returns the correct ecosystem and package manager set" do
             ecosystem = parser.ecosystem
-
             expect(ecosystem.name).to eq("uv")
             expect(ecosystem.package_manager.name).to eq("uv")
-            expect(ecosystem.package_manager.version.to_s).to eq("0.8.6")
+            file_path = File.expand_path("../../../helpers/requirements.txt", __dir__)
+            uv_version = File.foreach(file_path).find { |line| line =~ /^uv==/ }.split("==").last.strip
+            expect(ecosystem.package_manager.version.to_s).to eq(uv_version)
             expect(ecosystem.language.name).to eq("python")
           end
         end
