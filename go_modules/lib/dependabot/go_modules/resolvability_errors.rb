@@ -8,7 +8,7 @@ module Dependabot
     module ResolvabilityErrors
       extend T::Sig
 
-      GITHUB_REPO_REGEX = %r{github.com/[^:@]*}
+      GITHUB_REPO_REGEX = %r{github.com/[^:@ ]*}
 
       sig { params(message: String, goprivate: T.untyped).void }
       def self.handle(message, goprivate:)
