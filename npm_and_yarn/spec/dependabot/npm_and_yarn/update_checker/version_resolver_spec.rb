@@ -2123,4 +2123,63 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       end
     end
   end
+
+  describe "integration with npm8 checker and registry override" do
+    let(:project_name) { "npm8/simple" }
+    let(:latest_allowable_version) { Gem::Version.new("4.17.21") }
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "lodash",
+        version: "4.17.0",
+        package_manager: "npm_and_yarn",
+        requirements: [{
+          file: "package.json",
+          requirement: "^4.17.0",
+          groups: ["dependencies"],
+          source: { type: "registry", url: "https://registry.npmjs.org" }
+        }]
+      )
+    end
+    let(:enable_corepack_for_npm_and_yarn) { true }
+
+    before do
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command)
+        .and_return("npm install successful")
+    end
+
+    context "when registry override is configured" do
+      let(:credentials) do
+        [Dependabot::Credential.new({
+          "type" => "npm_registry",
+          "registry" => "custom-registry.example.com",
+          "replaces-base" => true,
+          "token" => "auth-token"
+        })]
+      end
+
+      it "passes registry override environment to npm command" do
+        resolver.send(:run_npm8_checker, version: "4.17.21")
+
+        expect(Dependabot::NpmAndYarn::Helpers).to have_received(:run_npm_command)
+          .with(
+            "install lodash@4.17.21 --package-lock-only --dry-run=true --ignore-scripts",
+            env: { "npm_config_registry" => "https://custom-registry.example.com" }
+          )
+      end
+    end
+
+    context "when no registry override is needed" do
+      let(:credentials) { [] }
+
+      it "calls npm command without env variables" do
+        resolver.send(:run_npm8_checker, version: "4.17.21")
+
+        expect(Dependabot::NpmAndYarn::Helpers).to have_received(:run_npm_command)
+          .with(
+            "install lodash@4.17.21 --package-lock-only --dry-run=true --ignore-scripts",
+            env: nil
+          )
+      end
+    end
+  end
 end
