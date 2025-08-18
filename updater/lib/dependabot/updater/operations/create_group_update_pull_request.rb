@@ -131,7 +131,7 @@ module Dependabot
             if Dependabot::Experiments.enabled?(:group_membership_enforcement)
               merged_change = group_dependency_selector.merge_per_directory!(dependency_changes)
               group_dependency_selector.filter_to_group!(merged_change)
-              group_dependency_selector.annotate_side_effects!(merged_change)
+              group_dependency_selector.annotate_dependency_drift!(merged_change)
               @dependency_change = merged_change
             else
               # Fallback to original behavior
@@ -176,7 +176,7 @@ module Dependabot
           return unless Dependabot::Experiments.enabled?(:group_membership_enforcement)
 
           group_dependency_selector.filter_to_group!(change)
-          group_dependency_selector.annotate_side_effects!(change)
+          group_dependency_selector.annotate_dependency_drift!(change)
         end
       end
     end

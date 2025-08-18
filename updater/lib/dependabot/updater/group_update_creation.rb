@@ -68,7 +68,8 @@ module Dependabot
         prepare_workspace
 
         group_changes = Dependabot::Updater::DependencyGroupChangeBatch.new(
-          initial_dependency_files: dependency_snapshot.dependency_files
+          dependency_snapshot: dependency_snapshot,
+          group: group
         )
 
         # deduplicate the dependencies.

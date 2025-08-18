@@ -247,7 +247,7 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
     end
   end
 
-  describe "#annotate_side_effects!" do
+  describe "#annotate_dependency_drifts!" do
     let(:dependency_change) do
       create_dependency_change(
         job: job,
@@ -263,8 +263,8 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
       end
 
       it "does not annotate side effects" do
-        selector.annotate_side_effects!(dependency_change)
-        expect(dependency_change.instance_variable_get(:@side_effects)).to be_nil
+        selector.annotate_dependency_drifts!(dependency_change)
+        expect(dependency_change.instance_variable_get(:@dependency_drifts)).to be_nil
       end
     end
 
@@ -276,32 +276,32 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
 
       it "processes files for side effects" do
         # Mock side effect detection
-        allow(selector).to receive(:detect_file_side_effects)
+        allow(selector).to receive(:detect_file_dependency_drifts)
                              .and_return(%w(transitive-dep-1 transitive-dep-2))
 
-        selector.annotate_side_effects!(dependency_change)
+        selector.annotate_dependency_drifts!(dependency_change)
 
-        side_effects = dependency_change.instance_variable_get(:@side_effects)
-        expect(side_effects).to contain_exactly("transitive-dep-1", "transitive-dep-2")
+        dependency_drifts = dependency_change.instance_variable_get(:@dependency_drifts)
+        expect(dependency_drifts).to contain_exactly("transitive-dep-1", "transitive-dep-2")
       end
 
       it "emits side effect metrics when side effects are detected" do
-        allow(selector).to receive(:detect_file_side_effects).and_return(["transitive-dep"])
-        expect(selector).to receive(:emit_side_effect_metrics).with("/api", 1)
+        allow(selector).to receive(:detect_file_dependency_drifts).and_return(["transitive-dep"])
+        expect(selector).to receive(:emit_dependency_drift_metrics).with("/api", 1)
 
-        selector.annotate_side_effects!(dependency_change)
+        selector.annotate_dependency_drifts!(dependency_change)
       end
 
       it "logs side effects" do
-        allow(selector).to receive(:detect_file_side_effects).and_return(["transitive-dep"])
+        allow(selector).to receive(:detect_file_dependency_drifts).and_return(["transitive-dep"])
         expect(Dependabot.logger).to receive(:info).with(
           "Side effects detected: transitive-dep",
           group: group_name,
           ecosystem: "bundler",
-          side_effect_count: 1
+          dependency_drift_count: 1
         )
 
-        selector.annotate_side_effects!(dependency_change)
+        selector.annotate_dependency_drifts!(dependency_change)
       end
     end
   end

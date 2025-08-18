@@ -1,6 +1,8 @@
 # typed: strong
 # frozen_string_literal: true
 
+require "dependabot/dependency_attribution"
+
 module Dependabot
   module Updater
     class GroupDependencySelector
@@ -82,27 +84,27 @@ module Dependabot
         log_filtered_dependencies(filtered_out_deps) if filtered_out_deps.any?
       end
 
-      # Optional: compute and attach side-effect metadata for observability
+      # Optional: compute and attach dependency drift metadata for observability
       sig { params(dependency_change: Dependabot::DependencyChange).void }
-      def annotate_side_effects!(dependency_change)
+      def annotate_dependency_drift!(dependency_change)
         return unless Dependabot::Experiments.enabled?(:group_membership_enforcement)
 
-        side_effects = []
+        dependency_drift = []
         directory = dependency_change.job&.source&.directory || "."
 
         # Check if any file changes reference dependencies not in updated_dependencies
         dependency_change.updated_dependency_files&.each do |file|
           # This would need ecosystem-specific logic to parse file content
           # and identify referenced dependencies
-          detected_side_effects = detect_file_side_effects(file, dependency_change.updated_dependencies)
-          side_effects.concat(detected_side_effects)
+          detected_drift = detect_file_dependency_drift(file, dependency_change.updated_dependencies)
+          dependency_drift.concat(detected_drift)
         end
 
-        return unless side_effects.any?
+        return unless dependency_drift.any?
 
-        dependency_change.instance_variable_set(:@side_effects, side_effects)
-        emit_side_effect_metrics(directory, side_effects.length)
-        log_side_effects(side_effects)
+        dependency_change.instance_variable_set(:@dependency_drift, dependency_drift)
+        emit_dependency_drift_metrics(directory, dependency_drift.length)
+        log_dependency_drift(dependency_drift)
       end
 
       private
@@ -130,14 +132,21 @@ module Dependabot
 
       sig { params(dep: Dependabot::Dependency, reason: Symbol).void }
       def annotate_dependency_selection(dep, reason)
-        return unless dep.respond_to?(:instance_variable_set)
+        directory = dep.instance_variable_get(:@source_directory) ||
+                    @snapshot.current_directory ||
+                    "."
 
-        dep.instance_variable_set(:@source_group, @group.name)
-        dep.instance_variable_set(:@selection_reason, reason)
+        DependencyAttribution.annotate_dependency(
+          dep,
+          source_group: @group.name,
+          selection_reason: reason,
+          directory: directory
+        )
       end
 
       sig { params(file: T.untyped, updated_deps: T::Array[Dependabot::Dependency]).returns(T::Array[String]) }
-      def detect_file_side_effects(file, updated_deps)
+      def detect_file_dependency_drift(file, updated_deps)
+        # This is a placeholder - real implementation would need ecosystem-specific logic
         # to parse lockfiles and detect transitive dependencies
         []
       end
@@ -145,18 +154,13 @@ module Dependabot
       sig { params(dir_count: Integer, merged_count: Integer).void }
       def log_merge_stats(dir_count, merged_count)
         Dependabot.logger.info(
-          "GroupDependencySelector merged #{dir_count} directory changes into #{merged_count} unique dependencies" \
+          "GroupDependencySelector merged #{dir_count} directory changes into #{merged_count} unique dependencies " \
           "[group=#{@group.name}, ecosystem=#{@snapshot.ecosystem}]"
         )
       end
 
       sig { params(directory: String, original: Integer, filtered: Integer, removed: Integer).void }
       def emit_filtering_metrics(directory, original, filtered, removed)
-        return unless removed.positive?
-
-        # Emit metrics (assuming a metrics system exists)
-        return unless defined?(Dependabot::Metrics)
-
         Dependabot::Metrics.increment(
           "dependabot.group.filtered_out_count",
           removed,
@@ -169,11 +173,9 @@ module Dependabot
       end
 
       sig { params(directory: String, count: Integer).void }
-      def emit_side_effect_metrics(directory, count)
-        return unless defined?(Dependabot::Metrics)
-
+      def emit_dependency_drift_metrics(directory, count)
         Dependabot::Metrics.increment(
-          "dependabot.group.side_effect_count",
+          "dependabot.group.dependency_drift_count",
           count,
           tags: {
             group: @group.name,
@@ -192,12 +194,10 @@ module Dependabot
       end
 
       sig { params(side_effects: T::Array[String]).void }
-      def log_side_effects(side_effects)
-        capped_effects = side_effects.first(10)
-
+      def log_dependency_drift(dependency_drift)
         Dependabot.logger.info(
-          "Side effects detected: #{capped_effects.join(', ')}#{suffix}" \
-          "[group=#{@group.name}, ecosystem=#{@snapshot.ecosystem}, filtered_count=#{side_effects.length}]"
+          "Dependency drift detected: #{capped_drift.join(', ')}#{suffix} " \
+          "[group=#{@group.name}, ecosystem=#{@snapshot.ecosystem}, dependency_drift_count=#{dependency_drift.length}]"
         )
       end
     end

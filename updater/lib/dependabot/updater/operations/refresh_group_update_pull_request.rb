@@ -174,7 +174,7 @@ module Dependabot
               selector = group_dependency_selector(job_group)
               merged_change = selector.merge_per_directory!(dependency_changes)
               selector.filter_to_group!(merged_change)
-              selector.annotate_side_effects!(merged_change)
+              selector.annotate_dependency_drift!(merged_change)
               @dependency_change = merged_change
             else
               # Fallback to original behavior
@@ -200,7 +200,7 @@ module Dependabot
 
           selector = group_dependency_selector(group)
           selector.filter_to_group!(change)
-          selector.annotate_side_effects!(change)
+          selector.annotate_dependency_drift!(change)
         end
       end
     end
