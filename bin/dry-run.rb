@@ -614,33 +614,15 @@ begin
     config = $config_file.update_config(
       $package_manager,
       directory: $options[:directory],
-      target_branch: $options[:branch]
+      target_branch: $options[:branch],
+      exclude_paths: $options[:exclude_paths] || config.exclude_paths || []
     )
-
-    # Merge command-line exclude_paths with config file exclude_paths
-    if $options[:exclude_paths] && !$options[:exclude_paths].empty?
-      existing_exclude_paths = config.exclude_paths || []
-      merged_exclude_paths = (existing_exclude_paths + $options[:exclude_paths]).uniq
-
-      # Create a new UpdateConfig with merged exclude_paths
-      Dependabot::Config::UpdateConfig.new(
-        exclude_paths: merged_exclude_paths
-      )
-    else
-      config
-    end
+    config
   rescue KeyError
     raise Dependabot::DependabotError, "Invalid package manager: #{$package_manager}"
   end
 
-  # Final fetcher_args with update_config included
-  fetcher_args = {
-    source: $source,
-    credentials: $options[:credentials],
-    repo_contents_path: $repo_contents_path,
-    options: $options[:updater_options],
-    update_config: $update_config
-  }
+  fetcher_args = initial_fetcher_args.merge(update_config: $update_config)
 
   fetcher = Dependabot::FileFetchers.for_package_manager($package_manager).new(**fetcher_args)
   $files = fetch_files(fetcher)
