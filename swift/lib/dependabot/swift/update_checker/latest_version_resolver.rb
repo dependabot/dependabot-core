@@ -86,7 +86,7 @@ module Dependabot
           return false unless tag_with_detail.release_date
 
           current_version = version_class.correct?(dependency.version) ? version_class.new(dependency.version) : nil
-          days = cooldown_days_for(current_version, version_class.new(tag_with_detail.tag.gsub("v", "")))
+          days = cooldown_days_for(current_version, version_class.new(tag_with_detail.tag.delete("v")))
 
           # Calculate the number of seconds passed since the release
           passed_seconds = Time.now.to_i - tag_with_detail.release_date.to_i

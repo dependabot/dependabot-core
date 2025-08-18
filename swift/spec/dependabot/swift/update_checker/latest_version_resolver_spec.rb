@@ -117,7 +117,7 @@ RSpec.describe Dependabot::Swift::UpdateChecker::LatestVersionResolver do
     end
 
     context "when tag has a release date" do
-      let(:release_date) { "2025-08-08 19:59:21.739762572 +0000"} # 10 days ago
+      let(:release_date) { "2025-08-08 19:59:21.739762572 +0000" } # 10 days ago
 
       before do
         allow(resolver).to receive(:cooldown_days_for).and_return(30)
@@ -141,28 +141,34 @@ RSpec.describe Dependabot::Swift::UpdateChecker::LatestVersionResolver do
 
     context "when cooldown_options has positive days" do
       it "returns true when default_days is positive" do
-        allow(cooldown_options).to receive(:default_days).and_return(1)
-        allow(cooldown_options).to receive(:semver_major_days).and_return(0)
-        allow(cooldown_options).to receive(:semver_minor_days).and_return(0)
-        allow(cooldown_options).to receive(:semver_patch_days).and_return(0)
+        allow(cooldown_options).to receive_messages(
+          default_days: 1,
+          semver_major_days: 0,
+          semver_minor_days: 0,
+          semver_patch_days: 0
+        )
         expect(resolver.cooldown_enabled?).to be true
       end
 
       it "returns true when semver_major_days is positive" do
-        allow(cooldown_options).to receive(:default_days).and_return(0)
-        allow(cooldown_options).to receive(:semver_major_days).and_return(1)
-        allow(cooldown_options).to receive(:semver_minor_days).and_return(0)
-        allow(cooldown_options).to receive(:semver_patch_days).and_return(0)
+        allow(cooldown_options).to receive_messages(
+          default_days: 0,
+          semver_major_days: 1,
+          semver_minor_days: 0,
+          semver_patch_days: 0
+        )
         expect(resolver.cooldown_enabled?).to be true
       end
     end
 
     context "when all cooldown days are zero" do
       it "returns false" do
-        allow(cooldown_options).to receive(:default_days).and_return(0)
-        allow(cooldown_options).to receive(:semver_major_days).and_return(0)
-        allow(cooldown_options).to receive(:semver_minor_days).and_return(0)
-        allow(cooldown_options).to receive(:semver_patch_days).and_return(0)
+        allow(cooldown_options).to receive_messages(
+          default_days: 0,
+          semver_major_days: 0,
+          semver_minor_days: 0,
+          semver_patch_days: 0
+        )
         expect(resolver.cooldown_enabled?).to be false
       end
     end
