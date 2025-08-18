@@ -101,21 +101,70 @@ RSpec.describe Dependabot::Swift::UpdateChecker::LatestVersionResolver do
   end
 
   describe "#check_if_version_in_cooldown_period?" do
-    it "returns true if the release date is within the cooldown period" do
-      release_date = (Time.now - (10 * 24 * 60 * 60)).iso8601 # 10 days ago
-      expect(resolver.check_if_version_in_cooldown_period?(release_date)).to be true
+    let(:tag_with_detail) do
+      Dependabot::GitTagWithDetail.new(
+        tag: "1.2.0",
+        release_date: release_date
+      )
     end
 
-    it "returns false if the release date is outside the cooldown period" do
-      release_date = (Time.now - (100 * 24 * 60 * 60)).iso8601 # 100 days ago
-      expect(resolver.check_if_version_in_cooldown_period?(release_date)).to be false
+    context "when tag has no release date" do
+      let(:release_date) { nil }
+
+      it "returns false" do
+        expect(resolver.check_if_version_in_cooldown_period?(tag_with_detail)).to be false
+      end
+    end
+
+    context "when tag has a release date" do
+      let(:release_date) { "2025-08-08 19:59:21.739762572 +0000"} # 10 days ago
+
+      before do
+        allow(resolver).to receive(:cooldown_days_for).and_return(30)
+      end
+
+      it "returns false if the release date is outside the cooldown period" do
+        allow(resolver).to receive(:cooldown_days_for).and_return(5)
+        expect(resolver.check_if_version_in_cooldown_period?(tag_with_detail)).to be false
+      end
     end
   end
 
-  describe "#release_date_to_seconds" do
-    it "converts a valid release date string to seconds" do
-      release_date = "2025-05-27T12:34:56Z"
-      expect(resolver.release_date_to_seconds(release_date)).to eq(Time.parse(release_date).to_i)
+  describe "#cooldown_enabled?" do
+    context "when cooldown_options is nil" do
+      let(:cooldown_options) { nil }
+
+      it "returns false" do
+        expect(resolver.cooldown_enabled?).to be false
+      end
+    end
+
+    context "when cooldown_options has positive days" do
+      it "returns true when default_days is positive" do
+        allow(cooldown_options).to receive(:default_days).and_return(1)
+        allow(cooldown_options).to receive(:semver_major_days).and_return(0)
+        allow(cooldown_options).to receive(:semver_minor_days).and_return(0)
+        allow(cooldown_options).to receive(:semver_patch_days).and_return(0)
+        expect(resolver.cooldown_enabled?).to be true
+      end
+
+      it "returns true when semver_major_days is positive" do
+        allow(cooldown_options).to receive(:default_days).and_return(0)
+        allow(cooldown_options).to receive(:semver_major_days).and_return(1)
+        allow(cooldown_options).to receive(:semver_minor_days).and_return(0)
+        allow(cooldown_options).to receive(:semver_patch_days).and_return(0)
+        expect(resolver.cooldown_enabled?).to be true
+      end
+    end
+
+    context "when all cooldown days are zero" do
+      it "returns false" do
+        allow(cooldown_options).to receive(:default_days).and_return(0)
+        allow(cooldown_options).to receive(:semver_major_days).and_return(0)
+        allow(cooldown_options).to receive(:semver_minor_days).and_return(0)
+        allow(cooldown_options).to receive(:semver_patch_days).and_return(0)
+        expect(resolver.cooldown_enabled?).to be false
+      end
     end
   end
 end
