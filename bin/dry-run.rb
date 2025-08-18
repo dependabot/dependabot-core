@@ -615,7 +615,7 @@ begin
       $package_manager,
       directory: $options[:directory],
       target_branch: $options[:branch],
-      exclude_paths: $options[:exclude_paths] || config.exclude_paths || []
+      exclude_paths: $options[:exclude_paths] || []
     )
     config
   rescue KeyError
