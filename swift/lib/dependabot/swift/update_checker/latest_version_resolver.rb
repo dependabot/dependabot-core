@@ -56,7 +56,6 @@ module Dependabot
               end
               Dependabot.logger.info("Allowed version tags after filtering versions in cooldown:
                 #{allowed_version_tags.map(&:name).join(', ')}")
-
             rescue StandardError => e
               Dependabot.logger.error("Error fetching latest version tag: #{e.message}")
             end
