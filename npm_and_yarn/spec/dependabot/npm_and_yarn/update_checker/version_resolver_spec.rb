@@ -2123,4 +2123,70 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       end
     end
   end
+
+  describe "#run_npm8_checker" do
+    subject { resolver.send(:run_npm8_checker, version: version) }
+
+    let(:project_name) { "npm8/simple" }
+    let(:latest_allowable_version) { Gem::Version.new("1.3.0") }
+    let(:version) { "1.3.0" }
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "example",
+        version: "1.2.3",
+        requirements: [{
+          file: "package.json",
+          requirement: "^1.2.3",
+          groups: ["dependencies"],
+          source: { type: "registry", url: "https://registry.npmjs.org" }
+        }],
+        package_manager: "npm_and_yarn"
+      )
+    end
+
+    before do
+      allow(resolver).to receive(:version_install_arg).and_return("example@1.3.0")
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command).and_return("")
+      allow(Dependabot::Experiments).to receive(:enabled?)
+        .with(:enable_corepack_for_npm_and_yarn).and_return(true)
+    end
+
+    context "when there is a replaces-base credential" do
+      let(:credentials) do
+        [
+          Dependabot::Credential.new({
+            "type" => "npm_registry",
+            "registry" => "https://custom-registry.example.com",
+            "replaces-base" => true
+          })
+        ]
+      end
+
+      it "calls apply_corepack_registry_override and passes the modified command to run_npm_command" do
+        expect(resolver).to receive(:apply_corepack_registry_override)
+          .with("install example@1.3.0 --package-lock-only --dry-run=true --ignore-scripts")
+          .and_call_original
+
+        subject
+
+        expect(Dependabot::NpmAndYarn::Helpers).to have_received(:run_npm_command)
+          .with("COREPACK_NPM_REGISTRY=https://custom-registry.example.com install example@1.3.0 --package-lock-only --dry-run=true --ignore-scripts")
+      end
+    end
+
+    context "when there is no replaces-base credential" do
+      let(:credentials) { [] }
+
+      it "calls apply_corepack_registry_override and passes the unmodified command to run_npm_command" do
+        expect(resolver).to receive(:apply_corepack_registry_override)
+          .with("install example@1.3.0 --package-lock-only --dry-run=true --ignore-scripts")
+          .and_call_original
+
+        subject
+
+        expect(Dependabot::NpmAndYarn::Helpers).to have_received(:run_npm_command)
+          .with("install example@1.3.0 --package-lock-only --dry-run=true --ignore-scripts")
+      end
+    end
+  end
 end
