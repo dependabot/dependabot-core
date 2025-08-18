@@ -850,11 +850,9 @@ module Dependabot
           registry_url = replaces_base_cred&.[]("registry")
           registry_url = "https://#{registry_url}" if registry_url && !registry_url.start_with?("http")
 
-          if registry_url
-            "COREPACK_NPM_REGISTRY=#{registry_url} " + cmd
-          else
-            cmd
-          end
+          return cmd unless registry_url
+
+          "COREPACK_NPM_REGISTRY=#{registry_url} " + cmd
         end
 
         sig do

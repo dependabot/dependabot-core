@@ -2138,7 +2138,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
           file: "package.json",
           requirement: "^1.2.3",
           groups: ["dependencies"],
-          source: { type: "registry", url: "https://registry.npmjs.org" }
+          source: {}
         }],
         package_manager: "npm_and_yarn"
       )
