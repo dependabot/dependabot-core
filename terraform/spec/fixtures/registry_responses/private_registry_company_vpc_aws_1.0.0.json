@@ -1,0 +1,117 @@
+{
+  "description": "A private VPC module for AWS infrastructure",
+  "downloads": 150,
+  "examples": [
+    {
+      "dependencies": [],
+      "empty": false,
+      "inputs": [
+        {
+          "default": "\"10.0.0.0/16\"",
+          "description": "The CIDR block for the VPC",
+          "name": "cidr_block"
+        },
+        {
+          "default": "\"us-west-2\"",
+          "description": "The AWS region",
+          "name": "region"
+        }
+      ],
+      "name": "basic-vpc",
+      "outputs": [
+        {
+          "description": "The ID of the VPC",
+          "name": "vpc_id"
+        },
+        {
+          "description": "The CIDR block of the VPC",
+          "name": "vpc_cidr_block"
+        }
+      ],
+      "path": "examples/basic-vpc",
+      "readme": "# Basic VPC Example\n\nThis example creates a basic VPC with public and private subnets.",
+      "resources": []
+    }
+  ],
+  "id": "company/vpc/aws/1.0.0",
+  "name": "vpc",
+  "namespace": "company",
+  "owner": "company-infrastructure-team",
+  "provider": "aws",
+  "providers": [
+    "aws"
+  ],
+  "published_at": "2024-01-15T10:30:00.000Z",
+  "root": {
+    "dependencies": [],
+    "empty": false,
+    "inputs": [
+      {
+        "default": "\"10.0.0.0/16\"",
+        "description": "The CIDR block for the VPC",
+        "name": "cidr_block"
+      },
+      {
+        "default": "\"us-west-2\"",
+        "description": "The AWS region",
+        "name": "region"
+      },
+      {
+        "default": "true",
+        "description": "Enable DNS hostnames in the VPC",
+        "name": "enable_dns_hostnames"
+      },
+      {
+        "default": "true",
+        "description": "Enable DNS support in the VPC",
+        "name": "enable_dns_support"
+      }
+    ],
+    "name": "vpc",
+    "outputs": [
+      {
+        "description": "The ID of the VPC",
+        "name": "vpc_id"
+      },
+      {
+        "description": "The CIDR block of the VPC",
+        "name": "vpc_cidr_block"
+      },
+      {
+        "description": "The IDs of the public subnets",
+        "name": "public_subnet_ids"
+      },
+      {
+        "description": "The IDs of the private subnets",
+        "name": "private_subnet_ids"
+      }
+    ],
+    "path": "",
+    "readme": "# Company VPC Module\n\nThis module creates a VPC with public and private subnets across multiple availability zones.\n\n## Features\n\n- Creates VPC with configurable CIDR block\n- Creates public and private subnets\n- Sets up Internet Gateway and NAT Gateways\n- Configures route tables\n\n## Usage\n\n```hcl\nmodule \"vpc\" {\n  source = \"company/vpc/aws\"\n  version = \"1.0.0\"\n\n  cidr_block = \"10.0.0.0/16\"\n  region = \"us-west-2\"\n}\n```\n\n## Changelog\n\n### v1.0.0 (2024-01-15)\n\n- Initial release\n- Support for VPC creation with public/private subnets\n- Internet Gateway and NAT Gateway setup\n- Route table configuration\n\n### v0.9.0 (2024-01-10)\n\n- Beta release\n- Basic VPC functionality\n- Public subnet support only\n\n## Requirements\n\n- Terraform >= 1.0\n- AWS Provider >= 4.0\n\n## License\n\nProprietary - Company Internal Use Only",
+    "resources": []
+  },
+  "source": "https://github.com/company/terraform-vpc",
+  "submodules": [
+    {
+      "dependencies": [],
+      "empty": false,
+      "inputs": [
+        {
+          "default": "",
+          "description": "The VPC ID",
+          "name": "vpc_id"
+        }
+      ],
+      "name": "security-groups",
+      "outputs": [
+        {
+          "description": "The ID of the default security group",
+          "name": "default_security_group_id"
+        }
+      ],
+      "path": "modules/security-groups",
+      "readme": "# Security Groups Module\n\nThis module creates default security groups for the VPC.",
+      "resources": []
+    }
+  ]
+}

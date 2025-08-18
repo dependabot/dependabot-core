@@ -303,4 +303,175 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
       end
     end
   end
+
+  describe "enhanced private registry functionality" do
+    let(:private_hostname) { "private-registry.example.com" }
+    let(:private_client) { described_class.new(hostname: private_hostname) }
+    let(:logger) { instance_double("Logger") }
+
+    before do
+      allow(Dependabot).to receive(:logger).and_return(logger)
+    end
+
+    describe "#headers_for" do
+      context "with private registry" do
+        it "includes enhanced headers" do
+          expect(logger).to receive(:info).with(
+            "Private registry operation: authentication_setup for #{private_hostname} (has_token: false, token_length: 0)"
+          )
+
+          headers = private_client.send(:headers_for, private_hostname)
+          expect(headers).to include("User-Agent" => "Dependabot-Terraform/#{Dependabot::VERSION}")
+        end
+
+        it "includes authentication token when available" do
+          credentials = [{ "type" => "terraform_registry", "host" => private_hostname, "token" => "test-token" }]
+          client_with_creds = described_class.new(hostname: private_hostname, credentials: credentials)
+
+          expect(logger).to receive(:info).with(
+            "Private registry operation: authentication_setup for #{private_hostname} (has_token: true, token_length: 10)"
+          )
+
+          headers = client_with_creds.send(:headers_for, private_hostname)
+          expect(headers).to include("Authorization" => "Bearer test-token")
+          expect(headers).to include("User-Agent" => "Dependabot-Terraform/#{Dependabot::VERSION}")
+        end
+      end
+
+      context "with public registry" do
+        it "does not include enhanced headers or logging" do
+          expect(logger).not_to receive(:info)
+
+          headers = client.send(:headers_for, "registry.terraform.io")
+          expect(headers).not_to include("User-Agent")
+        end
+      end
+    end
+
+    describe "#validate_credentials_for_hostname" do
+      context "with private registry" do
+        it "logs credential validation for private registry without credentials" do
+          expect(logger).to receive(:info).with(
+            "Private registry operation: credential_validation for #{private_hostname} (has_credentials: false)"
+          )
+
+          result = private_client.send(:validate_credentials_for_hostname, private_hostname)
+          expect(result).to be false
+        end
+
+        it "logs credential validation for private registry with credentials" do
+          credentials = [{ "type" => "terraform_registry", "host" => private_hostname, "token" => "test-token" }]
+          client_with_creds = described_class.new(hostname: private_hostname, credentials: credentials)
+
+          expect(logger).to receive(:info).with(
+            "Private registry operation: credential_validation for #{private_hostname} (has_credentials: true)"
+          )
+
+          result = client_with_creds.send(:validate_credentials_for_hostname, private_hostname)
+          expect(result).to be true
+        end
+      end
+
+      context "with public registry" do
+        it "returns true without logging for public registry" do
+          expect(logger).not_to receive(:info)
+
+          result = client.send(:validate_credentials_for_hostname, "registry.terraform.io")
+          expect(result).to be true
+        end
+      end
+    end
+
+    describe "#source with enhanced logging" do
+      let(:private_dependency) do
+        Dependabot::Dependency.new(
+          name: "company/vpc/aws",
+          version: "1.0.0",
+          package_manager: "terraform",
+          requirements: [{
+            requirement: "1.0.0",
+            groups: [],
+            file: "main.tf",
+            source: {
+              type: "registry",
+              registry_hostname: private_hostname,
+              module_identifier: "company/vpc/aws"
+            }
+          }]
+        )
+      end
+
+      context "successful source resolution" do
+        before do
+          stub_request(:get, "https://#{private_hostname}/.well-known/terraform.json")
+            .to_return(status: 200, body: { "modules.v1": "/v1/modules/" }.to_json)
+          stub_request(:get, "https://#{private_hostname}/v1/modules/company/vpc/aws/1.0.0/download")
+            .to_return(status: 204, headers: { "X-Terraform-Get" => "git::https://github.com/company/terraform-vpc" })
+        end
+
+        it "logs source resolution operations" do
+          expect(logger).to receive(:info).at_least(:once).with(/Private registry operation: .* for #{private_hostname}/)
+
+          source = private_client.source(dependency: private_dependency)
+          expect(source).to be_a(Dependabot::Source)
+          expect(source.url).to eq("https://github.com/company/terraform-vpc")
+        end
+      end
+
+      context "authentication failure" do
+        before do
+          stub_request(:get, "https://#{private_hostname}/.well-known/terraform.json")
+            .to_return(status: 200, body: { "modules.v1": "/v1/modules/" }.to_json)
+          stub_request(:get, "https://#{private_hostname}/v1/modules/company/vpc/aws/1.0.0/download")
+            .to_return(status: 401)
+        end
+
+        it "logs authentication errors" do
+          expect(logger).to receive(:info).at_least(:once).with(/Private registry operation: .* for #{private_hostname}/)
+          expect(logger).to receive(:warn).at_least(:once).with(/Private registry error: .* for #{private_hostname}/)
+
+          expect do
+            private_client.source(dependency: private_dependency)
+          end.to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
+        end
+      end
+
+      context "JSON parsing error" do
+        before do
+          stub_request(:get, "https://#{private_hostname}/.well-known/terraform.json")
+            .to_return(status: 200, body: { "providers.v1": "/v1/providers/" }.to_json)
+
+          # Mock a provider dependency that will cause JSON parsing
+          provider_dependency = Dependabot::Dependency.new(
+            name: "company/custom",
+            version: "1.0.0",
+            package_manager: "terraform",
+            requirements: [{
+              requirement: "1.0.0",
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "provider",
+                registry_hostname: private_hostname,
+                module_identifier: "company/custom"
+              }
+            }]
+          )
+
+          stub_request(:get, "https://#{private_hostname}/v1/providers/company/custom/1.0.0")
+            .to_return(status: 200, body: "invalid json")
+
+          @provider_dependency = provider_dependency
+        end
+
+        it "logs JSON parsing errors and returns nil" do
+          expect(logger).to receive(:info).at_least(:once).with(/Private registry operation: .* for #{private_hostname}/)
+          expect(logger).to receive(:warn).at_least(:once).with(/Private registry error: .* for #{private_hostname}/)
+
+          result = private_client.source(dependency: @provider_dependency)
+          expect(result).to be_nil
+        end
+      end
+    end
+  end
 end

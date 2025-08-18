@@ -145,4 +145,178 @@ RSpec.describe Dependabot::Terraform::MetadataFinder do
       end
     end
   end
+
+  describe "enhanced private registry functionality" do
+    let(:private_hostname) { "private-registry.example.com" }
+    let(:logger) { instance_double("Logger") }
+
+    before do
+      allow(Dependabot).to receive(:logger).and_return(logger)
+    end
+
+    context "with private registry dependency" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "company/vpc/aws",
+          version: "1.0.0",
+          previous_version: "0.9.0",
+          requirements: [{
+            requirement: "1.0.0",
+            groups: [],
+            file: "main.tf",
+            source: {
+              type: "registry",
+              registry_hostname: private_hostname,
+              module_identifier: "company/vpc/aws"
+            }
+          }],
+          previous_requirements: [{
+            requirement: "0.9.0",
+            groups: [],
+            file: "main.tf",
+            source: {
+              type: "registry",
+              registry_hostname: private_hostname,
+              module_identifier: "company/vpc/aws"
+            }
+          }],
+          package_manager: "terraform"
+        )
+      end
+
+      describe "#source_url" do
+        context "successful source resolution" do
+          before do
+            stub_request(:get, "https://#{private_hostname}/.well-known/terraform.json")
+              .to_return(status: 200, body: { "modules.v1": "/v1/modules/" }.to_json)
+            stub_request(:get, "https://#{private_hostname}/v1/modules/company/vpc/aws/1.0.0/download")
+              .to_return(status: 204, headers: { "X-Terraform-Get" => "git::https://github.com/company/terraform-vpc" })
+          end
+
+          it "logs metadata finder operations and returns source URL" do
+            expect(logger).to receive(:info).at_least(:once).with(/Private registry operation: .* for #{private_hostname}/)
+
+            source_url = finder.source_url
+            expect(source_url).to eq("https://github.com/company/terraform-vpc")
+          end
+        end
+
+        context "authentication failure" do
+          before do
+            stub_request(:get, "https://#{private_hostname}/.well-known/terraform.json")
+              .to_return(status: 200, body: { "modules.v1": "/v1/modules/" }.to_json)
+            stub_request(:get, "https://#{private_hostname}/v1/modules/company/vpc/aws/1.0.0/download")
+              .to_return(status: 401)
+          end
+
+          it "logs authentication error and re-raises" do
+            expect(logger).to receive(:info).at_least(:once).with(/Private registry operation: .* for #{private_hostname}/)
+            expect(logger).to receive(:warn).at_least(:once).with(/Private registry error: .* for #{private_hostname}/)
+
+            expect { finder.source_url }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
+          end
+        end
+
+        context "registry returns no source" do
+          before do
+            stub_request(:get, "https://#{private_hostname}/.well-known/terraform.json")
+              .to_return(status: 200, body: { "modules.v1": "/v1/modules/" }.to_json)
+            stub_request(:get, "https://#{private_hostname}/v1/modules/company/vpc/aws/1.0.0/download")
+              .to_return(status: 404)
+          end
+
+          it "logs no source found and returns nil" do
+            expect(logger).to receive(:info).at_least(:once).with(/Private registry operation: .* for #{private_hostname}/)
+
+            source_url = finder.source_url
+            expect(source_url).to be_nil
+          end
+        end
+
+        context "unexpected error" do
+          before do
+            stub_request(:get, "https://#{private_hostname}/.well-known/terraform.json")
+              .to_return(status: 200, body: { "modules.v1": "/v1/modules/" }.to_json)
+            stub_request(:get, "https://#{private_hostname}/v1/modules/company/vpc/aws/1.0.0/download")
+              .to_raise(StandardError.new("Network error"))
+          end
+
+          it "logs unexpected error and returns nil for graceful degradation" do
+            expect(logger).to receive(:info).at_least(:once).with(/Private registry operation: .* for #{private_hostname}/)
+            expect(logger).to receive(:warn).at_least(:once).with(/Private registry error: .* for #{private_hostname}/)
+
+            source_url = finder.source_url
+            expect(source_url).to be_nil
+          end
+        end
+      end
+
+      describe "#enhanced_credentials_for_source" do
+        let(:credentials) do
+          [
+            { "type" => "git_source", "host" => "github.com", "username" => "x-access-token", "password" => "token1" },
+            { "type" => "terraform_registry", "host" => private_hostname, "token" => "registry-token" },
+            { "type" => "terraform_registry", "host" => "other-registry.com", "token" => "other-token" },
+            { "type" => "npm_registry", "host" => "npm.example.com", "token" => "npm-token" }
+          ]
+        end
+
+        it "filters and logs relevant credentials" do
+          expect(logger).to receive(:info).with(/Private registry operation: credential_filtering for #{private_hostname}/)
+
+          result = finder.send(:enhanced_credentials_for_source, private_hostname)
+          expect(result).to have_attributes(length: 3)
+          expect(result.map { |c| c["type"] }).to include("git_source", "terraform_registry", "npm_registry")
+          expect(result.find { |c| c["type"] == "terraform_registry" }["host"]).to eq(private_hostname)
+        end
+      end
+    end
+
+    context "with public registry dependency (no enhanced logging)" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "hashicorp/consul/aws",
+          version: "0.3.8",
+          previous_version: "0.1.0",
+          requirements: [{
+            requirement: "0.3.8",
+            groups: [],
+            file: "main.tf",
+            source: {
+              type: "registry",
+              registry_hostname: "registry.terraform.io",
+              module_identifier: "hashicorp/consul/aws"
+            }
+          }],
+          previous_requirements: [{
+            requirement: "0.1.0",
+            groups: [],
+            file: "main.tf",
+            source: {
+              type: "registry",
+              registry_hostname: "registry.terraform.io",
+              module_identifier: "hashicorp/consul/aws"
+            }
+          }],
+          package_manager: "terraform"
+        )
+      end
+
+      before do
+        stub_request(:get, "https://registry.terraform.io/.well-known/terraform.json")
+          .to_return(status: 200, body: { "modules.v1": "/v1/modules/" }.to_json)
+        stub_request(:get, "https://registry.terraform.io/v1/modules/hashicorp/consul/aws/0.3.8/download")
+          .to_return(status: 204, headers: { "X-Terraform-Get" => "git::https://github.com/hashicorp/terraform-aws-consul" })
+      end
+
+      it "does not log private registry operations for public registry" do
+        # Should not receive any private registry logging calls
+        expect(logger).not_to receive(:info).with(/Private registry operation/)
+        expect(logger).not_to receive(:warn).with(/Private registry error/)
+
+        source_url = finder.source_url
+        expect(source_url).to eq("https://github.com/hashicorp/terraform-aws-consul")
+      end
+    end
+  end
 end

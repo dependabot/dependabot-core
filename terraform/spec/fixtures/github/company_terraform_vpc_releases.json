@@ -1,0 +1,56 @@
+[
+  {
+    "url": "https://api.github.com/repos/company/terraform-vpc/releases/12345",
+    "assets_url": "https://api.github.com/repos/company/terraform-vpc/releases/12345/assets",
+    "upload_url": "https://uploads.github.com/repos/company/terraform-vpc/releases/12345/assets{?name,label}",
+    "html_url": "https://github.com/company/terraform-vpc/releases/tag/v1.0.0",
+    "id": 12345,
+    "node_id": "MDc6UmVsZWFzZTEyMzQ1",
+    "tag_name": "v1.0.0",
+    "target_commitish": "main",
+    "name": "v1.0.0 - Stable Release",
+    "draft": false,
+    "prerelease": false,
+    "created_at": "2024-01-15T10:30:00Z",
+    "published_at": "2024-01-15T10:30:00Z",
+    "body": "## What's Changed\n\n### 🚀 Features\n- Initial stable release of the VPC module\n- Support for creating VPC with configurable CIDR block\n- Public and private subnet creation across multiple AZs\n- Internet Gateway and NAT Gateway setup\n- Route table configuration for public and private subnets\n- Security group module for default VPC security groups\n- Comprehensive documentation and examples\n\n### 🔧 Improvements\n- Upgraded minimum Terraform version requirement to 1.0\n- Upgraded minimum AWS provider version to 4.0\n- Improved variable validation and descriptions\n\n### 🐛 Bug Fixes\n- Fixed issue with route table associations\n- Resolved NAT Gateway dependency issues\n\n### 📚 Documentation\n- Added comprehensive README with usage examples\n- Added changelog following Keep a Changelog format\n- Added contribution guidelines\n\n**Full Changelog**: https://github.com/company/terraform-vpc/compare/v0.9.0...v1.0.0",
+    "author": {
+      "login": "company-bot",
+      "id": 67890,
+      "node_id": "MDQ6VXNlcjY3ODkw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/67890?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/company-bot",
+      "html_url": "https://github.com/company-bot",
+      "type": "User",
+      "site_admin": false
+    }
+  },
+  {
+    "url": "https://api.github.com/repos/company/terraform-vpc/releases/12344",
+    "assets_url": "https://api.github.com/repos/company/terraform-vpc/releases/12344/assets",
+    "upload_url": "https://uploads.github.com/repos/company/terraform-vpc/releases/12344/assets{?name,label}",
+    "html_url": "https://github.com/company/terraform-vpc/releases/tag/v0.9.0",
+    "id": 12344,
+    "node_id": "MDc6UmVsZWFzZTEyMzQ0",
+    "tag_name": "v0.9.0",
+    "target_commitish": "main",
+    "name": "v0.9.0 - Beta Release",
+    "draft": false,
+    "prerelease": true,
+    "created_at": "2024-01-10T15:20:00Z",
+    "published_at": "2024-01-10T15:20:00Z",
+    "body": "## What's Changed\n\n### 🚀 Features\n- Beta release of VPC module\n- Basic VPC creation functionality\n- Public subnet support\n- Internet Gateway setup\n- Basic route table configuration\n\n### ⚠️ Known Issues\n- Private subnets not yet supported\n- NAT Gateway functionality incomplete\n- Limited documentation\n\n**Note**: This is a beta release and should not be used in production environments.\n\n**Full Changelog**: https://github.com/company/terraform-vpc/compare/v0.8.0...v0.9.0",
+    "author": {
+      "login": "company-bot",
+      "id": 67890,
+      "node_id": "MDQ6VXNlcjY3ODkw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/67890?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/company-bot",
+      "html_url": "https://github.com/company-bot",
+      "type": "User",
+      "site_admin": false
+    }
+  }
+]

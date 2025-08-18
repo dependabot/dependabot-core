@@ -6,6 +6,7 @@ require "dependabot/errors"
 require "dependabot/registry_client"
 require "dependabot/source"
 require "dependabot/terraform/version"
+require "dependabot/terraform/private_registry_logger"
 
 module Dependabot
   module Terraform
@@ -114,28 +115,63 @@ module Dependabot
       sig { params(dependency: Dependabot::Dependency).returns(T.nilable(Dependabot::Source)) }
       def source(dependency:)
         type = T.must(dependency.requirements.first)[:source][:type]
+
+        PrivateRegistryLogger.log_registry_operation(
+          hostname: hostname,
+          operation: "source_resolution",
+          details: {
+            dependency_name: dependency.name,
+            dependency_version: dependency.version,
+            source_type: type
+          }
+        )
+
         base_url = service_url_for(service_key_for(type))
+        source_url = nil
+
         case type
         # https://www.terraform.io/internals/module-registry-protocol#download-source-code-for-a-specific-module-version
         when "module", "modules", "registry"
-          download_url = URI.join(base_url, "#{dependency.name}/#{dependency.version}/download")
-          response = http_get(download_url)
-          return nil unless response.status == 204
-
-          source_url = response.headers.fetch("X-Terraform-Get")
-          source_url = URI.join(download_url, source_url) if
-            source_url.start_with?("/", "./", "../")
-          source_url = RegistryClient.get_proxied_source(source_url) if source_url
+          source_url = resolve_module_source(dependency, base_url)
         when "provider", "providers"
-          response = http_get(URI.join(base_url, "#{dependency.name}/#{dependency.version}"))
-          return nil unless response.status == 200
-
-          source_url = JSON.parse(response.body).fetch("source")
+          source_url = resolve_provider_source(dependency, base_url)
         end
 
-        Source.from_url(source_url) if source_url
-      rescue JSON::ParserError, Excon::Error::Timeout
+        result = Source.from_url(source_url) if source_url
+
+        PrivateRegistryLogger.log_registry_operation(
+          hostname: hostname,
+          operation: "source_resolution_success",
+          details: {
+            dependency_name: dependency.name,
+            resolved_source_url: source_url,
+            has_source: !result.nil?
+          }
+        )
+
+        result
+      rescue JSON::ParserError, Excon::Error::Timeout => e
+        PrivateRegistryLogger.log_registry_error(
+          hostname: hostname,
+          error: e,
+          context: {
+            operation: "source_resolution",
+            dependency_name: dependency.name,
+            dependency_version: dependency.version
+          }
+        )
         nil
+      rescue StandardError => e
+        PrivateRegistryLogger.log_registry_error(
+          hostname: hostname,
+          error: e,
+          context: {
+            operation: "source_resolution",
+            dependency_name: dependency.name,
+            dependency_version: dependency.version
+          }
+        )
+        raise
       end
 
       # Perform service discovery and return the absolute URL for
@@ -168,7 +204,66 @@ module Dependabot
       sig { params(hostname: String).returns(T::Hash[String, String]) }
       def headers_for(hostname)
         token = tokens[hostname]
-        token ? { "Authorization" => "Bearer #{token}" } : {}
+        headers = token ? { "Authorization" => "Bearer #{token}" } : {}
+
+        # Add enhanced headers for private registries
+        if PrivateRegistryLogger.private_registry?(hostname)
+          headers.merge!(enhanced_headers_for_private_registry(hostname))
+        end
+
+        headers
+      end
+
+      # Provides enhanced headers specifically for private registry requests.
+      #
+      # This method adds additional headers that improve compatibility and debugging
+      # for private registry interactions, such as a descriptive User-Agent header.
+      # It also logs authentication context for debugging purposes.
+      #
+      # @param hostname [String] The hostname of the private registry
+      # @return [Hash<String, String>] Additional headers for private registry requests
+      sig { params(hostname: String).returns(T::Hash[String, String]) }
+      def enhanced_headers_for_private_registry(hostname)
+        # Add User-Agent for better debugging and registry compatibility
+        enhanced_headers = {
+          "User-Agent" => "Dependabot-Terraform/#{Dependabot::VERSION}"
+        }
+
+        # Log authentication context for debugging
+        has_token = !tokens[hostname].nil?
+        PrivateRegistryLogger.log_registry_operation(
+          hostname: hostname,
+          operation: "authentication_setup",
+          details: {
+            has_token: has_token,
+            token_length: has_token ? tokens[hostname].length : 0
+          }
+        )
+
+        enhanced_headers
+      end
+
+      # Validates that appropriate credentials are available for a given hostname.
+      #
+      # For private registries, this method checks if authentication tokens are available.
+      # For public registries, it always returns true as no authentication is required.
+      # The validation result is logged for debugging purposes.
+      #
+      # @param hostname [String] The hostname to validate credentials for
+      # @return [Boolean] true if credentials are available or not required, false otherwise
+      sig { params(hostname: String).returns(T::Boolean) }
+      def validate_credentials_for_hostname(hostname)
+        return true unless PrivateRegistryLogger.private_registry?(hostname)
+
+        has_credentials = !tokens[hostname].nil?
+
+        PrivateRegistryLogger.log_registry_operation(
+          hostname: hostname,
+          operation: "credential_validation",
+          details: { has_credentials: has_credentials }
+        )
+
+        has_credentials
       end
 
       sig { returns(T::Hash[String, String]) }
@@ -208,8 +303,33 @@ module Dependabot
       def http_get!(url)
         response = http_get(url)
 
-        raise Dependabot::PrivateSourceAuthenticationFailure, hostname if response.status == 401
-        raise error("Response from registry was #{response.status}") unless response.status == 200
+        if response.status == 401
+          PrivateRegistryLogger.log_registry_error(
+            hostname: hostname,
+            error: StandardError.new("Authentication failed"),
+            context: {
+              operation: "http_request",
+              url: url.to_s,
+              status: response.status,
+              has_credentials: validate_credentials_for_hostname(hostname)
+            }
+          )
+          raise Dependabot::PrivateSourceAuthenticationFailure, hostname
+        end
+
+        unless response.status == 200
+          error_msg = "Response from registry was #{response.status}"
+          PrivateRegistryLogger.log_registry_error(
+            hostname: hostname,
+            error: StandardError.new(error_msg),
+            context: {
+              operation: "http_request",
+              url: url.to_s,
+              status: response.status
+            }
+          )
+          raise error(error_msg)
+        end
 
         response
       end
@@ -228,6 +348,32 @@ module Dependabot
       sig { params(message: String).returns(Dependabot::DependabotError) }
       def error(message)
         Dependabot::DependabotError.new(message)
+      end
+
+      sig { params(dependency: Dependabot::Dependency, base_url: String).returns(T.nilable(String)) }
+      def resolve_module_source(dependency, base_url)
+        download_url = URI.join(base_url, "#{dependency.name}/#{dependency.version}/download")
+        response = http_get(download_url)
+
+        if response.status == 401
+          raise Dependabot::PrivateSourceAuthenticationFailure, hostname
+        end
+
+        return nil unless response.status == 204
+
+        source_url = response.headers.fetch("X-Terraform-Get")
+        source_url = URI.join(download_url, source_url) if
+          source_url.start_with?("/", "./", "../")
+        source_url = RegistryClient.get_proxied_source(source_url) if source_url
+        source_url
+      end
+
+      sig { params(dependency: Dependabot::Dependency, base_url: String).returns(T.nilable(String)) }
+      def resolve_provider_source(dependency, base_url)
+        response = http_get(URI.join(base_url, "#{dependency.name}/#{dependency.version}"))
+        return nil unless response.status == 200
+
+        JSON.parse(response.body).fetch("source")
       end
     end
   end

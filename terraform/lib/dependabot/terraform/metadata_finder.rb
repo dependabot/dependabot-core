@@ -6,6 +6,7 @@ require "json"
 require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
 require "dependabot/terraform/registry_client"
+require "dependabot/terraform/private_registry_logger"
 require "dependabot/shared_helpers"
 require "sorbet-runtime"
 
@@ -43,9 +44,164 @@ module Dependabot
         info = dependency.requirements.filter_map { |r| r[:source] }.first
         hostname = info[:registry_hostname] || info["registry_hostname"]
 
-        RegistryClient
-          .new(hostname: hostname, credentials: credentials)
-          .source(dependency: dependency)
+        PrivateRegistryLogger.log_registry_operation(
+          hostname: hostname,
+          operation: "metadata_finder_source_lookup",
+          details: {
+            dependency_name: dependency.name,
+            dependency_version: dependency.version
+          }
+        )
+
+        begin
+          registry_client = RegistryClient.new(hostname: hostname, credentials: credentials)
+          source = registry_client.source(dependency: dependency)
+
+          if source
+            validated_source = validate_source_access(source, hostname)
+            PrivateRegistryLogger.log_registry_operation(
+              hostname: hostname,
+              operation: "metadata_finder_source_resolved",
+              details: {
+                dependency_name: dependency.name,
+                source_url: source.url,
+                source_accessible: !validated_source.nil?
+              }
+            )
+            validated_source
+          else
+            PrivateRegistryLogger.log_registry_operation(
+              hostname: hostname,
+              operation: "metadata_finder_no_source",
+              details: {
+                dependency_name: dependency.name,
+                reason: "registry_returned_nil"
+              }
+            )
+            nil
+          end
+        rescue Dependabot::PrivateSourceAuthenticationFailure => e
+          PrivateRegistryLogger.log_registry_error(
+            hostname: hostname,
+            error: e,
+            context: {
+              operation: "metadata_finder_source_lookup",
+              dependency_name: dependency.name,
+              error_type: "authentication_failure"
+            }
+          )
+          # Re-raise authentication failures as they should be handled by the caller
+          raise
+        rescue StandardError => e
+          PrivateRegistryLogger.log_registry_error(
+            hostname: hostname,
+            error: e,
+            context: {
+              operation: "metadata_finder_source_lookup",
+              dependency_name: dependency.name,
+              error_type: "unexpected_error"
+            }
+          )
+          # For other errors, return nil to allow graceful degradation
+          nil
+        end
+      end
+
+      # Validates that a resolved source is accessible with current credentials.
+      #
+      # Currently, this method assumes that if a source was returned by the registry,
+      # it should be accessible. In the future, this could be enhanced to actually
+      # test source accessibility with the current credentials.
+      #
+      # @param source [Dependabot::Source] The source to validate
+      # @param hostname [String] The registry hostname for logging context
+      # @return [Dependabot::Source, nil] The source if valid, nil if not accessible
+      sig { params(source: Dependabot::Source, hostname: String).returns(T.nilable(Dependabot::Source)) }
+      def validate_source_access(source, hostname)
+        # For now, we'll assume the source is accessible if it was returned by the registry
+        # In the future, this could be enhanced to actually test source accessibility
+        # with the current credentials
+
+        PrivateRegistryLogger.log_registry_operation(
+          hostname: hostname,
+          operation: "source_validation",
+          details: {
+            source_url: source.url,
+            source_provider: source.provider,
+            validation_result: "assumed_accessible"
+          }
+        )
+
+        source
+      end
+
+      # Override source method to add logging for private registries.
+      #
+      # This method extends the base class source method to add structured logging
+      # for private registry operations, helping with debugging and monitoring.
+      # Public registry operations are not logged to reduce noise.
+      #
+      # @return [Dependabot::Source, nil] The resolved source or nil if not found
+      sig { returns(T.nilable(Dependabot::Source)) }
+      def source
+        result = super
+
+        if result && dependency.source_type == "registry"
+          info = dependency.requirements.filter_map { |r| r[:source] }.first
+          hostname = info[:registry_hostname] || info["registry_hostname"]
+
+          PrivateRegistryLogger.log_registry_operation(
+            hostname: hostname,
+            operation: "metadata_finder_final_source",
+            details: {
+              dependency_name: dependency.name,
+              source_url: result.url,
+              source_provider: result.provider,
+              has_credentials: !credentials.empty?
+            }
+          )
+        end
+
+        result
+      end
+
+      # Filters and contextualizes credentials for source repository access.
+      #
+      # This method filters the available credentials to include only those that
+      # are relevant for accessing the source repository. It includes git source
+      # credentials for repository access and terraform registry credentials for
+      # the specific hostname.
+      #
+      # @param source_hostname [String] The hostname to filter credentials for
+      # @return [Array<Dependabot::Credential>] Filtered credentials relevant to the hostname
+      sig { params(source_hostname: String).returns(T::Array[Dependabot::Credential]) }
+      def enhanced_credentials_for_source(source_hostname)
+        # Filter credentials to include relevant ones for the source repository
+        relevant_credentials = credentials.select do |cred|
+          case cred["type"]
+          when "git_source"
+            # Include git source credentials that might be needed for source repository access
+            true
+          when "terraform_registry"
+            # Include terraform registry credentials for the specific hostname
+            cred["host"] == source_hostname
+          else
+            # Include other credential types that might be relevant
+            true
+          end
+        end
+
+        PrivateRegistryLogger.log_registry_operation(
+          hostname: source_hostname,
+          operation: "credential_filtering",
+          details: {
+            total_credentials: credentials.length,
+            relevant_credentials: relevant_credentials.length,
+            credential_types: relevant_credentials.map { |c| c["type"] }.uniq
+          }
+        )
+
+        relevant_credentials
       end
     end
   end
