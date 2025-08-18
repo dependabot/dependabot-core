@@ -2125,7 +2125,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
   end
 
   describe "#run_npm8_checker" do
-    subject { resolver.send(:run_npm8_checker, version: version) }
+    subject(:run_npm8_checker) { resolver.send(:run_npm8_checker, version: version) }
 
     let(:project_name) { "npm8/simple" }
     let(:latest_allowable_version) { Gem::Version.new("1.3.0") }
@@ -2167,10 +2167,11 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
           .with("install example@1.3.0 --package-lock-only --dry-run=true --ignore-scripts")
           .and_call_original
 
-        subject
+        run_npm8_checker
 
         expect(Dependabot::NpmAndYarn::Helpers).to have_received(:run_npm_command)
-          .with("COREPACK_NPM_REGISTRY=https://custom-registry.example.com install example@1.3.0 --package-lock-only --dry-run=true --ignore-scripts")
+          .with("COREPACK_NPM_REGISTRY=https://custom-registry.example.com install example@1.3.0 " \
+                "--package-lock-only --dry-run=true --ignore-scripts")
       end
     end
 
@@ -2182,7 +2183,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
           .with("install example@1.3.0 --package-lock-only --dry-run=true --ignore-scripts")
           .and_call_original
 
-        subject
+        run_npm8_checker
 
         expect(Dependabot::NpmAndYarn::Helpers).to have_received(:run_npm_command)
           .with("install example@1.3.0 --package-lock-only --dry-run=true --ignore-scripts")
