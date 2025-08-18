@@ -8,7 +8,7 @@ ARG PY_3_10=3.10.18
 ARG PY_3_9=3.9.23
 ARG PYENV_VERSION=v2.5.2
 # This cannot be inlined below (e.g., COPY --from=...) because Dependabot does not support that syntax yet
-FROM ghcr.io/astral-sh/uv:0.8.4 AS uv
+FROM ghcr.io/astral-sh/uv:0.8.11 AS uv
 
 FROM ghcr.io/dependabot/dependabot-updater-core AS python-core
 ARG PY_3_13
