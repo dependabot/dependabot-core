@@ -22,8 +22,8 @@ module Dependabot
         # array can be slow (if it's large)
         return latest_version_listing["homepage"] if latest_version_listing["homepage"]
 
-        listing = all_version_listings.find { |l| l["homepage"] }
-        listing&.fetch("homepage", nil) || super
+        listing = all_version_listings.find { |_, l| l["homepage"] }
+        listing&.last&.fetch("homepage", nil) || super
       end
 
       sig { override.returns(T.nilable(String)) }
@@ -55,8 +55,8 @@ module Dependabot
       sig { returns(T.nilable(String)) }
       def npm_releaser
         all_version_listings
-          .find { |v| v["version"] == dependency.version }
-          &.dig("_npmUser", "name")
+          .find { |v, _| v == dependency.version }
+          &.last&.dig("_npmUser", "name")
       end
 
       sig { returns(T.nilable(T::Array[String])) }
@@ -73,7 +73,7 @@ module Dependabot
 
         all_version_listings
           .reject { |v, _| Time.parse(times[v]) > cutoff }
-          .filter_map { |d| d.fetch("_npmUser", nil)&.fetch("name", nil) }
+          .filter_map { |_, d| d.fetch("_npmUser", nil)&.fetch("name", nil) }
       end
 
       sig { returns(T.nilable(Source)) }
@@ -90,7 +90,7 @@ module Dependabot
         return potential_sources.first if potential_sources.any?
 
         potential_sources =
-          all_version_listings.flat_map do |listing|
+          all_version_listings.flat_map do |_, listing|
             [
               get_source(listing["repository"]),
               get_source(listing["homepage"]),
@@ -110,7 +110,7 @@ module Dependabot
         sources.first
       end
 
-      sig { params(details: T.any(String, T::Hash[String, String])).returns(T.nilable(Source)) }
+      sig { params(details: T.nilable(T.any(String, T::Hash[String, String]))).returns(T.nilable(Source)) }
       def get_source(details)
         potential_url = get_url(details)
         return unless potential_url
@@ -144,7 +144,7 @@ module Dependabot
         "https://github.com/" + url
       end
 
-      sig { params(details: T.any(String, T::Hash[String, String])).returns(T.nilable(String)) }
+      sig { params(details: T.nilable(T.any(String, T::Hash[String, String]))).returns(T.nilable(String)) }
       def get_directory(details)
         # Only return a directory if it is explicitly specified
         return unless details.is_a?(Hash)
@@ -177,7 +177,7 @@ module Dependabot
         @latest_version_listing = T.let({}, T.nilable(T::Hash[String, T.untyped]))
       end
 
-      sig { returns(T::Array[T::Hash[String, T.untyped]]) }
+      sig { returns(T::Array[[String, T::Hash[String, T.untyped]]]) }
       def all_version_listings
         return [] if npm_listing["versions"].nil?
 
@@ -208,14 +208,35 @@ module Dependabot
       sig { returns(String) }
       def dependency_url
         registry_url =
-          if new_source.nil? then "https://registry.npmjs.org"
+          if new_source.nil?
+            configured_registry_from_credentials || "https://registry.npmjs.org"
           else
             new_source&.fetch(:url)
           end
 
+        # Remove trailing slashes and escape spaces for proper URL formatting
+        registry_url = URI::DEFAULT_PARSER.escape(registry_url)&.gsub(%r{/+$}, "")
+
         # NPM registries expect slashes to be escaped
         escaped_dependency_name = dependency.name.gsub("/", "%2F")
         "#{registry_url}/#{escaped_dependency_name}"
+      end
+
+      sig { returns(T.nilable(String)) }
+      def configured_registry_from_credentials
+        # Look for a credential that replaces the base registry (global registry replacement)
+        replaces_base_cred = credentials.find { |cred| cred["type"] == "npm_registry" && cred.replaces_base? }
+        return normalize_registry_url(replaces_base_cred["registry"]) if replaces_base_cred
+
+        nil
+      end
+
+      sig { params(registry: T.nilable(String)).returns(T.nilable(String)) }
+      def normalize_registry_url(registry)
+        return nil unless registry
+        return registry if registry.start_with?("http")
+
+        "https://#{registry}"
       end
 
       sig { returns(T::Hash[String, String]) }
