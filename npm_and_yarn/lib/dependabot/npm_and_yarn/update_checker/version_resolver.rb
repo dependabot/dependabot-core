@@ -848,9 +848,9 @@ module Dependabot
 
           replaces_base_cred = credentials.find { |cred| cred["type"] == "npm_registry" && cred.replaces_base? }
           registry_url = replaces_base_cred&.[]("registry")
-          registry_url = "https://#{registry_url}" if registry_url && !registry_url.start_with?("http")
-
           return cmd unless registry_url
+
+          registry_url = "https://#{registry_url}" if !registry_url.start_with?("http")
 
           "COREPACK_NPM_REGISTRY=#{registry_url} " + cmd
         end
