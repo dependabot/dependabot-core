@@ -844,12 +844,17 @@ module Dependabot
 
         sig { params(cmd: String).returns(String) }
         def apply_corepack_registry_override(cmd)
-          return cmd if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
-          
+          return cmd unless Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
+
           replaces_base_cred = credentials.find { |cred| cred["type"] == "npm_registry" && cred.replaces_base? }
           registry_url = replaces_base_cred&.[]("registry")
           registry_url = "https://#{registry_url}" if registry_url && !registry_url.start_with?("http://")
-          "COREPACK_NPM_REGISTRY=#{registry_url} " + cmd if registry_url
+
+          if registry_url
+            "COREPACK_NPM_REGISTRY=#{registry_url} " + cmd
+          else
+            cmd
+          end
         end
 
         sig do
