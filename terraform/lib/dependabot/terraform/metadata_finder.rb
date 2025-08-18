@@ -5,6 +5,8 @@ require "excon"
 require "json"
 require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
+require "dependabot/metadata_finders/base/changelog_finder"
+require "dependabot/metadata_finders/base/release_finder"
 require "dependabot/terraform/registry_client"
 require "dependabot/terraform/private_registry_logger"
 require "dependabot/shared_helpers"
@@ -14,6 +16,51 @@ module Dependabot
   module Terraform
     class MetadataFinder < Dependabot::MetadataFinders::Base
       extend T::Sig
+
+      # Override changelog_text to use enhanced credentials for private registries.
+      #
+      # For private registry dependencies, this method ensures that the appropriate
+      # credentials are passed to the ChangelogFinder, enabling access to private
+      # source repositories.
+      #
+      # @return [String, nil] The changelog text or nil if not found/accessible
+      sig { override.returns(T.nilable(String)) }
+      def changelog_text
+        return super unless dependency.source_type == "registry"
+
+        @changelog_finder ||= T.let(
+          Dependabot::MetadataFinders::Base::ChangelogFinder.new(
+            dependency: dependency,
+            source: source,
+            credentials: enhanced_credentials_for_changelog,
+            suggested_changelog_url: suggested_changelog_url
+          ),
+          T.nilable(Dependabot::MetadataFinders::Base::ChangelogFinder)
+        )
+        @changelog_finder.changelog_text
+      end
+
+      # Override releases_text to use enhanced credentials for private registries.
+      #
+      # For private registry dependencies, this method ensures that the appropriate
+      # credentials are passed to the ReleaseFinder, enabling access to private
+      # source repositories for GitHub releases.
+      #
+      # @return [String, nil] The releases text or nil if not found/accessible
+      sig { override.returns(T.nilable(String)) }
+      def releases_text
+        return super unless dependency.source_type == "registry"
+
+        @release_finder ||= T.let(
+          Dependabot::MetadataFinders::Base::ReleaseFinder.new(
+            dependency: dependency,
+            source: source,
+            credentials: enhanced_credentials_for_changelog
+          ),
+          T.nilable(Dependabot::MetadataFinders::Base::ReleaseFinder)
+        )
+        @release_finder.releases_text
+      end
 
       private
 
@@ -163,6 +210,53 @@ module Dependabot
         end
 
         result
+      end
+
+      # Filters and contextualizes credentials for source repository access.
+      #
+      # This method filters the available credentials to include only those that
+      # are relevant for accessing the source repository. It includes git source
+      # credentials for repository access and is used by both changelog and release
+      # finding functionality.
+      #
+      # @return [Array<Dependabot::Credential>] Filtered credentials for source access
+      sig { returns(T::Array[Dependabot::Credential]) }
+      def enhanced_credentials_for_changelog
+        return credentials unless source
+
+        # For private registries, filter credentials to include those relevant
+        # for both the registry and the source repository
+        source_host = T.must(source).hostname
+        registry_info = dependency.requirements.filter_map { |r| r[:source] }.first
+        registry_hostname = registry_info[:registry_hostname] || registry_info["registry_hostname"]
+
+        relevant_credentials = credentials.select do |cred|
+          case cred["type"]
+          when "git_source"
+            # Include git source credentials that match the source repository host
+            cred["host"] == source_host
+          when "terraform_registry"
+            # Include terraform registry credentials for the registry hostname
+            cred["host"] == registry_hostname
+          else
+            # Include other credential types that might be relevant
+            true
+          end
+        end
+
+        PrivateRegistryLogger.log_registry_operation(
+          hostname: registry_hostname,
+          operation: "credential_filtering_for_changelog",
+          details: {
+            source_host: source_host,
+            registry_hostname: registry_hostname,
+            total_credentials: credentials.length,
+            relevant_credentials: relevant_credentials.length,
+            credential_types: relevant_credentials.map { |c| c["type"] }.uniq
+          }
+        )
+
+        relevant_credentials
       end
 
       # Filters and contextualizes credentials for source repository access.

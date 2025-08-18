@@ -352,20 +352,206 @@ module Dependabot
 
       sig { params(dependency: Dependabot::Dependency, base_url: String).returns(T.nilable(String)) }
       def resolve_module_source(dependency, base_url)
-        download_url = URI.join(base_url, "#{dependency.name}/#{dependency.version}/download")
+        # Get the full module identifier from the dependency requirements
+        requirement = T.must(dependency.requirements.first)
+        source = requirement[:source]
+        module_identifier = source[:module_identifier] || source["module_identifier"]
+        
+        # First try the download endpoint (for modules with direct source links)
+        download_url = URI.join(base_url, "#{module_identifier}/#{dependency.version}/download")
         response = http_get(download_url)
 
         if response.status == 401
           raise Dependabot::PrivateSourceAuthenticationFailure, hostname
         end
 
-        return nil unless response.status == 204
+        if response.status == 204
+          source_url = response.headers.fetch("X-Terraform-Get")
+          source_url = URI.join(download_url, source_url) if
+            source_url.start_with?("/", "./", "../")
+          source_url = RegistryClient.get_proxied_source(source_url) if source_url
+          
+          # Check if this is a valid Git source URL that Source.from_url can parse
+          if source_url && Source.from_url(source_url)
+            return source_url
+          end
+        end
 
-        source_url = response.headers.fetch("X-Terraform-Get")
-        source_url = URI.join(download_url, source_url) if
-          source_url.start_with?("/", "./", "../")
-        source_url = RegistryClient.get_proxied_source(source_url) if source_url
-        source_url
+        # For private registry modules or modules without direct Git links,
+        # try to get source information from the versions endpoint
+        resolve_module_source_from_versions(dependency, base_url)
+      end
+
+      # Attempts to resolve module source from the versions API endpoint.
+      # This is used for private registry modules that don't have direct Git links
+      # but may have source repository information in their metadata.
+      #
+      # @param dependency [Dependabot::Dependency] the dependency to resolve
+      # @param base_url [String] the registry API base URL
+      # @return [String, nil] the resolved source URL or nil if not found
+      sig { params(dependency: Dependabot::Dependency, base_url: String).returns(T.nilable(String)) }
+      def resolve_module_source_from_versions(dependency, base_url)
+        # Get the full module identifier from the dependency requirements
+        requirement = T.must(dependency.requirements.first)
+        source = requirement[:source]
+        module_identifier = source[:module_identifier] || source["module_identifier"]
+        
+        versions_url = URI.join(base_url, "#{module_identifier}/versions")
+        
+        PrivateRegistryLogger.log_registry_operation(
+          hostname: hostname,
+          operation: "versions_api_fallback",
+          details: {
+            dependency_name: dependency.name,
+            module_identifier: module_identifier,
+            versions_url: versions_url.to_s
+          }
+        )
+        
+        response = http_get(versions_url)
+        return nil unless response.status == 200
+
+        begin
+          body = JSON.parse(response.body)
+          modules = body["modules"]
+          return nil unless modules&.any?
+
+          module_data = modules.first
+          source_field = module_data["source"]
+          
+          PrivateRegistryLogger.log_registry_operation(
+            hostname: hostname,
+            operation: "versions_api_source_found",
+            details: {
+              dependency_name: dependency.name,
+              source_field: source_field,
+              is_registry_identifier: source_field&.include?(hostname)
+            }
+          )
+
+          # If source is a registry identifier (e.g., "app.terraform.io/org/module/provider"),
+          # try to get VCS information from TFC v2 API (for app.terraform.io)
+          if source_field&.include?(hostname)
+            PrivateRegistryLogger.log_registry_operation(
+              hostname: hostname,
+              operation: "attempting_tfc_v2_api",
+              details: {
+                dependency_name: dependency.name,
+                message: "Registry identifier found, trying TFC v2 API for VCS info"
+              }
+            )
+            
+            vcs_url = resolve_vcs_from_tfc_v2_api(dependency)
+            return vcs_url if vcs_url
+            
+            PrivateRegistryLogger.log_registry_operation(
+              hostname: hostname,
+              operation: "no_git_source_available",
+              details: {
+                dependency_name: dependency.name,
+                message: "No VCS repository found in TFC v2 API"
+              }
+            )
+            return nil
+          end
+
+          # If it's a Git URL, return it
+          if source_field && Source.from_url(source_field)
+            return source_field
+          end
+
+          nil
+        rescue JSON::ParserError => e
+          PrivateRegistryLogger.log_registry_error(
+            hostname: hostname,
+            error: e,
+            context: {
+              operation: "versions_api_parse_error",
+              dependency_name: dependency.name
+            }
+          )
+          nil
+        end
+      end
+
+      # Attempts to resolve VCS repository information from Terraform Cloud v2 API.
+      # This is specifically for app.terraform.io private modules that have VCS integration
+      # but don't expose the Git URL through the standard registry protocol.
+      #
+      # @param dependency [Dependabot::Dependency] the dependency to resolve
+      # @return [String, nil] the Git repository URL or nil if not found
+      sig { params(dependency: Dependabot::Dependency).returns(T.nilable(String)) }
+      def resolve_vcs_from_tfc_v2_api(dependency)
+        # Only try TFC v2 API for app.terraform.io
+        return nil unless hostname == "app.terraform.io"
+
+        requirement = T.must(dependency.requirements.first)
+        source = requirement[:source]
+        module_identifier = source[:module_identifier] || source["module_identifier"]
+        
+        # Parse module identifier: org/module/provider
+        parts = module_identifier.split("/")
+        return nil unless parts.length == 3
+        
+        org, module_name, provider = parts
+        
+        # Construct TFC v2 API URL
+        tfc_v2_url = URI.join("https://app.terraform.io/", "/api/v2/organizations/#{org}/registry-modules/private/#{module_identifier}")
+        
+        PrivateRegistryLogger.log_registry_operation(
+          hostname: hostname,
+          operation: "tfc_v2_api_request",
+          details: {
+            dependency_name: dependency.name,
+            tfc_v2_url: tfc_v2_url.to_s,
+            organization: org
+          }
+        )
+        
+        # Make request with TFC v2 API headers
+        token = tokens[hostname]
+        headers = {}
+        headers["Authorization"] = "Bearer #{token}" if token
+        headers["Content-Type"] = "application/vnd.api+json"
+        
+        response = Dependabot::RegistryClient.get(
+          url: tfc_v2_url.to_s,
+          headers: headers
+        )
+        return nil unless response.status == 200
+        
+        begin
+          body = JSON.parse(response.body)
+          vcs_repo = body.dig("data", "attributes", "vcs-repo")
+          
+          if vcs_repo && vcs_repo["repository-http-url"]
+            repository_url = vcs_repo["repository-http-url"]
+            
+            PrivateRegistryLogger.log_registry_operation(
+              hostname: hostname,
+              operation: "tfc_v2_vcs_found",
+              details: {
+                dependency_name: dependency.name,
+                repository_url: repository_url,
+                service_provider: vcs_repo["service-provider"]
+              }
+            )
+            
+            return repository_url
+          end
+          
+          nil
+        rescue JSON::ParserError => e
+          PrivateRegistryLogger.log_registry_error(
+            hostname: hostname,
+            error: e,
+            context: {
+              operation: "tfc_v2_api_parse_error",
+              dependency_name: dependency.name
+            }
+          )
+          nil
+        end
       end
 
       sig { params(dependency: Dependabot::Dependency, base_url: String).returns(T.nilable(String)) }
