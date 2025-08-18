@@ -43,20 +43,26 @@ module Dependabot
         sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
         def latest_version_tag
           # step one fetch allowed version tags and
-          allowed_version_tags = git_commit_checker.allowed_version_tags
-          begin
-            # sort the allowed version tags by name in descending order
-            select_version_tags_in_cooldown_period&.each do |tag_name|
-              # filter out if name is not in cooldown period
-              allowed_version_tags.reject! do |gitref_filtered|
-                true if gitref_filtered.name == tag_name
+
+          if cooldown_enabled?
+            allowed_version_tags = git_commit_checker.allowed_version_tags
+            begin
+              # sort the allowed version tags by name in descending order
+              select_version_tags_in_cooldown_period&.each do |tag_name|
+                # filter out if name is not in cooldown period
+                allowed_version_tags.reject! do |gitref_filtered|
+                  true if gitref_filtered.name == tag_name
+                end
               end
+              Dependabot.logger.info("Allowed version tags after filtering versions in cooldown:
+                #{allowed_version_tags.map(&:name).join(', ')}")
+
+            rescue StandardError => e
+              Dependabot.logger.error("Error fetching latest version tag: #{e.message}")
             end
-            Dependabot.logger.info("Allowed version tags after filtering versions in cooldown:
-              #{allowed_version_tags.map(&:name).join(', ')}")
             git_commit_checker.max_local_tag(allowed_version_tags)
-          rescue StandardError => e
-            Dependabot.logger.error("Error fetching latest version tag: #{e.message}")
+          else
+            # if cooldown is not enabled, then we return the latest tag
             git_commit_checker.local_tag_for_latest_version
           end
         end
@@ -76,12 +82,12 @@ module Dependabot
           version_tags_in_cooldown_period
         end
 
-        sig { params(tag_with_detail:Dependabot::GitTagWithDetail).returns(T::Boolean) }
+        sig { params(tag_with_detail: Dependabot::GitTagWithDetail).returns(T::Boolean) }
         def check_if_version_in_cooldown_period?(tag_with_detail)
           return false unless tag_with_detail.release_date
 
           current_version = version_class.correct?(dependency.version) ? version_class.new(dependency.version) : nil
-          days = cooldown_days_for(current_version,version_class.new(tag_with_detail.tag))
+          days = cooldown_days_for(current_version, version_class.new(tag_with_detail.tag))
 
           # Calculate the number of seconds passed since the release
           passed_seconds = Time.now.to_i - tag_with_detail.release_date.to_i
@@ -98,7 +104,6 @@ module Dependabot
         def cooldown_days_for(current_version, new_version)
           cooldown = @cooldown_options
           return 0 if cooldown.nil?
-          return 0 unless cooldown_enabled?
           return 0 unless cooldown.included?(dependency.name)
           return cooldown.default_days if current_version.nil?
 
@@ -144,17 +149,23 @@ module Dependabot
           )
         end
 
-        # Since base class is returning false, we need to override it.
-        sig { returns(T::Boolean) }
-        def cooldown_enabled?
-          true
-        end
-
         sig { returns(Dependabot::GitCommitChecker) }
         attr_reader :git_commit_checker
 
         sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
+
+        sig { returns(T::Boolean) }
+        def cooldown_enabled?
+          # This is a simple check to see if user has put cooldown days.
+          # If not set, then we aassume user does not want cooldown.
+          return false if @cooldown_options.nil?
+          return true if @cooldown_options.default_days.positive? ||
+                         @cooldown_options.semver_major_days.positive? ||
+                         @cooldown_options.semver_minor_days.positive? ||
+                         @cooldown_options.semver_patch_days.positive?
+          false
+        end
       end
     end
   end
