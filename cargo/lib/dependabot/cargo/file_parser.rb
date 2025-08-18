@@ -121,6 +121,10 @@ module Dependabot
 
           DEPENDENCY_TYPES.each do |type|
             parsed_content.fetch(type, {}).each do |name, requirement|
+              # Skip workspace-inherited dependencies (similar to pnpm catalog)
+              # Only skip if workspace is exactly boolean true
+              next if requirement.is_a?(Hash) && requirement["workspace"] == true
+
               next unless name == name_from_declaration(name, requirement)
               next if lockfile && !version_from_lockfile(name, requirement)
 
@@ -129,6 +133,10 @@ module Dependabot
 
             parsed_content.fetch("target", {}).each do |_, t_details|
               t_details.fetch(type, {}).each do |name, requirement|
+                # Skip workspace-inherited dependencies
+                # Only skip if workspace is exactly boolean true
+                next if requirement.is_a?(Hash) && requirement["workspace"] == true
+
                 next unless name == name_from_declaration(name, requirement)
                 next if lockfile && !version_from_lockfile(name, requirement)
 

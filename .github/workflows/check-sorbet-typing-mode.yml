@@ -12,7 +12,7 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
 
       - name: Get Changed Files
         id: changed-files
@@ -27,6 +27,12 @@ jobs:
 
           # Iterate over the changed Ruby files and filter only Ruby files
           for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
+            # Skip spec files altogether
+            if [[ "$file" =~ _spec\.rb$ ]]; then
+              echo "Skipping spec file: $file"
+              continue
+            fi
+
             echo "Checking $file for Sorbet typing..."
             # Check if the top of the file has `# typed: strict` or `# typed: strong`
             if ! head -n 10 "$file" | grep -E -q '^# typed: (strict|strong)'; then
