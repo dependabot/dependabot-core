@@ -164,6 +164,7 @@ module Dependabot
                          @cooldown_options.semver_major_days.positive? ||
                          @cooldown_options.semver_minor_days.positive? ||
                          @cooldown_options.semver_patch_days.positive?
+
           false
         end
       end
