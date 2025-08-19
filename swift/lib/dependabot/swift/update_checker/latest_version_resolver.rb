@@ -47,7 +47,7 @@ module Dependabot
         attr_reader :git_commit_checker
 
         # Return latest version tag for the dependency, it removes tags that are in cooldown period
-        # and returns the latest version tag that is not in cooldown period. If eexception occurs
+        # and returns the latest version tag that is not in cooldown period. If exception occurs
         # it will return the latest version tag from the git_commit_checker. as it was before
         sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
         def latest_version_tag
@@ -92,7 +92,7 @@ module Dependabot
           days = cooldown_days_for(current_version, version_class.new(tag_with_detail.tag.delete("v")))
 
           # Calculate the number of seconds passed since the release
-          passed_seconds = Time.now.to_i - tag_with_detail.release_date.to_i
+          passed_seconds = Time.now.to_i - release_date_to_seconds(tag_with_detail.release_date)
           # Check if the release is within the cooldown period
           passed_seconds < days * DAY_IN_SECONDS
         end
@@ -133,8 +133,10 @@ module Dependabot
           dependency.version_class
         end
 
-        sig { params(release_date: String).returns(Integer) }
+        sig { params(release_date: T.nilable(String)).returns(Integer) }
         def release_date_to_seconds(release_date)
+          return 0 unless release_date
+
           Time.parse(release_date).to_i
         rescue ArgumentError => e
           Dependabot.logger.error("Invalid release date format: #{release_date} and error: #{e.message}")
