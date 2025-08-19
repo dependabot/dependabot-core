@@ -43,27 +43,21 @@ module Dependabot
         sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
         def latest_version_tag
           # step one fetch allowed version tags and
+          return git_commit_checker.local_tag_for_latest_version if !cooldown_enabled?
 
-          if cooldown_enabled?
-            allowed_version_tags = git_commit_checker.allowed_version_tags
-            begin
-              # sort the allowed version tags by name in descending order
-              select_version_tags_in_cooldown_period&.each do |tag_name|
-                # filter out if name is not in cooldown period
-                allowed_version_tags.reject! do |gitref_filtered|
-                  true if gitref_filtered.name == tag_name
-                end
-              end
-              Dependabot.logger.info("Allowed version tags after filtering versions in cooldown:
-                #{allowed_version_tags.map(&:name).join(', ')}")
-            rescue StandardError => e
-              Dependabot.logger.error("Error fetching latest version tag: #{e.message}")
+          allowed_version_tags = git_commit_checker.allowed_version_tags
+          # sort the allowed version tags by name in descending order
+          select_version_tags_in_cooldown_period&.each do |tag_name|
+            # filter out if name is not in cooldown period
+            allowed_version_tags.reject! do |gitref_filtered|
+              true if gitref_filtered.name == tag_name
             end
-            git_commit_checker.max_local_tag(allowed_version_tags)
-          else
-            # if cooldown is not enabled, then we return the latest tag
-            git_commit_checker.local_tag_for_latest_version
           end
+
+          git_commit_checker.max_local_tag(allowed_version_tags)
+        rescue StandardError => e
+          Dependabot.logger.error("Error fetching latest version tag: #{e.message}")
+          git_commit_checker.local_tag_for_latest_version
         end
 
         sig { returns(T.nilable(T::Array[String])) }
