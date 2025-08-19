@@ -170,6 +170,39 @@ module Dependabot
       @handled_dependencies[@current_directory]&.merge(names)
     end
 
+    # Enhanced method to track handled dependencies with group context
+    sig { params(dependency_names: T.any(String, T::Array[String]), group_name: T.nilable(String)).void }
+    def add_handled_dependencies_with_group(dependency_names, group_name = nil)
+      assert_current_directory_set!
+      names = Array(dependency_names)
+
+      # Add to traditional tracking for backward compatibility
+      add_handled_dependencies(names)
+
+      # Add to enhanced tracking with group context
+      return unless group_name && Dependabot::Experiments.enabled?(:group_membership_enforcement)
+
+      @enhanced_handled_dependencies ||= Set.new
+      names.each do |name|
+        key = [group_name, @current_directory, name]
+        @enhanced_handled_dependencies.add(key)
+        Dependabot.logger.debug("Enhanced tracking: [#{group_name}, #{@current_directory}, #{name}]")
+      end
+    end
+
+    # Check if a dependency is handled with group awareness
+    sig { params(dependency_name: String, group_name: T.nilable(String)).returns(T::Boolean) }
+    def dependency_handled_with_group?(dependency_name, group_name = nil)
+      return handled_dependencies.include?(dependency_name) unless group_name
+
+      if Dependabot::Experiments.enabled?(:group_membership_enforcement) && @enhanced_handled_dependencies
+        key = [group_name, @current_directory, dependency_name]
+        @enhanced_handled_dependencies.include?(key)
+      else
+        handled_dependencies.include?(dependency_name)
+      end
+    end
+
     sig { returns(T::Set[String]) }
     def handled_dependencies
       assert_current_directory_set!
@@ -219,6 +252,7 @@ module Dependabot
       @base_commit_sha = base_commit_sha
       @dependency_files = dependency_files
       @handled_dependencies = T.let({}, T::Hash[String, T::Set[String]])
+      @enhanced_handled_dependencies = T.let(nil, T.nilable(T::Set[T::Array[String]]))
       @current_directory = T.let("", String)
 
       @dependencies = T.let({}, T::Hash[String, T::Array[Dependabot::Dependency]])

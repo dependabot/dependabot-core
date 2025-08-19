@@ -69,7 +69,8 @@ module Dependabot
 
         group_changes = Dependabot::Updater::DependencyGroupChangeBatch.new(
           dependency_snapshot: dependency_snapshot,
-          group: group
+          group: group,
+          job: job
         )
 
         # deduplicate the dependencies.
@@ -174,8 +175,12 @@ module Dependabot
 
       sig { params(dependency: Dependabot::Dependency, group: Dependabot::DependencyGroup).returns(T::Boolean) }
       def skip_dependency?(dependency, group)
-        # Check if dependency has already been handled
-        handled_dependency = dependency_snapshot.handled_dependencies.include?(dependency.name)
+        # Check if dependency has already been handled with group context awareness
+        handled_dependency = if Dependabot::Experiments.enabled?(:group_membership_enforcement)
+                               dependency_snapshot.dependency_handled_with_group?(dependency.name, group.name)
+                             else
+                               dependency_snapshot.handled_dependencies.include?(dependency.name)
+                             end
 
         # Check if this is a group update
         is_group_update = if Dependabot::Experiments.enabled?(:allow_refresh_group_with_all_dependencies)
@@ -534,7 +539,13 @@ module Dependabot
         Dependabot.logger.info(
           "Skipping #{dependency.name} as it has already been updated to #{dependency.version}"
         )
-        dependency_snapshot.handled_dependencies << dependency.name
+
+        # Use enhanced tracking with group context if available
+        if Dependabot::Experiments.enabled?(:group_membership_enforcement)
+          dependency_snapshot.add_handled_dependencies_with_group(dependency.name, group.name)
+        else
+          dependency_snapshot.handled_dependencies << dependency.name
+        end
 
         dependency_params = {
           name: dependency.name,

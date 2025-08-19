@@ -2,6 +2,8 @@
 # frozen_string_literal: true
 
 require "pathname"
+require "sorbet-runtime"
+require "dependabot/updater/group_dependency_selector"
 
 # This class is responsible for aggregating individual DependencyChange objects
 # by tracking changes to individual files and the overall dependency list.
@@ -10,10 +12,12 @@ module Dependabot
     class DependencyGroupChangeBatch
       attr_reader :updated_dependencies
 
-      def initialize(dependency_snapshot: nil, group: nil)
+      def initialize(dependency_snapshot: nil, group: nil, job: nil)
         @updated_dependencies = []
         @group = group
         @dependency_snapshot = dependency_snapshot
+        @job = job # Store job context for selector operations
+        @group_dependency_selector = nil
 
         @dependency_file_batch = dependency_snapshot.dependency_files.each_with_object({}) do |file, hsh|
           hsh[file.path] = { file: file, changed: false, changes: 0 }
@@ -64,7 +68,18 @@ module Dependabot
 
       private
 
-      attr_reader :group, :dependency_snapshot
+      attr_reader :group
+      attr_reader :dependency_snapshot
+
+      # Get or create the group dependency selector for consistent filtering
+      def group_dependency_selector
+        return @group_dependency_selector if @group_dependency_selector
+
+        @group_dependency_selector = Dependabot::Updater::GroupDependencySelector.new(
+          group: group,
+          dependency_snapshot: dependency_snapshot
+        )
+      end
 
       # We should retain a list of all dependencies that we change, in future we may need to account for the folder
       # in which these changes are made to permit-cross folder updates of the same dependency.
@@ -75,7 +90,8 @@ module Dependabot
       # presentation concern.
       def merge_dependency_changes(updated_dependencies)
         if should_enforce_group_membership?
-          filtered_dependencies = filter_dependencies_to_group(updated_dependencies)
+          # Route through GroupDependencySelector for consistent filtering
+          filtered_dependencies = apply_group_dependency_filtering(updated_dependencies)
           @updated_dependencies.concat(filtered_dependencies)
         else
           @updated_dependencies.concat(updated_dependencies)
@@ -108,6 +124,37 @@ module Dependabot
       def should_enforce_group_membership?
         Dependabot::Experiments.enabled?(:group_membership_enforcement) &&
           group && dependency_snapshot
+      end
+
+      # Apply group dependency filtering through the GroupDependencySelector
+      # This ensures consistent filtering logic across the codebase
+      def apply_group_dependency_filtering(updated_dependencies)
+        return updated_dependencies if updated_dependencies.empty?
+
+        # If we have a job context, use the full selector with config filtering
+        return apply_selector_filtering(updated_dependencies) if @job
+
+        # Fallback to the basic group membership filtering
+        filter_dependencies_to_group(updated_dependencies)
+      end
+
+      # Use GroupDependencySelector for complete filtering (group + config)
+      def apply_selector_filtering(updated_dependencies)
+        # Create a temporary DependencyChange to use the selector's filtering
+        dummy_files = [] # The selector doesn't mutate files, so empty is fine
+
+        temp_change = Dependabot::DependencyChange.new(
+          job: @job,
+          updated_dependencies: updated_dependencies.dup,
+          updated_dependency_files: dummy_files
+        )
+
+        # Apply the selector's filtering logic
+        selector = group_dependency_selector
+        selector.filter_to_group!(temp_change)
+
+        # Return the filtered dependencies
+        temp_change.updated_dependencies
       end
 
       # Filter dependencies to only include those that belong to the group
@@ -161,6 +208,7 @@ module Dependabot
       def dependency_matches_pattern?(dep_name, pattern)
         return true if pattern == dep_name
         return true if pattern.include?("*") && File.fnmatch(pattern, dep_name)
+
         false
       end
 
@@ -179,7 +227,7 @@ module Dependabot
 
         Dependabot.logger.debug(
           "DependencyGroupChangeBatch filtered non-group dependencies: #{capped_names.join(', ')}#{suffix} " \
-            "[group=#{group.name}, ecosystem=#{dependency_snapshot.ecosystem}]"
+          "[group=#{group.name}, ecosystem=#{dependency_snapshot.ecosystem}]"
         )
       end
 
@@ -187,18 +235,21 @@ module Dependabot
       def emit_batch_filtering_metrics(original_count, filtered_count, removed_count)
         return unless removed_count > 0
 
-        if defined?(Dependabot::Metrics)
-          Dependabot::Metrics.increment(
-            "dependabot.batch.filtered_out_count",
-            removed_count,
-            tags: {
-              group: group.name,
-              ecosystem: dependency_snapshot.ecosystem,
-              original_count: original_count,
-              filtered_count: filtered_count
-            }
-          )
-        end
+        # NOTE: Dependabot::Metrics may not be available in all contexts
+        # Using T.unsafe to handle the potentially missing constant
+        metrics_class = T.unsafe(Dependabot).const_get(:Metrics) if T.unsafe(Dependabot).const_defined?(:Metrics)
+        return unless metrics_class
+
+        metrics_class.increment(
+          "dependabot.batch.filtered_out_count",
+          removed_count,
+          tags: {
+            group: group.name,
+            ecosystem: dependency_snapshot.ecosystem,
+            original_count: original_count,
+            filtered_count: filtered_count
+          }
+        )
       end
 
       def debug_updated_dependencies
