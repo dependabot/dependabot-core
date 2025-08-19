@@ -1,0 +1,16 @@
+[workspace]
+members = ["fvm", "sdk"]
+resolver = "2"
+
+[workspace.package]
+version = "4.7.2"
+license = "MIT OR Apache-2.0"
+edition = "2021"
+repository = "https://github.com/example/test-repo"
+authors = ["Test Author"]
+
+[workspace.dependencies]
+wasmtime = "31.0.0"
+serde = { version = "1.0.164", features = ["derive"] }
+thiserror = "1.0.50"
+anyhow = "1.0.86"
