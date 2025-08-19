@@ -57,7 +57,9 @@ module Dependabot
           allowed_version_tags = git_commit_checker.allowed_version_tags
           # filter out allowed version tags that are in the cooldown period
           select_version_tags_in_cooldown_period&.each do |tag_name|
-            # filter out if name is not in cooldown period
+          # filter out version tags that are in the cooldown period
+          select_version_tags_in_cooldown_period&.each do |tag_name|
+            # filter out if name is in cooldown period
             allowed_version_tags.reject! do |gitref_filtered|
               true if gitref_filtered.name == tag_name
             end
