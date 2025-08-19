@@ -48,7 +48,8 @@ module Dependabot
 
         # Return latest version tag for the dependency, it removes tags that are in cooldown period
         # and returns the latest version tag that is not in cooldown period. If an exception occurs
-        # it will return the latest version tag from the git_commit_checker. as it was before
+        # and returns the latest version tag that is not in cooldown period. If an exception occurs,
+        # it will return the latest version tag from the git_commit_checker, as before.
         sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
         def latest_version_tag
           # step one fetch allowed version tags and
