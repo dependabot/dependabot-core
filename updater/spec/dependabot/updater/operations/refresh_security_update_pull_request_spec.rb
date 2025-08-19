@@ -371,5 +371,54 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
                                                   [dependency])
       end
     end
+
+    context "when dependencies have changed in security update" do
+      let(:new_dependency) do
+        Dependabot::Dependency.new(
+          name: "dummy-pkg-b",
+          package_manager: "bundler",
+          version: "1.8.0",
+          requirements: [
+            { file: "Gemfile", requirement: "~> 1.8.0", groups: [], source: nil }
+          ]
+        )
+      end
+
+      let(:changed_dependency_change) do
+        instance_double(Dependabot::DependencyChange,
+                        should_replace_existing_pr?: true,
+                        updated_dependencies: [new_dependency])
+      end
+
+      before do
+        allow(dependency_snapshot).to receive(:job_dependencies).and_return([new_dependency])
+        allow(stub_update_checker).to receive_messages(
+          up_to_date?: false,
+          requirements_unlocked_or_can_be?: true,
+          updated_dependencies: [new_dependency]
+        )
+        allow(job).to receive(:dependencies).and_return(["dummy-pkg-a"])
+        allow(job).to receive(:allowed_update?).with(new_dependency).and_return(true)
+        allow(Dependabot::DependencyChangeBuilder).to receive(
+          :create_from
+        ).and_return(changed_dependency_change)
+        allow(refresh_security_update_pull_request).to receive_messages(
+          all_versions_ignored?: false
+        )
+      end
+
+      it "closes the existing pull request and creates a new one" do
+        expect(refresh_security_update_pull_request).to receive(
+          :close_pull_request
+        ).with(reason: :dependencies_changed)
+        expect(refresh_security_update_pull_request).to receive(
+          :create_pull_request
+        ).with(changed_dependency_change)
+        
+        refresh_security_update_pull_request.send(
+          :check_and_update_pull_request, [new_dependency]
+        )
+      end
+    end
   end
 end
