@@ -15,6 +15,8 @@ module Dependabot
         sig { params(dependency_file: DependencyFile).void }
         def initialize(dependency_file)
           @dependency_file = dependency_file
+          # Set this file to priority so it is used for top-level dependencies
+          dependency_file.priority = 1
         end
 
         sig { returns(T::Hash[String, T.untyped]) }
@@ -87,6 +89,7 @@ module Dependabot
             dependency_set += recursively_fetch_dependencies(details)
           end
 
+          @dependency_file.dependencies = dependency_set.dependencies.to_set
           dependency_set
         end
 

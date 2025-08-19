@@ -1718,4 +1718,55 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
       end
     end
   end
+
+  describe "parse support for DependencySubmission" do
+    subject(:dependencies) { parser.parse }
+
+    context "when using npm" do
+      context "with a simple project" do
+        let(:files) { project_dependency_files("npm9/simple") }
+
+        it "attaches a list of direct dependencies to the package.json file" do
+          expect(parser.dependency_files.count).to eq(2)
+          package_json = parser.dependency_files.find { |f| f.name == "package.json" }
+
+          direct_dependencies = dependencies.select(&:direct?)
+
+          # assert that direct dependencies are attributed to this file
+          expect(package_json.dependencies).to eq(direct_dependencies.to_set)
+
+          # assert that the package.json has default priority
+          expect(package_json.priority).to be_zero
+        end
+
+        it "attaches a full list of direct and indirect dependencies to the package-lock.json" do
+          expect(parser.dependency_files.count).to eq(2)
+          lockfile = parser.dependency_files.find { |f| f.name == "package-lock.json" }
+
+          _direct, indirect = dependencies.partition(&:direct?)
+
+          # assert that all dependencies are attributed to this file
+          expect(lockfile.dependencies.count).to eq(dependencies.count)
+
+          # TODO(brrygrdn): Correctly sort direct vs indirect
+          #
+          # This approach will report everything as indirect for now.
+          #
+          # expect(lockfile.dependencies.count(&:direct?)).to eql(direct.count)
+          # expect(lockfile.dependencies.count { |d| !d.direct? }).to eql(indirect.count)
+
+          # direct.each do |dependency|
+          #   expect(lockfile.dependencies).to include(dependency)
+          # end
+
+          indirect.each do |dependency|
+            expect(lockfile.dependencies).to include(dependency)
+          end
+
+          # assert that the package.json has higher priority
+          expect(lockfile.priority).to be(1)
+        end
+      end
+    end
+  end
 end
