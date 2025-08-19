@@ -157,7 +157,7 @@ module Dependabot
         sig { returns(T::Boolean) }
         def cooldown_enabled?
           # This is a simple check to see if user has put cooldown days.
-          # If not set, then we aassume user does not want cooldown.
+          # If not set, then we assume user does not want cooldown.
           return false if @cooldown_options.nil?
           return true if @cooldown_options.default_days.positive? ||
                          @cooldown_options.semver_major_days.positive? ||
