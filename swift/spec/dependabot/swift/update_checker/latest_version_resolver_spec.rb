@@ -117,7 +117,7 @@ RSpec.describe Dependabot::Swift::UpdateChecker::LatestVersionResolver do
     end
 
     context "when tag has a release date" do
-      let(:release_date) { "2025-08-08 19:59:21.739762572 +0000" } # 10 days ago
+      let(:release_date) { (Time.now - (10 * 24 * 60 * 60)).iso8601 } # 10 days ago
 
       before do
         allow(resolver).to receive(:cooldown_days_for).and_return(30)
