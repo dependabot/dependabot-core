@@ -8,6 +8,7 @@ require "support/dependency_file_helpers"
 require "dependabot/dependency_change"
 require "dependabot/dependency_snapshot"
 require "dependabot/service"
+require "dependabot/api_client"
 require "dependabot/updater/error_handler"
 require "dependabot/updater/operations/refresh_security_update_pull_request"
 require "dependabot/dependency_change_builder"
@@ -369,6 +370,49 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
 
         refresh_security_update_pull_request.send(:check_and_update_pull_request,
                                                   [dependency])
+      end
+    end
+
+    context "when dependencies have changed" do
+      let(:changed_dependencies) { %w(dummy-pkg-a dummy-pkg-new) }
+
+      before do
+        allow(job).to receive(:dependencies).and_return(%w(dummy-pkg-a dummy-pkg-b))
+        allow(refresh_security_update_pull_request).to receive(:existing_pull_request).and_return(false)
+        allow(stub_dependency_change).to receive(:updated_dependencies).and_return(
+          [
+            instance_double(Dependabot::Dependency, name: "dummy-pkg-a"),
+            instance_double(Dependabot::Dependency, name: "dummy-pkg-new")
+          ]
+        )
+      end
+
+      it "closes the existing PR and creates a new one" do
+        expect(mock_service).to receive(:close_pull_request).with(%w(dummy-pkg-a dummy-pkg-b), :dependencies_changed)
+        expect(mock_service).to receive(:create_pull_request)
+
+        refresh_security_update_pull_request.send(:check_and_update_pull_request,
+                                                  [dependency])
+      end
+
+      context "when creating the new PR fails" do
+        let(:api_error) { Dependabot::ApiClient::ApiError.new("API Error") }
+
+        before do
+          allow(mock_service).to receive(:create_pull_request).and_raise(api_error)
+        end
+
+        it "logs the error and re-raises the exception" do
+          expect(mock_service).to receive(:close_pull_request).with(%w(dummy-pkg-a dummy-pkg-b), :dependencies_changed)
+          expect(Dependabot.logger).to receive(:error).with(
+            "Failed to create replacement PR after closing existing PR for dependencies_changed: API Error"
+          )
+
+          expect do
+            refresh_security_update_pull_request.send(:check_and_update_pull_request,
+                                                      [dependency])
+          end.to raise_error(Dependabot::ApiClient::ApiError)
+        end
       end
     end
   end
