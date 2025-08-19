@@ -13,13 +13,19 @@ module Dependabot
     class RegistryClient
       extend T::Sig
 
-      sig { params(credentials: T::Array[Dependabot::Credential]).void }
-      def initialize(credentials:)
+      sig { params(credentials: T::Array[Dependabot::Credential], custom_registries: T::Array[T::Hash[Symbol, String]]).void }
+      def initialize(credentials:, custom_registries: [])
         @credentials = credentials
+        @custom_registries = custom_registries
       end
 
       sig { params(package_name: String, package_uuid: T.nilable(String)).returns(T.nilable(Gem::Version)) }
       def fetch_latest_version(package_name, package_uuid = nil)
+        # Use custom registries if available
+        if custom_registries.any?
+          return fetch_latest_version_with_custom_registries(package_name, package_uuid)
+        end
+
         args = { package_name: package_name }
         args[:package_uuid] = package_uuid if package_uuid
 
@@ -38,6 +44,31 @@ module Dependabot
         Gem::Version.new(result["version"])
       rescue StandardError => e
         Dependabot.logger.warn("Failed to fetch latest version for #{package_name}: #{e.message}")
+        nil
+      end
+
+      sig { params(package_name: String, package_uuid: T.nilable(String)).returns(T.nilable(Gem::Version)) }
+      def fetch_latest_version_with_custom_registries(package_name, package_uuid = nil)
+        args = {
+          package_name: package_name,
+          package_uuid: package_uuid || "",
+          registry_urls: custom_registry_urls
+        }
+
+        result = call_julia_helper(
+          function: "get_latest_version_with_custom_registries",
+          args: args
+        )
+
+        # Check if the result itself contains an error (package not found)
+        return nil if result["error"]
+
+        # Extract version from the result structure
+        return nil unless result["version"]
+
+        Gem::Version.new(result["version"])
+      rescue StandardError => e
+        Dependabot.logger.warn("Failed to fetch latest version with custom registries for #{package_name}: #{e.message}")
         nil
       end
 
@@ -182,6 +213,11 @@ module Dependabot
 
       sig { params(package_name: String, package_uuid: T.nilable(String)).returns(T::Array[String]) }
       def fetch_available_versions(package_name, package_uuid = nil)
+        # Use custom registries if available
+        if custom_registries.any?
+          return fetch_available_versions_with_custom_registries(package_name, package_uuid)
+        end
+
         args = { package_name: package_name }
         args[:package_uuid] = package_uuid if package_uuid
 
@@ -203,7 +239,41 @@ module Dependabot
         []
       end
 
+      sig { params(package_name: String, package_uuid: T.nilable(String)).returns(T::Array[String]) }
+      def fetch_available_versions_with_custom_registries(package_name, package_uuid = nil)
+        args = {
+          package_name: package_name,
+          package_uuid: package_uuid || "",
+          registry_urls: custom_registry_urls
+        }
+
+        result = call_julia_helper(
+          function: "get_available_versions_with_custom_registries",
+          args: args
+        )
+
+        # Check if the result contains an error
+        return [] if result["error"]
+
+        # Extract versions array from the result
+        versions = result["versions"]
+        return [] unless versions.is_a?(Array)
+
+        versions.map(&:to_s)
+      rescue StandardError => e
+        Dependabot.logger.warn("Failed to fetch available versions with custom registries for #{package_name}: #{e.message}")
+        []
+      end
+
       private
+
+      sig { returns(T::Array[T::Hash[Symbol, String]]) }
+      attr_reader :custom_registries
+
+      sig { returns(T::Array[String]) }
+      def custom_registry_urls
+        custom_registries.map { |reg| reg[:url] }.compact
+      end
 
       sig { returns(T::Array[Dependabot::Credential]) }
       attr_reader :credentials

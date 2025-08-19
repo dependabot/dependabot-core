@@ -20,6 +20,17 @@ module Dependabot
         @latest_version ||= T.let(latest_version_finder.latest_version, T.nilable(Gem::Version))
       end
 
+      sig { returns(T::Array[T::Hash[Symbol, String]]) }
+      def custom_registries
+        @custom_registries ||= begin
+          registries = T.cast(options.dig(:registries, :julia), T.nilable(T::Array[T.untyped])) || []
+          # Convert string keys to symbols if needed
+          registries.map do |registry|
+            registry.is_a?(Hash) ? registry.transform_keys(&:to_sym) : registry
+          end
+        end
+      end
+
       sig { override.returns(T.nilable(Gem::Version)) }
       def latest_resolvable_version
         # For Julia, the latest version is generally resolvable since
@@ -64,7 +75,8 @@ module Dependabot
                                            ignored_versions: ignored_versions,
                                            security_advisories: security_advisories,
                                            raise_on_ignored: raise_on_ignored,
-                                           cooldown_config: cooldown_config
+                                           cooldown_config: cooldown_config,
+                                           custom_registries: custom_registries
                                          ), T.nilable(Dependabot::Julia::LatestVersionFinder))
       end
 

@@ -18,12 +18,14 @@ module Dependabot
         sig do
           params(
             dependency: Dependabot::Dependency,
-            credentials: T::Array[Dependabot::Credential]
+            credentials: T::Array[Dependabot::Credential],
+            custom_registries: T::Array[T::Hash[Symbol, String]]
           ).void
         end
-        def initialize(dependency:, credentials:)
+        def initialize(dependency:, credentials:, custom_registries: [])
           @dependency = dependency
           @credentials = credentials
+          @custom_registries = custom_registries
         end
 
         sig { returns(Dependabot::Dependency) }
@@ -32,12 +34,18 @@ module Dependabot
         sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
 
+        sig { returns(T::Array[T::Hash[Symbol, String]]) }
+        attr_reader :custom_registries
+
         sig { returns(T::Array[Dependabot::Package::PackageRelease]) }
         def fetch_package_releases
           releases = T.let([], T::Array[Dependabot::Package::PackageRelease])
 
           begin
-            registry_client = RegistryClient.new(credentials: credentials)
+            registry_client = RegistryClient.new(
+              credentials: credentials,
+              custom_registries: custom_registries
+            )
             uuid = T.cast(dependency.metadata[:julia_uuid], T.nilable(String))
 
             # Fetch all available versions

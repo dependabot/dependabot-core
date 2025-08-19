@@ -4,6 +4,9 @@ using DependabotHelper
 
 @testset "DependabotHelper.jl Tests" begin
 
+    # Include custom registry management tests
+    include("test_registry_management.jl")
+
     @testset "Function Tests" begin
         # Test error handling for non-existent files
         result = @test_nowarn DependabotHelper.parse_project("/nonexistent/Project.toml")

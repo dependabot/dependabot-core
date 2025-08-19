@@ -19,11 +19,12 @@ module Dependabot
           ignored_versions: T::Array[String],
           security_advisories: T::Array[Dependabot::SecurityAdvisory],
           raise_on_ignored: T::Boolean,
-          cooldown_config: T.nilable(T::Hash[Symbol, T.untyped])
+          cooldown_config: T.nilable(T::Hash[Symbol, T.untyped]),
+          custom_registries: T::Array[T::Hash[Symbol, String]]
         ).void
       end
       def initialize(dependency:, dependency_files:, credentials:, ignored_versions:, security_advisories:,
-                     raise_on_ignored:, cooldown_config: nil)
+                     raise_on_ignored:, cooldown_config: nil, custom_registries: [])
         @dependency = dependency
         @dependency_files = dependency_files
         @credentials = credentials
@@ -31,6 +32,7 @@ module Dependabot
         @security_advisories = security_advisories
         @raise_on_ignored = raise_on_ignored
         @cooldown_config = cooldown_config
+        @custom_registries = custom_registries
       end
 
       sig { returns(T.nilable(Gem::Version)) }
@@ -61,12 +63,16 @@ module Dependabot
       sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
       attr_reader :cooldown_config
 
+      sig { returns(T::Array[T::Hash[Symbol, String]]) }
+      attr_reader :custom_registries
+
       sig { returns(T.nilable(Gem::Version)) }
       def fetch_latest_version
         # Fetch all package releases using the PackageDetailsFetcher
         package_fetcher = Julia::Package::PackageDetailsFetcher.new(
           dependency: dependency,
-          credentials: credentials
+          credentials: credentials,
+          custom_registries: custom_registries
         )
 
         releases = package_fetcher.fetch_package_releases

@@ -50,8 +50,20 @@ module Dependabot
       sig { returns(Dependabot::Julia::RegistryClient) }
       def registry_client
         @registry_client ||= Dependabot::Julia::RegistryClient.new(
-          credentials: credentials
+          credentials: credentials,
+          custom_registries: custom_registries
         )
+      end
+
+      sig { returns(T::Array[T::Hash[Symbol, String]]) }
+      def custom_registries
+        @custom_registries ||= begin
+          registries = options.dig(:registries, :julia) || []
+          # Convert string keys to symbols if needed
+          registries.map do |registry|
+            registry.is_a?(Hash) ? registry.transform_keys(&:to_sym) : registry
+          end
+        end
       end
 
       sig { returns(String) }
