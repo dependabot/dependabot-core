@@ -37,13 +37,22 @@ module Dependabot
         sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
 
+        sig { returns(Dependabot::GitCommitChecker) }
+        attr_reader :git_commit_checker
+
+        sig { returns(T::Array[Dependabot::Credential]) }
+        attr_reader :credentials
+
+        sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
+        attr_reader :cooldown_options
+
         # Return latest version tag for the dependency, it removes tags that are in cooldown period
         # and returns the latest version tag that is not in cooldown period. If eexception occurs
         # it will return the latest version tag from the git_commit_checker. as it was before
         sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
         def latest_version_tag
           # step one fetch allowed version tags and
-          return git_commit_checker.local_tag_for_latest_version unless cooldown_enabled?
+          return git_commit_checker.local_tag_for_latest_version unless cooldown_options.nil?
 
           allowed_version_tags = git_commit_checker.allowed_version_tags
           # sort the allowed version tags by name in descending order
@@ -95,7 +104,7 @@ module Dependabot
           ).returns(Integer)
         end
         def cooldown_days_for(current_version, new_version)
-          cooldown = @cooldown_options
+          cooldown = T.let(cooldown_options, T.nilable(Dependabot::Package::ReleaseCooldownOptions))
           return 0 if cooldown.nil?
           return 0 unless cooldown.included?(dependency.name)
           return cooldown.default_days if current_version.nil?
@@ -140,25 +149,6 @@ module Dependabot
               git_commit_checker: git_commit_checker
             ), T.nilable(Package::PackageDetailsFetcher)
           )
-        end
-
-        sig { returns(Dependabot::GitCommitChecker) }
-        attr_reader :git_commit_checker
-
-        sig { returns(T::Array[Dependabot::Credential]) }
-        attr_reader :credentials
-
-        sig { returns(T::Boolean) }
-        def cooldown_enabled?
-          # This is a simple check to see if user has put cooldown days.
-          # If not set, then we assume user does not want cooldown.
-          return false if @cooldown_options.nil?
-          return true if @cooldown_options.default_days.positive? ||
-                         @cooldown_options.semver_major_days.positive? ||
-                         @cooldown_options.semver_minor_days.positive? ||
-                         @cooldown_options.semver_patch_days.positive?
-
-          false
         end
       end
     end
