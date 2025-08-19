@@ -157,7 +157,8 @@ $options = {
   vendor_dependencies: false,
   ignore_conditions: [],
   pull_request: false,
-  cooldown: nil
+  cooldown: nil,
+  exclude_paths: []
 }
 
 unless ENV["LOCAL_GITHUB_ACCESS_TOKEN"].to_s.strip.empty?
@@ -212,6 +213,11 @@ end
 
 if ENV.key?("COOLDOWN") && !ENV["COOLDOWN"].to_s.strip.empty?
   $options[:cooldown] = JSON.parse(ENV.fetch("COOLDOWN", "{}"))
+end
+
+unless ENV["EXCLUDE_PATHS"].to_s.strip.empty?
+  # Comma separated list of paths to exclude
+  $options[:exclude_paths] = ENV.fetch("EXCLUDE_PATHS", "").split(",").map(&:strip)
 end
 
 # rubocop:disable Metrics/BlockLength
@@ -321,6 +327,10 @@ option_parse = OptionParser.new do |opts|
   rescue JSON::ParserError
     puts "Invalid JSON format for cooldown parameter. Please provide a valid JSON string."
     exit 1
+  end
+
+  opts.on("--exclude-paths PATHS", "Comma separated list of paths to exclude") do |value|
+    $options[:exclude_paths] = value.split(",").map(&:strip)
   end
 end
 # rubocop:enable Metrics/BlockLength
@@ -585,27 +595,34 @@ begin
 
   $repo_contents_path = File.expand_path(File.join("tmp", $repo_name.split("/")))
 
-  fetcher_args = {
+  # Initial fetcher_args for config file fetching (without update_config)
+  initial_fetcher_args = {
     source: $source,
     credentials: $options[:credentials],
     repo_contents_path: $repo_contents_path,
     options: $options[:updater_options]
   }
+
   $config_file = begin
-    cfg_file = Dependabot::Config::FileFetcher.new(**fetcher_args).config_file
+    cfg_file = Dependabot::Config::FileFetcher.new(**initial_fetcher_args).config_file
     Dependabot::Config::File.parse(cfg_file.content)
   rescue Dependabot::RepoNotFound, Dependabot::DependencyFileNotFound
     Dependabot::Config::File.new(updates: [])
   end
+
   $update_config = begin
-    $config_file.update_config(
+    config = $config_file.update_config(
       $package_manager,
       directory: $options[:directory],
-      target_branch: $options[:branch]
+      target_branch: $options[:branch],
+      exclude_paths: $options[:exclude_paths] || []
     )
+    config
   rescue KeyError
     raise Dependabot::DependabotError, "Invalid package manager: #{$package_manager}"
   end
+
+  fetcher_args = initial_fetcher_args.merge(update_config: $update_config)
 
   fetcher = Dependabot::FileFetchers.for_package_manager($package_manager).new(**fetcher_args)
   $files = fetch_files(fetcher)
