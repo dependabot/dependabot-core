@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "dependabot/update_checkers/base"
@@ -52,7 +52,7 @@ module Dependabot
         sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
         def latest_version_tag
           # step one fetch allowed version tags and
-          return git_commit_checker.local_tag_for_latest_version unless cooldown_options.nil?
+          return git_commit_checker.local_tag_for_latest_version unless cooldown_enabled?
 
           allowed_version_tags = git_commit_checker.allowed_version_tags
           # sort the allowed version tags by name in descending order
@@ -104,9 +104,9 @@ module Dependabot
           ).returns(Integer)
         end
         def cooldown_days_for(current_version, new_version)
-          cooldown = @cooldown_options
-          return 0 if cooldown.nil?
           return 0 unless cooldown_enabled?
+
+          cooldown = T.must(cooldown_options)
           return 0 unless cooldown.included?(dependency.name)
           return cooldown.default_days if current_version.nil?
 
@@ -154,18 +154,13 @@ module Dependabot
 
         sig { returns(T::Boolean) }
         def cooldown_enabled?
-          cooldown = T.let(cooldown_options, T.nilable(Dependabot::Package::ReleaseCooldownOptions))
+          return false if cooldown_options.nil?
 
-          return false if cooldown.nil?
-
-          if cooldown.default_days.to_i.positive? ||
-             cooldown.semver_major_days.to_i.positive? ||
-             cooldown.semver_minor_days.to_i.positive? ||
-             cooldown.semver_patch_days.to_i.positive?
-            return true
-          end
-
-          false
+          cooldown = T.must(cooldown_options)
+          cooldown.default_days.to_i.positive? ||
+            cooldown.semver_major_days.to_i.positive? ||
+            cooldown.semver_minor_days.to_i.positive? ||
+            cooldown.semver_patch_days.to_i.positive?
         end
       end
     end
