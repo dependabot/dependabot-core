@@ -73,7 +73,7 @@ module GithubApi
 
     sig { returns(String) }
     def job_correlator
-      "#{SNAPSHOT_DETECTOR_NAME}-experimental"
+      "#{SNAPSHOT_DETECTOR_NAME}-#{package_manager}"
     end
 
     sig { returns(String) }
