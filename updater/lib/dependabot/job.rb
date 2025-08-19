@@ -33,6 +33,7 @@ module Dependabot
       allowed_updates
       commit_message_options
       dependencies
+      exclude_paths
       existing_pull_requests
       existing_group_pull_requests
       experiments
@@ -63,6 +64,9 @@ module Dependabot
 
     sig { returns(T.nilable(T::Array[String])) }
     attr_reader :dependencies
+
+    sig { returns(T.nilable(T::Array[String])) }
+    attr_reader :exclude_paths
 
     sig { returns(T::Array[PullRequest]) }
     attr_reader :existing_pull_requests
@@ -105,6 +109,9 @@ module Dependabot
 
     sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
     attr_reader :cooldown
+
+    sig { returns(Dependabot::Config::UpdateConfig) }
+    attr_reader :update_config
 
     sig do
       params(job_id: String, job_definition: T::Hash[String, T.untyped],
@@ -150,6 +157,7 @@ module Dependabot
         T::Array[Dependabot::Credential]
       )
       @dependencies                   = T.let(attributes.fetch(:dependencies), T.nilable(T::Array[T.untyped]))
+      @exclude_paths                  = T.let(attributes.fetch(:exclude_paths, []), T.nilable(T::Array[String]))
       @existing_pull_requests         = T.let(PullRequest.create_from_job_definition(attributes), T::Array[PullRequest])
       # TODO: Make this hash required
       #
@@ -408,9 +416,6 @@ module Dependabot
 
     private
 
-    sig { returns(Dependabot::Config::UpdateConfig) }
-    attr_reader :update_config
-
     sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
     def completely_ignored?(dependency)
       ignore_conditions_for(dependency).any?(Dependabot::Config::IgnoreCondition::ALL_VERSIONS)
@@ -519,7 +524,8 @@ module Dependabot
       end
 
       update_config = Dependabot::Config::UpdateConfig.new(
-        ignore_conditions: T.let(update_config_ignore_conditions, T::Array[Dependabot::Config::IgnoreCondition])
+        ignore_conditions: T.let(update_config_ignore_conditions, T::Array[Dependabot::Config::IgnoreCondition]),
+        exclude_paths: T.let(exclude_paths, T.nilable(T::Array[String]))
       )
       T.let(update_config, Dependabot::Config::UpdateConfig)
     end
