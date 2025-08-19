@@ -55,7 +55,7 @@ module Dependabot
           return git_commit_checker.local_tag_for_latest_version unless cooldown_enabled?
 
           allowed_version_tags = git_commit_checker.allowed_version_tags
-          # sort the allowed version tags by name in descending order
+          # filter out allowed version tags that are in the cooldown period
           select_version_tags_in_cooldown_period&.each do |tag_name|
             # filter out if name is not in cooldown period
             allowed_version_tags.reject! do |gitref_filtered|
