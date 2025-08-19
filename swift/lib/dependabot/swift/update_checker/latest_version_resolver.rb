@@ -1,4 +1,4 @@
-# typed: strong
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/update_checkers/base"
@@ -37,14 +37,14 @@ module Dependabot
         sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
 
-        sig { returns(Dependabot::GitCommitChecker) }
-        attr_reader :git_commit_checker
-
         sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
 
         sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
         attr_reader :cooldown_options
+
+        sig { returns(Dependabot::GitCommitChecker) }
+        attr_reader :git_commit_checker
 
         # Return latest version tag for the dependency, it removes tags that are in cooldown period
         # and returns the latest version tag that is not in cooldown period. If eexception occurs
@@ -104,8 +104,9 @@ module Dependabot
           ).returns(Integer)
         end
         def cooldown_days_for(current_version, new_version)
-          cooldown = T.let(cooldown_options, T.nilable(Dependabot::Package::ReleaseCooldownOptions))
+          cooldown = @cooldown_options
           return 0 if cooldown.nil?
+          return 0 unless cooldown_enabled?
           return 0 unless cooldown.included?(dependency.name)
           return cooldown.default_days if current_version.nil?
 
@@ -149,6 +150,22 @@ module Dependabot
               git_commit_checker: git_commit_checker
             ), T.nilable(Package::PackageDetailsFetcher)
           )
+        end
+
+        sig { returns(T::Boolean) }
+        def cooldown_enabled?
+          cooldown = T.let(cooldown_options, T.nilable(Dependabot::Package::ReleaseCooldownOptions))
+
+          return false if cooldown.nil?
+
+          if cooldown.default_days.to_i.positive? ||
+             cooldown.semver_major_days.to_i.positive? ||
+             cooldown.semver_minor_days.to_i.positive? ||
+             cooldown.semver_patch_days.to_i.positive?
+            return true
+          end
+
+          false
         end
       end
     end
