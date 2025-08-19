@@ -101,6 +101,9 @@ RSpec.describe Dependabot::Swift::UpdateChecker::LatestVersionResolver do
   end
 
   describe "#check_if_version_in_cooldown_period?" do
+    before do
+      allow(Time).to receive(:now).and_return(Time.parse("2025-08-08T17:30:00.000Z"))
+    end
     let(:tag_with_detail) do
       Dependabot::GitTagWithDetail.new(
         tag: "1.2.0",
