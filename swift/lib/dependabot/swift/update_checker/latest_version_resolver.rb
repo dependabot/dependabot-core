@@ -43,7 +43,7 @@ module Dependabot
         sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
         def latest_version_tag
           # step one fetch allowed version tags and
-          return git_commit_checker.local_tag_for_latest_version if !cooldown_enabled?
+          return git_commit_checker.local_tag_for_latest_version unless cooldown_enabled?
 
           allowed_version_tags = git_commit_checker.allowed_version_tags
           # sort the allowed version tags by name in descending order
