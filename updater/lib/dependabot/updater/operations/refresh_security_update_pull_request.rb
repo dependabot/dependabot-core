@@ -92,7 +92,7 @@ module Dependabot
         sig { params(dependencies: T::Array[Dependabot::Dependency]).void }
         def check_and_update_pull_request(dependencies)
           # If the job dependencies are empty, then we should close the PR
-          job_dependencies = job.dependencies.uniq
+          job_dependencies = job.dependencies&.uniq
           unless job_dependencies
             Dependabot.logger.info("No dependencies to update")
             close_pull_request(reason: :dependencies_removed)
