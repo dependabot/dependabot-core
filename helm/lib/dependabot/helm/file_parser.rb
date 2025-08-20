@@ -12,7 +12,7 @@ module Dependabot
 
       CHART_YAML = /.*chart\.ya?ml$/i
       CHART_LOCK = /.*chart\.lock$/i
-      VALUES_YAML = /.*values\.ya?ml$/i
+      VALUES_YAML = /.*(^|\/)values(?:\.[\w-]+)?\.ya?ml$/i
       DEFAULT_REPOSITORY = "https://charts.helm.sh/stable"
 
       sig { returns(Ecosystem) }
