@@ -6,7 +6,7 @@ require "sorbet-runtime"
 module Dependabot
   module Shared
     module Utils
-      HELM_REGEXP = /^values(?:\.[\w-]+)?\.ya?ml$/i
+      HELM_REGEXP = /(^|\/)values(?:\.[\w-]+)?\.ya?ml$/i
 
       extend T::Sig
 
