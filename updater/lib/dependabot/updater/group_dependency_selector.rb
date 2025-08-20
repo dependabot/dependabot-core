@@ -32,7 +32,7 @@ module Dependabot
         changes_by_dir.each do |change|
           directory = change.job.source.directory || "."
 
-          change.updated_dependencies.each do |dep|
+          Array(change.updated_dependencies).each do |dep|
             key = [directory, dep.name]
             next if seen_updates.include?(key)
 
@@ -69,7 +69,7 @@ module Dependabot
         directory = dependency_change.job.source.directory || "."
         job = dependency_change.job
 
-        dependency_change.updated_dependencies.each do |dep|
+        Array(dependency_change.updated_dependencies).each do |dep|
           # Check both group membership AND dependabot.yml configuration filters
           if group_contains_dependency?(dep, directory) && allowed_by_config?(dep, job)
             # Annotate with selection reason
