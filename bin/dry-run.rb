@@ -218,6 +218,8 @@ end
 unless ENV["EXCLUDE_PATHS"].to_s.strip.empty?
   # Comma separated list of paths to exclude
   $options[:exclude_paths] = ENV.fetch("EXCLUDE_PATHS", "").split(",").map(&:strip)
+  # Enable the experiment flag to allow exclude_paths filtering in file fetchers
+  Dependabot::Experiments.register(:enable_exclude_paths_subdirectory_manifest_files, true)
 end
 
 # rubocop:disable Metrics/BlockLength
@@ -331,6 +333,8 @@ option_parse = OptionParser.new do |opts|
 
   opts.on("--exclude-paths PATHS", "Comma separated list of paths to exclude") do |value|
     $options[:exclude_paths] = value.split(",").map(&:strip)
+    # Enable the experiment flag to allow exclude_paths filtering in file fetchers
+    Dependabot::Experiments.register(:enable_exclude_paths_subdirectory_manifest_files, true)
   end
 end
 # rubocop:enable Metrics/BlockLength
@@ -515,26 +519,34 @@ begin
   # rubocop:enable Metrics/AbcSize
 
   def fetch_files(fetcher)
-    if $repo_contents_path
-      if $options[:cache_steps].include?("files") && Dir.exist?($repo_contents_path)
-        puts "=> reading cloned repo from #{$repo_contents_path}"
-      else
-        puts "=> cloning into #{$repo_contents_path}"
-        FileUtils.rm_rf($repo_contents_path)
-        fetcher.clone_repo_contents
-      end
-      if $options[:commit]
-        Dir.chdir($repo_contents_path) do
-          puts "=> checking out commit #{$options[:commit]}"
-          Dependabot::SharedHelpers.run_shell_command("git checkout #{$options[:commit]}")
-        end
-      end
-      fetcher.files
-    else
-      cached_dependency_files_read do
-        fetcher.files
-      end
+    files = if $repo_contents_path
+              if $options[:cache_steps].include?("files") && Dir.exist?($repo_contents_path)
+                puts "=> reading cloned repo from #{$repo_contents_path}"
+              else
+                puts "=> cloning into #{$repo_contents_path}"
+                FileUtils.rm_rf($repo_contents_path)
+                fetcher.clone_repo_contents
+              end
+              if $options[:commit]
+                Dir.chdir($repo_contents_path) do
+                  puts "=> checking out commit #{$options[:commit]}"
+                  Dependabot::SharedHelpers.run_shell_command("git checkout #{$options[:commit]}")
+                end
+              end
+              fetcher.files
+            else
+              cached_dependency_files_read do
+                fetcher.files
+              end
+            end
+
+    # Apply exclude_paths filtering if paths are specified
+    debugger
+    if $options[:exclude_paths] && !$options[:exclude_paths].empty?
+      files = filter_excluded_files(files, $options[:exclude_paths])
     end
+
+    files
   rescue Dependabot::RepoNotFound => e
     puts " => handled error whilst fetching dependencies: RepoNotFound #{e.message}"
     exit 1 # Exit with a non-zero status for repo not found errors
@@ -546,6 +558,49 @@ begin
          "#{error_details.fetch(:"error-detail")}"
 
     []
+  end
+
+  # Filter dependency files based on exclude_paths patterns
+  def filter_excluded_files(files, exclude_paths)
+    return files if exclude_paths.empty?
+
+    files.reject do |file|
+      file_path = file.name
+
+      exclude_paths.any? do |exclude_pattern|
+
+        # case 1: exact match
+        exclude_exact = file_path == exclude_pattern
+
+        # case 2: Directory prefix matching: check if path is inside an excluded directory
+        exclude_deeper = file_path.start_with?("#{exclude_pattern}#{File::SEPARATOR}",
+                                                 "#{exclude_pattern}/")
+
+        # case 3: Explicit recursive (patterns that end with /**)
+        exclude_recursive = false
+        if exclude_pattern.end_with?("/**")
+          base_pattern = exclude_pattern[0...-3]
+          exclude_recursive = file_path == base_pattern ||
+                              file_path.start_with?("#{base_pattern}/") ||
+                              file_path.start_with?("#{base_pattern}#{File::SEPARATOR}")
+        end
+
+        # case 4: Glob pattern matching with enhanced flags
+        # Use multiple fnmatch attempts with different flag combinations
+        fnmatch_flags = [
+          File::FNM_EXTGLOB,
+          File::FNM_EXTGLOB | File::FNM_PATHNAME,
+          File::FNM_EXTGLOB | File::FNM_PATHNAME | File::FNM_DOTMATCH,
+          File::FNM_PATHNAME
+        ]
+        exclude_fnmatch_paths = fnmatch_flags.any? do |flag|
+          File.fnmatch?(exclude_pattern, file_path, flag)
+        end
+
+        result = exclude_exact || exclude_deeper || exclude_recursive || exclude_fnmatch_paths
+        result
+      end
+    end
   end
 
   def parse_dependencies(parser)
@@ -615,7 +670,7 @@ begin
       $package_manager,
       directory: $options[:directory],
       target_branch: $options[:branch],
-      exclude_paths: $options[:exclude_paths] || []
+      exclude_paths: $options[:exclude_paths]
     )
     config
   rescue KeyError
@@ -906,11 +961,8 @@ begin
   # rubocop:enable Metrics/BlockLength
 
   # rubocop:enable Style/GlobalVars
-rescue StandardError => e
-  puts "An error occurred: #{e.class}, #{e.message}"
-  exit 1
-end
+  end
 
-# Ensure the script exits successfully if no errors occur
-puts "Dry-run completed successfully."
-exit 0
+  # Ensure the script exits successfully if no errors occur
+  puts "Dry-run completed successfully."
+  exit 0
