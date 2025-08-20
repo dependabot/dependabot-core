@@ -191,6 +191,7 @@ module Dependabot
       end
 
       # rubocop:disable Metrics/AbcSize
+      # rubocop:disable Metrics/PerceivedComplexity
       sig do
         params(
           dependency: Dependabot::Dependency,
@@ -209,6 +210,10 @@ module Dependabot
           if dependency.name.include?(":")
             dep_parts = dependency.name.split(":")
             next false unless line.include?(T.must(dep_parts.first)) || line.include?(T.must(dep_parts.last))
+          elsif T.let(requirement.fetch(:file), String).end_with?(".properties")
+            property = T.let(requirement, T::Hash[Symbol, T.nilable(T::Hash[Symbol, T.nilable(String)])])
+                        .dig(:source, :property)
+            next false unless !property.nil? && line.start_with?(property)
           elsif T.let(requirement.fetch(:file), String).end_with?(".toml")
             next false unless line.include?(dependency.name)
           else
@@ -221,6 +226,7 @@ module Dependabot
         end
       end
       # rubocop:enable Metrics/AbcSize
+      # rubocop:enable Metrics/PerceivedComplexity
 
       sig { params(string: String, buildfile: Dependabot::DependencyFile).returns(String) }
       def evaluate_properties(string, buildfile)

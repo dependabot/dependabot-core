@@ -817,6 +817,67 @@ RSpec.describe Dependabot::Gradle::FileParser do
       end
     end
 
+    describe "wrapper properties file" do
+      shared_examples "wrapper_properties_test" do |version, type, checksum|
+        describe "gradle #{version}, distribution #{type}" do
+          let(:files) do
+            [
+              Dependabot::DependencyFile.new(
+                name: "gradle/wrapper/gradle-wrapper.properties",
+                content: fixture("wrapper_properties_file",
+                                 "gradle-wrapper-#{version}-#{type}#{checksum ? '-checksum' : ''}.properties")
+              )
+            ]
+          end
+
+          its(:length) { is_expected.to eq(1) }
+
+          describe "check dependency" do
+            subject(:dependency) { dependencies.first }
+
+            it "has the right details" do
+              requirements = [
+                {
+                  requirement: version,
+                  file: "gradle/wrapper/gradle-wrapper.properties",
+                  groups: [],
+                  source: {
+                    type: "gradle-distribution",
+                    url: "https://services.gradle.org/distributions/gradle-#{version}-#{type}.zip",
+                    property: "distributionUrl"
+                  }
+                }
+              ]
+              if checksum
+                requirements << {
+                  requirement: checksum,
+                  file: "gradle/wrapper/gradle-wrapper.properties",
+                  groups: [],
+                  source: {
+                    type: "gradle-distribution",
+                    url: "https://services.gradle.org/distributions/gradle-#{version}-#{type}.zip.sha256",
+                    property: "distributionSha256Sum"
+                  }
+                }
+              end
+
+              expect(dependency).to be_a(Dependabot::Dependency)
+              expect(dependency.name).to eq("gradle-wrapper")
+              expect(dependency.version).to eq(version)
+              expect(dependency.requirements).to eq(requirements)
+            end
+          end
+        end
+      end
+
+      it_behaves_like "wrapper_properties_test", "8.14.2", "bin", nil
+      it_behaves_like "wrapper_properties_test", "8.14.2", "all", nil
+      it_behaves_like "wrapper_properties_test", "9.0.0", "bin",
+                      "8fad3d78296ca518113f3d29016617c7f9367dc005f932bd9d93bf45ba46072b"
+      it_behaves_like "wrapper_properties_test", "9.0.0", "all",
+                      "f759b8dd5204e2e3fa4ca3e73f452f087153cf81bac9561eeb854229cc2c5365"
+    end
+
     describe "with a version catalog file" do
       let(:files) { [buildfile, version_catalog] }
       let(:version_catalog) do

@@ -9,6 +9,7 @@
 require "sorbet-runtime"
 
 require "dependabot/requirements_updater/base"
+require "dependabot/gradle/distributions"
 require "dependabot/gradle/update_checker"
 require "dependabot/gradle/version"
 require "dependabot/gradle/requirement"
@@ -46,11 +47,13 @@ module Dependabot
           return unless latest_version
 
           @latest_version = T.let(version_class.new(latest_version), Version)
+          @is_distribution = T.let(Distributions.distribution_requirements?(requirements), T::Boolean)
         end
 
         sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
         def updated_requirements
           return requirements unless latest_version
+          return updated_distribution_requirements if @is_distribution
 
           # NOTE: Order is important here. The FileUpdater needs the updated
           # requirement at index `i` to correspond to the previous requirement
@@ -112,6 +115,31 @@ module Dependabot
           else
             version_parts.join(".") + "+"
           end
+        end
+
+        sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        def updated_distribution_requirements
+          req_version = T.must(requirements[0])
+
+          requirement = req_version[:requirement]
+          updated_requirement = update_exact_requirement(requirement)
+
+          distribution_url = req_version[:source][:url]
+          updated_distribution_url = distribution_url.gsub(requirement, updated_requirement)
+
+          req_version = req_version.merge(
+            requirement: updated_requirement,
+            source: req_version[:source].merge(url: updated_distribution_url)
+          )
+          return [req_version] unless requirements.size > 1
+
+          req_checksum = T.must(requirements[1])
+          checksum_url, checksum = DistributionsFinder.resolve_checksum(updated_distribution_url)
+          req_checksum = req_checksum.merge(
+            requirement: checksum,
+            source: req_checksum[:source].merge(url: checksum_url)
+          )
+          [req_version, req_checksum]
         end
 
         sig { override.returns(T::Class[Version]) }

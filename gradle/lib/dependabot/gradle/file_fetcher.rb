@@ -24,6 +24,9 @@ module Dependabot
       SUPPORTED_SETTINGS_FILE_NAMES =
         T.let(%w(settings.gradle settings.gradle.kts).freeze, T::Array[String])
 
+      SUPPORTED_WRAPPER_PROPERTIES_FILE_PATH =
+        %w(/gradle/wrapper/gradle-wrapper.properties).freeze
+
       # For now Gradle only supports library .toml files in the main gradle folder
       SUPPORTED_VERSION_CATALOG_FILE_PATH =
         T.let(%w(/gradle/libs.versions.toml).freeze, T::Array[String])
@@ -74,8 +77,13 @@ module Dependabot
 
       sig { params(root_dir: String).returns(T::Array[DependencyFile]) }
       def all_buildfiles_in_build(root_dir)
-        files = [buildfile(root_dir), settings_file(root_dir), version_catalog_file(root_dir), lockfile(root_dir)]
-                .compact
+        files = [
+          buildfile(root_dir),
+          settings_file(root_dir),
+          wrapper_properties_file(root_dir),
+          version_catalog_file(root_dir),
+          lockfile(root_dir)
+        ].compact
         files += subproject_buildfiles(root_dir)
         files += subproject_lockfiles(root_dir)
         files += dependency_script_plugins(root_dir)
@@ -173,6 +181,16 @@ module Dependabot
       end
 
       sig { params(root_dir: String).returns(T.nilable(DependencyFile)) }
+      def wrapper_properties_file(root_dir)
+        return nil unless root_dir == "."
+
+        gradle_wrapper_properties_file(root_dir)
+      rescue Dependabot::DependencyFileNotFound
+        # Wrapper file is optional for Gradle
+        nil
+      end
+
+      sig { params(root_dir: String).returns(T.nilable(DependencyFile)) }
       def version_catalog_file(root_dir)
         return nil unless root_dir == "."
 
@@ -229,6 +247,11 @@ module Dependabot
         file = find_first(dir, SUPPORTED_BUILD_FILE_NAMES) || return
         @buildfile_name ||= File.basename(file.name)
         file
+      end
+
+      sig { params(dir: String).returns(T.nilable(DependencyFile)) }
+      def gradle_wrapper_properties_file(dir)
+        find_first(dir, SUPPORTED_WRAPPER_PROPERTIES_FILE_PATH)
       end
 
       sig { params(dir: String).returns(T.nilable(DependencyFile)) }
