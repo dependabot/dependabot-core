@@ -47,10 +47,53 @@ RSpec.describe Dependabot::Config::File do
         expect(update_config.commit_message_options.prefix).to be_nil
       end
 
-      it "does not accept exclude_paths parameter" do
-        expect {
-          config.update_config("npm_and_yarn", exclude_paths: ["vendor/*"])
-        }.to raise_error(ArgumentError, /unknown keyword.*exclude_paths/)
+      it "accepts exclude_paths parameter and merges with config file exclude_paths" do
+        update_config = config.update_config("npm_and_yarn", exclude_paths: ["vendor/*"])
+        expect(update_config).to be_a(Dependabot::Config::UpdateConfig)
+        expect(update_config.exclude_paths).to eq(["vendor/*"])
+      end
+
+      context "when config file has exclude_paths" do
+        let(:config_with_excludes) do
+          described_class.parse(<<~YAML)
+            version: 2
+            updates:
+              - package-ecosystem: "npm"
+                directory: "/"
+                schedule:
+                  interval: "weekly"
+                exclude-paths:
+                  - "build/*"
+                  - "dist/*"
+          YAML
+        end
+
+        it "merges parameter exclude_paths with config file exclude_paths" do
+          update_config = config_with_excludes.update_config(
+            "npm_and_yarn",
+            exclude_paths: ["vendor/*", "temp/*"]
+          )
+          expect(update_config.exclude_paths).to contain_exactly(
+            "build/*", "dist/*", "vendor/*", "temp/*"
+          )
+        end
+
+        it "deduplicates exclude_paths when there are overlaps" do
+          update_config = config_with_excludes.update_config(
+            "npm_and_yarn",
+            exclude_paths: ["build/*", "vendor/*"]
+          )
+          expect(update_config.exclude_paths).to contain_exactly(
+            "build/*", "dist/*", "vendor/*"
+          )
+        end
+
+        it "works when no parameter exclude_paths provided" do
+          update_config = config_with_excludes.update_config("npm_and_yarn")
+          expect(update_config.exclude_paths).to contain_exactly(
+            "build/*", "dist/*"
+          )
+        end
       end
     end
 
