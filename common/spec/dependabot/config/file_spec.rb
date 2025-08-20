@@ -46,6 +46,12 @@ RSpec.describe Dependabot::Config::File do
         expect(update_config).to be_a(Dependabot::Config::UpdateConfig)
         expect(update_config.commit_message_options.prefix).to be_nil
       end
+
+      it "does not accept exclude_paths parameter" do
+        expect {
+          config.update_config("npm_and_yarn", exclude_paths: ["vendor/*"])
+        }.to raise_error(ArgumentError, /unknown keyword.*exclude_paths/)
+      end
     end
 
     describe "#parse" do

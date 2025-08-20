@@ -614,8 +614,7 @@ begin
     config = $config_file.update_config(
       $package_manager,
       directory: $options[:directory],
-      target_branch: $options[:branch],
-      exclude_paths: $options[:exclude_paths] || []
+      target_branch: $options[:branch]
     )
     config
   rescue KeyError
