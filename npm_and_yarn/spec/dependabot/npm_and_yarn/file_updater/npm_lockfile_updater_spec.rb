@@ -71,6 +71,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       .with(:enable_shared_helpers_command_timeout).and_return(true)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:avoid_duplicate_updates_package_json).and_return(false)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_dependency_submission_poc).and_return(false)
   end
 
   after do
