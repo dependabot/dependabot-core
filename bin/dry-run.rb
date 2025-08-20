@@ -541,7 +541,6 @@ begin
             end
 
     # Apply exclude_paths filtering if paths are specified
-    debugger
     if $options[:exclude_paths] && !$options[:exclude_paths].empty?
       files = filter_excluded_files(files, $options[:exclude_paths])
     end
