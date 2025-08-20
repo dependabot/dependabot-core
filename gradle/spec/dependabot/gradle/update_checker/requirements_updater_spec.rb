@@ -145,5 +145,87 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::RequirementsUpdater do
         end
       end
     end
+
+    context "with distribution dependency" do
+      let(:requirements) { [distribution_req, checksum_req] }
+      let(:latest_version) { version_class.new("9.0.0") }
+
+      let(:distribution_req) do
+        {
+          requirement: "8.14.2",
+          file: "gradle/wrapper/gradle-wrapper.properties",
+          source: {
+            type: "gradle-distribution",
+            url: "https://services.gradle.org/distributions/gradle-8.14.2-all.zip",
+            property: "distributionUrl"
+          },
+          groups: []
+        }
+      end
+
+      let(:checksum_req) do
+        {
+          requirement: "443c9c8ee2ac1ee0e11881a40f2376d79c66386264a44b24a9f8ca67e633375f",
+          file: "gradle/wrapper/gradle-wrapper.properties",
+          source: {
+            type: "gradle-distribution",
+            url: "https://services.gradle.org/distributions/gradle-8.14.2-all.zip.sha256",
+            property: "distributionUrlSha256Sum"
+          },
+          groups: []
+        }
+      end
+
+      before do
+        stub_request(:get, "https://services.gradle.org/distributions/gradle-9.0.0-all.zip.sha256")
+          .to_return(status: 200, body: "f759b8dd5204e2e3fa4ca3e73f452f087153cf81bac9561eeb854229cc2c5365")
+      end
+
+      it "updates the checksum" do
+        expect(updater.updated_requirements).not_to eq(requirements)
+        expect(updater.updated_requirements).to eq([
+          {
+            requirement: "9.0.0",
+            file: "gradle/wrapper/gradle-wrapper.properties",
+            source: {
+              type: "gradle-distribution",
+              url: "https://services.gradle.org/distributions/gradle-9.0.0-all.zip",
+              property: "distributionUrl"
+            },
+            groups: []
+          },
+          {
+            requirement: "f759b8dd5204e2e3fa4ca3e73f452f087153cf81bac9561eeb854229cc2c5365",
+            file: "gradle/wrapper/gradle-wrapper.properties",
+            source: {
+              type: "gradle-distribution",
+              url: "https://services.gradle.org/distributions/gradle-9.0.0-all.zip.sha256",
+              property: "distributionUrlSha256Sum"
+            },
+            groups: []
+          }
+        ])
+      end
+
+      context "when no checksum is available" do
+        let(:requirements) { [distribution_req] }
+
+        it "does not update the requirement" do
+          expect(updater.updated_requirements).not_to eq(requirements)
+          expect(updater.updated_requirements).to eq([
+            {
+              requirement: "9.0.0",
+              file: "gradle/wrapper/gradle-wrapper.properties",
+              source: {
+                type: "gradle-distribution",
+                url: "https://services.gradle.org/distributions/gradle-9.0.0-all.zip",
+                property: "distributionUrl"
+              },
+              groups: []
+            }
+          ])
+        end
+      end
+    end
   end
 end

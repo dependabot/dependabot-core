@@ -4,8 +4,10 @@
 require "nokogiri"
 require "dependabot/shared_helpers"
 require "dependabot/update_checkers/version_filters"
+require "dependabot/gradle/distributions"
 require "dependabot/gradle/file_parser/repositories_finder"
 require "dependabot/gradle/update_checker"
+require "dependabot/gradle/update_checker/distributions_finder"
 require "dependabot/gradle/version"
 require "dependabot/gradle/requirement"
 require "dependabot/maven/utils/auth_headers_finder"
@@ -105,6 +107,10 @@ module Dependabot
 
         sig { returns(T.any(T::Array[T::Hash[String, T.untyped]], T::Array[T::Hash[Symbol, T.untyped]])) }
         def versions
+          if Distributions.distribution_requirements?(dependency.requirements)
+            return DistributionsFinder.available_versions
+          end
+
           Package::PackageDetailsFetcher.new(
             dependency: dependency,
             dependency_files: dependency_files,

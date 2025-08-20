@@ -71,6 +71,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
           "subproject/build.gradle.kts",
           "subproject/settings.gradle",
           "subproject/settings.gradle.kts",
+          "gradle/wrapper/gradle-wrapper.properties",
           "gradle/libs.versions.toml",
           "subproject/gradle/libs.versions.toml",
           "dependencies.gradle",
@@ -86,6 +87,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
         non_matching_files = [
           "README.md",
           ".github/workflow/main.yml",
+          "gradle/wrapper/gradle-wrapper.jar",
           "some_random_file.rb",
           "requirements.txt",
           "package-lock.json",
@@ -671,6 +673,84 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
           is_expected
             .to include("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.1.1")
         end
+      end
+
+      context "with a wrapper properties" do
+        shared_examples "wrapper properties" do |version, type, checksum, updated_checksum|
+          subject(:updated_buildfile) do
+            updated_files.find { |f| f.name == "gradle/wrapper/gradle-wrapper.properties" }
+          end
+
+          let(:buildfile) do
+            Dependabot::DependencyFile.new(
+              name: "gradle/wrapper/gradle-wrapper.properties",
+              content: fixture("wrapper_properties_file",
+                               "gradle-wrapper-#{version}-#{type}#{checksum ? '-checksum' : ''}.properties")
+            )
+          end
+
+          let(:dependency) do
+            requirements = [{
+              file: "gradle/wrapper/gradle-wrapper.properties",
+              requirement: "9.0.0",
+              groups: [],
+              source: { type: "gradle-distribution", url: "https://services.gradle.org", property: "distributionUrl" }
+            }]
+            if checksum
+              requirements << {
+                file: "gradle/wrapper/gradle-wrapper.properties",
+                requirement: updated_checksum,
+                groups: [],
+                source: { type: "gradle-distribution", url: "https://services.gradle.org", property: "distributionSha256Sum" }
+              }
+            end
+
+            previous_requirements = [{
+              file: "gradle/wrapper/gradle-wrapper.properties",
+              requirement: version,
+              groups: [],
+              source: { type: "gradle-distribution", url: "https://services.gradle.org", property: "distributionUrl" }
+            }]
+            if checksum
+              previous_requirements << {
+                file: "gradle/wrapper/gradle-wrapper.properties",
+                requirement: checksum,
+                groups: [],
+                source: { type: "gradle-distribution", url: "https://services.gradle.org", property: "distributionSha256Sum" }
+              }
+            end
+
+            Dependabot::Dependency.new(
+              name: "gradle-wrapper",
+              version: "9.0.0",
+              previous_version: version,
+              requirements: requirements,
+              previous_requirements: previous_requirements,
+              package_manager: "gradle"
+            )
+          end
+
+          its(:content) do
+            is_expected.to include(
+              "distributionUrl=https\\://services.gradle.org/distributions/gradle-9.0.0-#{type}.zip"
+            )
+
+            if checksum
+              is_expected.to include("distributionSha256Sum=#{updated_checksum}")
+            else
+              is_expected.not_to include("distributionSha256Sum=")
+            end
+          end
+        end
+
+        it_behaves_like "wrapper properties", "8.14.2", "all", nil, nil
+        it_behaves_like "wrapper properties", "8.14.2", "bin", nil, nil
+        it_behaves_like "wrapper properties", "8.14.2", "bin",
+                        "7197a12f450794931532469d4ff21a59ea2c1cd59a3ec3f89c035c3c420a6999",
+                        "8fad3d78296ca518113f3d29016617c7f9367dc005f932bd9d93bf45ba46072b"
+        it_behaves_like "wrapper properties", "8.14.2", "all",
+                        "443c9c8ee2ac1ee0e11881a40f2376d79c66386264a44b24a9f8ca67e633375f",
+                        "f759b8dd5204e2e3fa4ca3e73f452f087153cf81bac9561eeb854229cc2c5365"
       end
 
       context "with a version catalog" do
