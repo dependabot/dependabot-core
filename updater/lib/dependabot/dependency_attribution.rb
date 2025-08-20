@@ -74,7 +74,7 @@ module Dependabot
     end
 
     # Generate telemetry summary for attributed dependencies
-    sig { params(dependencies: T::Array[Dependabot::Dependency]).returns(T::Hash[String, T.untyped]) }
+    sig { params(dependencies: T::Array[Dependabot::Dependency]).returns(T::Hash[Symbol, T.untyped]) }
     def self.telemetry_summary(dependencies)
       attributed_deps = dependencies.select { |dep| attributed?(dep) }
 

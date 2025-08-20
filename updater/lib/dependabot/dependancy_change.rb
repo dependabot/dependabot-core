@@ -1,12 +1,15 @@
+# typed: strict
 # frozen_string_literal: true
+
+require "sorbet-runtime"
 
 module Dependabot
   class DependencyChange
     extend T::Sig
 
-    sig { returns(T::Hash[String, T.untyped]) }
+    sig { returns(T::Hash[Symbol, T.untyped]) }
     def attribution_summary
-      DependencyAttribution.telemetry_summary(updated_dependencies)
+      @attribution_summary ||= T.let(DependencyAttribution.telemetry_summary(updated_dependencies), T.nilable(T::Hash[Symbol, T.untyped]))
     end
 
     sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
@@ -64,27 +67,30 @@ module Dependabot
       return unless has_attributed_dependencies?
 
       summary = attribution_summary
+      attributed_count = T.cast(summary[:attributed_dependencies], Integer)
+      total_count = T.cast(summary[:total_dependencies], Integer)
+      coverage = T.cast(summary[:attribution_coverage], Float)
+      
       Dependabot.logger.info(
-        "DependencyChange attribution summary: #{summary[:attributed_dependencies]}/#{summary[:total_dependencies]} dependencies attributed " \
-          "[coverage=#{(summary[:attribution_coverage] * 100).round(1)}%]"
+        "DependencyChange attribution summary: #{attributed_count}/#{total_count} dependencies attributed " \
+        "[coverage=#{(coverage * 100).round(1)}%]"
       )
 
       # Log selection reason breakdown
-      if summary[:selection_reasons].any?
-        reasons = summary[:selection_reasons].map { |reason, count| "#{reason}:#{count}" }.join(", ")
+      selection_reasons = T.cast(summary[:selection_reasons], T::Hash[String, Integer])
+      if selection_reasons.any?
+        reasons = selection_reasons.map { |reason, count| "#{reason}:#{count}" }.join(", ")
         Dependabot.logger.debug("Selection reasons: #{reasons}")
-      end
-
-      # Log any filtered dependencies
+      end      # Log any filtered dependencies
       if filtered_dependencies&.any?
-        filtered_names = filtered_dependencies.map(&:name).join(", ")
+        filtered_names = filtered_dependencies&.map(&:name)&.join(", ")
         Dependabot.logger.debug("Filtered dependencies: #{filtered_names}")
       end
 
       # Log any dependency drift
       return unless dependency_drift&.any?
 
-      Dependabot.logger.debug("Dependency drift detected: #{dependency_drift.join(', ')}")
+      Dependabot.logger.debug("Dependency drift detected: #{dependency_drift&.join(', ')}")
     end
   end
 end
