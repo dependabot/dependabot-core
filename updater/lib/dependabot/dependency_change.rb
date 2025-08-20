@@ -203,7 +203,7 @@ module Dependabot
     # Attribution and observability methods
 
     # Get attribution summary for this change's dependencies
-    sig { returns(T::Hash[String, T.untyped]) }
+    sig { returns(T::Hash[Symbol, T.untyped]) }
     def attribution_summary
       DependencyAttribution.telemetry_summary(updated_dependencies)
     end
@@ -216,7 +216,7 @@ module Dependabot
 
     # Check if any dependencies have attribution metadata
     sig { returns(T::Boolean) }
-    def has_attributed_dependencies?
+    def attributed_dependencies?
       updated_dependencies.any? { |dep| DependencyAttribution.attributed?(dep) }
     end
 
@@ -228,7 +228,7 @@ module Dependabot
       updated_dependencies.each do |dep|
         attribution = DependencyAttribution.get_attribution(dep)
         reason = attribution ? attribution[:selection_reason] : :unknown
-        result[reason] << dep
+        T.must(result[reason]) << dep
       end
 
       result
@@ -250,37 +250,37 @@ module Dependabot
     sig { void }
     def log_attribution_details
       return unless Dependabot::Experiments.enabled?(:group_membership_enforcement)
-      return unless has_attributed_dependencies?
+      return unless attributed_dependencies?
 
       summary = attribution_summary
       Dependabot.logger.info(
-        "DependencyChange attribution summary: #{summary[:attributed_dependencies]}/#{summary[:total_dependencies]} dependencies attributed " \
-          "[coverage=#{(summary[:attribution_coverage] * 100).round(1)}%]"
+        "DependencyChange attribution summary: #{summary['attributed_dependencies']}/#{summary['total_dependencies']} dependencies attributed " \
+        "[coverage=#{(summary['attribution_coverage'] * 100).round(1)}%]"
       )
 
       # Log selection reason breakdown
-      if summary[:selection_reasons].any?
-        reasons = summary[:selection_reasons].map { |reason, count| "#{reason}:#{count}" }.join(", ")
+      if summary["selection_reasons"].any?
+        reasons = summary["selection_reasons"].map { |reason, count| "#{reason}:#{count}" }.join(", ")
         Dependabot.logger.debug("Selection reasons: #{reasons}")
       end
 
       # Log any filtered dependencies
       if filtered_dependencies&.any?
-        filtered_names = filtered_dependencies.map(&:name).join(", ")
+        filtered_names = filtered_dependencies&.map(&:name)&.join(", ")
         Dependabot.logger.debug("Filtered dependencies: #{filtered_names}")
       end
 
       # Log any dependency drift
-      if dependency_drift&.any?
-        Dependabot.logger.debug("Dependency drift detected: #{dependency_drift.join(", ")}")
-      end
+      return unless dependency_drift&.any?
+
+      Dependabot.logger.debug("Dependency drift detected: #{dependency_drift&.join(', ')}")
     end
 
     # Export attribution data for telemetry systems
     sig { returns(T::Hash[String, T.untyped]) }
     def export_attribution_telemetry
       return {} unless Dependabot::Experiments.enabled?(:group_membership_enforcement)
-      return {} unless has_attributed_dependencies?
+      return {} unless attributed_dependencies?
 
       {
         dependency_change_id: object_id,

@@ -9,7 +9,10 @@ module Dependabot
 
     sig { returns(T::Hash[Symbol, T.untyped]) }
     def attribution_summary
-      @attribution_summary ||= T.let(DependencyAttribution.telemetry_summary(updated_dependencies), T.nilable(T::Hash[Symbol, T.untyped]))
+      @attribution_summary ||= T.let(
+        DependencyAttribution.telemetry_summary(updated_dependencies),
+        T.nilable(T::Hash[Symbol, T.untyped])
+      )
     end
 
     sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
@@ -18,7 +21,7 @@ module Dependabot
     end
 
     sig { returns(T::Boolean) }
-    def has_attributed_dependencies?
+    def attributed_dependencies?
       updated_dependencies.any? { |dep| DependencyAttribution.attributed?(dep) }
     end
 
@@ -64,13 +67,13 @@ module Dependabot
     sig { void }
     def log_attribution_details
       return unless Dependabot::Experiments.enabled?(:group_membership_enforcement)
-      return unless has_attributed_dependencies?
+      return unless attributed_dependencies?
 
       summary = attribution_summary
       attributed_count = T.cast(summary[:attributed_dependencies], Integer)
       total_count = T.cast(summary[:total_dependencies], Integer)
       coverage = T.cast(summary[:attribution_coverage], Float)
-      
+
       Dependabot.logger.info(
         "DependencyChange attribution summary: #{attributed_count}/#{total_count} dependencies attributed " \
         "[coverage=#{(coverage * 100).round(1)}%]"
@@ -81,7 +84,7 @@ module Dependabot
       if selection_reasons.any?
         reasons = selection_reasons.map { |reason, count| "#{reason}:#{count}" }.join(", ")
         Dependabot.logger.debug("Selection reasons: #{reasons}")
-      end      # Log any filtered dependencies
+      end
       if filtered_dependencies&.any?
         filtered_names = filtered_dependencies&.map(&:name)&.join(", ")
         Dependabot.logger.debug("Filtered dependencies: #{filtered_names}")
@@ -94,4 +97,3 @@ module Dependabot
     end
   end
 end
-

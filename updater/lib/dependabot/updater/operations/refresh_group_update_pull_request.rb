@@ -183,11 +183,13 @@ module Dependabot
               @dependency_change = T.let(dependency_change, T.nilable(Dependabot::DependencyChange))
             end
           end
+
+          @dependency_change
         end
 
         sig { params(group: Dependabot::DependencyGroup).returns(Dependabot::Updater::GroupDependencySelector) }
         def group_dependency_selector(group)
-          @group_dependency_selectors ||= {}
+          @group_dependency_selectors ||= T.let({}, T.nilable(T::Hash[T.untyped, T.untyped]))
           @group_dependency_selectors[group.name] ||= Dependabot::Updater::GroupDependencySelector.new(
             group: group,
             dependency_snapshot: dependency_snapshot
