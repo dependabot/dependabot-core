@@ -51,6 +51,7 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
   context "with a basic buildfile" do
     before do
       stub_no_content_request("gradle?ref=sha")
+      stub_no_content_request("gradle/wrapper?ref=sha")
       stub_content_request("?ref=sha", "contents_java.json")
       stub_content_request("build.gradle?ref=sha", "contents_java_basic_buildfile.json")
       stub_no_content_request("gradle.lockfile?ref=sha")
@@ -60,6 +61,19 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
       expect(file_fetcher_instance.files.count).to eq(1)
       expect(file_fetcher_instance.files.map(&:name))
         .to match_array(%w(build.gradle))
+    end
+
+    context "with gradle wrapper properties" do
+      before do
+        stub_content_request("gradle/wrapper?ref=sha", "content_gradle_wrapper.json")
+        stub_content_request("gradle/wrapper/gradle-wrapper.properties?ref=sha", "gradle-wrapper.properties.json")
+      end
+
+      it "fetches the toml file" do
+        expect(file_fetcher_instance.files.count).to eq(2)
+        expect(file_fetcher_instance.files.map(&:name))
+          .to match_array(%w(build.gradle gradle/wrapper/gradle-wrapper.properties))
+      end
     end
 
     context "with version catalog" do
@@ -380,6 +394,7 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
   context "with a script plugin" do
     before do
       stub_no_content_request("gradle?ref=sha")
+      stub_no_content_request("gradle/wrapper?ref=sha")
       stub_content_request("?ref=sha", "contents_java.json")
       stub_content_request("build.gradle?ref=sha", "contents_java_buildfile_with_script_plugins.json")
       stub_content_request("gradle/dependencies.gradle?ref=sha", "contents_java_simple_settings.json")
@@ -425,6 +440,7 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
   context "with no required manifest files" do
     before do
       stub_no_content_request("gradle?ref=sha")
+      stub_no_content_request("gradle/wrapper?ref=sha")
       stub_request(:get, url + "?ref=sha")
         .with(headers: { "Authorization" => "token token" })
         .to_return(
