@@ -254,13 +254,13 @@ module Dependabot
 
       summary = attribution_summary
       Dependabot.logger.info(
-        "DependencyChange attribution summary: #{summary['attributed_dependencies']}/#{summary['total_dependencies']} dependencies attributed " \
-        "[coverage=#{(summary['attribution_coverage'] * 100).round(1)}%]"
+        "DependencyChange attribution summary: #{summary[:attributed_dependencies]}/#{summary[:total_dependencies]} dependencies attributed " \
+        "[coverage=#{(summary[:attribution_coverage] * 100).round(1)}%]"
       )
 
       # Log selection reason breakdown
-      if summary["selection_reasons"].any?
-        reasons = summary["selection_reasons"].map { |reason, count| "#{reason}:#{count}" }.join(", ")
+      if summary[:selection_reasons].any?
+        reasons = summary[:selection_reasons].map { |reason, count| "#{reason}:#{count}" }.join(", ")
         Dependabot.logger.debug("Selection reasons: #{reasons}")
       end
 
