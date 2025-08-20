@@ -48,9 +48,12 @@ module Dependabot
           @dependency_snapshot = dependency_snapshot
           @error_handler = error_handler
           @group = group
-          @group_dependency_selector = GroupDependencySelector.new(
-            group: group,
-            dependency_snapshot: dependency_snapshot
+          @group_dependency_selector = T.let(
+            GroupDependencySelector.new(
+              group: group,
+              dependency_snapshot: dependency_snapshot
+            ),
+            Dependabot::Updater::GroupDependencySelector
           )
         end
 
@@ -135,12 +138,13 @@ module Dependabot
               @dependency_change = merged_change
             else
               # Fallback to original behavior
-              dependency_change = T.let(T.must(dependency_changes.first), Dependabot::DependencyChange)
-              dependency_change.merge_changes!(T.must(dependency_changes[1..-1])) if dependency_changes.count > 1
-              @dependency_change = T.let(dependency_change, T.nilable(Dependabot::DependencyChange))
+              fallback_change = T.let(T.must(dependency_changes.first), Dependabot::DependencyChange)
+              fallback_change.merge_changes!(T.must(dependency_changes[1..-1])) if dependency_changes.count > 1
+              @dependency_change = T.let(fallback_change, T.nilable(Dependabot::DependencyChange))
             end
-            @dependency_change = T.let(dependency_change, T.nilable(Dependabot::DependencyChange))
           end
+
+          @dependency_change
         end
 
         sig { void }
