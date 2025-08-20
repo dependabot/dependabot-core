@@ -518,6 +518,7 @@ begin
   # rubocop:enable Metrics/MethodLength
   # rubocop:enable Metrics/AbcSize
 
+  # rubocop:disable Metrics/PerceivedComplexity
   def fetch_files(fetcher)
     files = if $repo_contents_path
               if $options[:cache_steps].include?("files") && Dir.exist?($repo_contents_path)
@@ -567,13 +568,12 @@ begin
       file_path = file.name
 
       exclude_paths.any? do |exclude_pattern|
-
         # case 1: exact match
         exclude_exact = file_path == exclude_pattern
 
         # case 2: Directory prefix matching: check if path is inside an excluded directory
         exclude_deeper = file_path.start_with?("#{exclude_pattern}#{File::SEPARATOR}",
-                                                 "#{exclude_pattern}/")
+                                               "#{exclude_pattern}/")
 
         # case 3: Explicit recursive (patterns that end with /**)
         exclude_recursive = false
@@ -601,6 +601,7 @@ begin
       end
     end
   end
+  # rubocop:enable Metrics/PerceivedComplexity
 
   def parse_dependencies(parser)
     cached_read("dependencies") { parser.parse }
@@ -960,8 +961,8 @@ begin
   # rubocop:enable Metrics/BlockLength
 
   # rubocop:enable Style/GlobalVars
-  end
+end
 
-  # Ensure the script exits successfully if no errors occur
-  puts "Dry-run completed successfully."
-  exit 0
+# Ensure the script exits successfully if no errors occur
+puts "Dry-run completed successfully."
+exit 0
