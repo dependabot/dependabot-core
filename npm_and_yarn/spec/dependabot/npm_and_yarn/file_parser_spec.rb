@@ -39,6 +39,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
       .with(:enable_corepack_for_npm_and_yarn).and_return(enable_corepack_for_npm_and_yarn)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_shared_helpers_command_timeout).and_return(true)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_dependency_submission_poc).and_return(false)
   end
 
   after do
@@ -1722,6 +1724,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
   describe "parse support for DependencySubmission" do
     subject(:dependencies) { parser.parse }
 
+    before do
+      # DependencySubmission is experimental, so let's enable it
+      allow(Dependabot::Experiments).to receive(:enabled?)
+        .with(:enable_dependency_submission_poc).and_return(true)
+    end
+
     context "when using npm" do
       context "with a simple project" do
         let(:files) { project_dependency_files("npm9/simple") }
@@ -1743,21 +1751,24 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           expect(parser.dependency_files.count).to eq(2)
           lockfile = parser.dependency_files.find { |f| f.name == "package-lock.json" }
 
-          _direct, indirect = dependencies.partition(&:direct?)
+          direct, indirect = dependencies.partition(&:direct?)
 
           # assert that all dependencies are attributed to this file
           expect(lockfile.dependencies.count).to eq(dependencies.count)
 
-          # TODO(brrygrdn): Correctly sort direct vs indirect
-          #
-          # This approach will report everything as indirect for now.
-          #
-          # expect(lockfile.dependencies.count(&:direct?)).to eql(direct.count)
-          # expect(lockfile.dependencies.count { |d| !d.direct? }).to eql(indirect.count)
+          expect(lockfile.dependencies.count(&:direct?)).to eql(direct.count)
+          expect(lockfile.dependencies.count { |d| !d.direct? }).to eql(indirect.count)
 
-          # direct.each do |dependency|
-          #   expect(lockfile.dependencies).to include(dependency)
-          # end
+          # direct dependencies in the global list will be from the package.json,
+          # so here we check that the package-lock.json contains the equivalent
+          # by name and version.
+          direct.each do |dependency|
+            lockfile_dep = lockfile.dependencies.find { |d| d.name == dependency.name }
+
+            expect(lockfile_dep).not_to be_nil
+            expect(lockfile_dep.version).to eql(dependency.version)
+            expect(lockfile_dep.requirements).to be_empty
+          end
 
           indirect.each do |dependency|
             expect(lockfile.dependencies).to include(dependency)
@@ -1765,6 +1776,41 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
           # assert that the package.json has higher priority
           expect(lockfile.priority).to be(1)
+        end
+
+        it "assigns the correct descendants and scope to dependencies assigned to the package-lock.json" do
+          # Run the parse
+          parser.parse
+
+          expect(parser.dependency_files.count).to eq(2)
+          lockfile = parser.dependency_files.find { |f| f.name == "package-lock.json" }
+
+          # Check the top-level dependencies
+          fetch_factory = lockfile.dependencies.find { |f| f.name == "fetch-factory" }
+          expect(fetch_factory).to be_production
+          expect(fetch_factory).to be_direct
+          expect(fetch_factory.metadata[:depends_on]).to eql(%w(es6-promise isomorphic-fetch lodash))
+
+          etag = lockfile.dependencies.find { |f| f.name == "etag" }
+          expect(etag).not_to be_production
+          expect(etag).to be_direct
+          expect(etag.metadata[:depends_on]).to be_empty
+
+          # Spot check further down the graph
+          isomorphic_fetch = lockfile.dependencies.find { |f| f.name == "isomorphic-fetch" }
+          expect(isomorphic_fetch).to be_production
+          expect(isomorphic_fetch).not_to be_direct
+          expect(isomorphic_fetch.metadata[:depends_on]).to eql(%w(node-fetch whatwg-fetch))
+
+          node_fetch = lockfile.dependencies.find { |f| f.name == "node-fetch" }
+          expect(node_fetch).to be_production
+          expect(node_fetch).not_to be_direct
+          expect(node_fetch.metadata[:depends_on]).to eql(%w(encoding is-stream))
+
+          encoding = lockfile.dependencies.find { |f| f.name == "encoding" }
+          expect(encoding).to be_production
+          expect(encoding).not_to be_direct
+          expect(encoding.metadata[:depends_on]).to eql(%w(iconv-lite))
         end
       end
     end
