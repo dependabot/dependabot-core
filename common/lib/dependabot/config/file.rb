@@ -33,7 +33,7 @@ module Dependabot
           package_manager: String,
           directory: T.nilable(String),
           target_branch: T.nilable(String),
-          exclude_paths: T.nilable((T::Array[String])),
+          exclude_paths: T.nilable((T::Array[String]))
         )
           .returns(UpdateConfig)
       end
