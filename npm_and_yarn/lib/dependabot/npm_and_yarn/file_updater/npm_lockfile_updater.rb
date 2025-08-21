@@ -617,6 +617,9 @@ module Dependabot
           dependency_names = dependencies.map(&:name).join(", ")
           msg = "Error whilst updating #{dependency_names} in " \
                 "#{lockfile.path}:\n#{error_message}"
+          if error_message.include?("The git reference could not be found")
+            raise Dependabot::GitDependenciesNotReachable, msg
+          end
           raise Dependabot::DependencyFileNotResolvable, msg
         end
 
