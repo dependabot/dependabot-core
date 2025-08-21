@@ -620,6 +620,7 @@ module Dependabot
           if error_message.include?("The git reference could not be found")
             raise Dependabot::GitDependenciesNotReachable, msg
           end
+
           raise Dependabot::DependencyFileNotResolvable, msg
         end
 
