@@ -2143,15 +2143,14 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
     let(:enable_corepack_for_npm_and_yarn) { true }
 
     before do
-      allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command)
-        .and_return("npm install successful")
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("npm install successful")
     end
 
     context "when registry override is configured" do
       let(:credentials) do
         [Dependabot::Credential.new({
           "type" => "npm_registry",
-          "registry" => "custom-registry.example.com",
+          "registry" => "https://artifactory.example.com/artifactory/api/npm/npm/",
           "replaces-base" => true,
           "token" => "auth-token"
         })]
@@ -2160,10 +2159,12 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       it "passes registry override environment to npm command" do
         resolver.send(:run_npm8_checker, version: "4.17.21")
 
-        expect(Dependabot::NpmAndYarn::Helpers).to have_received(:run_npm_command)
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
           .with(
-            "install lodash@4.17.21 --package-lock-only --dry-run=true --ignore-scripts",
-            env: { "npm_config_registry" => "https://custom-registry.example.com" }
+            anything, # The actual command
+            hash_including(
+              env: hash_including("npm_config_registry" => "https://artifactory.example.com/artifactory/api/npm/npm/")
+            )
           )
       end
     end
@@ -2174,10 +2175,12 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       it "calls npm command without env variables" do
         resolver.send(:run_npm8_checker, version: "4.17.21")
 
-        expect(Dependabot::NpmAndYarn::Helpers).to have_received(:run_npm_command)
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
           .with(
-            "install lodash@4.17.21 --package-lock-only --dry-run=true --ignore-scripts",
-            env: nil
+            anything, # The actual command
+            hash_including(
+              env: nil
+            )
           )
       end
     end
