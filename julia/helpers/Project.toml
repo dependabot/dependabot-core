@@ -1,0 +1,9 @@
+[deps]
+DependabotHelper = "e7a99c2c-d05a-4768-9b9a-24beacacea09"
+
+[compat]
+DependabotHelper = "0.1.0"
+julia = "1"
+
+[sources]
+DependabotHelper = {path = "DependabotHelper.jl"}
