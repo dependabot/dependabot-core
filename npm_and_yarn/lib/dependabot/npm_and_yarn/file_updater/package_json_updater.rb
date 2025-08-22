@@ -105,6 +105,8 @@ module Dependabot
             .returns(T.nilable(T::Hash[Symbol, T.untyped]))
         end
         def old_requirement(dependency, new_requirement)
+          return nil unless dependency.previous_requirements
+
           T.must(dependency.previous_requirements)
            .select { |r| r[:file] == package_json.name }
            .find { |r| r[:groups] == new_requirement[:groups] }
@@ -117,20 +119,22 @@ module Dependabot
 
         sig { params(dependency: Dependabot::Dependency).returns(T.nilable(T::Array[T::Hash[Symbol, T.untyped]])) }
         def updated_requirements(dependency)
-          # If dependency has current requirements but no previous requirements,
-          # it might indicate a parsing issue. For webdriverio and similar packages
-          # that are consistently left out, we should still process them if they
-          # have requirements in the current package.json
-          if dependency.previous_requirements.nil? && dependency.requirements.any? { |r| r[:file] == package_json.name }
-            Dependabot.logger.warn(
-              "Dependency #{dependency.name} has current requirements but no previous requirements. " \
-              "Treating current requirements as both new and previous for update purposes."
-            )
-            # Use current requirements as previous requirements to enable update
-            dependency.instance_variable_set(:@previous_requirements, dependency.requirements)
+          # Handle the case where a dependency has current requirements but no previous requirements.
+          # This can happen with certain packages like webdriverio that are consistently left out
+          # of package.json updates due to this condition.
+          if dependency.previous_requirements.nil?
+            # Check if this dependency has requirements for the current package.json
+            current_package_requirements = dependency.requirements.select { |r| r[:file] == package_json.name }
+            if current_package_requirements.any?
+              Dependabot.logger.info(
+                "Dependency #{dependency.name} has requirements for #{package_json.name} " \
+                "but no previous requirements. Proceeding with update using current requirements."
+              )
+              # Return the current requirements - they will be treated as needing updates
+              return current_package_requirements
+            end
+            return nil
           end
-          
-          return unless dependency.previous_requirements
 
           preliminary_check_for_update(dependency)
 
@@ -238,6 +242,9 @@ module Dependabot
 
           unless git_dependency
             requirement = dependency_req&.fetch(:requirement)
+            # If we don't have a requirement, try to find the dependency by name in the content
+            return find_dependency_line_by_name(dependency_name, content) if requirement.nil?
+            
             return content.match(/"#{Regexp.escape(dependency_name)}"\s*:\s*
                                   "#{Regexp.escape(requirement)}"/x).to_s
           end
@@ -249,6 +256,13 @@ module Dependabot
             %r{"#{Regexp.escape(dependency_name)}"\s*:\s*
                ".*?#{Regexp.escape(username)}/#{Regexp.escape(repo)}.*"}x
           ).to_s
+        end
+
+        sig { params(dependency_name: String, content: String).returns(String) }
+        def find_dependency_line_by_name(dependency_name, content)
+          # When we don't have the specific requirement, try to find the dependency line by name
+          # This handles the case where previous_requirements is nil but we still want to update
+          content.match(/"#{Regexp.escape(dependency_name)}"\s*:\s*"[^"]*"/).to_s
         end
 
         sig do
