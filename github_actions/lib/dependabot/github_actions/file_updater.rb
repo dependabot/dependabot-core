@@ -135,10 +135,10 @@ module Dependabot
         new_version = version_class.new(new_version_tag).to_s
         
         # Replace the version at the end of the comment, preserving any prefixes
-        comment.gsub(/(?:v|@v|tag=v?)?#{Regexp.escape(previous_version)}\s*$/) do |match|
+        comment.gsub(/(?:v|@v|tag=v?)?#{Regexp.escape(previous_version)}(\s*)$/) do |match|
           # Extract the prefix (everything before the version) and any trailing whitespace
-          prefix = match.sub(/#{Regexp.escape(previous_version)}\s*$/, "")
-          trailing_space = match.match(/\s*$/)[0]
+          trailing_space = $1
+          prefix = match.sub(/#{Regexp.escape(previous_version)}#{Regexp.escape(trailing_space)}$/, "")
           "#{prefix}#{new_version}#{trailing_space}"
         end
       end
