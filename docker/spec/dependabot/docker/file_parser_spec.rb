@@ -688,6 +688,78 @@ RSpec.describe Dependabot::Docker::FileParser do
         end
       end
     end
+
+    context "with Byte-Order Mark" do
+      let(:dockerfile_fixture_name) { "byte_order_mark" }
+      let(:registry_tags) { fixture("docker", "registry_tags", "ubuntu.json") }
+      let(:digest_headers) do
+        JSON.parse(
+          fixture("docker", "registry_manifest_headers", "ubuntu_12.04.5.json")
+        )
+      end
+
+      let(:repo_url) { "https://registry.hub.docker.com/v2/library/ubuntu/" }
+
+      before do
+        auth_url = "https://auth.docker.io/token?service=registry.docker.io"
+        stub_request(:get, auth_url)
+          .and_return(status: 200, body: { token: "token" }.to_json)
+
+        tags_url = repo_url + "tags/list"
+        stub_request(:get, tags_url)
+          .and_return(status: 200, body: registry_tags)
+      end
+
+      context "when the digest doesn't match any tags" do
+        let(:registry_tags) do
+          fixture("docker", "registry_tags", "small_ubuntu.json")
+        end
+
+        before do
+          digest_headers["docker_content_digest"] = "nomatch"
+          ubuntu_url = "https://registry.hub.docker.com/v2/library/ubuntu/"
+          stub_request(:head, /#{Regexp.quote(ubuntu_url)}manifests/)
+            .and_return(status: 200, body: "", headers: digest_headers)
+        end
+
+        its(:length) { is_expected.to eq(1) }
+      end
+
+      context "when the digest matches a tag" do
+        before do
+          stub_request(:head, repo_url + "manifests/10.04")
+            .and_return(status: 404)
+
+          stub_request(:head, repo_url + "manifests/12.04.5")
+            .and_return(status: 200, body: "", headers: digest_headers)
+        end
+
+        its(:length) { is_expected.to eq(1) }
+
+        describe "the first dependency" do
+          subject(:dependency) { dependencies.first }
+
+          let(:expected_requirements) do
+            [{
+              requirement: nil,
+              groups: [],
+              file: "Dockerfile",
+              source: {
+                digest: "18305429afa14ea462f810146ba44d4363ae76e4c8d" \
+                        "fc38288cf73aa07485005"
+              }
+            }]
+          end
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("ubuntu")
+            expect(dependency.version).to eq("18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005")
+            expect(dependency.requirements).to eq(expected_requirements)
+          end
+        end
+      end
+    end
   end
 
   describe "YAML parse" do
@@ -725,6 +797,30 @@ RSpec.describe Dependabot::Docker::FileParser do
       let(:podfile_fixture_name) { "bare.yaml" }
 
       its(:length) { is_expected.to eq(0) }
+    end
+
+    context "with byte-order mark encoding" do
+      let(:podfile_fixture_name) { "with_bom.yaml" }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: "with_bom.yaml",
+            source: { tag: "1.14.2" }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("nginx")
+          expect(dependency.version).to eq("1.14.2")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
     end
 
     context "with a namespace" do

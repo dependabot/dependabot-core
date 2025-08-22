@@ -80,7 +80,7 @@ module Dependabot
               fetched = fetch_file_from_host(f.name)
               # The YAML parser used doesn't properly handle a byte-order-mark (BOM) and it can cause failures in
               # unexpected ways.  That BOM is removed here to allow regular updates to proceed.
-              fetched.content = T.must(fetched.content)[1..-1] if fetched.content&.start_with?("\uFEFF")
+              fetched.content = T.must(fetched.content).delete_prefix("\uFEFF")
               fetched
             end,
           T.nilable(T::Array[DependencyFile])

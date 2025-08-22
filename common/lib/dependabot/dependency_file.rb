@@ -96,7 +96,8 @@ module Dependabot
                    content_encoding: ContentEncoding::UTF_8, deleted: false,
                    operation: Operation::UPDATE, mode: nil, priority: 0)
       @name = name
-      @content = content
+      # Remove UTF-8 BOM if present
+      @content = content.delete_prefix("\uFEFF")
       @directory = T.let(clean_directory(directory), String)
       @symlink_target = symlink_target
       @support_file = support_file
