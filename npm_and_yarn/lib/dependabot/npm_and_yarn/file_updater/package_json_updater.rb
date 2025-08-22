@@ -117,6 +117,19 @@ module Dependabot
 
         sig { params(dependency: Dependabot::Dependency).returns(T.nilable(T::Array[T::Hash[Symbol, T.untyped]])) }
         def updated_requirements(dependency)
+          # If dependency has current requirements but no previous requirements,
+          # it might indicate a parsing issue. For webdriverio and similar packages
+          # that are consistently left out, we should still process them if they
+          # have requirements in the current package.json
+          if dependency.previous_requirements.nil? && dependency.requirements.any? { |r| r[:file] == package_json.name }
+            Dependabot.logger.warn(
+              "Dependency #{dependency.name} has current requirements but no previous requirements. " \
+              "Treating current requirements as both new and previous for update purposes."
+            )
+            # Use current requirements as previous requirements to enable update
+            dependency.instance_variable_set(:@previous_requirements, dependency.requirements)
+          end
+          
           return unless dependency.previous_requirements
 
           preliminary_check_for_update(dependency)
