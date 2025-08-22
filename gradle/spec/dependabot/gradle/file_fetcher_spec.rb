@@ -67,6 +67,9 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
       before do
         stub_content_request("gradle/wrapper?ref=sha", "content_gradle_wrapper.json")
         stub_content_request("gradle/wrapper/gradle-wrapper.properties?ref=sha", "gradle-wrapper.properties.json")
+        stub_no_content_request("gradle/wrapper/gradle-wrapper.jar?ref=sha")
+        stub_no_content_request("gradlew?ref=sha")
+        stub_no_content_request("gradlew.bat?ref=sha")
       end
 
       it "fetches the toml file" do
