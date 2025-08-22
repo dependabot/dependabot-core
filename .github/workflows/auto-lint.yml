@@ -32,17 +32,52 @@ jobs:
         with:
           bundler-cache: true
 
+      - name: Set up Node.js
+        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: 'npm_and_yarn/helpers/package-lock.json'
+
       - name: Run RuboCop with auto-fix
         run: |
           # Run RuboCop with auto-fix (-a flag)
-          ./bin/rubocop -a || true
+          # Continue even if RuboCop finds issues that can't be auto-fixed
+          ./bin/rubocop -a || exit_code=$?
+          echo "RuboCop exit code: ${exit_code:-0}"
+          # Don't fail the step if RuboCop just found unfixable issues
+          true
+
+      - name: Run JavaScript linting with auto-fix
+        run: |
+          # Auto-fix JavaScript code in npm_and_yarn helpers
+          if [ -d npm_and_yarn/helpers ]; then
+            cd npm_and_yarn/helpers
+            if [ -f package.json ] && command -v npm >/dev/null 2>&1; then
+              # Install dependencies if needed
+              npm ci --silent || npm install --silent
+              # Run eslint with auto-fix
+              npm run lint -- --fix || echo "ESLint completed with exit code $?"
+              # Run prettier to format code
+              if command -v npx >/dev/null 2>&1; then
+                npx prettier --write . || echo "Prettier completed"
+              fi
+            fi
+            cd ../..
+          fi
       - name: Check for changes
         id: changes
         run: |
           if git diff --quiet; then
             echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "No changes were made by auto-linting."
           else
             echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "Changes made by auto-linting:"
+            git diff --name-only
+            echo ""
+            echo "Diff summary:"
+            git diff --stat
           fi
 
       - name: Commit and push fixes
@@ -51,9 +86,14 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add .
+          # Check if we still have changes after adding (in case of .gitignore etc.)
+          if git diff --staged --quiet; then
+            echo "No changes to commit after staging."
+            exit 0
+          fi
           git commit -m "Auto-fix linting issues
 
-          Applied RuboCop auto-fixes to address linting violations.
+          Applied RuboCop and ESLint auto-fixes to address linting violations.
 
           [skip ci]"
           git push
