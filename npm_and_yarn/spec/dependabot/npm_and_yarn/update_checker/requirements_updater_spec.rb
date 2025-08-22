@@ -682,5 +682,45 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
         expect(updater.updated_requirements).to eq(requirements)
       end
     end
+
+    context "when dealing with a requirement being widened and ignored versions" do
+      let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::WidenRanges }
+
+      context "with widen_ranges and ignore conditions issue reproduction" do
+        let(:package_json_req_string) { "^4.0.0" }
+        
+        context "when latest_resolvable_version respects ignore conditions" do
+          let(:latest_resolvable_version) { version_class.new("4.0.3") }
+
+          its([:requirement]) { is_expected.to eq("^4.0.0") }
+          
+          it "does not update requirement when it already satisfies" do
+            # ^4.0.0 should satisfy 4.0.3, so no update needed
+            expect(updater.updated_requirements.first[:requirement]).to eq("^4.0.0")
+          end
+        end
+
+        context "when latest_resolvable_version incorrectly bypasses ignore conditions (reproducing bug)" do
+          let(:latest_resolvable_version) { version_class.new("4.0.4") }
+
+          it "would update to ignored version (demonstrates the bug)" do
+            # This test demonstrates the issue: if latest_resolvable_version is 4.0.4
+            # (which should have been filtered out by >4.0.3 ignore condition), 
+            # then widen_ranges would update ^4.0.0 to ^4.0.4
+            expect(updater.updated_requirements.first[:requirement]).to eq("^4.0.4")
+          end
+        end
+
+        context "when current requirement doesn't satisfy latest allowed version" do
+          let(:package_json_req_string) { "^3.9.0" }
+          let(:latest_resolvable_version) { version_class.new("4.0.3") }
+
+          it "updates to the latest allowed version" do
+            # ^3.9.0 doesn't satisfy 4.0.3, so it should be updated to ^4.0.3
+            expect(updater.updated_requirements.first[:requirement]).to eq("^4.0.3")
+          end
+        end
+      end
+    end
   end
 end
