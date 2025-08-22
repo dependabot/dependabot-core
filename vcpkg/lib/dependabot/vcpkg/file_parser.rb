@@ -119,7 +119,7 @@ module Dependabot
           return nil
         elsif dependency_spec.is_a?(Hash)
           name = dependency_spec["name"]
-          return nil unless name.is_a?(String)
+          return nil unless name.is_a?(String) && !name.empty?
 
           # Handle version constraints
           requirement = nil
@@ -127,7 +127,7 @@ module Dependabot
           # Check for version>=
           if dependency_spec.key?("version>=")
             version_constraint = dependency_spec["version>="]
-            if version_constraint.is_a?(String)
+            if version_constraint.is_a?(String) && !version_constraint.empty?
               requirement = ">= #{version_constraint}"
             end
           end

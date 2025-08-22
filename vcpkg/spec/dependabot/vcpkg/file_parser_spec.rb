@@ -180,6 +180,45 @@ RSpec.describe Dependabot::Vcpkg::FileParser do
         end
       end
 
+      context "when vcpkg.json contains invalid dependency specifications" do
+        let(:vcpkg_json_content) do
+          <<~JSON
+            {
+              "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+              "name": "my-project",
+              "version": "1.0.0",
+              "builtin-baseline": "fe1cde61e971d53c9687cf9a46308f8f55da19fa",
+              "dependencies": [
+                {
+                  "version>=": "8.15.0"
+                },
+                {
+                  "name": "valid-package",
+                  "version>=": "1.0.0"
+                },
+                {
+                  "name": "package-without-constraint"
+                }
+              ]
+            }
+          JSON
+        end
+
+        it "ignores invalid dependencies and only parses valid ones" do
+          expect(dependencies.length).to eq(2) # baseline + valid-package
+          
+          baseline_dep = dependencies.find { |dep| dep.name == "github.com/microsoft/vcpkg" }
+          expect(baseline_dep).not_to be_nil
+          
+          valid_dep = dependencies.find { |dep| dep.name == "valid-package" }
+          expect(valid_dep).not_to be_nil
+          expect(valid_dep.requirements.first[:requirement]).to eq(">= 1.0.0")
+          
+          # Should not include dependency without name or dependency without constraint
+          expect(dependencies.map(&:name)).not_to include("package-without-constraint")
+        end
+      end
+
       context "when vcpkg.json does not contain a builtin-baseline" do
         let(:vcpkg_json_content) do
           <<~JSON
