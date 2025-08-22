@@ -46,7 +46,6 @@ module Dependabot
             credentials: T::Array[Dependabot::Credential],
             ignored_versions: T::Array[String],
             security_advisories: T::Array[Dependabot::SecurityAdvisory],
-            goprivate: String,
             raise_on_ignored: T::Boolean,
             cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
           )
@@ -58,7 +57,6 @@ module Dependabot
           credentials:,
           ignored_versions:,
           security_advisories:,
-          goprivate:,
           raise_on_ignored: false,
           cooldown_options: nil
         )
@@ -68,7 +66,6 @@ module Dependabot
           @ignored_versions    = ignored_versions
           @security_advisories = security_advisories
           @raise_on_ignored    = raise_on_ignored
-          @goprivate           = goprivate
           @cooldown_options    = cooldown_options
           super(
             dependency: dependency,
@@ -122,9 +119,6 @@ module Dependabot
         sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
         attr_reader :security_advisories
 
-        sig { returns(String) }
-        attr_reader :goprivate
-
         sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
         attr_reader :cooldown_options
 
@@ -133,8 +127,7 @@ module Dependabot
           @available_versions_details ||= T.let(Package::PackageDetailsFetcher.new(
             dependency: dependency,
             dependency_files: dependency_files,
-            credentials: credentials,
-            goprivate: goprivate
+            credentials: credentials
           ).fetch_available_versions, T.nilable(T::Array[Dependabot::Package::PackageRelease]))
         end
 
@@ -197,13 +190,10 @@ module Dependabot
         # rubocop:disable Metrics/AbcSize
         sig { params(release: Dependabot::Package::PackageRelease).returns(T::Boolean) }
         def in_cooldown_period?(release)
-          env = { "GOPRIVATE" => @goprivate }
-
           begin
             release_info = SharedHelpers.run_shell_command(
               "go list -m -json #{dependency.name}@#{release.details.[]('version_string')}",
-              fingerprint: "go list -m -json <dependency_name>",
-              env: env
+              fingerprint: "go list -m -json <dependency_name>"
             )
           rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
             Dependabot.logger.info("Error while fetching release date info: #{e.message}")

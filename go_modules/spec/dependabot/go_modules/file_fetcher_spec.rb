@@ -57,6 +57,14 @@ RSpec.describe Dependabot::GoModules::FileFetcher do
     end
   end
 
+  context "with a go.env file" do
+    let(:branch) { "with-go-env" }
+
+    it "fetches the go.env file" do
+      expect(file_fetcher_instance.files.map(&:name)).to include("go.env")
+    end
+  end
+
   context "when directory is missing" do
     let(:directory) { "/missing" }
 
