@@ -15,6 +15,7 @@ module Dependabot
       require_relative "file_updater/dependency_set_updater"
       require_relative "file_updater/property_value_updater"
       require_relative "file_updater/lockfile_updater"
+      require_relative "file_updater/wrapper_updater"
 
       SUPPORTED_BUILD_FILE_NAMES = %w(build.gradle build.gradle.kts gradle.lockfile).freeze
 
@@ -23,8 +24,9 @@ module Dependabot
         [
           # Matches build.gradle or build.gradle.kts in root directory
           %r{(^|.*/)build\.gradle(\.kts)?$},
-          # Matches gradle/wrapper/gradle-wrapper.properties in root or any subdirectory
-          %r{(^|.*/)?gradle/wrapper/gradle-wrapper.properties$},
+          # Matches gradle-wrapper files in root or any subdirectory
+          %r{(^|.*/)?gradlew(\.bat)?$},
+          %r{(^|.*/)?gradle/wrapper/gradle-wrapper\.(properties|jar)$},
           # Matches gradle/libs.versions.toml in root or any subdirectory
           %r{(^|.*/)?gradle/libs\.versions\.toml$},
           # Matches settings.gradle or settings.gradle.kts in root or any subdirectory
@@ -81,6 +83,10 @@ module Dependabot
       def update_buildfiles_for_dependency(buildfiles:, dependency:)
         files = buildfiles.dup
 
+        # dependencies may have multiple requirements targeting the same file or build dir
+        # we keep the last one by path to later run its native helpers
+        buildfiles_processed = T.let({}, T::Hash[String, Dependabot::DependencyFile])
+
         # The UpdateChecker ensures the order of requirements is preserved
         # when updating, so we can zip them together in new/old pairs.
         reqs = dependency.requirements.zip(T.must(dependency.previous_requirements))
@@ -110,16 +116,20 @@ module Dependabot
             files[T.must(files.index(buildfile))] = update_version_in_buildfile(dependency, buildfile, old_req, new_req)
           end
 
-          next unless Dependabot::Experiments.enabled?(:gradle_lockfile_updater)
+          buildfiles_processed[buildfile.name] = buildfile
+        end
 
-          lockfile_updater = LockfileUpdater.new(dependency_files: files)
-          lockfiles = lockfile_updater.update_lockfiles(buildfile)
-          lockfiles.each do |lockfile|
-            existing_file = files.find { |f| f.name == lockfile.name && f.directory == lockfile.directory }
+        # runs native updaters (e.g. wrapper, lockfile) on relevant build files updated
+        updaters = native_updaters(files, dependency)
+        buildfiles_processed.each do |_, buildfile|
+          updated_files = updaters.flat_map { |updater| updater.update_files(buildfile) }
+
+          updated_files.each do |file|
+            existing_file = files.find { |f| f.name == file.name && f.directory == file.directory }
             if existing_file.nil?
-              files << lockfile
+              files << file
             else
-              files[T.must(files.index(existing_file))] = lockfile
+              files[T.must(files.index(existing_file))] = file
             end
           end
         end
@@ -129,6 +139,18 @@ module Dependabot
       # rubocop:enable Metrics/PerceivedComplexity
       # rubocop:enable Metrics/CyclomaticComplexity
       # rubocop:enable Metrics/AbcSize
+
+      sig do
+        params(files: T::Array[Dependabot::DependencyFile],
+               dependency: Dependabot::Dependency).returns(T::Array[GradleUpdaterBase])
+      end
+      def native_updaters(files, dependency)
+        updaters = T.let([], T::Array[GradleUpdaterBase])
+        updaters << LockfileUpdater.new(dependency_files: files) if Experiments.enabled?(:gradle_lockfile_updater)
+        updaters << WrapperUpdater.new(dependency_files: files, dependency: dependency) if
+          Experiments.enabled?(:gradle_wrapper_updater)
+        updaters
+      end
 
       sig do
         params(

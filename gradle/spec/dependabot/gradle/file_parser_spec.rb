@@ -824,7 +824,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
             [
               Dependabot::DependencyFile.new(
                 name: "#{folder}gradle/wrapper/gradle-wrapper.properties",
-                content: fixture("wrapper_properties_file",
+                content: fixture("wrapper_files",
                                  "gradle-wrapper-#{version}-#{type}#{checksum ? '-checksum' : ''}.properties")
               )
             ]

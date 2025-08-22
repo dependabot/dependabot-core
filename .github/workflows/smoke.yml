@@ -15,7 +15,7 @@ concurrency:
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   SMOKE_TEST_REPO: gmazzo/dependabot-smoke-tests
-  SMOKE_TEST_BRANCH: gradle-wrapper-support
+  SMOKE_TEST_BRANCH: gradle-wrapper-support-binaries
 jobs:
   discover:
     runs-on: ubuntu-latest
