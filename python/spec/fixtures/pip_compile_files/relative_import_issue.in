@@ -1,0 +1,3 @@
+-r base_requirements.in
+
+ruff
