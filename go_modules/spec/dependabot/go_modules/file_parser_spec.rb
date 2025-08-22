@@ -305,6 +305,31 @@ RSpec.describe Dependabot::GoModules::FileParser do
       its(:length) { is_expected.to eq(0) }
     end
 
+    context "with features needed to support DependencySubmission" do
+      it "attaches the list of dependencies to the go_mod DependencyFile" do
+        expect(parser.dependency_files.count).to eq(1)
+        dep_file = parser.dependency_files.first
+        expect(dep_file).to equal(go_mod)
+
+        # assert that the dependencies got correctly attached to the dep file
+        dep_set = dependencies.to_set
+        expect(dep_file.dependencies).to eq(dep_set)
+      end
+
+      it "marks indirect dependencies accordingly" do
+        # there are only 2 top-level dependencies
+        expect(dependencies.count(&:direct?)).to eq(2)
+
+        # and 2 indirect dependencies
+        indirect_deps = dependencies.reject(&:direct?)
+        expect(indirect_deps.count).to eq(2)
+
+        indirect_deps_names = indirect_deps.map(&:name)
+        expect(indirect_deps_names).to include("github.com/mattn/go-isatty")
+        expect(indirect_deps_names).to include("github.com/mattn/go-colorable")
+      end
+    end
+
     context "when using a monorepo" do
       let(:project_name) { "monorepo" }
       let(:repo_contents_path) { build_tmp_repo(project_name) }
@@ -354,7 +379,7 @@ RSpec.describe Dependabot::GoModules::FileParser do
       it "returns the correct package manager" do
         expect(package_manager.name).to eq "go_modules"
         expect(package_manager.requirement).to be_nil
-        expect(package_manager.version.to_s).to eq "1.25-12"
+        expect(package_manager.version.to_s).to eq "1.25.0"
       end
     end
 

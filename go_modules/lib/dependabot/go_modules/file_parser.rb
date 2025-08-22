@@ -24,8 +24,14 @@ module Dependabot
       def parse
         dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
-        required_packages.each do |dep|
-          dependency_set << dependency_from_details(dep) unless skip_dependency?(dep)
+        required_packages.each do |hsh|
+          unless skip_dependency?(hsh) # rubocop:disable Style/Next
+
+            dep = dependency_from_details(hsh)
+
+            T.must(go_mod).dependencies << dep
+            dependency_set << dep
+          end
         end
 
         dependency_set.dependencies
@@ -96,11 +102,14 @@ module Dependabot
           groups: []
         }]
 
+        is_indirect = details["Indirect"]
+
         Dependency.new(
           name: details["Path"],
           version: version,
-          requirements: details["Indirect"] ? [] : reqs,
-          package_manager: "go_modules"
+          requirements: is_indirect ? [] : reqs,
+          package_manager: "go_modules",
+          direct_relationship: !is_indirect
         )
       end
 

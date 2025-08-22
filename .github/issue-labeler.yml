@@ -4,8 +4,14 @@
 "L: rust:cargo":
     - '(rust|cargo)'
 
+"L: rust:rust-toolchain":
+    - '(rust[-_]toolchain)'
+
 "L: php:composer":
     - '(php|composer)'
+
+"L: cpp:vcpkg":
+    - '(vcpkg)'
 
 "L: devcontainers":
     - '(devcontainers)'
@@ -26,7 +32,7 @@
     - '(actions)'
 
 "L: go:modules":
-    - '(go|gomod)'
+    - '(golang|gomod)'
 
 "L: javascript":
     - '(javascript|npm|pnpm|yarn|bun)'
@@ -42,6 +48,9 @@
 
 "L: dotnet:nuget":
     - '(nuget)'
+
+"L: dotnet:dotnet-sdk":
+    - '(dotnet(?:[-_]sdk)?|\.NET)'
 
 "L: dart:pub":
     - '(dart|pub)'
