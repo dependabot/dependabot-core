@@ -65,7 +65,11 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
     context "with gradle wrapper properties" do
       before do
         Dependabot::Experiments.register(:gradle_wrapper_updater, true)
+        stub_content_request("?ref=sha", "contents_wrapper.json")
         stub_content_request("gradle/wrapper?ref=sha", "content_gradle_wrapper.json")
+        stub_content_request("gradlew?ref=sha", "gradlew.json")
+        stub_content_request("gradlew.bat?ref=sha", "gradlew.bat.json")
+        stub_content_request("gradle/wrapper/gradle-wrapper.jar?ref=sha", "gradle-wrapper.jar.json")
         stub_content_request("gradle/wrapper/gradle-wrapper.properties?ref=sha", "gradle-wrapper.properties.json")
       end
 
@@ -73,10 +77,15 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
         Dependabot::Experiments.reset!
       end
 
-      it "fetches the properties file" do
-        expect(file_fetcher_instance.files.count).to eq(2)
-        expect(file_fetcher_instance.files.map(&:name))
-          .to match_array(%w(build.gradle gradle/wrapper/gradle-wrapper.properties))
+      it "fetches the wrapper files" do
+        expect(file_fetcher_instance.files.map(&:name)).to eq(%w(
+          build.gradle
+          gradlew
+          gradlew.bat
+          gradle/wrapper/gradle-wrapper.jar
+          gradle/wrapper/gradle-wrapper.properties
+        ))
+        expect(file_fetcher_instance.files.map(&:content_encoding)).to eq(%w(utf-8 utf-8 utf-8 base64 utf-8))
       end
     end
 
