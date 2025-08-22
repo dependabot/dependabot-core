@@ -525,6 +525,73 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
         end
       end
 
+      context "with multiple tags pointing to the same commit" do
+        let(:service_pack_url) do
+          "https://github.com/github/codeql-action.git/info/refs" \
+            "?service=git-upload-pack"
+        end
+        let(:workflow_file_body) do
+          fixture("workflow_files", "multiple_tags_same_commit.yml")
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "github/codeql-action/init",
+            version: "3.29.10",
+            package_manager: "github_actions",
+            previous_version: "3.29.5",
+            previous_requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/github/codeql-action",
+                ref: "51f77329afa6477de8c49fc9c7046c15b9a4e79d",
+                branch: nil
+              },
+              metadata: { declaration_string: "github/codeql-action/init@51f77329afa6477de8c49fc9c7046c15b9a4e79d" }
+            }],
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/github/codeql-action",
+                ref: "96f518a34f7a870018057716cc4d7a5c014bd61c",
+                branch: nil
+              },
+              metadata: { declaration_string: "github/codeql-action/init@96f518a34f7a870018057716cc4d7a5c014bd61c" }
+            }]
+          )
+        end
+
+        before do
+          stub_request(:get, service_pack_url)
+            .to_return(
+              status: 200,
+              body: fixture("git", "upload_packs", "github-codeql-action"),
+              headers: {
+                "content-type" => "application/x-git-upload-pack-advertisement"
+              }
+            )
+        end
+
+        it "updates SHA version" do
+          old_sha = dependency.previous_requirements.first.dig(:source, :ref)
+          expect(updated_workflow_file.content).to include "#{dependency.name}@#{dependency.requirements.first.dig(
+            :source, :ref
+          )}"
+          expect(updated_workflow_file.content).not_to match(/#{old_sha}['"]?\s+#.*#{dependency.previous_version}/)
+        end
+
+        it "updates version comment even when multiple tags point to same commit" do
+          new_sha = dependency.requirements.first.dig(:source, :ref)
+          expect(updated_workflow_file.content).not_to match(/@#{new_sha}['"]?\s+#.*#{dependency.previous_version}\s*$/)
+          expect(updated_workflow_file.content).to include "# v#{dependency.version}"
+        end
+      end
+
       context "with a path based tag with semver" do
         let(:workflow_file_body) do
           fixture("workflow_files", "workflow_monorepo_path_based_semver.yml")

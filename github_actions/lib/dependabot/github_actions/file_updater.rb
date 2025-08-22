@@ -118,11 +118,22 @@ module Dependabot
         git_checker = Dependabot::GitCommitChecker.new(dependency: dependency, credentials: credentials)
         return unless git_checker.ref_looks_like_commit_sha?(old_ref)
 
-        previous_version_tag = git_checker.most_specific_version_tag_for_sha(old_ref)
-        return unless previous_version_tag # There's no tag for this commit
+        # Get all version tags for the old commit SHA, not just the most specific one
+        old_tags = git_checker.local_tags.select { |t| t.commit_sha == old_ref && version_class.correct?(t.name) }
+        return if old_tags.empty? # There are no tags for this commit
+
+        # Find the version tag that matches what's actually in the comment
+        previous_version_tag = nil
+        old_tags.each do |tag|
+          version = version_class.new(tag.name).to_s
+          if comment.end_with? version
+            previous_version_tag = tag.name
+            break
+          end
+        end
+        return unless previous_version_tag # None of the tags match the comment
 
         previous_version = version_class.new(previous_version_tag).to_s
-        return unless comment.end_with? previous_version
 
         new_version_tag = git_checker.most_specific_version_tag_for_sha(new_ref)
         return unless new_version_tag
