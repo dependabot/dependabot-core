@@ -424,7 +424,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
 
       it "raises a helpful error" do
         expect { updated_npm_lock_content }
-          .to raise_error(Dependabot::DependencyFileNotParseable)
+          .to raise_error(Dependabot::DependencyFileNotResolvable)
       end
     end
 
