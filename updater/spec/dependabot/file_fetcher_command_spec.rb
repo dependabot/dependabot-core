@@ -537,5 +537,33 @@ RSpec.describe Dependabot::FileFetcherCommand do
         expect(root_files).to be_empty
       end
     end
+
+    context "when all directories have required files" do
+      before do
+        # Create root directory with go.mod
+        File.write(File.join(repo_contents_path, "go.mod"), "module test-repo\n\ngo 1.20\n")
+        
+        # Create tools directory with go.mod
+        FileUtils.mkdir_p(File.join(repo_contents_path, "tools"))
+        File.write(File.join(repo_contents_path, "tools/go.mod"), "module test-repo/tools\n\ngo 1.20\n")
+      end
+
+      it "processes all directories" do
+        command = described_class.new
+
+        files = command.send(:files_from_multidirectories)
+
+        expect(files).not_to be_empty
+        
+        tools_files = files.select { |f| f.directory == "/tools" }
+        root_files = files.select { |f| f.directory == "/" }
+
+        expect(tools_files).not_to be_empty
+        expect(tools_files.map(&:name)).to include("go.mod")
+        
+        expect(root_files).not_to be_empty 
+        expect(root_files.map(&:name)).to include("go.mod")
+      end
+    end
   end
 end
