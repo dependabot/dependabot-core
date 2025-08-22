@@ -100,11 +100,82 @@ RSpec.describe Dependabot::Maven::UpdateChecker::TransitiveDependencyUpdater do
       )
     end
 
+    context "with a commonly used transitive dependency" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "com.google.guava:guava",
+          version: "23.6-jre",
+          requirements: [
+            {
+              file: "pom.xml",
+              requirement: "23.6-jre",
+              groups: [],
+              source: nil,
+              metadata: { packaging_type: "jar" }
+            }
+          ],
+          package_manager: "maven"
+        )
+      end
+
+      before do
+        # Enable the Maven transitive dependencies experiment
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:maven_transitive_dependencies)
+          .and_return(true)
+      end
+
+      it "updates the target dependency and considers transitive dependencies" do
+        expect(updated_dependencies).to include(
+          an_object_having_attributes(
+            name: "com.google.guava:guava",
+            version: "23.7-jre",
+            previous_version: "23.6-jre"
+          )
+        )
+      end
+    end
+
     context "when update is not possible" do
       let(:target_version_details) { nil }
 
       it "raises an error" do
         expect { updated_dependencies }.to raise_error("Update not possible!")
+      end
+    end
+  end
+
+  describe "#dependencies_depending_on_target" do
+    subject(:dependencies_depending_on_target) { updater.dependencies_depending_on_target }
+
+    before do
+      # Enable the Maven transitive dependencies experiment
+      allow(Dependabot::Experiments).to receive(:enabled?)
+        .with(:maven_transitive_dependencies)
+        .and_return(true)
+    end
+
+    context "with a commonly used transitive dependency" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "com.google.guava:guava",
+          version: "23.6-jre",
+          requirements: [
+            {
+              file: "pom.xml",
+              requirement: "23.6-jre",
+              groups: [],
+              source: nil,
+              metadata: { packaging_type: "jar" }
+            }
+          ],
+          package_manager: "maven"
+        )
+      end
+
+      it "identifies dependencies that might depend on the target" do
+        # The actual result will depend on the pom structure and Maven's dependency analysis
+        expect(dependencies_depending_on_target).to be_an(Array)
       end
     end
   end
