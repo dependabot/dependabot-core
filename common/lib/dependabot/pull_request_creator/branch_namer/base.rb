@@ -1,6 +1,7 @@
 # typed: strong
 # frozen_string_literal: true
 
+require "digest"
 require "sorbet-runtime"
 
 module Dependabot
@@ -64,9 +65,9 @@ module Dependabot
           sanitized_name = sanitized_name.gsub("/", separator)
 
           # Shorten the ref in case users refs have length limits
-          if max_length && (sanitized_name.length > T.must(max_length))
-            sha = T.must(Digest::SHA1.hexdigest(sanitized_name)[0, T.must(max_length)])
-            sanitized_name[[T.must(max_length) - sha.size, 0].max..] = sha
+          if max_length && (sanitized_name.length > max_length)
+            sha = Digest::SHA1.hexdigest(sanitized_name)[0, max_length]
+            sanitized_name[[max_length - sha.size, 0].max..] = sha
           end
 
           sanitized_name
