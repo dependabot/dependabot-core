@@ -168,9 +168,7 @@ module Dependabot
         begin
           files = ff.files
         rescue Dependabot::DependencyFileNotFound
-          next if has_glob
-
-          raise
+          next
         end
         post_ecosystem_versions(ff) if should_record_ecosystem_versions?
         files
