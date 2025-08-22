@@ -828,15 +828,29 @@ module Dependabot
           ).returns(T.nilable(T.any(T::Hash[String, T.untyped], String, T::Array[T::Hash[String, T.untyped]])))
         end
         def run_npm8_checker(version:)
+          env = corepack_registry_override_env
           cmd =
             "install #{version_install_arg(version: version)} --package-lock-only --dry-run=true --ignore-scripts"
-          output = Helpers.run_npm_command(cmd)
+          output = Helpers.run_npm_command(cmd, env: env)
           if output.match?(NPM8_PEER_DEP_ERROR_REGEX)
             error_context = { command: cmd, process_exit_value: 1 }
             raise SharedHelpers::HelperSubprocessFailed.new(message: output, error_context: error_context)
           end
         rescue SharedHelpers::HelperSubprocessFailed => e
           raise if e.message.match?(NPM8_PEER_DEP_ERROR_REGEX)
+        end
+
+        sig { returns(T.nilable(T::Hash[String, String])) }
+        def corepack_registry_override_env
+          return nil unless Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
+
+          replaces_base_cred = credentials.find { |cred| cred["type"] == "npm_registry" && cred.replaces_base? }
+          registry_url = replaces_base_cred&.[]("registry")
+          return nil unless registry_url
+
+          registry_url = "https://#{registry_url}" unless registry_url.start_with?("http")
+
+          { "npm_config_registry" => registry_url }
         end
 
         sig do
