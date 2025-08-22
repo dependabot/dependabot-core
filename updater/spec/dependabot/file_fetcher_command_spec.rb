@@ -171,6 +171,42 @@ RSpec.describe Dependabot::FileFetcherCommand do
       end
     end
 
+    context "with multiple update configurations and invalid target-branch" do
+      let(:job_definition) do
+        job_def = JSON.parse(fixture("jobs/job_with_credentials.json"))
+        # Simulate a case where we have multiple update configs but one has invalid branch
+        job_def["job"]["source"]["branch"] = "invalid-branch"
+        job_def
+      end
+
+      let(:git_metadata_fetcher) { double("GitMetadataFetcher") }
+
+      before do
+        allow_any_instance_of(described_class)
+          .to receive(:git_metadata_fetcher)
+          .and_return(git_metadata_fetcher)
+        
+        allow(git_metadata_fetcher)
+          .to receive(:ref_names)
+          .and_return(["main", "develop", "feature-branch"])
+      end
+
+      it "validates branch early and prevents silent failures" do
+        expect(api_client)
+          .to receive(:record_update_job_error)
+          .with(
+            error_details: { 
+              "branch-name": "invalid-branch",
+              "message": "The branch 'invalid-branch' specified in the target-branch field does not exist. Please check that the branch name is correct and that the branch exists in the repository."
+            },
+            error_type: "branch_not_found"
+          )
+        expect(api_client).to receive(:mark_job_as_processed)
+
+        expect { perform_job }.to output(/Error during file fetching; aborting/).to_stdout_from_any_process
+      end
+    end
+
     context "when the fetcher raises a RepoNotFound error" do
       let(:provider) { job_definition.dig("job", "source", "provider") }
       let(:repo) { job_definition.dig("job", "source", "repo") }
