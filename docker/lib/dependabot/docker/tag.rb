@@ -139,8 +139,20 @@ module Dependabot
         return unless comparable?
 
         # Handle git describe format versions first, before other cleaning
-        # Pattern: <version>[-.]<commits>[-.]g<hash> where commits is digits and hash is hex
-        cleaned_version = version&.gsub(/-\d+-g[0-9a-f]+$/, "")&.gsub(/[.-]\d+[.-]g[0-9a-f]+$/, "")&.gsub(/[.-]g[0-9a-f]+$/, "")
+        # Process patterns in order from most specific to avoid false matches
+        cleaned_version = version
+        
+        # 1. Standard format: version-commits-ghash (e.g., 1.0.0-5-gabcdef1)
+        cleaned_version = cleaned_version&.gsub(/-\d+-g[0-9a-f]{7,}$/, "")
+        
+        # 2. Mixed format: version-commits.ghash (e.g., 3.26.3-5.g87159cd)
+        cleaned_version = cleaned_version&.gsub(/-\d+\.g[0-9a-f]{7,}$/, "")
+        
+        # 3. Dot format: version.commits.ghash (e.g., 2.1.0.5.g1a2b3c4, 3.26.3.8.g8d771eb)
+        cleaned_version = cleaned_version&.gsub(/\.\d+\.g[0-9a-f]{7,}$/, "")
+        
+        # 4. Direct git hash: version-ghash or version.ghash (e.g., 1.2.3-gabcdef1)
+        cleaned_version = cleaned_version&.gsub(/[.-]g[0-9a-f]{7,}$/, "")
         
         # Then apply other cleaning
         cleaned_version&.gsub(/kb/i, "")&.gsub(/-[a-z]+/, "")&.downcase

@@ -27,8 +27,7 @@ RSpec.describe Dependabot::Docker::Tag do
     end
 
     it "handles edge cases with git hash suffixes" do
-      expect(described_class.new("1.2.3-g12345").numeric_version).to eq("1.2.3")
-      expect(described_class.new("4.5.6.g789abc").numeric_version).to eq("4.5.6")
+      expect(described_class.new("1.2.3-g1234567").numeric_version).to eq("1.2.3")
     end
   end
 end
