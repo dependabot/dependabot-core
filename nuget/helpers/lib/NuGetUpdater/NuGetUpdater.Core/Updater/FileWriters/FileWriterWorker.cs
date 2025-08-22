@@ -12,14 +12,16 @@ public class FileWriterWorker
 {
     private readonly IDiscoveryWorker _discoveryWorker;
     private readonly IDependencySolver _dependencySolver;
-    private readonly IFileWriter _fileWriter;
+    private readonly ImmutableArray<IFileWriter> _fileWriters;
+    private readonly ComputeUpdateOperations _computeUpdateOperations;
     private readonly ILogger _logger;
 
-    public FileWriterWorker(IDiscoveryWorker discoveryWorker, IDependencySolver dependencySolver, IFileWriter fileWriter, ILogger logger)
+    public FileWriterWorker(IDiscoveryWorker discoveryWorker, IDependencySolver dependencySolver, IEnumerable<IFileWriter> fileWriters, ComputeUpdateOperations computeUpdateOperations, ILogger logger)
     {
         _discoveryWorker = discoveryWorker;
         _dependencySolver = dependencySolver;
-        _fileWriter = fileWriter;
+        _fileWriters = [.. fileWriters];
+        _computeUpdateOperations = computeUpdateOperations;
         _logger = logger;
     }
 
@@ -206,48 +208,61 @@ public class FileWriterWorker
             var originalFileContents = await GetOriginalFileContentsAsync(repoContentsPath, initialProjectDirectory, orderedProjectDiscovery);
 
             var allUpdatedFiles = new List<string>();
-            foreach (var projectDiscovery in orderedProjectDiscovery)
+            foreach (var fileWriter in _fileWriters)
             {
-                var projectFullPath = Path.Join(repoContentsPath.FullName, initialDiscoveryResult.Path, projectDiscovery.FilePath).FullyNormalizedRootedPath();
-                var updatedFiles = await TryPerformFileWritesAsync(_fileWriter, repoContentsPath, initialProjectDirectory, projectDiscovery, resolvedDependencies.Value);
-                allUpdatedFiles.AddRange(updatedFiles);
+                _logger.Info($"Starting update attempt with file writer {fileWriter.GetType().Name}");
+                var filesUpdatedByThisWriter = new List<string>();
+                foreach (var projectDiscovery in orderedProjectDiscovery)
+                {
+                    var projectFullPath = Path.Join(repoContentsPath.FullName, initialDiscoveryResult.Path, projectDiscovery.FilePath).FullyNormalizedRootedPath();
+                    var updatedFiles = await TryPerformFileWritesAsync(fileWriter, repoContentsPath, initialProjectDirectory, projectDiscovery, resolvedDependencies.Value);
+                    filesUpdatedByThisWriter.AddRange(updatedFiles);
+                }
+
+                if (filesUpdatedByThisWriter.Count == 0)
+                {
+                    _logger.Warn("Failed to write new dependency versions.");
+                    await RestoreOriginalFileContentsAsync(originalFileContents);
+                    continue;
+                }
+
+                // this final call to discover has the benefit of also updating the lock file if it exists
+                var finalDiscoveryResult = await _discoveryWorker.RunAsync(repoContentsPath.FullName, initialProjectDirectoryRelativeToRepoRoot);
+                var finalProjectDiscovery = finalDiscoveryResult.GetProjectDiscoveryFromFullPath(repoContentsPath, projectPath);
+                if (finalProjectDiscovery is null)
+                {
+                    _logger.Warn($"Unable to find final project discovery for project {projectPath}.");
+                    await RestoreOriginalFileContentsAsync(originalFileContents);
+                    continue;
+                }
+
+                var finalRequestedDependency = finalProjectDiscovery.Dependencies
+                    .FirstOrDefault(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase));
+                if (finalRequestedDependency is null || finalRequestedDependency.Version is null)
+                {
+                    _logger.Warn($"Dependency {dependencyName} not found in final project discovery.");
+                    await RestoreOriginalFileContentsAsync(originalFileContents);
+                    continue;
+                }
+
+                var resolvedVersion = NuGetVersion.Parse(finalRequestedDependency.Version);
+                if (resolvedVersion != newDependencyVersion)
+                {
+                    _logger.Warn($"Final dependency version for {dependencyName} is {resolvedVersion}, expected {newDependencyVersion}.");
+                    await RestoreOriginalFileContentsAsync(originalFileContents);
+                    continue;
+                }
+
+                allUpdatedFiles.AddRange(filesUpdatedByThisWriter);
             }
 
             if (allUpdatedFiles.Count == 0)
             {
-                _logger.Warn("Failed to write new dependency versions.");
-                await RestoreOriginalFileContentsAsync(originalFileContents);
+                _logger.Warn($"No files were updated for project {projectPath.FullName}.");
                 continue;
             }
 
-            // this final call to discover has the benefit of also updating the lock file if it exists
-            var finalDiscoveryResult = await _discoveryWorker.RunAsync(repoContentsPath.FullName, initialProjectDirectoryRelativeToRepoRoot);
-            var finalProjectDiscovery = finalDiscoveryResult.GetProjectDiscoveryFromFullPath(repoContentsPath, projectPath);
-            if (finalProjectDiscovery is null)
-            {
-                _logger.Warn($"Unable to find final project discovery for project {projectPath}.");
-                await RestoreOriginalFileContentsAsync(originalFileContents);
-                continue;
-            }
-
-            var finalRequestedDependency = finalProjectDiscovery.Dependencies
-                .FirstOrDefault(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase));
-            if (finalRequestedDependency is null || finalRequestedDependency.Version is null)
-            {
-                _logger.Warn($"Dependency {dependencyName} not found in final project discovery.");
-                await RestoreOriginalFileContentsAsync(originalFileContents);
-                continue;
-            }
-
-            var resolvedVersion = NuGetVersion.Parse(finalRequestedDependency.Version);
-            if (resolvedVersion != newDependencyVersion)
-            {
-                _logger.Warn($"Final dependency version for {dependencyName} is {resolvedVersion}, expected {newDependencyVersion}.");
-                await RestoreOriginalFileContentsAsync(originalFileContents);
-                continue;
-            }
-
-            var computedUpdateOperations = await PackageReferenceUpdater.ComputeUpdateOperations(
+            var computedUpdateOperations = await _computeUpdateOperations(
                 repoContentsPath.FullName,
                 projectPath.FullName,
                 targetFramework,
