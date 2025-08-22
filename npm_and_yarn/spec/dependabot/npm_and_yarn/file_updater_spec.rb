@@ -2665,6 +2665,42 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
           specify { expect(updated_files.map(&:name)).to eq(["package.json"]) }
         end
+
+        context "when updating webdriverio as a direct dependency" do
+          let(:files) { project_dependency_files("npm8/webdriverio_issue") }
+
+          let(:dependency_name) { "webdriverio" }
+          let(:version) { "9.19.0" }
+          let(:previous_version) { "9.18.1" }
+          let(:requirements) do
+            [{
+              file: "package.json",
+              requirement: "^9.19.0",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          end
+          let(:previous_requirements) do
+            [{
+              file: "package.json",
+              requirement: "^9.18.1",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          end
+
+          it "updates both package.json and package-lock.json" do
+            expect(updated_files.map(&:name))
+              .to contain_exactly("package.json", "package-lock.json")
+
+            expect(updated_package_json.content)
+              .to include('"webdriverio": "^9.19.0"')
+
+            parsed_package_lock = JSON.parse(updated_npm_lock.content)
+            expect(parsed_package_lock["dependencies"]["webdriverio"]["version"])
+              .to eq("9.19.0")
+          end
+        end
       end
     end
 
