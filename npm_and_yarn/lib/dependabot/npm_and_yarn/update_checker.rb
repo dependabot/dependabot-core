@@ -179,7 +179,16 @@ module Dependabot
         # This is a safety check to prevent widen_ranges from updating to ignored versions
         if resolvable_version && version_ignored?(resolvable_version)
           Dependabot.logger.info("Filtering out ignored version #{resolvable_version} for #{dependency.name}")
-          resolvable_version = latest_version_respecting_ignore_conditions
+          fallback_version = latest_version_respecting_ignore_conditions
+          
+          # Double-check that the fallback version is not also ignored
+          if fallback_version && !version_ignored?(fallback_version)
+            resolvable_version = fallback_version
+          else
+            # If we can't find a non-ignored version, set to nil to prevent update
+            Dependabot.logger.info("No suitable non-ignored version found for #{dependency.name}")
+            resolvable_version = nil
+          end
         end
 
         @updated_requirements ||=
@@ -584,7 +593,7 @@ module Dependabot
         return false if ignored_versions.empty?
 
         version = version_class.new(version_string)
-        latest_version_finder.ignore_requirements.any? { |req| req.satisfied_by?(version) }
+        ignore_requirements.any? { |req| req.satisfied_by?(version) }
       rescue Gem::Version::BadVersionError
         false
       end

@@ -711,6 +711,20 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
           end
         end
 
+        context "edge case - when both preferred and fallback versions are ignored" do
+          let(:latest_resolvable_version) { version_class.new("4.0.4") }
+          let(:package_json_req_string) { "^3.0.0" }
+          
+          # This simulates a case where the preferred version (4.0.4) is ignored by >4.0.3
+          # and any potential fallback is also problematic
+          
+          it "handles gracefully when no suitable version is available" do
+            # In this edge case, if we can't find a suitable non-ignored version,
+            # the requirement should remain unchanged
+            expect(updater.updated_requirements.first[:requirement]).to eq("^3.0.0")
+          end
+        end
+
         context "when current requirement doesn't satisfy latest allowed version" do
           let(:package_json_req_string) { "^3.9.0" }
           let(:latest_resolvable_version) { version_class.new("4.0.3") }
