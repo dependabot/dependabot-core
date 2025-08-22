@@ -7,6 +7,7 @@ require "dependabot/errors"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 require "dependabot/github_actions/constants"
+require "dependabot/git_commit_checker"
 
 module Dependabot
   module GithubActions
@@ -122,13 +123,24 @@ module Dependabot
         return unless previous_version_tag # There's no tag for this commit
 
         previous_version = version_class.new(previous_version_tag).to_s
-        return unless comment.end_with? previous_version
+        
+        # Check if comment ends with the previous version or a prefixed version (v2.1.0, @v2.1.0, etc.)
+        # This handles the case where the version might have prefixes but still represents the end of the comment
+        version_at_end_pattern = /(?:v|@v|tag=v?)?#{Regexp.escape(previous_version)}\s*$/
+        return unless comment.match?(version_at_end_pattern)
 
         new_version_tag = git_checker.most_specific_version_tag_for_sha(new_ref)
         return unless new_version_tag
 
         new_version = version_class.new(new_version_tag).to_s
-        comment.gsub(previous_version, new_version)
+        
+        # Replace the version at the end of the comment, preserving any prefixes
+        comment.gsub(/(?:v|@v|tag=v?)?#{Regexp.escape(previous_version)}\s*$/) do |match|
+          # Extract the prefix (everything before the version) and any trailing whitespace
+          prefix = match.sub(/#{Regexp.escape(previous_version)}\s*$/, "")
+          trailing_space = match.match(/\s*$/)[0]
+          "#{prefix}#{new_version}#{trailing_space}"
+        end
       end
 
       sig { returns(T.class_of(Dependabot::GithubActions::Version)) }
