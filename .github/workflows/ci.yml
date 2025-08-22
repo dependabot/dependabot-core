@@ -9,7 +9,20 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
+  sorbet:
+    name: Sorbet Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - uses: ruby/setup-ruby@829114fc20da43a41d27359103ec7a63020954d4 # v1.255.0
+        with:
+          bundler-cache: true
+
+      - run: bundle exec srb tc
+
   ci:
+    needs: sorbet
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -74,6 +87,7 @@ jobs:
             "cd /home/dependabot/${{ matrix.suite.path }} && ./script/ci-test"
 
   updater:
+    needs: sorbet
     env:
       DOCKER_BUILDKIT: 1
     name: Updater
@@ -92,6 +106,7 @@ jobs:
         run: script/ci-test-updater
 
   lint:
+    needs: sorbet
     name: Lint
     runs-on: ubuntu-latest
     env:
@@ -106,6 +121,7 @@ jobs:
       - run: yamllint .
 
   integration:
+    needs: sorbet
     env:
       DOCKER_BUILDKIT: 1
     runs-on: ubuntu-latest

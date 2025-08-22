@@ -16,7 +16,20 @@ env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   SMOKE_TEST_BRANCH: main
 jobs:
+  sorbet:
+    name: Sorbet Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - uses: ruby/setup-ruby@829114fc20da43a41d27359103ec7a63020954d4 # v1.255.0
+        with:
+          bundler-cache: true
+
+      - run: bundle exec srb tc
+
   discover:
+    needs: sorbet
     runs-on: ubuntu-latest
     outputs:
       suites: ${{ steps.suites.outputs.suites }}
