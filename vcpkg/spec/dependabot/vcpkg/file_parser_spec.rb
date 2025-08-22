@@ -75,6 +75,111 @@ RSpec.describe Dependabot::Vcpkg::FileParser do
         end
       end
 
+      context "when vcpkg.json contains dependencies with version constraints" do
+        let(:vcpkg_json_content) do
+          <<~JSON
+            {
+              "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+              "name": "my-project",
+              "version": "1.0.0",
+              "builtin-baseline": "fe1cde61e971d53c9687cf9a46308f8f55da19fa",
+              "dependencies": [
+                "openssl",
+                {
+                  "name": "curl",
+                  "version>=": "8.15.0#1"
+                },
+                {
+                  "name": "boost",
+                  "version>=": "1.82.0"
+                }
+              ]
+            }
+          JSON
+        end
+
+        it "returns baseline dependency plus dependencies with version constraints" do
+          expect(dependencies.length).to eq(3) # baseline + 2 packages with constraints
+        end
+
+        describe "the baseline dependency" do
+          subject(:baseline_dep) { dependencies.find { |dep| dep.name == "github.com/microsoft/vcpkg" } }
+
+          it "has the correct attributes" do
+            expect(baseline_dep).to be_a(Dependabot::Dependency)
+            expect(baseline_dep.name).to eq("github.com/microsoft/vcpkg")
+            expect(baseline_dep.version).to eq("fe1cde61e971d53c9687cf9a46308f8f55da19fa")
+            expect(baseline_dep.package_manager).to eq("vcpkg")
+          end
+        end
+
+        describe "string dependencies without constraints" do
+          it "are ignored (openssl should not be in dependencies list)" do
+            openssl_dep = dependencies.find { |dep| dep.name == "openssl" }
+            expect(openssl_dep).to be_nil
+          end
+        end
+
+        describe "the curl dependency (with version constraint)" do
+          subject(:curl_dep) { dependencies.find { |dep| dep.name == "curl" } }
+
+          it "has the correct attributes" do
+            expect(curl_dep).to be_a(Dependabot::Dependency)
+            expect(curl_dep.name).to eq("curl")
+            expect(curl_dep.version).to be_nil # no locked version yet
+            expect(curl_dep.package_manager).to eq("vcpkg")
+            expect(curl_dep.requirements).to eq([{
+              file: "vcpkg.json",
+              requirement: ">= 8.15.0#1",
+              groups: [],
+              source: nil
+            }])
+          end
+        end
+
+        describe "the boost dependency (with version constraint without port-version)" do
+          subject(:boost_dep) { dependencies.find { |dep| dep.name == "boost" } }
+
+          it "has the correct attributes" do
+            expect(boost_dep).to be_a(Dependabot::Dependency)
+            expect(boost_dep.name).to eq("boost")
+            expect(boost_dep.version).to be_nil # no locked version yet
+            expect(boost_dep.package_manager).to eq("vcpkg")
+            expect(boost_dep.requirements).to eq([{
+              file: "vcpkg.json",
+              requirement: ">= 1.82.0",
+              groups: [],
+              source: nil
+            }])
+          end
+        end
+      end
+
+      context "when vcpkg.json contains only dependencies with version constraints (no baseline)" do
+        let(:vcpkg_json_content) do
+          <<~JSON
+            {
+              "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+              "name": "my-project",
+              "version": "1.0.0",
+              "dependencies": [
+                "fmt",
+                {
+                  "name": "curl",
+                  "version>=": "8.15.0#1"
+                }
+              ]
+            }
+          JSON
+        end
+
+        it "returns only dependencies with version constraints" do
+          expect(dependencies.length).to eq(1) # only curl with constraint
+          expect(dependencies.first.name).to eq("curl")
+          expect(dependencies.first.requirements.first[:requirement]).to eq(">= 8.15.0#1")
+        end
+      end
+
       context "when vcpkg.json does not contain a builtin-baseline" do
         let(:vcpkg_json_content) do
           <<~JSON
