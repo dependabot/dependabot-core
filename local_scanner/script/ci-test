@@ -1,0 +1,8 @@
+#!/bin/bash
+
+set -e
+
+cd "$(dirname "$0")/.."
+
+echo "=> running local_scanner tests"
+bundle exec rspec spec

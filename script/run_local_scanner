@@ -1,0 +1,37 @@
+#!/bin/bash
+
+# Run Local Scanner on a Project
+# Usage: ./script/run_local_scanner <project_path>
+
+set -e
+cd "$(dirname "$0")/.."
+source script/_common
+
+PROJECT_PATH="$1"
+ECOSYSTEM="local_scanner"
+
+if [[ -z "$PROJECT_PATH" ]]; then
+  echo "Usage: $0 <project_path>"
+  echo "Example: $0 ~/development/chargify-skipper"
+  exit 1
+fi
+
+if [[ ! -d "$PROJECT_PATH" ]]; then
+  echo "❌ Project directory not found: $PROJECT_PATH"
+  exit 1
+fi
+
+echo "🔍 Running local scanner on: $PROJECT_PATH"
+echo "🏗️  Building local_scanner ecosystem..."
+
+# Build the ecosystem image
+docker_build "$ECOSYSTEM"
+
+# Run the scanner directly
+echo "🚀 Executing scanner..."
+docker run --rm \
+  -v "$PROJECT_PATH:/scan" \
+  -v "$(pwd):/dependabot-core" \
+  -w /dependabot-core \
+  "$UPDATER_IMAGE$TAG" \
+  bash -c "cd dependabot-updater && bundle install > /dev/null 2>&1 && cd ../local_scanner && ruby -I ../common/lib -I ../bundler/lib -I ../updater/lib bin/local_ruby_scan /scan"

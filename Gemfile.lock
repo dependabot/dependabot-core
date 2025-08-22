@@ -127,6 +127,13 @@ PATH
       dependabot-common (= 0.327.0)
 
 PATH
+  remote: local_scanner
+  specs:
+    dependabot-local_scanner (0.326.1)
+      dependabot-bundler (= 0.326.1)
+      dependabot-common (= 0.326.1)
+
+PATH
   remote: maven
   specs:
     dependabot-maven (0.327.0)
@@ -217,6 +224,7 @@ GEM
     benchmark (0.4.0)
     bigdecimal (3.1.8)
     citrus (3.0.2)
+    commonmarker (2.3.1-aarch64-linux)
     commonmarker (2.3.1-arm64-darwin)
     commonmarker (2.3.1-x86_64-linux)
     crack (1.0.0)
@@ -272,6 +280,8 @@ GEM
     multi_xml (0.7.1)
       bigdecimal (~> 3.1)
     netrc (0.11.0)
+    nokogiri (1.18.1-aarch64-linux-gnu)
+      racc (~> 1.4)
     nokogiri (1.18.1-arm64-darwin)
       racc (~> 1.4)
     nokogiri (1.18.1-x86_64-linux-gnu)
@@ -374,6 +384,7 @@ GEM
     sorbet (0.5.11952)
       sorbet-static (= 0.5.11952)
     sorbet-runtime (0.5.11952)
+    sorbet-static (0.5.11952-aarch64-linux)
     sorbet-static (0.5.11952-universal-darwin)
     sorbet-static (0.5.11952-x86_64-linux)
     sorbet-static-and-runtime (0.5.11952)
@@ -419,6 +430,7 @@ GEM
     zeitwerk (2.7.1)
 
 PLATFORMS
+  aarch64-linux
   arm64-darwin
   universal-darwin
   x86_64-linux
@@ -442,6 +454,7 @@ DEPENDENCIES
   dependabot-gradle!
   dependabot-helm!
   dependabot-hex!
+  dependabot-local_scanner!
   dependabot-maven!
   dependabot-npm_and_yarn!
   dependabot-nuget!
@@ -483,6 +496,7 @@ CHECKSUMS
   benchmark (0.4.0) sha256=0f12f8c495545e3710c3e4f0480f63f06b4c842cc94cec7f33a956f5180e874a
   bigdecimal (3.1.8) sha256=a89467ed5a44f8ae01824af49cbc575871fa078332e8f77ea425725c1ffe27be
   citrus (3.0.2) sha256=4ec2412fc389ad186735f4baee1460f7900a8e130ffe3f216b30d4f9c684f650
+  commonmarker (2.3.1-aarch64-linux) sha256=43b940cb5a4d59378c68d1dcf4480b4223817aaf53acebe262467eca8dd14807
   commonmarker (2.3.1-arm64-darwin) sha256=e1c8991b92ea971b8933621124f6461ef06ea64c031429d8b8ebd297dab790dc
   commonmarker (2.3.1-x86_64-linux) sha256=afa0df3f64076f0fe996120783db6af28b6d634019ff3a954155884d409caf2a
   crack (1.0.0) sha256=c83aefdb428cdc7b66c7f287e488c796f055c0839e6e545fec2c7047743c4a49
@@ -544,6 +558,7 @@ CHECKSUMS
   mini_portile2 (2.8.9) sha256=0cd7c7f824e010c072e33f68bc02d85a00aeb6fce05bb4819c03dfd3c140c289
   multi_xml (0.7.1) sha256=4fce100c68af588ff91b8ba90a0bb3f0466f06c909f21a32f4962059140ba61b
   netrc (0.11.0) sha256=de1ce33da8c99ab1d97871726cba75151113f117146becbe45aa85cb3dabee3f
+  nokogiri (1.18.1-aarch64-linux-gnu) sha256=35837013800e34342fcbaca305f8c49231f6bd4f779bfa23fe7b4686ae82d5b8
   nokogiri (1.18.1-arm64-darwin) sha256=d75193f284c899d225943a8944479faedd995a7573ddd5c8308ffbdf2ec55204
   nokogiri (1.18.1-x86_64-linux-gnu) sha256=e516cf16ccde67ed4cc595a2621ca5ddd42562ecb24928914b0045a20a41620e
   octokit (7.2.0) sha256=7032d968d03177ee7a29e3bd4782fc078215cca4743db0dfc66a49feb9411907
@@ -590,6 +605,7 @@ CHECKSUMS
   simplecov_json_formatter (0.1.4) sha256=529418fbe8de1713ac2b2d612aa3daa56d316975d307244399fa4838c601b428
   sorbet (0.5.11952) sha256=0e5ed931243e140cd2fa42baca4a4f571fa779cbcccda40b4e44c12483120425
   sorbet-runtime (0.5.11952) sha256=03261787bff1d400bce3cc0d81a2aa9bc9899cdd0dfbdc2c019e427697d87edf
+  sorbet-static (0.5.11952-aarch64-linux) sha256=a7fb0d3debfa28edc8fd425be51859a8f29caebd1bb6d430b266cd42adfee47c
   sorbet-static (0.5.11952-universal-darwin) sha256=e24575b632d9ce90950cc64066a2cad6a2c583bb5cf1a6872a031b8d0dcd6e2f
   sorbet-static (0.5.11952-x86_64-linux) sha256=d6cff58d2b215a6b5c66af0df016ce45b3deb0641cfa0fe88a3072d74ad74605
   sorbet-static-and-runtime (0.5.11952) sha256=cb94d25267ac0d65055b4651e08c6cc81c00bbdc79735cb5099a7103a739ece8

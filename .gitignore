@@ -34,3 +34,10 @@ spoom_report.html
 **/.mono/**/values.xml
 # Ignore Vim swap files
 *.swp
+
+# Local development files
+.bash_history
+.core-bash_history
+git.store
+.local/
+**/tmp/
