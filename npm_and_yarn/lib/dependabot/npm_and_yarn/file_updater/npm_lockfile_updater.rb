@@ -516,17 +516,18 @@ module Dependabot
           if (error_message.include?("No matching vers") ||
              error_message.include?("404 Not Found") ||
              error_message.include?("Non-registry package missing package") ||
-             error_message.include?("Invalid tag name") ||
-             error_message.match?(NPM6_MISSING_GIT_REF) ||
-             error_message.match?(NPM8_MISSING_GIT_REF)) &&
+             error_message.include?("Invalid tag name")) &&
              !resolvable_before_update?
             raise_resolvability_error(error_message)
           end
 
-          # NOTE: This check was introduced in npm8/arborist
-          if error_message.include?("must provide string spec")
-            msg = "Error parsing your package.json manifest: the version requirement must be a string."
-            raise Dependabot::DependencyFileNotParseable, msg
+          # Handle missing git reference errors separately. npm can error with
+          # greppable messages like "did not match any file(s) known to git".
+          # These are best surfaced as GitDependenciesNotReachable so callers
+          # can treat them as unreachable git dependencies (Yarn can sometimes
+          # silently succeed where npm fails).
+          if error_message.match?(NPM6_MISSING_GIT_REF) || error_message.match?(NPM8_MISSING_GIT_REF)
+            raise Dependabot::GitDependenciesNotReachable
           end
 
           if error_message.match?(PREMATURE_CLOSE)
