@@ -27,6 +27,16 @@ module Dependabot
           filenames.any? { |f| f.match?(YAML_REGEXP) }
       end
 
+      sig { override.returns(T::Array[DependencyFile]) }
+      def fetch_files
+        fetched_files = correctly_encoded_dockerfiles
+        fetched_files += super
+
+        return fetched_files if fetched_files.any?
+
+        raise_appropriate_error(incorrectly_encoded_dockerfiles)
+      end
+
       private
 
       sig { override.returns(String) }
@@ -37,16 +47,6 @@ module Dependabot
       sig { override.returns(String) }
       def file_type
         "Docker"
-      end
-
-      sig { override.returns(T::Array[DependencyFile]) }
-      def fetch_files
-        fetched_files = correctly_encoded_dockerfiles
-        fetched_files += super
-
-        return fetched_files if fetched_files.any?
-
-        raise_appropriate_error(incorrectly_encoded_dockerfiles)
       end
 
       sig { returns(T::Array[DependencyFile]) }
