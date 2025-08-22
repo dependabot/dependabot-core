@@ -131,6 +131,16 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
       end
     end
 
+    context "with engines field for package manager with '^' constraint and missing patch version" do
+      let(:lockfiles) { {} }
+      let(:package_json) { { "engines" => { "pnpm" => "^10.11" } } }
+
+      it "returns a PNPMPackageManager instance from engines field" do
+        expect(helper.package_manager).to be_a(Dependabot::NpmAndYarn::PNPMPackageManager)
+        expect(helper.package_manager.detected_version).to eq("10.11.0")
+      end
+    end
+
     context "when neither lockfile, packageManager, nor engines field exists" do
       let(:lockfiles) { {} }
       let(:package_json) { {} }

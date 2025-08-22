@@ -2,11 +2,14 @@
 # frozen_string_literal: true
 
 require "base64"
+require "json"
 require "dependabot/base_command"
 require "dependabot/dependency_snapshot"
 require "dependabot/errors"
 require "dependabot/opentelemetry"
 require "dependabot/updater"
+
+require "github_api/dependency_submission"
 
 module Dependabot
   class UpdateFilesCommand < BaseCommand
@@ -32,6 +35,12 @@ module Dependabot
 
         # Update the service's metadata about this project
         service.update_dependency_list(dependency_snapshot: dependency_snapshot)
+
+        # POC: Emit the dependency data formatted for the GitHub Dependency Submission API
+        #
+        # We only want to run this experiment on Version Updates as Security Updates are downstream of
+        # Dependency Submission so this could create an unhelpful feedback loop.
+        dependency_submission_experiment(dependency_snapshot) unless job.security_updates_only?
 
         # TODO: Pull fatal error handling handling up into this class
         #
@@ -148,6 +157,20 @@ module Dependabot
         error_type: T.must(error_details).fetch(:"error-type"),
         error_details: T.must(error_details)[:"error-detail"]
       )
+    end
+
+    def dependency_submission_experiment(dependency_snapshot)
+      return unless Dependabot::Experiments.enabled?(:enable_dependency_submission_poc)
+
+      submission = GithubApi::DependencySubmission.new(
+        job: job,
+        snapshot: dependency_snapshot
+      )
+
+      # TODO(brrygrdn): Drop this back down to debug logging
+      Dependabot.logger.info("Dependency submission payload:\n#{JSON.pretty_generate(submission.payload)}")
+
+      service.create_dependency_submission(dependency_submission: submission)
     end
   end
 end

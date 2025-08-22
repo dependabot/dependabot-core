@@ -177,8 +177,10 @@ To (re)build a specific one:
 
   ```shell
   $ docker pull ghcr.io/dependabot/dependabot-updater-core # OR
-  $ docker build -f Dockerfile.updater-core . # recommended on ARM
+  $ docker build -f Dockerfile.updater-core . --tag=dependabot-manual-build/updater-core # recommended on ARM
   ```
+
+Each language/ecosystem sits on top of the core image. You need to rebuild whichever one you’re working on so it picks up your new core bits. For instance, if you’re working on **Go Modules**:
 
 - The Updater ecosystem image:
 
@@ -187,10 +189,33 @@ To (re)build a specific one:
   $ script/build go_modules # recommended on ARM
   ```
 
-- The development container using the `--rebuild` flag:
+  Or explicitly:
+  ```shell
+  $ docker build \
+  --platform linux/amd64 \
+  --file go_modules/Dockerfile \
+  --build-arg UPDATER_CORE_IMAGE=dependabot-manual-build/updater-core \
+  --tag dependabot-manual-build/updater-gomod \
+  .
+  ```
+
+- Spin-up the development container using the `--rebuild` flag:
 
   ```shell
   $ bin/docker-dev-shell go_modules --rebuild
+  ```
+
+  If successful, you should be inside the shell:
+
+  ```shell
+  => running docker development shell
+  [dependabot-core-dev] ~ $
+  ```
+
+- Once inside the shell, you can run tests, e.g.:
+
+  ```shell
+  rspec common/spec/dependabot/file_fetchers/base_exclude_spec.rb
   ```
 
 ### Making Changes to native Package Manager helpers

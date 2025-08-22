@@ -77,3 +77,6 @@ helm:
 vcpkg:
   - *common
   - 'vcpkg/**'
+conda:
+  - *common
+  - 'conda/**'

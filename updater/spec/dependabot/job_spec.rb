@@ -586,4 +586,19 @@ RSpec.describe Dependabot::Job do
       end
     end
   end
+
+  describe "#exclude_paths" do
+    it "defaults to false" do
+      expect(job.exclude_paths).to eq([])
+    end
+
+    context "when exclude_paths is provided" do
+      it "returns the exclude_paths array" do
+        attrs = attributes
+        attrs[:exclude_paths] = ["vendor/*", "spec/fixtures/*"]
+        job = described_class.new(attrs)
+        expect(job.exclude_paths).to eq(["vendor/*", "spec/fixtures/*"])
+      end
+    end
+  end
 end

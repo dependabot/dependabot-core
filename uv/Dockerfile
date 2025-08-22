@@ -7,6 +7,8 @@ ARG PY_3_11=3.11.13
 ARG PY_3_10=3.10.18
 ARG PY_3_9=3.9.23
 ARG PYENV_VERSION=v2.5.2
+# This cannot be inlined below (e.g., COPY --from=...) because Dependabot does not support that syntax yet
+FROM ghcr.io/astral-sh/uv:0.8.4 AS uv
 
 FROM ghcr.io/dependabot/dependabot-updater-core AS python-core
 ARG PY_3_13
@@ -178,7 +180,7 @@ COPY --from=rust /usr/local/cargo $CARGO_HOME
 RUN mkdir -p ~/.cargo && printf "[net]\ngit-fetch-with-cli = true\n" >> ~/.cargo/config.toml
 
 # Install uv by copying from the official image
-COPY --from=ghcr.io/astral-sh/uv:0.8.0 /uv /uvx /usr/local/bin/
+COPY --from=uv /uv /uvx /usr/local/bin/
 
 COPY --chown=dependabot:dependabot cargo $DEPENDABOT_HOME/cargo
 COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common

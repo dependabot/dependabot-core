@@ -1,0 +1,18 @@
+[
+  {
+    "name": "requirements.txt",
+    "path": "requirements.txt",
+    "sha": "e47f93ec6a7e6e0e0ba44e8e3c59df52d5063c1c",
+    "size": 234,
+    "url": "https://api.github.com/repos/gocardless/conda-test/contents/requirements.txt?ref=sha",
+    "html_url": "https://github.com/gocardless/conda-test/blob/sha/requirements.txt",
+    "git_url": "https://api.github.com/repos/gocardless/conda-test/git/blobs/e47f93ec6a7e6e0e0ba44e8e3c59df52d5063c1c",
+    "download_url": "https://raw.githubusercontent.com/gocardless/conda-test/sha/requirements.txt",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/gocardless/conda-test/contents/requirements.txt?ref=sha",
+      "git": "https://api.github.com/repos/gocardless/conda-test/git/blobs/e47f93ec6a7e6e0e0ba44e8e3c59df52d5063c1c",
+      "html": "https://github.com/gocardless/conda-test/blob/sha/requirements.txt"
+    }
+  }
+]
