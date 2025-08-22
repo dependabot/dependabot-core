@@ -12,7 +12,7 @@ RSpec.describe Dependabot::Gradle::FileParser::DistributionsFinder do
       let(:properties_file) do
         Dependabot::DependencyFile.new(
           name: "gradle/wrapper/gradle-wrapper.properties",
-          content: fixture("wrapper_properties_file",
+          content: fixture("wrapper_files",
                            "gradle-wrapper-#{version}-#{type}#{checksum ? '-checksum' : ''}.properties")
         )
       end

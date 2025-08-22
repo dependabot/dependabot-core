@@ -62,21 +62,24 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
 
     context "when files match the regex patterns" do
       it "returns true for files that should be updated" do
-        matching_files = [
-          "build.gradle",
-          "build.gradle.kts",
-          "settings.gradle",
-          "settings.gradle.kts",
-          "subproject/build.gradle",
-          "subproject/build.gradle.kts",
-          "subproject/settings.gradle",
-          "subproject/settings.gradle.kts",
-          "gradle/wrapper/gradle-wrapper.properties",
-          "gradle/libs.versions.toml",
-          "subproject/gradle/libs.versions.toml",
-          "dependencies.gradle",
-          "subproject/dependencies.gradle"
-        ]
+        matching_files = %w(
+          build.gradle
+          build.gradle.kts
+          settings.gradle
+          settings.gradle.kts
+          subproject/build.gradle
+          subproject/build.gradle.kts
+          subproject/settings.gradle
+          subproject/settings.gradle.kts
+          gradlew
+          gradlew.bat
+          gradle/wrapper/gradle-wrapper.properties
+          gradle/wrapper/gradle-wrapper.jar
+          gradle/libs.versions.toml
+          subproject/gradle/libs.versions.toml
+          dependencies.gradle
+          subproject/dependencies.gradle
+        )
 
         matching_files.each do |file_name|
           expect(updated_files_regex).to(be_any { |regex| file_name.match?(regex) })
@@ -84,15 +87,14 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
       end
 
       it "returns false for files that should not be updated" do
-        non_matching_files = [
-          "README.md",
-          ".github/workflow/main.yml",
-          "gradle/wrapper/gradle-wrapper.jar",
-          "some_random_file.rb",
-          "requirements.txt",
-          "package-lock.json",
-          "package.json"
-        ]
+        non_matching_files = %w(
+          README.md
+          .github/workflow/main.yml
+          some_random_file.rb
+          requirements.txt
+          package-lock.json
+          package.json
+        )
 
         non_matching_files.each do |file_name|
           expect(updated_files_regex).not_to(be_any { |regex| file_name.match?(regex) })
@@ -675,8 +677,8 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
         end
       end
 
-      context "with a wrapper properties" do
-        shared_examples "wrapper properties" do |version, type, checksum, updated_checksum|
+      context "with a wrapper" do
+        shared_examples "wrapper" do |version, type, checksum, updated_checksum|
           subject(:updated_buildfile) do
             updated_files.find { |f| f.name == "gradle/wrapper/gradle-wrapper.properties" }
           end
@@ -684,7 +686,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
           let(:buildfile) do
             Dependabot::DependencyFile.new(
               name: "gradle/wrapper/gradle-wrapper.properties",
-              content: fixture("wrapper_properties_file",
+              content: fixture("wrapper_files",
                                "gradle-wrapper-#{version}-#{type}#{checksum ? '-checksum' : ''}.properties")
             )
           end
@@ -743,12 +745,12 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
           end
         end
 
-        it_behaves_like "wrapper properties", "8.14.2", "all", nil, nil
-        it_behaves_like "wrapper properties", "8.14.2", "bin", nil, nil
-        it_behaves_like "wrapper properties", "8.14.2", "bin",
+        it_behaves_like "wrapper", "8.14.2", "all", nil, nil
+        it_behaves_like "wrapper", "8.14.2", "bin", nil, nil
+        it_behaves_like "wrapper", "8.14.2", "bin",
                         "7197a12f450794931532469d4ff21a59ea2c1cd59a3ec3f89c035c3c420a6999",
                         "8fad3d78296ca518113f3d29016617c7f9367dc005f932bd9d93bf45ba46072b"
-        it_behaves_like "wrapper properties", "8.14.2", "all",
+        it_behaves_like "wrapper", "8.14.2", "all",
                         "443c9c8ee2ac1ee0e11881a40f2376d79c66386264a44b24a9f8ca67e633375f",
                         "f759b8dd5204e2e3fa4ca3e73f452f087153cf81bac9561eeb854229cc2c5365"
       end
