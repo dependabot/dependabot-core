@@ -2,7 +2,6 @@ FROM ghcr.io/dependabot/dependabot-updater-core
 
 # Install VCPKG and dependencies
 USER root
-ARG VCPKG_VERSION=2025.06.13
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
     cmake \
@@ -12,7 +11,6 @@ RUN apt-get update \
     pkg-config \
   && git clone https://github.com/microsoft/vcpkg.git /opt/vcpkg \
   && cd /opt/vcpkg \
-  && git checkout $VCPKG_VERSION \
   && ./bootstrap-vcpkg.sh \
   && chown -R dependabot:dependabot /opt/vcpkg \
   && apt-get clean \
