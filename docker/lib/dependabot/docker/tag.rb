@@ -138,7 +138,12 @@ module Dependabot
       def numeric_version
         return unless comparable?
 
-        version&.gsub(/kb/i, "")&.gsub(/-[a-z]+/, "")&.downcase
+        # Handle git describe format versions first, before other cleaning
+        # Pattern: <version>[-.]<commits>[-.]g<hash> where commits is digits and hash is hex
+        cleaned_version = version&.gsub(/-\d+-g[0-9a-f]+$/, "")&.gsub(/[.-]\d+[.-]g[0-9a-f]+$/, "")&.gsub(/[.-]g[0-9a-f]+$/, "")
+        
+        # Then apply other cleaning
+        cleaned_version&.gsub(/kb/i, "")&.gsub(/-[a-z]+/, "")&.downcase
       end
 
       sig { returns(Integer) }
