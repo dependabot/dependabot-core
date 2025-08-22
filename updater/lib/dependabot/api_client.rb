@@ -404,6 +404,62 @@ module Dependabot
     end
     # rubocop:enable Metrics/MethodLength, Metrics/AbcSize
 
+    # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
+    sig { params(job: T.nilable(Dependabot::Job)).void }
+    def record_exclude_paths_subdirectory_meta(job)
+      unless Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_metrics_collection)
+        Dependabot.logger.info("Exclude paths subdirectory metrics collection is disabled.")
+        return
+      end
+
+      return if job&.exclude_paths.nil? || job&.exclude_paths&.empty?
+
+      # Only record metrics if the feature is actually being used
+      return unless Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files)
+
+      exclude_paths = T.must(job).exclude_paths
+
+      begin
+        ::Dependabot::OpenTelemetry.tracer.in_span("record_exclude_paths_subdirectory_meta", kind: :internal) do |_span|
+          api_url = "#{base_url}/update_jobs/#{job_id}/record_exclude_paths_subdirectory_meta"
+
+          body = {
+            data: [
+              {
+                exclude_paths_subdirectory: {
+                  ecosystem_name: T.must(job).package_manager,
+                  config: {
+                    patterns_count: T.must(exclude_paths).length,
+                    patterns: T.must(exclude_paths)
+                  }
+                }
+              }
+            ]
+          }
+
+          retry_count = 0
+
+          begin
+            response = http_client.post(api_url, json: body)
+            raise ApiError, response.body if response.code >= 400
+          rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError, ApiError => e
+            retry_count += 1
+            if retry_count <= MAX_REQUEST_RETRIES
+              sleep(rand(3.0..10.0))
+              retry
+            else
+              Dependabot.logger.error(
+                "Failed to record exclude paths subdirectory meta after #{MAX_REQUEST_RETRIES} retries: #{e.message}"
+              )
+            end
+          end
+        end
+      rescue StandardError => e
+        Dependabot.logger.error("Failed to record exclude paths subdirectory meta: #{e.message}")
+      end
+    end
+    # rubocop:enable Metrics/MethodLength, Metrics/AbcSize
+
     private
 
     # Update return type to allow returning a Hash or nil
