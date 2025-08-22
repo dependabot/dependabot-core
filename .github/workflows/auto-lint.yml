@@ -1,0 +1,59 @@
+---
+name: Auto-lint Pull Requests
+
+on:  # yamllint disable-line rule:truthy
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write  # Needed to push fixes back to the PR branch
+
+jobs:
+  auto-lint:
+    name: Auto-lint and fix
+    runs-on: ubuntu-latest
+    # Only run on pull requests, not on the main branch
+    if: github.event_name == 'pull_request'
+    env:
+      BUNDLE_GEMFILE: updater/Gemfile
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          # Checkout the head of the PR, not the merge commit
+          ref: ${{ github.head_ref }}
+          # Use a token that can push to the branch
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@829114fc20da43a41d27359103ec7a63020954d4 # v1.255.0
+        with:
+          bundler-cache: true
+
+      - name: Run RuboCop with auto-fix
+        run: |
+          # Run RuboCop with auto-fix (-a flag)
+          ./bin/rubocop -a || true
+      - name: Check for changes
+        id: changes
+        run: |
+          if git diff --quiet; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit and push fixes
+        if: steps.changes.outputs.has_changes == 'true'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add .
+          git commit -m "Auto-fix linting issues
+
+          Applied RuboCop auto-fixes to address linting violations.
+
+          [skip ci]"
+          git push
