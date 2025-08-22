@@ -24,12 +24,6 @@ module Dependabot
         filenames.any? { |f| f.match?(filename_regex) }
       end
 
-      sig { override.returns(T::Array[DependencyFile]) }
-      def fetch_files
-        fetched_files = []
-        fetched_files + correctly_encoded_yamlfiles
-      end
-
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def correctly_encoded_yamlfiles
         candidate_files = yamlfiles.select { |f| f.content&.valid_encoding? }
@@ -85,6 +79,12 @@ module Dependabot
             end,
           T.nilable(T::Array[DependencyFile])
         )
+      end
+
+      sig { override.returns(T::Array[DependencyFile]) }
+      def fetch_files
+        fetched_files = []
+        fetched_files + correctly_encoded_yamlfiles
       end
 
       private
