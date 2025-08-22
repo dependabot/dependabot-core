@@ -106,6 +106,59 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
       it { is_expected.to eq("dependabot-dummy-business-1.5.0") }
     end
 
+    context "with default maximum length behavior" do
+      let(:namer_with_100_limit) do
+        described_class.new(
+          dependencies: dependencies,
+          files: files,
+          target_branch: target_branch,
+          max_length: 100
+        )
+      end
+
+      let(:dependency_name) { "microsoft.extensions.dependencyinjection.abstractions" }
+      let(:dependency_version) { "8.0.0" }
+      let(:gemfile) do
+        Dependabot::DependencyFile.new(
+          name: "project.csproj",
+          content: "dummy content",
+          directory: ".config"
+        )
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: dependency_version,
+          previous_version: "7.0.0",
+          package_manager: "nuget",
+          requirements: [],
+          previous_requirements: []
+        )
+      end
+
+      it "does not shorten branch names under 100 characters" do
+        # The branch would be: dependabot/nuget/.config/microsoft.extensions.dependencyinjection.abstractions-8.0.0
+        # Which is 84 characters, so it should not be shortened
+        branch_name = namer_with_100_limit.new_branch_name
+        expect(branch_name.length).to eq(84)
+        expect(branch_name).to eq("dependabot/nuget/.config/microsoft.extensions.dependencyinjection.abstractions-8.0.0")
+      end
+
+      context "with very long dependency name that exceeds 100 characters" do
+        let(:dependency_name) { "this.is.an.extremely.long.package.name.that.will.definitely.exceed.the.maximum.length.limit.of.one.hundred.characters.for.sure" }
+        
+        it "shortens the branch name to 100 characters using hash" do
+          branch_name = namer_with_100_limit.new_branch_name
+          expect(branch_name.length).to eq(100)
+          
+          expected_full_name = "dependabot/nuget/.config/#{dependency_name}-#{dependency_version}"
+          expected_shortened = Digest::SHA1.hexdigest(expected_full_name)[0, 100]
+          expect(branch_name).to eq(expected_shortened)
+        end
+      end
+    end
+
     context "with a maximum length" do
       let(:namer) do
         described_class.new(
