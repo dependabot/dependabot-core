@@ -201,7 +201,16 @@ module Dependabot
             # The dependencies being updated have changed. Close the existing
             # multi-dependency PR and try creating a new one.
             close_pull_request(reason: :dependencies_changed)
-            create_pull_request(dependency_change)
+            begin
+              create_pull_request(dependency_change)
+            rescue StandardError => e
+              Dependabot.logger.error(
+                "Failed to create replacement PR after closing existing PR for dependencies_changed: #{e.message}"
+              )
+              # Re-raise the exception so it's handled by the main error handler
+              # This ensures the error is properly reported to the backend
+              raise e
+            end
           elsif existing_pull_request(dependency_change.updated_dependencies)
             # The existing PR is for this version. Update it.
             update_pull_request(dependency_change)
