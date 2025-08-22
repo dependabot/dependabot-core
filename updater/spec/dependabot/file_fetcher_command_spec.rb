@@ -5,6 +5,7 @@ require "spec_helper"
 require "dependabot/file_fetcher_command"
 require "dependabot/errors"
 require "tmpdir"
+require "fileutils"
 
 require "support/dummy_package_manager/dummy"
 
@@ -477,6 +478,63 @@ RSpec.describe Dependabot::FileFetcherCommand do
           expect(Dependabot.logger).to have_received(:info).with(/Connectivity check starting/)
           expect(Dependabot.logger).to have_received(:error).with(/Connectivity check failed/)
         end
+      end
+    end
+  end
+
+  describe "#files_from_multidirectories" do
+    let(:job_definition) do
+      {
+        "job" => {
+          "package_manager" => "gomod", 
+          "source" => {
+            "provider" => "github",
+            "repo" => "test/test-repo",
+            "directory" => "/",
+            "directories" => ["/", "/tools"],
+            "branch" => nil,
+            "hostname" => "github.com",
+            "api-endpoint" => "https://api.github.com/"
+          }
+        }
+      }
+    end
+
+    let(:repo_contents_path) { Dir.mktmpdir }
+
+    before do
+      allow(Dependabot::Environment).to receive(:job_definition).and_return(job_definition)
+      allow(Dependabot::Environment).to receive(:repo_contents_path).and_return(repo_contents_path)
+    end
+
+    after do
+      FileUtils.rm_rf(repo_contents_path)
+    end
+
+    context "when only some directories have required files" do
+      before do
+        # Create tools directory with go.mod
+        FileUtils.mkdir_p(File.join(repo_contents_path, "tools"))
+        File.write(File.join(repo_contents_path, "tools/go.mod"), "module test-repo/tools\n\ngo 1.20\n")
+        
+        # Root directory has no go.mod - should be skipped gracefully
+      end
+
+      it "processes only directories with required files" do
+        command = described_class.new
+
+        files = command.send(:files_from_multidirectories)
+
+        expect(files).not_to be_empty
+        
+        tools_files = files.select { |f| f.directory == "/tools" }
+        root_files = files.select { |f| f.directory == "/" }
+
+        expect(tools_files).not_to be_empty
+        expect(tools_files.map(&:name)).to include("go.mod")
+        
+        # Root directory should be skipped since it has no go.mod
+        expect(root_files).to be_empty
       end
     end
   end
