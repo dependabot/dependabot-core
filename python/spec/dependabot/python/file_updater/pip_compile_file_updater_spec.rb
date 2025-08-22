@@ -551,6 +551,52 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
         expect(updated_files.first.content).not_to include("boto3")
       end
     end
+
+    context "with relative import paths (regression test for pip >25 issue)" do
+      let(:dependency_files) do
+        [base_file, manifest_file, generated_file]
+      end
+      let(:base_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements/base_requirements.in",
+          content: fixture("pip_compile_files", "base_requirements.in")
+        )
+      end
+      let(:manifest_fixture_name) { "relative_import_issue.in" }
+      let(:generated_fixture_name) { "pip_compile_relative_import_issue.txt" }
+      let(:dependency_name) { "ruff" }
+      let(:dependency_version) { "0.12.4" }
+      let(:dependency_previous_version) { "0.12.3" }
+      let(:dependency_requirements) do
+        [{
+          file: "requirements/test.in",
+          requirement: nil,
+          groups: [],
+          source: nil
+        }]
+      end
+      let(:dependency_previous_requirements) do
+        [{
+          file: "requirements/test.in",
+          requirement: nil,
+          groups: [],
+          source: nil
+        }]
+      end
+
+      it "preserves relative paths in generated comments" do
+        expect(updated_files.count).to eq(1)
+        content = updated_files.first.content
+        
+        # Verify the upgrade worked
+        expect(content).to include("ruff==0.12.4")
+        
+        # Verify that relative paths are preserved in comments (not converted to absolute paths)
+        expect(content).to include("# via -r base_requirements.in")
+        expect(content).not_to include("# via -r /")  # Should not contain absolute paths
+        expect(content).not_to include("/tmp/")        # Should not contain temp directory paths
+      end
+    end
   end
 
   describe "#package_hashes_for" do
