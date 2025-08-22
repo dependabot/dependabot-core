@@ -118,17 +118,51 @@ module Dependabot
         git_checker = Dependabot::GitCommitChecker.new(dependency: dependency, credentials: credentials)
         return unless git_checker.ref_looks_like_commit_sha?(old_ref)
 
-        previous_version_tag = git_checker.most_specific_version_tag_for_sha(old_ref)
-        return unless previous_version_tag # There's no tag for this commit
+        # Try to get the most specific version tag for the SHA
+        most_specific_version_tag = git_checker.most_specific_version_tag_for_sha(old_ref)
+        return unless most_specific_version_tag # There's no tag for this commit
 
-        previous_version = version_class.new(previous_version_tag).to_s
-        return unless comment.end_with? previous_version
+        # Check if the comment ends with the most specific version
+        most_specific_version = version_class.new(most_specific_version_tag).to_s
+        if comment.end_with?(most_specific_version)
+          # Original logic: comment matches the most specific version
+          previous_version = most_specific_version
+        else
+          # New logic: comment might contain a different version tag that also points to this SHA
+          # But we still only update if the comment ENDS with a version number (for safety)
+          version_strings = extract_version_strings_from_comment(comment)
+          
+          matching_version = nil
+          version_strings.each do |version_str|
+            # Only consider versions that the comment ends with (same safety as original)
+            if comment.end_with?(version_str) && version_class.correct?("v#{version_str}")
+              matching_version = version_str
+              break
+            elsif comment.end_with?(version_str) && version_class.correct?(version_str)
+              matching_version = version_str
+              break  
+            end
+          end
+          
+          return unless matching_version
+          previous_version = matching_version
+        end
 
         new_version_tag = git_checker.most_specific_version_tag_for_sha(new_ref)
         return unless new_version_tag
 
         new_version = version_class.new(new_version_tag).to_s
         comment.gsub(previous_version, new_version)
+      end
+
+      private
+
+      # Extract version strings from comment that could potentially be version numbers
+      def extract_version_strings_from_comment(comment)
+        # Look for version patterns in the comment
+        # Matches patterns like "2.1.0", "v2.1.0" etc.
+        version_patterns = comment.scan(/(\d+\.\d+\.\d+(?:\.\d+)*)/)
+        version_patterns.flatten.uniq
       end
 
       sig { returns(T.class_of(Dependabot::GithubActions::Version)) }
