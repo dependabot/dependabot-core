@@ -207,6 +207,9 @@ module Dependabot
             version: dependency_version(dependency.name)&.to_s,
             requirements: [],
             package_manager: "bundler",
+            metadata: {
+              depends_on: dependency.dependencies.map(&:name)
+            },
             subdependency_metadata: [{
               production: production_dep_names.include?(dependency.name)
             }],
