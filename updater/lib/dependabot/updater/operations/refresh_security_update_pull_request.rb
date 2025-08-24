@@ -194,10 +194,7 @@ module Dependabot
           # NOTE: Gradle, Maven and Nuget dependency names can be case-insensitive
           # and the dependency name in the security advisory often doesn't match
           # what users have specified in their manifest.
-          job_dependencies = job_dependencies.map(&:downcase)
-          changed_dependencies = dependency_change.updated_dependencies.map { |x| x.name.downcase }
-
-          if changed_dependencies.sort_by(&:downcase) != job_dependencies.sort_by(&:downcase)
+          if dependency_change.should_replace_existing_pr?
             # The dependencies being updated have changed. Close the existing
             # multi-dependency PR and try creating a new one.
             close_pull_request(reason: :dependencies_changed)
