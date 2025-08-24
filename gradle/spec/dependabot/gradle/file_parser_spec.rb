@@ -818,12 +818,12 @@ RSpec.describe Dependabot::Gradle::FileParser do
     end
 
     describe "wrapper properties file" do
-      shared_examples "wrapper_properties_test" do |version, type, checksum|
+      shared_examples "wrapper_properties_test" do |folder, version, type, checksum|
         describe "gradle #{version}, distribution #{type}" do
           let(:files) do
             [
               Dependabot::DependencyFile.new(
-                name: "gradle/wrapper/gradle-wrapper.properties",
+                name: "#{folder}gradle/wrapper/gradle-wrapper.properties",
                 content: fixture("wrapper_properties_file",
                                  "gradle-wrapper-#{version}-#{type}#{checksum ? '-checksum' : ''}.properties")
               )
@@ -839,7 +839,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
               requirements = [
                 {
                   requirement: version,
-                  file: "gradle/wrapper/gradle-wrapper.properties",
+                  file: "#{folder}gradle/wrapper/gradle-wrapper.properties",
                   groups: [],
                   source: {
                     type: "gradle-distribution",
@@ -851,7 +851,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
               if checksum
                 requirements << {
                   requirement: checksum,
-                  file: "gradle/wrapper/gradle-wrapper.properties",
+                  file: "#{folder}gradle/wrapper/gradle-wrapper.properties",
                   groups: [],
                   source: {
                     type: "gradle-distribution",
@@ -870,11 +870,14 @@ RSpec.describe Dependabot::Gradle::FileParser do
         end
       end
 
-      it_behaves_like "wrapper_properties_test", "8.14.2", "bin", nil
-      it_behaves_like "wrapper_properties_test", "8.14.2", "all", nil
-      it_behaves_like "wrapper_properties_test", "9.0.0", "bin",
+      it_behaves_like "wrapper_properties_test", "/", "8.14.2", "bin", nil
+      it_behaves_like "wrapper_properties_test", "/", "8.14.2", "all", nil
+      it_behaves_like "wrapper_properties_test", "/", "9.0.0", "bin",
                       "8fad3d78296ca518113f3d29016617c7f9367dc005f932bd9d93bf45ba46072b"
-      it_behaves_like "wrapper_properties_test", "9.0.0", "all",
+      it_behaves_like "wrapper_properties_test", "/", "9.0.0", "all",
+                      "f759b8dd5204e2e3fa4ca3e73f452f087153cf81bac9561eeb854229cc2c5365"
+      it_behaves_like "wrapper_properties_test", "/buildSrc/", "8.14.2", "bin", nil
+      it_behaves_like "wrapper_properties_test", "/buildSrc/", "9.0.0", "all",
                       "f759b8dd5204e2e3fa4ca3e73f452f087153cf81bac9561eeb854229cc2c5365"
     end
 
