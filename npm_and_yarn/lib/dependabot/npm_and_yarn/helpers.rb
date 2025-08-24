@@ -267,14 +267,21 @@ module Dependabot
       # NOTE: Needs to be explicitly run through corepack to respect the
       # `packageManager` setting in `package.json`, because corepack does not
       # add shims for NPM.
-      sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
-      def self.run_npm_command(command, fingerprint: command)
+      sig do
+        params(
+          command: String,
+          fingerprint: T.nilable(String),
+          env: T.nilable(T::Hash[String, String])
+        ).returns(String)
+      end
+      def self.run_npm_command(command, fingerprint: command, env: nil)
         if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
           package_manager_run_command(
             NpmPackageManager::NAME,
             command,
             fingerprint: fingerprint,
-            output_observer: ->(output) { command_observer(output) }
+            output_observer: ->(output) { command_observer(output) },
+            env: env
           )
         else
           Dependabot::SharedHelpers.run_shell_command(
@@ -506,14 +513,16 @@ module Dependabot
           name: String,
           command: String,
           fingerprint: T.nilable(String),
-          output_observer: CommandHelpers::OutputObserver
+          output_observer: CommandHelpers::OutputObserver,
+          env: T.nilable(T::Hash[String, String])
         ).returns(String)
       end
       def self.package_manager_run_command(
         name,
         command,
         fingerprint: nil,
-        output_observer: nil
+        output_observer: nil,
+        env: nil
       )
         return run_bun_command(command, fingerprint: fingerprint) if name == BunPackageManager::NAME
 
@@ -524,7 +533,8 @@ module Dependabot
           return Dependabot::SharedHelpers.run_shell_command(
             full_command,
             fingerprint: fingerprint,
-            output_observer: output_observer
+            output_observer: output_observer,
+            env: env
           ).strip
         else
           Dependabot::SharedHelpers.run_shell_command(full_command, fingerprint: fingerprint)
