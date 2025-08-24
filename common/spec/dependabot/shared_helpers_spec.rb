@@ -690,7 +690,20 @@ RSpec.describe Dependabot::SharedHelpers do
       end
 
       it "creates a git credentials store that contains github.com credentials" do
-        expect(configured_git_credentials).to eq("https://x-access-token:fake-token@github.com\n")
+        result = configured_git_credentials
+        expect(result).to eq("https://x-access-token:fake-token@github.com\n"), lambda {
+          debug_info = []
+          debug_info << "Result length: #{result.length}"
+          debug_info << "Expected length: #{expected.length}"
+          debug_info << "Result bytes: #{result.bytes.inspect}"
+          debug_info << "Expected bytes: #{expected.bytes.inspect}"
+          debug_info << "Result encoding: #{result.encoding}"
+          debug_info << "Expected encoding: #{expected.encoding}"
+          debug_info << "Result base64: #{Base64.strict_encode64(result)}"
+          debug_info << "Expected base64: #{Base64.strict_encode64("https://x-access-token:fake-token@github.com\n")}"
+
+          debug_info.join("\n")
+        }
       end
     end
 
