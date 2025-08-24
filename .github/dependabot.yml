@@ -182,6 +182,5 @@ updates:
     multi-ecosystem-group: "uv-ecosystem"
     patterns: ["*"]
     ignore:
-      # TODO: Remove when we drop support for Python 3.10
-      - dependency-name: "tomli"
+      - dependency-name: "*"
         update-types: [ "version-update:semver-major" ]
