@@ -115,27 +115,36 @@ module Dependabot
 
         sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
         def updated_distribution_requirements
-          req_version = T.must(requirements[0])
+          version = T.let(nil, T.nilable(String))
+          distribution_url = T.let(nil, T.nilable(String))
+          checksum = T.let(nil, T.nilable(String))
+          checksum_url = T.let(nil, T.nilable(String))
 
-          requirement = req_version[:requirement]
-          updated_requirement = update_exact_requirement(requirement)
+          requirements.map do |req|
+            source = req[:source]
+            next req unless source
 
-          distribution_url = req_version[:source][:url]
-          updated_distribution_url = distribution_url.gsub(requirement, updated_requirement)
-
-          req_version = req_version.merge(
-            requirement: updated_requirement,
-            source: req_version[:source].merge(url: updated_distribution_url)
-          )
-          return [req_version] unless requirements.size > 1
-
-          req_checksum = T.must(requirements[1])
-          checksum_url, checksum = DistributionsFinder.resolve_checksum(updated_distribution_url)
-          req_checksum = req_checksum.merge(
-            requirement: checksum,
-            source: req_checksum[:source].merge(url: checksum_url)
-          )
-          [req_version, req_checksum]
+            case source[:property]
+            when "distributionUrl"
+              if version.nil?
+                requirement = req[:requirement]
+                version = update_exact_requirement(requirement)
+                distribution_url = source[:url].gsub(requirement, version)
+              end
+              req.merge(
+                requirement: version,
+                source: source.merge(url: distribution_url)
+              )
+            when "distributionUrlSha256Sum"
+              checksum_url, checksum = DistributionsFinder.resolve_checksum(T.must(distribution_url)) if checksum.nil?
+              req.merge(
+                requirement: checksum,
+                source: source.merge(url: checksum_url)
+              )
+            else
+              next req
+            end
+          end
         end
 
         sig { override.returns(T::Class[Version]) }
