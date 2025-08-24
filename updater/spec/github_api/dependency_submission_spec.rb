@@ -91,7 +91,7 @@ RSpec.describe GithubApi::DependencySubmission do
       expect(payload[:detector][:name]).to eq(described_class::SNAPSHOT_DETECTOR_NAME)
       expect(payload[:detector][:url]).to eq(described_class::SNAPSHOT_DETECTOR_URL)
       expect(payload[:detector][:version]).to eq(Dependabot::VERSION)
-      expect(payload[:job][:correlator]).to eq("dependabot-experimental")
+      expect(payload[:job][:correlator]).to eq("dependabot-bundler")
       expect(payload[:job][:id]).to eq("9999")
 
       # And check we have an iso8601 timestamp
@@ -321,7 +321,7 @@ RSpec.describe GithubApi::DependencySubmission do
       expect(payload[:detector][:name]).to eq(described_class::SNAPSHOT_DETECTOR_NAME)
       expect(payload[:detector][:url]).to eq(described_class::SNAPSHOT_DETECTOR_URL)
       expect(payload[:detector][:version]).to eq(Dependabot::VERSION)
-      expect(payload[:job][:correlator]).to eq("dependabot-experimental")
+      expect(payload[:job][:correlator]).to eq("dependabot-bundler")
       expect(payload[:job][:id]).to eq("9999")
 
       expect(dependency_submission.payload[:manifests]).to be_empty

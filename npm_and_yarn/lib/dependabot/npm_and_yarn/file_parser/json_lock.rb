@@ -15,6 +15,9 @@ module Dependabot
         sig { params(dependency_file: DependencyFile).void }
         def initialize(dependency_file)
           @dependency_file = dependency_file
+          # Set this file to priority 1 to indicate it should override manifests for purposes of a graph
+          dependency_file.priority = 1
+          @direct_dependencies = T.let(fetch_direct_dependencies, T::Array[String])
         end
 
         sig { returns(T::Hash[String, T.untyped]) }
@@ -48,6 +51,31 @@ module Dependabot
 
         private
 
+        # Only V3 lockfiles contain information on the package itself, so we use `npm ls` to generate
+        # a graph we can pluck the direct dependency list from at parse-time for this lockfile.
+        sig { returns(T::Array[String]) }
+        def fetch_direct_dependencies
+          # TODO(brrygrdn): Implement a 'verbose' flag that runs this extra step?
+          #
+          # For now, don't run this extra native command if we aren't using the submission experiment
+          return [] unless Dependabot::Experiments.enabled?(:enable_dependency_submission_poc)
+
+          SharedHelpers.in_a_temporary_repo_directory do |_|
+            write_temporary_dependency_files
+
+            npm_ls_json = Helpers.run_npm_command("ls --all --package-lock-only --json")
+
+            JSON.parse(npm_ls_json).fetch("dependencies", {}).keys
+          end
+        end
+
+        sig { void }
+        def write_temporary_dependency_files
+          path = @dependency_file.name
+          FileUtils.mkdir_p(Pathname.new(path).dirname)
+          File.write(path, @dependency_file.content)
+        end
+
         sig do
           params(object_with_dependencies: T::Hash[String, T.untyped])
             .returns(Dependabot::FileParsers::Base::DependencySet)
@@ -64,13 +92,18 @@ module Dependabot
             version = Version.semver_for(details["version"])
             next unless version
 
+            package_name = name.split("node_modules/").last
             version = version.to_s
 
             dependency_args = {
-              name: name.split("node_modules/").last,
+              name: package_name,
               version: version,
               package_manager: "npm_and_yarn",
-              requirements: []
+              requirements: [],
+              direct_relationship: @direct_dependencies.include?(package_name),
+              metadata: {
+                depends_on: details&.fetch("dependencies", {})&.keys || []
+              }
             }
 
             if details["bundled"]
@@ -87,6 +120,7 @@ module Dependabot
             dependency_set += recursively_fetch_dependencies(details)
           end
 
+          @dependency_file.dependencies = dependency_set.dependencies.to_set
           dependency_set
         end
 
