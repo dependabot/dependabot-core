@@ -233,6 +233,48 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::RequirementsUpdater do
           ])
         end
       end
+
+      context "when multiple properties files" do
+        let(:requirements) do
+          [distribution_req, checksum_req, distribution_req.merge(
+            file: "another/gradle/wrapper/gradle-wrapper.properties"
+          )]
+        end
+
+        it "does not update the requirement" do
+          expect(updater.updated_requirements).not_to eq(requirements)
+          expect(updater.updated_requirements).to eq([
+            {
+              requirement: "9.0.0",
+              file: "gradle/wrapper/gradle-wrapper.properties",
+              source: {
+                type: "gradle-distribution",
+                url: "https://services.gradle.org/distributions/gradle-9.0.0-all.zip",
+                property: "distributionUrl"
+              },
+              groups: []
+            }, {
+              requirement: "f759b8dd5204e2e3fa4ca3e73f452f087153cf81bac9561eeb854229cc2c5365",
+              file: "gradle/wrapper/gradle-wrapper.properties",
+              source: {
+                type: "gradle-distribution",
+                url: "https://services.gradle.org/distributions/gradle-9.0.0-all.zip.sha256",
+                property: "distributionUrlSha256Sum"
+              },
+              groups: []
+            }, {
+              requirement: "9.0.0",
+              file: "another/gradle/wrapper/gradle-wrapper.properties",
+              source: {
+                type: "gradle-distribution",
+                url: "https://services.gradle.org/distributions/gradle-9.0.0-all.zip",
+                property: "distributionUrl"
+              },
+              groups: []
+            }
+          ])
+        end
+      end
     end
   end
 end
