@@ -62,19 +62,21 @@ module Dependabot
               # equivalent to "*" (latest available version)
               req = "*" if req == ""
 
-              dependencies <<
-                Dependency.new(
-                  name: normalised_name(dep_name),
-                  version: dependency_version(dep_name, req, T.must(group)),
-                  requirements: [{
-                    requirement: req.is_a?(String) ? req : req["version"],
-                    file: T.must(pipfile).name,
-                    source: nil,
-                    groups: [group]
-                  }],
-                  package_manager: "pip",
-                  metadata: { original_name: dep_name }
-                )
+              dependency = Dependency.new(
+                name: normalised_name(dep_name),
+                version: dependency_version(dep_name, req, T.must(group)),
+                requirements: [{
+                  requirement: req.is_a?(String) ? req : req["version"],
+                  file: T.must(pipfile).name,
+                  source: nil,
+                  groups: [group]
+                }],
+                package_manager: "pip",
+                metadata: { original_name: dep_name }
+              )
+
+              T.must(pipfile).dependencies << dependency
+              dependencies << dependency
             end
           end
 
@@ -100,14 +102,16 @@ module Dependabot
               next unless version
               next if git_or_path_requirement?(details)
 
-              dependencies <<
-                Dependency.new(
-                  name: dep_name,
-                  version: version&.gsub(/^===?/, ""),
-                  requirements: [],
-                  package_manager: "pip",
-                  subdependency_metadata: [{ production: key != "develop" }]
-                )
+              dependency = Dependency.new(
+                name: dep_name,
+                version: version&.gsub(/^===?/, ""),
+                requirements: [],
+                package_manager: "pip",
+                subdependency_metadata: [{ production: key != "develop" }]
+              )
+
+              T.must(pipfile_lock).dependencies << dependency
+              dependencies << dependency
             end
           end
 
@@ -183,8 +187,14 @@ module Dependabot
 
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def pipfile_lock
-          @pipfile_lock ||= T.let(dependency_files.find { |f| f.name == "Pipfile.lock" },
-                                  T.nilable(Dependabot::DependencyFile))
+          return @pipfile_lock if defined?(@pipfile_lock)
+
+          @pipfile_lock = T.let(dependency_files.find { |f| f.name == "Pipfile.lock" },
+                                T.nilable(Dependabot::DependencyFile))
+
+          # Set the lockfile as higher priority so we know to ignore the manifest
+          # when producing a graph.
+          @pipfile_lock&.tap { |f| f.priority = 1 }
         end
       end
     end

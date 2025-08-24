@@ -1450,4 +1450,72 @@ RSpec.describe Dependabot::Python::FileParser do
       end
     end
   end
+
+  describe "parse support for DependencySubmission" do
+    subject(:dependencies) { parser.parse }
+
+    context "when using a Pipfile and Pipfile.lock" do
+      let(:files) { [pipfile, lockfile] }
+      let(:pipfile) do
+        Dependabot::DependencyFile.new(
+          name: "Pipfile",
+          content: pipfile_body
+        )
+      end
+      let(:lockfile) do
+        Dependabot::DependencyFile.new(
+          name: "Pipfile.lock",
+          content: lockfile_body
+        )
+      end
+
+      let(:pipfile_body) { fixture("pipfile_files", pipfile_fixture_name) }
+      let(:lockfile_body) { fixture("pipfile_files", lockfile_fixture_name) }
+      let(:pipfile_fixture_name) { "version_not_specified" }
+      let(:lockfile_fixture_name) { "version_not_specified.lock" }
+
+      it "attaches a list of direct dependencies to the Pipfile" do
+        expect(parser.dependency_files.count).to eq(2)
+        pipfile = parser.dependency_files.find { |f| f.name == "Pipfile" }
+
+        direct_dependencies = dependencies.select(&:direct?)
+
+        # assert that direct dependencies are attributed to this file
+        expect(pipfile.dependencies).to eq(direct_dependencies.to_set)
+
+        # assert the Gemfile has default priority
+        expect(pipfile.priority).to be_zero
+      end
+
+      it "attaches a full list of direct and indirect dependencies to the Pipfile.lock" do
+        expect(parser.dependency_files.count).to eq(2)
+        lockfile = parser.dependency_files.find { |f| f.name == "Pipfile.lock" }
+
+        direct, indirect = dependencies.partition(&:direct?)
+
+        # assert that all dependencies are attributed to this file
+        expect(lockfile.dependencies.count).to eq(dependencies.count)
+
+        # direct dependencies in the global list will be from the Pipfile,
+        # so here we check that the Pipfile.lock contains the equivalent
+        # by name and version.
+        direct.each do |dep|
+          lockfile_dep = lockfile.dependencies.find { |d| d.name == dep.name }
+
+          expect(lockfile_dep).not_to be_nil
+          expect(lockfile_dep.version).to eql(dep.version)
+          expect(lockfile_dep.requirements).to be_empty
+        end
+
+        # indirect dependencies should just match the global list since
+        # the Pipfile.lock is the source
+        indirect.each do |dependency|
+          expect(lockfile.dependencies).to include(dependency)
+        end
+
+        # assert the Pipfile.lock is set to a higher priority
+        expect(lockfile.priority).to be(1)
+      end
+    end
+  end
 end
