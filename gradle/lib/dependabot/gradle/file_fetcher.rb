@@ -25,7 +25,7 @@ module Dependabot
         T.let(%w(settings.gradle settings.gradle.kts).freeze, T::Array[String])
 
       SUPPORTED_WRAPPER_PROPERTIES_FILE_PATH =
-        %w(/gradle/wrapper/gradle-wrapper.properties).freeze
+        %w(gradle/wrapper/gradle-wrapper.properties).freeze
 
       # For now Gradle only supports library .toml files in the main gradle folder
       SUPPORTED_VERSION_CATALOG_FILE_PATH =
@@ -182,8 +182,6 @@ module Dependabot
 
       sig { params(root_dir: String).returns(T.nilable(DependencyFile)) }
       def wrapper_properties_file(root_dir)
-        return nil unless root_dir == "."
-
         gradle_wrapper_properties_file(root_dir)
       rescue Dependabot::DependencyFileNotFound
         # Wrapper file is optional for Gradle
