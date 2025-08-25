@@ -149,6 +149,8 @@ module Dependabot
 
       sig { params(root_dir: String).returns(T::Array[DependencyFile]) }
       def wrapper_files(root_dir)
+        return [] unless Experiments.enabled?(:gradle_wrapper_updater)
+
         SUPPORTED_WRAPPER_FILES_PATH.filter_map do |path|
           find_first(root_dir, [path])
         rescue Dependabot::DependencyFileNotFound
