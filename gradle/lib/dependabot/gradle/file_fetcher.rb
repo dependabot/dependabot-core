@@ -23,6 +23,13 @@ module Dependabot
       SUPPORTED_SETTINGS_FILE_NAMES =
         T.let(%w(settings.gradle settings.gradle.kts).freeze, T::Array[String])
 
+      SUPPORTED_WRAPPER_FILES_PATH = %w(
+        gradlew
+        gradlew.bat
+        gradle/wrapper/gradle-wrapper.jar
+        gradle/wrapper/gradle-wrapper.properties
+      ).freeze
+
       # For now Gradle only supports library .toml files in the main gradle folder
       SUPPORTED_VERSION_CATALOG_FILE_PATH =
         T.let(%w(/gradle/libs.versions.toml).freeze, T::Array[String])
@@ -68,6 +75,7 @@ module Dependabot
       def all_buildfiles_in_build(root_dir)
         files = [buildfile(root_dir), settings_file(root_dir), version_catalog_file(root_dir), lockfile(root_dir)]
                 .compact
+        files += wrapper_files(root_dir)
         files += subproject_buildfiles(root_dir)
         files += subproject_lockfiles(root_dir)
         files += dependency_script_plugins(root_dir)
@@ -135,6 +143,18 @@ module Dependabot
           end
         rescue Dependabot::DependencyFileNotFound
           # Gradle itself doesn't worry about missing subprojects, so we don't
+          nil
+        end
+      end
+
+      sig { params(root_dir: String).returns(T::Array[DependencyFile]) }
+      def wrapper_files(root_dir)
+        return [] unless Experiments.enabled?(:gradle_wrapper_updater)
+
+        SUPPORTED_WRAPPER_FILES_PATH.filter_map do |path|
+          find_first(root_dir, [path])
+        rescue Dependabot::DependencyFileNotFound
+          # Wrapper files are optional for Gradle
           nil
         end
       end
