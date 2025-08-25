@@ -6,6 +6,7 @@ require "sorbet-runtime"
 
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
+require "dependabot/file_filtering"
 
 module Dependabot
   module Maven
@@ -80,7 +81,11 @@ module Dependabot
           ].compact.reject(&:empty?)
           path = Pathname.new(File.join(name_parts)).cleanpath.to_path
 
-          next [] if fetched_filenames.include?(path)
+          if fetched_filenames.include?(path) || (!@exclude_paths.empty? && Dependabot::FileFiltering.exclude_path?(
+            path, @exclude_paths
+          ))
+            next []
+          end
 
           child_pom = fetch_file_from_host(path)
           fetched_files = [
@@ -94,7 +99,6 @@ module Dependabot
           fetched_files
         rescue Dependabot::DependencyFileNotFound
           fetch_file_from_host(T.must(path), fetch_submodules: true)
-
           [] # Ignore any child submodules (since we can't update them)
         end
       end

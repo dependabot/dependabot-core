@@ -5,6 +5,7 @@ require "sorbet-runtime"
 
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
+require "dependabot/file_filtering"
 
 module Dependabot
   module Gradle
@@ -110,6 +111,9 @@ module Dependabot
 
         subproject_paths.filter_map do |path|
           lockfile_path = File.join(root_dir, path, @lockfile_name)
+          cleaned_path = Pathname.new(lockfile_path).cleanpath.to_path
+          next nil if !@exclude_paths.empty? && Dependabot::FileFiltering.exclude_path?(cleaned_path, @exclude_paths)
+
           fetch_file_from_host(lockfile_path)
         rescue Dependabot::DependencyFileNotFound
           # Gradle itself doesn't worry about missing subprojects, so we don't
@@ -129,6 +133,9 @@ module Dependabot
         subproject_paths.filter_map do |path|
           if @buildfile_name
             buildfile_path = File.join(root_dir, path, @buildfile_name)
+            cleaned_path = Pathname.new(buildfile_path).cleanpath.to_path
+            next nil if !@exclude_paths.empty? && Dependabot::FileFiltering.exclude_path?(cleaned_path, @exclude_paths)
+
             fetch_file_from_host(buildfile_path)
           else
             buildfile(File.join(root_dir, path))
@@ -161,6 +168,9 @@ module Dependabot
                     .uniq
 
         dependency_plugin_paths.filter_map do |path|
+          cleaned_path = Pathname.new(path).cleanpath.to_path
+          next nil if !@exclude_paths.empty? && Dependabot::FileFiltering.exclude_path?(cleaned_path, @exclude_paths)
+
           fetch_file_from_host(path)
         rescue Dependabot::DependencyFileNotFound
           next nil if file_exists_in_submodule?(path)
