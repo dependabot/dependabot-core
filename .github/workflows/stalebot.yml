@@ -10,6 +10,7 @@ on: # yamllint disable-line rule:truthy
 
 jobs:
   stale:
+    if: github.repository == 'dependabot/dependabot-core'
     runs-on: ubuntu-latest
     steps:
     - uses: actions/stale@5bef64f19d7facfb25b37b414482c7164d639639 # v9.1.0
