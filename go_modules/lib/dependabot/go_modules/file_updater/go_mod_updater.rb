@@ -7,6 +7,7 @@ require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/logger"
 require "dependabot/go_modules/file_updater"
+require "dependabot/go_modules/file_updater/updater_helper"
 require "dependabot/go_modules/replace_stubber"
 require "dependabot/go_modules/resolvability_errors"
 
@@ -247,7 +248,13 @@ module Dependabot
         end
         def in_repo_path(&block)
           SharedHelpers.in_a_temporary_repo_directory(directory, repo_contents_path) do
-            SharedHelpers.with_git_configured(credentials: credentials, &block)
+            SharedHelpers.with_git_configured(credentials: credentials) do
+              # Configure git rewrite rules for vanity import hosts by actually resolving them
+              # This prevents SSH URL failures when Go toolchain discovers git hosts from vanity imports
+              UpdaterHelper.configure_git_vanity_imports(dependencies)
+
+              block.call
+            end
           end
         end
 
