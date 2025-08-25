@@ -197,3 +197,9 @@ updates:
       # Ignore major updates as most major updates will need manual intervention
       - dependency-name: "*"
         update-types: [ "version-update:semver-major" ]
+  - package-ecosystem: "docker"
+    directory: "/docker"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "16:00"
