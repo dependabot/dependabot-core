@@ -119,10 +119,7 @@ module Dependabot
 
         sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
         def updated_distribution_requirements
-          version = T.let(nil, T.nilable(String))
           distribution_url = T.let(nil, T.nilable(String))
-          checksum = T.let(nil, T.nilable(String))
-          checksum_url = T.let(nil, T.nilable(String))
 
           requirements.map do |req|
             source = req[:source]
@@ -130,16 +127,15 @@ module Dependabot
 
             case source[:property]
             when "distributionUrl"
-              if version.nil?
-                requirement = req[:requirement]
-                version = update_exact_requirement(requirement)
-                distribution_url = source[:url].gsub(requirement, version)
-              end
+              requirement = req[:requirement]
+              version = update_exact_requirement(requirement)
+              distribution_url = source[:url].gsub(requirement, version)
+
               req.merge(
                 requirement: version,
                 source: source.merge(url: distribution_url)
               )
-            when "distributionUrlSha256Sum"
+            when "distributionSha256Sum"
               checksum_url, checksum = DistributionsFinder.resolve_checksum(T.must(distribution_url)) if checksum.nil?
               req.merge(
                 requirement: checksum,
