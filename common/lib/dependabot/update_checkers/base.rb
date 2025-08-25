@@ -91,6 +91,24 @@ module Dependabot
         end
       end
 
+      sig { returns(T::Boolean) }
+      def excluded?
+        origin_files = @dependency.origin_files
+
+        if origin_files.length > 0
+          origin_files.each do |file|
+            # If FGLOB pattern matches with origin file then return true
+            exclude_paths = options.fetch(:exclude_paths, [])
+            if exclude_paths.any? { |path| File.fnmatch?(path, file) }
+              Dependabot.logger.info("Excluding #{dependency.name} (#{file}) from update")
+              return true
+            end
+          end
+        end
+
+        false
+      end
+
       sig { params(requirements_to_unlock: T.nilable(Symbol)).returns(T::Boolean) }
       def can_update?(requirements_to_unlock:)
         # Can't update if all versions are being ignored

@@ -161,6 +161,13 @@ module Dependabot
             )
           end
 
+          if checker.excluded?
+            return Dependabot.logger.info(
+              "Skipping update for #{dependency.name} #{dependency.version} " \
+              "(excluded by config)"
+            )
+          end
+
           if peer_dependency_should_update_instead?(checker.dependency.name, updated_deps)
             return Dependabot.logger.info(
               "No update possible for #{dependency.name} #{dependency.version} " \

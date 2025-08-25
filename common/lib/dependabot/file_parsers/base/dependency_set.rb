@@ -150,6 +150,10 @@ module Dependabot
               (old_dep.subdependency_metadata || []) +
               (new_dep.subdependency_metadata || [])
             ).uniq
+            origin_files = (
+              (old_dep.origin_files) +
+              (new_dep.origin_files)
+            ).uniq
 
             Dependency.new(
               name: old_dep.name,
@@ -157,7 +161,8 @@ module Dependabot
               requirements: requirements,
               package_manager: old_dep.package_manager,
               metadata: old_dep.metadata,
-              subdependency_metadata: subdependency_metadata
+              subdependency_metadata: subdependency_metadata,
+              origin_files: origin_files
             )
           end
 

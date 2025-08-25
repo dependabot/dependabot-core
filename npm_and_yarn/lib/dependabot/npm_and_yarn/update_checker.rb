@@ -296,6 +296,7 @@ module Dependabot
             version: target_version,
             previous_version: dependency.version,
             removed: target_version.nil?,
+            origin_files: dependency.origin_files,
             metadata: { information_only: true } # Instruct updater to not directly update this dependency
           )
         end
@@ -342,7 +343,8 @@ module Dependabot
           previous_requirements: original_dep.requirements,
           package_manager: original_dep.package_manager,
           removed: removed,
-          metadata: metadata
+          metadata: metadata,
+          origin_files: original_dep.origin_files
         )
       end
 

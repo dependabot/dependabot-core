@@ -227,7 +227,8 @@ module Dependabot
             version: T.cast(latest_allowable_version, T.nilable(T.any(String, Dependabot::Version))),
             previous_version: dependency.version,
             requirements: [],
-            package_manager: dependency.package_manager
+            package_manager: dependency.package_manager,
+            origin_files: dependency.origin_files,
           )
         end
 
