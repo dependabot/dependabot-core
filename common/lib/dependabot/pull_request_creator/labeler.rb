@@ -71,6 +71,8 @@ module Dependabot
 
       sig { returns(T::Array[String]) }
       def labels_for_pr
+        return *default_labels_for_pr if custom_labels
+
         [
           *default_labels_for_pr,
           includes_security_fixes? ? security_label : nil,
