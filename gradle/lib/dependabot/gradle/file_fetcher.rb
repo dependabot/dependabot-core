@@ -182,6 +182,8 @@ module Dependabot
 
       sig { params(root_dir: String).returns(T.nilable(DependencyFile)) }
       def wrapper_properties_file(root_dir)
+        return nil unless Experiments.enabled?(:gradle_wrapper_updater)
+
         gradle_wrapper_properties_file(root_dir)
       rescue Dependabot::DependencyFileNotFound
         # Wrapper file is optional for Gradle
