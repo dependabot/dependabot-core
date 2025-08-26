@@ -230,7 +230,11 @@ module Dependabot
       def update_dependency_version_in_manifest(content, dependency_name, new_version)
         # Pattern to find the dependency entry and update its version
         # Matches the [[deps.DependencyName]] section and updates the version line within it
-        pattern = /(^\[\[deps\.#{Regexp.escape(dependency_name)}\]\]\s*\n(?:.*\n)*?)(^\s*version\s*=\s*)(?:"[^"]*"|'[^']*'|[^\s#\n]+)(\s*(?:\#.*)?$)/mx
+        dep_start = /^\[\[deps\.#{Regexp.escape(dependency_name)}\]\]\s*\n(?:.*\n)*?/
+        version_key = /^\s*version\s*=\s*/
+        old_version = /(?:"[^"]*"|'[^']*'|[^\s#\n]+)/
+        trailing = /\s*(?:\#.*)?$/
+        pattern = /(#{dep_start})(#{version_key})#{old_version}(#{trailing})/mx
 
         if content.match?(pattern)
           content.gsub(pattern, "\\1\\2\"#{new_version}\"\\3")

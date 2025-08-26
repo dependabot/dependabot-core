@@ -13,7 +13,9 @@ module Dependabot
     class RegistryClient
       extend T::Sig
 
-      sig { params(credentials: T::Array[Dependabot::Credential], custom_registries: T::Array[T::Hash[Symbol, String]]).void }
+      sig do
+        params(credentials: T::Array[Dependabot::Credential], custom_registries: T::Array[T::Hash[Symbol, String]]).void
+      end
       def initialize(credentials:, custom_registries: [])
         @credentials = credentials
         @custom_registries = custom_registries
@@ -22,9 +24,7 @@ module Dependabot
       sig { params(package_name: String, package_uuid: T.nilable(String)).returns(T.nilable(Gem::Version)) }
       def fetch_latest_version(package_name, package_uuid = nil)
         # Use custom registries if available
-        if custom_registries.any?
-          return fetch_latest_version_with_custom_registries(package_name, package_uuid)
-        end
+        return fetch_latest_version_with_custom_registries(package_name, package_uuid) if custom_registries.any?
 
         args = { package_name: package_name }
         args[:package_uuid] = package_uuid if package_uuid
@@ -43,7 +43,9 @@ module Dependabot
 
         Gem::Version.new(result["version"])
       rescue StandardError => e
-        Dependabot.logger.warn("Failed to fetch latest version for #{package_name}: #{e.message}")
+        Dependabot.logger.warn(
+          "Failed to fetch latest version for #{package_name}: #{e.message}"
+        )
         nil
       end
 
@@ -68,7 +70,9 @@ module Dependabot
 
         Gem::Version.new(result["version"])
       rescue StandardError => e
-        Dependabot.logger.warn("Failed to fetch latest version with custom registries for #{package_name}: #{e.message}")
+        Dependabot.logger.warn(
+          "Failed to fetch latest version with custom registries for #{package_name}: #{e.message}"
+        )
         nil
       end
 
@@ -214,9 +218,7 @@ module Dependabot
       sig { params(package_name: String, package_uuid: T.nilable(String)).returns(T::Array[String]) }
       def fetch_available_versions(package_name, package_uuid = nil)
         # Use custom registries if available
-        if custom_registries.any?
-          return fetch_available_versions_with_custom_registries(package_name, package_uuid)
-        end
+        return fetch_available_versions_with_custom_registries(package_name, package_uuid) if custom_registries.any?
 
         args = { package_name: package_name }
         args[:package_uuid] = package_uuid if package_uuid
@@ -261,7 +263,9 @@ module Dependabot
 
         versions.map(&:to_s)
       rescue StandardError => e
-        Dependabot.logger.warn("Failed to fetch available versions with custom registries for #{package_name}: #{e.message}")
+        Dependabot.logger.warn(
+          "Failed to fetch available versions with custom registries for #{package_name}: #{e.message}"
+        )
         []
       end
 
@@ -272,7 +276,7 @@ module Dependabot
 
       sig { returns(T::Array[String]) }
       def custom_registry_urls
-        custom_registries.map { |reg| reg[:url] }.compact
+        custom_registries.filter_map { |reg| reg[:url] }
       end
 
       sig { returns(T::Array[Dependabot::Credential]) }
