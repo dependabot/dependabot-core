@@ -1469,10 +1469,8 @@ RSpec.describe Dependabot::Python::FileParser do
         )
       end
 
-      let(:pipfile_body) { fixture("pipfile_files", pipfile_fixture_name) }
-      let(:lockfile_body) { fixture("pipfile_files", lockfile_fixture_name) }
-      let(:pipfile_fixture_name) { "version_not_specified" }
-      let(:lockfile_fixture_name) { "version_not_specified.lock" }
+      let(:pipfile_body) { fixture("projects", "pipenv", "simple", "Pipfile") }
+      let(:lockfile_body) { fixture("projects", "pipenv", "simple", "Pipfile.lock") }
 
       it "attaches a list of direct dependencies to the Pipfile" do
         expect(parser.dependency_files.count).to eq(2)
