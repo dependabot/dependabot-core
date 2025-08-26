@@ -26,5 +26,4 @@ For more information about Julia package management:
 ## TODOs
 
 - [ ] Move this to its own repository and register in Julia's package registry
-- [ ] Implement full custom registry support
 - [ ] Add comprehensive version history fetching from registries
