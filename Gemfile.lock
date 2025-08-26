@@ -129,8 +129,8 @@ PATH
 PATH
   remote: julia
   specs:
-    dependabot-julia (0.318.0)
-      dependabot-common (= 0.318.0)
+    dependabot-julia (0.327.0)
+      dependabot-common (= 0.327.0)
 
 PATH
   remote: maven
