@@ -11,6 +11,7 @@ module Dependabot
   module Julia
     class FileUpdater < Dependabot::FileUpdaters::Base
       extend T::Sig
+
       sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
         [/(?:Julia)?Project\.toml$/i, /(?:Julia)?Manifest(?:-v[\d.]+)?\.toml$/i]
@@ -167,32 +168,88 @@ module Dependabot
       def updated_project_content
         return T.must(T.must(project_file).content) unless project_file
 
-        parsed_toml = T.cast(TomlRB.parse(T.must(project_file).content), T::Hash[String, T.untyped])
+        content = T.must(project_file).content
 
         dependencies.each do |dependency|
-          # Update the [compat] section with new version requirements
-          parsed_toml["compat"] ||= {}
-          compat_section = T.cast(parsed_toml["compat"], T::Hash[String, T.untyped])
-
           # Find the new requirement for this dependency
           new_requirement = dependency.requirements
                                       .find { |req| T.cast(req[:file], String) == T.must(project_file).name }
                                       &.fetch(:requirement)
 
-          compat_section[dependency.name] = new_requirement if new_requirement
+          next unless new_requirement
+
+          content = update_dependency_requirement_in_content(content, dependency.name, new_requirement)
         end
 
-        T.cast(TomlRB.dump(parsed_toml), String)
+        content
+      end
+
+      sig { params(content: String, dependency_name: String, new_requirement: String).returns(String) }
+      def update_dependency_requirement_in_content(content, dependency_name, new_requirement)
+        # Pattern to match the dependency in [compat] section
+        # Handles various quote styles and spacing
+        pattern = /(^\s*#{Regexp.escape(dependency_name)}\s*=\s*)(?:"[^"]*"|'[^']*'|[^\s#\n]+)(\s*(?:\#.*)?$)/mx
+
+        if content.match?(pattern)
+          # Replace existing entry
+          content.gsub(pattern, "\\1\"#{new_requirement}\"\\2")
+        else
+          # Add new entry to [compat] section
+          add_compat_entry_to_content(content, dependency_name, new_requirement)
+        end
+      end
+
+      sig { params(content: String, dependency_name: String, requirement: String).returns(String) }
+      def add_compat_entry_to_content(content, dependency_name, requirement)
+        # Find [compat] section or create it
+        if content.match?(/^\s*\[compat\]\s*$/m)
+          # Add to existing [compat] section
+          content.gsub(/(\[compat\]\s*\n)/, "\\1#{dependency_name} = \"#{requirement}\"\n")
+        else
+          # Add new [compat] section at the end
+          content + "\n[compat]\n#{dependency_name} = \"#{requirement}\"\n"
+        end
       end
 
       sig { returns(String) }
       def build_updated_manifest_content
         return T.must(T.must(manifest_file).content) unless manifest_file
 
-        parsed_manifest = T.cast(TomlRB.parse(T.must(manifest_file).content), T::Hash[String, T.untyped])
+        content = T.must(manifest_file).content
 
         dependencies.each do |dependency|
-          update_dependency_in_manifest(dependency, parsed_manifest)
+          next unless dependency.version
+
+          content = update_dependency_version_in_manifest(content, dependency.name, dependency.version)
+        end
+
+        content
+      end
+
+      sig { params(content: String, dependency_name: String, new_version: String).returns(String) }
+      def update_dependency_version_in_manifest(content, dependency_name, new_version)
+        # Pattern to find the dependency entry and update its version
+        # Matches the [[deps.DependencyName]] section and updates the version line within it
+        pattern = /(^\[\[deps\.#{Regexp.escape(dependency_name)}\]\]\s*\n(?:.*\n)*?)(^\s*version\s*=\s*)(?:"[^"]*"|'[^']*'|[^\s#\n]+)(\s*(?:\#.*)?$)/mx
+
+        if content.match?(pattern)
+          content.gsub(pattern, "\\1\\2\"#{new_version}\"\\3")
+        else
+          # If pattern doesn't match, fall back to original approach
+          Dependabot.logger.warn("Could not find manifest entry for #{dependency_name}, using fallback")
+          fallback_update_manifest_content(content, dependency_name, new_version)
+        end
+      end
+
+      sig { params(content: String, dependency_name: String, new_version: String).returns(String) }
+      def fallback_update_manifest_content(content, dependency_name, new_version)
+        # Fallback to parse-and-dump for complex cases
+        parsed_manifest = T.cast(TomlRB.parse(content), T::Hash[String, T.untyped])
+
+        deps_section = T.cast(parsed_manifest["deps"] || {}, T::Hash[String, T.untyped])
+        if deps_section[dependency_name]
+          dep_entries = T.unsafe(deps_section[dependency_name])
+          update_dependency_entries(dep_entries, new_version)
         end
 
         T.cast(TomlRB.dump(parsed_manifest), String)
