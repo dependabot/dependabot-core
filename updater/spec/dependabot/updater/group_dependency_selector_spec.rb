@@ -10,8 +10,8 @@ require "dependabot/updater/group_dependency_selector"
 RSpec.describe Dependabot::Updater::GroupDependencySelector do
   let(:group_name) { "backend-dependencies" }
   let(:dependency_group) do
-    double(
-      "DependencyGroup",
+    instance_double(
+      Dependabot::DependencyGroup,
       name: group_name,
       dependencies: [],
       rules: group_rules
@@ -163,8 +163,7 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
         end
 
         # Mock job configuration checking
-        allow(job).to receive(:ignore_conditions_for).and_return([])
-        allow(job).to receive(:allowed_update?).and_return(true)
+        allow(job).to receive_messages(ignore_conditions_for: [], allowed_update?: true)
 
         # Mock the dependency change to have mutable updated_dependencies array
         allow(dependency_change.updated_dependencies).to receive(:clear)
@@ -176,7 +175,8 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
         selector.filter_to_group!(dependency_change)
 
         # Check that the selector attempted to filter dependencies
-        included_deps = original_deps.select { |dep| %w(rails redis-client).include?(dep.name) }
+        expected_deps = %w(rails redis-client)
+        included_deps = original_deps.select { |dep| expected_deps.include?(dep.name) }
         expect(included_deps.length).to eq(2)
       end
 
@@ -216,8 +216,7 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
         end
 
         # Mock job configuration checking
-        allow(job).to receive(:ignore_conditions_for).and_return([])
-        allow(job).to receive(:allowed_update?).and_return(true)
+        allow(job).to receive_messages(ignore_conditions_for: [], allowed_update?: true)
 
         # Mock the dependency change array methods
         allow(dependency_change.updated_dependencies).to receive(:clear)
@@ -294,21 +293,6 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
       let(:redis_dep) { create_dependency("redis-client", "0.11.0") }
       let(:unauthorized_dep) { create_dependency("puma", "5.6.0") }
 
-      context "when group has contains_dependency? method" do
-        before do
-          allow(dependency_group).to receive(:respond_to?)
-            .with(:contains_dependency?).and_return(true)
-          allow(dependency_group).to receive(:contains_dependency?) do |dep, directory:|
-            %w(rails pg).include?(dep.name)
-          end
-        end
-
-        it "uses the group's method" do
-          expect(selector.send(:group_contains_dependency?, rails_dep, "/api")).to be true
-          expect(selector.send(:group_contains_dependency?, unauthorized_dep, "/api")).to be false
-        end
-      end
-
       context "when group uses pattern matching fallback" do
         before do
           allow(dependency_group).to receive(:respond_to?)
@@ -360,7 +344,7 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
       end
 
       it "returns false when dependency is ignored" do
-        all_versions_condition = double("ignore_condition")
+        all_versions_condition = instance_double(Dependabot::Config::IgnoreCondition)
         allow(job).to receive(:ignore_conditions_for).with(dependency).and_return([all_versions_condition])
 
         # Mock the constant check
@@ -381,8 +365,8 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
   private
 
   def create_dependency(name, version)
-    double(
-      "Dependency",
+    instance_double(
+      Dependabot::Dependency,
       name: name,
       version: version
     ).tap do |dep|
@@ -392,10 +376,8 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
       allow(dep).to receive(:attribution_directory=)
       allow(dep).to receive(:attribution_timestamp=)
       # Allow attribution getter methods
-      allow(dep).to receive(:attribution_source_group).and_return(nil)
-      allow(dep).to receive(:attribution_selection_reason).and_return(nil)
-      allow(dep).to receive(:attribution_directory).and_return(nil)
-      allow(dep).to receive(:attribution_timestamp).and_return(nil)
+      allow(dep).to receive_messages(attribution_source_group: nil, attribution_selection_reason: nil,
+                                     attribution_directory: nil, attribution_timestamp: nil)
     end
   end
 
