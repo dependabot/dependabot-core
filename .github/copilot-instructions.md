@@ -152,23 +152,21 @@ rspec spec                       # Run relevant tests
 # Run Sorbet type checker to identify errors
 bundle exec srb tc
 
-# Use autocorrect to fix issues that can be automatically resolved
-bundle exec srb tc -a
-
 # Run type checking on specific files to focus on particular issues
 bundle exec srb tc path/to/file.rb
 
-# Use autocorrect with specific files
+# Use autocorrect ONLY when you have high confidence it won't cause issues
 bundle exec srb tc -a path/to/file.rb
 ```
 
-**Important**: Sorbet's autocorrect feature (`-a` flag) can automatically fix many type checking issues including:
-- Adding missing `override.` annotations for method overrides
+**Important**: Sorbet's autocorrect feature (`-a` flag) should be used cautiously as it can cause more issues than it resolves. Only use autocorrect when you have high confidence that the changes will not break code functionality. 
+
+Autocorrect can handle some simple cases like:
+- Adding missing `override.` annotations for method overrides  
 - Adding `T.let` declarations for instance variables in strict-typed files
-- Adding `T.must` calls to handle potential nil values
 - Adding type annotations for constants
 
-However, autocorrect may not handle complex type mismatches or structural issues, which require manual resolution. Always review autocorrected changes to ensure they maintain code correctness and intent.
+However, autocorrect often creates incorrect fixes for complex type mismatches, method signature issues, and structural problems. **Always manually resolve Sorbet errors** rather than relying on autocorrect, and carefully review any autocorrected changes to ensure they maintain code correctness and intent.
 
 ### Native Helpers
 

@@ -31,7 +31,11 @@ module Dependabot
       MAX_FILE_SIZE = 500_000
 
       def self.required_files_in?(filenames)
-        return true if filenames.any? { |name| T.must(REQUIREMENT_FILE_PATTERNS[:extensions]).any? { |ext| name.end_with?(ext) } }
+        return true if filenames.any? do |name|
+          T.must(REQUIREMENT_FILE_PATTERNS[:extensions]).any? do |ext|
+            name.end_with?(ext)
+          end
+        end
 
         # If there is a directory of requirements return true
         return true if filenames.include?("requirements")
@@ -168,6 +172,7 @@ module Dependabot
         @req_txt_and_in_files
       end
 
+      sig { params(requirements_dir: T.untyped).returns(T::Array[T.untyped]) }
       def req_files_for_dir(requirements_dir)
         dir = directory.gsub(%r{(^/|/$)}, "")
         relative_reqs_dir =
@@ -205,7 +210,8 @@ module Dependabot
               fetched_files += child_files
               child_files
             end
-          end, T.nilable(T::Array[Dependabot::DependencyFile]))
+          end, T.nilable(T::Array[Dependabot::DependencyFile])
+        )
       end
 
       sig { params(file: T.untyped, previously_fetched_files: T.untyped).returns(T::Array[T.untyped]) }
@@ -280,15 +286,17 @@ module Dependabot
         project_files
       end
 
+      sig { params(path: String).returns(T::Boolean) }
       def sdist_or_wheel?(path)
         path.end_with?(".tar.gz", ".whl", ".zip")
       end
 
+      sig { params(file: Dependabot::DependencyFile).returns(T::Boolean) }
       def requirements_file?(file)
-        return false unless file.content.valid_encoding?
+        return false unless file.content&.valid_encoding?
         return true if file.name.match?(/requirements/x)
 
-        file.content.lines.all? do |line|
+        T.must(file.content).lines.all? do |line|
           next true if line.strip.empty?
           next true if line.strip.start_with?("#", "-r ", "-c ", "-e ", "--")
 
@@ -326,17 +334,25 @@ module Dependabot
 
         uneditable_reqs =
           T.must(req_file.content)
-                  .scan(/(?<name>^['"]?(?:file:)?(?<path>\..*?)(?=\[|#|'|"|$))/)
-                  .filter_map do |n, p|
-                    { name: n.strip, path: p.strip, file: req_file.name } unless p.class.include?("://")
-                  end
+           .scan(/(?<name>^['"]?(?:file:)?(?<path>\..*?)(?=\[|#|'|"|$))/)
+           .filter_map do |match_data|
+            n, p = match_data
+            next if n.nil? || p.nil?
+            next if p.include?("://")
+
+            { name: n.strip, path: p.strip, file: req_file.name }
+          end
 
         editable_reqs =
           T.must(req_file.content)
-                  .scan(/(?<name>^(?:-e)\s+['"]?(?:file:)?(?<path>.*?)(?=\[|#|'|"|$))/)
-                  .filter_map do |n, p|
-                    { name: n.strip, path: p.strip, file: req_file.name } unless p.class.include?("://") || p.class.include?("git@")
-                  end
+           .scan(/(?<name>^(?:-e)\s+['"]?(?:file:)?(?<path>.*?)(?=\[|#|'|"|$))/)
+           .filter_map do |match_data|
+            n, p = match_data
+            next if n.nil? || p.nil?
+            next if p.include?("://") || p.include?("git@")
+
+            { name: n.strip, path: p.strip, file: req_file.name }
+          end
 
         uneditable_reqs + editable_reqs
       end
@@ -348,9 +364,11 @@ module Dependabot
 
       sig { returns(Dependabot::Uv::RequiremenstFileMatcher) }
       def requirements_in_file_matcher
-        @requirements_in_file_matcher ||= T.let(RequiremenstFileMatcher.new(requirements_in_files), T.nilable(Dependabot::Uv::RequiremenstFileMatcher))
+        @requirements_in_file_matcher ||= T.let(RequiremenstFileMatcher.new(requirements_in_files),
+                                                T.nilable(Dependabot::Uv::RequiremenstFileMatcher))
       end
 
+      sig { returns(T::Array[T.untyped]) }
       def uv_sources_path_dependencies
         return [] unless pyproject
 
@@ -368,7 +386,7 @@ module Dependabot
         end
       end
 
-      sig { params(path: T.any(Pathname, String)).returns(T.untyped) }
+      sig { params(path: T.nilable(T.any(Pathname, String))).returns(T.untyped) }
       def fetch_requirement_files_from_path(path = nil)
         contents = path ? repo_contents(dir: path) : repo_contents
         filter_requirement_files(contents, base_path: path)
@@ -381,6 +399,7 @@ module Dependabot
           .flat_map { |dir| req_files_for_dir(dir) }
       end
 
+      sig { params(contents: T.untyped, base_path: T.nilable(T.any(Pathname, String))).returns(T.untyped) }
       def filter_requirement_files(contents, base_path: nil)
         contents
           .select { |f| f.type == "file" }
