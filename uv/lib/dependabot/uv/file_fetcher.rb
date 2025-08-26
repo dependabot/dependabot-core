@@ -13,6 +13,20 @@ require "dependabot/uv/file_parser/pyproject_files_parser"
 require "dependabot/uv/file_parser/python_requirement_parser"
 require "dependabot/errors"
 
+# Type definitions for repository file structures
+module Dependabot
+  module Uv
+    # Structure representing a file or directory in the repository
+    RepoFileStruct = T.type_alias { T.any(OpenStruct, T::Struct) }
+    
+    # Hash representing a path dependency
+    PathDependency = T.type_alias { T::Hash[Symbol, String] }
+    
+    # Hash representing TOML content
+    TomlContent = T.type_alias { T::Hash[String, T.untyped] }
+  end
+end
+
 module Dependabot
   module Uv
     class FileFetcher < Dependabot::FileFetchers::Base
@@ -135,44 +149,44 @@ module Dependabot
         @pyproject = T.let(fetch_file_if_present("pyproject.toml"), T.nilable(Dependabot::DependencyFile))
       end
 
-      sig { returns(T::Array[T.untyped]) }
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def requirements_txt_files
         req_txt_and_in_files.select { |f| f.name.end_with?(".txt") }
       end
 
-      sig { returns(T::Array[T.untyped]) }
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def requirements_in_files
         req_txt_and_in_files.select { |f| f.name.end_with?(".in") } +
           child_requirement_in_files
       end
 
-      sig { returns(T::Array[T.untyped]) }
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def uv_lock_files
         req_txt_and_in_files.select { |f| f.name.end_with?("uv.lock") } +
           child_uv_lock_files
       end
 
-      sig { returns(T::Hash[String, T.untyped]) }
+      sig { returns(TomlContent) }
       def parsed_pyproject
         raise "No pyproject.toml" unless pyproject
 
-        @parsed_pyproject ||= T.let(TomlRB.parse(T.must(pyproject).content), T.nilable(T::Hash[String, T.untyped]))
+        @parsed_pyproject ||= T.let(TomlRB.parse(T.must(pyproject).content), T.nilable(TomlContent))
       rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
         raise Dependabot::DependencyFileNotParseable, T.must(pyproject).path
       end
 
-      sig { returns(T::Array[T.untyped]) }
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def req_txt_and_in_files
         return @req_txt_and_in_files if @req_txt_and_in_files
 
-        @req_txt_and_in_files = T.let([], T.nilable(T::Array[T.untyped]))
+        @req_txt_and_in_files = T.let([], T.nilable(T::Array[Dependabot::DependencyFile]))
         @req_txt_and_in_files = T.must(@req_txt_and_in_files) + fetch_requirement_files_from_path
         @req_txt_and_in_files += fetch_requirement_files_from_dirs
 
         @req_txt_and_in_files
       end
 
-      sig { params(requirements_dir: T.untyped).returns(T::Array[T.untyped]) }
+      sig { params(requirements_dir: RepoFileStruct).returns(T::Array[Dependabot::DependencyFile]) }
       def req_files_for_dir(requirements_dir)
         dir = directory.gsub(%r{(^/|/$)}, "")
         relative_reqs_dir =
@@ -181,22 +195,22 @@ module Dependabot
         fetch_requirement_files_from_path(relative_reqs_dir)
       end
 
-      sig { returns(T::Array[T.untyped]) }
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def child_requirement_txt_files
         child_requirement_files.select { |f| f.name.end_with?(".txt") }
       end
 
-      sig { returns(T::Array[T.untyped]) }
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def child_requirement_in_files
         child_requirement_files.select { |f| f.name.end_with?(".in") }
       end
 
-      sig { returns(T::Array[T.untyped]) }
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def child_uv_lock_files
         child_requirement_files.select { |f| f.name.end_with?("uv.lock") }
       end
 
-      sig { returns(T::Array[T.untyped]) }
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def child_requirement_files
         @child_requirement_files ||= T.let(
           begin
@@ -214,7 +228,7 @@ module Dependabot
         )
       end
 
-      sig { params(file: T.untyped, previously_fetched_files: T.untyped).returns(T::Array[T.untyped]) }
+      sig { params(file: Dependabot::DependencyFile, previously_fetched_files: T::Array[Dependabot::DependencyFile]).returns(T::Array[Dependabot::DependencyFile]) }
       def fetch_child_requirement_files(file:, previously_fetched_files:)
         paths = file.content.scan(CHILD_REQUIREMENT_REGEX).flatten
         current_dir = File.dirname(file.name)
@@ -304,7 +318,7 @@ module Dependabot
         end
       end
 
-      sig { returns(T::Array[T.untyped]) }
+      sig { returns(T::Array[PathDependency]) }
       def path_dependencies
         [
           *requirement_txt_path_dependencies,
@@ -313,21 +327,21 @@ module Dependabot
         ]
       end
 
-      sig { returns(T::Array[T.untyped]) }
+      sig { returns(T::Array[PathDependency]) }
       def requirement_txt_path_dependencies
         (requirements_txt_files + child_requirement_txt_files)
           .map { |req_file| parse_requirement_path_dependencies(req_file) }
           .flatten.uniq { |dep| dep[:path] }
       end
 
-      sig { returns(T::Array[T.untyped]) }
+      sig { returns(T::Array[PathDependency]) }
       def requirement_in_path_dependencies
         requirements_in_files
           .map { |req_file| parse_requirement_path_dependencies(req_file) }
           .flatten.uniq { |dep| dep[:path] }
       end
 
-      sig { params(req_file: Dependabot::DependencyFile).returns(T.untyped) }
+      sig { params(req_file: Dependabot::DependencyFile).returns(T::Array[PathDependency]) }
       def parse_requirement_path_dependencies(req_file)
         # If this is a pip-compile lockfile, rely on whatever path dependencies we found in the main manifest
         return [] if requirements_in_file_matcher.compiled_file?(req_file)
@@ -339,14 +353,14 @@ module Dependabot
         uneditable_reqs + editable_reqs
       end
 
-      sig { params(content: String, file_name: String).returns(T::Array[T.untyped]) }
+      sig { params(content: String, file_name: String).returns(T::Array[PathDependency]) }
       def parse_uneditable_requirements(content, file_name)
         content
           .scan(/(?<name>^['"]?(?:file:)?(?<path>\..*?)(?=\[|#|'|"|$))/)
           .filter_map { |match_data| process_requirement_match(T.cast(match_data, T::Array[String]), file_name, false) }
       end
 
-      sig { params(content: String, file_name: String).returns(T::Array[T.untyped]) }
+      sig { params(content: String, file_name: String).returns(T::Array[PathDependency]) }
       def parse_editable_requirements(content, file_name)
         content
           .scan(/(?<name>^(?:-e)\s+['"]?(?:file:)?(?<path>.*?)(?=\[|#|'|"|$))/)
@@ -358,7 +372,7 @@ module Dependabot
           match_data: T::Array[String],
           file_name: String,
           editable: T::Boolean
-        ).returns(T.nilable(T::Hash[Symbol, String]))
+        ).returns(T.nilable(PathDependency))
       end
       def process_requirement_match(match_data, file_name, editable)
         name, path = match_data
@@ -369,7 +383,7 @@ module Dependabot
         { name: name.strip, path: path.strip, file: file_name }
       end
 
-      sig { params(path: T.untyped).returns(String) }
+      sig { params(path: String).returns(String) }
       def cleanpath(path)
         Pathname.new(path).cleanpath.to_path
       end
@@ -380,7 +394,7 @@ module Dependabot
                                                 T.nilable(Dependabot::Uv::RequiremenstFileMatcher))
       end
 
-      sig { returns(T::Array[T.untyped]) }
+      sig { returns(T::Array[PathDependency]) }
       def uv_sources_path_dependencies
         return [] unless pyproject
 
@@ -398,20 +412,20 @@ module Dependabot
         end
       end
 
-      sig { params(path: T.nilable(T.any(Pathname, String))).returns(T.untyped) }
+      sig { params(path: T.nilable(T.any(Pathname, String))).returns(T::Array[Dependabot::DependencyFile]) }
       def fetch_requirement_files_from_path(path = nil)
         contents = path ? repo_contents(dir: path) : repo_contents
-        filter_requirement_files(contents, base_path: path)
+        filter_requirement_files(T.cast(contents, T::Array[RepoFileStruct]), base_path: path)
       end
 
-      sig { returns(T::Array[T.untyped]) }
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def fetch_requirement_files_from_dirs
-        repo_contents
+        T.cast(repo_contents, T::Array[RepoFileStruct])
           .select { |f| f.type == "dir" }
           .flat_map { |dir| req_files_for_dir(dir) }
       end
 
-      sig { params(contents: T.untyped, base_path: T.nilable(T.any(Pathname, String))).returns(T.untyped) }
+      sig { params(contents: T::Array[RepoFileStruct], base_path: T.nilable(T.any(Pathname, String))).returns(T::Array[Dependabot::DependencyFile]) }
       def filter_requirement_files(contents, base_path: nil)
         contents
           .select { |f| f.type == "file" }
@@ -421,7 +435,7 @@ module Dependabot
           .select { |f| T.must(REQUIREMENT_FILE_PATTERNS[:filenames]).include?(f.name) || requirements_file?(f) }
       end
 
-      sig { params(filename: T.untyped).returns(T::Boolean) }
+      sig { params(filename: String).returns(T::Boolean) }
       def file_matches_requirement_pattern?(filename)
         T.must(REQUIREMENT_FILE_PATTERNS[:extensions]).any? { |ext| filename.end_with?(ext) } ||
           T.must(REQUIREMENT_FILE_PATTERNS[:filenames]).any?(filename)
