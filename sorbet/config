@@ -25,6 +25,7 @@
 --ignore=gradle/spec/
 --ignore=helm/spec/
 --ignore=hex/spec/
+--ignore=julia/spec/
 --ignore=maven/spec/
 --ignore=npm_and_yarn/spec/
 --ignore=nuget/spec/

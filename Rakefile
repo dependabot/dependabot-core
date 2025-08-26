@@ -30,6 +30,7 @@ GEMSPECS = %w(
   gradle/dependabot-gradle.gemspec
   helm/dependabot-helm.gemspec
   hex/dependabot-hex.gemspec
+  julia/dependabot-julia.gemspec
   maven/dependabot-maven.gemspec
   npm_and_yarn/dependabot-npm_and_yarn.gemspec
   nuget/dependabot-nuget.gemspec

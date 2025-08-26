@@ -33,6 +33,7 @@ jobs:
           - { path: gradle, name: gradle, ecosystem: gradle }
           - { path: helm, name: helm, ecosystem: helm }
           - { path: hex, name: hex, ecosystem: mix }
+          - { path: julia, name: julia, ecosystem: julia }
           - { path: maven, name: maven, ecosystem: maven }
           - { path: npm_and_yarn, name: npm_and_yarn, ecosystem: npm }
           - { path: nuget, name: nuget, ecosystem: nuget }
