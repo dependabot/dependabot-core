@@ -27,9 +27,9 @@ module Dependabot
         filenames: ["uv.lock"]
       }.freeze, T::Hash[Symbol, T::Array[String]])
 
-      sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       MAX_FILE_SIZE = 500_000
 
+      sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
         return true if filenames.any? do |name|
           T.must(REQUIREMENT_FILE_PATTERNS[:extensions]).any? do |ext|
