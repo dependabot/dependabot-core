@@ -168,7 +168,7 @@ module Dependabot
       def updated_project_content
         return T.must(T.must(project_file).content) unless project_file
 
-        content = T.must(project_file).content
+        content = T.must(T.must(project_file).content)
 
         dependencies.each do |dependency|
           # Find the new requirement for this dependency
@@ -215,12 +215,12 @@ module Dependabot
       def build_updated_manifest_content
         return T.must(T.must(manifest_file).content) unless manifest_file
 
-        content = T.must(manifest_file).content
+        content = T.must(T.must(manifest_file).content)
 
         dependencies.each do |dependency|
           next unless dependency.version
 
-          content = update_dependency_version_in_manifest(content, dependency.name, dependency.version)
+          content = update_dependency_version_in_manifest(content, dependency.name, T.must(dependency.version))
         end
 
         content

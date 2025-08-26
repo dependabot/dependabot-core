@@ -32,6 +32,7 @@ module Dependabot
         @parsed_project_file = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
         @parsed_manifest_file = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
         @registry_client = T.let(nil, T.nilable(Dependabot::Julia::RegistryClient))
+        @custom_registries = T.let(nil, T.nilable(T::Array[T::Hash[Symbol, T.untyped]]))
         @temp_dir = T.let(nil, T.nilable(String))
       end
 
@@ -55,7 +56,7 @@ module Dependabot
         )
       end
 
-      sig { returns(T::Array[T::Hash[Symbol, String]]) }
+      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
       def custom_registries
         @custom_registries ||= begin
           registries = options.dig(:registries, :julia) || []

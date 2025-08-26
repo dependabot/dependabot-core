@@ -1,4 +1,4 @@
-# typed: strong
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/update_checkers"
@@ -15,18 +15,39 @@ module Dependabot
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       extend T::Sig
 
+      sig do
+        params(
+          dependency: Dependabot::Dependency,
+          dependency_files: T::Array[Dependabot::DependencyFile],
+          credentials: T::Array[Dependabot::Credential],
+          ignored_versions: T::Array[String],
+          raise_on_ignored: T::Boolean,
+          security_advisories: T::Array[Dependabot::SecurityAdvisory],
+          options: T::Hash[Symbol, T.untyped]
+        ).void
+      end
+      def initialize(dependency:, dependency_files:, credentials:, ignored_versions:,
+                     raise_on_ignored:, security_advisories:, options:)
+        super
+        @custom_registries = T.let(nil, T.nilable(T::Array[T::Hash[Symbol, T.untyped]]))
+      end
+
       sig { override.returns(T.nilable(Gem::Version)) }
       def latest_version
         @latest_version ||= T.let(latest_version_finder.latest_version, T.nilable(Gem::Version))
       end
 
-      sig { returns(T::Array[T::Hash[Symbol, String]]) }
+      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
       def custom_registries
-        @custom_registries ||= begin
-          registries = T.cast(options.dig(:registries, :julia), T.nilable(T::Array[T.untyped])) || []
-          # Convert string keys to symbols if needed
-          registries.map do |registry|
-            registry.is_a?(Hash) ? registry.transform_keys(&:to_sym) : registry
+        return @custom_registries if @custom_registries
+
+        registries = T.cast(options.dig(:registries, :julia), T.nilable(T::Array[T.untyped])) || []
+        # Convert string keys to symbols if needed
+        @custom_registries = registries.map do |registry|
+          if registry.is_a?(Hash)
+            registry.transform_keys(&:to_sym)
+          else
+            T.cast(registry, T::Hash[Symbol, T.untyped])
           end
         end
       end
