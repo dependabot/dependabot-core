@@ -1044,4 +1044,326 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       end
     end
   end
+
+  describe "vanity import integration" do
+    let(:project_name) { "vanity_imports" }
+    let(:dependency_name) { "k8s.io/client-go" }
+    let(:dependency_version) { "v0.30.0" }
+    let(:dependency_previous_version) { "v0.29.0" }
+    let(:requirements) do
+      [{
+        file: "go.mod",
+        requirement: "v0.30.0",
+        groups: [],
+        source: {
+          type: "default",
+          source: "k8s.io/client-go"
+        }
+      }]
+    end
+    let(:previous_requirements) do
+      [{
+        file: "go.mod",
+        requirement: "v0.29.0",
+        groups: [],
+        source: {
+          type: "default",
+          source: "k8s.io/client-go"
+        }
+      }]
+    end
+
+    before do
+      allow(Dependabot::GoModules::FileUpdater::UpdaterHelper).to receive(:configure_git_vanity_imports)
+        .and_call_original
+    end
+
+    context "when updating dependencies" do
+      it "calls configure_git_vanity_imports with the dependencies" do
+        # Mock the subprocess calls to avoid actual network requests
+        allow(Open3).to receive(:capture3).and_call_original
+        allow(Open3).to receive(:capture3).with(anything, /^go get/).and_return(["", "", double(success?: true)])
+
+        updater.updated_go_mod_content
+
+        expect(Dependabot::GoModules::FileUpdater::UpdaterHelper)
+          .to have_received(:configure_git_vanity_imports)
+          .with([dependency])
+      end
+    end
+
+    context "when vanity import configuration succeeds" do
+      let(:mock_resolver) { instance_double(Dependabot::GoModules::VanityImportResolver) }
+
+      before do
+        allow(Dependabot::GoModules::VanityImportResolver).to receive(:new).and_return(mock_resolver)
+        allow(mock_resolver).to receive(:resolve_git_hosts).and_return([
+          { vanity: "k8s.io/client-go", git: "github.com/kubernetes/client-go" }
+        ])
+        allow(Dependabot::SharedHelpers).to receive(:configure_git_to_use_https)
+
+        # Mock subprocess to avoid network calls
+        allow(Open3).to receive(:capture3).and_call_original
+        allow(Open3).to receive(:capture3).with(anything, /^go get/).and_return(["", "", double(success?: true)])
+      end
+
+      it "configures git rewrite rules for vanity imports" do
+        updater.updated_go_mod_content
+
+        expect(Dependabot::SharedHelpers).to have_received(:configure_git_to_use_https)
+          .with("github.com/kubernetes/client-go")
+      end
+    end
+
+    context "when vanity import configuration fails" do
+      before do
+        allow(Dependabot::GoModules::FileUpdater::UpdaterHelper).to receive(:configure_git_vanity_imports)
+          .and_raise(StandardError, "Network error")
+        allow(Dependabot.logger).to receive(:warn)
+
+        # Mock subprocess to avoid network calls
+        allow(Open3).to receive(:capture3).and_call_original
+        allow(Open3).to receive(:capture3).with(anything, /^go get/).and_return(["", "", double(success?: true)])
+      end
+
+      it "logs the error and continues" do
+        expect { updater.updated_go_mod_content }.not_to raise_error
+
+        expect(Dependabot.logger).to have_received(:warn).with(
+          "Failed to configure git vanity imports: Network error"
+        )
+      end
+    end
+
+    context "with multiple vanity imports" do
+      let(:mock_resolver) { instance_double(Dependabot::GoModules::VanityImportResolver) }
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "k8s.io/client-go",
+            version: "v0.30.0",
+            requirements: [{
+              file: "go.mod",
+              requirement: "v0.30.0",
+              groups: [],
+              source: { type: "default", source: "k8s.io/client-go" }
+            }],
+            previous_version: "v0.29.0",
+            previous_requirements: [{
+              file: "go.mod",
+              requirement: "v0.29.0",
+              groups: [],
+              source: { type: "default", source: "k8s.io/client-go" }
+            }],
+            package_manager: "go_modules"
+          ),
+          Dependabot::Dependency.new(
+            name: "gonum.org/v1/gonum",
+            version: "v0.15.0",
+            requirements: [{
+              file: "go.mod",
+              requirement: "v0.15.0",
+              groups: [],
+              source: { type: "default", source: "gonum.org/v1/gonum" }
+            }],
+            previous_version: "v0.14.0",
+            previous_requirements: [{
+              file: "go.mod",
+              requirement: "v0.14.0",
+              groups: [],
+              source: { type: "default", source: "gonum.org/v1/gonum" }
+            }],
+            package_manager: "go_modules"
+          )
+        ]
+      end
+
+      let(:updater) do
+        described_class.new(
+          dependencies: dependencies,
+          dependency_files: dependency_files,
+          credentials: credentials,
+          repo_contents_path: repo_contents_path,
+          directory: directory,
+          options: { tidy: tidy, vendor: false, goprivate: goprivate }
+        )
+      end
+
+      before do
+        allow(Dependabot::GoModules::VanityImportResolver).to receive(:new).and_return(mock_resolver)
+        allow(mock_resolver).to receive(:resolve_git_hosts).and_return([
+          { vanity: "k8s.io/client-go", git: "github.com/kubernetes/client-go" },
+          { vanity: "gonum.org/v1/gonum", git: "github.com/gonum/gonum" }
+        ])
+        allow(Dependabot::SharedHelpers).to receive(:configure_git_to_use_https)
+
+        # Mock subprocess to avoid network calls
+        allow(Open3).to receive(:capture3).and_call_original
+        allow(Open3).to receive(:capture3).with(anything, /^go get/).and_return(["", "", double(success?: true)])
+      end
+
+      it "configures git rewrite rules for all vanity imports" do
+        updater.updated_go_mod_content
+
+        expect(Dependabot::SharedHelpers).to have_received(:configure_git_to_use_https)
+          .with("github.com/kubernetes/client-go")
+        expect(Dependabot::SharedHelpers).to have_received(:configure_git_to_use_https)
+          .with("github.com/gonum/gonum")
+      end
+    end
+
+    context "enterprise vanity imports with SSH URLs" do
+      let(:project_name) { "simple" }
+      let(:dependency_name) { "tools.company.com/platform/shared" }
+      let(:dependency_version) { "v2.1.0" }
+      let(:dependency_previous_version) { "v2.0.0" }
+      let(:requirements) do
+        [{
+          file: "go.mod",
+          requirement: "v2.1.0",
+          groups: [],
+          source: {
+            type: "default",
+            source: "tools.company.com/platform/shared"
+          }
+        }]
+      end
+      let(:previous_requirements) do
+        [{
+          file: "go.mod",
+          requirement: "v2.0.0", 
+          groups: [],
+          source: {
+            type: "default",
+            source: "tools.company.com/platform/shared"
+          }
+        }]
+      end
+
+      let(:mock_resolver) { instance_double(Dependabot::GoModules::VanityImportResolver) }
+
+      before do
+        # Mock vanity imports pointing to SSH URLs 
+        allow(Dependabot::GoModules::VanityImportResolver).to receive(:new).and_return(mock_resolver)
+        allow(mock_resolver).to receive(:resolve_git_hosts).and_return([
+          # Typical enterprise setup where go-import meta tags use SSH URLs
+          { vanity: "tools.company.com/platform/shared", git: "git.company.com/platform/shared.git" }
+        ])
+        allow(Dependabot::SharedHelpers).to receive(:configure_git_to_use_https)
+
+        # Mock subprocess to avoid network calls
+        allow(Open3).to receive(:capture3).and_call_original
+        allow(Open3).to receive(:capture3).with(anything, /^go get/).and_return(["", "", double(success?: true)])
+      end
+
+      it "resolves vanity import SSH URLs for git rewrite rules" do
+        updater.updated_go_mod_content
+
+        # Verify that the git host extracted from SSH URL is configured for HTTPS rewrite
+        expect(Dependabot::SharedHelpers).to have_received(:configure_git_to_use_https)
+          .with("git.company.com/platform/shared.git")
+      end
+
+      it "integrates vanity import resolution into go mod update process" do
+        # Mock successful resolution
+        expect(mock_resolver).to receive(:resolve_git_hosts).and_return([
+          { vanity: "tools.company.com/platform/shared", git: "git.company.com/platform/shared.git" }
+        ])
+
+        # Test the full update flow including vanity import handling
+        result = updater.updated_go_mod_content
+
+        # Should complete without SSH-related errors that would occur without git rewrite rules
+        expect(result).to be_a(String)
+      end
+
+      context "when multiple enterprise vanity imports are present" do
+        let(:dependencies) do
+          [
+            Dependabot::Dependency.new(
+              name: "tools.company.com/platform/shared",
+              version: "v2.1.0",
+              requirements: [{
+                file: "go.mod",
+                requirement: "v2.1.0",
+                groups: [],
+                source: { type: "default", source: "tools.company.com/platform/shared" }
+              }],
+              previous_version: "v2.0.0",
+              previous_requirements: [{
+                file: "go.mod", 
+                requirement: "v2.0.0",
+                groups: [],
+                source: { type: "default", source: "tools.company.com/platform/shared" }
+              }],
+              package_manager: "go_modules"
+            ),
+            Dependabot::Dependency.new(
+              name: "api.company.com/v1/client",
+              version: "v1.5.0",
+              requirements: [{
+                file: "go.mod",
+                requirement: "v1.5.0",
+                groups: [],
+                source: { type: "default", source: "api.company.com/v1/client" }
+              }],
+              previous_version: "v1.4.0",
+              previous_requirements: [{
+                file: "go.mod",
+                requirement: "v1.4.0", 
+                groups: [],
+                source: { type: "default", source: "api.company.com/v1/client" }
+              }],
+              package_manager: "go_modules"
+            )
+          ]
+        end
+
+        let(:updater) do
+          described_class.new(
+            dependencies: dependencies,
+            dependency_files: dependency_files,
+            credentials: credentials,
+            repo_contents_path: repo_contents_path,
+            directory: directory,
+            options: { tidy: tidy, vendor: false, goprivate: goprivate }
+          )
+        end
+
+        before do
+          allow(mock_resolver).to receive(:resolve_git_hosts).and_return([
+            { vanity: "tools.company.com/platform/shared", git: "git.company.com/platform/shared.git" },
+            { vanity: "api.company.com/v1/client", git: "gitlab.company.com/api/client.git" }
+          ])
+        end
+
+        it "handles multiple enterprise vanity imports with different git hosts" do
+          updater.updated_go_mod_content
+
+          expect(Dependabot::SharedHelpers).to have_received(:configure_git_to_use_https)
+            .with("git.company.com/platform/shared.git")
+          expect(Dependabot::SharedHelpers).to have_received(:configure_git_to_use_https)
+            .with("gitlab.company.com/api/client.git") 
+        end
+      end
+
+      context "when vanity import resolution fails in enterprise environment" do
+        before do
+          # Mock network issues (firewalls, VPN, etc)
+          allow(mock_resolver).to receive(:resolve_git_hosts).and_raise(
+            StandardError, "Connection timeout to tools.company.com"
+          )
+          allow(Dependabot.logger).to receive(:warn)
+        end
+
+        it "falls back gracefully and continues the update process" do
+          expect { updater.updated_go_mod_content }.not_to raise_error
+
+          expect(Dependabot.logger).to have_received(:warn).with(
+            "Failed to configure git vanity imports: Connection timeout to tools.company.com"
+          )
+        end
+      end
+    end
+  end
 end
