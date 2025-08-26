@@ -569,6 +569,12 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
 
           it { is_expected.to eq(["wontfix"]) }
         end
+
+        context "when custom_labels is set to an empty list" do
+          let(:custom_labels) { [] }
+
+          it { is_expected.to eq([]) }
+        end
       end
 
       context "when dealing with an automerge candidate" do
@@ -989,6 +995,8 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
             .not_to have_requested(:post, "#{repo_api_url}/issues/1/labels")
         end
       end
+
+
     end
   end
 end
