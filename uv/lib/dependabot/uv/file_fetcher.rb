@@ -332,29 +332,41 @@ module Dependabot
         # If this is a pip-compile lockfile, rely on whatever path dependencies we found in the main manifest
         return [] if requirements_in_file_matcher.compiled_file?(req_file)
 
-        uneditable_reqs =
-          T.must(req_file.content)
-           .scan(/(?<name>^['"]?(?:file:)?(?<path>\..*?)(?=\[|#|'|"|$))/)
-           .filter_map do |match_data|
-            n, p = match_data
-            next if n.nil? || p.nil?
-            next if p.include?("://")
-
-            { name: n.strip, path: p.strip, file: req_file.name }
-          end
-
-        editable_reqs =
-          T.must(req_file.content)
-           .scan(/(?<name>^(?:-e)\s+['"]?(?:file:)?(?<path>.*?)(?=\[|#|'|"|$))/)
-           .filter_map do |match_data|
-            n, p = match_data
-            next if n.nil? || p.nil?
-            next if p.include?("://") || p.include?("git@")
-
-            { name: n.strip, path: p.strip, file: req_file.name }
-          end
+        content = T.must(req_file.content)
+        uneditable_reqs = parse_uneditable_requirements(content, req_file.name)
+        editable_reqs = parse_editable_requirements(content, req_file.name)
 
         uneditable_reqs + editable_reqs
+      end
+
+      sig { params(content: String, file_name: String).returns(T::Array[T.untyped]) }
+      def parse_uneditable_requirements(content, file_name)
+        content
+          .scan(/(?<name>^['"]?(?:file:)?(?<path>\..*?)(?=\[|#|'|"|$))/)
+          .filter_map { |match_data| process_requirement_match(T.cast(match_data, T::Array[String]), file_name, false) }
+      end
+
+      sig { params(content: String, file_name: String).returns(T::Array[T.untyped]) }
+      def parse_editable_requirements(content, file_name)
+        content
+          .scan(/(?<name>^(?:-e)\s+['"]?(?:file:)?(?<path>.*?)(?=\[|#|'|"|$))/)
+          .filter_map { |match_data| process_requirement_match(T.cast(match_data, T::Array[String]), file_name, true) }
+      end
+
+      sig do
+        params(
+          match_data: T::Array[String],
+          file_name: String,
+          editable: T::Boolean
+        ).returns(T.nilable(T::Hash[Symbol, String]))
+      end
+      def process_requirement_match(match_data, file_name, editable)
+        name, path = match_data
+        return nil if name.nil? || path.nil?
+        return nil if path.include?("://")
+        return nil if editable && path.include?("git@")
+
+        { name: name.strip, path: path.strip, file: file_name }
       end
 
       sig { params(path: T.untyped).returns(String) }
