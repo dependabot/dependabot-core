@@ -13,7 +13,9 @@ RSpec.describe Dependabot::Julia::UpdateChecker do
       dependency_files: dependency_files,
       credentials: credentials,
       ignored_versions: ignored_versions,
-      security_advisories: security_advisories
+      raise_on_ignored: false,
+      security_advisories: security_advisories,
+      options: {}
     )
   end
 

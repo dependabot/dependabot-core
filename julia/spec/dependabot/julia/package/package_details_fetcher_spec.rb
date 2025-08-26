@@ -40,7 +40,7 @@ RSpec.describe Dependabot::Julia::Package::PackageDetailsFetcher do
 
     before do
       allow(Dependabot::Julia::RegistryClient).to receive(:new)
-        .with(credentials: credentials)
+        .with(credentials: credentials, custom_registries: [])
         .and_return(registry_client)
 
       allow(registry_client).to receive(:fetch_available_versions)

@@ -20,14 +20,21 @@ module Dependabot
           dependency: Dependabot::Dependency,
           dependency_files: T::Array[Dependabot::DependencyFile],
           credentials: T::Array[Dependabot::Credential],
+          repo_contents_path: T.nilable(String),
           ignored_versions: T::Array[String],
           raise_on_ignored: T::Boolean,
           security_advisories: T::Array[Dependabot::SecurityAdvisory],
+          requirements_update_strategy: T.nilable(Dependabot::RequirementsUpdateStrategy),
+          dependency_group: T.nilable(Dependabot::DependencyGroup),
+          update_cooldown: T.nilable(Dependabot::Package::ReleaseCooldownOptions),
           options: T::Hash[Symbol, T.untyped]
         ).void
       end
-      def initialize(dependency:, dependency_files:, credentials:, ignored_versions:,
-                     raise_on_ignored:, security_advisories:, options:)
+      def initialize(dependency:, dependency_files:, credentials:,
+                     repo_contents_path: nil, ignored_versions: [],
+                     raise_on_ignored: false, security_advisories: [],
+                     requirements_update_strategy: nil, dependency_group: nil,
+                     update_cooldown: nil, options: {})
         super
         @custom_registries = T.let(nil, T.nilable(T::Array[T::Hash[Symbol, T.untyped]]))
       end
