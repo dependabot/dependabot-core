@@ -778,4 +778,104 @@ RSpec.describe Dependabot::ApiClient do
       end
     end
   end
+
+  describe "record_exclude_paths_subdirectory_meta" do
+    before do
+      allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_exclude_paths_subdirectory_metrics_collection).and_return(true)
+      allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_exclude_paths_subdirectory_manifest_files).and_return(true)
+    end
+
+    let(:job) do
+      instance_double(Dependabot::Job,
+                      source: source,
+                      credentials: [],
+                      package_manager: package_manager,
+                      commit_message_options: [],
+                      updating_a_pull_request?: false,
+                      ignore_conditions: [],
+                      exclude_paths: exclude_paths)
+    end
+
+    let(:source) do
+      instance_double(Dependabot::Source, provider: "github", repo: "gocardless/bump", directory: "/")
+    end
+
+    let(:package_manager) do
+      "bundler"
+    end
+
+    let(:exclude_paths) do
+      ["vendor/**", "test/fixtures/**"]
+    end
+
+    let(:record_exclude_paths_subdirectory_meta_url) { "http://example.com/update_jobs/1/record_exclude_paths_subdirectory_meta" }
+
+    it "hits the correct endpoint" do
+      client.record_exclude_paths_subdirectory_meta(job)
+
+      expect(WebMock)
+        .to have_requested(:post, record_exclude_paths_subdirectory_meta_url)
+        .with(headers: { "Authorization" => "token" })
+    end
+
+    it "encodes the payload correctly" do
+      client.record_exclude_paths_subdirectory_meta(job)
+
+      expect(WebMock).to(have_requested(:post, record_exclude_paths_subdirectory_meta_url).with do |req|
+        data = JSON.parse(req.body)["data"]
+
+        expect(data).not_to be_nil
+        expect(data[0]["exclude_paths_subdirectory"]["ecosystem_name"]).to eq("bundler")
+        expect(data[0]["exclude_paths_subdirectory"]["config"]["patterns_count"]).to eq(2)
+        expect(data[0]["exclude_paths_subdirectory"]["config"]["patterns"]).to eq(["vendor/**", "test/fixtures/**"])
+      end)
+    end
+
+    context "when exclude_paths is empty" do
+      let(:exclude_paths) { [] }
+
+      it "does not send a request" do
+        client.record_exclude_paths_subdirectory_meta(job)
+        expect(WebMock).not_to have_requested(:post, record_exclude_paths_subdirectory_meta_url)
+      end
+    end
+
+    context "when exclude_paths is nil" do
+      let(:exclude_paths) { nil }
+
+      it "does not send a request" do
+        client.record_exclude_paths_subdirectory_meta(job)
+        expect(WebMock).not_to have_requested(:post, record_exclude_paths_subdirectory_meta_url)
+      end
+    end
+
+    context "when job is nil" do
+      it "does not send a request" do
+        client.record_exclude_paths_subdirectory_meta(nil)
+        expect(WebMock).not_to have_requested(:post, record_exclude_paths_subdirectory_meta_url)
+      end
+    end
+
+    context "when metrics collection feature flag is disabled" do
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_exclude_paths_subdirectory_metrics_collection).and_return(false)
+      end
+
+      it "does not send a request" do
+        client.record_exclude_paths_subdirectory_meta(job)
+        expect(WebMock).not_to have_requested(:post, record_exclude_paths_subdirectory_meta_url)
+      end
+    end
+
+    context "when exclude paths subdirectory manifest files feature flag is disabled" do
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_exclude_paths_subdirectory_manifest_files).and_return(false)
+      end
+
+      it "does not send a request" do
+        client.record_exclude_paths_subdirectory_meta(job)
+        expect(WebMock).not_to have_requested(:post, record_exclude_paths_subdirectory_meta_url)
+      end
+    end
+  end
 end
