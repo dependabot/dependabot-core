@@ -11,6 +11,7 @@ module Dependabot
       require_relative "update_checker/requirements_updater"
       require_relative "update_checker/version_finder"
       require_relative "update_checker/property_updater"
+      require_relative "update_checker/transitive_dependency_updater"
 
       sig do
         params(
@@ -37,6 +38,7 @@ module Dependabot
 
         @version_finder = T.let(nil, T.nilable(VersionFinder))
         @property_updater = T.let(nil, T.nilable(PropertyUpdater))
+        @transitive_dependency_updater = T.let(nil, T.nilable(TransitiveDependencyUpdater))
         @property_value_finder = T.let(nil, T.nilable(Maven::FileParser::PropertyValueFinder))
         @declarations_using_a_property = T.let(nil, T.nilable(T::Array[T::Hash[Symbol, T.untyped]]))
         @all_property_based_dependencies = T.let(nil, T.nilable(T::Array[Dependabot::Dependency]))
@@ -116,6 +118,7 @@ module Dependabot
 
       sig { override.returns(T::Boolean) }
       def latest_version_resolvable_with_full_unlock?
+        return true if version_comes_from_transitive_dependencies? && transitive_dependency_updater.update_possible?
         return false unless version_comes_from_multi_dependency_property?
 
         property_updater.update_possible?
@@ -123,6 +126,8 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def updated_dependencies_after_full_unlock
+        return transitive_dependency_updater.updated_dependencies if version_comes_from_transitive_dependencies?
+
         property_updater.updated_dependencies
       end
 
@@ -184,6 +189,19 @@ module Dependabot
           )
       end
 
+      sig { returns(TransitiveDependencyUpdater) }
+      def transitive_dependency_updater
+        @transitive_dependency_updater ||=
+          TransitiveDependencyUpdater.new(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            target_version_details: latest_version_details,
+            credentials: credentials,
+            ignored_versions: ignored_versions,
+            update_cooldown: update_cooldown
+          )
+      end
+
       sig { returns(Maven::FileParser::PropertyValueFinder) }
       def property_value_finder
         @property_value_finder ||=
@@ -208,6 +226,24 @@ module Dependabot
             end
           end
         end
+      end
+
+      sig { returns(T::Boolean) }
+      def version_comes_from_transitive_dependencies?
+        # Enable transitive dependency updates when:
+        # 1. Maven transitive dependencies experiment is enabled
+        # 2. Not using property-based versioning to avoid conflicts
+        # 3. There are actually dependencies that depend on this one
+        
+        return false unless Dependabot::Experiments.enabled?(:maven_transitive_dependencies)
+        return false if version_comes_from_multi_dependency_property?
+        return false unless declarations_using_a_property.empty?
+        
+        # Check if there are dependencies that depend on our target
+        transitive_dependency_updater.dependencies_depending_on_target.any?
+      rescue StandardError => e
+        Dependabot.logger.warn("Error checking for transitive dependencies: #{e.message}")
+        false
       end
 
       sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }

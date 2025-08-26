@@ -3,3 +3,4 @@
 /.env
 /tmp
 /dependabot-*.gem
+test_transitive_updater.rb
