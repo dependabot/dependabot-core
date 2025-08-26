@@ -37,6 +37,35 @@ bin/docker-dev-shell {ecosystem}  # e.g., go_modules, bundler
 
 **Note**: The first run of `bin/docker-dev-shell` can take some minutes as it builds the Docker development image from scratch. Wait for it to complete before proceeding. Check for completion every 5 seconds. Subsequent runs will be much faster as they reuse the built image.
 
+### GitHub Actions/CI Environment
+
+**For GitHub Actions runners (including Copilot coding agent)**, the interactive `bin/docker-dev-shell` command will NOT work. Instead, use the non-interactive CI pattern:
+
+```bash
+# Step 1: Build the ecosystem image
+script/build {ecosystem}  # e.g., script/build bundler
+
+# Step 2: Run commands inside the container (non-interactive)
+docker run --rm \
+  --env "CI=true" \
+  --env "DEPENDABOT_TEST_ACCESS_TOKEN=$GITHUB_TOKEN" \
+  ghcr.io/dependabot/dependabot-updater-{ecosystem} bash -c \
+  "cd /home/dependabot/{ecosystem} && rspec spec"
+
+# Examples for specific tasks:
+# Run tests for bundler:
+docker run --rm ghcr.io/dependabot/dependabot-updater-bundler bash -c \
+  "cd /home/dependabot/bundler && rspec spec"
+
+# Run rubocop for go_modules:
+docker run --rm ghcr.io/dependabot/dependabot-updater-gomod bash -c \
+  "cd /home/dependabot/go_modules && rubocop && rubocop -A"
+
+# Run Sorbet type checking:
+docker run --rm ghcr.io/dependabot/dependabot-updater-bundler bash -c \
+  "cd /home/dependabot && bundle exec srb tc"
+```
+
 ### Testing Changes
 
 **IMPORTANT**: All testing must be done within Docker containers. The development environment, dependencies, and native helpers are containerized and will not work on the host system.
