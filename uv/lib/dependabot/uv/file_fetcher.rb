@@ -6,6 +6,7 @@ require "sorbet-runtime"
 
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
+require "dependabot/uv"
 require "dependabot/uv/language_version_manager"
 require "dependabot/uv/requirements_file_matcher"
 require "dependabot/uv/requirement_parser"
@@ -21,10 +22,6 @@ module Dependabot
       const :type, String
       const :size, Integer
     end
-
-    PathDependency = T.type_alias { { name: String, path: String, file: String } }
-
-    TomlContent = T.type_alias { T::Hash[String, T.untyped] }
 
     class FileFetcher < Dependabot::FileFetchers::Base
       extend T::Sig

@@ -8,10 +8,8 @@ module Dependabot
   module Uv
     extend T::Sig
 
-    # Hash representing a path dependency
-    PathDependency = T.type_alias { T::Hash[Symbol, String] }
+    PathDependency = T.type_alias { { name: String, path: String, file: String } }
 
-    # Hash representing TOML content
     TomlContent = T.type_alias { T::Hash[String, T.untyped] }
   end
 end
