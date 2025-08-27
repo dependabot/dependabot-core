@@ -117,14 +117,10 @@ RSpec.describe Dependabot::FileFetcherCommand do
           .to receive(:git_metadata_fetcher)
           .and_return(git_metadata_fetcher)
 
-        allow(git_metadata_fetcher)
-          .to receive(:ref_names)
-          .and_return(%w(main develop feature-branch))
-        
-        # Also mock upload_pack to prevent HTTP requests
-        allow(git_metadata_fetcher)
-          .to receive(:upload_pack)
-          .and_return(nil)
+        allow(git_metadata_fetcher).to receive_messages(
+          ref_names: %w(main develop feature-branch),
+          upload_pack: nil
+        )
       end
 
       it "raises BranchNotFound error with helpful message before file operations" do
@@ -193,14 +189,10 @@ RSpec.describe Dependabot::FileFetcherCommand do
           .to receive(:git_metadata_fetcher)
           .and_return(git_metadata_fetcher)
 
-        allow(git_metadata_fetcher)
-          .to receive(:ref_names)
-          .and_return(%w(main develop feature-branch))
-        
-        # Also mock upload_pack to prevent HTTP requests
-        allow(git_metadata_fetcher)
-          .to receive(:upload_pack)
-          .and_return(nil)
+        allow(git_metadata_fetcher).to receive_messages(
+          ref_names: %w(main develop feature-branch),
+          upload_pack: nil
+        )
       end
 
       it "validates branch early and prevents silent failures" do
