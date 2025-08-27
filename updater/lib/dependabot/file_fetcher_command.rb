@@ -236,6 +236,9 @@ module Dependabot
         # If we can't fetch git metadata, we'll let the original validation handle it
         # during file fetching to avoid masking other errors
         Dependabot.logger.warn("Could not validate target branch early due to git metadata fetch error: #{e.message}")
+      rescue Dependabot::BranchNotFound
+        # Re-raise BranchNotFound errors so they aren't caught by the generic rescue
+        raise
       rescue StandardError => e
         # For any other errors, we'll log and let the original validation handle it
         Dependabot.logger.warn("Could not validate target branch early: #{e.message}")

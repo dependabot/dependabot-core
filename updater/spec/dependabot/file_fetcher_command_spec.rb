@@ -133,7 +133,9 @@ RSpec.describe Dependabot::FileFetcherCommand do
           .with(
             error_details: {
               "branch-name": "nonexistent-branch",
-              message: "Dependabot::BranchNotFound" # TODO: Custom message not working yet
+              message: "The branch 'nonexistent-branch' specified in the target-branch field " \
+                       "does not exist. Please check that the branch name is correct and that " \
+                       "the branch exists in the repository."
             },
             error_type: "branch_not_found"
           )
@@ -207,7 +209,9 @@ RSpec.describe Dependabot::FileFetcherCommand do
           .with(
             error_details: {
               "branch-name": "invalid-branch",
-              message: "Dependabot::BranchNotFound" # TODO: Custom message not working yet
+              message: "The branch 'invalid-branch' specified in the target-branch field " \
+                       "does not exist. Please check that the branch name is correct and that " \
+                       "the branch exists in the repository."
             },
             error_type: "branch_not_found"
           )
