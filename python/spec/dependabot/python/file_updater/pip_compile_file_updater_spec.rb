@@ -583,7 +583,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
       let(:dependency_previous_version) { "0.12.3" }
       let(:dependency_requirements) do
         [{
-          file: "requirements/test.in", 
+          file: "requirements/test.in",
           requirement: nil,
           groups: [],
           source: nil
@@ -600,7 +600,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
 
       it "preserves relative paths in generated comments (not absolute)", :slow do
         updated_content = updated_files.first.content
-        
+
         # The key assertion: ensure that relative paths in comments are preserved
         # and not converted to absolute paths like "/tmp/..." or "/home/..."
         expect(updated_content).not_to match(%r{# via -r /})  # No absolute paths starting with /
