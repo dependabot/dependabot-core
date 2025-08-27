@@ -13,20 +13,6 @@ require "dependabot/uv/file_parser/pyproject_files_parser"
 require "dependabot/uv/file_parser/python_requirement_parser"
 require "dependabot/errors"
 
-# Type definitions for repository file structures
-module Dependabot
-  module Uv
-    # Structure representing a file or directory in the repository
-    RepoFileStruct = T.type_alias { T.any(OpenStruct, T::Struct) }
-    
-    # Hash representing a path dependency
-    PathDependency = T.type_alias { T::Hash[Symbol, String] }
-    
-    # Hash representing TOML content
-    TomlContent = T.type_alias { T::Hash[String, T.untyped] }
-  end
-end
-
 module Dependabot
   module Uv
     class FileFetcher < Dependabot::FileFetchers::Base
@@ -186,11 +172,11 @@ module Dependabot
         @req_txt_and_in_files
       end
 
-      sig { params(requirements_dir: RepoFileStruct).returns(T::Array[Dependabot::DependencyFile]) }
+      sig { params(requirements_dir: T.untyped).returns(T::Array[Dependabot::DependencyFile]) }
       def req_files_for_dir(requirements_dir)
         dir = directory.gsub(%r{(^/|/$)}, "")
         relative_reqs_dir =
-          requirements_dir.path.gsub(%r{^/?#{Regexp.escape(dir)}/?}, "")
+          T.unsafe(requirements_dir).path.gsub(%r{^/?#{Regexp.escape(dir)}/?}, "")
 
         fetch_requirement_files_from_path(relative_reqs_dir)
       end
@@ -228,9 +214,17 @@ module Dependabot
         )
       end
 
-      sig { params(file: Dependabot::DependencyFile, previously_fetched_files: T::Array[Dependabot::DependencyFile]).returns(T::Array[Dependabot::DependencyFile]) }
+      sig do
+        params(
+          file: Dependabot::DependencyFile,
+          previously_fetched_files: T::Array[Dependabot::DependencyFile]
+        ).returns(T::Array[Dependabot::DependencyFile])
+      end
       def fetch_child_requirement_files(file:, previously_fetched_files:)
-        paths = file.content.scan(CHILD_REQUIREMENT_REGEX).flatten
+        content = file.content
+        return [] if content.nil?
+
+        paths = content.scan(CHILD_REQUIREMENT_REGEX).flatten
         current_dir = File.dirname(file.name)
 
         paths.flat_map do |path|
@@ -256,7 +250,10 @@ module Dependabot
 
         constraints_paths = all_requirement_files.map do |req_file|
           current_dir = File.dirname(req_file.name)
-          paths = req_file.content.scan(CONSTRAINT_REGEX).flatten
+          content = req_file.content
+          next [] if content.nil?
+
+          paths = content.scan(CONSTRAINT_REGEX).flatten
 
           paths.map do |path|
             path = File.join(current_dir, path) unless current_dir == "."
@@ -274,6 +271,8 @@ module Dependabot
 
         path_dependencies.each do |dep|
           path = dep[:path]
+          next if path.nil?
+
           project_files += fetch_project_file(path)
         rescue Dependabot::DependencyFileNotFound
           unfetchable_deps << "\"#{dep[:name]}\" at #{cleanpath(File.join(directory, dep[:file]))}"
@@ -415,23 +414,28 @@ module Dependabot
       sig { params(path: T.nilable(T.any(Pathname, String))).returns(T::Array[Dependabot::DependencyFile]) }
       def fetch_requirement_files_from_path(path = nil)
         contents = path ? repo_contents(dir: path) : repo_contents
-        filter_requirement_files(T.cast(contents, T::Array[RepoFileStruct]), base_path: path)
+        filter_requirement_files(contents, base_path: path)
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def fetch_requirement_files_from_dirs
-        T.cast(repo_contents, T::Array[RepoFileStruct])
-          .select { |f| f.type == "dir" }
+        repo_contents
+          .select { |f| T.unsafe(f).type == "dir" }
           .flat_map { |dir| req_files_for_dir(dir) }
       end
 
-      sig { params(contents: T::Array[RepoFileStruct], base_path: T.nilable(T.any(Pathname, String))).returns(T::Array[Dependabot::DependencyFile]) }
+      sig do
+        params(
+          contents: T::Array[T.untyped],
+          base_path: T.nilable(T.any(Pathname, String))
+        ).returns(T::Array[Dependabot::DependencyFile])
+      end
       def filter_requirement_files(contents, base_path: nil)
         contents
-          .select { |f| f.type == "file" }
-          .select { |f| file_matches_requirement_pattern?(f.name) }
-          .reject { |f| f.size > MAX_FILE_SIZE }
-          .map { |f| fetch_file_with_path(f.name, base_path) }
+          .select { |f| T.unsafe(f).type == "file" }
+          .select { |f| file_matches_requirement_pattern?(T.unsafe(f).name) }
+          .reject { |f| T.unsafe(f).size > MAX_FILE_SIZE }
+          .map { |f| fetch_file_with_path(T.unsafe(f).name, base_path) }
           .select { |f| T.must(REQUIREMENT_FILE_PATTERNS[:filenames]).include?(f.name) || requirements_file?(f) }
       end
 

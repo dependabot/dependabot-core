@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "dependabot/dependency"
+require "dependabot/dependency_file"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/file_parsers/base/dependency_set"
@@ -385,7 +386,7 @@ module Dependabot
         @pyproject ||= T.let(get_original_file("pyproject.toml"), T.nilable(DependencyFile))
       end
 
-      sig { returns(T::Array[Requirement]) }
+      sig { returns(T::Array[DependencyFile]) }
       def requirements_in_files
         @requirements_in_files ||= T.let(dependency_files.select { |f| f.name.end_with?(".in") }, T.untyped)
       end
