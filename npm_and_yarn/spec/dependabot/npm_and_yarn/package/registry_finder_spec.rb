@@ -480,6 +480,25 @@ RSpec.describe Dependabot::NpmAndYarn::Package::RegistryFinder do
 
       it { is_expected.to eq("registry.npmjs.org") }
     end
+
+    context "when configured registry take precedence over locked registry" do
+      let(:credentials) do
+        [
+          Dependabot::Credential.new({
+            "type" => "npm_registry",
+            "registry" => "https://registry.configured.org/dependabot",
+            "token" => "secret_token",
+            "replaces-base" => true
+          })
+        ]
+      end
+
+      let(:source) do
+        { type: "registry", url: "https://registry.locked.org/dependabot" }
+      end
+
+      it { is_expected.to eq("registry.configured.org/dependabot") }
+    end
   end
 
   describe "#auth_headers" do
