@@ -253,7 +253,7 @@ module Dependabot
               # This prevents SSH URL failures when Go toolchain discovers git hosts from vanity imports
               UpdaterHelper.configure_git_vanity_imports(dependencies)
 
-              block.call
+              yield
             end
           end
         end
