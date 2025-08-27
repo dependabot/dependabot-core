@@ -446,7 +446,12 @@ module Dependabot
           T.must(REQUIREMENT_FILE_PATTERNS[:filenames]).any?(filename)
       end
 
-      sig { params(filename: T.any(Pathname, String), base_path: BasicObject).returns(Dependabot::DependencyFile) }
+      sig do
+        params(
+          filename: T.any(Pathname, String),
+          base_path: T.nilable(T.any(Pathname, String))
+        ).returns(Dependabot::DependencyFile)
+      end
       def fetch_file_with_path(filename, base_path)
         path = base_path ? File.join(base_path, filename) : filename
         fetch_file_from_host(path)

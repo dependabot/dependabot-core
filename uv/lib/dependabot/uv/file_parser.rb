@@ -132,7 +132,7 @@ module Dependabot
 
       sig { params(package_manager: String, version: String).void }
       def log_if_version_malformed(package_manager, version)
-        return unless version.match?(/^\d+(?:\.\d+)*$/)
+        return if version.match?(/^\d+(?:\.\d+)*$/)
 
         Dependabot.logger.warn("Detected #{package_manager} with malformed version #{version}")
       end
