@@ -16,13 +16,6 @@ require "dependabot/errors"
 
 module Dependabot
   module Uv
-    class RepoContentEntry < T::Struct
-      const :name, String
-      const :path, String
-      const :type, String
-      const :size, Integer
-    end
-
     class FileFetcher < Dependabot::FileFetchers::Base
       extend T::Sig
       extend T::Helpers
