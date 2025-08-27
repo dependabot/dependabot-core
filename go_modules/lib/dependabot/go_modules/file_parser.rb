@@ -65,8 +65,8 @@ module Dependabot
       sig { void }
       def set_go_environment_variables
         set_goenv_variable
-        set_goprivate_variable
         set_goproxy_variable
+        set_goprivate_variable
       end
 
       sig { void }
@@ -81,6 +81,8 @@ module Dependabot
       sig { void }
       def set_goprivate_variable
         return if go_env&.content&.include?("GOPRIVATE")
+        return if go_env&.content&.include?("GOPROXY")
+        return if goproxy_credentials.any?
 
         goprivate = options.fetch(:goprivate, "*")
         ENV["GOPRIVATE"] = goprivate if goprivate
@@ -89,12 +91,17 @@ module Dependabot
       sig { void }
       def set_goproxy_variable
         return if go_env&.content&.include?("GOPROXY")
-
-        goproxy_credentials = credentials.select { |cred| cred["type"] == "goproxy_server" }
         return if goproxy_credentials.empty?
 
         urls = goproxy_credentials.filter_map { |cred| cred["url"] }
         ENV["GOPROXY"] = "#{urls.join(',')},direct"
+      end
+
+      sig { returns(T::Array[Dependabot::Credential]) }
+      def goproxy_credentials
+        @goproxy_credentials ||= T.let(credentials.select do |cred|
+          cred["type"] == "goproxy_server"
+        end, T.nilable(T::Array[Dependabot::Credential]))
       end
 
       sig { returns(Ecosystem::VersionManager) }

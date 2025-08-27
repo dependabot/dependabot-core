@@ -85,6 +85,18 @@ RSpec.describe Dependabot::GoModules::FileParser do
       described_class.new(dependency_files: [go_mod, go_env], source: source)
       expect(`go env GOPROXY`.strip).to eq("https://proxy.example.com")
     end
+
+    it "does not set the GOPRIVATE environment variable if a goproxy_server credential is passed" do
+      credentials = [
+        Dependabot::Credential.new({
+          "type" => "goproxy_server",
+          "url" => "https://proxy.example.com"
+        })
+      ]
+      described_class.new(dependency_files: [go_mod], source: source, credentials: credentials,
+                          options: { goprivate: "*" })
+      expect(`go env GOPRIVATE`.strip).to be_empty
+    end
   end
 
   describe "parse" do
