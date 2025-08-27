@@ -67,10 +67,16 @@ module Dependabot
         vanity_dependencies.any?
       end
 
-      # Get only the dependencies that are potential vanity imports
+      # Get dependencies that might be vanity imports, with fallback strategy:
+      # 1. First try dependencies with credentialed hosts
+      # 2. Fallback: try all domain-like dependencies and let HTTP request determine if it's vanity
       sig { returns(T::Array[Dependabot::Dependency]) }
       def vanity_dependencies
-        @dependencies.select do |dep|
+        credentialed_hosts = credentials
+                             .select { |cred| cred["type"] == "git_source" }
+                             .filter_map { |cred| cred["host"] }
+
+        potential_vanity_deps = @dependencies.select do |dep|
           path = dep.name
           # Skip known public hosting providers
           next false if KNOWN_PUBLIC_HOSTS.any? { |host| path.start_with?("#{host}/") }
@@ -78,6 +84,19 @@ module Dependabot
           # Check if this looks like a vanity import (has domain with dots)
           path.match?(VANITY_IMPORT_PATH_REGEX)
         end
+
+        # First priority: dependencies with credentialed vanity hosts
+        credentialed_vanity_deps = potential_vanity_deps.select do |dep|
+          vanity_host = dep.name.split("/").first
+          credentialed_hosts.include?(vanity_host)
+        end
+
+        # If we found credentialed vanity dependencies, use those
+        return credentialed_vanity_deps if credentialed_vanity_deps.any?
+
+        # Fallback: try all potential vanity dependencies
+        # HTTP request will determine if they're actually vanity imports
+        potential_vanity_deps
       end
 
       private
