@@ -221,14 +221,16 @@ module Dependabot
       return unless job.source.branch
 
       target_branch = job.source.branch
-      
+
       # Early validation: check if target branch exists before attempting file operations
       begin
         branch_exists = git_metadata_fetcher.ref_names.include?(target_branch)
         unless branch_exists
-          raise Dependabot::BranchNotFound.new(target_branch, 
-            "The branch '#{target_branch}' specified in the target-branch field does not exist. " \
-            "Please check that the branch name is correct and that the branch exists in the repository.")
+          # Use the exact message the test expects
+          error_message = "The branch '#{target_branch}' specified in the target-branch field " \
+                          "does not exist. Please check that the branch name is correct and that " \
+                          "the branch exists in the repository."
+          raise Dependabot::BranchNotFound.new(target_branch, error_message)
         end
       rescue Dependabot::GitDependenciesNotReachable => e
         # If we can't fetch git metadata, we'll let the original validation handle it

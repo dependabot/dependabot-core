@@ -47,7 +47,10 @@ module Dependabot
     when Dependabot::BranchNotFound
       {
         "error-type": "branch_not_found",
-        "error-detail": { "branch-name": error.branch_name }
+        "error-detail": {
+          "branch-name": error.branch_name,
+          message: error.message
+        }
       }
     when Dependabot::DirectoryNotFound
       {
@@ -152,9 +155,9 @@ module Dependabot
     when Dependabot::BranchNotFound
       {
         "error-type": "branch_not_found",
-        "error-detail": { 
+        "error-detail": {
           "branch-name": error.branch_name,
-          "message": error.message
+          message: error.message
         }
       }
     when Dependabot::DependencyFileNotParseable

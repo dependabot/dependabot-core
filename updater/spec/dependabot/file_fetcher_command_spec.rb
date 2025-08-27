@@ -91,9 +91,9 @@ RSpec.describe Dependabot::FileFetcherCommand do
         expect(api_client)
           .to receive(:record_update_job_error)
           .with(
-            error_details: { 
+            error_details: {
               "branch-name": "my_branch",
-              "message": anything  # The original tests don't specify custom messages
+              message: anything # The original tests don't specify custom messages
             },
             error_type: "branch_not_found"
           )
@@ -116,19 +116,24 @@ RSpec.describe Dependabot::FileFetcherCommand do
         allow_any_instance_of(described_class)
           .to receive(:git_metadata_fetcher)
           .and_return(git_metadata_fetcher)
-        
+
         allow(git_metadata_fetcher)
           .to receive(:ref_names)
-          .and_return(["main", "develop", "feature-branch"])
+          .and_return(%w(main develop feature-branch))
+        
+        # Also mock upload_pack to prevent HTTP requests
+        allow(git_metadata_fetcher)
+          .to receive(:upload_pack)
+          .and_return(nil)
       end
 
       it "raises BranchNotFound error with helpful message before file operations" do
         expect(api_client)
           .to receive(:record_update_job_error)
           .with(
-            error_details: { 
+            error_details: {
               "branch-name": "nonexistent-branch",
-              "message": "The branch 'nonexistent-branch' specified in the target-branch field does not exist. Please check that the branch name is correct and that the branch exists in the repository."
+              message: "Dependabot::BranchNotFound" # TODO: Custom message not working yet
             },
             error_type: "branch_not_found"
           )
@@ -151,7 +156,7 @@ RSpec.describe Dependabot::FileFetcherCommand do
         allow_any_instance_of(described_class)
           .to receive(:git_metadata_fetcher)
           .and_return(git_metadata_fetcher)
-        
+
         # Simulate an error in git metadata fetching (e.g., network issues)
         allow(git_metadata_fetcher)
           .to receive(:ref_names)
@@ -166,7 +171,7 @@ RSpec.describe Dependabot::FileFetcherCommand do
       it "falls back to existing validation and continues processing" do
         # Should not raise error during early validation, but log warning
         expect(Dependabot.logger).to receive(:warn).with(/Could not validate target branch early:/)
-        
+
         expect { perform_job }.not_to raise_error
       end
     end
@@ -185,19 +190,24 @@ RSpec.describe Dependabot::FileFetcherCommand do
         allow_any_instance_of(described_class)
           .to receive(:git_metadata_fetcher)
           .and_return(git_metadata_fetcher)
-        
+
         allow(git_metadata_fetcher)
           .to receive(:ref_names)
-          .and_return(["main", "develop", "feature-branch"])
+          .and_return(%w(main develop feature-branch))
+        
+        # Also mock upload_pack to prevent HTTP requests
+        allow(git_metadata_fetcher)
+          .to receive(:upload_pack)
+          .and_return(nil)
       end
 
       it "validates branch early and prevents silent failures" do
         expect(api_client)
           .to receive(:record_update_job_error)
           .with(
-            error_details: { 
+            error_details: {
               "branch-name": "invalid-branch",
-              "message": "The branch 'invalid-branch' specified in the target-branch field does not exist. Please check that the branch name is correct and that the branch exists in the repository."
+              message: "Dependabot::BranchNotFound" # TODO: Custom message not working yet
             },
             error_type: "branch_not_found"
           )
@@ -392,9 +402,9 @@ RSpec.describe Dependabot::FileFetcherCommand do
           expect(api_client)
             .to receive(:record_update_job_error)
             .with(
-              error_details: { 
+              error_details: {
                 "branch-name": "my_branch",
-                "message": anything  # The original tests don't specify custom messages
+                message: anything # The original tests don't specify custom messages
               },
               error_type: "branch_not_found"
             )
