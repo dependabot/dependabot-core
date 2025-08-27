@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	"go.testcompany.local/shared/logger"
 )
 

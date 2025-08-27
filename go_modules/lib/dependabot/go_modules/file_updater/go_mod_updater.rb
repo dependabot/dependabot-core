@@ -251,7 +251,7 @@ module Dependabot
             SharedHelpers.with_git_configured(credentials: credentials) do
               # Configure git rewrite rules for vanity import hosts by actually resolving them
               # This prevents SSH URL failures when Go toolchain discovers git hosts from vanity imports
-              UpdaterHelper.configure_git_vanity_imports(dependencies)
+              UpdaterHelper.configure_git_vanity_imports(dependencies, credentials)
 
               yield
             end

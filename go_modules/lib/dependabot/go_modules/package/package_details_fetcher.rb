@@ -72,7 +72,7 @@ module Dependabot
         def fetch_available_versions
           SharedHelpers.in_a_temporary_directory do
             SharedHelpers.with_git_configured(credentials: credentials) do
-              UpdaterHelper.configure_git_vanity_imports([dependency])
+              UpdaterHelper.configure_git_vanity_imports([dependency], credentials)
               manifest = parse_manifest
 
               # Set up an empty go.mod so 'go list -m' won't attempt to download dependencies. This
