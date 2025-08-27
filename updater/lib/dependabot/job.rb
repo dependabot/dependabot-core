@@ -291,6 +291,13 @@ module Dependabot
         security_update = update_type == "security" || security_updates_only?
         next false if security_update && !vulnerable?(dependency)
 
+        # Check update-types (semver-based filtering)
+        update_types = update.fetch("update-types", nil)
+        if update_types && !update_types.empty? && !security_update
+          dep_update_type = dependency_update_type(dependency)
+          next false if dep_update_type && !update_types.include?(dep_update_type)
+        end
+
         # Check the dependency-name (defaulting to matching)
         condition_name = update.fetch("dependency-name", dependency.name)
         next false unless name_match?(condition_name, dependency.name)
@@ -528,6 +535,35 @@ module Dependabot
         exclude_paths: T.let(exclude_paths, T.nilable(T::Array[String]))
       )
       T.let(update_config, Dependabot::Config::UpdateConfig)
+    end
+
+    # Determines the semantic version update type for a dependency
+    # Returns the semver update type string that can be used for filtering
+    sig { params(dependency: Dependabot::Dependency).returns(T.nilable(String)) }
+    def dependency_update_type(dependency)
+      return nil unless dependency.version && dependency.previous_version
+
+      version_class = Utils.version_class_for_package_manager(package_manager)
+      return nil unless version_class.correct?(dependency.version) && 
+                        version_class.correct?(dependency.previous_version)
+
+      new_version = version_class.new(dependency.version)
+      old_version = version_class.new(dependency.previous_version)
+
+      # Determine update precision based on version comparison logic from labeler
+      new_version_parts = dependency.version.split(/[.+]/)
+      old_version_parts = dependency.previous_version.split(/[.+]/)
+      all_parts = new_version_parts.first(3) + old_version_parts.first(3)
+      
+      return nil unless all_parts.all? { |part| part.to_i.to_s == part }
+      
+      if new_version_parts[0] != old_version_parts[0]
+        Dependabot::Config::IgnoreCondition::MAJOR_VERSION_TYPE
+      elsif new_version_parts[1] != old_version_parts[1]
+        Dependabot::Config::IgnoreCondition::MINOR_VERSION_TYPE  
+      else
+        Dependabot::Config::IgnoreCondition::PATCH_VERSION_TYPE
+      end
     end
   end
 end
