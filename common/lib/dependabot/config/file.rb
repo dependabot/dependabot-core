@@ -29,10 +29,14 @@ module Dependabot
       end
 
       sig do
-        params(package_manager: String, directory: T.nilable(String), target_branch: T.nilable(String))
-          .returns(UpdateConfig)
+        params(
+          package_manager: String,
+          directory: T.nilable(String),
+          target_branch: T.nilable(String),
+          exclude_paths: T.nilable(T::Array[String])
+        ).returns(UpdateConfig)
       end
-      def update_config(package_manager, directory: nil, target_branch: nil)
+      def update_config(package_manager, directory: nil, target_branch: nil, exclude_paths: nil)
         dir = directory || "/"
         package_ecosystem = REVERSE_PACKAGE_MANAGER_LOOKUP.fetch(package_manager, "dummy")
         cfg = updates.find do |u|
@@ -42,7 +46,7 @@ module Dependabot
         UpdateConfig.new(
           ignore_conditions: ignore_conditions(cfg),
           commit_message_options: commit_message_options(cfg),
-          exclude_paths: exclude_paths(cfg)
+          exclude_paths: merge_exclude_paths(cfg, exclude_paths)
         )
       end
 
@@ -119,6 +123,18 @@ module Dependabot
       sig { params(cfg: T.nilable(T::Hash[Symbol, T.untyped])).returns(T::Array[String]) }
       def exclude_paths(cfg)
         Array(cfg&.dig(:"exclude-paths") || [])
+      end
+
+      sig do
+        params(
+          cfg: T.nilable(T::Hash[Symbol, T.untyped]),
+          additional_exclude_paths: T.nilable(T::Array[String])
+        ).returns(T::Array[String])
+      end
+      def merge_exclude_paths(cfg, additional_exclude_paths)
+        config_exclude_paths = exclude_paths(cfg)
+        additional_paths = Array(additional_exclude_paths || [])
+        (config_exclude_paths + additional_paths).uniq
       end
     end
   end
