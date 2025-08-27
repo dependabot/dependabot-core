@@ -481,7 +481,7 @@ RSpec.describe Dependabot::NpmAndYarn::Package::RegistryFinder do
       it { is_expected.to eq("registry.npmjs.org") }
     end
 
-    context "when configured registry take precedence over locked registry" do
+    context "when both a configured and a locked registry are present, the configured registry takes precedence" do
       let(:credentials) do
         [
           Dependabot::Credential.new({
