@@ -55,7 +55,7 @@ module Dependabot
         def registry
           return @registry if @registry
 
-          @registry =  configured_registry || first_registry_with_dependency_details || locked_registry
+          @registry = configured_registry || first_registry_with_dependency_details || locked_registry
           T.must(@registry)
         end
 
