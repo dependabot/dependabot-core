@@ -15,6 +15,17 @@ require "dependabot/errors"
 
 module Dependabot
   module Uv
+    class RepoContentEntry < T::Struct
+      const :name, String
+      const :path, String
+      const :type, String
+      const :size, Integer
+    end
+
+    PathDependency = T.type_alias { { name: String, path: String, file: String } }
+
+    TomlContent = T.type_alias { T::Hash[String, T.untyped] }
+
     class FileFetcher < Dependabot::FileFetchers::Base
       extend T::Sig
       extend T::Helpers
