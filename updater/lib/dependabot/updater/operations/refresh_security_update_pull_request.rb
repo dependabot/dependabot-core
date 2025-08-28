@@ -1,8 +1,9 @@
-# typed: strong
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/updater/security_update_helpers"
 require "dependabot/notices"
+require "dependabot/updater/operations/base"
 
 # This class implements our strategy for 'refreshing' an existing Pull Request
 # that updates an insecure dependency.
@@ -167,6 +168,10 @@ module Dependabot
 
           return close_pull_request(reason: :up_to_date) if checker.up_to_date?
 
+          if Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files) && checker.excluded?
+            return close_pull_request(reason: :dependency_removed)
+          end
+
           requirements_to_unlock = requirements_to_unlock(checker)
           log_requirements_for_update(requirements_to_unlock, checker)
 
@@ -245,6 +250,7 @@ module Dependabot
             security_advisories: job.security_advisories_for(dependency),
             raise_on_ignored: true,
             requirements_update_strategy: job.requirements_update_strategy,
+            exclude_paths: job.exclude_paths,
             options: job.experiments
           )
         end

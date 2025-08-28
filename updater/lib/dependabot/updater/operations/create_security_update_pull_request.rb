@@ -135,6 +135,13 @@ module Dependabot
           # version (uses a different version suffix for gradle/maven)
           return record_security_update_not_found(checker) if checker.up_to_date?
 
+          if Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files) && checker.excluded?
+            return Dependabot.logger.info(
+              "Skipping update for #{dependency.name} #{dependency.version} " \
+              "(excluded by config)"
+            )
+          end
+
           if pr_exists_for_latest_version?(checker)
             Dependabot.logger.info(
               "Pull request already exists for #{checker.dependency.name} " \
@@ -226,6 +233,7 @@ module Dependabot
             security_advisories: job.security_advisories_for(dependency),
             raise_on_ignored: true, # always true for security updates
             requirements_update_strategy: job.requirements_update_strategy,
+            exclude_paths: job.exclude_paths,
             options: job.experiments
           )
         end

@@ -139,6 +139,13 @@ module Dependabot
             )
           end
 
+          if Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files) && checker.excluded?
+            return Dependabot.logger.info(
+              "Skipping update for #{dependency.name} #{dependency.version} " \
+              "(excluded by config)"
+            )
+          end
+
           updated_deps = checker.updated_dependencies(
             requirements_to_unlock: requirements_to_unlock
           )
@@ -218,6 +225,7 @@ module Dependabot
             raise_on_ignored: raise_on_ignored,
             requirements_update_strategy: job.requirements_update_strategy,
             update_cooldown: job.cooldown,
+            exclude_paths: job.exclude_paths,
             options: job.experiments
           )
         end

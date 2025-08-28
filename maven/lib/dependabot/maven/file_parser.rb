@@ -58,7 +58,8 @@ module Dependabot
               name: dep.name,
               version: dep.version,
               package_manager: "maven",
-              requirements: requirements
+              requirements: requirements,
+              origin_files: dep.origin_files
             )
           end
         else
@@ -192,7 +193,8 @@ module Dependabot
               packaging_type: packaging_type(pom, dependency_node),
               classifier: dependency_classifier(dependency_node, pom)
             }.merge(property_details).compact
-          }]
+          }],
+          origin_files: [pom.name]
         )
       end
 
