@@ -108,8 +108,8 @@ module Dependabot
 
         # Check if any file changes reference dependencies not in updated_dependencies
         dependency_change.updated_dependency_files.each do |file|
-          # This would need ecosystem-specific logic to parse file content
-          # and identify referenced dependencies
+          # Uses already-parsed dependencies from ecosystem-specific FileParser
+          # to identify dependencies referenced in this file
           detected_drift = detect_file_dependency_drift(file, dependency_change.updated_dependencies)
           dependency_drift.concat(detected_drift)
         end
@@ -225,11 +225,20 @@ module Dependabot
         )
       end
 
-      sig { params(_file: T.untyped, _updated_deps: T::Array[Dependabot::Dependency]).returns(T::Array[String]) }
-      def detect_file_dependency_drift(_file, _updated_deps)
-        # This is a placeholder - real implementation would need ecosystem-specific logic
-        # to parse lockfiles and detect transitive dependencies
-        []
+      sig { params(file: Dependabot::DependencyFile, updated_deps: T::Array[Dependabot::Dependency]).returns(T::Array[String]) }
+      def detect_file_dependency_drift(file, updated_deps)
+        updated_dep_names = updated_deps.to_set(&:name)
+
+        # Find all dependencies that have requirements from this file
+        # Uses the already-parsed dependencies from the ecosystem-specific FileParser
+        file_dependencies = @snapshot.dependencies.select do |dep|
+          dep.requirements.any? { |req| req[:file] == file.name }
+        end
+
+        # Find dependencies in the file that aren't in updated_dependencies
+        file_dependencies.filter_map do |dep|
+          dep.name unless updated_dep_names.include?(dep.name)
+        end
       end
 
       sig { params(dir_count: Integer, merged_count: Integer).void }
