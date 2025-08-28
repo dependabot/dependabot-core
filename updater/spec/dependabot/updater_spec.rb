@@ -486,6 +486,7 @@ RSpec.describe Dependabot::Updater do
             raise_on_ignored: false,
             requirements_update_strategy: anything,
             update_cooldown: nil,
+            exclude_paths: anything,
             options: anything
           )
         end
@@ -518,6 +519,7 @@ RSpec.describe Dependabot::Updater do
             raise_on_ignored: true,
             requirements_update_strategy: anything,
             update_cooldown: nil,
+            exclude_paths: anything,
             options: anything
           )
         end
