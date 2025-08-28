@@ -499,6 +499,21 @@ RSpec.describe Dependabot::NpmAndYarn::Package::RegistryFinder do
 
       it { is_expected.to eq("registry.configured.org/dependabot") }
     end
+
+    context "when both a .npmrc and a locked registry are present, the .npmrc registry takes precedence" do
+      let(:npmrc_file) do
+        Dependabot::DependencyFile.new(
+          name: ".npmrc",
+          content: "registry=https://registry.npmrc.org/dependabot"
+        )
+      end
+
+      let(:source) do
+        { type: "registry", url: "https://registry.locked.org/dependabot" }
+      end
+
+      it { is_expected.to eq("registry.npmrc.org/dependabot") }
+    end
   end
 
   describe "#auth_headers" do
