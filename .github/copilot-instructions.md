@@ -146,6 +146,28 @@ rspec spec                       # Run relevant tests
 - **Type annotations**: Add explicit type signatures for method parameters and return values
 - **Validation**: Always run `bundle exec srb tc` to ensure type correctness
 
+**Sorbet type checking workflow**:
+
+```bash
+# Run Sorbet type checker to identify errors
+bundle exec srb tc
+
+# Run type checking on specific files to focus on particular issues
+bundle exec srb tc path/to/file.rb
+
+# Use autocorrect ONLY when you have high confidence it won't cause issues
+bundle exec srb tc -a path/to/file.rb
+```
+
+**Important**: Sorbet's autocorrect feature (`-a` flag) should be used cautiously as it can cause more issues than it resolves. Only use autocorrect when you have high confidence that the changes will not break code functionality. 
+
+Autocorrect can handle some simple cases like:
+- Adding missing `override.` annotations for method overrides  
+- Adding `T.let` declarations for instance variables in strict-typed files
+- Adding type annotations for constants
+
+However, autocorrect often creates incorrect fixes for complex type mismatches, method signature issues, and structural problems. **Always manually resolve Sorbet errors** rather than relying on autocorrect, and carefully review any autocorrected changes to ensure they maintain code correctness and intent.
+
 ### Native Helpers
 
 Many ecosystems use native language helpers (Go, Node.js, Python) located in `{ecosystem}/helpers/`. These helpers run exclusively within containers and changes require rebuilding:
