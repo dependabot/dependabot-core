@@ -750,6 +750,74 @@ RSpec.describe Dependabot::SharedHelpers do
       end
     end
 
+    context "when providing git_source host without credentials" do
+      let(:credentials) do
+        [
+          {
+            "type" => "git_source",
+            "host" => "git.testinternal.dev"
+          }
+        ]
+      end
+
+      it "creates a .gitconfig that contains the git.testinternal.dev alternatives" do
+        expect(configured_git_config).to include(alternatives("git.testinternal.dev"))
+      end
+
+      it "creates a git credentials store with unauthenticated URL" do
+        expect(configured_git_credentials).to eq("https://git.testinternal.dev\n")
+      end
+    end
+
+    context "when providing git_source with partial credentials" do
+      let(:credentials) do
+        [
+          {
+            "type" => "git_source",
+            "host" => "git.testinternal.dev",
+            "username" => "git"
+          }
+        ]
+      end
+
+      it "creates a .gitconfig that contains the git.testinternal.dev alternatives" do
+        expect(configured_git_config).to include(alternatives("git.testinternal.dev"))
+      end
+
+      it "creates a git credentials store with unauthenticated URL when password is missing" do
+        expect(configured_git_credentials).to eq("https://git.testinternal.dev\n")
+      end
+    end
+
+    context "when providing mixed credentials with git.testinternal.dev" do
+      let(:credentials) do
+        [
+          {
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "github-token"
+          },
+          {
+            "type" => "git_source",
+            "host" => "git.testinternal.dev"
+          }
+        ]
+      end
+
+      it "creates a git credentials store with mixed authenticated and unauthenticated URLs" do
+        expect(configured_git_credentials).to eq(
+          "https://git.testinternal.dev\n" \
+          "https://x-access-token:github-token@github.com\n"
+        )
+      end
+
+      it "creates git rewrite rules for both hosts" do
+        expect(configured_git_config).to include(alternatives("github.com"))
+        expect(configured_git_config).to include(alternatives("git.testinternal.dev"))
+      end
+    end
+
     context "when the host has run out of disk space" do
       before do
         allow(File).to receive(:open)
