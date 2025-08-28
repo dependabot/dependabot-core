@@ -481,7 +481,7 @@ RSpec.describe Dependabot::NpmAndYarn::Package::RegistryFinder do
       it { is_expected.to eq("registry.npmjs.org") }
     end
 
-    context "when both a configured and a locked registry are present, the configured registry takes precedence" do
+    context "when both lockfile and dependabot config specify a registry, dependabot config takes precedence" do
       let(:credentials) do
         [
           Dependabot::Credential.new({
@@ -500,12 +500,24 @@ RSpec.describe Dependabot::NpmAndYarn::Package::RegistryFinder do
       it { is_expected.to eq("registry.configured.org/dependabot") }
     end
 
-    context "when both a .npmrc and a locked registry are present, the .npmrc registry takes precedence" do
+    context "when registry is set in .npmrc, then it takes precedence" do
       let(:npmrc_file) do
         Dependabot::DependencyFile.new(
           name: ".npmrc",
           content: "registry=https://registry.npmrc.org/dependabot"
         )
+      end
+
+      # .npmrc registry takes precedence over dependabot config
+      let(:credentials) do
+        [
+          Dependabot::Credential.new({
+            "type" => "npm_registry",
+            "registry" => "https://registry.configured.org/dependabot",
+            "token" => "secret_token",
+            "replaces-base" => true
+          })
+        ]
       end
 
       let(:source) do
