@@ -88,6 +88,19 @@ module Dependabot
     sig { returns(T::Hash[Symbol, T.untyped]) }
     attr_reader :metadata
 
+    # Attribution metadata for group membership tracking
+    sig { returns(T.nilable(String)) }
+    attr_accessor :attribution_source_group
+
+    sig { returns(T.nilable(Symbol)) }
+    attr_accessor :attribution_selection_reason
+
+    sig { returns(T.nilable(String)) }
+    attr_accessor :attribution_directory
+
+    sig { returns(T.nilable(Time)) }
+    attr_accessor :attribution_timestamp
+
     sig { returns(T::Array[String]) }
     attr_reader :origin_files
 
