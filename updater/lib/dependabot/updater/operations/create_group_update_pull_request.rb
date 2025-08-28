@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "dependabot/updater/group_update_creation"
+require "dependabot/updater/group_dependency_selector"
 require "sorbet-runtime"
 
 # This class implements our strategy for creating a single Pull Request which
@@ -47,6 +48,13 @@ module Dependabot
           @dependency_snapshot = dependency_snapshot
           @error_handler = error_handler
           @group = group
+          @group_dependency_selector = T.let(
+            GroupDependencySelector.new(
+              group: group,
+              dependency_snapshot: dependency_snapshot
+            ),
+            Dependabot::Updater::GroupDependencySelector
+          )
         end
 
         # rubocop:disable Metrics/AbcSize
@@ -105,12 +113,16 @@ module Dependabot
         sig { returns(Dependabot::DependencyGroup) }
         attr_reader :group
 
+        sig { returns(Dependabot::Updater::GroupDependencySelector) }
+        attr_reader :group_dependency_selector
+
         sig { returns(T.nilable(Dependabot::DependencyChange)) }
         def dependency_change
           return @dependency_change if defined?(@dependency_change)
 
           if job.source.directories.nil?
             @dependency_change = compile_all_dependency_changes_for(group)
+            apply_group_membership_enforcement(@dependency_change) if @dependency_change
           else
             dependency_changes = T.must(job.source.directories).filter_map do |directory|
               job.source.directory = directory
@@ -119,10 +131,20 @@ module Dependabot
             end
 
             # merge the changes together into one
-            dependency_change = T.let(T.must(dependency_changes.first), Dependabot::DependencyChange)
-            dependency_change.merge_changes!(T.must(dependency_changes[1..-1])) if dependency_changes.count > 1
-            @dependency_change = T.let(dependency_change, T.nilable(Dependabot::DependencyChange))
+            if Dependabot::Experiments.enabled?(:group_membership_enforcement)
+              merged_change = group_dependency_selector.merge_per_directory!(dependency_changes)
+              group_dependency_selector.filter_to_group!(merged_change)
+              group_dependency_selector.annotate_dependency_drift!(merged_change)
+              @dependency_change = merged_change
+            else
+              # Fallback to original behavior
+              fallback_change = T.let(T.must(dependency_changes.first), Dependabot::DependencyChange)
+              fallback_change.merge_changes!(T.must(dependency_changes[1..-1])) if dependency_changes.count > 1
+              @dependency_change = T.let(fallback_change, T.nilable(Dependabot::DependencyChange))
+            end
           end
+
+          @dependency_change
         end
 
         sig { void }
@@ -151,6 +173,14 @@ module Dependabot
               dependency_group: group
             )
           end
+        end
+
+        sig { params(change: Dependabot::DependencyChange).void }
+        def apply_group_membership_enforcement(change)
+          return unless Dependabot::Experiments.enabled?(:group_membership_enforcement)
+
+          group_dependency_selector.filter_to_group!(change)
+          group_dependency_selector.annotate_dependency_drift!(change)
         end
       end
     end
