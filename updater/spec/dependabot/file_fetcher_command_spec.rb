@@ -118,7 +118,7 @@ RSpec.describe Dependabot::FileFetcherCommand do
           .and_return(git_metadata_fetcher)
 
         allow(git_metadata_fetcher).to receive_messages(
-          ref_names: %w[main develop feature-branch],
+          ref_names: %w(main develop feature-branch),
           upload_pack: nil
         )
       end
@@ -190,7 +190,7 @@ RSpec.describe Dependabot::FileFetcherCommand do
           .and_return(git_metadata_fetcher)
 
         allow(git_metadata_fetcher).to receive_messages(
-          ref_names: %w[main develop feature-branch],
+          ref_names: %w(main develop feature-branch),
           upload_pack: nil
         )
       end
