@@ -298,6 +298,37 @@ public class XmlFileWriterTests : FileWriterTestsBase
     }
 
     [Fact]
+    public async Task SingleDependency_SingleFile_AttributeDirectUpdate_VersionRangeFromWildCard()
+    {
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="Ignored.Dependency" Version="7.0.0" />
+                        <PackageReference Include="Some.Dependency" Version="1.*" />
+                        <PackageReference Include="Some.Other.Dependency" Version="8.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Some.Dependency/1.1.0"],
+            requiredDependencyStrings: ["Some.Dependency/2.0.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="Ignored.Dependency" Version="7.0.0" />
+                        <PackageReference Include="Some.Dependency" Version="2.0.0" />
+                        <PackageReference Include="Some.Other.Dependency" Version="8.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
     public async Task SingleDependency_SingleFile_UpdateVersionAttribute()
     {
         await TestAsync(
@@ -587,6 +618,33 @@ public class XmlFileWriterTests : FileWriterTestsBase
             ],
             initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
             requiredDependencyStrings: ["Unrelated.Dependency/2.0.0"]
+        );
+    }
+
+    [Fact]
+    public async Task SingleDependency_SingleFile_NoChangeForWildCard()
+    {
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="Some.Dependency" Version="1.*" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/1.0.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="Some.Dependency" Version="1.*" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ]
         );
     }
 
