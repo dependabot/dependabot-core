@@ -241,7 +241,12 @@ module Dependabot
         )
       end
 
-      sig { params(file: Dependabot::DependencyFile, updated_deps: T::Array[Dependabot::Dependency]).returns(T::Array[String]) }
+      sig do
+        params(
+          file: Dependabot::DependencyFile,
+          updated_deps: T::Array[Dependabot::Dependency]
+        ).returns(T::Array[String])
+      end
       def detect_file_dependency_drift(file, updated_deps)
         updated_dep_names = updated_deps.to_set(&:name)
 
