@@ -144,6 +144,9 @@ RSpec.describe Dependabot::Updater::Operations::RefreshVersionUpdatePullRequest 
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_shared_helpers_command_timeout)
       .and_return(true)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_exclude_paths_subdirectory_manifest_files)
+      .and_return(true)
 
     allow(Dependabot::UpdateCheckers).to receive(:for_package_manager).and_return(stub_update_checker_class)
     allow(Dependabot::DependencyChangeBuilder)

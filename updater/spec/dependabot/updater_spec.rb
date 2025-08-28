@@ -375,6 +375,7 @@ RSpec.describe Dependabot::Updater do
           raise_on_ignored: anything,
           requirements_update_strategy: anything,
           update_cooldown: nil,
+          exclude_paths: anything,
           options: anything
         ).once
       end
@@ -549,6 +550,7 @@ RSpec.describe Dependabot::Updater do
             raise_on_ignored: true,
             requirements_update_strategy: anything,
             update_cooldown: nil,
+            exclude_paths: anything,
             options: anything
           )
         end
@@ -810,7 +812,8 @@ RSpec.describe Dependabot::Updater do
             security_advisories: anything,
             raise_on_ignored: true,
             requirements_update_strategy: anything,
-            update_cooldown: nil
+            update_cooldown: nil,
+            exclude_paths: anything
           ).twice.ordered
           # this is the "peer checker" instantiation
           expect(Dependabot::Bundler::UpdateChecker).to have_received(:new).with(
@@ -823,7 +826,8 @@ RSpec.describe Dependabot::Updater do
             security_advisories: anything,
             raise_on_ignored: false,
             requirements_update_strategy: anything,
-            update_cooldown: nil
+            update_cooldown: nil,
+            exclude_paths: anything
           ).ordered
         end
       end
@@ -2391,6 +2395,7 @@ RSpec.describe Dependabot::Updater do
           raise_on_ignored: anything,
           requirements_update_strategy: anything,
           update_cooldown: nil,
+          exclude_paths: anything,
           options: { large_hadron_collider: true }
         ).twice
       end

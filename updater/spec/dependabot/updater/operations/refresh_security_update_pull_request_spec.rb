@@ -167,6 +167,10 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_shared_helpers_command_timeout)
       .and_return(true)
+
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_exclude_paths_subdirectory_manifest_files)
+      .and_return(true)
   end
 
   after do
