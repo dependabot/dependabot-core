@@ -9,6 +9,22 @@ require "dependabot/dependency_snapshot"
 
 module Dependabot
   class Updater
+    # GroupDependencySelector ensures consistent group dependency selection by filtering
+    # dependencies to only include those that belong to the specified group and are
+    # allowed by configuration. This prevents the "superset problem" where dependencies
+    # outside the group were being included in group PRs during recreation or rebasing.
+    #
+    # Key responsibilities:
+    # - Merges per-directory dependency changes with deduplication
+    # - Filters dependencies to only include group-eligible ones (filter_to_group!)
+    # - Detects dependency drift in updated files
+    # - Provides comprehensive observability for debugging
+    #
+    # The class implements a two-layer filtering system:
+    # 1. Group membership check via group.contains_dependency?
+    # 2. Configuration compliance check via job.allowed_update?
+    #
+    # Note: Filtering requires the :group_membership_enforcement feature to be enabled.
     class GroupDependencySelector
       extend T::Sig
 
