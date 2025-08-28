@@ -113,5 +113,55 @@ RSpec.describe Dependabot::PullRequest do
 
       expect(pr1).not_to eq(pr2)
     end
+
+    it "is false when the left has more dependencies" do
+      pr1 = described_class.new(
+        [
+          Dependabot::PullRequest::Dependency.new(
+            name: "foo",
+            version: "1.0.0"
+          ),
+          Dependabot::PullRequest::Dependency.new(
+            name: "bar",
+            version: "2.0.0"
+          )
+        ]
+      )
+      pr2 = described_class.new(
+        [
+          Dependabot::PullRequest::Dependency.new(
+            name: "foo",
+            version: "1.0.0"
+          )
+        ]
+      )
+
+      expect(pr1).not_to eq(pr2)
+    end
+
+    it "is false when the right has more dependencies" do
+      pr1 = described_class.new(
+        [
+          Dependabot::PullRequest::Dependency.new(
+            name: "foo",
+            version: "1.0.0"
+          )
+        ]
+      )
+      pr2 = described_class.new(
+        [
+          Dependabot::PullRequest::Dependency.new(
+            name: "foo",
+            version: "1.0.0"
+          ),
+          Dependabot::PullRequest::Dependency.new(
+            name: "bar",
+            version: "2.0.0"
+          )
+        ]
+      )
+
+      expect(pr1).not_to eq(pr2)
+    end
   end
 end

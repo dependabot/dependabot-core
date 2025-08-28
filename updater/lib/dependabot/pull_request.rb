@@ -87,11 +87,10 @@ module Dependabot
     sig { params(other: PullRequest).returns(T::Boolean) }
     def ==(other)
       if using_directory? && other.using_directory?
-        dependencies.map(&:to_h).difference(other.dependencies.map(&:to_h)).none?
+        dependencies.to_set(&:to_h) == other.dependencies.to_set(&:to_h)
       else
-        dependencies.map { |dep| dep.to_h.except(:directory) }.difference(
-          other.dependencies.map { |dep| dep.to_h.except(:directory) }
-        ).none?
+        dependencies.to_set { |dep| dep.to_h.except(:directory) } ==
+          other.dependencies.to_set { |dep| dep.to_h.except(:directory) }
       end
     end
 
