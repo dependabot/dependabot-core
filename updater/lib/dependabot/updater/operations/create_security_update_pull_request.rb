@@ -108,7 +108,7 @@ module Dependabot
         # rubocop:disable Metrics/PerceivedComplexity
         # rubocop:disable Metrics/MethodLength
         sig { params(dependency: Dependabot::Dependency).void }
-        def check_and_create_pull_request(dependency)
+        def check_and_create_pull_request(dependency) # rubocop:disable Metrics/CyclomaticComplexity
           dependency = vulnerable_version(dependency) if dependency.metadata[:all_versions]
           checker = update_checker_for(dependency)
 

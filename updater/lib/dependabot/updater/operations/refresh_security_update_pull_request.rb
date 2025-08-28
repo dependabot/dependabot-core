@@ -3,7 +3,6 @@
 
 require "dependabot/updater/security_update_helpers"
 require "dependabot/notices"
-require "dependabot/updater/operations/base"
 
 # This class implements our strategy for 'refreshing' an existing Pull Request
 # that updates an insecure dependency.
