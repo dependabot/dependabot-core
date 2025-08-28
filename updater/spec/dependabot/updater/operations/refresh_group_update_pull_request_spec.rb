@@ -10,6 +10,7 @@ require "dependabot/dependency_snapshot"
 require "dependabot/service"
 require "dependabot/updater/error_handler"
 require "dependabot/updater/operations/refresh_group_update_pull_request"
+require "dependabot/updater/group_dependency_selector"
 
 require "dependabot/bundler"
 
@@ -336,6 +337,76 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
         end
 
         refresh_group.perform
+      end
+    end
+  end
+
+  describe "#dependency_change" do
+    let(:job_definition) do
+      job_definition_fixture("bundler/version_updates/group_update_refresh")
+    end
+
+    before do
+      stub_rubygems_calls
+    end
+
+    context "when group membership enforcement is disabled" do
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:group_membership_enforcement)
+          .and_return(false)
+      end
+
+      it "does not apply GroupDependencySelector filtering" do
+        expect(Dependabot::Updater::GroupDependencySelector).not_to receive(:new)
+        refresh_group.send(:dependency_change)
+      end
+    end
+
+    context "when group membership enforcement is enabled" do
+      let(:mock_selector) { instance_double(Dependabot::Updater::GroupDependencySelector) }
+
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:group_membership_enforcement)
+          .and_return(true)
+      end
+
+      it "creates and uses GroupDependencySelector to filter dependencies" do
+        allow(Dependabot::Updater::GroupDependencySelector).to receive(:new)
+          .with(group: dependency_snapshot.job_group, dependency_snapshot: dependency_snapshot)
+          .and_return(mock_selector)
+        allow(mock_selector).to receive(:filter_to_group!)
+
+        refresh_group.send(:dependency_change)
+
+        expect(mock_selector).to have_received(:filter_to_group!)
+      end
+
+      it "only filters when a dependency change exists" do
+        allow(refresh_group).to receive(:compile_all_dependency_changes_for).and_return(nil)
+        expect(Dependabot::Updater::GroupDependencySelector).not_to receive(:new)
+
+        result = refresh_group.send(:dependency_change)
+        expect(result).to be_nil
+      end
+
+      it "applies filtering with the correct parameters" do
+        job_group = dependency_snapshot.job_group
+        expect(Dependabot::Updater::GroupDependencySelector).to receive(:new)
+          .with(group: job_group, dependency_snapshot: dependency_snapshot)
+          .and_return(mock_selector)
+        allow(mock_selector).to receive(:filter_to_group!)
+
+        refresh_group.send(:dependency_change)
+      end
+
+      it "calls filter_to_group! on the dependency change" do
+        allow(Dependabot::Updater::GroupDependencySelector).to receive(:new)
+          .and_return(mock_selector)
+
+        dependency_change = refresh_group.send(:dependency_change)
+        expect(mock_selector).to have_received(:filter_to_group!).with(dependency_change)
       end
     end
   end
