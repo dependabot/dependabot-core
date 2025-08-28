@@ -1,0 +1,99 @@
+---
+name: Auto-lint Pull Requests
+
+on:  # yamllint disable-line rule:truthy
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write  # Needed to push fixes back to the PR branch
+
+jobs:
+  auto-lint:
+    name: Auto-lint and fix
+    runs-on: ubuntu-latest
+    # Only run on pull requests, not on the main branch
+    if: github.event_name == 'pull_request'
+    env:
+      BUNDLE_GEMFILE: updater/Gemfile
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          # Checkout the head of the PR, not the merge commit
+          ref: ${{ github.head_ref }}
+          # Use a token that can push to the branch
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@829114fc20da43a41d27359103ec7a63020954d4 # v1.255.0
+        with:
+          bundler-cache: true
+
+      - name: Set up Node.js
+        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: 'npm_and_yarn/helpers/package-lock.json'
+
+      - name: Run RuboCop with auto-fix
+        run: |
+          # Run RuboCop with auto-fix (-a flag)
+          # Continue even if RuboCop finds issues that can't be auto-fixed
+          ./bin/rubocop -a || exit_code=$?
+          echo "RuboCop exit code: ${exit_code:-0}"
+          # Don't fail the step if RuboCop just found unfixable issues
+          true
+
+      - name: Run JavaScript linting with auto-fix
+        run: |
+          # Auto-fix JavaScript code in npm_and_yarn helpers
+          if [ -d npm_and_yarn/helpers ]; then
+            cd npm_and_yarn/helpers
+            if [ -f package.json ] && command -v npm >/dev/null 2>&1; then
+              # Install dependencies if needed
+              npm ci --silent || npm install --silent
+              # Run eslint with auto-fix
+              npm run lint -- --fix || echo "ESLint completed with exit code $?"
+              # Run prettier to format code
+              if command -v npx >/dev/null 2>&1; then
+                npx prettier --write . || echo "Prettier completed"
+              fi
+            fi
+            cd ../..
+          fi
+      - name: Check for changes
+        id: changes
+        run: |
+          if git diff --quiet; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "No changes were made by auto-linting."
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "Changes made by auto-linting:"
+            git diff --name-only
+            echo ""
+            echo "Diff summary:"
+            git diff --stat
+          fi
+
+      - name: Commit and push fixes
+        if: steps.changes.outputs.has_changes == 'true'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add .
+          # Check if we still have changes after adding (in case of .gitignore etc.)
+          if git diff --staged --quiet; then
+            echo "No changes to commit after staging."
+            exit 0
+          fi
+          git commit -m "Auto-fix linting issues
+
+          Applied RuboCop and ESLint auto-fixes to address linting violations.
+
+          [skip ci]"
+          git push
