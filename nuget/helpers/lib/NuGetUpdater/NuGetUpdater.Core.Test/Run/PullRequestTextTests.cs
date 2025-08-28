@@ -32,6 +32,22 @@ public class PullRequestTextTests
         Assert.Equal(expectedTitle, actualTitle);
     }
 
+    [Fact]
+    public void FromClauseInTitleIsIncludedIfVersionUpdatesAreIdentical()
+    {
+        // this can happen if the same update was performed for multiple projects
+        var job = FromCommitOptions(null);
+        var updateOperations = new UpdateOperationBase[]
+        {
+            new DirectUpdate() { DependencyName = "Some.Dependency", OldVersion = NuGetVersion.Parse("1.0.0"), NewVersion = NuGetVersion.Parse("2.0.0"), UpdatedFiles = [] },
+            new DirectUpdate() { DependencyName = "Some.Dependency", OldVersion = NuGetVersion.Parse("1.0.0"), NewVersion = NuGetVersion.Parse("2.0.0"), UpdatedFiles = [] },
+        };
+
+        var actualTitle = PullRequestTextGenerator.GetPullRequestTitle(job, [.. updateOperations], dependencyGroupName: null);
+        var expectedTitle = "Bump Some.Dependency from 1.0.0 to 2.0.0";
+        Assert.Equal(expectedTitle, actualTitle);
+    }
+
     [Theory]
     [MemberData(nameof(GetPullRequestTextTestData))]
     public async Task PullRequestText(
@@ -422,7 +438,7 @@ public class PullRequestTextTests
                 new DirectUpdate()
                 {
                     DependencyName = "Some.Package",
-                    OldVersion = NuGetVersion.Parse("1.0.0"),
+                    OldVersion = NuGetVersion.Parse("1.1.0"),
                     NewVersion = NuGetVersion.Parse("1.2.3"),
                     UpdatedFiles = ["b.txt"]
                 }
@@ -439,6 +455,7 @@ public class PullRequestTextTests
             """
             Performed the following updates:
             - Updated Some.Package from 1.0.0 to 1.2.3
+            - Updated Some.Package from 1.1.0 to 1.2.3
             """
         ];
     }

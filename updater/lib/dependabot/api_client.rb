@@ -348,14 +348,9 @@ module Dependabot
       end
     end
 
-    # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
+    # rubocop:disable Metrics/MethodLength
     sig { params(job: T.nilable(Dependabot::Job)).void }
     def record_cooldown_meta(job)
-      unless Dependabot::Experiments.enabled?(:enable_cooldown_metrics_collection)
-        Dependabot.logger.info("Cooldown metrics collection is disabled.")
-        return
-      end
-
       return if job&.cooldown.nil?
 
       cooldown = T.must(job).cooldown
@@ -402,7 +397,7 @@ module Dependabot
         Dependabot.logger.error("Failed to record cooldown meta: #{e.message}")
       end
     end
-    # rubocop:enable Metrics/MethodLength, Metrics/AbcSize
+    # rubocop:enable Metrics/MethodLength
 
     private
 
