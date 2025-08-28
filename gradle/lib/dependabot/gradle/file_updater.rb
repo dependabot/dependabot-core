@@ -16,17 +16,17 @@ module Dependabot
       require_relative "file_updater/property_value_updater"
       require_relative "file_updater/lockfile_updater"
 
-      SUPPORTED_BUILD_FILE_NAMES = %w(build.gradle build.gradle.kts gradle.lockfile).freeze
+      SUPPORTED_BUILD_FILE_NAMES = %w(build.gradle build.gradle.kts build.gradle.dcl gradle.lockfile).freeze
 
       sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
         [
           # Matches build.gradle or build.gradle.kts in root directory
-          %r{(^|.*/)build\.gradle(\.kts)?$},
+          %r{(^|.*/)build\.gradle((\.kts)|(\.dcl))?$},
           # Matches gradle/libs.versions.toml in root or any subdirectory
           %r{(^|.*/)?gradle/libs\.versions\.toml$},
           # Matches settings.gradle or settings.gradle.kts in root or any subdirectory
-          %r{(^|.*/)settings\.gradle(\.kts)?$},
+          %r{(^|.*/)settings\.gradle((\.kts)|(\.dcl))?$},
           # Matches dependencies.gradle in root or any subdirectory
           %r{(^|.*/)dependencies\.gradle$},
           %r{(^|.*/)?gradle.lockfile$}
@@ -59,7 +59,7 @@ module Dependabot
 
       sig { override.void }
       def check_required_files
-        raise "No build.gradle or build.gradle.kts!" if dependency_files.empty?
+        raise "No build.gradle or build.gradle.kts or build.gradle.dcl!" if dependency_files.empty?
       end
 
       sig { void }

@@ -360,6 +360,21 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
             .to match_array(%w(build.gradle.kts settings.gradle.kts app/build.gradle.kts))
         end
       end
+
+      context "with a settings.gradle.dcl" do
+        before do
+          stub_content_request("?ref=sha", "contents_kotlin_with_settings.json")
+          stub_content_request("settings.gradle.dcl?ref=sha", "contents_kotlin_simple_settings.json")
+          stub_content_request("app/build.gradle.dcl?ref=sha", "contents_kotlin_basic_buildfile.json")
+          stub_no_content_request("app/gradle.lockfile?ref=sha")
+        end
+
+        it "fetches the main buildfile and subproject buildfile" do
+          expect(file_fetcher_instance.files.count).to eq(3)
+          expect(file_fetcher_instance.files.map(&:name))
+            .to match_array(%w(build.gradle.kts settings.gradle.dcl app/build.gradle.dcl))
+        end
+      end
     end
   end
 
