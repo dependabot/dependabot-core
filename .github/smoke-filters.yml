@@ -74,6 +74,9 @@ uv:
 helm:
   - *common
   - 'helm/**'
+julia:
+  - *common
+  - 'julia/**'
 vcpkg:
   - *common
   - 'vcpkg/**'
