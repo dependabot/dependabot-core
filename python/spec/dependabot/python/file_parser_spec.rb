@@ -1501,6 +1501,7 @@ RSpec.describe Dependabot::Python::FileParser do
           lockfile_dep = lockfile.dependencies.find { |d| d.name == dep.name }
 
           expect(lockfile_dep).not_to be_nil
+          expect(lockfile_dep).to be_direct
           expect(lockfile_dep.version).to eql(dep.version)
           expect(lockfile_dep.requirements).to be_empty
         end
@@ -1513,6 +1514,36 @@ RSpec.describe Dependabot::Python::FileParser do
 
         # assert the Pipfile.lock is set to a higher priority
         expect(lockfile.priority).to be(1)
+      end
+
+      it "assigns the correct descendants and scope to dependencies assigned to the Pipfile.lock" do
+        # Run the parse
+        parser.parse
+
+        expect(parser.dependency_files.count).to eq(2)
+        lockfile = parser.dependency_files.find { |f| f.name == "Pipfile.lock" }
+
+        # Check the top-level dependencies
+        flask = lockfile.dependencies.find { |f| f.name == "flask" }
+        expect(flask).to be_production
+        expect(flask).to be_direct
+        expect(flask.metadata[:depends_on]).to eql(%w(blinker click itsdangerous jinja2 markupsafe werkzeug))
+
+        pytest = lockfile.dependencies.find { |f| f.name == "pytest" }
+        expect(pytest).not_to be_production
+        expect(pytest).to be_direct
+        expect(pytest.metadata[:depends_on]).to eql(%w(iniconfig packaging pluggy pygments))
+
+        # Spot check transitive dependencies
+        jinja2 = lockfile.dependencies.find { |f| f.name == "jinja2" }
+        expect(jinja2).to be_production
+        expect(jinja2).not_to be_direct
+        expect(jinja2.metadata[:depends_on]).to eql(%w(markupsafe))
+
+        iniconfig = lockfile.dependencies.find { |f| f.name == "iniconfig" }
+        expect(iniconfig).not_to be_production
+        expect(iniconfig).not_to be_direct
+        expect(iniconfig.metadata[:depends_on]).to be_empty
       end
     end
   end

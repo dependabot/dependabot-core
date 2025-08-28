@@ -25,9 +25,17 @@ module Dependabot
           }
         ].freeze, T::Array[T::Hash[Symbol, String]])
 
-        sig { params(dependency_files: T::Array[Dependabot::DependencyFile]).void }
-        def initialize(dependency_files:)
+        sig do
+          params(
+            dependency_files: T::Array[Dependabot::DependencyFile],
+            credentials: T::Array[Dependabot::Credential]
+          ).void
+        end
+        def initialize(dependency_files:, credentials: [])
           @dependency_files = dependency_files
+          @credentials = T.let(credentials, T::Array[Dependabot::Credential])
+          @direct_dependencies = T.let([], T::Array[String])
+          @depends_on_dictionary = T.let({}, T::Hash[String, T::Array[String]])
         end
 
         sig { returns(Dependabot::FileParsers::Base::DependencySet) }
@@ -42,8 +50,76 @@ module Dependabot
 
         private
 
+        # NOTE: It might make more sense to generate everything from the structured graph
+        #
+        # This is purely to get an illustrated example of a Python graph working, I think we should step back and
+        # consider how we want to land the responsibility between the parser and any extra commands to fill in blanks
+        # in the dependency submission payload before we lock in on this model so I've err'd on the side of least code
+        # at the cost of more native commands.
+        sig { void }
+        def fetch_metadata_for_lockfile
+          SharedHelpers.in_a_temporary_repo_directory(T.must(dependency_files.first).directory) do
+            SharedHelpers.with_git_configured(credentials: credentials) do
+              write_temporary_dependency_files
+
+              # We would now need credentials to be made available to the parser in order to run this install,
+              # I've omitted it for now but this is a significant extra complexity we could avoid if we didn't need
+              # the `depends_on` data or fetched it as a post-parser process using a new component.
+              SharedHelpers.run_shell_command("pyenv exec pipenv install --dev --ignore-pipfile")
+              # This is a lazy way of doing this, but the fact we need to lookup direct/indirect when parsing
+              # the Pipfile.lock is a consequence of our decision to look at the dependency list via highest resolution
+              # file analysed rather than the existing dependency list in the Dependency Submission POC.
+              structured_graph_json = SharedHelpers.run_shell_command("pyenv exec pipenv graph --json-tree")
+              @direct_dependencies = JSON.parse(structured_graph_json).map { |dep| dep["key"] }
+
+              # If we were using the dependency list directly instead of maintaining a file-based subset, we would
+              # only need to run this native command to get the metadata.
+              flat_graph_json = SharedHelpers.run_shell_command("pyenv exec pipenv graph --json")
+              @depends_on_dictionary = JSON.parse(flat_graph_json).each_with_object({}) do |dep, depends_on_map|
+                depends_on_map[dep["package"]["key"]] = dep["dependencies"].map { |subdep| subdep["key"] }
+              end
+            end
+          end
+        end
+
+        sig { void }
+        def write_temporary_dependency_files
+          dependency_files.each do |file|
+            path = file.name
+            FileUtils.mkdir_p(Pathname.new(path).dirname)
+            File.write(path, file.content)
+          end
+
+          # Overwrite the .python-version with updated content
+          File.write(".python-version", language_version_manager.python_major_minor)
+          language_version_manager.install_required_python
+        end
+
+        sig { returns(FileParser::PythonRequirementParser) }
+        def python_requirement_parser
+          @python_requirement_parser ||= T.let(
+            FileParser::PythonRequirementParser.new(
+              dependency_files: dependency_files
+            ),
+            T.nilable(FileParser::PythonRequirementParser)
+          )
+        end
+
+        sig { returns(LanguageVersionManager) }
+        def language_version_manager
+          @language_version_manager ||= T.let(
+            LanguageVersionManager.new(
+              python_requirement_parser: python_requirement_parser
+            ),
+            T.nilable(LanguageVersionManager)
+          )
+        end
+
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
+
+        sig { returns(T::Array[Dependabot::Credential]) }
+        attr_reader :credentials
 
         sig { returns(Dependabot::FileParsers::Base::DependencySet) }
         def pipfile_dependencies
@@ -91,6 +167,9 @@ module Dependabot
           dependencies = Dependabot::FileParsers::Base::DependencySet.new
           return dependencies unless pipfile_lock
 
+          # TODO(brrygrdn): This should be gated by the experiment if we were going to merge this iteration
+          fetch_metadata_for_lockfile
+
           DEPENDENCY_GROUP_KEYS.map { |h| h.fetch(:lockfile) }.each do |key|
             next unless parsed_pipfile_lock[key]
 
@@ -107,7 +186,11 @@ module Dependabot
                 version: version&.gsub(/^===?/, ""),
                 requirements: [],
                 package_manager: "pip",
-                subdependency_metadata: [{ production: key != "develop" }]
+                subdependency_metadata: [{ production: key != "develop" }],
+                direct_relationship: @direct_dependencies.include?(dep_name),
+                metadata: {
+                  depends_on: @depends_on_dictionary.fetch(dep_name, [])
+                }
               )
 
               T.must(pipfile_lock).dependencies << dependency
