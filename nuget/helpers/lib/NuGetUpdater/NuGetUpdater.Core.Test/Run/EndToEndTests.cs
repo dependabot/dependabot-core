@@ -483,6 +483,253 @@ public class EndToEndTests
     }
 
     [Fact]
+    public async Task WithJsonFiles()
+    {
+        await RunAsync(
+            packages: [
+                // dotnet-tools.json packages
+                MockNuGetPackage.CreateDotNetToolPackage("Test.Tool", "1.0.0", "net9.0"),
+                MockNuGetPackage.CreateDotNetToolPackage("Test.Tool", "2.0.0", "net9.0"),
+                // global.json packages
+                MockNuGetPackage.CreateMSBuildSdkPackage("TestSdk", "3.10.1"),
+                MockNuGetPackage.CreateMSBuildSdkPackage("TestSdk", "3.10.3"),
+                // regular package is up to date
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net9.0"),
+            ],
+            job: new()
+            {
+                Source = new()
+                {
+                    Provider = "github",
+                    Repo = "test/repo",
+                    Directory = "/",
+                }
+            },
+            files: [
+                (".config/dotnet-tools.json", """
+                    {
+                      "version": 1,
+                      "isRoot": true,
+                      "tools": {
+                        "Test.Tool": {
+                          "version": "1.0.0",
+                          "commands": [
+                            "test-tool"
+                          ],
+                          "rollForward": false
+                        }
+                      }
+                    }
+                    """),
+                ("global.json", """
+                    {
+                      "msbuild-sdks": {
+                        "TestSdk": "3.10.1"
+                      }
+                    }
+                    """),
+                ("Directory.Build.props", "<Project />"),
+                ("Directory.Build.targets", "<Project />"),
+                ("Directory.Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+                      </PropertyGroup>
+                    </Project>
+                    """),
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net9.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            discoveryWorker: null, // use real worker
+            analyzeWorker: null, // use real worker
+            updaterWorker: null, // use real worker
+            expectedApiMessages: [
+                new IncrementMetric()
+                {
+                    Metric = "updater.started",
+                    Tags = new()
+                    {
+                        ["operation"] = "group_update_all_versions"
+                    }
+                },
+                new UpdatedDependencyList()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "Test.Tool",
+                            Version = "1.0.0",
+                            Requirements = [
+                                new()
+                                {
+                                    Requirement = "1.0.0",
+                                    File = "/.config/dotnet-tools.json",
+                                    Groups = ["dependencies"],
+                                }
+                            ]
+                        },
+                        new()
+                        {
+                            Name = "TestSdk",
+                            Version = "3.10.1",
+                            Requirements = [
+                                new()
+                                {
+                                    Requirement = "3.10.1",
+                                    File = "/global.json",
+                                    Groups = ["dependencies"],
+                                }
+                            ]
+                        },
+                        new()
+                        {
+                            Name = "Some.Package",
+                            Version = "1.0.0",
+                            Requirements = [
+                                new()
+                                {
+                                    Requirement = "1.0.0",
+                                    File = "/project.csproj",
+                                    Groups = ["dependencies"],
+                                }
+                            ]
+                        },
+                    ],
+                    DependencyFiles = [
+                        "/.config/dotnet-tools.json",
+                        "/Directory.Build.props",
+                        "/Directory.Build.targets",
+                        "/Directory.Packages.props",
+                        "/global.json",
+                        "/project.csproj",
+                    ],
+                },
+                // for dotnet-tools.json
+                new CreatePullRequest()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "Test.Tool",
+                            Version = "2.0.0",
+                            Requirements = [
+                                new()
+                                {
+                                    Requirement = "2.0.0",
+                                    File = "/.config/dotnet-tools.json",
+                                    Groups = ["dependencies"],
+                                    Source = new()
+                                    {
+                                        SourceUrl = null,
+                                        Type = "nuget_repo",
+                                    }
+                                }
+                            ],
+                            PreviousVersion = "1.0.0",
+                            PreviousRequirements = [
+                                new()
+                                {
+                                    Requirement = "1.0.0",
+                                    File = "/.config/dotnet-tools.json",
+                                    Groups = ["dependencies"],
+                                }
+                            ],
+                        },
+                    ],
+                    UpdatedDependencyFiles = [
+                        new()
+                        {
+                            Directory = "/.config",
+                            Name = "dotnet-tools.json",
+                            Content = """
+                                {
+                                  "version": 1,
+                                  "isRoot": true,
+                                  "tools": {
+                                    "Test.Tool": {
+                                      "version": "2.0.0",
+                                      "commands": [
+                                        "test-tool"
+                                      ],
+                                      "rollForward": false
+                                    }
+                                  }
+                                }
+                                """
+                        },
+                    ],
+                    BaseCommitSha = "TEST-COMMIT-SHA",
+                    CommitMessage = TestPullRequestCommitMessage,
+                    PrTitle = TestPullRequestTitle,
+                    PrBody = TestPullRequestBody,
+                    DependencyGroup = null,
+                },
+                // for global.json
+                new CreatePullRequest()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "TestSdk",
+                            Version = "3.10.3",
+                            Requirements = [
+                                new()
+                                {
+                                    Requirement = "3.10.3",
+                                    File = "/global.json",
+                                    Groups = ["dependencies"],
+                                    Source = new()
+                                    {
+                                        SourceUrl = null,
+                                        Type = "nuget_repo",
+                                    }
+                                }
+                            ],
+                            PreviousVersion = "3.10.1",
+                            PreviousRequirements = [
+                                new()
+                                {
+                                    Requirement = "3.10.1",
+                                    File = "/global.json",
+                                    Groups = ["dependencies"],
+                                }
+                            ],
+                        },
+                    ],
+                    UpdatedDependencyFiles = [
+                        new()
+                        {
+                            Directory = "/",
+                            Name = "global.json",
+                            Content = """
+                                {
+                                  "msbuild-sdks": {
+                                    "TestSdk": "3.10.3"
+                                  }
+                                }
+                                """
+                        },
+                    ],
+                    BaseCommitSha = "TEST-COMMIT-SHA",
+                    CommitMessage = TestPullRequestCommitMessage,
+                    PrTitle = TestPullRequestTitle,
+                    PrBody = TestPullRequestBody,
+                    DependencyGroup = null,
+                },
+                new MarkAsProcessed("TEST-COMMIT-SHA")
+            ]
+        );
+    }
+
+    [Fact]
     public async Task UpdatePackageWithDifferentVersionsInDifferentDirectories()
     {
         // this test passes `null` for discovery, analyze, and update workers to fully test the desired behavior

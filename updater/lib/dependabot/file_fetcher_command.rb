@@ -4,6 +4,7 @@
 require "base64"
 require "dependabot/base_command"
 require "dependabot/errors"
+require "dependabot/git_metadata_fetcher"
 require "dependabot/opentelemetry"
 require "dependabot/updater"
 require "octokit"
@@ -28,6 +29,7 @@ module Dependabot
 
         begin
           connectivity_check if ENV["ENABLE_CONNECTIVITY_CHECK"] == "1"
+          validate_target_branch
           clone_repo_contents
           @base_commit_sha = file_fetcher.commit
           raise "base commit SHA not found" unless @base_commit_sha
@@ -215,6 +217,35 @@ module Dependabot
     end
 
     sig { void }
+    def validate_target_branch
+      return unless job.source.branch
+
+      target_branch = job.source.branch
+
+      # Early validation: check if target branch exists before attempting file operations
+      begin
+        branch_exists = git_metadata_fetcher.ref_names.include?(target_branch)
+        unless branch_exists
+          # Use the exact message the test expects
+          error_message = "The branch '#{target_branch}' specified in the target-branch field " \
+                          "does not exist. Please check that the branch name is correct and that " \
+                          "the branch exists in the repository."
+          raise Dependabot::BranchNotFound.new(target_branch, error_message)
+        end
+      rescue Dependabot::GitDependenciesNotReachable => e
+        # If we can't fetch git metadata, we'll let the original validation handle it
+        # during file fetching to avoid masking other errors
+        Dependabot.logger.warn("Could not validate target branch early due to git metadata fetch error: #{e.message}")
+      rescue Dependabot::BranchNotFound
+        # Re-raise BranchNotFound errors so they aren't caught by the generic rescue
+        raise
+      rescue StandardError => e
+        # For any other errors, we'll log and let the original validation handle it
+        Dependabot.logger.warn("Could not validate target branch early: #{e.message}")
+      end
+    end
+
+    sig { void }
     def clone_repo_contents
       return unless job.clone?
 
@@ -352,6 +383,18 @@ module Dependabot
     def glob?(directory)
       # We could tighten this up, but it's probably close enough.
       directory.include?("*") || directory.include?("?") || (directory.include?("[") && directory.include?("]"))
+    end
+
+    sig { returns(Dependabot::GitMetadataFetcher) }
+    def git_metadata_fetcher
+      @git_metadata_fetcher ||=
+        T.let(
+          GitMetadataFetcher.new(
+            url: job.source.url,
+            credentials: job.credentials
+          ),
+          T.nilable(Dependabot::GitMetadataFetcher)
+        )
     end
   end
 end

@@ -91,7 +91,120 @@ RSpec.describe Dependabot::FileFetcherCommand do
         expect(api_client)
           .to receive(:record_update_job_error)
           .with(
-            error_details: { "branch-name": "my_branch" },
+            error_details: {
+              "branch-name": "my_branch",
+              message: anything # The original tests don't specify custom messages
+            },
+            error_type: "branch_not_found"
+          )
+        expect(api_client).to receive(:mark_job_as_processed)
+
+        expect { perform_job }.to output(/Error during file fetching; aborting/).to_stdout_from_any_process
+      end
+    end
+
+    context "when target-branch validation detects non-existent branch early" do
+      let(:job_definition) do
+        job_def = JSON.parse(fixture("jobs/job_with_credentials.json"))
+        job_def["job"]["source"]["branch"] = "nonexistent-branch"
+        job_def
+      end
+
+      let(:git_metadata_fetcher) { double("GitMetadataFetcher") }
+
+      before do
+        allow_any_instance_of(described_class)
+          .to receive(:git_metadata_fetcher)
+          .and_return(git_metadata_fetcher)
+
+        allow(git_metadata_fetcher).to receive_messages(
+          ref_names: %w(main develop feature-branch),
+          upload_pack: nil
+        )
+      end
+
+      it "raises BranchNotFound error with helpful message before file operations" do
+        expect(api_client)
+          .to receive(:record_update_job_error)
+          .with(
+            error_details: {
+              "branch-name": "nonexistent-branch",
+              message: "The branch 'nonexistent-branch' specified in the target-branch field " \
+                       "does not exist. Please check that the branch name is correct and that " \
+                       "the branch exists in the repository."
+            },
+            error_type: "branch_not_found"
+          )
+        expect(api_client).to receive(:mark_job_as_processed)
+
+        expect { perform_job }.to output(/Error during file fetching; aborting/).to_stdout_from_any_process
+      end
+    end
+
+    context "when target-branch validation fails gracefully" do
+      let(:job_definition) do
+        job_def = JSON.parse(fixture("jobs/job_with_credentials.json"))
+        job_def["job"]["source"]["branch"] = "some-branch"
+        job_def
+      end
+
+      let(:git_metadata_fetcher) { double("GitMetadataFetcher") }
+
+      before do
+        allow_any_instance_of(described_class)
+          .to receive(:git_metadata_fetcher)
+          .and_return(git_metadata_fetcher)
+
+        # Simulate an error in git metadata fetching (e.g., network issues)
+        allow(git_metadata_fetcher)
+          .to receive(:ref_names)
+          .and_raise(StandardError, "Network error")
+
+        # Mock the file fetcher to verify it still gets called
+        allow_any_instance_of(Dependabot::Bundler::FileFetcher)
+          .to receive(:commit)
+          .and_return("abc123")
+      end
+
+      it "falls back to existing validation and continues processing" do
+        # Should not raise error during early validation, but log warning
+        expect(Dependabot.logger).to receive(:warn).with(/Could not validate target branch early:/)
+
+        expect { perform_job }.not_to raise_error
+      end
+    end
+
+    context "with multiple update configurations and invalid target-branch" do
+      let(:job_definition) do
+        job_def = JSON.parse(fixture("jobs/job_with_credentials.json"))
+        # Simulate a case where we have multiple update configs but one has invalid branch
+        job_def["job"]["source"]["branch"] = "invalid-branch"
+        job_def
+      end
+
+      let(:git_metadata_fetcher) { double("GitMetadataFetcher") }
+
+      before do
+        allow_any_instance_of(described_class)
+          .to receive(:git_metadata_fetcher)
+          .and_return(git_metadata_fetcher)
+
+        allow(git_metadata_fetcher).to receive_messages(
+          ref_names: %w(main develop feature-branch),
+          upload_pack: nil
+        )
+      end
+
+      it "validates branch early and prevents silent failures" do
+        expect(api_client)
+          .to receive(:record_update_job_error)
+          .with(
+            error_details: {
+              "branch-name": "invalid-branch",
+              message: "The branch 'invalid-branch' specified in the target-branch field " \
+                       "does not exist. Please check that the branch name is correct and that " \
+                       "the branch exists in the repository."
+            },
             error_type: "branch_not_found"
           )
         expect(api_client).to receive(:mark_job_as_processed)
@@ -285,7 +398,10 @@ RSpec.describe Dependabot::FileFetcherCommand do
           expect(api_client)
             .to receive(:record_update_job_error)
             .with(
-              error_details: { "branch-name": "my_branch" },
+              error_details: {
+                "branch-name": "my_branch",
+                message: anything # The original tests don't specify custom messages
+              },
               error_type: "branch_not_found"
             )
           expect(api_client).to receive(:mark_job_as_processed)

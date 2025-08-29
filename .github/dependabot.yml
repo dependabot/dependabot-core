@@ -173,6 +173,18 @@ updates:
       interval: "weekly"
       day: "sunday"
       time: "16:00"
+  - package-ecosystem: "maven"
+    directory: "/maven/lib/dependabot/maven/"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "16:00"
+  - package-ecosystem: "docker"
+    directory: "/maven"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "16:00"
   - package-ecosystem: "docker"
     directory: "/uv"
     multi-ecosystem-group: "uv-ecosystem"
