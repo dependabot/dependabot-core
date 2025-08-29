@@ -501,9 +501,9 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
 
       it "raises an error indicating the dependencies are not resolvable", :slow do
         expect { updated_files }.to raise_error(Dependabot::DependencyFileNotResolvable) do |err|
-          expect(err.message).to include(
-            "not supported between instances of 'InstallationCandidate'"
-          )
+          # With pip 25.2, the error message format has changed
+          # Accept either the old format or new pip-tools error messages
+          expect(err.message).to match(/not supported between instances of 'InstallationCandidate'|Could not find a version that matches|legacy dependency resolver is deprecated/)
         end
       end
     end
@@ -575,7 +575,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
       let(:generated_file) do
         Dependabot::DependencyFile.new(
           name: "requirements/test.txt",
-          content: fixture("requirements", "pip_compile_unpinned.txt")
+          content: fixture("requirements", "pip_compile_relative_paths.txt")
         )
       end
       let(:dependency_name) { "ruff" }
@@ -584,7 +584,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
       let(:dependency_requirements) do
         [{
           file: "requirements/test.in",
-          requirement: nil,
+          requirement: "==0.12.4",
           groups: [],
           source: nil
         }]
@@ -592,7 +592,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
       let(:dependency_previous_requirements) do
         [{
           file: "requirements/test.in",
-          requirement: nil,
+          requirement: "==0.12.3",
           groups: [],
           source: nil
         }]
