@@ -1,15 +1,22 @@
-# typed: strong
+# typed: strict
 # frozen_string_literal: true
 
 require "shellwords"
 require "sorbet-runtime"
+require "nokogiri"
 
 module Dependabot
   module Maven
     module NativeHelpers
       extend T::Sig
-      # Latest version of the plugin can be found here - https://mvnrepository.com/artifact/org.apache.maven.plugins/maven-dependency-plugin
-      DEPENDENCY_PLUGIN_VERSION = "3.8.1"
+      pom_path = File.join(__dir__, "pom.xml")
+
+      version = File.open(pom_path) do |f|
+        doc = Nokogiri::XML(f)
+        doc.at_xpath("//project/properties/maven-dependency-plugin.version")&.text
+      end
+
+      DEPENDENCY_PLUGIN_VERSION = T.let(version, T.nilable(String))
 
       sig do
         params(file_name: String).void
