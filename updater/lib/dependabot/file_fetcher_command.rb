@@ -156,23 +156,21 @@ module Dependabot
           Dir.glob(dir, File::FNM_DOTMATCH).select { |d| File.directory?(d) }.map { |d| "/#{d}" }
         end&.flatten
       end&.uniq
-      list_files_in_directory(directories, has_glob)
+      list_files_in_directory(directories)
     end
 
     sig do
-      params(directories: T.nilable(T::Array[String]), has_glob: T::Boolean)
+      params(directories: T.nilable(T::Array[String]))
         .returns(T.nilable(T::Array[Dependabot::DependencyFile]))
     end
-    def list_files_in_directory(directories, has_glob)
+    def list_files_in_directory(directories)
       directories&.flat_map do |dir|
         ff = with_retries { file_fetcher_for_directory(dir) }
 
         begin
           files = ff.files
         rescue Dependabot::DependencyFileNotFound
-          next if has_glob
-
-          raise
+          next
         end
         post_ecosystem_versions(ff) if should_record_ecosystem_versions?
         files
