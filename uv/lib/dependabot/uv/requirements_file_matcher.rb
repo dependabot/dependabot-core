@@ -1,12 +1,14 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
+
+require "dependabot/dependency_file"
 
 module Dependabot
   module Uv
     class RequiremenstFileMatcher
       extend T::Sig
 
-      sig { params(requirements_in_files: T::Array[Requirement]).void }
+      sig { params(requirements_in_files: T::Array[DependencyFile]).void }
       def initialize(requirements_in_files)
         @requirements_in_files = requirements_in_files
       end
@@ -21,12 +23,12 @@ module Dependabot
         return true if file.content&.match?(output_file_regex(name))
 
         basename = name.gsub(/\.txt$/, "")
-        requirements_in_files.any? { |f| f.instance_variable_get(:@name) == basename + ".in" }
+        requirements_in_files.any? { |f| f.name == basename + ".in" }
       end
 
       private
 
-      sig { returns(T::Array[Requirement]) }
+      sig { returns(T::Array[DependencyFile]) }
       attr_reader :requirements_in_files
 
       sig { params(filename: T.any(String, Symbol)).returns(String) }

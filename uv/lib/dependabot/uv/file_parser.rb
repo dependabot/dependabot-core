@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "dependabot/dependency"
+require "dependabot/dependency_file"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/file_parsers/base/dependency_set"
@@ -20,6 +21,7 @@ module Dependabot
   module Uv
     class FileParser < Dependabot::FileParsers::Base
       extend T::Sig
+
       require_relative "file_parser/pyproject_files_parser"
       require_relative "file_parser/python_requirement_parser"
 
@@ -128,14 +130,11 @@ module Dependabot
         nil
       end
 
-      sig { params(package_manager: String, version: String).returns(T::Boolean) }
+      sig { params(package_manager: String, version: String).void }
       def log_if_version_malformed(package_manager, version)
-        if version.match?(/^\d+(?:\.\d+)*$/)
-          true
-        else
-          Dependabot.logger.warn("Detected #{package_manager} with malformed version #{version}")
-          false
-        end
+        return if version.match?(/^\d+(?:\.\d+)*$/)
+
+        Dependabot.logger.warn("Detected #{package_manager} with malformed version #{version}")
       end
 
       sig { returns(String) }
@@ -273,12 +272,12 @@ module Dependabot
       def marker_satisfied?(marker, python_version)
         conditions = marker.split(/\s+(and|or)\s+/)
 
-        result = T.let(evaluate_condition(conditions.shift, python_version), T::Boolean)
+        result = T.let(evaluate_condition?(conditions.shift, python_version), T::Boolean)
 
         until conditions.empty?
           operator = conditions.shift
           next_condition = conditions.shift
-          next_result = evaluate_condition(next_condition, python_version)
+          next_result = evaluate_condition?(next_condition, python_version)
 
           result = if operator == "and"
                      result && next_result
@@ -294,7 +293,7 @@ module Dependabot
         params(condition: T.untyped,
                python_version: T.any(String, Integer, Gem::Version)).returns(T::Boolean)
       end
-      def evaluate_condition(condition, python_version)
+      def evaluate_condition?(condition, python_version)
         operator, version = condition.match(/([<>=!]=?)\s*"?([\d.]+)"?/)&.captures
 
         case operator
@@ -385,9 +384,9 @@ module Dependabot
         @pyproject ||= T.let(get_original_file("pyproject.toml"), T.nilable(DependencyFile))
       end
 
-      sig { returns(T::Array[Requirement]) }
+      sig { returns(T::Array[DependencyFile]) }
       def requirements_in_files
-        @requirements_in_files ||= T.let(dependency_files.select { |f| f.name.end_with?(".in") }, T.untyped)
+        dependency_files.select { |f| f.name.end_with?(".in") }
       end
 
       sig { returns(RequiremenstFileMatcher) }
