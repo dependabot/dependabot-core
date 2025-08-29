@@ -371,6 +371,7 @@ module Dependabot
       git_store_content = ""
       deduped_credentials.each do |cred|
         next unless cred["type"] == "git_source"
+        next unless cred["host"]
 
         has_creds = cred["username"] && cred["password"]
 
