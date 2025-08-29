@@ -486,12 +486,21 @@ RSpec.describe Dependabot::FileFetcherCommand do
     let(:job_definition) do
       {
         "job" => {
-          "package_manager" => "gomod",
+          "package_manager" => "dummy",
           "allowed_updates" => [],
+          "dependencies" => nil,
+          "ignore_conditions" => [],
+          "security_advisories" => [],
+          "security_updates_only" => false,
+          "update_subdependencies" => false,
+          "updating_a_pull_request" => false,
+          "existing_pull_requests" => [],
+          "requirements_update_strategy" => nil,
+          "lockfile_only" => false,
           "source" => {
             "provider" => "github",
             "repo" => "test/test-repo",
-            "directory" => "/",
+            "directory" => nil,
             "directories" => ["/", "/tools"],
             "branch" => nil,
             "hostname" => "github.com",
@@ -515,17 +524,34 @@ RSpec.describe Dependabot::FileFetcherCommand do
     end
 
     context "when only some directories have required files" do
-      before do
-        # Create tools directory with go.mod
-        FileUtils.mkdir_p(File.join(repo_contents_path, "tools"))
-        File.write(File.join(repo_contents_path, "tools/go.mod"), "module test-repo/tools\n\ngo 1.20\n")
+      let(:command) { described_class.new }
 
-        # Root directory has no go.mod - should be skipped gracefully
+      before do
+        # Create tools directory with a.dummy
+        FileUtils.mkdir_p(File.join(repo_contents_path, "tools"))
+        File.write(File.join(repo_contents_path, "tools/a.dummy"), "dummy content")
+
+        # Root directory has no dummy files - should be skipped gracefully
+
+        # Stub file fetcher behavior to avoid cloning
+
+        # Mock the file fetchers to return different behavior per directory
+        allow(command).to receive(:file_fetcher_for_directory) do |dir|
+          fetcher = double("FileFetcher")
+          if dir == "/tools"
+            # Tools directory has files
+            dummy_file = double("DependencyFile")
+            allow(dummy_file).to receive_messages(name: "a.dummy", directory: "/tools")
+            allow(fetcher).to receive(:files).and_return([dummy_file])
+          else
+            # Root directory has no files, should raise DependencyFileNotFound
+            allow(fetcher).to receive(:files).and_raise(Dependabot::DependencyFileNotFound.new("No files found"))
+          end
+          fetcher
+        end
       end
 
       it "processes only directories with required files" do
-        command = described_class.new
-
         files = command.send(:files_from_multidirectories)
 
         expect(files).not_to be_empty
@@ -534,26 +560,37 @@ RSpec.describe Dependabot::FileFetcherCommand do
         root_files = files.select { |f| f.directory == "/" }
 
         expect(tools_files).not_to be_empty
-        expect(tools_files.map(&:name)).to include("go.mod")
+        expect(tools_files.map(&:name)).to include("a.dummy")
 
-        # Root directory should be skipped since it has no go.mod
+        # Root directory should be skipped since it has no dummy files
         expect(root_files).to be_empty
       end
     end
 
     context "when all directories have required files" do
-      before do
-        # Create root directory with go.mod
-        File.write(File.join(repo_contents_path, "go.mod"), "module test-repo\n\ngo 1.20\n")
+      let(:command) { described_class.new }
 
-        # Create tools directory with go.mod
+      before do
+        # Create root directory with a.dummy
+        File.write(File.join(repo_contents_path, "a.dummy"), "dummy content")
+
+        # Create tools directory with a.dummy
         FileUtils.mkdir_p(File.join(repo_contents_path, "tools"))
-        File.write(File.join(repo_contents_path, "tools/go.mod"), "module test-repo/tools\n\ngo 1.20\n")
+        File.write(File.join(repo_contents_path, "tools/a.dummy"), "dummy content")
+
+        # Stub file fetcher behavior to avoid cloning
+
+        # Mock the file fetchers to return files for both directories
+        allow(command).to receive(:file_fetcher_for_directory) do |dir|
+          fetcher = double("FileFetcher")
+          dummy_file = double("DependencyFile")
+          allow(dummy_file).to receive_messages(name: "a.dummy", directory: dir)
+          allow(fetcher).to receive(:files).and_return([dummy_file])
+          fetcher
+        end
       end
 
       it "processes all directories" do
-        command = described_class.new
-
         files = command.send(:files_from_multidirectories)
 
         expect(files).not_to be_empty
@@ -562,10 +599,10 @@ RSpec.describe Dependabot::FileFetcherCommand do
         root_files = files.select { |f| f.directory == "/" }
 
         expect(tools_files).not_to be_empty
-        expect(tools_files.map(&:name)).to include("go.mod")
+        expect(tools_files.map(&:name)).to include("a.dummy")
 
         expect(root_files).not_to be_empty
-        expect(root_files.map(&:name)).to include("go.mod")
+        expect(root_files.map(&:name)).to include("a.dummy")
       end
     end
   end
