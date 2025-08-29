@@ -503,7 +503,11 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
         expect { updated_files }.to raise_error(Dependabot::DependencyFileNotResolvable) do |err|
           # With pip 25.2, the error message format has changed
           # Accept either the old format or new pip-tools error messages
-          expect(err.message).to match(/not supported between instances of 'InstallationCandidate'|Could not find a version that matches|legacy dependency resolver is deprecated/)
+          expect(err.message).to match(
+            /not supported between instances of 'InstallationCandidate'|
+             Could not find a version that matches|
+             legacy dependency resolver is deprecated/x
+          )
         end
       end
     end
