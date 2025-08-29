@@ -165,6 +165,7 @@ module Dependabot
 
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/PerceivedComplexity
+        # rubocop:disable Metrics/CyclomaticComplexity
         sig { params(message: String).returns(T.nilable(String)) }
         def handle_pip_compile_errors(message) # rubocop:disable Metrics/MethodLength
           if message.include?("ModuleNotFoundError: No module named 'piptools'")
