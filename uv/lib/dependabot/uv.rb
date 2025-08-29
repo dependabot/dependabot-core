@@ -1,6 +1,19 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "sorbet-runtime"
+
+# Type definitions for repository file structures
+module Dependabot
+  module Uv
+    extend T::Sig
+
+    PathDependency = T.type_alias { { name: String, path: String, file: String } }
+
+    TomlContent = T.type_alias { T::Hash[String, T.untyped] }
+  end
+end
+
 # These all need to be required so the various classes can be registered in a
 # lookup table of package manager names to concrete classes.
 require "dependabot/uv/file_fetcher"

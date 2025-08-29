@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project>
+
+  <!--
+  This build is not used directly within the native helper.
+  The goal is to help automate the maintenance overhead of keeping the version of maven-dependency-plugin up to date.
+
+    1. We read the maven-dependency-plugin.version version dynamically from the native_helper
+    2. We use Dependabot keep the version up to date
+  -->
+
+  <properties>
+    <maven-dependency-plugin.version>3.8.1</maven-dependency-plugin.version>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.maven.plugins</groupId>
+      <artifactId>maven-dependency-plugin</artifactId>
+      <version>${maven-dependency-plugin.version}</version>
+    </dependency>
+  </dependencies>
+</project>
