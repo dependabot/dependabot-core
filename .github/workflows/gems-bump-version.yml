@@ -15,6 +15,7 @@ on: # yamllint disable-line rule:truthy
 
 jobs:
   Create-PR-To-Bump-Dependabot-Gems-Version:
+    if: github.repository == 'dependabot/dependabot-core'
     runs-on: ubuntu-latest
     steps:
       - name: Generate token
