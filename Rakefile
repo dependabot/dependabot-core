@@ -130,7 +130,11 @@ end
 def guard_tag_match
   tag = "v#{Dependabot::VERSION}"
   tag_commit = `git rev-list -n 1 #{tag} 2> /dev/null`.strip
-  abort "Can't release - tag #{tag} does not exist" unless $CHILD_STATUS == 0
+  abort_msg = "Can't release - tag #{tag} does not exist. " \
+              "This may be due to an issue with the Actions runner or workflow. " \
+              "Please delete the failing tag and branch, and run the bump-versions workflow again. " \
+              "See https://github.com/github/dependabot-updates/issues/10603 for more info."
+  abort abort_msg unless $CHILD_STATUS == 0
 
   head_commit = `git rev-parse HEAD`.strip
   return if tag_commit == head_commit
