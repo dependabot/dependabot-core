@@ -1,20 +1,12 @@
+# Terraform does not currently offer a documented way to verify image signatures.
+# Reference: https://github.com/hashicorp/terraform/issues/37518
+# For now, we can confirm that the image digest matches the official HashiCorp published value
+# We can, however, still benefit from automated Dependabot updates to keep this image up to date.
+FROM hashicorp/terraform:1.12.2@sha256:f5ac787eee9d292b6a3b97d40f04019ce08189d356233fc73d5ec7ef8529cce2 AS terraform
+
 FROM ghcr.io/dependabot/dependabot-updater-core
-ARG TARGETARCH
 
-# See https://github.com/hashicorp/terraform/releases or https://releases.hashicorp.com/terraform/
-ARG TERRAFORM_VERSION=1.12.2
-
-# curl "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_SHA256SUMS" | grep "terraform_${TERRAFORM_VERSION}_linux_amd64.zip"
-ARG TERRAFORM_AMD64_CHECKSUM=1eaed12ca41fcfe094da3d76a7e9aa0639ad3409c43be0103ee9f5a1ff4b7437
-
-# curl "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_SHA256SUMS" | grep "terraform_${TERRAFORM_VERSION}_linux_arm64.zip"
-ARG TERRAFORM_ARM64_CHECKSUM=f8a0347dc5e68e6d60a9fa2db361762e7943ed084a773f28a981d988ceb6fdc9
-
-RUN cd /tmp \
-  && curl -o terraform-${TARGETARCH}.tar.gz https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_${TARGETARCH}.zip \
-  && printf "$TERRAFORM_AMD64_CHECKSUM terraform-amd64.tar.gz\n$TERRAFORM_ARM64_CHECKSUM terraform-arm64.tar.gz\n" | sha256sum -c --ignore-missing - \
-  && unzip -d /usr/local/bin terraform-${TARGETARCH}.tar.gz \
-  && rm terraform-${TARGETARCH}.tar.gz
+COPY --from=terraform /bin/terraform /usr/local/bin/terraform
 
 USER dependabot
 COPY --chown=dependabot:dependabot terraform/helpers /opt/terraform/helpers

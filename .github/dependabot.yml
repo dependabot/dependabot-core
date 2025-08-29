@@ -197,3 +197,9 @@ updates:
       # TODO: Remove when we drop support for Python 3.10
       - dependency-name: "tomli"
         update-types: [ "version-update:semver-major" ]
+  - package-ecosystem: "docker"
+    directory: "/terraform"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "16:00"
