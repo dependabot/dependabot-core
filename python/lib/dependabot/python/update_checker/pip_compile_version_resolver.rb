@@ -167,6 +167,11 @@ module Dependabot
         # rubocop:disable Metrics/PerceivedComplexity
         sig { params(message: String).returns(T.nilable(String)) }
         def handle_pip_compile_errors(message) # rubocop:disable Metrics/MethodLength
+          if message.include?("ModuleNotFoundError: No module named 'piptools'")
+            raise DependencyFileNotResolvable, "pip-compile could not be run. " \
+                                               "Please ensure pip-tools is installed in the Python environment."
+          end
+
           if message.include?(RESOLUTION_IMPOSSIBLE_ERROR)
             check_original_requirements_resolvable
             # If the original requirements are resolvable but we get an
