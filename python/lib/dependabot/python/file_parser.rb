@@ -239,8 +239,10 @@ module Dependabot
 
       sig { returns(DependencySet) }
       def pipenv_dependencies
-        @pipenv_dependencies ||= T.let(PipfileFilesParser.new(dependency_files:
-                                    dependency_files).dependency_set, T.nilable(DependencySet))
+        @pipenv_dependencies ||= T.let(PipfileFilesParser.new(
+          dependency_files: dependency_files,
+          credentials: credentials
+        ).dependency_set, T.nilable(DependencySet))
       end
 
       sig { returns(DependencySet) }
