@@ -8,6 +8,7 @@ require "dependabot/file_parsers/base"
 require "dependabot/conda/python_package_classifier"
 require "dependabot/conda/requirement"
 require "dependabot/conda/version"
+require "dependabot/conda/package_manager"
 
 module Dependabot
   module Conda
@@ -25,7 +26,27 @@ module Dependabot
         dependencies.uniq
       end
 
+      sig { returns(Ecosystem) }
+      def ecosystem
+        @ecosystem ||= T.let(
+          Ecosystem.new(
+            name: ECOSYSTEM,
+            package_manager: package_manager,
+            language: nil
+          ),
+          T.nilable(Ecosystem)
+        )
+      end
+
       private
+
+      sig { returns(Ecosystem::VersionManager) }
+      def package_manager
+        @package_manager ||= T.let(
+          CondaPackageManager.new,
+          T.nilable(Ecosystem::VersionManager)
+        )
+      end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def environment_files

@@ -180,6 +180,30 @@ RSpec.describe Dependabot::Conda::FileParser do
     end
   end
 
+  describe "#ecosystem" do
+    subject(:ecosystem) { parser.ecosystem }
+
+    let(:environment_content) { fixture("environment_simple.yml") }
+
+    it "has the correct name" do
+      expect(ecosystem.name).to eq "conda"
+    end
+
+    describe "#package_manager" do
+      subject(:package_manager) { ecosystem.package_manager }
+
+      it "returns the correct package manager" do
+        expect(package_manager.name).to eq "conda"
+        expect(package_manager.requirement).to be_nil
+        expect(package_manager.version.to_s).to eq "23.9.0"
+      end
+    end
+
+    it "has no language component" do
+      expect(ecosystem.language).to be_nil
+    end
+  end
+
   private
 
   def fixture(name)
