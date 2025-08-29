@@ -21,6 +21,7 @@ jobs:
 
       - name: Install the RubyGems version specified in the Dockerfile.updater-core file
         run: |
+          git fetch --tags
           RUBYGEMS_VERSION=$(grep 'ARG RUBYGEMS_VERSION=' Dockerfile.updater-core | cut -d '=' -f 2)
           gem update --system $RUBYGEMS_VERSION
 
