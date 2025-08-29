@@ -227,7 +227,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
               /Cannot install jupyter-server|
                Could not find a version that matches|
                package versions have conflicting dependencies|
-               legacy dependency resolver is deprecated/x
+               legacy dependency resolver is deprecated/
             )
           end
       end

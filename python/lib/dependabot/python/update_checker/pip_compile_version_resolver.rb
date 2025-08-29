@@ -172,6 +172,14 @@ module Dependabot
                                                "Please ensure pip-tools is installed in the Python environment."
           end
 
+          # Handle version matching failures
+          if message.include?("Could not find a version that matches")
+            check_original_requirements_resolvable
+            # Extract the error message for better reporting
+            cleaned_message = clean_error_message(message)
+            raise DependencyFileNotResolvable, cleaned_message.empty? ? message : cleaned_message
+          end
+
           if message.include?(RESOLUTION_IMPOSSIBLE_ERROR)
             check_original_requirements_resolvable
             # If the original requirements are resolvable but we get an
@@ -583,10 +591,13 @@ module Dependabot
 
       HASH_MISMATCH = T.let(/HashMismatch/, Regexp)
 
+      VERSION_MATCHING_ERROR = T.let(/Could not find a version that matches/, Regexp)
+
       sig { params(error: String).void }
       def handle_pipcompile_error(error)
         return unless error.match?(SUBPROCESS_ERROR) || error.match?(INSTALLATION_ERROR) ||
-                      error.match?(INSTALLATION_SUBPROCESS_ERROR) || error.match?(HASH_MISMATCH)
+                      error.match?(INSTALLATION_SUBPROCESS_ERROR) || error.match?(HASH_MISMATCH) ||
+                      error.match?(VERSION_MATCHING_ERROR)
 
         raise DependencyFileNotResolvable, "Error resolving dependency"
       end
