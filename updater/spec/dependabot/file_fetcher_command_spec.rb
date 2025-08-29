@@ -486,7 +486,8 @@ RSpec.describe Dependabot::FileFetcherCommand do
     let(:job_definition) do
       {
         "job" => {
-          "package_manager" => "gomod", 
+          "package_manager" => "gomod",
+          "allowed_updates" => [],
           "source" => {
             "provider" => "github",
             "repo" => "test/test-repo",
@@ -503,8 +504,10 @@ RSpec.describe Dependabot::FileFetcherCommand do
     let(:repo_contents_path) { Dir.mktmpdir }
 
     before do
-      allow(Dependabot::Environment).to receive(:job_definition).and_return(job_definition)
-      allow(Dependabot::Environment).to receive(:repo_contents_path).and_return(repo_contents_path)
+      allow(Dependabot::Environment).to receive_messages(
+        job_definition: job_definition,
+        repo_contents_path: repo_contents_path
+      )
     end
 
     after do
@@ -516,7 +519,7 @@ RSpec.describe Dependabot::FileFetcherCommand do
         # Create tools directory with go.mod
         FileUtils.mkdir_p(File.join(repo_contents_path, "tools"))
         File.write(File.join(repo_contents_path, "tools/go.mod"), "module test-repo/tools\n\ngo 1.20\n")
-        
+
         # Root directory has no go.mod - should be skipped gracefully
       end
 
@@ -526,13 +529,13 @@ RSpec.describe Dependabot::FileFetcherCommand do
         files = command.send(:files_from_multidirectories)
 
         expect(files).not_to be_empty
-        
+
         tools_files = files.select { |f| f.directory == "/tools" }
         root_files = files.select { |f| f.directory == "/" }
 
         expect(tools_files).not_to be_empty
         expect(tools_files.map(&:name)).to include("go.mod")
-        
+
         # Root directory should be skipped since it has no go.mod
         expect(root_files).to be_empty
       end
@@ -542,7 +545,7 @@ RSpec.describe Dependabot::FileFetcherCommand do
       before do
         # Create root directory with go.mod
         File.write(File.join(repo_contents_path, "go.mod"), "module test-repo\n\ngo 1.20\n")
-        
+
         # Create tools directory with go.mod
         FileUtils.mkdir_p(File.join(repo_contents_path, "tools"))
         File.write(File.join(repo_contents_path, "tools/go.mod"), "module test-repo/tools\n\ngo 1.20\n")
@@ -554,14 +557,14 @@ RSpec.describe Dependabot::FileFetcherCommand do
         files = command.send(:files_from_multidirectories)
 
         expect(files).not_to be_empty
-        
+
         tools_files = files.select { |f| f.directory == "/tools" }
         root_files = files.select { |f| f.directory == "/" }
 
         expect(tools_files).not_to be_empty
         expect(tools_files.map(&:name)).to include("go.mod")
-        
-        expect(root_files).not_to be_empty 
+
+        expect(root_files).not_to be_empty
         expect(root_files.map(&:name)).to include("go.mod")
       end
     end

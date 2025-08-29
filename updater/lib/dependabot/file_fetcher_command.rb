@@ -160,10 +160,10 @@ module Dependabot
     end
 
     sig do
-      params(directories: T.nilable(T::Array[String]), has_glob: T::Boolean)
+      params(directories: T.nilable(T::Array[String]), _has_glob: T::Boolean)
         .returns(T.nilable(T::Array[Dependabot::DependencyFile]))
     end
-    def list_files_in_directory(directories, has_glob)
+    def list_files_in_directory(directories, _has_glob)
       directories&.flat_map do |dir|
         ff = with_retries { file_fetcher_for_directory(dir) }
 
