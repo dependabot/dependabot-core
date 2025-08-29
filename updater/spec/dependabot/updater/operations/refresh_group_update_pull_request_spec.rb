@@ -10,6 +10,7 @@ require "dependabot/dependency_snapshot"
 require "dependabot/service"
 require "dependabot/updater/error_handler"
 require "dependabot/updater/operations/refresh_group_update_pull_request"
+require "dependabot/updater/group_dependency_selector"
 
 require "dependabot/bundler"
 
@@ -336,6 +337,82 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
         end
 
         refresh_group.perform
+      end
+    end
+  end
+
+  describe "#dependency_change" do
+    let(:job_definition) do
+      job_definition_fixture("bundler/version_updates/group_update_refresh")
+    end
+
+    before do
+      stub_rubygems_calls
+    end
+
+    context "when group membership enforcement is disabled" do
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?).and_return(false)
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:group_membership_enforcement)
+          .and_return(false)
+      end
+
+      it "creates GroupDependencySelector but does not filter" do
+        # When feature flag is disabled, GroupDependencySelector is created but filtering is skipped internally
+        mock_selector = instance_double(Dependabot::Updater::GroupDependencySelector)
+        allow(Dependabot::Updater::GroupDependencySelector).to receive(:new)
+          .and_return(mock_selector)
+        allow(mock_selector).to receive(:filter_to_group!) # No-op when feature flag disabled
+
+        refresh_group.send(:dependency_change)
+
+        expect(Dependabot::Updater::GroupDependencySelector).to have_received(:new)
+        expect(mock_selector).to have_received(:filter_to_group!)
+      end
+    end
+
+    context "when group membership enforcement is enabled" do
+      let(:mock_selector) { instance_double(Dependabot::Updater::GroupDependencySelector) }
+
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?).and_return(false)
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:group_membership_enforcement)
+          .and_return(true)
+      end
+
+      it "creates and uses GroupDependencySelector to filter dependencies" do
+        allow(Dependabot::Updater::GroupDependencySelector).to receive(:new)
+          .with(group: dependency_snapshot.job_group, dependency_snapshot: dependency_snapshot)
+          .and_return(mock_selector)
+        allow(mock_selector).to receive(:filter_to_group!)
+
+        refresh_group.send(:dependency_change)
+
+        expect(mock_selector).to have_received(:filter_to_group!)
+      end
+
+      it "applies filtering with the correct parameters" do
+        job_group = dependency_snapshot.job_group
+        allow(Dependabot::Updater::GroupDependencySelector).to receive(:new)
+          .with(group: job_group, dependency_snapshot: dependency_snapshot)
+          .and_return(mock_selector)
+        allow(mock_selector).to receive(:filter_to_group!)
+
+        refresh_group.send(:dependency_change)
+
+        expect(Dependabot::Updater::GroupDependencySelector).to have_received(:new)
+          .with(group: job_group, dependency_snapshot: dependency_snapshot)
+      end
+
+      it "calls filter_to_group! on the dependency change" do
+        allow(Dependabot::Updater::GroupDependencySelector).to receive(:new)
+          .and_return(mock_selector)
+        allow(mock_selector).to receive(:filter_to_group!)
+
+        dependency_change = refresh_group.send(:dependency_change)
+        expect(mock_selector).to have_received(:filter_to_group!).with(dependency_change)
       end
     end
   end
