@@ -1,0 +1,7 @@
+FROM ubuntu:17.04
+
+RUN touch /tmp/my_file
+
+FROM ubuntu:17.04
+
+COPY --from=0 /tmp/my_file /tmp/my_file
