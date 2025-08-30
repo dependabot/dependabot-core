@@ -25,7 +25,7 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker::LatestVersionFinder do
     )
   end
 
-  let(:dependency_name) { "baseline" }
+  let(:dependency_name) { "github.com/microsoft/vcpkg" }
   let(:dependency_version) { "2025.04.09" }
   let(:dependency) do
     Dependabot::Dependency.new(
