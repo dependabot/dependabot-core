@@ -4,6 +4,7 @@
 # rubocop:disable RSpec/ExampleLength
 
 require "spec_helper"
+require "dependabot/gradle/update_checker"
 require "dependabot/gradle/update_checker/distributions_finder"
 
 RSpec.describe Dependabot::Gradle::UpdateChecker::DistributionsFinder do

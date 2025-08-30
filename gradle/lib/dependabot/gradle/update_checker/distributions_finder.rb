@@ -1,7 +1,6 @@
 # typed: strong
 # frozen_string_literal: true
 
-require "dependabot/gradle/distributions"
 require "dependabot/gradle/version"
 require "sorbet-runtime"
 
@@ -10,7 +9,6 @@ module Dependabot
     class UpdateChecker
       class DistributionsFinder
         extend T::Sig
-        include Dependabot::Gradle::Distributions
 
         @available_versions = T.let([], T::Array[T::Hash[String, T.untyped]])
         @distributions_checksums = T.let({}, T::Hash[String, T::Array[String]])
@@ -19,7 +17,7 @@ module Dependabot
         def self.available_versions
           return @available_versions if @available_versions.any?
 
-          response = Dependabot::RegistryClient.get(url: "#{DISTRIBUTIONS_URL}/versions/all")
+          response = Dependabot::RegistryClient.get(url: "https://services.gradle.org/versions/all")
           versions = T.let(JSON.parse(T.let(response.body, String),
                                       object_class: OpenStruct), T::Array[OpenStruct])
           @available_versions += versions
@@ -29,7 +27,7 @@ module Dependabot
                                  .select { |v| Gradle::Version.correct?(v) }
                                  .map { |v| Gradle::Version.new(v) }
                                  .sort
-                                 .map { |version| { version: version, source_url: DISTRIBUTIONS_URL } }
+                                 .map { |version| { version: version, source_url: "https://services.gradle.org" } }
         end
 
         sig { params(version: OpenStruct).returns(T::Boolean) }
