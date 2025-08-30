@@ -694,6 +694,138 @@ RSpec.describe Dependabot::Docker::FileParser do
         end
       end
     end
+
+    context "with COPY line, copying from an image" do
+      let(:dockerfile_fixture_name) { "copy_from_image" }
+
+      describe "the second dependency" do
+        subject(:dependency) { dependencies.last }
+
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { tag: "8.9.0" }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("alpine/curl")
+          expect(dependency.version).to eq("8.9.0")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+    end
+
+    context "with COPY line, copying from an image with --chown flag" do
+      let(:dockerfile_fixture_name) { "copy_from_image_with_chown" }
+
+      its(:length) { is_expected.to eq(3) }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { tag: "17.04" }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("ubuntu")
+          expect(dependency.version).to eq("17.04")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+
+      describe "the second dependency" do
+        subject(:dependency) { dependencies[1] }
+
+        let(:expected_requirements) do
+          [
+            {
+              requirement: nil,
+              groups: [],
+              file: "Dockerfile",
+              source: { tag: "8.9.0" }
+            },
+            {
+              requirement: nil,
+              groups: [],
+              file: "Dockerfile",
+              source: { tag: "8.8.0" }
+            }
+          ]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("alpine/curl")
+          expect(dependency.version).to eq("8.9.0")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+
+      describe "the third dependency" do
+        subject(:dependency) { dependencies.last }
+
+        let(:expected_requirements) do
+          [
+            {
+              requirement: nil,
+              groups: [],
+              file: "Dockerfile",
+              source: { tag: "8.9.0" }
+            },
+            {
+              requirement: nil,
+              groups: [],
+              file: "Dockerfile",
+              source: { tag: "8.8.0" }
+            }
+          ]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("alpine/curl")
+          expect(dependency.version).to eq("8.8.0")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+    end
+
+    context "with only one COPY line, copying from the previous stage" do
+      let(:dockerfile_fixture_name) { "copy_from_previous_stage" }
+
+      its(:length) { is_expected.to eq(1) }
+
+      describe "the dependency" do
+        subject(:dependency) { dependencies.first }
+
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { tag: "17.04" }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("ubuntu")
+          expect(dependency.version).to eq("17.04")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+    end
   end
 
   describe "YAML parse" do
