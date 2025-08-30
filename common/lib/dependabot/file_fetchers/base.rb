@@ -158,9 +158,6 @@ module Dependabot
         @files = files
       end
 
-      sig { abstract.returns(T::Array[DependencyFile]) }
-      def fetch_files; end
-
       sig { returns(T.nilable(String)) }
       def commit
         return T.must(cloned_commit) if cloned_commit
@@ -194,6 +191,9 @@ module Dependabot
 
       sig { overridable.returns(T.nilable(T::Hash[Symbol, T.untyped])) }
       def ecosystem_versions; end
+
+      sig { abstract.returns(T::Array[DependencyFile]) }
+      def fetch_files; end
 
       private
 
