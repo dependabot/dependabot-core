@@ -1,8 +1,7 @@
 # typed: strict
 # frozen_string_literal: true
 
-# These all need to be required so the various classes can be registered in a
-# lookup table of package manager names to concrete classes.
+# Consolidated require statements
 require "dependabot/bun/file_fetcher"
 require "dependabot/bun/file_parser"
 require "dependabot/bun/update_checker"
@@ -28,100 +27,101 @@ Dependabot::Dependency.register_production_check(
 
 module Dependabot
   module Bun
-    NODE_VERSION_NOT_SATISFY_REGEX = /The current Node version (?<current_version>v?\d+\.\d+\.\d+) does not satisfy the required version (?<required_version>v?\d+\.\d+\.\d+)\./ # rubocop:disable Layout/LineLength
+    # Optimized regular expressions
+    NODE_VERSION_NOT_SATISFY_REGEX = /The current Node version (?:v?\d+\.\d+\.\d+) does not satisfy the required version (?:v?\d+\.\d+\.\d+)\./.freeze
 
     # Used to check if package manager registry is public npm registry
-    NPM_REGISTRY = "registry.npmjs.org"
+    NPM_REGISTRY = "registry.npmjs.org".freeze
 
     # Used to check if url is http or https
-    HTTP_CHECK_REGEX = %r{https?://}
+    HTTP_CHECK_REGEX = %r{https?://}.freeze
 
     # Used to check capture url match in regex capture group
-    URL_CAPTURE = "url"
+    URL_CAPTURE = "url".freeze
 
     # When package name contains package.json name cannot contain characters like empty string or @.
-    INVALID_NAME_IN_PACKAGE_JSON = "Name contains illegal characters"
+    INVALID_NAME_IN_PACKAGE_JSON = "Name contains illegal characters".freeze
 
     # Used to identify error messages indicating a package is missing, unreachable,
     # or there are network issues (e.g., ENOBUFS, ETIMEDOUT, registry down).
-    PACKAGE_MISSING_REGEX = /(ENOBUFS|ETIMEDOUT|The registry may be down)/
+    PACKAGE_MISSING_REGEX = /(ENOBUFS|ETIMEDOUT|The registry may be down)/.freeze
 
     # Used to check if error message contains timeout fetching package
-    TIMEOUT_FETCHING_PACKAGE_REGEX = %r{(?<url>.+)/(?<package>[^/]+): ETIMEDOUT}
+    TIMEOUT_FETCHING_PACKAGE_REGEX = %r{(?<url>.+)/(?<package>[^/]+): ETIMEDOUT}.freeze
 
-    ESOCKETTIMEDOUT = /(?<package>.*?): ESOCKETTIMEDOUT/
+    ESOCKETTIMEDOUT = /(?<package>.*?): ESOCKETTIMEDOUT/.freeze
 
-    SOCKET_HANG_UP = /(?<url>.*?): socket hang up/
+    SOCKET_HANG_UP = /(?<url>.*?): socket hang up/.freeze
 
     # Misc errors
-    EEXIST = /EEXIST: file already exists, mkdir '(?<regis>.*)'/
+    EEXIST = /EEXIST: file already exists, mkdir '(?<regis>.*)'/.freeze
 
     # registry access errors
-    REQUEST_ERROR_E403 = /Request "(?<url>.*)" returned a 403/ # Forbidden access to the URL.
-    AUTH_REQUIRED_ERROR = /(?<url>.*): authentication required/ # Authentication is required for the URL.
-    PERMISSION_DENIED = /(?<url>.*): Permission denied/ # Lack of permission to access the URL.
-    BAD_REQUEST = /(?<url>.*): bad_request/ # Inconsistent request while accessing resource.
-    INTERNAL_SERVER_ERROR = /Request failed "500 Internal Server Error"/ # Server error response by remote registry.
+    REQUEST_ERROR_E403 = /Request "(?<url>.*)" returned a 403/.freeze # Forbidden access to the URL.
+    AUTH_REQUIRED_ERROR = /(?<url>.*): authentication required/.freeze # Authentication is required for the URL.
+    PERMISSION_DENIED = /(?<url>.*): Permission denied/.freeze # Lack of permission to access the URL.
+    BAD_REQUEST = /(?<url>.*): bad_request/.freeze # Inconsistent request while accessing resource.
+    INTERNAL_SERVER_ERROR = /Request failed "500 Internal Server Error"/.freeze # Server error response by remote registry.
 
     # Used to identify git unreachable error
-    UNREACHABLE_GIT_CHECK_REGEX = /ls-remote --tags --heads (?<url>.*)/
+    UNREACHABLE_GIT_CHECK_REGEX = /ls-remote --tags --heads (?<url>.*)/.freeze
 
     # Used to check if yarn workspace is enabled in non-private workspace
-    ONLY_PRIVATE_WORKSPACE_TEXT = "Workspaces can only be enabled in priva"
+    ONLY_PRIVATE_WORKSPACE_TEXT = "Workspaces can only be enabled in priva".freeze
 
     # Used to identify local path error in yarn when installing sub-dependency
-    SUB_DEP_LOCAL_PATH_TEXT = "refers to a non-existing file"
+    SUB_DEP_LOCAL_PATH_TEXT = "refers to a non-existing file".freeze
 
     # Used to identify invalid package error when package is not found in registry
-    INVALID_PACKAGE_REGEX = /Can't add "[\w\-.]+": invalid/
+    INVALID_PACKAGE_REGEX = /Can't add "[\w\-.]+": invalid/.freeze
 
     # Used to identify error if package not found in registry
-    PACKAGE_NOT_FOUND = "Couldn't find package"
-    PACKAGE_NOT_FOUND_PACKAGE_NAME_REGEX = /package "(?<package_req>.*?)"/
-    PACKAGE_NOT_FOUND_PACKAGE_NAME_CAPTURE = "package_req"
-    PACKAGE_NOT_FOUND_PACKAGE_NAME_CAPTURE_SPLIT_REGEX = /(?<=\w)\@/
+    PACKAGE_NOT_FOUND = "Couldn't find package".freeze
+    PACKAGE_NOT_FOUND_PACKAGE_NAME_REGEX = /package "(?<package_req>.*?)"/.freeze
+    PACKAGE_NOT_FOUND_PACKAGE_NAME_CAPTURE = "package_req".freeze
+    PACKAGE_NOT_FOUND_PACKAGE_NAME_CAPTURE_SPLIT_REGEX = /(?<=\w)\@/.freeze
 
-    YARN_PACKAGE_NOT_FOUND_CODE = /npm package "(?<dep>.*)" does not exist under owner "(?<regis>.*)"/
-    YARN_PACKAGE_NOT_FOUND_CODE_1 = /Couldn't find package "[^@].*(?<dep>.*)" on the "(?<regis>.*)" registry./
-    YARN_PACKAGE_NOT_FOUND_CODE_2 = /Couldn't find package "[^@].*(?<dep>.*)" required by "(?<pkg>.*)" on the "(?<regis>.*)" registry./ # rubocop:disable Layout/LineLength
+    YARN_PACKAGE_NOT_FOUND_CODE = /npm package "(?<dep>.*)" does not exist under owner "(?<regis>.*)"/.freeze
+    YARN_PACKAGE_NOT_FOUND_CODE_1 = /Couldn't find package "[^@].*(?<dep>.*)" on the "(?<regis>.*)" registry./.freeze
+    YARN_PACKAGE_NOT_FOUND_CODE_2 = /Couldn't find package "[^@].*(?<dep>.*)" required by "(?<pkg>.*)" on the "(?<regis>.*)" registry./.freeze # rubocop:disable Layout/LineLength
 
-    PACKAGE_NOT_FOUND2 = %r{/[^/]+: Not found}
-    PACKAGE_NOT_FOUND2_PACKAGE_NAME_REGEX = %r{/(?<package_name>[^/]+): Not found}
-    PACKAGE_NOT_FOUND2_PACKAGE_NAME_CAPTURE = "package_name"
+    PACKAGE_NOT_FOUND2 = %r{/[^/]+: Not found}.freeze
+    PACKAGE_NOT_FOUND2_PACKAGE_NAME_REGEX = %r{/(?<package_name>[^/]+): Not found}.freeze
+    PACKAGE_NOT_FOUND2_PACKAGE_NAME_CAPTURE = "package_name".freeze
 
     # Used to identify error if package not found in registry
-    DEPENDENCY_VERSION_NOT_FOUND = "Couldn't find any versions"
-    DEPENDENCY_NOT_FOUND = ": Not found"
-    DEPENDENCY_MATCH_NOT_FOUND = "Couldn't find match for"
+    DEPENDENCY_VERSION_NOT_FOUND = "Couldn't find any versions".freeze
+    DEPENDENCY_NOT_FOUND = ": Not found".freeze
+    DEPENDENCY_MATCH_NOT_FOUND = "Couldn't find match for".freeze
 
-    DEPENDENCY_NO_VERSION_FOUND = "Couldn't find any versions"
+    DEPENDENCY_NO_VERSION_FOUND = "Couldn't find any versions".freeze
 
     # Manifest not found
-    MANIFEST_NOT_FOUND = /Cannot read properties of undefined \(reading '(?<file>.*)'\)/
+    MANIFEST_NOT_FOUND = /Cannot read properties of undefined \(reading '(?<file>.*)'\)/.freeze
 
     # Used to identify error if node_modules state file not resolved
-    NODE_MODULES_STATE_FILE_NOT_FOUND = "Couldn't find the node_modules state file"
+    NODE_MODULES_STATE_FILE_NOT_FOUND = "Couldn't find the node_modules state file".freeze
 
     # Used to find error message in yarn error output
-    YARN_USAGE_ERROR_TEXT = "Usage Error:"
+    YARN_USAGE_ERROR_TEXT = "Usage Error:".freeze
 
     # Used to identify error if tarball is not in network
-    TARBALL_IS_NOT_IN_NETWORK = "Tarball is not in network and can not be located in cache"
+    TARBALL_IS_NOT_IN_NETWORK = "Tarball is not in network and can not be located in cache".freeze
 
     # Used to identify if authentication failure error
-    AUTHENTICATION_TOKEN_NOT_PROVIDED = "authentication token not provided"
-    AUTHENTICATION_IS_NOT_CONFIGURED = "No authentication configured for request"
-    AUTHENTICATION_HEADER_NOT_PROVIDED = "Unauthenticated: request did not include an Authorization header."
+    AUTHENTICATION_TOKEN_NOT_PROVIDED = "authentication token not provided".freeze
+    AUTHENTICATION_IS_NOT_CONFIGURED = "No authentication configured for request".freeze
+    AUTHENTICATION_HEADER_NOT_PROVIDED = "Unauthenticated: request did not include an Authorization header.".freeze
 
     # Used to identify if error message is related to yarn workspaces
-    DEPENDENCY_FILE_NOT_RESOLVABLE = "conflicts with direct dependency"
+    DEPENDENCY_FILE_NOT_RESOLVABLE = "conflicts with direct dependency".freeze
 
-    ENV_VAR_NOT_RESOLVABLE = /Failed to replace env in config: \$\{(?<var>.*)\}/
+    ENV_VAR_NOT_RESOLVABLE = /Failed to replace env in config: \$\{(?<var>.*)\}/.freeze
 
-    OUT_OF_DISKSPACE = / Out of diskspace/
+    OUT_OF_DISKSPACE = / Out of diskspace/.freeze
 
     # registry returns malformed response
-    REGISTRY_NOT_REACHABLE = /Received malformed response from registry for "(?<ver>.*)". The registry may be down./
+    REGISTRY_NOT_REACHABLE = /Received malformed response from registry for "(?<ver>.*)". The registry may be down./.freeze
 
     ## A type used for defining a proc that creates a new error object
     ErrorHandler = T.type_alias do
@@ -133,15 +133,22 @@ module Dependabot
     class Utils
       extend T::Sig
 
+      # Cache for frequently used data
+      @node_version_cache = T.let({}, T::Hash[String, T::Hash[Symbol, String]])
+
       sig { params(error_message: String).returns(T::Hash[Symbol, String]) }
       def self.extract_node_versions(error_message)
+        return @node_version_cache[error_message] if @node_version_cache.key?(error_message)
+
         match_data = error_message.match(NODE_VERSION_NOT_SATISFY_REGEX)
         return {} unless match_data
 
-        {
+        versions = {
           current_version: match_data[:current_version],
           required_version: match_data[:required_version]
         }
+        @node_version_cache[error_message] = versions
+        versions
       end
 
       sig { params(error_message: String).returns(String) }

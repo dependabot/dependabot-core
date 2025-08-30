@@ -136,8 +136,8 @@ module Dependabot
         end
 
         def ruby_requirements(requirement_string)
-          Bun::Requirement
-            .requirements_array(requirement_string)
+          @ruby_requirements_cache ||= {}
+          @ruby_requirements_cache[requirement_string] ||= Bun::Requirement.requirements_array(requirement_string)
         end
 
         def update_range_requirement(req_string)

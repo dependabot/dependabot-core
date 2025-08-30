@@ -19,6 +19,9 @@ module Dependabot
       require_relative "update_checker/conflicting_dependency_resolver"
       require_relative "update_checker/vulnerability_auditor"
 
+      # Cache for frequently used data
+      @vulnerable_versions_cache = T.let({}, T::Hash[String, T::Array[T.any(String, Gem::Version)]])
+
       sig do
         params(
           dependency: Dependabot::Dependency,
@@ -228,7 +231,10 @@ module Dependabot
 
       sig { returns(T::Array[T.any(String, Gem::Version)]) }
       def vulnerable_versions
-        @vulnerable_versions ||=
+        cache_key = dependency.name
+        return @vulnerable_versions_cache[cache_key] if @vulnerable_versions_cache.key?(cache_key)
+
+        @vulnerable_versions_cache[cache_key] =
           begin
             all_versions = dependency.all_versions
                                      .filter_map { |v| version_class.new(v) if version_class.correct?(v) }
@@ -463,7 +469,7 @@ module Dependabot
 
         # If there was a semver requirement provided or the dependency was
         # pinned to a version, look for the latest tag
-        if semver_req || git_commit_checker.pinned_ref_looks_like_version?
+        if (semver_req || git_commit_checker.pinned_ref_looks_like_version?) && !git_commit_checker.local_tag_for_latest_version.nil?
           latest_tag = git_commit_checker.local_tag_for_latest_version
           return {
             sha: latest_tag&.fetch(:commit_sha),

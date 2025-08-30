@@ -369,12 +369,14 @@ module Dependabot
 
       sig { returns(T.untyped) }
       def parsed_package_json
-        parsed = JSON.parse(T.must(package_json.content))
-        raise Dependabot::DependencyFileNotParseable, package_json.path unless parsed.is_a?(Hash)
+        @parsed_package_json ||= begin
+          parsed = JSON.parse(T.must(package_json.content))
+          raise Dependabot::DependencyFileNotParseable, package_json.path unless parsed.is_a?(Hash)
 
-        parsed
-      rescue JSON::ParserError
-        raise Dependabot::DependencyFileNotParseable, package_json.path
+          parsed
+        rescue JSON::ParserError
+          raise Dependabot::DependencyFileNotParseable, package_json.path
+        end
       end
 
       sig { params(filename: String).returns(T.nilable(DependencyFile)) }
