@@ -1,0 +1,3 @@
+FROM ubuntu:17.04
+
+COPY --from=alpine/curl:8.9.0 /usr/bin/curl /usr/bin/curl
