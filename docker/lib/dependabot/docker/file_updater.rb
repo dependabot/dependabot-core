@@ -14,10 +14,11 @@ module Dependabot
       YAML_REGEXP = /^[^\.].*\.ya?ml$/i
       DOCKER_REGEXP = /(docker|container)file/i
       FROM_REGEX = /FROM(\s+--platform\=\S+)?/i
+      COPY_FROM_REGEX = /COPY\s+--from\=\S+/i
 
       sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
-        [DOCKER_REGEXP, YAML_REGEXP]
+        [DOCKER_REGEXP, YAML_REGEXP, COPY_FROM_REGEX]
       end
 
       sig { override.returns(String) }
@@ -32,7 +33,7 @@ module Dependabot
 
       sig { override.returns(Regexp) }
       def container_image_regex
-        %r{^#{FROM_REGEX}\s+(docker\.io/)?}o
+        %r{^(#{FROM_REGEX}\s+|#{COPY_FROM_REGEX})(docker\.io/)?}o
       end
     end
   end
