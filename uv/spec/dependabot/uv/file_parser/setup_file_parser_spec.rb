@@ -3,6 +3,7 @@
 
 require "spec_helper"
 require "dependabot/dependency_file"
+require "dependabot/uv"
 require "dependabot/uv/file_parser/setup_file_parser"
 
 RSpec.describe Dependabot::Uv::FileParser::SetupFileParser do
