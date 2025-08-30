@@ -16,7 +16,7 @@ module Dependabot
       extend T::Sig
 
       NAME = "conda"
-      VERSION = "latest"
+      VERSION = "23.9.0"  # Use a valid semantic version instead of "latest"
 
       SUPPORTED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
       DEPRECATED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
