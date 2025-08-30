@@ -23,6 +23,15 @@ module Dependabot
       IMAGE_SPEC = %r{^(#{REGISTRY}/)?#{IMAGE}#{TAG}?(?:@sha256:#{DIGEST})?#{NAME}?}x
       TAG_WITH_DIGEST = /^#{TAG_NO_PREFIX}(?:@sha256:#{DIGEST})?/x
 
+      COPY = /COPY/i
+      CHOWN = /--chown\=(?<ownerUser>[A-Za-z0-9]+):(?<ownerGroup>[A-Za-z0-9]+)/
+      # Exclude '0' from 'image' capture group as it represents a copy
+      # of build artifact of previous stage into the next one
+      COPY_FROM = %r{--from\=((?!0)(#{REGISTRY}/)?#{IMAGE}#{TAG}?(?:@sha256:#{DIGEST})?#{NAME}?)}
+
+      # --chown flag can be set optionally, meaning we might have different orders of flags
+      COPY_FROM_LINE = /^#{COPY}\s+(#{COPY_FROM}\s+#{CHOWN}?|#{CHOWN}?\s+#{COPY_FROM})/x
+
       sig { returns(Ecosystem) }
       def ecosystem
         @ecosystem ||= T.let(
@@ -40,9 +49,9 @@ module Dependabot
 
         dockerfiles.each do |dockerfile|
           T.must(dockerfile.content).each_line do |line|
-            next unless FROM_LINE.match?(line)
+            next unless FROM_LINE.match?(line) || COPY_FROM_LINE.match?(line)
 
-            parsed_from_line = T.must(FROM_LINE.match(line)).named_captures
+            parsed_from_line = T.must(FROM_LINE.match(line) || COPY_FROM_LINE.match(line)).named_captures
             parsed_from_line["registry"] = nil if parsed_from_line["registry"] == "docker.io"
 
             version = version_from(parsed_from_line)
