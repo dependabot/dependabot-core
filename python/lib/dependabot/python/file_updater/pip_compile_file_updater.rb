@@ -26,6 +26,7 @@ module Dependabot
         UNSAFE_PACKAGES = T.let(%w(setuptools distribute pip).freeze, T::Array[String])
         INCOMPATIBLE_VERSIONS_REGEX = T.let(/not supported between instances of 'InstallationCandidate'.*\z/m,
                                             Regexp)
+        VERSION_MATCHING_ERROR_REGEX = T.let(/Could not find a version that matches.*\z/m, Regexp)
         WARNINGS = T.let(/\s*# WARNING:.*\Z/m, Regexp)
         UNSAFE_NOTE = T.let(/\s*# The following packages are considered to be unsafe.*\Z/m, Regexp)
         RESOLVER_REGEX = T.let(/(?<=--resolver=)(\w+)/, Regexp)
@@ -225,6 +226,10 @@ module Dependabot
 
           if stdout.match?(INCOMPATIBLE_VERSIONS_REGEX)
             raise DependencyFileNotResolvable, stdout.match(INCOMPATIBLE_VERSIONS_REGEX)
+          end
+
+          if stdout.match?(VERSION_MATCHING_ERROR_REGEX)
+            raise DependencyFileNotResolvable, stdout.match(VERSION_MATCHING_ERROR_REGEX)
           end
 
           raise
