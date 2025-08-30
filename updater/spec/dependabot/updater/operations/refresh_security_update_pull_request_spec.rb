@@ -135,7 +135,8 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
       updated_dependencies: updated_dependencies,
       dependency: dependency,
       requirements_unlocked_or_can_be?: true,
-      can_update?: true
+      can_update?: true,
+      excluded?: false
     )
   end
 
@@ -166,6 +167,10 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
 
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_shared_helpers_command_timeout)
+      .and_return(true)
+
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_exclude_paths_subdirectory_manifest_files)
       .and_return(true)
   end
 

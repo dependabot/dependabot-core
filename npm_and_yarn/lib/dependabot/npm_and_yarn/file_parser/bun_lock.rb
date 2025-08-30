@@ -40,6 +40,8 @@ module Dependabot
         def dependencies
           dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
+          origin_file = Pathname.new(@dependency_file.directory).join(@dependency_file.name).to_s
+
           # bun.lock v0 format:
           # https://github.com/oven-sh/bun/blob/c130df6c589fdf28f9f3c7f23ed9901140bc9349/src/install/bun.lock.zig#L595-L605
 
@@ -62,7 +64,8 @@ module Dependabot
               name: name,
               version: semver.to_s,
               package_manager: "npm_and_yarn",
-              requirements: []
+              requirements: [],
+              origin_files: [origin_file]
             )
           end
 

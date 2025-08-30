@@ -302,6 +302,8 @@ module Dependabot
         # Example: "my-fetch-factory@npm:fetch-factory"
         return if aliased_package_name?(name)
 
+        origin_file = Pathname.new(file.directory).join(file.name).to_s
+
         Dependency.new(
           name: name,
           version: converted_version,
@@ -311,7 +313,8 @@ module Dependabot
             file: file.name,
             groups: [type],
             source: source_for(name, requirement, lockfile_details)
-          }]
+          }],
+          origin_files: [origin_file]
         )
       end
 

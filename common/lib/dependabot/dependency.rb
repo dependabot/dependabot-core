@@ -101,6 +101,9 @@ module Dependabot
     sig { returns(T.nilable(Time)) }
     attr_accessor :attribution_timestamp
 
+    sig { returns(T::Array[String]) }
+    attr_reader :origin_files
+
     # rubocop:disable Metrics/AbcSize
     # rubocop:disable Metrics/PerceivedComplexity
     sig do
@@ -116,12 +119,14 @@ module Dependabot
         subdependency_metadata: T.nilable(T::Array[T::Hash[T.any(Symbol, String), String]]),
         removed: T::Boolean,
         metadata: T.nilable(T::Hash[T.any(Symbol, String), String]),
-        direct_relationship: T::Boolean
+        direct_relationship: T::Boolean,
+        origin_files: T::Array[String]
       ).void
     end
     def initialize(name:, requirements:, package_manager:, version: nil,
                    previous_version: nil, previous_requirements: nil, directory: nil,
-                   subdependency_metadata: [], removed: false, metadata: {}, direct_relationship: false)
+                   subdependency_metadata: [], removed: false, metadata: {}, direct_relationship: false,
+                   origin_files: [])
       @name = name
       @version = T.let(
         case version
@@ -149,7 +154,7 @@ module Dependabot
       @removed = removed
       @metadata = T.let(symbolize_keys(metadata || {}), T::Hash[Symbol, T.untyped])
       @direct_relationship = direct_relationship
-
+      @origin_files = origin_files
       check_values
     end
     # rubocop:enable Metrics/AbcSize

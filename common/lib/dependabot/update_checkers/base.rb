@@ -45,6 +45,9 @@ module Dependabot
       sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
       attr_reader :update_cooldown
 
+      sig { returns(T.nilable(T::Array[String])) }
+      attr_reader :exclude_paths
+
       sig { returns(T::Hash[Symbol, T.untyped]) }
       attr_reader :options
 
@@ -60,6 +63,7 @@ module Dependabot
           requirements_update_strategy: T.nilable(Dependabot::RequirementsUpdateStrategy),
           dependency_group: T.nilable(Dependabot::DependencyGroup),
           update_cooldown: T.nilable(Dependabot::Package::ReleaseCooldownOptions),
+          exclude_paths: T.nilable(T::Array[String]),
           options: T::Hash[Symbol, T.untyped]
         )
           .void
@@ -68,7 +72,7 @@ module Dependabot
                      repo_contents_path: nil, ignored_versions: [],
                      raise_on_ignored: false, security_advisories: [],
                      requirements_update_strategy: nil, dependency_group: nil,
-                     update_cooldown: nil, options: {})
+                     update_cooldown: nil, exclude_paths: [], options: {})
         @dependency = dependency
         @dependency_files = dependency_files
         @repo_contents_path = repo_contents_path
@@ -79,6 +83,7 @@ module Dependabot
         @security_advisories = security_advisories
         @dependency_group = dependency_group
         @update_cooldown = update_cooldown
+        @exclude_paths = exclude_paths
         @options = options
       end
 
@@ -104,6 +109,24 @@ module Dependabot
 
           requirements_can_update?
         end
+      end
+
+      sig { returns(T::Boolean) }
+      def excluded?
+        return false if exclude_paths.nil? || exclude_paths&.empty?
+
+        origin_files = @dependency.origin_files
+        if origin_files.length.positive?
+          origin_files.each do |origin_file|
+            excluded = Dependabot::FileFiltering.exclude_path?(origin_file, exclude_paths)
+            if excluded
+              Dependabot.logger.info("Excluding dependency #{dependency.name} from #{origin_file} due to exclude-paths")
+              return true
+            end
+          end
+        end
+
+        false
       end
 
       sig { params(requirements_to_unlock: T.nilable(Symbol)).returns(T::Array[Dependabot::Dependency]) }

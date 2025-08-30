@@ -73,7 +73,8 @@ module Dependabot
                     groups: [group]
                   }],
                   package_manager: "pip",
-                  metadata: { original_name: dep_name }
+                  metadata: { original_name: dep_name },
+                  origin_files: [T.must(pipfile).name]
                 )
             end
           end
@@ -106,7 +107,8 @@ module Dependabot
                   version: version&.gsub(/^===?/, ""),
                   requirements: [],
                   package_manager: "pip",
-                  subdependency_metadata: [{ production: key != "develop" }]
+                  subdependency_metadata: [{ production: key != "develop" }],
+                  origin_files: [T.must(pipfile_lock).name]
                 )
             end
           end
