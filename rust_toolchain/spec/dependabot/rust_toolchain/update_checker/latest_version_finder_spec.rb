@@ -179,6 +179,58 @@ RSpec.describe Dependabot::RustToolchain::UpdateChecker::LatestVersionFinder do
           .to match_array(%w(nightly-2023-12-25))
       end
     end
+
+    context "when dependency requirement is a nightly dated channel with mixed stability releases" do
+      let(:dependency_requirement) { "nightly-2025-08-19" }
+      let(:dependency_version) { "nightly-2025-08-19" }
+      let(:mock_versions) do
+        [
+          Dependabot::RustToolchain::Version.new("nightly-2025-08-01"),
+          Dependabot::RustToolchain::Version.new("nightly-2025-08-19"),
+          Dependabot::RustToolchain::Version.new("nightly-2025-08-20"),
+          Dependabot::RustToolchain::Version.new("stable-2025-08-07"),
+          Dependabot::RustToolchain::Version.new("stable-2025-08-14"),
+          Dependabot::RustToolchain::Version.new("beta-2025-08-10"),
+          Dependabot::RustToolchain::Version.new("1.72.0")
+        ]
+      end
+
+      it "only includes nightly releases, not stable or beta releases" do
+        package_details = version_finder.package_details
+        filtered_releases = version_finder.send(:apply_post_fetch_latest_versions_filter, package_details.releases)
+
+        expect(filtered_releases.map { |x| x.version.to_s })
+          .to match_array(%w(nightly-2025-08-01 nightly-2025-08-19 nightly-2025-08-20))
+        expect(filtered_releases.map { |x| x.version.to_s })
+          .not_to include("stable-2025-08-07", "stable-2025-08-14", "beta-2025-08-10", "1.72.0")
+      end
+    end
+
+    context "when dependency requirement is a stable dated channel with mixed stability releases" do
+      let(:dependency_requirement) { "stable-2025-08-07" }
+      let(:dependency_version) { "stable-2025-08-07" }
+      let(:mock_versions) do
+        [
+          Dependabot::RustToolchain::Version.new("nightly-2025-08-01"),
+          Dependabot::RustToolchain::Version.new("nightly-2025-08-19"),
+          Dependabot::RustToolchain::Version.new("stable-2025-08-07"),
+          Dependabot::RustToolchain::Version.new("stable-2025-08-14"),
+          Dependabot::RustToolchain::Version.new("stable-2025-08-21"),
+          Dependabot::RustToolchain::Version.new("beta-2025-08-10"),
+          Dependabot::RustToolchain::Version.new("1.72.0")
+        ]
+      end
+
+      it "only includes stable releases, not nightly or beta releases" do
+        package_details = version_finder.package_details
+        filtered_releases = version_finder.send(:apply_post_fetch_latest_versions_filter, package_details.releases)
+
+        expect(filtered_releases.map { |x| x.version.to_s })
+          .to match_array(%w(stable-2025-08-07 stable-2025-08-14 stable-2025-08-21))
+        expect(filtered_releases.map { |x| x.version.to_s })
+          .not_to include("nightly-2025-08-01", "nightly-2025-08-19", "beta-2025-08-10", "1.72.0")
+      end
+    end
   end
 
   describe "#apply_post_fetch_lowest_security_fix_versions_filter" do

@@ -48,6 +48,7 @@ module Dependabot
 
         private
 
+        # rubocop:disable Metrics/PerceivedComplexity
         sig do
           params(releases: T::Array[Dependabot::Package::PackageRelease])
             .returns(T::Array[Dependabot::Package::PackageRelease])
@@ -75,6 +76,13 @@ module Dependabot
             # Check that the release version is in the same channel type
             next unless release_channel.channel_type == current_type
 
+            # For DatedStability channels, also check that the stability levels match
+            # e.g., "nightly-2025-08-19" should only match other "nightly-*" releases,
+            # not "stable-*" or "beta-*" releases
+            if current_type == ChannelType::DatedStability && release_channel.stability != current_channel.stability
+              next
+            end
+
             next release unless release_channel.channel_type == ChannelType::Version
 
             # For version channels, we need to ensure that the version format matches
@@ -91,6 +99,7 @@ module Dependabot
             release.version.to_s
           end
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         # Check if a version string is in major.minor format (e.g., "1.72" vs "1.72.0")
         sig { params(version_string: String).returns(T::Boolean) }
