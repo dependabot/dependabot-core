@@ -10,13 +10,9 @@ module Dependabot
     class FileParser
       class DistributionsFinder
         extend T::Sig
-        include Dependabot::Gradle::Distributions
 
-        DISTRIBUTION_URL_REGEX = %r{
-          ^#{Regexp.escape(DISTRIBUTIONS_URL)}/distributions/
-          gradle-(?<version>[\d.]+)-
-          (?<distribution_type>bin|all)\.zip$
-        }x
+        DISTRIBUTION_URL_REGEX =
+          /.*?(?<version>(\d+(?:\.\d+){1,3}(?:-(?!bin|all)\w++)*(?:\+\w++)*))(?:-bin|-all)?.*?/
 
         sig { params(properties_file: DependencyFile).returns(T.nilable(Dependency)) }
         def self.resolve_dependency(properties_file)
@@ -33,7 +29,7 @@ module Dependabot
             requirement: version,
             file: properties_file.name,
             source: {
-              type: DISTRIBUTION_DEPENDENCY_TYPE,
+              type: Distributions::DISTRIBUTION_DEPENDENCY_TYPE,
               url: distribution_url,
               property: "distributionUrl"
             },
@@ -45,7 +41,7 @@ module Dependabot
               requirement: checksum,
               file: properties_file.name,
               source: {
-                type: DISTRIBUTION_DEPENDENCY_TYPE,
+                type: Distributions::DISTRIBUTION_DEPENDENCY_TYPE,
                 url: "#{distribution_url}.sha256",
                 property: "distributionSha256Sum"
               },
