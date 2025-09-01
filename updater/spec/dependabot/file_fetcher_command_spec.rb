@@ -5,6 +5,7 @@ require "spec_helper"
 require "dependabot/file_fetcher_command"
 require "dependabot/errors"
 require "tmpdir"
+require "fileutils"
 
 require "support/dummy_package_manager/dummy"
 
@@ -477,6 +478,131 @@ RSpec.describe Dependabot::FileFetcherCommand do
           expect(Dependabot.logger).to have_received(:info).with(/Connectivity check starting/)
           expect(Dependabot.logger).to have_received(:error).with(/Connectivity check failed/)
         end
+      end
+    end
+  end
+
+  describe "#files_from_multidirectories" do
+    let(:job_definition) do
+      {
+        "job" => {
+          "package_manager" => "dummy",
+          "allowed_updates" => [],
+          "dependencies" => nil,
+          "ignore_conditions" => [],
+          "security_advisories" => [],
+          "security_updates_only" => false,
+          "update_subdependencies" => false,
+          "updating_a_pull_request" => false,
+          "existing_pull_requests" => [],
+          "requirements_update_strategy" => nil,
+          "lockfile_only" => false,
+          "source" => {
+            "provider" => "github",
+            "repo" => "test/test-repo",
+            "directory" => nil,
+            "directories" => ["/", "/tools"],
+            "branch" => nil,
+            "hostname" => "github.com",
+            "api-endpoint" => "https://api.github.com/"
+          }
+        }
+      }
+    end
+
+    let(:repo_contents_path) { Dir.mktmpdir }
+
+    before do
+      allow(Dependabot::Environment).to receive_messages(
+        job_definition: job_definition,
+        repo_contents_path: repo_contents_path
+      )
+    end
+
+    after do
+      FileUtils.rm_rf(repo_contents_path)
+    end
+
+    context "when only some directories have required files" do
+      let(:command) { described_class.new }
+
+      before do
+        # Create tools directory with a.dummy
+        FileUtils.mkdir_p(File.join(repo_contents_path, "tools"))
+        File.write(File.join(repo_contents_path, "tools/a.dummy"), "dummy content")
+
+        # Root directory has no dummy files - should be skipped gracefully
+
+        # Stub file fetcher behavior to avoid cloning
+
+        # Mock the file fetchers to return different behavior per directory
+        allow(command).to receive(:file_fetcher_for_directory) do |dir|
+          fetcher = double("FileFetcher")
+          if dir == "/tools"
+            # Tools directory has files
+            dummy_file = double("DependencyFile")
+            allow(dummy_file).to receive_messages(name: "a.dummy", directory: "/tools")
+            allow(fetcher).to receive(:files).and_return([dummy_file])
+          else
+            # Root directory has no files, should raise DependencyFileNotFound
+            allow(fetcher).to receive(:files).and_raise(Dependabot::DependencyFileNotFound.new("No files found"))
+          end
+          fetcher
+        end
+      end
+
+      it "processes only directories with required files" do
+        files = command.send(:files_from_multidirectories)
+
+        expect(files).not_to be_empty
+
+        tools_files = files.select { |f| f.directory == "/tools" }
+        root_files = files.select { |f| f.directory == "/" }
+
+        expect(tools_files).not_to be_empty
+        expect(tools_files.map(&:name)).to include("a.dummy")
+
+        # Root directory should be skipped since it has no dummy files
+        expect(root_files).to be_empty
+      end
+    end
+
+    context "when all directories have required files" do
+      let(:command) { described_class.new }
+
+      before do
+        # Create root directory with a.dummy
+        File.write(File.join(repo_contents_path, "a.dummy"), "dummy content")
+
+        # Create tools directory with a.dummy
+        FileUtils.mkdir_p(File.join(repo_contents_path, "tools"))
+        File.write(File.join(repo_contents_path, "tools/a.dummy"), "dummy content")
+
+        # Stub file fetcher behavior to avoid cloning
+
+        # Mock the file fetchers to return files for both directories
+        allow(command).to receive(:file_fetcher_for_directory) do |dir|
+          fetcher = double("FileFetcher")
+          dummy_file = double("DependencyFile")
+          allow(dummy_file).to receive_messages(name: "a.dummy", directory: dir)
+          allow(fetcher).to receive(:files).and_return([dummy_file])
+          fetcher
+        end
+      end
+
+      it "processes all directories" do
+        files = command.send(:files_from_multidirectories)
+
+        expect(files).not_to be_empty
+
+        tools_files = files.select { |f| f.directory == "/tools" }
+        root_files = files.select { |f| f.directory == "/" }
+
+        expect(tools_files).not_to be_empty
+        expect(tools_files.map(&:name)).to include("a.dummy")
+
+        expect(root_files).not_to be_empty
+        expect(root_files.map(&:name)).to include("a.dummy")
       end
     end
   end
