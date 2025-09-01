@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 # This class provides a data object that can be submitted to a repository's dependency submission
