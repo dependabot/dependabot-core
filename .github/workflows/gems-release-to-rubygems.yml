@@ -17,6 +17,14 @@ jobs:
 
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          # Ensures the checkout retrieves all repository tags and the complete commit history
+          # By default, it performs a shallow fetch (depth: 1), which may omit the tag needed for the release
+          # Using both options may be seen as redundant, but it is a defect of the actions/checkout action
+          # See https://github.com/actions/checkout/issues/1471 for more context
+          # In the future, we may be able to remove `fetch-depth` and just use `fetch-tags`
+          fetch-depth: 0 # We need the full history to ensure that all the tags are present
+          fetch-tags: true # Ensure tags are fetched
       - uses: ruby/setup-ruby@829114fc20da43a41d27359103ec7a63020954d4 # v1.255.0
 
       - name: Install the RubyGems version specified in the Dockerfile.updater-core file
