@@ -139,7 +139,7 @@ module Dependabot
             )
           end
 
-          if Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files) && checker.excluded?
+          if checker.excluded?
             return Dependabot.logger.info(
               "Skipping update for #{dependency.name} #{dependency.version} " \
               "(excluded by config)"

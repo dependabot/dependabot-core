@@ -135,7 +135,7 @@ module Dependabot
           # version (uses a different version suffix for gradle/maven)
           return record_security_update_not_found(checker) if checker.up_to_date?
 
-          if Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files) && checker.excluded?
+          if checker.excluded?
             return Dependabot.logger.info(
               "Skipping update for #{dependency.name} #{dependency.version} " \
               "(excluded by config)"

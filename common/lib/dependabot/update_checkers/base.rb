@@ -8,6 +8,7 @@ require "dependabot/requirements_update_strategy"
 require "dependabot/security_advisory"
 require "dependabot/utils"
 require "dependabot/package/release_cooldown_options"
+require "dependabot/file_filtering"
 
 module Dependabot
   module UpdateCheckers
@@ -113,6 +114,8 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def excluded?
+        return false unless Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files)
+
         return false if exclude_paths.nil? || exclude_paths&.empty?
 
         origin_files = @dependency.origin_files
