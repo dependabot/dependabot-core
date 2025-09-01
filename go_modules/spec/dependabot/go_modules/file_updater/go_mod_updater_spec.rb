@@ -5,6 +5,7 @@ require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/go_modules/file_updater/go_mod_updater"
+require "dependabot/go_modules/file_parser"
 
 RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
   let(:updater) do
@@ -14,7 +15,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       credentials: credentials,
       repo_contents_path: repo_contents_path,
       directory: directory,
-      options: { tidy: tidy, vendor: false, goprivate: goprivate }
+      options: { tidy: tidy, vendor: false }
     )
   end
 
@@ -23,7 +24,6 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
   let(:go_mod_content) { fixture("projects", project_name, "go.mod") }
   let(:tidy) { true }
   let(:directory) { "/" }
-  let(:goprivate) { "*" }
   let(:dependency_files) { [] }
 
   let(:credentials) { [] }
@@ -37,6 +37,14 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       previous_requirements: previous_requirements,
       package_manager: "go_modules"
     )
+  end
+
+  after do
+    ENV.delete("GOPRIVATE")
+  end
+
+  before do
+    ENV["GOPRIVATE"] = "*"
   end
 
   describe "#updated_go_mod_content" do
@@ -121,13 +129,13 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         end
 
         context "with an unrestricted goprivate" do
-          let(:goprivate) { "" }
+          before { ENV["GOPRIVATE"] = "" }
 
           it { is_expected.to include(%(rsc.io/quote v1.5.2\n)) }
         end
 
         context "with an org specific goprivate" do
-          let(:goprivate) { "rsc.io/*" }
+          before { ENV["GOPRIVATE"] = "rsc.io/*" }
 
           it { is_expected.to include(%(rsc.io/quote v1.5.2\n)) }
         end
@@ -409,8 +417,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
 
       before do
         allow(Open3).to receive(:capture3).and_call_original
-        allow(Open3).to receive(:capture3).with(anything,
-                                                "go get github.com/spf13/viper@v1.7.1").and_return(["", stderr,
+        allow(Open3).to receive(:capture3).with("go get github.com/spf13/viper@v1.7.1").and_return(["", stderr,
                                                                                                     exit_status])
       end
 
@@ -664,7 +671,9 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       end
 
       context "with an unrestricted goprivate" do
-        let(:goprivate) { "" }
+        before do
+          ENV["GOPRIVATE"] = ""
+        end
 
         it "raises the correct error" do
           expect { updater.updated_go_sum_content }
@@ -673,7 +682,9 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       end
 
       context "with an org specific goprivate" do
-        let(:goprivate) { "github.com/dependabot-fixtures/*" }
+        before do
+          ENV["GOPRIVATE"] = "github.com/dependabot-fixtures/*"
+        end
 
         it "raises the correct error" do
           expect { updater.updated_go_sum_content }

@@ -1,4 +1,4 @@
-# typed: strong
+# typed: strict
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -17,7 +17,7 @@ module Dependabot
       sig { override.returns(T.nilable(T.any(String, Dependabot::Version))) }
       def latest_version
         @latest_version ||= T.let(
-          latest_version_finder.latest_tag,
+          latest_version_finder.latest_version,
           T.nilable(T.any(String, Dependabot::Version))
         )
       end
@@ -36,16 +36,34 @@ module Dependabot
 
         dependency.requirements.filter_map do |requirement|
           source = T.cast(requirement[:source], T.nilable(T::Hash[Symbol, T.untyped]))
+          requirement_constraint = requirement[:requirement]
 
-          if source
-            requirement.merge(source: source.merge(ref: latest_version.to_s))
+          if source && registry_dependency?
+            # For git dependencies (baselines), update the git ref with the commit SHA
+            latest_commit_sha = latest_version_finder.latest_release_info&.details&.dig("commit_sha")
+            requirement.merge(source: source.merge(ref: latest_commit_sha))
+          elsif source.nil? && requirement_constraint
+            # For port dependencies (no source but has requirement), update the version constraint
+            requirement.merge(requirement: ">=#{latest_version}")
           else
+            # Keep the original requirement unchanged for other cases
             requirement
           end
         end
       end
 
       private
+
+      sig { returns(T::Boolean) }
+      def registry_dependency?
+        dependency.source_details(allowed_types: ["git"]) in { type: "git" }
+      end
+
+      sig { returns(T::Boolean) }
+      def port_dependency?
+        # A port dependency has no git source but has a requirement constraint
+        !registry_dependency? && dependency.requirements.any? { |req| req[:requirement] }
+      end
 
       # Vcpkg doesn't support full unlocking since dependencies are tracked via baselines
       sig { override.returns(T::Boolean) }

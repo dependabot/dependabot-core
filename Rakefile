@@ -130,7 +130,11 @@ end
 def guard_tag_match
   tag = "v#{Dependabot::VERSION}"
   tag_commit = `git rev-list -n 1 #{tag} 2> /dev/null`.strip
-  abort "Can't release - tag #{tag} does not exist" unless $CHILD_STATUS == 0
+  abort_msg = "Can't release - tag #{tag} does not exist. " \
+              "This may be due to a bug in the Actions runner resulting in a stale copy of the git repo. " \
+              "Please delete the failing git tag and then recreate the GitHub release for this version. " \
+              "This will retrigger the gems-release-to-rubygems.yml workflow."
+  abort abort_msg unless $CHILD_STATUS == 0
 
   head_commit = `git rev-parse HEAD`.strip
   return if tag_commit == head_commit
