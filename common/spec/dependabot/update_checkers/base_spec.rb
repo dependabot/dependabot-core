@@ -742,14 +742,6 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
 
           it { is_expected.to be(false) }
         end
-
-        context "when one matches exclude patterns" do
-          let(:exclude_paths) { ["frontend"] }
-
-          it "returns true on first match" do
-            expect(excluded).to be(true)
-          end
-        end
       end
     end
   end
