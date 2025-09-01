@@ -123,7 +123,24 @@ module GithubApi
     # marked as a support file.
     sig { params(dependency_files: T::Array[Dependabot::DependencyFile]).returns(Dependabot::DependencyFile) }
     def relevant_dependency_file(dependency_files)
-      T.must(dependency_files.reject(&:support_file?).last)
+      filtered_files = dependency_files.reject { |f| f.support_file? || f.vendored_file? }
+
+      # TODO(brrygrdn): Make relevant_dependency_file an ecosystem property
+      #
+      # It turns out that the right-most-file-aligns-with-dependency-graph-static-parsing strategy isn't a durable
+      # assumption, for Go we prefer go.mod over go.sum even though the latter is technically the lockfile.
+      #
+      # With python ecosystems, this gets more fragmented and it isn't always accurate for 'bun' Javascript projects
+      # if they use mixins.
+      #
+      # The correct way to solve this is to use Dependency Injection to provide a small ecosystem-specific helper
+      # for this and PURLs so we can define the correct heuristic as necessary and use the 'last file wins' as our
+      # fallback strategy.
+      if %w(bun go Python).include?(package_manager)
+        T.must(filtered_files.first)
+      else
+        T.must(filtered_files.last)
+      end
     end
 
     # Helper function to create a Package URL (purl)
