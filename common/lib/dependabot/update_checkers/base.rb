@@ -113,19 +113,37 @@ module Dependabot
       end
 
       sig { returns(T::Boolean) }
-      def excluded?
+      def excluded? # rubocop:disable Metrics/PerceivedComplexity
         return false unless Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files)
 
         return false if exclude_paths.nil? || exclude_paths&.empty?
 
         origin_files = @dependency.origin_files
         if origin_files.length.positive?
+          excluded_files = []
+          non_excluded_files = []
+
           origin_files.each do |origin_file|
-            excluded = Dependabot::FileFiltering.exclude_path?(origin_file, exclude_paths)
-            if excluded
-              Dependabot.logger.info("Excluding dependency #{dependency.name} from #{origin_file} due to exclude-paths")
-              return true
+            if Dependabot::FileFiltering.exclude_path?(origin_file, exclude_paths)
+              excluded_files << origin_file
+            else
+              non_excluded_files << origin_file
             end
+          end
+
+          # Log what we found for debugging
+          if excluded_files.any?
+            Dependabot.logger.info("Dependency #{dependency.name} found in excluded paths: #{excluded_files.join(', ')}")
+          end
+          if non_excluded_files.any?
+            Dependabot.logger.info("Dependency #{dependency.name} found in non-excluded paths: #{non_excluded_files.join(', ')}")
+          end
+
+          # Only exclude if the dependency appears ONLY in excluded paths
+          # If it appears in any non-excluded path, we should process it
+          if non_excluded_files.empty? && excluded_files.any?
+            Dependabot.logger.info("Excluding dependency #{dependency.name} - only found in excluded paths")
+            return true
           end
         end
 
