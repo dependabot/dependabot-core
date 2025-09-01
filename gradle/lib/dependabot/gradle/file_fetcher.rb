@@ -81,9 +81,11 @@ module Dependabot
 
       sig { params(root_dir: String).returns(T::Array[DependencyFile]) }
       def all_buildfiles_in_build(root_dir)
-        files = [buildfile(root_dir), settings_file(root_dir), version_catalog_file(root_dir), lockfile(root_dir)]
+        files = [buildfile(root_dir), settings_file(root_dir), lockfile(root_dir)]
                 .compact
         files += wrapper_files(root_dir)
+        files += catalog_files(root_dir)
+        files += subproject_catalog_files(root_dir)
         files += subproject_buildfiles(root_dir)
         files += subproject_lockfiles(root_dir)
         files += dependency_script_plugins(root_dir)
@@ -199,13 +201,6 @@ module Dependabot
         end
       end
 
-      sig { params(root_dir: String).returns(T.nilable(DependencyFile)) }
-      def version_catalog_file(root_dir)
-        return nil unless root_dir == "."
-
-        gradle_toml_file(root_dir)
-      end
-
       # rubocop:disable Metrics/PerceivedComplexity
       sig { params(root_dir: String).returns(T::Array[DependencyFile]) }
       def dependency_script_plugins(root_dir)
@@ -258,9 +253,29 @@ module Dependabot
         file
       end
 
-      sig { params(dir: String).returns(T.nilable(DependencyFile)) }
-      def gradle_toml_file(dir)
-        find_first(dir, SUPPORTED_VERSION_CATALOG_FILE_PATH)
+      sig { params(dir: String, look_at_gradle_dir: T::Boolean).returns(T::Array[DependencyFile]) }
+      def catalog_files(dir, look_at_gradle_dir: true)
+        files = repo_contents(dir: dir, raise_errors: false).flat_map do |f|
+          next [f] if f.type == "file"
+          next [] unless look_at_gradle_dir && f.type == "dir" && f.name == "gradle"
+
+          catalog_files(File.join(dir, f.name), look_at_gradle_dir: false)
+        end
+
+        files.select { |f| f.type == "file" && f.name.end_with?(".versions.toml") }
+             .map { |f| fetch_file_from_host(File.join(dir, f.name)) }
+      end
+
+      sig { params(root_dir: String).returns(T::Array[DependencyFile]) }
+      def subproject_catalog_files(root_dir)
+        return [] unless settings_file(root_dir)
+
+        subproject_paths =
+          SettingsFileParser
+          .new(settings_file: T.must(settings_file(root_dir)))
+          .subproject_paths
+
+        subproject_paths.flat_map { |path| catalog_files(File.join(root_dir, path), look_at_gradle_dir: false) }
       end
 
       sig { params(dir: String).returns(T.nilable(DependencyFile)) }
