@@ -44,15 +44,7 @@ module Dependabot
           return service.mark_job_as_processed(Environment.job_definition["base_commit_sha"])
         end
 
-        submission = GithubApi::DependencySubmission.new(
-          job_id: job.id.to_s,
-          branch: job.source.branch || "main",
-          sha: dependency_snapshot.base_commit_sha,
-          ecosystem: T.must(dependency_snapshot.ecosystem),
-          dependency_files: dependency_snapshot.dependency_files,
-          dependencies: dependency_snapshot.dependencies
-        )
-
+        submission = build_submission(dependency_snapshot)
         Dependabot.logger.info("Dependency submission payload:\n#{JSON.pretty_generate(submission.payload)}")
 
         # For now, we require the experiment to actually submit data as this alters repository dependency state
@@ -74,6 +66,18 @@ module Dependabot
                        job_definition: Environment.job_definition,
                        repo_contents_path: Environment.repo_contents_path
                      ), T.nilable(Dependabot::Job))
+    end
+
+    sig { params(dependency_snapshot: Dependabot::DependencySnapshot).returns(GithubApi::DependencySubmission) }
+    def build_submission(dependency_snapshot)
+      GithubApi::DependencySubmission.new(
+        job_id: job.id.to_s,
+        branch: job.source.branch || "main",
+        sha: dependency_snapshot.base_commit_sha,
+        ecosystem: T.must(dependency_snapshot.ecosystem),
+        dependency_files: dependency_snapshot.dependency_files,
+        dependencies: dependency_snapshot.dependencies
+      )
     end
 
     sig { returns(String) }
