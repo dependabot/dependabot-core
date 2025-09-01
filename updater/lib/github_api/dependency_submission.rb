@@ -21,29 +21,27 @@ module GithubApi
     sig { returns(String) }
     attr_reader :sha
     sig { returns(String) }
-    attr_reader :directory
-    sig { returns(String) }
     attr_reader :package_manager
     sig { returns(T::Hash[String, T.untyped]) }
     attr_reader :manifests
 
-    sig { params(job: Dependabot::Job, snapshot: Dependabot::DependencySnapshot).void }
-    def initialize(job:, snapshot:)
-      @job_id = T.let(job.id.to_s, String)
-      # TODO: Ensure that the branch is always set for analysis runs
-      #
-      # For purposes of the POC, we'll assume the default branch of `main`
-      # if this is nil, but this isn't a sustainable approach
-      @branch = T.let(job.source.branch || "main", String)
-      @sha = T.let(snapshot.base_commit_sha, String)
-      # TODO: Ensure that directory is always set for analysis runs
-      #
-      # We shouldn't need to default here, this is mostly for type safety
-      # but we should make sure this value is set as we proceed
-      @directory = T.let(job.source.directory || "/", String)
-      @package_manager = T.let(job.package_manager, String)
+    sig do
+      params(
+        job_id: String,
+        branch: String,
+        sha: String,
+        ecosystem: Dependabot::Ecosystem,
+        dependency_files: T::Array[Dependabot::DependencyFile],
+        dependencies: T::Array[Dependabot::Dependency]
+      ).void
+    end
+    def initialize(job_id:, branch:, sha:, ecosystem:, dependency_files:, dependencies:)
+      @job_id = job_id
+      @branch = branch
+      @sha = sha
+      @package_manager = T.let(ecosystem.name, String)
 
-      @manifests = T.let(build_manifests(snapshot), T::Hash[String, T.untyped])
+      @manifests = T.let(build_manifests(dependency_files, dependencies), T::Hash[String, T.untyped])
     end
 
     # TODO: Change to a typed structure?
@@ -82,10 +80,15 @@ module GithubApi
       "refs/heads/#{branch}"
     end
 
-    sig { params(snapshot: Dependabot::DependencySnapshot).returns(T::Hash[String, T.untyped]) }
-    def build_manifests(snapshot)
+    sig do
+      params(
+        dependency_files: T::Array[Dependabot::DependencyFile],
+        _dependencies: T::Array[Dependabot::Dependency]
+      ).returns(T::Hash[String, T.untyped])
+    end
+    def build_manifests(dependency_files, _dependencies)
       dependencies_by_manifest = {}
-      relevant_manifests(snapshot).each do |file|
+      relevant_manifests(dependency_files).each do |file|
         dependencies_by_manifest[file.path] ||= []
         file.dependencies.each do |dependency|
           dependencies_by_manifest[file.path] << dependency
@@ -107,7 +110,7 @@ module GithubApi
             source_location: source_location
           },
           metadata: {
-            ecosystem: T.must(snapshot.ecosystem).name
+            ecosystem: package_manager
           },
           resolved: deps.uniq.each_with_object({}) do |dep, resolved|
             resolved[dep.name] = {
@@ -129,9 +132,9 @@ module GithubApi
 
     # For each distinct directory in our manifest list, we only want the highest priority manifests available,
     # this method will filter out manifests for directories that have lockfiles and so on.
-    sig { params(snapshot: Dependabot::DependencySnapshot).returns(T::Array[Dependabot::DependencyFile]) }
-    def relevant_manifests(snapshot)
-      manifests_by_directory = snapshot.dependency_files.each_with_object({}) do |file, dirs|
+    sig { params(dependency_files: T::Array[Dependabot::DependencyFile]).returns(T::Array[Dependabot::DependencyFile]) }
+    def relevant_manifests(dependency_files)
+      manifests_by_directory = dependency_files.each_with_object({}) do |file, dirs|
         # If the file doesn't have any dependencies assigned to it, then it isn't relevant.
         next if file.dependencies.empty?
 

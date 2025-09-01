@@ -45,8 +45,12 @@ module Dependabot
         end
 
         submission = GithubApi::DependencySubmission.new(
-          job: job,
-          snapshot: dependency_snapshot
+          job_id: job.id.to_s,
+          branch: job.source.branch || "main",
+          sha: dependency_snapshot.base_commit_sha,
+          ecosystem: T.must(dependency_snapshot.ecosystem),
+          dependency_files: dependency_snapshot.dependency_files,
+          dependencies: dependency_snapshot.dependencies
         )
 
         Dependabot.logger.info("Dependency submission payload:\n#{JSON.pretty_generate(submission.payload)}")
