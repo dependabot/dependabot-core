@@ -96,11 +96,6 @@ module GithubApi
       end
 
       dependencies_by_manifest.each_with_object({}) do |(file, deps), manifests|
-        # TODO: Confirm whether this approach will work properly with multi-directory job definitions
-        #
-        # For now it is tolerable to omit this and limit our testing accordingly, but we
-        # should behave sensibly in a multi-directory context as well
-
         # source location is relative to the root of the repo, so we strip the leading slash
         source_location = file.gsub(%r{^/}, "")
 
