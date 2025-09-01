@@ -1,0 +1,66 @@
+[
+  {
+    "name": "gradle",
+    "path": "gradle",
+    "sha": "193ef2b05a8976c5ff11d575bc3f00b74dd1955e",
+    "size": 0,
+    "url": "https://api.github.com/repos/dependabot-fixtures/gradle/contents/gradle?ref=main",
+    "html_url": "https://github.com/dependabot-fixtures/gradle/tree/main/gradle",
+    "git_url": "https://api.github.com/repos/dependabot-fixtures/gradle/git/trees/193ef2b05a8976c5ff11d575bc3f00b74dd1955e",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/dependabot-fixtures/gradle/contents/gradle?ref=main",
+      "git": "https://api.github.com/repos/dependabot-fixtures/gradle/git/trees/193ef2b05a8976c5ff11d575bc3f00b74dd1955e",
+      "html": "https://github.com/dependabot-fixtures/gradle/tree/main/gradle"
+    }
+  },
+  {
+    "name": "app",
+    "path": "app",
+    "sha": "193ef2b05a8976c5ff11d575bc3f00b74dd1955e",
+    "size": 0,
+    "url": "https://api.github.com/repos/dependabot-fixtures/gradle/contents/app?ref=main",
+    "html_url": "https://github.com/dependabot-fixtures/gradle/tree/main/app",
+    "git_url": "https://api.github.com/repos/dependabot-fixtures/app/git/trees/193ef2b05a8976c5ff11d575bc3f00b74dd1955e",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/dependabot-fixtures/gradle/contents/app?ref=main",
+      "git": "https://api.github.com/repos/dependabot-fixtures/gradle/git/trees/193ef2b05a8976c5ff11d575bc3f00b74dd1955e",
+      "html": "https://github.com/dependabot-fixtures/gradle/tree/main/app"
+    }
+  },
+  {
+    "name": "build.gradle",
+    "path": "build.gradle",
+    "sha": "f036f9f0357a50b02a422923f0bb0c3719eaf8ae",
+    "size": 2355,
+    "url": "https://api.github.com/repos/dependabot-fixtures/gradle/contents/build.gradle?ref=main",
+    "html_url": "https://github.com/dependabot-fixtures/gradle/blob/main/build.gradle",
+    "git_url": "https://api.github.com/repos/dependabot-fixtures/gradle/git/blobs/f036f9f0357a50b02a422923f0bb0c3719eaf8ae",
+    "download_url": "https://raw.githubusercontent.com/dependabot-fixtures/gradle/main/build.gradle",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/dependabot-fixtures/gradle/contents/build.gradle?ref=main",
+      "git": "https://api.github.com/repos/dependabot-fixtures/gradle/git/blobs/f036f9f0357a50b02a422923f0bb0c3719eaf8ae",
+      "html": "https://github.com/dependabot-fixtures/gradle/blob/main/build.gradle"
+    }
+  },
+  {
+    "name": "settings.gradle",
+    "path": "settings.gradle",
+    "sha": "cbc2afee9c9e1a0849ceade9d3b166dcea5e5a64",
+    "size": 185,
+    "url": "https://api.github.com/repos/chriswk/isharelib2/contents/settings.gradle?ref=master",
+    "html_url": "https://github.com/chriswk/isharelib2/blob/master/settings.gradle",
+    "git_url": "https://api.github.com/repos/chriswk/isharelib2/git/blobs/cbc2afee9c9e1a0849ceade9d3b166dcea5e5a64",
+    "download_url": "https://raw.githubusercontent.com/chriswk/isharelib2/master/settings.gradle",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/chriswk/isharelib2/contents/settings.gradle?ref=master",
+      "git": "https://api.github.com/repos/chriswk/isharelib2/git/blobs/cbc2afee9c9e1a0849ceade9d3b166dcea5e5a64",
+      "html": "https://github.com/chriswk/isharelib2/blob/master/settings.gradle"
+    }
+  }
+]
