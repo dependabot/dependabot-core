@@ -83,31 +83,24 @@ module GithubApi
     sig do
       params(
         dependency_files: T::Array[Dependabot::DependencyFile],
-        _dependencies: T::Array[Dependabot::Dependency]
+        dependencies: T::Array[Dependabot::Dependency]
       ).returns(T::Hash[String, T.untyped])
     end
-    def build_manifests(dependency_files, _dependencies)
-      dependencies_by_manifest = {}
-      relevant_manifests(dependency_files).each do |file|
-        dependencies_by_manifest[file.path] ||= []
-        file.dependencies.each do |dependency|
-          dependencies_by_manifest[file.path] << dependency
-        end
-      end
+    def build_manifests(dependency_files, dependencies)
+      return {} if dependencies.empty?
 
-      dependencies_by_manifest.each_with_object({}) do |(file, deps), manifests|
-        # source location is relative to the root of the repo, so we strip the leading slash
-        source_location = file.gsub(%r{^/}, "")
+      file = relevant_dependency_file(dependency_files)
 
-        manifests[file] = {
-          name: file,
+      {
+        file.path => {
+          name: file.path,
           file: {
-            source_location: source_location
+            source_location: file.path.gsub(%r{^/}, "")
           },
           metadata: {
             ecosystem: package_manager
           },
-          resolved: deps.uniq.each_with_object({}) do |dep, resolved|
+          resolved: dependencies.uniq.each_with_object({}) do |dep, resolved|
             resolved[dep.name] = {
               package_url: build_purl(dep),
               relationship: relationship_for(dep),
@@ -118,28 +111,19 @@ module GithubApi
             }
           end
         }
-      end
+      }
     end
 
-    # For each distinct directory in our manifest list, we only want the highest priority manifests available,
-    # this method will filter out manifests for directories that have lockfiles and so on.
-    sig { params(dependency_files: T::Array[Dependabot::DependencyFile]).returns(T::Array[Dependabot::DependencyFile]) }
-    def relevant_manifests(dependency_files)
-      manifests_by_directory = dependency_files.each_with_object({}) do |file, dirs|
-        # If the file doesn't have any dependencies assigned to it, then it isn't relevant.
-        next if file.dependencies.empty?
-
-        # Build up a dictionary of unique directories...
-        dirs[file.directory] ||= {}
-        # Add a list of files for each distinct priority...
-        dirs[file.directory][file.priority] ||= []
-        dirs[file.directory][file.priority] << file
-      end
-
-      manifests_by_directory.map do |_directory, manifests_by_priority|
-        # ... and cherry pick the highest priority list for each directory
-        manifests_by_priority[manifests_by_priority.keys.max]
-      end.flatten
+    # Dependabot aligns with Dependency Graph's existing behaviour where all dependencies are attributed to the
+    # most specific file out of the manifest or lockfile for the directory rather than split direct and indirect
+    # to the manifest and lockfile respectively.
+    #
+    # Dependabot's parsers apply this precedence by deterministic ordering, i.e. the manifest file's dependencies
+    # are added to the set first, then the lockfiles so we want the right-most file in the set, excluding anything
+    # marked as a support file.
+    sig { params(dependency_files: T::Array[Dependabot::DependencyFile]).returns(Dependabot::DependencyFile) }
+    def relevant_dependency_file(dependency_files)
+      T.must(dependency_files.reject(&:support_file?).last)
     end
 
     # Helper function to create a Package URL (purl)

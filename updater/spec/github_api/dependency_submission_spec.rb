@@ -240,22 +240,12 @@ RSpec.describe GithubApi::DependencySubmission do
     end
   end
 
-  # Dependabot's existing behaviour is to fail without a lockfile, which makes sense from an update perspective,
-  # but we should eventually tolerate Gemfile-only projects when we are just asked to produce a graph.
-  #
-  # For now this test covers a corner case, that an empty Gemfile.lock will not result in an empty dependency
-  # submission as we fall back to submitting the Gemfile even though it is lower resolution.
-  context "with an empty Gemfile.lock" do
+  context "without a Gemfile.lock" do
     let(:dependency_files) do
       [
         Dependabot::DependencyFile.new(
           name: "Gemfile",
           content: fixture("bundler/original/Gemfile"),
-          directory: directory
-        ),
-        Dependabot::DependencyFile.new(
-          name: "Gemfile.lock",
-          content: "",
           directory: directory
         )
       ]
