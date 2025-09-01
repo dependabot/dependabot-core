@@ -24,16 +24,38 @@ module Dependabot
           )
         end
 
-        sig { returns(T.nilable(String)) }
-        def latest_tag
-          available_versions
-            &.then { |releases| filter_by_cooldown(releases) }
-            &.max_by(&:version)
-            &.details
-            &.[]("tag_sha")
+        sig do
+          override
+            .params(language_version: T.nilable(T.any(String, Dependabot::Version)))
+            .returns(T.nilable(Dependabot::Version))
+        end
+        def fetch_latest_version(language_version: nil) # rubocop:disable Lint/UnusedMethodArgument
+          latest_release_info&.version
+        end
+
+        sig { returns(T.nilable(Dependabot::Package::PackageRelease)) }
+        def latest_release_info
+          @latest_release_info ||= T.let(
+            begin
+              releases = available_versions
+              return unless releases
+
+              releases = filter_yanked_versions(releases)
+              releases = filter_by_cooldown(releases)
+              releases = filter_ignored_versions(releases)
+
+              releases.max_by(&:version)
+            end,
+            T.nilable(Dependabot::Package::PackageRelease)
+          )
         end
 
         private
+
+        sig { returns(T::Boolean) }
+        def registry_dependency?
+          dependency.source_details(allowed_types: ["git"]) in { type: "git" }
+        end
 
         sig { override.returns(T::Boolean) }
         def cooldown_enabled? = true

@@ -23,9 +23,7 @@ module Dependabot
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
         vcpkg_json_file = get_original_file(VCPKG_JSON_FILENAME)
-        return [] unless vcpkg_json_file
-
-        return [] unless file_changed?(vcpkg_json_file)
+        return [] unless vcpkg_json_file&.then { |file| file_changed?(file) }
 
         [updated_file(
           file: vcpkg_json_file,
@@ -45,17 +43,26 @@ module Dependabot
       sig { params(file: Dependabot::DependencyFile).returns(String) }
       def updated_vcpkg_json_content(file)
         content = T.must(file.content)
-
         parsed_content = JSON.parse(content)
 
-        # Find the baseline dependency and update it
         dependencies
-          .find { |dep| dep.name == VCPKG_DEFAULT_BASELINE_DEPENDENCY_NAME }
-          &.then { |dep| update_baseline_in_content(parsed_content, dep, file.name) }
+          .filter_map { |dep| [dep, dep.requirements.find { |r| r[:file] == file.name }] }
+          .select { |_, requirement| requirement }
+          .each { |dependency, _| update_dependency_in_content(parsed_content, dependency, file.name) }
 
         JSON.pretty_generate(parsed_content)
       rescue JSON::ParserError
         raise Dependabot::DependencyFileNotParseable, file.path
+      end
+
+      sig { params(content: T::Hash[String, T.untyped], dependency: Dependabot::Dependency, filename: String).void }
+      def update_dependency_in_content(content, dependency, filename)
+        case dependency.name
+        when VCPKG_DEFAULT_BASELINE_DEPENDENCY_NAME
+          update_baseline_in_content(content, dependency, filename)
+        else
+          update_port_dependency_in_content(content, dependency)
+        end
       end
 
       sig { params(content: T::Hash[String, T.untyped], dependency: Dependabot::Dependency, filename: String).void }
@@ -71,6 +78,17 @@ module Dependabot
         else
           # Skip if source doesn't have the expected structure
         end
+      end
+
+      sig { params(content: T::Hash[String, T.untyped], dependency: Dependabot::Dependency).void }
+      def update_port_dependency_in_content(content, dependency)
+        # Update the dependencies array
+        dependencies_array = content["dependencies"]
+        return unless dependencies_array.is_a?(Array)
+
+        # Find and update the specific dependency using more functional approach
+        target_dep = dependencies_array.find { _1.is_a?(Hash) && _1["name"] == dependency.name }
+        target_dep&.[]=("version>=", dependency.version)
       end
     end
   end
