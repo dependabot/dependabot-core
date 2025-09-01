@@ -195,7 +195,7 @@ RSpec.describe Dependabot::Conda::FileParser do
       it "returns the correct package manager" do
         expect(package_manager.name).to eq "conda"
         expect(package_manager.requirement).to be_nil
-        expect(package_manager.version.to_s).to eq "23.9.0"
+        expect(package_manager.version).to be_nil
       end
     end
 
