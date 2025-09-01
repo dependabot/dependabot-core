@@ -2801,6 +2801,7 @@ RSpec.describe Dependabot::Updater do
         {
           up_to_date?: false,
           vulnerable?: false,
+          excluded?: false,
           version_class: Dependabot::Bundler::Version,
           latest_version: Gem::Version.new("1.2.0"),
           dependency: Dependabot::Dependency.new(

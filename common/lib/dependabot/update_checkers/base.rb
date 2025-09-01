@@ -133,10 +133,12 @@ module Dependabot
 
           # Log what we found for debugging
           if excluded_files.any?
-            Dependabot.logger.info("Dependency #{dependency.name} found in excluded paths: #{excluded_files.join(', ')}")
+            Dependabot.logger.info("Dependency #{dependency.name} found in excluded paths:" \
+            "#{excluded_files.join(', ')}")
           end
           if non_excluded_files.any?
-            Dependabot.logger.info("Dependency #{dependency.name} found in non-excluded paths: #{non_excluded_files.join(', ')}")
+            Dependabot.logger.info("Dependency #{dependency.name} found in non-excluded paths: " \
+            "#{non_excluded_files.join(', ')}")
           end
 
           # Only exclude if the dependency appears ONLY in excluded paths
