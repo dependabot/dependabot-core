@@ -1,5 +1,5 @@
 FROM ghcr.io/dependabot/dependabot-updater-core
-ARG COMPOSER_V2_VERSION=2.8.10
+ARG COMPOSER_V2_VERSION=2.8.11
 ARG PHP_VERSION=8.4
 ENV COMPOSER_ALLOW_SUPERUSER=1
 RUN apt-get update \
