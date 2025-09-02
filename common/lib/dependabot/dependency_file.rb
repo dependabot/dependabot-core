@@ -28,14 +28,6 @@ module Dependabot
     sig { returns(T::Boolean) }
     attr_accessor :vendored_file
 
-    # Dependency file priority is used to determine which files are relevant when generating a dependency graph for the
-    # project - only the highest priority files will be graphed for each directory.
-    #
-    # This allows us to default to treating all dependency files as relevant unless the ecosystem's file parser tells
-    # us otherwise, for example indicating that a Gemfile.lock fully supersedes its peered Gemfile.
-    sig { returns(Integer) }
-    attr_accessor :priority
-
     sig { returns(T.nilable(String)) }
     attr_accessor :symlink_target
 
@@ -47,9 +39,6 @@ module Dependabot
 
     sig { returns(T.nilable(String)) }
     attr_accessor :mode
-
-    sig { returns(T::Set[T.untyped]) }
-    attr_accessor :dependencies
 
     class ContentEncoding
       UTF_8 = "utf-8"
@@ -86,15 +75,14 @@ module Dependabot
         content_encoding: String,
         deleted: T::Boolean,
         operation: String,
-        mode: T.nilable(String),
-        priority: Integer
+        mode: T.nilable(String)
       )
         .void
     end
     def initialize(name:, content:, directory: "/", type: "file",
                    support_file: false, vendored_file: false, symlink_target: nil,
                    content_encoding: ContentEncoding::UTF_8, deleted: false,
-                   operation: Operation::UPDATE, mode: nil, priority: 0)
+                   operation: Operation::UPDATE, mode: nil)
       @name = name
       @content = content
       @directory = T.let(clean_directory(directory), String)
@@ -104,8 +92,6 @@ module Dependabot
       @content_encoding = content_encoding
       @operation = operation
       @mode = mode
-      @dependencies = T.let(Set.new, T::Set[T.untyped])
-      @priority = priority
       raise ArgumentError, "Invalid Git mode: #{mode}" if mode && !VALID_MODES.include?(mode)
 
       # Make deleted override the operation. Deleted is kept when operation

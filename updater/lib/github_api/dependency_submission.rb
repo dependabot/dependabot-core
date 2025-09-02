@@ -204,7 +204,7 @@ module GithubApi
 
     sig { params(dep: Dependabot::Dependency).returns(String) }
     def relationship_for(dep)
-      if dep.direct?
+      if dep.top_level?
         "direct"
       else
         "indirect"
