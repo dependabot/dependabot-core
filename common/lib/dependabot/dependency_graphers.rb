@@ -17,7 +17,11 @@ module Dependabot
       grapher = @graphers[package_manager]
       return grapher if grapher
 
-      # If an ecosystem has not defined its own graphing strategy, then we use a best-effort generic one.
+      # If an ecosystem has not defined its own graphing strategy, then we use
+      # a best-effort generic while we are rolling out graphing capabilities.
+      #
+      # This approach allows us to assess the quality of data from the ecosystem's
+      # parser and triage the scope of work to implement the non-generic class.
       Generic
     end
 
