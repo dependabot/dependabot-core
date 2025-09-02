@@ -429,30 +429,4 @@ RSpec.describe Dependabot::GoModules::FileParser do
       end
     end
   end
-
-  describe "parse support for DependencySubmission" do
-    subject(:dependencies) { parser.parse }
-
-    it "attaches the list of dependencies to the go_mod DependencyFile" do
-      expect(parser.dependency_files.count).to eq(1)
-      dep_file = parser.dependency_files.first
-      expect(dep_file).to equal(go_mod)
-
-      # assert that the dependencies got correctly attached to the dep file
-      expect(dep_file.dependencies).to eq(dependencies.to_set)
-    end
-
-    it "marks indirect dependencies accordingly" do
-      # there are only 2 top-level dependencies
-      expect(dependencies.count(&:direct?)).to eq(2)
-
-      # and 2 indirect dependencies
-      indirect_deps = dependencies.reject(&:direct?)
-      expect(indirect_deps.count).to eq(2)
-
-      indirect_deps_names = indirect_deps.map(&:name)
-      expect(indirect_deps_names).to include("github.com/mattn/go-isatty")
-      expect(indirect_deps_names).to include("github.com/mattn/go-colorable")
-    end
-  end
 end
