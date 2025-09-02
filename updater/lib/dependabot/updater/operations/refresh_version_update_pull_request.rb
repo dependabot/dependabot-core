@@ -153,7 +153,8 @@ module Dependabot
             updated_dependencies: updated_deps,
             change_source: checker.dependency,
             # Sending notices to the pr message builder to be used in the PR message if show_in_pr is true
-            notices: @notices
+            notices: @notices,
+            exclude_paths: job.exclude_paths || []
           )
 
           # Send warning alerts to the API if any warning notices are present.
