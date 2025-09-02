@@ -1,6 +1,8 @@
 # typed: strong
 # frozen_string_literal: true
 
+require "dependabot/dependency_grapher"
+
 # This class provides a data object that can be submitted to a repository's dependency submission
 # REST API.
 #
@@ -89,7 +91,12 @@ module GithubApi
     def build_manifests(dependency_files, dependencies)
       return {} if dependencies.empty?
 
-      file = relevant_dependency_file(dependency_files)
+      grapher = Dependabot::DependencyGrapher.for_package_manager(package_manager).new(
+        dependency_files: dependency_files,
+        dependencies: dependencies
+      )
+
+      file = grapher.relevant_dependency_file
 
       {
         file.path => {
@@ -100,115 +107,9 @@ module GithubApi
           metadata: {
             ecosystem: package_manager
           },
-          resolved: dependencies.uniq.each_with_object({}) do |dep, resolved|
-            resolved[dep.name] = {
-              package_url: build_purl(dep),
-              relationship: relationship_for(dep),
-              scope: scope_for(dep),
-              # We expect direct dependencies to be added to the metadata, but they may not always be available
-              dependencies: dep.metadata.fetch(:depends_on, []),
-              metadata: {}
-            }
-          end
+          resolved: grapher.resolved_dependencies.to_h
         }
       }
-    end
-
-    # Dependabot aligns with Dependency Graph's existing behaviour where all dependencies are attributed to the
-    # most specific file out of the manifest or lockfile for the directory rather than split direct and indirect
-    # to the manifest and lockfile respectively.
-    #
-    # Dependabot's parsers apply this precedence by deterministic ordering, i.e. the manifest file's dependencies
-    # are added to the set first, then the lockfiles so we want the right-most file in the set, excluding anything
-    # marked as a support file.
-    sig { params(dependency_files: T::Array[Dependabot::DependencyFile]).returns(Dependabot::DependencyFile) }
-    def relevant_dependency_file(dependency_files)
-      filtered_files = dependency_files.reject { |f| f.support_file? || f.vendored_file? }
-
-      # TODO(brrygrdn): Make relevant_dependency_file an ecosystem property
-      #
-      # It turns out that the right-most-file-aligns-with-dependency-graph-static-parsing strategy isn't a durable
-      # assumption, for Go we prefer go.mod over go.sum even though the latter is technically the lockfile.
-      #
-      # With python ecosystems, this gets more fragmented and it isn't always accurate for 'bun' Javascript projects
-      # if they use mixins.
-      #
-      # The correct way to solve this is to use Dependency Injection to provide a small ecosystem-specific helper
-      # for this and PURLs so we can define the correct heuristic as necessary and use the 'last file wins' as our
-      # fallback strategy.
-      if %w(bun go Python).include?(package_manager)
-        T.must(filtered_files.first)
-      else
-        T.must(filtered_files.last)
-      end
-    end
-
-    # Helper function to create a Package URL (purl)
-    #
-    # TODO: Move out of this class.
-    #
-    # It probably makes more sense to assign this to a Dependabot::Dependency
-    # when it is created so the ecosystem-specific parser can own this?
-    #
-    # Let's let it live here for now until we start making changes to core to
-    # fill in some blanks.
-    sig { params(dependency: Dependabot::Dependency).returns(String) }
-    def build_purl(dependency)
-      "pkg:#{purl_pkg_for(dependency.package_manager)}/#{dependency.name}@#{dependency.version}".chomp("@")
-    end
-
-    sig { params(package_manager: String).returns(String) }
-    def purl_pkg_for(package_manager)
-      case package_manager
-      when "bundler"
-        "gem"
-      when "npm_and_yarn", "bun"
-        "npm"
-      when "maven", "gradle"
-        "maven"
-      when "pip", "uv"
-        "pypi"
-      when "cargo"
-        "cargo"
-      when "hex"
-        "hex"
-      when "composer"
-        "composer"
-      when "nuget"
-        "nuget"
-      when "go_modules"
-        "golang"
-      when "docker"
-        "docker"
-      when "github_actions"
-        "github"
-      when "terraform"
-        "terraform"
-      when "pub"
-        "pub"
-      when "elm"
-        "elm"
-      else
-        "generic"
-      end
-    end
-
-    sig { params(dependency: Dependabot::Dependency).returns(String) }
-    def scope_for(dependency)
-      if dependency.production?
-        "runtime"
-      else
-        "development"
-      end
-    end
-
-    sig { params(dep: Dependabot::Dependency).returns(String) }
-    def relationship_for(dep)
-      if dep.top_level?
-        "direct"
-      else
-        "indirect"
-      end
     end
   end
 end
