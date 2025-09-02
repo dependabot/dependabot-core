@@ -3,11 +3,11 @@
 
 require "sorbet-runtime"
 
-require "dependabot/dependency_grapher/base"
-require "dependabot/dependency_grapher/generic"
+require "dependabot/dependency_graphers/base"
+require "dependabot/dependency_graphers/generic"
 
 module Dependabot
-  module DependencyGrapher
+  module DependencyGraphers
     extend T::Sig
 
     @graphers = T.let({}, T::Hash[String, T.class_of(Base)])

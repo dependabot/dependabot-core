@@ -4,7 +4,7 @@
 require "sorbet-runtime"
 
 module Dependabot
-  module DependencyGrapher
+  module DependencyGraphers
     class Base
       extend T::Sig
       extend T::Helpers

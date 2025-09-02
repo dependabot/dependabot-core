@@ -1,7 +1,7 @@
 # typed: strong
 # frozen_string_literal: true
 
-require "dependabot/dependency_grapher"
+require "dependabot/dependency_graphers"
 
 # This class provides a data object that can be submitted to a repository's dependency submission
 # REST API.
@@ -91,7 +91,7 @@ module GithubApi
     def build_manifests(dependency_files, dependencies)
       return {} if dependencies.empty?
 
-      grapher = Dependabot::DependencyGrapher.for_package_manager(package_manager).new(
+      grapher = Dependabot::DependencyGraphers.for_package_manager(package_manager).new(
         dependency_files: dependency_files,
         dependencies: dependencies
       )
