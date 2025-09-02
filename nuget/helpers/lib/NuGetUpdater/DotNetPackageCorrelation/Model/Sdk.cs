@@ -10,5 +10,5 @@ public record Sdk
     public SemVersion? Version { get; init; }
 
     [JsonPropertyName("runtime-version")]
-    public SemVersion? RuntimeVersion { get; init; } = null;
+    public SemVersion? RuntimeVersion { get; init; }
 }
