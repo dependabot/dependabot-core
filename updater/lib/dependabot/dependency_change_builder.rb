@@ -128,6 +128,7 @@ module Dependabot
       T.cast(change_source, Dependabot::DependencyGroup)
     end
 
+    # rubocop:disable Metrics/PerceivedComplexity
     sig { returns(T::Array[Dependabot::DependencyFile]) }
     def generate_dependency_files
       if updated_dependencies.count == 1
@@ -145,24 +146,21 @@ module Dependabot
       # only included here to be included in the PR info.
       relevant_dependencies = updated_dependencies.reject(&:informational_only?)
       # Exclude support files since they are not manifests, just needed for supporting the update
-      # file_updater_for(relevant_dependencies).updated_dependency_files.reject(&:support_file)
-      update_files = file_updater_for(relevant_dependencies).updated_dependency_files
-      update_files.reject(&:support_file)
-      if Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files) && update_files.length > 0
+      update_files = file_updater_for(relevant_dependencies).updated_dependency_files.reject(&:support_file)
+      if Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files) && !update_files.empty?
         update_file_names = update_files.map(&:name)
         update_files.reject! do |f|
           Dependabot::FileFiltering.exclude_path?(f.name, @exclude_paths)
         end
-        if update_files.length == 0
+        if update_files.empty?
           msg = "No update files found due to exclude-paths. Excluded files: #{update_file_names.join(', ')}"
           Dependabot.logger.info(msg)
           raise msg
         end
-        update_files
-      else
-        update_files
       end
+      update_files
     end
+    # rubocop:enable Metrics/PerceivedComplexity
 
     sig { params(dependencies: T::Array[Dependabot::Dependency]).returns(Dependabot::FileUpdaters::Base) }
     def file_updater_for(dependencies)
