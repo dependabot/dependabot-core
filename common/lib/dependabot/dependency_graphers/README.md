@@ -2,11 +2,11 @@
 
 Dependency graphers are used to convert a set of parsed dependencies into a data structure we can use to output the dependency graph of a project in a generic data structure based on GitHub's [Dependency submission API](https://docs.github.com/en/rest/dependency-graph/dependency-submission).
 
-We will expect each language Dependabot supports to implement a `Dependabot::DependencyGrapher` class in future, but for now any modules that do not implement a specific class fail over to a 'best effort' generic implementation that works in most cases.
+We will expect each language Dependabot supports to implement a `Dependabot::DependencyGraphers` class in future, but for now any modules that do not implement a specific class fail over to a 'best effort' generic implementation that works in most cases.
 
 ## Public API
 
-Each `Dependabot::DependencyGrapher` class implements the following methods:
+Each `Dependabot::DependencyGraphers` class implements the following methods:
 
 | Method                      | Description                                                                                   |
 |-----------------------------|-----------------------------------------------------------------------------------------------|
@@ -41,7 +41,7 @@ An example of a `.resolved_dependencies` hash for a Bundler project:
 
 ## Writing a file fetcher for a new language
 
-All new file fetchers should inherit from `Dependabot::FileFetchers::Base` and
+All new file fetchers should inherit from `Dependabot::DependencyGraphers::Base` and
 implement the following methods:
 
 | Method                           | Description                                                                                   |
