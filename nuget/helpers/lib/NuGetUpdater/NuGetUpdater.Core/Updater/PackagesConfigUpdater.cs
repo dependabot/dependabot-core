@@ -54,6 +54,15 @@ internal static partial class PackagesConfigUpdater
         var packagesDirectory = PathHelper.JoinPath(projectDirectory, packagesSubDirectory);
         Directory.CreateDirectory(packagesDirectory);
 
+        var restoreArgs = new List<string>
+        {
+            "restore",
+            projectPath,
+            "-PackagesDirectory",
+            packagesDirectory,
+            "-NonInteractive",
+        };
+
         var updateArgs = new List<string>
         {
             "update",
@@ -67,20 +76,11 @@ internal static partial class PackagesConfigUpdater
             "-NonInteractive",
         };
 
-        var restoreArgs = new List<string>
-        {
-            "restore",
-            projectPath,
-            "-PackagesDirectory",
-            packagesDirectory,
-            "-NonInteractive",
-        };
-
         logger.Info("    Finding MSBuild...");
         var msbuildDirectory = MSBuildHelper.MSBuildPath;
         if (msbuildDirectory is not null)
         {
-            foreach (var args in new[] { updateArgs, restoreArgs })
+            foreach (var args in new[] { restoreArgs, updateArgs })
             {
                 args.Add("-MSBuildPath");
                 args.Add(msbuildDirectory); // e.g., /usr/share/dotnet/sdk/7.0.203
@@ -89,7 +89,7 @@ internal static partial class PackagesConfigUpdater
 
         using (new SpecialImportsConditionPatcher(projectPath))
         {
-            RunNugetUpdate(updateArgs, restoreArgs, projectDirectory ?? packagesDirectory, logger);
+            RunNugetUpdate([.. restoreArgs], [.. updateArgs], projectDirectory ?? packagesDirectory, logger);
         }
 
         projectBuildFile = ProjectBuildFile.Open(repoRootPath, projectPath);
@@ -110,7 +110,7 @@ internal static partial class PackagesConfigUpdater
         return [updateResult];
     }
 
-    private static void RunNugetUpdate(List<string> updateArgs, List<string> restoreArgs, string projectDirectory, ILogger logger)
+    private static void RunNugetUpdate(string[] restoreArgs, string[] updateArgs, string projectDirectory, ILogger logger)
     {
         var outputBuilder = new StringBuilder();
         var writer = new StringWriter(outputBuilder);
@@ -122,52 +122,25 @@ internal static partial class PackagesConfigUpdater
 
         var currentDir = Environment.CurrentDirectory;
         var existingSpawnedProcesses = GetLikelyNuGetSpawnedProcesses();
+
+        void RunNuGetWithArguments(string[] args)
+        {
+            logger.Info($"    Running NuGet.exe with args: {string.Join(" ", args)}");
+            outputBuilder.Clear();
+            var exitCode = Program.Main(args);
+            var fullOutput = outputBuilder.ToString();
+            if (exitCode != 0)
+            {
+                MSBuildHelper.ThrowOnError(fullOutput);
+                throw new Exception($"Unable to run NuGet.exe with args: {string.Join(" ", args)}\nOutput:\n{fullOutput}\n");
+            }
+        }
+
         try
         {
             Environment.CurrentDirectory = projectDirectory;
-            var retryingAfterRestore = false;
-
-        doRestore:
-            logger.Info($"    Running NuGet.exe with args: {string.Join(" ", updateArgs)}");
-            outputBuilder.Clear();
-            var result = Program.Main(updateArgs.ToArray());
-            var fullOutput = outputBuilder.ToString();
-            logger.Info($"    Result: {result}");
-            logger.Info($"    Output:\n{fullOutput}");
-            if (result != 0)
-            {
-                // The initial `update` command can fail for several reasons:
-                // 1. One possibility is that the `packages.config` file contains a delisted package.  If that's the
-                //    case, `update` will fail with the message "Existing packages must be restored before performing
-                //    an install or update."
-                // 2. Another possibility is that the `update` command fails because the package contains no assemblies
-                //    and doesn't appear in the cache.  The message in this case will be "Could not install package
-                //    '<name> <version>'...the package does not contain any assembly references or content files that
-                //    are compatible with that framework.".
-                // 3. Yet another possibility is that the project explicitly imports a targets file without a condition
-                //    of `Exists(...)`.
-                // The solution in all cases is to run `restore` then try the update again.
-                if (!retryingAfterRestore && OutputIndicatesRestoreIsRequired(fullOutput))
-                {
-                    retryingAfterRestore = true;
-                    logger.Info($"    Running NuGet.exe with args: {string.Join(" ", restoreArgs)}");
-                    outputBuilder.Clear();
-                    var exitCodeAgain = Program.Main(restoreArgs.ToArray());
-                    var restoreOutput = outputBuilder.ToString();
-
-                    if (exitCodeAgain != 0)
-                    {
-                        MSBuildHelper.ThrowOnError(fullOutput);
-                        MSBuildHelper.ThrowOnError(restoreOutput);
-                        throw new Exception($"Unable to restore.\nOutput:\n${restoreOutput}\n");
-                    }
-
-                    goto doRestore;
-                }
-
-                MSBuildHelper.ThrowOnError(fullOutput);
-                throw new Exception(fullOutput);
-            }
+            RunNuGetWithArguments(restoreArgs);
+            RunNuGetWithArguments(updateArgs);
         }
         catch (Exception e)
         {
@@ -189,13 +162,6 @@ internal static partial class PackagesConfigUpdater
                 credProvider.Kill();
             }
         }
-    }
-
-    private static bool OutputIndicatesRestoreIsRequired(string output)
-    {
-        return output.Contains("Existing packages must be restored before performing an install or update.")
-            || output.Contains("the package does not contain any assembly references or content files that are compatible with that framework.")
-            || MSBuildHelper.GetMissingFile(output) is not null;
     }
 
     private static Process[] GetLikelyNuGetSpawnedProcesses()
