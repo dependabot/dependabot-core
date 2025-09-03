@@ -1868,7 +1868,7 @@ public class PackagesConfigUpdaterTests : TestBase
         var error = JobErrorBase.ErrorFromException(notFoundException, "TEST-JOB-ID", temporaryDirectory.DirectoryPath);
         var notFound = Assert.IsType<DependencyNotFound>(error);
         var depName = Assert.IsType<string>(notFound.Details["source"]);
-        Assert.Equal("Unrelated.Package", depName);
+        Assert.Equal("Unrelated.Package.1.0.0", depName);
     }
 
     [Theory]
