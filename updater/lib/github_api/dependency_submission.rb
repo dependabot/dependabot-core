@@ -64,7 +64,6 @@ module GithubApi
           version: Dependabot::VERSION,
           url: SNAPSHOT_DETECTOR_URL
         },
-        scanned: scanned,
         manifests: manifests
       }
     end
@@ -74,11 +73,6 @@ module GithubApi
     sig { returns(String) }
     def job_correlator
       "#{SNAPSHOT_DETECTOR_NAME}-#{package_manager}"
-    end
-
-    sig { returns(String) }
-    def scanned
-      Time.now.utc.iso8601
     end
 
     sig { returns(String) }

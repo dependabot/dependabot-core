@@ -497,7 +497,6 @@ RSpec.describe Dependabot::ApiClient do
           version: "1.0.0",
           url: "https://github.com/dependabot/dependabot-core"
         },
-        scanned: "2025-07-09T12:00:00Z",
         manifests: {
           "Gemfile" => {
             name: "Gemfile",
