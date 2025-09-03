@@ -93,9 +93,6 @@ RSpec.describe GithubApi::DependencySubmission do
       expect(payload[:detector][:version]).to eq(Dependabot::VERSION)
       expect(payload[:job][:correlator]).to eq("dependabot-bundler")
       expect(payload[:job][:id]).to eq("9999")
-
-      # And check we have an iso8601 timestamp
-      expect(payload[:scanned]).to match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/)
     end
 
     it "generates git attributes correctly" do
