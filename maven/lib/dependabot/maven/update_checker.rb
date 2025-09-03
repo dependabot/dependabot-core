@@ -24,7 +24,7 @@ module Dependabot
           requirements_update_strategy: T.nilable(Dependabot::RequirementsUpdateStrategy),
           dependency_group: T.nilable(Dependabot::DependencyGroup),
           update_cooldown: T.nilable(Dependabot::Package::ReleaseCooldownOptions),
-          exclude_paths: T::Array[String],
+          exclude_paths: T.nilable(T::Array[String]),
           options: T::Hash[Symbol, T.untyped]
         )
           .void
