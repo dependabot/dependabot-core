@@ -98,7 +98,8 @@ module Dependabot
                   source: nil,
                   groups: [dep["requirement_type"]].compact
                 }],
-                package_manager: "uv"
+                package_manager: "uv",
+                origin_files: [Pathname.new(dep["file"]).cleanpath.to_path]
               )
           end
 
@@ -123,7 +124,8 @@ module Dependabot
               name: normalise(name),
               version: version_from_lockfile(name),
               requirements: requirements,
-              package_manager: "uv"
+              package_manager: "uv",
+              origin_files: ["pyproject.toml"]
             )
           end
           dependencies
@@ -208,7 +210,8 @@ module Dependabot
                 package_manager: "uv",
                 subdependency_metadata: [{
                   production: production_dependency_names.include?(name)
-                }]
+                }],
+                origin_files: ["uv.lock"]
               )
           end
 

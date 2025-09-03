@@ -60,7 +60,8 @@ module SilentPackageManager
           file: T.must(dependency_files.first).name,
           groups: [info["group"]].compact,
           source: nil
-        }]
+        }],
+        origin_files: [T.must(dependency_files.first).name]
       )
     end
 

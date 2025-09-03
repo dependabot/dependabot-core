@@ -83,7 +83,8 @@ module Dependabot
                   name: dep.name,
                   version: resolved.to_s,
                   requirements: dep.requirements,
-                  package_manager: dep.package_manager
+                  package_manager: dep.package_manager,
+                  origin_files: [file.name]
                 )
               end
             end
@@ -130,7 +131,8 @@ module Dependabot
             file: file.name,
             metadata: { declaration_string: string }
           }],
-          package_manager: PackageManager::NAME
+          package_manager: PackageManager::NAME,
+          origin_files: [file.name]
         )
       end
 

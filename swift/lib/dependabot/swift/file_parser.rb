@@ -31,7 +31,8 @@ module Dependabot
               version: dep.version,
               package_manager: dep.package_manager,
               requirements: requirements,
-              metadata: dep.metadata
+              metadata: dep.metadata,
+              origin_files: dep.origin_files
             )
           else
             dependency_set << dep

@@ -166,7 +166,8 @@ module Dependabot
             ),
             groups: [group]
           }],
-          package_manager: PackageManager::NAME
+          package_manager: PackageManager::NAME,
+          origin_files: [PackageManager::MANIFEST_FILENAME]
         )
       end
 
@@ -207,7 +208,8 @@ module Dependabot
           package_manager: PackageManager::NAME,
           subdependency_metadata: [{
             production: keys.fetch(:group) != "development"
-          }]
+          }],
+          origin_files: [PackageManager::LOCKFILE_FILENAME]
         )
       end
 

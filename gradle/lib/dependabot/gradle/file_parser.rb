@@ -419,7 +419,8 @@ module Dependabot
             groups: groups,
             metadata: dependency_metadata(details_hash, in_dependency_set)
           }],
-          package_manager: "gradle"
+          package_manager: "gradle",
+          origin_files: [buildfile.name]
         )
       end
 

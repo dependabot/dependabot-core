@@ -168,7 +168,8 @@ module Dependabot
           version: version,
           requirements: is_indirect ? [] : reqs,
           package_manager: "go_modules",
-          direct_relationship: !is_indirect
+          direct_relationship: !is_indirect,
+          origin_files: [go_mod&.name].compact
         )
       end
 

@@ -99,7 +99,8 @@ module Dependabot
                   groups: ["feature"],
                   source: nil
                 }
-              ]
+              ],
+              origin_files: [config_dependency_file.name]
             )
 
             dependencies << dep

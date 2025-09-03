@@ -132,7 +132,8 @@ module Dependabot
                   source: dep.fetch("source")&.transform_keys(&:to_sym),
                   file: file.name
                 }],
-                package_manager: "bundler"
+                package_manager: "bundler",
+                origin_files: [file.name]
               )
 
             file.dependencies << dep
@@ -172,7 +173,8 @@ module Dependabot
                   source: dependency.fetch("source")&.transform_keys(&:to_sym),
                   file: gemspec.name
                 }],
-                package_manager: "bundler"
+                package_manager: "bundler",
+                origin_files: [gemspec.name]
               )
 
               gemspec.dependencies << dep
@@ -210,7 +212,8 @@ module Dependabot
             subdependency_metadata: [{
               production: production_dep_names.include?(dependency.name)
             }],
-            direct_relationship: is_direct
+            direct_relationship: is_direct,
+            origin_files: [T.must(lockfile).name]
           )
 
           T.must(lockfile).dependencies << dep

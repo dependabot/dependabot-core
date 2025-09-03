@@ -84,7 +84,8 @@ module Dependabot
 
           source = { type: "git", url: url, ref: version, branch: nil }
           metadata = { identity: identity }
-          args = { name: name, version: version, package_manager: "swift", requirements: [], metadata: metadata }
+          args = { name: name, version: version, package_manager: "swift", requirements: [], metadata: metadata,
+                   origin_files: ["Package.swift"] }
 
           if level.zero?
             args[:requirements] << { requirement: nil, groups: ["dependencies"], file: nil, source: source }
