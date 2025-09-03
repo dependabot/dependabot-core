@@ -159,7 +159,8 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
       updated_dependencies: [dependency],
       dependency: dependency,
       requirements_unlocked_or_can_be?: true,
-      can_update?: true
+      can_update?: true,
+      excluded?: false
     )
   end
 
@@ -181,7 +182,8 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
       updated_dependencies: [transitive_dependency],
       dependency: transitive_dependency,
       requirements_unlocked_or_can_be?: false,
-      can_update?: false
+      can_update?: false,
+      excluded?: false
     )
   end
 

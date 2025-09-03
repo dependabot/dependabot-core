@@ -80,7 +80,7 @@ module Dependabot
           params(object_with_dependencies: T::Hash[String, T.untyped])
             .returns(Dependabot::FileParsers::Base::DependencySet)
         end
-        def recursively_fetch_dependencies(object_with_dependencies)
+        def recursively_fetch_dependencies(object_with_dependencies) # rubocop:disable Metrics/AbcSize
           dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
           dependencies = object_with_dependencies["dependencies"]
@@ -95,6 +95,8 @@ module Dependabot
             package_name = name.split("node_modules/").last
             version = version.to_s
 
+            origin_file = Pathname.new(@dependency_file.directory).join(@dependency_file.name).to_s
+
             dependency_args = {
               name: package_name,
               version: version,
@@ -103,7 +105,8 @@ module Dependabot
               direct_relationship: @direct_dependencies.include?(package_name),
               metadata: {
                 depends_on: details&.fetch("dependencies", {})&.keys || []
-              }
+              },
+              origin_files: [origin_file]
             }
 
             if details["bundled"]

@@ -124,7 +124,8 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
       updated_dependencies: [dependency],
       dependency: dependency,
       requirements_unlocked_or_can_be?: true,
-      can_update?: true
+      can_update?: true,
+      excluded?: false
     )
   end
 
