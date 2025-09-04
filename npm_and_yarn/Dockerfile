@@ -5,7 +5,7 @@ ARG COREPACK_VERSION=0.33.0
 
 # Check for updates at https://github.com/pnpm/pnpm/releases
 # With every major release update, also update npm_and_yarn/lib/dependabot/npm_and_yarn/pnpm_package_manager.rb (Section : Update instructions)
-ARG PNPM_VERSION=10.14.0
+ARG PNPM_VERSION=10.15.1
 
 # Check for updates at https://github.com/yarnpkg/berry/releases
 # With every major release update, also update npm_and_yarn/lib/dependabot/npm_and_yarn/yarn_package_manager.rb (Section : Update instructions)
