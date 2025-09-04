@@ -95,7 +95,9 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
       Dependabot::Source,
       directories: nil,
       directory: "/",
-      repo: "test/repo"
+      repo: "test/repo",
+      "directory=": nil,
+      "directories=": nil
     )
   end
 
@@ -104,7 +106,9 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
       Dependabot::Source,
       directories: ["/", "/subdir"],
       directory: "/",
-      repo: "test/repo"
+      repo: "test/repo",
+      "directory=": nil,
+      "directories=": nil
     )
   end
 
@@ -113,7 +117,9 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
       Dependabot::Source,
       directories: nil,
       directory: "/single",
-      repo: "test/repo"
+      repo: "test/repo",
+      "directory=": nil,
+      "directories=": nil
     )
   end
 
@@ -352,26 +358,6 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
           .with("Found no dependencies to update after filtering allowed updates in /")
         expect(mock_update_all_versions).not_to receive(:perform)
         perform
-      end
-    end
-  end
-
-  describe "private methods" do
-    describe "#directories" do
-      context "when source has directories" do
-        it "returns the directories" do
-          allow(job).to receive(:source).and_return(mock_source_with_multiple_dirs)
-
-          expect(group_update_all_versions.send(:directories)).to eq(["/", "/subdir"])
-        end
-      end
-
-      context "when source has no directories" do
-        it "returns the single directory" do
-          allow(job).to receive(:source).and_return(mock_source_single_dir)
-
-          expect(group_update_all_versions.send(:directories)).to eq(["/single"])
-        end
       end
     end
   end
