@@ -52,7 +52,7 @@ module Dependabot
           params(object_with_dependencies: T::Hash[String, T.untyped])
             .returns(Dependabot::FileParsers::Base::DependencySet)
         end
-        def recursively_fetch_dependencies(object_with_dependencies) # rubocop:disable Metrics/AbcSize
+        def recursively_fetch_dependencies(object_with_dependencies)
           dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
           dependencies = object_with_dependencies["dependencies"]
