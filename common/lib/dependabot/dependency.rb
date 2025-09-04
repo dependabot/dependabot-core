@@ -119,14 +119,12 @@ module Dependabot
         subdependency_metadata: T.nilable(T::Array[T::Hash[T.any(Symbol, String), String]]),
         removed: T::Boolean,
         metadata: T.nilable(T::Hash[T.any(Symbol, String), String]),
-        direct_relationship: T::Boolean,
         origin_files: T::Array[String]
       ).void
     end
     def initialize(name:, requirements:, package_manager:, version: nil,
                    previous_version: nil, previous_requirements: nil, directory: nil,
-                   subdependency_metadata: [], removed: false, metadata: {}, direct_relationship: false,
-                   origin_files: [])
+                   subdependency_metadata: [], removed: false, metadata: {}, origin_files: [])
       @name = name
       @version = T.let(
         case version
@@ -153,7 +151,6 @@ module Dependabot
       end
       @removed = removed
       @metadata = T.let(symbolize_keys(metadata || {}), T::Hash[Symbol, T.untyped])
-      @direct_relationship = direct_relationship
       @origin_files = origin_files
       check_values
     end
@@ -163,12 +160,6 @@ module Dependabot
     sig { returns(T::Boolean) }
     def top_level?
       requirements.any?
-    end
-
-    # used to support lockfile parsing/DependencySubmission
-    sig { returns(T::Boolean) }
-    def direct?
-      top_level? || @direct_relationship
     end
 
     sig { returns(T::Boolean) }

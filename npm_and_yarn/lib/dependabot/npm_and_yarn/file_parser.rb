@@ -226,10 +226,7 @@ module Dependabot
             dep = build_dependency(
               file: file, type: type, name: name, requirement: requirement
             )
-            if dep
-              file.dependencies << dep
-              dependency_set << dep
-            end
+            dependency_set << dep if dep
           end
         end
 
