@@ -163,8 +163,12 @@ module Dependabot
       return unless Dependabot::Experiments.enabled?(:enable_dependency_submission_poc)
 
       submission = GithubApi::DependencySubmission.new(
-        job: job,
-        snapshot: dependency_snapshot
+        job_id: job.id.to_s,
+        branch: job.source.branch || "main",
+        sha: dependency_snapshot.base_commit_sha,
+        ecosystem: T.must(dependency_snapshot.ecosystem),
+        dependency_files: dependency_snapshot.dependency_files,
+        dependencies: dependency_snapshot.dependencies
       )
 
       # TODO(brrygrdn): Drop this back down to debug logging
