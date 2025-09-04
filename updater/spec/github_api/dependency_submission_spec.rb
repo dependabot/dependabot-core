@@ -16,8 +16,22 @@ RSpec.describe GithubApi::DependencySubmission do
 
   subject(:dependency_submission) do
     described_class.new(
-      job: job,
-      snapshot: dependabot_snapshot
+      job_id: "9999",
+      branch: branch,
+      sha: sha,
+      ecosystem: ecosystem,
+      dependency_files: dependency_files,
+      dependencies: parsed_dependencies
+    )
+  end
+
+  let(:parser) do
+    Dependabot::FileParsers.for_package_manager("bundler").new(
+      dependency_files: dependency_files,
+      repo_contents_path: nil,
+      source: source,
+      credentials: [],
+      reject_external_code: false
     )
   end
 
@@ -25,8 +39,13 @@ RSpec.describe GithubApi::DependencySubmission do
   let(:branch) { "main" }
   let(:sha) { "fake-sha" }
 
-  let(:directory) { "/" }
-  let(:directories) { nil }
+  let(:ecosystem) do
+    parser.ecosystem
+  end
+
+  let(:parsed_dependencies) do
+    parser.parse
+  end
 
   let(:source) do
     Dependabot::Source.new(
@@ -37,35 +56,7 @@ RSpec.describe GithubApi::DependencySubmission do
     )
   end
 
-  let(:job) do
-    instance_double(
-      Dependabot::Job,
-      id: 9999,
-      source: source,
-      package_manager: "bundler",
-      repo_contents_path: nil,
-      credentials: [],
-      reject_external_code?: false,
-      experiments: {},
-      dependency_groups: [],
-      security_updates_only?: false,
-      allowed_update?: true
-    )
-  end
-
-  let(:job_definition) do
-    {
-      "base_commit_sha" => sha,
-      "base64_dependency_files" => encode_dependency_files(dependency_files)
-    }
-  end
-
-  let(:dependabot_snapshot) do
-    Dependabot::DependencySnapshot.create_from_job_definition(
-      job: job,
-      job_definition: job_definition
-    )
-  end
+  let(:directory) { "/" }
 
   context "with a basic Gemfile project" do
     let(:dependency_files) do
@@ -249,22 +240,12 @@ RSpec.describe GithubApi::DependencySubmission do
     end
   end
 
-  # Dependabot's existing behaviour is to fail without a lockfile, which makes sense from an update perspective,
-  # but we should eventually tolerate Gemfile-only projects when we are just asked to produce a graph.
-  #
-  # For now this test covers a corner case, that an empty Gemfile.lock will not result in an empty dependency
-  # submission as we fall back to submitting the Gemfile even though it is lower resolution.
-  context "with an empty Gemfile.lock" do
+  context "without a Gemfile.lock" do
     let(:dependency_files) do
       [
         Dependabot::DependencyFile.new(
           name: "Gemfile",
           content: fixture("bundler/original/Gemfile"),
-          directory: directory
-        ),
-        Dependabot::DependencyFile.new(
-          name: "Gemfile.lock",
-          content: "",
           directory: directory
         )
       ]
