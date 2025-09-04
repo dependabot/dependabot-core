@@ -200,13 +200,8 @@ module Dependabot
             package_manager: "bundler",
             subdependency_metadata: [{
               production: production_dep_names.include?(dependency.name)
-<<<<<<< HEAD
             }],
-            direct_relationship: is_direct,
             origin_files: [T.must(lockfile).name]
-=======
-            }]
->>>>>>> 9eb080ce5b71139f8399ccd0acf8de08bd1f591a
           )
         end
 
