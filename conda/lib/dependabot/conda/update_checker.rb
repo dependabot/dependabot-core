@@ -134,11 +134,14 @@ module Dependabot
       sig { returns(T.nilable(Dependabot::Version)) }
       def fetch_lowest_resolvable_security_fix_version
         # Delegate to latest_version_finder for security fix resolution
-        # This leverages the Python ecosystem's security advisory infrastructure
+        # This leverages Python ecosystem's security advisory infrastructure
         fix_version = latest_version_finder.lowest_security_fix_version
 
         # If no security fix version is found, fall back to latest_resolvable_version
-        return latest_resolvable_version if fix_version.nil?
+        if fix_version.nil?
+          fallback = latest_resolvable_version
+          return fallback.is_a?(String) ? Dependabot::Conda::Version.new(fallback) : fallback
+        end
 
         fix_version
       end
