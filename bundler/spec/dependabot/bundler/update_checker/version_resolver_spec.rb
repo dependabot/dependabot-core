@@ -28,7 +28,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
   let(:ignored_versions) { [] }
   let(:latest_allowable_version) { nil }
   let(:unlock_requirement) { false }
-  let(:cooldown_options) { {} }
+  let(:cooldown_options) { Dependabot::Package::ReleaseCooldownOptions.new }
 
   let(:dependency) do
     Dependabot::Dependency.new(

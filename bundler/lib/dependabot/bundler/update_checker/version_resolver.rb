@@ -1,7 +1,8 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "excon"
+require "sorbet-runtime"
 
 require "dependabot/bundler/helpers"
 require "dependabot/bundler/update_checker"
@@ -15,19 +16,36 @@ module Dependabot
   module Bundler
     class UpdateChecker
       class VersionResolver
+        extend T::Sig
+
         require_relative "file_preparer"
         require_relative "latest_version_finder"
         require_relative "shared_bundler_helpers"
         include SharedBundlerHelpers
 
-        def initialize(dependency:, unprepared_dependency_files:,
-                       repo_contents_path: nil, credentials:, ignored_versions:,
+        sig do
+          params(
+            dependency: Dependabot::Dependency,
+            unprepared_dependency_files: T::Array[Dependabot::DependencyFile],
+            credentials: T::Array[Dependabot::Credential],
+            ignored_versions: T::Array[String],
+            options: T::Hash[Symbol, T.untyped],
+            repo_contents_path: T.nilable(String),
+            raise_on_ignored: T::Boolean,
+            replacement_git_pin: T.nilable(String),
+            remove_git_source: T::Boolean,
+            unlock_requirement: T::Boolean,
+            latest_allowable_version: T.nilable(T.any(String, Dependabot::Version)),
+            cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
+          ).void
+        end
+        def initialize(dependency:, unprepared_dependency_files:, credentials:, ignored_versions:, options:,
+                       repo_contents_path: nil,
                        raise_on_ignored: false,
                        replacement_git_pin: nil, remove_git_source: false,
                        unlock_requirement: true,
                        latest_allowable_version: nil,
-                       cooldown_options: nil,
-                       options:)
+                       cooldown_options: nil)
           @dependency                  = dependency
           @unprepared_dependency_files = unprepared_dependency_files
           @credentials                 = credentials
@@ -41,37 +59,30 @@ module Dependabot
           @cooldown_options            = cooldown_options
           @options                     = options
 
-          @latest_allowable_version_incompatible_with_ruby = false
+          @latest_allowable_version_incompatible_with_ruby = T.let(false, T::Boolean)
+          @latest_resolvable_version_details = T.let(nil, T.nilable(T::Hash[Symbol, T.untyped]))
+          @dependency_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
+          @latest_version_details = T.let(nil, T.nilable(T::Hash[Symbol, T.untyped]))
+          @gemspec_ruby_unlocked = T.let(false, T::Boolean)
+          @bundler_version = T.let(nil, T.nilable(String))
         end
 
+        sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
         def latest_resolvable_version_details
           @latest_resolvable_version_details ||=
             fetch_latest_resolvable_version_details
         end
 
+        sig { returns(T::Boolean) }
         def latest_allowable_version_incompatible_with_ruby?
           @latest_allowable_version_incompatible_with_ruby
         end
 
-        private
-
-        attr_reader :dependency
-        attr_reader :unprepared_dependency_files
-        attr_reader :repo_contents_path
-        attr_reader :credentials
-        attr_reader :ignored_versions
-        attr_reader :replacement_git_pin
-        attr_reader :latest_allowable_version
+        # Abstract method implementations
+        sig { override.returns(T::Hash[Symbol, T.untyped]) }
         attr_reader :options
 
-        def remove_git_source?
-          @remove_git_source
-        end
-
-        def unlock_requirement?
-          @unlock_requirement
-        end
-
+        sig { override.returns(T::Array[Dependabot::DependencyFile]) }
         def dependency_files
           @dependency_files ||=
             FilePreparer.new(
@@ -84,7 +95,41 @@ module Dependabot
             ).prepared_dependency_files
         end
 
+        sig { override.returns(T.nilable(String)) }
+        attr_reader :repo_contents_path
+
+        sig { override.returns(T::Array[Dependabot::Credential]) }
+        attr_reader :credentials
+
+        private
+
+        sig { returns(Dependabot::Dependency) }
+        attr_reader :dependency
+
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
+        attr_reader :unprepared_dependency_files
+
+        sig { returns(T::Array[String]) }
+        attr_reader :ignored_versions
+
+        sig { returns(T.nilable(String)) }
+        attr_reader :replacement_git_pin
+
+        sig { returns(T.nilable(T.any(String, Dependabot::Version))) }
+        attr_reader :latest_allowable_version
+
+        sig { returns(T::Boolean) }
+        def remove_git_source?
+          @remove_git_source
+        end
+
+        sig { returns(T::Boolean) }
+        def unlock_requirement?
+          @unlock_requirement
+        end
+
         # rubocop:disable Metrics/PerceivedComplexity
+        sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
         def fetch_latest_resolvable_version_details
           return latest_version_details unless gemfile
 
@@ -100,7 +145,7 @@ module Dependabot
                 args: {
                   dependency_name: dependency.name,
                   dependency_requirements: dependency.requirements,
-                  gemfile_name: gemfile.name,
+                  gemfile_name: T.must(gemfile).name,
                   lockfile_name: lockfile&.name,
                   dir: tmp_dir,
                   credentials: credentials
@@ -136,12 +181,14 @@ module Dependabot
         end
         # rubocop:enable Metrics/PerceivedComplexity
 
+        sig { params(error: Dependabot::SharedHelpers::HelperSubprocessFailed).returns(T::Boolean) }
         def circular_dependency_at_new_version?(error)
           return false unless error.error_class.include?("CyclicDependencyError")
 
           error.message.include?("'#{dependency.name}'")
         end
 
+        sig { params(error: Dependabot::SharedHelpers::HelperSubprocessFailed).returns(T::Boolean) }
         def error_due_to_restrictive_upper_bound?(error)
           # We see this when the dependency doesn't appear in the lockfile and
           # has an overly restrictive upper bound that we've added, either due
@@ -152,6 +199,7 @@ module Dependabot
           error.message.include?("#{dependency.name} ")
         end
 
+        sig { params(error: T.untyped).returns(T::Boolean) }
         def ruby_lock_error?(error)
           return false unless conflict_on_ruby?(error)
           return false if @gemspec_ruby_unlocked
@@ -159,6 +207,7 @@ module Dependabot
           dependency_files.any? { |f| f.name.end_with?(".gemspec") }
         end
 
+        sig { params(error: Dependabot::SharedHelpers::HelperSubprocessFailed).returns(T::Boolean) }
         def conflict_on_ruby?(error)
           if bundler_version == "1"
             error.message.include?(" for gem \"ruby\0\"")
@@ -167,6 +216,7 @@ module Dependabot
           end
         end
 
+        sig { returns(T::Boolean) }
         def regenerate_dependency_files_without_ruby_lock
           @dependency_files =
             FilePreparer.new(
@@ -178,8 +228,10 @@ module Dependabot
               latest_allowable_version: latest_allowable_version,
               lock_ruby_version: false
             ).prepared_dependency_files
+          true
         end
 
+        sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
         def latest_version_details
           @latest_version_details ||=
             LatestVersionFinder.new(
@@ -194,6 +246,7 @@ module Dependabot
             ).latest_version_details
         end
 
+        sig { params(details: T.untyped).returns(T::Boolean) }
         def ruby_version_incompatible?(details)
           # It's only the old index we have a problem with
           return false unless details[:fetcher] == "Bundler::Fetcher::Dependency"
@@ -231,16 +284,19 @@ module Dependabot
           false
         end
 
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def gemfile
           dependency_files.find { |f| f.name == "Gemfile" } ||
             dependency_files.find { |f| f.name == "gems.rb" }
         end
 
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def lockfile
           dependency_files.find { |f| f.name == "Gemfile.lock" } ||
             dependency_files.find { |f| f.name == "gems.locked" }
         end
 
+        sig { override.returns(String) }
         def bundler_version
           @bundler_version ||= Helpers.bundler_version(lockfile)
         end
