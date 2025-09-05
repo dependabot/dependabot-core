@@ -1,5 +1,5 @@
 # This cannot be inlined below (e.g., COPY --from=maven:...) because Dependabot does not support that syntax yet
-FROM maven:3.9.9 as maven
+FROM maven:3.9.11 as maven
 
 FROM ghcr.io/dependabot/dependabot-updater-core
 
