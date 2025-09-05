@@ -246,7 +246,8 @@ module Dependabot
           job: job,
           dependency_files: dependency_files,
           updated_dependencies: updated_dependencies,
-          change_source: dependency_group
+          change_source: dependency_group,
+          exclude_paths: job.exclude_paths || []
         )
       rescue Dependabot::InconsistentRegistryResponse => e
         error_handler.log_dependency_error(

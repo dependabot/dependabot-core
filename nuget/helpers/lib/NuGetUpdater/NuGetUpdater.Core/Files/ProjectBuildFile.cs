@@ -149,13 +149,59 @@ internal sealed class ProjectBuildFile : XmlBuildFile
 
     public void NormalizeDirectorySeparatorsInProject()
     {
+        // `//Reference/HintPath`
         var hintPathNodes = Contents.Descendants()
             .Where(e =>
                 e.Name.Equals("HintPath", StringComparison.OrdinalIgnoreCase) &&
-                e.Parent.Name.Equals("Reference", StringComparison.OrdinalIgnoreCase))
-            .Select(e => (XmlElementSyntax)e.AsNode);
+                (e.Parent?.Name ?? "").Equals("Reference", StringComparison.OrdinalIgnoreCase))
+            .Select(e => e.AsNode)
+            .OfType<XmlElementSyntax>();
         var updatedXml = Contents.ReplaceNodes(hintPathNodes,
             (_, n) => n.WithContent(n.GetContentValue().Replace("/", "\\")).AsNode);
+        Update(updatedXml);
+
+        // `//Target/Error[starts-with(@Condition, '!Exists(' and Text)]`
+        var errorsWithConditions = Contents.Descendants()
+            .Where(e =>
+                e.Name.Equals("Error", StringComparison.OrdinalIgnoreCase) &&
+                (e.Parent?.Name ?? "").Equals("Target", StringComparison.OrdinalIgnoreCase) &&
+                e.GetAttributeValue("Condition")?.StartsWith("!Exists(") == true &&
+                e.GetAttribute("Text") is not null)
+            .Select(e => e.AsNode)
+            .OfType<XmlEmptyElementSyntax>();
+        updatedXml = Contents.ReplaceNodes(errorsWithConditions,
+            (_, n) =>
+            {
+                var conditionAttr = n.GetAttribute("Condition");
+                var newConditionAttr = conditionAttr.WithValue(conditionAttr.Value.Replace("/", "\\"));
+                n = (XmlEmptyElementSyntax)n.ReplaceAttribute(conditionAttr, newConditionAttr).AsNode;
+
+                var textAttr = n.GetAttribute("Text");
+                var newTextAttr = textAttr.WithValue(textAttr.Value.Replace("/", "\\"));
+                return n.ReplaceAttribute(textAttr, newTextAttr).AsNode;
+            });
+        Update(updatedXml);
+
+        // `/Project/Import[starts-with(@Condition, 'Exists(') and Project]`
+        var importsWithConditions = Contents.Descendants()
+            .Where(e =>
+                e.Name.Equals("Import", StringComparison.OrdinalIgnoreCase) &&
+                (e.Parent?.Name ?? "").Equals("Project", StringComparison.OrdinalIgnoreCase) &&
+                e.GetAttributeValue("Condition")?.StartsWith("Exists(") == true &&
+                e.GetAttribute("Project") is not null)
+            .Select(e => e.AsNode)
+            .OfType<XmlEmptyElementSyntax>();
+        updatedXml = Contents.ReplaceNodes(importsWithConditions,
+            (_, n) =>
+            {
+                var projectAttr = n.GetAttribute("Project");
+                var newProjectAttr = projectAttr.WithValue(projectAttr.Value.Replace("/", "\\"));
+                n = (XmlEmptyElementSyntax)n.ReplaceAttribute(projectAttr, newProjectAttr).AsNode;
+
+                var conditionAttr = n.GetAttribute("Condition");
+                var newConditionAttr = conditionAttr.WithValue(conditionAttr.Value.Replace("/", "\\"));
+                return n.ReplaceAttribute(conditionAttr, newConditionAttr).AsNode;
+            });
         Update(updatedXml);
     }
 

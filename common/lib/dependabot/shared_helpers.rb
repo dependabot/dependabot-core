@@ -371,11 +371,13 @@ module Dependabot
       git_store_content = ""
       deduped_credentials.each do |cred|
         next unless cred["type"] == "git_source"
-        next unless cred["username"] && cred["password"]
+        next unless cred["host"]
 
-        authenticated_url =
-          "https://#{cred.fetch('username')}:#{cred.fetch('password')}" \
-          "@#{cred.fetch('host')}"
+        has_creds = cred["username"] && cred["password"]
+
+        # Build authenticated URL with credentials if available
+        creds = has_creds ? "#{cred.fetch('username')}:#{cred.fetch('password')}@" : ""
+        authenticated_url = "https://#{creds}#{cred.fetch('host')}"
 
         git_store_content += authenticated_url + "\n"
         configure_git_to_use_https(cred.fetch("host"))

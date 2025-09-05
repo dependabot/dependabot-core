@@ -8,6 +8,14 @@ require "dependabot/go_modules/update_checker"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::GoModules::UpdateChecker do
+  before do
+    ENV["GOPRIVATE"] = "*"
+  end
+
+  after do
+    ENV.delete("GOPRIVATE")
+  end
+
   let(:dependency_files) do
     [
       Dependabot::DependencyFile.new(

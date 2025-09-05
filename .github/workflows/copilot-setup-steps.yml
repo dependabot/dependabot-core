@@ -1,0 +1,103 @@
+name: "Copilot Setup Steps"
+
+# Automatically run the setup steps when they are changed to allow for easy validation, and
+# allow manual testing through the repository's "Actions" tab
+on:  # yamllint disable-line rule:truthy
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+  pull_request:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+
+jobs:
+  # The job MUST be called `copilot-setup-steps` or it will not be picked up by Copilot.
+  copilot-setup-steps:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    # Set the permissions to the lowest permissions possible needed for your steps.
+    # Copilot will be given its own token for its operations.
+    permissions:
+      # Need contents: read to clone the repository and access source code
+      contents: read
+
+    env:
+      # Enable Docker BuildKit for faster builds and caching
+      DOCKER_BUILDKIT: 1
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          submodules: recursive
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@829114fc20da43a41d27359103ec7a63020954d4 # v1.255.0
+        with:
+          bundler-cache: true
+
+      - name: Install system dependencies
+        run: |
+          echo "Installing system dependencies..."
+          sudo apt-get update
+          sudo apt-get install -y build-essential curl git shellcheck
+
+      - name: Install Ruby dependencies
+        run: |
+          echo "Installing Ruby gems..."
+          bundle install
+
+      - name: Verify Ruby environment and gems
+        run: |
+          echo "Ruby version: $(ruby --version)"
+          echo "Bundler version: $(bundle --version)"
+          echo "Verifying gem dependencies..."
+          bundle exec tapioca gem --verify
+
+      - name: Verify Sorbet type checking
+        run: |
+          echo "Running Sorbet type checking..."
+          if bundle exec srb tc; then
+            echo "✓ Sorbet type checking passed"
+          else
+            echo "⚠ Sorbet type checking found errors (expected during development)"
+            echo "This is normal during active development - Copilot will resolve type errors"
+            echo "Run 'bundle exec srb tc' locally to see specific errors"
+          fi
+
+      - name: Verify linting tools
+        run: |
+          echo "Testing rubocop..."
+          bundle exec rubocop --version
+          echo "Testing shellcheck..."
+          shellcheck --version
+
+      - name: Verify development environment
+        run: |
+          echo "Verifying Docker is available..."
+          docker --version
+          echo "Verifying script/build is available..."
+          if [ -x "./script/build" ]; then
+            echo "✓ script/build is available for CI development"
+          else
+            echo "✗ script/build not found"
+            exit 1
+          fi
+          echo "Testing dry-run script..."
+          ./bin/dry-run.rb --help 2>&1 | head -5 || echo "dry-run requires container (expected)"
+
+      - name: Display environment summary
+        run: |
+          echo "=== Copilot Development Environment Ready ==="
+          echo "Ruby: $(ruby --version)"
+          echo "Docker: $(docker --version)"
+          echo ""
+          echo "Copilot coding agent workflow:"
+          echo "  1. script/build {ecosystem}"
+          echo "  2. docker run --rm ghcr.io/dependabot/dependabot-updater-{ecosystem} bash -c 'cd /home/dependabot/{ecosystem} && rspec spec'"
+          echo "  3. docker run --rm ghcr.io/dependabot/dependabot-updater-{ecosystem} bash -c 'cd /home/dependabot/{ecosystem} && rubocop && rubocop -A'"
+          echo "  4. docker run --rm ghcr.io/dependabot/dependabot-updater-{ecosystem} bash -c 'cd /home/dependabot && bundle exec srb tc'"
+          echo ""
+          echo "Environment setup complete - Copilot can now develop Dependabot Core"

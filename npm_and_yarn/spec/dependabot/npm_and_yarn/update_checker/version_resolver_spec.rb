@@ -2123,4 +2123,66 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       end
     end
   end
+
+  describe "integration with npm8 checker and registry override" do
+    let(:project_name) { "npm8/simple" }
+    let(:latest_allowable_version) { Gem::Version.new("4.17.21") }
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "lodash",
+        version: "4.17.0",
+        package_manager: "npm_and_yarn",
+        requirements: [{
+          file: "package.json",
+          requirement: "^4.17.0",
+          groups: ["dependencies"],
+          source: { type: "registry", url: "https://registry.npmjs.org" }
+        }]
+      )
+    end
+    let(:enable_corepack_for_npm_and_yarn) { true }
+
+    before do
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("npm install successful")
+    end
+
+    context "when registry override is configured" do
+      let(:credentials) do
+        [Dependabot::Credential.new({
+          "type" => "npm_registry",
+          "registry" => "https://artifactory.example.com/artifactory/api/npm/npm/",
+          "replaces-base" => true,
+          "token" => "auth-token"
+        })]
+      end
+
+      it "passes registry override environment to npm command" do
+        resolver.send(:run_npm8_checker, version: "4.17.21")
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+          .with(
+            anything, # The actual command
+            hash_including(
+              env: hash_including("npm_config_registry" => "https://artifactory.example.com/artifactory/api/npm/npm/")
+            )
+          )
+      end
+    end
+
+    context "when no registry override is needed" do
+      let(:credentials) { [] }
+
+      it "calls npm command without env variables" do
+        resolver.send(:run_npm8_checker, version: "4.17.21")
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+          .with(
+            anything, # The actual command
+            hash_including(
+              env: nil
+            )
+          )
+      end
+    end
+  end
 end

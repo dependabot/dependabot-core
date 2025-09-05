@@ -25,7 +25,7 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker do
     )
   end
 
-  let(:dependency_name) { "baseline" }
+  let(:dependency_name) { "github.com/microsoft/vcpkg" }
   let(:dependency_version) { "2025.04.09" }
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -70,7 +70,7 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker do
       allow(Dependabot::Vcpkg::UpdateChecker::LatestVersionFinder)
         .to receive(:new)
         .and_return(latest_version_finder)
-      allow(latest_version_finder).to receive(:latest_tag).and_return(mock_latest_version)
+      allow(latest_version_finder).to receive(:latest_version).and_return(mock_latest_version)
     end
 
     it "returns the latest version from the version finder" do
@@ -79,7 +79,7 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker do
 
     it "memoizes the result" do
       2.times { checker.latest_version }
-      expect(latest_version_finder).to have_received(:latest_tag).once
+      expect(latest_version_finder).to have_received(:latest_version).once
     end
 
     context "when no latest version is available" do
@@ -101,7 +101,7 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker do
       allow(Dependabot::Vcpkg::UpdateChecker::LatestVersionFinder)
         .to receive(:new)
         .and_return(latest_version_finder)
-      allow(latest_version_finder).to receive(:latest_tag).and_return(mock_latest_version)
+      allow(latest_version_finder).to receive(:latest_version).and_return(mock_latest_version)
     end
 
     it "returns the same as latest_version for vcpkg baselines" do
@@ -127,7 +127,7 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker do
       allow(Dependabot::Vcpkg::UpdateChecker::LatestVersionFinder)
         .to receive(:new)
         .and_return(latest_version_finder)
-      allow(latest_version_finder).to receive(:latest_tag).and_return(mock_latest_version)
+      allow(latest_version_finder).to receive(:latest_version).and_return(mock_latest_version)
     end
 
     it "returns the same as latest_version for vcpkg baselines" do
@@ -136,7 +136,7 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker do
 
     it "memoizes the result" do
       2.times { checker.latest_resolvable_version_with_no_unlock }
-      expect(latest_version_finder).to have_received(:latest_tag).once
+      expect(latest_version_finder).to have_received(:latest_version).once
     end
 
     context "when no version is available" do
@@ -158,7 +158,7 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker do
         allow(Dependabot::Vcpkg::UpdateChecker::LatestVersionFinder)
           .to receive(:new)
           .and_return(latest_version_finder)
-        allow(latest_version_finder).to receive(:latest_tag).and_return(nil)
+        allow(latest_version_finder).to receive(:latest_version).and_return(nil)
       end
 
       it "returns the original requirements" do
@@ -168,23 +168,37 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker do
 
     context "when there is a latest version" do
       let(:latest_version) { "2025.06.13" }
+      let(:commit_sha) { "abc123def456789" }
       let(:latest_version_finder) { instance_double(Dependabot::Vcpkg::UpdateChecker::LatestVersionFinder) }
+      let(:mock_latest_release_info) do
+        instance_double(
+          Dependabot::Package::PackageRelease,
+          details: { "commit_sha" => commit_sha, "tag_sha" => "tag123" }
+        )
+      end
 
       before do
         allow(Dependabot::Vcpkg::UpdateChecker::LatestVersionFinder)
           .to receive(:new)
           .and_return(latest_version_finder)
-        allow(latest_version_finder).to receive(:latest_tag).and_return(latest_version)
+        allow(latest_version_finder)
+          .to receive(:latest_version)
+          .and_return(latest_version)
+        allow(latest_version_finder)
+          .to receive_messages(
+            latest_version: latest_version,
+            latest_release_info: mock_latest_release_info
+          )
       end
 
-      it "updates the git ref to the new version" do
+      it "updates the git ref to the commit SHA from the latest release" do
         expect(updated_requirements).to eq([{
           requirement: nil,
           groups: [],
           source: {
             type: "git",
             url: "https://github.com/microsoft/vcpkg.git",
-            ref: latest_version
+            ref: commit_sha
           },
           file: "vcpkg.json"
         }])
@@ -212,63 +226,6 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker do
             source: nil,
             file: "vcpkg.json"
           }])
-        end
-      end
-
-      context "with multiple requirements" do
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: dependency_name,
-            version: dependency_version,
-            requirements: [
-              {
-                requirement: nil,
-                groups: [],
-                source: {
-                  type: "git",
-                  url: "https://github.com/microsoft/vcpkg.git",
-                  ref: dependency_version
-                },
-                file: "vcpkg.json"
-              },
-              {
-                requirement: nil,
-                groups: [],
-                source: {
-                  type: "git",
-                  url: "https://github.com/microsoft/vcpkg.git",
-                  ref: dependency_version
-                },
-                file: "vcpkg-configuration.json"
-              }
-            ],
-            package_manager: "vcpkg"
-          )
-        end
-
-        it "updates all requirements with git sources" do
-          expect(updated_requirements).to eq([
-            {
-              requirement: nil,
-              groups: [],
-              source: {
-                type: "git",
-                url: "https://github.com/microsoft/vcpkg.git",
-                ref: latest_version
-              },
-              file: "vcpkg.json"
-            },
-            {
-              requirement: nil,
-              groups: [],
-              source: {
-                type: "git",
-                url: "https://github.com/microsoft/vcpkg.git",
-                ref: latest_version
-              },
-              file: "vcpkg-configuration.json"
-            }
-          ])
         end
       end
     end
@@ -313,27 +270,6 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker do
   end
 
   describe "integration" do
-    context "when checking for updates with mocked git tags" do
-      let(:latest_version_finder) { instance_double(Dependabot::Vcpkg::UpdateChecker::LatestVersionFinder) }
-      let(:mock_latest_tag) { "2025.06.13" }
-
-      before do
-        allow(Dependabot::Vcpkg::UpdateChecker::LatestVersionFinder)
-          .to receive(:new)
-          .and_return(latest_version_finder)
-        allow(latest_version_finder).to receive(:latest_tag).and_return(mock_latest_tag)
-      end
-
-      it "can find the latest version" do
-        expect(checker.latest_version).to eq("2025.06.13")
-      end
-
-      it "updates requirements correctly" do
-        updated_reqs = checker.updated_requirements
-        expect(updated_reqs.first[:source][:ref]).to eq("2025.06.13")
-      end
-    end
-
     context "when git repository is not reachable" do
       let(:latest_version_finder) { instance_double(Dependabot::Vcpkg::UpdateChecker::LatestVersionFinder) }
 
@@ -341,7 +277,7 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker do
         allow(Dependabot::Vcpkg::UpdateChecker::LatestVersionFinder)
           .to receive(:new)
           .and_return(latest_version_finder)
-        allow(latest_version_finder).to receive(:latest_tag).and_return(nil)
+        allow(latest_version_finder).to receive(:latest_version).and_return(nil)
       end
 
       it "returns nil for latest version" do
@@ -350,6 +286,93 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker do
 
       it "returns original requirements when no update is available" do
         expect(checker.updated_requirements).to eq(dependency.requirements)
+      end
+    end
+  end
+
+  describe "port dependencies" do
+    let(:dependency_name) { "curl" }
+    let(:dependency_version) { "8.10.0" }
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: dependency_name,
+        version: dependency_version,
+        requirements: [{
+          requirement: ">=#{dependency_version}",
+          groups: [],
+          source: nil,
+          file: "vcpkg.json"
+        }],
+        package_manager: "vcpkg"
+      )
+    end
+
+    let(:dependency_files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "vcpkg.json",
+          content: %(
+            {
+              "name": "test",
+              "version": "1.0.0",
+              "dependencies": [
+                {
+                  "name": "curl",
+                  "version>=": "#{dependency_version}"
+                }
+              ]
+            }
+          ),
+          directory: "/"
+        )
+      ]
+    end
+
+    describe "#updated_requirements" do
+      subject(:updated_requirements) { checker.updated_requirements }
+
+      context "when there is a latest version" do
+        let(:latest_version) { "8.15.0#1" }
+        let(:latest_version_finder) { instance_double(Dependabot::Vcpkg::UpdateChecker::LatestVersionFinder) }
+
+        before do
+          allow(Dependabot::Vcpkg::UpdateChecker::LatestVersionFinder)
+            .to receive(:new)
+            .and_return(latest_version_finder)
+          allow(latest_version_finder).to receive(:latest_version).and_return(latest_version)
+        end
+
+        it "updates the version constraint" do
+          expect(updated_requirements).to eq([{
+            requirement: ">=#{latest_version}",
+            groups: [],
+            source: nil,
+            file: "vcpkg.json"
+          }])
+        end
+      end
+
+      context "when there is no latest version" do
+        let(:latest_version_finder) { instance_double(Dependabot::Vcpkg::UpdateChecker::LatestVersionFinder) }
+
+        before do
+          allow(Dependabot::Vcpkg::UpdateChecker::LatestVersionFinder)
+            .to receive(:new)
+            .and_return(latest_version_finder)
+          allow(latest_version_finder).to receive(:latest_version).and_return(nil)
+        end
+
+        it "returns the original requirements" do
+          expect(updated_requirements).to eq(dependency.requirements)
+        end
+      end
+    end
+
+    describe "#port_dependency?" do
+      subject(:port_dependency) { checker.send(:port_dependency?) }
+
+      it "returns true for non-baseline dependencies" do
+        expect(port_dependency).to be(true)
       end
     end
   end

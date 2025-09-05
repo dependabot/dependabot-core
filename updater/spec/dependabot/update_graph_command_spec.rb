@@ -270,7 +270,10 @@ RSpec.describe Dependabot::UpdateGraphCommand do
         expect(service).not_to receive(:capture_exception)
         expect(service).to receive(:record_update_job_error).with(
           error_type: "branch_not_found",
-          error_details: { "branch-name": "my_branch" }
+          error_details: {
+            "branch-name": "my_branch",
+            message: anything # The original tests don't specify custom messages
+          }
         )
 
         perform_job

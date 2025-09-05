@@ -75,6 +75,106 @@ RSpec.describe Dependabot::Vcpkg::FileParser do
         end
       end
 
+      context "when vcpkg.json contains dependencies with version constraints" do
+        let(:vcpkg_json_content) do
+          <<~JSON
+            {
+              "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+              "builtin-baseline": "fe1cde61e971d53c9687cf9a46308f8f55da19fa",
+              "dependencies": [
+                "curl",
+                {
+                  "name": "openssl",
+                  "version>=": "3.1"
+                },
+                {
+                  "name": "zlib",
+                  "version>=": "1.2.11#3"
+                }
+              ]
+            }
+          JSON
+        end
+
+        it "returns the baseline dependency and dependencies with version constraints" do
+          expect(dependencies.length).to eq(3)
+
+          baseline_dep = dependencies.find { |d| d.name == "github.com/microsoft/vcpkg" }
+          expect(baseline_dep).not_to be_nil
+
+          openssl_dep = dependencies.find { |d| d.name == "openssl" }
+          expect(openssl_dep).not_to be_nil
+          expect(openssl_dep.version).to eq("3.1")
+          expect(openssl_dep.requirements.first[:requirement]).to eq(">=3.1")
+
+          zlib_dep = dependencies.find { |d| d.name == "zlib" }
+          expect(zlib_dep).not_to be_nil
+          expect(zlib_dep.version).to eq("1.2.11")
+          expect(zlib_dep.requirements.first[:requirement]).to eq(">=1.2.11#3")
+        end
+
+        it "logs warnings for dependencies without version constraints" do
+          expect(Dependabot.logger)
+            .to receive(:warn).with("Skipping vcpkg dependency 'curl' without version>= constraint")
+          dependencies
+        end
+      end
+
+      context "when vcpkg.json contains only dependencies with version constraints" do
+        let(:vcpkg_json_content) do
+          <<~JSON
+            {
+              "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+              "dependencies": [
+                {
+                  "name": "openssl",
+                  "version>=": "3.1"
+                }
+              ]
+            }
+          JSON
+        end
+
+        it "returns only the dependency with version constraint" do
+          expect(dependencies.length).to eq(1)
+
+          openssl_dep = dependencies.first
+          expect(openssl_dep.name).to eq("openssl")
+          expect(openssl_dep.version).to eq("3.1")
+          expect(openssl_dep.package_manager).to eq("vcpkg")
+          expect(openssl_dep.requirements).to eq([{
+            file: "vcpkg.json",
+            requirement: ">=3.1",
+            groups: [],
+            source: nil
+          }])
+        end
+      end
+
+      context "when vcpkg.json contains only string dependencies" do
+        let(:vcpkg_json_content) do
+          <<~JSON
+            {
+              "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+              "dependencies": [
+                "curl",
+                "openssl"
+              ]
+            }
+          JSON
+        end
+
+        it "returns no dependencies and logs warnings" do
+          expect(Dependabot.logger)
+            .to receive(:warn)
+            .with("Skipping vcpkg dependency 'curl' without version>= constraint")
+          expect(Dependabot.logger)
+            .to receive(:warn)
+            .with("Skipping vcpkg dependency 'openssl' without version>= constraint")
+          expect(dependencies).to be_empty
+        end
+      end
+
       context "when vcpkg.json does not contain a builtin-baseline" do
         let(:vcpkg_json_content) do
           <<~JSON

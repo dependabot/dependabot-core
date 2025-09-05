@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 
 using NuGet.Versioning;
@@ -352,7 +353,7 @@ public class FileWriterWorkerTests : TestBase
     {
         // project is directly changed
         await TestAsync(
-            dependencyName: "Some.Dependency",
+            dependencyName: "Some.Package",
             oldDependencyVersion: "1.0.0",
             newDependencyVersion: "2.0.0",
             projectContents: """
@@ -365,25 +366,46 @@ public class FileWriterWorkerTests : TestBase
                     <None Include="packages.config" />
                   </ItemGroup>
                   <ItemGroup>
-                    <Reference Include="Some.Dependency">
-                      <HintPath>packages\Some.Dependency.1.0.0\lib\net45\Some.Dependency.dll</HintPath>
+                    <Reference Include="Some.Other.Package">
+                      <HintPath>..\packages\Some.Other.Package.3.0.0\lib\net45\Some.Other.Package.dll</HintPath>
+                      <Private>True</Private>
+                    </Reference>
+                    <Reference Include="Some.Package">
+                      <HintPath>..\packages\Some.Package.1.0.0\lib\net45\Some.Package.dll</HintPath>
                       <Private>True</Private>
                     </Reference>
                   </ItemGroup>
+                  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+                    <Error Condition="!Exists('..\packages\Some.Other.Package.3.0.0\build\Some.Other.Package.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Some.Other.Package.3.0.0\build\Some.Other.Package.targets'))" />
+                    <Error Condition="!Exists('..\packages\Some.Package.1.0.0\build\Some.Package.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Some.Package.1.0.0\build\Some.Package.targets'))" />
+                  </Target>
                   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                  <Import Project="..\packages\Some.Other.Package.3.0.0\build\Some.Other.Package.targets" Condition="Exists('..\packages\Some.Other.Package.3.0.0\build\Some.Other.Package.targets')" />
+                  <Import Project="..\packages\Some.Package.1.0.0\build\Some.Package.targets" Condition="Exists('..\packages\Some.Package.1.0.0\build\Some.Package.targets')" />
                 </Project>
                 """,
             additionalFiles: [
                 ("packages.config", """
                     <?xml version="1.0" encoding="utf-8"?>
                     <packages>
-                      <package id="Some.Dependency" version="1.0.0" targetFramework="net45" />
+                      <package id="Some.Other.Package" version="3.0.0" targetFramework="net45" />
+                      <package id="Some.Package" version="1.0.0" targetFramework="net45" />
                     </packages>
                     """)
             ],
             packages: [
-                MockNuGetPackage.CreateSimplePackage("Some.Dependency", "1.0.0", "net45"),
-                MockNuGetPackage.CreateSimplePackage("Some.Dependency", "2.0.0", "net45"),
+                new MockNuGetPackage("Some.Package", "1.0.0", Files: [
+                    ("lib/net45/Some.Package.dll", Array.Empty<byte>()),
+                    ("build/Some.Package.targets", Encoding.UTF8.GetBytes("<Project />"))
+                ]),
+                new MockNuGetPackage("Some.Package", "2.0.0", Files: [
+                    ("lib/net45/Some.Package.dll", Array.Empty<byte>()),
+                    ("build/Some.Package.targets", Encoding.UTF8.GetBytes("<Project />"))
+                ]),
+                new MockNuGetPackage("Some.Other.Package", "3.0.0", Files: [
+                    ("lib/net45/Some.Other.Package.dll", Array.Empty<byte>()),
+                    ("build/Some.Other.Package.targets", Encoding.UTF8.GetBytes("<Project />"))
+                ]),
             ],
             discoveryWorker: null, // use real worker
             dependencySolver: null, // use real worker
@@ -398,24 +420,35 @@ public class FileWriterWorkerTests : TestBase
                     <None Include="packages.config" />
                   </ItemGroup>
                   <ItemGroup>
-                    <Reference Include="Some.Dependency">
-                      <HintPath>packages\Some.Dependency.2.0.0\lib\net45\Some.Dependency.dll</HintPath>
+                    <Reference Include="Some.Other.Package">
+                      <HintPath>..\packages\Some.Other.Package.3.0.0\lib\net45\Some.Other.Package.dll</HintPath>
+                      <Private>True</Private>
+                    </Reference>
+                    <Reference Include="Some.Package">
+                      <HintPath>..\packages\Some.Package.2.0.0\lib\net45\Some.Package.dll</HintPath>
                       <Private>True</Private>
                     </Reference>
                   </ItemGroup>
+                  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+                    <Error Condition="!Exists('..\packages\Some.Other.Package.3.0.0\build\Some.Other.Package.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Some.Other.Package.3.0.0\build\Some.Other.Package.targets'))" />
+                    <Error Condition="!Exists('..\packages\Some.Package.2.0.0\build\Some.Package.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Some.Package.2.0.0\build\Some.Package.targets'))" />
+                  </Target>
                   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                  <Import Project="..\packages\Some.Other.Package.3.0.0\build\Some.Other.Package.targets" Condition="Exists('..\packages\Some.Other.Package.3.0.0\build\Some.Other.Package.targets')" />
+                  <Import Project="..\packages\Some.Package.2.0.0\build\Some.Package.targets" Condition="Exists('..\packages\Some.Package.2.0.0\build\Some.Package.targets')" />
                 </Project>
                 """,
             expectedAdditionalFiles: [
                 ("packages.config", """
                     <?xml version="1.0" encoding="utf-8"?>
                     <packages>
-                      <package id="Some.Dependency" version="2.0.0" targetFramework="net45" />
+                      <package id="Some.Other.Package" version="3.0.0" targetFramework="net45" />
+                      <package id="Some.Package" version="2.0.0" targetFramework="net45" />
                     </packages>
                     """)
             ],
             expectedOperations: [
-                new DirectUpdate() { DependencyName = "Some.Dependency", NewVersion = NuGetVersion.Parse("2.0.0"), UpdatedFiles = ["/packages.config", "/project.csproj"] }
+                new DirectUpdate() { DependencyName = "Some.Package", NewVersion = NuGetVersion.Parse("2.0.0"), UpdatedFiles = ["/packages.config", "/project.csproj"] }
             ]
         );
     }

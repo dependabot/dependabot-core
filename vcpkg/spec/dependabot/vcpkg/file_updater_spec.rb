@@ -223,4 +223,202 @@ RSpec.describe Dependabot::Vcpkg::FileUpdater do
       end
     end
   end
+
+  describe "#updated_dependency_files for port dependencies" do
+    subject(:updated_dependency_files) { updater.updated_dependency_files }
+
+    let(:vcpkg_json_content) do
+      <<~JSON
+        {
+          "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+          "name": "my-project",
+          "version": "1.0.0",
+          "dependencies": [
+            {
+              "name": "curl",
+              "version>=": "8.10.0"
+            },
+            {
+              "name": "boost-system",
+              "version>=": "1.82.0"
+            }
+          ]
+        }
+      JSON
+    end
+
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "curl",
+        version: "8.15.0#1",
+        previous_version: "8.10.0",
+        requirements: [{
+          requirement: ">=8.15.0#1",
+          groups: [],
+          source: nil,
+          file: "vcpkg.json"
+        }],
+        previous_requirements: [{
+          requirement: ">=8.10.0",
+          groups: [],
+          source: nil,
+          file: "vcpkg.json"
+        }],
+        package_manager: "vcpkg"
+      )
+    end
+
+    it "updates the version constraint for the port dependency" do
+      updated_file = updated_dependency_files.first
+      updated_content = JSON.parse(updated_file.content)
+
+      curl_dep = updated_content["dependencies"].find { |dep| dep["name"] == "curl" }
+      expect(curl_dep["version>="]).to eq("8.15.0#1")
+
+      # Verify other dependencies are unchanged
+      boost_dep = updated_content["dependencies"].find { |dep| dep["name"] == "boost-system" }
+      expect(boost_dep["version>="]).to eq("1.82.0")
+    end
+
+    it "preserves all other properties and structure" do
+      updated_file = updated_dependency_files.first
+      updated_content = JSON.parse(updated_file.content)
+
+      expect(updated_content["name"]).to eq("my-project")
+      expect(updated_content["version"]).to eq("1.0.0")
+      expect(updated_content["$schema"]).to eq("https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json")
+    end
+
+    context "with multiple port dependencies updating" do
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "curl",
+            version: "8.15.0#1",
+            previous_version: "8.10.0",
+            requirements: [{
+              requirement: ">=8.15.0#1",
+              groups: [],
+              source: nil,
+              file: "vcpkg.json"
+            }],
+            previous_requirements: [{
+              requirement: ">=8.10.0",
+              groups: [],
+              source: nil,
+              file: "vcpkg.json"
+            }],
+            package_manager: "vcpkg"
+          ),
+          Dependabot::Dependency.new(
+            name: "boost-system",
+            version: "1.84.0",
+            previous_version: "1.82.0",
+            requirements: [{
+              requirement: ">=1.84.0",
+              groups: [],
+              source: nil,
+              file: "vcpkg.json"
+            }],
+            previous_requirements: [{
+              requirement: ">=1.82.0",
+              groups: [],
+              source: nil,
+              file: "vcpkg.json"
+            }],
+            package_manager: "vcpkg"
+          )
+        ]
+      end
+
+      it "updates all port dependencies" do
+        updated_file = updated_dependency_files.first
+        updated_content = JSON.parse(updated_file.content)
+
+        curl_dep = updated_content["dependencies"].find { |dep| dep["name"] == "curl" }
+        expect(curl_dep["version>="]).to eq("8.15.0#1")
+
+        boost_dep = updated_content["dependencies"].find { |dep| dep["name"] == "boost-system" }
+        expect(boost_dep["version>="]).to eq("1.84.0")
+      end
+    end
+
+    context "with mixed baseline and port dependency updates" do
+      let(:vcpkg_json_content) do
+        <<~JSON
+          {
+            "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+            "name": "my-project",
+            "version": "1.0.0",
+            "builtin-baseline": "old-commit-sha",
+            "dependencies": [
+              {
+                "name": "curl",
+                "version>=": "8.10.0"
+              }
+            ]
+          }
+        JSON
+      end
+
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "github.com/microsoft/vcpkg",
+            version: "new-commit-sha",
+            previous_version: "old-commit-sha",
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://github.com/microsoft/vcpkg.git",
+                ref: "new-commit-sha"
+              },
+              file: "vcpkg.json"
+            }],
+            previous_requirements: [{
+              requirement: nil,
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://github.com/microsoft/vcpkg.git",
+                ref: "old-commit-sha"
+              },
+              file: "vcpkg.json"
+            }],
+            package_manager: "vcpkg"
+          ),
+          Dependabot::Dependency.new(
+            name: "curl",
+            version: "8.15.0#1",
+            previous_version: "8.10.0",
+            requirements: [{
+              requirement: ">=8.15.0#1",
+              groups: [],
+              source: nil,
+              file: "vcpkg.json"
+            }],
+            previous_requirements: [{
+              requirement: ">=8.10.0",
+              groups: [],
+              source: nil,
+              file: "vcpkg.json"
+            }],
+            package_manager: "vcpkg"
+          )
+        ]
+      end
+
+      it "updates both baseline and port dependencies" do
+        updated_file = updated_dependency_files.first
+        updated_content = JSON.parse(updated_file.content)
+
+        expect(updated_content["builtin-baseline"]).to eq("new-commit-sha")
+
+        curl_dep = updated_content["dependencies"].find { |dep| dep["name"] == "curl" }
+        expect(curl_dep["version>="]).to eq("8.15.0#1")
+      end
+    end
+  end
 end

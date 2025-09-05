@@ -16,7 +16,6 @@ module Dependabot
       extend T::Sig
 
       NAME = "conda"
-      VERSION = "latest"
 
       SUPPORTED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
       DEPRECATED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
@@ -25,7 +24,7 @@ module Dependabot
       def initialize
         super(
           name: NAME,
-          version: Dependabot::Conda::Version.new(VERSION),
+          version: nil,
           deprecated_versions: DEPRECATED_VERSIONS,
           supported_versions: SUPPORTED_VERSIONS
         )

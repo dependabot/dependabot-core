@@ -3,6 +3,7 @@
 
 require "dependabot/updater/group_update_creation"
 require "dependabot/updater/group_update_refreshing"
+require "dependabot/updater/group_dependency_selector"
 require "sorbet-runtime"
 
 # This class implements our strategy for refreshing a single Pull Request which
@@ -173,6 +174,17 @@ module Dependabot
             dependency_change.merge_changes!(T.must(dependency_changes[1..-1])) if dependency_changes.count > 1
             @dependency_change = T.let(dependency_change, T.nilable(Dependabot::DependencyChange))
           end
+
+          # Apply GroupDependencySelector filtering to ensure only group-eligible dependencies
+          if @dependency_change
+            selector = Dependabot::Updater::GroupDependencySelector.new(
+              group: job_group,
+              dependency_snapshot: dependency_snapshot
+            )
+            selector.filter_to_group!(@dependency_change)
+          end
+
+          @dependency_change
         end
       end
     end

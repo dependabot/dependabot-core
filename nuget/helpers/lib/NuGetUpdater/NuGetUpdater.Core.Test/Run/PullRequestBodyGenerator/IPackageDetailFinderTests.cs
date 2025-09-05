@@ -12,6 +12,8 @@ public class IPackageDetailFinderTests
     [InlineData("version-one.zero.zero", "v1.0.0", "1.0.0")]
     [InlineData("v-one.zero.zero", "v-one.zero.zero", null)]
     [InlineData("Stable", "version-1.0.0", "1.0.0")]
+    [InlineData("some.package/1.0.0", "some.package/1.0.0", "1.0.0")]
+    [InlineData("some.package 1.0.0", "some.package 1.0.0", "1.0.0")]
     public void GetVersionFromNames(string releaseName, string tagName, string? expectedVersion)
     {
         var actualVersion = IPackageDetailFinder.GetVersionFromNames(releaseName, tagName);

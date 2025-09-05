@@ -235,6 +235,14 @@ module Dependabot
         oci_registry = repo_url.gsub("oci://", "")
 
         release_tags = Helpers.fetch_oci_tags("#{oci_registry}/#{chart_name}").split("\n")
+        # Filter out tags that are not valid versions (e.g., SHA256 hashes, .sig, .att, .metadata files)
+        release_tags = release_tags.select do |tag|
+          # Skip tags that start with "sha256-" or end with .sig, .att, or .metadata
+          next false if tag.start_with?("sha256-") || tag.end_with?(".sig", ".att", ".metadata")
+
+          # Use Version.correct? to check if the tag is a valid version
+          version_class.correct?(tag)
+        end
         release_tags.map { |tag| tag.tr("_", "+") }
       end
 
