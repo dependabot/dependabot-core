@@ -122,12 +122,8 @@ module Dependabot
           @wants_prerelease ||= T.let(
             begin
               current_version = dependency.numeric_version
-              if current_version&.prerelease?
-                true
-              else
-                dependency.requirements.any? do |req|
-                  req[:requirement].match?(/[a-z]/i)
-                end
+              current_version&.prerelease? || dependency.requirements.any? do |req|
+                req[:requirement].match?(/[a-z]/i)
               end
             end, T.nilable(T::Boolean)
           )

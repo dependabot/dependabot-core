@@ -431,7 +431,7 @@ module Dependabot
                      .map { |rv| "#{source.repo.split('/').first}/#{rv}" }
 
         reviewers_string =
-          if reviewers.count == 1
+          if reviewers.one?
             "`@#{reviewers.first}`"
           else
             names = reviewers.map { |rv| "`@#{rv}`" }

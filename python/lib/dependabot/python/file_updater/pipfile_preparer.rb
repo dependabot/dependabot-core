@@ -57,7 +57,7 @@ module Dependabot
 
           # provide a default "true" value to file generator in case no value is provided in manifest file
           pipfile_object["source"].each do |key|
-            key["verify_ssl"] = verify_ssl.nil? ? true : verify_ssl
+            key["verify_ssl"] = verify_ssl.nil? || verify_ssl
           end
 
           TomlRB.dump(pipfile_object)

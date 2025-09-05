@@ -10,6 +10,7 @@ module Dependabot
     module Package
       class PackageRegistryFinder
         extend T::Sig
+
         PYPI_BASE_URL = "https://pypi.org/simple/"
         ENVIRONMENT_VARIABLE_REGEX = /\$\{.+\}/
 

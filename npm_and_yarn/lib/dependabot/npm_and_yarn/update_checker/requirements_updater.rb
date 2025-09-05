@@ -154,7 +154,7 @@ module Dependabot
           updated_requirement =
             if reqs.any? { |r| r.match?(/(<|-\s)/i) }
               update_range_requirement(current_requirement)
-            elsif current_requirement.strip.split(SEPARATOR).count == 1
+            elsif current_requirement.strip.split(SEPARATOR).one?
               update_version_string(current_requirement)
             else
               current_requirement
@@ -174,7 +174,7 @@ module Dependabot
           range_requirements =
             req_string.split(SEPARATOR).select { |r| r.match?(/<|(\s+-\s+)/) }
 
-          if range_requirements.count == 1
+          if range_requirements.one?
             range_requirement = T.must(range_requirements.first)
             versions = range_requirement.scan(VERSION_REGEX)
             version_objects = versions.map { |v| version_class.new(v.to_s) }

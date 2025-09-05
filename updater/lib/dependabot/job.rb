@@ -118,7 +118,7 @@ module Dependabot
              repo_contents_path: T.nilable(String)).returns(Job)
     end
     def self.new_fetch_job(job_id:, job_definition:, repo_contents_path: nil)
-      attrs = standardise_keys(job_definition["job"]).select { |k, _| PERMITTED_KEYS.include?(k) }
+      attrs = standardise_keys(job_definition["job"]).slice(*PERMITTED_KEYS)
 
       new(attrs.merge(id: job_id, repo_contents_path: repo_contents_path))
     end
@@ -129,7 +129,7 @@ module Dependabot
     end
     def self.new_update_job(job_id:, job_definition:, repo_contents_path: nil)
       job_hash = standardise_keys(job_definition["job"])
-      attrs = job_hash.select { |k, _| PERMITTED_KEYS.include?(k) }
+      attrs = job_hash.slice(*PERMITTED_KEYS)
       attrs[:credentials] = job_hash[:credentials_metadata] || []
 
       new(attrs.merge(id: job_id, repo_contents_path: repo_contents_path))

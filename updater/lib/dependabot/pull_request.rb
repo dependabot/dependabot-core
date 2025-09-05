@@ -35,7 +35,7 @@ module Dependabot
         {
           name: name,
           version: version,
-          removed: removed? ? true : nil,
+          removed: removed? || nil,
           directory: directory
         }.compact
       end

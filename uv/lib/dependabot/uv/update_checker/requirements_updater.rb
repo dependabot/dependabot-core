@@ -350,7 +350,7 @@ module Dependabot
           elsif req_string.strip.start_with?("~=", "==")
             version.segments.count - 2
           elsif req_string.strip.start_with?("~")
-            req_string.split(".").count == 1 ? 0 : 1
+            req_string.split(".").one? ? 0 : 1
           else
             raise "Don't know how to convert #{req_string} to range"
           end

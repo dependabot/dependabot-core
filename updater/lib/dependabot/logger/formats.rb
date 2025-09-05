@@ -23,6 +23,7 @@ module Dependabot
 
     class JobFormatter < ::Logger::Formatter
       extend T::Sig
+
       CLI_ID = "cli"
       UNKNOWN_ID = "unknown_id"
 

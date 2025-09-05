@@ -13,6 +13,7 @@ module Dependabot
   module GitSubmodules
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       extend T::Sig
+
       require_relative "update_checker/latest_version_finder"
 
       sig { override.returns(T.nilable(T.any(String, Dependabot::Version))) }

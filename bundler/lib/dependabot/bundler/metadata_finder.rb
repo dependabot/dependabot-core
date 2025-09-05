@@ -204,7 +204,7 @@ module Dependabot
           cred["type"] == "rubygems_server" && cred.replaces_base?
         end
         host = credential ? credential["host"] : "rubygems.org"
-        @base_url = "https://#{host}#{host&.end_with?('/') ? '' : '/'}"
+        @base_url = "https://#{host}#{'/' unless host&.end_with?('/')}"
       end
 
       def registry_auth_headers

@@ -210,7 +210,7 @@ module Dependabot
         # rubocop:enable Metrics/PerceivedComplexity
         sig { params(dependency: Dependabot::Dependency).returns(Dependabot::Dependency) }
         def vulnerable_version(dependency)
-          return dependency if dependency.metadata[:all_versions].count == 1
+          return dependency if dependency.metadata[:all_versions].one?
 
           vulnerable_dependency = dependency.metadata[:all_versions].find do |dep|
             checker = update_checker_for(dep)

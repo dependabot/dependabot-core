@@ -195,7 +195,7 @@ module Dependabot
               version_for_reqs(existing_reqs + [hash[:requirement]])
             end
 
-            raise MissingExtensions, (T.must(missing_extension).then { |ext| [ext] })
+            raise(MissingExtensions, T.must(missing_extension).then { |ext| [ext] })
           end
 
           git_dependency_reference_error(error) if error.message.start_with?("Failed to execute git checkout")

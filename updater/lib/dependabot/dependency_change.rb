@@ -195,7 +195,7 @@ module Dependabot
             "dependency-name" => dep.name,
             "dependency-version" => dep.version,
             "directory" => should_consider_directory ? dep.directory : nil,
-            "dependency-removed" => dep.removed? ? true : nil
+            "dependency-removed" => dep.removed? || nil
           }.compact
         end
       )

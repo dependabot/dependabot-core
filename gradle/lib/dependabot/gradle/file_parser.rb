@@ -470,7 +470,7 @@ module Dependabot
 
       sig { params(value: T.nilable(String), buildfile: Dependabot::DependencyFile).returns(T.nilable(String)) }
       def evaluated_value(value, buildfile)
-        return value unless value&.scan(PROPERTY_REGEX)&.count == 1
+        return value unless value&.scan(PROPERTY_REGEX)&.one?
 
         property_name  = T.must(T.must(value).match(PROPERTY_REGEX)
                           &.named_captures&.fetch("property_name"))

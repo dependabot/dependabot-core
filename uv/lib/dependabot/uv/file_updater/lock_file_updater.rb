@@ -18,6 +18,7 @@ module Dependabot
     class FileUpdater
       class LockFileUpdater
         extend T::Sig
+
         require_relative "pyproject_preparer"
 
         REQUIRED_FILES = %w(pyproject.toml uv.lock).freeze # At least one of these files should be present

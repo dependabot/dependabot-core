@@ -10,6 +10,7 @@ module Dependabot
     class UpdateChecker
       class RequirementsUpdater
         extend T::Sig
+
         RANGE_REQUIREMENT_REGEX =
           /(\d+\.\d+\.\d+) <= v < (\d+\.\d+\.\d+)/
         SINGLE_VERSION_REGEX = /\A(\d+\.\d+\.\d+)\z/

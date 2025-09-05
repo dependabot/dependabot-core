@@ -15,6 +15,7 @@ module Dependabot
     class FileParser
       class PyprojectFilesParser
         extend T::Sig
+
         POETRY_DEPENDENCY_TYPES = %w(dependencies dev-dependencies).freeze
 
         # https://python-poetry.org/docs/dependency-specification/
