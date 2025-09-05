@@ -42,7 +42,7 @@ module Dependabot
           # A list of notices that will be used in PR messages and/or sent to the dependabot github alerts.
           @notices = T.let([], T::Array[Dependabot::Notice])
 
-          return unless job.source.directory.nil? && job.source.directories&.count == 1
+          return unless job.source.directory.nil? && job.source.directories&.one?
 
           job.source.directory = job.source.directories&.first
         end

@@ -15,6 +15,7 @@ module Dependabot
   module Maven
     class MetadataFinder < Dependabot::MetadataFinders::Base
       extend T::Sig
+
       DOT_SEPARATOR_REGEX = %r{\.(?!\d+([.\/_\-]|$)+)}
 
       private

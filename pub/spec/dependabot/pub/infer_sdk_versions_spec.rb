@@ -8,7 +8,7 @@ require "dependabot/pub/helpers"
 require "webrick"
 
 RSpec.describe "Helpers" do
-  let(:dev_null) { WEBrick::Log.new("/dev/null", 7) }
+  let(:dev_null) { WEBrick::Log.new(File::NULL, 7) }
   let(:inferred_result) do
     Dependabot::Pub::Helpers.run_infer_sdk_versions \
       File.join("spec", "fixtures", "projects", project), url: "http://localhost:#{server[:Port]}/flutter_releases.json"

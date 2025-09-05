@@ -7,6 +7,7 @@ module Dependabot
   module NpmAndYarn
     class NpmPackageManager < Ecosystem::VersionManager
       extend T::Sig
+
       NAME = "npm"
       RC_FILENAME = ".npmrc"
       LOCKFILE_NAME = "package-lock.json"

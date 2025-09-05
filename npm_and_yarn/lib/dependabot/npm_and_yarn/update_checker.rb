@@ -11,6 +11,7 @@ module Dependabot
   module NpmAndYarn
     class UpdateChecker < Dependabot::UpdateCheckers::Base # rubocop:disable Metrics/ClassLength
       extend T::Sig
+
       require_relative "update_checker/requirements_updater"
       require_relative "update_checker/library_detector"
       require_relative "update_checker/latest_version_finder"
