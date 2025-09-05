@@ -46,8 +46,6 @@ module Dependabot
         def dependencies
           dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
-          origin_file = Pathname.new(@dependency_file.directory).join(@dependency_file.name).to_s
-
           parsed.each do |reqs, details|
             reqs.split(", ").each do |req|
               version = Version.semver_for(details["version"])
@@ -61,7 +59,7 @@ module Dependabot
                 version: version.to_s,
                 package_manager: "npm_and_yarn",
                 requirements: [],
-                origin_files: [origin_file]
+                origin_files: [@dependency_file.name]
               )
             end
           end
