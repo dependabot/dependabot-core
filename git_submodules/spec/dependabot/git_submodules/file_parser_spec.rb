@@ -135,7 +135,7 @@ RSpec.describe Dependabot::GitSubmodules::FileParser do
         it "returns the correct package manager" do
           expect(package_manager.name).to eq "git_submodules"
           expect(package_manager.requirement).to be_nil
-          expect(package_manager.version.to_s).to eq "2.43.0"
+          expect(package_manager.version.to_s).to eq "2.51.0"
         end
       end
     end
