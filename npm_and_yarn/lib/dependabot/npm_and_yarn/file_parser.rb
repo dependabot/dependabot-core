@@ -309,7 +309,7 @@ module Dependabot
             groups: [type],
             source: source_for(name, requirement, lockfile_details)
           }],
-           origin_files: [file.name]
+          origin_files: [file.name]
         )
       end
 
