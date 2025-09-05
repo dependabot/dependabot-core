@@ -134,20 +134,24 @@ module Dependabot
       sig { returns(T.nilable(Dependabot::Version)) }
       def fetch_lowest_resolvable_security_fix_version
         # Delegate to latest_version_finder for security fix resolution
-        # This leverages Python ecosystem's security advisory infrastructure
-        latest_version_finder.lowest_security_fix_version
+        # This leverages the Python ecosystem's security advisory infrastructure
+        fix_version = latest_version_finder.lowest_security_fix_version
+
+        # If no security fix version is found, fall back to latest_resolvable_version
+        return latest_resolvable_version if fix_version.nil?
+
+        fix_version
       end
 
       sig { override.returns(T::Boolean) }
       def latest_version_resolvable_with_full_unlock?
-        # For Phase 3, return false as placeholder since we're not doing full dependency resolution
+        # No lock file support for Conda
         false
       end
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def updated_dependencies_after_full_unlock
-        # For Phase 3, return empty array as placeholder
-        []
+        raise NotImplementedError
       end
 
       sig { params(requirement_string: String, new_version: String).returns(String) }
