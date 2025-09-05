@@ -134,7 +134,8 @@ module Dependabot
               ).updated_requirements,
             previous_version: original_dep.version,
             previous_requirements: original_dep.requirements,
-            package_manager: original_dep.package_manager
+            package_manager: original_dep.package_manager,
+            origin_files: original_dep.origin_files
           )
         end
 
