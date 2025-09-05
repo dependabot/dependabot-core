@@ -9,7 +9,7 @@ RSpec.describe Dependabot::Vcpkg::Package::PackageDetailsFetcher do
     described_class.new(dependency: dependency)
   end
 
-  let(:dependency_name) { "baseline" }
+  let(:dependency_name) { "github.com/microsoft/vcpkg" }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -33,10 +33,10 @@ RSpec.describe Dependabot::Vcpkg::Package::PackageDetailsFetcher do
     context "when dependency is not a git dependency" do
       let(:dependency) do
         Dependabot::Dependency.new(
-          name: dependency_name,
-          version: "2025.06.13",
+          name: "curl",
+          version: "8.10.0",
           requirements: [{
-            requirement: nil,
+            requirement: ">=8.10.0",
             groups: [],
             source: nil,
             file: "vcpkg.json"
@@ -45,12 +45,87 @@ RSpec.describe Dependabot::Vcpkg::Package::PackageDetailsFetcher do
         )
       end
 
-      it "returns nil" do
-        expect(details).to be_nil
+      before do
+        # Mock the git commands that would be run in /opt/vcpkg
+        allow(Dir).to receive(:chdir).with("/opt/vcpkg").and_yield
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |cmd|
+          case cmd
+          when %r{git log --format=%H --follow -- ports/curl/vcpkg\.json}
+            <<~GIT
+              abc123def456789012345678901234567890abcd
+              def4561237890123456789012345678901abcdef
+              abc7890123456789012345678901abcdef123456
+            GIT
+          when "git show abc123def456789012345678901234567890abcd:ports/curl/vcpkg.json"
+            '{"name": "curl", "version": "8.15.0", "port-version": 1}'
+          when "git show def4561237890123456789012345678901abcdef:ports/curl/vcpkg.json"
+            '{"name": "curl", "version": "8.14.0"}'
+          when "git show abc7890123456789012345678901abcdef123456:ports/curl/vcpkg.json"
+            '{"name": "curl", "version": "8.10.0"}'
+          when "git show -s --format=%ci abc123def456789012345678901234567890abcd"
+            "2025-01-15 10:30:00 +0000"
+          when "git show -s --format=%ci def4561237890123456789012345678901abcdef"
+            "2025-01-10 14:20:00 +0000"
+          when "git show -s --format=%ci abc7890123456789012345678901abcdef123456"
+            "2025-01-05 09:15:00 +0000"
+          else
+            raise Dependabot::SharedHelpers::HelperSubprocessFailed.new("Command failed: #{cmd}", "Mock error")
+          end
+        end
+      end
+
+      it "returns package details with releases from port history" do
+        expect(details).to be_a(Dependabot::Package::PackageDetails)
+        expect(details.dependency).to eq(dependency)
+        expect(details.releases).not_to be_empty
+        expect(details.releases.size).to eq(3)
+
+        latest_release = details.releases.first
+        expect(latest_release.version.to_s).to eq("8.15.0#1")
+        expect(latest_release.tag).to eq("8.15.0#1")
+        expect(latest_release.details["base_version"]).to eq("8.15.0")
+        expect(latest_release.details["port_version"]).to eq(1)
+
+        second_release = details.releases[1]
+        expect(second_release.version.to_s).to eq("8.14.0")
+        expect(second_release.tag).to eq("8.14.0")
+        expect(second_release.details["base_version"]).to eq("8.14.0")
+        expect(second_release.details["port_version"]).to eq(0)
       end
     end
 
-    context "when dependency is a git dependency" do
+    context "when dependency is not a git dependency and git commands fail" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "nonexistent",
+          version: "1.0.0",
+          requirements: [{
+            requirement: ">=1.0.0",
+            groups: [],
+            source: nil,
+            file: "vcpkg.json"
+          }],
+          package_manager: "vcpkg"
+        )
+      end
+
+      before do
+        allow(Dir).to receive(:chdir).with("/opt/vcpkg").and_yield
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                       message: "Command failed: Port not found",
+                       error_context: { command: "git log" }
+                     ))
+      end
+
+      it "returns empty package details" do
+        expect(details).to be_a(Dependabot::Package::PackageDetails)
+        expect(details.dependency).to eq(dependency)
+        expect(details.releases).to be_empty
+      end
+    end
+
+    context "when dependency is a baseline git dependency" do
       let(:git_commit_checker) { instance_double(Dependabot::GitCommitChecker) }
       let(:mock_tags) do
         [
@@ -104,16 +179,16 @@ RSpec.describe Dependabot::Vcpkg::Package::PackageDetailsFetcher do
     end
   end
 
-  describe "#extract_release_date" do
+  describe "#extract_release_date_from_tag" do
     it "extracts valid dates from vcpkg tag format" do
-      expect(fetcher.send(:extract_release_date, "2025.06.13")).to eq(Time.new(2025, 6, 13))
-      expect(fetcher.send(:extract_release_date, "2024.12.16")).to eq(Time.new(2024, 12, 16))
-      expect(fetcher.send(:extract_release_date, "v2025.01.13")).to eq(Time.new(2025, 1, 13))
+      expect(fetcher.send(:extract_release_date_from_tag, "2025.06.13")).to eq(Time.new(2025, 6, 13))
+      expect(fetcher.send(:extract_release_date_from_tag, "2024.12.16")).to eq(Time.new(2024, 12, 16))
+      expect(fetcher.send(:extract_release_date_from_tag, "v2025.01.13")).to eq(Time.new(2025, 1, 13))
     end
 
     it "returns nil for invalid tag formats" do
-      expect(fetcher.send(:extract_release_date, "invalid")).to be_nil
-      expect(fetcher.send(:extract_release_date, "1.2.3")).to be_nil
+      expect(fetcher.send(:extract_release_date_from_tag, "invalid")).to be_nil
+      expect(fetcher.send(:extract_release_date_from_tag, "1.2.3")).to be_nil
     end
   end
 end

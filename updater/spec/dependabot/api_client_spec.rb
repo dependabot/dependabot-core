@@ -82,7 +82,6 @@ RSpec.describe Dependabot::ApiClient do
     before do
       allow(Dependabot::PullRequestCreator::MessageBuilder).to receive_message_chain(:new, :message).and_return(message)
       allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_record_ecosystem_meta).and_return(true)
-      allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_cooldown_metrics_collection).and_return(true)
       stub_request(:post, create_pull_request_url)
         .to_return(status: 204, headers: headers)
     end
@@ -498,7 +497,6 @@ RSpec.describe Dependabot::ApiClient do
           version: "1.0.0",
           url: "https://github.com/dependabot/dependabot-core"
         },
-        scanned: "2025-07-09T12:00:00Z",
         manifests: {
           "Gemfile" => {
             name: "Gemfile",
@@ -703,10 +701,6 @@ RSpec.describe Dependabot::ApiClient do
   end
 
   describe "record_cooldown_meta" do
-    before do
-      allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_cooldown_metrics_collection).and_return(true)
-    end
-
     let(:job) do
       instance_double(Dependabot::Job,
                       source: source,
@@ -763,17 +757,6 @@ RSpec.describe Dependabot::ApiClient do
     context "when cooldown is nil" do
       it "does not send a request" do
         client.record_cooldown_meta(nil)
-        expect(WebMock).not_to have_requested(:post, record_cooldown_meta_url)
-      end
-    end
-
-    context "when feature flag is disabled" do
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_cooldown_metrics_collection).and_return(false)
-      end
-
-      it "does not send a request" do
-        client.record_cooldown_meta(job)
         expect(WebMock).not_to have_requested(:post, record_cooldown_meta_url)
       end
     end

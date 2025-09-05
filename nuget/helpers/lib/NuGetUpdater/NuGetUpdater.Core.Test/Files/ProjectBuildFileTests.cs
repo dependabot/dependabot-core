@@ -161,4 +161,32 @@ public class ProjectBuildFileTests
         buildFile.NormalizeDirectorySeparatorsInProject();
         Assert.Equal(expectedXml, buildFile.Contents.ToFullString());
     }
+
+    [Theory]
+    [InlineData(
+        // language=xml
+        """
+        <Project>
+          <Target>
+            <Error Condition="!Exists('../packages/Some.Package.1.0.0/build/Some.Package.targets')" Text="$([System.String]::Format('$(ErrorText)', '../packages/Some.Package.1.0.0/build/Some.Package.targets'))" />
+          </Target>
+          <Import Project="../packages/Some.Package.1.0.0/build/Some.Package.targets" Condition="Exists('../packages/Some.Package.1.0.0/build/Some.Package.targets')" />
+        </Project>
+        """,
+        // language=xml
+        """
+        <Project>
+          <Target>
+            <Error Condition="!Exists('..\packages\Some.Package.1.0.0\build\Some.Package.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Some.Package.1.0.0\build\Some.Package.targets'))" />
+          </Target>
+          <Import Project="..\packages\Some.Package.1.0.0\build\Some.Package.targets" Condition="Exists('..\packages\Some.Package.1.0.0\build\Some.Package.targets')" />
+        </Project>
+        """
+    )]
+    public void ImportPathsCanBeNormalized(string originalXml, string expectedXml)
+    {
+        var buildFile = GetBuildFile(originalXml, "project.csproj");
+        buildFile.NormalizeDirectorySeparatorsInProject();
+        Assert.Equal(expectedXml, buildFile.Contents.ToFullString());
+    }
 }

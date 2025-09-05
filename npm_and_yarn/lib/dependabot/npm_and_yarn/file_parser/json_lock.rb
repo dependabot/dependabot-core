@@ -64,13 +64,20 @@ module Dependabot
             version = Version.semver_for(details["version"])
             next unless version
 
+            package_name = name.split("node_modules/").last
             version = version.to_s
 
+            origin_file = Pathname.new(@dependency_file.directory).join(@dependency_file.name).to_s
+
             dependency_args = {
-              name: name.split("node_modules/").last,
+              name: package_name,
               version: version,
               package_manager: "npm_and_yarn",
-              requirements: []
+              requirements: [],
+              metadata: {
+                depends_on: details&.fetch("dependencies", {})&.keys || []
+              },
+              origin_files: [origin_file]
             }
 
             if details["bundled"]

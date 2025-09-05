@@ -92,7 +92,7 @@ module Dependabot
         sig { params(dependencies: T::Array[Dependabot::Dependency]).void }
         def check_and_update_pull_request(dependencies)
           # If the job dependencies are empty, then we should close the PR
-          job_dependencies = job.dependencies
+          job_dependencies = job.dependencies&.uniq
           unless job_dependencies
             Dependabot.logger.info("No dependencies to update")
             close_pull_request(reason: :dependencies_removed)
@@ -103,6 +103,9 @@ module Dependabot
             # If the job dependencies mismatch the parsed dependencies, then
             # we should close the PR as at least one thing we changed has been
             # removed from the project.
+            Dependabot.logger.info("Job dependencies do not match parsed dependencies. " \
+                                   "Job dependencies: #{job_dependencies}, " \
+                                   "Parsed dependencies: #{dependencies.map(&:name)}")
             close_pull_request(reason: :dependency_removed)
             return
           end
@@ -167,6 +170,8 @@ module Dependabot
 
           return close_pull_request(reason: :up_to_date) if checker.up_to_date?
 
+          return close_pull_request(reason: :dependency_removed) if checker.excluded?
+
           requirements_to_unlock = requirements_to_unlock(checker)
           log_requirements_for_update(requirements_to_unlock, checker)
 
@@ -184,7 +189,8 @@ module Dependabot
             updated_dependencies: updated_deps,
             change_source: checker.dependency,
             # Sending notices to the pr message builder to be used in the PR message if show_in_pr is true
-            notices: @notices
+            notices: @notices,
+            exclude_paths: job.exclude_paths || []
           )
 
           # Send warning alerts to the API if any warning notices are present.
@@ -194,8 +200,11 @@ module Dependabot
           # NOTE: Gradle, Maven and Nuget dependency names can be case-insensitive
           # and the dependency name in the security advisory often doesn't match
           # what users have specified in their manifest.
-          job_dependencies = job_dependencies.map(&:downcase)
-          changed_dependencies = dependency_change.updated_dependencies.map { |x| x.name.downcase }
+          job_dependencies = job_dependencies.map(&:downcase).uniq
+          changed_dependencies = dependency_change.updated_dependencies.map { |x| x.name.downcase }.uniq
+
+          Dependabot.logger.info("Job Dependencies (current): #{job_dependencies}, " \
+                                 "Changed Dependencies (new): #{changed_dependencies}")
 
           if changed_dependencies.sort_by(&:downcase) != job_dependencies.sort_by(&:downcase)
             # The dependencies being updated have changed. Close the existing
@@ -245,6 +254,7 @@ module Dependabot
             security_advisories: job.security_advisories_for(dependency),
             raise_on_ignored: true,
             requirements_update_strategy: job.requirements_update_strategy,
+            exclude_paths: job.exclude_paths,
             options: job.experiments
           )
         end

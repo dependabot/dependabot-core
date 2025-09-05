@@ -20,6 +20,18 @@ module Dependabot
     class FileParser < Dependabot::FileParsers::Base
       extend T::Sig
 
+      sig do
+        params(dependency_files: T::Array[Dependabot::DependencyFile], source: T.nilable(Dependabot::Source),
+               repo_contents_path: T.nilable(String), credentials: T::Array[Dependabot::Credential],
+               reject_external_code: T::Boolean, options: T::Hash[Symbol, T.untyped]).void
+      end
+      def initialize(dependency_files:, source: nil, repo_contents_path: nil,
+                     credentials: [], reject_external_code: false, options: {})
+        super
+
+        set_go_environment_variables
+      end
+
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
         dependency_set = Dependabot::FileParsers::Base::DependencySet.new
@@ -28,8 +40,6 @@ module Dependabot
           unless skip_dependency?(hsh) # rubocop:disable Style/Next
 
             dep = dependency_from_details(hsh)
-
-            T.must(go_mod).dependencies << dep
             dependency_set << dep
           end
         end
@@ -49,6 +59,48 @@ module Dependabot
       end
 
       private
+
+      sig { void }
+      def set_go_environment_variables
+        set_goenv_variable
+        set_goproxy_variable
+        set_goprivate_variable
+      end
+
+      sig { void }
+      def set_goenv_variable
+        return unless go_env
+
+        env_file = T.must(go_env)
+        File.write(env_file.name, env_file.content)
+        ENV["GOENV"] = Pathname.new(env_file.name).realpath.to_s
+      end
+
+      sig { void }
+      def set_goprivate_variable
+        return if go_env&.content&.include?("GOPRIVATE")
+        return if go_env&.content&.include?("GOPROXY")
+        return if goproxy_credentials.any?
+
+        goprivate = options.fetch(:goprivate, "*")
+        ENV["GOPRIVATE"] = goprivate if goprivate
+      end
+
+      sig { void }
+      def set_goproxy_variable
+        return if go_env&.content&.include?("GOPROXY")
+        return if goproxy_credentials.empty?
+
+        urls = goproxy_credentials.filter_map { |cred| cred["url"] }
+        ENV["GOPROXY"] = "#{urls.join(',')},direct"
+      end
+
+      sig { returns(T::Array[Dependabot::Credential]) }
+      def goproxy_credentials
+        @goproxy_credentials ||= T.let(credentials.select do |cred|
+          cred["type"] == "goproxy_server"
+        end, T.nilable(T::Array[Dependabot::Credential]))
+      end
 
       sig { returns(Ecosystem::VersionManager) }
       def package_manager
@@ -85,6 +137,11 @@ module Dependabot
         @go_mod ||= T.let(get_original_file("go.mod"), T.nilable(Dependabot::DependencyFile))
       end
 
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def go_env
+        @go_env ||= T.let(get_original_file("go.env"), T.nilable(Dependabot::DependencyFile))
+      end
+
       sig { override.void }
       def check_required_files
         raise "No go.mod!" unless go_mod
@@ -102,14 +159,11 @@ module Dependabot
           groups: []
         }]
 
-        is_indirect = details["Indirect"]
-
         Dependency.new(
           name: details["Path"],
           version: version,
-          requirements: is_indirect ? [] : reqs,
-          package_manager: "go_modules",
-          direct_relationship: !is_indirect
+          requirements: details["Indirect"] ? [] : reqs,
+          package_manager: "go_modules"
         )
       end
 

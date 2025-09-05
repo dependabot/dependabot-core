@@ -95,8 +95,11 @@ public class PullRequestTextGenerator
     private static string GetDependencySetBumpText(DependencySet dependencySet, bool isCommitMessageDetail)
     {
         var bumpSuffix = isCommitMessageDetail ? "s" : string.Empty; // "Bumps" for commit message details, "Bump" otherwise
-        var fromText = dependencySet.Versions.Length == 1 && dependencySet.Versions[0].OldVersion is not null
-            ? $"from {dependencySet.Versions[0].OldVersion} "
+        var versionSets = dependencySet.Versions
+            .DistinctBy(versionSet => $"{versionSet.OldVersion}/{versionSet.NewVersion}".ToLowerInvariant())
+            .ToArray();
+        var fromText = versionSets.Length == 1 && versionSets[0].OldVersion is not null
+            ? $"from {versionSets[0].OldVersion} "
             : string.Empty;
         var newVersions = dependencySet.Versions
             .Select(v => v.NewVersion)

@@ -207,7 +207,8 @@ module Dependabot
               version: d.previous_version,
               previous_version: d.previous_version,
               requirements: T.must(d.previous_requirements),
-              previous_requirements: d.previous_requirements
+              previous_requirements: d.previous_requirements,
+              origin_files: d.origin_files
             )
           end
 
@@ -218,7 +219,8 @@ module Dependabot
               version: d.previous_version,
               previous_version: d.previous_version,
               requirements: [],
-              previous_requirements: []
+              previous_requirements: [],
+              origin_files: d.origin_files
             )
           end
 

@@ -118,6 +118,10 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
     )
   end
 
+  let(:updated_dependencies) do
+    [dependency]
+  end
+
   let(:stub_update_checker) do
     instance_double(
       Dependabot::UpdateCheckers::Base,
@@ -128,10 +132,11 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
       lowest_security_fix_version: "2.0.0",
       conflicting_dependencies: [],
       up_to_date?: false,
-      updated_dependencies: [dependency],
+      updated_dependencies: updated_dependencies,
       dependency: dependency,
       requirements_unlocked_or_can_be?: true,
-      can_update?: true
+      can_update?: true,
+      excluded?: false
     )
   end
 
@@ -142,7 +147,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
   let(:stub_dependency_change) do
     instance_double(
       Dependabot::DependencyChange,
-      updated_dependencies: [dependency],
+      updated_dependencies: updated_dependencies,
       should_replace_existing_pr?: false,
       grouped_update?: false,
       matches_existing_pr?: false,
@@ -162,6 +167,10 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
 
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_shared_helpers_command_timeout)
+      .and_return(true)
+
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_exclude_paths_subdirectory_manifest_files)
       .and_return(true)
   end
 
@@ -259,6 +268,29 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
             show_alert: true
           }])
           expect(refresh_security_update_pull_request).to receive(:create_pull_request)
+          refresh_security_update_pull_request.send(:check_and_update_pull_request, [dependency])
+        end
+      end
+
+      context "when multiple versions of the dependency are being updated" do
+        let(:updated_dependencies) do
+          [
+            dependency,
+            Dependabot::Dependency.new(
+              name: "dummy-pkg-a",
+              version: "5.0.1",
+              requirements: [],
+              previous_version: "5.0.0",
+              previous_requirements: [],
+              package_manager: "bundler",
+              metadata: {}
+            )
+          ]
+        end
+
+        it "checks if a pull request already exists" do
+          allow(refresh_security_update_pull_request).to receive(:existing_pull_request).and_return(true)
+          expect(refresh_security_update_pull_request).to receive(:update_pull_request)
           refresh_security_update_pull_request.send(:check_and_update_pull_request, [dependency])
         end
       end
