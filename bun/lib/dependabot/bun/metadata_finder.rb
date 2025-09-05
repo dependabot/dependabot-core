@@ -73,7 +73,7 @@ module Dependabot
 
         all_version_listings
           .reject { |v, _| Time.parse(times[v]) > cutoff }
-          .filter_map { |_, d| d.fetch("_npmUser", nil)&.fetch("name", nil) }
+          .filter_map { |_, d| d.dig("_npmUser", "name") }
       end
 
       sig { returns(T.nilable(Source)) }

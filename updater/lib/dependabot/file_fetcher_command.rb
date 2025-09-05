@@ -13,6 +13,7 @@ require "sorbet-runtime"
 module Dependabot
   class FileFetcherCommand < BaseCommand
     extend T::Sig
+
     # BaseCommand does not implement this method, so we should expose
     # the instance variable for error handling to avoid raising a
     # NotImplementedError if it is referenced

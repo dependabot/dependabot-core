@@ -32,7 +32,7 @@ end
 # https://github.com/simplecov-ruby/simplecov/issues/992
 SimpleCov.at_exit do
   original_file_descriptor = $stdout
-  $stdout.reopen("/dev/null")
+  $stdout.reopen(File::NULL)
   SimpleCov.result.format!
   $stdout.reopen(original_file_descriptor)
 end

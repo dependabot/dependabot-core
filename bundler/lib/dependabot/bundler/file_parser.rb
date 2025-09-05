@@ -20,6 +20,7 @@ module Dependabot
   module Bundler
     class FileParser < Dependabot::FileParsers::Base # rubocop:disable Metrics/ClassLength
       extend T::Sig
+
       require "dependabot/file_parsers/base/dependency_set"
       require "dependabot/bundler/file_parser/file_preparer"
       require "dependabot/bundler/file_parser/gemfile_declaration_finder"

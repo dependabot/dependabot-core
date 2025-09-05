@@ -11,6 +11,7 @@ module Dependabot
     class FileParser
       class MavenDependencyParser
         extend T::Sig
+
         require "dependabot/file_parsers/base/dependency_set"
 
         DEPENDENCY_OUTPUT_FILE = "dependency-tree-output.json"

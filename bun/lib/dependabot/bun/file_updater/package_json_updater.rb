@@ -60,7 +60,7 @@ module Dependabot
               )
 
               if Dependabot::Experiments.enabled?(:avoid_duplicate_updates_package_json) &&
-                 (content == new_content && unique_deps_count > 1)
+                 content == new_content && unique_deps_count > 1
 
                 # (we observed that) package.json does not always contains the same dependencies compared to
                 # "dependencies" list, for example, dependencies object can contain same name dependency "dep"=> "1.0.0"
