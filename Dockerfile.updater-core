@@ -45,13 +45,30 @@ Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
 
 EOF
 
-
 RUN apt-get update \
   && apt-get upgrade -y \
   && apt-get install -y --no-install-recommends \
+    # needed to run add-apt-repository
+    software-properties-common \
+    # Used to download the git-lfs GPG key as well as dev dependencies for CI
+    curl \
+    # Add git core ppa to get a more recent git version than the one provided by ubuntu
+    && add-apt-repository -y ppa:git-core/ppa \
+    # Install the git-lfs mirror. See https://github.com/git-lfs/git-lfs/blob/main/INSTALLING.md
+    # We need this because the version of git-lfs provided by Ubuntu is outdated
+    # apt-transport-https is a temporary dependency to install the git-lfs apt source
+    && apt-get install -y --no-install-recommends apt-transport-https \
+    && mkdir -p /etc/apt/keyrings \
+           && curl -fsSL 'https://packagecloud.io/github/git-lfs/gpgkey' | gpg --dearmor > /etc/apt/keyrings/github_git-lfs-archive-keyring.gpg \
+           && release=$( . /etc/os-release && echo "$VERSION_CODENAME" ) \
+           && echo "deb [signed-by=/etc/apt/keyrings/github_git-lfs-archive-keyring.gpg] https://packagecloud.io/github/git-lfs/ubuntu/ $release main" \
+              > /etc/apt/sources.list.d/github_git-lfs.list \
+           && echo "deb-src [signed-by=/etc/apt/keyrings/github_git-lfs-archive-keyring.gpg] https://packagecloud.io/github/git-lfs/ubuntu/ $release main" \
+              >> /etc/apt/sources.list.d/github_git-lfs.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends \
     # dev dependencies for CI
     build-essential \
-    curl \
     libgmp-dev \
     # Compression libs
     zlib1g-dev \
@@ -74,6 +91,8 @@ RUN apt-get update \
     libyaml-dev \
     locales \
   && locale-gen en_US.UTF-8 \
+  # No longer needed post git-core ppa addition and git-lfs install
+  && apt purge software-properties-common apt-transport-https -y && apt-get autoremove -y \
   && rm -rf /var/lib/apt/lists/*
 
 ARG USER_UID=1000
