@@ -1,0 +1,18 @@
+{
+  "name": "gradle-wrapper.properties",
+  "path": "gradle/wrapper/gradle-wrapper.properties",
+  "sha": "3ec3a7f5c2167bb4059a6b770addff024c9a3780",
+  "size": 230,
+  "url": "https://api.github.com/repos/bigandroidenergies/version_catalog/contents/gradle/wrapper/gradle-wrapper.properties?ref=main",
+  "html_url": "https://github.com/bigandroidenergies/version_catalog/blob/main/gradle/wrapper/gradle-wrapper.properties",
+  "git_url": "https://api.github.com/repos/bigandroidenergies/version_catalog/git/blobs/3ec3a7f5c2167bb4059a6b770addff024c9a3780",
+  "download_url": "https://raw.githubusercontent.com/bigandroidenergies/version_catalog/main/gradle/wrapper/gradle-wrapper.properties",
+  "type": "file",
+  "content": "I01vbiBOb3YgMjggMTQ6Mjk6MzkgQ0VUIDIwMjIKZGlzdHJpYnV0aW9uQmFz\nZT1HUkFETEVfVVNFUl9IT01FCmRpc3RyaWJ1dGlvblVybD1odHRwc1w6Ly9z\nZXJ2aWNlcy5ncmFkbGUub3JnL2Rpc3RyaWJ1dGlvbnMvZ3JhZGxlLTcuNS1i\naW4uemlwCmRpc3RyaWJ1dGlvblBhdGg9d3JhcHBlci9kaXN0cwp6aXBTdG9y\nZVBhdGg9d3JhcHBlci9kaXN0cwp6aXBTdG9yZUJhc2U9R1JBRExFX1VTRVJf\nSE9NRQo=\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/bigandroidenergies/version_catalog/contents/gradle/wrapper/gradle-wrapper.properties?ref=main",
+    "git": "https://api.github.com/repos/bigandroidenergies/version_catalog/git/blobs/3ec3a7f5c2167bb4059a6b770addff024c9a3780",
+    "html": "https://github.com/bigandroidenergies/version_catalog/blob/main/gradle/wrapper/gradle-wrapper.properties"
+  }
+}
