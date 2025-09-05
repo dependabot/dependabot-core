@@ -41,7 +41,8 @@ module Dependabot
                 source: dep["source"] && symbolize_keys(dep["source"]),
                 file: dep["from"]
               }],
-              package_manager: "hex"
+              package_manager: "hex",
+              origin_files: [dep["from"]]
             )
         end
 

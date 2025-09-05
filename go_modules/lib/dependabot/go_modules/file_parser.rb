@@ -163,7 +163,8 @@ module Dependabot
           name: details["Path"],
           version: version,
           requirements: details["Indirect"] ? [] : reqs,
-          package_manager: "go_modules"
+          package_manager: "go_modules",
+          origin_files: [go_mod&.name].compact
         )
       end
 

@@ -93,7 +93,8 @@ module Dependabot
               ref: VCPKG_DEFAULT_BASELINE_DEFAULT_BRANCH
             },
             file: dependency_file.name
-          }]
+          }],
+          origin_files: [dependency_file.name]
         )
       end
 
@@ -133,7 +134,8 @@ module Dependabot
               groups: [],
               source: nil,
               file: dependency_file.name
-            }]
+            }],
+            origin_files: [dependency_file.name]
           )
         else
           Dependabot.logger.warn("Skipping unknown vcpkg dependency format: #{dep.inspect}")

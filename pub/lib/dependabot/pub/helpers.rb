@@ -315,7 +315,8 @@ module Dependabot
           name: json["name"],
           version: json["version"],
           package_manager: "pub",
-          requirements: []
+          requirements: [],
+          origin_files: ["pubspec.yaml"]
         }
 
         if json["kind"] != "transitive" && !json["constraint"].nil?
@@ -347,7 +348,8 @@ module Dependabot
           name: json["name"],
           version: json["version"],
           package_manager: "pub",
-          requirements: []
+          requirements: [],
+          origin_files: ["pubspec.yaml"]
         }
         constraint_field = constraint_field_from_update_strategy(requirements_update_strategy)
 

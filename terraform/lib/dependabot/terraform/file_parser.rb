@@ -140,7 +140,8 @@ module Dependabot
             groups: [],
             file: file.name,
             source: source
-          ]
+          ],
+          origin_files: [file.name]
         )
       end
 
@@ -173,7 +174,8 @@ module Dependabot
               registry_hostname: hostname,
               module_identifier: "#{namespace}/#{name}"
             }
-          ]
+          ],
+          origin_files: [file.name]
         )
       end
 
@@ -208,7 +210,8 @@ module Dependabot
             groups: [],
             file: file.name,
             source: source
-          ]
+          ],
+          origin_files: [file.name]
         )
       end
 

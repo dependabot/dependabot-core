@@ -68,7 +68,8 @@ module Dependabot
             name: dependency.name,
             version: dependency.version,
             requirements: python_compatible_requirements,
-            package_manager: "pip" # Use pip for PyPI compatibility
+            package_manager: "pip", # Use pip for PyPI compatibility
+            origin_files: dependency.origin_files
           )
         end
 

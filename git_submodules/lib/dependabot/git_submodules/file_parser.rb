@@ -37,7 +37,8 @@ module Dependabot
                   ref: params["branch"]
                 },
                 groups: []
-              }]
+              }],
+              origin_files: [".gitmodules"]
             )
           end
         end

@@ -72,7 +72,8 @@ module Dependabot
           metadata: {
             allow_prerelease: sdk_info["allowPrerelease"] || false,
             roll_forward: sdk_info["rollForward"] || "latestPatch"
-          }
+          },
+          origin_files: [dependency_file.name]
         )
       end
 

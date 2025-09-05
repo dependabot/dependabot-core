@@ -50,7 +50,8 @@ module Dependabot
                   source: nil,
                   groups: [dep["requirement_type"]]
                 }],
-                package_manager: "uv"
+                package_manager: "uv",
+                origin_files: [Pathname.new(dep["file"]).cleanpath.to_path]
               )
           end
           dependencies

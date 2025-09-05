@@ -61,7 +61,8 @@ module Dependabot
             groups: [],
             file: file.name,
             source: source_from(details)
-          ]
+          ],
+          origin_files: [file.name]
         )
       end
 
