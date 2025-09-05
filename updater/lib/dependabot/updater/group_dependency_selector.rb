@@ -98,6 +98,8 @@ module Dependabot
       def filter_to_group!(dependency_change)
         return unless Dependabot::Experiments.enabled?(:group_membership_enforcement)
 
+        Dependabot.logger.info("Applying GroupDependencySelector filtering for group '#{group.name}'")
+
         original_count = dependency_change.updated_dependencies.length
         group_eligible_deps, filtered_out_deps = partition_dependencies(dependency_change)
 
@@ -111,7 +113,9 @@ module Dependabot
 
         directory = dependency_change.job.source.directory || "."
         emit_filtering_metrics(directory, original_count, group_eligible_deps.length, filtered_out_deps.length)
-        log_filtered_dependencies(filtered_out_deps) if filtered_out_deps.any?
+        return log_filtered_dependencies(filtered_out_deps) if filtered_out_deps.any?
+
+        Dependabot.logger.info("No dependencies were filtered out")
       end
 
       # Optional: compute and attach dependency drift metadata for observability
