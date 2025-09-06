@@ -2665,6 +2665,109 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
           specify { expect(updated_files.map(&:name)).to eq(["package.json"]) }
         end
+
+        context "when updating webdriverio as a direct dependency" do
+          let(:files) { project_dependency_files("npm8/webdriverio_issue") }
+
+          let(:dependency_name) { "webdriverio" }
+          let(:version) { "9.19.0" }
+          let(:previous_version) { "9.18.1" }
+          let(:requirements) do
+            [{
+              file: "package.json",
+              requirement: "^9.19.0",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          end
+          let(:previous_requirements) do
+            [{
+              file: "package.json",
+              requirement: "^9.18.1",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          end
+
+          it "updates both package.json and package-lock.json" do
+            expect(updated_files.map(&:name))
+              .to contain_exactly("package.json", "package-lock.json")
+
+            expect(updated_package_json.content)
+              .to include('"webdriverio": "^9.19.0"')
+
+            parsed_package_lock = JSON.parse(updated_npm_lock.content)
+            expect(parsed_package_lock["dependencies"]["webdriverio"]["version"])
+              .to eq("9.19.0")
+          end
+        end
+
+        context "when a dependency has requirements but no previous requirements" do
+          let(:files) { project_dependency_files("npm8/webdriverio_issue") }
+
+          # Simulate a dependency that has current requirements but no previous requirements
+          # This can happen in certain update scenarios and was causing webdriverio to be skipped
+          let(:dependency_name) { "webdriverio" }
+          let(:version) { "9.19.0" }
+          let(:previous_version) { "9.18.1" }
+          let(:requirements) do
+            [{
+              file: "package.json",
+              requirement: "^9.19.0",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          end
+          let(:previous_requirements) { nil } # This is the key - nil previous requirements
+
+          it "still updates package.json by using current requirements" do
+            expect(updated_files.map(&:name))
+              .to contain_exactly("package.json", "package-lock.json")
+
+            expect(updated_package_json.content)
+              .to include('"webdriverio": "^9.19.0"')
+
+            parsed_package_lock = JSON.parse(updated_npm_lock.content)
+            expect(parsed_package_lock["dependencies"]["webdriverio"]["version"])
+              .to eq("9.19.0")
+          end
+        end
+
+        context "when a regular dependency with previous requirements is updated" do
+          let(:files) { project_dependency_files("npm8/regular_dependency_update") }
+
+          let(:dependency_name) { "lodash" }
+          let(:version) { "4.17.21" }
+          let(:previous_version) { "4.17.20" }
+          let(:requirements) do
+            [{
+              file: "package.json",
+              requirement: "^4.17.21",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          end
+          let(:previous_requirements) do
+            [{
+              file: "package.json",
+              requirement: "^4.17.20",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          end
+
+          it "updates normally without affecting existing logic" do
+            expect(updated_files.map(&:name))
+              .to contain_exactly("package.json", "package-lock.json")
+
+            expect(updated_package_json.content)
+              .to include('"lodash": "^4.17.21"')
+
+            parsed_package_lock = JSON.parse(updated_npm_lock.content)
+            expect(parsed_package_lock["dependencies"]["lodash"]["version"])
+              .to eq("4.17.21")
+          end
+        end
       end
     end
 
