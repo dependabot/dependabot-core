@@ -501,8 +501,11 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
 
       it "raises an error indicating the dependencies are not resolvable", :slow do
         expect { updated_files }.to raise_error(Dependabot::DependencyFileNotResolvable) do |err|
-          expect(err.message).to include(
-            "not supported between instances of 'InstallationCandidate'"
+          # With pip 25.2, the error message format has changed
+          # Accept either the old format or new pip-tools error messages
+          expect(err.message).to match(
+            /not supported between instances of 'InstallationCandidate'|Could not find a version that matches|
+            legacy dependency resolver is deprecated/
           )
         end
       end
@@ -549,6 +552,64 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
         expect(updated_files.count).to eq(1)
         expect(updated_files.first.content).to include("--resolver=legacy")
         expect(updated_files.first.content).not_to include("boto3")
+      end
+    end
+
+    context "with relative import paths (regression test for pip >25 issue)" do
+      # This test verifies that the upgrade to pip 25.2 and pip-tools 7.5.0
+      # correctly preserves relative paths in generated comments instead of
+      # converting them to absolute paths. This was an issue with pip >25 and
+      # older pip-tools versions.
+      let(:dependency_files) do
+        [base_file, manifest_file, generated_file]
+      end
+      let(:base_file) do
+        Dependabot::DependencyFile.new(
+          name: "base.in",
+          content: "authlib"
+        )
+      end
+      let(:manifest_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements/test.in",
+          content: "-r ../base.in\nruff==0.12.3"
+        )
+      end
+      let(:generated_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements/test.txt",
+          content: fixture("requirements", "pip_compile_relative_paths.txt")
+        )
+      end
+      let(:dependency_name) { "ruff" }
+      let(:dependency_version) { "0.12.4" }
+      let(:dependency_previous_version) { "0.12.3" }
+      let(:dependency_requirements) do
+        [{
+          file: "requirements/test.in",
+          requirement: "==0.12.4",
+          groups: [],
+          source: nil
+        }]
+      end
+      let(:dependency_previous_requirements) do
+        [{
+          file: "requirements/test.in",
+          requirement: "==0.12.3",
+          groups: [],
+          source: nil
+        }]
+      end
+
+      it "preserves relative paths in generated comments (not absolute)", :slow do
+        updated_content = updated_files.first.content
+
+        # The key assertion: ensure that relative paths in comments are preserved
+        # and not converted to absolute paths like "/tmp/..." or "/home/..."
+        expect(updated_content).not_to match(%r{# via -r /})  # No absolute paths starting with /
+        expect(updated_content).not_to include("/tmp/")       # No temp directory paths
+        expect(updated_content).not_to include("/home/")      # No home directory paths
+        expect(updated_content).not_to include("/opt/")       # No opt directory paths
       end
     end
   end
