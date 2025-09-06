@@ -10,13 +10,13 @@ namespace NuGetUpdater.Core.Test
 {
     public class TestHttpServer : IDisposable
     {
-        private readonly Func<string, string, (int, byte[]?)> _requestHandler;
+        private readonly Func<string, string, string?, (int, byte[]?)> _requestHandler;
         private readonly HttpListener _listener;
         private bool _runServer = true;
 
         public string BaseUrl { get; }
 
-        private TestHttpServer(string baseurl, Func<string, string, (int, byte[]?)> requestHandler)
+        private TestHttpServer(string baseurl, Func<string, string, string?, (int, byte[]?)> requestHandler)
         {
             BaseUrl = baseurl;
             _requestHandler = requestHandler;
@@ -43,7 +43,9 @@ namespace NuGetUpdater.Core.Test
             while (_runServer)
             {
                 var context = await _listener.GetContextAsync();
-                var (statusCode, response) = _requestHandler(context.Request.HttpMethod, context.Request.Url!.AbsoluteUri);
+                var bodyBytes = context.Request.InputStream.ReadAllBytes();
+                var body = Encoding.UTF8.GetString(bodyBytes);
+                var (statusCode, response) = _requestHandler(context.Request.HttpMethod, context.Request.Url!.AbsoluteUri, body);
                 context.Response.StatusCode = statusCode;
                 if (response is not null)
                 {
@@ -58,10 +60,16 @@ namespace NuGetUpdater.Core.Test
 
         public static TestHttpServer CreateTestServer(Func<string, (int, byte[])> requestHandler)
         {
-            return CreateTestServer((method, url) => requestHandler(url));
+            return CreateTestServer((_method, url) => requestHandler(url));
         }
 
         public static TestHttpServer CreateTestServer(Func<string, string, (int, byte[]?)> requestHandler)
+        {
+            var requestHandlerNoBody = (string method, string url, string? _body) => requestHandler(method, url);
+            return CreateTestServer(requestHandlerNoBody);
+        }
+
+        public static TestHttpServer CreateTestServer(Func<string, string, string?, (int, byte[]?)> requestHandler)
         {
             // static lock to ensure the port is not recycled after `FindFreePort()` and before we can start the real server
             lock (PortGate)
@@ -77,6 +85,16 @@ namespace NuGetUpdater.Core.Test
         public static TestHttpServer CreateTestStringServer(Func<string, (int, string)> requestHandler)
         {
             return CreateTestStringServer((method, url) => requestHandler(url));
+        }
+
+        public static TestHttpServer CreateTestStringServerWithBody(Func<string, string?, (int, string)> requestHandler)
+        {
+            Func<string, string, string?, (int, byte[]?)> bytesRequestHandlerWithBody = (method, url, body) =>
+            {
+                var (statusCode, response) = requestHandler(url, body);
+                return (statusCode, Encoding.UTF8.GetBytes(response));
+            };
+            return CreateTestServer(bytesRequestHandlerWithBody);
         }
 
         public static TestHttpServer CreateTestStringServer(Func<string, string, (int, string)> requestHandler)
