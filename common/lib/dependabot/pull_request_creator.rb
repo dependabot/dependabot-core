@@ -184,7 +184,7 @@ module Dependabot
                    custom_labels: nil, author_details: nil, signature_key: nil,
                    commit_message_options: {}, vulnerabilities_fixed: {},
                    reviewers: nil, assignees: nil, milestone: nil, branch_name_separator: "/",
-                   branch_name_prefix: "dependabot", branch_name_max_length: nil,
+                   branch_name_prefix: "dependabot", branch_name_max_length: 100,
                    label_language: false, automerge_candidate: false,
                    github_redirection_service: DEFAULT_GITHUB_REDIRECTION_SERVICE,
                    custom_headers: nil, require_up_to_date_base: false,
