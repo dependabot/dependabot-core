@@ -39,5 +39,7 @@ module Dependabot
     VCPKG_DEFAULT_BASELINE_URL = "https://github.com/microsoft/vcpkg.git"
 
     VCPKG_DEFAULT_BASELINE_DEFAULT_BRANCH = "master"
+
+    VCPKG_SUPPORTED_REGISTRY_TYPES = %w(git builtin).freeze
   end
 end
