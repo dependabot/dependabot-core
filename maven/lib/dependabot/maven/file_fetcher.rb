@@ -91,7 +91,7 @@ module Dependabot
           next [] if fetched_filenames.include?(path)
 
           next [] if Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files) &&
-                     @exclude_paths.empty? && Dependabot::FileFiltering.exclude_path?(path, @exclude_paths)
+                     !@exclude_paths.empty? && Dependabot::FileFiltering.exclude_path?(path, @exclude_paths)
 
           child_pom = fetch_file_from_host(path)
           fetched_files = [
