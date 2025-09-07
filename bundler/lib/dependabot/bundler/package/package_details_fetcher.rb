@@ -43,16 +43,24 @@ module Dependabot
           @credentials = credentials
 
           @source_type = T.let(nil, T.nilable(String))
+          @options = T.let({}, T::Hash[Symbol, T.untyped])
+          @repo_contents_path = T.let(nil, T.nilable(String))
         end
 
         sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
 
-        sig { returns(T::Array[T.untyped]) }
+        sig { override.returns(T::Array[T.untyped]) }
         attr_reader :dependency_files
 
-        sig { returns(T::Array[T.untyped]) }
+        sig { override.returns(T::Array[T.untyped]) }
         attr_reader :credentials
+
+        sig { override.returns(T::Hash[Symbol, T.untyped]) }
+        attr_reader :options
+
+        sig { override.returns(T.nilable(String)) }
+        attr_reader :repo_contents_path
 
         sig { returns(Dependabot::Package::PackageDetails) }
         def fetch
