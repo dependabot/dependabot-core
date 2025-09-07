@@ -67,8 +67,6 @@ module Dependabot
             package_name = name.split("node_modules/").last
             version = version.to_s
 
-            origin_file = Pathname.new(@dependency_file.directory).join(@dependency_file.name).to_s
-
             dependency_args = {
               name: package_name,
               version: version,
@@ -76,8 +74,7 @@ module Dependabot
               requirements: [],
               metadata: {
                 depends_on: details&.fetch("dependencies", {})&.keys || []
-              },
-              origin_files: [origin_file]
+              }
             }
 
             if details["bundled"]

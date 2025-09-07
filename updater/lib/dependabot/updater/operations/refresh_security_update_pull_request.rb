@@ -170,8 +170,6 @@ module Dependabot
 
           return close_pull_request(reason: :up_to_date) if checker.up_to_date?
 
-          return close_pull_request(reason: :dependency_removed) if checker.excluded?
-
           requirements_to_unlock = requirements_to_unlock(checker)
           log_requirements_for_update(requirements_to_unlock, checker)
 
@@ -189,8 +187,7 @@ module Dependabot
             updated_dependencies: updated_deps,
             change_source: checker.dependency,
             # Sending notices to the pr message builder to be used in the PR message if show_in_pr is true
-            notices: @notices,
-            exclude_paths: job.exclude_paths || []
+            notices: @notices
           )
 
           # Send warning alerts to the API if any warning notices are present.
@@ -254,7 +251,6 @@ module Dependabot
             security_advisories: job.security_advisories_for(dependency),
             raise_on_ignored: true,
             requirements_update_strategy: job.requirements_update_strategy,
-            exclude_paths: job.exclude_paths,
             options: job.experiments
           )
         end
