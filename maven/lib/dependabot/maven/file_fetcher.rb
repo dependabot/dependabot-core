@@ -37,7 +37,8 @@ module Dependabot
 
         # Filter excluded files from final collection
         filtered_files = fetched_files.uniq.reject do |file|
-          !@exclude_paths.empty? && Dependabot::FileFiltering.exclude_path?(file.name, @exclude_paths)
+          Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files) &&
+            !@exclude_paths.empty? && Dependabot::FileFiltering.exclude_path?(file.name, @exclude_paths)
         end
 
         filtered_files
@@ -89,7 +90,8 @@ module Dependabot
 
           next [] if fetched_filenames.include?(path)
 
-          next [] if !@exclude_paths.empty? && Dependabot::FileFiltering.exclude_path?(path, @exclude_paths)
+          next [] if Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files) &&
+                     @exclude_paths.empty? && Dependabot::FileFiltering.exclude_path?(path, @exclude_paths)
 
           child_pom = fetch_file_from_host(path)
           fetched_files = [
