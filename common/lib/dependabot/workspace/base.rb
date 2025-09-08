@@ -75,6 +75,8 @@ module Dependabot
       end
       def capture_failed_change_attempt(memo = nil, error = nil); end
 
+      private
+
       sig { abstract.returns(String) }
       def clean; end
     end
