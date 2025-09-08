@@ -63,7 +63,7 @@ module Dependabot
         sig { void }
         def perform
           run_grouped_dependency_updates if dependency_snapshot.groups.any?
-          run_ungrouped_dependency_updates
+          run_ungrouped_dependency_updates unless job.multi_ecosystem_update?
         end
 
         private

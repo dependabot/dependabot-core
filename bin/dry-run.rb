@@ -157,8 +157,7 @@ $options = {
   vendor_dependencies: false,
   ignore_conditions: [],
   pull_request: false,
-  cooldown: nil,
-  exclude_paths: []
+  cooldown: nil
 }
 
 unless ENV["LOCAL_GITHUB_ACCESS_TOKEN"].to_s.strip.empty?
@@ -213,11 +212,6 @@ end
 
 if ENV.key?("COOLDOWN") && !ENV["COOLDOWN"].to_s.strip.empty?
   $options[:cooldown] = JSON.parse(ENV.fetch("COOLDOWN", "{}"))
-end
-
-unless ENV["EXCLUDE_PATHS"].to_s.strip.empty?
-  # Comma separated list of paths to exclude
-  $options[:exclude_paths] = ENV.fetch("EXCLUDE_PATHS", "").split(",").map(&:strip)
 end
 
 # rubocop:disable Metrics/BlockLength
@@ -327,10 +321,6 @@ option_parse = OptionParser.new do |opts|
   rescue JSON::ParserError
     puts "Invalid JSON format for cooldown parameter. Please provide a valid JSON string."
     exit 1
-  end
-
-  opts.on("--exclude-paths PATHS", "Comma separated list of paths to exclude") do |value|
-    $options[:exclude_paths] = value.split(",").map(&:strip)
   end
 end
 # rubocop:enable Metrics/BlockLength
@@ -614,8 +604,7 @@ begin
     config = $config_file.update_config(
       $package_manager,
       directory: $options[:directory],
-      target_branch: $options[:branch],
-      exclude_paths: $options[:exclude_paths] || []
+      target_branch: $options[:branch]
     )
     config
   rescue KeyError
