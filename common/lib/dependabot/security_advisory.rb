@@ -27,7 +27,7 @@ module Dependabot
       params(
         dependency_name: String,
         package_manager: String,
-        vulnerable_versions: T.nilable(T::Array[Dependabot::Requirement]),
+        vulnerable_versions: T.nilable(T::Array[T.any(String, Dependabot::Requirement)]),
         safe_versions: T.nilable(T::Array[T.any(String, Dependabot::Requirement)])
       )
         .void
