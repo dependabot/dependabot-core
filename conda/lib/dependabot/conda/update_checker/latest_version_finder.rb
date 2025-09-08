@@ -84,12 +84,21 @@ module Dependabot
         sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
         def python_compatible_security_advisories
           security_advisories.map do |advisory|
+            # Convert Conda requirements to Python requirements for pip compatibility
+            python_vulnerable_versions = advisory.vulnerable_versions.flat_map do |conda_req|
+              Dependabot::Python::Requirement.requirements_array(conda_req.to_s)
+            end
+
+            python_safe_versions = advisory.safe_versions.flat_map do |conda_req|
+              Dependabot::Python::Requirement.requirements_array(conda_req.to_s)
+            end
+
             # Normalize security advisories to use 'pip' package manager for Python delegation
             Dependabot::SecurityAdvisory.new(
               dependency_name: advisory.dependency_name,
               package_manager: "pip", # Use pip for PyPI compatibility
-              vulnerable_versions: advisory.vulnerable_versions.map(&:to_s),
-              safe_versions: advisory.safe_versions.map(&:to_s)
+              vulnerable_versions: python_vulnerable_versions,
+              safe_versions: python_safe_versions
             )
           end
         end
