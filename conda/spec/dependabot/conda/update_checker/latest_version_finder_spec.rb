@@ -130,4 +130,78 @@ RSpec.describe Dependabot::Conda::UpdateChecker::LatestVersionFinder do
       end
     end
   end
+
+  describe "security advisory conversion" do
+    let(:conda_advisory) do
+      Dependabot::SecurityAdvisory.new(
+        dependency_name: "numpy",
+        package_manager: "conda",
+        vulnerable_versions: ["< 1.22.0"],
+        safe_versions: [">= 1.22.0"]
+      )
+    end
+    let(:security_advisories) { [conda_advisory] }
+
+    describe "#python_compatible_security_advisories" do
+      it "converts conda advisories to python-compatible format" do
+        python_advisories = finder.send(:python_compatible_security_advisories)
+        expect(python_advisories).to be_an(Array)
+        expect(python_advisories.size).to eq(1)
+      end
+
+      it "normalizes package_manager to pip" do
+        python_advisories = finder.send(:python_compatible_security_advisories)
+        expect(python_advisories.first.package_manager).to eq("pip")
+      end
+
+      it "preserves dependency name" do
+        python_advisories = finder.send(:python_compatible_security_advisories)
+        expect(python_advisories.first.dependency_name).to eq("numpy")
+      end
+
+      it "converts vulnerable versions to python requirement objects" do
+        python_advisories = finder.send(:python_compatible_security_advisories)
+        vulnerable_versions = python_advisories.first.vulnerable_versions
+        expect(vulnerable_versions).to be_an(Array)
+        expect(vulnerable_versions.first).to be_a(Dependabot::Python::Requirement)
+        expect(vulnerable_versions.first.to_s).to eq("< 1.22.0")
+      end
+
+      it "converts safe versions to python requirement objects" do
+        python_advisories = finder.send(:python_compatible_security_advisories)
+        safe_versions = python_advisories.first.safe_versions
+        expect(safe_versions).to be_an(Array)
+        expect(safe_versions.first).to be_a(Dependabot::Python::Requirement)
+        expect(safe_versions.first.to_s).to eq(">= 1.22.0")
+      end
+    end
+
+    context "with multiple advisories" do
+      let(:another_advisory) do
+        Dependabot::SecurityAdvisory.new(
+          dependency_name: "scipy",
+          package_manager: "conda",
+          vulnerable_versions: ["< 1.8.0"],
+          safe_versions: [">= 1.8.0"]
+        )
+      end
+      let(:security_advisories) { [conda_advisory, another_advisory] }
+
+      it "converts all advisories" do
+        python_advisories = finder.send(:python_compatible_security_advisories)
+        expect(python_advisories.size).to eq(2)
+        expect(python_advisories.map(&:dependency_name)).to contain_exactly("numpy", "scipy")
+        expect(python_advisories.map(&:package_manager)).to all(eq("pip"))
+      end
+    end
+
+    context "with empty security advisories" do
+      let(:security_advisories) { [] }
+
+      it "returns empty array" do
+        python_advisories = finder.send(:python_compatible_security_advisories)
+        expect(python_advisories).to be_empty
+      end
+    end
+  end
 end

@@ -88,8 +88,8 @@ module Dependabot
             Dependabot::SecurityAdvisory.new(
               dependency_name: advisory.dependency_name,
               package_manager: "pip", # Use pip for PyPI compatibility
-              vulnerable_versions: advisory.vulnerable_versions,
-              safe_versions: advisory.safe_versions
+              vulnerable_versions: advisory.vulnerable_versions.map(&:to_s),
+              safe_versions: advisory.safe_versions.map(&:to_s)
             )
           end
         end
