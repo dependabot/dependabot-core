@@ -135,8 +135,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
       updated_dependencies: updated_dependencies,
       dependency: dependency,
       requirements_unlocked_or_can_be?: true,
-      can_update?: true,
-      excluded?: false
+      can_update?: true
     )
   end
 

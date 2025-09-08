@@ -120,8 +120,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshVersionUpdatePullRequest 
       updated_dependencies: [dependency],
       dependency: dependency,
       requirements_unlocked_or_can_be?: true,
-      can_update?: true,
-      excluded?: false
+      can_update?: true
     )
   end
 

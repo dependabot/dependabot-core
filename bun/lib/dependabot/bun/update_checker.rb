@@ -31,7 +31,6 @@ module Dependabot
           requirements_update_strategy: T.nilable(Dependabot::RequirementsUpdateStrategy),
           dependency_group: T.nilable(Dependabot::DependencyGroup),
           update_cooldown: T.nilable(Dependabot::Package::ReleaseCooldownOptions),
-          exclude_paths: T.nilable(T::Array[String]),
           options: T::Hash[Symbol, T.untyped]
         )
           .void
@@ -40,7 +39,7 @@ module Dependabot
                      repo_contents_path: nil, ignored_versions: [],
                      raise_on_ignored: false, security_advisories: [],
                      requirements_update_strategy: nil, dependency_group: nil,
-                     update_cooldown: nil, exclude_paths: [], options: {})
+                     update_cooldown: nil, options: {})
         @latest_version = T.let(nil, T.nilable(T.any(String, Gem::Version)))
         @latest_resolvable_version = T.let(nil, T.nilable(T.any(String, Dependabot::Version)))
         @updated_requirements = T.let(nil, T.nilable(T::Array[T::Hash[Symbol, T.untyped]]))
