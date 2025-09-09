@@ -276,7 +276,7 @@ module Dependabot
 
         # Count wildcards and calculate specificity
         wildcard_count = pattern.count("*")
-        return 500 if wildcard_count == 0 # No wildcards, exact pattern
+        return 500 if wildcard_count.zero? # No wildcards, exact pattern
 
         # Patterns with wildcards: base score minus penalty for each wildcard
         base_score = 100
@@ -291,7 +291,9 @@ module Dependabot
 
       # Check if a specific group contains a dependency
       # Similar to group_contains_dependency? but for any group
-      sig { params(group: Dependabot::DependencyGroup, dep: Dependabot::Dependency, directory: String).returns(T::Boolean) }
+      sig do
+        params(group: Dependabot::DependencyGroup, dep: Dependabot::Dependency, directory: String).returns(T::Boolean)
+      end
       def group_contains_dependency_for_group?(group, dep, directory)
         # Use the group's dependency matching logic
         if group.respond_to?(:contains_dependency?)
@@ -395,7 +397,10 @@ module Dependabot
 
         log_dependency_group(not_in_group, "not in group") if not_in_group.any?
         log_dependency_group(filtered_by_config, "filtered by dependabot.yml config") if filtered_by_config.any?
-        log_dependency_group(belongs_to_more_specific_group, "belongs to more specific group") if belongs_to_more_specific_group.any?
+        if belongs_to_more_specific_group.any?
+          log_dependency_group(belongs_to_more_specific_group,
+                               "belongs to more specific group")
+        end
         log_dependency_group(other, "filtered (other reasons)") if other.any?
       end
 

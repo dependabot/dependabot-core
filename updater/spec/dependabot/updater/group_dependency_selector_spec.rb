@@ -405,7 +405,9 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
     end
 
     describe "#dependency_belongs_to_more_specific_group?" do
-      let(:generic_selector) { described_class.new(group: generic_group, dependency_snapshot: snapshot_with_multiple_groups) }
+      let(:generic_selector) do
+        described_class.new(group: generic_group, dependency_snapshot: snapshot_with_multiple_groups)
+      end
 
       before do
         # Mock group contains? methods for all groups
@@ -413,7 +415,7 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
         allow(docker_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
         allow(exact_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
 
-        allow(generic_group).to receive(:contains?).and_return(true) # matches everything
+        allow(generic_group).to receive_messages(contains?: true, dependencies: []) # matches everything
         allow(docker_group).to receive(:contains?) { |dep| dep.name.start_with?("docker") }
         allow(exact_group).to receive(:contains?) { |dep| dep.name == "nginx" }
       end
@@ -525,7 +527,9 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
       end
 
       context "when processing generic group that matches everything" do
-        let(:generic_selector) { described_class.new(group: generic_group, dependency_snapshot: snapshot_with_multiple_groups) }
+        let(:generic_selector) do
+          described_class.new(group: generic_group, dependency_snapshot: snapshot_with_multiple_groups)
+        end
 
         before do
           allow(Dependabot::Experiments).to receive(:enabled?)
@@ -536,7 +540,7 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
           allow(docker_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
           allow(exact_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
 
-          allow(generic_group).to receive(:contains?).and_return(true) # matches everything
+          allow(generic_group).to receive_messages(contains?: true, dependencies: []) # matches everything
           allow(docker_group).to receive(:contains?) { |dep| dep.name.start_with?("docker") }
           allow(exact_group).to receive(:contains?) { |dep| dep.name == "nginx" }
 
@@ -573,7 +577,9 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
       end
 
       context "when processing specific group" do
-        let(:docker_selector) { described_class.new(group: docker_group, dependency_snapshot: snapshot_with_multiple_groups) }
+        let(:docker_selector) do
+          described_class.new(group: docker_group, dependency_snapshot: snapshot_with_multiple_groups)
+        end
 
         before do
           allow(Dependabot::Experiments).to receive(:enabled?)
@@ -584,7 +590,7 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
           allow(docker_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
           allow(exact_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
 
-          allow(generic_group).to receive(:contains?).and_return(true)
+          allow(generic_group).to receive_messages(contains?: true, dependencies: []) # matches everything
           allow(docker_group).to receive(:contains?) { |dep| dep.name.start_with?("docker") }
           allow(exact_group).to receive(:contains?) { |dep| dep.name == "nginx" }
 
@@ -617,7 +623,9 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
         )
       end
 
-      let(:generic_selector) { described_class.new(group: generic_group, dependency_snapshot: snapshot_with_multiple_groups) }
+      let(:generic_selector) do
+        described_class.new(group: generic_group, dependency_snapshot: snapshot_with_multiple_groups)
+      end
 
       before do
         allow(Dependabot::Experiments).to receive(:enabled?)
@@ -628,7 +636,7 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
         allow(docker_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
         allow(exact_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
 
-        allow(generic_group).to receive(:contains?).and_return(true) # matches everything
+        allow(generic_group).to receive_messages(contains?: true, dependencies: []) # matches everything
         allow(docker_group).to receive(:contains?) { |dep| dep.name.start_with?("docker") }
         allow(exact_group).to receive(:contains?) { |dep| dep.name == "nginx" }
 
@@ -655,7 +663,7 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
       it "includes specificity filtering in group dependencies by reason" do
         # Mock the attribution to test the grouping
         allow(Dependabot::DependencyAttribution).to receive(:get_attribution) do |dep|
-          if %w[docker-compose nginx].include?(dep.name)
+          if %w(docker-compose nginx).include?(dep.name)
             { selection_reason: :belongs_to_more_specific_group }
           else
             { selection_reason: :direct }
