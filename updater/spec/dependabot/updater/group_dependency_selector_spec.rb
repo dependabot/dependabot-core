@@ -27,7 +27,8 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
   let(:dependency_snapshot) do
     instance_double(
       Dependabot::DependencySnapshot,
-      ecosystem: "bundler"
+      ecosystem: "bundler",
+      groups: []
     )
   end
 
@@ -431,8 +432,8 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
       end
 
       it "returns false when no more specific group exists" do
-        redis_selector = described_class.new(group: docker_group, dependency_snapshot: snapshot_with_multiple_groups)
-        result = redis_selector.send(:dependency_belongs_to_more_specific_group?, redis_dep, "/api")
+        docker_selector = described_class.new(group: docker_group, dependency_snapshot: snapshot_with_multiple_groups)
+        result = docker_selector.send(:dependency_belongs_to_more_specific_group?, docker_dep, "/api")
         expect(result).to be false
       end
     end
