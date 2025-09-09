@@ -106,8 +106,10 @@ RSpec.describe Dependabot::GitSubmodules::Package::PackageDetailsFetcher do
           release_date: "2024-01-01T00:00:00Z"
         )
 
-        allow(checker).to receive(:fetch_tags_and_release_date)
-          .and_return(parsed_results)
+        allow(checker).to receive_messages(
+          build_sha_to_tags: {},
+          fetch_tags_and_release_date: parsed_results
+        )
 
         releases = checker.available_versions
 
@@ -117,7 +119,10 @@ RSpec.describe Dependabot::GitSubmodules::Package::PackageDetailsFetcher do
       end
 
       it "fetches latest tag info if no versions metadata is available" do
-        allow(checker).to receive(:fetch_tags_and_release_date).and_return([])
+        allow(checker).to receive_messages(
+          build_sha_to_tags: {},
+          fetch_tags_and_release_date: []
+        )
         allow_any_instance_of(Dependabot::GitCommitChecker).to receive(:head_commit_for_current_branch) # rubocop:disable RSpec/AnyInstance
           .and_return("95a470a557091cdbdc9f68a178b60bd142c")
 
