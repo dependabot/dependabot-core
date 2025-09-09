@@ -42,6 +42,8 @@ common_gemspec = File.expand_path("common/dependabot-common.gemspec", __dir__)
 deps_shared_with_common = %w(
   debug
   gpgme
+  minitest
+  minitest-reporters
   rake
   rspec-its
   rspec-sorbet

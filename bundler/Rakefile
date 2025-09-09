@@ -1,0 +1,31 @@
+# typed: strict
+# frozen_string_literal: true
+
+require "rake/testtask"
+
+# Minitest task
+Rake::TestTask.new(:test) do |t|
+  t.libs << "test"
+  t.test_files = FileList["test/**/*_test.rb"]
+  t.warning = true
+  t.verbose = true
+end
+
+# Keep RSpec task during migration (remove after completion)
+begin
+  require "rspec/core/rake_task"
+  RSpec::Core::RakeTask.new(:spec)
+rescue LoadError
+  # RSpec not available - migration complete
+end
+
+# Default task runs appropriate test suite
+task :default do
+  if Dir.exist?("test") && !Dir.glob("test/**/*_test.rb").empty?
+    Rake::Task[:test].invoke
+  elsif Dir.exist?("spec") && !Dir.glob("spec/**/*_spec.rb").empty?
+    Rake::Task[:spec].invoke
+  else
+    puts "No tests found"
+  end
+end

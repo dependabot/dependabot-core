@@ -50,6 +50,8 @@ Gem::Specification.new do |spec|
 
   spec.add_development_dependency "debug", "~> 1.9"
   spec.add_development_dependency "gpgme", "~> 2.0"
+  spec.add_development_dependency "minitest", "~> 5.20"
+  spec.add_development_dependency "minitest-reporters", "~> 1.6"
   spec.add_development_dependency "rake", "~> 13.2"
   spec.add_development_dependency "rspec", "~> 3.12"
   spec.add_development_dependency "rspec-its", "~> 1.3"
