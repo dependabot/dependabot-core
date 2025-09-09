@@ -11,6 +11,7 @@ require "dependabot/bun/helpers"
 require "dependabot/bun/package_manager"
 require "dependabot/bun/file_parser"
 require "dependabot/bun/file_parser/lockfile_parser"
+require "dependabot/file_filtering"
 
 module Dependabot
   module Bun
@@ -81,7 +82,12 @@ module Dependabot
         fetched_files += workspace_package_jsons
         fetched_files += path_dependencies(fetched_files)
 
-        fetched_files.uniq
+        # Filter excluded files from final collection
+        filtered_files = fetched_files.uniq.reject do |file|
+          Dependabot::FileFiltering.should_exclude_path?(file.name, "file from final collection", @exclude_paths)
+        end
+
+        filtered_files
       end
 
       private
@@ -184,6 +190,9 @@ module Dependabot
           filename = File.join(filename, MANIFEST_FILENAME) unless filename.end_with?(".tgz", ".tar", ".tar.gz")
           cleaned_name = Pathname.new(filename).cleanpath.to_path
           next if fetched_files.map(&:name).include?(cleaned_name)
+
+          # Skip excluded path dependencies
+          next if Dependabot::FileFiltering.should_exclude_path?(cleaned_name, "path dependency file", @exclude_paths)
 
           begin
             file = fetch_file_from_host(filename, fetch_submodules: true)

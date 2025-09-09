@@ -7,6 +7,7 @@ require "dependabot/experiments"
 require "dependabot/logger"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
+require "dependabot/file_filtering"
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/package_manager"
 require "dependabot/npm_and_yarn/file_parser"
@@ -89,7 +90,13 @@ module Dependabot
         fetched_files += workspace_package_jsons
         fetched_files += path_dependencies(fetched_files)
 
-        fetched_files.uniq
+        # Filter excluded files from final collection
+        filtered_files = fetched_files.uniq.reject do |file|
+          Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files) &&
+            !@exclude_paths.empty? && Dependabot::FileFiltering.exclude_path?(file.name, @exclude_paths)
+        end
+
+        filtered_files
       end
 
       private
@@ -390,6 +397,16 @@ module Dependabot
           cleaned_name = Pathname.new(filename).cleanpath.to_path
           next if fetched_files.map(&:name).include?(cleaned_name)
 
+          # Skip excluded path dependencies
+          if Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files) &&
+             !@exclude_paths.empty? && Dependabot::FileFiltering.exclude_path?(cleaned_name, @exclude_paths)
+            Dependabot.logger.warn(
+              "Skipping excluded path dependency '#{cleaned_name}' for package '#{name}'. " \
+              "This file is excluded by exclude_paths configuration: #{@exclude_paths}"
+            )
+            next
+          end
+
           begin
             file = fetch_file_from_host(filename, fetch_submodules: true)
             package_json_files << file
@@ -609,6 +626,16 @@ module Dependabot
       sig { params(workspace: String).returns(T.nilable(DependencyFile)) }
       def fetch_package_json_if_present(workspace)
         file = File.join(workspace, MANIFEST_FILENAME)
+
+        # Skip excluded workspace packages
+        if Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files) &&
+           !@exclude_paths.empty? && Dependabot::FileFiltering.exclude_path?(file, @exclude_paths)
+          Dependabot.logger.info(
+            "Skipping excluded workspace package '#{file}' from workspace '#{workspace}'. " \
+            "This file is excluded by exclude_paths configuration: #{@exclude_paths}"
+          )
+          return nil
+        end
 
         begin
           fetch_file_from_host(file)

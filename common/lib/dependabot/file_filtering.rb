@@ -66,5 +66,25 @@ module Dependabot
       normalized = normalized.sub(%r{^/+}, "")
       normalized
     end
+
+    # Helper method to check if a file path should be excluded
+    sig do
+      params(path: String,
+             context: String,
+             exclude_paths: T.nilable(T::Array[String])).returns(T::Boolean)
+    end
+    def self.should_exclude_path?(path, context, exclude_paths)
+      should_exclude = Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files) &&
+                       !exclude_paths.nil? && !exclude_paths.empty? && exclude_path?(path, exclude_paths)
+
+      if should_exclude
+        Dependabot.logger.warn(
+          "Skipping excluded #{context} '#{path}'. " \
+          "This file is excluded by exclude_paths configuration: #{exclude_paths}"
+        )
+      end
+
+      should_exclude
+    end
   end
 end
