@@ -362,6 +362,316 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
     end
   end
 
+  # New tests for pattern specificity functionality
+  describe "pattern specificity functionality" do
+    let(:docker_dep) { create_dependency("docker-compose", "2.0.0") }
+    let(:nginx_dep) { create_dependency("nginx", "1.21.0") }
+    let(:redis_dep) { create_dependency("redis-client", "0.11.0") }
+
+    # Mock multiple groups with different specificity levels
+    let(:generic_group) do
+      instance_double(
+        Dependabot::DependencyGroup,
+        name: "all-dependencies",
+        dependencies: [],
+        rules: { "patterns" => ["*"] }
+      )
+    end
+
+    let(:docker_group) do
+      instance_double(
+        Dependabot::DependencyGroup,
+        name: "docker-dependencies",
+        dependencies: [],
+        rules: { "patterns" => ["docker*"] }
+      )
+    end
+
+    let(:exact_group) do
+      instance_double(
+        Dependabot::DependencyGroup,
+        name: "exact-nginx",
+        dependencies: [],
+        rules: { "patterns" => ["nginx"] }
+      )
+    end
+
+    let(:snapshot_with_multiple_groups) do
+      instance_double(
+        Dependabot::DependencySnapshot,
+        ecosystem: "bundler",
+        groups: [generic_group, docker_group, exact_group]
+      )
+    end
+
+    describe "#dependency_belongs_to_more_specific_group?" do
+      let(:generic_selector) { described_class.new(group: generic_group, dependency_snapshot: snapshot_with_multiple_groups) }
+
+      before do
+        # Mock group contains? methods for all groups
+        allow(generic_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
+        allow(docker_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
+        allow(exact_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
+
+        allow(generic_group).to receive(:contains?).and_return(true) # matches everything
+        allow(docker_group).to receive(:contains?) { |dep| dep.name.start_with?("docker") }
+        allow(exact_group).to receive(:contains?) { |dep| dep.name == "nginx" }
+      end
+
+      it "returns true when dependency belongs to more specific docker group" do
+        result = generic_selector.send(:dependency_belongs_to_more_specific_group?, docker_dep, "/api")
+        expect(result).to be true
+      end
+
+      it "returns true when dependency belongs to exact match group" do
+        result = generic_selector.send(:dependency_belongs_to_more_specific_group?, nginx_dep, "/api")
+        expect(result).to be true
+      end
+
+      it "returns false when no more specific group exists" do
+        redis_selector = described_class.new(group: docker_group, dependency_snapshot: snapshot_with_multiple_groups)
+        result = redis_selector.send(:dependency_belongs_to_more_specific_group?, redis_dep, "/api")
+        expect(result).to be false
+      end
+    end
+
+    describe "#calculate_group_specificity_for_dependency" do
+      before do
+        # Mock group dependencies and contains? methods
+        allow(generic_group).to receive(:dependencies).and_return([])
+        allow(docker_group).to receive(:dependencies).and_return([])
+        allow(exact_group).to receive(:dependencies).and_return([nginx_dep])
+      end
+
+      it "returns highest score for explicit group members" do
+        score = described_class.new(group: exact_group, dependency_snapshot: snapshot_with_multiple_groups)
+                               .send(:calculate_group_specificity_for_dependency, exact_group, nginx_dep)
+        expect(score).to eq(1000)
+      end
+
+      it "returns medium score for no patterns" do
+        no_patterns_group = instance_double(
+          Dependabot::DependencyGroup,
+          name: "no-patterns",
+          dependencies: [],
+          rules: {}
+        )
+        allow(no_patterns_group).to receive(:dependencies).and_return([])
+
+        score = described_class.new(group: no_patterns_group, dependency_snapshot: snapshot_with_multiple_groups)
+                               .send(:calculate_group_specificity_for_dependency, no_patterns_group, nginx_dep)
+        expect(score).to eq(500)
+      end
+
+      it "calculates correct scores for different pattern types" do
+        selector = described_class.new(group: generic_group, dependency_snapshot: snapshot_with_multiple_groups)
+
+        # Generic wildcard should have lowest score
+        generic_score = selector.send(:calculate_group_specificity_for_dependency, generic_group, docker_dep)
+        expect(generic_score).to eq(1) # Universal wildcard gets score of 1
+
+        # Specific pattern should have higher score
+        docker_score = selector.send(:calculate_group_specificity_for_dependency, docker_group, docker_dep)
+        expect(docker_score).to be > generic_score
+        expect(docker_score).to be < 500 # Less than exact patterns but more than universal wildcard
+      end
+    end
+
+    describe "#calculate_pattern_specificity" do
+      let(:selector) { described_class.new(group: generic_group, dependency_snapshot: snapshot_with_multiple_groups) }
+
+      it "returns highest score for exact matches" do
+        score = selector.send(:calculate_pattern_specificity, "nginx", "nginx")
+        expect(score).to eq(1000)
+      end
+
+      it "returns lowest score for universal wildcard" do
+        score = selector.send(:calculate_pattern_specificity, "*", "nginx")
+        expect(score).to eq(1)
+      end
+
+      it "returns medium score for patterns without wildcards" do
+        score = selector.send(:calculate_pattern_specificity, "nginx-exact", "nginx")
+        expect(score).to eq(500)
+      end
+
+      it "calculates scores with wildcard penalties" do
+        # Single wildcard pattern
+        single_wildcard_score = selector.send(:calculate_pattern_specificity, "docker*", "docker-compose")
+        expect(single_wildcard_score).to be > 1
+        expect(single_wildcard_score).to be < 500
+
+        # Multiple wildcard pattern should have lower score
+        multi_wildcard_score = selector.send(:calculate_pattern_specificity, "*docker*", "docker-compose")
+        expect(multi_wildcard_score).to be < single_wildcard_score
+      end
+
+      it "includes length bonus for longer patterns" do
+        short_pattern_score = selector.send(:calculate_pattern_specificity, "doc*", "docker-compose")
+        long_pattern_score = selector.send(:calculate_pattern_specificity, "docker-very-long*", "docker-compose")
+
+        # Longer patterns should get bonus points (assuming they match)
+        expect(long_pattern_score).to be > short_pattern_score
+      end
+    end
+
+    describe "#partition_dependencies with specificity filtering" do
+      let(:dependency_change) do
+        create_dependency_change(
+          job: job,
+          dependencies: [docker_dep, nginx_dep, redis_dep],
+          files: [create_dependency_file("Gemfile.lock", "/api")]
+        )
+      end
+
+      context "when processing generic group that matches everything" do
+        let(:generic_selector) { described_class.new(group: generic_group, dependency_snapshot: snapshot_with_multiple_groups) }
+
+        before do
+          allow(Dependabot::Experiments).to receive(:enabled?)
+            .with(:group_membership_enforcement).and_return(true)
+
+          # Mock group membership and config checks
+          allow(generic_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
+          allow(docker_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
+          allow(exact_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
+
+          allow(generic_group).to receive(:contains?).and_return(true) # matches everything
+          allow(docker_group).to receive(:contains?) { |dep| dep.name.start_with?("docker") }
+          allow(exact_group).to receive(:contains?) { |dep| dep.name == "nginx" }
+
+          allow(job).to receive_messages(ignore_conditions_for: [], allowed_update?: true)
+
+          # Mock dependencies arrays
+          allow(generic_group).to receive(:dependencies).and_return([])
+          allow(docker_group).to receive(:dependencies).and_return([])
+          allow(exact_group).to receive(:dependencies).and_return([])
+        end
+
+        it "filters out dependencies that belong to more specific groups" do
+          eligible_deps, filtered_deps = generic_selector.send(:partition_dependencies, dependency_change)
+
+          # Docker and nginx deps should be filtered out due to more specific groups
+          eligible_names = eligible_deps.map(&:name)
+          filtered_names = filtered_deps.map(&:name)
+
+          expect(eligible_names).to contain_exactly("redis-client") # Only this doesn't match more specific groups
+          expect(filtered_names).to include("docker-compose", "nginx") # These have more specific groups
+        end
+
+        it "annotates filtered dependencies with correct reason" do
+          # Mock DependencyAttribution
+          expect(Dependabot::DependencyAttribution).to receive(:annotate_dependency)
+            .with(docker_dep, hash_including(selection_reason: :belongs_to_more_specific_group))
+          expect(Dependabot::DependencyAttribution).to receive(:annotate_dependency)
+            .with(nginx_dep, hash_including(selection_reason: :belongs_to_more_specific_group))
+          expect(Dependabot::DependencyAttribution).to receive(:annotate_dependency)
+            .with(redis_dep, hash_including(selection_reason: :direct))
+
+          generic_selector.send(:partition_dependencies, dependency_change)
+        end
+      end
+
+      context "when processing specific group" do
+        let(:docker_selector) { described_class.new(group: docker_group, dependency_snapshot: snapshot_with_multiple_groups) }
+
+        before do
+          allow(Dependabot::Experiments).to receive(:enabled?)
+            .with(:group_membership_enforcement).and_return(true)
+
+          # Mock group membership
+          allow(generic_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
+          allow(docker_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
+          allow(exact_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
+
+          allow(generic_group).to receive(:contains?).and_return(true)
+          allow(docker_group).to receive(:contains?) { |dep| dep.name.start_with?("docker") }
+          allow(exact_group).to receive(:contains?) { |dep| dep.name == "nginx" }
+
+          allow(job).to receive_messages(ignore_conditions_for: [], allowed_update?: true)
+
+          # Mock dependencies arrays
+          allow(generic_group).to receive(:dependencies).and_return([])
+          allow(docker_group).to receive(:dependencies).and_return([])
+          allow(exact_group).to receive(:dependencies).and_return([])
+        end
+
+        it "includes dependencies that match its specific pattern" do
+          eligible_deps, filtered_deps = docker_selector.send(:partition_dependencies, dependency_change)
+
+          eligible_names = eligible_deps.map(&:name)
+          filtered_names = filtered_deps.map(&:name)
+
+          expect(eligible_names).to contain_exactly("docker-compose") # Matches docker* pattern
+          expect(filtered_names).to include("nginx", "redis-client") # Don't match docker* pattern
+        end
+      end
+    end
+
+    describe "integration with filter_to_group!" do
+      let(:dependency_change) do
+        create_dependency_change(
+          job: job,
+          dependencies: [docker_dep, nginx_dep],
+          files: [create_dependency_file("Gemfile.lock", "/api")]
+        )
+      end
+
+      let(:generic_selector) { described_class.new(group: generic_group, dependency_snapshot: snapshot_with_multiple_groups) }
+
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:group_membership_enforcement).and_return(true)
+
+        # Mock group membership
+        allow(generic_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
+        allow(docker_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
+        allow(exact_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
+
+        allow(generic_group).to receive(:contains?).and_return(true) # matches everything
+        allow(docker_group).to receive(:contains?) { |dep| dep.name.start_with?("docker") }
+        allow(exact_group).to receive(:contains?) { |dep| dep.name == "nginx" }
+
+        allow(job).to receive_messages(ignore_conditions_for: [], allowed_update?: true)
+
+        # Mock dependencies arrays
+        allow(generic_group).to receive(:dependencies).and_return([])
+        allow(docker_group).to receive(:dependencies).and_return([])
+        allow(exact_group).to receive(:dependencies).and_return([])
+
+        # Mock the dependency change array methods
+        allow(dependency_change.updated_dependencies).to receive(:clear)
+        allow(dependency_change.updated_dependencies).to receive(:concat)
+      end
+
+      it "logs dependencies filtered due to more specific groups" do
+        expect(generic_selector).to receive(:log_filtered_dependencies) do |filtered_deps|
+          expect(filtered_deps.length).to be > 0
+        end
+
+        generic_selector.filter_to_group!(dependency_change)
+      end
+
+      it "includes specificity filtering in group dependencies by reason" do
+        # Mock the attribution to test the grouping
+        allow(Dependabot::DependencyAttribution).to receive(:get_attribution) do |dep|
+          if %w[docker-compose nginx].include?(dep.name)
+            { selection_reason: :belongs_to_more_specific_group }
+          else
+            { selection_reason: :direct }
+          end
+        end
+
+        filtered_deps = [docker_dep, nginx_dep]
+        grouped = generic_selector.send(:group_dependencies_by_reason, filtered_deps)
+
+        expect(grouped[:belongs_to_more_specific_group]).to contain_exactly("docker-compose", "nginx")
+        expect(grouped[:not_in_group]).to be_empty
+        expect(grouped[:filtered_by_config]).to be_empty
+      end
+    end
+  end
+
   private
 
   def create_dependency(name, version)

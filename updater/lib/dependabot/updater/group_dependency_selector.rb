@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "wildcard_matcher"
 require "dependabot/dependency_attribution"
 require "dependabot/dependency_change"
 require "dependabot/dependency_group"
@@ -178,9 +179,16 @@ module Dependabot
         Array(dependency_change.updated_dependencies).each do |dep|
           # Check both group membership AND dependabot.yml configuration filters
           if group_contains_dependency?(dep, directory) && allowed_by_config?(dep, job)
-            # Annotate with selection reason
-            annotate_dependency_selection(dep, :direct)
-            group_eligible_deps << dep
+            # Before including in current group, check if dependency belongs to a more specific group
+            if dependency_belongs_to_more_specific_group?(dep, directory)
+              # Track reason for filtering due to more specific group
+              annotate_dependency_selection(dep, :belongs_to_more_specific_group)
+              filtered_out_deps << dep
+            else
+              # Annotate with selection reason
+              annotate_dependency_selection(dep, :direct)
+              group_eligible_deps << dep
+            end
           else
             # Track reason for filtering
             reason = determine_filtering_reason(dep, directory, job)
@@ -209,6 +217,88 @@ module Dependabot
         else
           # Fallback to the standard contains? method
           @group.contains?(dep)
+        end
+      end
+
+      # Check if dependency belongs to a more specific group than the current one
+      # This prevents generic patterns (like '*') from capturing dependencies
+      # that belong to more specific patterns (like 'docker*' or exact names)
+      sig { params(dep: Dependabot::Dependency, directory: String).returns(T::Boolean) }
+      def dependency_belongs_to_more_specific_group?(dep, directory)
+        current_group_specificity = calculate_group_specificity_for_dependency(@group, dep)
+
+        # Check all other groups in the snapshot to see if any have higher specificity
+        @snapshot.groups.any? do |other_group|
+          next if other_group == @group # Skip the current group
+
+          # Check if the other group contains this dependency
+          if group_contains_dependency_for_group?(other_group, dep, directory)
+            other_group_specificity = calculate_group_specificity_for_dependency(other_group, dep)
+            other_group_specificity > current_group_specificity
+          else
+            false
+          end
+        end
+      end
+
+      # Calculate the specificity score for a dependency within a group
+      # Higher scores indicate more specific patterns
+      # Exact name matches: 1000
+      # Specific patterns without wildcards: 500
+      # Patterns with wildcards: 100 - (wildcard_count * 10)
+      # Universal wildcard '*': 1
+      sig { params(group: Dependabot::DependencyGroup, dep: Dependabot::Dependency).returns(Integer) }
+      def calculate_group_specificity_for_dependency(group, dep)
+        # If dependency is explicitly added to the group, highest specificity
+        return 1000 if group.dependencies.include?(dep)
+
+        # Check patterns if they exist
+        patterns = T.unsafe(group.rules["patterns"])
+        return 500 unless patterns # No patterns means it matches everything with medium specificity
+
+        matching_patterns = patterns.select { |pattern| WildcardMatcher.match?(pattern, dep.name) }
+        return 0 if matching_patterns.empty? # Shouldn't happen if we got here, but safety
+
+        # Find the most specific matching pattern
+        matching_patterns.map do |pattern|
+          calculate_pattern_specificity(pattern, dep.name)
+        end.max || 0
+      end
+
+      # Calculate specificity for an individual pattern
+      sig { params(pattern: String, dep_name: String).returns(Integer) }
+      def calculate_pattern_specificity(pattern, dep_name)
+        # Exact match gets highest score
+        return 1000 if pattern == dep_name
+
+        # Universal wildcard gets lowest score
+        return 1 if pattern == "*"
+
+        # Count wildcards and calculate specificity
+        wildcard_count = pattern.count("*")
+        return 500 if wildcard_count == 0 # No wildcards, exact pattern
+
+        # Patterns with wildcards: base score minus penalty for each wildcard
+        base_score = 100
+        wildcard_penalty = wildcard_count * 10
+        specificity = base_score - wildcard_penalty
+
+        # Additional bonus for longer patterns (more specific context)
+        length_bonus = [pattern.length - 5, 0].max # Bonus for patterns longer than 5 chars
+
+        [specificity + length_bonus, 1].max # Minimum score of 1
+      end
+
+      # Check if a specific group contains a dependency
+      # Similar to group_contains_dependency? but for any group
+      sig { params(group: Dependabot::DependencyGroup, dep: Dependabot::Dependency, directory: String).returns(T::Boolean) }
+      def group_contains_dependency_for_group?(group, dep, directory)
+        # Use the group's dependency matching logic
+        if group.respond_to?(:contains_dependency?)
+          T.unsafe(group).contains_dependency?(dep, directory: directory)
+        else
+          # Fallback to the standard contains? method
+          group.contains?(dep)
         end
       end
 
@@ -300,10 +390,12 @@ module Dependabot
 
         not_in_group = T.must(grouped_deps[:not_in_group])
         filtered_by_config = T.must(grouped_deps[:filtered_by_config])
+        belongs_to_more_specific_group = T.must(grouped_deps[:belongs_to_more_specific_group])
         other = T.must(grouped_deps[:other])
 
         log_dependency_group(not_in_group, "not in group") if not_in_group.any?
         log_dependency_group(filtered_by_config, "filtered by dependabot.yml config") if filtered_by_config.any?
+        log_dependency_group(belongs_to_more_specific_group, "belongs to more specific group") if belongs_to_more_specific_group.any?
         log_dependency_group(other, "filtered (other reasons)") if other.any?
       end
 
@@ -312,6 +404,7 @@ module Dependabot
         grouped = {
           not_in_group: T.let([], T::Array[String]),
           filtered_by_config: T.let([], T::Array[String]),
+          belongs_to_more_specific_group: T.let([], T::Array[String]),
           other: T.let([], T::Array[String])
         }
 
@@ -322,6 +415,8 @@ module Dependabot
             grouped[:not_in_group] << dep.name
           when :filtered_by_config
             grouped[:filtered_by_config] << dep.name
+          when :belongs_to_more_specific_group
+            grouped[:belongs_to_more_specific_group] << dep.name
           else
             grouped[:other] << dep.name
           end
