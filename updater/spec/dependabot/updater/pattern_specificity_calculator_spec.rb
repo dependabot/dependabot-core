@@ -260,7 +260,7 @@ RSpec.describe Dependabot::Updater::PatternSpecificityCalculator do
     end
 
     before do
-      allow(calculator).to receive(:calculate_group_specificity_for_dependency) do |group, dep|
+      allow(calculator).to receive(:calculate_group_specificity_for_dependency) do |group, _dep|
         case group
         when universal_group
           1
@@ -318,7 +318,7 @@ RSpec.describe Dependabot::Updater::PatternSpecificityCalculator do
       let(:non_docker_dependency) { create_dependency("nginx", "1.21.0") }
 
       let(:non_matching_contains_checker) do
-        proc do |group, dep, _dir|
+        proc do |group, _dep, _dir|
           case group
           when universal_group
             true
@@ -361,7 +361,7 @@ RSpec.describe Dependabot::Updater::PatternSpecificityCalculator do
       let(:groups_with_equal) { [universal_group, docker_group, equal_specificity_group] }
 
       before do
-        allow(calculator).to receive(:calculate_group_specificity_for_dependency) do |group, dep|
+        allow(calculator).to receive(:calculate_group_specificity_for_dependency) do |group, _dep|
           case group
           when universal_group
             1
