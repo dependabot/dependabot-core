@@ -72,7 +72,7 @@ module Dependabot
           parsed_results
         end
 
-        MAX_COMMITS_TO_FETCH = T.let(5 * Dependabot::GitMetadataFetcher::MAX_COMMITS_PER_PAGE, Integer)
+        MAX_COMMITS_TO_FETCH = 250
 
         sig { returns(T::Array[GitTagWithDetail]) }
         def fetch_tags_and_release_date
