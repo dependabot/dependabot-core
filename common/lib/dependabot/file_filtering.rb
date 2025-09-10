@@ -7,7 +7,7 @@ module Dependabot
 
     # Returns true if the given path matches any of the exclude patterns
     sig { params(path: String, exclude_patterns: T.nilable(T::Array[String])).returns(T::Boolean) }
-    def self.exclude_path?(path, exclude_patterns) # rubocop:disable Metrics/PerceivedComplexity
+    def self.exclude_path?(path, exclude_patterns) # rubocop:disable Metrics/PerceivedComplexity,Metrics/CyclomaticComplexity
       return false if exclude_patterns.nil? || exclude_patterns.empty?
 
       # Normalize the path by removing leading slashes and resolving relative paths

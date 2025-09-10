@@ -17,7 +17,7 @@ require "dependabot/file_filtering"
 
 module Dependabot
   module Uv
-    class FileFetcher < Dependabot::FileFetchers::Base
+    class FileFetcher < Dependabot::FileFetchers::Base # rubocop:disable Metrics/ClassLength
       extend T::Sig
       extend T::Helpers
 

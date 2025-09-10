@@ -378,7 +378,7 @@ module Dependabot
 
       # rubocop:disable Metrics/PerceivedComplexity
       sig { params(fetched_files: T::Array[DependencyFile]).returns(T::Array[DependencyFile]) }
-      def path_dependencies(fetched_files)
+      def path_dependencies(fetched_files) # rubocop:disable Metrics/AbcSize
         package_json_files = T.let([], T::Array[DependencyFile])
         unfetchable_deps = T.let([], T::Array[[String, String]])
 
