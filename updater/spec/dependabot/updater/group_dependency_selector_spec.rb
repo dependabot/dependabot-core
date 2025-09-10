@@ -448,7 +448,8 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
 
       it "returns highest score for explicit group members" do
         score = described_class.new(group: exact_group, dependency_snapshot: snapshot_with_multiple_groups)
-                               .send(:calculate_group_specificity_for_dependency, exact_group, nginx_dep)
+                               .instance_variable_get(:@specificity_calculator)
+                               .calculate_group_specificity_for_dependency(exact_group, nginx_dep)
         expect(score).to eq(1000)
       end
 
@@ -462,19 +463,21 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
         allow(no_patterns_group).to receive(:dependencies).and_return([])
 
         score = described_class.new(group: no_patterns_group, dependency_snapshot: snapshot_with_multiple_groups)
-                               .send(:calculate_group_specificity_for_dependency, no_patterns_group, nginx_dep)
+                               .instance_variable_get(:@specificity_calculator)
+                               .calculate_group_specificity_for_dependency(no_patterns_group, nginx_dep)
         expect(score).to eq(500)
       end
 
       it "calculates correct scores for different pattern types" do
         selector = described_class.new(group: generic_group, dependency_snapshot: snapshot_with_multiple_groups)
+        calculator = selector.instance_variable_get(:@specificity_calculator)
 
         # Generic wildcard should have lowest score
-        generic_score = selector.send(:calculate_group_specificity_for_dependency, generic_group, docker_dep)
+        generic_score = calculator.calculate_group_specificity_for_dependency(generic_group, docker_dep)
         expect(generic_score).to eq(1) # Universal wildcard gets score of 1
 
         # Specific pattern should have higher score
-        docker_score = selector.send(:calculate_group_specificity_for_dependency, docker_group, docker_dep)
+        docker_score = calculator.calculate_group_specificity_for_dependency(docker_group, docker_dep)
         expect(docker_score).to be > generic_score
         expect(docker_score).to be < 500 # Less than exact patterns but more than universal wildcard
       end
@@ -482,36 +485,37 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
 
     describe "#calculate_pattern_specificity" do
       let(:selector) { described_class.new(group: generic_group, dependency_snapshot: snapshot_with_multiple_groups) }
+      let(:calculator) { selector.instance_variable_get(:@specificity_calculator) }
 
       it "returns highest score for exact matches" do
-        score = selector.send(:calculate_pattern_specificity, "nginx", "nginx")
+        score = calculator.calculate_pattern_specificity("nginx", "nginx")
         expect(score).to eq(1000)
       end
 
       it "returns lowest score for universal wildcard" do
-        score = selector.send(:calculate_pattern_specificity, "*", "nginx")
+        score = calculator.calculate_pattern_specificity("*", "nginx")
         expect(score).to eq(1)
       end
 
       it "returns medium score for patterns without wildcards" do
-        score = selector.send(:calculate_pattern_specificity, "nginx-exact", "nginx")
+        score = calculator.calculate_pattern_specificity("nginx-exact", "nginx")
         expect(score).to eq(500)
       end
 
       it "calculates scores with wildcard penalties" do
         # Single wildcard pattern
-        single_wildcard_score = selector.send(:calculate_pattern_specificity, "docker*", "docker-compose")
+        single_wildcard_score = calculator.calculate_pattern_specificity("docker*", "docker-compose")
         expect(single_wildcard_score).to be > 1
         expect(single_wildcard_score).to be < 500
 
         # Multiple wildcard pattern should have lower score
-        multi_wildcard_score = selector.send(:calculate_pattern_specificity, "*docker*", "docker-compose")
+        multi_wildcard_score = calculator.calculate_pattern_specificity("*docker*", "docker-compose")
         expect(multi_wildcard_score).to be < single_wildcard_score
       end
 
       it "includes length bonus for longer patterns" do
-        short_pattern_score = selector.send(:calculate_pattern_specificity, "doc*", "docker-compose")
-        long_pattern_score = selector.send(:calculate_pattern_specificity, "docker-very-long*", "docker-compose")
+        short_pattern_score = calculator.calculate_pattern_specificity("doc*", "docker-compose")
+        long_pattern_score = calculator.calculate_pattern_specificity("docker-very-long*", "docker-compose")
 
         # Longer patterns should get bonus points (assuming they match)
         expect(long_pattern_score).to be > short_pattern_score

@@ -7,29 +7,13 @@ require "dependabot/dependency_attribution"
 require "dependabot/dependency_change"
 require "dependabot/dependency_group"
 require "dependabot/dependency_snapshot"
+require "dependabot/updater/pattern_specificity_calculator"
 
 module Dependabot
   class Updater
-    # GroupDependencySelector ensures consistent group dependency selection by filtering
-    # dependencies to only include those that belong to the specified group and are
-    # allowed by configuration. This prevents the "superset problem" where dependencies
-    # outside the group were being included in group PRs during recreation or rebasing.
-    #
-    # Key responsibilities:
-    # - Merges per-directory dependency changes with deduplication
-    # - Filters dependencies to only include group-eligible ones (filter_to_group!)
-    # - Detects dependency drift in updated files
-    # - Provides comprehensive observability for debugging
-    #
-    # The class implements a two-layer filtering system:
-    # 1. Group membership check via group.contains_dependency?
-    # 2. Configuration compliance check via job.allowed_update?
-    #
-    # Note: Filtering requires the :group_membership_enforcement feature to be enabled.
     class GroupDependencySelector
       extend T::Sig
 
-      # Maximum number of dependency names to show in logs
       MAX_DEPENDENCIES_TO_LOG = 10
 
       sig { returns(Dependabot::DependencyGroup) }
@@ -46,10 +30,9 @@ module Dependabot
         @updated_dependencies = T.let([], T::Array[Dependabot::Dependency])
         @filtered_dependencies = T.let(nil, T.nilable(T::Array[Dependabot::Dependency]))
         @dependency_drift = T.let(nil, T.nilable(T::Array[String]))
+        @specificity_calculator = T.let(PatternSpecificityCalculator.new, PatternSpecificityCalculator)
       end
 
-      # Input: array of per-directory DependencyChange objects
-      # Output: single merged DependencyChange with directory-aware dedup
       sig { params(changes_by_dir: T::Array[Dependabot::DependencyChange]).returns(Dependabot::DependencyChange) }
       def merge_per_directory!(changes_by_dir)
         return T.must(changes_by_dir.first) if changes_by_dir.length == 1
@@ -62,7 +45,6 @@ module Dependabot
         merged_change
       end
 
-      # Collect and deduplicate updated files from all directory changes
       sig do
         params(changes_by_dir: T::Array[Dependabot::DependencyChange]).returns(T::Array[Dependabot::DependencyFile])
       end
@@ -76,7 +58,6 @@ module Dependabot
         all_updated_files.uniq { |f| [f.directory, f.name] }
       end
 
-      # Create merged DependencyChange object using first change as template
       sig do
         params(
           changes_by_dir: T::Array[Dependabot::DependencyChange],
@@ -93,8 +74,6 @@ module Dependabot
         )
       end
 
-      # Mutates the DependencyChange to keep only group-eligible updated_dependencies
-      # Adds attribution metadata; emits observability.
       sig { params(dependency_change: Dependabot::DependencyChange).void }
       def filter_to_group!(dependency_change)
         return unless Dependabot::Experiments.enabled?(:group_membership_enforcement)
@@ -104,12 +83,9 @@ module Dependabot
         original_count = dependency_change.updated_dependencies.length
         group_eligible_deps, filtered_out_deps = partition_dependencies(dependency_change)
 
-        # Mutate the dependency change to only include group-eligible dependencies
-        # Clear the current array and replace with filtered dependencies
         dependency_change.updated_dependencies.clear
         dependency_change.updated_dependencies.concat(group_eligible_deps)
 
-        # Store filtered dependencies for observability
         @filtered_dependencies = filtered_out_deps if filtered_out_deps.any?
 
         directory = dependency_change.job.source.directory || "."
@@ -119,7 +95,6 @@ module Dependabot
         Dependabot.logger.info("No dependencies were filtered out")
       end
 
-      # Optional: compute and attach dependency drift metadata for observability
       sig { params(dependency_change: Dependabot::DependencyChange).void }
       def annotate_dependency_drift!(dependency_change)
         return unless Dependabot::Experiments.enabled?(:group_membership_enforcement)
@@ -127,10 +102,7 @@ module Dependabot
         dependency_drift = T.let([], T::Array[String])
         directory = dependency_change.job.source.directory || "."
 
-        # Check if any file changes reference dependencies not in updated_dependencies
         dependency_change.updated_dependency_files.each do |file|
-          # Uses already-parsed dependencies from ecosystem-specific FileParser
-          # to identify dependencies referenced in this file
           detected_drift = detect_file_dependency_drift(file, dependency_change.updated_dependencies)
           dependency_drift.concat(detected_drift)
         end
@@ -144,7 +116,6 @@ module Dependabot
 
       private
 
-      # Deduplicate dependencies across directories using directory + name as key
       sig { params(changes_by_dir: T::Array[Dependabot::DependencyChange]).returns(T::Array[Dependabot::Dependency]) }
       def deduplicate_dependencies(changes_by_dir)
         seen_updates = T.let(Set.new, T::Set[[String, String]])
@@ -177,20 +148,15 @@ module Dependabot
         job = dependency_change.job
 
         Array(dependency_change.updated_dependencies).each do |dep|
-          # Check both group membership AND dependabot.yml configuration filters
           if group_contains_dependency?(dep, directory) && allowed_by_config?(dep, job)
-            # Before including in current group, check if dependency belongs to a more specific group
             if dependency_belongs_to_more_specific_group?(dep, directory)
-              # Track reason for filtering due to more specific group
               annotate_dependency_selection(dep, :belongs_to_more_specific_group)
               filtered_out_deps << dep
             else
-              # Annotate with selection reason
               annotate_dependency_selection(dep, :direct)
               group_eligible_deps << dep
             end
           else
-            # Track reason for filtering
             reason = determine_filtering_reason(dep, directory, job)
             annotate_dependency_selection(dep, reason)
             filtered_out_deps << dep
@@ -210,115 +176,46 @@ module Dependabot
 
       sig { params(dep: Dependabot::Dependency, directory: String).returns(T::Boolean) }
       def group_contains_dependency?(dep, directory)
-        # Use the group's dependency matching logic
-        # First check if group has the enhanced contains_dependency? method with directory parameter
         if @group.respond_to?(:contains_dependency?)
           T.unsafe(@group).contains_dependency?(dep, directory: directory)
         else
-          # Fallback to the standard contains? method
           @group.contains?(dep)
         end
       end
 
-      # Check if dependency belongs to a more specific group than the current one
-      # This prevents generic patterns (like '*') from capturing dependencies
-      # that belong to more specific patterns (like 'docker*' or exact names)
       sig { params(dep: Dependabot::Dependency, directory: String).returns(T::Boolean) }
       def dependency_belongs_to_more_specific_group?(dep, directory)
-        current_group_specificity = calculate_group_specificity_for_dependency(@group, dep)
+        contains_checker = T.let(
+          proc { |group, dependency, dir| group_contains_dependency_for_group?(group, dependency, dir) },
+          T.proc.params(group: Dependabot::DependencyGroup, dep: Dependabot::Dependency, directory: String).returns(T::Boolean)
+        )
 
-        # Check all other groups in the snapshot to see if any have higher specificity
-        @snapshot.groups.any? do |other_group|
-          next if other_group == @group # Skip the current group
-
-          # Check if the other group contains this dependency
-          if group_contains_dependency_for_group?(other_group, dep, directory)
-            other_group_specificity = calculate_group_specificity_for_dependency(other_group, dep)
-            other_group_specificity > current_group_specificity
-          else
-            false
-          end
-        end
+        @specificity_calculator.dependency_belongs_to_more_specific_group?(
+          @group, dep, @snapshot.groups, contains_checker, directory
+        )
       end
 
-      # Calculate the specificity score for a dependency within a group
-      # Higher scores indicate more specific patterns
-      # Exact name matches: 1000
-      # Specific patterns without wildcards: 500
-      # Patterns with wildcards: 100 - (wildcard_count * 10)
-      # Universal wildcard '*': 1
-      sig { params(group: Dependabot::DependencyGroup, dep: Dependabot::Dependency).returns(Integer) }
-      def calculate_group_specificity_for_dependency(group, dep)
-        # If dependency is explicitly added to the group, highest specificity
-        return 1000 if group.dependencies.include?(dep)
-
-        # Check patterns if they exist
-        patterns = T.unsafe(group.rules["patterns"])
-        return 500 unless patterns # No patterns means it matches everything with medium specificity
-
-        matching_patterns = patterns.select { |pattern| WildcardMatcher.match?(pattern, dep.name) }
-        return 0 if matching_patterns.empty? # Shouldn't happen if we got here, but safety
-
-        # Find the most specific matching pattern
-        matching_patterns.map do |pattern|
-          calculate_pattern_specificity(pattern, dep.name)
-        end.max || 0
-      end
-
-      # Calculate specificity for an individual pattern
-      sig { params(pattern: String, dep_name: String).returns(Integer) }
-      def calculate_pattern_specificity(pattern, dep_name)
-        # Exact match gets highest score
-        return 1000 if pattern == dep_name
-
-        # Universal wildcard gets lowest score
-        return 1 if pattern == "*"
-
-        # Count wildcards and calculate specificity
-        wildcard_count = pattern.count("*")
-        return 500 if wildcard_count.zero? # No wildcards, exact pattern
-
-        # Patterns with wildcards: base score minus penalty for each wildcard
-        base_score = 100
-        wildcard_penalty = wildcard_count * 10
-        specificity = base_score - wildcard_penalty
-
-        # Additional bonus for longer patterns (more specific context)
-        length_bonus = [pattern.length - 5, 0].max # Bonus for patterns longer than 5 chars
-
-        [specificity + length_bonus, 1].max # Minimum score of 1
-      end
-
-      # Check if a specific group contains a dependency
-      # Similar to group_contains_dependency? but for any group
       sig do
         params(group: Dependabot::DependencyGroup, dep: Dependabot::Dependency, directory: String).returns(T::Boolean)
       end
       def group_contains_dependency_for_group?(group, dep, directory)
-        # Use the group's dependency matching logic
         if group.respond_to?(:contains_dependency?)
           T.unsafe(group).contains_dependency?(dep, directory: directory)
         else
-          # Fallback to the standard contains? method
           group.contains?(dep)
         end
       end
 
-      # Check if dependency is allowed by dependabot.yml configuration
-      # This respects ignore conditions and allowed_updates from the job
       sig { params(dep: Dependabot::Dependency, job: Dependabot::Job).returns(T::Boolean) }
       def allowed_by_config?(dep, job)
-        # Check if dependency is completely ignored by looking at ignore conditions
         ignore_conditions = job.ignore_conditions_for(dep)
         return false if ignore_conditions.any?(Dependabot::Config::IgnoreCondition::ALL_VERSIONS)
 
-        # Check if dependency is allowed by the job's allowed_updates configuration
         job.allowed_update?(dep)
       end
 
       sig { params(dep_name: String, pattern: String).returns(T::Boolean) }
       def dependency_matches_pattern?(dep_name, pattern)
-        # Simple pattern matching - could be enhanced with glob/regex support
         return true if pattern == dep_name
         return true if pattern.include?("*") && File.fnmatch(pattern, dep_name)
 
@@ -346,13 +243,10 @@ module Dependabot
       def detect_file_dependency_drift(file, updated_deps)
         updated_dep_names = updated_deps.to_set(&:name)
 
-        # Find all dependencies that have requirements from this file
-        # Uses the already-parsed dependencies from the ecosystem-specific FileParser
         file_dependencies = @snapshot.dependencies.select do |dep|
           dep.requirements.any? { |req| req[:file] == file.name }
         end
 
-        # Find dependencies in the file that aren't in updated_dependencies
         file_dependencies.filter_map do |dep|
           dep.name unless updated_dep_names.include?(dep.name)
         end
@@ -368,8 +262,6 @@ module Dependabot
 
       sig { params(directory: String, _original: Integer, _filtered: Integer, removed: Integer).void }
       def emit_filtering_metrics(directory, _original, _filtered, removed)
-        # Metrics functionality removed - would require service object access
-        # Future implementation could emit metrics if service is made available
         Dependabot.logger.debug(
           "GroupDependencySelector filtered #{removed} dependencies " \
           "[group=#{@group.name}, ecosystem=#{@snapshot.ecosystem}, directory=#{directory}]"
@@ -378,7 +270,6 @@ module Dependabot
 
       sig { params(directory: String, count: Integer).void }
       def emit_dependency_drift_metrics(directory, count)
-        # Future implementation could emit metrics if service is made available
         Dependabot.logger.debug(
           "GroupDependencySelector detected #{count} dependency drift items " \
           "[group=#{@group.name}, ecosystem=#{@snapshot.ecosystem}, directory=#{directory}]"
@@ -387,7 +278,6 @@ module Dependabot
 
       sig { params(filtered_deps: T::Array[Dependabot::Dependency]).void }
       def log_filtered_dependencies(filtered_deps)
-        # Group dependencies by filtering reason for better logging
         grouped_deps = group_dependencies_by_reason(filtered_deps)
 
         not_in_group = T.must(grouped_deps[:not_in_group])

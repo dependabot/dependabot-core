@@ -1,0 +1,94 @@
+# typed: strict
+# frozen_string_literal: true
+
+require "sorbet-runtime"
+require "wildcard_matcher"
+
+module Dependabot
+  class Updater
+    # PatternSpecificityCalculator handles the calculation of pattern specificity scores
+    # for dependency group patterns. This enables proper prioritization when a dependency
+    # matches multiple groups, ensuring it's only processed by the most specific group.
+    #
+    # Specificity scoring hierarchy:
+    # - Explicit group members: 1000 (highest)
+    # - Exact pattern matches: 1000
+    # - Patterns without wildcards: 500
+    # - Patterns with wildcards: 100 - (wildcard_count * 10) + length_bonus
+    # - Universal wildcard '*': 1 (lowest)
+    # - No patterns: 500 (medium)
+    class PatternSpecificityCalculator
+      extend T::Sig
+
+      sig { void }
+      def initialize
+      end
+
+      # Calculate the specificity score for a dependency within a group
+      # Higher scores indicate more specific patterns
+      sig { params(group: Dependabot::DependencyGroup, dep: Dependabot::Dependency).returns(Integer) }
+      def calculate_group_specificity_for_dependency(group, dep)
+        # If dependency is explicitly added to the group, highest specificity
+        return 1000 if group.dependencies.include?(dep)
+
+        # Check patterns if they exist
+        patterns = T.unsafe(group.rules["patterns"])
+        return 500 unless patterns # No patterns means it matches everything with medium specificity
+
+        matching_patterns = patterns.select { |pattern| WildcardMatcher.match?(pattern, dep.name) }
+        return 0 if matching_patterns.empty? # Shouldn't happen if we got here, but safety
+
+        # Find the most specific matching pattern
+        matching_patterns.map do |pattern|
+          calculate_pattern_specificity(pattern, dep.name)
+        end.max || 0
+      end
+
+      # Calculate specificity for an individual pattern
+      # Higher scores indicate more specific patterns
+      sig { params(pattern: String, dep_name: String).returns(Integer) }
+      def calculate_pattern_specificity(pattern, dep_name)
+        # Exact match gets highest score
+        return 1000 if pattern == dep_name
+
+        # Universal wildcard gets lowest score
+        return 1 if pattern == "*"
+
+        # Count wildcards and calculate specificity
+        wildcard_count = pattern.count("*")
+        return 500 if wildcard_count == 0 # No wildcards, exact pattern
+
+        # Patterns with wildcards: base score minus penalty for each wildcard
+        base_score = 100
+        wildcard_penalty = wildcard_count * 10
+        specificity = base_score - wildcard_penalty
+
+        # Additional bonus for longer patterns (more specific context)
+        length_bonus = [pattern.length - 5, 0].max # Bonus for patterns longer than 5 chars
+
+        [specificity + length_bonus, 1].max # Minimum score of 1
+      end
+
+      # Check if a dependency belongs to a more specific group than the current one
+      # This prevents generic patterns (like '*') from capturing dependencies
+      # that belong to more specific patterns (like 'docker*' or exact names)
+      sig { params(current_group: Dependabot::DependencyGroup, dep: Dependabot::Dependency, groups: T::Array[Dependabot::DependencyGroup], contains_checker: T.proc.params(group: Dependabot::DependencyGroup, dep: Dependabot::Dependency, directory: String).returns(T::Boolean), directory: String).returns(T::Boolean) }
+      def dependency_belongs_to_more_specific_group?(current_group, dep, groups, contains_checker, directory)
+        current_group_specificity = calculate_group_specificity_for_dependency(current_group, dep)
+
+        return false if current_group_specificity >= 1000
+
+        groups.any? do |other_group|
+          next if other_group == current_group
+
+          if contains_checker.call(other_group, dep, directory)
+            other_group_specificity = calculate_group_specificity_for_dependency(other_group, dep)
+            other_group_specificity > current_group_specificity
+          else
+            false
+          end
+        end
+      end
+    end
+  end
+end
