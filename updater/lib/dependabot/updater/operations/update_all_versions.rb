@@ -266,9 +266,15 @@ module Dependabot
           latest_version = checker.latest_version&.to_s
           return false if latest_version.nil?
 
-          job.existing_pull_requests
-             .any? { |pr| pr.contains_dependency?(checker.dependency.name, latest_version, job.source.directory) } ||
-            created_pull_requests.any? { |pr| pr.contains_dependency?(checker.dependency.name, latest_version, job.source.directory) }
+          return true if job.existing_pull_requests.any? do |pr|
+            pr.contains_dependency?(checker.dependency.name, latest_version, T.must(job.source.directory))
+          end
+
+          return true if created_pull_requests.any? do |pr|
+            pr.contains_dependency?(checker.dependency.name, latest_version, T.must(job.source.directory))
+          end
+
+          false
         end
 
         sig do

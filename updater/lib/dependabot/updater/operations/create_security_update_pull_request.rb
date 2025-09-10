@@ -165,8 +165,8 @@ module Dependabot
           #   https://github.com/github/dependabot-api/issues/905
           return record_security_update_not_possible_error(checker) if updated_deps.none? { |d| job.security_fix?(d) }
 
-          # DependencyChange will ensure directories are set on the updated dependencies if needed.
-          # This means it needs to run before checking if an existing PR exists to consider the directory in the comparison.
+          # DependencyChange will ensure directories are set on the updated dependencies if needed. This means it
+          # needs to run before checking if an existing PR exists to consider the directory in the comparison.
           dependency_change = Dependabot::DependencyChangeBuilder.create_from(
             job: job,
             dependency_files: dependency_snapshot.dependency_files,
@@ -272,9 +272,15 @@ module Dependabot
           latest_version = checker.latest_version&.to_s
           return false if latest_version.nil?
 
-          job.existing_pull_requests
-             .any? { |pr| pr.contains_dependency?(checker.dependency.name, latest_version, job.source.directory) } ||
-            created_pull_requests.any? { |pr| pr.contains_dependency?(checker.dependency.name, latest_version, job.source.directory) }
+          return true if job.existing_pull_requests.any? do |pr|
+            pr.contains_dependency?(checker.dependency.name, latest_version, T.must(job.source.directory))
+          end
+
+          return true if created_pull_requests.any? do |pr|
+            pr.contains_dependency?(checker.dependency.name, latest_version, T.must(job.source.directory))
+          end
+
+          false
         end
 
         sig do
