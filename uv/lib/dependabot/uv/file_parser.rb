@@ -180,7 +180,8 @@ module Dependabot
               name: normalised_name(package_data["name"]),
               version: package_data["version"],
               requirements: [], # Lock files don't contain requirements
-              package_manager: "uv"
+              package_manager: "uv",
+              origin_files: ["uv.lock"]
             )
           end
         rescue StandardError => e
@@ -226,7 +227,8 @@ module Dependabot
               name: normalised_name(name, dep["extras"]),
               version: version&.include?("*") ? nil : version,
               requirements: requirements,
-              package_manager: "uv"
+              package_manager: "uv",
+              origin_files: [dep["file"]]
             )
         end
         dependencies

@@ -386,7 +386,8 @@ module Dependabot
               tag: version
             }
           }],
-          package_manager: "helm"
+          package_manager: "helm",
+          origin_files: dependency.origin_files
         )
       end
 

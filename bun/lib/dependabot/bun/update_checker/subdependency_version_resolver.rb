@@ -106,7 +106,8 @@ module Dependabot
             version: latest_allowable_version,
             previous_version: dependency.version,
             requirements: [],
-            package_manager: dependency.package_manager
+            package_manager: dependency.package_manager,
+            origin_files: dependency.origin_files
           )
         end
 

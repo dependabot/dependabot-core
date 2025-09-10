@@ -157,7 +157,8 @@ module Dependabot
           name: name,
           version: version_for(requirement)&.to_s,
           requirements: direct ? requirements : [],
-          package_manager: "elm"
+          package_manager: "elm",
+          origin_files: [MANIFEST_FILE]
         )
       end
 

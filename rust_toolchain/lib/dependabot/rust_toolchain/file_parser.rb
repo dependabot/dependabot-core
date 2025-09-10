@@ -74,7 +74,8 @@ module Dependabot
             groups: [],
             source: nil
           }],
-          package_manager: "rust_toolchain"
+          package_manager: "rust_toolchain",
+          origin_files: [dependency_file.name]
         )
       end
 

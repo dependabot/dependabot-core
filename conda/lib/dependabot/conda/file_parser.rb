@@ -105,7 +105,8 @@ module Dependabot
             name: parsed_dep[:name],
             version: parsed_dep[:version],
             requirements: parsed_dep[:requirements],
-            package_manager: "conda"
+            package_manager: "conda",
+            origin_file: file
           )
         end
 
@@ -139,7 +140,8 @@ module Dependabot
             name: parsed_dep[:name],
             version: parsed_dep[:version],
             requirements: parsed_dep[:requirements],
-            package_manager: "conda"
+            package_manager: "conda",
+            origin_file: file
           )
         end
 
@@ -270,15 +272,17 @@ module Dependabot
           name: String,
           version: T.nilable(String),
           requirements: T::Array[T::Hash[Symbol, T.untyped]],
-          package_manager: String
+          package_manager: String,
+          origin_file: Dependabot::DependencyFile
         ).returns(Dependabot::Dependency)
       end
-      def create_dependency(name:, version:, requirements:, package_manager:)
+      def create_dependency(name:, version:, requirements:, package_manager:, origin_file:)
         Dependabot::Dependency.new(
           name: name,
           version: version,
           requirements: requirements,
-          package_manager: package_manager
+          package_manager: package_manager,
+          origin_files: [origin_file.name]
         )
       end
 
