@@ -3,14 +3,3 @@ inherit_from: ../.rubocop.yml
 inherit_mode:
   merge:
     - Exclude
-
-Sorbet/StrictSigil:
-  Exclude:
-    - lib/dependabot/gradle/file_parser/property_value_finder.rb
-    - lib/dependabot/gradle/file_parser/repositories_finder.rb
-    - lib/dependabot/gradle/file_parser.rb
-    - lib/dependabot/gradle/file_updater/property_value_updater.rb
-    - lib/dependabot/gradle/update_checker/multi_dependency_updater.rb
-    - lib/dependabot/gradle/update_checker/version_finder.rb
-    - lib/dependabot/gradle/update_checker.rb
-    - lib/dependabot/gradle/version.rb
