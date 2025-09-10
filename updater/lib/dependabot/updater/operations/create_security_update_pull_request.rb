@@ -165,7 +165,19 @@ module Dependabot
           #   https://github.com/github/dependabot-api/issues/905
           return record_security_update_not_possible_error(checker) if updated_deps.none? { |d| job.security_fix?(d) }
 
-          if (existing_pr = existing_pull_request(updated_deps))
+          # DependencyChange will ensure directories are set on the updated dependencies if needed.
+          # This means it needs to run before checking if an existing PR exists to consider the directory in the comparison.
+          dependency_change = Dependabot::DependencyChangeBuilder.create_from(
+            job: job,
+            dependency_files: dependency_snapshot.dependency_files,
+            updated_dependencies: updated_deps,
+            change_source: checker.dependency,
+            # Sending notices to the pr message builder to be used in the PR message if show_in_pr is true
+            notices: @notices,
+            exclude_paths: job.exclude_paths || []
+          )
+
+          if (existing_pr = existing_pull_request(dependency_change.updated_dependencies))
             # Create a update job error to prevent dependabot-api from creating a
             # update_not_possible error, this is likely caused by a update job retry
             # so should be invisible to users (as the first job completed with a pull
@@ -184,16 +196,6 @@ module Dependabot
               "Pull request already exists for #{deps.join(', ')}"
             )
           end
-
-          dependency_change = Dependabot::DependencyChangeBuilder.create_from(
-            job: job,
-            dependency_files: dependency_snapshot.dependency_files,
-            updated_dependencies: updated_deps,
-            change_source: checker.dependency,
-            # Sending notices to the pr message builder to be used in the PR message if show_in_pr is true
-            notices: @notices,
-            exclude_paths: job.exclude_paths || []
-          )
 
           # Send warning alerts to the API if any warning notices are present.
           # Note that only notices with notice.show_alert set to true will be sent.
@@ -271,8 +273,8 @@ module Dependabot
           return false if latest_version.nil?
 
           job.existing_pull_requests
-             .any? { |pr| pr.contains_dependency?(checker.dependency.name, latest_version) } ||
-            created_pull_requests.any? { |pr| pr.contains_dependency?(checker.dependency.name, latest_version) }
+             .any? { |pr| pr.contains_dependency?(checker.dependency.name, latest_version, job.source.directory) } ||
+            created_pull_requests.any? { |pr| pr.contains_dependency?(checker.dependency.name, latest_version, job.source.directory) }
         end
 
         sig do

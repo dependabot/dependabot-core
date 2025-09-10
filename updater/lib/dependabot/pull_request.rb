@@ -94,9 +94,9 @@ module Dependabot
       end
     end
 
-    sig { params(name: String, version: String).returns(T::Boolean) }
-    def contains_dependency?(name, version)
-      dependencies.any? { |dep| dep.name == name && dep.version == version }
+    sig { params(name: String, version: String, dir: String).returns(T::Boolean) }
+    def contains_dependency?(name, version, dir)
+      dependencies.any? { |dep| dep.name == name && dep.version == version && dep.directory == dir }
     end
 
     sig { returns(T::Boolean) }

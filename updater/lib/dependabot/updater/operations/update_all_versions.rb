@@ -267,8 +267,8 @@ module Dependabot
           return false if latest_version.nil?
 
           job.existing_pull_requests
-             .any? { |pr| pr.contains_dependency?(checker.dependency.name, latest_version) } ||
-            created_pull_requests.any? { |pr| pr.contains_dependency?(checker.dependency.name, latest_version) }
+             .any? { |pr| pr.contains_dependency?(checker.dependency.name, latest_version, job.source.directory) } ||
+            created_pull_requests.any? { |pr| pr.contains_dependency?(checker.dependency.name, latest_version, job.source.directory) }
         end
 
         sig do
