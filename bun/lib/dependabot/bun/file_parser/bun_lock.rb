@@ -62,7 +62,8 @@ module Dependabot
               name: name,
               version: semver.to_s,
               package_manager: "bun",
-              requirements: []
+              requirements: [],
+              origin_files: [@dependency_file.name]
             )
           end
 
