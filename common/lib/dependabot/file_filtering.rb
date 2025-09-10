@@ -27,8 +27,8 @@ module Dependabot
         exclude_recursive = false
         if pattern.end_with?("/**")
           base_pattern_str = pattern[0...-3]
-          base_pattern = normalize_path(base_pattern_str) if base_pattern_str
-          exclude_recursive = base_pattern && (
+          base_pattern = normalize_path(base_pattern_str) if base_pattern_str && !base_pattern_str.empty?
+          exclude_recursive = !base_pattern.nil? && !base_pattern.empty? && (
             normalized_path == base_pattern ||
             normalized_path.start_with?("#{base_pattern}/") ||
             normalized_path.start_with?("#{base_pattern}#{File::SEPARATOR}")
@@ -74,8 +74,11 @@ module Dependabot
              exclude_paths: T.nilable(T::Array[String])).returns(T::Boolean)
     end
     def self.should_exclude_path?(path, context, exclude_paths)
-      should_exclude = Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files) &&
-                       !exclude_paths.nil? && !exclude_paths.empty? && exclude_path?(path, exclude_paths)
+      return false unless Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files)
+
+      return false if exclude_paths.nil? || exclude_paths.empty?
+
+      should_exclude = exclude_path?(path, exclude_paths)
 
       if should_exclude
         Dependabot.logger.warn(

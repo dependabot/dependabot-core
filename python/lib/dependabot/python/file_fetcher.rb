@@ -87,8 +87,7 @@ module Dependabot
 
         uniques = uniq_files(fetched_files)
         filtered_files = uniques.reject do |file|
-          Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files) &&
-            !@exclude_paths.empty? && Dependabot::FileFiltering.exclude_path?(file.name, @exclude_paths)
+          Dependabot::FileFiltering.should_exclude_path?(file.name, "file from final collection", @exclude_paths)
         end
 
         filtered_files
