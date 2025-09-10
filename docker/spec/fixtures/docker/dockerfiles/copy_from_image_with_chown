@@ -5,6 +5,6 @@ RUN mkdir /myuserfolder && chown myuser:myuser /myuserfolder
 
 USER myuser
 
-COPY --chown=myuser:myuser --from=alpine/curl:8.9.0 /usr/bin/curl /myuserfolder/curl
+COPY --chown=myuser:myuser --from=alpine/curl:8.9.0 /usr/bin/local/curl /myuserfolder/curl
 
-COPY --from=alpine/curl:8.8.0 --chown=myuser:myuser /usr/bin/curl /myuserfolder/curl
+COPY --from=alpine/curl-http3:8.11.0 --chown=myuser:myuser /usr/bin/local/curl /myuserfolder/curl
