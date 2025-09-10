@@ -21,8 +21,7 @@ module Dependabot
       extend T::Sig
 
       sig { void }
-      def initialize
-      end
+      def initialize; end
 
       # Calculate the specificity score for a dependency within a group
       # Higher scores indicate more specific patterns
@@ -56,7 +55,7 @@ module Dependabot
 
         # Count wildcards and calculate specificity
         wildcard_count = pattern.count("*")
-        return 500 if wildcard_count == 0 # No wildcards, exact pattern
+        return 500 if wildcard_count.zero? # No wildcards, exact pattern
 
         # Patterns with wildcards: base score minus penalty for each wildcard
         base_score = 100
@@ -72,7 +71,16 @@ module Dependabot
       # Check if a dependency belongs to a more specific group than the current one
       # This prevents generic patterns (like '*') from capturing dependencies
       # that belong to more specific patterns (like 'docker*' or exact names)
-      sig { params(current_group: Dependabot::DependencyGroup, dep: Dependabot::Dependency, groups: T::Array[Dependabot::DependencyGroup], contains_checker: T.proc.params(group: Dependabot::DependencyGroup, dep: Dependabot::Dependency, directory: String).returns(T::Boolean), directory: String).returns(T::Boolean) }
+      sig do
+        params(
+          current_group: Dependabot::DependencyGroup,
+          dep: Dependabot::Dependency,
+          groups: T::Array[Dependabot::DependencyGroup],
+          contains_checker:
+            T.proc.params(group: Dependabot::DependencyGroup, dep: Dependabot::Dependency, directory: String)
+                             .returns(T::Boolean), directory: String
+        ).returns(T::Boolean)
+      end
       def dependency_belongs_to_more_specific_group?(current_group, dep, groups, contains_checker, directory)
         current_group_specificity = calculate_group_specificity_for_dependency(current_group, dep)
 
