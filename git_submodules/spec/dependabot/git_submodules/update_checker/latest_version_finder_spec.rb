@@ -94,7 +94,7 @@ RSpec.describe Dependabot::GitSubmodules::UpdateChecker::LatestVersionFinder do
     let(:dependency) do
       Dependabot::Dependency.new(
         name: "NuGet",
-        version: "95a470a557091cdbdc9f68a178b60bd19329942c",
+        version: "7a84f1ecdb1df83034aa639e496f3b25a16d94ec",
         requirements: [{
           file: ".gitmodules",
           requirement: nil,

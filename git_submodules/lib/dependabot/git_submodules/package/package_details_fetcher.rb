@@ -83,21 +83,23 @@ module Dependabot
             client = build_client
 
             sha = T.let(nil, T.nilable(String))
-            while parsed_results.length < TARGET_COMMITS_TO_FETCH
-              max_len = Dependabot::GitMetadataFetcher::MAX_COMMITS_PER_PAGE
-              max_len -= 1 unless sha.nil?
-              commits = get_commits(client, sha)
-              break if commits.empty?
+            catch :found do
+              while parsed_results.length < TARGET_COMMITS_TO_FETCH
+                max_len = Dependabot::GitMetadataFetcher::MAX_COMMITS_PER_PAGE
+                max_len -= 1 unless sha.nil?
+                commits = get_commits(client, sha)
+                break if commits.empty?
 
-              commits.each do |commit|
-                sha = commit["sha"]
-                parsed_results << GitTagWithDetail.new(
-                  tag: sha,
-                  release_date: commit["commit"]["committer"]["date"]
-                )
+                commits.each do |commit|
+                  sha = commit["sha"]
+                  parsed_results << GitTagWithDetail.new(
+                    tag: sha,
+                    release_date: commit["commit"]["committer"]["date"]
+                  )
+                  throw :found if sha == dependency.version
+                end
+                break if commits.length < max_len
               end
-              break if commits.length < max_len
-
             end
             parsed_results
           rescue StandardError => e

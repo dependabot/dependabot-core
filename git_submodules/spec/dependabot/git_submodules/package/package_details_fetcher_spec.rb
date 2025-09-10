@@ -215,6 +215,32 @@ RSpec.describe Dependabot::GitSubmodules::Package::PackageDetailsFetcher do
         expect(releases[2].version.semver_parts).to eq([0, 0, 0])
         expect(releases[2].tag).to eq("95a470a557091cdbdc9f68a178b60bdabncd")
       end
+
+      it "ignores commits before the current one" do
+        allow(checker).to receive_messages(
+          build_sha_to_tags: {
+            "95a470a557091cdbdc9f68a178b60bdabncd" => ["v2.0.0", "v1.0.0"]
+          },
+          get_commits: [
+            {
+              sha: "2468a02a6230e59ed1232d95d1ad3ef157195b03",
+              commit: { committer: { date: "2024-01-01T00:00:00Z" } }
+            },
+            {
+              sha: "95a470a557091cdbdc9f68a178b60bdabncd",
+              commit: { committer: { date: "2024-01-01T00:00:00Z" } }
+            }
+          ],
+          fetch_latest_tag_info: [
+            Dependabot::GitTagWithDetail.new(tag: "2468a02a6230e59ed1232d95d1ad3ef157195b03")
+          ]
+        )
+
+        releases = checker.available_versions
+        expect(releases.size).to eq(1)
+        expect(releases[0].version.semver_parts).to eq([0, 0, 0])
+        expect(releases[0].tag).to eq("2468a02a6230e59ed1232d95d1ad3ef157195b03")
+      end
     end
   end
 end
