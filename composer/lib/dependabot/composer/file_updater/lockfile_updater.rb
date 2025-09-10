@@ -400,12 +400,9 @@ module Dependabot
               updated_object_package["extra"]["patches_applied"] = patches
 
               content =
-                T.cast(
-                  JSON.pretty_generate(updated_object, indent: "    ")
+                JSON.pretty_generate(updated_object, indent: "    ")
                     .gsub(/\[\n\n\s*\]/, "[]")
-                    .gsub(/\}\z/, "}\n"),
-                  String
-                )
+                    .gsub(/\}\z/, "}\n")
             end
           end
           content

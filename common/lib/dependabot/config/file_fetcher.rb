@@ -27,8 +27,6 @@ module Dependabot
         @config_file ||= T.let(files.first, T.nilable(Dependabot::DependencyFile))
       end
 
-      private
-
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def fetch_files
         fetched_files = T.let([], T::Array[Dependabot::DependencyFile])
