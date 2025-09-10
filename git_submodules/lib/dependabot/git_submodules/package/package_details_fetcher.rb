@@ -72,7 +72,7 @@ module Dependabot
           parsed_results
         end
 
-        MAX_COMMITS_TO_FETCH = 250
+        TARGET_COMMITS_TO_FETCH = 250
 
         sig { returns(T::Array[GitTagWithDetail]) }
         def fetch_tags_and_release_date
@@ -83,7 +83,7 @@ module Dependabot
             client = build_client
 
             sha = T.let(nil, T.nilable(String))
-            while parsed_results.length <= MAX_COMMITS_TO_FETCH
+            while parsed_results.length < TARGET_COMMITS_TO_FETCH
               max_len = Dependabot::GitMetadataFetcher::MAX_COMMITS_PER_PAGE
               max_len -= 1 unless sha.nil?
               commits = get_commits(client, sha)
