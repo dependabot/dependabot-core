@@ -755,12 +755,6 @@ RSpec.describe Dependabot::Docker::FileParser do
               file: "Dockerfile",
               source: { tag: "8.9.0" }
             },
-            {
-              requirement: nil,
-              groups: [],
-              file: "Dockerfile",
-              source: { tag: "8.8.0" }
-            }
           ]
         end
 
@@ -781,21 +775,15 @@ RSpec.describe Dependabot::Docker::FileParser do
               requirement: nil,
               groups: [],
               file: "Dockerfile",
-              source: { tag: "8.9.0" }
+              source: { tag: "8.11.0" }
             },
-            {
-              requirement: nil,
-              groups: [],
-              file: "Dockerfile",
-              source: { tag: "8.8.0" }
-            }
           ]
         end
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("alpine/curl")
-          expect(dependency.version).to eq("8.8.0")
+          expect(dependency.name).to eq("alpine/curl-http3")
+          expect(dependency.version).to eq("8.11.0")
           expect(dependency.requirements).to eq(expected_requirements)
         end
       end
