@@ -157,25 +157,34 @@ module Dependabot
           released_at = version_details.release_date ? Time.parse(T.must(version_details.release_date)) : nil
           sha = version_details.tag
 
-          releases = Array(sha_to_tags[sha]).map do |tag_name|
+          normalized_versions(sha, sha_to_tags, pseudo_version).map do |version|
             Dependabot::Package::PackageRelease.new(
-              version: normalize_version(tag_name, pseudo_version),
+              version: version,
               tag: sha,
               released_at: released_at
             )
           end
+        end
 
-          releases << Dependabot::Package::PackageRelease.new(
-            version: normalize_version(sha, pseudo_version),
-            tag: sha,
-            released_at: released_at
-          )
+        sig do
+          params(
+            sha: String,
+            sha_to_tags: T::Hash[String, T::Array[String]],
+            pseudo_version: Integer
+          ).returns(T::Array[Dependabot::Version])
+        end
+        def normalized_versions(sha, sha_to_tags, pseudo_version)
+          versions = Array(sha_to_tags[sha]).map do |tag_name|
+            normalized_version(tag_name, pseudo_version)
+          end
 
-          releases
+          versions << normalized_version(sha, pseudo_version)
+
+          versions.uniq
         end
 
         sig { params(tag: String, pseudo_version: Integer).returns(Dependabot::Version) }
-        def normalize_version(tag, pseudo_version)
+        def normalized_version(tag, pseudo_version)
           if Dependabot::Version.valid_semver?(tag)
             Dependabot::Version.new(tag)
           elsif tag.start_with?("v") && GitSubmodules::Version.valid_semver?(T.must(tag[1..]))

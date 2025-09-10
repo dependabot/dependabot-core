@@ -130,6 +130,91 @@ RSpec.describe Dependabot::GitSubmodules::Package::PackageDetailsFetcher do
         expect(releases.size).to eq(1)
         expect(releases.first.tag).to eq("95a470a557091cdbdc9f68a178b60bd142c")
       end
+
+      it "gives priority to tags if available" do
+        parsed_results = T.let([], T::Array[Dependabot::GitTagWithDetail])
+        parsed_results << Dependabot::GitTagWithDetail.new(
+          tag: "95a470a557091cdbdc9f68a178b60bdabncd",
+          release_date: "2024-01-01T00:00:00Z"
+        )
+
+        allow(checker).to receive_messages(
+          build_sha_to_tags: { "95a470a557091cdbdc9f68a178b60bdabncd" => ["v1.0.0"] },
+          fetch_tags_and_release_date: parsed_results
+        )
+
+        releases = checker.available_versions
+        expect(releases.size).to eq(2)
+        expect(releases[0].version.semver_parts).to eq([1, 0, 0])
+        expect(releases[0].tag).to eq("95a470a557091cdbdc9f68a178b60bdabncd")
+        expect(releases[1].version.semver_parts).to eq([0, 0, 0])
+        expect(releases[1].tag).to eq("95a470a557091cdbdc9f68a178b60bdabncd")
+      end
+
+      it "ignores tags that aren't valid semver" do
+        parsed_results = T.let([], T::Array[Dependabot::GitTagWithDetail])
+        parsed_results << Dependabot::GitTagWithDetail.new(
+          tag: "95a470a557091cdbdc9f68a178b60bdabncd",
+          release_date: "2024-01-01T00:00:00Z"
+        )
+
+        allow(checker).to receive_messages(
+          build_sha_to_tags: { "95a470a557091cdbdc9f68a178b60bdabncd" => ["not-a-version"] },
+          fetch_tags_and_release_date: parsed_results
+        )
+
+        releases = checker.available_versions
+        expect(releases.size).to eq(1)
+        expect(releases[0].version.semver_parts).to eq([0, 0, 0])
+        expect(releases[0].tag).to eq("95a470a557091cdbdc9f68a178b60bdabncd")
+      end
+
+      it "ignores tags that are referring to unknown commits" do
+        parsed_results = T.let([], T::Array[Dependabot::GitTagWithDetail])
+        parsed_results << Dependabot::GitTagWithDetail.new(
+          tag: "95a470a557091cdbdc9f68a178b60bdabncd",
+          release_date: "2024-01-01T00:00:00Z"
+        )
+
+        allow(checker).to receive_messages(
+          build_sha_to_tags: {
+            "2468a02a6230e59ed1232d95d1ad3ef157195b03" => ["v2.0.0"],
+            "95a470a557091cdbdc9f68a178b60bdabncd" => ["v1.0.0"]
+          },
+          fetch_tags_and_release_date: parsed_results
+        )
+
+        releases = checker.available_versions
+        expect(releases.size).to eq(2)
+        expect(releases[0].version.semver_parts).to eq([1, 0, 0])
+        expect(releases[0].tag).to eq("95a470a557091cdbdc9f68a178b60bdabncd")
+        expect(releases[1].version.semver_parts).to eq([0, 0, 0])
+        expect(releases[1].tag).to eq("95a470a557091cdbdc9f68a178b60bdabncd")
+      end
+
+      it "returns all tags if multiple tags point to the same commit" do
+        parsed_results = T.let([], T::Array[Dependabot::GitTagWithDetail])
+        parsed_results << Dependabot::GitTagWithDetail.new(
+          tag: "95a470a557091cdbdc9f68a178b60bdabncd",
+          release_date: "2024-01-01T00:00:00Z"
+        )
+
+        allow(checker).to receive_messages(
+          build_sha_to_tags: {
+            "95a470a557091cdbdc9f68a178b60bdabncd" => ["v2.0.0", "v1.0.0"]
+          },
+          fetch_tags_and_release_date: parsed_results
+        )
+
+        releases = checker.available_versions
+        expect(releases.size).to eq(3)
+        expect(releases[0].version.semver_parts).to eq([2, 0, 0])
+        expect(releases[0].tag).to eq("95a470a557091cdbdc9f68a178b60bdabncd")
+        expect(releases[1].version.semver_parts).to eq([1, 0, 0])
+        expect(releases[1].tag).to eq("95a470a557091cdbdc9f68a178b60bdabncd")
+        expect(releases[2].version.semver_parts).to eq([0, 0, 0])
+        expect(releases[2].tag).to eq("95a470a557091cdbdc9f68a178b60bdabncd")
+      end
     end
   end
 end
