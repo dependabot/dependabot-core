@@ -7,7 +7,6 @@ inherit_mode:
 Sorbet/StrictSigil:
   Exclude:
     - lib/dependabot/base_command.rb
-    - lib/dependabot/file_fetcher_command.rb
     - lib/dependabot/update_files_command.rb
     - lib/dependabot/updater/dependency_group_change_batch.rb
     - lib/dependabot/updater/group_update_refreshing.rb
