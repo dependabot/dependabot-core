@@ -31,7 +31,7 @@ module Dependabot
       sig { override.returns(T.nilable(T::Hash[Symbol, T.untyped])) }
       def ecosystem_versions
         channel = if rust_toolchain
-                    TomlRB.parse(T.must(rust_toolchain).content).fetch("toolchain", nil)&.fetch("channel", nil)
+                    TomlRB.parse(T.must(rust_toolchain).content).dig("toolchain", "channel")
                   else
                     "default"
                   end

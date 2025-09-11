@@ -19,6 +19,7 @@ module Dependabot
       # rubocop:disable Metrics/ClassLength
       class PipCompileFileUpdater
         extend T::Sig
+
         require_relative "requirement_replacer"
         require_relative "requirement_file_updater"
         require_relative "setup_file_sanitizer"

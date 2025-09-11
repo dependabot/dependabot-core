@@ -17,8 +17,10 @@ require "dependabot/errors"
 module Dependabot
   module Hex
     extend T::Sig
+
     class FileParser < Dependabot::FileParsers::Base
       extend T::Sig
+
       require "dependabot/file_parsers/base/dependency_set"
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }

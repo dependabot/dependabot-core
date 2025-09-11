@@ -14,6 +14,7 @@ module Dependabot
     class FileParser
       class PipfileFilesParser
         extend T::Sig
+
         DEPENDENCY_GROUP_KEYS = T.let([
           {
             pipfile: "packages",

@@ -126,7 +126,7 @@ module Dependabot
 
     sig { returns(T::Array[Dependabot::DependencyFile]) }
     def generate_dependency_files
-      if updated_dependencies.count == 1
+      if updated_dependencies.one?
         updated_dependency = T.must(updated_dependencies.first)
         Dependabot.logger.info("Updating #{updated_dependency.name} from " \
                                "#{updated_dependency.previous_version} to " \
