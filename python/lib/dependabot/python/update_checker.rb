@@ -17,6 +17,7 @@ require "dependabot/update_checkers/base"
 
 module Dependabot
   module Python
+    # rubocop:disable Metrics/ClassLength
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       extend T::Sig
 
@@ -33,76 +34,46 @@ module Dependabot
       ).freeze
       VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/
 
-      # rubocop:disable Metrics/AbcSize
-      sig do
-        params(
-          dependency: Dependabot::Dependency,
-          dependency_files: T::Array[Dependabot::DependencyFile],
-          credentials: T::Array[Dependabot::Credential],
-          repo_contents_path: T.nilable(String),
-          ignored_versions: T::Array[String],
-          raise_on_ignored: T::Boolean,
-          security_advisories: T::Array[Dependabot::SecurityAdvisory],
-          requirements_update_strategy: T.nilable(Dependabot::RequirementsUpdateStrategy),
-          dependency_group: T.nilable(Dependabot::DependencyGroup),
-          update_cooldown: T.nilable(Dependabot::Package::ReleaseCooldownOptions),
-          exclude_paths: T.nilable(T::Array[String]),
-          options: T::Hash[Symbol, T.untyped]
-        ).void
-      end
-      def initialize(dependency:, dependency_files:, credentials:,
-                     repo_contents_path: nil, ignored_versions: [],
-                     raise_on_ignored: false, security_advisories: [],
-                     requirements_update_strategy: nil, dependency_group: nil,
-                     update_cooldown: nil, exclude_paths: [], options: {})
-        super
-
-        @latest_version = T.let(nil, T.nilable(Dependabot::Version))
-        @latest_resolvable_version = T.let(nil, T.nilable(Dependabot::Version))
-        @latest_resolvable_version_with_no_unlock = T.let(nil, T.nilable(Dependabot::Version))
-        @lowest_resolvable_security_fix_version = T.let(nil, T.nilable(Dependabot::Version))
-        @latest_version_finder = T.let(nil, T.nilable(LatestVersionFinder))
-        @pipenv_version_resolver = T.let(nil, T.nilable(PipenvVersionResolver))
-        @pip_compile_version_resolver = T.let(nil, T.nilable(PipCompileVersionResolver))
-        @poetry_version_resolver = T.let(nil, T.nilable(PoetryVersionResolver))
-        @pip_version_resolver = T.let(nil, T.nilable(PipVersionResolver))
-        @library_details = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
-        @poetry_details = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
-        @standard_details = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
-        @build_system_details = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
-        @toml_content = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
-      end
-      # rubocop:enable Metrics/AbcSize
-
       sig { override.returns(T.nilable(Dependabot::Version)) }
       def latest_version
-        @latest_version ||= fetch_latest_version
+        @latest_version = T.let(fetch_latest_version, T.nilable(Dependabot::Version)) if @latest_version.nil?
+        @latest_version
       end
 
       sig { override.returns(T.nilable(Dependabot::Version)) }
       def latest_resolvable_version
-        @latest_resolvable_version ||=
-          if resolver_type == :requirements
-            resolver.latest_resolvable_version
-          elsif resolver_type == :pip_compile && resolver.resolvable?(version: latest_version)
-            latest_version
-          else
-            resolver.latest_resolvable_version(
-              requirement: unlocked_requirement_string
-            )
-          end
+        if @latest_resolvable_version.nil?
+          @latest_resolvable_version = T.let(
+            if resolver_type == :requirements
+              resolver.latest_resolvable_version
+            elsif resolver_type == :pip_compile && resolver.resolvable?(version: latest_version)
+              latest_version
+            else
+              resolver.latest_resolvable_version(
+                requirement: unlocked_requirement_string
+              )
+            end,
+            T.nilable(Dependabot::Version)
+          )
+        end
+        @latest_resolvable_version
       end
 
       sig { override.returns(T.nilable(Dependabot::Version)) }
       def latest_resolvable_version_with_no_unlock
-        @latest_resolvable_version_with_no_unlock ||=
-          if resolver_type == :requirements
-            resolver.latest_resolvable_version_with_no_unlock
-          else
-            resolver.latest_resolvable_version(
-              requirement: current_requirement_string
-            )
-          end
+        if @latest_resolvable_version_with_no_unlock.nil?
+          @latest_resolvable_version_with_no_unlock = T.let(
+            if resolver_type == :requirements
+              resolver.latest_resolvable_version_with_no_unlock
+            else
+              resolver.latest_resolvable_version(
+                requirement: current_requirement_string
+              )
+            end,
+            T.nilable(Dependabot::Version)
+          )
+        end
+        @latest_resolvable_version_with_no_unlock
       end
 
       sig { override.returns(T.nilable(Dependabot::Version)) }
@@ -114,10 +85,13 @@ module Dependabot
       def lowest_resolvable_security_fix_version
         raise "Dependency not vulnerable!" unless vulnerable?
 
-        return @lowest_resolvable_security_fix_version if defined?(@lowest_resolvable_security_fix_version)
-
-        @lowest_resolvable_security_fix_version =
-          fetch_lowest_resolvable_security_fix_version
+        if @lowest_resolvable_security_fix_version.nil?
+          @lowest_resolvable_security_fix_version = T.let(
+            fetch_lowest_resolvable_security_fix_version,
+            T.nilable(Dependabot::Version)
+          )
+        end
+        @lowest_resolvable_security_fix_version
       end
 
       sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
@@ -230,45 +204,56 @@ module Dependabot
 
       sig { returns(PipenvVersionResolver) }
       def pipenv_version_resolver
-        @pipenv_version_resolver ||= PipenvVersionResolver.new(
-          dependency: dependency,
-          dependency_files: dependency_files,
-          credentials: credentials,
-          repo_contents_path: repo_contents_path
+        @pipenv_version_resolver ||= T.let(
+          PipenvVersionResolver.new(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            credentials: credentials,
+            repo_contents_path: repo_contents_path
+          ),
+          T.nilable(PipenvVersionResolver)
         )
       end
 
       sig { returns(PipCompileVersionResolver) }
       def pip_compile_version_resolver
-        @pip_compile_version_resolver ||=
+        @pip_compile_version_resolver ||= T.let(
           PipCompileVersionResolver.new(
             dependency: dependency,
             dependency_files: dependency_files,
             credentials: credentials,
             repo_contents_path: repo_contents_path
-          )
+          ),
+          T.nilable(PipCompileVersionResolver)
+        )
       end
 
       sig { returns(PoetryVersionResolver) }
       def poetry_version_resolver
-        @poetry_version_resolver ||= PoetryVersionResolver.new(
-          dependency: dependency,
-          dependency_files: dependency_files,
-          credentials: credentials,
-          repo_contents_path: repo_contents_path
+        @poetry_version_resolver ||= T.let(
+          PoetryVersionResolver.new(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            credentials: credentials,
+            repo_contents_path: repo_contents_path
+          ),
+          T.nilable(PoetryVersionResolver)
         )
       end
 
       sig { returns(PipVersionResolver) }
       def pip_version_resolver
-        @pip_version_resolver ||= PipVersionResolver.new(
-          dependency: dependency,
-          dependency_files: dependency_files,
-          credentials: credentials,
-          ignored_versions: ignored_versions,
-          update_cooldown: @update_cooldown,
-          raise_on_ignored: @raise_on_ignored,
-          security_advisories: security_advisories
+        @pip_version_resolver ||= T.let(
+          PipVersionResolver.new(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            credentials: credentials,
+            ignored_versions: ignored_versions,
+            update_cooldown: @update_cooldown,
+            raise_on_ignored: @raise_on_ignored,
+            security_advisories: security_advisories
+          ),
+          T.nilable(PipVersionResolver)
         )
       end
 
@@ -335,14 +320,17 @@ module Dependabot
 
       sig { returns(LatestVersionFinder) }
       def latest_version_finder
-        @latest_version_finder ||= LatestVersionFinder.new(
-          dependency: dependency,
-          dependency_files: dependency_files,
-          credentials: credentials,
-          ignored_versions: ignored_versions,
-          raise_on_ignored: @raise_on_ignored,
-          cooldown_options: @update_cooldown,
-          security_advisories: security_advisories
+        @latest_version_finder ||= T.let(
+          LatestVersionFinder.new(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            credentials: credentials,
+            ignored_versions: ignored_versions,
+            raise_on_ignored: @raise_on_ignored,
+            cooldown_options: @update_cooldown,
+            security_advisories: security_advisories
+          ),
+          T.nilable(LatestVersionFinder)
         )
       end
 
@@ -431,27 +419,42 @@ module Dependabot
 
       sig { returns(T.nilable(T::Hash[String, T.untyped])) }
       def library_details
-        @library_details ||= poetry_details || standard_details || build_system_details
+        @library_details ||= T.let(
+          poetry_details || standard_details || build_system_details,
+          T.nilable(T::Hash[String, T.untyped])
+        )
       end
 
       sig { returns(T.nilable(T::Hash[String, T.untyped])) }
       def poetry_details
-        @poetry_details ||= toml_content.dig("tool", "poetry")
+        @poetry_details ||= T.let(
+          toml_content.dig("tool", "poetry"),
+          T.nilable(T::Hash[String, T.untyped])
+        )
       end
 
       sig { returns(T.nilable(T::Hash[String, T.untyped])) }
       def standard_details
-        @standard_details ||= toml_content["project"]
+        @standard_details ||= T.let(
+          toml_content["project"],
+          T.nilable(T::Hash[String, T.untyped])
+        )
       end
 
       sig { returns(T.nilable(T::Hash[String, T.untyped])) }
       def build_system_details
-        @build_system_details ||= toml_content["build-system"]
+        @build_system_details ||= T.let(
+          toml_content["build-system"],
+          T.nilable(T::Hash[String, T.untyped])
+        )
       end
 
       sig { returns(T::Hash[String, T.untyped]) }
       def toml_content
-        @toml_content ||= TomlRB.parse(T.must(pyproject).content)
+        @toml_content ||= T.let(
+          TomlRB.parse(T.must(pyproject).content),
+          T.nilable(T::Hash[String, T.untyped])
+        )
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
@@ -459,6 +462,7 @@ module Dependabot
         dependency_files.select { |f| f.name.end_with?(".in") }
       end
     end
+    # rubocop:enable Metrics/ClassLength
   end
 end
 

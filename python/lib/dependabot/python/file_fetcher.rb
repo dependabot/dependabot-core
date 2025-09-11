@@ -24,35 +24,6 @@ module Dependabot
       CONSTRAINT_REGEX = /^-c\s?(?<path>.*\.(?:txt|in))/
       DEPENDENCY_TYPES = %w(packages dev-packages).freeze
 
-      # rubocop:disable Metrics/AbcSize
-      sig do
-        override.params(
-          source: Dependabot::Source,
-          credentials: T::Array[Dependabot::Credential],
-          repo_contents_path: T.nilable(String),
-          options: T::Hash[String, String],
-          update_config: T.nilable(Dependabot::Config::UpdateConfig)
-        ).void
-      end
-      def initialize(source:, credentials:, repo_contents_path: nil, options: {}, update_config: nil)
-        super
-        @setup_file = T.let(nil, T.nilable(Dependabot::DependencyFile))
-        @setup_cfg_file = T.let(nil, T.nilable(Dependabot::DependencyFile))
-        @pip_conf = T.let(nil, T.nilable(Dependabot::DependencyFile))
-        @python_version_file = T.let(nil, T.nilable(Dependabot::DependencyFile))
-        @pipfile = T.let(nil, T.nilable(Dependabot::DependencyFile))
-        @pipfile_lock = T.let(nil, T.nilable(Dependabot::DependencyFile))
-        @pyproject = T.let(nil, T.nilable(Dependabot::DependencyFile))
-        @poetry_lock = T.let(nil, T.nilable(Dependabot::DependencyFile))
-        @pdm_lock = T.let(nil, T.nilable(Dependabot::DependencyFile))
-        @req_txt_and_in_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
-        @child_requirement_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
-        @parsed_pipfile = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
-        @parsed_pyproject = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
-        @pip_compile_file_matcher = T.let(nil, T.nilable(Dependabot::Python::PipCompileFileMatcher))
-      end
-      # rubocop:enable Metrics/AbcSize
-
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
         return true if filenames.any? { |name| name.end_with?(".txt", ".in") }
@@ -150,74 +121,80 @@ module Dependabot
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def setup_file
-        return @setup_file if defined?(@setup_file)
-
-        @setup_file = fetch_file_if_present("setup.py")
+        @setup_file ||= T.let(
+          fetch_file_if_present("setup.py"),
+          T.nilable(Dependabot::DependencyFile)
+        )
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def setup_cfg_file
-        return @setup_cfg_file if defined?(@setup_cfg_file)
-
-        @setup_cfg_file = fetch_file_if_present("setup.cfg")
+        @setup_cfg_file ||= T.let(
+          fetch_file_if_present("setup.cfg"),
+          T.nilable(Dependabot::DependencyFile)
+        )
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def pip_conf
-        return @pip_conf if defined?(@pip_conf)
-
-        @pip_conf = fetch_support_file("pip.conf")
+        @pip_conf ||= T.let(
+          fetch_support_file("pip.conf"),
+          T.nilable(Dependabot::DependencyFile)
+        )
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def python_version_file
-        return @python_version_file if defined?(@python_version_file)
+        @python_version_file ||= T.let(begin
+          file = fetch_support_file(".python-version")
+          return file if file
+          return if [".", "/"].include?(directory)
 
-        @python_version_file = fetch_support_file(".python-version")
-
-        return @python_version_file if @python_version_file
-        return if [".", "/"].include?(directory)
-
-        # Check the top-level for a .python-version file, too
-        reverse_path = Pathname.new(directory[0]).relative_path_from(directory)
-        @python_version_file =
+          # Check the top-level for a .python-version file, too
+          reverse_path = Pathname.new(directory[0]).relative_path_from(directory)
           fetch_support_file(File.join(reverse_path, ".python-version"))
-          &.tap { |f| f.name = ".python-version" }
+            &.tap { |f| f.name = ".python-version" }
+        end, T.nilable(Dependabot::DependencyFile))
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def pipfile
-        return @pipfile if defined?(@pipfile)
-
-        @pipfile = fetch_file_if_present("Pipfile")
+        @pipfile ||= T.let(
+          fetch_file_if_present("Pipfile"),
+          T.nilable(Dependabot::DependencyFile)
+        )
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def pipfile_lock
-        return @pipfile_lock if defined?(@pipfile_lock)
-
-        @pipfile_lock = fetch_file_if_present("Pipfile.lock")
+        @pipfile_lock ||= T.let(
+          fetch_file_if_present("Pipfile.lock"),
+          T.nilable(Dependabot::DependencyFile)
+        )
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def pyproject
-        return @pyproject if defined?(@pyproject)
-
-        @pyproject = fetch_file_if_present("pyproject.toml")
+        @pyproject ||= T.let(
+          fetch_file_if_present("pyproject.toml"),
+          T.nilable(Dependabot::DependencyFile)
+        )
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def poetry_lock
-        return @poetry_lock if defined?(@poetry_lock)
-
-        @poetry_lock = fetch_file_if_present("poetry.lock")
+        @poetry_lock ||= T.let(
+          fetch_file_if_present("poetry.lock"),
+          T.nilable(Dependabot::DependencyFile)
+        )
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def pdm_lock
-        return @pdm_lock if defined?(@pdm_lock)
-
-        @pdm_lock = fetch_file_if_present("pdm.lock")
+        @pdm_lock ||= T.let(
+          fetch_file_if_present("pdm.lock"),
+          T.nilable(Dependabot::DependencyFile)
+        )
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
@@ -235,7 +212,10 @@ module Dependabot
       def parsed_pipfile
         raise "No Pipfile" unless pipfile
 
-        @parsed_pipfile ||= TomlRB.parse(T.must(pipfile).content)
+        @parsed_pipfile ||= T.let(
+          TomlRB.parse(T.must(pipfile).content),
+          T.nilable(T::Hash[String, T.untyped])
+        )
       rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
         raise Dependabot::DependencyFileNotParseable, T.must(pipfile).path
       end
@@ -244,30 +224,33 @@ module Dependabot
       def parsed_pyproject
         raise "No pyproject.toml" unless pyproject
 
-        @parsed_pyproject ||= TomlRB.parse(T.must(pyproject).content)
+        @parsed_pyproject ||= T.let(
+          TomlRB.parse(T.must(pyproject).content),
+          T.nilable(T::Hash[String, T.untyped])
+        )
       rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
         raise Dependabot::DependencyFileNotParseable, T.must(pyproject).path
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def req_txt_and_in_files
-        return @req_txt_and_in_files if @req_txt_and_in_files
+        @req_txt_and_in_files ||= T.let(begin
+          files = T.let([], T::Array[Dependabot::DependencyFile])
 
-        @req_txt_and_in_files = []
+          repo_contents
+            .select { |f| f.type == "file" }
+            .select { |f| f.name.end_with?(".txt", ".in") }
+            .reject { |f| f.size > 500_000 }
+            .map { |f| fetch_file_from_host(f.name) }
+            .select { |f| requirements_file?(f) }
+            .each { |f| files << f }
 
-        repo_contents
-          .select { |f| f.type == "file" }
-          .select { |f| f.name.end_with?(".txt", ".in") }
-          .reject { |f| f.size > 500_000 }
-          .map { |f| fetch_file_from_host(f.name) }
-          .select { |f| requirements_file?(f) }
-          .each { |f| @req_txt_and_in_files << f }
+          repo_contents
+            .select { |f| f.type == "dir" }
+            .each { |f| files.concat(req_files_for_dir(f)) }
 
-        repo_contents
-          .select { |f| f.type == "dir" }
-          .each { |f| @req_txt_and_in_files += req_files_for_dir(f) }
-
-        @req_txt_and_in_files
+          files
+        end, T.nilable(T::Array[Dependabot::DependencyFile]))
       end
 
       sig { params(requirements_dir: T.untyped).returns(T::Array[Dependabot::DependencyFile]) }
@@ -296,19 +279,18 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def child_requirement_files
-        @child_requirement_files ||=
-          begin
-            fetched_files = req_txt_and_in_files.dup
-            req_txt_and_in_files.flat_map do |requirement_file|
-              child_files = fetch_child_requirement_files(
-                file: requirement_file,
-                previously_fetched_files: fetched_files
-              )
+        @child_requirement_files ||= T.let(begin
+          fetched_files = req_txt_and_in_files.dup
+          req_txt_and_in_files.flat_map do |requirement_file|
+            child_files = fetch_child_requirement_files(
+              file: requirement_file,
+              previously_fetched_files: fetched_files
+            )
 
-              fetched_files += child_files
-              child_files
-            end
+            fetched_files += child_files
+            child_files
           end
+        end, T.nilable(T::Array[Dependabot::DependencyFile]))
       end
 
       sig do
@@ -534,7 +516,10 @@ module Dependabot
 
       sig { returns(Dependabot::Python::PipCompileFileMatcher) }
       def pip_compile_file_matcher
-        @pip_compile_file_matcher ||= PipCompileFileMatcher.new(requirements_in_files)
+        @pip_compile_file_matcher ||= T.let(
+          PipCompileFileMatcher.new(requirements_in_files),
+          T.nilable(Dependabot::Python::PipCompileFileMatcher)
+        )
       end
     end
     # rubocop:enable Metrics/ClassLength
