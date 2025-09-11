@@ -713,8 +713,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
     end
   end
 
-
-
   describe "#latest_resolvable_version" do
     subject(:latest_resolvable_version) { checker.latest_resolvable_version }
 
