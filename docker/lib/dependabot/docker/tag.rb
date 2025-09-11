@@ -11,14 +11,14 @@ module Dependabot
 
       WORDS_WITH_BUILD = /(?:(?:-[a-z]+)+-[0-9]+)+/
       VERSION_REGEX = /v?(?<version>[0-9]+(?:[_.][0-9]+)*(?:\.[a-z0-9]+|#{WORDS_WITH_BUILD}|-(?:kb)?[0-9]+)*)/i
-      # MinIO-style RELEASE.YYYY-MM-DDTHH-MM-SSZ format
-      RELEASE_TIMESTAMP_REGEX = /^(?<prefix>RELEASE\.)(?<version>[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}Z)$/ # rubocop:disable Layout/LineLength
+      # Generic ISO 8601-like timestamp format supporting various prefixes and formats
+      ISO_TIMESTAMP_REGEX = /^(?<prefix>(?:[a-z]+\.|[a-z]+_|v)?)?(?<version>[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}[-:][0-9]{2}[-:][0-9]{2}(?:\.[0-9]{1,3})?(?:Z|[+-][0-9]{2}:?[0-9]{2})?)(?<suffix>.+)?$/i # rubocop:disable Layout/LineLength
       VERSION_WITH_SFX = /^(?<operator>[~^<>=]*)#{VERSION_REGEX}(?<suffix>-[a-z][a-z0-9.\-]*)?$/i
       VERSION_WITH_PFX = /^(?<prefix>[a-z][a-z0-9.\-_]*-)?#{VERSION_REGEX}$/i
       VERSION_WITH_PFX_AND_SFX = /^(?<prefix>[a-z\-_]+-)?#{VERSION_REGEX}(?<suffix>-[a-z\-]+)?$/i
       NAME_WITH_VERSION =
         /
-          #{RELEASE_TIMESTAMP_REGEX}|
+          #{ISO_TIMESTAMP_REGEX}|
           #{VERSION_WITH_PFX}|
           #{VERSION_WITH_SFX}|
           #{VERSION_WITH_PFX_AND_SFX}
@@ -51,10 +51,14 @@ module Dependabot
                other_suffix: T.nilable(String)).returns(T::Boolean)
       end
       def comparable_formats(other_format, other_prefix, other_suffix)
-        return false unless prefix.nil? && suffix.nil? && other_prefix.nil? && other_suffix.nil?
+        # Allow comparison between different year/month formats
+        if prefix.nil? && suffix.nil? && other_prefix.nil? && other_suffix.nil?
+          formats = %i(year_month year_month_day)
+          return (format == :build_num && formats.include?(other_format)) || (formats.include?(format) && other_format == :build_num) # rubocop:disable Layout/LineLength
+        end
 
-        formats = %i(year_month year_month_day)
-        (format == :build_num && formats.include?(other_format)) || (formats.include?(format) && other_format == :build_num) # rubocop:disable Layout/LineLength
+        # Allow comparison between ISO timestamp tags regardless of prefix
+        format == :iso_timestamp && other_format == :iso_timestamp
       end
 
       sig { params(other: Tag).returns(T::Boolean) }
@@ -96,8 +100,8 @@ module Dependabot
         return false unless numeric_version
         return true if name == numeric_version
 
-        # MinIO RELEASE tags are considered canonical when they match the expected format
-        return true if name.match?(RELEASE_TIMESTAMP_REGEX)
+        # ISO timestamp tags are considered canonical when they match the expected format
+        return true if name.match?(ISO_TIMESTAMP_REGEX)
 
         # .NET tags are suffixed with -sdk
         return true if numeric_version && name == numeric_version.to_s + "-sdk"
@@ -107,12 +111,14 @@ module Dependabot
 
       sig { returns T.nilable(String) }
       def prefix
-        name.match(NAME_WITH_VERSION)&.named_captures&.fetch("prefix")
+        result = name.match(NAME_WITH_VERSION)&.named_captures&.fetch("prefix")
+        result&.empty? ? nil : result
       end
 
       sig { returns T.nilable(String) }
       def suffix
-        name.match(NAME_WITH_VERSION)&.named_captures&.fetch("suffix")
+        result = name.match(NAME_WITH_VERSION)&.named_captures&.fetch("suffix")
+        result&.empty? ? nil : result
       end
 
       sig { returns T.nilable(String) }
@@ -123,7 +129,7 @@ module Dependabot
       sig { returns(Symbol) }
       def format
         return :sha_suffixed if name.match?(/(^|\-g?)[0-9a-f]{7,}$/)
-        return :release_timestamp if name.match?(RELEASE_TIMESTAMP_REGEX)
+        return :iso_timestamp if name.match?(ISO_TIMESTAMP_REGEX)
         return :year_month if version&.match?(/^[12]\d{3}(?:[.\-]|$)/)
         return :year_month_day if version&.match?(/^[12](?:\d{5}|\d{7})(?:[.\-]|$)/)
         return :build_num if version&.match?(/^\d+$/)
@@ -135,8 +141,11 @@ module Dependabot
       def numeric_version
         return unless comparable?
 
-        # For RELEASE timestamps, preserve the original case
-        return version if name.match?(RELEASE_TIMESTAMP_REGEX)
+        # For ISO timestamp formats, preserve the original case and normalize separators
+        if name.match?(ISO_TIMESTAMP_REGEX)
+          # Normalize time separators to hyphens for consistent comparison
+          return version&.gsub(/T(\d{2}):(\d{2}):(\d{2})/, 'T\1-\2-\3')
+        end
 
         version&.gsub(/kb/i, "")&.gsub(/-[a-z]+/, "")&.downcase
       end
