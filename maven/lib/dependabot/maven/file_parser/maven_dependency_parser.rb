@@ -93,8 +93,7 @@ module Dependabot
                   classifier: classifier,
                   pom_file: pom.name
                 }
-              }],
-              origin_files: [pom.name]
+              }]
             )
 
             node["children"]&.each(&traverse_tree)

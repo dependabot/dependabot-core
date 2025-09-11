@@ -31,18 +31,16 @@ module Dependabot
         dependency_files: T::Array[Dependabot::DependencyFile],
         updated_dependencies: T::Array[Dependabot::Dependency],
         change_source: T.any(Dependabot::Dependency, Dependabot::DependencyGroup),
-        notices: T::Array[Dependabot::Notice],
-        exclude_paths: T.nilable(T::Array[String])
+        notices: T::Array[Dependabot::Notice]
       ).returns(Dependabot::DependencyChange)
     end
-    def self.create_from(job:, dependency_files:, updated_dependencies:, change_source:, notices: [], exclude_paths: [])
+    def self.create_from(job:, dependency_files:, updated_dependencies:, change_source:, notices: [])
       new(
         job: job,
         dependency_files: dependency_files,
         updated_dependencies: updated_dependencies,
         change_source: change_source,
-        notices: notices,
-        exclude_paths: exclude_paths
+        notices: notices
       ).run
     end
 
@@ -52,11 +50,10 @@ module Dependabot
         dependency_files: T::Array[Dependabot::DependencyFile],
         updated_dependencies: T::Array[Dependabot::Dependency],
         change_source: T.any(Dependabot::Dependency, Dependabot::DependencyGroup),
-        notices: T::Array[Dependabot::Notice],
-        exclude_paths: T.nilable(T::Array[String])
+        notices: T::Array[Dependabot::Notice]
       ).void
     end
-    def initialize(job:, dependency_files:, updated_dependencies:, change_source:, notices: [], exclude_paths: [])
+    def initialize(job:, dependency_files:, updated_dependencies:, change_source:, notices: [])
       @job = job
 
       dir = Pathname.new(job.source.directory).cleanpath
@@ -68,7 +65,6 @@ module Dependabot
       @updated_dependencies = updated_dependencies
       @change_source = change_source
       @notices = notices
-      @exclude_paths = exclude_paths
     end
 
     sig { returns(Dependabot::DependencyChange) }
@@ -128,7 +124,6 @@ module Dependabot
       T.cast(change_source, Dependabot::DependencyGroup)
     end
 
-    # rubocop:disable Metrics/PerceivedComplexity
     sig { returns(T::Array[Dependabot::DependencyFile]) }
     def generate_dependency_files
       if updated_dependencies.one?
@@ -147,21 +142,8 @@ module Dependabot
       relevant_dependencies = updated_dependencies.reject(&:informational_only?)
       # Exclude support files since they are not manifests, just needed for supporting the update
       update_files = file_updater_for(relevant_dependencies).updated_dependency_files.reject(&:support_file)
-      if Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files) && !update_files.empty?
-        update_file_names = update_files.map(&:name)
-        update_files.reject! do |f|
-          Dependabot::FileFiltering.exclude_path?(f.name, @exclude_paths)
-        end
-        if update_files.empty?
-          msg = "No update files found due to exclude-paths. Excluded files: #{update_file_names.join(', ')}"
-          Dependabot.logger.info(msg)
-          raise msg
-        end
-      end
       update_files
     end
-    # rubocop:enable Metrics/PerceivedComplexity
-
     sig { params(dependencies: T::Array[Dependabot::Dependency]).returns(Dependabot::FileUpdaters::Base) }
     def file_updater_for(dependencies)
       Dependabot::FileUpdaters.for_package_manager(job.package_manager).new(

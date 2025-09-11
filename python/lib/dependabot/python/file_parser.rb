@@ -282,8 +282,7 @@ module Dependabot
               name: normalised_name(name, dep["extras"]),
               version: version&.include?("*") ? nil : version,
               requirements: requirements,
-              package_manager: "pip",
-              origin_files: [Pathname.new(file).cleanpath.to_path]
+              package_manager: "pip"
             )
         end
         dependencies
