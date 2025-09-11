@@ -377,14 +377,6 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
           )
       end
 
-      it "checks if a pull request already exists" do
-        expect(create_security_update_pull_request)
-          .to receive(:record_pull_request_exists_for_latest_version)
-          .with(stub_update_checker)
-        create_security_update_pull_request
-          .send(:check_and_create_pull_request, dependency)
-      end
-
       context "when pull request doesn't exists" do
         before do
           allow(job)

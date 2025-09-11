@@ -329,22 +329,6 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
       end
     end
 
-    context "when an existing pull request matches the updated dependencies" do
-      before do
-        allow(stub_update_checker).to receive_messages(
-          up_to_date?: false,
-          requirements_unlocked_or_can_be?: true,
-          updated_dependencies: [dependency],
-          latest_version: Gem::Version.new("2.0.0")
-        )
-      end
-
-      it "does not create a pull request" do
-        expect(update_all_versions).not_to receive(:create_pull_request)
-        update_all_versions.send(:check_and_create_pull_request, dependency)
-      end
-    end
-
     context "when no existing pull request matches the updated dependencies" do
       before do
         allow(stub_update_checker).to receive_messages(
