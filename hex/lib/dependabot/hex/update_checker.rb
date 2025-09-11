@@ -13,6 +13,7 @@ module Dependabot
   module Hex
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       extend T::Sig
+
       require_relative "update_checker/file_preparer"
       require_relative "update_checker/requirements_updater"
       require_relative "update_checker/version_resolver"

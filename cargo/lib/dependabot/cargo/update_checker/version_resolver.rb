@@ -14,6 +14,7 @@ module Dependabot
     class UpdateChecker
       class VersionResolver # rubocop:disable Metrics/ClassLength
         extend T::Sig
+
         UNABLE_TO_UPDATE = /Unable to update (?<url>.*?)$/
         BRANCH_NOT_FOUND_REGEX = /#{UNABLE_TO_UPDATE}.*to find branch `(?<branch>[^`]+)`/m
         REVSPEC_PATTERN = /revspec '.*' not found/
@@ -133,7 +134,7 @@ module Dependabot
                   dependency.version
                 end
 
-          if spec_options.count { |s| s.end_with?(T.must(ver)) } == 1
+          if spec_options.one? { |s| s.end_with?(T.must(ver)) }
             @custom_specification = spec_options.find { |s| s.end_with?(T.must(ver)) }
             return true
           elsif spec_options.count { |s| s.end_with?(T.must(ver)) } > 1

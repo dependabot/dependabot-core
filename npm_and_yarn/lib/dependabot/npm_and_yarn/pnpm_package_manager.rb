@@ -7,6 +7,7 @@ module Dependabot
   module NpmAndYarn
     class PNPMPackageManager < Ecosystem::VersionManager
       extend T::Sig
+
       NAME = "pnpm"
       LOCKFILE_NAME = "pnpm-lock.yaml"
       PNPM_WS_YML_FILENAME = "pnpm-workspace.yaml"

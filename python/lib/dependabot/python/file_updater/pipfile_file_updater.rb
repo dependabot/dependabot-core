@@ -17,6 +17,7 @@ module Dependabot
     class FileUpdater
       class PipfileFileUpdater
         extend T::Sig
+
         require_relative "pipfile_preparer"
         require_relative "pipfile_manifest_updater"
         require_relative "setup_file_sanitizer"

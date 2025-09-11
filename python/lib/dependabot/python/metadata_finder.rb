@@ -14,6 +14,7 @@ module Dependabot
   module Python
     class MetadataFinder < Dependabot::MetadataFinders::Base
       extend T::Sig
+
       MAIN_PYPI_URL = "https://pypi.org/pypi"
 
       sig do

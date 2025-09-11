@@ -104,8 +104,7 @@ module Dependabot
 
           repositories =
             JSON.parse(T.must(composer_file.content))
-                .fetch("repositories", [])
-                .select { |r| r.is_a?(Hash) }
+                .fetch("repositories", []).grep(Hash)
 
           urls = repositories
                  .select { |h| h["type"] == PackageManager::NAME }
