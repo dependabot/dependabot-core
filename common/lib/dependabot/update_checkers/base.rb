@@ -362,9 +362,7 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def requirements_up_to_date?
-        if can_compare_requirements?
-          return (T.must(version_from_requirements) >= version_class.new(latest_version.to_s))
-        end
+        return T.must(version_from_requirements) >= version_class.new(latest_version.to_s) if can_compare_requirements?
 
         changed_requirements.none?
       end

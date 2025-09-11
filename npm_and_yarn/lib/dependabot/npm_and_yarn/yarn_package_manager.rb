@@ -7,6 +7,7 @@ module Dependabot
   module NpmAndYarn
     class YarnPackageManager < Ecosystem::VersionManager
       extend T::Sig
+
       NAME = "yarn"
       RC_FILENAME = ".yarnrc"
       RC_YML_FILENAME = ".yarnrc.yml"

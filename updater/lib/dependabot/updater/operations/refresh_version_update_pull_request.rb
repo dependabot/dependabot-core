@@ -49,7 +49,7 @@ module Dependabot
           # A list of notices that will be used in PR messages and/or sent to the dependabot github alerts.
           @notices = T.let([], T::Array[Dependabot::Notice])
 
-          return unless job.source.directory.nil? && job.source.directories&.count == 1
+          return unless job.source.directory.nil? && job.source.directories&.one?
 
           job.source.directory = job.source.directories&.first
         end
@@ -100,7 +100,7 @@ module Dependabot
         def check_and_update_pull_request(dependencies)
           job_dependencies = T.must(job.dependencies)
 
-          if job_dependencies.count.zero? || dependencies.count != job_dependencies.count
+          if job_dependencies.none? || dependencies.count != job_dependencies.count
             # If the job dependencies mismatch the parsed dependencies, then
             # we should close the PR as at least one thing we changed has been
             # removed from the project.

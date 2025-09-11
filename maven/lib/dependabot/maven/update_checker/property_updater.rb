@@ -12,6 +12,7 @@ module Dependabot
     class UpdateChecker
       class PropertyUpdater
         extend T::Sig
+
         require_relative "requirements_updater"
         require_relative "version_finder"
 

@@ -20,6 +20,7 @@ module Dependabot
     # rubocop:disable Metrics/ClassLength
     class FileParser < Dependabot::FileParsers::Base
       extend T::Sig
+
       require "dependabot/file_parsers/base/dependency_set"
       require_relative "file_parser/maven_dependency_parser"
       require_relative "file_parser/property_value_finder"

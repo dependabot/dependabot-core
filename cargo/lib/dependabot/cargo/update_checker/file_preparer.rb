@@ -121,7 +121,7 @@ module Dependabot
             dependency_names_for_type(parsed_manifest, type).each do |name|
               req = parsed_manifest.dig(type, name)
               next unless req.is_a?(Hash)
-              next unless [req["tag"], req["rev"]].compact.uniq.count == 1
+              next unless [req["tag"], req["rev"]].compact.uniq.one?
 
               parsed_manifest[type][name]["tag"] = replacement_git_pin if req["tag"]
 
@@ -146,7 +146,7 @@ module Dependabot
               dependency_names.each do |name|
                 req = parsed_manifest.dig("target", target, type, name)
                 next unless req.is_a?(Hash)
-                next unless [req["tag"], req["rev"]].compact.uniq.count == 1
+                next unless [req["tag"], req["rev"]].compact.uniq.one?
 
                 if req["tag"]
                   parsed_manifest["target"][target][type][name]["tag"] =

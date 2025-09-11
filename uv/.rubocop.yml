@@ -7,10 +7,8 @@ inherit_mode:
 Sorbet/StrictSigil:
   Exclude:
     - lib/dependabot/uv/authed_url_builder.rb
-    - lib/dependabot/uv/file_fetcher.rb
     - lib/dependabot/uv/file_parser/python_requirement_parser.rb
     - lib/dependabot/uv/file_updater/compile_file_updater.rb
-    - lib/dependabot/uv/file_updater/lock_file_updater.rb
     - lib/dependabot/uv/file_updater/requirement_replacer.rb
     - lib/dependabot/uv/metadata_finder.rb
     - lib/dependabot/uv/package/package_registry_finder.rb
