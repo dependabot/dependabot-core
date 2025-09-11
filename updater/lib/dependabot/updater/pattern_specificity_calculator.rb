@@ -20,7 +20,6 @@ module Dependabot
     class PatternSpecificityCalculator
       extend T::Sig
 
-      # Specificity score constants
       EXPLICIT_MEMBER_SCORE = 1000
       EXACT_MATCH_SCORE = 1000
       NO_WILDCARDS_SCORE = 500
@@ -67,17 +66,14 @@ module Dependabot
       # Higher scores indicate more specific patterns
       sig { params(group: Dependabot::DependencyGroup, dep: Dependabot::Dependency).returns(Integer) }
       def calculate_group_specificity_for_dependency(group, dep)
-        # If dependency is explicitly added to the group, highest specificity
         return EXPLICIT_MEMBER_SCORE if group.dependencies.include?(dep)
 
-        # Check patterns if they exist
         patterns = T.unsafe(group.rules["patterns"])
-        return NO_PATTERNS_SCORE unless patterns # No patterns means it matches everything with medium specificity
+        return NO_PATTERNS_SCORE unless patterns
 
         matching_patterns = patterns.select { |pattern| WildcardMatcher.match?(pattern, dep.name) }
-        return 0 if matching_patterns.empty? # Shouldn't happen if we got here, but safety
+        return 0 if matching_patterns.empty?
 
-        # Find the most specific matching pattern
         matching_patterns.map do |pattern|
           calculate_pattern_specificity(pattern, dep.name)
         end.max || 0
@@ -87,20 +83,15 @@ module Dependabot
       # Higher scores indicate more specific patterns
       sig { params(pattern: String, dep_name: String).returns(Integer) }
       def calculate_pattern_specificity(pattern, dep_name)
-        # Exact match gets highest score
         return EXACT_MATCH_SCORE if pattern == dep_name
 
-        # Universal wildcard gets lowest score
         return UNIVERSAL_WILDCARD_SCORE if pattern == "*"
 
-        # Count wildcards and calculate specificity
         wildcard_count = pattern.count("*")
         return NO_WILDCARDS_SCORE if wildcard_count.zero? # No wildcards, exact pattern
 
-        # Patterns with wildcards: base score minus penalty for each wildcard
         specificity = WILDCARD_BASE_SCORE - (wildcard_count * WILDCARD_PENALTY)
 
-        # Additional bonus for longer patterns (more specific context)
         length_bonus = [pattern.length - LENGTH_BONUS_THRESHOLD, 0].max
 
         [specificity + length_bonus, MINIMUM_SCORE].max # Minimum score of 1
