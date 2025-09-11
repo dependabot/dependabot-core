@@ -300,6 +300,9 @@ module Dependabot
         return [] unless parsed_package_json["workspaces"]
 
         workspace_paths(parsed_package_json["workspaces"]).filter_map do |workspace|
+          # Skip excluded workspace directories
+          next if Dependabot::FileFiltering.should_exclude_path?(workspace, "workspace directory", @exclude_paths)
+
           fetch_package_json_if_present(workspace)
         end
       end
