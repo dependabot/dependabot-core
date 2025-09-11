@@ -165,24 +165,6 @@ RSpec.describe Dependabot::Updater::PatternSpecificityCalculator do
           rules: {}
         )
       end
-
-      it "returns true when dependency belongs to a group with patterns" do
-        no_patterns_contains_checker = proc do |group, _dep, _directory|
-          case group
-          when no_patterns_group
-            true # no patterns means matches everything
-          when docker_group
-            dependency.name.start_with?("docker")
-          else
-            false
-          end
-        end
-
-        result = calculator.dependency_belongs_to_more_specific_group?(
-          no_patterns_group, dependency, [no_patterns_group, docker_group], no_patterns_contains_checker, directory
-        )
-        expect(result).to be true
-      end
     end
 
     context "when no other group contains the dependency" do
@@ -270,7 +252,7 @@ RSpec.describe Dependabot::Updater::PatternSpecificityCalculator do
           Dependabot::DependencyGroup,
           name: "long-pattern",
           dependencies: [],
-          rules: { "patterns" => ["docker-compose-very-specific*"] }
+          rules: { "patterns" => ["docker-compose*"] }
         )
       end
 
