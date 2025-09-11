@@ -55,7 +55,7 @@ RSpec.describe Dependabot::Updater::PatternSpecificityCalculator do
       proc do |group, dep, _directory|
         case group
         when generic_group
-          true # matches everything
+          true
         when docker_group
           dep.name.start_with?("docker")
         when exact_group
@@ -206,19 +206,16 @@ RSpec.describe Dependabot::Updater::PatternSpecificityCalculator do
       end
 
       it "correctly identifies the most specific group in complex hierarchy" do
-        # Multi-wildcard group should defer to prefix group
         result = calculator.dependency_belongs_to_more_specific_group?(
           multi_wildcard_group, dependency, complex_groups, complex_contains_checker, directory
         )
         expect(result).to be true
 
-        # Prefix group should defer to exact group
         result = calculator.dependency_belongs_to_more_specific_group?(
           prefix_group, dependency, complex_groups, complex_contains_checker, directory
         )
         expect(result).to be true
 
-        # Exact group should not defer to any other group
         result = calculator.dependency_belongs_to_more_specific_group?(
           exact_group, dependency, complex_groups, complex_contains_checker, directory
         )
