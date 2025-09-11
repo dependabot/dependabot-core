@@ -11,8 +11,19 @@ module Dependabot
 
       WORDS_WITH_BUILD = /(?:(?:-[a-z]+)+-[0-9]+)+/
       VERSION_REGEX = /v?(?<version>[0-9]+(?:[_.][0-9]+)*(?:\.[a-z0-9]+|#{WORDS_WITH_BUILD}|-(?:kb)?[0-9]+)*)/i
-      # Generic ISO 8601-like timestamp format supporting various prefixes and formats
-      ISO_TIMESTAMP_REGEX = /^(?<prefix>(?:[a-z]+\.|[a-z]+_|v)?)?(?<version>[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}[-:][0-9]{2}[-:][0-9]{2}(?:\.[0-9]{1,3})?(?:Z|[+-][0-9]{2}:?[0-9]{2})?)(?<suffix>.+)?$/i # rubocop:disable Layout/LineLength
+      # Generic ISO 8601-like date/timestamp format supporting various prefixes and formats
+      # Breaks down into readable components:
+      # - Prefix: optional prefix like "RELEASE.", "v", "build.", "build_"
+      # - Date: YYYY-MM-DD (required)
+      # - Time: T + HH:MM:SS or HH-MM-SS (optional, but if T is present, full time must be valid)
+      # - Milliseconds: .sss (optional, only if time is present)
+      # - Timezone: Z or +/-HH:MM or +/-HHMM (optional, only if time is present)
+      # - Suffix: any additional content after the date/timestamp (optional)
+      ISO_DATE_PART = /[0-9]{4}-[0-9]{2}-[0-9]{2}/ # YYYY-MM-DD
+      ISO_TIME_PART = /T[0-9]{2}[-:][0-9]{2}[-:][0-9]{2}/ # THH:MM:SS or THH-MM-SS
+      ISO_MILLIS_PART = /\.[0-9]{1,3}/ # .sss
+      ISO_TIMEZONE_PART = /Z|[+-][0-9]{2}:?[0-9]{2}/ # Z or +/-HH:MM or +/-HHMM
+      ISO_TIMESTAMP_REGEX = /^(?<prefix>(?:[a-z]+\.|[a-z]+_|v)?)?(?<version>#{ISO_DATE_PART}(?:#{ISO_TIME_PART}(?:#{ISO_MILLIS_PART})?(?:#{ISO_TIMEZONE_PART})?)?(?![T]))(?<suffix>.+)?$/i # rubocop:disable Layout/LineLength
       VERSION_WITH_SFX = /^(?<operator>[~^<>=]*)#{VERSION_REGEX}(?<suffix>-[a-z][a-z0-9.\-]*)?$/i
       VERSION_WITH_PFX = /^(?<prefix>[a-z][a-z0-9.\-_]*-)?#{VERSION_REGEX}$/i
       VERSION_WITH_PFX_AND_SFX = /^(?<prefix>[a-z\-_]+-)?#{VERSION_REGEX}(?<suffix>-[a-z\-]+)?$/i
@@ -143,7 +154,7 @@ module Dependabot
 
         # For ISO timestamp formats, preserve the original case and normalize separators
         if name.match?(ISO_TIMESTAMP_REGEX)
-          # Normalize time separators to hyphens for consistent comparison
+          # Normalize time separators to hyphens for consistent comparison (only if time is present)
           return version&.gsub(/T(\d{2}):(\d{2}):(\d{2})/, 'T\1-\2-\3')
         end
 
