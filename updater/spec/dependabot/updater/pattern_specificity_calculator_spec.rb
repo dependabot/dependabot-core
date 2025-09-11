@@ -156,17 +156,6 @@ RSpec.describe Dependabot::Updater::PatternSpecificityCalculator do
       end
     end
 
-    context "when current group has no patterns" do
-      let(:no_patterns_group) do
-        instance_double(
-          Dependabot::DependencyGroup,
-          name: "no-patterns",
-          dependencies: [],
-          rules: {}
-        )
-      end
-    end
-
     context "when no other group contains the dependency" do
       it "returns false" do
         non_matching_contains_checker = proc { |_group, _dep, _directory| false }
