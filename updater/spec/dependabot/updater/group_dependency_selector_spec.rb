@@ -27,7 +27,8 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
   let(:dependency_snapshot) do
     instance_double(
       Dependabot::DependencySnapshot,
-      ecosystem: "bundler"
+      ecosystem: "bundler",
+      groups: []
     )
   end
 
@@ -41,7 +42,6 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
   end
 
   before do
-    # Mock the logger
     allow(Dependabot).to receive(:logger).and_return(
       instance_double(Logger, info: nil, warn: nil, error: nil, debug: nil)
     )
@@ -49,7 +49,6 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
 
   describe "#initialize" do
     it "stores group and dependency snapshot" do
-      # Test behavior rather than internal state
       expect(selector).to respond_to(:merge_per_directory!)
       expect(selector).to respond_to(:filter_to_group!)
       expect(selector).to respond_to(:annotate_dependency_drift!)
@@ -87,7 +86,6 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
 
     context "with multiple changes" do
       before do
-        # Mock DependencyChange.new to return a mock object
         allow(Dependabot::DependencyChange).to receive(:new) do |args|
           instance_double(
             Dependabot::DependencyChange,
@@ -101,7 +99,7 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
       it "merges dependencies with directory-aware deduplication" do
         result = selector.merge_per_directory!([change1, change2])
 
-        expect(result.updated_dependencies.length).to eq(4) # rails from both dirs, pg, redis
+        expect(result.updated_dependencies.length).to eq(4)
         dependency_names = result.updated_dependencies.map(&:name)
         expect(dependency_names).to contain_exactly("rails", "pg", "redis", "rails")
       end
@@ -128,7 +126,7 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
   describe "#filter_to_group!" do
     let(:rails_dep) { create_dependency("rails", "7.0.0") }
     let(:unauthorized_dep) { create_dependency("puma", "5.6.0") }
-    let(:redis_dep) { create_dependency("redis-client", "0.11.0") } # matches redis* pattern
+    let(:redis_dep) { create_dependency("redis-client", "0.11.0") }
 
     let(:dependency_change) do
       create_dependency_change(
@@ -156,16 +154,13 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
         allow(Dependabot::Experiments).to receive(:enabled?)
           .with(:group_membership_enforcement).and_return(true)
 
-        # Mock group membership checking - the actual method is contains? not contains_dependency?
         allow(dependency_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
         allow(dependency_group).to receive(:contains?) do |dep|
           %w(rails redis-client).include?(dep.name)
         end
 
-        # Mock job configuration checking
         allow(job).to receive_messages(ignore_conditions_for: [], allowed_update?: true)
 
-        # Mock the dependency change to have mutable updated_dependencies array
         allow(dependency_change.updated_dependencies).to receive(:clear)
         allow(dependency_change.updated_dependencies).to receive(:concat)
       end
@@ -174,7 +169,6 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
         original_deps = dependency_change.updated_dependencies.dup
         selector.filter_to_group!(dependency_change)
 
-        # Check that the selector attempted to filter dependencies
         expected_deps = %w(rails redis-client)
         included_deps = original_deps.select { |dep| expected_deps.include?(dep.name) }
         expect(included_deps.length).to eq(2)
@@ -207,25 +201,20 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
         allow(Dependabot::Experiments).to receive(:enabled?)
           .with(:group_membership_enforcement).and_return(true)
 
-        # Simulate group without contains_dependency? method
         allow(dependency_group).to receive(:respond_to?)
           .with(:contains_dependency?).and_return(false)
-        # Mock the fallback contains? method
+
         allow(dependency_group).to receive(:contains?) do |dep|
           %w(rails redis-client).include?(dep.name)
         end
 
-        # Mock job configuration checking
         allow(job).to receive_messages(ignore_conditions_for: [], allowed_update?: true)
 
-        # Mock the dependency change array methods
         allow(dependency_change.updated_dependencies).to receive(:clear)
         allow(dependency_change.updated_dependencies).to receive(:concat)
       end
 
       it "uses pattern matching fallback" do
-        # The fallback now uses @group.contains?(dep) which is the correct approach
-        # since DependencyGroup already handles pattern matching internally
         expect(dependency_group).to receive(:contains?).at_least(:once).and_return(true)
 
         selector.filter_to_group!(dependency_change)
@@ -261,13 +250,11 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
       end
 
       it "processes files for dependency drift" do
-        # Mock dependency drift detection
         allow(selector).to receive(:detect_file_dependency_drift)
           .and_return(%w(transitive-dep-1 transitive-dep-2))
 
         selector.annotate_dependency_drift!(dependency_change)
 
-        # Test that dependency drift detection was called
         expect(selector).to have_received(:detect_file_dependency_drift)
       end
 
@@ -287,77 +274,226 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
     end
   end
 
-  describe "private methods" do
-    describe "#group_contains_dependency?" do
-      let(:rails_dep) { create_dependency("rails", "7.0.0") }
-      let(:redis_dep) { create_dependency("redis-client", "0.11.0") }
-      let(:unauthorized_dep) { create_dependency("puma", "5.6.0") }
+  describe "pattern specificity functionality" do
+    let(:docker_dep) { create_dependency("docker-compose", "2.0.0") }
+    let(:nginx_dep) { create_dependency("nginx", "1.21.0") }
+    let(:redis_dep) { create_dependency("redis-client", "0.11.0") }
 
-      context "when group uses pattern matching fallback" do
+    let(:generic_group) do
+      instance_double(
+        Dependabot::DependencyGroup,
+        name: "all-dependencies",
+        dependencies: [],
+        rules: { "patterns" => ["*"] }
+      )
+    end
+
+    let(:docker_group) do
+      instance_double(
+        Dependabot::DependencyGroup,
+        name: "docker-dependencies",
+        dependencies: [],
+        rules: { "patterns" => ["docker*"] }
+      )
+    end
+
+    let(:exact_group) do
+      instance_double(
+        Dependabot::DependencyGroup,
+        name: "exact-nginx",
+        dependencies: [],
+        rules: { "patterns" => ["nginx"] }
+      )
+    end
+
+    let(:snapshot_with_multiple_groups) do
+      instance_double(
+        Dependabot::DependencySnapshot,
+        ecosystem: "bundler",
+        groups: [generic_group, docker_group, exact_group]
+      )
+    end
+
+    describe "#dependency_belongs_to_more_specific_group?" do
+      let(:generic_selector) do
+        described_class.new(group: generic_group, dependency_snapshot: snapshot_with_multiple_groups)
+      end
+
+      before do
+        allow(generic_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
+        allow(docker_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
+        allow(exact_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
+
+        allow(generic_group).to receive_messages(contains?: true, dependencies: [])
+        allow(docker_group).to receive(:contains?) { |dep| dep.name.start_with?("docker") }
+        allow(exact_group).to receive(:contains?) { |dep| dep.name == "nginx" }
+      end
+
+      it "returns true when dependency belongs to more specific docker group" do
+        result = generic_selector.send(:dependency_belongs_to_more_specific_group?, docker_dep, "/api")
+        expect(result).to be true
+      end
+
+      it "returns true when dependency belongs to exact match group" do
+        result = generic_selector.send(:dependency_belongs_to_more_specific_group?, nginx_dep, "/api")
+        expect(result).to be true
+      end
+
+      it "returns false when no more specific group exists" do
+        docker_selector = described_class.new(group: docker_group, dependency_snapshot: snapshot_with_multiple_groups)
+        result = docker_selector.send(:dependency_belongs_to_more_specific_group?, docker_dep, "/api")
+        expect(result).to be false
+      end
+    end
+
+    describe "#partition_dependencies with specificity filtering" do
+      let(:dependency_change) do
+        create_dependency_change(
+          job: job,
+          dependencies: [docker_dep, nginx_dep, redis_dep],
+          files: [create_dependency_file("Gemfile.lock", "/api")]
+        )
+      end
+
+      context "when processing generic group that matches everything" do
+        let(:generic_selector) do
+          described_class.new(group: generic_group, dependency_snapshot: snapshot_with_multiple_groups)
+        end
+
         before do
-          allow(dependency_group).to receive(:respond_to?)
-            .with(:contains_dependency?).and_return(false)
-          # Mock the fallback contains? method
-          allow(dependency_group).to receive(:contains?) do |dep|
-            %w(rails redis-client).include?(dep.name)
+          allow(Dependabot::Experiments).to receive(:enabled?)
+            .with(:group_membership_enforcement).and_return(true)
+
+          allow(generic_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
+          allow(docker_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
+          allow(exact_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
+
+          allow(generic_group).to receive_messages(contains?: true, dependencies: [])
+          allow(docker_group).to receive(:contains?) { |dep| dep.name.start_with?("docker") }
+          allow(exact_group).to receive(:contains?) { |dep| dep.name == "nginx" }
+
+          allow(job).to receive_messages(ignore_conditions_for: [], allowed_update?: true)
+
+          allow(docker_group).to receive(:dependencies).and_return([])
+          allow(exact_group).to receive(:dependencies).and_return([])
+        end
+
+        it "filters out dependencies that belong to more specific groups" do
+          eligible_deps, filtered_deps = generic_selector.send(:partition_dependencies, dependency_change)
+
+          eligible_names = eligible_deps.map(&:name)
+          filtered_names = filtered_deps.map(&:name)
+
+          expect(eligible_names).to contain_exactly("redis-client")
+          expect(filtered_names).to include("docker-compose", "nginx")
+        end
+
+        it "annotates filtered dependencies with correct reason" do
+          expect(Dependabot::DependencyAttribution).to receive(:annotate_dependency)
+            .with(docker_dep, hash_including(selection_reason: :belongs_to_more_specific_group))
+          expect(Dependabot::DependencyAttribution).to receive(:annotate_dependency)
+            .with(nginx_dep, hash_including(selection_reason: :belongs_to_more_specific_group))
+          expect(Dependabot::DependencyAttribution).to receive(:annotate_dependency)
+            .with(redis_dep, hash_including(selection_reason: :direct))
+
+          generic_selector.send(:partition_dependencies, dependency_change)
+        end
+      end
+
+      context "when processing specific group" do
+        let(:docker_selector) do
+          described_class.new(group: docker_group, dependency_snapshot: snapshot_with_multiple_groups)
+        end
+
+        before do
+          allow(Dependabot::Experiments).to receive(:enabled?)
+            .with(:group_membership_enforcement).and_return(true)
+
+          allow(generic_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
+          allow(docker_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
+          allow(exact_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
+
+          allow(generic_group).to receive_messages(contains?: true, dependencies: [])
+          allow(docker_group).to receive(:contains?) { |dep| dep.name.start_with?("docker") }
+          allow(exact_group).to receive(:contains?) { |dep| dep.name == "nginx" }
+
+          allow(job).to receive_messages(ignore_conditions_for: [], allowed_update?: true)
+
+          allow(generic_group).to receive(:dependencies).and_return([])
+          allow(docker_group).to receive(:dependencies).and_return([])
+          allow(exact_group).to receive(:dependencies).and_return([])
+        end
+
+        it "includes dependencies that match its specific pattern" do
+          eligible_deps, filtered_deps = docker_selector.send(:partition_dependencies, dependency_change)
+
+          eligible_names = eligible_deps.map(&:name)
+          filtered_names = filtered_deps.map(&:name)
+
+          expect(eligible_names).to contain_exactly("docker-compose")
+          expect(filtered_names).to include("nginx", "redis-client")
+        end
+      end
+    end
+
+    describe "integration with filter_to_group!" do
+      let(:dependency_change) do
+        create_dependency_change(
+          job: job,
+          dependencies: [docker_dep, nginx_dep],
+          files: [create_dependency_file("Gemfile.lock", "/api")]
+        )
+      end
+
+      let(:generic_selector) do
+        described_class.new(group: generic_group, dependency_snapshot: snapshot_with_multiple_groups)
+      end
+
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:group_membership_enforcement).and_return(true)
+
+        allow(generic_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
+        allow(docker_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
+        allow(exact_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
+
+        allow(generic_group).to receive_messages(contains?: true, dependencies: [])
+        allow(docker_group).to receive(:contains?) { |dep| dep.name.start_with?("docker") }
+        allow(exact_group).to receive(:contains?) { |dep| dep.name == "nginx" }
+
+        allow(job).to receive_messages(ignore_conditions_for: [], allowed_update?: true)
+
+        allow(generic_group).to receive(:dependencies).and_return([])
+        allow(docker_group).to receive(:dependencies).and_return([])
+        allow(exact_group).to receive(:dependencies).and_return([])
+
+        allow(dependency_change.updated_dependencies).to receive(:clear)
+        allow(dependency_change.updated_dependencies).to receive(:concat)
+      end
+
+      it "logs dependencies filtered due to more specific groups" do
+        expect(generic_selector).to receive(:log_filtered_dependencies) do |filtered_deps|
+          expect(filtered_deps.length).to be > 0
+        end
+
+        generic_selector.filter_to_group!(dependency_change)
+      end
+
+      it "includes specificity filtering in group dependencies by reason" do
+        allow(Dependabot::DependencyAttribution).to receive(:get_attribution) do |dep|
+          if %w(docker-compose nginx).include?(dep.name)
+            { selection_reason: :belongs_to_more_specific_group }
+          else
+            { selection_reason: :direct }
           end
         end
 
-        it "matches exact names" do
-          expect(selector.send(:group_contains_dependency?, rails_dep, "/api")).to be true
-        end
+        filtered_deps = [docker_dep, nginx_dep]
+        grouped = generic_selector.send(:group_dependencies_by_reason, filtered_deps)
 
-        it "matches wildcard patterns" do
-          expect(selector.send(:group_contains_dependency?, redis_dep, "/api")).to be true
-        end
-
-        it "rejects non-matching names" do
-          expect(selector.send(:group_contains_dependency?, unauthorized_dep, "/api")).to be false
-        end
-      end
-    end
-
-    describe "#dependency_matches_pattern?" do
-      it "matches exact names" do
-        expect(selector.send(:dependency_matches_pattern?, "rails", "rails")).to be true
-      end
-
-      it "matches wildcard patterns" do
-        expect(selector.send(:dependency_matches_pattern?, "redis-client", "redis*")).to be true
-        expect(selector.send(:dependency_matches_pattern?, "redis", "redis*")).to be true
-      end
-
-      it "rejects non-matching patterns" do
-        expect(selector.send(:dependency_matches_pattern?, "puma", "redis*")).to be false
-        expect(selector.send(:dependency_matches_pattern?, "rails", "pg")).to be false
-      end
-    end
-
-    describe "#allowed_by_config?" do
-      let(:dependency) { create_dependency("rails", "7.0.0") }
-
-      it "returns true when dependency is allowed" do
-        allow(job).to receive(:ignore_conditions_for).with(dependency).and_return([])
-        allow(job).to receive(:allowed_update?).with(dependency).and_return(true)
-
-        expect(selector.send(:allowed_by_config?, dependency, job)).to be true
-      end
-
-      it "returns false when dependency is ignored" do
-        all_versions_condition = instance_double(Dependabot::Config::IgnoreCondition)
-        allow(job).to receive(:ignore_conditions_for).with(dependency).and_return([all_versions_condition])
-
-        # Mock the constant check
-        stub_const("Dependabot::Config::IgnoreCondition::ALL_VERSIONS", all_versions_condition)
-
-        expect(selector.send(:allowed_by_config?, dependency, job)).to be false
-      end
-
-      it "returns false when dependency update is not allowed" do
-        allow(job).to receive(:ignore_conditions_for).with(dependency).and_return([])
-        allow(job).to receive(:allowed_update?).with(dependency).and_return(false)
-
-        expect(selector.send(:allowed_by_config?, dependency, job)).to be false
+        expect(grouped[:belongs_to_more_specific_group]).to contain_exactly("docker-compose", "nginx")
+        expect(grouped[:not_in_group]).to be_empty
+        expect(grouped[:filtered_by_config]).to be_empty
       end
     end
   end
@@ -370,12 +506,10 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
       name: name,
       version: version
     ).tap do |dep|
-      # Allow attribution setter methods
       allow(dep).to receive(:attribution_source_group=)
       allow(dep).to receive(:attribution_selection_reason=)
       allow(dep).to receive(:attribution_directory=)
       allow(dep).to receive(:attribution_timestamp=)
-      # Allow attribution getter methods
       allow(dep).to receive_messages(attribution_source_group: nil, attribution_selection_reason: nil,
                                      attribution_directory: nil, attribution_timestamp: nil)
     end
@@ -388,7 +522,6 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
       updated_dependencies: dependencies,
       updated_dependency_files: files
     ).tap do |change|
-      # Allow the array modification methods for updated_dependencies
       allow(change.updated_dependencies).to receive(:clear)
       allow(change.updated_dependencies).to receive(:concat)
     end
