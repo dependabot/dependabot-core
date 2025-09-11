@@ -112,7 +112,7 @@ module Dependabot
           options: options
         ).conflicting_dependencies(
           dependency: dependency,
-          target_version: lowest_security_fix_version
+          target_version: lowest_security_fix_version.to_s # Convert Version to String
         )
       end
 
