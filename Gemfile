@@ -32,8 +32,8 @@ gem "dependabot-uv", path: "uv"
 gem "dependabot-vcpkg", path: "vcpkg"
 
 # Sorbet
-gem "sorbet", "0.5.11952", group: :development
-gem "tapioca", "0.16.11", require: false, group: :development
+gem "sorbet", "0.6.12479", group: :development
+gem "tapioca", "0.17.7", require: false, group: :development
 
 gem "zeitwerk", "~> 2.7"
 

@@ -170,7 +170,7 @@ module Dependabot
           previous_refs = T.must(dependency.previous_requirements).filter_map do |r|
             r.dig(:source, "ref") || r.dig(:source, :ref)
           end.uniq
-          previous_refs.first if previous_refs.count == 1
+          previous_refs.first if previous_refs.one?
         end
 
         sig { returns(T.nilable(String)) }
@@ -180,7 +180,7 @@ module Dependabot
           new_refs = dependency.requirements.filter_map do |r|
             r.dig(:source, "ref") || r.dig(:source, :ref)
           end.uniq
-          new_refs.first if new_refs.count == 1
+          new_refs.first if new_refs.one?
         end
 
         sig { params(tag: String, version: T.nilable(String)).returns(T::Boolean) }

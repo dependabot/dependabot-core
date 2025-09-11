@@ -40,8 +40,6 @@ module Dependabot
           unless skip_dependency?(hsh) # rubocop:disable Style/Next
 
             dep = dependency_from_details(hsh)
-
-            T.must(go_mod).dependencies << dep
             dependency_set << dep
           end
         end
@@ -161,14 +159,11 @@ module Dependabot
           groups: []
         }]
 
-        is_indirect = details["Indirect"]
-
         Dependency.new(
           name: details["Path"],
           version: version,
-          requirements: is_indirect ? [] : reqs,
-          package_manager: "go_modules",
-          direct_relationship: !is_indirect
+          requirements: details["Indirect"] ? [] : reqs,
+          package_manager: "go_modules"
         )
       end
 

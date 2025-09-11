@@ -1,8 +1,10 @@
+using System.Text.RegularExpressions;
+
 using NuGet.Versioning;
 
 namespace NuGetUpdater.Core.Run.PullRequestBodyGenerator;
 
-internal interface IPackageDetailFinder
+internal partial interface IPackageDetailFinder
 {
     string GetReleasesUrlPath();
     string GetCompareUrlPath(string? oldTag, string? newTag);
@@ -10,38 +12,20 @@ internal interface IPackageDetailFinder
 
     internal static NuGetVersion? GetVersionFromNames(string? releaseName, string? tagName)
     {
-        var prefixesToTrim = new[]
-        {
-            "version-",
-            "version.",
-            "version ",
-            "version",
-            "v-",
-            "v.",
-            "v ",
-            "v",
-        };
         foreach (var candidateName in new[] { releaseName, tagName }.Where(n => n is not null).Cast<string>())
         {
-            foreach (var prefix in prefixesToTrim)
+            var trimmedName = NamePrefixPattern.Replace(candidateName, string.Empty);
+            if (NuGetVersion.TryParse(trimmedName, out var versionFromTrimmed))
             {
-                if (candidateName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-                {
-                    var trimmedCandidateName = candidateName[prefix.Length..];
-                    if (NuGetVersion.TryParse(trimmedCandidateName, out var versionFromTrimmed))
-                    {
-                        return versionFromTrimmed;
-                    }
-                }
-            }
-
-            // no prefix match, try the whole string
-            if (NuGetVersion.TryParse(candidateName, out var versionFromWhole))
-            {
-                return versionFromWhole;
+                return versionFromTrimmed;
             }
         }
 
         return null;
     }
+
+    [GeneratedRegex(@"^[^0-9]*")]
+    private static partial Regex NamePrefixRemover();
+
+    private static readonly Regex NamePrefixPattern = NamePrefixRemover();
 }

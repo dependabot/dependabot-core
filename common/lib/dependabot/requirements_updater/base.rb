@@ -18,6 +18,8 @@ module Dependabot
       sig { abstract.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
       def updated_requirements; end
 
+      private
+
       sig { abstract.returns(T::Class[Version]) }
       def version_class; end
 

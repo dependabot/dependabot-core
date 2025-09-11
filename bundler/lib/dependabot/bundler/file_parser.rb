@@ -20,6 +20,7 @@ module Dependabot
   module Bundler
     class FileParser < Dependabot::FileParsers::Base # rubocop:disable Metrics/ClassLength
       extend T::Sig
+
       require "dependabot/file_parsers/base/dependency_set"
       require "dependabot/bundler/file_parser/file_preparer"
       require "dependabot/bundler/file_parser/gemfile_declaration_finder"
@@ -122,21 +123,17 @@ module Dependabot
           parsed_gemfile.each do |dep|
             next unless gemfile_declaration_finder.gemfile_includes_dependency?(dep)
 
-            dep =
-              Dependency.new(
-                name: dep.fetch("name"),
-                version: dependency_version(dep.fetch("name"))&.to_s,
-                requirements: [{
-                  requirement: gemfile_declaration_finder.enhanced_req_string(dep),
-                  groups: dep.fetch("groups").map(&:to_sym),
-                  source: dep.fetch("source")&.transform_keys(&:to_sym),
-                  file: file.name
-                }],
-                package_manager: "bundler"
-              )
-
-            file.dependencies << dep
-            dependencies << dep
+            dependencies << Dependency.new(
+              name: dep.fetch("name"),
+              version: dependency_version(dep.fetch("name"))&.to_s,
+              requirements: [{
+                requirement: gemfile_declaration_finder.enhanced_req_string(dep),
+                groups: dep.fetch("groups").map(&:to_sym),
+                source: dep.fetch("source")&.transform_keys(&:to_sym),
+                file: file.name
+              }],
+              package_manager: "bundler"
+            )
           end
         end
 
@@ -144,7 +141,7 @@ module Dependabot
       end
 
       sig { returns(DependencySet) }
-      def gemspec_dependencies # rubocop:disable Metrics/PerceivedComplexity,Metrics/AbcSize
+      def gemspec_dependencies # rubocop:disable Metrics/PerceivedComplexity
         @gemspec_dependencies = T.let(@gemspec_dependencies, T.nilable(DependencySet))
         return @gemspec_dependencies if @gemspec_dependencies
 
@@ -159,7 +156,7 @@ module Dependabot
             parsed_gemspec(gemspec).each do |dependency|
               next unless gemspec_declaration_finder.gemspec_includes_dependency?(dependency)
 
-              dep = Dependency.new(
+              queue << Dependency.new(
                 name: dependency.fetch("name"),
                 version: dependency_version(dependency.fetch("name"))&.to_s,
                 requirements: [{
@@ -174,9 +171,6 @@ module Dependabot
                 }],
                 package_manager: "bundler"
               )
-
-              gemspec.dependencies << dep
-              queue << dep
             end
           end
         end
@@ -198,23 +192,15 @@ module Dependabot
         parsed_lockfile.specs.each do |dependency|
           next if dependency.source.is_a?(::Bundler::Source::Path)
 
-          # if a dependency is listed in the lockfiles' DEPENDENCIES section,
-          # then it is a direct dependency & we want to keep track of that fact
-          is_direct = parsed_lockfile.dependencies.key?(dependency.name)
-
-          dep = Dependency.new(
+          dependencies << Dependency.new(
             name: dependency.name,
             version: dependency_version(dependency.name)&.to_s,
             requirements: [],
             package_manager: "bundler",
             subdependency_metadata: [{
               production: production_dep_names.include?(dependency.name)
-            }],
-            direct_relationship: is_direct
+            }]
           )
-
-          T.must(lockfile).dependencies << dep
-          dependencies << dep
         end
 
         dependencies
@@ -357,10 +343,6 @@ module Dependabot
           get_original_file("Gemfile.lock") || get_original_file("gems.locked"),
           T.nilable(Dependabot::DependencyFile)
         )
-
-        # Set the lockfile as higher priority so we know to ignore the Gemfile, etc
-        # when producing a graph.
-        @lockfile&.tap { |f| f.priority = 1 }
       end
 
       sig { returns(T.untyped) }

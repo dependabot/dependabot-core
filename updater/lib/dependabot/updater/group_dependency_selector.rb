@@ -2,10 +2,12 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "wildcard_matcher"
 require "dependabot/dependency_attribution"
 require "dependabot/dependency_change"
 require "dependabot/dependency_group"
 require "dependabot/dependency_snapshot"
+require "dependabot/updater/pattern_specificity_calculator"
 
 module Dependabot
   class Updater
@@ -28,7 +30,6 @@ module Dependabot
     class GroupDependencySelector
       extend T::Sig
 
-      # Maximum number of dependency names to show in logs
       MAX_DEPENDENCIES_TO_LOG = 10
 
       sig { returns(Dependabot::DependencyGroup) }
@@ -45,10 +46,9 @@ module Dependabot
         @updated_dependencies = T.let([], T::Array[Dependabot::Dependency])
         @filtered_dependencies = T.let(nil, T.nilable(T::Array[Dependabot::Dependency]))
         @dependency_drift = T.let(nil, T.nilable(T::Array[String]))
+        @specificity_calculator = T.let(PatternSpecificityCalculator.new, PatternSpecificityCalculator)
       end
 
-      # Input: array of per-directory DependencyChange objects
-      # Output: single merged DependencyChange with directory-aware dedup
       sig { params(changes_by_dir: T::Array[Dependabot::DependencyChange]).returns(Dependabot::DependencyChange) }
       def merge_per_directory!(changes_by_dir)
         return T.must(changes_by_dir.first) if changes_by_dir.length == 1
@@ -61,7 +61,6 @@ module Dependabot
         merged_change
       end
 
-      # Collect and deduplicate updated files from all directory changes
       sig do
         params(changes_by_dir: T::Array[Dependabot::DependencyChange]).returns(T::Array[Dependabot::DependencyFile])
       end
@@ -75,7 +74,6 @@ module Dependabot
         all_updated_files.uniq { |f| [f.directory, f.name] }
       end
 
-      # Create merged DependencyChange object using first change as template
       sig do
         params(
           changes_by_dir: T::Array[Dependabot::DependencyChange],
@@ -92,29 +90,27 @@ module Dependabot
         )
       end
 
-      # Mutates the DependencyChange to keep only group-eligible updated_dependencies
-      # Adds attribution metadata; emits observability.
       sig { params(dependency_change: Dependabot::DependencyChange).void }
       def filter_to_group!(dependency_change)
         return unless Dependabot::Experiments.enabled?(:group_membership_enforcement)
 
+        Dependabot.logger.info("Applying GroupDependencySelector filtering for group '#{group.name}'")
+
         original_count = dependency_change.updated_dependencies.length
         group_eligible_deps, filtered_out_deps = partition_dependencies(dependency_change)
 
-        # Mutate the dependency change to only include group-eligible dependencies
-        # Clear the current array and replace with filtered dependencies
         dependency_change.updated_dependencies.clear
         dependency_change.updated_dependencies.concat(group_eligible_deps)
 
-        # Store filtered dependencies for observability
         @filtered_dependencies = filtered_out_deps if filtered_out_deps.any?
 
         directory = dependency_change.job.source.directory || "."
         emit_filtering_metrics(directory, original_count, group_eligible_deps.length, filtered_out_deps.length)
-        log_filtered_dependencies(filtered_out_deps) if filtered_out_deps.any?
+        return log_filtered_dependencies(filtered_out_deps) if filtered_out_deps.any?
+
+        Dependabot.logger.info("No dependencies were filtered out")
       end
 
-      # Optional: compute and attach dependency drift metadata for observability
       sig { params(dependency_change: Dependabot::DependencyChange).void }
       def annotate_dependency_drift!(dependency_change)
         return unless Dependabot::Experiments.enabled?(:group_membership_enforcement)
@@ -122,10 +118,7 @@ module Dependabot
         dependency_drift = T.let([], T::Array[String])
         directory = dependency_change.job.source.directory || "."
 
-        # Check if any file changes reference dependencies not in updated_dependencies
         dependency_change.updated_dependency_files.each do |file|
-          # Uses already-parsed dependencies from ecosystem-specific FileParser
-          # to identify dependencies referenced in this file
           detected_drift = detect_file_dependency_drift(file, dependency_change.updated_dependencies)
           dependency_drift.concat(detected_drift)
         end
@@ -139,7 +132,6 @@ module Dependabot
 
       private
 
-      # Deduplicate dependencies across directories using directory + name as key
       sig { params(changes_by_dir: T::Array[Dependabot::DependencyChange]).returns(T::Array[Dependabot::Dependency]) }
       def deduplicate_dependencies(changes_by_dir)
         seen_updates = T.let(Set.new, T::Set[[String, String]])
@@ -172,13 +164,15 @@ module Dependabot
         job = dependency_change.job
 
         Array(dependency_change.updated_dependencies).each do |dep|
-          # Check both group membership AND dependabot.yml configuration filters
           if group_contains_dependency?(dep, directory) && allowed_by_config?(dep, job)
-            # Annotate with selection reason
-            annotate_dependency_selection(dep, :direct)
-            group_eligible_deps << dep
+            if dependency_belongs_to_more_specific_group?(dep, directory)
+              annotate_dependency_selection(dep, :belongs_to_more_specific_group)
+              filtered_out_deps << dep
+            else
+              annotate_dependency_selection(dep, :direct)
+              group_eligible_deps << dep
+            end
           else
-            # Track reason for filtering
             reason = determine_filtering_reason(dep, directory, job)
             annotate_dependency_selection(dep, reason)
             filtered_out_deps << dep
@@ -198,31 +192,47 @@ module Dependabot
 
       sig { params(dep: Dependabot::Dependency, directory: String).returns(T::Boolean) }
       def group_contains_dependency?(dep, directory)
-        # Use the group's dependency matching logic
-        # First check if group has the enhanced contains_dependency? method with directory parameter
         if @group.respond_to?(:contains_dependency?)
           T.unsafe(@group).contains_dependency?(dep, directory: directory)
         else
-          # Fallback to the standard contains? method
           @group.contains?(dep)
         end
       end
 
-      # Check if dependency is allowed by dependabot.yml configuration
-      # This respects ignore conditions and allowed_updates from the job
+      sig { params(dep: Dependabot::Dependency, directory: String).returns(T::Boolean) }
+      def dependency_belongs_to_more_specific_group?(dep, directory)
+        contains_checker = T.let(
+          proc { |group, dependency, dir| group_contains_dependency_for_group?(group, dependency, dir) },
+          T.proc.params(group: Dependabot::DependencyGroup, dep: Dependabot::Dependency,
+                        directory: String).returns(T::Boolean)
+        )
+
+        @specificity_calculator.dependency_belongs_to_more_specific_group?(
+          @group, dep, @snapshot.groups, contains_checker, directory
+        )
+      end
+
+      sig do
+        params(group: Dependabot::DependencyGroup, dep: Dependabot::Dependency, directory: String).returns(T::Boolean)
+      end
+      def group_contains_dependency_for_group?(group, dep, directory)
+        if group.respond_to?(:contains_dependency?)
+          T.unsafe(group).contains_dependency?(dep, directory: directory)
+        else
+          group.contains?(dep)
+        end
+      end
+
       sig { params(dep: Dependabot::Dependency, job: Dependabot::Job).returns(T::Boolean) }
       def allowed_by_config?(dep, job)
-        # Check if dependency is completely ignored by looking at ignore conditions
         ignore_conditions = job.ignore_conditions_for(dep)
         return false if ignore_conditions.any?(Dependabot::Config::IgnoreCondition::ALL_VERSIONS)
 
-        # Check if dependency is allowed by the job's allowed_updates configuration
         job.allowed_update?(dep)
       end
 
       sig { params(dep_name: String, pattern: String).returns(T::Boolean) }
       def dependency_matches_pattern?(dep_name, pattern)
-        # Simple pattern matching - could be enhanced with glob/regex support
         return true if pattern == dep_name
         return true if pattern.include?("*") && File.fnmatch(pattern, dep_name)
 
@@ -250,13 +260,10 @@ module Dependabot
       def detect_file_dependency_drift(file, updated_deps)
         updated_dep_names = updated_deps.to_set(&:name)
 
-        # Find all dependencies that have requirements from this file
-        # Uses the already-parsed dependencies from the ecosystem-specific FileParser
         file_dependencies = @snapshot.dependencies.select do |dep|
           dep.requirements.any? { |req| req[:file] == file.name }
         end
 
-        # Find dependencies in the file that aren't in updated_dependencies
         file_dependencies.filter_map do |dep|
           dep.name unless updated_dep_names.include?(dep.name)
         end
@@ -272,8 +279,6 @@ module Dependabot
 
       sig { params(directory: String, _original: Integer, _filtered: Integer, removed: Integer).void }
       def emit_filtering_metrics(directory, _original, _filtered, removed)
-        # Metrics functionality removed - would require service object access
-        # Future implementation could emit metrics if service is made available
         Dependabot.logger.debug(
           "GroupDependencySelector filtered #{removed} dependencies " \
           "[group=#{@group.name}, ecosystem=#{@snapshot.ecosystem}, directory=#{directory}]"
@@ -282,7 +287,6 @@ module Dependabot
 
       sig { params(directory: String, count: Integer).void }
       def emit_dependency_drift_metrics(directory, count)
-        # Future implementation could emit metrics if service is made available
         Dependabot.logger.debug(
           "GroupDependencySelector detected #{count} dependency drift items " \
           "[group=#{@group.name}, ecosystem=#{@snapshot.ecosystem}, directory=#{directory}]"
@@ -291,15 +295,19 @@ module Dependabot
 
       sig { params(filtered_deps: T::Array[Dependabot::Dependency]).void }
       def log_filtered_dependencies(filtered_deps)
-        # Group dependencies by filtering reason for better logging
         grouped_deps = group_dependencies_by_reason(filtered_deps)
 
         not_in_group = T.must(grouped_deps[:not_in_group])
         filtered_by_config = T.must(grouped_deps[:filtered_by_config])
+        belongs_to_more_specific_group = T.must(grouped_deps[:belongs_to_more_specific_group])
         other = T.must(grouped_deps[:other])
 
         log_dependency_group(not_in_group, "not in group") if not_in_group.any?
         log_dependency_group(filtered_by_config, "filtered by dependabot.yml config") if filtered_by_config.any?
+        if belongs_to_more_specific_group.any?
+          log_dependency_group(belongs_to_more_specific_group,
+                               "belongs to more specific group")
+        end
         log_dependency_group(other, "filtered (other reasons)") if other.any?
       end
 
@@ -308,6 +316,7 @@ module Dependabot
         grouped = {
           not_in_group: T.let([], T::Array[String]),
           filtered_by_config: T.let([], T::Array[String]),
+          belongs_to_more_specific_group: T.let([], T::Array[String]),
           other: T.let([], T::Array[String])
         }
 
@@ -318,6 +327,8 @@ module Dependabot
             grouped[:not_in_group] << dep.name
           when :filtered_by_config
             grouped[:filtered_by_config] << dep.name
+          when :belongs_to_more_specific_group
+            grouped[:belongs_to_more_specific_group] << dep.name
           else
             grouped[:other] << dep.name
           end

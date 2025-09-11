@@ -158,7 +158,7 @@ module Dependabot
             repos = parsed_composer_json.fetch("repositories", [])
             if repos.is_a?(Hash) || repos.is_a?(Array)
               repos = repos.values if repos.is_a?(Hash)
-              repos = repos.select { |r| r.is_a?(Hash) }
+              repos = repos.grep(Hash)
 
               repos
                 .select { |details| details["type"] == "path" || details["type"] == "artifact" }

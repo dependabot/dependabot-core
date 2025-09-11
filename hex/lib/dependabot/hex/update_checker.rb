@@ -13,6 +13,7 @@ module Dependabot
   module Hex
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       extend T::Sig
+
       require_relative "update_checker/file_preparer"
       require_relative "update_checker/requirements_updater"
       require_relative "update_checker/version_resolver"
@@ -20,26 +21,26 @@ module Dependabot
 
       sig { override.returns(T.nilable(T.any(String, Dependabot::Version, Gem::Version))) }
       def latest_version
-        @latest_version = T.let(nil, T.nilable(T.any(String, Dependabot::Version, Gem::Version)))
-
-        @latest_version ||=
+        @latest_version ||= T.let(
           if git_dependency?
             latest_version_for_git_dependency
           else
             latest_release_from_hex_registry || latest_resolvable_version
-          end
+          end,
+          T.nilable(T.any(String, Dependabot::Version, Gem::Version))
+        )
       end
 
       sig { override.returns(T.nilable(T.any(String, Dependabot::Version, Gem::Version))) }
       def latest_resolvable_version
-        @latest_resolvable_version = T.let(nil, T.nilable(T.any(String, Dependabot::Version, Gem::Version)))
-
-        @latest_resolvable_version ||=
+        @latest_resolvable_version ||= T.let(
           if git_dependency?
             latest_resolvable_version_for_git_dependency
           else
             fetch_latest_resolvable_version(unlock_requirement: true)
-          end
+          end,
+          T.nilable(T.any(String, Dependabot::Version, Gem::Version))
+        )
       end
 
       sig { override.returns(T.any(String, T.nilable(Dependabot::Version))) }
@@ -247,13 +248,13 @@ module Dependabot
 
       sig { returns(Dependabot::GitCommitChecker) }
       def git_commit_checker
-        @git_commit_checker = T.let(nil, T.nilable(Dependabot::GitCommitChecker))
-
-        @git_commit_checker ||=
+        @git_commit_checker ||= T.let(
           GitCommitChecker.new(
             dependency: dependency,
             credentials: credentials
-          )
+          ),
+          T.nilable(Dependabot::GitCommitChecker)
+        )
       end
     end
   end

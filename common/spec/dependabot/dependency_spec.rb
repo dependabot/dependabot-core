@@ -99,7 +99,7 @@ RSpec.describe Dependabot::Dependency do
 
     context "when two dependencies are not equal" do
       let(:dependency1) { described_class.new(**args) }
-      let(:dependency2) { described_class.new(**args.merge(name: "dep2")) }
+      let(:dependency2) { described_class.new(**args, name: "dep2") }
 
       specify { expect(dependency1).not_to eq(dependency2) }
     end
@@ -138,36 +138,6 @@ RSpec.describe Dependabot::Dependency do
 
         it { is_expected.to be(false) }
       end
-    end
-  end
-
-  describe "#direct?" do
-    it "is true when the dependency is top-level" do
-      dependency = described_class.new(name: "dep",
-                                       package_manager: "dummy",
-                                       requirements: [{ file: "a.rb", requirement: "1", groups: [], source: nil }])
-
-      expect(dependency.top_level?).to be(true)
-      expect(dependency.direct?).to be(true)
-    end
-
-    it "returns false when the dependency is not top-level" do
-      dependency = described_class.new(name: "dep",
-                                       package_manager: "dummy",
-                                       requirements: [])
-
-      expect(dependency.top_level?).to be(false)
-      expect(dependency.direct?).to be(false)
-    end
-
-    it "returns true if you specify it directly" do
-      dependency = described_class.new(name: "dep",
-                                       package_manager: "dummy",
-                                       requirements: [],
-                                       direct_relationship: true)
-
-      expect(dependency.top_level?).to be(false)
-      expect(dependency.direct?).to be(true)
     end
   end
 

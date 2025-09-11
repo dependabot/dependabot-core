@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/bundler/update_checker"
@@ -10,11 +10,33 @@ module Dependabot
   module Bundler
     class UpdateChecker < UpdateCheckers::Base
       class ConflictingDependencyResolver
+        extend T::Sig
+
         require_relative "shared_bundler_helpers"
+
         include SharedBundlerHelpers
 
+        sig { override.returns(T::Hash[Symbol, T.untyped]) }
         attr_reader :options
 
+        sig { override.returns(T::Array[Dependabot::Credential]) }
+        attr_reader :credentials
+
+        sig { override.returns(T::Array[Dependabot::DependencyFile]) }
+        attr_reader :dependency_files
+
+        sig { override.returns(T.nilable(String)) }
+        attr_reader :repo_contents_path
+
+        sig do
+          params(
+            dependency_files: T::Array[Dependabot::DependencyFile],
+            repo_contents_path: T.nilable(String),
+            credentials: T::Array[Dependabot::Credential],
+            options: T::Hash[Symbol, T.untyped]
+          )
+            .void
+        end
         def initialize(dependency_files:, repo_contents_path:, credentials:, options:)
           @dependency_files = dependency_files
           @repo_contents_path = repo_contents_path
@@ -31,6 +53,13 @@ module Dependabot
         #   * name [String] the blocking dependencies name
         #   * version [String] the version of the blocking dependency
         #   * requirement [String] the requirement on the target_dependency
+        sig do
+          params(
+            dependency: Dependabot::Dependency,
+            target_version: String
+          )
+            .returns(T::Array[T::Hash[String, String]])
+        end
         def conflicting_dependencies(dependency:, target_version:)
           return [] if lockfile.nil?
 
@@ -44,7 +73,7 @@ module Dependabot
                 dependency_name: dependency.name,
                 target_version: target_version,
                 credentials: credentials,
-                lockfile_name: lockfile.name
+                lockfile_name: T.must(lockfile).name
               }
             )
           end
@@ -52,8 +81,12 @@ module Dependabot
 
         private
 
+        sig { override.returns(String) }
         def bundler_version
-          @bundler_version ||= Helpers.bundler_version(lockfile)
+          @bundler_version ||= T.let(
+            Helpers.bundler_version(lockfile),
+            T.nilable(String)
+          )
         end
       end
     end

@@ -54,7 +54,7 @@ module Dependabot
               credentials: credentials,
               ignored_versions: ignored_versions,
               raise_on_ignored: @raise_on_ignored,
-              security_advisories: security_advisories,
+              security_advisories: python_compatible_security_advisories,
               cooldown_options: @cooldown_options
             ),
             T.nilable(Dependabot::Python::UpdateChecker::LatestVersionFinder)
@@ -77,6 +77,28 @@ module Dependabot
           dependency.requirements.map do |req|
             req.merge(
               requirement: convert_conda_requirement_to_pip(req[:requirement])
+            )
+          end
+        end
+
+        sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
+        def python_compatible_security_advisories
+          security_advisories.map do |advisory|
+            # Convert Conda requirements to Python requirements for pip compatibility
+            python_vulnerable_versions = advisory.vulnerable_versions.flat_map do |conda_req|
+              Dependabot::Python::Requirement.requirements_array(conda_req.to_s)
+            end
+
+            python_safe_versions = advisory.safe_versions.flat_map do |conda_req|
+              Dependabot::Python::Requirement.requirements_array(conda_req.to_s)
+            end
+
+            # Normalize security advisories to use 'pip' package manager for Python delegation
+            Dependabot::SecurityAdvisory.new(
+              dependency_name: advisory.dependency_name,
+              package_manager: "pip", # Use pip for PyPI compatibility
+              vulnerable_versions: python_vulnerable_versions,
+              safe_versions: python_safe_versions
             )
           end
         end

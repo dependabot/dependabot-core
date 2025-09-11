@@ -10,6 +10,7 @@ module Dependabot
     class FileUpdater
       class MixfileSanitizer
         extend T::Sig
+
         sig { params(mixfile_content: String).void }
         def initialize(mixfile_content:)
           @mixfile_content = mixfile_content

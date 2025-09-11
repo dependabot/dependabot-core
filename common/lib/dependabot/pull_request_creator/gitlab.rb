@@ -170,7 +170,7 @@ module Dependabot
 
       sig { returns(::Gitlab::ObjectifiedHash) }
       def create_commit
-        return create_submodule_update_commit if files.count == 1 && T.must(files.first).type == "submodule"
+        return create_submodule_update_commit if files.one? && T.must(files.first).type == "submodule"
 
         options = {}
         options[:author_email] = author_details&.fetch(:email) if author_details&.key?(:email)
