@@ -237,7 +237,7 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
     context "when ignore_requirements contains mixed requirement types" do
       let(:docker_requirement) { Dependabot::Docker::Requirement.new(">= 18.0.0") }
       let(:mock_base_requirement) do
-        req = double("MockBaseRequirement")
+        req = instance_double(Dependabot::Requirement)
         allow(req).to receive(:instance_of?).with(Dependabot::Requirement).and_return(true)
         allow(req).to receive(:satisfied_by?) do |version|
           # Mock requirement ">= 19.0.0"
@@ -296,7 +296,7 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
     context "when ignore_requirements contains mixed requirement types" do
       let(:docker_requirement) { Dependabot::Docker::Requirement.new(">= 18.0.0") }
       let(:mock_base_requirement) do
-        req = double("MockBaseRequirement")
+        req = instance_double(Dependabot::Requirement)
         allow(req).to receive(:instance_of?).with(Dependabot::Requirement).and_return(true)
         allow(req).to receive(:satisfied_by?) do |version|
           # Mock requirement ">= 19.0.0"
@@ -324,7 +324,7 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
       end
     end
 
-    context "reproducing the original error scenario" do
+    context "when reproducing the original error scenario" do
       let(:version) { "17.7.1" } # The version that caused the original error
       let(:docker_requirement) { Dependabot::Docker::Requirement.new(">= 17.7.0") }
 
