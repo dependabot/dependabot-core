@@ -17,7 +17,6 @@ require "dependabot/update_checkers/base"
 
 module Dependabot
   module Python
-    # rubocop:disable Metrics/ClassLength
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       extend T::Sig
 
@@ -34,64 +33,57 @@ module Dependabot
       ).freeze
       VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/
 
-      sig { override.returns(T.nilable(Dependabot::Version)) }
+      sig { override.returns(T.nilable(Gem::Version)) }
       def latest_version
-        @latest_version = T.let(fetch_latest_version, T.nilable(Dependabot::Version)) if @latest_version.nil?
-        @latest_version
+        @latest_version ||= T.let(
+          fetch_latest_version,
+          T.nilable(Gem::Version)
+        )
       end
 
-      sig { override.returns(T.nilable(Dependabot::Version)) }
+      sig { override.returns(T.nilable(Gem::Version)) }
       def latest_resolvable_version
-        if @latest_resolvable_version.nil?
-          @latest_resolvable_version = T.let(
-            if resolver_type == :requirements
-              resolver.latest_resolvable_version
-            elsif resolver_type == :pip_compile && resolver.resolvable?(version: latest_version)
-              latest_version
-            else
-              resolver.latest_resolvable_version(
-                requirement: unlocked_requirement_string
-              )
-            end,
-            T.nilable(Dependabot::Version)
-          )
-        end
-        @latest_resolvable_version
+        @latest_resolvable_version ||= T.let(
+          if resolver_type == :requirements
+            resolver.latest_resolvable_version
+          elsif resolver_type == :pip_compile && resolver.resolvable?(version: latest_version)
+            latest_version
+          else
+            resolver.latest_resolvable_version(
+              requirement: unlocked_requirement_string
+            )
+          end,
+          T.nilable(Gem::Version)
+        )
       end
 
-      sig { override.returns(T.nilable(Dependabot::Version)) }
+      sig { override.returns(T.nilable(Gem::Version)) }
       def latest_resolvable_version_with_no_unlock
-        if @latest_resolvable_version_with_no_unlock.nil?
-          @latest_resolvable_version_with_no_unlock = T.let(
-            if resolver_type == :requirements
-              resolver.latest_resolvable_version_with_no_unlock
-            else
-              resolver.latest_resolvable_version(
-                requirement: current_requirement_string
-              )
-            end,
-            T.nilable(Dependabot::Version)
-          )
-        end
-        @latest_resolvable_version_with_no_unlock
+        @latest_resolvable_version_with_no_unlock ||= T.let(
+          if resolver_type == :requirements
+            resolver.latest_resolvable_version_with_no_unlock
+          else
+            resolver.latest_resolvable_version(
+              requirement: current_requirement_string
+            )
+          end,
+          T.nilable(Gem::Version)
+        )
       end
 
-      sig { override.returns(T.nilable(Dependabot::Version)) }
+      sig { override.returns(T.nilable(Gem::Version)) }
       def lowest_security_fix_version
         latest_version_finder.lowest_security_fix_version
       end
 
-      sig { override.returns(T.nilable(Dependabot::Version)) }
+      sig { override.returns(T.nilable(Gem::Version)) }
       def lowest_resolvable_security_fix_version
         raise "Dependency not vulnerable!" unless vulnerable?
 
-        if @lowest_resolvable_security_fix_version.nil?
-          @lowest_resolvable_security_fix_version = T.let(
-            fetch_lowest_resolvable_security_fix_version,
-            T.nilable(Dependabot::Version)
-          )
-        end
-        @lowest_resolvable_security_fix_version
+        @lowest_resolvable_security_fix_version ||= T.let(
+          fetch_lowest_resolvable_security_fix_version,
+          T.nilable(Gem::Version)
+        )
       end
 
       sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
@@ -131,7 +123,7 @@ module Dependabot
         raise NotImplementedError
       end
 
-      sig { returns(T.nilable(Dependabot::Version)) }
+      sig { returns(T.nilable(Gem::Version)) }
       def fetch_lowest_resolvable_security_fix_version
         fix_version = lowest_security_fix_version
         return latest_resolvable_version if fix_version.nil?
@@ -313,7 +305,7 @@ module Dependabot
         ">=#{version_for_requirement || 0}"
       end
 
-      sig { returns(T.nilable(Dependabot::Version)) }
+      sig { returns(T.nilable(Gem::Version)) }
       def fetch_latest_version
         latest_version_finder.latest_version
       end
@@ -462,7 +454,6 @@ module Dependabot
         dependency_files.select { |f| f.name.end_with?(".in") }
       end
     end
-    # rubocop:enable Metrics/ClassLength
   end
 end
 
