@@ -46,6 +46,7 @@ module Dependabot
       security_advisories
       security_updates_only
       source
+      update_dependency_list_only
       update_subdependencies
       updating_a_pull_request
       vendor_dependencies
@@ -189,6 +190,7 @@ module Dependabot
       @source                         = T.let(build_source(attributes.fetch(:source)), Dependabot::Source)
       @token                          = T.let(attributes.fetch(:token, nil), T.nilable(String))
       @update_subdependencies         = T.let(attributes.fetch(:update_subdependencies), T::Boolean)
+      @update_dependency_list_only    = T.let(attributes.fetch(:update_dependency_list_only, false), T::Boolean)
       @updating_a_pull_request        = T.let(attributes.fetch(:updating_a_pull_request), T::Boolean)
       @vendor_dependencies            = T.let(attributes.fetch(:vendor_dependencies, false), T::Boolean)
       @cooldown = T.let(
@@ -249,6 +251,11 @@ module Dependabot
     sig { returns(T::Boolean) }
     def update_subdependencies?
       @update_subdependencies
+    end
+
+    sig { returns(T::Boolean) }
+    def update_dependency_list_only?
+      @update_dependency_list_only
     end
 
     sig { returns(T::Boolean) }
