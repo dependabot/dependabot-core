@@ -199,6 +199,147 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
     end
   end
 
+  describe "#filter_valid_releases" do
+    let(:releases) do
+      [
+        { "version" => "17.0.0" },
+        { "version" => "17.7.1" }, # This version caused the original Sorbet error
+        { "version" => "18.0.0" },
+        { "version" => "19.0.0" },
+        { "version" => "20.0.0" }
+      ]
+    end
+
+    context "when ignore_requirements contains Docker::Requirement objects" do
+      let(:docker_requirement) { Dependabot::Docker::Requirement.new(">= 18.0.0") }
+
+      before do
+        allow(checker).to receive(:ignore_requirements).and_return([docker_requirement])
+      end
+
+      it "does not cause Sorbet type validation errors with Docker requirements processing Helm versions" do
+        # This test specifically validates the fix for:
+        # Parameter 'version': Expected type Dependabot::Docker::Version, got type Dependabot::Helm::Version
+        expect { checker.send(:filter_valid_releases, releases) }.not_to raise_error
+      end
+
+      it "ignores Docker::Requirement objects due to instance_of? check" do
+        # Since Docker::Requirement is not instance_of?(Dependabot::Requirement),
+        # it should be ignored and not filter any versions
+        result = checker.send(:filter_valid_releases, releases)
+
+        # Should only filter out versions <= current version (17.11.3)
+        # Docker requirements should be ignored due to instance_of? check
+        expect(result.map { |r| r["version"] }).to contain_exactly("18.0.0", "19.0.0", "20.0.0")
+      end
+    end
+
+    context "when ignore_requirements contains mixed requirement types" do
+      let(:docker_requirement) { Dependabot::Docker::Requirement.new(">= 18.0.0") }
+      let(:mock_base_requirement) do
+        req = double("MockBaseRequirement")
+        allow(req).to receive(:instance_of?).with(Dependabot::Requirement).and_return(true)
+        allow(req).to receive(:satisfied_by?) do |version|
+          # Mock requirement ">= 19.0.0"
+          version.to_s >= "19.0.0"
+        end
+        req
+      end
+
+      before do
+        allow(checker).to receive(:ignore_requirements).and_return([docker_requirement, mock_base_requirement])
+      end
+
+      it "only processes requirements that pass instance_of? check" do
+        result = checker.send(:filter_valid_releases, releases)
+
+        # Should filter out:
+        # 1. Versions <= current version (17.11.3): 17.0.0, 17.7.1
+        # 2. Versions matching mock_base_requirement >= 19.0.0: 19.0.0, 20.0.0
+        # Docker requirement should be ignored
+        expect(result.map { |r| r["version"] }).to contain_exactly("18.0.0")
+      end
+
+      it "does not cause cross-package type validation errors" do
+        expect { checker.send(:filter_valid_releases, releases) }.not_to raise_error
+      end
+    end
+  end
+
+  describe "#filter_valid_versions" do
+    let(:all_versions) { ["17.0.0", "17.7.1", "18.0.0", "19.0.0", "20.0.0"] }
+
+    context "when ignore_requirements contains Docker::Requirement objects" do
+      let(:docker_requirement) { Dependabot::Docker::Requirement.new(">= 18.0.0") }
+
+      before do
+        allow(checker).to receive(:ignore_requirements).and_return([docker_requirement])
+      end
+
+      it "does not cause Sorbet type validation errors with Docker requirements processing Helm versions" do
+        # This test specifically validates the fix for:
+        # Parameter 'version': Expected type Dependabot::Docker::Version, got type Dependabot::Helm::Version
+        expect { checker.send(:filter_valid_versions, all_versions) }.not_to raise_error
+      end
+
+      it "ignores Docker::Requirement objects due to instance_of? check" do
+        # Since Docker::Requirement is not instance_of?(Dependabot::Requirement),
+        # it should be ignored and not filter any versions
+        result = checker.send(:filter_valid_versions, all_versions)
+
+        # Should only filter out versions <= current version (17.11.3)
+        # Docker requirements should be ignored due to instance_of? check
+        expect(result).to contain_exactly("18.0.0", "19.0.0", "20.0.0")
+      end
+    end
+
+    context "when ignore_requirements contains mixed requirement types" do
+      let(:docker_requirement) { Dependabot::Docker::Requirement.new(">= 18.0.0") }
+      let(:mock_base_requirement) do
+        req = double("MockBaseRequirement")
+        allow(req).to receive(:instance_of?).with(Dependabot::Requirement).and_return(true)
+        allow(req).to receive(:satisfied_by?) do |version|
+          # Mock requirement ">= 19.0.0"
+          Dependabot::Helm::Version.new(version.to_s) >= Dependabot::Helm::Version.new("19.0.0")
+        end
+        req
+      end
+
+      before do
+        allow(checker).to receive(:ignore_requirements).and_return([docker_requirement, mock_base_requirement])
+      end
+
+      it "only processes requirements that pass instance_of? check" do
+        result = checker.send(:filter_valid_versions, all_versions)
+
+        # Should filter out:
+        # 1. Versions <= current version (17.11.3): 17.0.0, 17.7.1
+        # 2. Versions matching mock_base_requirement >= 19.0.0: 19.0.0, 20.0.0
+        # Docker requirement should be ignored
+        expect(result).to contain_exactly("18.0.0")
+      end
+
+      it "does not cause cross-package type validation errors" do
+        expect { checker.send(:filter_valid_versions, all_versions) }.not_to raise_error
+      end
+    end
+
+    context "reproducing the original error scenario" do
+      let(:version) { "17.7.1" } # The version that caused the original error
+      let(:docker_requirement) { Dependabot::Docker::Requirement.new(">= 17.7.0") }
+
+      before do
+        allow(checker).to receive(:ignore_requirements).and_return([docker_requirement])
+      end
+
+      it "handles the problematic version 17.7.1 without Sorbet errors" do
+        # This specifically tests the scenario mentioned in the original error:
+        # Dependabot::Helm::Version "17.7.1" being passed to Docker::Requirement#satisfied_by?
+        expect { checker.send(:filter_valid_versions, ["17.7.1", "18.0.0"]) }.not_to raise_error
+      end
+    end
+  end
+
   describe "#fetch_helm_chart_index" do
     subject(:latest_chart_version) { checker.send(:fetch_latest_chart_version) }
 
