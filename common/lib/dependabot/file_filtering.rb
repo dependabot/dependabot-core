@@ -7,7 +7,7 @@ module Dependabot
 
     # Returns true if the given path matches any of the exclude patterns
     sig { params(path: String, exclude_patterns: T.nilable(T::Array[String])).returns(T::Boolean) }
-    def self.exclude_path?(path, exclude_patterns) # rubocop:disable Metrics/PerceivedComplexity,Metrics/CyclomaticComplexity
+    def self.exclude_path?(path, exclude_patterns)
       return false if exclude_patterns.nil? || exclude_patterns.empty?
 
       # Normalize the path by removing leading slashes and resolving relative paths
@@ -16,39 +16,51 @@ module Dependabot
       exclude_patterns.any? do |pattern|
         normalized_pattern = normalize_path(pattern.chomp("/"))
 
-        # case 1: exact match
-        exclude_exact = normalized_path == pattern || normalized_path == normalized_pattern
+        exact_or_directory_match?(normalized_path, pattern, normalized_pattern) ||
+          recursive_match?(normalized_path, pattern) ||
+          glob_match?(normalized_path, pattern, normalized_pattern)
+      end
+    end
 
-        # case 2: Directory prefix matching: check if path is inside an excluded directory
-        exclude_deeper = normalized_path.start_with?("#{pattern}#{File::SEPARATOR}",
-                                                     "#{normalized_pattern}#{File::SEPARATOR}")
+    # Check for exact path matches or directory prefix matches
+    sig { params(normalized_path: String, pattern: String, normalized_pattern: String).returns(T::Boolean) }
+    def self.exact_or_directory_match?(normalized_path, pattern, normalized_pattern)
+      # Exact match
+      return true if normalized_path == pattern || normalized_path == normalized_pattern
 
-        # case 3: Explicit recursive (patterns that end with /**)
-        exclude_recursive = false
-        if pattern.end_with?("/**")
-          base_pattern_str = pattern[0...-3]
-          base_pattern = normalize_path(base_pattern_str) if base_pattern_str && !base_pattern_str.empty?
-          exclude_recursive = !base_pattern.nil? && !base_pattern.empty? && (
-            normalized_path == base_pattern ||
-            normalized_path.start_with?("#{base_pattern}/") ||
-            normalized_path.start_with?("#{base_pattern}#{File::SEPARATOR}")
-          )
-        end
+      # Directory prefix match: check if path is inside an excluded directory
+      normalized_path.start_with?("#{pattern}#{File::SEPARATOR}",
+                                  "#{normalized_pattern}#{File::SEPARATOR}")
+    end
 
-        # case 4: Glob pattern matching with enhanced flags
-        # Use multiple fnmatch attempts with different flag combinations
-        fnmatch_flags = [
-          File::FNM_EXTGLOB,
-          File::FNM_EXTGLOB | File::FNM_PATHNAME,
-          File::FNM_EXTGLOB | File::FNM_PATHNAME | File::FNM_DOTMATCH,
-          File::FNM_PATHNAME
-        ]
-        exclude_fnmatch_paths = fnmatch_flags.any? do |flag|
-          File.fnmatch?(pattern, normalized_path, flag) || File.fnmatch?(normalized_pattern, normalized_path, flag)
-        end
+    # Check for recursive pattern matches (patterns ending with /**)
+    sig { params(normalized_path: String, pattern: String).returns(T::Boolean) }
+    def self.recursive_match?(normalized_path, pattern)
+      return false unless pattern.end_with?("/**")
 
-        result = exclude_exact || exclude_deeper || exclude_recursive || exclude_fnmatch_paths
-        result
+      base_pattern_str = pattern[0...-3]
+      return false if base_pattern_str.nil? || base_pattern_str.empty?
+
+      base_pattern = normalize_path(base_pattern_str)
+      return false if base_pattern.empty?
+
+      normalized_path == base_pattern ||
+        normalized_path.start_with?("#{base_pattern}/") ||
+        normalized_path.start_with?("#{base_pattern}#{File::SEPARATOR}")
+    end
+
+    # Check for glob pattern matches with various fnmatch flags
+    sig { params(normalized_path: String, pattern: String, normalized_pattern: String).returns(T::Boolean) }
+    def self.glob_match?(normalized_path, pattern, normalized_pattern)
+      fnmatch_flags = [
+        File::FNM_EXTGLOB,
+        File::FNM_EXTGLOB | File::FNM_PATHNAME,
+        File::FNM_EXTGLOB | File::FNM_PATHNAME | File::FNM_DOTMATCH,
+        File::FNM_PATHNAME
+      ]
+
+      fnmatch_flags.any? do |flag|
+        File.fnmatch?(pattern, normalized_path, flag) || File.fnmatch?(normalized_pattern, normalized_path, flag)
       end
     end
 
