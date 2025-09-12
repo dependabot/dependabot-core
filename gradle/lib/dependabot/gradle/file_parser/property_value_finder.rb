@@ -12,7 +12,7 @@ module Dependabot
         extend T::Sig
 
         # rubocop:disable Layout/LineLength
-        SUPPORTED_BUILD_FILE_NAMES = %w(build.gradle build.gradle.kts).freeze
+        SUPPORTED_BUILD_FILE_NAMES = %w(build.gradle build.gradle.kts build.gradle.dcl).freeze
 
         QUOTED_VALUE_REGEX = /\s*['"][^\s]+['"]\s*/
 
