@@ -104,7 +104,7 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                         continue;
                     }
 
-                    var dependencyInfo = RunWorker.GetDependencyInfo(job, dependency, allowCooldown: experimentsManager.EnableCooldown);
+                    var dependencyInfo = RunWorker.GetDependencyInfo(job, dependency, allowCooldown: true);
                     var analysisResult = await analyzeWorker.RunAsync(repoContentsPath.FullName, discoveryResult, dependencyInfo);
                     if (analysisResult.Error is not null)
                     {
@@ -207,7 +207,7 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                         continue;
                     }
 
-                    var dependencyInfo = RunWorker.GetDependencyInfo(job, dependency, allowCooldown: experimentsManager.EnableCooldown);
+                    var dependencyInfo = RunWorker.GetDependencyInfo(job, dependency, allowCooldown: true);
                     var analysisResult = await analyzeWorker.RunAsync(repoContentsPath.FullName, discoveryResult, dependencyInfo);
                     if (analysisResult.Error is not null)
                     {

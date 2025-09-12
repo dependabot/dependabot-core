@@ -19,6 +19,7 @@ module Dependabot
   module Python
     class FileParser < Dependabot::FileParsers::Base # rubocop:disable Metrics/ClassLength
       extend T::Sig
+
       require_relative "file_parser/pipfile_files_parser"
       require_relative "file_parser/pyproject_files_parser"
       require_relative "file_parser/setup_file_parser"
@@ -281,8 +282,7 @@ module Dependabot
               name: normalised_name(name, dep["extras"]),
               version: version&.include?("*") ? nil : version,
               requirements: requirements,
-              package_manager: "pip",
-              origin_files: [Pathname.new(file).cleanpath.to_path]
+              package_manager: "pip"
             )
         end
         dependencies

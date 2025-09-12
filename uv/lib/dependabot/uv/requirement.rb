@@ -146,7 +146,7 @@ module Dependabot
         quoted_ops = OPS.keys.sort_by(&:length).reverse
                         .map { |k| Regexp.quote(k) }.join("|")
         op = req_string.match(/\A\s*(#{quoted_ops})?/)
-                       .captures.first.to_s&.strip
+                       .captures.first.to_s.strip
         exact_op = ["", "=", "==", "==="].include?(op)
 
         req_string.strip
