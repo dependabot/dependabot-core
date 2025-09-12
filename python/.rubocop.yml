@@ -1,10 +1,1 @@
 inherit_from: ../.rubocop.yml
-
-inherit_mode:
-  merge:
-    - Exclude
-
-Sorbet/StrictSigil:
-  Exclude:
-    - lib/dependabot/python/file_fetcher.rb
-    - lib/dependabot/python/update_checker.rb
