@@ -116,7 +116,7 @@ module Dependabot
         releases.reject do |release|
           version_class.new(release["version"]) <= version_class.new(dependency.version) ||
             ignore_requirements.any? do |r|
-              r.instance_of?(::Dependabot::Helm::Requirement) && r.satisfied_by?(version_class.new(release["version"]))
+              r.instance_of?(Dependabot::Requirement) && r.satisfied_by?(version_class.new(release["version"]))
             end
         end
       end
@@ -291,7 +291,7 @@ module Dependabot
         all_versions.reject do |version|
           version_class.new(version) <= version_class.new(dependency.version) ||
             ignore_requirements.any? do |r|
-              r.instance_of?(::Dependabot::Helm::Requirement) && r.satisfied_by?(version_class.new(version))
+              r.instance_of?(Dependabot::Requirement) && r.satisfied_by?(version_class.new(version))
             end
         end
       end
