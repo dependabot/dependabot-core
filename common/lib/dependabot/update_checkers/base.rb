@@ -46,9 +46,6 @@ module Dependabot
       sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
       attr_reader :update_cooldown
 
-      sig { returns(T.nilable(T::Array[String])) }
-      attr_reader :exclude_paths
-
       sig { returns(T::Hash[Symbol, T.untyped]) }
       attr_reader :options
 
@@ -64,7 +61,6 @@ module Dependabot
           requirements_update_strategy: T.nilable(Dependabot::RequirementsUpdateStrategy),
           dependency_group: T.nilable(Dependabot::DependencyGroup),
           update_cooldown: T.nilable(Dependabot::Package::ReleaseCooldownOptions),
-          exclude_paths: T.nilable(T::Array[String]),
           options: T::Hash[Symbol, T.untyped]
         )
           .void
@@ -73,7 +69,7 @@ module Dependabot
                      repo_contents_path: nil, ignored_versions: [],
                      raise_on_ignored: false, security_advisories: [],
                      requirements_update_strategy: nil, dependency_group: nil,
-                     update_cooldown: nil, exclude_paths: [], options: {})
+                     update_cooldown: nil, options: {})
         @dependency = dependency
         @dependency_files = dependency_files
         @repo_contents_path = repo_contents_path
@@ -84,7 +80,6 @@ module Dependabot
         @security_advisories = security_advisories
         @dependency_group = dependency_group
         @update_cooldown = update_cooldown
-        @exclude_paths = exclude_paths
         @options = options
       end
 
@@ -110,37 +105,6 @@ module Dependabot
 
           requirements_can_update?
         end
-      end
-
-      sig { returns(T::Boolean) }
-      def excluded? # rubocop:disable Metrics/PerceivedComplexity
-        return false unless Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files)
-
-        return false if exclude_paths.nil? || exclude_paths&.empty?
-
-        origin_files = @dependency.origin_files
-        if origin_files.length.positive?
-          excluded_files = []
-          non_excluded_files = []
-
-          origin_files.each do |origin_file|
-            if Dependabot::FileFiltering.exclude_path?(origin_file, exclude_paths)
-              excluded_files << origin_file
-            else
-              non_excluded_files << origin_file
-            end
-          end
-
-          # Only exclude if the dependency appears ONLY in excluded paths
-          # If it appears in any non-excluded path, we should process it
-          if non_excluded_files.empty? && excluded_files.any?
-            Dependabot.logger.info("Excluding dependency #{dependency.name} - only found in excluded paths " \
-                                   "#{excluded_files.join(', ')}")
-            return true
-          end
-        end
-
-        false
       end
 
       sig { params(requirements_to_unlock: T.nilable(Symbol)).returns(T::Array[Dependabot::Dependency]) }
@@ -398,9 +362,7 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def requirements_up_to_date?
-        if can_compare_requirements?
-          return (T.must(version_from_requirements) >= version_class.new(latest_version.to_s))
-        end
+        return T.must(version_from_requirements) >= version_class.new(latest_version.to_s) if can_compare_requirements?
 
         changed_requirements.none?
       end

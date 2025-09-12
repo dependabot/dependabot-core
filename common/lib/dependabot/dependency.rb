@@ -101,9 +101,6 @@ module Dependabot
     sig { returns(T.nilable(Time)) }
     attr_accessor :attribution_timestamp
 
-    sig { returns(T::Array[String]) }
-    attr_reader :origin_files
-
     # rubocop:disable Metrics/AbcSize
     # rubocop:disable Metrics/PerceivedComplexity
     sig do
@@ -118,13 +115,12 @@ module Dependabot
         directory: T.nilable(String),
         subdependency_metadata: T.nilable(T::Array[T::Hash[T.any(Symbol, String), String]]),
         removed: T::Boolean,
-        metadata: T.nilable(T::Hash[T.any(Symbol, String), String]),
-        origin_files: T::Array[String]
+        metadata: T.nilable(T::Hash[T.any(Symbol, String), String])
       ).void
     end
     def initialize(name:, requirements:, package_manager:, version: nil,
                    previous_version: nil, previous_requirements: nil, directory: nil,
-                   subdependency_metadata: [], removed: false, metadata: {}, origin_files: [])
+                   subdependency_metadata: [], removed: false, metadata: {})
       @name = name
       @version = T.let(
         case version
@@ -151,7 +147,6 @@ module Dependabot
       end
       @removed = removed
       @metadata = T.let(symbolize_keys(metadata || {}), T::Hash[Symbol, T.untyped])
-      @origin_files = origin_files
       check_values
     end
     # rubocop:enable Metrics/AbcSize
@@ -185,7 +180,7 @@ module Dependabot
         "directory" => directory,
         "package_manager" => package_manager,
         "subdependency_metadata" => subdependency_metadata,
-        "removed" => removed? ? true : nil
+        "removed" => removed? || nil
       }.compact
     end
 
@@ -272,7 +267,7 @@ module Dependabot
       previous_refs = T.must(previous_requirements).filter_map do |r|
         r.dig(:source, "ref") || r.dig(:source, :ref)
       end.uniq
-      previous_refs.first if previous_refs.count == 1
+      previous_refs.first if previous_refs.one?
     end
 
     sig { returns(T.nilable(String)) }
@@ -280,7 +275,7 @@ module Dependabot
       new_refs = requirements.filter_map do |r|
         r.dig(:source, "ref") || r.dig(:source, :ref)
       end.uniq
-      new_refs.first if new_refs.count == 1
+      new_refs.first if new_refs.one?
     end
 
     sig { returns(T::Boolean) }

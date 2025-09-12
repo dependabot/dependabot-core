@@ -14,6 +14,7 @@ module Dependabot
     class FileParser
       class PipfileFilesParser
         extend T::Sig
+
         DEPENDENCY_GROUP_KEYS = T.let([
           {
             pipfile: "packages",
@@ -73,8 +74,7 @@ module Dependabot
                     groups: [group]
                   }],
                   package_manager: "pip",
-                  metadata: { original_name: dep_name },
-                  origin_files: [T.must(pipfile).name]
+                  metadata: { original_name: dep_name }
                 )
             end
           end
@@ -107,8 +107,7 @@ module Dependabot
                   version: version&.gsub(/^===?/, ""),
                   requirements: [],
                   package_manager: "pip",
-                  subdependency_metadata: [{ production: key != "develop" }],
-                  origin_files: [T.must(pipfile_lock).name]
+                  subdependency_metadata: [{ production: key != "develop" }]
                 )
             end
           end
