@@ -132,7 +132,13 @@ module Dependabot
       def handle_string_value(key, value, hash, current_path)
         images = []
         if key == "repository" && hash["tag"].is_a?(String)
-          images << { path: current_path.join("."), image: "#{value}:#{hash['tag']}" }
+          # Handle separate registry field
+          repository = value
+          if hash["registry"].is_a?(String) && !repository.match?(%r{^[^/]+\.[^/]+/})
+            # If registry is separate and repository doesn't already contain a domain-like registry
+            repository = "#{hash['registry']}/#{repository}"
+          end
+          images << { path: current_path.join("."), image: "#{repository}:#{hash['tag']}" }
         elsif key == "image" && value.include?(":")
           images << { path: current_path.join("."), image: value }
         end

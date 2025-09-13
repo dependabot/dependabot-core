@@ -185,4 +185,79 @@ RSpec.describe Dependabot::Helm::FileParser do
       end
     end
   end
+
+  describe "values.yaml Docker image parsing" do
+    let(:files) { [values_file] }
+    let(:values_file) do
+      Dependabot::DependencyFile.new(
+        name: "values.yaml",
+        content: values_content
+      )
+    end
+
+    context "with separate registry and repository fields" do
+      let(:values_content) do
+        <<~YAML
+          curl:
+            image:
+              repository: curl/curl
+              tag: 8.12.0
+              registry: quay.io
+
+          argocli:
+            image:
+              repository: quay.io/argoproj/argocli
+              tag: v3.6.6
+        YAML
+      end
+
+      it "correctly handles images with separate registry field" do
+        dependencies = parser.parse
+
+        curl_dep = dependencies.find { |d| d.name == "quay.io/curl/curl" }
+        expect(curl_dep).to be_a(Dependabot::Dependency)
+        expect(curl_dep.version).to eq("8.12.0")
+        expect(curl_dep.requirements.first[:source][:registry]).to eq("quay.io")
+        expect(curl_dep.requirements.first[:source][:tag]).to eq("8.12.0")
+      end
+
+      it "correctly handles images with registry in repository field" do
+        dependencies = parser.parse
+
+        argocli_dep = dependencies.find { |d| d.name == "quay.io/argoproj/argocli" }
+        expect(argocli_dep).to be_a(Dependabot::Dependency)
+        expect(argocli_dep.version).to eq("v3.6.6")
+        expect(argocli_dep.requirements.first[:source][:registry]).to eq("quay.io")
+        expect(argocli_dep.requirements.first[:source][:tag]).to eq("v3.6.6")
+      end
+
+      it "prevents registry doubling when repository already contains registry" do
+        # Test case specifically for issue #12207 - prevent registry doubling
+        values_content_with_doubling = <<~YAML
+          app:
+            image:
+              repository: quay.io/myorg/myapp
+              tag: v1.0.0
+              registry: quay.io
+        YAML
+
+        values_file = Dependabot::DependencyFile.new(
+          name: "values.yaml",
+          content: values_content_with_doubling
+        )
+        parser = described_class.new(dependency_files: [values_file], source: source)
+        dependencies = parser.parse
+
+        # Should find the dependency with correct name (no doubling)
+        app_dep = dependencies.find { |d| d.name == "quay.io/myorg/myapp" }
+        expect(app_dep).to be_a(Dependabot::Dependency)
+        expect(app_dep.name).to eq("quay.io/myorg/myapp")
+        expect(app_dep.version).to eq("v1.0.0")
+
+        # Should not create a doubled registry version
+        doubled_dep = dependencies.find { |d| d.name == "quay.io/quay.io/myorg/myapp" }
+        expect(doubled_dep).to be_nil
+      end
+    end
+  end
 end
