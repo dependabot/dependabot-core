@@ -176,7 +176,8 @@ module Dependabot
             file: file.name,
             groups: [type],
             source: source_from_declaration(requirement)
-          }]
+          }],
+          origin_files: [file.name]
         )
       end
 
@@ -197,7 +198,8 @@ module Dependabot
             name: package_details["name"],
             version: version_from_lockfile_details(package_details),
             package_manager: "cargo",
-            requirements: []
+            requirements: [],
+            origin_files: [T.must(lockfile).name]
           )
         end
 
