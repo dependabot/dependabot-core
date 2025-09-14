@@ -16,7 +16,7 @@ module Dependabot
       abstract!
 
       FROM_REGEX = /FROM(\s+--platform\=\S+)?/i
-      COPY_FROM_REGEX = /COPY\s+(?:--chown\=.+\s+)?--from\=/i
+      COPY_FROM_REGEX = /COPY\s+.*--from\=/i
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
