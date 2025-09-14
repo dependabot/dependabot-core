@@ -18,7 +18,7 @@ module Dependabot
 
       sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
-        [DOCKER_REGEXP, YAML_REGEXP, COPY_FROM_REGEX]
+        [DOCKER_REGEXP, YAML_REGEXP]
       end
 
       sig { override.returns(String) }
