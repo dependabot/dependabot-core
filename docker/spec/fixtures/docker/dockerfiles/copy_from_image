@@ -1,3 +1,12 @@
 FROM ubuntu:17.04
 
+RUN addgroup myuser && adduser -S -G myuser myuser
+RUN mkdir /myuserfolder && chown myuser:myuser /myuserfolder
+
+USER myuser
+
 COPY --from=alpine/curl:8.9.0 /usr/bin/curl /usr/bin/curl
+
+COPY --chown=myuser:myuser --from=alpine/curl2:8.9.1 --chmod=0777 /usr/bin/local/curl /myuserfolder/curl
+
+COPY --from=alpine/curl-http3:8.11.0 --chown=myuser:myuser /usr/bin/local/curl /myuserfolder/curl
