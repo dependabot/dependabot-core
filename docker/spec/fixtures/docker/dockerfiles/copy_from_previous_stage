@@ -6,6 +6,10 @@ FROM ubuntu:17.04
 
 COPY --from=0 /tmp/my_file /tmp/my_file
 
+COPY --from=1 /tmp/my_file /tmp/my_file
+
+COPY --from=1234 /tmp/my_file /tmp/my_file
+
 COPY --from=00000:0.0.1 /tmp/my_file /tmp/my_file
 
 COPY --from=00/00:0.0.1 /tmp/my_file /tmp/my_file
