@@ -16,6 +16,7 @@ module Dependabot
       abstract!
 
       FROM_REGEX = /FROM(\s+--platform\=\S+)?/i
+      COPY_FROM_REGEX = /COPY\s+(?:--chown\=.+\s+)?--from\=/i
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
@@ -124,7 +125,7 @@ module Dependabot
 
       sig { params(escaped_declaration: String).returns(Regexp) }
       def build_old_declaration_regex(escaped_declaration)
-        %r{^#{FROM_REGEX}\s+(docker\.io/)?#{escaped_declaration}(?=\s|$)}
+        %r{^(#{FROM_REGEX}\s+|#{COPY_FROM_REGEX})(docker\.io/)?#{escaped_declaration}(?=\s|$)}
       end
 
       sig { params(file: Dependabot::DependencyFile).returns(T.nilable(String)) }
