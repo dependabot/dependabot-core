@@ -813,6 +813,76 @@ RSpec.describe Dependabot::Docker::FileUpdater do
         its(:content) { is_expected.to include "RUN apk add" }
       end
     end
+
+    context "when the dockerfile has COPY --from" do
+      context "which uses simple COPY --from statement" do
+        let(:dockerfile_body) do
+          fixture("docker", "dockerfiles", "copy_from_image")
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "alpine/curl",
+            version: "8.10.0",
+            previous_version: "8.9.0",
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              file: "Dockerfile",
+              source: { tag: "8.10.0" }
+            }],
+            previous_requirements: [{
+              requirement: nil,
+              groups: [],
+              file: "Dockerfile",
+              source: { tag: "8.9.0" }
+            }],
+            package_manager: "docker"
+          )
+        end
+
+        describe "the updated Dockerfile" do
+          subject(:updated_dockerfile) do
+            updated_files.find { |f| f.name == "Dockerfile" }
+          end
+
+          its(:content) { is_expected.to include "COPY --from=alpine/curl:8.10.0" }
+        end
+      end
+
+      context "which includes --chown" do
+        let(:dockerfile_body) do
+          fixture("docker", "dockerfiles", "copy_from_image_with_chown")
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "alpine/curl",
+            version: "8.10.0",
+            previous_version: "8.9.0",
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              file: "Dockerfile",
+              source: { tag: "8.10.0" }
+            }],
+            previous_requirements: [{
+              requirement: nil,
+              groups: [],
+              file: "Dockerfile",
+              source: { tag: "8.9.0" }
+            }],
+            package_manager: "docker"
+          )
+        end
+
+        describe "the updated Dockerfile" do
+          subject(:updated_dockerfile) do
+            updated_files.find { |f| f.name == "Dockerfile" }
+          end
+
+          its(:content) { is_expected.to include "COPY --chown=myuser:myuser --from=alpine/curl:8.10.0" }
+        end
+      end
+    end
   end
 
   describe "#updated_dependency_files" do
