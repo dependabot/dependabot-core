@@ -15,21 +15,27 @@ module Dependabot
       TAG_NO_PREFIX = /(?<tag>[\w][\w.-]{0,127})/
       TAG = /:#{TAG_NO_PREFIX}/
       DIGEST = /(?<digest>[0-9a-f]{64})/
+      IMAGE_SPEC = %r{(#{REGISTRY}/)?#{IMAGE}#{TAG}?(?:@sha256:#{DIGEST})?#{NAME}?}x
 
       FROM_LINE =
         %r{^#{FROM}\s+(#{PLATFORM}\s+)?(#{REGISTRY}/)?
           #{IMAGE}#{TAG}?(?:@sha256:#{DIGEST})?#{NAME}?}x
 
-      IMAGE_SPEC = %r{^(#{REGISTRY}/)?#{IMAGE}#{TAG}?(?:@sha256:#{DIGEST})?#{NAME}?}x
+      WORKFLOW_IMAGE_LINE = /^#{IMAGE_SPEC}$/
+
       TAG_WITH_DIGEST = /^#{TAG_NO_PREFIX}(?:@sha256:#{DIGEST})?/x
 
       COPY = /COPY/i
-      CHOWN = /--chown\=(?<ownerUser>[A-Za-z0-9]+):(?<ownerGroup>[A-Za-z0-9]+)/
-      # Exclude '0' from 'image' capture group as it represents a copy
-      # of build artifact of previous stage into the next one
-      COPY_FROM = %r{--from\=((?!0)(#{REGISTRY}/)?#{IMAGE}#{TAG}?(?:@sha256:#{DIGEST})?#{NAME}?)}
+      CHOWN = /--chown\=(?:[[:alnum:]]+):(?:[[:alnum:]]+)/
 
-      # --chown flag can be set optionally, meaning we might have different orders of flags
+      # Exclude '0' from 'image' capture group as it represents a copy
+      # of build artifact of previous stage into the next one.
+      # (See also https://docs.docker.com/build/building/multi-stage/#use-multi-stage-builds)
+      # However, we have to make sure that it only matches to --from=0, as
+      # it's valid to have an image named like regex '0+/0+'.
+      PREVIOUS_STAGE_REF_LOOKAHEAD = /(?!0(?:$|\s))/
+      COPY_FROM = /--from\=#{PREVIOUS_STAGE_REF_LOOKAHEAD}#{IMAGE_SPEC}/
+      # --chown flag can be set optionally, meaning we might have different orders of flags.
       COPY_FROM_LINE = /^#{COPY}\s+(#{COPY_FROM}\s+#{CHOWN}?|#{CHOWN}?\s+#{COPY_FROM})/x
 
       sig { returns(Ecosystem) }
@@ -102,7 +108,7 @@ module Dependabot
 
           images.each do |string|
             # TODO: Support Docker references and path references
-            details = string.match(IMAGE_SPEC)&.named_captures
+            details = string.match(WORKFLOW_IMAGE_LINE)&.named_captures
             next if details.nil?
 
             details["registry"] = nil if details["registry"] == "docker.io"
