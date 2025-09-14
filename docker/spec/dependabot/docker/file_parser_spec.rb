@@ -724,14 +724,12 @@ RSpec.describe Dependabot::Docker::FileParser do
         subject(:dependency) { dependencies[1] }
 
         let(:expected_requirements) do
-          [
-            {
-              requirement: nil,
-              groups: [],
-              file: "Dockerfile",
-              source: { tag: "8.9.0" }
-            },
-          ]
+          [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { tag: "8.9.0" }
+          }]
         end
 
         it "has the right details" do
@@ -746,14 +744,12 @@ RSpec.describe Dependabot::Docker::FileParser do
         subject(:dependency) { dependencies[2] }
 
         let(:expected_requirements) do
-          [
-            {
-              requirement: nil,
-              groups: [],
-              file: "Dockerfile",
-              source: { tag: "8.9.1" }
-            }
-          ]
+          [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { tag: "8.9.1" }
+          }]
         end
 
         it "has the right details" do
@@ -768,14 +764,12 @@ RSpec.describe Dependabot::Docker::FileParser do
         subject(:dependency) { dependencies.last }
 
         let(:expected_requirements) do
-          [
-            {
-              requirement: nil,
-              groups: [],
-              file: "Dockerfile",
-              source: { tag: "8.11.0" }
-            }
-          ]
+          [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { tag: "8.11.0" }
+          }]
         end
 
         it "has the right details" do
