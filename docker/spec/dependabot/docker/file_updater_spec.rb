@@ -815,7 +815,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
     end
 
     context "when the dockerfile has COPY --from" do
-      context "which uses simple COPY --from statement" do
+      context "with simple COPY --from statement" do
         let(:dockerfile_body) do
           fixture("docker", "dockerfiles", "copy_from_image")
         end
@@ -849,7 +849,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
         end
       end
 
-      context "which includes options, with --from being the second option" do
+      context "with options included, with --from being the second option" do
         let(:dockerfile_body) do
           fixture("docker", "dockerfiles", "copy_from_image")
         end
