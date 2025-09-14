@@ -26,8 +26,6 @@ module Dependabot
       TAG_WITH_DIGEST = /^#{TAG_NO_PREFIX}(?:@sha256:#{DIGEST})?/x
 
       COPY = /COPY/i
-      CHOWN = /--chown\=(?:[[:alnum:]]+):(?:[[:alnum:]]+)/
-
       # Exclude '0' from 'image' capture group as it represents a copy
       # of build artifact of previous stage into the next one.
       # (See also https://docs.docker.com/build/building/multi-stage/#use-multi-stage-builds)
@@ -35,8 +33,11 @@ module Dependabot
       # it's valid to have an image named like regex '0+/0+'.
       PREVIOUS_STAGE_REF_LOOKAHEAD = /(?!0(?:$|\s))/
       COPY_FROM = /--from\=#{PREVIOUS_STAGE_REF_LOOKAHEAD}#{IMAGE_SPEC}/
-      # --chown flag can be set optionally, meaning we might have different orders of flags.
-      COPY_FROM_LINE = /^#{COPY}\s+(#{COPY_FROM}\s+#{CHOWN}?|#{CHOWN}?\s+#{COPY_FROM})/x
+      # COPY can have optional options set in random order. Listing every possible
+      # combination scales badly if new options are added, so instead we just try
+      # to lookup the --from option.
+      # For a list of possible options, see https://docs.docker.com/reference/dockerfile/#copy
+      COPY_FROM_LINE = /^#{COPY}\s+.*#{COPY_FROM}\s+/x
 
       sig { returns(Ecosystem) }
       def ecosystem
