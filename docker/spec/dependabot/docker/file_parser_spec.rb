@@ -754,7 +754,7 @@ RSpec.describe Dependabot::Docker::FileParser do
               groups: [],
               file: "Dockerfile",
               source: { tag: "8.9.0" }
-            },
+            }
           ]
         end
 
@@ -776,7 +776,7 @@ RSpec.describe Dependabot::Docker::FileParser do
               groups: [],
               file: "Dockerfile",
               source: { tag: "8.11.0" }
-            },
+            }
           ]
         end
 
@@ -792,9 +792,9 @@ RSpec.describe Dependabot::Docker::FileParser do
     context "with only one COPY line, copying from the previous stage" do
       let(:dockerfile_fixture_name) { "copy_from_previous_stage" }
 
-      its(:length) { is_expected.to eq(1) }
+      its(:length) { is_expected.to eq(4) }
 
-      describe "the dependency" do
+      describe "the first dependency" do
         subject(:dependency) { dependencies.first }
 
         let(:expected_requirements) do
@@ -810,6 +810,66 @@ RSpec.describe Dependabot::Docker::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("ubuntu")
           expect(dependency.version).to eq("17.04")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+
+      describe "the second dependency (with zeroes)" do
+        subject(:dependency) { dependencies[1] }
+
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { tag: "0.0.1" }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("00000")
+          expect(dependency.version).to eq("0.0.1")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+
+      describe "the third dependency (with zeroes)" do
+        subject(:dependency) { dependencies[2] }
+
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { tag: "0.0.1" }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("00/00")
+          expect(dependency.version).to eq("0.0.1")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+
+      describe "the fourth dependency (with zeroes)" do
+        subject(:dependency) { dependencies[3] }
+
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { tag: "0.0.1" }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("0/00")
+          expect(dependency.version).to eq("0.0.1")
           expect(dependency.requirements).to eq(expected_requirements)
         end
       end
