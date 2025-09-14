@@ -695,34 +695,10 @@ RSpec.describe Dependabot::Docker::FileParser do
       end
     end
 
-    context "with COPY line, copying from an image" do
+    context "with COPY line with options specified, copying from an image" do
       let(:dockerfile_fixture_name) { "copy_from_image" }
 
-      describe "the second dependency" do
-        subject(:dependency) { dependencies.last }
-
-        let(:expected_requirements) do
-          [{
-            requirement: nil,
-            groups: [],
-            file: "Dockerfile",
-            source: { tag: "8.9.0" }
-          }]
-        end
-
-        it "has the right details" do
-          expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("alpine/curl")
-          expect(dependency.version).to eq("8.9.0")
-          expect(dependency.requirements).to eq(expected_requirements)
-        end
-      end
-    end
-
-    context "with COPY line, copying from an image with --chown flag" do
-      let(:dockerfile_fixture_name) { "copy_from_image_with_chown" }
-
-      its(:length) { is_expected.to eq(3) }
+      its(:length) { is_expected.to eq(4) }
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
@@ -754,7 +730,7 @@ RSpec.describe Dependabot::Docker::FileParser do
               groups: [],
               file: "Dockerfile",
               source: { tag: "8.9.0" }
-            }
+            },
           ]
         end
 
@@ -767,6 +743,28 @@ RSpec.describe Dependabot::Docker::FileParser do
       end
 
       describe "the third dependency" do
+        subject(:dependency) { dependencies[2] }
+
+        let(:expected_requirements) do
+          [
+            {
+              requirement: nil,
+              groups: [],
+              file: "Dockerfile",
+              source: { tag: "8.9.1" }
+            }
+          ]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("alpine/curl2")
+          expect(dependency.version).to eq("8.9.1")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+
+      describe "the fourth dependency" do
         subject(:dependency) { dependencies.last }
 
         let(:expected_requirements) do

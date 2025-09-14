@@ -849,15 +849,15 @@ RSpec.describe Dependabot::Docker::FileUpdater do
         end
       end
 
-      context "which includes --chown" do
+      context "which includes options, with --from being the second option" do
         let(:dockerfile_body) do
-          fixture("docker", "dockerfiles", "copy_from_image_with_chown")
+          fixture("docker", "dockerfiles", "copy_from_image")
         end
         let(:dependency) do
           Dependabot::Dependency.new(
-            name: "alpine/curl",
+            name: "alpine/curl2",
             version: "8.10.0",
-            previous_version: "8.9.0",
+            previous_version: "8.9.1",
             requirements: [{
               requirement: nil,
               groups: [],
@@ -868,7 +868,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
               requirement: nil,
               groups: [],
               file: "Dockerfile",
-              source: { tag: "8.9.0" }
+              source: { tag: "8.9.1" }
             }],
             package_manager: "docker"
           )
@@ -879,7 +879,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
             updated_files.find { |f| f.name == "Dockerfile" }
           end
 
-          its(:content) { is_expected.to include "COPY --chown=myuser:myuser --from=alpine/curl:8.10.0" }
+          its(:content) { is_expected.to include "COPY --chown=myuser:myuser --from=alpine/curl2:8.10.0" }
         end
       end
     end
