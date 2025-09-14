@@ -26,12 +26,12 @@ module Dependabot
       TAG_WITH_DIGEST = /^#{TAG_NO_PREFIX}(?:@sha256:#{DIGEST})?/x
 
       COPY = /COPY/i
-      # Exclude '0' from 'image' capture group as it represents a copy
-      # of build artifact of previous stage into the next one.
+      # Exclude integers from 'image' capture group as it represents a copy
+      # of build artifact of previous stages into the next one.
       # (See also https://docs.docker.com/build/building/multi-stage/#use-multi-stage-builds)
-      # However, we have to make sure that it only matches to --from=0, as
-      # it's valid to have an image named like regex '0+/0+'.
-      PREVIOUS_STAGE_REF_LOOKAHEAD = /(?!0(?:$|\s))/
+      # However, we have to make sure that it only matches to --from=\d+, as
+      # it's valid to have an image named like regex '\d+/.+'.
+      PREVIOUS_STAGE_REF_LOOKAHEAD = /(?!\d+(?:$|\s))/
       COPY_FROM = /--from\=#{PREVIOUS_STAGE_REF_LOOKAHEAD}#{IMAGE_SPEC}/
       # COPY can have optional options set in random order. Listing every possible
       # combination scales badly if new options are added, so instead we just try
