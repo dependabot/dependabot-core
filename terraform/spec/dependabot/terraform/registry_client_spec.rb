@@ -147,6 +147,47 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
     expect(source.url).to eq("https://github.com/hashicorp/terraform-aws-consul")
   end
 
+  it "falls back to metadata API when X-Terraform-Get returns archivist URL" do
+    hostname = "registry.terraform.io"
+
+    # Mock service discovery
+    stub_request(:get, "https://#{hostname}/.well-known/terraform.json").and_return(
+      status: 200,
+      body: {
+        "modules.v1": "/v1/modules/"
+      }.to_json
+    )
+
+    # Mock download endpoint returning archivist URL
+    stub_request(:get, "https://#{hostname}/v1/modules/hashicorp/consul/aws/0.9.3/download").and_return(
+      status: 204,
+      headers: {
+        "X-Terraform-Get" => "https://archivist.terraform.io/v1/object/dmF1bHQ6djE6..."
+      }
+    )
+
+    # Mock archivist URL request (returns the archivist URL, which can't be parsed by Source.from_url)
+    stub_request(:get, "https://archivist.terraform.io/v1/object/dmF1bHQ6djE6...?terraform-get=1").and_return(
+      status: 200,
+      headers: {
+        "X-Terraform-Get" => "https://archivist.terraform.io/v1/object/dmF1bHQ6djE6..."
+      }
+    )
+
+    # Mock metadata API returning GitHub URL
+    stub_request(:get, "https://#{hostname}/v1/modules/hashicorp/consul/aws").and_return(
+      status: 200,
+      body: {
+        "source" => "https://github.com/hashicorp/terraform-aws-consul"
+      }.to_json
+    )
+
+    source = client.source(dependency: module_dependency)
+
+    expect(source).to be_a Dependabot::Source
+    expect(source.url).to eq("https://github.com/hashicorp/terraform-aws-consul")
+  end
+
   it "fetches the source for a provider dependency", :vcr do
     source = client.source(dependency: module_dependency)
 
@@ -207,6 +248,58 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
 
     expect(source).to be_a Dependabot::Source
     expect(source.url).to eq("https://github.com/hashicorp/terraform-provider-ciscoasa")
+  end
+
+  it "passes Bearer token to metadata API when fallback occurs on private registry" do
+    hostname = "registry.example.org"
+    token = SecureRandom.hex(16)
+    credentials = [{ "type" => "terraform_registry", "host" => hostname, "token" => token }]
+
+    # Create a private registry dependency
+    private_module_dependency = Dependabot::Dependency.new(
+      name: "corp/mymodule/aws",
+      version: "1.0.0",
+      package_manager: "terraform",
+      requirements: [{
+        requirement: "1.0.0",
+        groups: [],
+        file: "main.tf",
+        source: {
+          type: "registry",
+          registry_hostname: hostname,
+          module_identifier: "corp/mymodule/aws"
+        }
+      }]
+    )
+
+    # Mock service discovery
+    stub_request(:get, "https://#{hostname}/.well-known/terraform.json")
+      .and_return(body: { "modules.v1": "/v1/modules/" }.to_json)
+
+    # Mock download endpoint returning archivist URL (triggers fallback to metadata API)
+    stub_request(:get, "https://#{hostname}/v1/modules/corp/mymodule/aws/1.0.0/download")
+      .and_return(
+        status: 204,
+        headers: { "X-Terraform-Get" => "https://archivist.terraform.io/v1/object/dmF1bHQ6djE6..." }
+      )
+
+    # Mock the archivist URL request (this will fail to parse, triggering metadata API fallback)
+    stub_request(:get, "https://archivist.terraform.io/v1/object/dmF1bHQ6djE6...?terraform-get=1")
+      .and_return(status: 200, body: "<html><head><meta name=\"terraform-get\" content=\"https://archivist.terraform.io/v1/object/dmF1bHQ6djE6...\"/></head></html>")
+
+    # Mock metadata API endpoint
+    stub_request(:get, "https://#{hostname}/v1/modules/corp/mymodule/aws")
+      .and_return(body: { "source" => "https://github.com/corp/terraform-aws-mymodule" }.to_json)
+
+    client = described_class.new(hostname: hostname, credentials: credentials)
+    source = client.source(dependency: private_module_dependency)
+
+    expect(source).to be_a Dependabot::Source
+    expect(source.url).to eq("https://github.com/corp/terraform-aws-mymodule")
+
+    # Verify Bearer token was passed to metadata API
+    expect(WebMock).to have_requested(:get, "https://#{hostname}/v1/modules/corp/mymodule/aws")
+      .with(headers: { "Authorization" => "Bearer #{token}" })
   end
 
   context "with a custom hostname" do
