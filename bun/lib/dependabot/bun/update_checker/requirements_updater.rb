@@ -1,10 +1,12 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 ################################################################################
 # For more details on npm version constraints, see:                            #
 # https://docs.npmjs.com/misc/semver                                           #
 ################################################################################
+
+require "sorbet-runtime"
 
 require "dependabot/bun/requirement"
 require "dependabot/bun/update_checker"
@@ -15,6 +17,8 @@ module Dependabot
   module Bun
     class UpdateChecker
       class RequirementsUpdater
+        extend T::Sig
+
         VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/
         SEPARATOR = /(?<=[a-zA-Z0-9*])[\s|]+(?![\s|-])/
         ALLOWED_UPDATE_STRATEGIES = T.let(
@@ -27,6 +31,15 @@ module Dependabot
           T::Array[Dependabot::RequirementsUpdateStrategy]
         )
 
+        sig do
+          params(
+            requirements: T::Array[T::Hash[Symbol, T.untyped]],
+            updated_source: T.nilable(T::Hash[Symbol, T.untyped]),
+            update_strategy: Dependabot::RequirementsUpdateStrategy,
+            latest_resolvable_version: T.nilable(T.any(String, Gem::Version))
+          )
+            .void
+        end
         def initialize(requirements:, updated_source:, update_strategy:,
                        latest_resolvable_version:)
           @requirements = requirements
@@ -37,10 +50,13 @@ module Dependabot
 
           return unless latest_resolvable_version
 
-          @latest_resolvable_version =
-            version_class.new(latest_resolvable_version)
+          @latest_resolvable_version = T.let(
+            version_class.new(latest_resolvable_version),
+            Bun::Version
+          )
         end
 
+        sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
         def updated_requirements
           return requirements if update_strategy.lockfile_only?
 
@@ -62,17 +78,26 @@ module Dependabot
 
         private
 
+        sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
         attr_reader :requirements
+
+        sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
         attr_reader :updated_source
+
+        sig { returns(Dependabot::RequirementsUpdateStrategy) }
         attr_reader :update_strategy
+
+        sig { returns(T.nilable(Bun::Version)) }
         attr_reader :latest_resolvable_version
 
+        sig { void }
         def check_update_strategy
           return if ALLOWED_UPDATE_STRATEGIES.include?(update_strategy)
 
           raise "Unknown update strategy: #{update_strategy}"
         end
 
+        sig { returns(T::Boolean) }
         def updating_from_git_to_npm?
           return false unless updated_source.nil?
 
@@ -80,6 +105,7 @@ module Dependabot
           original_source&.fetch(:type) == "git"
         end
 
+        sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
         def initial_req_after_source_change(req)
           return req unless updating_from_git_to_npm?
           return req unless req[:requirement].nil?
@@ -87,12 +113,13 @@ module Dependabot
           req.merge(requirement: "^#{latest_resolvable_version}")
         end
 
+        sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
         def update_version_requirement(req)
           current_requirement = req[:requirement]
 
           if current_requirement.match?(/(<|-\s)/i)
             ruby_req = ruby_requirements(current_requirement).first
-            return req if ruby_req.satisfied_by?(latest_resolvable_version)
+            return req if ruby_req&.satisfied_by?(latest_resolvable_version)
 
             updated_req = update_range_requirement(current_requirement)
             return req.merge(requirement: updated_req)
@@ -102,6 +129,7 @@ module Dependabot
           req.merge(requirement: update_version_string(reqs.first))
         end
 
+        sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
         def update_version_requirement_if_needed(req)
           current_requirement = req[:requirement]
           version = latest_resolvable_version
@@ -113,6 +141,7 @@ module Dependabot
           update_version_requirement(req)
         end
 
+        sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
         def widen_requirement(req)
           current_requirement = req[:requirement]
           version = latest_resolvable_version
@@ -135,22 +164,25 @@ module Dependabot
           req.merge(requirement: updated_requirement)
         end
 
+        sig { params(requirement_string: String).returns(T::Array[Bun::Requirement]) }
         def ruby_requirements(requirement_string)
           Bun::Requirement
             .requirements_array(requirement_string)
         end
 
+        sig { params(req_string: String).returns(String) }
         def update_range_requirement(req_string)
           range_requirements =
             req_string.split(SEPARATOR).select { |r| r.match?(/<|(\s+-\s+)/) }
 
           if range_requirements.one?
-            range_requirement = range_requirements.first
+            range_requirement = T.must(range_requirements.first)
             versions = range_requirement.scan(VERSION_REGEX)
-            upper_bound = versions.map { |v| version_class.new(v) }.max
+            version_objects = versions.map { |v| version_class.new(v.to_s) }
+            upper_bound = T.must(version_objects.max)
             new_upper_bound = update_greatest_version(
-              upper_bound,
-              latest_resolvable_version
+              upper_bound.to_s,
+              T.must(latest_resolvable_version)
             )
 
             req_string.sub(
@@ -162,41 +194,47 @@ module Dependabot
           end
         end
 
+        sig { params(req_string: String).returns(String) }
         def update_version_string(req_string)
           req_string
             .sub(VERSION_REGEX) do |old_version|
               if old_version.match?(/\d-/) ||
-                 latest_resolvable_version.to_s.match?(/\d-/)
-                latest_resolvable_version.to_s
+                 T.must(latest_resolvable_version).to_s.match?(/\d-/)
+                T.must(latest_resolvable_version).to_s
               else
                 old_parts = old_version.split(".")
-                new_parts = latest_resolvable_version.to_s.split(".")
-                                                     .first(old_parts.count)
+                new_parts = T.must(latest_resolvable_version).to_s.split(".")
+                             .first(old_parts.count)
                 new_parts.map.with_index do |part, i|
-                  old_parts[i].match?(/^x\b/) ? "x" : part
+                  old_parts[i]&.match?(/^x\b/) ? "x" : part
                 end.join(".")
               end
             end
         end
 
+        sig { params(old_version: String, version_to_be_permitted: Bun::Version).returns(String) }
         def update_greatest_version(old_version, version_to_be_permitted)
           version = version_class.new(old_version)
           version = version.release if version.prerelease?
 
           index_to_update =
-            version.segments.map.with_index { |seg, i| seg.zero? ? 0 : i }.max
+            version.segments.map.with_index { |seg, i| T.cast(seg, Integer).zero? ? 0 : i }.max || 0
 
           version.segments.map.with_index do |_, index|
-            if index < index_to_update
-              version_to_be_permitted.segments[index]
-            elsif index == index_to_update
-              version_to_be_permitted.segments[index] + 1
-            else
-              0
-            end
+            segment_value =
+              if index < index_to_update
+                T.cast(version_to_be_permitted.segments[index], Integer)
+              elsif index == index_to_update
+                # Cast to Integer before adding 1 to ensure correct type
+                T.cast(version_to_be_permitted.segments[index], Integer) + 1
+              else
+                0
+              end
+            segment_value.to_s
           end.join(".")
         end
 
+        sig { returns(T.class_of(Bun::Version)) }
         def version_class
           Bun::Version
         end
