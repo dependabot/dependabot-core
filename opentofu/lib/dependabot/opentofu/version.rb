@@ -64,4 +64,4 @@ module Dependabot
 end
 
 Dependabot::Utils
-  .register_version_class("terraform", Dependabot::Opentofu::Version)
+  .register_version_class("opentofu", Dependabot::Opentofu::Version)

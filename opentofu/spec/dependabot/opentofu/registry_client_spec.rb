@@ -11,7 +11,7 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
     Dependabot::Dependency.new(
       name: "hashicorp/consul/aws",
       version: "0.9.3",
-      package_manager: "terraform",
+      package_manager: "opentofu",
       previous_version: "0.1.0",
       requirements: [{
         requirement: "0.3.8",
@@ -158,7 +158,7 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
     provider_dependency = Dependabot::Dependency.new(
       name: "dependabot/package",
       version: "0.9.3",
-      package_manager: "terraform",
+      package_manager: "opentofu",
       previous_version: "0.1.0",
       requirements: [{
         requirement: "0.3.8",
@@ -192,7 +192,7 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
     source = client.source(dependency: Dependabot::Dependency.new(
       name: "hashicorp/ciscoasa",
       version: "1.2.0",
-      package_manager: "terraform",
+      package_manager: "opentofu",
       requirements: [{
         requirement: "~> 1.2",
         groups: [],

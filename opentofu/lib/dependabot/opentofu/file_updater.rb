@@ -462,4 +462,4 @@ module Dependabot
 end
 
 Dependabot::FileUpdaters
-  .register("terraform", Dependabot::Opentofu::FileUpdater)
+  .register("opentofu", Dependabot::Opentofu::FileUpdater)

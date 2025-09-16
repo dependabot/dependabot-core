@@ -7,8 +7,8 @@ require "dependabot/opentofu/version"
 
 module Dependabot
   module Opentofu
-    ECOSYSTEM = "terraform"
-    PACKAGE_MANAGER = "terraform"
+    ECOSYSTEM = "opentofu"
+    PACKAGE_MANAGER = "opentofu"
     SUPPORTED_TERRAFORM_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
 
     # When a version is going to be unsupported, it will be added here

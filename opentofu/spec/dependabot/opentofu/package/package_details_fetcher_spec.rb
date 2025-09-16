@@ -13,7 +13,7 @@ RSpec.describe Dependabot::Opentofu::Package::PackageDetailsFetcher do
     Dependabot::Dependency.new(
       name: "github.com/terraform-aws-modules/iam/aws",
       version: "1.0.0",
-      package_manager: "terraform",
+      package_manager: "opentofu",
       requirements: [],
       previous_requirements: []
     )
