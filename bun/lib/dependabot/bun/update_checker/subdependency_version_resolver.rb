@@ -1,5 +1,7 @@
-# typed: true
+# typed: strong
 # frozen_string_literal: true
+
+require "sorbet-runtime"
 
 require "dependabot/dependency"
 require "dependabot/errors"
@@ -17,6 +19,36 @@ module Dependabot
   module Bun
     class UpdateChecker
       class SubdependencyVersionResolver
+        extend T::Sig
+
+        sig { returns(Dependency) }
+        attr_reader :dependency
+
+        sig { returns(T::Array[Dependabot::Credential]) }
+        attr_reader :credentials
+
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
+        attr_reader :dependency_files
+
+        sig { returns(T::Array[String]) }
+        attr_reader :ignored_versions
+
+        sig { returns(T.nilable(T.any(String, Gem::Version))) }
+        attr_reader :latest_allowable_version
+
+        sig { returns(T.nilable(String)) }
+        attr_reader :repo_contents_path
+
+        sig do
+          params(
+            dependency: Dependency,
+            credentials: T::Array[Dependabot::Credential],
+            dependency_files: T::Array[Dependabot::DependencyFile],
+            ignored_versions: T::Array[String],
+            latest_allowable_version: T.nilable(T.any(String, Gem::Version)),
+            repo_contents_path: T.nilable(String)
+          ).void
+        end
         def initialize(dependency:, credentials:, dependency_files:,
                        ignored_versions:, latest_allowable_version:, repo_contents_path:)
           @dependency = dependency
@@ -27,11 +59,12 @@ module Dependabot
           @repo_contents_path = repo_contents_path
         end
 
+        sig { returns(T.nilable(T.any(String, Gem::Version))) }
         def latest_resolvable_version
           raise "Not a subdependency!" if dependency.requirements.any?
           return if bundled_dependency?
 
-          base_dir = dependency_files.first.directory
+          base_dir = T.must(dependency_files.first).directory
           SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
             dependency_files_builder.write_temporary_dependency_files
 
@@ -53,22 +86,21 @@ module Dependabot
 
         private
 
-        attr_reader :dependency
-        attr_reader :credentials
-        attr_reader :dependency_files
-        attr_reader :ignored_versions
-        attr_reader :latest_allowable_version
-        attr_reader :repo_contents_path
-
+        sig { params(lockfile: Dependabot::DependencyFile).returns(String) }
         def update_subdependency_in_lockfile(lockfile)
           lockfile_name = Pathname.new(lockfile.name).basename.to_s
           path = Pathname.new(lockfile.name).dirname.to_s
 
-          updated_files = (run_bun_updater(path, lockfile_name) if lockfile.name.end_with?("bun.lock"))
+          updated_files = if lockfile.name.end_with?("bun.lock")
+                            run_bun_updater(path, lockfile_name)
+                          else
+                            raise "Unsupported lockfile type: #{lockfile.name}"
+                          end
 
           updated_files.fetch(lockfile_name)
         end
 
+        sig { params(updated_lockfiles: T::Array[Dependabot::DependencyFile]).returns(T.nilable(Gem::Version)) }
         def version_from_updated_lockfiles(updated_lockfiles)
           updated_files = dependency_files -
                           dependency_files_builder.lockfiles +
@@ -84,6 +116,7 @@ module Dependabot
           version_class.new(updated_version)
         end
 
+        sig { params(path: String, lockfile_name: String).returns(T::Hash[String, String]) }
         def run_bun_updater(path, lockfile_name)
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
@@ -96,35 +129,43 @@ module Dependabot
           end
         end
 
+        sig { returns(T.class_of(Dependabot::Version)) }
         def version_class
           dependency.version_class
         end
 
+        sig { returns(Dependabot::Dependency) }
         def updated_dependency
           Dependabot::Dependency.new(
             name: dependency.name,
-            version: latest_allowable_version,
+            version: T.cast(latest_allowable_version, T.nilable(T.any(String, Dependabot::Version))),
             previous_version: dependency.version,
             requirements: [],
             package_manager: dependency.package_manager
           )
         end
 
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
         def filtered_lockfiles
-          @filtered_lockfiles ||=
+          @filtered_lockfiles ||= T.let(
             SubDependencyFilesFilterer.new(
               dependency_files: dependency_files,
               updated_dependencies: [updated_dependency]
-            ).files_requiring_update
+            ).files_requiring_update,
+            T.nilable(T::Array[Dependabot::DependencyFile])
+          )
         end
 
+        sig { returns(Dependabot::Bun::UpdateChecker::DependencyFilesBuilder) }
         def dependency_files_builder
-          @dependency_files_builder ||=
+          @dependency_files_builder ||= T.let(
             DependencyFilesBuilder.new(
               dependency: dependency,
               dependency_files: dependency_files,
               credentials: credentials
-            )
+            ),
+            T.nilable(Dependabot::Bun::UpdateChecker::DependencyFilesBuilder)
+          )
         end
 
         # TODO: We should try and fix this by updating the parent that's not
@@ -143,6 +184,7 @@ module Dependabot
         # Updating the sub-dependency by deleting the entry works but it gets
         # removed from the bundled set of dependencies and moved top level
         # resulting in a bunch of package duplication which is pretty confusing.
+        sig { returns(T::Boolean) }
         def bundled_dependency?
           dependency.subdependency_metadata
                     &.any? { |h| h.fetch(:npm_bundled, false) } ||

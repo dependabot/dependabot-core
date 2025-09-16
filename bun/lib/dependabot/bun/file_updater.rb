@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "dependabot/file_updaters"
@@ -179,7 +179,7 @@ module Dependabot
           BunLockfileUpdater.new(
             dependencies: dependencies,
             dependency_files: dependency_files,
-            repo_contents_path: repo_contents_path,
+            repo_contents_path: T.must(repo_contents_path),
             credentials: credentials
           ),
           T.nilable(Dependabot::Bun::FileUpdater::BunLockfileUpdater)
