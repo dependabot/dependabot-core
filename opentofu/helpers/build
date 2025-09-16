@@ -7,7 +7,7 @@ if [ -z "$DEPENDABOT_NATIVE_HELPERS_PATH" ]; then
   exit 1
 fi
 
-install_dir="$DEPENDABOT_NATIVE_HELPERS_PATH/terraform"
+install_dir="$DEPENDABOT_NATIVE_HELPERS_PATH/opentofu"
 
 if [ ! -d "$install_dir/bin" ]; then
   mkdir -p "$install_dir/bin"
