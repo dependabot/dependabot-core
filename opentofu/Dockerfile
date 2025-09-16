@@ -12,7 +12,7 @@ ARG TOFU_ARM64_CHECKSUM=a32f653d686a8cad9b9be82101eb5b5e834fbfa8d095842fa1820c5d
 
 
 RUN cd /tmp \
-  && curl -o tofu-${TARGETARCH}.tar.gz https://github.com/opentofu/opentofu/releases/download/v${TOFU_VERSION}/tofu_${TOFU_VERSION}_linux_${TARGETARCH}.zip \
+  && curl -v -o tofu-${TARGETARCH}.tar.gz https://github.com/opentofu/opentofu/releases/download/v${TOFU_VERSION}/tofu_${TOFU_VERSION}_linux_${TARGETARCH}.zip \
   && printf "$TOFU_AMD64_CHECKSUM tofu-amd64.tar.gz\n$TOFU_ARM64_CHECKSUM tofu-arm64.tar.gz\n" | sha256sum -c --ignore-missing - \
   && unzip -d /usr/local/bin tofu-${TARGETARCH}.tar.gz \
   && rm tofu-${TARGETARCH}.tar.gz
