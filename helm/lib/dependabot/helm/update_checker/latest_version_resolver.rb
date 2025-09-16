@@ -178,7 +178,7 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def cooldown_enabled?
-        Dependabot::Experiments.enabled?(:enable_cooldown_for_helm)
+        true
       end
 
       sig { returns(T::Array[Dependabot::Credential]) }

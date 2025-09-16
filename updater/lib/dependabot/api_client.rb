@@ -483,7 +483,7 @@ module Dependabot
             directory: dep.directory
           }.merge({
             version: dep.version,
-            removed: dep.removed? ? true : nil
+            removed: dep.removed? || nil
           }.compact)
         end,
         "updated-dependency-files": dependency_change.updated_dependency_files_hash,

@@ -317,7 +317,7 @@ module Dependabot
 
     sig { void }
     def assert_current_directory_set!
-      if @current_directory == "" && directories.count == 1
+      if @current_directory == "" && directories.one?
         @current_directory = T.must(directories.first)
         return
       end

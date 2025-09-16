@@ -15,6 +15,7 @@ module Dependabot
     class FileParser
       class PyprojectFilesParser
         extend T::Sig
+
         POETRY_DEPENDENCY_TYPES = %w(dependencies dev-dependencies).freeze
 
         # https://python-poetry.org/docs/dependency-specification/
@@ -98,8 +99,7 @@ module Dependabot
                   source: nil,
                   groups: [dep["requirement_type"]].compact
                 }],
-                package_manager: "pip",
-                origin_files: [Pathname.new(dep["file"]).cleanpath.to_path]
+                package_manager: "pip"
               )
           end
 
@@ -124,8 +124,7 @@ module Dependabot
               name: normalise(name),
               version: version_from_lockfile(name),
               requirements: requirements,
-              package_manager: "pip",
-              origin_files: [T.must(pyproject).name]
+              package_manager: "pip"
             )
           end
           dependencies
@@ -210,8 +209,7 @@ module Dependabot
                 package_manager: "pip",
                 subdependency_metadata: [{
                   production: production_dependency_names.include?(name)
-                }],
-                origin_files: [lockfile.name]
+                }]
               )
           end
 

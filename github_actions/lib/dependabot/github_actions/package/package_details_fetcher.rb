@@ -144,7 +144,7 @@ module Dependabot
           other_split = other.split(".")
           return false unless base_split.length <= other_split.length
 
-          other_split[0..base_split.length - 1] == base_split
+          other_split[0..(base_split.length - 1)] == base_split
         end
 
         sig { returns(T.nilable(Dependabot::Version)) }

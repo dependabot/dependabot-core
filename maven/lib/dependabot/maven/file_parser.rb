@@ -20,6 +20,7 @@ module Dependabot
     # rubocop:disable Metrics/ClassLength
     class FileParser < Dependabot::FileParsers::Base
       extend T::Sig
+
       require "dependabot/file_parsers/base/dependency_set"
       require_relative "file_parser/maven_dependency_parser"
       require_relative "file_parser/property_value_finder"
@@ -58,8 +59,7 @@ module Dependabot
               name: dep.name,
               version: dep.version,
               package_manager: "maven",
-              requirements: requirements,
-              origin_files: dep.origin_files
+              requirements: requirements
             )
           end
         else
@@ -193,8 +193,7 @@ module Dependabot
               packaging_type: packaging_type(pom, dependency_node),
               classifier: dependency_classifier(dependency_node, pom)
             }.merge(property_details).compact
-          }],
-          origin_files: [pom.name]
+          }]
         )
       end
 

@@ -18,6 +18,7 @@ module Dependabot
     class FileUpdater
       class LockFileUpdater
         extend T::Sig
+
         require_relative "pyproject_preparer"
 
         REQUIRED_FILES = %w(pyproject.toml uv.lock).freeze # At least one of these files should be present
@@ -31,7 +32,7 @@ module Dependabot
         sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
 
-        sig { returns(T.nilable(T::Array[String])) }
+        sig { returns(T.nilable(T::Array[T.nilable(String)])) }
         attr_reader :index_urls
 
         sig do
@@ -39,7 +40,7 @@ module Dependabot
             dependencies: T::Array[Dependency],
             dependency_files: T::Array[DependencyFile],
             credentials: T::Array[Dependabot::Credential],
-            index_urls: T.nilable(T::Array[String])
+            index_urls: T.nilable(T::Array[T.nilable(String)])
           ).void
         end
         def initialize(dependencies:, dependency_files:, credentials:, index_urls: nil)

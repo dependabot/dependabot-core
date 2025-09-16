@@ -7,6 +7,7 @@ require "toml-rb"
 
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
+require "dependabot/file_filtering"
 require "dependabot/cargo/file_parser"
 
 # Docs on Cargo workspaces:
@@ -30,7 +31,7 @@ module Dependabot
       sig { override.returns(T.nilable(T::Hash[Symbol, T.untyped])) }
       def ecosystem_versions
         channel = if rust_toolchain
-                    TomlRB.parse(T.must(rust_toolchain).content).fetch("toolchain", nil)&.fetch("channel", nil)
+                    TomlRB.parse(T.must(rust_toolchain).content).dig("toolchain", "channel")
                   else
                     "default"
                   end
@@ -55,7 +56,13 @@ module Dependabot
         fetched_files << T.must(cargo_config) if cargo_config
         fetched_files << T.must(rust_toolchain) if rust_toolchain
         fetched_files += fetch_path_dependency_and_workspace_files
-        fetched_files.uniq
+
+        # Filter excluded files from final collection
+        filtered_files = fetched_files.reject do |file|
+          Dependabot::FileFiltering.should_exclude_path?(file.name, "file from final collection", @exclude_paths)
+        end
+
+        filtered_files.uniq
       end
 
       private
@@ -125,6 +132,8 @@ module Dependabot
           next if previously_fetched_files.map(&:name).include?(path)
           next if file.name == path
 
+          next if Dependabot::FileFiltering.should_exclude_path?(path, "file from final collection", @exclude_paths)
+
           fetched_file = fetch_file_from_host(path, fetch_submodules: true)
           previously_fetched_files << fetched_file
           grandchild_requirement_files =
@@ -159,6 +168,8 @@ module Dependabot
 
             next if previously_fetched_files.map(&:name).include?(path)
             next if file.name == path
+
+            next if Dependabot::FileFiltering.should_exclude_path?(path, "file from final collection", @exclude_paths)
 
             fetched_file = fetch_file_from_host(path, fetch_submodules: true)
                            .tap { |f| f.support_file = true }
