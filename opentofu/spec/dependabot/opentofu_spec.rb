@@ -6,7 +6,7 @@ require "dependabot/opentofu"
 require_common_spec "shared_examples_for_autoloading"
 
 RSpec.describe Dependabot::Opentofu do
-  it_behaves_like "it registers the required classes", "terraform"
+  it_behaves_like "it registers the required classes", "opentofu"
 
   describe "Dependency#display_name" do
     subject(:display_name) do
@@ -14,7 +14,7 @@ RSpec.describe Dependabot::Opentofu do
     end
 
     let(:dependency_args) do
-      { name: name, requirements: [], package_manager: "terraform" }
+      { name: name, requirements: [], package_manager: "opentofu" }
     end
 
     context "when dealing with a provider source" do

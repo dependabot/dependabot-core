@@ -97,7 +97,7 @@ module Dependabot
       sig { params(dependency_set: Dependabot::FileParsers::Base::DependencySet).void }
       def parse_terragrunt_files(dependency_set)
         terragrunt_files.each do |file|
-          modules = parsed_file(file).fetch("terraform", [])
+          modules = parsed_file(file).fetch("opentofu", [])
           modules.each do |details|
             next unless details["source"]
 
@@ -137,7 +137,7 @@ module Dependabot
         Dependency.new(
           name: dep_name,
           version: version,
-          package_manager: "terraform",
+          package_manager: "opentofu",
           requirements: [
             requirement: version_req,
             groups: [],
@@ -166,7 +166,7 @@ module Dependabot
         Dependency.new(
           name: T.must(dependency_name),
           version: determine_version_for(T.must(hostname), T.must(namespace), T.must(name), version_req),
-          package_manager: "terraform",
+          package_manager: "opentofu",
           requirements: [
             requirement: version_req,
             groups: [],
@@ -205,7 +205,7 @@ module Dependabot
         Dependency.new(
           name: T.must(dep_name),
           version: version,
-          package_manager: "terraform",
+          package_manager: "opentofu",
           requirements: [
             requirement: nil,
             groups: [],
@@ -460,7 +460,7 @@ module Dependabot
       def opentofu_version
         @opentofu_version ||= T.let(
           begin
-            version = SharedHelpers.run_shell_command("terraform --version")
+            version = SharedHelpers.run_shell_command("tofu --version")
             version.match(Dependabot::Ecosystem::VersionManager::DEFAULT_VERSION_PATTERN)&.captures&.first
           end,
           T.nilable(String)
@@ -471,4 +471,4 @@ module Dependabot
 end
 
 Dependabot::FileParsers
-  .register("terraform", Dependabot::Opentofu::FileParser)
+  .register("opentofu", Dependabot::Opentofu::FileParser)

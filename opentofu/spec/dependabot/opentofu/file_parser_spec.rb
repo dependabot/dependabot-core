@@ -1111,14 +1111,14 @@ RSpec.describe Dependabot::Opentofu::FileParser do
     let(:files) { project_dependency_files("registry") }
 
     it "has the correct name" do
-      expect(ecosystem.name).to eq "terraform"
+      expect(ecosystem.name).to eq "opentofu"
     end
 
     describe "#package_manager" do
       subject(:package_manager) { ecosystem.package_manager }
 
       it "returns the correct package manager" do
-        expect(package_manager.name).to eq "terraform"
+        expect(package_manager.name).to eq "opentofu"
         expect(package_manager.requirement).to be_nil
       end
     end
