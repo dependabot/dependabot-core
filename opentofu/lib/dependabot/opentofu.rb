@@ -13,7 +13,7 @@ require "dependabot/opentofu/version"
 
 require "dependabot/pull_request_creator/labeler"
 Dependabot::PullRequestCreator::Labeler
-  .register_label_details("opentofu", name: "opentofu", colour: "5C4EE5")
+  .register_label_details("opentofu", name: "opentofu", colour: "F9DB4E")
 
 require "dependabot/dependency"
 Dependabot::Dependency
