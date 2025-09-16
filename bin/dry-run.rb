@@ -135,6 +135,7 @@ require "dependabot/pub"
 require "dependabot/python"
 require "dependabot/swift"
 require "dependabot/terraform"
+require "dependabot/opentofu"
 require "dependabot/uv"
 require "dependabot/vcpkg"
 
@@ -371,6 +372,7 @@ valid_package_managers = %w(
   rust_toolchain
   swift
   terraform
+  opentofu
   uv
   vcpkg
 )
