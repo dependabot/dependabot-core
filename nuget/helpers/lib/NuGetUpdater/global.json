@@ -1,5 +1,6 @@
 {
   "sdk": {
+    "// comment": "this version should be kept in sync with the files `.devcontainer/devcontainer.json` and `nuget/Dockerfile`",
     "version": "9.0.302",
     "rollForward": "latestMinor"
   }
