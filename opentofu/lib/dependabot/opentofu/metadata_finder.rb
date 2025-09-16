@@ -52,4 +52,4 @@ module Dependabot
 end
 
 Dependabot::MetadataFinders
-  .register("terraform", Dependabot::Opentofu::MetadataFinder)
+  .register("opentofu", Dependabot::Opentofu::MetadataFinder)

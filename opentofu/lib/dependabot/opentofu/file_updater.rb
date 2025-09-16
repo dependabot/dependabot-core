@@ -219,8 +219,8 @@ module Dependabot
             File.write(".terraform.lock.hcl", lockfile_hash_removed)
 
             SharedHelpers.run_shell_command(
-              "terraform providers lock -platform=#{arch} #{provider_source} -no-color",
-              fingerprint: "terraform providers lock -platform=<arch> <provider_source> -no-color"
+              "tofu providers lock -platform=#{arch} #{provider_source} -no-color",
+              fingerprint: "tofu providers lock -platform=<arch> <provider_source> -no-color"
             )
 
             updated_lockfile = File.read(".terraform.lock.hcl")
@@ -241,7 +241,7 @@ module Dependabot
             mod = T.must(e.message.match(MODULE_NOT_INSTALLED_ERROR)).named_captures.fetch("mod")
             raise Dependabot::DependencyFileNotResolvable, "Attempt to install module #{mod} failed"
           end
-          raise if @retrying_lock || !e.message.include?("terraform init")
+          raise if @retrying_lock || !e.message.include?("tofu init")
 
           # NOTE: Modules need to be installed before OpenTofu can update the lockfile
           @retrying_lock = true
@@ -286,8 +286,8 @@ module Dependabot
           File.write(".terraform.lock.hcl", lockfile_dependency_removed)
 
           SharedHelpers.run_shell_command(
-            "terraform providers lock #{platforms} #{provider_source}",
-            fingerprint: "terraform providers lock <platforms> <provider_source>"
+            "tofu providers lock #{platforms} #{provider_source}",
+            fingerprint: "tofu providers lock <platforms> <provider_source>"
           )
 
           updated_lockfile = File.read(".terraform.lock.hcl")
@@ -307,7 +307,7 @@ module Dependabot
             mod = T.must(e.message.match(MODULE_NOT_INSTALLED_ERROR)).named_captures.fetch("mod")
             raise Dependabot::DependencyFileNotResolvable, "Attempt to install module #{mod} failed"
           end
-          raise if @retrying_lock || !e.message.include?("terraform init")
+          raise if @retrying_lock || !e.message.include?("tofu init")
 
           # NOTE: Modules need to be installed before OpenTofu can update the lockfile
           @retrying_lock = T.let(true, T.nilable(T::Boolean))
@@ -324,7 +324,7 @@ module Dependabot
           # -backend=false option used to ignore any backend configuration, as these won't be accessible
           # -input=false option used to immediately fail if it needs user input
           # -no-color option used to prevent any color characters being printed in the output
-          SharedHelpers.run_shell_command("terraform init -backend=false -input=false -no-color")
+          SharedHelpers.run_shell_command("tofu init -backend=false -input=false -no-color")
         rescue SharedHelpers::HelperSubprocessFailed => e
           output = e.message
 
@@ -337,7 +337,7 @@ module Dependabot
             raise PrivateSourceAuthenticationFailure, repo
           end
 
-          raise Dependabot::DependencyFileNotResolvable, "Error running `terraform init`: #{output}"
+          raise Dependabot::DependencyFileNotResolvable, "Error running `tofu init`: #{output}"
         end
       end
 
@@ -357,7 +357,7 @@ module Dependabot
       def check_required_files
         return if [*opentofu_files, *terragrunt_files].any?
 
-        raise "No Terraform configuration file!"
+        raise "No Opentofu configuration file!"
       end
 
       sig { returns(Regexp) }
@@ -463,4 +463,4 @@ module Dependabot
 end
 
 Dependabot::FileUpdaters
-  .register("terraform", Dependabot::Opentofu::FileUpdater)
+  .register("opentofu", Dependabot::Opentofu::FileUpdater)

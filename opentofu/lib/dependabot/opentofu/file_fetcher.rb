@@ -121,4 +121,4 @@ module Dependabot
 end
 
 Dependabot::FileFetchers
-  .register("terraform", Dependabot::Opentofu::FileFetcher)
+  .register("opentofu", Dependabot::Opentofu::FileFetcher)

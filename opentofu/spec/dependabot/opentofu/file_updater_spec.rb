@@ -106,7 +106,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
                 module_identifier: "example-org-5d3190/s3-webapp/aws"
               }
             }],
-            package_manager: "terraform"
+            package_manager: "opentofu"
           )
         ]
       end
@@ -152,7 +152,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
                 module_identifier: "example-org-5d3190/s3-webapp/aws"
               }
             }],
-            package_manager: "terraform"
+            package_manager: "opentofu"
           )
         ]
       end
@@ -216,7 +216,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
                 module_identifier: "example-org-5d3190/s3-webapp/aws"
               }
             }],
-            package_manager: "terraform"
+            package_manager: "opentofu"
           )
         ]
       end
@@ -267,7 +267,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
                 module_identifier: "namespaces/name"
               }
             }],
-            package_manager: "terraform"
+            package_manager: "opentofu"
           )
         ]
       end
@@ -318,7 +318,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
                 ref: "tags/0.3.7"
               }
             }],
-            package_manager: "terraform"
+            package_manager: "opentofu"
           )
         ]
       end
@@ -357,7 +357,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
                 ref: "tags/0.3.7"
               }
             }],
-            package_manager: "terraform"
+            package_manager: "opentofu"
           )
         ]
       end
@@ -395,7 +395,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
                 ref: "tags/0.3.7"
               }
             }],
-            package_manager: "terraform"
+            package_manager: "opentofu"
           )
         ]
       end
@@ -490,7 +490,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
                   module_identifier: "hashicorp/consul/aws"
                 }
               }],
-              package_manager: "terraform"
+              package_manager: "opentofu"
             )
           ]
         end
@@ -536,7 +536,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
                   module_identifier: "hashicorp/consul/aws"
                 }
               }],
-              package_manager: "terraform"
+              package_manager: "opentofu"
             )
           ]
         end
@@ -582,7 +582,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
                   module_identifier: "hashicorp/consul/aws"
                 }
               }],
-              package_manager: "terraform"
+              package_manager: "opentofu"
             )
           ]
         end
@@ -629,7 +629,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
                 module_identifier: "hashicorp/consul/aws"
               }
             }],
-            package_manager: "terraform"
+            package_manager: "opentofu"
           )
         ]
       end
@@ -678,7 +678,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
                 ref: "v0.0.2"
               }
             }],
-            package_manager: "terraform"
+            package_manager: "opentofu"
           )
         ]
       end
@@ -723,7 +723,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
                 module_identifier: "hashicorp/aws"
               }
             }],
-            package_manager: "terraform"
+            package_manager: "opentofu"
           )
         ]
       end
@@ -778,7 +778,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
                 module_identifier: "hashicorp/http"
               }
             }],
-            package_manager: "terraform"
+            package_manager: "opentofu"
           )
         ]
       end
@@ -830,7 +830,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
                 module_identifier: "hashicorp/random"
               }
             }],
-            package_manager: "terraform"
+            package_manager: "opentofu"
           )
         ]
       end
@@ -878,7 +878,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
                 module_identifier: "hashicorp/aws"
               }
             }],
-            package_manager: "terraform"
+            package_manager: "opentofu"
           )
         ]
       end
@@ -918,7 +918,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
                 module_identifier: "hashicorp/aws"
               }
             }],
-            package_manager: "terraform"
+            package_manager: "opentofu"
           )
         ]
       end
@@ -1012,7 +1012,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
                 module_identifier: "hashicorp/aws"
               }
             }],
-            package_manager: "terraform"
+            package_manager: "opentofu"
           )
         ]
       end
@@ -1108,7 +1108,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
                 module_identifier: "hashicorp/aws"
               }
             }],
-            package_manager: "terraform"
+            package_manager: "opentofu"
           )
         ]
       end
@@ -1148,7 +1148,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
                 module_identifier: "hashicorp/oci"
               }
             }],
-            package_manager: "terraform"
+            package_manager: "opentofu"
           )
         ]
       end
@@ -1203,7 +1203,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
                 module_identifier: "iam/aws"
               }
             }],
-            package_manager: "terraform"
+            package_manager: "opentofu"
           )
         ]
       end
@@ -1250,7 +1250,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
                 module_identifier: "iam/aws"
               }
             }],
-            package_manager: "terraform"
+            package_manager: "opentofu"
           )
         ]
       end
@@ -1297,7 +1297,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
                 module_identifier: "integrations/github"
               }
             }],
-            package_manager: "terraform"
+            package_manager: "opentofu"
           )
         ]
       end
@@ -1343,7 +1343,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
                 module_identifier: "aztfmod/caf/azurerm"
               }
             }],
-            package_manager: "terraform"
+            package_manager: "opentofu"
           )
         ]
       end
@@ -1390,7 +1390,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
                 module_identifier: "aztfmod/caf/azurerm"
               }
             }],
-            package_manager: "terraform"
+            package_manager: "opentofu"
           )
         ]
       end
@@ -1437,7 +1437,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
                 module_identifier: "hashicorp/azurerm"
               }
             }],
-            package_manager: "terraform"
+            package_manager: "opentofu"
           )
         ]
       end
@@ -1482,7 +1482,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
                 module_identifier: "hashicorp/azurerm"
               }
             }],
-            package_manager: "terraform"
+            package_manager: "opentofu"
           )
         ]
       end
@@ -1527,7 +1527,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
                 module_identifier: "Mongey/confluentcloud"
               }
             }],
-            package_manager: "terraform"
+            package_manager: "opentofu"
           )
         ]
       end
@@ -1608,7 +1608,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
                 module_identifier: "Mongey/confluentcloud"
               }
             }],
-            package_manager: "terraform"
+            package_manager: "opentofu"
           )
         ]
       end
@@ -1660,7 +1660,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
                 module_identifier: "hashicorp/azurerm"
               }
             }],
-            package_manager: "terraform"
+            package_manager: "opentofu"
           )
         ]
       end
@@ -1701,7 +1701,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
                 ref: "tags/0.3.7"
               }
             }],
-            package_manager: "terraform"
+            package_manager: "opentofu"
           )
         ]
       end
@@ -1842,7 +1842,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
               module_identifier: "integrations/github"
             }
           }],
-          package_manager: "terraform"
+          package_manager: "opentofu"
         )
       ]
     end

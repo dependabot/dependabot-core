@@ -11,7 +11,7 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
     Dependabot::Dependency.new(
       name: "hashicorp/consul/aws",
       version: "0.9.3",
-      package_manager: "terraform",
+      package_manager: "opentofu",
       previous_version: "0.1.0",
       requirements: [{
         requirement: "0.3.8",
@@ -88,7 +88,7 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
   it "fetches provider versions form a custom registry secured by a token" do
     hostname = "registry.example.org"
     token = SecureRandom.hex(16)
-    credentials = [{ "type" => "terraform_registry", "host" => hostname, "token" => token }]
+    credentials = [{ "type" => "opentofu_registry", "host" => hostname, "token" => token }]
 
     stub_request(:get, "https://#{hostname}/.well-known/terraform.json").and_return(
       body: {
@@ -162,7 +162,7 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
     provider_dependency = Dependabot::Dependency.new(
       name: "dependabot/package",
       version: "0.9.3",
-      package_manager: "terraform",
+      package_manager: "opentofu",
       previous_version: "0.1.0",
       requirements: [{
         requirement: "0.3.8",

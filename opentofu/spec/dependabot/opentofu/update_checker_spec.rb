@@ -27,7 +27,7 @@ RSpec.describe Dependabot::Opentofu::UpdateChecker do
       name: dependency_name,
       version: version,
       requirements: requirements,
-      package_manager: "terraform"
+      package_manager: "opentofu"
     )
   end
   let(:ignored_versions) { [] }
