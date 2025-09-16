@@ -27,7 +27,7 @@ module Dependabot
       include FileSelector
 
       DEFAULT_REGISTRY = "registry.opentofu.org"
-      DEFAULT_NAMESPACE = "opentofu"
+      DEFAULT_NAMESPACE = "hashicorp"
       # https://opentofu.org/docs/language/providers/requirements/#source-addresses
       PROVIDER_SOURCE_ADDRESS = %r{\A((?<hostname>.+)/)?(?<namespace>.+)/(?<name>.+)\z}
 
