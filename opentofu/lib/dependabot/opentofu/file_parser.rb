@@ -27,15 +27,15 @@ module Dependabot
       include FileSelector
 
       DEFAULT_REGISTRY = "registry.opentofu.org"
-      DEFAULT_NAMESPACE = "hashicorp"
-      # https://www.terraform.io/docs/language/providers/requirements.html#source-addresses
+      DEFAULT_NAMESPACE = "opentofu"
+      # https://opentofu.org/docs/language/providers/requirements/#source-addresses
       PROVIDER_SOURCE_ADDRESS = %r{\A((?<hostname>.+)/)?(?<namespace>.+)/(?<name>.+)\z}
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
         dependency_set = DependencySet.new
 
-        parse_terraform_files(dependency_set)
+        parse_opentofu_files(dependency_set)
 
         parse_terragrunt_files(dependency_set)
 
@@ -56,7 +56,7 @@ module Dependabot
 
       # rubocop:disable Metrics/PerceivedComplexity
       sig { params(dependency_set: Dependabot::FileParsers::Base::DependencySet).void }
-      def parse_terraform_files(dependency_set)
+      def parse_opentofu_files(dependency_set)
         terraform_files.each do |file|
           next if file.support_file?
 
@@ -79,7 +79,7 @@ module Dependabot
             dependency_set << build_terraform_dependency(file, name, T.must(source), details)
           end
 
-          parsed_file(file).fetch("opentofu", []).each do |terraform|
+          parsed_file(file).fetch("terraform", []).each do |terraform|
             required_providers = terraform.fetch("required_providers", {})
             required_providers.each do |provider|
               provider.each do |name, details|
@@ -94,7 +94,7 @@ module Dependabot
       sig { params(dependency_set: Dependabot::FileParsers::Base::DependencySet).void }
       def parse_terragrunt_files(dependency_set)
         terragrunt_files.each do |file|
-          modules = parsed_file(file).fetch("opentofu", [])
+          modules = parsed_file(file).fetch("terraform", [])
           modules.each do |details|
             next unless details["source"]
 
