@@ -1,0 +1,3 @@
+module "project" {
+  source = "./project"
+}
