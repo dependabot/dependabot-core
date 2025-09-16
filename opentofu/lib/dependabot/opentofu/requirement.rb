@@ -31,7 +31,7 @@ module Dependabot
 
         return DefaultRequirement if matches[1] == ">=" && matches[2] == "0"
 
-        [matches[1] || "=", OpenTofu::Version.new(matches[2])]
+        [matches[1] || "=", Opentofu::Version.new(matches[2])]
       end
 
       # For consistency with other languages, we define a requirements array.
