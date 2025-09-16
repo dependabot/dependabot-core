@@ -105,15 +105,22 @@ RSpec/OverwritingSetup:
     - 'gradle/spec/dependabot/gradle/update_checker/version_finder_spec.rb'
     - 'maven/spec/dependabot/maven/update_checker/version_finder_spec.rb'
     - 'nuget/spec/dependabot/nuget/update_checker/repository_finder_spec.rb'
+    - 'opentofu/spec/dependabot/opentofu/file_parser_spec.rb'
     - 'python/spec/dependabot/python/update_checker/pip_version_resolver_spec.rb'
     - 'python/spec/dependabot/python/update_checker_spec.rb'
     - 'terraform/spec/dependabot/terraform/file_parser_spec.rb'
     - 'updater/spec/dependabot/dependency_snapshot_spec.rb'
 
+# Offense count: 15
+Metrics/CyclomaticComplexity:
+  Exclude:
+    - 'updater/lib/github_api/dependency_submission.rb'
+
 # Offense count: 4
 RSpec/RepeatedExample:
   Exclude:
     - 'nuget/spec/dependabot/nuget/update_checker/repository_finder_spec.rb'
+    - 'opentofu/spec/dependabot/opentofu/registry_client_spec.rb'
     - 'terraform/spec/dependabot/terraform/registry_client_spec.rb'
 
 # Offense count: 8
