@@ -9,7 +9,7 @@ require "sorbet-runtime"
 require "dependabot/swift"
 
 module Dependabot
-  module OpenTofu
+  module Opentofu
     module Package
       class PackageDetailsFetcher
         extend T::Sig

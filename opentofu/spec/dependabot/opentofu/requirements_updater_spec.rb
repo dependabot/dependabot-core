@@ -5,7 +5,7 @@ require "spec_helper"
 require "dependabot/opentofu/version"
 require "dependabot/opentofu/requirements_updater"
 
-RSpec.describe Dependabot::OpenTofu::RequirementsUpdater do
+RSpec.describe Dependabot::Opentofu::RequirementsUpdater do
   let(:updater) do
     described_class.new(
       requirements: requirements,
@@ -20,7 +20,7 @@ RSpec.describe Dependabot::OpenTofu::RequirementsUpdater do
   let(:latest_version) { version_class.new("0.3.7") }
   let(:tag_for_latest_version) { nil }
 
-  let(:version_class) { Dependabot::OpenTofu::Version }
+  let(:version_class) { Dependabot::Opentofu::Version }
   let(:requirement) { "~> 0.2.1" }
   let(:source) do
     {

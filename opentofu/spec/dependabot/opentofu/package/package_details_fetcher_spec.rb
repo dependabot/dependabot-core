@@ -8,7 +8,7 @@ require "dependabot/credential"
 require "dependabot/git_commit_checker"
 require "dependabot/git_tag_with_detail"
 require "excon"
-RSpec.describe Dependabot::OpenTofu::Package::PackageDetailsFetcher do
+RSpec.describe Dependabot::Opentofu::Package::PackageDetailsFetcher do
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "github.com/terraform-aws-modules/iam/aws",

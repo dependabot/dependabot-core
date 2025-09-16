@@ -5,7 +5,7 @@ require "spec_helper"
 require "dependabot/opentofu/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
-RSpec.describe Dependabot::OpenTofu::FileFetcher do
+RSpec.describe Dependabot::Opentofu::FileFetcher do
   let(:repo_contents_path) { build_tmp_repo(project_name) }
   let(:directory) { "/" }
   let(:project_name) { "provider" }

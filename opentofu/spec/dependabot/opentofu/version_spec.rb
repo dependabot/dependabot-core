@@ -4,7 +4,7 @@
 require "spec_helper"
 require "dependabot/opentofu/version"
 
-RSpec.describe Dependabot::OpenTofu::Version do
+RSpec.describe Dependabot::Opentofu::Version do
   subject(:version) { described_class.new(version_string) }
 
   let(:version_string) { "1.0.0" }

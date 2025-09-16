@@ -13,7 +13,7 @@ require "dependabot/version"
 # See, for example, https://releases.hashicorp.com/terraform/
 
 module Dependabot
-  module OpenTofu
+  module Opentofu
     class Version < Dependabot::Version
       extend T::Sig
 
@@ -26,9 +26,9 @@ module Dependabot
         super
       end
 
-      sig { override.params(version: VersionParameter).returns(Dependabot::OpenTofu::Version) }
+      sig { override.params(version: VersionParameter).returns(Dependabot::Opentofu::Version) }
       def self.new(version)
-        T.cast(super, Dependabot::OpenTofu::Version)
+        T.cast(super, Dependabot::Opentofu::Version)
       end
 
       sig { override.returns(String) }
@@ -64,4 +64,4 @@ module Dependabot
 end
 
 Dependabot::Utils
-  .register_version_class("terraform", Dependabot::OpenTofu::Version)
+  .register_version_class("terraform", Dependabot::Opentofu::Version)

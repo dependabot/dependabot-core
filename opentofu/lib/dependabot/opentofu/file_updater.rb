@@ -10,7 +10,7 @@ require "dependabot/opentofu/file_selector"
 require "dependabot/shared_helpers"
 
 module Dependabot
-  module OpenTofu
+  module Opentofu
     class FileUpdater < Dependabot::FileUpdaters::Base
       extend T::Sig
 
@@ -462,4 +462,4 @@ module Dependabot
 end
 
 Dependabot::FileUpdaters
-  .register("terraform", Dependabot::OpenTofu::FileUpdater)
+  .register("terraform", Dependabot::Opentofu::FileUpdater)

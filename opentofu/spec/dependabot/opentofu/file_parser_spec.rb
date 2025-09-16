@@ -8,7 +8,7 @@ require "dependabot/opentofu/file_parser"
 require "dependabot/opentofu/version"
 require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
-RSpec.describe Dependabot::OpenTofu::FileParser do
+RSpec.describe Dependabot::Opentofu::FileParser do
   subject(:parser) do
     described_class.new(
       dependency_files: files,
@@ -205,7 +205,7 @@ RSpec.describe Dependabot::OpenTofu::FileParser do
     end
 
     context "with git sources" do
-      let(:version_class) { Dependabot::OpenTofu::Version }
+      let(:version_class) { Dependabot::Opentofu::Version }
       let(:files) { project_dependency_files("git_tags_011") }
 
       specify { expect(dependencies.length).to eq(6) }

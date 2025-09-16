@@ -4,7 +4,7 @@
 require "spec_helper"
 require "dependabot/opentofu/requirement"
 
-RSpec.describe Dependabot::OpenTofu::Requirement do
+RSpec.describe Dependabot::Opentofu::Requirement do
   subject(:requirement) { described_class.new(requirement_string) }
 
   let(:requirement_string) { ">=1.0.0" }

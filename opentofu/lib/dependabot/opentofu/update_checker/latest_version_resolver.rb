@@ -7,7 +7,7 @@ require "sorbet-runtime"
 require "dependabot/git_commit_checker"
 
 module Dependabot
-  module OpenTofu
+  module Opentofu
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       class LatestVersionResolver
         extend T::Sig
@@ -63,8 +63,8 @@ module Dependabot
 
         # To filter versions in cooldown period based on version tags from registry call
         sig do
-          params(versions: T::Array[Dependabot::OpenTofu::Version])
-            .returns(T::Array[Dependabot::OpenTofu::Version])
+          params(versions: T::Array[Dependabot::Opentofu::Version])
+            .returns(T::Array[Dependabot::Opentofu::Version])
         end
         def filter_versions_in_cooldown_period_from_provider(versions)
           # to make call for registry to get the versions
@@ -87,8 +87,8 @@ module Dependabot
 
         # To filter versions in cooldown period based on version tags from registry call
         sig do
-          params(versions: T::Array[Dependabot::OpenTofu::Version])
-            .returns(T::Array[Dependabot::OpenTofu::Version])
+          params(versions: T::Array[Dependabot::Opentofu::Version])
+            .returns(T::Array[Dependabot::Opentofu::Version])
         end
         def filter_versions_in_cooldown_period_from_module(versions)
           # to make call for registry to get the versions

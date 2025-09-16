@@ -9,7 +9,7 @@ require "dependabot/opentofu/version"
 
 # Just ensures that Terraform requirements use Terraform versions
 module Dependabot
-  module OpenTofu
+  module Opentofu
     class Requirement < Dependabot::Requirement
       extend T::Sig
 
@@ -57,4 +57,4 @@ module Dependabot
 end
 
 Dependabot::Utils
-  .register_requirement_class("opentofu", Dependabot::OpenTofu::Requirement)
+  .register_requirement_class("opentofu", Dependabot::Opentofu::Requirement)

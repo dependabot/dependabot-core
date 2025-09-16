@@ -9,7 +9,7 @@ require "dependabot/opentofu/file_selector"
 require "dependabot/file_filtering"
 
 module Dependabot
-  module OpenTofu
+  module Opentofu
     class FileFetcher < Dependabot::FileFetchers::Base
       extend T::Sig
       extend T::Helpers
@@ -121,4 +121,4 @@ module Dependabot
 end
 
 Dependabot::FileFetchers
-  .register("terraform", Dependabot::OpenTofu::FileFetcher)
+  .register("terraform", Dependabot::Opentofu::FileFetcher)

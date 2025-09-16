@@ -7,7 +7,7 @@ require "dependabot/dependency_file"
 require "dependabot/opentofu/file_updater"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
-RSpec.describe Dependabot::OpenTofu::FileUpdater do
+RSpec.describe Dependabot::Opentofu::FileUpdater do
   subject(:updater) do
     described_class.new(
       dependency_files: files,
@@ -1711,7 +1711,7 @@ RSpec.describe Dependabot::OpenTofu::FileUpdater do
     end
 
     describe "#error_handler" do
-      subject(:error_handler) { Dependabot::OpenTofu::FileUpdaterErrorHandler.new }
+      subject(:error_handler) { Dependabot::Opentofu::FileUpdaterErrorHandler.new }
 
       let(:error) { instance_double(Dependabot::SharedHelpers::HelperSubprocessFailed, message: error_message) }
 

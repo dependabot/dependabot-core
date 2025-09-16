@@ -6,7 +6,7 @@ require "dependabot/ecosystem"
 require "dependabot/opentofu/version"
 
 module Dependabot
-  module OpenTofu
+  module Opentofu
     ECOSYSTEM = "terraform"
     PACKAGE_MANAGER = "terraform"
     SUPPORTED_TERRAFORM_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])

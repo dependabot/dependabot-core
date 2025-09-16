@@ -4,7 +4,7 @@
 require "spec_helper"
 require "dependabot/opentofu/update_checker/latest_version_resolver"
 
-RSpec.describe Dependabot::OpenTofu::UpdateChecker::LatestVersionResolver do
+RSpec.describe Dependabot::Opentofu::UpdateChecker::LatestVersionResolver do
   let(:credentials) { [Dependabot::Credential.new(type: "git_source", token: "test-token")] }
   let(:dependency) do
     Dependabot::Dependency.new(

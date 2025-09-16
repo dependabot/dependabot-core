@@ -4,7 +4,7 @@
 require "spec_helper"
 require "dependabot/opentofu/registry_client"
 
-RSpec.describe Dependabot::OpenTofu::RegistryClient do
+RSpec.describe Dependabot::Opentofu::RegistryClient do
   subject(:client) { described_class.new }
 
   let(:module_dependency) do

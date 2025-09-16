@@ -4,7 +4,7 @@
 require "sorbet-runtime"
 
 module Dependabot
-  module OpenTofu
+  module Opentofu
     module FileFilter
       extend T::Sig
 

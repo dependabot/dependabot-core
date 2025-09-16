@@ -8,7 +8,7 @@ require "dependabot/source"
 require "dependabot/opentofu/version"
 
 module Dependabot
-  module OpenTofu
+  module Opentofu
     # Terraform::RegistryClient is a basic API client to interact with a
     # terraform registry: https://www.terraform.io/docs/registry/api.html
     class RegistryClient
@@ -72,9 +72,9 @@ module Dependabot
       #
       # @param identifier [String] the identifier for the dependency, i.e:
       # "hashicorp/aws"
-      # @return [Array<Dependabot::OpenTofu::Version>]
+      # @return [Array<Dependabot::Opentofu::Version>]
       # @raise [Dependabot::DependabotError] when the versions cannot be retrieved
-      sig { params(identifier: String).returns(T::Array[Dependabot::OpenTofu::Version]) }
+      sig { params(identifier: String).returns(T::Array[Dependabot::Opentofu::Version]) }
       def all_provider_versions(identifier:)
         base_url = service_url_for("providers.v1")
         response = http_get!(URI.join(base_url, "#{identifier}/versions"))
@@ -91,9 +91,9 @@ module Dependabot
       #
       # @param identifier [String] the identifier for the dependency, i.e:
       # "hashicorp/consul/aws"
-      # @return [Array<Dependabot::OpenTofu::Version>]
+      # @return [Array<Dependabot::Opentofu::Version>]
       # @raise [Dependabot::DependabotError] when the versions cannot be retrieved
-      sig { params(identifier: String).returns(T::Array[Dependabot::OpenTofu::Version]) }
+      sig { params(identifier: String).returns(T::Array[Dependabot::Opentofu::Version]) }
       def all_module_versions(identifier:)
         base_url = service_url_for("modules.v1")
         response = http_get!(URI.join(base_url, "#{identifier}/versions"))
@@ -160,7 +160,7 @@ module Dependabot
       sig { returns(T::Hash[String, String]) }
       attr_reader :tokens
 
-      sig { returns(T.class_of(Dependabot::OpenTofu::Version)) }
+      sig { returns(T.class_of(Dependabot::Opentofu::Version)) }
       def version_class
         Version
       end

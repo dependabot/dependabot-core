@@ -7,7 +7,7 @@ require "dependabot/opentofu"
 require "dependabot/opentofu/update_checker"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
-RSpec.describe Dependabot::OpenTofu::UpdateChecker do
+RSpec.describe Dependabot::Opentofu::UpdateChecker do
   let(:source) do
     {
       type: "git",

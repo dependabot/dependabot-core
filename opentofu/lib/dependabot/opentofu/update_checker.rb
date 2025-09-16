@@ -12,7 +12,7 @@ require "dependabot/opentofu/version"
 require "dependabot/opentofu/registry_client"
 
 module Dependabot
-  module OpenTofu
+  module Opentofu
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       extend T::Sig
 
@@ -74,7 +74,7 @@ module Dependabot
         raise NotImplementedError
       end
 
-      sig { returns(T.nilable(Dependabot::OpenTofu::Version)) }
+      sig { returns(T.nilable(Dependabot::Opentofu::Version)) }
       def latest_version_for_registry_dependency
         return unless registry_dependency?
 
@@ -89,34 +89,34 @@ module Dependabot
         versions.reject! { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }
         @latest_version_for_registry_dependency = T.let(
           versions.max,
-          T.nilable(Dependabot::OpenTofu::Version)
+          T.nilable(Dependabot::Opentofu::Version)
         )
       end
 
-      sig { returns(T::Array[Dependabot::OpenTofu::Version]) }
+      sig { returns(T::Array[Dependabot::Opentofu::Version]) }
       def all_module_versions
         identifier = dependency_source_details&.fetch(:module_identifier)
         registry_client.all_module_versions(identifier: identifier)
       end
 
-      sig { returns(T::Array[Dependabot::OpenTofu::Version]) }
+      sig { returns(T::Array[Dependabot::Opentofu::Version]) }
       def all_provider_versions
         identifier = dependency_source_details&.fetch(:module_identifier)
         registry_client.all_provider_versions(identifier: identifier)
       end
 
-      sig { returns(Dependabot::OpenTofu::RegistryClient) }
+      sig { returns(Dependabot::Opentofu::RegistryClient) }
       def registry_client
         @registry_client ||= T.let(
           begin
             hostname = dependency_source_details&.fetch(:registry_hostname)
             RegistryClient.new(hostname: hostname, credentials: credentials)
           end,
-          T.nilable(Dependabot::OpenTofu::RegistryClient)
+          T.nilable(Dependabot::Opentofu::RegistryClient)
         )
       end
 
-      sig { returns(T.nilable(Dependabot::OpenTofu::Version)) }
+      sig { returns(T.nilable(Dependabot::Opentofu::Version)) }
       def latest_version_for_provider_dependency
         return unless provider_dependency?
 
@@ -132,7 +132,7 @@ module Dependabot
 
         @latest_version_for_provider_dependency = T.let(
           versions.max,
-          T.nilable(Dependabot::OpenTofu::Version)
+          T.nilable(Dependabot::Opentofu::Version)
         )
       end
 
@@ -261,4 +261,4 @@ module Dependabot
 end
 
 Dependabot::UpdateCheckers
-  .register("terraform", Dependabot::OpenTofu::UpdateChecker)
+  .register("terraform", Dependabot::Opentofu::UpdateChecker)

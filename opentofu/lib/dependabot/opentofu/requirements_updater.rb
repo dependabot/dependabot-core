@@ -12,7 +12,7 @@ require "dependabot/opentofu/version"
 require "dependabot/opentofu/requirement"
 
 module Dependabot
-  module OpenTofu
+  module Opentofu
     # Takes an array of `requirements` hashes for a dependency at the old
     # version and a new version, and generates a set of new `requirements`
     # hashes at the new version.
@@ -51,7 +51,7 @@ module Dependabot
       extend T::Sig
 
       # @param requirements [Hash{Symbol => String, Array, Hash}]
-      # @param latest_version [Dependabot::OpenTofu::Version]
+      # @param latest_version [Dependabot::Opentofu::Version]
       # @param tag_for_latest_version [String, NilClass]
       sig do
         params(
@@ -67,7 +67,7 @@ module Dependabot
         return unless latest_version
         return unless version_class.correct?(latest_version)
 
-        @latest_version = T.let(version_class.new(latest_version), Dependabot::OpenTofu::Version)
+        @latest_version = T.let(version_class.new(latest_version), Dependabot::Opentofu::Version)
       end
 
       # @return requirements [Hash{Symbol => String, Array, Hash}]
@@ -94,7 +94,7 @@ module Dependabot
       sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
       attr_reader :requirements
 
-      sig { returns(Dependabot::OpenTofu::Version) }
+      sig { returns(Dependabot::Opentofu::Version) }
       attr_reader :latest_version
 
       sig { returns(T.nilable(String)) }
@@ -136,7 +136,7 @@ module Dependabot
         req_string.sub(old_version.to_s, updated_version)
       end
 
-      sig { params(req_string: String).returns(T::Array[Dependabot::OpenTofu::Requirement]) }
+      sig { params(req_string: String).returns(T::Array[Dependabot::Opentofu::Requirement]) }
       def update_range(req_string)
         requirement_class.new(req_string).requirements.flat_map do |r|
           ruby_req = requirement_class.new(r.join(" "))
@@ -152,8 +152,8 @@ module Dependabot
 
       sig do
         params(
-          new_version: Dependabot::OpenTofu::Version,
-          old_version: Dependabot::OpenTofu::Version
+          new_version: Dependabot::Opentofu::Version,
+          old_version: Dependabot::Opentofu::Version
         )
           .returns(String)
       end
@@ -178,9 +178,9 @@ module Dependabot
       sig do
         params(
           requirement: Dependabot::Requirement,
-          version_to_be_permitted: T.any(String, Dependabot::OpenTofu::Version)
+          version_to_be_permitted: T.any(String, Dependabot::Opentofu::Version)
         )
-          .returns(Dependabot::OpenTofu::Requirement)
+          .returns(Dependabot::Opentofu::Requirement)
       end
       def update_greatest_version(requirement, version_to_be_permitted)
         if version_to_be_permitted.is_a?(String)
@@ -209,12 +209,12 @@ module Dependabot
         requirement_class.new("#{op} #{new_segments.join('.')}")
       end
 
-      sig { returns(T.class_of(Dependabot::OpenTofu::Version)) }
+      sig { returns(T.class_of(Dependabot::Opentofu::Version)) }
       def version_class
         Version
       end
 
-      sig { returns(T.class_of(Dependabot::OpenTofu::Requirement)) }
+      sig { returns(T.class_of(Dependabot::Opentofu::Requirement)) }
       def requirement_class
         Requirement
       end

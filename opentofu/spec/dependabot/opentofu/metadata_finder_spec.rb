@@ -6,7 +6,7 @@ require "dependabot/dependency"
 require "dependabot/opentofu/metadata_finder"
 require_common_spec "metadata_finders/shared_examples_for_metadata_finders"
 
-RSpec.describe Dependabot::OpenTofu::MetadataFinder do
+RSpec.describe Dependabot::Opentofu::MetadataFinder do
   subject(:finder) do
     described_class.new(dependency: dependency, credentials: credentials)
   end

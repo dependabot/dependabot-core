@@ -18,7 +18,7 @@ require "dependabot/opentofu/registry_client"
 require "dependabot/opentofu/package_manager"
 
 module Dependabot
-  module OpenTofu
+  module Opentofu
     class FileParser < Dependabot::FileParsers::Base
       extend T::Sig
 
@@ -449,7 +449,7 @@ module Dependabot
       def package_manager
         @package_manager ||= T.let(
           PackageManager.new(T.must(terraform_version)),
-          T.nilable(Dependabot::OpenTofu::PackageManager)
+          T.nilable(Dependabot::Opentofu::PackageManager)
         )
       end
 
@@ -468,4 +468,4 @@ module Dependabot
 end
 
 Dependabot::FileParsers
-  .register("terraform", Dependabot::OpenTofu::FileParser)
+  .register("terraform", Dependabot::Opentofu::FileParser)

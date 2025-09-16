@@ -10,7 +10,7 @@ require "dependabot/shared_helpers"
 require "sorbet-runtime"
 
 module Dependabot
-  module OpenTofu
+  module Opentofu
     class MetadataFinder < Dependabot::MetadataFinders::Base
       extend T::Sig
 
@@ -52,4 +52,4 @@ module Dependabot
 end
 
 Dependabot::MetadataFinders
-  .register("terraform", Dependabot::OpenTofu::MetadataFinder)
+  .register("terraform", Dependabot::Opentofu::MetadataFinder)
