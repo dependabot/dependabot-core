@@ -393,13 +393,13 @@ module Dependabot
 
       sig { returns(String) }
       def terraform_parser_path
-        helper_bin_dir = File.join(native_helpers_root, "terraform/bin")
+        helper_bin_dir = File.join(native_helpers_root, "opentofu/bin")
         Pathname.new(File.join(helper_bin_dir, "json2hcl")).cleanpath.to_path
       end
 
       sig { returns(String) }
       def terraform_hcl2_parser_path
-        helper_bin_dir = File.join(native_helpers_root, "terraform/bin")
+        helper_bin_dir = File.join(native_helpers_root, "opentofu/bin")
         Pathname.new(File.join(helper_bin_dir, "hcl2json")).cleanpath.to_path
       end
 

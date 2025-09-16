@@ -27,7 +27,7 @@ module Dependabot
         @hostname = hostname
         @tokens = T.let(
           credentials.each_with_object({}) do |item, memo|
-            memo[item["host"]] = item["token"] if item["type"] == "terraform_registry"
+            memo[item["host"]] = item["token"] if item["type"] == "opentofu_registry"
           end,
           T::Hash[String, String]
         )

@@ -88,7 +88,7 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
   it "fetches provider versions form a custom registry secured by a token" do
     hostname = "registry.example.org"
     token = SecureRandom.hex(16)
-    credentials = [{ "type" => "terraform_registry", "host" => hostname, "token" => token }]
+    credentials = [{ "type" => "opentofu_registry", "host" => hostname, "token" => token }]
 
     stub_request(:get, "https://#{hostname}/.well-known/terraform.json").and_return(body: {
       "modules.v1": "/v1/modules/",
