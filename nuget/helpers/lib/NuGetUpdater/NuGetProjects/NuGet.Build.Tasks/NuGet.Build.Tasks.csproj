@@ -21,6 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.FileProviders.Abstractions" VersionOverride="9.0.9" />
     <EmbeddedResource Include="$(NuGetSourceLocation)\src\NuGet.Core\NuGet.Build.Tasks\**\*.resx" />
   </ItemGroup>
 
