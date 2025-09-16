@@ -47,7 +47,7 @@ RSpec.describe Dependabot::Opentofu::MetadataFinder do
           ref: "tags/0.3.7"
         }
       }],
-      package_manager: "terraform"
+      package_manager: "opentofu"
     )
   end
 
@@ -84,7 +84,7 @@ RSpec.describe Dependabot::Opentofu::MetadataFinder do
               module_identifier: "hashicorp/consul/aws"
             }
           }],
-          package_manager: "terraform"
+          package_manager: "opentofu"
         )
       end
 
@@ -132,7 +132,7 @@ RSpec.describe Dependabot::Opentofu::MetadataFinder do
               module_identifier: "hashicorp/aws"
             }
           }],
-          package_manager: "terraform"
+          package_manager: "opentofu"
         )
       end
 

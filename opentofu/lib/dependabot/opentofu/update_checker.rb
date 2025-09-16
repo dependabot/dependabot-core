@@ -261,4 +261,4 @@ module Dependabot
 end
 
 Dependabot::UpdateCheckers
-  .register("terraform", Dependabot::Opentofu::UpdateChecker)
+  .register("opentofu", Dependabot::Opentofu::UpdateChecker)
