@@ -82,6 +82,9 @@ swift:
 terraform:
   - *shared
   - 'terraform/**'
+opentofu:
+  - *shared
+  - 'opentofu/**'
 uv:
   - *shared
   - 'uv/**'

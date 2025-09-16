@@ -40,6 +40,7 @@ GEMSPECS = %w(
   silent/dependabot-silent.gemspec
   swift/dependabot-swift.gemspec
   terraform/dependabot-terraform.gemspec
+  opentofu/dependabot-opentofu.gemspec
   uv/dependabot-uv.gemspec
   vcpkg/dependabot-vcpkg.gemspec
 ).freeze

@@ -184,6 +184,8 @@ module GithubApi
         "github"
       when "terraform"
         "terraform"
+      when "opentofu"
+        "opentofu"
       when "pub"
         "pub"
       when "elm"

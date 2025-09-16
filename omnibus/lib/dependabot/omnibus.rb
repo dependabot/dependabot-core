@@ -3,6 +3,7 @@
 
 require "dependabot/python"
 require "dependabot/terraform"
+require "dependabot/opentofu"
 require "dependabot/elm"
 require "dependabot/docker"
 require "dependabot/docker_compose"
