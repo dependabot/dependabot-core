@@ -72,6 +72,18 @@ module Dependabot
           @error_handler = error_handler
         end
 
+        sig { override.returns(Dependabot::Job) }
+        attr_reader :job
+
+        sig { override.returns(Dependabot::DependencySnapshot) }
+        attr_reader :dependency_snapshot
+
+        sig { override.returns(Dependabot::Updater::ErrorHandler) }
+        attr_reader :error_handler
+
+        sig { override.returns(Dependabot::Service) }
+        attr_reader :service
+
         sig { void }
         def perform
           # This guards against any jobs being performed where the data is malformed, this should not happen unless
@@ -141,18 +153,6 @@ module Dependabot
         end
 
         private
-
-        sig { returns(Dependabot::Job) }
-        attr_reader :job
-
-        sig { returns(Dependabot::Service) }
-        attr_reader :service
-
-        sig { returns(DependencySnapshot) }
-        attr_reader :dependency_snapshot
-
-        sig { returns(Dependabot::Updater::ErrorHandler) }
-        attr_reader :error_handler
 
         sig { returns(T.nilable(Dependabot::DependencyChange)) }
         def dependency_change
