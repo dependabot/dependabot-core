@@ -55,11 +55,12 @@ module Dependabot
     sig { params(dependencies: T::Array[Dependabot::Dependency]).void }
     def assign_to_groups!(dependencies:)
       if dependency_groups.any?
+        specificity_calculator = Dependabot::Updater::PatternSpecificityCalculator.new
 
         dependencies.each do |dependency|
           matched_groups = @dependency_groups.each_with_object([]) do |group, matches|
             next unless group.contains?(dependency)
-            next if should_skip_due_to_specificity?(group, dependency)
+            next if should_skip_due_to_specificity?(group, dependency, specificity_calculator)
 
             group.dependencies.push(dependency)
             matches << group
@@ -105,13 +106,12 @@ module Dependabot
     sig do
       params(
         group: Dependabot::DependencyGroup,
-        dependency: Dependabot::Dependency
+        dependency: Dependabot::Dependency,
+        specificity_calculator: Dependabot::Updater::PatternSpecificityCalculator
       ).returns(T::Boolean)
     end
-    def should_skip_due_to_specificity?(group, dependency)
+    def should_skip_due_to_specificity?(group, dependency, specificity_calculator)
       return false unless Dependabot::Experiments.enabled?(:group_membership_enforcement)
-
-      specificity_calculator = Dependabot::Updater::PatternSpecificityCalculator.new
 
       contains_checker = proc { |g, dep, _dir| g.contains?(dep) }
       specificity_calculator.dependency_belongs_to_more_specific_group?(

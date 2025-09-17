@@ -337,28 +337,25 @@ RSpec.describe Dependabot::DependencyGroupEngine do
         let(:generic_group) { dependency_group_engine.find_group(name: "generic-group") }
         let(:specific_group) { dependency_group_engine.find_group(name: "specific-group") }
         let(:very_specific_group) { dependency_group_engine.find_group(name: "very-specific-group") }
+        let(:specificity_calculator) { Dependabot::Updater::PatternSpecificityCalculator.new }
 
         context "when experiment is enabled" do
           let(:experiment_enabled) { true }
 
           it "returns true when dependency belongs to more specific group" do
             # dummy-pkg-a belongs to very-specific-group, so should skip generic and specific groups
-            expect(dependency_group_engine.send(:should_skip_due_to_specificity?, generic_group,
-                                                dummy_pkg_a)).to be(true)
-            expect(dependency_group_engine.send(:should_skip_due_to_specificity?, specific_group,
-                                                dummy_pkg_a)).to be(true)
+            expect(dependency_group_engine.send(:should_skip_due_to_specificity?, generic_group, dummy_pkg_a, specificity_calculator)).to be(true)
+            expect(dependency_group_engine.send(:should_skip_due_to_specificity?, specific_group, dummy_pkg_a, specificity_calculator)).to be(true)
           end
 
           it "returns false when dependency belongs to most specific group" do
             # dummy-pkg-a in very-specific-group (most specific) should not be skipped
-            expect(dependency_group_engine.send(:should_skip_due_to_specificity?, very_specific_group,
-                                                dummy_pkg_a)).to be(false)
+            expect(dependency_group_engine.send(:should_skip_due_to_specificity?, very_specific_group, dummy_pkg_a, specificity_calculator)).to be(false)
           end
 
           it "returns false when no more specific group exists" do
             # ungrouped_pkg only matches generic-group, so should not be skipped
-            expect(dependency_group_engine.send(:should_skip_due_to_specificity?, generic_group,
-                                                ungrouped_pkg)).to be(false)
+            expect(dependency_group_engine.send(:should_skip_due_to_specificity?, generic_group, ungrouped_pkg, specificity_calculator)).to be(false)
           end
         end
 
@@ -366,12 +363,9 @@ RSpec.describe Dependabot::DependencyGroupEngine do
           let(:experiment_enabled) { false }
 
           it "always returns false regardless of specificity" do
-            expect(dependency_group_engine.send(:should_skip_due_to_specificity?, generic_group,
-                                                dummy_pkg_a)).to be(false)
-            expect(dependency_group_engine.send(:should_skip_due_to_specificity?, specific_group,
-                                                dummy_pkg_a)).to be(false)
-            expect(dependency_group_engine.send(:should_skip_due_to_specificity?, very_specific_group,
-                                                dummy_pkg_a)).to be(false)
+            expect(dependency_group_engine.send(:should_skip_due_to_specificity?, generic_group, dummy_pkg_a, specificity_calculator)).to be(false)
+            expect(dependency_group_engine.send(:should_skip_due_to_specificity?, specific_group, dummy_pkg_a, specificity_calculator)).to be(false)
+            expect(dependency_group_engine.send(:should_skip_due_to_specificity?, very_specific_group, dummy_pkg_a, specificity_calculator)).to be(false)
           end
         end
       end
