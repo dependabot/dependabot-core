@@ -158,11 +158,13 @@ module Dependabot
         ).latest_resolvable_version
 
         @git_tag_resolvable = !resolver_result.nil?
+        @git_tag_resolvable
       rescue SharedHelpers::HelperSubprocessFailed,
              Dependabot::DependencyFileNotResolvable => e
         raise e unless e.message.include?("resolution failed")
 
         @git_tag_resolvable = T.let(false, T.nilable(T::Boolean))
+        false
       end
 
       sig { returns(T.nilable(T::Hash[T.untyped, T.untyped])) }
