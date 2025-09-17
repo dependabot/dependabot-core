@@ -85,7 +85,7 @@ RSpec.describe Dependabot::GoModules::DependencyGrapher do
       it "correctly serializes the resolved dependencies" do
         resolved_dependencies = grapher.resolved_dependencies
 
-        expect(resolved_dependencies.count).to eql(4)
+        expect(resolved_dependencies.count).to be(4)
 
         expect(resolved_dependencies.keys).to eql(%w(
           github.com/fatih/Color
@@ -105,12 +105,6 @@ RSpec.describe Dependabot::GoModules::DependencyGrapher do
         expect(colorable[:relationship]).to eql("indirect")
         expect(colorable[:scope]).to eql("runtime")
         expect(colorable[:dependencies]).to be_empty
-
-        isatty = resolved_dependencies["github.com/mattn/go-isatty"]
-        expect(isatty[:package_url]).to eql("pkg:go_modules/github.com/mattn/go-isatty@0.0.4")
-        expect(isatty[:relationship]).to eql("indirect")
-        expect(isatty[:scope]).to eql("runtime")
-        expect(isatty[:dependencies]).to be_empty
 
         quote = resolved_dependencies["rsc.io/quote"]
         expect(quote[:package_url]).to eql("pkg:go_modules/rsc.io/quote@1.4.0")

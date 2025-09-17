@@ -7,7 +7,7 @@ require "dependabot/dependency_graphers"
 
 # TODO: Implement a concrete Bundler class
 RSpec.describe "Dependabot::DependencyGraphers::Generic" do
-  context "for bundler" do
+  context "with a bundler project" do
     subject(:grapher) do
       Dependabot::DependencyGraphers.for_package_manager("bundler").new(
         dependency_files:,
@@ -58,7 +58,7 @@ RSpec.describe "Dependabot::DependencyGraphers::Generic" do
       end
 
       it "correctly serializes the resolved dependencies" do
-        expect(grapher.resolved_dependencies.count).to eql(1)
+        expect(grapher.resolved_dependencies.count).to be(1)
 
         ibandit = grapher.resolved_dependencies["ibandit"]
         expect(ibandit[:package_url]).to eql("pkg:gem/ibandit")
@@ -88,7 +88,7 @@ RSpec.describe "Dependabot::DependencyGraphers::Generic" do
       it "correctly serializes the resolved dependencies" do
         resolved_dependencies = grapher.resolved_dependencies
 
-        expect(resolved_dependencies.count).to eql(2)
+        expect(resolved_dependencies.count).to be(2)
 
         expect(resolved_dependencies.keys).to eql(%w(ibandit i18n))
 
