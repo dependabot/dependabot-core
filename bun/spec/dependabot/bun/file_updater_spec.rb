@@ -139,6 +139,7 @@ RSpec.describe Dependabot::Bun::FileUpdater do
 
     context "with multiple dependencies" do
       let(:files) { project_dependency_files("javascript/multiple_updates") }
+      let(:repo_contents_path) { build_tmp_repo("javascript/multiple_updates", path: "projects") }
 
       let(:dependencies) do
         [
@@ -281,6 +282,7 @@ RSpec.describe Dependabot::Bun::FileUpdater do
         let(:old_ref) { "master" }
 
         let(:files) { project_dependency_files("bun/github_dependency_no_ref") }
+        let(:repo_contents_path) { build_tmp_repo("bun/github_dependency_no_ref", path: "projects") }
 
         it "only updates the lockfile" do
           expect(updated_files.map(&:name))
@@ -296,6 +298,7 @@ RSpec.describe Dependabot::Bun::FileUpdater do
 
     context "when a wildcard is specified" do
       let(:files) { project_dependency_files("bun/wildcard") }
+      let(:repo_contents_path) { build_tmp_repo("bun/wildcard", path: "projects") }
 
       let(:version) { "0.2.0" }
       let(:requirements) do
