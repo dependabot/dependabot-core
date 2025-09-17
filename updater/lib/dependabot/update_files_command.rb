@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "base64"
@@ -13,6 +13,9 @@ require "github_api/dependency_submission"
 
 module Dependabot
   class UpdateFilesCommand < BaseCommand
+    extend T::Sig
+
+    sig { override.void }
     def perform_job
       # We expect the FileFetcherCommand to have been executed beforehand to place
       # encoded files and commit information in the environment, so let's retrieve
@@ -67,21 +70,27 @@ module Dependabot
       end
     end
 
-    private
-
+    sig { override.returns(Dependabot::Job) }
     def job
-      @job ||= Job.new_update_job(
-        job_id: job_id,
-        job_definition: Environment.job_definition,
-        repo_contents_path: Environment.repo_contents_path
+      @job ||= T.let(
+        Job.new_update_job(
+          job_id: job_id,
+          job_definition: Environment.job_definition,
+          repo_contents_path: Environment.repo_contents_path
+        ),
+        T.nilable(Dependabot::Job)
       )
     end
 
+    sig { override.returns(T.nilable(String)) }
     def base_commit_sha
       Environment.job_definition["base_commit_sha"]
     end
 
-    # rubocop:disable Metrics/AbcSize, Layout/LineLength, Metrics/MethodLength
+    private
+
+    # rubocop:disable Metrics/AbcSize, Layout/LineLength, Metrics/MethodLength, Metrics/PerceivedComplexity
+    sig { params(error: StandardError).void }
     def handle_parser_error(error)
       # This happens if the repo gets removed after a job gets kicked off.
       # The service will handle the removal without any prompt from the updater,
@@ -108,12 +117,12 @@ module Dependabot
           # If it isn't, then log all the details and let the application error
           # tracker know about it
           Dependabot.logger.error error.message
-          error.backtrace.each { |line| Dependabot.logger.error line }
+          error.backtrace&.each { |line| Dependabot.logger.error line }
           unknown_error_details = {
             ErrorAttributes::CLASS => error.class.to_s,
             ErrorAttributes::MESSAGE => error.message,
-            ErrorAttributes::BACKTRACE => error.backtrace.join("\n"),
-            ErrorAttributes::FINGERPRINT => error.respond_to?(:sentry_context) ? error.sentry_context[:fingerprint] : nil,
+            ErrorAttributes::BACKTRACE => error.backtrace&.join("\n"),
+            ErrorAttributes::FINGERPRINT => error.respond_to?(:sentry_context) ? T.unsafe(error).sentry_context[:fingerprint] : nil,
             ErrorAttributes::PACKAGE_MANAGER => job.package_manager,
             ErrorAttributes::JOB_ID => job.id,
             ErrorAttributes::DEPENDENCIES => job.dependencies,
@@ -142,8 +151,9 @@ module Dependabot
         error_details: error_details[:"error-detail"]
       )
     end
-    # rubocop:enable Metrics/AbcSize, Layout/LineLength, Metrics/MethodLength
+    # rubocop:enable Metrics/AbcSize, Layout/LineLength, Metrics/MethodLength, Metrics/PerceivedComplexity
 
+    sig { params(error: Dependabot::DependencyFileNotParseable).void }
     def handle_dependency_file_not_parseable_error(error)
       error_details = Dependabot.updater_error_details(error)
 
@@ -159,14 +169,18 @@ module Dependabot
       )
     end
 
+    sig { params(dependency_snapshot: Dependabot::DependencySnapshot).void }
     def dependency_submission_experiment(dependency_snapshot)
       return unless Dependabot::Experiments.enabled?(:enable_dependency_submission_poc)
+
+      ecosystem = dependency_snapshot.ecosystem
+      return unless ecosystem
 
       submission = GithubApi::DependencySubmission.new(
         job_id: job.id.to_s,
         branch: job.source.branch || "main",
         sha: dependency_snapshot.base_commit_sha,
-        ecosystem: T.must(dependency_snapshot.ecosystem),
+        ecosystem: ecosystem,
         dependency_files: dependency_snapshot.dependency_files,
         dependencies: dependency_snapshot.dependencies
       )

@@ -70,7 +70,7 @@ module Dependabot
 
         sig { returns(Dependabot::Job) }
         attr_reader :job
-        sig { returns(Dependabot::Service) }
+        sig { override.returns(Dependabot::Service) }
         attr_reader :service
         sig { returns(Dependabot::DependencySnapshot) }
         attr_reader :dependency_snapshot
