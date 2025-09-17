@@ -225,6 +225,64 @@ RSpec.describe Dependabot::Python::MetadataFinder do
       end
     end
 
+    context "with a private index where 'simple' appears in both repository name and endpoint" do
+      let(:credentials) do
+        [Dependabot::Credential.new({
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }), Dependabot::Credential.new({
+          "type" => "python_index",
+          "index-url" => "https://registry.example.com/simple/simple",
+          "token" => "testuser:testpass",
+          "replaces-base" => true
+        })]
+      end
+      let(:pypi_response) { fixture("pypi", "pypi_response.json") }
+
+      before do
+        # Stub the public PyPI to return 404 (private registry replaces base)
+        stub_request(:get, pypi_url).to_return(status: 404, body: "")
+
+        # Stub the correctly converted private registry URL
+        # Should convert only the trailing /simple to /pypi, leaving repository name intact
+        private_url = "https://registry.example.com/simple/pypi/#{dependency_name}/json"
+        stub_request(:get, private_url)
+          .with(basic_auth: %w(testuser testpass))
+          .to_return(status: 200, body: pypi_response)
+
+        # Also stub the original URL (since both URLs should be tried)
+        original_url = "https://registry.example.com/simple/simple/#{dependency_name}/json"
+        stub_request(:get, original_url)
+          .with(basic_auth: %w(testuser testpass))
+          .to_return(status: 404, body: "")
+      end
+
+      it "correctly converts only trailing /simple/ to /pypi/, preserving 'simple' in repository name" do
+        expect(source_url).to eq("https://github.com/spotify/luigi")
+      end
+
+      it "generates the correct URL with 'simple' preserved in repository name" do
+        possible_urls = finder.send(:possible_listing_urls)
+
+        # Should convert only trailing /simple to /pypi, keeping repository name "simple"
+        expect(possible_urls).to include(
+          "https://testuser:testpass@registry.example.com/simple/pypi/luigi/json"
+        )
+
+        # Should not include the incorrect /simple/ URL for JSON API
+        expect(possible_urls).not_to include(
+          "https://testuser:testpass@registry.example.com/simple/simple/luigi/json"
+        )
+
+        # Should NOT incorrectly modify the repository name
+        expect(possible_urls).not_to include(
+          "https://testuser:testpass@registry.example.com/pypi/pypi/luigi/json"
+        )
+      end
+    end
+
     context "when the dependency came from a local repository" do
       let(:pypi_response) { fixture("pypi", "pypi_response.json") }
       let(:version) { "1.0+gc.1" }
