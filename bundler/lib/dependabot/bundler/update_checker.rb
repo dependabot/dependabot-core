@@ -82,7 +82,7 @@ module Dependabot
 
         RequirementsUpdater.new(
           requirements: dependency.requirements,
-          update_strategy: requirements_update_strategy,
+          update_strategy: T.must(requirements_update_strategy),
           updated_source: updated_source,
           latest_version: latest_version_for_req_updater,
           latest_resolvable_version: latest_resolvable_version_for_req_updater
