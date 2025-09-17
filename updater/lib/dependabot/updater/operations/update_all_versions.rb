@@ -124,8 +124,17 @@ module Dependabot
           return log_up_to_date(dependency) if checker.up_to_date?
 
           if pr_exists_for_latest_version?(checker)
+            latest_version = checker.latest_version&.to_s
+            return false if latest_version.nil?
+
+            pr_number = job.existing_pull_requests
+                           .find { |pr| pr.contains_dependency?(checker.dependency.name, latest_version) }
+                           &.dependencies&.first&.pr_number
+
+            pr_number_text = pr_number ? "##{pr_number} " : ""
+
             return Dependabot.logger.info(
-              "Pull request already exists for #{checker.dependency.name} " \
+              "Pull request #{pr_number_text}already exists for #{checker.dependency.name} " \
               "with latest version #{checker.latest_version}"
             )
           end
