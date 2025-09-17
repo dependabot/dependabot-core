@@ -5,7 +5,8 @@ require "spec_helper"
 require "dependabot/bundler"
 require "dependabot/dependency_graphers"
 
-RSpec.describe Dependabot::DependencyGraphers::Generic do
+# TODO: Implement a concrete Bundler class
+RSpec.describe "Dependabot::DependencyGraphers::Generic" do
   context "for bundler" do
     subject(:grapher) do
       Dependabot::DependencyGraphers.for_package_manager("bundler").new(
@@ -35,6 +36,14 @@ RSpec.describe Dependabot::DependencyGraphers::Generic do
 
     let(:dependencies) { parser.parse }
 
+    # NOTE: This documents existing behaviour where Gemfile PURLs do not include a resolved version
+    #
+    # Package URLs deal in resolved versions, so for a Gemfile only project we only have a range
+    # which cannot currently be submitted to the Dependency Submission API.
+    #
+    # This is working as intended, but when we implement a concrete Bundler grapher we will want
+    # to execute a `bundle install` to resolve the file at runtime so we can submit the resolved
+    # dependencies.
     context "with a Gemfile only" do
       let(:gemfile) do
         bundler_project_dependency_file("subdependency", filename: "Gemfile")

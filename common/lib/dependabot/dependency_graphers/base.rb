@@ -11,14 +11,14 @@ module Dependabot
 
       abstract!
 
-      # TODO: Add credentials to init in future.
+      # TODO(brrygrdn): Inject the Dependency parser instead of pre-parsed `dependencies`
       #
-      # The grapher will be responsible for additional native commands in cases where we need to do further
-      # dependency file inspection, some binaries may try to authenticate with package registries as part
-      # of these operations, such as pipenv.
+      # Semantically it makes sense for the grapher to wrap the parser as a higher order function, but we already know
+      # that some package managers will require extra native commands before, after or during the parse - in extreme
+      # cases it may make sense to use an alternative parser that is more optimal.
       #
-      # We should pass in these credentials by default the first time we need to do this but we can defer
-      # this until then since rollout of dependency hierarchies is a separate concern.
+      # By injecting the parser, this allows the ecosystem to encapsulate the package manager specifics without the
+      # executor needing to manage parser modes / feature flags.
       sig do
         params(
           dependency_files: T::Array[Dependabot::DependencyFile],
