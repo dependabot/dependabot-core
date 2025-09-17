@@ -67,7 +67,7 @@ module Dependabot
               version: dep.fetch("dependency-version", nil),
               removed: dep.fetch("dependency-removed", false),
               directory: dep.fetch("directory", nil),
-              pr_number: dep.fetch("pr_number", nil)&.to_i,
+              pr_number: dep.fetch("pr_number", nil)&.to_i
             )
           end
         )

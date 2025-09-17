@@ -838,7 +838,7 @@ RSpec.describe Dependabot::Updater do
             {
               "dependency-name" => "dummy-pkg-b",
               "dependency-version" => "1.2.0",
-              "pr_number" => 123,
+              "pr_number" => 123
             }
           ]
         ])
