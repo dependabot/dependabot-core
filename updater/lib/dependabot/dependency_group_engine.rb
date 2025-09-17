@@ -4,6 +4,7 @@
 require "sorbet-runtime"
 
 require "dependabot/dependency_group"
+require "dependabot/updater/pattern_specificity_calculator"
 
 # This class implements our strategy for keeping track of and matching dependency
 # groups that are defined by users in their dependabot config file.
@@ -54,9 +55,11 @@ module Dependabot
     sig { params(dependencies: T::Array[Dependabot::Dependency]).void }
     def assign_to_groups!(dependencies:)
       if dependency_groups.any?
+
         dependencies.each do |dependency|
           matched_groups = @dependency_groups.each_with_object([]) do |group, matches|
             next unless group.contains?(dependency)
+            next if should_skip_due_to_specificity?(group, dependency)
 
             group.dependencies.push(dependency)
             matches << group
@@ -97,6 +100,23 @@ module Dependabot
         - your configuration's 'allow' rules do not permit any of the dependencies that match the group
         - the dependencies that match the group rules have been removed from your project
       WARN
+    end
+
+    sig do
+      params(
+        group: Dependabot::DependencyGroup,
+        dependency: Dependabot::Dependency
+      ).returns(T::Boolean)
+    end
+    def should_skip_due_to_specificity?(group, dependency)
+      return false unless Dependabot::Experiments.enabled?(:group_membership_enforcement)
+
+      specificity_calculator = Dependabot::Updater::PatternSpecificityCalculator.new
+
+      contains_checker = proc { |g, dep, _dir| g.contains?(dep) }
+      specificity_calculator.dependency_belongs_to_more_specific_group?(
+        group, dependency, @dependency_groups, contains_checker, dependency.directory
+      )
     end
   end
 end

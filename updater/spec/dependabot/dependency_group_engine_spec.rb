@@ -8,6 +8,7 @@ require "dependabot/dependency"
 require "dependabot/dependency_group_engine"
 require "dependabot/dependency_snapshot"
 require "dependabot/job"
+require "dependabot/experiments"
 
 RSpec.describe Dependabot::DependencyGroupEngine do
   include DependencyFileHelpers
@@ -43,7 +44,8 @@ RSpec.describe Dependabot::DependencyGroupEngine do
           groups: ["default"],
           source: nil
         }
-      ]
+      ],
+      directory: "/"
     )
   end
 
@@ -59,7 +61,8 @@ RSpec.describe Dependabot::DependencyGroupEngine do
           groups: ["default"],
           source: nil
         }
-      ]
+      ],
+      directory: "/"
     )
   end
 
@@ -75,7 +78,8 @@ RSpec.describe Dependabot::DependencyGroupEngine do
           groups: ["default"],
           source: nil
         }
-      ]
+      ],
+      directory: "/"
     )
   end
 
@@ -91,7 +95,8 @@ RSpec.describe Dependabot::DependencyGroupEngine do
           groups: ["default"],
           source: nil
         }
-      ]
+      ],
+      directory: "/"
     )
   end
 
@@ -239,6 +244,139 @@ RSpec.describe Dependabot::DependencyGroupEngine do
       end
     end
 
+    context "with group membership enforcement experiment" do
+      let(:dependency_groups_config) do
+        [
+          {
+            "name" => "generic-group",
+            "rules" => {
+              "patterns" => ["*"]
+            }
+          },
+          {
+            "name" => "specific-group",
+            "rules" => {
+              "patterns" => ["dummy-pkg-*"]
+            }
+          },
+          {
+            "name" => "very-specific-group",
+            "rules" => {
+              "patterns" => ["dummy-pkg-a"]
+            }
+          }
+        ]
+      end
+
+      let(:dependencies) { [dummy_pkg_a, dummy_pkg_b, ungrouped_pkg] }
+
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:group_membership_enforcement)
+          .and_return(experiment_enabled)
+      end
+
+      context "when experiment is enabled" do
+        let(:experiment_enabled) { true }
+
+        before do
+          dependency_group_engine.assign_to_groups!(dependencies: dependencies)
+        end
+
+        it "assigns dependencies to most specific matching groups only" do
+          generic_group = dependency_group_engine.find_group(name: "generic-group")
+          specific_group = dependency_group_engine.find_group(name: "specific-group")
+          very_specific_group = dependency_group_engine.find_group(name: "very-specific-group")
+
+          # dummy-pkg-a should only be in the most specific group (very-specific-group)
+          expect(very_specific_group.dependencies).to include(dummy_pkg_a)
+          expect(specific_group.dependencies).not_to include(dummy_pkg_a)
+          expect(generic_group.dependencies).not_to include(dummy_pkg_a)
+
+          # dummy-pkg-b should be in specific-group (most specific match)
+          expect(specific_group.dependencies).to include(dummy_pkg_b)
+          expect(generic_group.dependencies).not_to include(dummy_pkg_b)
+
+          # ungrouped_pkg should be in generic-group (only match)
+          expect(generic_group.dependencies).to include(ungrouped_pkg)
+        end
+
+        it "keeps dependencies ungrouped if they don't match any patterns" do
+          # All dependencies should be grouped in this test case
+          expect(dependency_group_engine.ungrouped_dependencies).to be_empty
+        end
+      end
+
+      context "when experiment is disabled" do
+        let(:experiment_enabled) { false }
+
+        before do
+          dependency_group_engine.assign_to_groups!(dependencies: dependencies)
+        end
+
+        it "assigns dependencies to all matching groups (legacy behavior)" do
+          generic_group = dependency_group_engine.find_group(name: "generic-group")
+          specific_group = dependency_group_engine.find_group(name: "specific-group")
+          very_specific_group = dependency_group_engine.find_group(name: "very-specific-group")
+
+          # dummy-pkg-a should be in all matching groups
+          expect(very_specific_group.dependencies).to include(dummy_pkg_a)
+          expect(specific_group.dependencies).to include(dummy_pkg_a)
+          expect(generic_group.dependencies).to include(dummy_pkg_a)
+
+          # dummy-pkg-b should be in matching groups
+          expect(specific_group.dependencies).to include(dummy_pkg_b)
+          expect(generic_group.dependencies).to include(dummy_pkg_b)
+
+          # ungrouped_pkg should be in generic-group
+          expect(generic_group.dependencies).to include(ungrouped_pkg)
+        end
+      end
+
+      describe "#should_skip_due_to_specificity?" do
+        let(:generic_group) { dependency_group_engine.find_group(name: "generic-group") }
+        let(:specific_group) { dependency_group_engine.find_group(name: "specific-group") }
+        let(:very_specific_group) { dependency_group_engine.find_group(name: "very-specific-group") }
+
+        context "when experiment is enabled" do
+          let(:experiment_enabled) { true }
+
+          it "returns true when dependency belongs to more specific group" do
+            # dummy-pkg-a belongs to very-specific-group, so should skip generic and specific groups
+            expect(dependency_group_engine.send(:should_skip_due_to_specificity?, generic_group,
+                                                dummy_pkg_a)).to be(true)
+            expect(dependency_group_engine.send(:should_skip_due_to_specificity?, specific_group,
+                                                dummy_pkg_a)).to be(true)
+          end
+
+          it "returns false when dependency belongs to most specific group" do
+            # dummy-pkg-a in very-specific-group (most specific) should not be skipped
+            expect(dependency_group_engine.send(:should_skip_due_to_specificity?, very_specific_group,
+                                                dummy_pkg_a)).to be(false)
+          end
+
+          it "returns false when no more specific group exists" do
+            # ungrouped_pkg only matches generic-group, so should not be skipped
+            expect(dependency_group_engine.send(:should_skip_due_to_specificity?, generic_group,
+                                                ungrouped_pkg)).to be(false)
+          end
+        end
+
+        context "when experiment is disabled" do
+          let(:experiment_enabled) { false }
+
+          it "always returns false regardless of specificity" do
+            expect(dependency_group_engine.send(:should_skip_due_to_specificity?, generic_group,
+                                                dummy_pkg_a)).to be(false)
+            expect(dependency_group_engine.send(:should_skip_due_to_specificity?, specific_group,
+                                                dummy_pkg_a)).to be(false)
+            expect(dependency_group_engine.send(:should_skip_due_to_specificity?, very_specific_group,
+                                                dummy_pkg_a)).to be(false)
+          end
+        end
+      end
+    end
+
     context "when a job has no groups configured" do
       let(:dependency_groups_config) { [] }
 
@@ -261,7 +399,8 @@ RSpec.describe Dependabot::DependencyGroupEngine do
                 groups: ["default"],
                 source: nil
               }
-            ]
+            ],
+            directory: "/"
           )
         end
 
@@ -277,7 +416,8 @@ RSpec.describe Dependabot::DependencyGroupEngine do
                 groups: ["default"],
                 source: nil
               }
-            ]
+            ],
+            directory: "/"
           )
         end
 
