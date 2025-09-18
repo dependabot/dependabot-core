@@ -114,6 +114,11 @@ RSpec.describe Dependabot::DependencySnapshot do
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:allow_refresh_for_existing_pr_dependencies)
       .and_return(true)
+    # Default stub for group membership enforcement so specs that don't explicitly
+    # stub this flag won't fail when the code queries it.
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:group_membership_enforcement)
+      .and_return(false)
   end
 
   after do
