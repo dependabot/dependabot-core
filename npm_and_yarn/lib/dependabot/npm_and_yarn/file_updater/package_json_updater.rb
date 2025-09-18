@@ -35,6 +35,27 @@ module Dependabot
 
         private
 
+        sig { params(dependency: Dependabot::Dependency).returns(T.nilable(T::Array[T::Hash[Symbol, T.untyped]])) }
+        def requirements_to_process(dependency)
+          # Handle dependencies with requirements but no previous_requirements
+          reqs_to_process = updated_requirements(dependency)
+
+          # Special case: if updated_requirements returns nil but dependency has current requirements for this file,
+          # it might be a case where previous_requirements is nil but we still want to update
+          if reqs_to_process.nil? && dependency.previous_requirements.nil?
+            current_package_requirements = dependency.requirements.select { |r| r[:file] == package_json.name }
+            if current_package_requirements.any?
+              Dependabot.logger.info(
+                "Dependency #{dependency.name} has requirements for #{package_json.name} " \
+                "but no previous requirements. Attempting update."
+              )
+              reqs_to_process = current_package_requirements
+            end
+          end
+
+          reqs_to_process
+        end
+
         sig { returns(Dependabot::DependencyFile) }
         attr_reader :package_json
 
@@ -49,20 +70,7 @@ module Dependabot
           unique_deps_count = dependencies.map(&:name).to_a.uniq.compact.length
 
           dependencies.reduce(package_json.content.dup) do |content, dep|
-            # Handle dependencies with requirements but no previous_requirements
-            reqs_to_process = updated_requirements(dep)
-            # Special case: if updated_requirements returns nil but dependency has current requirements for this file,
-            # it might be a case where previous_requirements is nil but we still want to update
-            if reqs_to_process.nil? && dep.previous_requirements.nil?
-              current_package_requirements = dep.requirements.select { |r| r[:file] == package_json.name }
-              if current_package_requirements.any?
-                Dependabot.logger.info(
-                  "Dependency #{dep.name} has requirements for #{package_json.name} " \
-                  "but no previous requirements. Attempting update."
-                )
-                reqs_to_process = current_package_requirements
-              end
-            end
+            reqs_to_process = requirements_to_process(dep)
 
             reqs_to_process&.each do |new_req|
               old_req = old_requirement(dep, new_req)
@@ -285,7 +293,7 @@ module Dependabot
         sig { params(dependency_name: String, groups: T::Array[String]).returns(T.nilable(String)) }
         def extract_existing_requirement(dependency_name, groups)
           # Parse the package.json to find the existing requirement for the dependency
-          parsed_json = JSON.parse(package_json.content)
+          parsed_json = JSON.parse(T.must(package_json.content))
 
           # Check different sections based on the groups
           groups.each do |group|
