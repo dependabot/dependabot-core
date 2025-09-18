@@ -109,11 +109,10 @@ module Dependabot
         pnpm_lockfile_version = pnpm_lockfile_version_str.to_f
 
         return PNPM_V10 if pnpm_lockfile_version >= 9.0
-        return PNPM_V9 if pnpm_lockfile_version >= 6.1
         return PNPM_V8 if pnpm_lockfile_version >= 6.0
         return PNPM_V7 if pnpm_lockfile_version >= 5.4
 
-        PNPM_FALLBACK_VERSION
+        PNPM_DEFAULT_VERSION
       end
 
       sig { params(_bun_lock: T.nilable(DependencyFile)).returns(Integer) }
