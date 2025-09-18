@@ -106,7 +106,7 @@ RSpec.describe Dependabot::UpdateGraphCommand do
       end
     end
 
-    context "with an update files error (cloud)" do
+    context "with an update graph error (cloud)" do
       let(:error) { StandardError.new("hell") }
 
       before do
@@ -122,7 +122,7 @@ RSpec.describe Dependabot::UpdateGraphCommand do
       it "captures the exception and records to a update job error api" do
         expect(service).to receive(:capture_exception)
         expect(service).to receive(:record_update_job_error).with(
-          error_type: "update_files_error",
+          error_type: "update_graph_error",
           error_details: {
             Dependabot::ErrorAttributes::BACKTRACE => an_instance_of(String),
             Dependabot::ErrorAttributes::MESSAGE => "hell",
@@ -139,7 +139,7 @@ RSpec.describe Dependabot::UpdateGraphCommand do
       it "captures the exception and records the a update job unknown error api" do
         expect(service).to receive(:capture_exception)
         expect(service).to receive(:record_update_job_unknown_error).with(
-          error_type: "update_files_error",
+          error_type: "update_graph_error",
           error_details: {
             Dependabot::ErrorAttributes::BACKTRACE => an_instance_of(String),
             Dependabot::ErrorAttributes::MESSAGE => "hell",
@@ -155,7 +155,7 @@ RSpec.describe Dependabot::UpdateGraphCommand do
       end
     end
 
-    context "with an update files error (ghes)" do
+    context "with an update graph error (ghes)" do
       let(:error) { StandardError.new("hell") }
 
       it_behaves_like "a fast-failed job"
@@ -163,7 +163,7 @@ RSpec.describe Dependabot::UpdateGraphCommand do
       it "captures the exception and records to a update job error api" do
         expect(service).to receive(:capture_exception)
         expect(service).to receive(:record_update_job_error).with(
-          error_type: "update_files_error",
+          error_type: "update_graph_error",
           error_details: {
             Dependabot::ErrorAttributes::BACKTRACE => an_instance_of(String),
             Dependabot::ErrorAttributes::MESSAGE => "hell",

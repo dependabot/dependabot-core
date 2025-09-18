@@ -14,16 +14,9 @@ module Dependabot
   class UpdateGraphCommand < BaseCommand
     extend T::Sig
 
-    # TODO(brrygrdn): Change label to update_graph_error?
-    #
-    # It feels odd to return update_files_error, but Dependabot's backend service does a lot of categorisation
-    # based on this label.
-    #
-    # We need to ensure that the service handles a new update_graph_error appropriately before we change this,
-    # but this is something we can address later.
-    ERROR_TYPE_LABEL = "update_files_error"
+    ERROR_TYPE_LABEL = "update_graph_error"
 
-    sig { void }
+    sig { override.void }
     def perform_job
       ::Dependabot::OpenTelemetry.tracer.in_span("update_graph", kind: :internal) do |span|
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id.to_s)
@@ -53,16 +46,24 @@ module Dependabot
       end
     end
 
-    private
-
-    sig { returns(Dependabot::Job) }
+    sig { override.returns(Dependabot::Job) }
     def job
-      @job ||= T.let(Job.new_update_job(
-                       job_id: job_id,
-                       job_definition: Environment.job_definition,
-                       repo_contents_path: Environment.repo_contents_path
-                     ), T.nilable(Dependabot::Job))
+      @job ||= T.let(
+        Job.new_update_job(
+          job_id: job_id,
+          job_definition: Environment.job_definition,
+          repo_contents_path: Environment.repo_contents_path
+        ),
+        T.nilable(Dependabot::Job)
+      )
     end
+
+    sig { override.returns(T.nilable(String)) }
+    def base_commit_sha
+      Environment.job_definition["base_commit_sha"]
+    end
+
+    private
 
     sig { params(dependency_snapshot: Dependabot::DependencySnapshot).returns(GithubApi::DependencySubmission) }
     def build_submission(dependency_snapshot)
@@ -74,11 +75,6 @@ module Dependabot
         dependency_files: dependency_snapshot.dependency_files,
         dependencies: dependency_snapshot.dependencies
       )
-    end
-
-    sig { returns(String) }
-    def base_commit_sha
-      Environment.job_definition["base_commit_sha"]
     end
 
     sig { params(error: StandardError).void }

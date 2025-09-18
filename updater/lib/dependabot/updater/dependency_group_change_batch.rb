@@ -1,29 +1,38 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "pathname"
+require "sorbet-runtime"
 
 # This class is responsible for aggregating individual DependencyChange objects
 # by tracking changes to individual files and the overall dependency list.
 module Dependabot
   class Updater
     class DependencyGroupChangeBatch
+      extend T::Sig
+
+      sig { returns(T::Array[Dependabot::Dependency]) }
       attr_reader :updated_dependencies
 
+      sig { params(initial_dependency_files: T::Array[Dependabot::DependencyFile]).void }
       def initialize(initial_dependency_files:)
-        @updated_dependencies = []
+        @updated_dependencies = T.let([], T::Array[Dependabot::Dependency])
 
-        @dependency_file_batch = initial_dependency_files.each_with_object({}) do |file, hsh|
-          hsh[file.path] = { file: file, changed: false, changes: 0 }
-        end
+        @dependency_file_batch = T.let(
+          initial_dependency_files.each_with_object({}) do |file, hsh|
+            hsh[file.path] = { file: file, changed: false, changes: 0 }
+          end,
+          T::Hash[String, T::Hash[Symbol, T.untyped]]
+        )
 
-        @vendored_dependency_batch = {}
+        @vendored_dependency_batch = T.let({}, T::Hash[String, T::Hash[Symbol, T.untyped]])
 
         Dependabot.logger.debug("Starting with '#{@dependency_file_batch.count}' dependency files:")
         debug_current_file_state
       end
 
       # Returns an array of DependencyFile objects for the current state
+      sig { params(job: Dependabot::Job).returns(T::Array[Dependabot::DependencyFile]) }
       def current_dependency_files(job)
         directory = Pathname.new(job.source.directory).cleanpath.to_s
 
@@ -39,11 +48,13 @@ module Dependabot
 
       # Returns an array of DependencyFile objects for dependency files that have changed at least once merged with
       # and changes we've collected to vendored dependencies
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
         @dependency_file_batch.filter_map { |_path, data| data[:file] if data[:changed] } +
           @vendored_dependency_batch.map { |_path, data| data[:file] }
       end
 
+      sig { params(dependency_change: Dependabot::DependencyChange).void }
       def merge(dependency_change)
         merge_dependency_changes(dependency_change.updated_dependencies)
         merge_file_changes(dependency_change.updated_dependency_files)
@@ -56,6 +67,7 @@ module Dependabot
       end
 
       # add an updated dependency without changing any files, useful for incidental updates
+      sig { params(dependency: Dependabot::Dependency).void }
       def add_updated_dependency(dependency)
         merge_dependency_changes([dependency])
       end
@@ -69,10 +81,12 @@ module Dependabot
       # rather than re-write the Dependency objects to account for the changes from the lowest previous version
       # to the final version, we should defer it to the Dependabot::PullRequestCreator::MessageBuilder as a
       # presentation concern.
+      sig { params(updated_dependencies: T::Array[Dependabot::Dependency]).void }
       def merge_dependency_changes(updated_dependencies)
         @updated_dependencies.concat(updated_dependencies)
       end
 
+      sig { params(updated_dependency_files: T::Array[Dependabot::DependencyFile]).void }
       def merge_file_changes(updated_dependency_files)
         updated_dependency_files.each do |updated_file|
           if updated_file.vendored_file?
@@ -83,6 +97,7 @@ module Dependabot
         end
       end
 
+      sig { params(file: Dependabot::DependencyFile, batch: T::Hash[String, T::Hash[Symbol, T.untyped]]).void }
       def merge_file_to_batch(file, batch)
         change_count = if (existing_file = batch[file.path])
                          existing_file.fetch(:change_count, 0)
@@ -95,6 +110,7 @@ module Dependabot
         batch[file.path] = { file: file, changed: true, changes: change_count + 1 }
       end
 
+      sig { void }
       def debug_updated_dependencies
         return unless Dependabot.logger.debug?
 
@@ -104,6 +120,7 @@ module Dependabot
         end
       end
 
+      sig { void }
       def debug_current_file_state
         return unless Dependabot.logger.debug?
 
@@ -115,6 +132,7 @@ module Dependabot
         @vendored_dependency_batch.each { |path, data| debug_file_hash(path, data) }
       end
 
+      sig { params(path: String, data: T::Hash[Symbol, T.untyped]).void }
       def debug_file_hash(path, data)
         changed_string = data[:changed] ? "( Changed #{data[:changes]} times )" : ""
         Dependabot.logger.debug("  - #{path} #{changed_string}")

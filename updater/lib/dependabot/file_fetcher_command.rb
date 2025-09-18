@@ -17,10 +17,10 @@ module Dependabot
     # BaseCommand does not implement this method, so we should expose
     # the instance variable for error handling to avoid raising a
     # NotImplementedError if it is referenced
-    sig { returns(T.nilable(String)) }
+    sig { override.returns(T.nilable(String)) }
     attr_reader :base_commit_sha
 
-    sig { returns(T.nilable(Integer)) }
+    sig { override.returns(T.nilable(Integer)) }
     def perform_job # rubocop:disable Metrics/AbcSize
       @base_commit_sha = T.let(nil, T.nilable(String))
 
@@ -61,6 +61,18 @@ module Dependabot
 
         save_job_details
       end
+    end
+
+    sig { override.returns(Dependabot::Job) }
+    def job
+      @job ||= T.let(
+        Job.new_fetch_job(
+          job_id: job_id,
+          job_definition: Environment.job_definition,
+          repo_contents_path: Environment.repo_contents_path
+        ),
+        T.nilable(Dependabot::Job)
+      )
     end
 
     private
@@ -259,17 +271,6 @@ module Dependabot
         base64_file.content = Base64.encode64(T.must(file.content)) unless file.binary?
         base64_file
       end
-    end
-
-    sig { returns(Dependabot::Job) }
-    def job
-      @job ||= T.let(
-        Job.new_fetch_job(
-          job_id: job_id,
-          job_definition: Environment.job_definition,
-          repo_contents_path: Environment.repo_contents_path
-        ), T.nilable(Dependabot::Job)
-      )
     end
 
     sig { returns(T::Boolean) }
