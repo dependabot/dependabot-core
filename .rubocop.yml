@@ -339,6 +339,8 @@ Style/SpecialGlobalVars:
   Enabled: false
 Style/SelectByRegexp:
   Enabled: false
+Sorbet/ForbidTUnsafe:
+  Enabled: true
 Sorbet/TrueSigil:
   Enabled: true
   Exclude:
