@@ -37,45 +37,15 @@ RSpec.describe Dependabot::UpdateGraphCommand do
   describe "#perform_job" do
     subject(:perform_job) { job.perform_job }
 
-    describe "experiment: enable_dependency_submission_poc" do
-      context "when it is enabled" do
-        before do
-          Dependabot::Experiments.register(:enable_dependency_submission_poc, true)
-        end
+    it "emits a create_dependency_submission call to the Dependabot service" do
+      expect(service).to receive(:create_dependency_submission) do |args|
+        expect(args[:dependency_submission]).to be_a(GithubApi::DependencySubmission)
 
-        after do
-          Dependabot::Experiments.reset!
-        end
-
-        it "emits a create_dependency_submission call to the Dependabot service" do
-          expect(service).to receive(:create_dependency_submission) do |args|
-            expect(args[:dependency_submission]).to be_a(GithubApi::DependencySubmission)
-
-            expect(args[:dependency_submission].job_id).to eql(job_id)
-            expect(args[:dependency_submission].package_manager).to eql("bundler")
-          end
-
-          perform_job
-        end
+        expect(args[:dependency_submission].job_id).to eql(job_id)
+        expect(args[:dependency_submission].package_manager).to eql("bundler")
       end
 
-      context "when it is disabled" do
-        subject(:perform_job) { job.perform_job }
-
-        before do
-          Dependabot::Experiments.register(:enable_dependency_submission_poc, false)
-        end
-
-        after do
-          Dependabot::Experiments.reset!
-        end
-
-        it "does not emits a create_dependency_submission call to the Dependabot service" do
-          expect(service).not_to receive(:create_dependency_submission)
-
-          perform_job
-        end
-      end
+      perform_job
     end
   end
 
@@ -136,7 +106,7 @@ RSpec.describe Dependabot::UpdateGraphCommand do
       end
     end
 
-    context "with an update files error (cloud)" do
+    context "with an update graph error (cloud)" do
       let(:error) { StandardError.new("hell") }
 
       before do
@@ -152,7 +122,7 @@ RSpec.describe Dependabot::UpdateGraphCommand do
       it "captures the exception and records to a update job error api" do
         expect(service).to receive(:capture_exception)
         expect(service).to receive(:record_update_job_error).with(
-          error_type: "update_files_error",
+          error_type: "update_graph_error",
           error_details: {
             Dependabot::ErrorAttributes::BACKTRACE => an_instance_of(String),
             Dependabot::ErrorAttributes::MESSAGE => "hell",
@@ -169,7 +139,7 @@ RSpec.describe Dependabot::UpdateGraphCommand do
       it "captures the exception and records the a update job unknown error api" do
         expect(service).to receive(:capture_exception)
         expect(service).to receive(:record_update_job_unknown_error).with(
-          error_type: "update_files_error",
+          error_type: "update_graph_error",
           error_details: {
             Dependabot::ErrorAttributes::BACKTRACE => an_instance_of(String),
             Dependabot::ErrorAttributes::MESSAGE => "hell",
@@ -185,7 +155,7 @@ RSpec.describe Dependabot::UpdateGraphCommand do
       end
     end
 
-    context "with an update files error (ghes)" do
+    context "with an update graph error (ghes)" do
       let(:error) { StandardError.new("hell") }
 
       it_behaves_like "a fast-failed job"
@@ -193,7 +163,7 @@ RSpec.describe Dependabot::UpdateGraphCommand do
       it "captures the exception and records to a update job error api" do
         expect(service).to receive(:capture_exception)
         expect(service).to receive(:record_update_job_error).with(
-          error_type: "update_files_error",
+          error_type: "update_graph_error",
           error_details: {
             Dependabot::ErrorAttributes::BACKTRACE => an_instance_of(String),
             Dependabot::ErrorAttributes::MESSAGE => "hell",

@@ -1,15 +1,1 @@
 inherit_from: ../.rubocop.yml
-
-inherit_mode:
-  merge:
-    - Exclude
-
-Sorbet/StrictSigil:
-  Exclude:
-    - lib/dependabot/base_command.rb
-    - lib/dependabot/update_files_command.rb
-    - lib/dependabot/updater/dependency_group_change_batch.rb
-    - lib/dependabot/updater/group_update_refreshing.rb
-    - lib/dependabot/updater/operations.rb
-    - lib/dependabot/updater/security_update_helpers.rb
-    - lib/dependabot/updater.rb
