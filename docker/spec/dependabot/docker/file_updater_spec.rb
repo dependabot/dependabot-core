@@ -155,7 +155,11 @@ RSpec.describe Dependabot::Docker::FileUpdater do
           "myapp.yaml",
           "config.yml",
           "service.yaml",
-          "v1_tag.yaml"
+          "v1_tag.yaml",
+          ".env",
+          ".env.local",
+          "app.env",
+          "production.env"
         ]
 
         matching_files.each do |file_name|
@@ -1624,6 +1628,266 @@ RSpec.describe Dependabot::Docker::FileUpdater do
         end
 
         its(:content) { is_expected.to include "image:\n  repository: 'mcr.microsoft.com/sql/sql'\n  version: v1.2.4" }
+      end
+    end
+  end
+
+  describe "#updated_dependency_files with .env files" do
+    let(:env_dependency) do
+      Dependabot::Dependency.new(
+        name: "nginx",
+        version: "1.22.0",
+        previous_version: "1.21.0",
+        requirements: [{
+          requirement: nil,
+          groups: [],
+          file: ".env",
+          source: {
+            tag: "1.22.0",
+            digest: "new123abc456def789012345678901234567890123456789012345678901234abcd"
+          }
+        }],
+        previous_requirements: [{
+          requirement: nil,
+          groups: [],
+          file: ".env",
+          source: {
+            tag: "1.21.0",
+            digest: "0b01b93c3a93e747fba8d9bb1025011bf108d77c9cf8252f17a6f3d63a1b5804"
+          }
+        }],
+        package_manager: "docker"
+      )
+    end
+    let(:envfile_body) { fixture("env", "basic.env") }
+    let(:envfile) do
+      Dependabot::DependencyFile.new(
+        content: envfile_body,
+        name: ".env"
+      )
+    end
+    let(:env_files) { [envfile] }
+    let(:env_updater) do
+      described_class.new(
+        dependency_files: env_files,
+        dependencies: [env_dependency],
+        credentials: credentials
+      )
+    end
+
+    subject(:updated_files) { env_updater.updated_dependency_files }
+
+    it "returns DependencyFile objects" do
+      updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
+    end
+
+    its(:length) { is_expected.to eq(1) }
+
+    describe "the updated .env file" do
+      subject(:updated_envfile) do
+        updated_files.find { |f| f.name == ".env" }
+      end
+
+      its(:content) { is_expected.to include "NGINX_IMAGE_TAG=nginx:1.22.0@sha256:new123abc456def789012345678901234567890123456789012345678901234abcd" }
+      its(:content) { is_expected.to include "REDIS_IMAGE_TAG=redis:6.2.5@sha256:4c854aa03f6b7e9bb2b945e8e2a17f565266a103c70bb3275b57e4f81a7e92a0" }
+      its(:content) { is_expected.to include "# Container Image Tags" }
+    end
+
+    context "with tag-only updates" do
+      let(:envfile_body) { fixture("env", "tag_only.env") }
+      let(:env_dependency) do
+        Dependabot::Dependency.new(
+          name: "nginx",
+          version: "1.22.0",
+          previous_version: "1.21.0",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: ".env",
+            source: { tag: "1.22.0" }
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            groups: [],
+            file: ".env",
+            source: { tag: "1.21.0" }
+          }],
+          package_manager: "docker"
+        )
+      end
+
+      describe "the updated .env file" do
+        subject(:updated_envfile) do
+          updated_files.find { |f| f.name == ".env" }
+        end
+
+        its(:content) { is_expected.to include "API_IMAGE=nginx:1.22.0" }
+        its(:content) { is_expected.to include "DB_IMAGE=postgres:13.4" }
+        its(:content) { is_expected.to include "CACHE_IMAGE=redis:6.2.5" }
+      end
+    end
+
+    context "with namespace images" do
+      let(:envfile_body) { fixture("env", "namespace.env") }
+      let(:env_dependency) do
+        Dependabot::Dependency.new(
+          name: "namespace/app",
+          version: "new456def789abc012345678901234567890123456789012345678901234567890",
+          previous_version: "abc123def456789012345678901234567890123456789012345678901234abcd",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: ".env",
+            source: {
+              registry: "my-registry.io",
+              tag: "v1.0.0",
+              digest: "new456def789abc012345678901234567890123456789012345678901234567890"
+            }
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            groups: [],
+            file: ".env",
+            source: {
+              registry: "my-registry.io",
+              tag: "v1.0.0",
+              digest: "abc123def456789012345678901234567890123456789012345678901234abcd"
+            }
+          }],
+          package_manager: "docker"
+        )
+      end
+
+      describe "the updated .env file" do
+        subject(:updated_envfile) do
+          updated_files.find { |f| f.name == ".env" }
+        end
+
+        its(:content) { is_expected.to include "APP_IMAGE=my-registry.io/namespace/app:v1.0.0@sha256:new456def789abc012345678901234567890123456789012345678901234567890" }
+        its(:content) { is_expected.to include "WORKER_IMAGE=registry.example.com/team/worker:latest@sha256:def456abc789012345678901234567890123456789012345678901234567890e" }
+      end
+    end
+
+    context "with mixed content" do
+      let(:envfile_body) { fixture("env", "mixed.env") }
+      let(:env_dependency) do
+        Dependabot::Dependency.new(
+          name: "nginx",
+          version: "1.22.0",
+          previous_version: "1.21.0",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: ".env",
+            source: {
+              tag: "1.22.0",
+              digest: "updated64dd661dcadfd9958f9e0de192a1fdda2c162a35668ab6ac42b465f0860"
+            }
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            groups: [],
+            file: ".env",
+            source: {
+              tag: "1.21.0",
+              digest: "9522864dd661dcadfd9958f9e0de192a1fdda2c162a35668ab6ac42b465f0860"
+            }
+          }],
+          package_manager: "docker"
+        )
+      end
+
+      describe "the updated .env file" do
+        subject(:updated_envfile) do
+          updated_files.find { |f| f.name == ".env" }
+        end
+
+        its(:content) { is_expected.to include "NGINX_IMAGE=nginx:1.22.0@sha256:updated64dd661dcadfd9958f9e0de192a1fdda2c162a35668ab6ac42b465f0860" }
+        its(:content) { is_expected.to include "REDIS_IMAGE=redis:6.2.5" }
+        its(:content) { is_expected.to include "DATABASE_URL=postgresql://user:pass@localhost:5432/mydb" }
+        its(:content) { is_expected.to include "DEBUG=true" }
+      end
+    end
+
+    context "with multiple .env files" do
+      let(:env_files) { [envfile, envfile2] }
+      let(:envfile2) do
+        Dependabot::DependencyFile.new(
+          name: "app.env",
+          content: envfile_body2
+        )
+      end
+      let(:envfile_body) { fixture("env", "basic.env") }
+      let(:envfile_body2) { fixture("env", "tag_only.env") }
+      let(:env_dependency) do
+        Dependabot::Dependency.new(
+          name: "nginx",
+          version: "1.22.0",
+          previous_version: "1.21.0",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: ".env",
+            source: {
+              tag: "1.22.0",
+              digest: "new123abc456def789012345678901234567890123456789012345678901234abcd"
+            }
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            groups: [],
+            file: ".env",
+            source: {
+              tag: "1.21.0",
+              digest: "0b01b93c3a93e747fba8d9bb1025011bf108d77c9cf8252f17a6f3d63a1b5804"
+            }
+          }],
+          package_manager: "docker"
+        )
+      end
+
+      its(:length) { is_expected.to eq(1) }
+
+      describe "the updated .env file" do
+        subject(:updated_envfile) do
+          updated_files.find { |f| f.name == ".env" }
+        end
+
+        its(:content) { is_expected.to include "NGINX_IMAGE_TAG=nginx:1.22.0@sha256:new123abc456def789012345678901234567890123456789012345678901234abcd" }
+      end
+
+      context "when only the second file needs updating" do
+        let(:env_dependency) do
+          Dependabot::Dependency.new(
+            name: "nginx",
+            version: "1.22.0",
+            previous_version: "1.21.0",
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              file: "app.env",
+              source: { tag: "1.22.0" }
+            }],
+            previous_requirements: [{
+              requirement: nil,
+              groups: [],
+              file: "app.env",
+              source: { tag: "1.21.0" }
+            }],
+            package_manager: "docker"
+          )
+        end
+
+        its(:length) { is_expected.to eq(1) }
+
+        describe "the updated app.env file" do
+          subject(:updated_envfile) do
+            updated_files.find { |f| f.name == "app.env" }
+          end
+
+          its(:content) { is_expected.to include "API_IMAGE=nginx:1.22.0" }
+          its(:content) { is_expected.to include "DB_IMAGE=postgres:13.4" }
+        end
       end
     end
   end

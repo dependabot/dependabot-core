@@ -28,6 +28,11 @@ module Dependabot
                                file: file,
                                content: T.must(updated_yaml_content(file))
                              )
+                           elsif file.name.match?(/\.env($|\.)/i)
+                             updated_file(
+                               file: file,
+                               content: T.must(updated_env_content(file))
+                             )
                            else
                              updated_file(
                                file: file,
@@ -201,6 +206,88 @@ module Dependabot
         tag = T.must(element).dig(:source, :tag) || ""
         digest = T.must(element).dig(:source, :digest) ? "@sha256:#{T.must(element).dig(:source, :digest)}" : ""
         "#{tag}#{digest}"
+      end
+
+      sig { params(file: Dependabot::DependencyFile).returns(T.nilable(String)) }
+      def updated_env_content(file)
+        old_sources = previous_sources(file)
+        new_sources = sources(file)
+
+        updated_content = T.let(file.content, T.untyped)
+
+        T.must(old_sources).zip(new_sources).each do |old_source, new_source|
+          updated_content = update_env_image_reference(updated_content, old_source, T.must(new_source))
+        end
+
+        raise "Expected content to change!" if updated_content == file.content
+
+        updated_content
+      end
+
+      sig do
+        params(previous_content: String, old_source: T::Hash[Symbol, T.nilable(String)],
+               new_source: T::Hash[Symbol, T.nilable(String)]).returns(String)
+      end
+      def update_env_image_reference(previous_content, old_source, new_source)
+        old_digest = old_source[:digest]
+        new_digest = new_source[:digest]
+
+        old_tag = old_source[:tag]
+        new_tag = new_source[:tag]
+
+        old_declaration =
+          if private_registry_url(old_source)
+            "#{private_registry_url(old_source)}/"
+          else
+            ""
+          end
+        old_declaration += T.must(dependency).name
+        old_declaration +=
+          if specified_with_tag?(old_source)
+            ":#{old_tag}"
+          else
+            ""
+          end
+        old_declaration +=
+          if specified_with_digest?(old_source)
+            "@sha256:#{old_digest}"
+          else
+            ""
+          end
+
+        escaped_declaration = Regexp.escape(old_declaration)
+
+        # Pattern for .env file: VARIABLE_NAME=image_reference
+        env_declaration_regex = /^([A-Z_][A-Z0-9_]*)=#{escaped_declaration}$/
+
+        previous_content.gsub(env_declaration_regex) do |match|
+          var_name = Regexp.last_match(1)
+          old_digest = old_digest.sub("sha256:", "") if old_digest&.start_with?("sha256:")
+          new_digest = new_digest.sub("sha256:", "") if new_digest&.start_with?("sha256:")
+
+          new_image_ref = ""
+          new_image_ref +=
+            if private_registry_url(new_source)
+              "#{private_registry_url(new_source)}/"
+            else
+              ""
+            end
+          new_image_ref += T.must(dependency).name
+          new_image_ref +=
+            if specified_with_tag?(new_source)
+              ":#{new_tag}"
+            else
+              ""
+            end
+          new_image_ref +=
+            if specified_with_digest?(new_source)
+              "@sha256:#{new_digest}"
+            else
+              ""
+            end
+
+          "#{var_name}=#{new_image_ref}"
+        end
       end
 
       protected

@@ -2,6 +2,41 @@
 
 Docker support for [`dependabot-core`][core-repo].
 
+### Supported file types
+
+Dependabot supports updating container image references in the following file types:
+
+- **Dockerfiles** - Container image references in `FROM` instructions
+- **Kubernetes YAML files** - Container image references in `image` fields
+- **Helm values files** - Container image references in image configuration
+- **Environment files (.env)** - Container image references in environment variables
+
+#### Environment files (.env)
+
+Dependabot can update container image references defined in `.env` files used with Kubernetes Kustomize. These files typically contain environment variables with container image references including tags and digests.
+
+**Supported .env file patterns:**
+- `.env`
+- `.env.local`
+- `.env.production`
+- `*.env`
+
+**Example .env file:**
+```env
+# Container Image Tags
+WEB_IMAGE_TAG=nginx:1.21.0@sha256:0b01b93c3a93e747fba8d9bb1025011bf108d77c9cf8252f17a6f3d63a1b5804
+CACHE_IMAGE_TAG=redis:6.2.5@sha256:4c854aa03f6b7e9bb2b945e8e2a17f565266a103c70bb3275b57e4f81a7e92a0
+API_IMAGE=node:16.14.0
+DB_IMAGE=postgres:13.4@sha256:abc123def456
+```
+
+Dependabot will detect and update:
+- Container images with tags (e.g., `nginx:1.21.0`)
+- Container images with digests (e.g., `image@sha256:abc123...`)
+- Container images with both tags and digests
+- Images from private registries
+- Images with namespaces
+
 ### Running locally
 
 1. Start a development shell

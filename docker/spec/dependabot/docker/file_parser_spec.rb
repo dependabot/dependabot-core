@@ -1261,4 +1261,273 @@ RSpec.describe Dependabot::Docker::FileParser do
       end
     end
   end
+
+  describe "ENV parse" do
+    let(:env_parser) { described_class.new(dependency_files: envfiles, source: source) }
+    let(:envfile_fixture_name) { "basic.env" }
+    let(:envfile_body) do
+      fixture("env", envfile_fixture_name)
+    end
+    let(:envfile) do
+      Dependabot::DependencyFile.new(name: ".env", content: envfile_body)
+    end
+    let(:envfiles) { [envfile] }
+
+    subject(:dependencies) { env_parser.parse }
+
+    its(:length) { is_expected.to eq(3) }
+
+    describe "the first dependency" do
+      subject(:dependency) { dependencies.first }
+
+      let(:expected_requirements) do
+        [{
+          requirement: nil,
+          groups: [],
+          file: ".env",
+          source: {
+            tag: "1.21.0",
+            digest: "0b01b93c3a93e747fba8d9bb1025011bf108d77c9cf8252f17a6f3d63a1b5804"
+          }
+        }]
+      end
+
+      it "has the right details" do
+        expect(dependency).to be_a(Dependabot::Dependency)
+        expect(dependency.name).to eq("nginx")
+        expect(dependency.version).to eq("1.21.0")
+        expect(dependency.requirements).to eq(expected_requirements)
+      end
+    end
+
+    describe "the second dependency" do
+      subject(:dependency) { dependencies[1] }
+
+      let(:expected_requirements) do
+        [{
+          requirement: nil,
+          groups: [],
+          file: ".env",
+          source: {
+            tag: "6.2.5",
+            digest: "4c854aa03f6b7e9bb2b945e8e2a17f565266a103c70bb3275b57e4f81a7e92a0"
+          }
+        }]
+      end
+
+      it "has the right details" do
+        expect(dependency).to be_a(Dependabot::Dependency)
+        expect(dependency.name).to eq("redis")
+        expect(dependency.version).to eq("6.2.5")
+        expect(dependency.requirements).to eq(expected_requirements)
+      end
+    end
+
+    describe "the third dependency" do
+      subject(:dependency) { dependencies.last }
+
+      let(:expected_requirements) do
+        [{
+          requirement: nil,
+          groups: [],
+          file: ".env",
+          source: {
+            tag: "13.4",
+            digest: "bfc714e5b358058d2cd155a9f2ab3f361530829caf071111e10c4b7efe1c54b6"
+          }
+        }]
+      end
+
+      it "has the right details" do
+        expect(dependency).to be_a(Dependabot::Dependency)
+        expect(dependency.name).to eq("postgres")
+        expect(dependency.version).to eq("13.4")
+        expect(dependency.requirements).to eq(expected_requirements)
+      end
+    end
+
+    context "with no container images" do
+      let(:envfile_fixture_name) { "empty.env" }
+
+      its(:length) { is_expected.to eq(0) }
+    end
+
+    context "with namespaced images" do
+      let(:envfile_fixture_name) { "namespace.env" }
+
+      its(:length) { is_expected.to eq(2) }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: ".env",
+            source: {
+              registry: "my-registry.io",
+              tag: "v1.0.0",
+              digest: "abc123def456789012345678901234567890123456789012345678901234abcd"
+            }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("namespace/app")
+          expect(dependency.version).to eq("v1.0.0")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+    end
+
+    context "with tag-only images" do
+      let(:envfile_fixture_name) { "tag_only.env" }
+
+      its(:length) { is_expected.to eq(3) }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: ".env",
+            source: { tag: "1.21.0" }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("nginx")
+          expect(dependency.version).to eq("1.21.0")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+    end
+
+    context "with mixed content" do
+      let(:envfile_fixture_name) { "mixed.env" }
+
+      its(:length) { is_expected.to eq(2) }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: ".env",
+            source: {
+              tag: "1.21.0",
+              digest: "9522864dd661dcadfd9958f9e0de192a1fdda2c162a35668ab6ac42b465f0860"
+            }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("nginx")
+          expect(dependency.version).to eq("1.21.0")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+
+      describe "the second dependency" do
+        subject(:dependency) { dependencies.last }
+
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: ".env",
+            source: { tag: "6.2.5" }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("redis")
+          expect(dependency.version).to eq("6.2.5")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+    end
+
+    context "with multiple .env files" do
+      let(:envfiles) { [envfile, envfile2] }
+      let(:envfile2) do
+        Dependabot::DependencyFile.new(
+          name: "app.env",
+          content: envfile_body2
+        )
+      end
+      let(:envfile_body2) { fixture("env", "tag_only.env") }
+
+      its(:length) { is_expected.to eq(3) }
+
+      describe "the first dependency from first file" do
+        subject(:dependency) { dependencies.first }
+
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: ".env",
+            source: {
+              tag: "1.21.0",
+              digest: "0b01b93c3a93e747fba8d9bb1025011bf108d77c9cf8252f17a6f3d63a1b5804"
+            }
+          }, {
+            requirement: nil,
+            groups: [],
+            file: "app.env",
+            source: {
+              tag: "1.21.0"
+            }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("nginx")
+          expect(dependency.version).to eq("1.21.0")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+
+      describe "the second dependency (redis)" do
+        subject(:dependency) { dependencies[1] }
+
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: ".env",
+            source: {
+              tag: "6.2.5",
+              digest: "4c854aa03f6b7e9bb2b945e8e2a17f565266a103c70bb3275b57e4f81a7e92a0"
+            }
+          }, {
+            requirement: nil,
+            groups: [],
+            file: "app.env",
+            source: {
+              tag: "6.2.5"
+            }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("redis")
+          expect(dependency.version).to eq("6.2.5")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+    end
+  end
 end
