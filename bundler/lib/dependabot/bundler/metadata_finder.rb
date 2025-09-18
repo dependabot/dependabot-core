@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "excon"
@@ -9,7 +9,9 @@ require "dependabot/registry_client"
 module Dependabot
   module Bundler
     class MetadataFinder < Dependabot::MetadataFinders::Base
-      SOURCE_KEYS = %w(
+      extend T::Sig
+
+      SOURCE_KEYS = T.let(%w(
         source_code_uri
         homepage_uri
         wiki_uri
@@ -18,8 +20,22 @@ module Dependabot
         changelog_uri
         mailing_list_uri
         download_uri
-      ).freeze
+      ).freeze, T::Array[String])
 
+      sig do
+        params(
+          dependency: Dependabot::Dependency,
+          credentials: T::Array[Dependabot::Credential]
+        ).void
+      end
+      def initialize(dependency:, credentials:)
+        super
+        @rubygems_marshalled_gemspec_response = T.let(nil, T.nilable(String))
+        @rubygems_api_response = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
+        @base_url = T.let(nil, T.nilable(String))
+      end
+
+      sig { override.returns(T.nilable(String)) }
       def homepage_url
         return super unless %w(default rubygems).include?(new_source_type)
         return super unless rubygems_api_response["homepage_uri"]
@@ -29,6 +45,7 @@ module Dependabot
 
       private
 
+      sig { override.returns(T.nilable(Dependabot::Source)) }
       def look_up_source
         case new_source_type
         when "git" then find_source_from_git_url
@@ -37,6 +54,7 @@ module Dependabot
         end
       end
 
+      sig { override.returns(T.nilable(String)) }
       def suggested_changelog_url
         case new_source_type
         when "default"
@@ -50,10 +68,12 @@ module Dependabot
         end
       end
 
+      sig { returns(String) }
       def new_source_type
-        dependency.source_type
+        T.must(dependency.source_type)
       end
 
+      sig { returns(T.nilable(Dependabot::Source)) }
       def find_source_from_rubygems
         api_source = find_source_from_rubygems_api_response
         return api_source if api_source || new_source_type == "default"
@@ -61,15 +81,16 @@ module Dependabot
         find_source_from_gemspec_download
       end
 
+      sig { returns(T.nilable(Dependabot::Source)) }
       def find_source_from_rubygems_api_response
-        source_url = rubygems_api_response
-                     .values_at(*SOURCE_KEYS)
-                     .compact
-                     .find { |url| Source.from_url(url) }
+        api_response = rubygems_api_response
+        source_url = SOURCE_KEYS.filter_map { |key| api_response[key] }
+                                .find { |url| Source.from_url(url) }
 
         Source.from_url(source_url)
       end
 
+      sig { returns(T.nilable(Dependabot::Source)) }
       def find_source_from_git_url
         info = dependency.requirements.filter_map { |r| r[:source] }.first
 
@@ -77,12 +98,13 @@ module Dependabot
         Source.from_url(url)
       end
 
+      sig { returns(T.nilable(Dependabot::Source)) }
       def find_source_from_gemspec_download
         github_urls = []
         return unless rubygems_marshalled_gemspec_response
 
-        rubygems_marshalled_gemspec_response.gsub("\x06;", "\n")
-                                            .scan(Source::SOURCE_REGEX) do
+        T.must(rubygems_marshalled_gemspec_response).gsub("\x06;", "\n")
+         .scan(Source::SOURCE_REGEX) do
           github_urls << Regexp.last_match.to_s
         end
 
@@ -95,12 +117,13 @@ module Dependabot
         Source.from_url(source_url)
       end
 
+      sig { returns(T.nilable(String)) }
       def changelog_url_from_gemspec_download
         github_urls = []
         return unless rubygems_marshalled_gemspec_response
 
-        rubygems_marshalled_gemspec_response.gsub("\x06;", "\n")
-                                            .scan(Dependabot::Source::SOURCE_REGEX) do
+        T.must(rubygems_marshalled_gemspec_response).gsub("\x06;", "\n")
+         .scan(Dependabot::Source::SOURCE_REGEX) do
           github_urls << (Regexp.last_match.to_s +
                          T.must(T.must(Regexp.last_match).post_match.split("\n").first))
         end
@@ -115,8 +138,9 @@ module Dependabot
 
       # NOTE: This response MUST NOT be unmarshalled
       # (as calling Marshal.load is unsafe)
+      sig { returns(T.nilable(String)) }
       def rubygems_marshalled_gemspec_response
-        return @rubygems_marshalled_gemspec_response if defined?(@rubygems_marshalled_gemspec_response)
+        return @rubygems_marshalled_gemspec_response if @rubygems_marshalled_gemspec_response
 
         gemspec_uri =
           "#{registry_url}quick/Marshal.4.8/" \
@@ -136,8 +160,9 @@ module Dependabot
         @rubygems_marshalled_gemspec_response = nil
       end
 
+      sig { returns(T::Hash[String, T.untyped]) }
       def rubygems_api_response
-        return @rubygems_api_response if defined?(@rubygems_api_response)
+        return @rubygems_api_response if @rubygems_api_response
 
         response =
           Dependabot::RegistryClient.get(
@@ -155,16 +180,18 @@ module Dependabot
         @rubygems_api_response = {}
       end
 
+      sig { params(listing: T::Hash[String, T.untyped]).returns(T::Hash[String, T.untyped]) }
       def append_slash_to_source_code_uri(listing)
         # We have to do this so that `Source.from_url(...)` doesn't prune the
         # last line off of the directory.
-        return listing unless listing&.fetch("source_code_uri", nil)
-        return listing if listing.fetch("source_code_uri").end_with?("/")
+        return listing unless listing.fetch("source_code_uri", nil)
+        return listing if T.cast(listing.fetch("source_code_uri"), String).end_with?("/")
 
-        listing["source_code_uri"] = listing["source_code_uri"] + "/"
+        listing["source_code_uri"] = T.cast(listing["source_code_uri"], String) + "/"
         listing
       end
 
+      sig { params(response_body: String).returns(String) }
       def augment_private_response_if_appropriate(response_body)
         return response_body if new_source_type == "default"
 
@@ -173,10 +200,8 @@ module Dependabot
 
         digest = parsed_body.values_at("version", "authors", "info").hash
 
-        source_url = parsed_body
-                     .values_at(*SOURCE_KEYS)
-                     .compact
-                     .find { |url| Source.from_url(url) }
+        source_url = SOURCE_KEYS.filter_map { |key| parsed_body[key] }
+                                .find { |url| Source.from_url(url) }
         return response_body if source_url
 
         rubygems_response =
@@ -190,6 +215,7 @@ module Dependabot
         response_body
       end
 
+      sig { returns(String) }
       def registry_url
         return base_url if new_source_type == "default"
 
@@ -197,8 +223,9 @@ module Dependabot
         info[:url] || info.fetch("url")
       end
 
+      sig { returns(String) }
       def base_url
-        return @base_url if defined?(@base_url)
+        return @base_url if @base_url
 
         credential = credentials.find do |cred|
           cred["type"] == "rubygems_server" && cred.replaces_base?
@@ -207,6 +234,7 @@ module Dependabot
         @base_url = "https://#{host}#{'/' unless host&.end_with?('/')}"
       end
 
+      sig { returns(T::Hash[String, String]) }
       def registry_auth_headers
         return {} unless new_source_type == "rubygems"
 
