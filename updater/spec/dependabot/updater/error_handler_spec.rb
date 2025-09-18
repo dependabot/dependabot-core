@@ -121,6 +121,14 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
         end
       end
 
+      before do
+        Dependabot::Experiments.register(:record_update_job_unknown_error, false)
+      end
+
+      after do
+        Dependabot::Experiments.reset!
+      end
+
       it "records error with only update job error api service, logs the backtrace and captures the exception" do
         expect(mock_service).not_to receive(:record_update_job_unknown_error)
 
@@ -237,6 +245,14 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
                                                               error_context: error_context).tap do |err|
           err.set_backtrace ["****** ERROR 8335 -- 101"]
         end
+      end
+
+      before do
+        Dependabot::Experiments.register(:record_update_job_unknown_error, false)
+      end
+
+      after do
+        Dependabot::Experiments.reset!
       end
 
       it "records the error with the service and logs the backtrace" do
@@ -365,6 +381,14 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
         StandardError.new("There are bees everywhere").tap do |err|
           err.set_backtrace ["bees.rb:5:in `buzz`"]
         end
+      end
+
+      before do
+        Dependabot::Experiments.register(:record_update_job_unknown_error, false)
+      end
+
+      after do
+        Dependabot::Experiments.reset!
       end
 
       it "records the error with the update job error services, logs the backtrace and captures the exception" do
