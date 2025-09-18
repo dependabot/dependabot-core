@@ -7,7 +7,7 @@
 
 # @api public
 #
-# source://parser//lib/parser/current.rb#3
+# source://parser//lib/parser.rb#19
 module Parser
   class << self
     private
@@ -45,7 +45,7 @@ class Parser::AST::Node < ::AST::Node
   # @api public
   # @return [Parser::Source::Map]
   #
-  # source://parser//lib/parser/ast/node.rb#18
+  # source://parser//lib/parser/ast/node.rb#20
   def loc; end
 
   # Source map for this Node.
@@ -65,33 +65,33 @@ class Parser::AST::Processor
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#179
   def on_alias(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#222
   def on_and(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#67
   def on_and_asgn(node); end
 
   # @api public
   # @private
   #
-  # source://parser//lib/parser/ast/processor.rb#118
+  # source://parser//lib/parser/ast/processor.rb#122
   def on_arg(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#148
   def on_arg_expr(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#103
   def on_args(node); end
 
   # @api public
@@ -101,64 +101,64 @@ class Parser::AST::Processor
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#22
   def on_array(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#258
   def on_array_pattern(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#259
   def on_array_pattern_with_tail(node); end
 
   # @api public
   # @private
   #
-  # source://parser//lib/parser/ast/processor.rb#34
+  # source://parser//lib/parser/ast/processor.rb#42
   def on_back_ref(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#240
   def on_begin(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#195
   def on_block(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#151
   def on_block_pass(node); end
 
   # @api public
   # @private
   #
-  # source://parser//lib/parser/ast/processor.rb#118
+  # source://parser//lib/parser/ast/processor.rb#125
   def on_blockarg(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#150
   def on_blockarg_expr(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#213
   def on_break(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#228
   def on_case(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#246
   def on_case_match(node); end
 
   # @api public
@@ -168,7 +168,7 @@ class Parser::AST::Processor
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#157
   def on_class(node); end
 
   # @api public
@@ -178,24 +178,24 @@ class Parser::AST::Processor
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#261
   def on_const_pattern(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#181
+  # source://parser//lib/parser/ast/processor.rb#190
   def on_csend(node); end
 
   # @api public
   # @private
   #
-  # source://parser//lib/parser/ast/processor.rb#34
+  # source://parser//lib/parser/ast/processor.rb#41
   def on_cvar(node); end
 
   # @api public
   # @private
   #
-  # source://parser//lib/parser/ast/processor.rb#58
+  # source://parser//lib/parser/ast/processor.rb#65
   def on_cvasgn(node); end
 
   # @api public
@@ -205,7 +205,7 @@ class Parser::AST::Processor
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#219
   def on_defined?(node); end
 
   # @api public
@@ -215,17 +215,17 @@ class Parser::AST::Processor
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#16
   def on_dstr(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#17
   def on_dsym(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#231
   def on_eflipflop(node); end
 
   # @api public
@@ -235,234 +235,234 @@ class Parser::AST::Processor
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#238
   def on_ensure(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#27
   def on_erange(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#262
   def on_find_pattern(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#210
   def on_for(node); end
 
   # @api public
   # @private
   #
-  # source://parser//lib/parser/ast/processor.rb#118
+  # source://parser//lib/parser/ast/processor.rb#130
   def on_forward_arg(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#154
   def on_forwarded_kwrestarg(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#153
   def on_forwarded_restarg(node); end
 
   # @api public
   # @private
   #
-  # source://parser//lib/parser/ast/processor.rb#34
+  # source://parser//lib/parser/ast/processor.rb#40
   def on_gvar(node); end
 
   # @api public
   # @private
   #
-  # source://parser//lib/parser/ast/processor.rb#58
+  # source://parser//lib/parser/ast/processor.rb#64
   def on_gvasgn(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#24
   def on_hash(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#260
   def on_hash_pattern(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#225
   def on_if(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#251
   def on_if_guard(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#230
   def on_iflipflop(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#247
   def on_in_match(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#250
   def on_in_pattern(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#192
   def on_index(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#193
   def on_indexasgn(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#26
   def on_irange(node); end
 
   # @api public
   # @private
   #
-  # source://parser//lib/parser/ast/processor.rb#34
+  # source://parser//lib/parser/ast/processor.rb#39
   def on_ivar(node); end
 
   # @api public
   # @private
   #
-  # source://parser//lib/parser/ast/processor.rb#58
+  # source://parser//lib/parser/ast/processor.rb#63
   def on_ivasgn(node); end
 
   # @api public
   # @private
   #
-  # source://parser//lib/parser/ast/processor.rb#118
+  # source://parser//lib/parser/ast/processor.rb#127
   def on_kwarg(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#25
   def on_kwargs(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#241
   def on_kwbegin(node); end
 
   # @api public
   # @private
   #
-  # source://parser//lib/parser/ast/processor.rb#118
+  # source://parser//lib/parser/ast/processor.rb#128
   def on_kwoptarg(node); end
 
   # @api public
   # @private
   #
-  # source://parser//lib/parser/ast/processor.rb#118
+  # source://parser//lib/parser/ast/processor.rb#129
   def on_kwrestarg(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#21
   def on_kwsplat(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#196
   def on_lambda(node); end
 
   # @api public
   # @private
   #
-  # source://parser//lib/parser/ast/processor.rb#34
+  # source://parser//lib/parser/ast/processor.rb#38
   def on_lvar(node); end
 
   # @api public
   # @private
   #
-  # source://parser//lib/parser/ast/processor.rb#58
+  # source://parser//lib/parser/ast/processor.rb#62
   def on_lvasgn(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#79
   def on_masgn(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#256
   def on_match_alt(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#257
   def on_match_as(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#233
   def on_match_current_line(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#248
   def on_match_pattern(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#249
   def on_match_pattern_p(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#254
   def on_match_rest(node); end
 
   # @api public
   # @private
   #
-  # source://parser//lib/parser/ast/processor.rb#34
+  # source://parser//lib/parser/ast/processor.rb#253
   def on_match_var(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#234
   def on_match_with_lvasgn(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#78
   def on_mlhs(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#156
   def on_module(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#214
   def on_next(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#221
   def on_not(node); end
 
   # @api public
   # @private
   #
-  # source://parser//lib/parser/ast/processor.rb#34
+  # source://parser//lib/parser/ast/processor.rb#43
   def on_nth_ref(node); end
 
   # @api public
@@ -478,37 +478,37 @@ class Parser::AST::Processor
   # @api public
   # @private
   #
-  # source://parser//lib/parser/ast/processor.rb#118
+  # source://parser//lib/parser/ast/processor.rb#123
   def on_optarg(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#223
   def on_or(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#68
   def on_or_asgn(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#23
   def on_pair(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#255
   def on_pin(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#244
   def on_postexe(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#243
   def on_preexe(node); end
 
   # @api public
@@ -518,48 +518,48 @@ class Parser::AST::Processor
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#215
   def on_redo(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#18
   def on_regexp(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#236
   def on_resbody(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#237
   def on_rescue(node); end
 
   # @api public
   # @private
   #
-  # source://parser//lib/parser/ast/processor.rb#118
+  # source://parser//lib/parser/ast/processor.rb#124
   def on_restarg(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#149
   def on_restarg_expr(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#216
   def on_retry(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#212
   def on_return(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#158
   def on_sclass(node); end
 
   # @api public
@@ -570,37 +570,37 @@ class Parser::AST::Processor
   # @api public
   # @private
   #
-  # source://parser//lib/parser/ast/processor.rb#118
+  # source://parser//lib/parser/ast/processor.rb#126
   def on_shadowarg(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#20
   def on_splat(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#217
   def on_super(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#178
   def on_undef(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#252
   def on_unless_guard(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#208
   def on_until(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#209
   def on_until_post(node); end
 
   # @api public
@@ -615,33 +615,33 @@ class Parser::AST::Processor
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#227
   def on_when(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#206
   def on_while(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#207
   def on_while_post(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#19
   def on_xstr(node); end
 
   # @api public
   #
-  # source://parser//lib/parser/ast/processor.rb#12
+  # source://parser//lib/parser/ast/processor.rb#218
   def on_yield(node); end
 
   # @api public
   # @private
   #
-  # source://parser//lib/parser/ast/processor.rb#281
+  # source://parser//lib/parser/ast/processor.rb#118
   def process_argument_node(node); end
 
   # @api public
@@ -652,13 +652,13 @@ class Parser::AST::Processor
   # @api public
   # @private
   #
-  # source://parser//lib/parser/ast/processor.rb#273
+  # source://parser//lib/parser/ast/processor.rb#58
   def process_var_asgn_node(node); end
 
   # @api public
   # @private
   #
-  # source://parser//lib/parser/ast/processor.rb#265
+  # source://parser//lib/parser/ast/processor.rb#34
   def process_variable_node(node); end
 end
 
@@ -2646,7 +2646,7 @@ class Parser::Lexer::StackState
   # source://parser//lib/parser/lexer/stack_state.rb#38
   def empty?; end
 
-  # source://parser//lib/parser/lexer/stack_state.rb#42
+  # source://parser//lib/parser/lexer/stack_state.rb#46
   def inspect; end
 
   # source://parser//lib/parser/lexer/stack_state.rb#29
@@ -7100,7 +7100,7 @@ class Parser::Source::Comment
   # @api public
   # @return [Parser::Source::Range]
   #
-  # source://parser//lib/parser/source/comment.rb#20
+  # source://parser//lib/parser/source/comment.rb#21
   def loc; end
 
   # @api public
@@ -7324,7 +7324,7 @@ class Parser::Source::Map
   # @api public
   # @return [Integer]
   #
-  # source://parser//lib/parser/source/map.rb#99
+  # source://parser//lib/parser/source/map.rb#103
   def first_line; end
 
   # A shortcut for `self.expression.last_column`.
@@ -7800,6 +7800,8 @@ class Parser::Source::Range
   def end_pos; end
 
   # @api public
+  #
+  # source://parser//lib/parser/source/range.rb#308
   def eql?(_arg0); end
 
   # Line number of the beginning of this range. By default, the first line
@@ -7809,7 +7811,7 @@ class Parser::Source::Range
   # @return [Integer] line number of the beginning of this range.
   # @see Buffer
   #
-  # source://parser//lib/parser/source/range.rb#83
+  # source://parser//lib/parser/source/range.rb#87
   def first_line; end
 
   # Support for Ranges be used in as Hash indices and in Sets.
@@ -7865,7 +7867,7 @@ class Parser::Source::Range
   # @api public
   # @return [Integer] amount of characters included in this range.
   #
-  # source://parser//lib/parser/source/range.rb#70
+  # source://parser//lib/parser/source/range.rb#74
   def length; end
 
   # Line number of the beginning of this range. By default, the first line
@@ -8304,7 +8306,7 @@ class Parser::Source::Rewriter::Action
   # source://parser//lib/parser/source/rewriter/action.rb#12
   def allow_multiple_insertions; end
 
-  # source://parser//lib/parser/source/rewriter/action.rb#12
+  # source://parser//lib/parser/source/rewriter/action.rb#13
   def allow_multiple_insertions?; end
 
   # source://parser//lib/parser/source/rewriter/action.rb#12

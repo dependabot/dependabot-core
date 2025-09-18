@@ -38,12 +38,18 @@ class Parser::Base; end
 module Prism
   class << self
     # Mirror the Prism.dump API by using the serialization API.
+    #
+    # source://prism//lib/prism.rb#83
     def dump(*_arg0); end
 
     # Mirror the Prism.dump_file API by using the serialization API.
+    #
+    # source://prism//lib/prism.rb#83
     def dump_file(*_arg0); end
 
     # Mirror the Prism.lex API by using the serialization API.
+    #
+    # source://prism//lib/prism.rb#83
     def lex(*_arg0); end
 
     # :call-seq:
@@ -60,6 +66,8 @@ module Prism
     def lex_compat(source, **options); end
 
     # Mirror the Prism.lex_file API by using the serialization API.
+    #
+    # source://prism//lib/prism.rb#83
     def lex_file(*_arg0); end
 
     # :call-seq:
@@ -83,54 +91,80 @@ module Prism
     def load(source, serialized, freeze = T.unsafe(nil)); end
 
     # Mirror the Prism.parse API by using the serialization API.
+    #
+    # source://prism//lib/prism.rb#83
     def parse(*_arg0); end
 
     # Mirror the Prism.parse_comments API by using the serialization API.
+    #
+    # source://prism//lib/prism.rb#83
     def parse_comments(*_arg0); end
 
     # Mirror the Prism.parse_failure? API by using the serialization API.
     #
     # @return [Boolean]
+    #
+    # source://prism//lib/prism.rb#83
     def parse_failure?(*_arg0); end
 
     # Mirror the Prism.parse_file API by using the serialization API. This uses
     # native strings instead of Ruby strings because it allows us to use mmap
     # when it is available.
+    #
+    # source://prism//lib/prism.rb#83
     def parse_file(*_arg0); end
 
     # Mirror the Prism.parse_file_comments API by using the serialization
     # API. This uses native strings instead of Ruby strings because it allows us
     # to use mmap when it is available.
+    #
+    # source://prism//lib/prism.rb#83
     def parse_file_comments(*_arg0); end
 
     # Mirror the Prism.parse_file_failure? API by using the serialization API.
     #
     # @return [Boolean]
+    #
+    # source://prism//lib/prism.rb#83
     def parse_file_failure?(*_arg0); end
 
     # Mirror the Prism.parse_file_success? API by using the serialization API.
     #
     # @return [Boolean]
+    #
+    # source://prism//lib/prism.rb#83
     def parse_file_success?(*_arg0); end
 
     # Mirror the Prism.parse_lex API by using the serialization API.
+    #
+    # source://prism//lib/prism.rb#83
     def parse_lex(*_arg0); end
 
     # Mirror the Prism.parse_lex_file API by using the serialization API.
+    #
+    # source://prism//lib/prism.rb#83
     def parse_lex_file(*_arg0); end
 
     # Mirror the Prism.parse_stream API by using the serialization API.
+    #
+    # source://prism//lib/prism.rb#83
     def parse_stream(*_arg0); end
 
     # Mirror the Prism.parse_success? API by using the serialization API.
     #
     # @return [Boolean]
+    #
+    # source://prism//lib/prism.rb#83
     def parse_success?(*_arg0); end
 
     # Mirror the Prism.profile API by using the serialization API.
+    #
+    # source://prism//lib/prism.rb#83
     def profile(*_arg0); end
 
     # Mirror the Prism.profile_file API by using the serialization API.
+    #
+    # source://prism//lib/prism.rb#83
     def profile_file(*_arg0); end
 
     # Create a new scope with the given locals and forwarding options that is
@@ -271,7 +305,7 @@ class Prism::AliasGlobalVariableNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#334
+  # source://prism//lib/prism/node.rb#354
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -418,7 +452,7 @@ class Prism::AliasMethodNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#441
+  # source://prism//lib/prism/node.rb#461
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -577,7 +611,7 @@ class Prism::AlternationPatternNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#560
+  # source://prism//lib/prism/node.rb#580
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -722,7 +756,7 @@ class Prism::AndNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#667
+  # source://prism//lib/prism/node.rb#687
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -918,7 +952,7 @@ class Prism::ArgumentsNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#778
+  # source://prism//lib/prism/node.rb#798
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -1079,7 +1113,7 @@ class Prism::ArrayNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#883
+  # source://prism//lib/prism/node.rb#903
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -1269,7 +1303,7 @@ class Prism::ArrayPatternNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#1040
+  # source://prism//lib/prism/node.rb#1065
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -1429,7 +1463,7 @@ class Prism::AssocNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#1199
+  # source://prism//lib/prism/node.rb#1219
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -1581,7 +1615,7 @@ class Prism::AssocSplatNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#1320
+  # source://prism//lib/prism/node.rb#1342
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -1710,7 +1744,7 @@ class Prism::BackReferenceReadNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#1420
+  # source://prism//lib/prism/node.rb#1440
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -1876,7 +1910,7 @@ class Prism::BeginNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#1504
+  # source://prism//lib/prism/node.rb#1529
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -2046,7 +2080,7 @@ class Prism::BlockArgumentNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#1663
+  # source://prism//lib/prism/node.rb#1685
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -2170,7 +2204,7 @@ class Prism::BlockLocalVariableNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#1763
+  # source://prism//lib/prism/node.rb#1783
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -2321,7 +2355,7 @@ class Prism::BlockNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#1849
+  # source://prism//lib/prism/node.rb#1872
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -2477,7 +2511,7 @@ class Prism::BlockParameterNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#1994
+  # source://prism//lib/prism/node.rb#2014
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -2663,7 +2697,7 @@ class Prism::BlockParametersNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#2130
+  # source://prism//lib/prism/node.rb#2153
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -2833,7 +2867,7 @@ class Prism::BreakNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#2290
+  # source://prism//lib/prism/node.rb#2312
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -2991,7 +3025,7 @@ class Prism::CallAndWriteNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#2396
+  # source://prism//lib/prism/node.rb#2419
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -3289,7 +3323,7 @@ class Prism::CallNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#2617
+  # source://prism//lib/prism/node.rb#2641
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -3586,7 +3620,7 @@ class Prism::CallOperatorWriteNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#2866
+  # source://prism//lib/prism/node.rb#2889
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -3828,7 +3862,7 @@ class Prism::CallOrWriteNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#3073
+  # source://prism//lib/prism/node.rb#3096
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -4075,7 +4109,7 @@ class Prism::CallTargetNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#3283
+  # source://prism//lib/prism/node.rb#3303
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -4250,7 +4284,7 @@ class Prism::CapturePatternNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#3433
+  # source://prism//lib/prism/node.rb#3453
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -4431,7 +4465,7 @@ class Prism::CaseMatchNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#3544
+  # source://prism//lib/prism/node.rb#3568
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -4618,7 +4652,7 @@ class Prism::CaseNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#3689
+  # source://prism//lib/prism/node.rb#3713
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -4803,7 +4837,7 @@ class Prism::ClassNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#3835
+  # source://prism//lib/prism/node.rb#3859
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -4971,7 +5005,7 @@ class Prism::ClassVariableAndWriteNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#3995
+  # source://prism//lib/prism/node.rb#4015
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -5150,7 +5184,7 @@ class Prism::ClassVariableOperatorWriteNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#4121
+  # source://prism//lib/prism/node.rb#4141
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -5303,7 +5337,7 @@ class Prism::ClassVariableOrWriteNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#4233
+  # source://prism//lib/prism/node.rb#4253
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -5442,7 +5476,7 @@ class Prism::ClassVariableReadNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#4343
+  # source://prism//lib/prism/node.rb#4363
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -5546,7 +5580,7 @@ class Prism::ClassVariableTargetNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#4420
+  # source://prism//lib/prism/node.rb#4440
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -5660,7 +5694,7 @@ class Prism::ClassVariableWriteNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#4496
+  # source://prism//lib/prism/node.rb#4516
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -5869,13 +5903,13 @@ class Prism::Compiler < ::Prism::Visitor
   # Visit the child nodes of the given node.
   # Compile a AliasGlobalVariableNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#44
   def visit_alias_global_variable_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a AliasMethodNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#47
   def visit_alias_method_node(node); end
 
   # Visit a list of nodes.
@@ -5887,139 +5921,139 @@ class Prism::Compiler < ::Prism::Visitor
   # Visit the child nodes of the given node.
   # Compile a AlternationPatternNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#50
   def visit_alternation_pattern_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a AndNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#53
   def visit_and_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a ArgumentsNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#56
   def visit_arguments_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a ArrayNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#59
   def visit_array_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a ArrayPatternNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#62
   def visit_array_pattern_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a AssocNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#65
   def visit_assoc_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a AssocSplatNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#68
   def visit_assoc_splat_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a BackReferenceReadNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#71
   def visit_back_reference_read_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a BeginNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#74
   def visit_begin_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a BlockArgumentNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#77
   def visit_block_argument_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a BlockLocalVariableNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#80
   def visit_block_local_variable_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a BlockNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#83
   def visit_block_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a BlockParameterNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#86
   def visit_block_parameter_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a BlockParametersNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#89
   def visit_block_parameters_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a BreakNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#92
   def visit_break_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a CallAndWriteNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#95
   def visit_call_and_write_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a CallNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#98
   def visit_call_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a CallOperatorWriteNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#101
   def visit_call_operator_write_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a CallOrWriteNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#104
   def visit_call_or_write_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a CallTargetNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#107
   def visit_call_target_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a CapturePatternNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#110
   def visit_capture_pattern_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a CaseMatchNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#113
   def visit_case_match_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a CaseNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#116
   def visit_case_node(node); end
 
   # Visit the child nodes of the given node.
@@ -6031,757 +6065,757 @@ class Prism::Compiler < ::Prism::Visitor
   # Visit the child nodes of the given node.
   # Compile a ClassNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#119
   def visit_class_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a ClassVariableAndWriteNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#122
   def visit_class_variable_and_write_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a ClassVariableOperatorWriteNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#125
   def visit_class_variable_operator_write_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a ClassVariableOrWriteNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#128
   def visit_class_variable_or_write_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a ClassVariableReadNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#131
   def visit_class_variable_read_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a ClassVariableTargetNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#134
   def visit_class_variable_target_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a ClassVariableWriteNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#137
   def visit_class_variable_write_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a ConstantAndWriteNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#140
   def visit_constant_and_write_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a ConstantOperatorWriteNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#143
   def visit_constant_operator_write_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a ConstantOrWriteNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#146
   def visit_constant_or_write_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a ConstantPathAndWriteNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#149
   def visit_constant_path_and_write_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a ConstantPathNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#152
   def visit_constant_path_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a ConstantPathOperatorWriteNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#155
   def visit_constant_path_operator_write_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a ConstantPathOrWriteNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#158
   def visit_constant_path_or_write_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a ConstantPathTargetNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#161
   def visit_constant_path_target_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a ConstantPathWriteNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#164
   def visit_constant_path_write_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a ConstantReadNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#167
   def visit_constant_read_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a ConstantTargetNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#170
   def visit_constant_target_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a ConstantWriteNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#173
   def visit_constant_write_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a DefNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#176
   def visit_def_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a DefinedNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#179
   def visit_defined_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a ElseNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#182
   def visit_else_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a EmbeddedStatementsNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#185
   def visit_embedded_statements_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a EmbeddedVariableNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#188
   def visit_embedded_variable_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a EnsureNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#191
   def visit_ensure_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a FalseNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#194
   def visit_false_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a FindPatternNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#197
   def visit_find_pattern_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a FlipFlopNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#200
   def visit_flip_flop_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a FloatNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#203
   def visit_float_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a ForNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#206
   def visit_for_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a ForwardingArgumentsNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#209
   def visit_forwarding_arguments_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a ForwardingParameterNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#212
   def visit_forwarding_parameter_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a ForwardingSuperNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#215
   def visit_forwarding_super_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a GlobalVariableAndWriteNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#218
   def visit_global_variable_and_write_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a GlobalVariableOperatorWriteNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#221
   def visit_global_variable_operator_write_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a GlobalVariableOrWriteNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#224
   def visit_global_variable_or_write_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a GlobalVariableReadNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#227
   def visit_global_variable_read_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a GlobalVariableTargetNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#230
   def visit_global_variable_target_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a GlobalVariableWriteNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#233
   def visit_global_variable_write_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a HashNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#236
   def visit_hash_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a HashPatternNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#239
   def visit_hash_pattern_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a IfNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#242
   def visit_if_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a ImaginaryNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#245
   def visit_imaginary_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a ImplicitNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#248
   def visit_implicit_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a ImplicitRestNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#251
   def visit_implicit_rest_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a InNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#254
   def visit_in_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a IndexAndWriteNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#257
   def visit_index_and_write_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a IndexOperatorWriteNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#260
   def visit_index_operator_write_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a IndexOrWriteNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#263
   def visit_index_or_write_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a IndexTargetNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#266
   def visit_index_target_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a InstanceVariableAndWriteNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#269
   def visit_instance_variable_and_write_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a InstanceVariableOperatorWriteNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#272
   def visit_instance_variable_operator_write_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a InstanceVariableOrWriteNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#275
   def visit_instance_variable_or_write_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a InstanceVariableReadNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#278
   def visit_instance_variable_read_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a InstanceVariableTargetNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#281
   def visit_instance_variable_target_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a InstanceVariableWriteNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#284
   def visit_instance_variable_write_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a IntegerNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#287
   def visit_integer_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a InterpolatedMatchLastLineNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#290
   def visit_interpolated_match_last_line_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a InterpolatedRegularExpressionNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#293
   def visit_interpolated_regular_expression_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a InterpolatedStringNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#296
   def visit_interpolated_string_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a InterpolatedSymbolNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#299
   def visit_interpolated_symbol_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a InterpolatedXStringNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#302
   def visit_interpolated_x_string_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a ItLocalVariableReadNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#305
   def visit_it_local_variable_read_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a ItParametersNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#308
   def visit_it_parameters_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a KeywordHashNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#311
   def visit_keyword_hash_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a KeywordRestParameterNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#314
   def visit_keyword_rest_parameter_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a LambdaNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#317
   def visit_lambda_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a LocalVariableAndWriteNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#320
   def visit_local_variable_and_write_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a LocalVariableOperatorWriteNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#323
   def visit_local_variable_operator_write_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a LocalVariableOrWriteNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#326
   def visit_local_variable_or_write_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a LocalVariableReadNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#329
   def visit_local_variable_read_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a LocalVariableTargetNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#332
   def visit_local_variable_target_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a LocalVariableWriteNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#335
   def visit_local_variable_write_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a MatchLastLineNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#338
   def visit_match_last_line_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a MatchPredicateNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#341
   def visit_match_predicate_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a MatchRequiredNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#344
   def visit_match_required_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a MatchWriteNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#347
   def visit_match_write_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a MissingNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#350
   def visit_missing_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a ModuleNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#353
   def visit_module_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a MultiTargetNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#356
   def visit_multi_target_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a MultiWriteNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#359
   def visit_multi_write_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a NextNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#362
   def visit_next_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a NilNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#365
   def visit_nil_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a NoKeywordsParameterNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#368
   def visit_no_keywords_parameter_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a NumberedParametersNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#371
   def visit_numbered_parameters_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a NumberedReferenceReadNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#374
   def visit_numbered_reference_read_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a OptionalKeywordParameterNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#377
   def visit_optional_keyword_parameter_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a OptionalParameterNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#380
   def visit_optional_parameter_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a OrNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#383
   def visit_or_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a ParametersNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#386
   def visit_parameters_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a ParenthesesNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#389
   def visit_parentheses_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a PinnedExpressionNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#392
   def visit_pinned_expression_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a PinnedVariableNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#395
   def visit_pinned_variable_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a PostExecutionNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#398
   def visit_post_execution_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a PreExecutionNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#401
   def visit_pre_execution_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a ProgramNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#404
   def visit_program_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a RangeNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#407
   def visit_range_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a RationalNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#410
   def visit_rational_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a RedoNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#413
   def visit_redo_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a RegularExpressionNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#416
   def visit_regular_expression_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a RequiredKeywordParameterNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#419
   def visit_required_keyword_parameter_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a RequiredParameterNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#422
   def visit_required_parameter_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a RescueModifierNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#425
   def visit_rescue_modifier_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a RescueNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#428
   def visit_rescue_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a RestParameterNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#431
   def visit_rest_parameter_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a RetryNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#434
   def visit_retry_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a ReturnNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#437
   def visit_return_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a SelfNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#440
   def visit_self_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a ShareableConstantNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#443
   def visit_shareable_constant_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a SingletonClassNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#446
   def visit_singleton_class_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a SourceEncodingNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#449
   def visit_source_encoding_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a SourceFileNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#452
   def visit_source_file_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a SourceLineNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#455
   def visit_source_line_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a SplatNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#458
   def visit_splat_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a StatementsNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#461
   def visit_statements_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a StringNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#464
   def visit_string_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a SuperNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#467
   def visit_super_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a SymbolNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#470
   def visit_symbol_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a TrueNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#473
   def visit_true_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a UndefNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#476
   def visit_undef_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a UnlessNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#479
   def visit_unless_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a UntilNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#482
   def visit_until_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a WhenNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#485
   def visit_when_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a WhileNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#488
   def visit_while_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a XStringNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#491
   def visit_x_string_node(node); end
 
   # Visit the child nodes of the given node.
   # Compile a YieldNode node
   #
-  # source://prism//lib/prism/compiler.rb#39
+  # source://prism//lib/prism/compiler.rb#494
   def visit_yield_node(node); end
 end
 
@@ -6860,7 +6894,7 @@ class Prism::ConstantAndWriteNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#4625
+  # source://prism//lib/prism/node.rb#4645
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -7027,7 +7061,7 @@ class Prism::ConstantOperatorWriteNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#4739
+  # source://prism//lib/prism/node.rb#4759
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -7180,7 +7214,7 @@ class Prism::ConstantOrWriteNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#4851
+  # source://prism//lib/prism/node.rb#4871
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -7331,7 +7365,7 @@ class Prism::ConstantPathAndWriteNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#4963
+  # source://prism//lib/prism/node.rb#4983
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -7476,7 +7510,7 @@ class Prism::ConstantPathNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#5062
+  # source://prism//lib/prism/node.rb#5084
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -7689,7 +7723,7 @@ class Prism::ConstantPathOperatorWriteNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#5198
+  # source://prism//lib/prism/node.rb#5218
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -7825,7 +7859,7 @@ class Prism::ConstantPathOrWriteNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#5295
+  # source://prism//lib/prism/node.rb#5315
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -7970,7 +8004,7 @@ class Prism::ConstantPathTargetNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#5394
+  # source://prism//lib/prism/node.rb#5416
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -8137,7 +8171,7 @@ class Prism::ConstantPathWriteNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#5514
+  # source://prism//lib/prism/node.rb#5534
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -8273,7 +8307,7 @@ class Prism::ConstantReadNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#5622
+  # source://prism//lib/prism/node.rb#5642
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -8390,7 +8424,7 @@ class Prism::ConstantTargetNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#5699
+  # source://prism//lib/prism/node.rb#5719
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -8517,7 +8551,7 @@ class Prism::ConstantWriteNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#5775
+  # source://prism//lib/prism/node.rb#5795
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -11366,7 +11400,7 @@ class Prism::DefNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#5913
+  # source://prism//lib/prism/node.rb#5937
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -11618,7 +11652,7 @@ class Prism::DefinedNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#6168
+  # source://prism//lib/prism/node.rb#6188
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -12045,7 +12079,7 @@ class Prism::Dispatcher < ::Prism::Visitor
   #
   # def dispatch: (Node) -> void
   #
-  # source://prism//lib/prism/visitor.rb#17
+  # source://prism//lib/prism/dispatcher.rb#61
   def dispatch(node); end
 
   # Dispatches a single event for `node` to all registered listeners.
@@ -14780,7 +14814,7 @@ class Prism::ElseNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#6312
+  # source://prism//lib/prism/node.rb#6334
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -14960,7 +14994,7 @@ class Prism::EmbeddedStatementsNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#6433
+  # source://prism//lib/prism/node.rb#6455
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -15094,7 +15128,7 @@ class Prism::EmbeddedVariableNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#6547
+  # source://prism//lib/prism/node.rb#6567
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -15245,7 +15279,7 @@ class Prism::EnsureNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#6645
+  # source://prism//lib/prism/node.rb#6667
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -15374,7 +15408,7 @@ class Prism::FalseNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#6757
+  # source://prism//lib/prism/node.rb#6777
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -15510,7 +15544,7 @@ class Prism::FindPatternNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#6837
+  # source://prism//lib/prism/node.rb#6862
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -15658,7 +15692,7 @@ class Prism::FlipFlopNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#6980
+  # source://prism//lib/prism/node.rb#7003
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -15783,7 +15817,7 @@ class Prism::FloatNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#7085
+  # source://prism//lib/prism/node.rb#7105
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -15912,7 +15946,7 @@ class Prism::ForNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#7164
+  # source://prism//lib/prism/node.rb#7188
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -16107,7 +16141,7 @@ class Prism::ForwardingArgumentsNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#7355
+  # source://prism//lib/prism/node.rb#7375
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -16195,7 +16229,7 @@ class Prism::ForwardingParameterNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#7424
+  # source://prism//lib/prism/node.rb#7444
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -16303,7 +16337,7 @@ class Prism::ForwardingSuperNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#7493
+  # source://prism//lib/prism/node.rb#7515
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -16411,7 +16445,7 @@ class Prism::GlobalVariableAndWriteNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#7571
+  # source://prism//lib/prism/node.rb#7591
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -16578,7 +16612,7 @@ class Prism::GlobalVariableOperatorWriteNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#7685
+  # source://prism//lib/prism/node.rb#7705
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -16731,7 +16765,7 @@ class Prism::GlobalVariableOrWriteNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#7797
+  # source://prism//lib/prism/node.rb#7817
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -16870,7 +16904,7 @@ class Prism::GlobalVariableReadNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#7907
+  # source://prism//lib/prism/node.rb#7927
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -16974,7 +17008,7 @@ class Prism::GlobalVariableTargetNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#7984
+  # source://prism//lib/prism/node.rb#8004
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -17088,7 +17122,7 @@ class Prism::GlobalVariableWriteNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#8060
+  # source://prism//lib/prism/node.rb#8080
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -17267,7 +17301,7 @@ class Prism::HashNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#8188
+  # source://prism//lib/prism/node.rb#8208
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -17437,7 +17471,7 @@ class Prism::HashPatternNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#8319
+  # source://prism//lib/prism/node.rb#8343
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -17607,7 +17641,7 @@ class Prism::IfNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#8466
+  # source://prism//lib/prism/node.rb#8490
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -17830,7 +17864,7 @@ class Prism::ImaginaryNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#8672
+  # source://prism//lib/prism/node.rb#8692
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -17950,7 +17984,7 @@ class Prism::ImplicitNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#8751
+  # source://prism//lib/prism/node.rb#8771
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -18054,7 +18088,7 @@ class Prism::ImplicitRestNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#8832
+  # source://prism//lib/prism/node.rb#8852
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -18162,7 +18196,7 @@ class Prism::InNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#8904
+  # source://prism//lib/prism/node.rb#8927
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -18370,7 +18404,7 @@ class Prism::IndexAndWriteNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#9035
+  # source://prism//lib/prism/node.rb#9060
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -18628,7 +18662,7 @@ class Prism::IndexOperatorWriteNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#9236
+  # source://prism//lib/prism/node.rb#9261
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -18872,7 +18906,7 @@ class Prism::IndexOrWriteNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#9435
+  # source://prism//lib/prism/node.rb#9460
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -19106,7 +19140,7 @@ class Prism::IndexTargetNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#9640
+  # source://prism//lib/prism/node.rb#9664
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -20111,7 +20145,7 @@ class Prism::InstanceVariableAndWriteNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#9787
+  # source://prism//lib/prism/node.rb#9807
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -20278,7 +20312,7 @@ class Prism::InstanceVariableOperatorWriteNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#9901
+  # source://prism//lib/prism/node.rb#9921
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -20431,7 +20465,7 @@ class Prism::InstanceVariableOrWriteNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#10013
+  # source://prism//lib/prism/node.rb#10033
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -20570,7 +20604,7 @@ class Prism::InstanceVariableReadNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#10123
+  # source://prism//lib/prism/node.rb#10143
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -20674,7 +20708,7 @@ class Prism::InstanceVariableTargetNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#10200
+  # source://prism//lib/prism/node.rb#10220
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -20788,7 +20822,7 @@ class Prism::InstanceVariableWriteNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#10276
+  # source://prism//lib/prism/node.rb#10296
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -20989,7 +21023,7 @@ class Prism::IntegerNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#10402
+  # source://prism//lib/prism/node.rb#10422
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -21139,7 +21173,7 @@ class Prism::InterpolatedMatchLastLineNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#10498
+  # source://prism//lib/prism/node.rb#10518
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -21383,7 +21417,7 @@ class Prism::InterpolatedRegularExpressionNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#10668
+  # source://prism//lib/prism/node.rb#10688
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -21619,7 +21653,7 @@ class Prism::InterpolatedStringNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#10838
+  # source://prism//lib/prism/node.rb#10858
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -21802,7 +21836,7 @@ class Prism::InterpolatedSymbolNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#10975
+  # source://prism//lib/prism/node.rb#10995
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -21955,7 +21989,7 @@ class Prism::InterpolatedXStringNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#11101
+  # source://prism//lib/prism/node.rb#11121
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -22078,7 +22112,7 @@ class Prism::ItLocalVariableReadNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#11212
+  # source://prism//lib/prism/node.rb#11232
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -22165,7 +22199,7 @@ class Prism::ItParametersNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#11280
+  # source://prism//lib/prism/node.rb#11300
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -22267,7 +22301,7 @@ class Prism::KeywordHashNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#11349
+  # source://prism//lib/prism/node.rb#11369
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -22398,7 +22432,7 @@ class Prism::KeywordRestParameterNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#11432
+  # source://prism//lib/prism/node.rb#11452
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -22572,7 +22606,7 @@ class Prism::LambdaNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#11555
+  # source://prism//lib/prism/node.rb#11578
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -23042,7 +23076,7 @@ class Prism::LocalVariableAndWriteNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#11701
+  # source://prism//lib/prism/node.rb#11721
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -23217,7 +23251,7 @@ class Prism::LocalVariableOperatorWriteNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#11820
+  # source://prism//lib/prism/node.rb#11840
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -23378,7 +23412,7 @@ class Prism::LocalVariableOrWriteNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#11937
+  # source://prism//lib/prism/node.rb#11957
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -23533,7 +23567,7 @@ class Prism::LocalVariableReadNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#12052
+  # source://prism//lib/prism/node.rb#12072
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -23663,7 +23697,7 @@ class Prism::LocalVariableTargetNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#12144
+  # source://prism//lib/prism/node.rb#12164
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -23785,7 +23819,7 @@ class Prism::LocalVariableWriteNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#12225
+  # source://prism//lib/prism/node.rb#12245
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -24336,7 +24370,7 @@ class Prism::MatchLastLineNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#12368
+  # source://prism//lib/prism/node.rb#12388
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -24561,7 +24595,7 @@ class Prism::MatchPredicateNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#12556
+  # source://prism//lib/prism/node.rb#12576
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -24697,7 +24731,7 @@ class Prism::MatchRequiredNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#12654
+  # source://prism//lib/prism/node.rb#12674
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -24837,7 +24871,7 @@ class Prism::MatchWriteNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#12751
+  # source://prism//lib/prism/node.rb#12771
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -24927,7 +24961,7 @@ class Prism::MissingNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#12825
+  # source://prism//lib/prism/node.rb#12845
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -25051,7 +25085,7 @@ class Prism::ModuleNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#12899
+  # source://prism//lib/prism/node.rb#12922
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -25214,7 +25248,7 @@ class Prism::MultiTargetNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#13035
+  # source://prism//lib/prism/node.rb#13059
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -25416,7 +25450,7 @@ class Prism::MultiWriteNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#13208
+  # source://prism//lib/prism/node.rb#13233
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -26406,7 +26440,7 @@ class Prism::NextNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#13406
+  # source://prism//lib/prism/node.rb#13428
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -26511,7 +26545,7 @@ class Prism::NilNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#13499
+  # source://prism//lib/prism/node.rb#13519
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -26616,7 +26650,7 @@ class Prism::NoKeywordsParameterNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#13570
+  # source://prism//lib/prism/node.rb#13590
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -26771,7 +26805,7 @@ class Prism::Node
   #
   # @raise [NoMethodError]
   #
-  # source://prism//lib/prism/node.rb#264
+  # source://prism//lib/prism/node.rb#268
   sig { abstract.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -26874,7 +26908,7 @@ class Prism::Node
   # An alias for source_lines, used to mimic the API from
   # RubyVM::AbstractSyntaxTree to make it easier to migrate.
   #
-  # source://prism//lib/prism/node.rb#135
+  # source://prism//lib/prism/node.rb#141
   sig { returns(T::Array[String]) }
   def script_lines; end
 
@@ -27099,7 +27133,7 @@ class Prism::NumberedParametersNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#13677
+  # source://prism//lib/prism/node.rb#13697
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -27207,7 +27241,7 @@ class Prism::NumberedReferenceReadNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#13750
+  # source://prism//lib/prism/node.rb#13770
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -27326,7 +27360,7 @@ class Prism::OptionalKeywordParameterNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#13832
+  # source://prism//lib/prism/node.rb#13852
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -27467,7 +27501,7 @@ class Prism::OptionalParameterNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#13933
+  # source://prism//lib/prism/node.rb#13953
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -27623,7 +27657,7 @@ class Prism::OrNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#14051
+  # source://prism//lib/prism/node.rb#14071
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -27706,6 +27740,7 @@ end
 # source://prism//lib/prism/pack.rb#6
 module Prism::Pack
   class << self
+    # source://prism//lib/prism.rb#83
     def parse(_arg0, _arg1, _arg2); end
   end
 end
@@ -28041,7 +28076,7 @@ class Prism::ParametersNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#14169
+  # source://prism//lib/prism/node.rb#14197
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -28211,7 +28246,7 @@ class Prism::ParenthesesNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#14280
+  # source://prism//lib/prism/node.rb#14302
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -28599,7 +28634,7 @@ class Prism::ParseResult::Newlines < ::Prism::Visitor
 
   # Permit block/lambda nodes to mark newlines within themselves.
   #
-  # source://prism//lib/prism/parse_result/newlines.rb#33
+  # source://prism//lib/prism/parse_result/newlines.rb#44
   def visit_lambda_node(node); end
 
   # Permit statements lists to mark newlines within themselves.
@@ -28609,7 +28644,7 @@ class Prism::ParseResult::Newlines < ::Prism::Visitor
 
   # Mark if/unless nodes as newlines.
   #
-  # source://prism//lib/prism/parse_result/newlines.rb#47
+  # source://prism//lib/prism/parse_result/newlines.rb#52
   def visit_unless_node(node); end
 end
 
@@ -28899,7 +28934,7 @@ class Prism::PinnedExpressionNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#14402
+  # source://prism//lib/prism/node.rb#14422
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -29063,7 +29098,7 @@ class Prism::PinnedVariableNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#14533
+  # source://prism//lib/prism/node.rb#14553
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -29209,7 +29244,7 @@ class Prism::PostExecutionNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#14628
+  # source://prism//lib/prism/node.rb#14650
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -29377,7 +29412,7 @@ class Prism::PreExecutionNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#14763
+  # source://prism//lib/prism/node.rb#14785
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -29526,7 +29561,7 @@ class Prism::ProgramNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#14893
+  # source://prism//lib/prism/node.rb#14913
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -29657,7 +29692,7 @@ class Prism::RangeNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#14976
+  # source://prism//lib/prism/node.rb#14999
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -29828,7 +29863,7 @@ class Prism::RationalNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#15095
+  # source://prism//lib/prism/node.rb#15115
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -29959,7 +29994,7 @@ class Prism::RedoNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#15196
+  # source://prism//lib/prism/node.rb#15216
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -30291,7 +30326,7 @@ class Prism::RegularExpressionNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#15268
+  # source://prism//lib/prism/node.rb#15288
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -31053,7 +31088,7 @@ class Prism::RequiredKeywordParameterNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#15456
+  # source://prism//lib/prism/node.rb#15476
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -31174,7 +31209,7 @@ class Prism::RequiredParameterNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#15550
+  # source://prism//lib/prism/node.rb#15570
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -31294,7 +31329,7 @@ class Prism::RescueModifierNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#15631
+  # source://prism//lib/prism/node.rb#15651
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -31452,7 +31487,7 @@ class Prism::RescueNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#15738
+  # source://prism//lib/prism/node.rb#15763
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -31639,7 +31674,7 @@ class Prism::RestParameterNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#15901
+  # source://prism//lib/prism/node.rb#15921
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -31872,7 +31907,7 @@ class Prism::RetryNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#16018
+  # source://prism//lib/prism/node.rb#16038
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -31982,7 +32017,7 @@ class Prism::ReturnNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#16088
+  # source://prism//lib/prism/node.rb#16110
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -32118,7 +32153,7 @@ class Prism::SelfNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#16181
+  # source://prism//lib/prism/node.rb#16201
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -32417,7 +32452,7 @@ class Prism::ShareableConstantNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#16251
+  # source://prism//lib/prism/node.rb#16271
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -32599,7 +32634,7 @@ class Prism::SingletonClassNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#16345
+  # source://prism//lib/prism/node.rb#16368
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -32901,7 +32936,7 @@ class Prism::SourceEncodingNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#16486
+  # source://prism//lib/prism/node.rb#16506
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -33003,7 +33038,7 @@ class Prism::SourceFileNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#16555
+  # source://prism//lib/prism/node.rb#16575
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -33128,7 +33163,7 @@ class Prism::SourceLineNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#16648
+  # source://prism//lib/prism/node.rb#16668
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -33232,7 +33267,7 @@ class Prism::SplatNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#16718
+  # source://prism//lib/prism/node.rb#16740
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -33364,7 +33399,7 @@ class Prism::StatementsNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#16812
+  # source://prism//lib/prism/node.rb#16832
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -33525,7 +33560,7 @@ class Prism::StringNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#16895
+  # source://prism//lib/prism/node.rb#16915
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -33678,16 +33713,22 @@ class Prism::StringQuery
     # Mirrors the C extension's StringQuery::constant? method.
     #
     # @return [Boolean]
+    #
+    # source://prism//lib/prism.rb#83
     def constant?(_arg0); end
 
     # Mirrors the C extension's StringQuery::local? method.
     #
     # @return [Boolean]
+    #
+    # source://prism//lib/prism.rb#83
     def local?(_arg0); end
 
     # Mirrors the C extension's StringQuery::method_name? method.
     #
     # @return [Boolean]
+    #
+    # source://prism//lib/prism.rb#83
     def method_name?(_arg0); end
   end
 end
@@ -33784,7 +33825,7 @@ class Prism::SuperNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#17065
+  # source://prism//lib/prism/node.rb#17088
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -33981,7 +34022,7 @@ class Prism::SymbolNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#17220
+  # source://prism//lib/prism/node.rb#17240
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -34749,7 +34790,7 @@ class Prism::Translation::Parser::Compiler < ::Prism::Compiler
   # if foo .. bar; end
   #    ^^^^^^^^^^
   #
-  # source://prism//lib/prism/translation/parser/compiler.rb#1501
+  # source://prism//lib/prism/translation/parser/compiler.rb#1519
   def visit_flip_flop_node(node); end
 
   # 1.0
@@ -34939,7 +34980,7 @@ class Prism::Translation::Parser::Compiler < ::Prism::Compiler
   # if /foo #{bar}/ then end
   #    ^^^^^^^^^^^^
   #
-  # source://prism//lib/prism/translation/parser/compiler.rb#1100
+  # source://prism//lib/prism/translation/parser/compiler.rb#1111
   def visit_interpolated_match_last_line_node(node); end
 
   # /foo #{bar}/
@@ -35040,7 +35081,7 @@ class Prism::Translation::Parser::Compiler < ::Prism::Compiler
   # if /foo/ then end
   #    ^^^^^
   #
-  # source://prism//lib/prism/translation/parser/compiler.rb#1535
+  # source://prism//lib/prism/translation/parser/compiler.rb#1555
   def visit_match_last_line_node(node); end
 
   # foo in bar
@@ -35661,30 +35702,47 @@ class Prism::Translation::Parser::Lexer::HeredocData < ::Struct
   # Returns the value of attribute common_whitespace
   #
   # @return [Object] the current value of common_whitespace
+  #
+  # source://prism//lib/prism/translation/parser/lexer.rb#213
   def common_whitespace; end
 
   # Sets the attribute common_whitespace
   #
   # @param value [Object] the value to set the attribute common_whitespace to.
   # @return [Object] the newly set value
+  #
+  # source://prism//lib/prism/translation/parser/lexer.rb#213
   def common_whitespace=(_); end
 
   # Returns the value of attribute identifier
   #
   # @return [Object] the current value of identifier
+  #
+  # source://prism//lib/prism/translation/parser/lexer.rb#213
   def identifier; end
 
   # Sets the attribute identifier
   #
   # @param value [Object] the value to set the attribute identifier to.
   # @return [Object] the newly set value
+  #
+  # source://prism//lib/prism/translation/parser/lexer.rb#213
   def identifier=(_); end
 
   class << self
+    # source://prism//lib/prism/translation/parser/lexer.rb#213
     def [](*_arg0); end
+
+    # source://prism//lib/prism/translation/parser/lexer.rb#213
     def inspect; end
+
+    # source://prism//lib/prism/translation/parser/lexer.rb#213
     def keyword_init?; end
+
+    # source://prism//lib/prism/translation/parser/lexer.rb#213
     def members; end
+
+    # source://prism//lib/prism/translation/parser/lexer.rb#213
     def new(*_arg0); end
   end
 end
@@ -36842,574 +36900,574 @@ class Prism::Translation::Ripper < ::Prism::Compiler
   # source://prism//lib/prism/translation/ripper.rb#3438
   def dedent_string(string, width); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_BEGIN(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_CHAR(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_END(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on___end__(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_alias(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_alias_error(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_aref(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_aref_field(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_arg_ambiguous(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_arg_paren(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_args_add(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_args_add_block(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_args_add_star(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3395
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_args_forward; end
 
-  # source://prism//lib/prism/translation/ripper.rb#3395
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_args_new; end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_array(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3399
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_aryptn(_, _, _, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_assign(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_assign_error(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_assoc_new(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_assoc_splat(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_assoclist_from_args(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_backref(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_backtick(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_bare_assoc_hash(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_begin(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3398
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_binary(_, _, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_block_var(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_blockarg(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3399
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_bodystmt(_, _, _, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_brace_block(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_break(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3398
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_call(_, _, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_case(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3398
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_class(_, _, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_class_name_error(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_comma(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_command(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3399
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_command_call(_, _, _, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_comment(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_const(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_const_path_field(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_const_path_ref(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_const_ref(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_cvar(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3398
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_def(_, _, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_defined(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3400
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_defs(_, _, _, _, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_do_block(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_dot2(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_dot3(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_dyna_symbol(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_else(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3398
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_elsif(_, _, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_embdoc(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_embdoc_beg(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_embdoc_end(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_embexpr_beg(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_embexpr_end(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_embvar(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_ensure(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3395
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_excessed_comma; end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_fcall(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3398
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_field(_, _, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_float(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3399
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_fndptn(_, _, _, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3398
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_for(_, _, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_gvar(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_hash(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_heredoc_beg(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_heredoc_dedent(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_heredoc_end(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3398
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_hshptn(_, _, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_ident(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3398
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_if(_, _, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_if_mod(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3398
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_ifop(_, _, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_ignored_nl(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_ignored_sp(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_imaginary(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3398
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_in(_, _, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_int(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_ivar(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_kw(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_kwrest_param(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_label(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_label_end(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_lambda(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_lbrace(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_lbracket(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_lparen(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_magic_comment(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_massign(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_method_add_arg(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_method_add_block(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_mlhs_add(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_mlhs_add_post(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_mlhs_add_star(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3395
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_mlhs_new; end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_mlhs_paren(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_module(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_mrhs_add(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_mrhs_add_star(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3395
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_mrhs_new; end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_mrhs_new_from_args(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_next(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_nl(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_nokw_param(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_op(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3398
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_opassign(_, _, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_operator_ambiguous(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_param_error(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3401
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_params(_, _, _, _, _, _, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_paren(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_parse_error(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_period(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_program(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_qsymbols_add(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_qsymbols_beg(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3395
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_qsymbols_new; end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_qwords_add(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_qwords_beg(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3395
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_qwords_new; end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_rational(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_rbrace(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_rbracket(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3395
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_redo; end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_regexp_add(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_regexp_beg(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_regexp_end(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_regexp_literal(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3395
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_regexp_new; end
 
-  # source://prism//lib/prism/translation/ripper.rb#3399
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_rescue(_, _, _, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_rescue_mod(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_rest_param(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3395
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_retry; end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_return(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3395
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_return0; end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_rparen(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_sclass(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_semicolon(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_sp(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_stmts_add(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3395
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_stmts_new; end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_string_add(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_string_concat(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3395
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_string_content; end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_string_dvar(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_string_embexpr(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_string_literal(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_super(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_symbeg(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_symbol(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_symbol_literal(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_symbols_add(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_symbols_beg(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3395
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_symbols_new; end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_tlambda(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_tlambeg(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_top_const_field(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_top_const_ref(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_tstring_beg(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_tstring_content(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_tstring_end(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_unary(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_undef(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3398
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_unless(_, _, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_unless_mod(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_until(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_until_mod(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_var_alias(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_var_field(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_var_ref(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_vcall(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3395
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_void_stmt; end
 
-  # source://prism//lib/prism/translation/ripper.rb#3398
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_when(_, _, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_while(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_while_mod(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_word_add(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3395
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_word_new; end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_words_add(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_words_beg(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3395
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_words_new; end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3431
   def on_words_sep(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3397
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_xstring_add(_, _); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_xstring_literal(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3395
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_xstring_new; end
 
-  # source://prism//lib/prism/translation/ripper.rb#3396
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_yield(_); end
 
-  # source://prism//lib/prism/translation/ripper.rb#3395
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_yield0; end
 
-  # source://prism//lib/prism/translation/ripper.rb#3395
+  # source://prism//lib/prism/translation/ripper.rb#3409
   def on_zsuper; end
 
   # Lazily initialize the parse result.
@@ -37680,573 +37738,573 @@ class Prism::Translation::Ripper::SexpBuilder < ::Prism::Translation::Ripper
   # source://prism//lib/prism/translation/ripper/sexp.rb#13
   def error; end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_BEGIN(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_CHAR(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_END(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on___end__(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_alias(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_alias_error(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_aref(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_aref_field(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_arg_ambiguous(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_arg_paren(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_args_add(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_args_add_block(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_args_add_star(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_args_forward(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_args_new(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_array(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_aryptn(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_assign(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_assign_error(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_assoc_new(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_assoc_splat(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_assoclist_from_args(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_backref(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_backtick(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_bare_assoc_hash(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_begin(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_binary(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_block_var(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_blockarg(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_bodystmt(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_brace_block(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_break(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_call(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_case(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_class(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_class_name_error(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_comma(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_command(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_command_call(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_comment(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_const(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_const_path_field(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_const_path_ref(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_const_ref(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_cvar(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_def(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_defined(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_defs(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_do_block(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_dot2(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_dot3(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_dyna_symbol(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_else(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_elsif(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_embdoc(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_embdoc_beg(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_embdoc_end(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_embexpr_beg(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_embexpr_end(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_embvar(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_ensure(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_excessed_comma(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_fcall(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_field(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_float(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_fndptn(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_for(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_gvar(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_hash(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_heredoc_beg(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_heredoc_end(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_hshptn(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_ident(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_if(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_if_mod(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_ifop(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_ignored_nl(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_ignored_sp(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_imaginary(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_in(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_int(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_ivar(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_kw(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_kwrest_param(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_label(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_label_end(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_lambda(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_lbrace(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_lbracket(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_lparen(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_magic_comment(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_massign(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_method_add_arg(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_method_add_block(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_mlhs_add(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_mlhs_add_post(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_mlhs_add_star(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_mlhs_new(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_mlhs_paren(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_module(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_mrhs_add(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_mrhs_add_star(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_mrhs_new(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_mrhs_new_from_args(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_next(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_nl(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_nokw_param(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_op(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_opassign(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_operator_ambiguous(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_param_error(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_params(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_paren(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_period(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_program(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_qsymbols_add(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_qsymbols_beg(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_qsymbols_new(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_qwords_add(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_qwords_beg(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_qwords_new(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_rational(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_rbrace(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_rbracket(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_redo(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_regexp_add(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_regexp_beg(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_regexp_end(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_regexp_literal(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_regexp_new(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_rescue(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_rescue_mod(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_rest_param(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_retry(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_return(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_return0(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_rparen(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_sclass(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_semicolon(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_sp(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_stmts_add(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_stmts_new(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_string_add(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_string_concat(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_string_content(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_string_dvar(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_string_embexpr(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_string_literal(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_super(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_symbeg(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_symbol(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_symbol_literal(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_symbols_add(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_symbols_beg(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_symbols_new(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_tlambda(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_tlambeg(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_top_const_field(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_top_const_ref(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_tstring_beg(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_tstring_content(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_tstring_end(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_unary(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_undef(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_unless(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_unless_mod(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_until(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_until_mod(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_var_alias(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_var_field(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_var_ref(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_vcall(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_void_stmt(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_when(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_while(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_while_mod(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_word_add(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_word_new(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_words_add(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_words_beg(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_words_new(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#55
+  # source://prism//lib/prism/translation/ripper/sexp.rb#54
   def on_words_sep(tok); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_xstring_add(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_xstring_literal(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_xstring_new(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_yield(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_yield0(*args); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#47
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_zsuper(*args); end
 
   private
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#61
+  # source://prism//lib/prism/translation/ripper/sexp.rb#66
   def compile_error(mesg); end
 
   # source://prism//lib/prism/translation/ripper/sexp.rb#17
@@ -38258,7 +38316,7 @@ class Prism::Translation::Ripper::SexpBuilder < ::Prism::Translation::Ripper
   # source://prism//lib/prism/translation/ripper/sexp.rb#24
   def on_heredoc_dedent(val, width); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#61
+  # source://prism//lib/prism/translation/ripper/sexp.rb#46
   def on_parse_error(mesg); end
 end
 
@@ -38276,16 +38334,16 @@ class Prism::Translation::Ripper::SexpBuilderPP < ::Prism::Translation::Ripper::
   # source://prism//lib/prism/translation/ripper/sexp.rb#96
   def _dispatch_event_push(list, item); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#96
+  # source://prism//lib/prism/translation/ripper/sexp.rb#117
   def on_args_add(list, item); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#92
+  # source://prism//lib/prism/translation/ripper/sexp.rb#115
   def on_args_new; end
 
   # source://prism//lib/prism/translation/ripper/sexp.rb#79
   def on_heredoc_dedent(val, width); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#96
+  # source://prism//lib/prism/translation/ripper/sexp.rb#117
   def on_mlhs_add(list, item); end
 
   # source://prism//lib/prism/translation/ripper/sexp.rb#109
@@ -38294,67 +38352,67 @@ class Prism::Translation::Ripper::SexpBuilderPP < ::Prism::Translation::Ripper::
   # source://prism//lib/prism/translation/ripper/sexp.rb#105
   def on_mlhs_add_star(list, star); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#92
+  # source://prism//lib/prism/translation/ripper/sexp.rb#115
   def on_mlhs_new; end
 
   # source://prism//lib/prism/translation/ripper/sexp.rb#101
   def on_mlhs_paren(list); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#96
+  # source://prism//lib/prism/translation/ripper/sexp.rb#117
   def on_mrhs_add(list, item); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#92
+  # source://prism//lib/prism/translation/ripper/sexp.rb#115
   def on_mrhs_new; end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#96
+  # source://prism//lib/prism/translation/ripper/sexp.rb#117
   def on_qsymbols_add(list, item); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#92
+  # source://prism//lib/prism/translation/ripper/sexp.rb#115
   def on_qsymbols_new; end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#96
+  # source://prism//lib/prism/translation/ripper/sexp.rb#117
   def on_qwords_add(list, item); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#92
+  # source://prism//lib/prism/translation/ripper/sexp.rb#115
   def on_qwords_new; end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#96
+  # source://prism//lib/prism/translation/ripper/sexp.rb#117
   def on_regexp_add(list, item); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#92
+  # source://prism//lib/prism/translation/ripper/sexp.rb#115
   def on_regexp_new; end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#96
+  # source://prism//lib/prism/translation/ripper/sexp.rb#117
   def on_stmts_add(list, item); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#92
+  # source://prism//lib/prism/translation/ripper/sexp.rb#115
   def on_stmts_new; end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#96
+  # source://prism//lib/prism/translation/ripper/sexp.rb#117
   def on_string_add(list, item); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#96
+  # source://prism//lib/prism/translation/ripper/sexp.rb#117
   def on_symbols_add(list, item); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#92
+  # source://prism//lib/prism/translation/ripper/sexp.rb#115
   def on_symbols_new; end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#96
+  # source://prism//lib/prism/translation/ripper/sexp.rb#117
   def on_word_add(list, item); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#92
+  # source://prism//lib/prism/translation/ripper/sexp.rb#115
   def on_word_new; end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#96
+  # source://prism//lib/prism/translation/ripper/sexp.rb#117
   def on_words_add(list, item); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#92
+  # source://prism//lib/prism/translation/ripper/sexp.rb#115
   def on_words_new; end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#96
+  # source://prism//lib/prism/translation/ripper/sexp.rb#117
   def on_xstring_add(list, item); end
 
-  # source://prism//lib/prism/translation/ripper/sexp.rb#92
+  # source://prism//lib/prism/translation/ripper/sexp.rb#115
   def on_xstring_new; end
 end
 
@@ -39516,7 +39574,7 @@ class Prism::TrueNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#17383
+  # source://prism//lib/prism/node.rb#17403
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -39620,7 +39678,7 @@ class Prism::UndefNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#17453
+  # source://prism//lib/prism/node.rb#17473
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -39765,7 +39823,7 @@ class Prism::UnlessNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#17554
+  # source://prism//lib/prism/node.rb#17578
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -39998,7 +40056,7 @@ class Prism::UntilNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#17740
+  # source://prism//lib/prism/node.rb#17763
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -40114,907 +40172,907 @@ Prism::VERSION = T.let(T.unsafe(nil), String)
 class Prism::Visitor < ::Prism::BasicVisitor
   # Visit a AliasGlobalVariableNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#56
   sig { params(node: Prism::AliasGlobalVariableNode).void }
   def visit_alias_global_variable_node(node); end
 
   # Visit a AliasMethodNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#59
   sig { params(node: Prism::AliasMethodNode).void }
   def visit_alias_method_node(node); end
 
   # Visit a AlternationPatternNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#62
   sig { params(node: Prism::AlternationPatternNode).void }
   def visit_alternation_pattern_node(node); end
 
   # Visit a AndNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#65
   sig { params(node: Prism::AndNode).void }
   def visit_and_node(node); end
 
   # Visit a ArgumentsNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#68
   sig { params(node: Prism::ArgumentsNode).void }
   def visit_arguments_node(node); end
 
   # Visit a ArrayNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#71
   sig { params(node: Prism::ArrayNode).void }
   def visit_array_node(node); end
 
   # Visit a ArrayPatternNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#74
   sig { params(node: Prism::ArrayPatternNode).void }
   def visit_array_pattern_node(node); end
 
   # Visit a AssocNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#77
   sig { params(node: Prism::AssocNode).void }
   def visit_assoc_node(node); end
 
   # Visit a AssocSplatNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#80
   sig { params(node: Prism::AssocSplatNode).void }
   def visit_assoc_splat_node(node); end
 
   # Visit a BackReferenceReadNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#83
   sig { params(node: Prism::BackReferenceReadNode).void }
   def visit_back_reference_read_node(node); end
 
   # Visit a BeginNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#86
   sig { params(node: Prism::BeginNode).void }
   def visit_begin_node(node); end
 
   # Visit a BlockArgumentNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#89
   sig { params(node: Prism::BlockArgumentNode).void }
   def visit_block_argument_node(node); end
 
   # Visit a BlockLocalVariableNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#92
   sig { params(node: Prism::BlockLocalVariableNode).void }
   def visit_block_local_variable_node(node); end
 
   # Visit a BlockNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#95
   sig { params(node: Prism::BlockNode).void }
   def visit_block_node(node); end
 
   # Visit a BlockParameterNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#98
   sig { params(node: Prism::BlockParameterNode).void }
   def visit_block_parameter_node(node); end
 
   # Visit a BlockParametersNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#101
   sig { params(node: Prism::BlockParametersNode).void }
   def visit_block_parameters_node(node); end
 
   # Visit a BreakNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#104
   sig { params(node: Prism::BreakNode).void }
   def visit_break_node(node); end
 
   # Visit a CallAndWriteNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#107
   sig { params(node: Prism::CallAndWriteNode).void }
   def visit_call_and_write_node(node); end
 
   # Visit a CallNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#110
   sig { params(node: Prism::CallNode).void }
   def visit_call_node(node); end
 
   # Visit a CallOperatorWriteNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#113
   sig { params(node: Prism::CallOperatorWriteNode).void }
   def visit_call_operator_write_node(node); end
 
   # Visit a CallOrWriteNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#116
   sig { params(node: Prism::CallOrWriteNode).void }
   def visit_call_or_write_node(node); end
 
   # Visit a CallTargetNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#119
   sig { params(node: Prism::CallTargetNode).void }
   def visit_call_target_node(node); end
 
   # Visit a CapturePatternNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#122
   sig { params(node: Prism::CapturePatternNode).void }
   def visit_capture_pattern_node(node); end
 
   # Visit a CaseMatchNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#125
   sig { params(node: Prism::CaseMatchNode).void }
   def visit_case_match_node(node); end
 
   # Visit a CaseNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#128
   sig { params(node: Prism::CaseNode).void }
   def visit_case_node(node); end
 
   # Visit a ClassNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#131
   sig { params(node: Prism::ClassNode).void }
   def visit_class_node(node); end
 
   # Visit a ClassVariableAndWriteNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#134
   sig { params(node: Prism::ClassVariableAndWriteNode).void }
   def visit_class_variable_and_write_node(node); end
 
   # Visit a ClassVariableOperatorWriteNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#137
   sig { params(node: Prism::ClassVariableOperatorWriteNode).void }
   def visit_class_variable_operator_write_node(node); end
 
   # Visit a ClassVariableOrWriteNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#140
   sig { params(node: Prism::ClassVariableOrWriteNode).void }
   def visit_class_variable_or_write_node(node); end
 
   # Visit a ClassVariableReadNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#143
   sig { params(node: Prism::ClassVariableReadNode).void }
   def visit_class_variable_read_node(node); end
 
   # Visit a ClassVariableTargetNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#146
   sig { params(node: Prism::ClassVariableTargetNode).void }
   def visit_class_variable_target_node(node); end
 
   # Visit a ClassVariableWriteNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#149
   sig { params(node: Prism::ClassVariableWriteNode).void }
   def visit_class_variable_write_node(node); end
 
   # Visit a ConstantAndWriteNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#152
   sig { params(node: Prism::ConstantAndWriteNode).void }
   def visit_constant_and_write_node(node); end
 
   # Visit a ConstantOperatorWriteNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#155
   sig { params(node: Prism::ConstantOperatorWriteNode).void }
   def visit_constant_operator_write_node(node); end
 
   # Visit a ConstantOrWriteNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#158
   sig { params(node: Prism::ConstantOrWriteNode).void }
   def visit_constant_or_write_node(node); end
 
   # Visit a ConstantPathAndWriteNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#161
   sig { params(node: Prism::ConstantPathAndWriteNode).void }
   def visit_constant_path_and_write_node(node); end
 
   # Visit a ConstantPathNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#164
   sig { params(node: Prism::ConstantPathNode).void }
   def visit_constant_path_node(node); end
 
   # Visit a ConstantPathOperatorWriteNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#167
   sig { params(node: Prism::ConstantPathOperatorWriteNode).void }
   def visit_constant_path_operator_write_node(node); end
 
   # Visit a ConstantPathOrWriteNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#170
   sig { params(node: Prism::ConstantPathOrWriteNode).void }
   def visit_constant_path_or_write_node(node); end
 
   # Visit a ConstantPathTargetNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#173
   sig { params(node: Prism::ConstantPathTargetNode).void }
   def visit_constant_path_target_node(node); end
 
   # Visit a ConstantPathWriteNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#176
   sig { params(node: Prism::ConstantPathWriteNode).void }
   def visit_constant_path_write_node(node); end
 
   # Visit a ConstantReadNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#179
   sig { params(node: Prism::ConstantReadNode).void }
   def visit_constant_read_node(node); end
 
   # Visit a ConstantTargetNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#182
   sig { params(node: Prism::ConstantTargetNode).void }
   def visit_constant_target_node(node); end
 
   # Visit a ConstantWriteNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#185
   sig { params(node: Prism::ConstantWriteNode).void }
   def visit_constant_write_node(node); end
 
   # Visit a DefNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#188
   sig { params(node: Prism::DefNode).void }
   def visit_def_node(node); end
 
   # Visit a DefinedNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#191
   sig { params(node: Prism::DefinedNode).void }
   def visit_defined_node(node); end
 
   # Visit a ElseNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#194
   sig { params(node: Prism::ElseNode).void }
   def visit_else_node(node); end
 
   # Visit a EmbeddedStatementsNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#197
   sig { params(node: Prism::EmbeddedStatementsNode).void }
   def visit_embedded_statements_node(node); end
 
   # Visit a EmbeddedVariableNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#200
   sig { params(node: Prism::EmbeddedVariableNode).void }
   def visit_embedded_variable_node(node); end
 
   # Visit a EnsureNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#203
   sig { params(node: Prism::EnsureNode).void }
   def visit_ensure_node(node); end
 
   # Visit a FalseNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#206
   sig { params(node: Prism::FalseNode).void }
   def visit_false_node(node); end
 
   # Visit a FindPatternNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#209
   sig { params(node: Prism::FindPatternNode).void }
   def visit_find_pattern_node(node); end
 
   # Visit a FlipFlopNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#212
   sig { params(node: Prism::FlipFlopNode).void }
   def visit_flip_flop_node(node); end
 
   # Visit a FloatNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#215
   sig { params(node: Prism::FloatNode).void }
   def visit_float_node(node); end
 
   # Visit a ForNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#218
   sig { params(node: Prism::ForNode).void }
   def visit_for_node(node); end
 
   # Visit a ForwardingArgumentsNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#221
   sig { params(node: Prism::ForwardingArgumentsNode).void }
   def visit_forwarding_arguments_node(node); end
 
   # Visit a ForwardingParameterNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#224
   sig { params(node: Prism::ForwardingParameterNode).void }
   def visit_forwarding_parameter_node(node); end
 
   # Visit a ForwardingSuperNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#227
   sig { params(node: Prism::ForwardingSuperNode).void }
   def visit_forwarding_super_node(node); end
 
   # Visit a GlobalVariableAndWriteNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#230
   sig { params(node: Prism::GlobalVariableAndWriteNode).void }
   def visit_global_variable_and_write_node(node); end
 
   # Visit a GlobalVariableOperatorWriteNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#233
   sig { params(node: Prism::GlobalVariableOperatorWriteNode).void }
   def visit_global_variable_operator_write_node(node); end
 
   # Visit a GlobalVariableOrWriteNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#236
   sig { params(node: Prism::GlobalVariableOrWriteNode).void }
   def visit_global_variable_or_write_node(node); end
 
   # Visit a GlobalVariableReadNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#239
   sig { params(node: Prism::GlobalVariableReadNode).void }
   def visit_global_variable_read_node(node); end
 
   # Visit a GlobalVariableTargetNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#242
   sig { params(node: Prism::GlobalVariableTargetNode).void }
   def visit_global_variable_target_node(node); end
 
   # Visit a GlobalVariableWriteNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#245
   sig { params(node: Prism::GlobalVariableWriteNode).void }
   def visit_global_variable_write_node(node); end
 
   # Visit a HashNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#248
   sig { params(node: Prism::HashNode).void }
   def visit_hash_node(node); end
 
   # Visit a HashPatternNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#251
   sig { params(node: Prism::HashPatternNode).void }
   def visit_hash_pattern_node(node); end
 
   # Visit a IfNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#254
   sig { params(node: Prism::IfNode).void }
   def visit_if_node(node); end
 
   # Visit a ImaginaryNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#257
   sig { params(node: Prism::ImaginaryNode).void }
   def visit_imaginary_node(node); end
 
   # Visit a ImplicitNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#260
   sig { params(node: Prism::ImplicitNode).void }
   def visit_implicit_node(node); end
 
   # Visit a ImplicitRestNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#263
   sig { params(node: Prism::ImplicitRestNode).void }
   def visit_implicit_rest_node(node); end
 
   # Visit a InNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#266
   sig { params(node: Prism::InNode).void }
   def visit_in_node(node); end
 
   # Visit a IndexAndWriteNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#269
   sig { params(node: Prism::IndexAndWriteNode).void }
   def visit_index_and_write_node(node); end
 
   # Visit a IndexOperatorWriteNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#272
   sig { params(node: Prism::IndexOperatorWriteNode).void }
   def visit_index_operator_write_node(node); end
 
   # Visit a IndexOrWriteNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#275
   sig { params(node: Prism::IndexOrWriteNode).void }
   def visit_index_or_write_node(node); end
 
   # Visit a IndexTargetNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#278
   sig { params(node: Prism::IndexTargetNode).void }
   def visit_index_target_node(node); end
 
   # Visit a InstanceVariableAndWriteNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#281
   sig { params(node: Prism::InstanceVariableAndWriteNode).void }
   def visit_instance_variable_and_write_node(node); end
 
   # Visit a InstanceVariableOperatorWriteNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#284
   sig { params(node: Prism::InstanceVariableOperatorWriteNode).void }
   def visit_instance_variable_operator_write_node(node); end
 
   # Visit a InstanceVariableOrWriteNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#287
   sig { params(node: Prism::InstanceVariableOrWriteNode).void }
   def visit_instance_variable_or_write_node(node); end
 
   # Visit a InstanceVariableReadNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#290
   sig { params(node: Prism::InstanceVariableReadNode).void }
   def visit_instance_variable_read_node(node); end
 
   # Visit a InstanceVariableTargetNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#293
   sig { params(node: Prism::InstanceVariableTargetNode).void }
   def visit_instance_variable_target_node(node); end
 
   # Visit a InstanceVariableWriteNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#296
   sig { params(node: Prism::InstanceVariableWriteNode).void }
   def visit_instance_variable_write_node(node); end
 
   # Visit a IntegerNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#299
   sig { params(node: Prism::IntegerNode).void }
   def visit_integer_node(node); end
 
   # Visit a InterpolatedMatchLastLineNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#302
   sig { params(node: Prism::InterpolatedMatchLastLineNode).void }
   def visit_interpolated_match_last_line_node(node); end
 
   # Visit a InterpolatedRegularExpressionNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#305
   sig { params(node: Prism::InterpolatedRegularExpressionNode).void }
   def visit_interpolated_regular_expression_node(node); end
 
   # Visit a InterpolatedStringNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#308
   sig { params(node: Prism::InterpolatedStringNode).void }
   def visit_interpolated_string_node(node); end
 
   # Visit a InterpolatedSymbolNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#311
   sig { params(node: Prism::InterpolatedSymbolNode).void }
   def visit_interpolated_symbol_node(node); end
 
   # Visit a InterpolatedXStringNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#314
   sig { params(node: Prism::InterpolatedXStringNode).void }
   def visit_interpolated_x_string_node(node); end
 
   # Visit a ItLocalVariableReadNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#317
   sig { params(node: Prism::ItLocalVariableReadNode).void }
   def visit_it_local_variable_read_node(node); end
 
   # Visit a ItParametersNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#320
   sig { params(node: Prism::ItParametersNode).void }
   def visit_it_parameters_node(node); end
 
   # Visit a KeywordHashNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#323
   sig { params(node: Prism::KeywordHashNode).void }
   def visit_keyword_hash_node(node); end
 
   # Visit a KeywordRestParameterNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#326
   sig { params(node: Prism::KeywordRestParameterNode).void }
   def visit_keyword_rest_parameter_node(node); end
 
   # Visit a LambdaNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#329
   sig { params(node: Prism::LambdaNode).void }
   def visit_lambda_node(node); end
 
   # Visit a LocalVariableAndWriteNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#332
   sig { params(node: Prism::LocalVariableAndWriteNode).void }
   def visit_local_variable_and_write_node(node); end
 
   # Visit a LocalVariableOperatorWriteNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#335
   sig { params(node: Prism::LocalVariableOperatorWriteNode).void }
   def visit_local_variable_operator_write_node(node); end
 
   # Visit a LocalVariableOrWriteNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#338
   sig { params(node: Prism::LocalVariableOrWriteNode).void }
   def visit_local_variable_or_write_node(node); end
 
   # Visit a LocalVariableReadNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#341
   sig { params(node: Prism::LocalVariableReadNode).void }
   def visit_local_variable_read_node(node); end
 
   # Visit a LocalVariableTargetNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#344
   sig { params(node: Prism::LocalVariableTargetNode).void }
   def visit_local_variable_target_node(node); end
 
   # Visit a LocalVariableWriteNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#347
   sig { params(node: Prism::LocalVariableWriteNode).void }
   def visit_local_variable_write_node(node); end
 
   # Visit a MatchLastLineNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#350
   sig { params(node: Prism::MatchLastLineNode).void }
   def visit_match_last_line_node(node); end
 
   # Visit a MatchPredicateNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#353
   sig { params(node: Prism::MatchPredicateNode).void }
   def visit_match_predicate_node(node); end
 
   # Visit a MatchRequiredNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#356
   sig { params(node: Prism::MatchRequiredNode).void }
   def visit_match_required_node(node); end
 
   # Visit a MatchWriteNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#359
   sig { params(node: Prism::MatchWriteNode).void }
   def visit_match_write_node(node); end
 
   # Visit a MissingNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#362
   sig { params(node: Prism::MissingNode).void }
   def visit_missing_node(node); end
 
   # Visit a ModuleNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#365
   sig { params(node: Prism::ModuleNode).void }
   def visit_module_node(node); end
 
   # Visit a MultiTargetNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#368
   sig { params(node: Prism::MultiTargetNode).void }
   def visit_multi_target_node(node); end
 
   # Visit a MultiWriteNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#371
   sig { params(node: Prism::MultiWriteNode).void }
   def visit_multi_write_node(node); end
 
   # Visit a NextNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#374
   sig { params(node: Prism::NextNode).void }
   def visit_next_node(node); end
 
   # Visit a NilNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#377
   sig { params(node: Prism::NilNode).void }
   def visit_nil_node(node); end
 
   # Visit a NoKeywordsParameterNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#380
   sig { params(node: Prism::NoKeywordsParameterNode).void }
   def visit_no_keywords_parameter_node(node); end
 
   # Visit a NumberedParametersNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#383
   sig { params(node: Prism::NumberedParametersNode).void }
   def visit_numbered_parameters_node(node); end
 
   # Visit a NumberedReferenceReadNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#386
   sig { params(node: Prism::NumberedReferenceReadNode).void }
   def visit_numbered_reference_read_node(node); end
 
   # Visit a OptionalKeywordParameterNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#389
   sig { params(node: Prism::OptionalKeywordParameterNode).void }
   def visit_optional_keyword_parameter_node(node); end
 
   # Visit a OptionalParameterNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#392
   sig { params(node: Prism::OptionalParameterNode).void }
   def visit_optional_parameter_node(node); end
 
   # Visit a OrNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#395
   sig { params(node: Prism::OrNode).void }
   def visit_or_node(node); end
 
   # Visit a ParametersNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#398
   sig { params(node: Prism::ParametersNode).void }
   def visit_parameters_node(node); end
 
   # Visit a ParenthesesNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#401
   sig { params(node: Prism::ParenthesesNode).void }
   def visit_parentheses_node(node); end
 
   # Visit a PinnedExpressionNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#404
   sig { params(node: Prism::PinnedExpressionNode).void }
   def visit_pinned_expression_node(node); end
 
   # Visit a PinnedVariableNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#407
   sig { params(node: Prism::PinnedVariableNode).void }
   def visit_pinned_variable_node(node); end
 
   # Visit a PostExecutionNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#410
   sig { params(node: Prism::PostExecutionNode).void }
   def visit_post_execution_node(node); end
 
   # Visit a PreExecutionNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#413
   sig { params(node: Prism::PreExecutionNode).void }
   def visit_pre_execution_node(node); end
 
   # Visit a ProgramNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#416
   sig { params(node: Prism::ProgramNode).void }
   def visit_program_node(node); end
 
   # Visit a RangeNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#419
   sig { params(node: Prism::RangeNode).void }
   def visit_range_node(node); end
 
   # Visit a RationalNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#422
   sig { params(node: Prism::RationalNode).void }
   def visit_rational_node(node); end
 
   # Visit a RedoNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#425
   sig { params(node: Prism::RedoNode).void }
   def visit_redo_node(node); end
 
   # Visit a RegularExpressionNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#428
   sig { params(node: Prism::RegularExpressionNode).void }
   def visit_regular_expression_node(node); end
 
   # Visit a RequiredKeywordParameterNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#431
   sig { params(node: Prism::RequiredKeywordParameterNode).void }
   def visit_required_keyword_parameter_node(node); end
 
   # Visit a RequiredParameterNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#434
   sig { params(node: Prism::RequiredParameterNode).void }
   def visit_required_parameter_node(node); end
 
   # Visit a RescueModifierNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#437
   sig { params(node: Prism::RescueModifierNode).void }
   def visit_rescue_modifier_node(node); end
 
   # Visit a RescueNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#440
   sig { params(node: Prism::RescueNode).void }
   def visit_rescue_node(node); end
 
   # Visit a RestParameterNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#443
   sig { params(node: Prism::RestParameterNode).void }
   def visit_rest_parameter_node(node); end
 
   # Visit a RetryNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#446
   sig { params(node: Prism::RetryNode).void }
   def visit_retry_node(node); end
 
   # Visit a ReturnNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#449
   sig { params(node: Prism::ReturnNode).void }
   def visit_return_node(node); end
 
   # Visit a SelfNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#452
   sig { params(node: Prism::SelfNode).void }
   def visit_self_node(node); end
 
   # Visit a ShareableConstantNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#455
   sig { params(node: Prism::ShareableConstantNode).void }
   def visit_shareable_constant_node(node); end
 
   # Visit a SingletonClassNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#458
   sig { params(node: Prism::SingletonClassNode).void }
   def visit_singleton_class_node(node); end
 
   # Visit a SourceEncodingNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#461
   sig { params(node: Prism::SourceEncodingNode).void }
   def visit_source_encoding_node(node); end
 
   # Visit a SourceFileNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#464
   sig { params(node: Prism::SourceFileNode).void }
   def visit_source_file_node(node); end
 
   # Visit a SourceLineNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#467
   sig { params(node: Prism::SourceLineNode).void }
   def visit_source_line_node(node); end
 
   # Visit a SplatNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#470
   sig { params(node: Prism::SplatNode).void }
   def visit_splat_node(node); end
 
   # Visit a StatementsNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#473
   sig { params(node: Prism::StatementsNode).void }
   def visit_statements_node(node); end
 
   # Visit a StringNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#476
   sig { params(node: Prism::StringNode).void }
   def visit_string_node(node); end
 
   # Visit a SuperNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#479
   sig { params(node: Prism::SuperNode).void }
   def visit_super_node(node); end
 
   # Visit a SymbolNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#482
   sig { params(node: Prism::SymbolNode).void }
   def visit_symbol_node(node); end
 
   # Visit a TrueNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#485
   sig { params(node: Prism::TrueNode).void }
   def visit_true_node(node); end
 
   # Visit a UndefNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#488
   sig { params(node: Prism::UndefNode).void }
   def visit_undef_node(node); end
 
   # Visit a UnlessNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#491
   sig { params(node: Prism::UnlessNode).void }
   def visit_unless_node(node); end
 
   # Visit a UntilNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#494
   sig { params(node: Prism::UntilNode).void }
   def visit_until_node(node); end
 
   # Visit a WhenNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#497
   sig { params(node: Prism::WhenNode).void }
   def visit_when_node(node); end
 
   # Visit a WhileNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#500
   sig { params(node: Prism::WhileNode).void }
   def visit_while_node(node); end
 
   # Visit a XStringNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#503
   sig { params(node: Prism::XStringNode).void }
   def visit_x_string_node(node); end
 
   # Visit a YieldNode node
   #
-  # source://prism//lib/prism/visitor.rb#29
+  # source://prism//lib/prism/visitor.rb#506
   sig { params(node: Prism::YieldNode).void }
   def visit_yield_node(node); end
 end
@@ -41102,7 +41160,7 @@ class Prism::WhenNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#17900
+  # source://prism//lib/prism/node.rb#17923
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -41277,7 +41335,7 @@ class Prism::WhileNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#18032
+  # source://prism//lib/prism/node.rb#18055
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -41468,7 +41526,7 @@ class Prism::XStringNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#18190
+  # source://prism//lib/prism/node.rb#18210
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
@@ -41644,7 +41702,7 @@ class Prism::YieldNode < ::Prism::Node
   # def child_nodes: () -> Array[nil | Node]
   # def deconstruct: () -> Array[nil | Node]
   #
-  # source://prism//lib/prism/node.rb#18334
+  # source://prism//lib/prism/node.rb#18356
   sig { override.returns(T::Array[T.nilable(Prism::Node)]) }
   def deconstruct; end
 
