@@ -1,4 +1,4 @@
-# typed: true
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -14,8 +14,12 @@ module Dependabot
 
       abstract!
 
-      sig { returns(Dependabot::Service) }
-      attr_reader :service
+      private
+
+      sig { abstract.returns(Dependabot::Service) }
+      def service; end
+
+      public
 
       sig { params(dependency: Dependabot::Dependency).void }
       def record_security_update_not_needed_error(dependency)
@@ -186,10 +190,14 @@ module Dependabot
       extend T::Sig
       extend T::Helpers
 
-      sig { returns(Dependabot::Service) }
-      attr_reader :service
-
       abstract!
+
+      private
+
+      sig { abstract.returns(Dependabot::Service) }
+      def service; end
+
+      public
 
       sig { params(notices: T.nilable(T::Array[Dependabot::Notice])).void }
       def record_warning_notices(notices)
@@ -202,15 +210,15 @@ module Dependabot
           # If alert is enabled, sending the deprecation notice to the service for showing on the UI insight page
           send_alert_notice(notice) if notice.show_alert
         end
-        rescue StandardError => e
-          Dependabot.logger.error(
-            "Failed to send notice warning: #{e.message}"
-          )
+      rescue StandardError => e
+        Dependabot.logger.error(
+          "Failed to send notice warning: #{e.message}"
+        )
       end
 
       private
 
-      # Resurns unique warning notices which are going to be shown on insight page.
+      # Returns unique warning notices which are going to be shown on insight page.
       sig { params(notices: T::Array[Dependabot::Notice]).returns(T::Array[Dependabot::Notice]) }
       def unique_warn_notices(notices)
         notices
