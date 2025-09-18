@@ -153,7 +153,7 @@ RSpec.describe GithubApi::DependencySubmission do
       ]
     end
 
-    it "generates a valid manifest list" do # rubocop:disable RSpec/MultipleExpectations
+    it "generates a valid manifest list" do
       payload = dependency_submission.payload
 
       # We only expect a lockfile to be returned

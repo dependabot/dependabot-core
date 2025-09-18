@@ -4,7 +4,7 @@
 require "spec_helper"
 require "dependabot/ecosystem"
 
-RSpec.describe Dependabot::Ecosystem::VersionManager do # rubocop:disable RSpec/FilePath,RSpec/SpecFilePathFormat
+RSpec.describe Dependabot::Ecosystem::VersionManager do # rubocop:disable RSpec/SpecFilePathFormat
   let(:concrete_class) do
     Class.new(Dependabot::Ecosystem::VersionManager) do
       def initialize
