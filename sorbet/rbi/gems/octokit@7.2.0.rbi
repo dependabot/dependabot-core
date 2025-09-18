@@ -490,7 +490,7 @@ module Octokit::Client::ActionsWorkflowJobs
   # @return [Sawyer::Resource] Jobs information
   # @see https://docs.github.com/rest/actions/workflow-jobs#list-jobs-for-a-workflow-run-attempt
   #
-  # source://octokit//lib/octokit/client/actions_workflow_jobs.rb#42
+  # source://octokit//lib/octokit/client/actions_workflow_jobs.rb#47
   def list_workflow_run_attempt_jobs(repo, run_id, attempt_number, options = T.unsafe(nil)); end
 
   # List jobs for a workflow run
@@ -502,7 +502,7 @@ module Octokit::Client::ActionsWorkflowJobs
   # @return [Sawyer::Resource] Jobs information
   # @see https://docs.github.com/rest/actions/workflow-jobs#list-jobs-for-a-workflow-run
   #
-  # source://octokit//lib/octokit/client/actions_workflow_jobs.rb#57
+  # source://octokit//lib/octokit/client/actions_workflow_jobs.rb#62
   def list_workflow_run_jobs(repo, run_id, options = T.unsafe(nil)); end
 
   # List jobs for a workflow run attempt
@@ -596,7 +596,7 @@ module Octokit::Client::ActionsWorkflowRuns
   # @return [Sawyer::Resource] the total count and an array of workflows
   # @see https://developer.github.com/v3/actions/workflow-runs/#list-repository-workflow-runs
   #
-  # source://octokit//lib/octokit/client/actions_workflow_runs.rb#37
+  # source://octokit//lib/octokit/client/actions_workflow_runs.rb#42
   def list_repository_workflow_runs(repo, options = T.unsafe(nil)); end
 
   # List all runs for a repository workflow
@@ -611,7 +611,7 @@ module Octokit::Client::ActionsWorkflowRuns
   # @return [Sawyer::Resource] the total count and an array of workflows
   # @see https://developer.github.com/v3/actions/workflow-runs/#list-workflow-runs
   #
-  # source://octokit//lib/octokit/client/actions_workflow_runs.rb#20
+  # source://octokit//lib/octokit/client/actions_workflow_runs.rb#25
   def list_workflow_runs(repo, workflow, options = T.unsafe(nil)); end
 
   # List all workflow runs for a repository
@@ -696,7 +696,7 @@ module Octokit::Client::ActionsWorkflows
   # @return [Sawyer::Resource] the total count and an array of workflows
   # @see https://developer.github.com/v3/actions/workflows/#list-repository-workflows
   #
-  # source://octokit//lib/octokit/client/actions_workflows.rb#15
+  # source://octokit//lib/octokit/client/actions_workflows.rb#20
   def list_workflows(repo, options = T.unsafe(nil)); end
 
   # Get single workflow in a repository
@@ -762,7 +762,7 @@ module Octokit::Client::Apps
   # @return [Boolean] Success
   # @see https://developer.github.com/v3/apps/installations/#add-repository-to-installation
   #
-  # source://octokit//lib/octokit/client/apps.rb#156
+  # source://octokit//lib/octokit/client/apps.rb#159
   def add_repo_to_installation(installation, repo, options = T.unsafe(nil)); end
 
   # Add a single repository to an installation
@@ -805,7 +805,7 @@ module Octokit::Client::Apps
   # @return [<Sawyer::Resource>] An installation token
   # @see https://developer.github.com/v3/apps/#create-a-new-installation-token
   #
-  # source://octokit//lib/octokit/client/apps.rb#72
+  # source://octokit//lib/octokit/client/apps.rb#75
   def create_installation_access_token(installation, options = T.unsafe(nil)); end
 
   # source://octokit//lib/octokit/client/apps.rb#77
@@ -856,7 +856,7 @@ module Octokit::Client::Apps
   # @return [Array<Sawyer::Resource>] the total_count and an array of installations
   # @see https://developer.github.com/v3/apps/#list-installations
   #
-  # source://octokit//lib/octokit/client/apps.rb#25
+  # source://octokit//lib/octokit/client/apps.rb#28
   def find_installations(options = T.unsafe(nil)); end
 
   # source://octokit//lib/octokit/client/apps.rb#30
@@ -934,7 +934,7 @@ module Octokit::Client::Apps
   # @return [Sawyer::Resource] the total_count and an array of repositories
   # @see https://developer.github.com/v3/apps/installations/#list-repositories
   #
-  # source://octokit//lib/octokit/client/apps.rb#130
+  # source://octokit//lib/octokit/client/apps.rb#135
   def list_installation_repos(options = T.unsafe(nil)); end
 
   # source://octokit//lib/octokit/client/apps.rb#137
@@ -948,7 +948,7 @@ module Octokit::Client::Apps
   # @return [Boolean] Success
   # @see https://developer.github.com/v3/apps/installations/#remove-repository-from-installation
   #
-  # source://octokit//lib/octokit/client/apps.rb#180
+  # source://octokit//lib/octokit/client/apps.rb#183
   def remove_repo_from_installation(installation, repo, options = T.unsafe(nil)); end
 
   # Remove a single repository to an installation
@@ -1118,7 +1118,7 @@ module Octokit::Client::Checks
   # @return [Sawyer::Resource] A hash representing a collection of check runs
   # @see https://developer.github.com/v3/checks/runs/#list-check-runs-in-a-check-suite
   #
-  # source://octokit//lib/octokit/client/checks.rb#86
+  # source://octokit//lib/octokit/client/checks.rb#92
   def list_check_runs_for_check_suite(repo, id, options = T.unsafe(nil)); end
 
   # List check runs for a specific ref
@@ -1138,7 +1138,7 @@ module Octokit::Client::Checks
   # @return [Sawyer::Resource] A hash representing a collection of check runs
   # @see https://developer.github.com/v3/checks/runs/#list-check-runs-for-a-specific-ref
   #
-  # source://octokit//lib/octokit/client/checks.rb#62
+  # source://octokit//lib/octokit/client/checks.rb#68
   def list_check_runs_for_ref(repo, ref, options = T.unsafe(nil)); end
 
   # List check suites for a specific ref
@@ -1157,7 +1157,7 @@ module Octokit::Client::Checks
   # @return [Sawyer::Resource] A hash representing a collection of check suites
   # @see https://developer.github.com/v3/checks/suites/#list-check-suites-for-a-specific-ref
   #
-  # source://octokit//lib/octokit/client/checks.rb#148
+  # source://octokit//lib/octokit/client/checks.rb#154
   def list_check_suites_for_ref(repo, ref, options = T.unsafe(nil)); end
 
   # Rerequest check suite
@@ -1534,7 +1534,7 @@ module Octokit::Client::Commits
   # @return [Array<Sawyer::Resource>] An array of hashes representing commits
   # @see https://developer.github.com/v3/repos/commits/#list-commits-on-a-repository
   #
-  # source://octokit//lib/octokit/client/commits.rb#23
+  # source://octokit//lib/octokit/client/commits.rb#29
   def list_commits(*args); end
 
   # Merge a branch or sha
@@ -1602,7 +1602,7 @@ module Octokit::Client::Contents
   # @return [Sawyer::Resource] The contents and commit info for the addition
   # @see https://developer.github.com/v3/repos/contents/#create-a-file
   #
-  # source://octokit//lib/octokit/client/contents.rb#61
+  # source://octokit//lib/octokit/client/contents.rb#89
   def add_content(*args); end
 
   # Add content to a repository
@@ -1618,7 +1618,7 @@ module Octokit::Client::Contents
   # @return [Sawyer::Resource] The contents and commit info for the addition
   # @see https://developer.github.com/v3/repos/contents/#create-a-file
   #
-  # source://octokit//lib/octokit/client/contents.rb#61
+  # source://octokit//lib/octokit/client/contents.rb#90
   def add_contents(*args); end
 
   # This method will provide a URL to download a tarball or zipball archive for a repository.
@@ -1648,7 +1648,7 @@ module Octokit::Client::Contents
   # @return [Sawyer::Resource] The contents of a file or list of the files in the folder
   # @see https://developer.github.com/v3/repos/contents/#get-contents
   #
-  # source://octokit//lib/octokit/client/contents.rb#36
+  # source://octokit//lib/octokit/client/contents.rb#42
   def content(repo, options = T.unsafe(nil)); end
 
   # Receive a listing of a repository folder or the contents of a file
@@ -1680,7 +1680,7 @@ module Octokit::Client::Contents
   # @return [Sawyer::Resource] The contents and commit info for the addition
   # @see https://developer.github.com/v3/repos/contents/#create-a-file
   #
-  # source://octokit//lib/octokit/client/contents.rb#61
+  # source://octokit//lib/octokit/client/contents.rb#88
   def create_content(*args); end
 
   # Add content to a repository
@@ -1716,7 +1716,7 @@ module Octokit::Client::Contents
   # @return [Sawyer::Resource] The commit info for the delete
   # @see https://developer.github.com/v3/repos/contents/#delete-a-file
   #
-  # source://octokit//lib/octokit/client/contents.rb#138
+  # source://octokit//lib/octokit/client/contents.rb#144
   def delete_content(repo, path, message, sha, options = T.unsafe(nil)); end
 
   # Delete content in a repository
@@ -1771,7 +1771,7 @@ module Octokit::Client::Contents
   # @return [Sawyer::Resource] The commit info for the delete
   # @see https://developer.github.com/v3/repos/contents/#delete-a-file
   #
-  # source://octokit//lib/octokit/client/contents.rb#138
+  # source://octokit//lib/octokit/client/contents.rb#145
   def remove_content(repo, path, message, sha, options = T.unsafe(nil)); end
 
   # Delete content in a repository
@@ -1791,7 +1791,7 @@ module Octokit::Client::Contents
   # @return [Sawyer::Resource] The commit info for the delete
   # @see https://developer.github.com/v3/repos/contents/#delete-a-file
   #
-  # source://octokit//lib/octokit/client/contents.rb#138
+  # source://octokit//lib/octokit/client/contents.rb#146
   def remove_contents(repo, path, message, sha, options = T.unsafe(nil)); end
 
   # Update content in a repository
@@ -1807,7 +1807,7 @@ module Octokit::Client::Contents
   # @return [Sawyer::Resource] The contents and commit info for the update
   # @see https://developer.github.com/v3/repos/contents/#update-a-file
   #
-  # source://octokit//lib/octokit/client/contents.rb#111
+  # source://octokit//lib/octokit/client/contents.rb#121
   def update_content(*args); end
 
   # Update content in a repository
@@ -1961,7 +1961,7 @@ module Octokit::Client::Deployments
   # @return [Array<Sawyer::Resource>] A list of deployment statuses
   # @see https://developer.github.com/v3/repos/deployments/#list-deployment-statuses
   #
-  # source://octokit//lib/octokit/client/deployments.rb#61
+  # source://octokit//lib/octokit/client/deployments.rb#65
   def list_deployment_statuses(deployment_url, options = T.unsafe(nil)); end
 
   # List all deployments for a repository
@@ -1970,7 +1970,7 @@ module Octokit::Client::Deployments
   # @return [Array<Sawyer::Resource>] A list of deployments
   # @see https://developer.github.com/v3/repos/deployments/#list-deployments
   #
-  # source://octokit//lib/octokit/client/deployments.rb#24
+  # source://octokit//lib/octokit/client/deployments.rb#27
   def list_deployments(repo, options = T.unsafe(nil)); end
 end
 
@@ -2027,7 +2027,7 @@ module Octokit::Client::Downloads
   # @return [Array] A list of available downloads
   # @see https://developer.github.com/v3/repos/downloads/#list-downloads-for-a-repository
   #
-  # source://octokit//lib/octokit/client/downloads.rb#17
+  # source://octokit//lib/octokit/client/downloads.rb#20
   def list_downloads(repo, options = T.unsafe(nil)); end
 end
 
@@ -2107,7 +2107,7 @@ module Octokit::Client::Environments
   # @return [Sawyer::Resource] Total count of environments and list of environments
   # @see https://docs.github.com/en/rest/deployments/environments#list-environments
   #
-  # source://octokit//lib/octokit/client/environments.rb#26
+  # source://octokit//lib/octokit/client/environments.rb#29
   def list_environments(repo, options = T.unsafe(nil)); end
 end
 
@@ -2207,7 +2207,7 @@ module Octokit::Client::Events
   # @see https://developer.github.com/v3/issues/events/#list-events-for-a-repository
   # @see https://developer.github.com/v3/activity/events/#list-issue-events-for-a-repository
   #
-  # source://octokit//lib/octokit/client/events.rb#119
+  # source://octokit//lib/octokit/client/events.rb#122
   def repo_issue_events(repo, options = T.unsafe(nil)); end
 
   # List events for a repository
@@ -2462,7 +2462,7 @@ module Octokit::Client::Gists
   # @return [Array<Sawyer::Resource>] A list of gists
   # @see https://developer.github.com/v3/gists/#list-gists
   #
-  # source://octokit//lib/octokit/client/gists.rb#18
+  # source://octokit//lib/octokit/client/gists.rb#25
   def list_gists(user = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # List public gists
@@ -2726,7 +2726,7 @@ module Octokit::Client::Hooks
   # @return [Array<Sawyer::Resource>] Array of hashes representing hooks.
   # @see https://developer.github.com/v3/orgs/hooks/#list-hooks
   #
-  # source://octokit//lib/octokit/client/hooks.rb#164
+  # source://octokit//lib/octokit/client/hooks.rb#167
   def list_org_hooks(org, options = T.unsafe(nil)); end
 
   # Get an org hook
@@ -2863,7 +2863,7 @@ module Octokit::Client::Hooks
   # @see https://api.github.com/hooks
   # @see https://developer.github.com/v3/orgs/hooks/#edit-a-hook
   #
-  # source://octokit//lib/octokit/client/hooks.rb#242
+  # source://octokit//lib/octokit/client/hooks.rb#246
   def update_org_hook(org, id, config, options = T.unsafe(nil)); end
 end
 
@@ -3016,7 +3016,7 @@ module Octokit::Client::Issues
   # @see https://developer.github.com/v3/issues/#list-issues-for-a-repository
   # @see https://developer.github.com/v3/issues/#list-issues
   #
-  # source://octokit//lib/octokit/client/issues.rb#30
+  # source://octokit//lib/octokit/client/issues.rb#34
   def issues(repository = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Get all comments attached to issues for the repository
@@ -3105,7 +3105,7 @@ module Octokit::Client::Issues
   # @return [Sawyer::Resource] Your newly created issue
   # @see https://developer.github.com/v3/issues/#create-an-issue
   #
-  # source://octokit//lib/octokit/client/issues.rb#91
+  # source://octokit//lib/octokit/client/issues.rb#104
   def open_issue(repo, title, body = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # List all issues for a given organization for the authenticated user
@@ -3504,7 +3504,7 @@ module Octokit::Client::Meta
   # @return [Sawyer::Resource] Hash with meta information.
   # @see https://developer.github.com/v3/meta/#meta
   #
-  # source://octokit//lib/octokit/client/meta.rb#14
+  # source://octokit//lib/octokit/client/meta.rb#17
   def github_meta(options = T.unsafe(nil)); end
 
   # Get meta information about GitHub.com, the service.
@@ -3567,7 +3567,7 @@ module Octokit::Client::Milestones
   # @return [Sawyer::Resource] A single milestone object
   # @see https://developer.github.com/v3/issues/milestones/#update-a-milestone
   #
-  # source://octokit//lib/octokit/client/milestones.rb#68
+  # source://octokit//lib/octokit/client/milestones.rb#71
   def edit_milestone(repository, number, options = T.unsafe(nil)); end
 
   # List milestones for a repository
@@ -3612,7 +3612,7 @@ module Octokit::Client::Milestones
   # @return [Array<Sawyer::Resource>] A list of milestones for a repository.
   # @see https://developer.github.com/v3/issues/milestones/#list-milestones-for-a-repository
   #
-  # source://octokit//lib/octokit/client/milestones.rb#21
+  # source://octokit//lib/octokit/client/milestones.rb#24
   def milestones(repository, options = T.unsafe(nil)); end
 
   # Update a milestone for a repository
@@ -3676,7 +3676,7 @@ module Octokit::Client::Notifications
   # @return [Boolean] True if marked as read, false otherwise
   # @see https://developer.github.com/v3/activity/notifications/#mark-notifications-as-read-in-a-repository
   #
-  # source://octokit//lib/octokit/client/notifications.rb#89
+  # source://octokit//lib/octokit/client/notifications.rb#94
   def mark_repo_notifications_as_read(repo, options = T.unsafe(nil)); end
 
   # Mark notifications from a specific repository as read
@@ -3735,7 +3735,7 @@ module Octokit::Client::Notifications
   # @return [Array<Sawyer::Resource>] Array of notifications.
   # @see https://developer.github.com/v3/activity/notifications/#list-your-notifications-in-a-repository
   #
-  # source://octokit//lib/octokit/client/notifications.rb#48
+  # source://octokit//lib/octokit/client/notifications.rb#51
   def repo_notifications(repo, options = T.unsafe(nil)); end
 
   # List your notifications in a repository
@@ -3816,7 +3816,7 @@ module Octokit::Client::OauthApplications
   # @return [Sawyer::Resource] A single authorization for the authenticated user
   # @see https://developer.github.com/v3/apps/oauth_applications/#check-a-token
   #
-  # source://octokit//lib/octokit/client/oauth_applications.rb#21
+  # source://octokit//lib/octokit/client/oauth_applications.rb#31
   def check_application_authorization(access_token, options = T.unsafe(nil)); end
 
   # Check if a token is valid.
@@ -3872,7 +3872,7 @@ module Octokit::Client::OauthApplications
   # @return [Boolean] Result
   # @see https://developer.github.com/v3/apps/oauth_applications/#delete-an-app-token
   #
-  # source://octokit//lib/octokit/client/oauth_applications.rb#69
+  # source://octokit//lib/octokit/client/oauth_applications.rb#84
   def delete_application_authorization(access_token, options = T.unsafe(nil)); end
 
   # Reset a token
@@ -3886,7 +3886,7 @@ module Octokit::Client::OauthApplications
   # @return [Sawyer::Resource] A single authorization for the authenticated user
   # @see https://developer.github.com/v3/apps/oauth_applications/#reset-a-token
   #
-  # source://octokit//lib/octokit/client/oauth_applications.rb#45
+  # source://octokit//lib/octokit/client/oauth_applications.rb#55
   def reset_application_authorization(access_token, options = T.unsafe(nil)); end
 
   # Reset a token
@@ -3914,7 +3914,7 @@ module Octokit::Client::OauthApplications
   # @return [Boolean] Result
   # @see https://developer.github.com/v3/apps/oauth_applications/#delete-an-app-token
   #
-  # source://octokit//lib/octokit/client/oauth_applications.rb#69
+  # source://octokit//lib/octokit/client/oauth_applications.rb#85
   def revoke_application_authorization(access_token, options = T.unsafe(nil)); end
 end
 
@@ -4102,7 +4102,7 @@ module Octokit::Client::Organizations
   # @see Octokit::Repository
   # @see https://developer.github.com/v3/orgs/teams/#add-or-update-team-repository
   #
-  # source://octokit//lib/octokit/client/organizations.rb#570
+  # source://octokit//lib/octokit/client/organizations.rb#573
   def add_team_repo(team_id, repo, options = T.unsafe(nil)); end
 
   # Add team repository
@@ -4157,7 +4157,7 @@ module Octokit::Client::Organizations
   # @return [Array<Sawyer::Resource>] List of GitHub organizations.
   # @see https://developer.github.com/v3/orgs/#list-all-organizations
   #
-  # source://octokit//lib/octokit/client/organizations.rb#116
+  # source://octokit//lib/octokit/client/organizations.rb#119
   def all_orgs(options = T.unsafe(nil)); end
 
   # Get GitHub Actions billing for an organization
@@ -4199,7 +4199,7 @@ module Octokit::Client::Organizations
   # @return [Boolean] True of unpublicization successful, false otherwise.
   # @see https://developer.github.com/v3/orgs/members/#conceal-a-users-membership
   #
-  # source://octokit//lib/octokit/client/organizations.rb#640
+  # source://octokit//lib/octokit/client/organizations.rb#643
   def conceal_membership(org, user, options = T.unsafe(nil)); end
 
   # Converts an organization member to an outside collaborator
@@ -4260,7 +4260,7 @@ module Octokit::Client::Organizations
   # @return [Boolean] True if deletion successful, otherwise false.
   # @see https://docs.github.com/rest/orgs/orgs#delete-an-organization
   #
-  # source://octokit//lib/octokit/client/organizations.rb#64
+  # source://octokit//lib/octokit/client/organizations.rb#67
   def delete_org(org); end
 
   # Delete an organization.
@@ -4320,7 +4320,7 @@ module Octokit::Client::Organizations
   # @see https://developer.github.com/v3/orgs/#list-your-organizations
   # @see https://developer.github.com/v3/orgs/#list-user-organizations
   #
-  # source://octokit//lib/octokit/client/organizations.rb#97
+  # source://octokit//lib/octokit/client/organizations.rb#100
   def list_organizations(user = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Get organizations for a user.
@@ -4352,7 +4352,7 @@ module Octokit::Client::Organizations
   # @see https://developer.github.com/v3/orgs/#list-your-organizations
   # @see https://developer.github.com/v3/orgs/#list-user-organizations
   #
-  # source://octokit//lib/octokit/client/organizations.rb#97
+  # source://octokit//lib/octokit/client/organizations.rb#101
   def list_orgs(user = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Fetches the URL to a migration archive.
@@ -4398,7 +4398,7 @@ module Octokit::Client::Organizations
   # @return [Sawyer::Resource] Hash representing GitHub organization.
   # @see https://developer.github.com/v3/orgs/#get-an-organization
   #
-  # source://octokit//lib/octokit/client/organizations.rb#18
+  # source://octokit//lib/octokit/client/organizations.rb#21
   def org(org, options = T.unsafe(nil)); end
 
   # List pending organization invitations
@@ -4411,7 +4411,7 @@ module Octokit::Client::Organizations
   # @return [Array<Sawyer::Resource>] Array of hashes representing invitations.
   # @see https://developer.github.com/v3/orgs/members/#list-pending-organization-invitations
   #
-  # source://octokit//lib/octokit/client/organizations.rb#239
+  # source://octokit//lib/octokit/client/organizations.rb#242
   def org_invitations(org, options = T.unsafe(nil)); end
 
   # Check if a user is a member of an organization.
@@ -4428,7 +4428,7 @@ module Octokit::Client::Organizations
   # @return [Boolean] Is a member?
   # @see https://developer.github.com/v3/orgs/members/#check-membership
   #
-  # source://octokit//lib/octokit/client/organizations.rb#199
+  # source://octokit//lib/octokit/client/organizations.rb#207
   def org_member?(org, user, options = T.unsafe(nil)); end
 
   # Get organization members
@@ -4445,7 +4445,7 @@ module Octokit::Client::Organizations
   # @return [Array<Sawyer::Resource>] Array of hashes representing users.
   # @see https://developer.github.com/v3/orgs/members/#members-list
   #
-  # source://octokit//lib/octokit/client/organizations.rb#160
+  # source://octokit//lib/octokit/client/organizations.rb#165
   def org_members(org, options = T.unsafe(nil)); end
 
   # Get an organization membership
@@ -4457,7 +4457,7 @@ module Octokit::Client::Organizations
   # @see https://developer.github.com/v3/orgs/members/#get-your-organization-membership
   # @see https://developer.github.com/v3/orgs/members/#get-organization-membership
   #
-  # source://octokit//lib/octokit/client/organizations.rb#711
+  # source://octokit//lib/octokit/client/organizations.rb#719
   def org_membership(org, options = T.unsafe(nil)); end
 
   # List all organizations memberships for the authenticated user
@@ -4465,7 +4465,7 @@ module Octokit::Client::Organizations
   # @return [Array<Sawyer::Resource>] Array of organizations memberships.
   # @see https://developer.github.com/v3/orgs/members/#list-your-organization-memberships
   #
-  # source://octokit//lib/octokit/client/organizations.rb#699
+  # source://octokit//lib/octokit/client/organizations.rb#702
   def org_memberships(options = T.unsafe(nil)); end
 
   # Check if a user is a public member of an organization.
@@ -4481,7 +4481,7 @@ module Octokit::Client::Organizations
   # @return [Boolean] Is a public member?
   # @see https://developer.github.com/v3/orgs/members/#check-public-membership
   #
-  # source://octokit//lib/octokit/client/organizations.rb#224
+  # source://octokit//lib/octokit/client/organizations.rb#227
   def org_public_member?(org, user, options = T.unsafe(nil)); end
 
   # Get organization public members
@@ -4496,7 +4496,7 @@ module Octokit::Client::Organizations
   # @return [Array<Sawyer::Resource>] Array of hashes representing users.
   # @see https://developer.github.com/v3/orgs/members/#public-members-list
   #
-  # source://octokit//lib/octokit/client/organizations.rb#178
+  # source://octokit//lib/octokit/client/organizations.rb#181
   def org_public_members(org, options = T.unsafe(nil)); end
 
   # List organization repositories
@@ -4519,7 +4519,7 @@ module Octokit::Client::Organizations
   # @return [Array<Sawyer::Resource>] List of repositories
   # @see https://developer.github.com/v3/repos/#list-organization-repositories
   #
-  # source://octokit//lib/octokit/client/organizations.rb#141
+  # source://octokit//lib/octokit/client/organizations.rb#145
   def org_repos(org, options = T.unsafe(nil)); end
 
   # List organization repositories
@@ -4542,7 +4542,7 @@ module Octokit::Client::Organizations
   # @return [Array<Sawyer::Resource>] List of repositories
   # @see https://developer.github.com/v3/repos/#list-organization-repositories
   #
-  # source://octokit//lib/octokit/client/organizations.rb#141
+  # source://octokit//lib/octokit/client/organizations.rb#144
   def org_repositories(org, options = T.unsafe(nil)); end
 
   # List teams
@@ -4557,7 +4557,7 @@ module Octokit::Client::Organizations
   # @return [Array<Sawyer::Resource>] Array of hashes representing teams.
   # @see https://developer.github.com/v3/orgs/teams/#list-teams
   #
-  # source://octokit//lib/octokit/client/organizations.rb#299
+  # source://octokit//lib/octokit/client/organizations.rb#302
   def org_teams(org, options = T.unsafe(nil)); end
 
   # Get an organization
@@ -4790,7 +4790,7 @@ module Octokit::Client::Organizations
   # @see https://developer.github.com/v3/orgs/#list-your-organizations
   # @see https://developer.github.com/v3/orgs/#list-user-organizations
   #
-  # source://octokit//lib/octokit/client/organizations.rb#97
+  # source://octokit//lib/octokit/client/organizations.rb#102
   def orgs(user = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # List outside collaborators for an organization
@@ -4833,7 +4833,7 @@ module Octokit::Client::Organizations
   # @return [Boolean] True if removal is successful, false otherwise.
   # @see https://developer.github.com/v3/orgs/members/#remove-a-member
   #
-  # source://octokit//lib/octokit/client/organizations.rb#607
+  # source://octokit//lib/octokit/client/organizations.rb#612
   def remove_org_member(org, user, options = T.unsafe(nil)); end
 
   # Remove an organization membership
@@ -4842,7 +4842,7 @@ module Octokit::Client::Organizations
   # @return [Boolean] Success
   # @see https://developer.github.com/v3/orgs/members/#remove-organization-membership
   #
-  # source://octokit//lib/octokit/client/organizations.rb#747
+  # source://octokit//lib/octokit/client/organizations.rb#752
   def remove_org_membership(org, options = T.unsafe(nil)); end
 
   # Remove organization member
@@ -4927,7 +4927,7 @@ module Octokit::Client::Organizations
   # @see Octokit::Repository
   # @see https://developer.github.com/v3/orgs/teams/#remove-team-repository
   #
-  # source://octokit//lib/octokit/client/organizations.rb#590
+  # source://octokit//lib/octokit/client/organizations.rb#593
   def remove_team_repo(team_id, repo, _options = T.unsafe(nil)); end
 
   # Remove team repository
@@ -5079,7 +5079,7 @@ module Octokit::Client::Organizations
   #   the team information.
   # @see https://developer.github.com/v3/orgs/teams/#check-if-a-team-manages-a-repository
   #
-  # source://octokit//lib/octokit/client/organizations.rb#541
+  # source://octokit//lib/octokit/client/organizations.rb#544
   def team_repo?(team_id, repo, _options = T.unsafe(nil)); end
 
   # List team repositories
@@ -5094,7 +5094,7 @@ module Octokit::Client::Organizations
   # @return [Array<Sawyer::Resource>] Array of hashes representing repositories.
   # @see https://developer.github.com/v3/orgs/teams/#list-team-repos
   #
-  # source://octokit//lib/octokit/client/organizations.rb#524
+  # source://octokit//lib/octokit/client/organizations.rb#527
   def team_repos(team_id, options = T.unsafe(nil)); end
 
   # List team repositories
@@ -5182,7 +5182,7 @@ module Octokit::Client::Organizations
   # @return [Sawyer::Resource] Hash representing GitHub organization.
   # @see https://developer.github.com/v3/orgs/#edit-an-organization
   #
-  # source://octokit//lib/octokit/client/organizations.rb#48
+  # source://octokit//lib/octokit/client/organizations.rb#51
   def update_org(org, values, options = T.unsafe(nil)); end
 
   # Edit an organization membership
@@ -5196,7 +5196,7 @@ module Octokit::Client::Organizations
   # @see https://developer.github.com/v3/orgs/members/#edit-your-organization-membership
   # @see https://developer.github.com/v3/orgs/members/#add-or-update-organization-membership
   #
-  # source://octokit//lib/octokit/client/organizations.rb#730
+  # source://octokit//lib/octokit/client/organizations.rb#740
   def update_org_membership(org, options = T.unsafe(nil)); end
 
   # Update an organization.
@@ -5292,7 +5292,7 @@ module Octokit::Client::Pages
   # @return [Array<Sawyer::Resource>] A list of build history for a repository.
   # @see https://developer.github.com/v3/repos/pages/#list-pages-builds
   #
-  # source://octokit//lib/octokit/client/pages.rb#35
+  # source://octokit//lib/octokit/client/pages.rb#38
   def list_pages_builds(repo, options = T.unsafe(nil)); end
 
   # List Pages information for a repository
@@ -5389,7 +5389,7 @@ module Octokit::Client::Projects
   # @return [Sawyer::Resource] Organization project
   # @see https://developer.github.com/v3/projects/#create-an-organization-project
   #
-  # source://octokit//lib/octokit/client/projects.rb#68
+  # source://octokit//lib/octokit/client/projects.rb#72
   def create_organization_project(org, name, options = T.unsafe(nil)); end
 
   # Create a project
@@ -5544,7 +5544,7 @@ module Octokit::Client::Projects
   # @return [Array<Sawyer::Resource>] Organization projects
   # @see https://developer.github.com/v3/projects/#list-organization-projects
   #
-  # source://octokit//lib/octokit/client/projects.rb#50
+  # source://octokit//lib/octokit/client/projects.rb#53
   def organization_projects(org, options = T.unsafe(nil)); end
 
   # Get a project by id
@@ -5754,7 +5754,7 @@ module Octokit::Client::PullRequests
   # @return [Sawyer::Resource] Hash representing the new comment
   # @see https://developer.github.com/v3/pulls/comments/#create-a-comment
   #
-  # source://octokit//lib/octokit/client/pull_requests.rb#207
+  # source://octokit//lib/octokit/client/pull_requests.rb#217
   def create_pull_comment(repo, pull_id, body, commit_id, path, position, options = T.unsafe(nil)); end
 
   # Create reply to a pull request comment
@@ -5768,7 +5768,7 @@ module Octokit::Client::PullRequests
   # @return [Sawyer::Resource] Hash representing new comment
   # @see https://developer.github.com/v3/pulls/comments/#create-a-comment
   #
-  # source://octokit//lib/octokit/client/pull_requests.rb#230
+  # source://octokit//lib/octokit/client/pull_requests.rb#237
   def create_pull_reply(repo, pull_id, body, comment_id, options = T.unsafe(nil)); end
 
   # Create a pull request
@@ -5848,7 +5848,7 @@ module Octokit::Client::PullRequests
   # @return [Sawyer::Resource] Hash representing new comment
   # @see https://developer.github.com/v3/pulls/comments/#create-a-comment
   #
-  # source://octokit//lib/octokit/client/pull_requests.rb#230
+  # source://octokit//lib/octokit/client/pull_requests.rb#238
   def create_review_reply(repo, pull_id, body, comment_id, options = T.unsafe(nil)); end
 
   # Create a pull request comment
@@ -5866,7 +5866,7 @@ module Octokit::Client::PullRequests
   # @return [Sawyer::Resource] Hash representing the new comment
   # @see https://developer.github.com/v3/pulls/comments/#create-a-comment
   #
-  # source://octokit//lib/octokit/client/pull_requests.rb#207
+  # source://octokit//lib/octokit/client/pull_requests.rb#218
   def create_view_comment(repo, pull_id, body, commit_id, path, position, options = T.unsafe(nil)); end
 
   # Delete pull request comment
@@ -5878,7 +5878,7 @@ module Octokit::Client::PullRequests
   # @return [Boolean] True if deleted, false otherwise
   # @see https://developer.github.com/v3/pulls/comments/#delete-a-comment
   #
-  # source://octokit//lib/octokit/client/pull_requests.rb#264
+  # source://octokit//lib/octokit/client/pull_requests.rb#267
   def delete_pull_comment(repo, comment_id, options = T.unsafe(nil)); end
 
   # Delete pull request comment
@@ -5902,7 +5902,7 @@ module Octokit::Client::PullRequests
   # @return [Boolean] True if deleted, false otherwise
   # @see https://developer.github.com/v3/pulls/comments/#delete-a-comment
   #
-  # source://octokit//lib/octokit/client/pull_requests.rb#264
+  # source://octokit//lib/octokit/client/pull_requests.rb#268
   def delete_review_comment(repo, comment_id, options = T.unsafe(nil)); end
 
   # Merge a pull request
@@ -5925,7 +5925,7 @@ module Octokit::Client::PullRequests
   # @return [Sawyer::Resource] Pull request info
   # @see https://developer.github.com/v3/pulls/#get-a-single-pull-request
   #
-  # source://octokit//lib/octokit/client/pull_requests.rb#32
+  # source://octokit//lib/octokit/client/pull_requests.rb#35
   def pull(repo, number, options = T.unsafe(nil)); end
 
   # Get a pull request comment
@@ -5937,7 +5937,7 @@ module Octokit::Client::PullRequests
   # @return [Sawyer::Resource] Hash representing the comment
   # @see https://developer.github.com/v3/pulls/comments/#get-a-single-comment
   #
-  # source://octokit//lib/octokit/client/pull_requests.rb#187
+  # source://octokit//lib/octokit/client/pull_requests.rb#190
   def pull_comment(repo, comment_id, options = T.unsafe(nil)); end
 
   # List comments on a pull request
@@ -5947,7 +5947,7 @@ module Octokit::Client::PullRequests
   # @return [Array<Sawyer::Resource>] List of comments
   # @see https://developer.github.com/v3/pulls/comments/#list-comments-on-a-pull-request
   #
-  # source://octokit//lib/octokit/client/pull_requests.rb#172
+  # source://octokit//lib/octokit/client/pull_requests.rb#176
   def pull_comments(repo, number, options = T.unsafe(nil)); end
 
   # List commits on a pull request
@@ -5957,7 +5957,7 @@ module Octokit::Client::PullRequests
   # @return [Array<Sawyer::Resource>] List of commits
   # @see https://developer.github.com/v3/pulls/#list-commits-on-a-pull-request
   #
-  # source://octokit//lib/octokit/client/pull_requests.rb#130
+  # source://octokit//lib/octokit/client/pull_requests.rb#133
   def pull_commits(repo, number, options = T.unsafe(nil)); end
 
   # List files on a pull request
@@ -5967,7 +5967,7 @@ module Octokit::Client::PullRequests
   # @return [Array<Sawyer::Resource>] List of files
   # @see https://developer.github.com/v3/pulls/#list-pull-requests-files
   #
-  # source://octokit//lib/octokit/client/pull_requests.rb#276
+  # source://octokit//lib/octokit/client/pull_requests.rb#279
   def pull_files(repo, number, options = T.unsafe(nil)); end
 
   # Check pull request merge status
@@ -6041,7 +6041,7 @@ module Octokit::Client::PullRequests
   # @return [Boolean] True if the pull request has been merged
   # @see https://developer.github.com/v3/pulls/#get-if-a-pull-request-has-been-merged
   #
-  # source://octokit//lib/octokit/client/pull_requests.rb#309
+  # source://octokit//lib/octokit/client/pull_requests.rb#312
   def pull_request_merged?(repo, number, options = T.unsafe(nil)); end
 
   # List pull requests for a repository
@@ -6086,7 +6086,7 @@ module Octokit::Client::PullRequests
   # @return [Array<Sawyer::Resource>] Array of pulls
   # @see https://developer.github.com/v3/pulls/#list-pull-requests
   #
-  # source://octokit//lib/octokit/client/pull_requests.rb#19
+  # source://octokit//lib/octokit/client/pull_requests.rb#22
   def pulls(repo, options = T.unsafe(nil)); end
 
   # List pull request comments for a repository
@@ -6109,7 +6109,7 @@ module Octokit::Client::PullRequests
   # @return [Array] List of pull request review comments.
   # @see https://developer.github.com/v3/pulls/comments/#list-comments-in-a-repository
   #
-  # source://octokit//lib/octokit/client/pull_requests.rb#160
+  # source://octokit//lib/octokit/client/pull_requests.rb#163
   def pulls_comments(repo, options = T.unsafe(nil)); end
 
   # Get a pull request comment
@@ -6121,7 +6121,7 @@ module Octokit::Client::PullRequests
   # @return [Sawyer::Resource] Hash representing the comment
   # @see https://developer.github.com/v3/pulls/comments/#get-a-single-comment
   #
-  # source://octokit//lib/octokit/client/pull_requests.rb#187
+  # source://octokit//lib/octokit/client/pull_requests.rb#191
   def review_comment(repo, comment_id, options = T.unsafe(nil)); end
 
   # List comments on a pull request
@@ -6131,7 +6131,7 @@ module Octokit::Client::PullRequests
   # @return [Array<Sawyer::Resource>] List of comments
   # @see https://developer.github.com/v3/pulls/comments/#list-comments-on-a-pull-request
   #
-  # source://octokit//lib/octokit/client/pull_requests.rb#172
+  # source://octokit//lib/octokit/client/pull_requests.rb#177
   def review_comments(repo, number, options = T.unsafe(nil)); end
 
   # List pull request comments for a repository
@@ -6154,7 +6154,7 @@ module Octokit::Client::PullRequests
   # @return [Array] List of pull request review comments.
   # @see https://developer.github.com/v3/pulls/comments/#list-comments-in-a-repository
   #
-  # source://octokit//lib/octokit/client/pull_requests.rb#160
+  # source://octokit//lib/octokit/client/pull_requests.rb#164
   def reviews_comments(repo, options = T.unsafe(nil)); end
 
   # Update pull request comment
@@ -6167,7 +6167,7 @@ module Octokit::Client::PullRequests
   # @return [Sawyer::Resource] Hash representing the updated comment
   # @see https://developer.github.com/v3/pulls/comments/#edit-a-comment
   #
-  # source://octokit//lib/octokit/client/pull_requests.rb#249
+  # source://octokit//lib/octokit/client/pull_requests.rb#253
   def update_pull_comment(repo, comment_id, body, options = T.unsafe(nil)); end
 
   # Update a pull request
@@ -6220,7 +6220,7 @@ module Octokit::Client::PullRequests
   # @return [Sawyer::Resource] Hash representing the updated comment
   # @see https://developer.github.com/v3/pulls/comments/#edit-a-comment
   #
-  # source://octokit//lib/octokit/client/pull_requests.rb#249
+  # source://octokit//lib/octokit/client/pull_requests.rb#254
   def update_review_comment(repo, comment_id, body, options = T.unsafe(nil)); end
 end
 
@@ -6269,7 +6269,7 @@ module Octokit::Client::RateLimit
   # @return [Octokit::RateLimit] Rate limit info
   # @see https://developer.github.com/v3/rate_limit/#rate-limit
   #
-  # source://octokit//lib/octokit/client/rate_limit.rb#14
+  # source://octokit//lib/octokit/client/rate_limit.rb#19
   def ratelimit(_options = T.unsafe(nil)); end
 
   # Refresh rate limit info by making a new request
@@ -6277,7 +6277,7 @@ module Octokit::Client::RateLimit
   # @return [Octokit::RateLimit] Rate limit info
   # @see https://developer.github.com/v3/rate_limit/#rate-limit
   #
-  # source://octokit//lib/octokit/client/rate_limit.rb#35
+  # source://octokit//lib/octokit/client/rate_limit.rb#39
   def ratelimit!(_options = T.unsafe(nil)); end
 
   # Get number of rate limted requests remaining
@@ -6285,7 +6285,7 @@ module Octokit::Client::RateLimit
   # @return [Integer] Number of requests remaining in this period
   # @see https://developer.github.com/v3/rate_limit/#rate-limit
   #
-  # source://octokit//lib/octokit/client/rate_limit.rb#25
+  # source://octokit//lib/octokit/client/rate_limit.rb#29
   def ratelimit_remaining(_options = T.unsafe(nil)); end
 
   # Refresh rate limit info and get number of rate limted requests remaining
@@ -6293,7 +6293,7 @@ module Octokit::Client::RateLimit
   # @return [Integer] Number of requests remaining in this period
   # @see https://developer.github.com/v3/rate_limit/#rate-limit
   #
-  # source://octokit//lib/octokit/client/rate_limit.rb#45
+  # source://octokit//lib/octokit/client/rate_limit.rb#49
   def ratelimit_remaining!(_options = T.unsafe(nil)); end
 end
 
@@ -6450,7 +6450,7 @@ module Octokit::Client::Refs
   # @return [Array<Sawyer::Resource>] The list of references, already containing the new one
   # @see https://developer.github.com/v3/git/refs/#create-a-reference
   #
-  # source://octokit//lib/octokit/client/refs.rb#60
+  # source://octokit//lib/octokit/client/refs.rb#68
   def create_reference(repo, ref, sha, options = T.unsafe(nil)); end
 
   # Delete a single branch
@@ -6486,7 +6486,7 @@ module Octokit::Client::Refs
   # @return [Boolean] Success
   # @see https://developer.github.com/v3/git/refs/#delete-a-reference
   #
-  # source://octokit//lib/octokit/client/refs.rb#125
+  # source://octokit//lib/octokit/client/refs.rb#128
   def delete_reference(repo, ref, options = T.unsafe(nil)); end
 
   # List all refs for a given user and repo
@@ -6498,7 +6498,7 @@ module Octokit::Client::Refs
   # @return [Array<Sawyer::Resource>] A list of references matching the repo and the namespace
   # @see https://developer.github.com/v3/git/refs/#get-all-references
   #
-  # source://octokit//lib/octokit/client/refs.rb#17
+  # source://octokit//lib/octokit/client/refs.rb#24
   def list_references(repo, namespace = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # List all refs for a given user and repo
@@ -6510,7 +6510,7 @@ module Octokit::Client::Refs
   # @return [Array<Sawyer::Resource>] A list of references matching the repo and the namespace
   # @see https://developer.github.com/v3/git/refs/#get-all-references
   #
-  # source://octokit//lib/octokit/client/refs.rb#17
+  # source://octokit//lib/octokit/client/refs.rb#22
   def list_refs(repo, namespace = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Fetch matching refs
@@ -6546,7 +6546,7 @@ module Octokit::Client::Refs
   # @return [Sawyer::Resource] The reference matching the given repo and the ref id
   # @see https://developer.github.com/v3/git/refs/#get-a-reference
   #
-  # source://octokit//lib/octokit/client/refs.rb#46
+  # source://octokit//lib/octokit/client/refs.rb#49
   def reference(repo, ref, options = T.unsafe(nil)); end
 
   # List all refs for a given user and repo
@@ -6558,7 +6558,7 @@ module Octokit::Client::Refs
   # @return [Array<Sawyer::Resource>] A list of references matching the repo and the namespace
   # @see https://developer.github.com/v3/git/refs/#get-all-references
   #
-  # source://octokit//lib/octokit/client/refs.rb#17
+  # source://octokit//lib/octokit/client/refs.rb#23
   def references(repo, namespace = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # List all refs for a given user and repo
@@ -6614,7 +6614,7 @@ module Octokit::Client::Refs
   # @return [Array<Sawyer::Resource>] The list of references updated
   # @see https://developer.github.com/v3/git/refs/#update-a-reference
   #
-  # source://octokit//lib/octokit/client/refs.rb#80
+  # source://octokit//lib/octokit/client/refs.rb#87
   def update_reference(repo, ref, sha, force = T.unsafe(nil), options = T.unsafe(nil)); end
 end
 
@@ -6671,7 +6671,7 @@ module Octokit::Client::Releases
   # @return [Sawyer::Resource] The release
   # @see https://developer.github.com/v3/repos/releases/#edit-a-release
   #
-  # source://octokit//lib/octokit/client/releases.rb#55
+  # source://octokit//lib/octokit/client/releases.rb#58
   def edit_release(url, options = T.unsafe(nil)); end
 
   # Update a release asset
@@ -6683,7 +6683,7 @@ module Octokit::Client::Releases
   # @return [Sawyer::Resource] The release asset
   # @see https://developer.github.com/v3/repos/releases/#edit-a-release-asset
   #
-  # source://octokit//lib/octokit/client/releases.rb#118
+  # source://octokit//lib/octokit/client/releases.rb#121
   def edit_release_asset(asset_url, options = T.unsafe(nil)); end
 
   # Get the latest release
@@ -6701,7 +6701,7 @@ module Octokit::Client::Releases
   # @return [Array<Sawyer::Resource>] A list of releases
   # @see https://developer.github.com/v3/repos/releases/#list-releases-for-a-repository
   #
-  # source://octokit//lib/octokit/client/releases.rb#14
+  # source://octokit//lib/octokit/client/releases.rb#17
   def list_releases(repo, options = T.unsafe(nil)); end
 
   # Get a release
@@ -6822,7 +6822,7 @@ module Octokit::Client::Repositories
   # @return [Boolean] True if collaborator added, false otherwise.
   # @see https://developer.github.com/v3/repos/collaborators/#add-user-as-a-collaborator
   #
-  # source://octokit//lib/octokit/client/repositories.rb#345
+  # source://octokit//lib/octokit/client/repositories.rb#348
   def add_collab(repo, collaborator, options = T.unsafe(nil)); end
 
   # Add collaborator to repo
@@ -6976,7 +6976,7 @@ module Octokit::Client::Repositories
   # @return [Array<Sawyer::Resource>] Array of hashes representing collaborating users.
   # @see https://developer.github.com/v3/repos/collaborators/#list-collaborators
   #
-  # source://octokit//lib/octokit/client/repositories.rb#320
+  # source://octokit//lib/octokit/client/repositories.rb#323
   def collabs(repo, options = T.unsafe(nil)); end
 
   # List contributors to a repo
@@ -6994,7 +6994,7 @@ module Octokit::Client::Repositories
   # @return [Array<Sawyer::Resource>] Array of hashes representing users.
   # @see https://developer.github.com/v3/repos/#list-contributors
   #
-  # source://octokit//lib/octokit/client/repositories.rb#457
+  # source://octokit//lib/octokit/client/repositories.rb#461
   def contribs(repo, anon = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # List contributors to a repo
@@ -7033,7 +7033,7 @@ module Octokit::Client::Repositories
   # @return [Sawyer::Resource] Repository info for the new repository
   # @see https://developer.github.com/v3/repos/#create
   #
-  # source://octokit//lib/octokit/client/repositories.rb#154
+  # source://octokit//lib/octokit/client/repositories.rb#166
   def create(name, options = T.unsafe(nil)); end
 
   # Create a repository for a user or organization
@@ -7054,7 +7054,7 @@ module Octokit::Client::Repositories
   # @return [Sawyer::Resource] Repository info for the new repository
   # @see https://developer.github.com/v3/repos/#create
   #
-  # source://octokit//lib/octokit/client/repositories.rb#154
+  # source://octokit//lib/octokit/client/repositories.rb#165
   def create_repo(name, options = T.unsafe(nil)); end
 
   # Create a repository for a user or organization generated from a template repository
@@ -7068,7 +7068,7 @@ module Octokit::Client::Repositories
   # @param options [Hash] a customizable set of options
   # @return [Sawyer::Resource] Repository info for the new repository
   #
-  # source://octokit//lib/octokit/client/repositories.rb#203
+  # source://octokit//lib/octokit/client/repositories.rb#207
   def create_repo_from_template(repo, name, options = T.unsafe(nil)); end
 
   # Create a repository for a user or organization
@@ -7114,7 +7114,7 @@ module Octokit::Client::Repositories
   # @return [Boolean] `true` if repository was deleted
   # @see https://developer.github.com/v3/repos/#delete-a-repository
   #
-  # source://octokit//lib/octokit/client/repositories.rb#175
+  # source://octokit//lib/octokit/client/repositories.rb#178
   def delete_repo(repo, options = T.unsafe(nil)); end
 
   # Delete repository
@@ -7206,7 +7206,7 @@ module Octokit::Client::Repositories
   # @return [Sawyer::Resource] Repository information
   # @see https://developer.github.com/v3/repos/#update-a-repository
   #
-  # source://octokit//lib/octokit/client/repositories.rb#46
+  # source://octokit//lib/octokit/client/repositories.rb#51
   def edit(repo, options = T.unsafe(nil)); end
 
   # Edit a deploy key
@@ -7296,7 +7296,7 @@ module Octokit::Client::Repositories
   # @return [Sawyer::Resource] The branch requested, if it exists
   # @see https://developer.github.com/v3/repos/#get-branch
   #
-  # source://octokit//lib/octokit/client/repositories.rb#566
+  # source://octokit//lib/octokit/client/repositories.rb#569
   def get_branch(repo, branch, options = T.unsafe(nil)); end
 
   # List languages of code in the repo.
@@ -7326,7 +7326,7 @@ module Octokit::Client::Repositories
   # @return [Array<Sawyer::Resource>] Array of hashes representing deploy keys.
   # @see https://developer.github.com/v3/repos/keys/#list-deploy-keys
   #
-  # source://octokit//lib/octokit/client/repositories.rb#238
+  # source://octokit//lib/octokit/client/repositories.rb#241
   def list_deploy_keys(repo, options = T.unsafe(nil)); end
 
   # List user repositories
@@ -7344,7 +7344,7 @@ module Octokit::Client::Repositories
   # @see https://developer.github.com/v3/repos/#list-your-repositories
   # @see https://developer.github.com/v3/repos/#list-user-repositories
   #
-  # source://octokit//lib/octokit/client/repositories.rb#69
+  # source://octokit//lib/octokit/client/repositories.rb#73
   def list_repos(user = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # List user repositories
@@ -7362,7 +7362,7 @@ module Octokit::Client::Repositories
   # @see https://developer.github.com/v3/repos/#list-your-repositories
   # @see https://developer.github.com/v3/repos/#list-user-repositories
   #
-  # source://octokit//lib/octokit/client/repositories.rb#69
+  # source://octokit//lib/octokit/client/repositories.rb#72
   def list_repositories(user = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # List forks
@@ -7379,7 +7379,7 @@ module Octokit::Client::Repositories
   # @return [Array<Sawyer::Resource>] Array of hashes representing repos.
   # @see https://developer.github.com/v3/repos/forks/#list-forks
   #
-  # source://octokit//lib/octokit/client/repositories.rb#508
+  # source://octokit//lib/octokit/client/repositories.rb#511
   def network(repo, options = T.unsafe(nil)); end
 
   # Get a user's permission level for a repo.
@@ -7424,7 +7424,7 @@ module Octokit::Client::Repositories
   # @return [Boolean] True if collaborator removed, false otherwise.
   # @see https://developer.github.com/v3/repos/collaborators/#remove-user-as-a-collaborator
   #
-  # source://octokit//lib/octokit/client/repositories.rb#362
+  # source://octokit//lib/octokit/client/repositories.rb#365
   def remove_collab(repo, collaborator, options = T.unsafe(nil)); end
 
   # Remove collaborator from repo.
@@ -7495,7 +7495,7 @@ module Octokit::Client::Repositories
   # @see https://developer.github.com/v3/repos/#get
   # @see https://developer.github.com/v3/licenses/#get-a-repositorys-license
   #
-  # source://octokit//lib/octokit/client/repositories.rb#26
+  # source://octokit//lib/octokit/client/repositories.rb#29
   def repo(repo, options = T.unsafe(nil)); end
 
   # List users available for assigning to issues.
@@ -7512,7 +7512,7 @@ module Octokit::Client::Repositories
   # @return [Array<Sawyer::Resource>] Array of hashes representing users.
   # @see https://developer.github.com/v3/issues/assignees/#list-assignees
   #
-  # source://octokit//lib/octokit/client/repositories.rb#657
+  # source://octokit//lib/octokit/client/repositories.rb#660
   def repo_assignees(repo, options = T.unsafe(nil)); end
 
   # List teams for a repo
@@ -7529,7 +7529,7 @@ module Octokit::Client::Repositories
   # @return [Array<Sawyer::Resource>] Array of hashes representing teams.
   # @see https://developer.github.com/v3/repos/#list-teams
   #
-  # source://octokit//lib/octokit/client/repositories.rb#406
+  # source://octokit//lib/octokit/client/repositories.rb#409
   def repo_teams(repo, options = T.unsafe(nil)); end
 
   # List user repositories
@@ -7547,7 +7547,7 @@ module Octokit::Client::Repositories
   # @see https://developer.github.com/v3/repos/#list-your-repositories
   # @see https://developer.github.com/v3/repos/#list-user-repositories
   #
-  # source://octokit//lib/octokit/client/repositories.rb#69
+  # source://octokit//lib/octokit/client/repositories.rb#74
   def repos(user = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # List user repositories
@@ -7712,7 +7712,7 @@ module Octokit::Client::Repositories
   # @return [Array<Sawyer::Resource>] Array of hashes representing teams.
   # @see https://developer.github.com/v3/repos/#list-teams
   #
-  # source://octokit//lib/octokit/client/repositories.rb#406
+  # source://octokit//lib/octokit/client/repositories.rb#410
   def teams(repo, options = T.unsafe(nil)); end
 
   # List all topics for a repository
@@ -7740,7 +7740,7 @@ module Octokit::Client::Repositories
   # @return [Sawyer::Resource] Repository info for the transferred repository
   # @see https://developer.github.com/v3/repos/#transfer-a-repository
   #
-  # source://octokit//lib/octokit/client/repositories.rb#189
+  # source://octokit//lib/octokit/client/repositories.rb#192
   def transfer_repo(repo, new_owner, options = T.unsafe(nil)); end
 
   # Transfer repository
@@ -7805,7 +7805,7 @@ module Octokit::Client::Repositories
   # @return [Sawyer::Resource] Repository information
   # @see https://developer.github.com/v3/repos/#update-a-repository
   #
-  # source://octokit//lib/octokit/client/repositories.rb#46
+  # source://octokit//lib/octokit/client/repositories.rb#53
   def update(repo, options = T.unsafe(nil)); end
 
   # Edit a deploy key
@@ -7826,7 +7826,7 @@ module Octokit::Client::Repositories
   # @see https://developer.github.com/changes/2014-02-24-finer-grained-scopes-for-ssh-keys/
   # @see https://developer.github.com/v3/repos/keys/#edit-a-deploy-key
   #
-  # source://octokit//lib/octokit/client/repositories.rb#285
+  # source://octokit//lib/octokit/client/repositories.rb#288
   def update_deploy_key(repo, id, options); end
 
   # Edit a repository
@@ -7845,7 +7845,7 @@ module Octokit::Client::Repositories
   # @return [Sawyer::Resource] Repository information
   # @see https://developer.github.com/v3/repos/#update-a-repository
   #
-  # source://octokit//lib/octokit/client/repositories.rb#46
+  # source://octokit//lib/octokit/client/repositories.rb#52
   def update_repository(repo, options = T.unsafe(nil)); end
 
   # Update repository subscription
@@ -7916,7 +7916,7 @@ module Octokit::Client::RepositoryInvitations
   # @return [Boolean] True if the acceptance of the invitation was successful
   # @see https://developer.github.com/v3/repos/invitations/#accept-a-repository-invitation
   #
-  # source://octokit//lib/octokit/client/repository_invitations.rb#78
+  # source://octokit//lib/octokit/client/repository_invitations.rb#81
   def accept_repo_invitation(invitation_id, options = T.unsafe(nil)); end
 
   # Accept a repository invitation
@@ -7938,7 +7938,7 @@ module Octokit::Client::RepositoryInvitations
   # @return [Boolean] True if the acceptance of the invitation was successful
   # @see https://developer.github.com/v3/repos/invitations/#decline-a-repository-invitation
   #
-  # source://octokit//lib/octokit/client/repository_invitations.rb#90
+  # source://octokit//lib/octokit/client/repository_invitations.rb#93
   def decline_invitation(invitation_id, options = T.unsafe(nil)); end
 
   # Decline a repository invitation
@@ -7961,7 +7961,7 @@ module Octokit::Client::RepositoryInvitations
   # @return [Boolean] True if the invitation was successfully deleted
   # @see https://developer.github.com/v3/repos/invitations/#delete-a-repository-invitation
   #
-  # source://octokit//lib/octokit/client/repository_invitations.rb#42
+  # source://octokit//lib/octokit/client/repository_invitations.rb#45
   def delete_repo_invitation(repo, invitation_id, options = T.unsafe(nil)); end
 
   # Delete an invitation for a repository
@@ -7985,7 +7985,7 @@ module Octokit::Client::RepositoryInvitations
   # @return [Sawyer::Resource] The repository invitation
   # @see https://developer.github.com/v3/repos/collaborators/#add-user-as-a-collaborator
   #
-  # source://octokit//lib/octokit/client/repository_invitations.rb#17
+  # source://octokit//lib/octokit/client/repository_invitations.rb#20
   def invite_user_to_repo(repo, user, options = T.unsafe(nil)); end
 
   # Invite a user to a repository
@@ -8008,7 +8008,7 @@ module Octokit::Client::RepositoryInvitations
   # @return [Array<Sawyer::Resource>] A list of invitations
   # @see https://developer.github.com/v3/repos/invitations/#list-invitations-for-a-repository
   #
-  # source://octokit//lib/octokit/client/repository_invitations.rb#29
+  # source://octokit//lib/octokit/client/repository_invitations.rb#32
   def repo_invitations(repo, options = T.unsafe(nil)); end
 
   # List all invitations for a repository
@@ -8031,7 +8031,7 @@ module Octokit::Client::RepositoryInvitations
   # @return [Sawyer::Resource] The updated repository invitation
   # @see https://developer.github.com/v3/repos/invitations/#update-a-repository-invitation
   #
-  # source://octokit//lib/octokit/client/repository_invitations.rb#55
+  # source://octokit//lib/octokit/client/repository_invitations.rb#58
   def update_repo_invitation(repo, invitation_id, options = T.unsafe(nil)); end
 
   # Update an invitation for a repository
@@ -8053,7 +8053,7 @@ module Octokit::Client::RepositoryInvitations
   # @return [Array<Sawyer::Resource>] The users repository invitations
   # @see https://developer.github.com/v3/repos/invitations/#list-a-users-repository-invitations
   #
-  # source://octokit//lib/octokit/client/repository_invitations.rb#66
+  # source://octokit//lib/octokit/client/repository_invitations.rb#69
   def user_repo_invitations(options = T.unsafe(nil)); end
 
   # List all repository invitations for the user
@@ -8250,7 +8250,7 @@ module Octokit::Client::Say
   #
   # @return [String]
   #
-  # source://octokit//lib/octokit/client/say.rb#11
+  # source://octokit//lib/octokit/client/say.rb#15
   def octocat(text = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Return a nifty ASCII Octocat with GitHub wisdom
@@ -8322,7 +8322,7 @@ module Octokit::Client::Search
   # @return [Sawyer::Resource] Search results object
   # @see https://developer.github.com/v3/search/#search-repositories
   #
-  # source://octokit//lib/octokit/client/search.rb#62
+  # source://octokit//lib/octokit/client/search.rb#65
   def search_repos(query, options = T.unsafe(nil)); end
 
   # Search repositories
@@ -8597,7 +8597,7 @@ module Octokit::Client::Stats
   # @return [Array<Sawyer::Resource>] Array of contributor stats
   # @see https://developer.github.com/v3/repos/statistics/#get-contributors-list-with-additions-deletions-and-commit-counts
   #
-  # source://octokit//lib/octokit/client/stats.rb#18
+  # source://octokit//lib/octokit/client/stats.rb#21
   def contributor_stats(repo, options = T.unsafe(nil)); end
 
   # Get contributors list with additions, deletions, and commit counts
@@ -8646,7 +8646,7 @@ module Octokit::Client::Stats
   #   number of commits
   # @see https://developer.github.com/v3/repos/statistics/#get-the-number-of-commits-per-hour-in-each-day
   #
-  # source://octokit//lib/octokit/client/stats.rb#77
+  # source://octokit//lib/octokit/client/stats.rb#80
   def punch_card(repo, options = T.unsafe(nil)); end
 
   # Get the number of commits per hour in each day
@@ -8715,7 +8715,7 @@ module Octokit::Client::Statuses
   # @return [Array<Sawyer::Resource>] A list of statuses
   # @see https://developer.github.com/v3/repos/statuses/#list-statuses-for-a-specific-ref
   #
-  # source://octokit//lib/octokit/client/statuses.rb#15
+  # source://octokit//lib/octokit/client/statuses.rb#18
   def list_statuses(repo, sha, options = T.unsafe(nil)); end
 
   # Get the combined status for a ref
@@ -8725,7 +8725,7 @@ module Octokit::Client::Statuses
   # @return [Sawyer::Resource] The combined status for the commit
   # @see https://developer.github.com/v3/repos/statuses/#get-the-combined-status-for-a-specific-ref
   #
-  # source://octokit//lib/octokit/client/statuses.rb#26
+  # source://octokit//lib/octokit/client/statuses.rb#29
   def status(repo, ref, options = T.unsafe(nil)); end
 
   # List all statuses for a given commit
@@ -9217,7 +9217,7 @@ module Octokit::Client::Users
   # @return [Array<Sawyer::Resource>] Array of repositories.
   # @see https://developer.github.com/v3/activity/watching/#list-repositories-being-watched
   #
-  # source://octokit//lib/octokit/client/users.rb#338
+  # source://octokit//lib/octokit/client/users.rb#341
   def watched(user = T.unsafe(nil), options = T.unsafe(nil)); end
 end
 
@@ -9438,7 +9438,7 @@ module Octokit::Configurable
 
   # Reset configuration options to default values
   #
-  # source://octokit//lib/octokit/configurable.rb#99
+  # source://octokit//lib/octokit/configurable.rb#111
   def setup; end
 
   # @return [String] SSL verify mode for ssl connections
@@ -9990,7 +9990,7 @@ module Octokit::EnterpriseAdminClient::SearchIndexing
   # @param user [String] A GitHub Enterprise user or organization
   # @return [Sawyer:Resource] Result of the queuing containing `:message`
   #
-  # source://octokit//lib/octokit/enterprise_admin_client/search_indexing.rb#13
+  # source://octokit//lib/octokit/enterprise_admin_client/search_indexing.rb#16
   def index_organization(user); end
 
   # Queue a user's or organization's repositories to be indexed
@@ -9998,7 +9998,7 @@ module Octokit::EnterpriseAdminClient::SearchIndexing
   # @param user [String] A GitHub Enterprise user or organization
   # @return [Sawyer:Resource] Result of the queuing containing `:message`
   #
-  # source://octokit//lib/octokit/enterprise_admin_client/search_indexing.rb#46
+  # source://octokit//lib/octokit/enterprise_admin_client/search_indexing.rb#49
   def index_organizations_repositories(user); end
 
   # Queue an index of all the code contained in all of a user's or
@@ -10007,7 +10007,7 @@ module Octokit::EnterpriseAdminClient::SearchIndexing
   # @param user [String] A GitHub Enterprise user or organization
   # @return [Sawyer:Resource] Result of the queuing containing `:message`
   #
-  # source://octokit//lib/octokit/enterprise_admin_client/search_indexing.rb#66
+  # source://octokit//lib/octokit/enterprise_admin_client/search_indexing.rb#69
   def index_organizations_repositories_code(user); end
 
   # Queue an index of all the issues across all of a user's or
@@ -10016,7 +10016,7 @@ module Octokit::EnterpriseAdminClient::SearchIndexing
   # @param user [String] A GitHub Enterprise user or organization
   # @return [Sawyer:Resource] Result of the queuing containing `:message`
   #
-  # source://octokit//lib/octokit/enterprise_admin_client/search_indexing.rb#56
+  # source://octokit//lib/octokit/enterprise_admin_client/search_indexing.rb#59
   def index_organizations_repositories_issues(user); end
 
   # Queue a Repository to be indexed
@@ -10283,7 +10283,7 @@ module Octokit::EnterpriseManagementConsoleClient::ManagementConsole
   #
   # @return [Sawyer::Resource] The installation information
   #
-  # source://octokit//lib/octokit/enterprise_management_console_client/management_console.rb#51
+  # source://octokit//lib/octokit/enterprise_management_console_client/management_console.rb#54
   def config_check; end
 
   # Get information about the Enterprise installation
@@ -10298,7 +10298,7 @@ module Octokit::EnterpriseManagementConsoleClient::ManagementConsole
   # @param key Either the file path to a key, a File handler to the key, or the contents of the key itself
   # @return [Sawyer::Resource] An array of authorized SSH keys
   #
-  # source://octokit//lib/octokit/enterprise_management_console_client/management_console.rb#130
+  # source://octokit//lib/octokit/enterprise_management_console_client/management_console.rb#149
   def delete_authorized_key(key); end
 
   # Start (or turn off) the Enterprise maintenance mode
@@ -10306,7 +10306,7 @@ module Octokit::EnterpriseManagementConsoleClient::ManagementConsole
   # @param maintenance [Hash] A hash configuration of the maintenance settings
   # @return [nil]
   #
-  # source://octokit//lib/octokit/enterprise_management_console_client/management_console.rb#87
+  # source://octokit//lib/octokit/enterprise_management_console_client/management_console.rb#92
   def edit_maintenance_status(maintenance); end
 
   # Modify the Enterprise settings
@@ -10321,21 +10321,21 @@ module Octokit::EnterpriseManagementConsoleClient::ManagementConsole
   #
   # @return [Sawyer::Resource] An array of authorized SSH keys
   #
-  # source://octokit//lib/octokit/enterprise_management_console_client/management_console.rb#97
+  # source://octokit//lib/octokit/enterprise_management_console_client/management_console.rb#100
   def get_authorized_keys; end
 
   # Get information about the Enterprise maintenance status
   #
   # @return [Sawyer::Resource] The maintenance status
   #
-  # source://octokit//lib/octokit/enterprise_management_console_client/management_console.rb#78
+  # source://octokit//lib/octokit/enterprise_management_console_client/management_console.rb#81
   def get_maintenance_status; end
 
   # Get information about the Enterprise installation
   #
   # @return [Sawyer::Resource] The settings
   #
-  # source://octokit//lib/octokit/enterprise_management_console_client/management_console.rb#59
+  # source://octokit//lib/octokit/enterprise_management_console_client/management_console.rb#62
   def get_settings; end
 
   # Get information about the Enterprise maintenance status
@@ -10867,7 +10867,7 @@ class Octokit::Repository
 
   # Returns the value of attribute name.
   #
-  # source://octokit//lib/octokit/repository.rb#7
+  # source://octokit//lib/octokit/repository.rb#80
   def repo; end
 
   # Repository owner/name
@@ -10881,7 +10881,7 @@ class Octokit::Repository
   #
   # @return [String]
   #
-  # source://octokit//lib/octokit/repository.rb#43
+  # source://octokit//lib/octokit/repository.rb#46
   def to_s; end
 
   # Repository URL based on {Octokit::Client#web_endpoint}
@@ -10893,12 +10893,12 @@ class Octokit::Repository
 
   # Returns the value of attribute owner.
   #
-  # source://octokit//lib/octokit/repository.rb#7
+  # source://octokit//lib/octokit/repository.rb#78
   def user; end
 
   # Returns the value of attribute owner.
   #
-  # source://octokit//lib/octokit/repository.rb#7
+  # source://octokit//lib/octokit/repository.rb#79
   def username; end
 
   private
