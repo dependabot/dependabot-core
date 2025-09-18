@@ -229,65 +229,31 @@ module Dependabot
                new_source: T::Hash[Symbol, T.nilable(String)]).returns(String)
       end
       def update_env_image_reference(previous_content, old_source, new_source)
-        old_digest = old_source[:digest]
-        new_digest = new_source[:digest]
-
-        old_tag = old_source[:tag]
-        new_tag = new_source[:tag]
-
-        old_declaration =
-          if private_registry_url(old_source)
-            "#{private_registry_url(old_source)}/"
-          else
-            ""
-          end
-        old_declaration += T.must(dependency).name
-        old_declaration +=
-          if specified_with_tag?(old_source)
-            ":#{old_tag}"
-          else
-            ""
-          end
-        old_declaration +=
-          if specified_with_digest?(old_source)
-            "@sha256:#{old_digest}"
-          else
-            ""
-          end
-
+        old_declaration = build_image_declaration(old_source)
         escaped_declaration = Regexp.escape(old_declaration)
-
-        # Pattern for .env file: VARIABLE_NAME=image_reference
         env_declaration_regex = /^([A-Z_][A-Z0-9_]*)=#{escaped_declaration}$/
 
-        previous_content.gsub(env_declaration_regex) do |match|
+        previous_content.gsub(env_declaration_regex) do |_match|
           var_name = Regexp.last_match(1)
-          old_digest = old_digest.sub("sha256:", "") if old_digest&.start_with?("sha256:")
-          new_digest = new_digest.sub("sha256:", "") if new_digest&.start_with?("sha256:")
-
-          new_image_ref = ""
-          new_image_ref +=
-            if private_registry_url(new_source)
-              "#{private_registry_url(new_source)}/"
-            else
-              ""
-            end
-          new_image_ref += T.must(dependency).name
-          new_image_ref +=
-            if specified_with_tag?(new_source)
-              ":#{new_tag}"
-            else
-              ""
-            end
-          new_image_ref +=
-            if specified_with_digest?(new_source)
-              "@sha256:#{new_digest}"
-            else
-              ""
-            end
-
+          new_image_ref = build_image_declaration(new_source)
           "#{var_name}=#{new_image_ref}"
         end
+      end
+
+      sig { params(source: T::Hash[Symbol, T.nilable(String)]).returns(String) }
+      def build_image_declaration(source)
+        registry_prefix = private_registry_url(source) ? "#{private_registry_url(source)}/" : ""
+        tag_suffix = specified_with_tag?(source) ? ":#{source[:tag]}" : ""
+        digest_suffix = specified_with_digest?(source) ? "@sha256:#{normalize_digest(source[:digest])}" : ""
+
+        "#{registry_prefix}#{T.must(dependency).name}#{tag_suffix}#{digest_suffix}"
+      end
+
+      sig { params(digest: T.nilable(String)).returns(T.nilable(String)) }
+      def normalize_digest(digest)
+        return nil if digest.nil?
+
+        digest.start_with?("sha256:") ? digest.sub("sha256:", "") : digest
       end
 
       protected

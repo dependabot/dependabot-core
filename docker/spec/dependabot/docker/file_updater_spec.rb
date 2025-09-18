@@ -1633,6 +1633,8 @@ RSpec.describe Dependabot::Docker::FileUpdater do
   end
 
   describe "#updated_dependency_files with .env files" do
+    subject(:updated_files) { env_updater.updated_dependency_files }
+
     let(:env_dependency) do
       Dependabot::Dependency.new(
         name: "nginx",
@@ -1675,8 +1677,6 @@ RSpec.describe Dependabot::Docker::FileUpdater do
       )
     end
 
-    subject(:updated_files) { env_updater.updated_dependency_files }
-
     it "returns DependencyFile objects" do
       updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
     end
@@ -1688,8 +1688,16 @@ RSpec.describe Dependabot::Docker::FileUpdater do
         updated_files.find { |f| f.name == ".env" }
       end
 
-      its(:content) { is_expected.to include "NGINX_IMAGE_TAG=nginx:1.22.0@sha256:new123abc456def789012345678901234567890123456789012345678901234abcd" }
-      its(:content) { is_expected.to include "REDIS_IMAGE_TAG=redis:6.2.5@sha256:4c854aa03f6b7e9bb2b945e8e2a17f565266a103c70bb3275b57e4f81a7e92a0" }
+      its(:content) do
+        is_expected.to include "NGINX_IMAGE_TAG=nginx:1.22.0@sha256:" \
+                               "new123abc456def789012345678901234567890123456789012345678901234abcd"
+      end
+
+      its(:content) do
+        is_expected.to include "REDIS_IMAGE_TAG=redis:6.2.5@sha256:" \
+                               "4c854aa03f6b7e9bb2b945e8e2a17f565266a103c70bb3275b57e4f81a7e92a0"
+      end
+
       its(:content) { is_expected.to include "# Container Image Tags" }
     end
 
@@ -1763,8 +1771,15 @@ RSpec.describe Dependabot::Docker::FileUpdater do
           updated_files.find { |f| f.name == ".env" }
         end
 
-        its(:content) { is_expected.to include "APP_IMAGE=my-registry.io/namespace/app:v1.0.0@sha256:new456def789abc012345678901234567890123456789012345678901234567890" }
-        its(:content) { is_expected.to include "WORKER_IMAGE=registry.example.com/team/worker:latest@sha256:def456abc789012345678901234567890123456789012345678901234567890e" }
+        its(:content) do
+          is_expected.to include "APP_IMAGE=my-registry.io/namespace/app:v1.0.0@sha256:" \
+                                 "new456def789abc012345678901234567890123456789012345678901234567890"
+        end
+
+        its(:content) do
+          is_expected.to include "WORKER_IMAGE=registry.example.com/team/worker:latest@sha256:" \
+                                 "def456abc789012345678901234567890123456789012345678901234567890e"
+        end
       end
     end
 
@@ -1802,7 +1817,11 @@ RSpec.describe Dependabot::Docker::FileUpdater do
           updated_files.find { |f| f.name == ".env" }
         end
 
-        its(:content) { is_expected.to include "NGINX_IMAGE=nginx:1.22.0@sha256:updated64dd661dcadfd9958f9e0de192a1fdda2c162a35668ab6ac42b465f0860" }
+        its(:content) do
+          is_expected.to include "NGINX_IMAGE=nginx:1.22.0@sha256:" \
+                                 "updated64dd661dcadfd9958f9e0de192a1fdda2c162a35668ab6ac42b465f0860"
+        end
+
         its(:content) { is_expected.to include "REDIS_IMAGE=redis:6.2.5" }
         its(:content) { is_expected.to include "DATABASE_URL=postgresql://user:pass@localhost:5432/mydb" }
         its(:content) { is_expected.to include "DEBUG=true" }
@@ -1853,7 +1872,10 @@ RSpec.describe Dependabot::Docker::FileUpdater do
           updated_files.find { |f| f.name == ".env" }
         end
 
-        its(:content) { is_expected.to include "NGINX_IMAGE_TAG=nginx:1.22.0@sha256:new123abc456def789012345678901234567890123456789012345678901234abcd" }
+        its(:content) do
+          is_expected.to include "NGINX_IMAGE_TAG=nginx:1.22.0@sha256:" \
+                                 "new123abc456def789012345678901234567890123456789012345678901234abcd"
+        end
       end
 
       context "when only the second file needs updating" do

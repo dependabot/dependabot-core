@@ -1263,6 +1263,8 @@ RSpec.describe Dependabot::Docker::FileParser do
   end
 
   describe "ENV parse" do
+    subject(:dependencies) { env_parser.parse }
+
     let(:env_parser) { described_class.new(dependency_files: envfiles, source: source) }
     let(:envfile_fixture_name) { "basic.env" }
     let(:envfile_body) do
@@ -1272,8 +1274,6 @@ RSpec.describe Dependabot::Docker::FileParser do
       Dependabot::DependencyFile.new(name: ".env", content: envfile_body)
     end
     let(:envfiles) { [envfile] }
-
-    subject(:dependencies) { env_parser.parse }
 
     its(:length) { is_expected.to eq(3) }
 
