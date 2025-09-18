@@ -11,7 +11,8 @@ RSpec.describe Dependabot::PullRequest do
         [
           Dependabot::PullRequest::Dependency.new(
             name: "foo",
-            version: "1.0.0"
+            version: "1.0.0",
+            pr_number: 123
           )
         ]
       )
@@ -19,7 +20,8 @@ RSpec.describe Dependabot::PullRequest do
         [
           Dependabot::PullRequest::Dependency.new(
             name: "foo",
-            version: "1.0.0"
+            version: "1.0.0",
+            pr_number: 123
           )
         ]
       )
@@ -32,7 +34,8 @@ RSpec.describe Dependabot::PullRequest do
         [
           Dependabot::PullRequest::Dependency.new(
             name: "foo",
-            version: "1.0.0"
+            version: "1.0.0",
+            pr_number: 123
           )
         ]
       )
@@ -40,7 +43,8 @@ RSpec.describe Dependabot::PullRequest do
         [
           Dependabot::PullRequest::Dependency.new(
             name: "bar",
-            version: "1.0.0"
+            version: "1.0.0",
+            pr_number: 123
           )
         ]
       )
@@ -53,7 +57,8 @@ RSpec.describe Dependabot::PullRequest do
         [
           Dependabot::PullRequest::Dependency.new(
             name: "foo",
-            version: "1.0.0"
+            version: "1.0.0",
+            pr_number: 123
           )
         ]
       )
@@ -61,7 +66,8 @@ RSpec.describe Dependabot::PullRequest do
         [
           Dependabot::PullRequest::Dependency.new(
             name: "foo",
-            version: "2.0.0"
+            version: "2.0.0",
+            pr_number: 123
           )
         ]
       )
@@ -74,7 +80,8 @@ RSpec.describe Dependabot::PullRequest do
         [
           Dependabot::PullRequest::Dependency.new(
             name: "foo",
-            version: "1.0.0"
+            version: "1.0.0",
+            pr_number: 123
           )
         ]
       )
@@ -83,7 +90,8 @@ RSpec.describe Dependabot::PullRequest do
           Dependabot::PullRequest::Dependency.new(
             name: "foo",
             version: "1.0.0",
-            removed: true
+            removed: true,
+            pr_number: 123
           )
         ]
       )
@@ -97,7 +105,8 @@ RSpec.describe Dependabot::PullRequest do
           Dependabot::PullRequest::Dependency.new(
             name: "foo",
             version: "1.0.0",
-            directory: "/foo"
+            directory: "/foo",
+            pr_number: 123
           )
         ]
       )
@@ -106,7 +115,8 @@ RSpec.describe Dependabot::PullRequest do
           Dependabot::PullRequest::Dependency.new(
             name: "foo",
             version: "1.0.0",
-            directory: "/bar"
+            directory: "/bar",
+            pr_number: 123
           )
         ]
       )
@@ -119,11 +129,13 @@ RSpec.describe Dependabot::PullRequest do
         [
           Dependabot::PullRequest::Dependency.new(
             name: "foo",
-            version: "1.0.0"
+            version: "1.0.0",
+            pr_number: 123
           ),
           Dependabot::PullRequest::Dependency.new(
             name: "bar",
-            version: "2.0.0"
+            version: "2.0.0",
+            pr_number: 456
           )
         ]
       )
@@ -131,7 +143,8 @@ RSpec.describe Dependabot::PullRequest do
         [
           Dependabot::PullRequest::Dependency.new(
             name: "foo",
-            version: "1.0.0"
+            version: "1.0.0",
+            pr_number: 123
           )
         ]
       )
@@ -144,7 +157,8 @@ RSpec.describe Dependabot::PullRequest do
         [
           Dependabot::PullRequest::Dependency.new(
             name: "foo",
-            version: "1.0.0"
+            version: "1.0.0",
+            pr_number: 123
           )
         ]
       )
@@ -152,11 +166,13 @@ RSpec.describe Dependabot::PullRequest do
         [
           Dependabot::PullRequest::Dependency.new(
             name: "foo",
-            version: "1.0.0"
+            version: "1.0.0",
+            pr_number: 123
           ),
           Dependabot::PullRequest::Dependency.new(
             name: "bar",
-            version: "2.0.0"
+            version: "2.0.0",
+            pr_number: 456
           )
         ]
       )

@@ -837,7 +837,8 @@ RSpec.describe Dependabot::Updater do
           [
             {
               "dependency-name" => "dummy-pkg-b",
-              "dependency-version" => "1.2.0"
+              "dependency-version" => "1.2.0",
+              "pr_number" => 123
             }
           ]
         ])
@@ -850,7 +851,7 @@ RSpec.describe Dependabot::Updater do
         expect(service).not_to receive(:record_update_job_error)
         expect(Dependabot.logger)
           .to receive(:info)
-          .with("Pull request already exists for dummy-pkg-b " \
+          .with("Pull request #123 already exists for dummy-pkg-b " \
                 "with latest version 1.2.0")
 
         updater.run

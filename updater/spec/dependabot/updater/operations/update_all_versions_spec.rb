@@ -275,10 +275,15 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
         )
         allow(job).to receive(
           :existing_pull_requests
-        ).and_return([[{
-          "dependency-name" => "dummy-pkg-a",
-          "dependency-version" => "2.0.1"
-        }]])
+        ).and_return([
+          Dependabot::PullRequest.new([
+            Dependabot::PullRequest::Dependency.new(
+              name: "dummy-pkg-a",
+              version: "2.0.1",
+              pr_number: 123
+            )
+          ])
+        ])
       end
 
       it "does not create a pull request" do
