@@ -270,6 +270,7 @@ module Dependabot
             requirement = dependency_req&.fetch(:requirement)
             # If we don't have a requirement, try to find the dependency by name in the content
             return find_dependency_line_by_name(dependency_name, content) if requirement.nil?
+
             return content.match(/"#{Regexp.escape(dependency_name)}"\s*:\s*
                                   "#{Regexp.escape(requirement)}"/x).to_s
           end
@@ -306,13 +307,9 @@ module Dependabot
                         parsed_json["optionalDependencies"]
                       when "peerDependencies"
                         parsed_json["peerDependencies"]
-                      else
-                        nil
                       end
 
-            if section&.key?(dependency_name)
-              return section[dependency_name]
-            end
+            return section[dependency_name] if section&.key?(dependency_name)
           end
 
           nil
