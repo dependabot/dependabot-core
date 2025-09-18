@@ -1,1 +1,26 @@
 inherit_from: ../.rubocop.yml
+
+Sorbet/ForbidTUnsafe:
+  Exclude:
+    - lib/dependabot/clients/bitbucket_with_retries.rb
+    - lib/dependabot/clients/github_with_retries.rb
+    - lib/dependabot/clients/gitlab_with_retries.rb
+    - lib/dependabot/command_helpers.rb
+    - lib/dependabot/credential.rb
+    - lib/dependabot/dependency_group.rb
+    - lib/dependabot/file_fetchers/base.rb
+    - lib/dependabot/file_updaters/artifact_updater.rb
+    - lib/dependabot/file_updaters/vendor_updater.rb
+    - lib/dependabot/git_commit_checker.rb
+    - lib/dependabot/metadata_finders/base/changelog_finder.rb
+    - lib/dependabot/metadata_finders/base/commits_finder.rb
+    - lib/dependabot/metadata_finders/base/release_finder.rb
+    - lib/dependabot/pull_request_creator/codecommit.rb
+    - lib/dependabot/pull_request_creator/github.rb
+    - lib/dependabot/pull_request_creator/gitlab.rb
+    - lib/dependabot/pull_request_creator/labeler.rb
+    - lib/dependabot/pull_request_creator/pr_name_prefixer.rb
+    - lib/dependabot/pull_request_updater/github.rb
+    - lib/dependabot/pull_request_updater/gitlab.rb
+    - lib/dependabot/shared_helpers.rb
+    - lib/dependabot/workspace/git.rb
