@@ -1,0 +1,72 @@
+# octocov configuration for Dependabot Core
+# Aggregates SimpleCov coverage reports from all ecosystems
+
+# Repository identification
+repository: dependabot/dependabot-core
+timeout: 5min
+
+# Coverage configuration
+coverage:
+  # Auto-discover coverage files using octocov's built-in detection
+  # Automatically finds SimpleCov .resultset.json files in coverage/ directories
+  # No manual path maintenance required - works for all current and future ecosystems!
+  
+  # Alternative: Use wildcard pattern if auto-discovery needs to be more specific
+  # paths:
+  #   - "**/coverage/.resultset.json"
+  
+  # Coverage quality thresholds (start conservative, can be increased later)
+  acceptable: 70%  # Fail CI if coverage drops below 70%
+  
+  # Generate coverage badge
+  badge:
+    path: docs/coverage.svg
+
+# Code to test ratio tracking
+codeToTestRatio:
+  code:
+    - "**/*.rb"
+    - "!**/spec/**/*.rb"
+    - "!**/test/**/*.rb"
+  test:
+    - "**/spec/**/*.rb"
+    - "**/test/**/*.rb"
+  acceptable: 1:1.1  # Require at least 1.1 lines of test per line of code
+  badge:
+    path: docs/ratio.svg
+
+# Pull request comments
+comment:
+  if: is_pull_request
+  hideFooterLink: true
+  deletePrevious: true
+  message: |
+    ## 📊 Coverage Report
+    
+    This pull request's coverage analysis compared to the target branch.
+
+# GitHub Actions job summary
+summary:
+  if: true
+  hideFooterLink: true
+  message: |
+    ## 📊 Dependabot Core Coverage Summary
+    
+    Overall code coverage across all package manager ecosystems.
+
+# Store reports for historical comparison
+report:
+  if: is_default_branch
+  datastores:
+    - artifact://${GITHUB_REPOSITORY}
+
+# Enable coverage diffs against previous runs
+diff:
+  if: is_pull_request
+  datastores:
+    - artifact://${GITHUB_REPOSITORY}
+
+# Generate and commit badges on main branch
+push:
+  if: is_default_branch
+  message: "Update coverage badges [skip ci]"

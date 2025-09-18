@@ -6,6 +6,11 @@
     </picture>
 </h1>
 
+<p align="center">
+    <img src="docs/coverage.svg" alt="Coverage">
+    <img src="docs/ratio.svg" alt="Code to Test Ratio">
+</p>
+
 Welcome to the public home of Dependabot :dependabot:.
 
 # Table of Contents

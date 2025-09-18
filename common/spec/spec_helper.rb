@@ -16,7 +16,11 @@ SimpleCov.start do
   command_name "test-process-#{ENV.fetch('TEST_ENV_NUMBER', 1)}"
   add_filter "/spec/"
   if ENV["CI"]
-    formatter SimpleCov::Formatter::SimpleFormatter
+    # In CI, we need both simple output for logs AND JSON for octocov aggregation
+    formatter SimpleCov::Formatter::MultiFormatter.new([
+      SimpleCov::Formatter::SimpleFormatter,
+      SimpleCov::Formatter::JSONFormatter
+    ])
   else
     formatter SimpleCov::Formatter::MultiFormatter.new([
       SimpleCov::Formatter::SimpleFormatter,

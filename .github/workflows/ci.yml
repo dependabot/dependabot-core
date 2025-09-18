@@ -64,14 +64,43 @@ jobs:
       - name: Run ${{ matrix.suite.name }} tests
         if: steps.changes.outputs[matrix.suite.path] == 'true'
         run: |
+          # Create coverage directory on host
+          mkdir -p "${{ matrix.suite.path }}/coverage"
+          
           docker run \
             --pull never \
             --env "CI=true" \
             --env "RAISE_ON_WARNINGS=true" \
             --env "DEPENDABOT_TEST_ACCESS_TOKEN=${{ secrets.GITHUB_TOKEN }}" \
             --env "SUITE_NAME=${{ matrix.suite.name }}" \
-            --rm ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }} bash -c \
-            "cd /home/dependabot/${{ matrix.suite.path }} && ./script/ci-test"
+            --volume "$(pwd)/${{ matrix.suite.path }}/coverage:/host-coverage" \
+            --rm \
+            ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }} bash -c \
+            "cd /home/dependabot/${{ matrix.suite.path }} && \
+             ./script/ci-test && \
+             if [ -d coverage ]; then \
+               echo 'Copying coverage files to host...' && \
+               cp -r coverage/* /host-coverage/ 2>/dev/null || true; \
+             fi"
+
+      - name: Verify coverage extraction
+        if: steps.changes.outputs[matrix.suite.path] == 'true' && always()
+        run: |
+          echo "Coverage files for ${{ matrix.suite.name }}:"
+          if [ -d "${{ matrix.suite.path }}/coverage" ]; then
+            ls -la "${{ matrix.suite.path }}/coverage/" || echo "Coverage directory exists but no files found"
+          else
+            echo "No coverage directory created"
+          fi
+
+      - name: Upload coverage for ${{ matrix.suite.name }}
+        if: steps.changes.outputs[matrix.suite.path] == 'true' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.suite.name }}
+          path: ${{ matrix.suite.path }}/coverage/
+          if-no-files-found: warn  # Changed to warn so we can see which ecosystems don't generate coverage
+          retention-days: 1
 
   updater:
     env:
@@ -90,6 +119,15 @@ jobs:
         env:
           DEPENDABOT_TEST_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: script/ci-test-updater
+
+      - name: Upload updater coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-updater
+          path: updater/coverage/
+          if-no-files-found: ignore
+          retention-days: 1
 
   lint:
     name: Lint
@@ -137,3 +175,60 @@ jobs:
         run: |
           cd silent/tests
           go test ./...
+
+  coverage:
+    name: Coverage Report
+    runs-on: ubuntu-latest
+    needs: [ci, updater]
+    if: always() && (needs.ci.result == 'success' || needs.ci.result == 'skipped') && (needs.updater.result == 'success' || needs.updater.result == 'skipped')
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          submodules: recursive
+
+      # Download coverage artifacts from all test jobs
+      - name: Download coverage artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*
+          merge-multiple: false
+        continue-on-error: true
+
+      # Simple reorganization for octocov auto-discovery
+      - name: Organize coverage files for octocov
+        run: |
+          echo "Organizing coverage files for octocov auto-discovery..."
+          
+          # Process each downloaded artifact directory
+          for artifact_dir in coverage-*/; do
+            if [ -d "$artifact_dir" ]; then
+              ecosystem=$(echo "$artifact_dir" | sed 's/coverage-//' | sed 's|/$||')
+              echo "Processing $ecosystem coverage files..."
+              
+              # Create ecosystem directory and copy coverage files
+              mkdir -p "$ecosystem/coverage"
+              cp -r "$artifact_dir"* "$ecosystem/coverage/" 2>/dev/null || true
+              
+              echo "Files in $ecosystem/coverage:"
+              ls -la "$ecosystem/coverage/" 2>/dev/null || echo "  No files found"
+            fi
+          done
+          
+          # Show what octocov will auto-discover
+          echo -e "\nCoverage files available for octocov auto-discovery:"
+          find . -name ".resultset.json" -type f | sort || echo "No SimpleCov files found"
+
+      # Run octocov for coverage aggregation and reporting
+      - name: Run octocov
+        uses: k1LoW/octocov-action@v1
+        with:
+          config: .octocov.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # octocov auto-discovers SimpleCov files, aggregates coverage across
+          # all ecosystems, and generates PR comments, badges, and job summaries
