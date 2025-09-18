@@ -83,6 +83,7 @@ module Dependabot
         "rust-toolchain" => "rust_toolchain",
         "swift" => "swift",
         "terraform" => "terraform",
+        "opentofu" => "opentofu",
         "uv" => "uv",
         "vcpkg" => "vcpkg"
       }.freeze, T::Hash[String, String])
