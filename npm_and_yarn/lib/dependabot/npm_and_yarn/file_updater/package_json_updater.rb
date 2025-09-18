@@ -49,7 +49,22 @@ module Dependabot
           unique_deps_count = dependencies.map(&:name).to_a.uniq.compact.length
 
           dependencies.reduce(package_json.content.dup) do |content, dep|
-            updated_requirements(dep)&.each do |new_req|
+            # Handle dependencies with requirements but no previous_requirements
+            reqs_to_process = updated_requirements(dep)
+            # Special case: if updated_requirements returns nil but dependency has current requirements for this file,
+            # it might be a case where previous_requirements is nil but we still want to update
+            if reqs_to_process.nil? && dep.previous_requirements.nil?
+              current_package_requirements = dep.requirements.select { |r| r[:file] == package_json.name }
+              if current_package_requirements.any?
+                Dependabot.logger.info(
+                  "Dependency #{dep.name} has requirements for #{package_json.name} " \
+                  "but no previous requirements. Attempting update."
+                )
+                reqs_to_process = current_package_requirements
+              end
+            end
+
+            reqs_to_process&.each do |new_req|
               old_req = old_requirement(dep, new_req)
 
               new_content = update_package_json_declaration(
@@ -105,11 +120,29 @@ module Dependabot
             .returns(T.nilable(T::Hash[Symbol, T.untyped]))
         end
         def old_requirement(dependency, new_requirement)
-          return nil unless dependency.previous_requirements
+          # If previous_requirements exists, use it
+          if dependency.previous_requirements
+            return T.must(dependency.previous_requirements)
+                    .select { |r| r[:file] == package_json.name }
+                    .find { |r| r[:groups] == new_requirement[:groups] }
+          end
 
-          T.must(dependency.previous_requirements)
-           .select { |r| r[:file] == package_json.name }
-           .find { |r| r[:groups] == new_requirement[:groups] }
+          # If previous_requirements is nil but dependency has current requirements,
+          # create a synthetic old requirement based on what's in the package.json file
+          current_package_requirements = dependency.requirements.select { |r| r[:file] == package_json.name }
+          return nil if current_package_requirements.empty?
+
+          # Extract the existing requirement from package.json content
+          existing_requirement = extract_existing_requirement(dependency.name, new_requirement[:groups])
+          return nil unless existing_requirement
+
+          # Create a synthetic old requirement
+          {
+            file: package_json.name,
+            requirement: existing_requirement,
+            groups: new_requirement[:groups],
+            source: new_requirement[:source]
+          }
         end
 
         sig { params(dependency: Dependabot::Dependency).returns(T::Array[T::Hash[Symbol, T.untyped]]) }
@@ -119,22 +152,7 @@ module Dependabot
 
         sig { params(dependency: Dependabot::Dependency).returns(T.nilable(T::Array[T::Hash[Symbol, T.untyped]])) }
         def updated_requirements(dependency)
-          # Handle the case where a dependency has current requirements but no previous requirements.
-          # This can happen with certain packages like webdriverio that are consistently left out
-          # of package.json updates due to this condition.
-          if dependency.previous_requirements.nil?
-            # Check if this dependency has requirements for the current package.json
-            current_package_requirements = dependency.requirements.select { |r| r[:file] == package_json.name }
-            if current_package_requirements.any?
-              Dependabot.logger.info(
-                "Dependency #{dependency.name} has requirements for #{package_json.name} " \
-                "but no previous requirements. Proceeding with update using current requirements."
-              )
-              # Return the current requirements - they will be treated as needing updates
-              return current_package_requirements
-            end
-            return nil
-          end
+          return nil unless dependency.previous_requirements
 
           preliminary_check_for_update(dependency)
 
@@ -244,7 +262,6 @@ module Dependabot
             requirement = dependency_req&.fetch(:requirement)
             # If we don't have a requirement, try to find the dependency by name in the content
             return find_dependency_line_by_name(dependency_name, content) if requirement.nil?
-            
             return content.match(/"#{Regexp.escape(dependency_name)}"\s*:\s*
                                   "#{Regexp.escape(requirement)}"/x).to_s
           end
@@ -263,6 +280,34 @@ module Dependabot
           # When we don't have the specific requirement, try to find the dependency line by name
           # This handles the case where previous_requirements is nil but we still want to update
           content.match(/"#{Regexp.escape(dependency_name)}"\s*:\s*"[^"]*"/).to_s
+        end
+
+        sig { params(dependency_name: String, groups: T::Array[String]).returns(T.nilable(String)) }
+        def extract_existing_requirement(dependency_name, groups)
+          # Parse the package.json to find the existing requirement for the dependency
+          parsed_json = JSON.parse(package_json.content)
+
+          # Check different sections based on the groups
+          groups.each do |group|
+            section = case group
+                      when "dependencies"
+                        parsed_json["dependencies"]
+                      when "devDependencies"
+                        parsed_json["devDependencies"]
+                      when "optionalDependencies"
+                        parsed_json["optionalDependencies"]
+                      when "peerDependencies"
+                        parsed_json["peerDependencies"]
+                      else
+                        nil
+                      end
+
+            if section&.key?(dependency_name)
+              return section[dependency_name]
+            end
+          end
+
+          nil
         end
 
         sig do
