@@ -14,14 +14,7 @@ module Dependabot
   class UpdateGraphCommand < BaseCommand
     extend T::Sig
 
-    # TODO(brrygrdn): Change label to update_graph_error?
-    #
-    # It feels odd to return update_files_error, but Dependabot's backend service does a lot of categorisation
-    # based on this label.
-    #
-    # We need to ensure that the service handles a new update_graph_error appropriately before we change this,
-    # but this is something we can address later.
-    ERROR_TYPE_LABEL = "update_files_error"
+    ERROR_TYPE_LABEL = "update_graph_error"
 
     sig { override.void }
     def perform_job
