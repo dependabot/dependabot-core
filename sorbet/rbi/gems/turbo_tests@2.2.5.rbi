@@ -37,81 +37,113 @@ class TurboTests::FakeExample < ::Struct
   # Returns the value of attribute description
   #
   # @return [Object] the current value of description
+  #
+  # source://turbo_tests//lib/turbo_tests.rb#55
   def description; end
 
   # Sets the attribute description
   #
   # @param value [Object] the value to set the attribute description to.
   # @return [Object] the newly set value
+  #
+  # source://turbo_tests//lib/turbo_tests.rb#55
   def description=(_); end
 
   # Returns the value of attribute execution_result
   #
   # @return [Object] the current value of execution_result
+  #
+  # source://turbo_tests//lib/turbo_tests.rb#55
   def execution_result; end
 
   # Sets the attribute execution_result
   #
   # @param value [Object] the value to set the attribute execution_result to.
   # @return [Object] the newly set value
+  #
+  # source://turbo_tests//lib/turbo_tests.rb#55
   def execution_result=(_); end
 
   # Returns the value of attribute full_description
   #
   # @return [Object] the current value of full_description
+  #
+  # source://turbo_tests//lib/turbo_tests.rb#55
   def full_description; end
 
   # Sets the attribute full_description
   #
   # @param value [Object] the value to set the attribute full_description to.
   # @return [Object] the newly set value
+  #
+  # source://turbo_tests//lib/turbo_tests.rb#55
   def full_description=(_); end
 
   # Returns the value of attribute location
   #
   # @return [Object] the current value of location
+  #
+  # source://turbo_tests//lib/turbo_tests.rb#55
   def location; end
 
   # Sets the attribute location
   #
   # @param value [Object] the value to set the attribute location to.
   # @return [Object] the newly set value
+  #
+  # source://turbo_tests//lib/turbo_tests.rb#55
   def location=(_); end
 
   # Returns the value of attribute location_rerun_argument
   #
   # @return [Object] the current value of location_rerun_argument
+  #
+  # source://turbo_tests//lib/turbo_tests.rb#55
   def location_rerun_argument; end
 
   # Sets the attribute location_rerun_argument
   #
   # @param value [Object] the value to set the attribute location_rerun_argument to.
   # @return [Object] the newly set value
+  #
+  # source://turbo_tests//lib/turbo_tests.rb#55
   def location_rerun_argument=(_); end
 
   # Returns the value of attribute metadata
   #
   # @return [Object] the current value of metadata
+  #
+  # source://turbo_tests//lib/turbo_tests.rb#55
   def metadata; end
 
   # Sets the attribute metadata
   #
   # @param value [Object] the value to set the attribute metadata to.
   # @return [Object] the newly set value
+  #
+  # source://turbo_tests//lib/turbo_tests.rb#55
   def metadata=(_); end
 
   # source://turbo_tests//lib/turbo_tests.rb#79
   def notification; end
 
   class << self
+    # source://turbo_tests//lib/turbo_tests.rb#55
     def [](*_arg0); end
 
     # source://turbo_tests//lib/turbo_tests.rb#57
     def from_obj(obj); end
 
+    # source://turbo_tests//lib/turbo_tests.rb#55
     def inspect; end
+
+    # source://turbo_tests//lib/turbo_tests.rb#55
     def keyword_init?; end
+
+    # source://turbo_tests//lib/turbo_tests.rb#55
     def members; end
+
+    # source://turbo_tests//lib/turbo_tests.rb#55
     def new(*_arg0); end
   end
 end
@@ -121,45 +153,65 @@ class TurboTests::FakeException < ::Struct
   # Returns the value of attribute backtrace
   #
   # @return [Object] the current value of backtrace
+  #
+  # source://turbo_tests//lib/turbo_tests.rb#21
   def backtrace; end
 
   # Sets the attribute backtrace
   #
   # @param value [Object] the value to set the attribute backtrace to.
   # @return [Object] the newly set value
+  #
+  # source://turbo_tests//lib/turbo_tests.rb#21
   def backtrace=(_); end
 
   # Returns the value of attribute cause
   #
   # @return [Object] the current value of cause
+  #
+  # source://turbo_tests//lib/turbo_tests.rb#21
   def cause; end
 
   # Sets the attribute cause
   #
   # @param value [Object] the value to set the attribute cause to.
   # @return [Object] the newly set value
+  #
+  # source://turbo_tests//lib/turbo_tests.rb#21
   def cause=(_); end
 
   # Returns the value of attribute message
   #
   # @return [Object] the current value of message
+  #
+  # source://turbo_tests//lib/turbo_tests.rb#21
   def message; end
 
   # Sets the attribute message
   #
   # @param value [Object] the value to set the attribute message to.
   # @return [Object] the newly set value
+  #
+  # source://turbo_tests//lib/turbo_tests.rb#21
   def message=(_); end
 
   class << self
+    # source://turbo_tests//lib/turbo_tests.rb#21
     def [](*_arg0); end
 
     # source://turbo_tests//lib/turbo_tests.rb#23
     def from_obj(obj); end
 
+    # source://turbo_tests//lib/turbo_tests.rb#21
     def inspect; end
+
+    # source://turbo_tests//lib/turbo_tests.rb#21
     def keyword_init?; end
+
+    # source://turbo_tests//lib/turbo_tests.rb#21
     def members; end
+
+    # source://turbo_tests//lib/turbo_tests.rb#21
     def new(*_arg0); end
   end
 end
@@ -169,66 +221,94 @@ class TurboTests::FakeExecutionResult < ::Struct
   # Returns the value of attribute example_skipped?
   #
   # @return [Object] the current value of example_skipped?
+  #
+  # source://turbo_tests//lib/turbo_tests.rb#41
   def example_skipped?; end
 
   # Returns the value of attribute exception
   #
   # @return [Object] the current value of exception
+  #
+  # source://turbo_tests//lib/turbo_tests.rb#41
   def exception; end
 
   # Sets the attribute exception
   #
   # @param value [Object] the value to set the attribute exception to.
   # @return [Object] the newly set value
+  #
+  # source://turbo_tests//lib/turbo_tests.rb#41
   def exception=(_); end
 
   # Returns the value of attribute pending_exception
   #
   # @return [Object] the current value of pending_exception
+  #
+  # source://turbo_tests//lib/turbo_tests.rb#41
   def pending_exception; end
 
   # Sets the attribute pending_exception
   #
   # @param value [Object] the value to set the attribute pending_exception to.
   # @return [Object] the newly set value
+  #
+  # source://turbo_tests//lib/turbo_tests.rb#41
   def pending_exception=(_); end
 
   # Returns the value of attribute pending_fixed?
   #
   # @return [Object] the current value of pending_fixed?
+  #
+  # source://turbo_tests//lib/turbo_tests.rb#41
   def pending_fixed?; end
 
   # Returns the value of attribute pending_message
   #
   # @return [Object] the current value of pending_message
+  #
+  # source://turbo_tests//lib/turbo_tests.rb#41
   def pending_message; end
 
   # Sets the attribute pending_message
   #
   # @param value [Object] the value to set the attribute pending_message to.
   # @return [Object] the newly set value
+  #
+  # source://turbo_tests//lib/turbo_tests.rb#41
   def pending_message=(_); end
 
   # Returns the value of attribute status
   #
   # @return [Object] the current value of status
+  #
+  # source://turbo_tests//lib/turbo_tests.rb#41
   def status; end
 
   # Sets the attribute status
   #
   # @param value [Object] the value to set the attribute status to.
   # @return [Object] the newly set value
+  #
+  # source://turbo_tests//lib/turbo_tests.rb#41
   def status=(_); end
 
   class << self
+    # source://turbo_tests//lib/turbo_tests.rb#41
     def [](*_arg0); end
 
     # source://turbo_tests//lib/turbo_tests.rb#43
     def from_obj(obj); end
 
+    # source://turbo_tests//lib/turbo_tests.rb#41
     def inspect; end
+
+    # source://turbo_tests//lib/turbo_tests.rb#41
     def keyword_init?; end
+
+    # source://turbo_tests//lib/turbo_tests.rb#41
     def members; end
+
+    # source://turbo_tests//lib/turbo_tests.rb#41
     def new(*_arg0); end
   end
 end
