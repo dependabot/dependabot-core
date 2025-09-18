@@ -37,45 +37,15 @@ RSpec.describe Dependabot::UpdateGraphCommand do
   describe "#perform_job" do
     subject(:perform_job) { job.perform_job }
 
-    describe "experiment: enable_dependency_submission_poc" do
-      context "when it is enabled" do
-        before do
-          Dependabot::Experiments.register(:enable_dependency_submission_poc, true)
-        end
+    it "emits a create_dependency_submission call to the Dependabot service" do
+      expect(service).to receive(:create_dependency_submission) do |args|
+        expect(args[:dependency_submission]).to be_a(GithubApi::DependencySubmission)
 
-        after do
-          Dependabot::Experiments.reset!
-        end
-
-        it "emits a create_dependency_submission call to the Dependabot service" do
-          expect(service).to receive(:create_dependency_submission) do |args|
-            expect(args[:dependency_submission]).to be_a(GithubApi::DependencySubmission)
-
-            expect(args[:dependency_submission].job_id).to eql(job_id)
-            expect(args[:dependency_submission].package_manager).to eql("bundler")
-          end
-
-          perform_job
-        end
+        expect(args[:dependency_submission].job_id).to eql(job_id)
+        expect(args[:dependency_submission].package_manager).to eql("bundler")
       end
 
-      context "when it is disabled" do
-        subject(:perform_job) { job.perform_job }
-
-        before do
-          Dependabot::Experiments.register(:enable_dependency_submission_poc, false)
-        end
-
-        after do
-          Dependabot::Experiments.reset!
-        end
-
-        it "does not emits a create_dependency_submission call to the Dependabot service" do
-          expect(service).not_to receive(:create_dependency_submission)
-
-          perform_job
-        end
-      end
+      perform_job
     end
   end
 
