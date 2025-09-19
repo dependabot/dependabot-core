@@ -21,28 +21,23 @@ module Dependabot
       ::Dependabot::OpenTelemetry.tracer.in_span("update_graph", kind: :internal) do |span|
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id.to_s)
 
-        begin
-          # We expect the FileFetcherCommand to have been executed beforehand to place
-          # encoded files and commit information in the environment, so let's retrieve
-          # them, decode and parse them into an object that knows the current state
-          # of the project's dependencies.
-          dependency_snapshot = Dependabot::DependencySnapshot.create_from_job_definition(
-            job: job,
-            job_definition: Environment.job_definition
-          )
-        rescue StandardError => e
-          handle_parser_error(e)
-          # If dependency file parsing has failed, there's nothing more we can do,
-          # so let's mark the job as processed and stop.
-          return service.mark_job_as_processed(Environment.job_definition["base_commit_sha"])
-        end
+        # We expect the FileFetcherCommand to have been executed beforehand to place
+        # encoded files and commit information in the environment, so let's retrieve
+        # them, decode and parse them into an object that knows the current state
+        # of the project's dependencies.
+        dependency_snapshot = Dependabot::DependencySnapshot.create_from_job_definition(
+          job: job,
+          job_definition: Environment.job_definition
+        )
 
         # TODO(brrygdn): This should be called once per directory in future
         submission = build_submission(dependency_snapshot)
         Dependabot.logger.info("Dependency submission payload:\n#{JSON.pretty_generate(submission.payload)}")
         service.create_dependency_submission(dependency_submission: submission)
-
-        service.mark_job_as_processed(dependency_snapshot.base_commit_sha)
+      rescue StandardError => e
+        handle_error(e)
+      ensure
+        service.mark_job_as_processed(Environment.job_definition["base_commit_sha"])
       end
     end
 
@@ -78,7 +73,7 @@ module Dependabot
     end
 
     sig { params(error: StandardError).void }
-    def handle_parser_error(error) # rubocop:disable Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity
+    def handle_error(error) # rubocop:disable Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity
       # This happens if the repo gets removed after a job gets kicked off.
       # The service will handle the removal without any prompt from the updater,
       # so no need to add an error to the errors array
