@@ -12,3 +12,6 @@
 
 # Enabled Layout/MultilineMethodParameterLineBreaks and Layout/FirstMethodParameterLineBreak
 f8acdfb85fdc4749f9cd1f29eb428cafd11478cd
+
+# Enable Layout/EmptyLinesAroundAttributeAccessor
+0f69e2d8016435d393646a30c81e64c1ed0a942c
