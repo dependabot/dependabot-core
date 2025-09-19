@@ -230,7 +230,7 @@ Your ecosystem implementation must support cooldown logic in the **UpdateChecker
 
 When adding a new ecosystem, you should validate your implementation locally before opening a PR. Dependabot provides a `bin/dry-run.rb` script that allows you to simulate update checks against real repositories.
 
-The dry-run scirpt can be run in your `bin/docker-dev-shell your-new-ecosystem-name [--rebuild]`
+The dry-run script can be run in your `bin/docker-dev-shell your-new-ecosystem-name [--rebuild]`
 
 #### Running a Basic Dry-Run
 
@@ -241,7 +241,7 @@ Create (or fork) a public repository with representative manifest and lockfiles 
 bin/dry-run.rb your-ecosystem your-github-user/your-sample-repo --enable-beta-ecosystems
 ```
 
-You can also simulate security advisories by setting the `SECURITY_ADVISORIES` envrionment variable and use the `--security-updates-only` flag:
+You can also simulate security advisories by setting the `SECURITY_ADVISORIES` environment variable and use the `--security-updates-only` flag:
 
 ```bash
 # Security updates only
