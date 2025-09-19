@@ -10,6 +10,7 @@ module Dependabot
       extend T::Sig
 
       DOCKER_REGEXP = /dockerfile|containerfile/i
+      ENV_REGEXP = /\.env($|\.)/i
 
       sig { override.returns(Regexp) }
       def self.filename_regex
@@ -18,23 +19,25 @@ module Dependabot
 
       sig { override.returns(String) }
       def self.required_files_message
-        "Repo must contain a Dockerfile, Containerfile, or Kubernetes YAML files."
+        "Repo must contain a Dockerfile, Containerfile, .env files, or Kubernetes YAML files."
       end
 
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
         filenames.any? { |f| f.match?(DOCKER_REGEXP) } or
-          filenames.any? { |f| f.match?(YAML_REGEXP) }
+          filenames.any? { |f| f.match?(YAML_REGEXP) } or
+          filenames.any? { |f| f.match?(ENV_REGEXP) }
       end
 
       sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
         fetched_files = correctly_encoded_dockerfiles
+        fetched_files += correctly_encoded_envfiles
         fetched_files += super
 
         return fetched_files if fetched_files.any?
 
-        raise_appropriate_error(incorrectly_encoded_dockerfiles)
+        raise_appropriate_error(incorrectly_encoded_dockerfiles + incorrectly_encoded_envfiles)
       end
 
       private
@@ -69,6 +72,28 @@ module Dependabot
       sig { returns(T::Array[DependencyFile]) }
       def incorrectly_encoded_dockerfiles
         dockerfiles.reject { |f| f.content&.valid_encoding? }
+      end
+
+      sig { returns(T::Array[DependencyFile]) }
+      def envfiles
+        @envfiles ||= T.let(fetch_candidate_envfiles, T.nilable(T::Array[DependencyFile]))
+      end
+
+      sig { returns(T::Array[DependencyFile]) }
+      def fetch_candidate_envfiles
+        repo_contents(raise_errors: false)
+          .select { |f| f.type == "file" && f.name.match?(ENV_REGEXP) }
+          .map { |f| fetch_file_from_host(f.name) }
+      end
+
+      sig { returns(T::Array[DependencyFile]) }
+      def correctly_encoded_envfiles
+        envfiles.select { |f| f.content&.valid_encoding? }
+      end
+
+      sig { returns(T::Array[DependencyFile]) }
+      def incorrectly_encoded_envfiles
+        envfiles.reject { |f| f.content&.valid_encoding? }
       end
     end
   end
