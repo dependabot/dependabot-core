@@ -21,18 +21,27 @@ module Dependabot
       ::Dependabot::OpenTelemetry.tracer.in_span("update_graph", kind: :internal) do |span|
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id.to_s)
 
-        # We expect the FileFetcherCommand to have been executed beforehand to place
-        # encoded files and commit information in the environment, so let's retrieve
-        # them, decode and parse them into an object that knows the current state
-        # of the project's dependencies.
-        dependency_snapshot = Dependabot::DependencySnapshot.create_from_job_definition(
-          job: job,
-          job_definition: Environment.job_definition
+        # TODO(brrygrdn): Handle multi-directory jobs
+        dependency_files = Environment.job_definition.fetch("base64_dependency_files").map do |a|
+          file = Dependabot::DependencyFile.new(**a.transform_keys(&:to_sym))
+          unless file.binary? && !file.deleted?
+            file.content = Base64.decode64(T.must(file.content)).force_encoding("utf-8")
+          end
+          file
+        end
+
+        parser = Dependabot::FileParsers.for_package_manager(job.package_manager).new(
+          dependency_files: dependency_files,
+          repo_contents_path: job.repo_contents_path,
+          source: job.source,
+          credentials: job.credentials,
+          reject_external_code: job.reject_external_code?,
+          options: job.experiments
         )
 
         grapher = Dependabot::DependencyGraphers.for_package_manager(job.package_manager).new(
-          dependency_files: dependency_snapshot.dependency_files,
-          dependencies: dependency_snapshot.dependencies
+          dependency_files: dependency_files,
+          dependencies: parser.parse
         )
 
         # TODO(brrygdn): This should be called once per directory in future

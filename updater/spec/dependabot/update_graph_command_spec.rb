@@ -70,7 +70,13 @@ RSpec.describe Dependabot::UpdateGraphCommand do
       allow(Dependabot.logger).to receive(:info)
       allow(Dependabot.logger).to receive(:error)
       allow(Sentry).to receive(:capture_exception)
-      allow(Dependabot::DependencySnapshot).to receive(:create_from_job_definition).and_raise(error)
+
+      mock_parser = instance_double(Dependabot::FileParsers::Base)
+      allow(mock_parser).to receive(:parse).and_raise(error)
+
+      stub_const("MockParserClass", Dependabot::FileParsers::Base)
+      allow(MockParserClass).to receive(:new) { mock_parser }
+      allow(Dependabot::FileParsers).to receive(:for_package_manager).and_return(MockParserClass)
     end
 
     shared_examples "a fast-failed job" do
