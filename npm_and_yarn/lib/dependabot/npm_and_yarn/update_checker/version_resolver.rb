@@ -217,18 +217,25 @@ module Dependabot
 
         sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
+
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
+
         sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
+
         sig { returns(T.nilable(T.any(String, Gem::Version))) }
         attr_reader :latest_allowable_version
+
         sig { returns(T.nilable(String)) }
         attr_reader :repo_contents_path
+
         sig { returns(T.nilable(Dependabot::DependencyGroup)) }
         attr_reader :dependency_group
+
         sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
         attr_reader :update_cooldown
+
         sig { returns(T::Boolean) }
         attr_reader :raise_on_ignored
 

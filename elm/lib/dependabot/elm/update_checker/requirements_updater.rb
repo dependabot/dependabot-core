@@ -51,6 +51,7 @@ module Dependabot
 
         sig { returns(T::Array[T::Hash[Symbol, T.nilable(String)]]) }
         attr_reader :requirements
+
         sig { returns(T.nilable(Dependabot::Version)) }
         attr_reader :latest_resolvable_version
 

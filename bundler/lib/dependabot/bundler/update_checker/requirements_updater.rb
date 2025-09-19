@@ -76,12 +76,16 @@ module Dependabot
 
         sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
         attr_reader :requirements
+
         sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
         attr_reader :updated_source
+
         sig { returns(T.nilable(Dependabot::Bundler::Version)) }
         attr_reader :latest_version
+
         sig { returns(T.nilable(Dependabot::Bundler::Version)) }
         attr_reader :latest_resolvable_version
+
         sig { returns(Dependabot::RequirementsUpdateStrategy) }
         attr_reader :update_strategy
 

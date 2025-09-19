@@ -50,12 +50,16 @@ module Dependabot
 
         sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
+
         sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
+
         sig { returns(T::Array[String]) }
         attr_reader :ignored_versions
+
         sig { returns(T::Boolean) }
         attr_reader :raise_on_ignored
+
         sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
         attr_reader :security_advisories
 
