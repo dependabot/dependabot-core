@@ -90,7 +90,6 @@ module GithubApi
       # If manifest is at repository root, append the file name
       return "#{base}-#{basename}" if dirname == ""
 
-      # If the dirname is pathologically long, we replace it with a SHA256
       sanitized_path = if dirname.bytesize > 32
                          # If the dirname is pathologically long, we replace it with a SHA256
                          Digest::SHA256.hexdigest(dirname)
