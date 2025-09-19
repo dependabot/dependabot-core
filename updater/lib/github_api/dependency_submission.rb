@@ -34,16 +34,16 @@ module GithubApi
         job_id: String,
         branch: String,
         sha: String,
-        ecosystem: Dependabot::Ecosystem,
+        package_manager: String,
         dependency_files: T::Array[Dependabot::DependencyFile],
         dependencies: T::Array[Dependabot::Dependency]
       ).void
     end
-    def initialize(job_id:, branch:, sha:, ecosystem:, dependency_files:, dependencies:)
+    def initialize(job_id:, branch:, sha:, package_manager:, dependency_files:, dependencies:)
       @job_id = job_id
       @branch = branch
       @sha = sha
-      @package_manager = T.let(ecosystem.name, String)
+      @package_manager = package_manager
 
       @grapher = T.let(Dependabot::DependencyGraphers.for_package_manager(package_manager).new(
                          dependency_files:,

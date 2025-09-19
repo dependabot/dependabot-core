@@ -19,7 +19,7 @@ RSpec.describe GithubApi::DependencySubmission do
       job_id: "9999",
       branch: branch,
       sha: sha,
-      ecosystem: ecosystem,
+      package_manager: "bundler",
       dependency_files: dependency_files,
       dependencies: parsed_dependencies
     )
@@ -38,10 +38,6 @@ RSpec.describe GithubApi::DependencySubmission do
   let(:repo) { "dependabot-fixtures/dependabot-test-ruby-package" }
   let(:branch) { "main" }
   let(:sha) { "fake-sha" }
-
-  let(:ecosystem) do
-    parser.ecosystem
-  end
 
   let(:parsed_dependencies) do
     parser.parse
