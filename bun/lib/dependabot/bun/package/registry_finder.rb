@@ -108,10 +108,13 @@ module Dependabot
 
         sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
+
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         attr_reader :npmrc_file
+
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         attr_reader :yarnrc_file
+
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         attr_reader :yarnrc_yml_file
 

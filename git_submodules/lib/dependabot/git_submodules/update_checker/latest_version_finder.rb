@@ -118,10 +118,13 @@ module Dependabot
 
         sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
+
         sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
+
         sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
         attr_reader :cooldown_options
+
         sig { override.returns(T.nilable(Dependabot::Package::PackageDetails)) }
         def package_details; end
       end

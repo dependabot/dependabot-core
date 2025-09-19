@@ -18,14 +18,19 @@ module GithubApi
 
     sig { returns(String) }
     attr_reader :job_id
+
     sig { returns(String) }
     attr_reader :branch
+
     sig { returns(String) }
     attr_reader :sha
+
     sig { returns(String) }
     attr_reader :package_manager
+
     sig { returns(T::Hash[String, T.untyped]) }
     attr_reader :manifests
+
     sig { returns(Dependabot::DependencyGraphers::Base) }
     attr_reader :grapher
 

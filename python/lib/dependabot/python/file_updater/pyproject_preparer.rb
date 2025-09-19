@@ -113,6 +113,7 @@ module Dependabot
 
         sig { returns(String) }
         attr_reader :pyproject_content
+
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         attr_reader :lockfile
 

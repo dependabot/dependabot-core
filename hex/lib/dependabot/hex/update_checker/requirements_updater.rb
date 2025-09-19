@@ -55,6 +55,7 @@ module Dependabot
 
         sig { returns(T.nilable(T::Hash[Symbol, T.nilable(String)])) }
         attr_reader :updated_source
+
         # rubocop:disable Metrics/PerceivedComplexity
         # rubocop:disable Metrics/AbcSize
         sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }

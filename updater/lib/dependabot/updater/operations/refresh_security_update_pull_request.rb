@@ -70,12 +70,16 @@ module Dependabot
 
         sig { returns(Dependabot::Job) }
         attr_reader :job
+
         sig { override.returns(Dependabot::Service) }
         attr_reader :service
+
         sig { returns(Dependabot::DependencySnapshot) }
         attr_reader :dependency_snapshot
+
         sig { returns(Dependabot::Updater::ErrorHandler) }
         attr_reader :error_handler
+
         # A list of notices that will be used in PR messages and/or sent to the dependabot github alerts.
         sig { returns(T::Array[Dependabot::Notice]) }
         attr_reader :notices

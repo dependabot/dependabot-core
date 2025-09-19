@@ -212,16 +212,22 @@ module Dependabot
 
         sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
+
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
+
         sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
+
         sig { returns(T::Array[String]) }
         attr_reader :ignored_versions
+
         sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
         attr_reader :security_advisories
+
         sig { returns(T::Hash[Symbol, T.untyped]) }
         attr_reader :options
+
         sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
         attr_reader :cooldown_options
       end
