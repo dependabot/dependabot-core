@@ -47,12 +47,12 @@ module Dependabot
 
           parsed_line = {
             "image" => dep["name"],
-            "tag" => dep["version"],
+            "tag" => dep["version"].to_s,
             "registry" => repository_from_registry(dep["repository"]),
             "digest" => nil
           }
 
-          dependency = build_dependency(chart_file, parsed_line, dep["version"])
+          dependency = build_dependency(chart_file, parsed_line, dep["version"].to_s)
           add_dependency_type_to_dependency(dependency, :helm_chart)
 
           dependency_set << dependency
