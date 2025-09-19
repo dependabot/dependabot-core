@@ -271,6 +271,9 @@ module Dependabot
           latest_version = checker.latest_version&.to_s
           return false if latest_version.nil?
 
+          puts (job.existing_pull_requests.map { |pr| pr.dependencies.map(&:to_h) })
+          puts (created_pull_requests.map { |pr| pr.dependencies.map(&:to_h) })
+
           job.existing_pull_requests
              .any? { |pr| pr.contains_dependency?(checker.dependency.name, latest_version) } ||
             created_pull_requests.any? { |pr| pr.contains_dependency?(checker.dependency.name, latest_version) }
