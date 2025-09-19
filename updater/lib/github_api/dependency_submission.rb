@@ -49,7 +49,7 @@ module GithubApi
                          dependency_files:,
                          dependencies:
                        ), Dependabot::DependencyGraphers::Base)
-      @manifests = T.let(build_manifests(dependency_files, dependencies), T::Hash[String, T.untyped])
+      @manifests = T.let(build_manifests(dependencies), T::Hash[String, T.untyped])
     end
 
     # TODO: Change to a typed structure?
@@ -109,11 +109,10 @@ module GithubApi
 
     sig do
       params(
-        dependency_files: T::Array[Dependabot::DependencyFile],
         dependencies: T::Array[Dependabot::Dependency]
       ).returns(T::Hash[String, T.untyped])
     end
-    def build_manifests(dependency_files, dependencies)
+    def build_manifests(dependencies)
       return {} if dependencies.empty?
 
       file = grapher.relevant_dependency_file
