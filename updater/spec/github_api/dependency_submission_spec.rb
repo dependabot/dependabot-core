@@ -58,6 +58,59 @@ RSpec.describe GithubApi::DependencySubmission do
 
   let(:directory) { "/" }
 
+  describe "::job_correlator" do
+    let(:dependency_files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "Gemfile",
+          content: fixture("bundler/original/Gemfile"),
+          directory: directory
+        ),
+        Dependabot::DependencyFile.new(
+          name: "Gemfile.lock",
+          content: fixture("bundler/original/Gemfile.lock"),
+          directory: directory
+        )
+      ]
+    end
+
+    [
+      {
+        context: "with a typical RubyGems project in directory root",
+        directory: "/",
+        expected_correlator: "dependabot-bundler-Gemfile.lock"
+      },
+      {
+        context: "with a RubyGems project in a subdirectory",
+        directory: "ruby/backend-api/",
+        expected_correlator: "dependabot-bundler-ruby-backend-api-Gemfile.lock"
+      },
+      {
+        context: "with mixed case in the file path",
+        directory: "Ruby/backend-api/",
+        expected_correlator: "dependabot-bundler-Ruby-backend-api-Gemfile.lock"
+      },
+      # If we're given something pathologically long, we use a SHA256 to limit length
+      {
+        context: "with a RubyGems project in a pathological directory tree",
+        directory: "lorem/ipsum/dolor/sit/amet/consectetur/adipiscing/elit/nunc/turpis/justo/" \
+                   "maximus/ac/eleifend/sit/amet/malesuada/eu/nisi/donec/faucibus/lobortis/" \
+                   "augue/vitae/venenatis/nunc/euismod/auctor/suspendisse/eget",
+        expected_correlator: /dependabot-bundler-[a-fA-F0-9]{64}-Gemfile.lock/
+      }
+    ].each do |tc|
+      context tc[:context] do
+        let(:directory) { tc[:directory] }
+
+        it "uses the expected value for job.correlator" do
+          payload = dependency_submission.payload
+
+          expect(payload[:job][:correlator]).to match(tc[:expected_correlator])
+        end
+      end
+    end
+  end
+
   context "with a basic Gemfile project" do
     let(:dependency_files) do
       [
@@ -82,7 +135,7 @@ RSpec.describe GithubApi::DependencySubmission do
       expect(payload[:detector][:name]).to eq(described_class::SNAPSHOT_DETECTOR_NAME)
       expect(payload[:detector][:url]).to eq(described_class::SNAPSHOT_DETECTOR_URL)
       expect(payload[:detector][:version]).to eq(Dependabot::VERSION)
-      expect(payload[:job][:correlator]).to eq("dependabot-bundler")
+      expect(payload[:job][:correlator]).to eq("dependabot-bundler-Gemfile.lock")
       expect(payload[:job][:id]).to eq("9999")
     end
 

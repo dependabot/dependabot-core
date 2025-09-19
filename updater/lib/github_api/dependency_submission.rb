@@ -26,6 +26,8 @@ module GithubApi
     attr_reader :package_manager
     sig { returns(T::Hash[String, T.untyped]) }
     attr_reader :manifests
+    sig { returns(Dependabot::DependencyGraphers::Base) }
+    attr_reader :grapher
 
     sig do
       params(
@@ -43,6 +45,10 @@ module GithubApi
       @sha = sha
       @package_manager = T.let(ecosystem.name, String)
 
+      @grapher = T.let(Dependabot::DependencyGraphers.for_package_manager(package_manager).new(
+                         dependency_files:,
+                         dependencies:
+                       ), Dependabot::DependencyGraphers::Base)
       @manifests = T.let(build_manifests(dependency_files, dependencies), T::Hash[String, T.untyped])
     end
 
@@ -72,7 +78,27 @@ module GithubApi
 
     sig { returns(String) }
     def job_correlator
-      "#{SNAPSHOT_DETECTOR_NAME}-#{package_manager}"
+      base = "#{SNAPSHOT_DETECTOR_NAME}-#{package_manager}"
+
+      # If we don't have any manifests (e.g. empty snapshot) fall back to the base
+      return base if manifests.empty?
+
+      path = grapher.relevant_dependency_file.path
+      dirname = File.dirname(path).gsub(%r{^/}, "")
+      basename = File.basename(path)
+
+      # If manifest is at repository root, append the file name
+      return "#{base}-#{basename}" if dirname == ""
+
+      # If the dirname is pathologically long, we replace it with a SHA256
+      sanitized_path = if dirname.bytesize > 32
+                         # If the dirname is pathologically long, we replace it with a SHA256
+                         Digest::SHA256.hexdigest(dirname)
+                       else
+                         dirname.tr("/", "-")
+                       end
+
+      "#{base}-#{sanitized_path}-#{basename}"
     end
 
     sig { returns(String) }
@@ -91,13 +117,7 @@ module GithubApi
     def build_manifests(dependency_files, dependencies)
       return {} if dependencies.empty?
 
-      grapher = Dependabot::DependencyGraphers.for_package_manager(package_manager).new(
-        dependency_files: dependency_files,
-        dependencies: dependencies
-      )
-
       file = grapher.relevant_dependency_file
-
       {
         file.path => {
           name: file.path,
