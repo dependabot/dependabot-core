@@ -1,0 +1,18 @@
+dependabot graph -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
+stdout 'create_dependency_submission'
+
+-- manifest.json --
+{
+  "dependency-a": { "version": "1.2.3" }
+}
+
+-- input.yml --
+command: graph
+job:
+  package-manager: "silent"
+  source:
+    directory: "/"
+    provider: example
+    hostname: 127.0.0.1
+    api-endpoint: http://127.0.0.1/api/v3
+    repo: dependabot/smoke-tests
