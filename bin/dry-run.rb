@@ -346,7 +346,6 @@ valid_package_managers = %w(
   docker_compose
   dotnet_sdk
   elm
-  git_submodules
   github_actions
   go_modules
   gradle
@@ -359,6 +358,7 @@ valid_package_managers = %w(
   pub
   python
   rust_toolchain
+  submodules
   swift
   terraform
   uv
