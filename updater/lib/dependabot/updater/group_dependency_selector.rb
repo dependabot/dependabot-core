@@ -204,7 +204,7 @@ module Dependabot
         contains_checker = T.let(
           proc { |group, dependency, dir| group_contains_dependency_for_group?(group, dependency, dir) },
           T.proc.params(group: Dependabot::DependencyGroup, dep: Dependabot::Dependency,
-                        directory: String).returns(T::Boolean)
+                        directory: T.nilable(String)).returns(T::Boolean)
         )
 
         @specificity_calculator.dependency_belongs_to_more_specific_group?(
