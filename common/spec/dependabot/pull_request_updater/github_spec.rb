@@ -692,7 +692,7 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
       end
 
       it "raises a helpful error" do
-        expect { updater.update } .to raise_error(Dependabot::PullRequestUpdater::BranchProtected)
+        expect { updater.update }.to raise_error(Dependabot::PullRequestUpdater::BranchProtected)
       end
     end
   end
