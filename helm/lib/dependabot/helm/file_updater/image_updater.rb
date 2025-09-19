@@ -107,8 +107,11 @@ module Dependabot
         end
 
         sig do
-          params(value_node: Psych::Nodes::Mapping, content: T::Array[String],
-                 dependency_version: String).returns(T::Array[String])
+          params(
+            value_node: Psych::Nodes::Mapping,
+            content: T::Array[String],
+            dependency_version: String
+          ).returns(T::Array[String])
         end
         def update_version_tags(value_node, content, dependency_version)
           dependency.requirements.each do |req|

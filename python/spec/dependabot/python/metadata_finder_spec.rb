@@ -15,12 +15,14 @@ RSpec.describe Dependabot::Python::MetadataFinder do
   let(:version) { "1.0" }
   let(:dependency_name) { "luigi" }
   let(:credentials) do
-    [Dependabot::Credential.new({
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    })]
+    [Dependabot::Credential.new(
+      {
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    )]
   end
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -70,15 +72,19 @@ RSpec.describe Dependabot::Python::MetadataFinder do
 
     context "with a private index" do
       let(:credentials) do
-        [Dependabot::Credential.new({
-          "type" => "git_source",
-          "host" => "github.com",
-          "username" => "x-access-token",
-          "password" => "token"
-        }), Dependabot::Credential.new({
-          "type" => "python_index",
-          "index-url" => "https://username:password@pypi.posrip.com/pypi/"
-        })]
+        [Dependabot::Credential.new(
+          {
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }
+        ), Dependabot::Credential.new(
+          {
+            "type" => "python_index",
+            "index-url" => "https://username:password@pypi.posrip.com/pypi/"
+          }
+        )]
       end
       let(:pypi_response) { fixture("pypi", "pypi_response.json") }
 
@@ -94,16 +100,20 @@ RSpec.describe Dependabot::Python::MetadataFinder do
 
       context "with the creds passed as a token" do
         let(:credentials) do
-          [Dependabot::Credential.new({
-            "type" => "git_source",
-            "host" => "github.com",
-            "username" => "x-access-token",
-            "password" => "token"
-          }), Dependabot::Credential.new({
-            "type" => "python_index",
-            "index-url" => "https://pypi.posrip.com/pypi/",
-            "token" => "username:password"
-          })]
+          [Dependabot::Credential.new(
+            {
+              "type" => "git_source",
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            }
+          ), Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://pypi.posrip.com/pypi/",
+              "token" => "username:password"
+            }
+          )]
         end
 
         it { is_expected.to eq("https://github.com/spotify/luigi") }
@@ -111,15 +121,19 @@ RSpec.describe Dependabot::Python::MetadataFinder do
 
       context "with the creds using an email address and basic auth" do
         let(:credentials) do
-          [Dependabot::Credential.new({
-            "type" => "git_source",
-            "host" => "github.com",
-            "username" => "x-access-token",
-            "password" => "token"
-          }), Dependabot::Credential.new({
-            "type" => "python_index",
-            "index-url" => "https://user@mail.co:password@pypi.posrip.com/pypi/"
-          })]
+          [Dependabot::Credential.new(
+            {
+              "type" => "git_source",
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            }
+          ), Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://user@mail.co:password@pypi.posrip.com/pypi/"
+            }
+          )]
         end
 
         before do
@@ -156,17 +170,21 @@ RSpec.describe Dependabot::Python::MetadataFinder do
 
     context "with a private index using /simple/ endpoint" do
       let(:credentials) do
-        [Dependabot::Credential.new({
-          "type" => "git_source",
-          "host" => "github.com",
-          "username" => "x-access-token",
-          "password" => "token"
-        }), Dependabot::Credential.new({
-          "type" => "python_index",
-          "index-url" => "https://jfrogghdemo.jfrog.io/artifactory/api/pypi/dependabot-pip/simple",
-          "token" => "testuser:testpass",
-          "replaces-base" => true
-        })]
+        [Dependabot::Credential.new(
+          {
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }
+        ), Dependabot::Credential.new(
+          {
+            "type" => "python_index",
+            "index-url" => "https://jfrogghdemo.jfrog.io/artifactory/api/pypi/dependabot-pip/simple",
+            "token" => "testuser:testpass",
+            "replaces-base" => true
+          }
+        )]
       end
       let(:pypi_response) { fixture("pypi", "pypi_response.json") }
 
@@ -201,11 +219,13 @@ RSpec.describe Dependabot::Python::MetadataFinder do
 
       context "when the private registry endpoint doesn't end with /simple/" do
         let(:credentials) do
-          [Dependabot::Credential.new({
-            "type" => "python_index",
-            "index-url" => "https://custom.registry.com/custom/path",
-            "token" => "testtoken"
-          })]
+          [Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://custom.registry.com/custom/path",
+              "token" => "testtoken"
+            }
+          )]
         end
 
         before do
@@ -227,17 +247,21 @@ RSpec.describe Dependabot::Python::MetadataFinder do
 
     context "with a private index where 'simple' appears in both repository name and endpoint" do
       let(:credentials) do
-        [Dependabot::Credential.new({
-          "type" => "git_source",
-          "host" => "github.com",
-          "username" => "x-access-token",
-          "password" => "token"
-        }), Dependabot::Credential.new({
-          "type" => "python_index",
-          "index-url" => "https://registry.example.com/simple/simple",
-          "token" => "testuser:testpass",
-          "replaces-base" => true
-        })]
+        [Dependabot::Credential.new(
+          {
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }
+        ), Dependabot::Credential.new(
+          {
+            "type" => "python_index",
+            "index-url" => "https://registry.example.com/simple/simple",
+            "token" => "testuser:testpass",
+            "replaces-base" => true
+          }
+        )]
       end
       let(:pypi_response) { fixture("pypi", "pypi_response.json") }
 

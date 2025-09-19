@@ -55,8 +55,10 @@ module Dependabot
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         def updated_dependency_files
-          @updated_dependency_files ||= T.let(fetch_updated_dependency_files,
-                                              T.nilable(T::Array[Dependabot::DependencyFile]))
+          @updated_dependency_files ||= T.let(
+            fetch_updated_dependency_files,
+            T.nilable(T::Array[Dependabot::DependencyFile])
+          )
         end
 
         private
@@ -154,8 +156,10 @@ module Dependabot
 
               # Restore the original requires-python if it exists
               if original_requires_python
-                result = result.gsub(/requires-python\s*=\s*["'][^"']+["']/,
-                                     "requires-python = \"#{original_requires_python}\"")
+                result = result.gsub(
+                  /requires-python\s*=\s*["'][^"']+["']/,
+                  "requires-python = \"#{original_requires_python}\""
+                )
               end
 
               result
@@ -355,7 +359,8 @@ module Dependabot
           @python_requirement_parser ||= T.let(
             FileParser::PythonRequirementParser.new(
               dependency_files: dependency_files
-            ), T.nilable(FileParser::PythonRequirementParser)
+            ),
+            T.nilable(FileParser::PythonRequirementParser)
           )
         end
 
@@ -364,14 +369,17 @@ module Dependabot
           @language_version_manager ||= T.let(
             LanguageVersionManager.new(
               python_requirement_parser: python_requirement_parser
-            ), T.nilable(LanguageVersionManager)
+            ),
+            T.nilable(LanguageVersionManager)
           )
         end
 
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def pyproject
-          @pyproject ||= T.let(dependency_files.find { |f| f.name == "pyproject.toml" },
-                               T.nilable(Dependabot::DependencyFile))
+          @pyproject ||= T.let(
+            dependency_files.find { |f| f.name == "pyproject.toml" },
+            T.nilable(Dependabot::DependencyFile)
+          )
         end
 
         sig { returns(T.nilable(Dependabot::DependencyFile)) }

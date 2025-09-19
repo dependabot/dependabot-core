@@ -132,8 +132,11 @@ module Dependabot
       sig { params(commit: String).returns(String) }
       def create_branch(commit)
         # codecommit returns an empty response on create branch success
-        codecommit_client_for_source.create_branch(source.repo, branch_name,
-                                                   commit)
+        codecommit_client_for_source.create_branch(
+          source.repo,
+          branch_name,
+          commit
+        )
         @branch_name = branch_name
         branch_name
       end

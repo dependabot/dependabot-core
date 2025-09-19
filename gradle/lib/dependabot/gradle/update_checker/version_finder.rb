@@ -23,10 +23,15 @@ module Dependabot
         TYPE_SUFFICES = %w(jre android java native_mt agp).freeze
 
         sig do
-          params(dependency: Dependabot::Dependency, dependency_files: T::Array[Dependabot::DependencyFile],
-                 credentials: T::Array[Dependabot::Credential], ignored_versions: T::Array[String],
-                 security_advisories: T::Array[Dependabot::SecurityAdvisory], raise_on_ignored: T::Boolean,
-                 cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions)).void
+          params(
+            dependency: Dependabot::Dependency,
+            dependency_files: T::Array[Dependabot::DependencyFile],
+            credentials: T::Array[Dependabot::Credential],
+            ignored_versions: T::Array[String],
+            security_advisories: T::Array[Dependabot::SecurityAdvisory],
+            raise_on_ignored: T::Boolean,
+            cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
+          ).void
         end
         def initialize(dependency:, dependency_files:, credentials:,
                        ignored_versions:,
@@ -86,8 +91,10 @@ module Dependabot
           possible_versions = filter_prerelease_versions(possible_versions)
           possible_versions = filter_date_based_versions(possible_versions)
           possible_versions = filter_version_types(possible_versions)
-          possible_versions = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(possible_versions,
-                                                                                                    security_advisories)
+          possible_versions = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(
+            possible_versions,
+            security_advisories
+          )
           possible_versions = filter_ignored_versions(possible_versions)
           possible_versions = filter_lower_versions(possible_versions)
 
@@ -171,12 +178,15 @@ module Dependabot
 
         sig { returns(Package::PackageDetailsFetcher) }
         def package_details_fetcher
-          @package_details_fetcher ||= T.let(Package::PackageDetailsFetcher.new(
-                                               dependency: dependency,
-                                               dependency_files: dependency_files,
-                                               credentials: credentials,
-                                               forbidden_urls: []
-                                             ), T.nilable(Dependabot::Gradle::Package::PackageDetailsFetcher))
+          @package_details_fetcher ||= T.let(
+            Package::PackageDetailsFetcher.new(
+              dependency: dependency,
+              dependency_files: dependency_files,
+              credentials: credentials,
+              forbidden_urls: []
+            ),
+            T.nilable(Dependabot::Gradle::Package::PackageDetailsFetcher)
+          )
         end
 
         sig { params(possible_versions: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
@@ -249,8 +259,10 @@ module Dependabot
           passed_days = passed_seconds / DAY_IN_SECONDS
 
           if passed_days < days
-            Dependabot.logger.info("Version #{release.version}, Release date: #{release.released_at}." \
-                                   " Days since release: #{passed_days} (cooldown days: #{days})")
+            Dependabot.logger.info(
+              "Version #{release.version}, Release date: #{release.released_at}." \
+              " Days since release: #{passed_days} (cooldown days: #{days})"
+            )
           end
 
           # Check if the release is within the cooldown period

@@ -92,14 +92,18 @@ module Dependabot
 
         @epoch = T.let(matches["epoch"].to_i, Integer)
         @release_segment = T.let(matches["release"]&.split(".")&.map(&:to_i) || [], T::Array[Integer])
-        @pre = T.let(parse_letter_version(matches["pre_l"], matches["pre_n"]),
-                     T.nilable(T::Array[T.any(String, Integer)]))
+        @pre = T.let(
+          parse_letter_version(matches["pre_l"], matches["pre_n"]),
+          T.nilable(T::Array[T.any(String, Integer)])
+        )
         @post = T.let(
           parse_letter_version(matches["post_l"], matches["post_n1"] || matches["post_n2"]),
           T.nilable(T::Array[T.any(String, Integer)])
         )
-        @dev = T.let(parse_letter_version(matches["dev_l"], matches["dev_n"]),
-                     T.nilable(T::Array[T.any(String, Integer)]))
+        @dev = T.let(
+          parse_letter_version(matches["dev_l"], matches["dev_n"]),
+          T.nilable(T::Array[T.any(String, Integer)])
+        )
         @local = T.let(parse_local_version(matches["local"]), T.nilable(T::Array[T.any(String, Integer)]))
         super(matches["release"] || "")
       end

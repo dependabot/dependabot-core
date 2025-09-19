@@ -75,16 +75,20 @@ module Dependabot
       def gemfile
         return @gemfile if defined?(@gemfile)
 
-        @gemfile = T.let(fetch_file_if_present("gems.rb") || fetch_file_if_present("Gemfile"),
-                         T.nilable(Dependabot::DependencyFile))
+        @gemfile = T.let(
+          fetch_file_if_present("gems.rb") || fetch_file_if_present("Gemfile"),
+          T.nilable(Dependabot::DependencyFile)
+        )
       end
 
       sig { returns(T.nilable(DependencyFile)) }
       def lockfile
         return @lockfile if defined?(@lockfile)
 
-        @lockfile = T.let(fetch_file_if_present("gems.locked") || fetch_file_if_present("Gemfile.lock"),
-                          T.nilable(Dependabot::DependencyFile))
+        @lockfile = T.let(
+          fetch_file_if_present("gems.locked") || fetch_file_if_present("Gemfile.lock"),
+          T.nilable(Dependabot::DependencyFile)
+        )
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
@@ -239,8 +243,10 @@ module Dependabot
       end
 
       sig do
-        params(file: DependencyFile,
-               previously_fetched_files: T::Array[DependencyFile]).returns(T::Array[DependencyFile])
+        params(
+          file: DependencyFile,
+          previously_fetched_files: T::Array[DependencyFile]
+        ).returns(T::Array[DependencyFile])
       end
       def fetch_child_gemfiles(file:, previously_fetched_files:)
         paths = ChildGemfileFinder.new(gemfile: file).child_gemfile_paths

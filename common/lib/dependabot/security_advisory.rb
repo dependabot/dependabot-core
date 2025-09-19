@@ -143,14 +143,16 @@ module Dependabot
     def check_version_requirements
       unless vulnerable_versions.is_a?(Array) &&
              vulnerable_versions.all? { |i| requirement_class <= i.class }
-        raise ArgumentError, "vulnerable_versions must be an array " \
-                             "of #{requirement_class} instances"
+        raise ArgumentError,
+              "vulnerable_versions must be an array " \
+              "of #{requirement_class} instances"
       end
 
       unless safe_versions.is_a?(Array) &&
              safe_versions.all? { |i| requirement_class <= i.class }
-        raise ArgumentError, "safe_versions must be an array " \
-                             "of #{requirement_class} instances"
+        raise ArgumentError,
+              "safe_versions must be an array " \
+              "of #{requirement_class} instances"
       end
     end
 

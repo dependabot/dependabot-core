@@ -77,10 +77,13 @@ module Dependabot
         ErrorAttributes::DEPENDENCY_GROUPS => job.dependency_groups
       }.compact
       service.record_update_job_unknown_error(error_type: "updater_error", error_details: error_details)
-      service.increment_metric("updater.update_job_unknown_error", tags: {
-        package_manager: job.package_manager,
-        class_name: err.class.name
-      })
+      service.increment_metric(
+        "updater.update_job_unknown_error",
+        tags: {
+          package_manager: job.package_manager,
+          class_name: err.class.name
+        }
+      )
     end
 
     sig { returns(String) }

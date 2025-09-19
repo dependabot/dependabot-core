@@ -9,12 +9,14 @@ require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 RSpec.describe Dependabot::Bun::FileFetcher do
   let(:json_header) { { "content-type" => "application/json" } }
   let(:credentials) do
-    [Dependabot::Credential.new({
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    })]
+    [Dependabot::Credential.new(
+      {
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    )]
   end
   let(:directory) { "/" }
   let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }

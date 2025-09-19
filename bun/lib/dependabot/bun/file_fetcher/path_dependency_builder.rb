@@ -154,17 +154,20 @@ module Dependabot
           return unless yarn_lock
           return @parsed_yarn_lock if defined?(@parsed_yarn_lock)
 
-          parsed = T.cast(SharedHelpers.in_a_temporary_directory do
-            File.write("yarn.lock", T.must(yarn_lock).content)
+          parsed = T.cast(
+            SharedHelpers.in_a_temporary_directory do
+              File.write("yarn.lock", T.must(yarn_lock).content)
 
-            SharedHelpers.run_helper_subprocess(
-              command: NativeHelpers.helper_path,
-              function: "yarn:parseLockfile",
-              args: [Dir.pwd]
-            )
-          rescue SharedHelpers::HelperSubprocessFailed
-            raise Dependabot::DependencyFileNotParseable, T.must(yarn_lock).path
-          end, T::Hash[String, T.untyped])
+              SharedHelpers.run_helper_subprocess(
+                command: NativeHelpers.helper_path,
+                function: "yarn:parseLockfile",
+                args: [Dir.pwd]
+              )
+            rescue SharedHelpers::HelperSubprocessFailed
+              raise Dependabot::DependencyFileNotParseable, T.must(yarn_lock).path
+            end,
+            T::Hash[String, T.untyped]
+          )
           @parsed_yarn_lock = T.let(parsed, T.nilable(T::Hash[String, T.untyped]))
         end
 

@@ -79,7 +79,8 @@ module Dependabot
 
       sig do
         params(
-          repo: String, commit: T.nilable(String),
+          repo: String,
+          commit: T.nilable(String),
           path: T.nilable(String)
         )
           # See PR 9344: should .returns(Seahorse::Client::Response)

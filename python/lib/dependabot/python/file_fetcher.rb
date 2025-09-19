@@ -151,16 +151,19 @@ module Dependabot
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def python_version_file
-        @python_version_file ||= T.let(begin
-          file = fetch_support_file(".python-version")
-          return file if file
-          return if [".", "/"].include?(directory)
+        @python_version_file ||= T.let(
+          begin
+            file = fetch_support_file(".python-version")
+            return file if file
+            return if [".", "/"].include?(directory)
 
-          # Check the top-level for a .python-version file, too
-          reverse_path = Pathname.new(directory[0]).relative_path_from(directory)
-          fetch_support_file(File.join(reverse_path, ".python-version"))
-            &.tap { |f| f.name = ".python-version" }
-        end, T.nilable(Dependabot::DependencyFile))
+            # Check the top-level for a .python-version file, too
+            reverse_path = Pathname.new(directory[0]).relative_path_from(directory)
+            fetch_support_file(File.join(reverse_path, ".python-version"))
+              &.tap { |f| f.name = ".python-version" }
+          end,
+          T.nilable(Dependabot::DependencyFile)
+        )
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
@@ -240,23 +243,26 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def req_txt_and_in_files
-        @req_txt_and_in_files ||= T.let(begin
-          files = T.let([], T::Array[Dependabot::DependencyFile])
+        @req_txt_and_in_files ||= T.let(
+          begin
+            files = T.let([], T::Array[Dependabot::DependencyFile])
 
-          repo_contents
-            .select { |f| f.type == "file" }
-            .select { |f| f.name.end_with?(".txt", ".in") }
-            .reject { |f| f.size > 500_000 }
-            .map { |f| fetch_file_from_host(f.name) }
-            .select { |f| requirements_file?(f) }
-            .each { |f| files << f }
+            repo_contents
+              .select { |f| f.type == "file" }
+              .select { |f| f.name.end_with?(".txt", ".in") }
+              .reject { |f| f.size > 500_000 }
+              .map { |f| fetch_file_from_host(f.name) }
+              .select { |f| requirements_file?(f) }
+              .each { |f| files << f }
 
-          repo_contents
-            .select { |f| f.type == "dir" }
-            .each { |f| files.concat(req_files_for_dir(f)) }
+            repo_contents
+              .select { |f| f.type == "dir" }
+              .each { |f| files.concat(req_files_for_dir(f)) }
 
-          files
-        end, T.nilable(T::Array[Dependabot::DependencyFile]))
+            files
+          end,
+          T.nilable(T::Array[Dependabot::DependencyFile])
+        )
       end
 
       sig { params(requirements_dir: T.untyped).returns(T::Array[Dependabot::DependencyFile]) }
@@ -285,18 +291,21 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def child_requirement_files
-        @child_requirement_files ||= T.let(begin
-          fetched_files = req_txt_and_in_files.dup
-          req_txt_and_in_files.flat_map do |requirement_file|
-            child_files = fetch_child_requirement_files(
-              file: requirement_file,
-              previously_fetched_files: fetched_files
-            )
+        @child_requirement_files ||= T.let(
+          begin
+            fetched_files = req_txt_and_in_files.dup
+            req_txt_and_in_files.flat_map do |requirement_file|
+              child_files = fetch_child_requirement_files(
+                file: requirement_file,
+                previously_fetched_files: fetched_files
+              )
 
-            fetched_files += child_files
-            child_files
-          end
-        end, T.nilable(T::Array[Dependabot::DependencyFile]))
+              fetched_files += child_files
+              child_files
+            end
+          end,
+          T.nilable(T::Array[Dependabot::DependencyFile])
+        )
       end
 
       sig do

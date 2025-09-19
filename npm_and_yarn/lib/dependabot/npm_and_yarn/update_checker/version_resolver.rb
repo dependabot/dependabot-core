@@ -27,9 +27,12 @@ module Dependabot
 
         require_relative "latest_version_finder"
 
-        TIGHTLY_COUPLED_MONOREPOS = T.let({
-          "vue" => %w(vue vue-template-compiler)
-        }.freeze, T::Hash[String, T::Array[String]])
+        TIGHTLY_COUPLED_MONOREPOS = T.let(
+          {
+            "vue" => %w(vue vue-template-compiler)
+          }.freeze,
+          T::Hash[String, T::Array[String]]
+        )
 
         # Error message returned by `yarn add` (for Yarn classic):
         # " > @reach/router@1.2.1" has incorrect peer dependency "react@15.x || 16.x || 16.4.0-alpha.0911da3"

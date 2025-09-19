@@ -82,9 +82,12 @@ module Dependabot
 
         sig { returns(T.nilable(T::Array[Dependabot::Package::PackageRelease])) }
         def package_releases
-          @package_releases = T.let(Dependabot::Hex::Package::PackageDetailsFetcher
-            .new(dependency: dependency)
-            .fetch_package_releases, T.nilable(T::Array[Dependabot::Package::PackageRelease]))
+          @package_releases = T.let(
+            Dependabot::Hex::Package::PackageDetailsFetcher
+                        .new(dependency: dependency)
+                        .fetch_package_releases,
+            T.nilable(T::Array[Dependabot::Package::PackageRelease])
+          )
         end
 
         sig { override.returns(T::Boolean) }

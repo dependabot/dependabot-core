@@ -45,10 +45,13 @@ module GithubApi
       @sha = sha
       @package_manager = package_manager
 
-      @grapher = T.let(Dependabot::DependencyGraphers.for_package_manager(package_manager).new(
-                         dependency_files:,
-                         dependencies:
-                       ), Dependabot::DependencyGraphers::Base)
+      @grapher = T.let(
+        Dependabot::DependencyGraphers.for_package_manager(package_manager).new(
+          dependency_files:,
+          dependencies:
+        ),
+        Dependabot::DependencyGraphers::Base
+      )
       @manifests = T.let(build_manifests(dependencies), T::Hash[String, T.untyped])
     end
 

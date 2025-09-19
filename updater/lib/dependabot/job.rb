@@ -29,32 +29,35 @@ module Dependabot
     extend T::Sig
 
     TOP_LEVEL_DEPENDENCY_TYPES = T.let(%w(direct production development).freeze, T::Array[String])
-    PERMITTED_KEYS = T.let(%i(
-      allowed_updates
-      commit_message_options
-      dependencies
-      exclude_paths
-      existing_pull_requests
-      existing_group_pull_requests
-      experiments
-      ignore_conditions
-      lockfile_only
-      package_manager
-      reject_external_code
-      repo_contents_path
-      requirements_update_strategy
-      security_advisories
-      security_updates_only
-      source
-      update_subdependencies
-      updating_a_pull_request
-      vendor_dependencies
-      dependency_groups
-      dependency_group_to_refresh
-      cooldown
-      repo_private
-      multi_ecosystem_update
-    ).freeze, T::Array[Symbol])
+    PERMITTED_KEYS = T.let(
+      %i(
+        allowed_updates
+        commit_message_options
+        dependencies
+        exclude_paths
+        existing_pull_requests
+        existing_group_pull_requests
+        experiments
+        ignore_conditions
+        lockfile_only
+        package_manager
+        reject_external_code
+        repo_contents_path
+        requirements_update_strategy
+        security_advisories
+        security_updates_only
+        source
+        update_subdependencies
+        updating_a_pull_request
+        vendor_dependencies
+        dependency_groups
+        dependency_group_to_refresh
+        cooldown
+        repo_private
+        multi_ecosystem_update
+      ).freeze,
+      T::Array[Symbol]
+    )
 
     sig { returns(T::Array[T::Hash[String, T.untyped]]) }
     attr_reader :allowed_updates
@@ -114,8 +117,11 @@ module Dependabot
     attr_reader :update_config
 
     sig do
-      params(job_id: String, job_definition: T::Hash[String, T.untyped],
-             repo_contents_path: T.nilable(String)).returns(Job)
+      params(
+        job_id: String,
+        job_definition: T::Hash[String, T.untyped],
+        repo_contents_path: T.nilable(String)
+      ).returns(Job)
     end
     def self.new_fetch_job(job_id:, job_definition:, repo_contents_path: nil)
       standardised = standardise_keys(job_definition["job"])
@@ -125,8 +131,11 @@ module Dependabot
     end
 
     sig do
-      params(job_id: String, job_definition: T::Hash[String, T.untyped],
-             repo_contents_path: T.nilable(String)).returns(Job)
+      params(
+        job_id: String,
+        job_definition: T::Hash[String, T.untyped],
+        repo_contents_path: T.nilable(String)
+      ).returns(Job)
     end
     def self.new_update_job(job_id:, job_definition:, repo_contents_path: nil)
       job_hash = standardise_keys(job_definition["job"])
@@ -181,7 +190,8 @@ module Dependabot
       @requirements_update_strategy   = T.let(
         build_update_strategy(
           **attributes.slice(:requirements_update_strategy, :lockfile_only)
-        ), T.nilable(Dependabot::RequirementsUpdateStrategy)
+        ),
+        T.nilable(Dependabot::RequirementsUpdateStrategy)
       )
 
       @security_advisories            = T.let(attributes.fetch(:security_advisories), T::Array[T.untyped])
@@ -476,8 +486,12 @@ module Dependabot
     end
 
     sig do
-      params(cooldown: T.nilable(T::Hash[String,
-                                         T.untyped])).returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions))
+      params(
+        cooldown: T.nilable(
+          T::Hash[String,
+                  T.untyped]
+        )
+      ).returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions))
     end
     def build_cooldown(cooldown)
       return nil unless cooldown

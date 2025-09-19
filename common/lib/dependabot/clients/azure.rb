@@ -65,10 +65,12 @@ module Dependabot
 
       sig { params(_repo: T.nilable(String), branch: String).returns(String) }
       def fetch_commit(_repo, branch)
-        response = get(T.must(source.api_endpoint) +
-          source.organization + "/" + source.project +
-          "/_apis/git/repositories/" + source.unscoped_repo +
-          "/stats/branches?name=" + branch)
+        response = get(
+          T.must(source.api_endpoint) +
+                    source.organization + "/" + source.project +
+                    "/_apis/git/repositories/" + source.unscoped_repo +
+                    "/stats/branches?name=" + branch
+        )
 
         raise NotFound if response.status == 400
 
@@ -77,9 +79,11 @@ module Dependabot
 
       sig { params(_repo: String).returns(String) }
       def fetch_default_branch(_repo)
-        response = get(T.must(source.api_endpoint) +
-          source.organization + "/" + source.project +
-          "/_apis/git/repositories/" + source.unscoped_repo)
+        response = get(
+          T.must(source.api_endpoint) +
+                    source.organization + "/" + source.project +
+                    "/_apis/git/repositories/" + source.unscoped_repo
+        )
 
         JSON.parse(response.body).fetch("defaultBranch").gsub("refs/heads/", "")
       end
@@ -94,10 +98,12 @@ module Dependabot
       def fetch_repo_contents(commit = nil, path = nil)
         tree = fetch_repo_contents_treeroot(commit, path)
 
-        response = get(T.must(source.api_endpoint) +
-          source.organization + "/" + source.project +
-          "/_apis/git/repositories/" + source.unscoped_repo +
-          "/trees/" + tree + "?recursive=false")
+        response = get(
+          T.must(source.api_endpoint) +
+                    source.organization + "/" + source.project +
+                    "/_apis/git/repositories/" + source.unscoped_repo +
+                    "/trees/" + tree + "?recursive=false"
+        )
 
         JSON.parse(response.body).fetch("treeEntries")
       end
@@ -124,12 +130,14 @@ module Dependabot
 
       sig { params(commit: String, path: String).returns(String) }
       def fetch_file_contents(commit, path)
-        response = get(T.must(source.api_endpoint) +
-          source.organization + "/" + source.project +
-          "/_apis/git/repositories/" + source.unscoped_repo +
-          "/items?path=" + path +
-          "&versionDescriptor.versionType=commit" \
-          "&versionDescriptor.version=" + commit)
+        response = get(
+          T.must(source.api_endpoint) +
+                    source.organization + "/" + source.project +
+                    "/_apis/git/repositories/" + source.unscoped_repo +
+                    "/items?path=" + path +
+                    "&versionDescriptor.versionType=commit" \
+                    "&versionDescriptor.version=" + commit
+        )
 
         response.body
       end
@@ -150,22 +158,26 @@ module Dependabot
 
       sig { params(branch_name: String).returns(T.nilable(T::Hash[String, T.untyped])) }
       def branch(branch_name)
-        response = get(T.must(source.api_endpoint) +
-          source.organization + "/" + source.project +
-          "/_apis/git/repositories/" + source.unscoped_repo +
-          "/refs?filter=heads/" + branch_name)
+        response = get(
+          T.must(source.api_endpoint) +
+                    source.organization + "/" + source.project +
+                    "/_apis/git/repositories/" + source.unscoped_repo +
+                    "/refs?filter=heads/" + branch_name
+        )
 
         JSON.parse(response.body).fetch("value").first
       end
 
       sig { params(source_branch: String, target_branch: String).returns(T::Array[T::Hash[String, T.untyped]]) }
       def pull_requests(source_branch, target_branch)
-        response = get(T.must(source.api_endpoint) +
-          source.organization + "/" + source.project +
-          "/_apis/git/repositories/" + source.unscoped_repo +
-          "/pullrequests?searchCriteria.status=all" \
-          "&searchCriteria.sourceRefName=refs/heads/" + source_branch +
-          "&searchCriteria.targetRefName=refs/heads/" + target_branch)
+        response = get(
+          T.must(source.api_endpoint) +
+                    source.organization + "/" + source.project +
+                    "/_apis/git/repositories/" + source.unscoped_repo +
+                    "/pullrequests?searchCriteria.status=all" \
+                    "&searchCriteria.sourceRefName=refs/heads/" + source_branch +
+                    "&searchCriteria.targetRefName=refs/heads/" + target_branch
+        )
 
         JSON.parse(response.body).fetch("value")
       end
@@ -204,9 +216,12 @@ module Dependabot
           ]
         }
 
-        post(T.must(source.api_endpoint) + source.organization + "/" + source.project +
-          "/_apis/git/repositories/" + source.unscoped_repo +
-          "/pushes?api-version=5.0", content.to_json)
+        post(
+          T.must(source.api_endpoint) + source.organization + "/" + source.project +
+                    "/_apis/git/repositories/" + source.unscoped_repo +
+                    "/pushes?api-version=5.0",
+          content.to_json
+        )
       end
 
       # rubocop:disable Metrics/ParameterLists
@@ -236,10 +251,13 @@ module Dependabot
           workItemRefs: [{ id: work_item }]
         }
 
-        post(T.must(source.api_endpoint) +
-          source.organization + "/" + source.project +
-          "/_apis/git/repositories/" + source.unscoped_repo +
-          "/pullrequests?api-version=5.0", content.to_json)
+        post(
+          T.must(source.api_endpoint) +
+                    source.organization + "/" + source.project +
+                    "/_apis/git/repositories/" + source.unscoped_repo +
+                    "/pullrequests?api-version=5.0",
+          content.to_json
+        )
       end
 
       sig do
@@ -272,19 +290,24 @@ module Dependabot
           }
         }
 
-        response = patch(T.must(source.api_endpoint) +
-                           source.organization + "/" + source.project +
-                           "/_apis/git/repositories/" + source.unscoped_repo +
-                           "/pullrequests/" + pull_request_id.to_s + "?api-version=5.1", content.to_json)
+        response = patch(
+          T.must(source.api_endpoint) +
+                                     source.organization + "/" + source.project +
+                                     "/_apis/git/repositories/" + source.unscoped_repo +
+                                     "/pullrequests/" + pull_request_id.to_s + "?api-version=5.1",
+          content.to_json
+        )
 
         JSON.parse(response.body)
       end
 
       sig { params(pull_request_id: String).returns(T::Hash[String, T.untyped]) }
       def pull_request(pull_request_id)
-        response = get(T.must(source.api_endpoint) +
-          source.organization + "/" + source.project +
-          "/_apis/git/pullrequests/" + pull_request_id)
+        response = get(
+          T.must(source.api_endpoint) +
+                    source.organization + "/" + source.project +
+                    "/_apis/git/pullrequests/" + pull_request_id
+        )
 
         JSON.parse(response.body)
       end
@@ -299,9 +322,12 @@ module Dependabot
           }
         ]
 
-        response = post(T.must(source.api_endpoint) + source.organization + "/" + source.project +
-                        "/_apis/git/repositories/" + source.unscoped_repo +
-                        "/refs?api-version=5.0", content.to_json)
+        response = post(
+          T.must(source.api_endpoint) + source.organization + "/" + source.project +
+                                  "/_apis/git/repositories/" + source.unscoped_repo +
+                                  "/refs?api-version=5.0",
+          content.to_json
+        )
 
         JSON.parse(response.body).fetch("value").first
       end
@@ -309,19 +335,22 @@ module Dependabot
 
       sig do
         params(
-          previous_tag: T.nilable(String), new_tag: T.nilable(String),
+          previous_tag: T.nilable(String),
+          new_tag: T.nilable(String),
           type: String
         )
           .returns(T::Array[T::Hash[String, T.untyped]])
       end
       def compare(previous_tag, new_tag, type)
-        response = get(T.must(source.api_endpoint) +
-                         source.organization + "/" + source.project +
-                         "/_apis/git/repositories/" + source.unscoped_repo +
-                         "/commits?searchCriteria.itemVersion.versionType=#{type}" \
-                         "&searchCriteria.itemVersion.version=#{previous_tag}" \
-                         "&searchCriteria.compareVersion.versionType=#{type}" \
-                         "&searchCriteria.compareVersion.version=#{new_tag}")
+        response = get(
+          T.must(source.api_endpoint) +
+                                   source.organization + "/" + source.project +
+                                   "/_apis/git/repositories/" + source.unscoped_repo +
+                                   "/commits?searchCriteria.itemVersion.versionType=#{type}" \
+                                   "&searchCriteria.itemVersion.version=#{previous_tag}" \
+                                   "&searchCriteria.compareVersion.versionType=#{type}" \
+                                   "&searchCriteria.compareVersion.version=#{new_tag}"
+        )
 
         JSON.parse(response.body).fetch("value")
       end

@@ -39,18 +39,20 @@ RSpec.describe Dependabot::DependencySnapshot do
   end
 
   let(:job) do
-    instance_double(Dependabot::Job,
-                    package_manager: "bundler",
-                    security_updates_only?: false,
-                    repo_contents_path: nil,
-                    credentials: [],
-                    reject_external_code?: false,
-                    source: source,
-                    dependency_groups: dependency_groups,
-                    allowed_update?: true,
-                    dependency_group_to_refresh: nil,
-                    dependencies: nil,
-                    experiments: { large_hadron_collider: true })
+    instance_double(
+      Dependabot::Job,
+      package_manager: "bundler",
+      security_updates_only?: false,
+      repo_contents_path: nil,
+      credentials: [],
+      reject_external_code?: false,
+      source: source,
+      dependency_groups: dependency_groups,
+      allowed_update?: true,
+      dependency_group_to_refresh: nil,
+      dependencies: nil,
+      experiments: { large_hadron_collider: true }
+    )
   end
 
   let(:dependency_files) do
@@ -269,18 +271,20 @@ RSpec.describe Dependabot::DependencySnapshot do
         }
       end
       let(:job) do
-        instance_double(Dependabot::Job,
-                        package_manager: "bundler",
-                        security_updates_only?: true,
-                        repo_contents_path: nil,
-                        credentials: [],
-                        reject_external_code?: false,
-                        source: source,
-                        dependency_groups: dependency_groups,
-                        dependencies: ["dummy-pkg-a"],
-                        allowed_update?: false,
-                        dependency_group_to_refresh: nil,
-                        experiments: { large_hadron_collider: true })
+        instance_double(
+          Dependabot::Job,
+          package_manager: "bundler",
+          security_updates_only?: true,
+          repo_contents_path: nil,
+          credentials: [],
+          reject_external_code?: false,
+          source: source,
+          dependency_groups: dependency_groups,
+          dependencies: ["dummy-pkg-a"],
+          allowed_update?: false,
+          dependency_group_to_refresh: nil,
+          experiments: { large_hadron_collider: true }
+        )
       end
 
       it "uses the dependencies even if they aren't allowed" do
@@ -345,19 +349,21 @@ RSpec.describe Dependabot::DependencySnapshot do
     end
 
     let(:job) do
-      instance_double(Dependabot::Job,
-                      package_manager: "bundler",
-                      security_updates_only?: false,
-                      repo_contents_path: nil,
-                      credentials: [],
-                      reject_external_code?: false,
-                      source: source,
-                      dependency_groups: dependency_groups,
-                      allowed_update?: true,
-                      dependency_group_to_refresh: nil,
-                      dependencies: nil,
-                      experiments: { large_hadron_collider: true },
-                      existing_group_pull_requests: existing_group_pull_requests)
+      instance_double(
+        Dependabot::Job,
+        package_manager: "bundler",
+        security_updates_only?: false,
+        repo_contents_path: nil,
+        credentials: [],
+        reject_external_code?: false,
+        source: source,
+        dependency_groups: dependency_groups,
+        allowed_update?: true,
+        dependency_group_to_refresh: nil,
+        dependencies: nil,
+        experiments: { large_hadron_collider: true },
+        existing_group_pull_requests: existing_group_pull_requests
+      )
     end
 
     let(:source) do

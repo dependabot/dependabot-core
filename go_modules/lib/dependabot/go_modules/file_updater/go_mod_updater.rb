@@ -16,58 +16,70 @@ module Dependabot
       class GoModUpdater
         extend T::Sig
 
-        RESOLVABILITY_ERROR_REGEXES = T.let([
-          # The checksum in go.sum does not match the downloaded content
-          /verifying .*: checksum mismatch/,
-          /go(?: get)?: .*: go.mod has post-v\d+ module path/,
-          # The Go tool is suggesting the user should run go mod tidy
-          /go mod tidy/,
-          # Something wrong in the chain of go.mod/go.sum files
-          # These are often fixable with go mod tidy too.
-          /no required module provides package/,
-          /missing go\.sum entry for module providing package/,
-          /missing go\.sum entry for go\.mod file/m,
-          /malformed module path/,
-          /used for two different module paths/,
-          # https://github.com/golang/go/issues/56494
-          /can't find reason for requirement on/,
-          # import path doesn't exist
-          /package \S+ is not in GOROOT/
-        ].freeze, T::Array[Regexp])
+        RESOLVABILITY_ERROR_REGEXES = T.let(
+          [
+            # The checksum in go.sum does not match the downloaded content
+            /verifying .*: checksum mismatch/,
+            /go(?: get)?: .*: go.mod has post-v\d+ module path/,
+            # The Go tool is suggesting the user should run go mod tidy
+            /go mod tidy/,
+            # Something wrong in the chain of go.mod/go.sum files
+            # These are often fixable with go mod tidy too.
+            /no required module provides package/,
+            /missing go\.sum entry for module providing package/,
+            /missing go\.sum entry for go\.mod file/m,
+            /malformed module path/,
+            /used for two different module paths/,
+            # https://github.com/golang/go/issues/56494
+            /can't find reason for requirement on/,
+            # import path doesn't exist
+            /package \S+ is not in GOROOT/
+          ].freeze,
+          T::Array[Regexp]
+        )
 
-        REPO_RESOLVABILITY_ERROR_REGEXES = T.let([
-          /fatal: The remote end hung up unexpectedly/,
-          /repository '.+' not found/,
-          %r{net/http: TLS handshake timeout},
-          # (Private) module could not be fetched
-          /go(?: get)?: .*: git (fetch|ls-remote) .*: exit status 128/m,
-          # (Private) module could not be found
-          /cannot find module providing package/,
-          # Package in module was likely renamed or removed
-          /module.*found.*but does not contain package/m,
-          # Package pseudo-version does not match the version-control metadata
-          # https://golang.google.cn/doc/go1.13#version-validation
-          /go(?: get)?: .*: invalid pseudo-version/m,
-          # Package does not exist, has been pulled or cannot be reached due to
-          # auth problems with either git or the go proxy
-          /go(?: get)?: .*: unknown revision/m,
-          # Package pointing to a proxy that 404s
-          /go(?: get)?: .*: unrecognized import path/m,
-          # Package not being referenced correctly
-          /go:.*imports.*package.+is not in std/m
-        ].freeze, T::Array[Regexp])
+        REPO_RESOLVABILITY_ERROR_REGEXES = T.let(
+          [
+            /fatal: The remote end hung up unexpectedly/,
+            /repository '.+' not found/,
+            %r{net/http: TLS handshake timeout},
+            # (Private) module could not be fetched
+            /go(?: get)?: .*: git (fetch|ls-remote) .*: exit status 128/m,
+            # (Private) module could not be found
+            /cannot find module providing package/,
+            # Package in module was likely renamed or removed
+            /module.*found.*but does not contain package/m,
+            # Package pseudo-version does not match the version-control metadata
+            # https://golang.google.cn/doc/go1.13#version-validation
+            /go(?: get)?: .*: invalid pseudo-version/m,
+            # Package does not exist, has been pulled or cannot be reached due to
+            # auth problems with either git or the go proxy
+            /go(?: get)?: .*: unknown revision/m,
+            # Package pointing to a proxy that 404s
+            /go(?: get)?: .*: unrecognized import path/m,
+            # Package not being referenced correctly
+            /go:.*imports.*package.+is not in std/m
+          ].freeze,
+          T::Array[Regexp]
+        )
 
-        MODULE_PATH_MISMATCH_REGEXES = T.let([
-          /go(?: get)?: ([^@\s]+)(?:@[^\s]+)?: .* has non-.* module path "(.*)" at/,
-          /go(?: get)?: ([^@\s]+)(?:@[^\s]+)?: .* unexpected module path "(.*)"/,
-          /go(?: get)?: ([^@\s]+)(?:@[^\s]+)?:? .* declares its path as: ([\S]*)/m
-        ].freeze, T::Array[Regexp])
+        MODULE_PATH_MISMATCH_REGEXES = T.let(
+          [
+            /go(?: get)?: ([^@\s]+)(?:@[^\s]+)?: .* has non-.* module path "(.*)" at/,
+            /go(?: get)?: ([^@\s]+)(?:@[^\s]+)?: .* unexpected module path "(.*)"/,
+            /go(?: get)?: ([^@\s]+)(?:@[^\s]+)?:? .* declares its path as: ([\S]*)/m
+          ].freeze,
+          T::Array[Regexp]
+        )
 
-        OUT_OF_DISK_REGEXES = T.let([
-          %r{input/output error},
-          /no space left on device/,
-          /Out of diskspace/
-        ].freeze, T::Array[Regexp])
+        OUT_OF_DISK_REGEXES = T.let(
+          [
+            %r{input/output error},
+            /no space left on device/,
+            /Out of diskspace/
+          ].freeze,
+          T::Array[Regexp]
+        )
 
         GO_LANG = "Go"
 
@@ -273,8 +285,11 @@ module Dependabot
         sig { params(manifest: T::Hash[String, T.untyped]).returns(T::Hash[String, String]) }
         def replace_directive_substitutions(manifest)
           @replace_directive_substitutions ||=
-            T.let(Dependabot::GoModules::ReplaceStubber.new(repo_contents_path)
-                                                 .stub_paths(manifest, directory), T.nilable(T::Hash[String, String]))
+            T.let(
+              Dependabot::GoModules::ReplaceStubber.new(repo_contents_path)
+                                                               .stub_paths(manifest, directory),
+              T.nilable(T::Hash[String, String])
+            )
         end
 
         sig { params(substitutions: T::Hash[String, String]).void }
@@ -324,8 +339,11 @@ module Dependabot
           end
 
           if (matches = stderr.match(GO_VERSION_MISMATCH))
-            raise Dependabot::ToolVersionNotSupported.new(GO_LANG, T.must(matches[:current_ver]),
-                                                          T.must(matches[:req_ver]))
+            raise Dependabot::ToolVersionNotSupported.new(
+              GO_LANG,
+              T.must(matches[:current_ver]),
+              T.must(matches[:req_ver])
+            )
           end
 
           # We don't know what happened so we raise a generic error

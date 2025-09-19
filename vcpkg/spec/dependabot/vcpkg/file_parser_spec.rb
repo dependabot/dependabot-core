@@ -61,16 +61,18 @@ RSpec.describe Dependabot::Vcpkg::FileParser do
             expect(dependency.name).to eq("github.com/microsoft/vcpkg")
             expect(dependency.version).to eq("fe1cde61e971d53c9687cf9a46308f8f55da19fa")
             expect(dependency.package_manager).to eq("vcpkg")
-            expect(dependency.requirements).to eq([{
-              file: "vcpkg.json",
-              requirement: nil,
-              groups: [],
-              source: {
-                type: "git",
-                url: Dependabot::Vcpkg::VCPKG_DEFAULT_BASELINE_URL,
-                ref: "master"
-              }
-            }])
+            expect(dependency.requirements).to eq(
+              [{
+                file: "vcpkg.json",
+                requirement: nil,
+                groups: [],
+                source: {
+                  type: "git",
+                  url: Dependabot::Vcpkg::VCPKG_DEFAULT_BASELINE_URL,
+                  ref: "master"
+                }
+              }]
+            )
           end
         end
       end
@@ -142,12 +144,14 @@ RSpec.describe Dependabot::Vcpkg::FileParser do
           expect(openssl_dep.name).to eq("openssl")
           expect(openssl_dep.version).to eq("3.1")
           expect(openssl_dep.package_manager).to eq("vcpkg")
-          expect(openssl_dep.requirements).to eq([{
-            file: "vcpkg.json",
-            requirement: ">=3.1",
-            groups: [],
-            source: nil
-          }])
+          expect(openssl_dep.requirements).to eq(
+            [{
+              file: "vcpkg.json",
+              requirement: ">=3.1",
+              groups: [],
+              source: nil
+            }]
+          )
         end
       end
 

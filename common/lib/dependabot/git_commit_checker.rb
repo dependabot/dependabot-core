@@ -102,13 +102,15 @@ module Dependabot
 
     sig { returns(Excon::Response) }
     def ref_details_for_pinned_ref
-      T.must(T.let(
-               GitMetadataFetcher.new(
-                 url: dependency.source_details&.fetch(:url, nil),
-                 credentials: credentials
-               ).ref_details_for_pinned_ref(ref_pinned),
-               T.nilable(Excon::Response)
-             ))
+      T.must(
+        T.let(
+          GitMetadataFetcher.new(
+            url: dependency.source_details&.fetch(:url, nil),
+            credentials: credentials
+          ).ref_details_for_pinned_ref(ref_pinned),
+          T.nilable(Excon::Response)
+        )
+      )
     end
 
     sig { params(ref: String).returns(T::Boolean) }

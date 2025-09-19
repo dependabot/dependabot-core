@@ -27,9 +27,12 @@ module Dependabot
 
         require_relative "latest_version_finder"
 
-        TIGHTLY_COUPLED_MONOREPOS = T.let({
-          "vue" => %w(vue vue-template-compiler)
-        }.freeze, T::Hash[String, T::Array[String]])
+        TIGHTLY_COUPLED_MONOREPOS = T.let(
+          {
+            "vue" => %w(vue vue-template-compiler)
+          }.freeze,
+          T::Hash[String, T::Array[String]]
+        )
 
         # Error message returned by `npm install` (for NPM 6):
         # react-dom@15.2.0 requires a peer of react@^15.2.0 \

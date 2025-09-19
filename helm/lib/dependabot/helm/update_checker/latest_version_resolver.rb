@@ -101,8 +101,10 @@ module Dependabot
             version == tag_name
           end
         end
-        Dependabot.logger.info("Allowed version tags after filtering versions in cooldown:
-              #{versions.map(&:to_s).join(', ')}")
+        Dependabot.logger.info(
+          "Allowed version tags after filtering versions in cooldown:
+              #{versions.map(&:to_s).join(', ')}"
+        )
         versions
       rescue StandardError => e
         Dependabot.logger.error("Error fetch_tag_and_release_date_helm_chart_index : #{e.message}")
@@ -172,7 +174,8 @@ module Dependabot
           Package::PackageDetailsFetcher.new(
             dependency: dependency,
             credentials: credentials
-          ), T.nilable(Package::PackageDetailsFetcher)
+          ),
+          T.nilable(Package::PackageDetailsFetcher)
         )
       end
 

@@ -206,8 +206,10 @@ module Dependabot
       sig { returns(T::Boolean) }
       def latest_git_tag_is_resolvable?
         unless defined?(@latest_git_tag_is_resolvable_checked)
-          @latest_git_tag_is_resolvable_checked = T.let(nil,
-                                                        T.nilable(T::Boolean))
+          @latest_git_tag_is_resolvable_checked = T.let(
+            nil,
+            T.nilable(T::Boolean)
+          )
         end
         @git_tag_resolvable = T.let(nil, T.nilable(T::Boolean)) unless defined?(@git_tag_resolvable)
 

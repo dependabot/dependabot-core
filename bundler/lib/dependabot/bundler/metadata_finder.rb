@@ -11,16 +11,19 @@ module Dependabot
     class MetadataFinder < Dependabot::MetadataFinders::Base
       extend T::Sig
 
-      SOURCE_KEYS = T.let(%w(
-        source_code_uri
-        homepage_uri
-        wiki_uri
-        bug_tracker_uri
-        documentation_uri
-        changelog_uri
-        mailing_list_uri
-        download_uri
-      ).freeze, T::Array[String])
+      SOURCE_KEYS = T.let(
+        %w(
+          source_code_uri
+          homepage_uri
+          wiki_uri
+          bug_tracker_uri
+          documentation_uri
+          changelog_uri
+          mailing_list_uri
+          download_uri
+        ).freeze,
+        T::Array[String]
+      )
 
       sig do
         params(

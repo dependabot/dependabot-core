@@ -44,11 +44,14 @@ module Dependabot
 
         INCOMPATIBLE_CONSTRAINTS = /Incompatible constraints in requirements of (?<dep>.+?) ((?<ver>.+?)):/
 
-        PACKAGE_RESOLVER_ERRORS = T.let({
-          package_info_error: /Unable to determine package info/,
-          self_dep_error: /Package '(?<path>.*)' is listed as a dependency of itself./,
-          incompatible_constraints: /Incompatible constraints in requirements/
-        }.freeze, T::Hash[T.nilable(String), Regexp])
+        PACKAGE_RESOLVER_ERRORS = T.let(
+          {
+            package_info_error: /Unable to determine package info/,
+            self_dep_error: /Package '(?<path>.*)' is listed as a dependency of itself./,
+            incompatible_constraints: /Incompatible constraints in requirements/
+          }.freeze,
+          T::Hash[T.nilable(String), Regexp]
+        )
 
         sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
@@ -78,8 +81,10 @@ module Dependabot
           @dependency_files         = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
           @credentials              = T.let(credentials, T::Array[Dependabot::Credential])
           @repo_contents_path       = T.let(repo_contents_path, T.nilable(String))
-          @error_handler = T.let(PoetryErrorHandler.new(dependencies: dependency, dependency_files: dependency_files),
-                                 Dependabot::Python::PoetryErrorHandler)
+          @error_handler = T.let(
+            PoetryErrorHandler.new(dependencies: dependency, dependency_files: dependency_files),
+            Dependabot::Python::PoetryErrorHandler
+          )
           @resolvable = T.let({}, T::Hash[Gem::Version, T::Boolean])
           @latest_resolvable_version_string = T.let({}, T::Hash[T.nilable(String), T.nilable(String)])
           @original_reqs_resolvable = T.let(nil, T.nilable(T::Boolean))
@@ -409,21 +414,27 @@ module Dependabot
       PACKAGE_NOT_FOUND = /Package (?<pkg>.*) ((?<req_ver>.*)) not found./
 
       # client access error codes while accessing package index
-      CLIENT_ERROR_CODES = T.let({
-        error401: /401 Client Error/,
-        error403: /403 Client Error/,
-        error404: /404 Client Error/,
-        http403: /HTTP error 403/,
-        http404: /HTTP error 404/
-      }.freeze, T::Hash[T.nilable(String), Regexp])
+      CLIENT_ERROR_CODES = T.let(
+        {
+          error401: /401 Client Error/,
+          error403: /403 Client Error/,
+          error404: /404 Client Error/,
+          http403: /HTTP error 403/,
+          http404: /HTTP error 404/
+        }.freeze,
+        T::Hash[T.nilable(String), Regexp]
+      )
 
       # server response error codes while accessing package index
-      SERVER_ERROR_CODES = T.let({
-        server500: /500 Server Error/,
-        server502: /502 Server Error/,
-        server503: /503 Server Error/,
-        server504: /504 Server Error/
-      }.freeze, T::Hash[T.nilable(String), Regexp])
+      SERVER_ERROR_CODES = T.let(
+        {
+          server500: /500 Server Error/,
+          server502: /502 Server Error/,
+          server503: /503 Server Error/,
+          server504: /504 Server Error/
+        }.freeze,
+        T::Hash[T.nilable(String), Regexp]
+      )
 
       # invalid configuration in pyproject.toml
       POETRY_VIRTUAL_ENV_CONFIG = %r{pypoetry/virtualenvs(.|\n)*list index out of range}
@@ -431,17 +442,23 @@ module Dependabot
       # error related to local project as dependency in pyproject.toml
       ERR_LOCAL_PROJECT_PATH = /Path (?<path>.*) for (?<dep>.*) does not exist/
 
-      TIME_OUT_ERRORS = T.let({
-        time_out_max_retries: /Max retries exceeded/,
-        time_out_read_timed_out: /Read timed out/,
-        time_out_inactivity: /Timed out due to inactivity/
-      }.freeze, T::Hash[T.nilable(String), Regexp])
+      TIME_OUT_ERRORS = T.let(
+        {
+          time_out_max_retries: /Max retries exceeded/,
+          time_out_read_timed_out: /Read timed out/,
+          time_out_inactivity: /Timed out due to inactivity/
+        }.freeze,
+        T::Hash[T.nilable(String), Regexp]
+      )
 
-      PACKAGE_RESOLVER_ERRORS = T.let({
-        package_info_error: /Unable to determine package info/,
-        self_dep_error: /Package '(?<path>.*)' is listed as a dependency of itself./,
-        incompatible_constraints: /Incompatible constraints in requirements/
-      }.freeze, T::Hash[T.nilable(String), Regexp])
+      PACKAGE_RESOLVER_ERRORS = T.let(
+        {
+          package_info_error: /Unable to determine package info/,
+          self_dep_error: /Package '(?<path>.*)' is listed as a dependency of itself./,
+          incompatible_constraints: /Incompatible constraints in requirements/
+        }.freeze,
+        T::Hash[T.nilable(String), Regexp]
+      )
 
       sig do
         params(

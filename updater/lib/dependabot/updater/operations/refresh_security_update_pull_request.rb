@@ -103,9 +103,11 @@ module Dependabot
             # If the job dependencies mismatch the parsed dependencies, then
             # we should close the PR as at least one thing we changed has been
             # removed from the project.
-            Dependabot.logger.info("Job dependencies do not match parsed dependencies. " \
-                                   "Job dependencies: #{job_dependencies}, " \
-                                   "Parsed dependencies: #{dependencies.map(&:name)}")
+            Dependabot.logger.info(
+              "Job dependencies do not match parsed dependencies. " \
+              "Job dependencies: #{job_dependencies}, " \
+              "Parsed dependencies: #{dependencies.map(&:name)}"
+            )
             close_pull_request(reason: :dependency_removed)
             return
           end
@@ -200,8 +202,10 @@ module Dependabot
           job_dependencies = job_dependencies.map(&:downcase).uniq
           changed_dependencies = dependency_change.updated_dependencies.map { |x| x.name.downcase }.uniq
 
-          Dependabot.logger.info("Job Dependencies (current): #{job_dependencies}, " \
-                                 "Changed Dependencies (new): #{changed_dependencies}")
+          Dependabot.logger.info(
+            "Job Dependencies (current): #{job_dependencies}, " \
+            "Changed Dependencies (new): #{changed_dependencies}"
+          )
 
           if changed_dependencies.sort_by(&:downcase) != job_dependencies.sort_by(&:downcase)
             # The dependencies being updated have changed. Close the existing
@@ -292,16 +296,20 @@ module Dependabot
 
         sig { params(dependency_change: Dependabot::DependencyChange).void }
         def create_pull_request(dependency_change)
-          Dependabot.logger.info("Submitting #{dependency_change.updated_dependencies.map(&:name).join(', ')} " \
-                                 "pull request for creation")
+          Dependabot.logger.info(
+            "Submitting #{dependency_change.updated_dependencies.map(&:name).join(', ')} " \
+            "pull request for creation"
+          )
 
           service.create_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
         end
 
         sig { params(dependency_change: Dependabot::DependencyChange).void }
         def update_pull_request(dependency_change)
-          Dependabot.logger.info("Submitting #{dependency_change.updated_dependencies.map(&:name).join(', ')} " \
-                                 "pull request for update")
+          Dependabot.logger.info(
+            "Submitting #{dependency_change.updated_dependencies.map(&:name).join(', ')} " \
+            "pull request for update"
+          )
 
           service.update_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
         end
@@ -312,8 +320,10 @@ module Dependabot
 
           job_dependencies = job.dependencies || []
 
-          Dependabot.logger.info("Telling backend to close pull request for " \
-                                 "#{job_dependencies.join(', ')} - #{reason_string}")
+          Dependabot.logger.info(
+            "Telling backend to close pull request for " \
+            "#{job_dependencies.join(', ')} - #{reason_string}"
+          )
 
           service.close_pull_request(job_dependencies, reason)
         end

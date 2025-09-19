@@ -209,8 +209,12 @@ module Dependabot
     end
 
     sig do
-      params(stdout: String, stderr: String, error_context: T::Hash[Symbol, T.untyped],
-             error_class: T.class_of(HelperSubprocessFailed))
+      params(
+        stdout: String,
+        stderr: String,
+        error_context: T::Hash[Symbol, T.untyped],
+        error_class: T.class_of(HelperSubprocessFailed)
+      )
         .returns(HelperSubprocessFailed)
     end
     def self.handle_json_parse_error(stdout, stderr, error_context, error_class)
@@ -232,8 +236,11 @@ module Dependabot
 
     # rubocop:enable Metrics/MethodLength
     sig do
-      params(stderr: T.nilable(String), error_context: T::Hash[Symbol, String],
-             error_class: T.class_of(HelperSubprocessFailed)).void
+      params(
+        stderr: T.nilable(String),
+        error_context: T::Hash[Symbol, String],
+        error_class: T.class_of(HelperSubprocessFailed)
+      ).void
     end
     def self.check_out_of_memory_error(stderr, error_context, error_class)
       return unless stderr&.include?("JavaScript heap out of memory")
@@ -325,8 +332,11 @@ module Dependabot
 
     # rubocop:disable Metrics/PerceivedComplexity
     sig do
-      params(credentials: T::Array[Dependabot::Credential], safe_directories: T::Array[String],
-             git_config_global_path: String).void
+      params(
+        credentials: T::Array[Dependabot::Credential],
+        safe_directories: T::Array[String],
+        git_config_global_path: String
+      ).void
     end
     def self.configure_git_to_use_https_with_credentials(credentials, safe_directories, git_config_global_path)
       File.open(git_config_global_path, "w") do |file|

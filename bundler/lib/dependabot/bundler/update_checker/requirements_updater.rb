@@ -302,8 +302,10 @@ module Dependabot
 
         # Updates the version in a "~>" constraint to allow the given version
         sig do
-          params(requirement: Gem::Requirement,
-                 version_to_be_permitted: Dependabot::Bundler::Version).returns(Gem::Requirement)
+          params(
+            requirement: Gem::Requirement,
+            version_to_be_permitted: Dependabot::Bundler::Version
+          ).returns(Gem::Requirement)
         end
         def update_twiddle_version(requirement, version_to_be_permitted)
           old_version = requirement.requirements.first.last
@@ -314,8 +316,10 @@ module Dependabot
         # Updates the version in a "<" or "<=" constraint to allow the given
         # version
         sig do
-          params(requirement: Gem::Requirement,
-                 version_to_be_permitted: Dependabot::Bundler::Version).returns(Gem::Requirement)
+          params(
+            requirement: Gem::Requirement,
+            version_to_be_permitted: Dependabot::Bundler::Version
+          ).returns(Gem::Requirement)
         end
         def update_greatest_version(requirement, version_to_be_permitted)
           op, version = requirement.requirements.first

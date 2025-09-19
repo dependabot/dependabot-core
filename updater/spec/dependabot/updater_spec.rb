@@ -168,10 +168,12 @@ RSpec.describe Dependabot::Updater do
 
         job = build_job
         service = build_service
-        error = Octokit::TooManyRequests.new({
-          status: 403,
-          response_headers: { "X-RateLimit-Reset" => 42 }
-        })
+        error = Octokit::TooManyRequests.new(
+          {
+            status: 403,
+            response_headers: { "X-RateLimit-Reset" => 42 }
+          }
+        )
         allow(service).to receive(:create_pull_request).and_raise(error)
         updater = build_updater(service: service, job: job)
 
@@ -785,16 +787,18 @@ RSpec.describe Dependabot::Updater do
               ]
             )
 
-          job = build_job(ignore_conditions: [
-            {
-              "dependency-name" => "dummy-pkg-a",
-              "version-requirement" => "~> 2.0.0"
-            },
-            {
-              "dependency-name" => "dummy-pkg-b",
-              "version-requirement" => "~> 1.0.0"
-            }
-          ])
+          job = build_job(
+            ignore_conditions: [
+              {
+                "dependency-name" => "dummy-pkg-a",
+                "version-requirement" => "~> 2.0.0"
+              },
+              {
+                "dependency-name" => "dummy-pkg-b",
+                "version-requirement" => "~> 1.0.0"
+              }
+            ]
+          )
           service = build_service
           updater = build_updater(service: service, job: job)
 
@@ -833,15 +837,17 @@ RSpec.describe Dependabot::Updater do
       it "doesn't call can_update? (so short-circuits resolution)" do
         checker = stub_update_checker
 
-        job = build_job(existing_pull_requests: [
-          [
-            {
-              "dependency-name" => "dummy-pkg-b",
-              "dependency-version" => "1.2.0",
-              "pr-number" => 123
-            }
+        job = build_job(
+          existing_pull_requests: [
+            [
+              {
+                "dependency-name" => "dummy-pkg-b",
+                "dependency-version" => "1.2.0",
+                "pr-number" => 123
+              }
+            ]
           ]
-        ])
+        )
         service = build_service
         updater = build_updater(service: service, job: job)
 
@@ -862,14 +868,16 @@ RSpec.describe Dependabot::Updater do
       it "doesn't update the dependency" do
         checker = stub_update_checker(latest_version: Gem::Version.new("1.3.0"))
 
-        job = build_job(existing_pull_requests: [
-          [
-            {
-              "dependency-name" => "dummy-pkg-b",
-              "dependency-version" => "1.2.0"
-            }
+        job = build_job(
+          existing_pull_requests: [
+            [
+              {
+                "dependency-name" => "dummy-pkg-b",
+                "dependency-version" => "1.2.0"
+              }
+            ]
           ]
-        ])
+        )
         service = build_service
         updater = build_updater(service: service, job: job)
 

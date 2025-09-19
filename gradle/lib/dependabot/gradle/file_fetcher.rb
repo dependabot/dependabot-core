@@ -120,9 +120,11 @@ module Dependabot
           lockfile_path = File.join(root_dir, path, @lockfile_name)
 
           # Skip excluded subproject lockfiles
-          next nil if Dependabot::FileFiltering.should_exclude_path?(lockfile_path,
-                                                                     "subproject lockfile in subproject '#{path}'",
-                                                                     @exclude_paths)
+          next nil if Dependabot::FileFiltering.should_exclude_path?(
+            lockfile_path,
+            "subproject lockfile in subproject '#{path}'",
+            @exclude_paths
+          )
 
           fetch_file_from_host(lockfile_path)
         rescue Dependabot::DependencyFileNotFound
@@ -145,18 +147,22 @@ module Dependabot
             buildfile_path = File.join(root_dir, path, @buildfile_name)
 
             # Skip excluded subproject buildfiles
-            next nil if Dependabot::FileFiltering.should_exclude_path?(buildfile_path,
-                                                                       "subproject buildfile in subproject '#{path}'",
-                                                                       @exclude_paths)
+            next nil if Dependabot::FileFiltering.should_exclude_path?(
+              buildfile_path,
+              "subproject buildfile in subproject '#{path}'",
+              @exclude_paths
+            )
 
             fetch_file_from_host(buildfile_path)
           else
             subproject_dir = File.join(root_dir, path)
 
             # Skip excluded subproject directories
-            next nil if Dependabot::FileFiltering.should_exclude_path?(subproject_dir,
-                                                                       "subproject directory for subproject '#{path}'",
-                                                                       @exclude_paths)
+            next nil if Dependabot::FileFiltering.should_exclude_path?(
+              subproject_dir,
+              "subproject directory for subproject '#{path}'",
+              @exclude_paths
+            )
 
             buildfile(subproject_dir)
           end
@@ -189,9 +195,11 @@ module Dependabot
 
         dependency_plugin_paths.filter_map do |path|
           # Skip excluded dependency script plugins
-          next nil if Dependabot::FileFiltering.should_exclude_path?(path,
-                                                                     "dependency script plugin",
-                                                                     @exclude_paths)
+          next nil if Dependabot::FileFiltering.should_exclude_path?(
+            path,
+            "dependency script plugin",
+            @exclude_paths
+          )
 
           fetch_file_from_host(path)
         rescue Dependabot::DependencyFileNotFound
