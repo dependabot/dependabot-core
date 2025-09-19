@@ -114,6 +114,9 @@ RSpec.describe Dependabot::DependencySnapshot do
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:allow_refresh_for_existing_pr_dependencies)
       .and_return(true)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:group_membership_enforcement)
+      .and_return(false)
   end
 
   after do

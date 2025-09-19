@@ -1,14 +1,1 @@
 inherit_from: ../.rubocop.yml
-
-inherit_mode:
-  merge:
-    - Exclude
-
-Sorbet/StrictSigil:
-  Exclude:
-    - lib/dependabot/cargo/file_updater/manifest_updater.rb
-    - lib/dependabot/cargo/metadata_finder.rb
-    - lib/dependabot/cargo/update_checker/file_preparer.rb
-    - lib/dependabot/cargo/update_checker/requirements_updater.rb
-    - lib/dependabot/cargo/update_checker.rb
-    - lib/dependabot/cargo/version.rb

@@ -186,7 +186,7 @@ module Dependabot
           )
         end
 
-        sig { params(dependency: Dependabot::Dependency).returns(T.nilable(T::Hash[String, T.untyped])) }
+        sig { params(dependency: Dependabot::Dependency).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
         def source_for(dependency)
           dependency.requirements
                     .find { |r| r.fetch(:source) }

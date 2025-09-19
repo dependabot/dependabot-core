@@ -15,9 +15,25 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder::Dependen
       "password" => "token"
     }]
   end
+  let(:dependency) do
+    Dependabot::Dependency.new(
+      name: "irrelevant",
+      version: "1.0.0",
+      requirements: [
+        {
+          file: "Gemfile",
+          requirement: "~> 1.0",
+          groups: ["default"],
+          source: nil
+        }
+      ],
+      package_manager: "bundler"
+    )
+  end
+
   let(:source) do
     described_class.new(
-      dependency: "irrelevant",
+      dependency: dependency,
       dependency_files: files,
       credentials: credentials,
       options: {}

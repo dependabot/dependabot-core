@@ -9,11 +9,17 @@
 module Commonmarker
   private
 
+  # source://commonmarker//lib/commonmarker/extension.rb#7
   def commonmark_parse(*_arg0); end
+
+  # source://commonmarker//lib/commonmarker/extension.rb#7
   def commonmark_to_html(*_arg0); end
 
   class << self
+    # source://commonmarker//lib/commonmarker/extension.rb#7
     def commonmark_parse(*_arg0); end
+
+    # source://commonmarker//lib/commonmarker/extension.rb#7
     def commonmark_to_html(*_arg0); end
 
     # Public: Parses a CommonMark string into an HTML string.
@@ -89,7 +95,10 @@ class Commonmarker::Node
   include ::Enumerable
   include ::Commonmarker::Node::Inspect
 
+  # source://commonmarker//lib/commonmarker/extension.rb#7
   def append_child(_arg0); end
+
+  # source://commonmarker//lib/commonmarker/extension.rb#7
   def delete; end
 
   # Public: Iterate over the children (if any) of the current pointer.
@@ -97,31 +106,82 @@ class Commonmarker::Node
   # source://commonmarker//lib/commonmarker/node.rb#24
   def each; end
 
+  # source://commonmarker//lib/commonmarker/extension.rb#7
   def fence_info; end
+
+  # source://commonmarker//lib/commonmarker/extension.rb#7
   def fence_info=(_arg0); end
+
+  # source://commonmarker//lib/commonmarker/extension.rb#7
   def first_child; end
+
+  # source://commonmarker//lib/commonmarker/extension.rb#7
   def header_level; end
+
+  # source://commonmarker//lib/commonmarker/extension.rb#7
   def header_level=(_arg0); end
+
+  # source://commonmarker//lib/commonmarker/extension.rb#7
   def insert_after(_arg0); end
+
+  # source://commonmarker//lib/commonmarker/extension.rb#7
   def insert_before(_arg0); end
+
+  # source://commonmarker//lib/commonmarker/extension.rb#7
   def last_child; end
+
+  # source://commonmarker//lib/commonmarker/extension.rb#7
   def list_start; end
+
+  # source://commonmarker//lib/commonmarker/extension.rb#7
   def list_start=(_arg0); end
+
+  # source://commonmarker//lib/commonmarker/extension.rb#7
   def list_tight; end
+
+  # source://commonmarker//lib/commonmarker/extension.rb#7
   def list_tight=(_arg0); end
+
+  # source://commonmarker//lib/commonmarker/extension.rb#7
   def list_type; end
+
+  # source://commonmarker//lib/commonmarker/extension.rb#7
   def list_type=(_arg0); end
+
+  # source://commonmarker//lib/commonmarker/extension.rb#7
   def next_sibling; end
+
+  # source://commonmarker//lib/commonmarker/extension.rb#7
   def node_to_commonmark(*_arg0); end
+
+  # source://commonmarker//lib/commonmarker/extension.rb#7
   def node_to_html(*_arg0); end
+
+  # source://commonmarker//lib/commonmarker/extension.rb#7
   def parent; end
+
+  # source://commonmarker//lib/commonmarker/extension.rb#7
   def prepend_child(_arg0); end
+
+  # source://commonmarker//lib/commonmarker/extension.rb#7
   def previous_sibling; end
+
+  # source://commonmarker//lib/commonmarker/extension.rb#7
   def replace(_arg0); end
+
+  # source://commonmarker//lib/commonmarker/extension.rb#7
   def source_position; end
+
+  # source://commonmarker//lib/commonmarker/extension.rb#7
   def string_content; end
+
+  # source://commonmarker//lib/commonmarker/extension.rb#7
   def string_content=(_arg0); end
+
+  # source://commonmarker//lib/commonmarker/extension.rb#7
   def title; end
+
+  # source://commonmarker//lib/commonmarker/extension.rb#7
   def title=(_arg0); end
 
   # Public: Convert the node to a CommonMark string.
@@ -148,8 +208,13 @@ class Commonmarker::Node
   # source://commonmarker//lib/commonmarker/node.rb#41
   def to_html(options: T.unsafe(nil), plugins: T.unsafe(nil)); end
 
+  # source://commonmarker//lib/commonmarker/extension.rb#7
   def type; end
+
+  # source://commonmarker//lib/commonmarker/extension.rb#7
   def url; end
+
+  # source://commonmarker//lib/commonmarker/extension.rb#7
   def url=(_arg0); end
 
   # Public: An iterator that "walks the tree," descending into children recursively.
@@ -163,6 +228,7 @@ class Commonmarker::Node
   def walk(&block); end
 
   class << self
+    # source://commonmarker//lib/commonmarker/extension.rb#7
     def new(*_arg0); end
   end
 end

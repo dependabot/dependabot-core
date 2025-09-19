@@ -31,9 +31,12 @@ gem "dependabot-terraform", path: "terraform"
 gem "dependabot-uv", path: "uv"
 gem "dependabot-vcpkg", path: "vcpkg"
 
+# HTTP client (used by updater module)
+gem "http", "~> 5.1"
+
 # Sorbet
-gem "sorbet", "0.6.12479", group: :development
-gem "tapioca", "0.17.7", require: false, group: :development
+gem "sorbet", "~> 0.6", group: :development
+gem "tapioca", "~> 0.17", require: false, group: :development
 
 gem "zeitwerk", "~> 2.7"
 

@@ -39,8 +39,9 @@ module Dependabot
           dep: Dependabot::Dependency,
           groups: T::Array[Dependabot::DependencyGroup],
           contains_checker:
-            T.proc.params(group: Dependabot::DependencyGroup, dep: Dependabot::Dependency, directory: String)
-                             .returns(T::Boolean), directory: String
+            T.proc.params(group: Dependabot::DependencyGroup, dep: Dependabot::Dependency, directory: T.nilable(String))
+                             .returns(T::Boolean),
+          directory: T.nilable(String)
         ).returns(T::Boolean)
       end
       def dependency_belongs_to_more_specific_group?(current_group, dep, groups, contains_checker, directory)

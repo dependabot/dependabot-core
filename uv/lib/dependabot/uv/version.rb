@@ -1,5 +1,7 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
+
+require "sorbet-runtime"
 
 require "dependabot/version"
 require "dependabot/utils"
@@ -9,6 +11,8 @@ require "dependabot/utils"
 module Dependabot
   module Uv
     class Version < Dependabot::Version
+      extend T::Sig
+
       sig { returns(Integer) }
       attr_reader :epoch
 
@@ -27,8 +31,8 @@ module Dependabot
       sig { returns(T.nilable(T::Array[T.any(String, Integer)])) }
       attr_reader :local
 
-      INFINITY = 1000
-      NEGATIVE_INFINITY = -INFINITY
+      INFINITY = T.let(1000, Integer)
+      NEGATIVE_INFINITY = T.let(-INFINITY, Integer)
 
       # See https://peps.python.org/pep-0440/#appendix-b-parsing-version-strings-with-regular-expressions
       VERSION_PATTERN = /
@@ -72,10 +76,10 @@ module Dependabot
       end
 
       sig { override.params(version: VersionParameter).void }
-      def initialize(version)
+      def initialize(version) # rubocop:disable Metrics/AbcSize
         raise Dependabot::BadRequirementError, "Malformed version string - string is nil" if version.nil?
 
-        @version_string = version.to_s
+        @version_string = T.let(version.to_s, String)
 
         raise Dependabot::BadRequirementError, "Malformed version string - string is empty" if @version_string.empty?
 
@@ -86,12 +90,17 @@ module Dependabot
                 "Malformed version string - #{@version_string} does not match regex"
         end
 
-        @epoch = matches["epoch"].to_i
-        @release_segment = matches["release"]&.split(".")&.map(&:to_i) || []
-        @pre = parse_letter_version(matches["pre_l"], matches["pre_n"])
-        @post = parse_letter_version(matches["post_l"], matches["post_n1"] || matches["post_n2"])
-        @dev = parse_letter_version(matches["dev_l"], matches["dev_n"])
-        @local = parse_local_version(matches["local"])
+        @epoch = T.let(matches["epoch"].to_i, Integer)
+        @release_segment = T.let(matches["release"]&.split(".")&.map(&:to_i) || [], T::Array[Integer])
+        @pre = T.let(parse_letter_version(matches["pre_l"], matches["pre_n"]),
+                     T.nilable(T::Array[T.any(String, Integer)]))
+        @post = T.let(
+          parse_letter_version(matches["post_l"], matches["post_n1"] || matches["post_n2"]),
+          T.nilable(T::Array[T.any(String, Integer)])
+        )
+        @dev = T.let(parse_letter_version(matches["dev_l"], matches["dev_n"]),
+                     T.nilable(T::Array[T.any(String, Integer)]))
+        @local = T.let(parse_local_version(matches["local"]), T.nilable(T::Array[T.any(String, Integer)]))
         super(matches["release"] || "")
       end
 
@@ -123,7 +132,6 @@ module Dependabot
       sig { params(other: VersionParameter).returns(Integer) }
       def <=>(other)
         other = Dependabot::Uv::Version.new(other.to_s) unless other.is_a?(Dependabot::Uv::Version)
-        other = T.cast(other, Dependabot::Uv::Version)
 
         epoch_comparison = epoch <=> other.epoch
         return epoch_comparison unless epoch_comparison.zero?
@@ -183,13 +191,13 @@ module Dependabot
           # - Alphanumeric segments sort lexicographically
           # - Numeric segments sort numerically
           # - Shorter versions sort before longer versions when the prefixes match exactly
-          local&.map do |token|
+          T.must(local).map do |token|
             if token.is_a?(Integer)
               [token, ""]
             else
               [NEGATIVE_INFINITY, token]
             end
-          end
+          end.flatten
         end
       end
 
