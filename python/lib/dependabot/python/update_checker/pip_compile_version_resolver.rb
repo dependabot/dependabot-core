@@ -165,8 +165,22 @@ module Dependabot
 
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/PerceivedComplexity
+        # rubocop:disable Metrics/CyclomaticComplexity
         sig { params(message: String).returns(T.nilable(String)) }
         def handle_pip_compile_errors(message) # rubocop:disable Metrics/MethodLength
+          if message.include?("ModuleNotFoundError: No module named 'piptools'")
+            raise DependencyFileNotResolvable, "pip-compile could not be run. " \
+                                               "Please ensure pip-tools is installed in the Python environment."
+          end
+
+          # Handle version matching failures
+          if message.include?("Could not find a version that matches")
+            check_original_requirements_resolvable
+            # Extract the error message for better reporting
+            cleaned_message = clean_error_message(message)
+            raise DependencyFileNotResolvable, cleaned_message.empty? ? message : cleaned_message
+          end
+
           if message.include?(RESOLUTION_IMPOSSIBLE_ERROR)
             check_original_requirements_resolvable
             # If the original requirements are resolvable but we get an
@@ -229,6 +243,7 @@ module Dependabot
         end
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/PerceivedComplexity
+        # rubocop:enable Metrics/CyclomaticComplexity
 
         # Needed because pip-compile's resolver isn't perfect.
         # Note: We raise errors from this method, rather than returning a
@@ -578,10 +593,13 @@ module Dependabot
 
       HASH_MISMATCH = T.let(/HashMismatch/, Regexp)
 
+      VERSION_MATCHING_ERROR = T.let(/Could not find a version that matches/, Regexp)
+
       sig { params(error: String).void }
       def handle_pipcompile_error(error)
         return unless error.match?(SUBPROCESS_ERROR) || error.match?(INSTALLATION_ERROR) ||
-                      error.match?(INSTALLATION_SUBPROCESS_ERROR) || error.match?(HASH_MISMATCH)
+                      error.match?(INSTALLATION_SUBPROCESS_ERROR) || error.match?(HASH_MISMATCH) ||
+                      error.match?(VERSION_MATCHING_ERROR)
 
         raise DependencyFileNotResolvable, "Error resolving dependency"
       end
