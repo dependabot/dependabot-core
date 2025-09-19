@@ -238,8 +238,10 @@ module Dependabot
             update_pyproject: T::Boolean
           ).void
         end
-        def write_temporary_dependency_files(updated_req: nil,
-                                             update_pyproject: true)
+        def write_temporary_dependency_files(
+          updated_req: nil,
+          update_pyproject: true
+        )
           dependency_files.each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)

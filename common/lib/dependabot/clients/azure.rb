@@ -192,8 +192,13 @@ module Dependabot
         )
           .returns(T.untyped)
       end
-      def create_commit(branch_name, base_commit, commit_message, files,
-                        author_details)
+      def create_commit(
+        branch_name,
+        base_commit,
+        commit_message,
+        files,
+        author_details
+      )
         content = {
           refUpdates: [
             { name: "refs/heads/" + branch_name, oldObjectId: base_commit }
@@ -238,9 +243,16 @@ module Dependabot
         )
           .returns(T.untyped)
       end
-      def create_pull_request(pr_name, source_branch, target_branch,
-                              pr_description, labels,
-                              reviewers = nil, assignees = nil, work_item = nil)
+      def create_pull_request(
+        pr_name,
+        source_branch,
+        target_branch,
+        pr_description,
+        labels,
+        reviewers = nil,
+        assignees = nil,
+        work_item = nil
+      )
         content = {
           sourceRefName: "refs/heads/" + source_branch,
           targetRefName: "refs/heads/" + target_branch,
@@ -273,9 +285,16 @@ module Dependabot
         )
           .returns(T.untyped)
       end
-      def autocomplete_pull_request(pull_request_id, auto_complete_set_by, merge_commit_message,
-                                    delete_source_branch = true, squash_merge = true, merge_strategy = "squash",
-                                    trans_work_items = true, ignore_config_ids = [])
+      def autocomplete_pull_request(
+        pull_request_id,
+        auto_complete_set_by,
+        merge_commit_message,
+        delete_source_branch = true,
+        squash_merge = true,
+        merge_strategy = "squash",
+        trans_work_items = true,
+        ignore_config_ids = []
+      )
         content = {
           autoCompleteSetBy: {
             id: auto_complete_set_by

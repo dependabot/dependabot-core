@@ -38,9 +38,14 @@ module Dependabot
       )
         .void
     end
-    def initialize(dependency:, credentials:,
-                   ignored_versions: [], raise_on_ignored: false,
-                   consider_version_branches_pinned: false, dependency_source_details: nil)
+    def initialize(
+      dependency:,
+      credentials:,
+      ignored_versions: [],
+      raise_on_ignored: false,
+      consider_version_branches_pinned: false,
+      dependency_source_details: nil
+    )
       @dependency = dependency
       @credentials = credentials
       @ignored_versions = ignored_versions

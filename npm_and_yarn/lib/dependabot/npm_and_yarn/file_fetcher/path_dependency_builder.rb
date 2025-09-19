@@ -23,8 +23,13 @@ module Dependabot
           )
             .void
         end
-        def initialize(dependency_name:, path:, directory:, package_lock:,
-                       yarn_lock:)
+        def initialize(
+          dependency_name:,
+          path:,
+          directory:,
+          package_lock:,
+          yarn_lock:
+        )
           @dependency_name = dependency_name
           @path = path
           @directory = directory

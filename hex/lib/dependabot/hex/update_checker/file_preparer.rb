@@ -27,10 +27,13 @@ module Dependabot
             latest_allowable_version: T.nilable(Gem::Version)
           ).void
         end
-        def initialize(dependency_files:, dependency:,
-                       unlock_requirement: true,
-                       replacement_git_pin: nil,
-                       latest_allowable_version: nil)
+        def initialize(
+          dependency_files:,
+          dependency:,
+          unlock_requirement: true,
+          replacement_git_pin: nil,
+          latest_allowable_version: nil
+        )
           @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
           @dependency = T.let(dependency, Dependabot::Dependency)
           @unlock_requirement = T.let(unlock_requirement ? true : false, T::Boolean)

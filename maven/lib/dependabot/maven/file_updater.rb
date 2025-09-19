@@ -322,8 +322,13 @@ module Dependabot
           parent_indentation_level: String
         ).void
       end
-      def add_dependency_entry(dependency, requirement, dependencies_node, current_indentation_level,
-                               parent_indentation_level)
+      def add_dependency_entry(
+        dependency,
+        requirement,
+        dependencies_node,
+        current_indentation_level,
+        parent_indentation_level
+      )
         dependency_node = REXML::Element.new("dependency", dependencies_node)
         dependency_node.add_text("\n#{current_indentation_level}")
         group_id = REXML::Element.new("groupId", dependency_node)

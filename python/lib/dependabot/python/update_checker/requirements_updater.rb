@@ -39,8 +39,12 @@ module Dependabot
             latest_resolvable_version: T.nilable(String)
           ).void
         end
-        def initialize(requirements:, update_strategy:, has_lockfile:,
-                       latest_resolvable_version:)
+        def initialize(
+          requirements:,
+          update_strategy:,
+          has_lockfile:,
+          latest_resolvable_version:
+        )
           @requirements = T.let(requirements, T::Array[T::Hash[Symbol, T.untyped]])
           @update_strategy = T.let(update_strategy, Dependabot::RequirementsUpdateStrategy)
           @has_lockfile = T.let(has_lockfile, T::Boolean)

@@ -118,9 +118,18 @@ module Dependabot
         metadata: T.nilable(T::Hash[T.any(Symbol, String), String])
       ).void
     end
-    def initialize(name:, requirements:, package_manager:, version: nil,
-                   previous_version: nil, previous_requirements: nil, directory: nil,
-                   subdependency_metadata: [], removed: false, metadata: {})
+    def initialize(
+      name:,
+      requirements:,
+      package_manager:,
+      version: nil,
+      previous_version: nil,
+      previous_requirements: nil,
+      directory: nil,
+      subdependency_metadata: [],
+      removed: false,
+      metadata: {}
+    )
       @name = name
       @version = T.let(
         case version

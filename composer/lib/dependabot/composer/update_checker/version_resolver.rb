@@ -61,8 +61,13 @@ module Dependabot
             latest_allowable_version: T.nilable(Gem::Version)
           ).void
         end
-        def initialize(credentials:, dependency:, dependency_files:,
-                       requirements_to_unlock:, latest_allowable_version:)
+        def initialize(
+          credentials:,
+          dependency:,
+          dependency_files:,
+          requirements_to_unlock:,
+          latest_allowable_version:
+        )
           @credentials                  = credentials
           @dependency                   = dependency
           @dependency_files             = dependency_files

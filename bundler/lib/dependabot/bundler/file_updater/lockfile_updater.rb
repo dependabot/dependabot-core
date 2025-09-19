@@ -36,8 +36,13 @@ module Dependabot
             repo_contents_path: T.nilable(String)
           ).void
         end
-        def initialize(dependencies:, dependency_files:, credentials:, options:,
-                       repo_contents_path: nil)
+        def initialize(
+          dependencies:,
+          dependency_files:,
+          credentials:,
+          options:,
+          repo_contents_path: nil
+        )
           @dependencies = T.let(dependencies, T::Array[Dependabot::Dependency])
           @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
           @repo_contents_path = T.let(repo_contents_path, T.nilable(String))

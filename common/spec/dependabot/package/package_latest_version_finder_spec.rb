@@ -9,8 +9,17 @@ require "dependabot/package/package_latest_version_finder"
 
 # Define the stubbed PackageLatestVersionFinder
 class StubPackageLatestVersionFinder < Dependabot::Package::PackageLatestVersionFinder
-  def initialize(dependency:, dependency_files:, credentials:, ignored_versions:, raise_on_ignored:,
-                 security_advisories:, package_name:, cooldown_options:, releases:)
+  def initialize(
+    dependency:,
+    dependency_files:,
+    credentials:,
+    ignored_versions:,
+    raise_on_ignored:,
+    security_advisories:,
+    package_name:,
+    cooldown_options:,
+    releases:
+  )
     super(
       dependency: dependency,
       dependency_files: dependency_files,

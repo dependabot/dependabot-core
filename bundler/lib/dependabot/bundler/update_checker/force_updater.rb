@@ -33,10 +33,16 @@ module Dependabot
             update_multiple_dependencies: T::Boolean
           ).void
         end
-        def initialize(dependency:, dependency_files:, credentials:, target_version:,
-                       requirements_update_strategy:, options:,
-                       repo_contents_path: nil,
-                       update_multiple_dependencies: true)
+        def initialize(
+          dependency:,
+          dependency_files:,
+          credentials:,
+          target_version:,
+          requirements_update_strategy:,
+          options:,
+          repo_contents_path: nil,
+          update_multiple_dependencies: true
+        )
           @dependency                   = dependency
           @dependency_files             = dependency_files
           @repo_contents_path           = repo_contents_path

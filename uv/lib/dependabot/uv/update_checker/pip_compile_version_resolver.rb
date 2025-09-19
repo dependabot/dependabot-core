@@ -365,8 +365,10 @@ module Dependabot
         sig do
           params(updated_req: T.nilable(String), update_requirement: T::Boolean).void
         end
-        def write_temporary_dependency_files(updated_req: nil,
-                                             update_requirement: true)
+        def write_temporary_dependency_files(
+          updated_req: nil,
+          update_requirement: true
+        )
           dependency_files.each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)

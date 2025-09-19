@@ -119,9 +119,11 @@ end
 # Creates a temporary directory and writes the provided files into it.
 #
 # @param files [DependencyFile] the files to be written into the temporary directory
-def write_tmp_repo(files,
-                   tmp_dir_path: Dependabot::Utils::BUMP_TMP_DIR_PATH,
-                   tmp_dir_prefix: Dependabot::Utils::BUMP_TMP_FILE_PREFIX)
+def write_tmp_repo(
+  files,
+  tmp_dir_path: Dependabot::Utils::BUMP_TMP_DIR_PATH,
+  tmp_dir_prefix: Dependabot::Utils::BUMP_TMP_FILE_PREFIX
+)
   FileUtils.mkdir_p(tmp_dir_path)
   tmp_repo = Dir.mktmpdir(tmp_dir_prefix, tmp_dir_path)
   tmp_repo_path = Pathname.new(tmp_repo).expand_path
@@ -150,10 +152,12 @@ end
 # @param project [String] the project directory, located in
 # "spec/fixtures/projects"
 # @return [String] the path to the new temp repo.
-def build_tmp_repo(project,
-                   path: "projects",
-                   tmp_dir_path: Dependabot::Utils::BUMP_TMP_DIR_PATH,
-                   tmp_dir_prefix: Dependabot::Utils::BUMP_TMP_FILE_PREFIX)
+def build_tmp_repo(
+  project,
+  path: "projects",
+  tmp_dir_path: Dependabot::Utils::BUMP_TMP_DIR_PATH,
+  tmp_dir_prefix: Dependabot::Utils::BUMP_TMP_FILE_PREFIX
+)
   project_path = File.expand_path(File.join("spec/fixtures", path, project))
 
   FileUtils.mkdir_p(tmp_dir_path)

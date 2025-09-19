@@ -30,8 +30,14 @@ module Dependabot
           options: T::Hash[Symbol, T.untyped]
         ).void
       end
-      def initialize(dependency_files:, source: nil, repo_contents_path: nil,
-                     credentials: [], reject_external_code: false, options: {})
+      def initialize(
+        dependency_files:,
+        source: nil,
+        repo_contents_path: nil,
+        credentials: [],
+        reject_external_code: false,
+        options: {}
+      )
         super
 
         set_go_environment_variables

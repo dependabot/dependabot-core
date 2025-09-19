@@ -24,9 +24,15 @@ module Dependabot
             cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
           ).void
         end
-        def initialize(dependency:, dependency_files:, credentials:,
-                       ignored_versions:, raise_on_ignored:, security_advisories:,
-                       cooldown_options:)
+        def initialize(
+          dependency:,
+          dependency_files:,
+          credentials:,
+          ignored_versions:,
+          raise_on_ignored:,
+          security_advisories:,
+          cooldown_options:
+        )
           @raise_on_ignored = T.let(raise_on_ignored, T::Boolean)
           @cooldown_options = T.let(cooldown_options, T.nilable(Dependabot::Package::ReleaseCooldownOptions))
 

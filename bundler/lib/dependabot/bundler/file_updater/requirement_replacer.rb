@@ -33,8 +33,13 @@ module Dependabot
             insert_if_bare: T::Boolean
           ).void
         end
-        def initialize(dependency:, file_type:, updated_requirement:,
-                       previous_requirement: nil, insert_if_bare: false)
+        def initialize(
+          dependency:,
+          file_type:,
+          updated_requirement:,
+          previous_requirement: nil,
+          insert_if_bare: false
+        )
           @dependency           = dependency
           @file_type            = file_type
           @updated_requirement  = updated_requirement
@@ -121,8 +126,12 @@ module Dependabot
               insert_if_bare: T::Boolean
             ).void
           end
-          def initialize(dependency:, file_type:, updated_requirement:,
-                         insert_if_bare:)
+          def initialize(
+            dependency:,
+            file_type:,
+            updated_requirement:,
+            insert_if_bare:
+          )
             @dependency = T.let(dependency, Dependabot::Dependency)
             @file_type = T.let(file_type, Symbol)
             @updated_requirement = T.let(updated_requirement, String)
@@ -250,9 +259,11 @@ module Dependabot
               use_equality_operator: T::Boolean
             ).returns(String)
           end
-          def new_requirement_string(quote_characters:,
-                                     space_after_specifier:,
-                                     use_equality_operator:)
+          def new_requirement_string(
+            quote_characters:,
+            space_after_specifier:,
+            use_equality_operator:
+          )
             open_quote, close_quote = quote_characters
             new_requirement_string =
               updated_requirement.split(",")

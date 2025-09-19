@@ -30,10 +30,15 @@ module Dependabot
             cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
           ).void
         end
-        def initialize(dependency:, dependency_files:, credentials:,
-                       ignored_versions: [],
-                       security_advisories: [], options: {},
-                       cooldown_options: nil)
+        def initialize(
+          dependency:,
+          dependency_files:,
+          credentials:,
+          ignored_versions: [],
+          security_advisories: [],
+          options: {},
+          cooldown_options: nil
+        )
           @dependency = dependency
           @dependency_files = dependency_files
           @credentials = credentials

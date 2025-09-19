@@ -184,8 +184,12 @@ module Dependabot
         )
           .returns(Dependabot::DependencyFile)
       end
-      def update_version_in_buildfile(dependency, buildfile, previous_req,
-                                      requirement)
+      def update_version_in_buildfile(
+        dependency,
+        buildfile,
+        previous_req,
+        requirement
+      )
         original_content = T.must(buildfile.content.dup)
 
         updated_content =

@@ -50,9 +50,15 @@ module Dependabot
         )
           .void
       end
-      def initialize(source:, custom_labels:, credentials:, dependencies:,
-                     includes_security_fixes:, label_language:,
-                     automerge_candidate:)
+      def initialize(
+        source:,
+        custom_labels:,
+        credentials:,
+        dependencies:,
+        includes_security_fixes:,
+        label_language:,
+        automerge_candidate:
+      )
         @source                  = source
         @custom_labels           = custom_labels
         @credentials             = credentials

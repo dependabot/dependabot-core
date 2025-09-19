@@ -32,8 +32,12 @@ module Dependabot
       )
         .void
     end
-    def initialize(dependency_name:, package_manager:,
-                   vulnerable_versions: [], safe_versions: [])
+    def initialize(
+      dependency_name:,
+      package_manager:,
+      vulnerable_versions: [],
+      safe_versions: []
+    )
       @dependency_name = dependency_name
       @package_manager = package_manager
       @vulnerable_version_strings = T.let(vulnerable_versions || [], T::Array[T.any(String, Dependabot::Requirement)])

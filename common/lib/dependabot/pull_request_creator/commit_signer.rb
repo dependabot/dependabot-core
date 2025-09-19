@@ -35,8 +35,13 @@ module Dependabot
           signature_key: String
         ).void
       end
-      def initialize(author_details:, commit_message:, tree_sha:, parent_sha:,
-                     signature_key:)
+      def initialize(
+        author_details:,
+        commit_message:,
+        tree_sha:,
+        parent_sha:,
+        signature_key:
+      )
         @author_details = author_details
         @commit_message = commit_message
         @tree_sha = tree_sha

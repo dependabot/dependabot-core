@@ -27,10 +27,12 @@ module Dependabot
           )
             .returns(T::Array[DependencyFile])
         end
-        def update_files_for_property_change(property_name:,
-                                             callsite_buildfile:,
-                                             previous_value:,
-                                             updated_value:)
+        def update_files_for_property_change(
+          property_name:,
+          callsite_buildfile:,
+          previous_value:,
+          updated_value:
+        )
           declaration_details = T.must(
             property_value_finder.property_details(
               property_name: property_name,
