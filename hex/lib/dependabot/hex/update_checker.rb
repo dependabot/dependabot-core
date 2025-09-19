@@ -225,8 +225,10 @@ module Dependabot
         )
           .returns(T::Array[Dependabot::DependencyFile])
       end
-      def prepared_dependency_files(unlock_requirement:,
-                                    latest_allowable_version: nil)
+      def prepared_dependency_files(
+        unlock_requirement:,
+        latest_allowable_version: nil
+      )
         FilePreparer.new(
           dependency: dependency,
           dependency_files: dependency_files,

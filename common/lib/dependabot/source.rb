@@ -149,8 +149,16 @@ module Dependabot
         api_endpoint: T.nilable(String)
       ).void
     end
-    def initialize(provider:, repo:, directory: nil, directories: nil, branch: nil, commit: nil,
-                   hostname: nil, api_endpoint: nil)
+    def initialize(
+      provider:,
+      repo:,
+      directory: nil,
+      directories: nil,
+      branch: nil,
+      commit: nil,
+      hostname: nil,
+      api_endpoint: nil
+    )
       if (hostname.nil? ^ api_endpoint.nil?) && (provider != "codecommit")
         msg = "Both hostname and api_endpoint must be specified if either " \
               "are. Alternatively, both may be left blank to use the " \

@@ -81,10 +81,19 @@ module Dependabot
       )
         .void
     end
-    def initialize(name:, content:, directory: "/", type: "file",
-                   support_file: false, vendored_file: false, symlink_target: nil,
-                   content_encoding: ContentEncoding::UTF_8, deleted: false,
-                   operation: Operation::UPDATE, mode: nil)
+    def initialize(
+      name:,
+      content:,
+      directory: "/",
+      type: "file",
+      support_file: false,
+      vendored_file: false,
+      symlink_target: nil,
+      content_encoding: ContentEncoding::UTF_8,
+      deleted: false,
+      operation: Operation::UPDATE,
+      mode: nil
+    )
       @name = name
       @content = content
       @directory = T.let(clean_directory(directory), String)

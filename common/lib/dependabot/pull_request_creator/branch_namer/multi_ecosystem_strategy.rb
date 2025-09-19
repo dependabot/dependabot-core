@@ -23,8 +23,16 @@ module Dependabot
           )
             .void
         end
-        def initialize(dependencies:, files:, target_branch:, includes_security_fixes:, multi_ecosystem_name:,
-                       separator: "/", prefix: "dependabot", max_length: nil)
+        def initialize(
+          dependencies:,
+          files:,
+          target_branch:,
+          includes_security_fixes:,
+          multi_ecosystem_name:,
+          separator: "/",
+          prefix: "dependabot",
+          max_length: nil
+        )
           super(
             dependencies: dependencies,
             files: files,

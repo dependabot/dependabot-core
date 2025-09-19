@@ -71,10 +71,15 @@ module Dependabot
           ).void
         end
         def initialize( # rubocop:disable Metrics/AbcSize
-          dependency:, dependency_files:, credentials:,
-          latest_allowable_version:, latest_version_finder:,
-          repo_contents_path:, dependency_group: nil,
-          raise_on_ignored: false, update_cooldown: nil
+          dependency:,
+          dependency_files:,
+          credentials:,
+          latest_allowable_version:,
+          latest_version_finder:,
+          repo_contents_path:,
+          dependency_group: nil,
+          raise_on_ignored: false,
+          update_cooldown: nil
         )
           @dependency               = dependency
           @dependency_files         = dependency_files

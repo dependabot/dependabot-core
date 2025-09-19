@@ -9,8 +9,14 @@ require "dependabot/notices_helpers"
 
 # A stub package manager for testing purposes.
 class StubVersionManager < Dependabot::Ecosystem::VersionManager
-  def initialize(name:, detected_version:, raw_version:, deprecated_versions: [], supported_versions: [],
-                 support_later_versions: false)
+  def initialize(
+    name:,
+    detected_version:,
+    raw_version:,
+    deprecated_versions: [],
+    supported_versions: [],
+    support_later_versions: false
+  )
     @support_later_versions = support_later_versions
     super(
       name: name,

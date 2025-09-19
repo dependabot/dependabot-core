@@ -2668,8 +2668,12 @@ RSpec.describe Dependabot::Updater do
     end
   end
 
-  def build_updater(service: build_service, job: build_job, dependency_files: default_dependency_files,
-                    dependency_snapshot: nil)
+  def build_updater(
+    service: build_service,
+    job: build_job,
+    dependency_files: default_dependency_files,
+    dependency_snapshot: nil
+  )
     Dependabot::Updater.new(
       service: service,
       job: job,
@@ -2729,10 +2733,21 @@ RSpec.describe Dependabot::Updater do
   end
 
   # rubocop:disable Metrics/MethodLength
-  def build_job(requested_dependencies: nil, allowed_updates: default_allowed_updates, existing_pull_requests: [],
-                existing_group_pull_requests: [], ignore_conditions: [], security_advisories: [], experiments: {},
-                updating_a_pull_request: false, security_updates_only: false, dependency_groups: [],
-                lockfile_only: false, repo_contents_path: nil, update_cooldown: nil)
+  def build_job(
+    requested_dependencies: nil,
+    allowed_updates: default_allowed_updates,
+    existing_pull_requests: [],
+    existing_group_pull_requests: [],
+    ignore_conditions: [],
+    security_advisories: [],
+    experiments: {},
+    updating_a_pull_request: false,
+    security_updates_only: false,
+    dependency_groups: [],
+    lockfile_only: false,
+    repo_contents_path: nil,
+    update_cooldown: nil
+  )
     Dependabot::Job.new(
       id: "1",
       token: "token",

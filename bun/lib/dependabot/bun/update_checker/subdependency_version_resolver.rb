@@ -49,8 +49,14 @@ module Dependabot
             repo_contents_path: T.nilable(String)
           ).void
         end
-        def initialize(dependency:, credentials:, dependency_files:,
-                       ignored_versions:, latest_allowable_version:, repo_contents_path:)
+        def initialize(
+          dependency:,
+          credentials:,
+          dependency_files:,
+          ignored_versions:,
+          latest_allowable_version:,
+          repo_contents_path:
+        )
           @dependency = dependency
           @credentials = credentials
           @dependency_files = dependency_files

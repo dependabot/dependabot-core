@@ -35,6 +35,10 @@ Layout/FirstMethodArgumentLineBreak:
   Enabled: true
 Layout/MultilineMethodArgumentLineBreaks:
   Enabled: true
+Layout/FirstMethodParameterLineBreak:
+  Enabled: true
+Layout/MultilineMethodParameterLineBreaks:
+  Enabled: true
 Layout/RescueEnsureAlignment:
   Enabled: false
 Layout/SpaceAroundMethodCallOperator:

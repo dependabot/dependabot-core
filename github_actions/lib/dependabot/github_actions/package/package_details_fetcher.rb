@@ -32,11 +32,13 @@ module Dependabot
             security_advisories: T::Array[Dependabot::SecurityAdvisory]
           ).void
         end
-        def initialize(dependency:,
-                       credentials:,
-                       ignored_versions: [],
-                       raise_on_ignored: false,
-                       security_advisories: [])
+        def initialize(
+          dependency:,
+          credentials:,
+          ignored_versions: [],
+          raise_on_ignored: false,
+          security_advisories: []
+        )
           @dependency = dependency
           @credentials = credentials
           @raise_on_ignored = raise_on_ignored

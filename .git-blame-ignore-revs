@@ -9,3 +9,6 @@
 
 # Enabled Layout/MultilineMethodArgumentLineBreaks and Layout/FirstMethodArgumentLineBreak
 653539603c43f638abb4d1fbdabe7c4c9df4bd81
+
+# Enabled Layout/MultilineMethodParameterLineBreaks and Layout/FirstMethodParameterLineBreak
+f8acdfb85fdc4749f9cd1f29eb428cafd11478cd

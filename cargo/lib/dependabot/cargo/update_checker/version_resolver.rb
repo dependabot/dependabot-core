@@ -36,8 +36,12 @@ module Dependabot
             prepared_dependency_files: T::Array[Dependabot::DependencyFile]
           ).void
         end
-        def initialize(dependency:, credentials:,
-                       original_dependency_files:, prepared_dependency_files:)
+        def initialize(
+          dependency:,
+          credentials:,
+          original_dependency_files:,
+          prepared_dependency_files:
+        )
           @dependency = dependency
           @prepared_dependency_files = prepared_dependency_files
           @original_dependency_files = original_dependency_files

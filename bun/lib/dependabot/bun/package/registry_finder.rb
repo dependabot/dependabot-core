@@ -35,8 +35,13 @@ module Dependabot
             yarnrc_yml_file: T.nilable(Dependabot::DependencyFile)
           ).void
         end
-        def initialize(dependency:, credentials:, npmrc_file: nil,
-                       yarnrc_file: nil, yarnrc_yml_file: nil)
+        def initialize(
+          dependency:,
+          credentials:,
+          npmrc_file: nil,
+          yarnrc_file: nil,
+          yarnrc_yml_file: nil
+        )
           @dependency = dependency
           @credentials = credentials
           @npmrc_file = npmrc_file

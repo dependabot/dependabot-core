@@ -99,8 +99,14 @@ module Dependabot
             options: T::Hash[Symbol, T.untyped]
           ).void
         end
-        def initialize(dependencies:, dependency_files:, credentials:, repo_contents_path:,
-                       directory:, options:)
+        def initialize(
+          dependencies:,
+          dependency_files:,
+          credentials:,
+          repo_contents_path:,
+          directory:,
+          options:
+        )
           @dependencies = dependencies
           @dependency_files = dependency_files
           @credentials = credentials

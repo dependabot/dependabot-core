@@ -307,8 +307,12 @@ module Dependabot
         )
           .returns(T::Array[T.untyped])
       end
-      def repo_contents(dir: ".", ignore_base_directory: false,
-                        raise_errors: true, fetch_submodules: false)
+      def repo_contents(
+        dir: ".",
+        ignore_base_directory: false,
+        raise_errors: true,
+        fetch_submodules: false
+      )
         dir = File.join(directory, dir) unless ignore_base_directory
         path = Pathname.new(dir).cleanpath.to_path.gsub(%r{^/*}, "")
 

@@ -32,8 +32,13 @@ module Dependabot
             latest_resolvable_version: T.nilable(String)
           ).void
         end
-        def initialize(requirements:, update_strategy:, updated_source:,
-                       latest_version:, latest_resolvable_version:)
+        def initialize(
+          requirements:,
+          update_strategy:,
+          updated_source:,
+          latest_version:,
+          latest_resolvable_version:
+        )
           @requirements = requirements
           @latest_version = T.let(
             (T.cast(Dependabot::Bundler::Version.new(latest_version), Dependabot::Bundler::Version) if latest_version),
