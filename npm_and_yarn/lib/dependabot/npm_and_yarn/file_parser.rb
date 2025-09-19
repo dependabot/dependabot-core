@@ -7,6 +7,7 @@ require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
+require "dependabot/npm_and_yarn/cached_lockfile_parser"
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/native_helpers"
 require "dependabot/npm_and_yarn/version"
@@ -259,9 +260,8 @@ module Dependabot
 
       sig { returns(LockfileParser) }
       def lockfile_parser
-        @lockfile_parser ||= T.let(LockfileParser.new(
-                                     dependency_files: dependency_files
-                                   ), T.nilable(Dependabot::NpmAndYarn::FileParser::LockfileParser))
+        @lockfile_parser ||= T.let(CachedLockfileParser.parse(dependency_files: dependency_files
+        ), T.nilable(Dependabot::NpmAndYarn::FileParser::LockfileParser))
       end
 
       sig { returns(Dependabot::FileParsers::Base::DependencySet) }

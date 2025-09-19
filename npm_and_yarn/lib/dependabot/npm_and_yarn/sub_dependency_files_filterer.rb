@@ -2,8 +2,9 @@
 # frozen_string_literal: true
 
 require "dependabot/utils"
-require "dependabot/npm_and_yarn/version"
+require "dependabot/npm_and_yarn/cached_lockfile_parser"
 require "dependabot/npm_and_yarn/file_parser/lockfile_parser"
+require "dependabot/npm_and_yarn/version"
 require "sorbet-runtime"
 
 # Used in the sub dependency version resolver and file updater to only run
@@ -52,7 +53,7 @@ module Dependabot
       def lockfile_dependencies(lockfile)
         @lockfile_dependencies ||= T.let({}, T.nilable(T::Hash[String, T::Array[Dependency]]))
         @lockfile_dependencies[lockfile.name] ||=
-          NpmAndYarn::FileParser::LockfileParser.new(
+          CachedLockfileParser.parse(
             dependency_files: [lockfile]
           ).parse
       end
