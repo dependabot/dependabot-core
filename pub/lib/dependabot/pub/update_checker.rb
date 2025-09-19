@@ -198,16 +198,18 @@ module Dependabot
       sig { returns(Dependabot::Pub::UpdateChecker::LatestVersionFinder) }
       def version_report
         @version_report ||=
-          T.let(LatestVersionFinder.new(
-                  dependency: dependency,
-                  dependency_files: dependency_files,
-                  credentials: credentials,
-                  ignored_versions: ignored_versions,
-                  security_advisories: security_advisories,
-                  options: options,
-                  cooldown_options: update_cooldown
-                ),
-                T.nilable(Dependabot::Pub::UpdateChecker::LatestVersionFinder))
+          T.let(
+            LatestVersionFinder.new(
+              dependency: dependency,
+              dependency_files: dependency_files,
+              credentials: credentials,
+              ignored_versions: ignored_versions,
+              security_advisories: security_advisories,
+              options: options,
+              cooldown_options: update_cooldown
+            ),
+            T.nilable(Dependabot::Pub::UpdateChecker::LatestVersionFinder)
+          )
       end
 
       sig { returns(Dependabot::RequirementsUpdateStrategy) }

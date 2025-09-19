@@ -203,8 +203,11 @@ module Dependabot
       def dependency_belongs_to_more_specific_group?(dep, directory)
         contains_checker = T.let(
           proc { |group, dependency, dir| group_contains_dependency_for_group?(group, dependency, dir) },
-          T.proc.params(group: Dependabot::DependencyGroup, dep: Dependabot::Dependency,
-                        directory: T.nilable(String)).returns(T::Boolean)
+          T.proc.params(
+            group: Dependabot::DependencyGroup,
+            dep: Dependabot::Dependency,
+            directory: T.nilable(String)
+          ).returns(T::Boolean)
         )
 
         @specificity_calculator.dependency_belongs_to_more_specific_group?(
@@ -305,8 +308,10 @@ module Dependabot
         log_dependency_group(not_in_group, "not in group") if not_in_group.any?
         log_dependency_group(filtered_by_config, "filtered by dependabot.yml config") if filtered_by_config.any?
         if belongs_to_more_specific_group.any?
-          log_dependency_group(belongs_to_more_specific_group,
-                               "belongs to more specific group")
+          log_dependency_group(
+            belongs_to_more_specific_group,
+            "belongs to more specific group"
+          )
         end
         log_dependency_group(other, "filtered (other reasons)") if other.any?
       end

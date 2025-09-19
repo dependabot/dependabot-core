@@ -77,13 +77,17 @@ module Dependabot
 
           # Annotations properties are optional, So getting a release date is not guaranteed.
           # https://specs.opencontainers.org/image-spec/annotations/#annotations
-          release.instance_variable_set(:@released_at,
-                                        released_at ? Time.parse(released_at) : nil)
+          release.instance_variable_set(
+            :@released_at,
+            released_at ? Time.parse(released_at) : nil
+          )
 
           release
         rescue StandardError => e
-          Dependabot.logger.error("Error while fetching metadata (Dev Container) " \
-                                  "for #{dependency.name}: #{e.message}")
+          Dependabot.logger.error(
+            "Error while fetching metadata (Dev Container) " \
+            "for #{dependency.name}: #{e.message}"
+          )
           release
         end
 
@@ -93,10 +97,12 @@ module Dependabot
         def fetch_response(release:)
           url = "https://#{ref_registry}/v2/#{ref_namespace}/#{ref_id}/manifests/#{release.version}"
 
-          Dependabot::RegistryClient.get(url: url,
-                                         headers: { "Accept" => "application/vnd.oci.image.manifest.v1+json",
-                                                    "user-agent": "devcontainer",
-                                                    "Authorization" => "Bearer #{auth_token}" })
+          Dependabot::RegistryClient.get(
+            url: url,
+            headers: { "Accept" => "application/vnd.oci.image.manifest.v1+json",
+                       "user-agent": "devcontainer",
+                       "Authorization" => "Bearer #{auth_token}" }
+          )
         end
 
         sig { returns(T.class_of(Dependabot::Version)) }

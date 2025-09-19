@@ -6,3 +6,6 @@
 #
 # Changed Layout/DotPosition from leading to trailing
 3fc49229761517cf3dc6979018a9a2d84f733ece
+
+# Enabled Layout/MultilineMethodArgumentLineBreaks and Layout/FirstMethodArgumentLineBreak
+653539603c43f638abb4d1fbdabe7c4c9df4bd81

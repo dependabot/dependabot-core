@@ -90,9 +90,12 @@ module Dependabot
 
         sig { returns(T.nilable(T::Array[Dependabot::Package::PackageRelease])) }
         def package_releases
-          @package_releases = T.let(Dependabot::Devcontainers::Package::PackageDetailsFetcher
-            .new(dependency: dependency)
-            .fetch_package_releases, T.nilable(T::Array[Dependabot::Package::PackageRelease]))
+          @package_releases = T.let(
+            Dependabot::Devcontainers::Package::PackageDetailsFetcher
+                        .new(dependency: dependency)
+                        .fetch_package_releases,
+            T.nilable(T::Array[Dependabot::Package::PackageRelease])
+          )
         end
 
         sig { override.returns(T::Boolean) }
@@ -146,9 +149,12 @@ module Dependabot
         # rubocop:disable Metrics/AbcSize
         sig { params(release: Dependabot::Package::PackageRelease).returns(T::Boolean) }
         def in_cooldown_period?(release)
-          release = T.let(Dependabot::Devcontainers::Package::PackageDetailsFetcher
-          .new(dependency: dependency)
-          .fetch_release_metadata(release: release), T.nilable(Dependabot::Package::PackageRelease))
+          release = T.let(
+            Dependabot::Devcontainers::Package::PackageDetailsFetcher
+                      .new(dependency: dependency)
+                      .fetch_release_metadata(release: release),
+            T.nilable(Dependabot::Package::PackageRelease)
+          )
 
           unless T.must(release).released_at
             Dependabot.logger.info(
@@ -164,8 +170,10 @@ module Dependabot
           passed_days = passed_seconds / DAY_IN_SECONDS
 
           if passed_days < days
-            Dependabot.logger.info("Version #{T.must(release).version}, Release date: #{T.must(release).released_at}." \
-                                   " Days since release: #{passed_days} (cooldown days: #{days})")
+            Dependabot.logger.info(
+              "Version #{T.must(release).version}, Release date: #{T.must(release).released_at}." \
+              " Days since release: #{passed_days} (cooldown days: #{days})"
+            )
           end
 
           passed_seconds < days * DAY_IN_SECONDS

@@ -26,8 +26,13 @@ module Dependabot
       attr_reader :pr_number
 
       sig do
-        params(name: String, version: T.nilable(String), removed: T::Boolean, directory: T.nilable(String),
-               pr_number: T.nilable(Integer)).void
+        params(
+          name: String,
+          version: T.nilable(String),
+          removed: T::Boolean,
+          directory: T.nilable(String),
+          pr_number: T.nilable(Integer)
+        ).void
       end
       def initialize(name:, version:, removed: false, directory: nil, pr_number: nil)
         @name = name

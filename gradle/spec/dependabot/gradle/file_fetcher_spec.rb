@@ -159,11 +159,13 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
 
           it "doesn't fetch buildSrc buildfiles twice" do
             expect(file_fetcher_instance.files.map(&:name))
-              .to match_array(%w(
-                build.gradle settings.gradle
-                buildSrc/build.gradle
-                included/build.gradle
-              ))
+              .to match_array(
+                %w(
+                  build.gradle settings.gradle
+                  buildSrc/build.gradle
+                  included/build.gradle
+                )
+              )
           end
         end
       end
@@ -186,12 +188,14 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
 
         it "fetches all buildfiles" do
           expect(file_fetcher_instance.files.map(&:name))
-            .to match_array(%w(
-              build.gradle settings.gradle
-              app/build.gradle
-              included/build.gradle included/settings.gradle
-              included/app/build.gradle
-            ))
+            .to match_array(
+              %w(
+                build.gradle settings.gradle
+                app/build.gradle
+                included/build.gradle included/settings.gradle
+                included/app/build.gradle
+              )
+            )
         end
       end
 
@@ -219,14 +223,16 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
 
         it "fetches all buildfiles" do
           expect(file_fetcher_instance.files.map(&:name))
-            .to match_array(%w(
-              build.gradle settings.gradle
-              app/build.gradle
-              included/build.gradle included/settings.gradle
-              included/app/build.gradle
-              included2/build.gradle included2/settings.gradle
-              included2/app/build.gradle
-            ))
+            .to match_array(
+              %w(
+                build.gradle settings.gradle
+                app/build.gradle
+                included/build.gradle included/settings.gradle
+                included/app/build.gradle
+                included2/build.gradle included2/settings.gradle
+                included2/app/build.gradle
+              )
+            )
         end
       end
 
@@ -247,30 +253,36 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
           stub_content_request("included/included?ref=sha", "contents_java_with_settings.json")
           stub_content_request("included/included/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
           stub_no_content_request("included/included/gradle.lockfile?ref=sha")
-          stub_content_request("included/included/settings.gradle?ref=sha",
-                               "contents_java_settings_1_included_build.json")
+          stub_content_request(
+            "included/included/settings.gradle?ref=sha",
+            "contents_java_settings_1_included_build.json"
+          )
           stub_content_request("included/included/app/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
           stub_no_content_request("included/included/app/gradle.lockfile?ref=sha")
           stub_content_request("included/included/included?ref=sha", "contents_java_with_buildsrc.json")
           stub_content_request("included/included/included/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
           stub_no_content_request("included/included/included/gradle.lockfile?ref=sha")
           stub_content_request("included/included/included/buildSrc?ref=sha", "contents_java.json")
-          stub_content_request("included/included/included/buildSrc/build.gradle?ref=sha",
-                               "contents_java_basic_buildfile.json")
+          stub_content_request(
+            "included/included/included/buildSrc/build.gradle?ref=sha",
+            "contents_java_basic_buildfile.json"
+          )
         end
 
         it "fetches all buildfiles transitively" do
           expect(file_fetcher_instance.files.map(&:name))
-            .to match_array(%w(
-              build.gradle settings.gradle
-              app/build.gradle
-              included/build.gradle included/settings.gradle
-              included/app/build.gradle
-              included/included/build.gradle included/included/settings.gradle
-              included/included/app/build.gradle
-              included/included/included/build.gradle
-              included/included/included/buildSrc/build.gradle
-            ))
+            .to match_array(
+              %w(
+                build.gradle settings.gradle
+                app/build.gradle
+                included/build.gradle included/settings.gradle
+                included/app/build.gradle
+                included/included/build.gradle included/included/settings.gradle
+                included/included/app/build.gradle
+                included/included/included/build.gradle
+                included/included/included/buildSrc/build.gradle
+              )
+            )
         end
       end
 
@@ -291,13 +303,15 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
 
         it "fetches script plugin of main and included build" do
           expect(file_fetcher_instance.files.map(&:name))
-            .to match_array(%w(
-              settings.gradle build.gradle
-              app/build.gradle
-              gradle/dependencies.gradle
-              included/build.gradle
-              included/gradle/dependencies.gradle
-            ))
+            .to match_array(
+              %w(
+                settings.gradle build.gradle
+                app/build.gradle
+                gradle/dependencies.gradle
+                included/build.gradle
+                included/gradle/dependencies.gradle
+              )
+            )
         end
       end
     end

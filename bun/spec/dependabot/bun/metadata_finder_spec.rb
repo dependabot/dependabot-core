@@ -13,12 +13,14 @@ RSpec.describe Dependabot::Bun::MetadataFinder do
   let(:dependency_name) { "etag" }
 
   let(:credentials) do
-    [Dependabot::Credential.new({
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    })]
+    [Dependabot::Credential.new(
+      {
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    )]
   end
 
   let(:dependency) do
@@ -235,17 +237,21 @@ RSpec.describe Dependabot::Bun::MetadataFinder do
         context "with credentials" do
           let(:credentials) do
             [
-              Dependabot::Credential.new({
-                "type" => "git_source",
-                "host" => "github.com",
-                "username" => "x-access-token",
-                "password" => "token"
-              }),
-              Dependabot::Credential.new({
-                "type" => "npm_registry",
-                "registry" => "registry.npmjs.org",
-                "token" => "secret_token"
-              })
+              Dependabot::Credential.new(
+                {
+                  "type" => "git_source",
+                  "host" => "github.com",
+                  "username" => "x-access-token",
+                  "password" => "token"
+                }
+              ),
+              Dependabot::Credential.new(
+                {
+                  "type" => "npm_registry",
+                  "registry" => "registry.npmjs.org",
+                  "token" => "secret_token"
+                }
+              )
             ]
           end
 
@@ -299,17 +305,21 @@ RSpec.describe Dependabot::Bun::MetadataFinder do
         context "with credentials" do
           let(:credentials) do
             [
-              Dependabot::Credential.new({
-                "type" => "git_source",
-                "host" => "github.com",
-                "username" => "x-access-token",
-                "password" => "token"
-              }),
-              Dependabot::Credential.new({
-                "type" => "npm_registry",
-                "registry" => "npm.fury.io/dependabot",
-                "token" => "secret_token"
-              })
+              Dependabot::Credential.new(
+                {
+                  "type" => "git_source",
+                  "host" => "github.com",
+                  "username" => "x-access-token",
+                  "password" => "token"
+                }
+              ),
+              Dependabot::Credential.new(
+                {
+                  "type" => "npm_registry",
+                  "registry" => "npm.fury.io/dependabot",
+                  "token" => "secret_token"
+                }
+              )
             ]
           end
 
@@ -343,17 +353,21 @@ RSpec.describe Dependabot::Bun::MetadataFinder do
 
       let(:credentials) do
         [
-          Dependabot::Credential.new({
-            "type" => "git_source",
-            "host" => "github.com",
-            "username" => "x-access-token",
-            "password" => "token"
-          }),
-          Dependabot::Credential.new({
-            "type" => "npm_registry",
-            "registry" => "npm.fury.io/dependabot",
-            "token" => "secret_token"
-          })
+          Dependabot::Credential.new(
+            {
+              "type" => "git_source",
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            }
+          ),
+          Dependabot::Credential.new(
+            {
+              "type" => "npm_registry",
+              "registry" => "npm.fury.io/dependabot",
+              "token" => "secret_token"
+            }
+          )
         ]
       end
 
@@ -538,12 +552,14 @@ RSpec.describe Dependabot::Bun::MetadataFinder do
 
       context "with replaces-base credential" do
         let(:credentials) do
-          [Dependabot::Credential.new({
-            "type" => "npm_registry",
-            "registry" => "jfrogghdemo.jfrog.io/artifactory/api/npm/e2e-tests-dependabot-npm/",
-            "token" => "secret_token",
-            "replaces-base" => true
-          })]
+          [Dependabot::Credential.new(
+            {
+              "type" => "npm_registry",
+              "registry" => "jfrogghdemo.jfrog.io/artifactory/api/npm/e2e-tests-dependabot-npm/",
+              "token" => "secret_token",
+              "replaces-base" => true
+            }
+          )]
         end
 
         it "uses private registry from credentials" do
@@ -557,12 +573,14 @@ RSpec.describe Dependabot::Bun::MetadataFinder do
 
       context "with registry URL that has no protocol" do
         let(:credentials) do
-          [Dependabot::Credential.new({
-            "type" => "npm_registry",
-            "registry" => "npm.fury.io/dependabot",
-            "token" => "secret_token",
-            "replaces-base" => true
-          })]
+          [Dependabot::Credential.new(
+            {
+              "type" => "npm_registry",
+              "registry" => "npm.fury.io/dependabot",
+              "token" => "secret_token",
+              "replaces-base" => true
+            }
+          )]
         end
 
         it "adds https protocol" do
@@ -573,17 +591,21 @@ RSpec.describe Dependabot::Bun::MetadataFinder do
       context "with multiple credentials" do
         let(:credentials) do
           [
-            Dependabot::Credential.new({
-              "type" => "npm_registry",
-              "registry" => "https://npm.fury.io/dependabot",
-              "token" => "secret_token",
-              "replaces-base" => true
-            }),
-            Dependabot::Credential.new({
-              "type" => "npm_registry",
-              "registry" => "another.registry.com",
-              "token" => "another_secret_token"
-            })
+            Dependabot::Credential.new(
+              {
+                "type" => "npm_registry",
+                "registry" => "https://npm.fury.io/dependabot",
+                "token" => "secret_token",
+                "replaces-base" => true
+              }
+            ),
+            Dependabot::Credential.new(
+              {
+                "type" => "npm_registry",
+                "registry" => "another.registry.com",
+                "token" => "another_secret_token"
+              }
+            )
           ]
         end
 
@@ -595,12 +617,14 @@ RSpec.describe Dependabot::Bun::MetadataFinder do
       context "with scoped dependency name" do
         let(:dependency_name) { "@babel/core" }
         let(:credentials) do
-          [Dependabot::Credential.new({
-            "type" => "npm_registry",
-            "registry" => "npm.fury.io/dependabot",
-            "token" => "secret_token",
-            "replaces-base" => true
-          })]
+          [Dependabot::Credential.new(
+            {
+              "type" => "npm_registry",
+              "registry" => "npm.fury.io/dependabot",
+              "token" => "secret_token",
+              "replaces-base" => true
+            }
+          )]
         end
 
         it "escapes dependency name properly" do
@@ -627,12 +651,14 @@ RSpec.describe Dependabot::Bun::MetadataFinder do
       end
 
       let(:credentials) do
-        [Dependabot::Credential.new({
-          "type" => "npm_registry",
-          "registry" => "different.registry.com",
-          "token" => "secret_token",
-          "replaces-base" => true
-        })]
+        [Dependabot::Credential.new(
+          {
+            "type" => "npm_registry",
+            "registry" => "different.registry.com",
+            "token" => "secret_token",
+            "replaces-base" => true
+          }
+        )]
       end
 
       it "uses source from lockfile, not credentials" do

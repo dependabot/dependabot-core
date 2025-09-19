@@ -126,8 +126,13 @@ module Dependabot
         end
 
         sig do
-          params(error: Dependabot::SharedHelpers::HelperSubprocessFailed).returns(T.any(Dependabot::Version, String,
-                                                                                         T::Boolean))
+          params(error: Dependabot::SharedHelpers::HelperSubprocessFailed).returns(
+            T.any(
+              Dependabot::Version,
+              String,
+              T::Boolean
+            )
+          )
         end
         def error_result(error)
           return false unless includes_result?(error)

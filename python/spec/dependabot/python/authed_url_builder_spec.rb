@@ -11,10 +11,12 @@ RSpec.describe Dependabot::Python::AuthedUrlBuilder do
 
     context "without index-url" do
       let(:credential) do
-        Dependabot::Credential.new({
-          "type" => "python_index",
-          "replaces-base" => true
-        })
+        Dependabot::Credential.new(
+          {
+            "type" => "python_index",
+            "replaces-base" => true
+          }
+        )
       end
 
       it "returns empty string" do
@@ -25,11 +27,13 @@ RSpec.describe Dependabot::Python::AuthedUrlBuilder do
 
     context "without a token" do
       let(:credential) do
-        Dependabot::Credential.new({
-          "type" => "python_index",
-          "index-url" => "https://pypi.weasyldev.com/weasyl/source/+simple",
-          "replaces-base" => true
-        })
+        Dependabot::Credential.new(
+          {
+            "type" => "python_index",
+            "index-url" => "https://pypi.weasyldev.com/weasyl/source/+simple",
+            "replaces-base" => true
+          }
+        )
       end
 
       it "leaves the URL alone" do
@@ -40,12 +44,14 @@ RSpec.describe Dependabot::Python::AuthedUrlBuilder do
 
     context "with a token" do
       let(:credential) do
-        Dependabot::Credential.new({
-          "type" => "python_index",
-          "index-url" => "https://pypi.weasyldev.com/weasyl/source/+simple",
-          "token" => token,
-          "replaces-base" => true
-        })
+        Dependabot::Credential.new(
+          {
+            "type" => "python_index",
+            "index-url" => "https://pypi.weasyldev.com/weasyl/source/+simple",
+            "token" => token,
+            "replaces-base" => true
+          }
+        )
       end
 
       context "when not including a :" do

@@ -496,17 +496,20 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::RequirementsUpdater do
       let(:gemspec_groups) { [] }
 
       it "updates both files" do
-        expect(updated_requirements).to contain_exactly({
-          file: "Gemfile",
-          requirement: "~> 1.5.0",
-          groups: [],
-          source: nil
-        }, {
-          file: "some.gemspec",
-          requirement: ">= 1.0, < 1.9",
-          groups: [],
-          source: nil
-        })
+        expect(updated_requirements).to contain_exactly(
+          {
+            file: "Gemfile",
+            requirement: "~> 1.5.0",
+            groups: [],
+            source: nil
+          },
+          {
+            file: "some.gemspec",
+            requirement: ">= 1.0, < 1.9",
+            groups: [],
+            source: nil
+          }
+        )
       end
 
       context "when an updated source" do
@@ -531,34 +534,40 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::RequirementsUpdater do
         let(:gemspec_source) { { type: "git", ref: "v1.4.0" } }
 
         it "updates both files" do
-          expect(updated_requirements).to contain_exactly({
-            file: "Gemfile",
-            requirement: "~> 1.5.0",
-            groups: [],
-            source: { type: "git", ref: "v1.5.0" }
-          }, {
-            file: "some.gemspec",
-            requirement: ">= 1.0, < 1.9",
-            groups: [],
-            source: { type: "git", ref: "v1.5.0" }
-          })
+          expect(updated_requirements).to contain_exactly(
+            {
+              file: "Gemfile",
+              requirement: "~> 1.5.0",
+              groups: [],
+              source: { type: "git", ref: "v1.5.0" }
+            },
+            {
+              file: "some.gemspec",
+              requirement: ">= 1.0, < 1.9",
+              groups: [],
+              source: { type: "git", ref: "v1.5.0" }
+            }
+          )
         end
 
         context "when the original gemspec source was `nil`" do
           let(:gemspec_source) { nil }
 
           it "leaves the gemspec source as `nil`" do
-            expect(updated_requirements).to contain_exactly({
-              file: "Gemfile",
-              requirement: "~> 1.5.0",
-              groups: [],
-              source: { type: "git", ref: "v1.5.0" }
-            }, {
-              file: "some.gemspec",
-              requirement: ">= 1.0, < 1.9",
-              groups: [],
-              source: nil
-            })
+            expect(updated_requirements).to contain_exactly(
+              {
+                file: "Gemfile",
+                requirement: "~> 1.5.0",
+                groups: [],
+                source: { type: "git", ref: "v1.5.0" }
+              },
+              {
+                file: "some.gemspec",
+                requirement: ">= 1.0, < 1.9",
+                groups: [],
+                source: nil
+              }
+            )
           end
         end
       end

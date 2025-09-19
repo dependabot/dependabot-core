@@ -65,10 +65,12 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
   end
 
   let(:job_definition_with_fetched_files) do
-    job_definition.merge({
-      "base_commit_sha" => "mock-sha",
-      "base64_dependency_files" => encode_dependency_files(dependency_files)
-    })
+    job_definition.merge(
+      {
+        "base_commit_sha" => "mock-sha",
+        "base64_dependency_files" => encode_dependency_files(dependency_files)
+      }
+    )
   end
 
   let(:dependency_files) do
@@ -156,8 +158,11 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
     context "when grouped security updates are disabled and job is security updates only" do
       before do
         allow(Dependabot::Experiments).to receive(:enabled?).with(:grouped_security_updates_disabled).and_return(true)
-        allow(job).to receive_messages(multi_ecosystem_update?: false, updating_a_pull_request?: false,
-                                       security_updates_only?: true)
+        allow(job).to receive_messages(
+          multi_ecosystem_update?: false,
+          updating_a_pull_request?: false,
+          security_updates_only?: true
+        )
       end
 
       it "returns false" do
@@ -168,8 +173,11 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
     context "when job is security updates only" do
       before do
         allow(Dependabot::Experiments).to receive(:enabled?).with(:grouped_security_updates_disabled).and_return(false)
-        allow(job).to receive_messages(multi_ecosystem_update?: false, updating_a_pull_request?: false,
-                                       security_updates_only?: true)
+        allow(job).to receive_messages(
+          multi_ecosystem_update?: false,
+          updating_a_pull_request?: false,
+          security_updates_only?: true
+        )
       end
 
       context "with multiple dependencies" do
@@ -184,8 +192,10 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
 
       context "with dependency groups that apply to security updates" do
         before do
-          allow(job).to receive_messages(dependencies: [dependency],
-                                         dependency_groups: [{ "applies-to" => "security-updates" }])
+          allow(job).to receive_messages(
+            dependencies: [dependency],
+            dependency_groups: [{ "applies-to" => "security-updates" }]
+          )
         end
 
         it "returns true" do
@@ -195,8 +205,10 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
 
       context "with single dependency and no applicable groups" do
         before do
-          allow(job).to receive_messages(dependencies: [dependency],
-                                         dependency_groups: [{ "applies-to" => "version-updates" }])
+          allow(job).to receive_messages(
+            dependencies: [dependency],
+            dependency_groups: [{ "applies-to" => "version-updates" }]
+          )
         end
 
         it "returns false" do
@@ -207,8 +219,11 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
 
     context "when job is not security updates only" do
       before do
-        allow(job).to receive_messages(multi_ecosystem_update?: false, updating_a_pull_request?: false,
-                                       security_updates_only?: false)
+        allow(job).to receive_messages(
+          multi_ecosystem_update?: false,
+          updating_a_pull_request?: false,
+          security_updates_only?: false
+        )
       end
 
       it "returns true" do
@@ -249,8 +264,11 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
       before do
         allow(dependency_snapshot).to receive(:groups).and_return([dependency_group])
         allow(dependency_snapshot).to receive(:mark_group_handled)
-        allow(job).to receive_messages(existing_group_pull_requests: [], multi_ecosystem_update?: false,
-                                       source: mock_source)
+        allow(job).to receive_messages(
+          existing_group_pull_requests: [],
+          multi_ecosystem_update?: false,
+          source: mock_source
+        )
         allow(dependency_snapshot).to receive(:current_directory=)
         allow(dependency_snapshot).to receive_messages(dependencies: [dependency], ungrouped_dependencies: [dependency])
       end
@@ -265,9 +283,11 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
 
       context "when PR already exists for dependency group" do
         before do
-          allow(job).to receive(:existing_group_pull_requests).and_return([
-            { "dependency-group-name" => "dummy-group" }
-          ])
+          allow(job).to receive(:existing_group_pull_requests).and_return(
+            [
+              { "dependency-group-name" => "dummy-group" }
+            ]
+          )
         end
 
         it "skips the group and marks it as handled" do
@@ -293,8 +313,11 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
       before do
         allow(job).to receive_messages(multi_ecosystem_update?: false, source: mock_source)
         allow(dependency_snapshot).to receive(:current_directory=)
-        allow(dependency_snapshot).to receive_messages(groups: [], dependencies: [dependency],
-                                                       ungrouped_dependencies: [dependency])
+        allow(dependency_snapshot).to receive_messages(
+          groups: [],
+          dependencies: [dependency],
+          ungrouped_dependencies: [dependency]
+        )
       end
 
       it "runs ungrouped dependency updates" do
@@ -320,8 +343,11 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
       before do
         allow(job).to receive_messages(multi_ecosystem_update?: false, source: mock_source_with_multiple_dirs)
         allow(dependency_snapshot).to receive(:current_directory=)
-        allow(dependency_snapshot).to receive_messages(groups: [], dependencies: [dependency],
-                                                       ungrouped_dependencies: [dependency])
+        allow(dependency_snapshot).to receive_messages(
+          groups: [],
+          dependencies: [dependency],
+          ungrouped_dependencies: [dependency]
+        )
       end
 
       it "processes each directory" do
@@ -349,8 +375,11 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
       before do
         allow(job).to receive_messages(multi_ecosystem_update?: false, source: mock_source)
         allow(dependency_snapshot).to receive(:current_directory=)
-        allow(dependency_snapshot).to receive_messages(groups: [], dependencies: [dependency],
-                                                       ungrouped_dependencies: [])
+        allow(dependency_snapshot).to receive_messages(
+          groups: [],
+          dependencies: [dependency],
+          ungrouped_dependencies: []
+        )
       end
 
       it "skips the directory and logs a message" do

@@ -16,8 +16,10 @@ module Dependabot
         SINGLE_VERSION_REGEX = /\A(\d+\.\d+\.\d+)\z/
 
         sig do
-          params(requirements: T::Array[T::Hash[Symbol, T.nilable(String)]],
-                 latest_resolvable_version: T.nilable(T.any(String, Integer, Dependabot::Version))).void
+          params(
+            requirements: T::Array[T::Hash[Symbol, T.nilable(String)]],
+            latest_resolvable_version: T.nilable(T.any(String, Integer, Dependabot::Version))
+          ).void
         end
         def initialize(requirements:, latest_resolvable_version:)
           @requirements = T.let(requirements, T::Array[T::Hash[Symbol, T.nilable(String)]])

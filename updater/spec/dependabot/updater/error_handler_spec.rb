@@ -165,8 +165,10 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
       end
 
       let(:error) do
-        Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: "the kernal is full of bees",
-                                                              error_context: error_context).tap do |err|
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "the kernal is full of bees",
+          error_context: error_context
+        ).tap do |err|
           err.set_backtrace ["****** ERROR 8335 -- 101"]
         end
       end
@@ -225,10 +227,12 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
           expect(args[:error].message)
             .to eq('Subprocess ["123456789"] failed to run. Check the job logs for error messages')
           expect(args[:error].sentry_context)
-            .to eq(fingerprint: ["123456789"],
-                   extra: {
-                     bumblebees: "many", honeybees: "few", wasps: "none"
-                   })
+            .to eq(
+              fingerprint: ["123456789"],
+              extra: {
+                bumblebees: "many", honeybees: "few", wasps: "none"
+              }
+            )
         end
 
         handle_dependency_error
@@ -241,8 +245,10 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
       end
 
       let(:error) do
-        Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: "the kernal is full of bees",
-                                                              error_context: error_context).tap do |err|
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "the kernal is full of bees",
+          error_context: error_context
+        ).tap do |err|
           err.set_backtrace ["****** ERROR 8335 -- 101"]
         end
       end
@@ -286,10 +292,12 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
           expect(args[:error].message)
             .to eq('Subprocess ["123456789"] failed to run. Check the job logs for error messages')
           expect(args[:error].sentry_context)
-            .to eq(fingerprint: ["123456789"],
-                   extra: {
-                     bumblebees: "many", honeybees: "few", wasps: "none"
-                   })
+            .to eq(
+              fingerprint: ["123456789"],
+              extra: {
+                bumblebees: "many", honeybees: "few", wasps: "none"
+              }
+            )
         end
 
         handle_dependency_error

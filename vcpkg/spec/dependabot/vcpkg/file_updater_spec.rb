@@ -151,10 +151,12 @@ RSpec.describe Dependabot::Vcpkg::FileUpdater do
         expect(updated_content["builtin-baseline"]).to eq("new-commit-sha")
         expect(updated_content["name"]).to eq("my-project")
         expect(updated_content["version"]).to eq("1.0.0")
-        expect(updated_content["dependencies"]).to eq([
-          "fmt",
-          { "name" => "boost-system", "features" => ["threading"] }
-        ])
+        expect(updated_content["dependencies"]).to eq(
+          [
+            "fmt",
+            { "name" => "boost-system", "features" => ["threading"] }
+          ]
+        )
       end
     end
 

@@ -316,8 +316,11 @@ module Dependabot
         @repo_contents[dir.to_s] ||= if repo_contents_path
                                        _cloned_repo_contents(path)
                                      else
-                                       _fetch_repo_contents(path, raise_errors: raise_errors,
-                                                                  fetch_submodules: fetch_submodules)
+                                       _fetch_repo_contents(
+                                         path,
+                                         raise_errors: raise_errors,
+                                         fetch_submodules: fetch_submodules
+                                       )
                                      end
       end
 

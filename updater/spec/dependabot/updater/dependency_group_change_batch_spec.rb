@@ -33,16 +33,20 @@ RSpec.describe Dependabot::Updater::DependencyGroupChangeBatch do
     let(:directory) { "/" }
 
     it "returns the current dependency files filtered by directory" do
-      expect(described_class.new(initial_dependency_files: files)
-        .current_dependency_files(job).map(&:name)).to eq(%w(Gemfile Gemfile.lock))
+      expect(
+        described_class.new(initial_dependency_files: files)
+                .current_dependency_files(job).map(&:name)
+      ).to eq(%w(Gemfile Gemfile.lock))
     end
 
     context "when the directory has a dot" do
       let(:directory) { "/." }
 
       it "normalizes the directory" do
-        expect(described_class.new(initial_dependency_files: files)
-          .current_dependency_files(job).map(&:name)).to eq(%w(Gemfile Gemfile.lock))
+        expect(
+          described_class.new(initial_dependency_files: files)
+                    .current_dependency_files(job).map(&:name)
+        ).to eq(%w(Gemfile Gemfile.lock))
       end
     end
 
@@ -50,8 +54,10 @@ RSpec.describe Dependabot::Updater::DependencyGroupChangeBatch do
       let(:directory) { "/hello/.." }
 
       it "normalizes the directory" do
-        expect(described_class.new(initial_dependency_files: files)
-          .current_dependency_files(job).map(&:name)).to eq(%w(Gemfile Gemfile.lock))
+        expect(
+          described_class.new(initial_dependency_files: files)
+                    .current_dependency_files(job).map(&:name)
+        ).to eq(%w(Gemfile Gemfile.lock))
       end
     end
   end

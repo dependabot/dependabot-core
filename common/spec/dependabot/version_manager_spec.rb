@@ -66,10 +66,12 @@ RSpec.describe Dependabot::Ecosystem::VersionManager do # rubocop:disable RSpec/
 
   describe "#supported_versions" do
     it "returns an array of supported versions" do
-      expect(package_manager.supported_versions).to eq([
-        Dependabot::Version.new("1"),
-        Dependabot::Version.new("2")
-      ])
+      expect(package_manager.supported_versions).to eq(
+        [
+          Dependabot::Version.new("1"),
+          Dependabot::Version.new("2")
+        ]
+      )
     end
 
     it "returns an empty array by default" do
@@ -87,8 +89,10 @@ RSpec.describe Dependabot::Ecosystem::VersionManager do # rubocop:disable RSpec/
 
       it "returns true" do
         package_manager.instance_variable_set(:@version, version)
-        package_manager.instance_variable_set(:@supported_versions,
-                                              [Dependabot::Version.new("1"), Dependabot::Version.new("2")])
+        package_manager.instance_variable_set(
+          :@supported_versions,
+          [Dependabot::Version.new("1"), Dependabot::Version.new("2")]
+        )
         expect(package_manager.deprecated?).to be true
       end
     end
@@ -100,8 +104,10 @@ RSpec.describe Dependabot::Ecosystem::VersionManager do # rubocop:disable RSpec/
       it "returns false as unsupported takes precedence" do
         package_manager.instance_variable_set(:@detected_version, detected_version)
         package_manager.instance_variable_set(:@version, raw_version)
-        package_manager.instance_variable_set(:@supported_versions,
-                                              [Dependabot::Version.new("1"), Dependabot::Version.new("2")])
+        package_manager.instance_variable_set(
+          :@supported_versions,
+          [Dependabot::Version.new("1"), Dependabot::Version.new("2")]
+        )
         expect(package_manager.deprecated?).to be false
       end
     end
@@ -115,8 +121,10 @@ RSpec.describe Dependabot::Ecosystem::VersionManager do # rubocop:disable RSpec/
       it "returns true" do
         package_manager.instance_variable_set(:@detected_version, detected_version)
         package_manager.instance_variable_set(:@version, raw_version)
-        package_manager.instance_variable_set(:@supported_versions,
-                                              [Dependabot::Version.new("1"), Dependabot::Version.new("2")])
+        package_manager.instance_variable_set(
+          :@supported_versions,
+          [Dependabot::Version.new("1"), Dependabot::Version.new("2")]
+        )
         expect(package_manager.unsupported?).to be true
       end
     end
@@ -126,8 +134,10 @@ RSpec.describe Dependabot::Ecosystem::VersionManager do # rubocop:disable RSpec/
 
       it "returns false" do
         package_manager.instance_variable_set(:@version, version)
-        package_manager.instance_variable_set(:@supported_versions,
-                                              [Dependabot::Version.new("1"), Dependabot::Version.new("2")])
+        package_manager.instance_variable_set(
+          :@supported_versions,
+          [Dependabot::Version.new("1"), Dependabot::Version.new("2")]
+        )
         expect(package_manager.unsupported?).to be false
       end
     end

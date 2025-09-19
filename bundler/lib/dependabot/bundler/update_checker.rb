@@ -354,8 +354,10 @@ module Dependabot
       sig { returns(Dependabot::Bundler::UpdateChecker::ForceUpdater) }
       def force_updater
         if @force_updater.nil?
-          @force_updater = T.let(@force_updater,
-                                 T.nilable(Dependabot::Bundler::UpdateChecker::ForceUpdater))
+          @force_updater = T.let(
+            @force_updater,
+            T.nilable(Dependabot::Bundler::UpdateChecker::ForceUpdater)
+          )
         end
         @force_updater ||=
           ForceUpdater.new(
@@ -372,8 +374,10 @@ module Dependabot
       sig { returns(Dependabot::GitCommitChecker) }
       def git_commit_checker
         if @git_commit_checker.nil?
-          @git_commit_checker = T.let(@git_commit_checker,
-                                      T.nilable(Dependabot::GitCommitChecker))
+          @git_commit_checker = T.let(
+            @git_commit_checker,
+            T.nilable(Dependabot::GitCommitChecker)
+          )
         end
         @git_commit_checker ||=
           GitCommitChecker.new(

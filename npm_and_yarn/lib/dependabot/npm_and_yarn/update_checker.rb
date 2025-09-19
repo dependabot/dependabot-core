@@ -391,8 +391,10 @@ module Dependabot
       def latest_version_for_git_dependency
         @latest_version_for_git_dependency ||=
           if version_class.correct?(dependency.version)
-            T.unsafe(latest_git_version_details[:version] &&
-              version_class.new(latest_git_version_details[:version]))
+            T.unsafe(
+              latest_git_version_details[:version] &&
+                            version_class.new(latest_git_version_details[:version])
+            )
           else
             latest_git_version_details[:sha]
           end

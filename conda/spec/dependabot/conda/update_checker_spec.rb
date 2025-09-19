@@ -40,8 +40,10 @@ RSpec.describe Dependabot::Conda::UpdateChecker do
   before do
     allow(Dependabot::Conda::UpdateChecker::LatestVersionFinder)
       .to receive(:new).and_return(latest_version_finder)
-    allow(latest_version_finder).to receive_messages(latest_version: mock_latest_version,
-                                                     lowest_security_fix_version: mock_security_fix_version)
+    allow(latest_version_finder).to receive_messages(
+      latest_version: mock_latest_version,
+      lowest_security_fix_version: mock_security_fix_version
+    )
   end
 
   it_behaves_like "an update checker"
@@ -430,8 +432,11 @@ RSpec.describe Dependabot::Conda::UpdateChecker do
       end
 
       before do
-        allow(checker).to receive_messages(latest_version: nil, latest_resolvable_version: nil,
-                                           preferred_resolvable_version: nil)
+        allow(checker).to receive_messages(
+          latest_version: nil,
+          latest_resolvable_version: nil,
+          preferred_resolvable_version: nil
+        )
       end
 
       it "returns existing requirements when target_version is nil" do

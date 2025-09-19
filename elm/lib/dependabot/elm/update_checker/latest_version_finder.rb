@@ -83,9 +83,12 @@ module Dependabot
 
         sig { returns(T.nilable(T::Array[Dependabot::Package::PackageRelease])) }
         def package_releases
-          @package_releases = T.let(Dependabot::Elm::Package::PackageDetailsFetcher
-            .new(dependency: dependency)
-            .fetch_package_releases, T.nilable(T::Array[Dependabot::Package::PackageRelease]))
+          @package_releases = T.let(
+            Dependabot::Elm::Package::PackageDetailsFetcher
+                        .new(dependency: dependency)
+                        .fetch_package_releases,
+            T.nilable(T::Array[Dependabot::Package::PackageRelease])
+          )
         end
 
         sig { override.returns(T::Boolean) }
@@ -175,9 +178,12 @@ module Dependabot
 
         sig { returns(T.nilable(T::Array[Dependabot::Package::PackageRelease])) }
         def package_releases
-          T.let(Dependabot::Elm::Package::PackageDetailsFetcher
-           .new(dependency: dependency)
-           .fetch_package_releases, T.nilable(T::Array[Dependabot::Package::PackageRelease]))
+          T.let(
+            Dependabot::Elm::Package::PackageDetailsFetcher
+                       .new(dependency: dependency)
+                       .fetch_package_releases,
+            T.nilable(T::Array[Dependabot::Package::PackageRelease])
+          )
         end
 
         sig { params(unlock_requirement: Symbol).returns(T.nilable(Dependabot::Elm::Version)) }
@@ -190,8 +196,10 @@ module Dependabot
           new_release = package_releases&.find { |release| release.version == version_after_install }
 
           if cooldown_options && in_cooldown_period?(T.must(new_release))
-            Dependabot.logger.info("#{dependency.name} #{new_release} is in cooldown period," \
-                                   " returning current version #{current_version}")
+            Dependabot.logger.info(
+              "#{dependency.name} #{new_release} is in cooldown period," \
+              " returning current version #{current_version}"
+            )
             return current_version
           end
 

@@ -61,9 +61,11 @@ RSpec.describe Dependabot::Composer::FileFetcher do
   end
 
   it "provides the composer version" do
-    expect(file_fetcher_instance.ecosystem_versions).to eq({
-      package_managers: { "composer" => "2" }
-    })
+    expect(file_fetcher_instance.ecosystem_versions).to eq(
+      {
+        package_managers: { "composer" => "2" }
+      }
+    )
   end
 
   context "without a composer.lock" do
@@ -85,9 +87,11 @@ RSpec.describe Dependabot::Composer::FileFetcher do
     end
 
     it "provides the composer version" do
-      expect(file_fetcher_instance.ecosystem_versions).to eq({
-        package_managers: { "composer" => "2" }
-      })
+      expect(file_fetcher_instance.ecosystem_versions).to eq(
+        {
+          package_managers: { "composer" => "2" }
+        }
+      )
     end
   end
 
@@ -451,16 +455,20 @@ RSpec.describe Dependabot::Composer::FileFetcher do
               .with(headers: { "Authorization" => "token token" })
               .to_return(
                 status: 200,
-                body: fixture("github",
-                              "composer_json_with_relative_path_deps.json"),
+                body: fixture(
+                  "github",
+                  "composer_json_with_relative_path_deps.json"
+                ),
                 headers: { "content-type" => "application/json" }
               )
             stub_request(:get, url + "composer.lock?ref=sha")
               .with(headers: { "Authorization" => "token token" })
               .to_return(
                 status: 200,
-                body: fixture("github",
-                              "composer_lock_with_relative_path_deps.json"),
+                body: fixture(
+                  "github",
+                  "composer_lock_with_relative_path_deps.json"
+                ),
                 headers: { "content-type" => "application/json" }
               )
             stub_request(:get, base_url + "my/components?ref=sha")
