@@ -1,0 +1,7 @@
+{
+  "name": "test-webdriverio",
+  "version": "1.0.0",
+  "dependencies": {
+    "webdriverio": "^9.18.1"
+  }
+}
