@@ -31,6 +31,10 @@ Layout/FirstArrayElementIndentation:
   EnforcedStyle: consistent
 Layout/FirstHashElementIndentation:
   EnforcedStyle: consistent
+Layout/FirstMethodArgumentLineBreak:
+  Enabled: true
+Layout/MultilineMethodArgumentLineBreaks:
+  Enabled: true
 Layout/RescueEnsureAlignment:
   Enabled: false
 Layout/SpaceAroundMethodCallOperator:
@@ -106,7 +110,7 @@ Sorbet/StrongSigil:
     - "**/spec/**/*"
 
 Style/AccessorGrouping:
-  EnforcedStyle: 'separated'
+  EnforcedStyle: "separated"
 Style/ArgumentsForwarding:
   Enabled: false
 Style/BisectedAttrAccessor:
