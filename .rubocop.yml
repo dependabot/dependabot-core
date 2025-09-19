@@ -39,8 +39,6 @@ Layout/MultilineMethodParameterLineBreaks:
   Enabled: true
 Layout/RescueEnsureAlignment:
   Enabled: false
-Layout/SpaceAroundMethodCallOperator:
-  Enabled: false
 Layout/LineContinuationLeadingSpace:
   Enabled: false
 
