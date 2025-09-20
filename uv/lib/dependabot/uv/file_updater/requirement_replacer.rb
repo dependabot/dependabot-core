@@ -30,8 +30,14 @@ module Dependabot
             index_urls: T.nilable(T::Array[T.nilable(String)])
           ).void
         end
-        def initialize(content:, dependency_name:, old_requirement:,
-                       new_requirement:, new_hash_version: nil, index_urls: nil)
+        def initialize(
+          content:,
+          dependency_name:,
+          old_requirement:,
+          new_requirement:,
+          new_hash_version: nil,
+          index_urls: nil
+        )
           @content = T.let(content, String)
           @dependency_name = T.let(normalise(dependency_name), String)
           @old_requirement = T.let(old_requirement, T.nilable(String))

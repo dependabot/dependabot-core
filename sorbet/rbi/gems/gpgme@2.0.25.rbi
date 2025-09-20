@@ -12,104 +12,301 @@
 module GPGME
   private
 
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_check_version(_arg0); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_ctx_get_engine_info(_arg0, _arg1); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_ctx_set_engine_info(_arg0, _arg1, _arg2, _arg3); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_data_get_encoding(_arg0); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_data_get_file_name(_arg0); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_data_new(_arg0); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_data_new_from_cbs(_arg0, _arg1, _arg2); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_data_new_from_fd(_arg0, _arg1); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_data_new_from_mem(_arg0, _arg1, _arg2); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_data_read(_arg0, _arg1); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_data_seek(_arg0, _arg1, _arg2); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_data_set_encoding(_arg0, _arg1); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_data_set_file_name(_arg0, _arg1); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_data_write(_arg0, _arg1, _arg2); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_engine_check_version(_arg0); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_err_code(_arg0); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_err_source(_arg0); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_get_armor(_arg0); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_get_ctx_flag(_arg0, _arg1); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_get_dirinfo(_arg0); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_get_engine_info(_arg0); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_get_ignore_mdc_error(_arg0); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_get_include_certs(_arg0); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_get_key(_arg0, _arg1, _arg2, _arg3); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_get_keylist_mode(_arg0); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_get_offline(_arg0); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_get_passphrase_cb(_arg0, _arg1, _arg2); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_get_pinentry_mode(_arg0); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_get_progress_cb(_arg0, _arg1, _arg2); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_get_protocol(_arg0); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_get_status_cb(_arg0, _arg1, _arg2); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_get_textmode(_arg0); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_hash_algo_name(_arg0); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_new(_arg0); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_op_card_edit(_arg0, _arg1, _arg2, _arg3, _arg4); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_op_card_edit_start(_arg0, _arg1, _arg2, _arg3, _arg4); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_op_decrypt(_arg0, _arg1, _arg2); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_op_decrypt_result(_arg0); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_op_decrypt_start(_arg0, _arg1, _arg2); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_op_decrypt_verify(_arg0, _arg1, _arg2); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_op_decrypt_verify_start(_arg0, _arg1, _arg2); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_op_delete(_arg0, _arg1, _arg2); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_op_delete_ext(_arg0, _arg1, _arg2); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_op_delete_start(_arg0, _arg1, _arg2); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_op_edit(_arg0, _arg1, _arg2, _arg3, _arg4); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_op_edit_start(_arg0, _arg1, _arg2, _arg3, _arg4); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_op_encrypt(_arg0, _arg1, _arg2, _arg3, _arg4); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_op_encrypt_result(_arg0); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_op_encrypt_sign(_arg0, _arg1, _arg2, _arg3, _arg4); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_op_encrypt_sign_start(_arg0, _arg1, _arg2, _arg3, _arg4); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_op_encrypt_start(_arg0, _arg1, _arg2, _arg3, _arg4); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_op_export(_arg0, _arg1, _arg2, _arg3); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_op_export_ext(_arg0, _arg1, _arg2, _arg3); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_op_export_ext_start(_arg0, _arg1, _arg2, _arg3); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_op_export_keys(_arg0, _arg1, _arg2, _arg3); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_op_export_keys_start(_arg0, _arg1, _arg2, _arg3); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_op_export_start(_arg0, _arg1, _arg2, _arg3); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_op_genkey(_arg0, _arg1, _arg2, _arg3); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_op_genkey_start(_arg0, _arg1, _arg2, _arg3); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_op_import(_arg0, _arg1); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_op_import_keys(_arg0, _arg1); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_op_import_keys_start(_arg0, _arg1); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_op_import_result(_arg0); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_op_import_start(_arg0, _arg1); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_op_keylist_end(_arg0); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_op_keylist_ext_start(_arg0, _arg1, _arg2); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_op_keylist_next(_arg0, _arg1); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_op_keylist_start(_arg0, _arg1, _arg2); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_op_random_bytes(_arg0, _arg1, _arg2); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_op_random_value(_arg0, _arg1); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_op_sign(_arg0, _arg1, _arg2, _arg3); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_op_sign_result(_arg0); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_op_sign_start(_arg0, _arg1, _arg2, _arg3); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_op_spawn(_arg0, _arg1, _arg2, _arg3, _arg4, _arg5, _arg6); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_op_spawn_start(_arg0, _arg1, _arg2, _arg3, _arg4, _arg5, _arg6); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_op_verify(_arg0, _arg1, _arg2, _arg3); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_op_verify_result(_arg0); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_op_verify_start(_arg0, _arg1, _arg2, _arg3); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_pubkey_algo_name(_arg0); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_release(_arg0); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_set_armor(_arg0, _arg1); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_set_ctx_flag(_arg0, _arg1, _arg2); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_set_engine_info(_arg0, _arg1, _arg2); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_set_ignore_mdc_error(_arg0, _arg1); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_set_include_certs(_arg0, _arg1); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_set_keylist_mode(_arg0, _arg1); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_set_locale(_arg0, _arg1, _arg2); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_set_offline(_arg0, _arg1); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_set_passphrase_cb(_arg0, _arg1, _arg2); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_set_pinentry_mode(_arg0, _arg1); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_set_progress_cb(_arg0, _arg1, _arg2); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_set_protocol(_arg0, _arg1); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_set_status_cb(_arg0, _arg1, _arg2); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_set_textmode(_arg0, _arg1); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_signers_add(_arg0, _arg1); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_signers_clear(_arg0); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_signers_enum(_arg0, _arg1); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_strerror(_arg0); end
+
+  # source://gpgme//lib/gpgme.rb#1
   def gpgme_wait(_arg0, _arg1, _arg2); end
 
   class << self
@@ -125,108 +322,309 @@ module GPGME
     # source://gpgme//lib/gpgme.rb#31
     def error_to_exception(err); end
 
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_check_version(_arg0); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_ctx_get_engine_info(_arg0, _arg1); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_ctx_set_engine_info(_arg0, _arg1, _arg2, _arg3); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_data_get_encoding(_arg0); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_data_get_file_name(_arg0); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_data_new(_arg0); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_data_new_from_cbs(_arg0, _arg1, _arg2); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_data_new_from_fd(_arg0, _arg1); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_data_new_from_mem(_arg0, _arg1, _arg2); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_data_read(_arg0, _arg1); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_data_seek(_arg0, _arg1, _arg2); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_data_set_encoding(_arg0, _arg1); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_data_set_file_name(_arg0, _arg1); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_data_write(_arg0, _arg1, _arg2); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_engine_check_version(_arg0); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_err_code(_arg0); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_err_source(_arg0); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_get_armor(_arg0); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_get_ctx_flag(_arg0, _arg1); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_get_dirinfo(_arg0); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_get_engine_info(_arg0); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_get_ignore_mdc_error(_arg0); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_get_include_certs(_arg0); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_get_key(_arg0, _arg1, _arg2, _arg3); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_get_keylist_mode(_arg0); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_get_offline(_arg0); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_get_passphrase_cb(_arg0, _arg1, _arg2); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_get_pinentry_mode(_arg0); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_get_progress_cb(_arg0, _arg1, _arg2); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_get_protocol(_arg0); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_get_status_cb(_arg0, _arg1, _arg2); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_get_textmode(_arg0); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_hash_algo_name(_arg0); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_new(_arg0); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_op_card_edit(_arg0, _arg1, _arg2, _arg3, _arg4); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_op_card_edit_start(_arg0, _arg1, _arg2, _arg3, _arg4); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_op_decrypt(_arg0, _arg1, _arg2); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_op_decrypt_result(_arg0); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_op_decrypt_start(_arg0, _arg1, _arg2); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_op_decrypt_verify(_arg0, _arg1, _arg2); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_op_decrypt_verify_start(_arg0, _arg1, _arg2); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_op_delete(_arg0, _arg1, _arg2); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_op_delete_ext(_arg0, _arg1, _arg2); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_op_delete_start(_arg0, _arg1, _arg2); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_op_edit(_arg0, _arg1, _arg2, _arg3, _arg4); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_op_edit_start(_arg0, _arg1, _arg2, _arg3, _arg4); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_op_encrypt(_arg0, _arg1, _arg2, _arg3, _arg4); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_op_encrypt_result(_arg0); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_op_encrypt_sign(_arg0, _arg1, _arg2, _arg3, _arg4); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_op_encrypt_sign_start(_arg0, _arg1, _arg2, _arg3, _arg4); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_op_encrypt_start(_arg0, _arg1, _arg2, _arg3, _arg4); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_op_export(_arg0, _arg1, _arg2, _arg3); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_op_export_ext(_arg0, _arg1, _arg2, _arg3); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_op_export_ext_start(_arg0, _arg1, _arg2, _arg3); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_op_export_keys(_arg0, _arg1, _arg2, _arg3); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_op_export_keys_start(_arg0, _arg1, _arg2, _arg3); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_op_export_start(_arg0, _arg1, _arg2, _arg3); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_op_genkey(_arg0, _arg1, _arg2, _arg3); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_op_genkey_start(_arg0, _arg1, _arg2, _arg3); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_op_import(_arg0, _arg1); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_op_import_keys(_arg0, _arg1); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_op_import_keys_start(_arg0, _arg1); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_op_import_result(_arg0); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_op_import_start(_arg0, _arg1); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_op_keylist_end(_arg0); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_op_keylist_ext_start(_arg0, _arg1, _arg2); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_op_keylist_next(_arg0, _arg1); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_op_keylist_start(_arg0, _arg1, _arg2); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_op_random_bytes(_arg0, _arg1, _arg2); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_op_random_value(_arg0, _arg1); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_op_sign(_arg0, _arg1, _arg2, _arg3); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_op_sign_result(_arg0); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_op_sign_start(_arg0, _arg1, _arg2, _arg3); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_op_spawn(_arg0, _arg1, _arg2, _arg3, _arg4, _arg5, _arg6); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_op_spawn_start(_arg0, _arg1, _arg2, _arg3, _arg4, _arg5, _arg6); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_op_verify(_arg0, _arg1, _arg2, _arg3); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_op_verify_result(_arg0); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_op_verify_start(_arg0, _arg1, _arg2, _arg3); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_pubkey_algo_name(_arg0); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_release(_arg0); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_set_armor(_arg0, _arg1); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_set_ctx_flag(_arg0, _arg1, _arg2); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_set_engine_info(_arg0, _arg1, _arg2); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_set_ignore_mdc_error(_arg0, _arg1); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_set_include_certs(_arg0, _arg1); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_set_keylist_mode(_arg0, _arg1); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_set_locale(_arg0, _arg1, _arg2); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_set_offline(_arg0, _arg1); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_set_passphrase_cb(_arg0, _arg1, _arg2); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_set_pinentry_mode(_arg0, _arg1); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_set_progress_cb(_arg0, _arg1, _arg2); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_set_protocol(_arg0, _arg1); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_set_status_cb(_arg0, _arg1, _arg2); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_set_textmode(_arg0, _arg1); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_signers_add(_arg0, _arg1); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_signers_clear(_arg0); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_signers_enum(_arg0, _arg1); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_strerror(_arg0); end
+
+    # source://gpgme//lib/gpgme.rb#1
     def gpgme_wait(_arg0, _arg1, _arg2); end
+
+    # source://gpgme//lib/gpgme.rb#26
     def hash_algo_name(_arg0); end
 
     # From the c extension
+    #
+    # source://gpgme//lib/gpgme.rb#25
     def pubkey_algo_name(_arg0); end
   end
 end
@@ -468,7 +866,7 @@ class GPGME::Ctx
 
   # Edit attributes of the key on the card.
   #
-  # source://gpgme//lib/gpgme/ctx.rb#475
+  # source://gpgme//lib/gpgme/ctx.rb#481
   def card_edit(key, editfunc, hook_value = T.unsafe(nil), out = T.unsafe(nil)); end
 
   # Remove the list of signers from this object.
@@ -492,7 +890,7 @@ class GPGME::Ctx
   # otherwise secret keys are deleted as well.
   # If force is true, the confirmation dialog will not be displayed.
   #
-  # source://gpgme//lib/gpgme/ctx.rb#451
+  # source://gpgme//lib/gpgme/ctx.rb#464
   def delete(key, allow_secret = T.unsafe(nil), force = T.unsafe(nil)); end
 
   # Delete the key from the key ring.
@@ -522,17 +920,17 @@ class GPGME::Ctx
   # See {GPGME::Key.find} for an example of how to use, or for an easier way
   # to use.
   #
-  # source://gpgme//lib/gpgme/ctx.rb#359
+  # source://gpgme//lib/gpgme/ctx.rb#369
   def each_keys(pattern = T.unsafe(nil), secret_only = T.unsafe(nil), &block); end
 
   # Edit attributes of the key in the local key ring.
   #
-  # source://gpgme//lib/gpgme/ctx.rb#467
+  # source://gpgme//lib/gpgme/ctx.rb#472
   def edit(key, editfunc, hook_value = T.unsafe(nil), out = T.unsafe(nil)); end
 
   # Edit attributes of the key on the card.
   #
-  # source://gpgme//lib/gpgme/ctx.rb#475
+  # source://gpgme//lib/gpgme/ctx.rb#480
   def edit_card(key, editfunc, hook_value = T.unsafe(nil), out = T.unsafe(nil)); end
 
   # Edit attributes of the key on the card.
@@ -566,7 +964,7 @@ class GPGME::Ctx
   # If passed, the key will be exported to +keydata+, which must be
   # a {GPGME::Data} object.
   #
-  # source://gpgme//lib/gpgme/ctx.rb#427
+  # source://gpgme//lib/gpgme/ctx.rb#433
   def export(recipients, keydata = T.unsafe(nil), mode = T.unsafe(nil)); end
 
   # Extract the public keys that match the +recipients+. Returns a
@@ -620,7 +1018,7 @@ class GPGME::Ctx
   # If +pubkey+ and +seckey+ are both set to +nil+, it stores the generated
   # key pair into your key ring.
   #
-  # source://gpgme//lib/gpgme/ctx.rb#412
+  # source://gpgme//lib/gpgme/ctx.rb#417
   def genkey(parms, pubkey = T.unsafe(nil), seckey = T.unsafe(nil)); end
 
   # Get the value of the Ctx flag with the given name.
@@ -673,7 +1071,7 @@ class GPGME::Ctx
 
   # Add the keys in the data buffer to the key ring.
   #
-  # source://gpgme//lib/gpgme/ctx.rb#436
+  # source://gpgme//lib/gpgme/ctx.rb#441
   def import(keydata); end
 
   # Add the keys in the data buffer to the key ring.
@@ -889,7 +1287,7 @@ class GPGME::Ctx
   #   $stderr.puts
   #   end
   #
-  # source://gpgme//lib/gpgme/ctx.rb#280
+  # source://gpgme//lib/gpgme/ctx.rb#283
   def set_passphrase_cb(passfunc, hook_value = T.unsafe(nil)); end
 
   # Set the progress callback with given hook value.
@@ -915,7 +1313,7 @@ class GPGME::Ctx
   #
   #  ctx.set_progress_callback(method(:progfunc))
   #
-  # source://gpgme//lib/gpgme/ctx.rb#295
+  # source://gpgme//lib/gpgme/ctx.rb#298
   def set_progress_cb(progfunc, hook_value = T.unsafe(nil)); end
 
   # Set the status callback with given hook value.
@@ -947,7 +1345,7 @@ class GPGME::Ctx
   #    return 0
   #  end
   #
-  # source://gpgme//lib/gpgme/ctx.rb#312
+  # source://gpgme//lib/gpgme/ctx.rb#315
   def set_status_cb(statusfunc, hook_value = T.unsafe(nil)); end
 
   # Create a signature for the text.
@@ -1211,6 +1609,7 @@ class GPGME::DecryptResult
   class << self
     private
 
+    # source://gpgme//lib/gpgme/misc.rb#22
     def new(*_arg0); end
   end
 end
@@ -1243,6 +1642,7 @@ class GPGME::EncryptResult
   class << self
     private
 
+    # source://gpgme//lib/gpgme/misc.rb#35
     def new(*_arg0); end
   end
 end
@@ -1332,7 +1732,7 @@ class GPGME::EngineInfo
 
   # Returns the value of attribute req_version.
   #
-  # source://gpgme//lib/gpgme/misc.rb#5
+  # source://gpgme//lib/gpgme/misc.rb#6
   def required_version; end
 
   # Returns the value of attribute version.
@@ -1343,6 +1743,7 @@ class GPGME::EngineInfo
   class << self
     private
 
+    # source://gpgme//lib/gpgme/misc.rb#3
     def new(*_arg0); end
   end
 end
@@ -1812,6 +2213,7 @@ class GPGME::ImportResult
   class << self
     private
 
+    # source://gpgme//lib/gpgme/misc.rb#66
     def new(*_arg0); end
   end
 end
@@ -1820,7 +2222,7 @@ end
 class GPGME::ImportStatus
   # Returns the value of attribute fpr.
   #
-  # source://gpgme//lib/gpgme/misc.rb#61
+  # source://gpgme//lib/gpgme/misc.rb#62
   def fingerprint; end
 
   # Returns the value of attribute fpr.
@@ -1841,6 +2243,7 @@ class GPGME::ImportStatus
   class << self
     private
 
+    # source://gpgme//lib/gpgme/misc.rb#59
     def new(*_arg0); end
   end
 end
@@ -1849,7 +2252,7 @@ end
 class GPGME::InvalidKey
   # Returns the value of attribute fpr.
   #
-  # source://gpgme//lib/gpgme/misc.rb#43
+  # source://gpgme//lib/gpgme/misc.rb#44
   def fingerprint; end
 
   # Returns the value of attribute fpr.
@@ -1865,6 +2268,7 @@ class GPGME::InvalidKey
   class << self
     private
 
+    # source://gpgme//lib/gpgme/misc.rb#41
     def new(*_arg0); end
   end
 end
@@ -2097,6 +2501,7 @@ class GPGME::Key
 
     private
 
+    # source://gpgme//lib/gpgme/key.rb#14
     def new(*_arg0); end
   end
 end
@@ -2175,6 +2580,7 @@ class GPGME::KeySig
   class << self
     private
 
+    # source://gpgme//lib/gpgme/key_sig.rb#3
     def new(*_arg0); end
   end
 end
@@ -2222,7 +2628,7 @@ GPGME::MD_TIGER = T.let(T.unsafe(nil), Integer)
 class GPGME::NewSignature
   # Returns the value of attribute fpr.
   #
-  # source://gpgme//lib/gpgme/misc.rb#50
+  # source://gpgme//lib/gpgme/misc.rb#51
   def fingerprint; end
 
   # Returns the value of attribute fpr.
@@ -2256,6 +2662,7 @@ class GPGME::NewSignature
   class << self
     private
 
+    # source://gpgme//lib/gpgme/misc.rb#48
     def new(*_arg0); end
   end
 end
@@ -2325,6 +2732,7 @@ class GPGME::Recipient
   class << self
     private
 
+    # source://gpgme//lib/gpgme/misc.rb#16
     def new(*_arg0); end
   end
 end
@@ -2640,6 +3048,7 @@ class GPGME::SignResult
   class << self
     private
 
+    # source://gpgme//lib/gpgme/misc.rb#29
     def new(*_arg0); end
   end
 end
@@ -2666,7 +3075,7 @@ class GPGME::Signature
 
   # Returns the value of attribute fpr.
   #
-  # source://gpgme//lib/gpgme/signature.rb#5
+  # source://gpgme//lib/gpgme/signature.rb#8
   def fingerprint; end
 
   # Returns the value of attribute fpr.
@@ -2749,6 +3158,7 @@ class GPGME::Signature
   class << self
     private
 
+    # source://gpgme//lib/gpgme/signature.rb#3
     def new(*_arg0); end
   end
 end
@@ -2770,7 +3180,7 @@ class GPGME::SubKey
 
   # Returns the value of attribute fpr.
   #
-  # source://gpgme//lib/gpgme/sub_key.rb#5
+  # source://gpgme//lib/gpgme/sub_key.rb#6
   def fingerprint; end
 
   # Returns the value of attribute fpr.
@@ -2811,6 +3221,7 @@ class GPGME::SubKey
   class << self
     private
 
+    # source://gpgme//lib/gpgme/sub_key.rb#3
     def new(*_arg0); end
   end
 end
@@ -2866,6 +3277,7 @@ class GPGME::UserID
   class << self
     private
 
+    # source://gpgme//lib/gpgme/user_id.rb#3
     def new(*_arg0); end
   end
 end
@@ -2901,6 +3313,7 @@ class GPGME::VerifyResult
   class << self
     private
 
+    # source://gpgme//lib/gpgme/misc.rb#10
     def new(*_arg0); end
   end
 end

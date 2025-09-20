@@ -63,14 +63,19 @@ module Dependabot
 
         sig { returns(Dependabot::Job) }
         attr_reader :job
-        sig { returns(Dependabot::Service) }
+
+        sig { override.returns(Dependabot::Service) }
         attr_reader :service
+
         sig { returns(Dependabot::DependencySnapshot) }
         attr_reader :dependency_snapshot
+
         sig { returns(Dependabot::Updater::ErrorHandler) }
         attr_reader :error_handler
+
         sig { returns(T::Array[PullRequest]) }
         attr_reader :created_pull_requests
+
         # A list of notices that will be used in PR messages and/or sent to the dependabot github alerts.
         sig { returns(T::Array[Dependabot::Notice]) }
         attr_reader :notices
@@ -124,10 +129,10 @@ module Dependabot
           return log_up_to_date(dependency) if checker.up_to_date?
 
           if pr_exists_for_latest_version?(checker)
-            return Dependabot.logger.info(
-              "Pull request already exists for #{checker.dependency.name} " \
-              "with latest version #{checker.latest_version}"
-            )
+            latest_version = checker.latest_version&.to_s
+            return false if latest_version.nil?
+
+            return log_existing_pr_for_latest_version(checker.dependency.name, latest_version, checker.latest_version)
           end
 
           requirements_to_unlock = requirements_to_unlock(checker)
@@ -187,6 +192,20 @@ module Dependabot
 
           create_pull_request(dependency_change)
         end
+        sig { params(dependency_name: String, latest_version: String, latest_version_obj: T.untyped).void }
+        def log_existing_pr_for_latest_version(dependency_name, latest_version, latest_version_obj)
+          pr_number = job.existing_pull_requests
+                         .find { |pr| pr.contains_dependency?(dependency_name, latest_version) }
+                         &.dependencies&.first&.pr_number
+
+          pr_number_text = pr_number ? "##{pr_number} " : ""
+
+          Dependabot.logger.info(
+            "Pull request #{pr_number_text}already exists for #{dependency_name} " \
+            "with latest version #{latest_version_obj}"
+          )
+        end
+
         # rubocop:enable Metrics/PerceivedComplexity
         # rubocop:enable Metrics/MethodLength
         # rubocop:enable Metrics/AbcSize
@@ -322,8 +341,10 @@ module Dependabot
 
         sig { params(dependency_change: Dependabot::DependencyChange).void }
         def create_pull_request(dependency_change)
-          Dependabot.logger.info("Submitting #{dependency_change.updated_dependencies.map(&:name).join(', ')} " \
-                                 "pull request for creation")
+          Dependabot.logger.info(
+            "Submitting #{dependency_change.updated_dependencies.map(&:name).join(', ')} " \
+            "pull request for creation"
+          )
 
           service.create_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
 

@@ -26,8 +26,10 @@ module Dependabot
         require_relative "requirement_file_updater"
 
         UNSAFE_PACKAGES = T.let(%w(setuptools distribute pip).freeze, T::Array[String])
-        INCOMPATIBLE_VERSIONS_REGEX = T.let(/There are incompatible versions in the resolved dependencies:.*\z/m,
-                                            Regexp)
+        INCOMPATIBLE_VERSIONS_REGEX = T.let(
+          /There are incompatible versions in the resolved dependencies:.*\z/m,
+          Regexp
+        )
         WARNINGS = T.let(/\s*# WARNING:.*\Z/m, Regexp)
         UNSAFE_NOTE = T.let(/\s*# The following packages are considered to be unsafe.*\Z/m, Regexp)
         RESOLVER_REGEX = T.let(/(?<=--resolver=)(\w+)/, Regexp)

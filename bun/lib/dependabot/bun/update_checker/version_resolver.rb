@@ -27,9 +27,12 @@ module Dependabot
 
         require_relative "latest_version_finder"
 
-        TIGHTLY_COUPLED_MONOREPOS = T.let({
-          "vue" => %w(vue vue-template-compiler)
-        }.freeze, T::Hash[String, T::Array[String]])
+        TIGHTLY_COUPLED_MONOREPOS = T.let(
+          {
+            "vue" => %w(vue vue-template-compiler)
+          }.freeze,
+          T::Hash[String, T::Array[String]]
+        )
 
         # Error message returned by `npm install` (for NPM 6):
         # react-dom@15.2.0 requires a peer of react@^15.2.0 \
@@ -68,10 +71,15 @@ module Dependabot
           ).void
         end
         def initialize( # rubocop:disable Metrics/AbcSize
-          dependency:, dependency_files:, credentials:,
-          latest_allowable_version:, latest_version_finder:,
-          repo_contents_path:, dependency_group: nil,
-          raise_on_ignored: false, update_cooldown: nil
+          dependency:,
+          dependency_files:,
+          credentials:,
+          latest_allowable_version:,
+          latest_version_finder:,
+          repo_contents_path:,
+          dependency_group: nil,
+          raise_on_ignored: false,
+          update_cooldown: nil
         )
           @dependency               = dependency
           @dependency_files         = dependency_files
@@ -170,18 +178,25 @@ module Dependabot
 
         sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
+
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
+
         sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
+
         sig { returns(T.nilable(T.any(String, Gem::Version))) }
         attr_reader :latest_allowable_version
+
         sig { returns(T.nilable(String)) }
         attr_reader :repo_contents_path
+
         sig { returns(T.nilable(Dependabot::DependencyGroup)) }
         attr_reader :dependency_group
+
         sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
         attr_reader :update_cooldown
+
         sig { returns(T::Boolean) }
         attr_reader :raise_on_ignored
 

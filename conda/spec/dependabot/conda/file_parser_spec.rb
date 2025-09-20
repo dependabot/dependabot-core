@@ -32,9 +32,11 @@ RSpec.describe Dependabot::Conda::FileParser do
         dependencies = parser.parse
 
         # Python interpreter is excluded as it's a system dependency, not a PyPI package
-        expect(dependencies.map(&:name)).to match_array(%w(
-          numpy pandas pydantic-settings
-        ))
+        expect(dependencies.map(&:name)).to match_array(
+          %w(
+            numpy pandas pydantic-settings
+          )
+        )
       end
 
       it "extracts conda dependencies with correct attributes" do
@@ -44,12 +46,14 @@ RSpec.describe Dependabot::Conda::FileParser do
 
         expect(numpy_dep.version).to eq("1.26")
         expect(numpy_dep.package_manager).to eq("conda")
-        expect(numpy_dep.requirements).to eq([{
-          requirement: "=1.26",
-          file: "environment.yml",
-          source: nil,
-          groups: ["dependencies"]
-        }])
+        expect(numpy_dep.requirements).to eq(
+          [{
+            requirement: "=1.26",
+            file: "environment.yml",
+            source: nil,
+            groups: ["dependencies"]
+          }]
+        )
       end
 
       it "extracts pip dependencies with correct attributes" do
@@ -58,12 +62,14 @@ RSpec.describe Dependabot::Conda::FileParser do
 
         expect(pydantic_dep.version).to eq("2.0")
         expect(pydantic_dep.package_manager).to eq("conda")
-        expect(pydantic_dep.requirements).to eq([{
-          requirement: ">=2.0",
-          file: "environment.yml",
-          source: nil,
-          groups: ["pip"]
-        }])
+        expect(pydantic_dep.requirements).to eq(
+          [{
+            requirement: ">=2.0",
+            file: "environment.yml",
+            source: nil,
+            groups: ["pip"]
+          }]
+        )
       end
     end
 

@@ -79,7 +79,8 @@ module Dependabot
 
       sig do
         params(
-          repo: String, commit: T.nilable(String),
+          repo: String,
+          commit: T.nilable(String),
           path: T.nilable(String)
         )
           # See PR 9344: should .returns(Seahorse::Client::Response)
@@ -253,8 +254,13 @@ module Dependabot
         )
           .returns(Aws::CodeCommit::Types::CreateCommitOutput)
       end
-      def create_commit(branch_name, author_name, base_commit, commit_message,
-                        files)
+      def create_commit(
+        branch_name,
+        author_name,
+        base_commit,
+        commit_message,
+        files
+      )
         cc_client.create_commit(
           repository_name: source.unscoped_repo,
           branch_name: branch_name,
@@ -280,8 +286,12 @@ module Dependabot
         )
           .returns(T.nilable(Aws::CodeCommit::Types::CreatePullRequestOutput))
       end
-      def create_pull_request(pr_name, target_branch, source_branch,
-                              pr_description)
+      def create_pull_request(
+        pr_name,
+        target_branch,
+        source_branch,
+        pr_description
+      )
         cc_client.create_pull_request(
           title: pr_name,
           description: pr_description,

@@ -4,7 +4,6 @@
 require "dependabot/helm/update_checker/latest_version_resolver"
 require "dependabot/helm/package/package_details_fetcher"
 # rubocop:disable RSpec/SpecFilePathFormat
-# rubocop:disable RSpec/FilePath
 RSpec.describe Dependabot::Helm::LatestVersionResolver do
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -192,4 +191,3 @@ RSpec.describe Dependabot::Helm::LatestVersionResolver do
   end
 end
 # rubocop:enable RSpec/SpecFilePathFormat
-# rubocop:enable RSpec/FilePath

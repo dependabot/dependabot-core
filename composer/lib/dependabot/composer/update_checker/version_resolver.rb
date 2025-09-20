@@ -61,8 +61,13 @@ module Dependabot
             latest_allowable_version: T.nilable(Gem::Version)
           ).void
         end
-        def initialize(credentials:, dependency:, dependency_files:,
-                       requirements_to_unlock:, latest_allowable_version:)
+        def initialize(
+          credentials:,
+          dependency:,
+          dependency_files:,
+          requirements_to_unlock:,
+          latest_allowable_version:
+        )
           @credentials                  = credentials
           @dependency                   = dependency
           @dependency_files             = dependency_files
@@ -637,11 +642,14 @@ module Dependabot
       # Private source errors
       CURL_ERROR = T.let(/curl error 52 while downloading (?<url>.*): Empty reply from server/, Regexp)
 
-      PRIVATE_SOURCE_AUTH_FAIL = T.let([
-        /Could not authenticate against (?<url>.*)/,
-        /The '(?<url>.*)' URL could not be accessed \(HTTP 403\)/,
-        /The "(?<url>.*)" file could not be downloaded/
-      ].freeze, T::Array[Regexp])
+      PRIVATE_SOURCE_AUTH_FAIL = T.let(
+        [
+          /Could not authenticate against (?<url>.*)/,
+          /The '(?<url>.*)' URL could not be accessed \(HTTP 403\)/,
+          /The "(?<url>.*)" file could not be downloaded/
+        ].freeze,
+        T::Array[Regexp]
+      )
 
       REQUIREMENT_ERROR = T.let(/^(?<req>.*) is invalid, it should not contain uppercase characters/, Regexp)
 

@@ -31,8 +31,12 @@ module Dependabot
       abstract!
 
       sig do
-        params(dependency_snapshot: Dependabot::DependencySnapshot, error_handler: Dependabot::Updater::ErrorHandler,
-               job: Dependabot::Job, group: Dependabot::DependencyGroup).void
+        params(
+          dependency_snapshot: Dependabot::DependencySnapshot,
+          error_handler: Dependabot::Updater::ErrorHandler,
+          job: Dependabot::Job,
+          group: Dependabot::DependencyGroup
+        ).void
       end
       def initialize(dependency_snapshot, error_handler, job, group)
         @dependency_snapshot = T.let(dependency_snapshot, Dependabot::DependencySnapshot)

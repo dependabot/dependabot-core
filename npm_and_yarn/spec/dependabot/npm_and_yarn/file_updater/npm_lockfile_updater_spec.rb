@@ -19,10 +19,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
   let(:dependencies) { [dependency] }
 
   let(:credentials) do
-    [Dependabot::Credential.new({
-      "type" => "git_source",
-      "host" => "github.com"
-    })]
+    [Dependabot::Credential.new(
+      {
+        "type" => "git_source",
+        "host" => "github.com"
+      }
+    )]
   end
 
   let(:dependency) do
@@ -136,8 +138,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       let(:files) { project_dependency_files("npm8/simple_no_indentation") }
 
       it "defaults to npm and uses two spaces" do
-        expected_updated_npm_lock_content = fixture("updated_projects", "npm8", "simple_no_indentation",
-                                                    "package-lock.json")
+        expected_updated_npm_lock_content = fixture(
+          "updated_projects",
+          "npm8",
+          "simple_no_indentation",
+          "package-lock.json"
+        )
         expect(updated_npm_lock_content).to eq(expected_updated_npm_lock_content)
       end
     end
@@ -146,8 +152,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       let(:files) { project_dependency_files("npm8/lockfile_with_newline") }
 
       it "ignores the newline when calculating indentation" do
-        expected_updated_npm_lock_content = fixture("updated_projects", "npm8", "lockfile_with_newline",
-                                                    "package-lock.json")
+        expected_updated_npm_lock_content = fixture(
+          "updated_projects",
+          "npm8",
+          "lockfile_with_newline",
+          "package-lock.json"
+        )
         expect(updated_npm_lock_content).to eq(expected_updated_npm_lock_content)
       end
     end

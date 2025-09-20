@@ -99,7 +99,8 @@ module Dependabot
               dependency_files: dependency_files,
               updated_dependencies: dependencies
             ).files_requiring_update
-          end, T.nilable(T::Array[DependencyFile])
+          end,
+          T.nilable(T::Array[DependencyFile])
         )
       end
 
@@ -131,7 +132,8 @@ module Dependabot
         @package_files ||= T.let(
           filtered_dependency_files.select do |f|
             f.name.end_with?("package.json")
-          end, T.nilable(T::Array[DependencyFile])
+          end,
+          T.nilable(T::Array[DependencyFile])
         )
       end
 

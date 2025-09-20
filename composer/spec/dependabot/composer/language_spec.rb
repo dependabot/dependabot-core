@@ -39,10 +39,12 @@ RSpec.describe Dependabot::Composer::Language do
       let(:requirement) { Dependabot::Composer::Requirement.new([">=7.4", "<8.0"]) }
 
       it "sets the requirement correctly" do
-        expect(language.requirement.requirements).to eq([
-          [">=", Gem::Version.new("7.4")],
-          ["<", Gem::Version.new("8.0")]
-        ])
+        expect(language.requirement.requirements).to eq(
+          [
+            [">=", Gem::Version.new("7.4")],
+            ["<", Gem::Version.new("8.0")]
+          ]
+        )
       end
     end
   end
@@ -92,10 +94,12 @@ RSpec.describe Dependabot::Composer::Language do
       let(:requirement) { Dependabot::Composer::Requirement.new([">=7.4", "<8.0"]) }
 
       it "returns the requirement object" do
-        expect(language.requirement.requirements).to eq([
-          [">=", Gem::Version.new("7.4")],
-          ["<", Gem::Version.new("8.0")]
-        ])
+        expect(language.requirement.requirements).to eq(
+          [
+            [">=", Gem::Version.new("7.4")],
+            ["<", Gem::Version.new("8.0")]
+          ]
+        )
       end
     end
   end

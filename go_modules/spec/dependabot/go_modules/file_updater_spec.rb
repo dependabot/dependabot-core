@@ -237,12 +237,18 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
 
       context "when dependency files are nested in a directory" do
         let(:go_mod) do
-          Dependabot::DependencyFile.new(name: "go.mod", content: go_mod_body,
-                                         directory: "/nested")
+          Dependabot::DependencyFile.new(
+            name: "go.mod",
+            content: go_mod_body,
+            directory: "/nested"
+          )
         end
         let(:go_sum) do
-          Dependabot::DependencyFile.new(name: "go.sum", content: go_sum_body,
-                                         directory: "/nested")
+          Dependabot::DependencyFile.new(
+            name: "go.sum",
+            content: go_sum_body,
+            directory: "/nested"
+          )
         end
 
         it "includes an updated go.mod" do

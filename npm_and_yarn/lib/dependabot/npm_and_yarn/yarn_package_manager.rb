@@ -23,12 +23,15 @@ module Dependabot
       YARN_V3 = "3"
       YARN_V4 = "4"
 
-      SUPPORTED_VERSIONS = T.let([
-        Version.new(YARN_V1),
-        Version.new(YARN_V2),
-        Version.new(YARN_V3),
-        Version.new(YARN_V4)
-      ].freeze, T::Array[Dependabot::Version])
+      SUPPORTED_VERSIONS = T.let(
+        [
+          Version.new(YARN_V1),
+          Version.new(YARN_V2),
+          Version.new(YARN_V3),
+          Version.new(YARN_V4)
+        ].freeze,
+        T::Array[Dependabot::Version]
+      )
 
       DEPRECATED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
 
