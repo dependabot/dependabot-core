@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -5,19 +6,23 @@ using NuGet.Versioning;
 
 using NuGetUpdater.Core.Analyze;
 using NuGetUpdater.Core.DependencySolver;
-using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Run.ApiModel;
 using NuGetUpdater.Core.Updater;
 using NuGetUpdater.Core.Updater.FileWriters;
 
 namespace NuGetUpdater.Core;
 
+public delegate IDependencySolver DependencySolverFactory(string workspacePath);
+
 public class UpdaterWorker : IUpdaterWorker
 {
     private readonly string _jobId;
+    private readonly IDiscoveryWorker _discoveryWorker;
+    private readonly DependencySolverFactory _dependencySolverFactory;
+    private readonly ImmutableArray<IFileWriter> _fileWriters;
+    private readonly ComputeUpdateOperations _computeUpdateOperations;
     private readonly ExperimentsManager _experimentsManager;
     private readonly ILogger _logger;
-    private readonly HashSet<string> _processedProjectPaths = new(StringComparer.OrdinalIgnoreCase);
 
     internal static readonly JsonSerializerOptions SerializerOptions = new()
     {
@@ -25,20 +30,23 @@ public class UpdaterWorker : IUpdaterWorker
         Converters = { new JsonStringEnumConverter(), new VersionConverter() },
     };
 
-    public UpdaterWorker(string jobId, ExperimentsManager experimentsManager, ILogger logger)
+    public UpdaterWorker(
+        string jobId,
+        IDiscoveryWorker discoveryWorker,
+        DependencySolverFactory dependencySolverFactory,
+        IEnumerable<IFileWriter> fileWriters,
+        ComputeUpdateOperations computeUpdateOperations,
+        ExperimentsManager experimentsManager,
+        ILogger logger
+    )
     {
         _jobId = jobId;
+        _discoveryWorker = discoveryWorker;
+        _dependencySolverFactory = dependencySolverFactory;
+        _fileWriters = [.. fileWriters];
+        _computeUpdateOperations = computeUpdateOperations;
         _experimentsManager = experimentsManager;
         _logger = logger;
-    }
-
-    public async Task RunAsync(string repoRootPath, string workspacePath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, bool isTransitive, string? resultOutputPath = null)
-    {
-        var result = await RunWithErrorHandlingAsync(repoRootPath, workspacePath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive);
-        if (resultOutputPath is { })
-        {
-            await WriteResultFile(result, resultOutputPath, _logger);
-        }
     }
 
     // this is a convenient method for tests
@@ -75,12 +83,8 @@ public class UpdaterWorker : IUpdaterWorker
             workspacePath = Path.GetFullPath(Path.Join(repoRootPath, workspacePath));
         }
 
-        var worker = new FileWriterWorker(
-            new DiscoveryWorker(_jobId, _experimentsManager, _logger),
-            new MSBuildDependencySolver(new DirectoryInfo(repoRootPath), new FileInfo(workspacePath), _logger),
-            new XmlFileWriter(_logger),
-            _logger
-        );
+        var dependencySolver = _dependencySolverFactory(workspacePath);
+        var worker = new FileWriterWorker(_discoveryWorker, dependencySolver, _fileWriters, _computeUpdateOperations, _logger);
         var updateOperations = await worker.RunAsync(
             new DirectoryInfo(repoRootPath),
             new FileInfo(workspacePath),
