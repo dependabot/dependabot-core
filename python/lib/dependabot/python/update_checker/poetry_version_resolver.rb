@@ -521,7 +521,7 @@ module Dependabot
         SERVER_ERROR_CODES.each do |(_error_codes, error_regex)|
           next unless error.message.match?(error_regex)
 
-          index_url = URI.extract(error.message.to_s).last .then { sanitize_url(_1) }
+          index_url = URI.extract(error.message.to_s).last.then { sanitize_url(_1) }
           raise InconsistentRegistryResponse, index_url
         end
 
@@ -534,7 +534,7 @@ module Dependabot
         CLIENT_ERROR_CODES.each do |(_error_codes, error_regex)|
           next unless error.message.match?(error_regex)
 
-          index_url = URI.extract(error.message.to_s).last .then { sanitize_url(_1) }
+          index_url = URI.extract(error.message.to_s).last.then { sanitize_url(_1) }
           raise PrivateSourceAuthenticationFailure, index_url
         end
 
