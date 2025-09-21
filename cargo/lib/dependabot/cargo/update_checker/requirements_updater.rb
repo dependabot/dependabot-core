@@ -40,8 +40,12 @@ module Dependabot
             target_version: T.nilable(T.any(String, Gem::Version))
           ).void
         end
-        def initialize(requirements:, updated_source:, update_strategy:,
-                       target_version:)
+        def initialize(
+          requirements:,
+          updated_source:,
+          update_strategy:,
+          target_version:
+        )
           @requirements = T.let(requirements, T::Array[T::Hash[Symbol, T.untyped]])
           @updated_source = T.let(updated_source, T.nilable(T::Hash[T.any(String, Symbol), T.untyped]))
           @update_strategy = T.let(update_strategy, Dependabot::RequirementsUpdateStrategy)

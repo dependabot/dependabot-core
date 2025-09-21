@@ -751,7 +751,7 @@ module Thor::Actions
   #
   #   comment_lines 'config/initializers/session_store.rb', /cookie_store/
   #
-  # source://thor//lib/thor/actions/file_manipulation.rb#308
+  # source://thor//lib/thor/actions/file_manipulation.rb#333
   def comment_lines(path, flag, *args); end
 
   # Copies the file from the relative source to the relative destination. If
@@ -928,8 +928,29 @@ module Thor::Actions
   #     match << " no more. Use thor!"
   #   end
   #
-  # source://thor//lib/thor/actions/file_manipulation.rb#262
+  # source://thor//lib/thor/actions/file_manipulation.rb#291
   def gsub_file(path, flag, *args, &block); end
+
+  # Run a regular expression replacement on a file, raising an error if the
+  # contents of the file are not changed.
+  #
+  # ==== Parameters
+  # path<String>:: path of the file to be changed
+  # flag<Regexp|String>:: the regexp or string to be replaced
+  # replacement<String>:: the replacement, can be also given as a block
+  # config<Hash>:: give :verbose => false to not log the status, and
+  #                :force => true, to force the replacement regardless of runner behavior.
+  #
+  # ==== Example
+  #
+  #   gsub_file! 'app/controllers/application_controller.rb', /#\s*(filter_parameter_logging :password)/, '\1'
+  #
+  #   gsub_file! 'README', /rake/, :green do |match|
+  #     match << " no more. Use thor!"
+  #   end
+  #
+  # source://thor//lib/thor/actions/file_manipulation.rb#263
+  def gsub_file!(path, flag, *args, &block); end
 
   # Goes to the root and execute the given block.
   #
@@ -1066,7 +1087,7 @@ module Thor::Actions
   #   remove_file 'README'
   #   remove_file 'app/controllers/application_controller.rb'
   #
-  # source://thor//lib/thor/actions/file_manipulation.rb#335
+  # source://thor//lib/thor/actions/file_manipulation.rb#360
   def remove_dir(path, config = T.unsafe(nil)); end
 
   # Removes a file at the given location.
@@ -1080,7 +1101,7 @@ module Thor::Actions
   #   remove_file 'README'
   #   remove_file 'app/controllers/application_controller.rb'
   #
-  # source://thor//lib/thor/actions/file_manipulation.rb#325
+  # source://thor//lib/thor/actions/file_manipulation.rb#350
   def remove_file(path, config = T.unsafe(nil)); end
 
   # Executes a command returning the contents of the command.
@@ -1164,7 +1185,7 @@ module Thor::Actions
   #
   #   uncomment_lines 'config/initializers/session_store.rb', /active_record/
   #
-  # source://thor//lib/thor/actions/file_manipulation.rb#289
+  # source://thor//lib/thor/actions/file_manipulation.rb#314
   def uncomment_lines(path, flag, *args); end
 
   protected
@@ -1179,25 +1200,28 @@ module Thor::Actions
 
   private
 
-  # source://thor//lib/thor/actions/file_manipulation.rb#346
+  # source://thor//lib/thor/actions/file_manipulation.rb#385
+  def actually_gsub_file(path, flag, args, error_on_no_change, &block); end
+
+  # source://thor//lib/thor/actions/file_manipulation.rb#371
   def capture(*args); end
 
-  # source://thor//lib/thor/actions/file_manipulation.rb#342
+  # source://thor//lib/thor/actions/file_manipulation.rb#367
   def concat(string); end
 
   # Returns the value of attribute output_buffer.
   #
-  # source://thor//lib/thor/actions/file_manipulation.rb#337
+  # source://thor//lib/thor/actions/file_manipulation.rb#362
   def output_buffer; end
 
   # Sets the attribute output_buffer
   #
   # @param value the value to set the attribute output_buffer to.
   #
-  # source://thor//lib/thor/actions/file_manipulation.rb#337
+  # source://thor//lib/thor/actions/file_manipulation.rb#362
   def output_buffer=(_arg0); end
 
-  # source://thor//lib/thor/actions/file_manipulation.rb#350
+  # source://thor//lib/thor/actions/file_manipulation.rb#375
   def with_output_buffer(buf = T.unsafe(nil)); end
 
   class << self
@@ -1209,9 +1233,9 @@ end
 # Thor::Actions#capture depends on what kind of buffer is used in ERB.
 # Thus CapturableERB fixes ERB to use String buffer.
 #
-# source://thor//lib/thor/actions/file_manipulation.rb#362
+# source://thor//lib/thor/actions/file_manipulation.rb#398
 class Thor::Actions::CapturableERB < ::ERB
-  # source://thor//lib/thor/actions/file_manipulation.rb#363
+  # source://thor//lib/thor/actions/file_manipulation.rb#399
   def set_eoutvar(compiler, eoutvar = T.unsafe(nil)); end
 end
 
@@ -3687,9 +3711,6 @@ class Thor::Shell::Basic
 
   # source://thor//lib/thor/shell/basic.rb#296
   def file_collision_help(block_given); end
-
-  # source://thor//lib/thor/shell/basic.rb#383
-  def git_merge_tool; end
 
   # @return [Boolean]
   #

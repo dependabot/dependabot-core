@@ -167,8 +167,10 @@ RSpec.describe Dependabot::Helm::FileUpdater::LockFileGenerator do
 
       it "uses the correct base directory" do
         generator.updated_chart_lock(chart_lock, updated_chart_yaml_content)
-        expect(Dependabot::SharedHelpers).to have_received(:in_a_temporary_repo_directory).with("/charts/myapp",
-                                                                                                repo_contents_path)
+        expect(Dependabot::SharedHelpers).to have_received(:in_a_temporary_repo_directory).with(
+          "/charts/myapp",
+          repo_contents_path
+        )
       end
     end
 

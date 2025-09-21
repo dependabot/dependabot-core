@@ -78,8 +78,10 @@ module Dependabot
       end
 
       sig do
-        params(dependencies: T::Array[T.untyped],
-               file: Dependabot::DependencyFile).returns(T::Array[Dependabot::Dependency])
+        params(
+          dependencies: T::Array[T.untyped],
+          file: Dependabot::DependencyFile
+        ).returns(T::Array[Dependabot::Dependency])
       end
       def parse_conda_dependencies(dependencies, file)
         parsed_dependencies = T.let([], T::Array[Dependabot::Dependency])
@@ -201,8 +203,10 @@ module Dependabot
       end
 
       sig do
-        params(constraint: T.nilable(String),
-               file: Dependabot::DependencyFile).returns(T::Array[T::Hash[Symbol, T.untyped]])
+        params(
+          constraint: T.nilable(String),
+          file: Dependabot::DependencyFile
+        ).returns(T::Array[T::Hash[Symbol, T.untyped]])
       end
       def build_conda_requirements(constraint, file)
         return [] unless constraint && !constraint.empty?

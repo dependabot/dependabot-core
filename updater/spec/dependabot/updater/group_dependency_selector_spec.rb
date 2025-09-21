@@ -510,8 +510,12 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
       allow(dep).to receive(:attribution_selection_reason=)
       allow(dep).to receive(:attribution_directory=)
       allow(dep).to receive(:attribution_timestamp=)
-      allow(dep).to receive_messages(attribution_source_group: nil, attribution_selection_reason: nil,
-                                     attribution_directory: nil, attribution_timestamp: nil)
+      allow(dep).to receive_messages(
+        attribution_source_group: nil,
+        attribution_selection_reason: nil,
+        attribution_directory: nil,
+        attribution_timestamp: nil
+      )
     end
   end
 

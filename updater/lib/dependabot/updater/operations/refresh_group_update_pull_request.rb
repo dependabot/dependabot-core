@@ -163,11 +163,14 @@ module Dependabot
           if job.source.directories.nil?
             @dependency_change = compile_all_dependency_changes_for(job_group)
           else
-            dependency_changes = T.let(T.must(job.source.directories).filter_map do |directory|
-              job.source.directory = directory
-              dependency_snapshot.current_directory = directory
-              compile_all_dependency_changes_for(job_group)
-            end, T::Array[Dependabot::DependencyChange])
+            dependency_changes = T.let(
+              T.must(job.source.directories).filter_map do |directory|
+                job.source.directory = directory
+                dependency_snapshot.current_directory = directory
+                compile_all_dependency_changes_for(job_group)
+              end,
+              T::Array[Dependabot::DependencyChange]
+            )
 
             # merge the changes together into one
             dependency_change = T.let(T.must(dependency_changes.first), Dependabot::DependencyChange)

@@ -209,8 +209,10 @@ module Dependabot
       sig { returns(T::Array[T::Hash[String, T.untyped]]) }
       def parsed_gemfile
         @parsed_gemfile ||= T.let(
-          SharedHelpers.in_a_temporary_repo_directory(T.must(base_directory),
-                                                      repo_contents_path) do
+          SharedHelpers.in_a_temporary_repo_directory(
+            T.must(base_directory),
+            repo_contents_path
+          ) do
             write_temporary_dependency_files
 
             NativeHelpers.run_bundler_subprocess(

@@ -532,7 +532,8 @@ module Dependabot
           @python_requirement_parser ||= T.let(
             FileParser::PythonRequirementParser.new(
               dependency_files: dependency_files
-            ), T.nilable(FileParser::PythonRequirementParser)
+            ),
+            T.nilable(FileParser::PythonRequirementParser)
           )
         end
 
@@ -541,7 +542,8 @@ module Dependabot
           @language_version_manager ||= T.let(
             LanguageVersionManager.new(
               python_requirement_parser: python_requirement_parser
-            ), T.nilable(LanguageVersionManager)
+            ),
+            T.nilable(LanguageVersionManager)
           )
         end
 

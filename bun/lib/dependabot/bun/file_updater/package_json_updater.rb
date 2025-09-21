@@ -69,8 +69,10 @@ module Dependabot
                 # a transitive dependency which only needs update in lockfile, So we avoid throwing exception and let
                 # the update continue.
 
-                Dependabot.logger.info("experiment: avoid_duplicate_updates_package_json.
-                Updating package.json for #{dep.name} ")
+                Dependabot.logger.info(
+                  "experiment: avoid_duplicate_updates_package_json.
+                Updating package.json for #{dep.name} "
+                )
 
                 raise "Expected content to change!"
               end
@@ -225,8 +227,10 @@ module Dependabot
 
           unless git_dependency
             requirement = dependency_req&.fetch(:requirement)
-            return content.match(/"#{Regexp.escape(dependency_name)}"\s*:\s*
-                                  "#{Regexp.escape(requirement)}"/x).to_s
+            return content.match(
+              /"#{Regexp.escape(dependency_name)}"\s*:\s*
+                                                "#{Regexp.escape(requirement)}"/x
+            ).to_s
           end
 
           username, repo =
@@ -355,8 +359,10 @@ module Dependabot
 
             # some deps are patched with local patches, we don't need to update them
             if req.fetch(:requirement).match?(Regexp.union(PATCH_PACKAGE))
-              Dependabot.logger.info("Func: updated_requirements. dependency patched #{dependency.name}," \
-                                     " Requirement: '#{req.fetch(:requirement)}'")
+              Dependabot.logger.info(
+                "Func: updated_requirements. dependency patched #{dependency.name}," \
+                " Requirement: '#{req.fetch(:requirement)}'"
+              )
 
               raise DependencyFileNotResolvable,
                     "Dependency is patched locally, Update not required."
@@ -365,8 +371,10 @@ module Dependabot
             # some deps are added as local packages, we don't need to update them as they are referred to a local path
             next unless req.fetch(:requirement).match?(Regexp.union(LOCAL_PACKAGE))
 
-            Dependabot.logger.info("Func: updated_requirements. local package #{dependency.name}," \
-                                   " Requirement: '#{req.fetch(:requirement)}'")
+            Dependabot.logger.info(
+              "Func: updated_requirements. local package #{dependency.name}," \
+              " Requirement: '#{req.fetch(:requirement)}'"
+            )
 
             raise DependencyFileNotResolvable,
                   "Local package, Update not required."

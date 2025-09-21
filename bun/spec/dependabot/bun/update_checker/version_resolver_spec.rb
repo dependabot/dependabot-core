@@ -21,12 +21,14 @@ RSpec.describe Dependabot::Bun::UpdateChecker::VersionResolver do
   let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
   let(:dependency_files) { project_dependency_files(project_name) }
   let(:credentials) do
-    [Dependabot::Credential.new({
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    })]
+    [Dependabot::Credential.new(
+      {
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    )]
   end
   let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
   let(:group) { nil }

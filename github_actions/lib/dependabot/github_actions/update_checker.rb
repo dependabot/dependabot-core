@@ -79,16 +79,18 @@ module Dependabot
       sig { returns(T.nilable(Dependabot::GithubActions::UpdateChecker::LatestVersionFinder)) }
       def latest_version_finder
         @latest_version_finder ||=
-          T.let(LatestVersionFinder.new(
-                  dependency: dependency,
-                  credentials: credentials,
-                  dependency_files: dependency_files,
-                  security_advisories: security_advisories,
-                  ignored_versions: ignored_versions,
-                  raise_on_ignored: raise_on_ignored,
-                  cooldown_options: update_cooldown
-                ),
-                T.nilable(Dependabot::GithubActions::UpdateChecker::LatestVersionFinder))
+          T.let(
+            LatestVersionFinder.new(
+              dependency: dependency,
+              credentials: credentials,
+              dependency_files: dependency_files,
+              security_advisories: security_advisories,
+              ignored_versions: ignored_versions,
+              raise_on_ignored: raise_on_ignored,
+              cooldown_options: update_cooldown
+            ),
+            T.nilable(Dependabot::GithubActions::UpdateChecker::LatestVersionFinder)
+          )
       end
 
       sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
@@ -183,9 +185,14 @@ module Dependabot
 
       sig { returns(Dependabot::GithubActions::Helpers::Githelper) }
       def git_helper
-        Helpers::Githelper.new(dependency: dependency, credentials: credentials,
-                               ignored_versions: ignored_versions, raise_on_ignored: raise_on_ignored,
-                               consider_version_branches_pinned: false, dependency_source_details: nil)
+        Helpers::Githelper.new(
+          dependency: dependency,
+          credentials: credentials,
+          ignored_versions: ignored_versions,
+          raise_on_ignored: raise_on_ignored,
+          consider_version_branches_pinned: false,
+          dependency_source_details: nil
+        )
       end
 
       sig { params(sha: String).returns(T.nilable(String)) }

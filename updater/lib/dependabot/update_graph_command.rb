@@ -71,7 +71,7 @@ module Dependabot
         job_id: job.id.to_s,
         branch: job.source.branch || "main",
         sha: dependency_snapshot.base_commit_sha,
-        ecosystem: T.must(dependency_snapshot.ecosystem),
+        package_manager: job.package_manager,
         dependency_files: dependency_snapshot.dependency_files,
         dependencies: dependency_snapshot.dependencies
       )
