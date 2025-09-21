@@ -3703,7 +3703,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
           it "updates the right file" do
             root_lockfile = updated_files.find { |f| f.name == "pnpm-lock.yaml" }
-            expect(updated_files.map(&:name)). to match_array(%w(pnpm-lock.yaml packages/package1/package.json))
+            expect(updated_files.map(&:name)).to match_array(%w(pnpm-lock.yaml packages/package1/package.json))
 
             expect(root_lockfile.content).to include("etag@1.8.1:\n    resolution").once
           end

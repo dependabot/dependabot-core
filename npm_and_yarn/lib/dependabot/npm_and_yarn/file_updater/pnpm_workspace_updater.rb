@@ -23,7 +23,7 @@ module Dependabot
           params(
             workspace_file: Dependabot::DependencyFile,
             dependencies: T::Array[Dependabot::Dependency]
-          ) .void
+          ).void
         end
         def initialize(workspace_file:, dependencies:)
           @dependencies = dependencies

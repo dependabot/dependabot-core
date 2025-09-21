@@ -85,7 +85,7 @@ RSpec.describe Dependabot::Uv::AuthedUrlBuilder do
         let(:token) { "token:pass@23" }
 
         it "builds the URL correctly" do
-          expect(authed_url). to eq(
+          expect(authed_url).to eq(
             "https://token:pass%4023@pypi.weasyldev.com/weasyl/source/+simple"
           )
         end
@@ -95,7 +95,7 @@ RSpec.describe Dependabot::Uv::AuthedUrlBuilder do
         let(:token) { "token:pass#23" }
 
         it "builds the URL correctly" do
-          expect(authed_url). to eq(
+          expect(authed_url).to eq(
             "https://token:pass%2323@pypi.weasyldev.com/weasyl/source/+simple"
           )
         end
@@ -105,7 +105,7 @@ RSpec.describe Dependabot::Uv::AuthedUrlBuilder do
         let(:token) { "token:pass:23" }
 
         it "builds the URL correctly" do
-          expect(authed_url). to eq(
+          expect(authed_url).to eq(
             "https://token:pass%3A23@pypi.weasyldev.com/weasyl/source/+simple"
           )
         end
@@ -115,7 +115,7 @@ RSpec.describe Dependabot::Uv::AuthedUrlBuilder do
         let(:token) { "dG9rZW46cGFzc0AyMw==" }
 
         it "builds the URL correctly" do
-          expect(authed_url). to eq(
+          expect(authed_url).to eq(
             "https://token:pass%4023@pypi.weasyldev.com/weasyl/source/+simple"
           )
         end

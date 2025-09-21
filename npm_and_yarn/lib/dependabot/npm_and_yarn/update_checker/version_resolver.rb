@@ -239,7 +239,7 @@ module Dependabot
         sig { returns(T::Boolean) }
         attr_reader :raise_on_ignored
 
-        sig { params(dep: Dependabot::Dependency) .returns(PackageLatestVersionFinder) }
+        sig { params(dep: Dependabot::Dependency).returns(PackageLatestVersionFinder) }
         def latest_version_finder(dep)
           @latest_version_finder[dep] ||=
             PackageLatestVersionFinder.new(

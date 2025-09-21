@@ -85,7 +85,7 @@ module Dependabot
                   # This security update would require unlocking other packages, which is not currently supported.
                   # Because of that, return original requirements, so that no requirements are actually updated and
                   # the error bubbles up as security_update_not_possible to the user.
-                  return dependency.requirements if breaking_changes&.size&. > 1
+                  return dependency.requirements if breaking_changes&.size&.> 1
 
                   updates&.find { |u| u["name"] == dependency.name }
                 else
