@@ -39,8 +39,14 @@ module Dependabot
         )
           .void
       end
-      def initialize(dependency_files:, source:, repo_contents_path: nil,
-                     credentials: [], reject_external_code: false, options: {})
+      def initialize(
+        dependency_files:,
+        source:,
+        repo_contents_path: nil,
+        credentials: [],
+        reject_external_code: false,
+        options: {}
+      )
         @dependency_files = dependency_files
         @repo_contents_path = repo_contents_path
         @credentials = credentials

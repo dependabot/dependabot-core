@@ -1,6 +1,8 @@
 # typed: strong
 # frozen_string_literal: true
 
+require "dependabot/dependency_graphers"
+
 # This class provides a data object that can be submitted to a repository's dependency submission
 # REST API.
 #
@@ -16,32 +18,46 @@ module GithubApi
 
     sig { returns(String) }
     attr_reader :job_id
+
     sig { returns(String) }
     attr_reader :branch
+
     sig { returns(String) }
     attr_reader :sha
+
     sig { returns(String) }
     attr_reader :package_manager
+
     sig { returns(T::Hash[String, T.untyped]) }
     attr_reader :manifests
+
+    sig { returns(Dependabot::DependencyGraphers::Base) }
+    attr_reader :grapher
 
     sig do
       params(
         job_id: String,
         branch: String,
         sha: String,
-        ecosystem: Dependabot::Ecosystem,
+        package_manager: String,
         dependency_files: T::Array[Dependabot::DependencyFile],
         dependencies: T::Array[Dependabot::Dependency]
       ).void
     end
-    def initialize(job_id:, branch:, sha:, ecosystem:, dependency_files:, dependencies:)
+    def initialize(job_id:, branch:, sha:, package_manager:, dependency_files:, dependencies:)
       @job_id = job_id
       @branch = branch
       @sha = sha
-      @package_manager = T.let(ecosystem.name, String)
+      @package_manager = package_manager
 
-      @manifests = T.let(build_manifests(dependency_files, dependencies), T::Hash[String, T.untyped])
+      @grapher = T.let(
+        Dependabot::DependencyGraphers.for_package_manager(package_manager).new(
+          dependency_files:,
+          dependencies:
+        ),
+        Dependabot::DependencyGraphers::Base
+      )
+      @manifests = T.let(build_manifests(dependencies), T::Hash[String, T.untyped])
     end
 
     # TODO: Change to a typed structure?
@@ -70,7 +86,26 @@ module GithubApi
 
     sig { returns(String) }
     def job_correlator
-      "#{SNAPSHOT_DETECTOR_NAME}-#{package_manager}"
+      base = "#{SNAPSHOT_DETECTOR_NAME}-#{package_manager}"
+
+      # If we don't have any manifests (e.g. empty snapshot) fall back to the base
+      return base if manifests.empty?
+
+      path = grapher.relevant_dependency_file.path
+      dirname = File.dirname(path).gsub(%r{^/}, "")
+      basename = File.basename(path)
+
+      # If manifest is at repository root, append the file name
+      return "#{base}-#{basename}" if dirname == ""
+
+      sanitized_path = if dirname.bytesize > 32
+                         # If the dirname is pathologically long, we replace it with a SHA256
+                         Digest::SHA256.hexdigest(dirname)
+                       else
+                         dirname.tr("/", "-")
+                       end
+
+      "#{base}-#{sanitized_path}-#{basename}"
     end
 
     sig { returns(String) }
@@ -82,15 +117,13 @@ module GithubApi
 
     sig do
       params(
-        dependency_files: T::Array[Dependabot::DependencyFile],
         dependencies: T::Array[Dependabot::Dependency]
       ).returns(T::Hash[String, T.untyped])
     end
-    def build_manifests(dependency_files, dependencies)
+    def build_manifests(dependencies)
       return {} if dependencies.empty?
 
-      file = relevant_dependency_file(dependency_files)
-
+      file = grapher.relevant_dependency_file
       {
         file.path => {
           name: file.path,
@@ -100,115 +133,9 @@ module GithubApi
           metadata: {
             ecosystem: package_manager
           },
-          resolved: dependencies.uniq.each_with_object({}) do |dep, resolved|
-            resolved[dep.name] = {
-              package_url: build_purl(dep),
-              relationship: relationship_for(dep),
-              scope: scope_for(dep),
-              # We expect direct dependencies to be added to the metadata, but they may not always be available
-              dependencies: dep.metadata.fetch(:depends_on, []),
-              metadata: {}
-            }
-          end
+          resolved: grapher.resolved_dependencies.to_h
         }
       }
-    end
-
-    # Dependabot aligns with Dependency Graph's existing behaviour where all dependencies are attributed to the
-    # most specific file out of the manifest or lockfile for the directory rather than split direct and indirect
-    # to the manifest and lockfile respectively.
-    #
-    # Dependabot's parsers apply this precedence by deterministic ordering, i.e. the manifest file's dependencies
-    # are added to the set first, then the lockfiles so we want the right-most file in the set, excluding anything
-    # marked as a support file.
-    sig { params(dependency_files: T::Array[Dependabot::DependencyFile]).returns(Dependabot::DependencyFile) }
-    def relevant_dependency_file(dependency_files)
-      filtered_files = dependency_files.reject { |f| f.support_file? || f.vendored_file? }
-
-      # TODO(brrygrdn): Make relevant_dependency_file an ecosystem property
-      #
-      # It turns out that the right-most-file-aligns-with-dependency-graph-static-parsing strategy isn't a durable
-      # assumption, for Go we prefer go.mod over go.sum even though the latter is technically the lockfile.
-      #
-      # With python ecosystems, this gets more fragmented and it isn't always accurate for 'bun' Javascript projects
-      # if they use mixins.
-      #
-      # The correct way to solve this is to use Dependency Injection to provide a small ecosystem-specific helper
-      # for this and PURLs so we can define the correct heuristic as necessary and use the 'last file wins' as our
-      # fallback strategy.
-      if %w(bun go Python).include?(package_manager)
-        T.must(filtered_files.first)
-      else
-        T.must(filtered_files.last)
-      end
-    end
-
-    # Helper function to create a Package URL (purl)
-    #
-    # TODO: Move out of this class.
-    #
-    # It probably makes more sense to assign this to a Dependabot::Dependency
-    # when it is created so the ecosystem-specific parser can own this?
-    #
-    # Let's let it live here for now until we start making changes to core to
-    # fill in some blanks.
-    sig { params(dependency: Dependabot::Dependency).returns(String) }
-    def build_purl(dependency)
-      "pkg:#{purl_pkg_for(dependency.package_manager)}/#{dependency.name}@#{dependency.version}".chomp("@")
-    end
-
-    sig { params(package_manager: String).returns(String) }
-    def purl_pkg_for(package_manager)
-      case package_manager
-      when "bundler"
-        "gem"
-      when "npm_and_yarn", "bun"
-        "npm"
-      when "maven", "gradle"
-        "maven"
-      when "pip", "uv"
-        "pypi"
-      when "cargo"
-        "cargo"
-      when "hex"
-        "hex"
-      when "composer"
-        "composer"
-      when "nuget"
-        "nuget"
-      when "go_modules"
-        "golang"
-      when "docker"
-        "docker"
-      when "github_actions"
-        "github"
-      when "terraform"
-        "terraform"
-      when "pub"
-        "pub"
-      when "elm"
-        "elm"
-      else
-        "generic"
-      end
-    end
-
-    sig { params(dependency: Dependabot::Dependency).returns(String) }
-    def scope_for(dependency)
-      if dependency.production?
-        "runtime"
-      else
-        "development"
-      end
-    end
-
-    sig { params(dep: Dependabot::Dependency).returns(String) }
-    def relationship_for(dep)
-      if dep.top_level?
-        "direct"
-      else
-        "indirect"
-      end
     end
   end
 end

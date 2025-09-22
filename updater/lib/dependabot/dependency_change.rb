@@ -195,7 +195,7 @@ module Dependabot
             "dependency-name" => dep.name,
             "dependency-version" => dep.version,
             "directory" => should_consider_directory ? dep.directory : nil,
-            "dependency-removed" => dep.removed? ? true : nil
+            "dependency-removed" => dep.removed? || nil
           }.compact
         end
       )
@@ -203,8 +203,10 @@ module Dependabot
 
     sig { returns(PullRequest) }
     def new_pr
-      @new_pr ||= T.let(PullRequest.create_from_updated_dependencies(updated_dependencies),
-                        T.nilable(Dependabot::PullRequest))
+      @new_pr ||= T.let(
+        PullRequest.create_from_updated_dependencies(updated_dependencies),
+        T.nilable(Dependabot::PullRequest)
+      )
     end
 
     sig { returns(T::Array[Dependabot::Dependency]) }

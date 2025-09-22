@@ -9,6 +9,7 @@ module Dependabot
   module Maven
     module NativeHelpers
       extend T::Sig
+
       pom_path = File.join(__dir__, "pom.xml")
 
       version = File.open(pom_path) do |f|
@@ -39,7 +40,7 @@ module Dependabot
       def self.handle_tool_error(output)
         if (match = output.match(
           %r{Could not transfer artifact (?<artifact>[^ ]+) from/to (?<repository_name>[^ ]+) \((?<repository_url>[^ ]+)\): status code: (?<status_code>[0-9]+)} # rubocop:disable Layout/LineLength
-        )) && (match[:status_code] == ("403") || match[:status_code] == ("401"))
+        )) && (match[:status_code] == "403" || match[:status_code] == "401")
           raise Dependabot::PrivateSourceAuthenticationFailure, match[:repository_url]
         end
 

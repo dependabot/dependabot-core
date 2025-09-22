@@ -24,7 +24,8 @@ module Dependabot
       def latest_resolvable_version
         @latest_resolvable_version ||= T.let(
           latest_version_finder_elm19
-          .latest_resolvable_version(unlock_requirement: :own), T.nilable(Dependabot::Version)
+          .latest_resolvable_version(unlock_requirement: :own),
+          T.nilable(Dependabot::Version)
         )
       end
 
@@ -76,7 +77,8 @@ module Dependabot
               dependency_files: dependency_files,
               cooldown_options: update_cooldown
             )
-          end, T.nilable(Elm19LatestVersionFinder)
+          end,
+          T.nilable(Elm19LatestVersionFinder)
         )
       end
 
@@ -94,16 +96,18 @@ module Dependabot
       sig { returns(T.nilable(Dependabot::Elm::UpdateChecker::LatestVersionFinder)) }
       def latest_version_finder
         @latest_version_finder ||=
-          T.let(LatestVersionFinder.new(
-                  dependency: dependency,
-                  credentials: credentials,
-                  dependency_files: dependency_files,
-                  security_advisories: security_advisories,
-                  ignored_versions: ignored_versions,
-                  raise_on_ignored: raise_on_ignored,
-                  cooldown_options: update_cooldown
-                ),
-                T.nilable(Dependabot::Elm::UpdateChecker::LatestVersionFinder))
+          T.let(
+            LatestVersionFinder.new(
+              dependency: dependency,
+              credentials: credentials,
+              dependency_files: dependency_files,
+              security_advisories: security_advisories,
+              ignored_versions: ignored_versions,
+              raise_on_ignored: raise_on_ignored,
+              cooldown_options: update_cooldown
+            ),
+            T.nilable(Dependabot::Elm::UpdateChecker::LatestVersionFinder)
+          )
       end
 
       # Overwrite the base class's requirements_up_to_date? method to instead

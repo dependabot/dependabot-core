@@ -59,8 +59,10 @@ module Dependabot
 
       sig { params(directory: T.nilable(String)).returns(Pathname) }
       def module_pathname(directory)
-        @module_pathname ||= T.let(Pathname.new(@repo_contents_path).join(T.must(directory).sub(%r{^/}, "")),
-                                   T.nilable(Pathname))
+        @module_pathname ||= T.let(
+          Pathname.new(@repo_contents_path).join(T.must(directory).sub(%r{^/}, "")),
+          T.nilable(Pathname)
+        )
       end
     end
   end

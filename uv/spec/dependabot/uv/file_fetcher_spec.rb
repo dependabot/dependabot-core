@@ -63,12 +63,14 @@ RSpec.describe Dependabot::Uv::FileFetcher do
     let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
     let(:url_with_directory) { File.join(url, directory) }
     let(:credentials) do
-      [Dependabot::Credential.new({
-        "type" => "git_source",
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      })]
+      [Dependabot::Credential.new(
+        {
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }
+      )]
     end
 
     let(:json_header) { { "content-type" => "application/json" } }
@@ -822,8 +824,10 @@ RSpec.describe Dependabot::Uv::FileFetcher do
 
         it "includes UV sources in path_dependencies method" do
           # Mock other path dependency methods to return empty arrays for isolation
-          allow(file_fetcher_instance).to receive_messages(requirement_txt_path_dependencies: [],
-                                                           requirement_in_path_dependencies: [])
+          allow(file_fetcher_instance).to receive_messages(
+            requirement_txt_path_dependencies: [],
+            requirement_in_path_dependencies: []
+          )
 
           all_path_deps = file_fetcher_instance.send(:path_dependencies)
           expect(all_path_deps).to contain_exactly(

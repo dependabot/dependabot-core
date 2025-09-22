@@ -27,8 +27,10 @@ module Dependabot
         def initialize(dependency:)
           @dependency = dependency
 
-          @provider_url = T.let("https://package.elm-lang.org/packages/#{dependency.name}/releases.json",
-                                T.nilable(String))
+          @provider_url = T.let(
+            "https://package.elm-lang.org/packages/#{dependency.name}/releases.json",
+            T.nilable(String)
+          )
         end
 
         sig { returns(Dependabot::Dependency) }

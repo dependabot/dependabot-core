@@ -46,8 +46,10 @@ module Dependabot
 
           # we fallback to the git based tag info if no versions metadata is available
           if versions_metadata&.empty?
-            versions_metadata = T.let(fetch_latest_tag_info,
-                                      T.nilable(T::Array[GitTagWithDetail]))
+            versions_metadata = T.let(
+              fetch_latest_tag_info,
+              T.nilable(T::Array[GitTagWithDetail])
+            )
           end
 
           releases = T.must(versions_metadata).map do |version_details|
@@ -95,8 +97,10 @@ module Dependabot
             response = client.ref_details_for_pinned_ref
 
             unless response.status == 200
-              Dependabot.logger.error("Error while fetching details for #{dependency.name} " \
-                                      "Detail : #{response.body}")
+              Dependabot.logger.error(
+                "Error while fetching details for #{dependency.name} " \
+                "Detail : #{response.body}"
+              )
             end
 
             return parsed_results unless response.status == 200

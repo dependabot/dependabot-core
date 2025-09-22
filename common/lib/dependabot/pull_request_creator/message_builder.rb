@@ -89,12 +89,22 @@ module Dependabot
         )
           .void
       end
-      def initialize(source:, dependencies:, files:, credentials:,
-                     pr_message_header: nil, pr_message_footer: nil,
-                     commit_message_options: {}, vulnerabilities_fixed: {},
-                     github_redirection_service: DEFAULT_GITHUB_REDIRECTION_SERVICE,
-                     dependency_group: nil, pr_message_max_length: nil, pr_message_encoding: nil,
-                     ignore_conditions: [], notices: nil)
+      def initialize(
+        source:,
+        dependencies:,
+        files:,
+        credentials:,
+        pr_message_header: nil,
+        pr_message_footer: nil,
+        commit_message_options: {},
+        vulnerabilities_fixed: {},
+        github_redirection_service: DEFAULT_GITHUB_REDIRECTION_SERVICE,
+        dependency_group: nil,
+        pr_message_max_length: nil,
+        pr_message_encoding: nil,
+        ignore_conditions: [],
+        notices: nil
+      )
         @dependencies               = dependencies
         @files                      = files
         @source                     = source
@@ -207,13 +217,13 @@ module Dependabot
       sig { returns(String) }
       def library_pr_name
         "update " +
-          if dependencies.count == 1
+          if dependencies.one?
             "#{T.must(dependencies.first).display_name} requirement " \
               "#{from_version_msg(old_library_requirement(T.must(dependencies.first)))}" \
               "to #{new_library_requirement(T.must(dependencies.first))}"
           else
             names = dependencies.map(&:name).uniq
-            if names.count == 1
+            if names.one?
               "requirements for #{names.first}"
             else
               "requirements for #{T.must(names[0..-2]).join(', ')} and #{names[-1]}"
@@ -225,7 +235,7 @@ module Dependabot
       sig { returns(String) }
       def application_pr_name
         "bump " +
-          if dependencies.count == 1
+          if dependencies.one?
             dependency = dependencies.first
             "#{T.must(dependency).display_name} " \
               "#{from_version_msg(T.must(dependency).humanized_previous_version)}" \
@@ -242,7 +252,7 @@ module Dependabot
               "to #{T.must(dependency).humanized_version}"
           else
             names = dependencies.map(&:name).uniq
-            if names.count == 1
+            if names.one?
               T.must(names.first)
             else
               "#{T.must(names[0..-2]).join(', ')} and #{names[-1]}"
@@ -263,7 +273,7 @@ module Dependabot
       sig { returns(String) }
       def grouped_name
         updates = dependencies.map(&:name).uniq.count
-        if dependencies.count == 1
+        if dependencies.one?
           "#{solo_pr_name} in the #{T.must(dependency_group).name} group"
         else
           "bump the #{T.must(dependency_group).name} group#{pr_name_directory} " \
@@ -281,7 +291,7 @@ module Dependabot
           directories_from_dependencies.include?(directory)
         end
 
-        if dependencies.count == 1
+        if dependencies.one?
           "#{solo_pr_name} in the #{T.must(dependency_group).name} group across " \
             "#{T.must(directories_with_updates).count} directory"
         else
@@ -387,7 +397,7 @@ module Dependabot
         msg = "Updates the requirements on "
 
         msg +=
-          if dependencies.count == 1
+          if dependencies.one?
             "#{dependency_links.first} "
           else
             "#{T.must(dependency_links[0..-2]).join(', ')} and #{dependency_links[-1]} "
@@ -508,7 +518,7 @@ module Dependabot
           update_count = dependencies_in_directory.map(&:name).uniq.count
 
           msg += "Bumps the #{T.must(dependency_group).name} group " \
-                 "with #{update_count} update#{update_count > 1 ? 's' : ''} in the #{directory} directory:"
+                 "with #{update_count} update#{'s' if update_count > 1} in the #{directory} directory:"
 
           msg += if update_count >= 5
                    header = %w(Package From To)
@@ -543,7 +553,7 @@ module Dependabot
         update_count = unique_dependencies.count
 
         msg = "Bumps the #{T.must(dependency_group).name} group#{pr_name_directory} " \
-              "with #{update_count} update#{update_count > 1 ? 's' : ''}:"
+              "with #{update_count} update#{'s' if update_count > 1}:"
 
         msg += if update_count >= 5
                  header = %w(Package From To)
@@ -663,7 +673,7 @@ module Dependabot
 
       sig { returns(String) }
       def metadata_links
-        return metadata_links_for_dep(T.must(dependencies.first)) if dependencies.count == 1 && dependency_group.nil?
+        return metadata_links_for_dep(T.must(dependencies.first)) if dependencies.one? && dependency_group.nil?
 
         dependencies.map do |dep|
           if dep.removed?

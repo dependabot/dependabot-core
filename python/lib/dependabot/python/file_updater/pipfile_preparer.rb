@@ -57,7 +57,7 @@ module Dependabot
 
           # provide a default "true" value to file generator in case no value is provided in manifest file
           pipfile_object["source"].each do |key|
-            key["verify_ssl"] = verify_ssl.nil? ? true : verify_ssl
+            key["verify_ssl"] = verify_ssl.nil? || verify_ssl
           end
 
           TomlRB.dump(pipfile_object)
@@ -70,13 +70,17 @@ module Dependabot
 
         sig { returns(T::Array[T::Hash[String, String]]) }
         def pipfile_sources
-          @pipfile_sources ||= T.let(TomlRB.parse(pipfile_content).fetch("source", []),
-                                     T.nilable(T::Array[T::Hash[String, String]]))
+          @pipfile_sources ||= T.let(
+            TomlRB.parse(pipfile_content).fetch("source", []),
+            T.nilable(T::Array[T::Hash[String, String]])
+          )
         end
 
         sig do
-          params(source: T::Hash[String, String],
-                 credentials: T::Array[Dependabot::Credential]).returns(T.nilable(T::Hash[String, String]))
+          params(
+            source: T::Hash[String, String],
+            credentials: T::Array[Dependabot::Credential]
+          ).returns(T.nilable(T::Hash[String, String]))
         end
         def sub_auth_url(source, credentials)
           if source["url"]&.include?("${")

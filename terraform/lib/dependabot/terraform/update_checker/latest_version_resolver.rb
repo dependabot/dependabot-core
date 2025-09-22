@@ -52,8 +52,10 @@ module Dependabot
                 end
               end
             end
-            Dependabot.logger.info("Allowed version tags after filtering versions in cooldown:
-              #{allowed_version_tags.map(&:name).join(', ')}")
+            Dependabot.logger.info(
+              "Allowed version tags after filtering versions in cooldown:
+              #{allowed_version_tags.map(&:name).join(', ')}"
+            )
             git_commit_checker.max_local_tag(allowed_version_tags)
           rescue StandardError => e
             Dependabot.logger.error("Error fetching latest version tag: #{e.message}")
@@ -77,8 +79,10 @@ module Dependabot
               version.to_s == tag_name
             end
           end
-          Dependabot.logger.info("Allowed version tags after filtering versions in cooldown:
-                #{versions.map(&:to_s).join(', ')}")
+          Dependabot.logger.info(
+            "Allowed version tags after filtering versions in cooldown:
+                #{versions.map(&:to_s).join(', ')}"
+          )
           versions
         rescue StandardError => e
           Dependabot.logger.error("Error filter_versions_in_cooldown_period_from_provider(versions): #{e.message}")
@@ -101,8 +105,10 @@ module Dependabot
               version.to_s == tag_name
             end
           end
-          Dependabot.logger.info("filter_versions_in_cooldown_period_from_module::
-              Allowed version tags after filtering versions in cooldown:#{versions.map(&:to_s).join(', ')}")
+          Dependabot.logger.info(
+            "filter_versions_in_cooldown_period_from_module::
+              Allowed version tags after filtering versions in cooldown:#{versions.map(&:to_s).join(', ')}"
+          )
           versions
         rescue StandardError => e
           Dependabot.logger.error("Error fetching latest version tag: #{e.message}")
@@ -184,7 +190,8 @@ module Dependabot
               dependency: dependency,
               credentials: credentials,
               git_commit_checker: git_commit_checker
-            ), T.nilable(Package::PackageDetailsFetcher)
+            ),
+            T.nilable(Package::PackageDetailsFetcher)
           )
         end
 

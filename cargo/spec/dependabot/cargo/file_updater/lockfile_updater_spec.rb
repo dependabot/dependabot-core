@@ -322,8 +322,10 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
 
           it "updates the dependency version in the lockfile" do
             expect(updated_lockfile_content)
-              .to include("git+ssh://git@github.com/BurntSushi/utf8-ranges#" \
-                          "be9b8dfcaf449453cbf83ac85260ee80323f4f77")
+              .to include(
+                "git+ssh://git@github.com/BurntSushi/utf8-ranges#" \
+                "be9b8dfcaf449453cbf83ac85260ee80323f4f77"
+              )
             expect(updated_lockfile_content).not_to include("git+https://")
 
             content = updated_lockfile_content

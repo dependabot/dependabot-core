@@ -157,8 +157,10 @@ module Dependabot
         # Detect indentation of the file from indentation of the project tag children
         indentation_config = detect_indentation_config(project)
 
-        dependency_management, dependency_management_created = ensure_dependency_management_element(project,
-                                                                                                    indentation_config)
+        dependency_management, dependency_management_created = ensure_dependency_management_element(
+          project,
+          indentation_config
+        )
         dependencies, dependencies_created = ensure_dependencies_element(dependency_management, indentation_config)
 
         if dependencies.children.last&.to_s&.start_with?("\n")
@@ -168,8 +170,13 @@ module Dependabot
         end
 
         # Create the dependency element with the required fields, adding the appropriate indentation as text nodes
-        add_dependency_entry(dependency, requirement, dependencies, indentation_config[:levels][:dependency],
-                             indentation_config[:levels][:dependencies])
+        add_dependency_entry(
+          dependency,
+          requirement,
+          dependencies,
+          indentation_config[:levels][:dependency],
+          indentation_config[:levels][:dependencies]
+        )
 
         # Close all sections with appropriate indentation
         dependencies.add_text("\n#{indentation_config[:levels][:dependency_management]}")
@@ -182,8 +189,10 @@ module Dependabot
 
         # If dependencyManagement was not created, we just replace the existing dependencyManagement element
         # with the updated one, preserving the rest of the document
-        content.gsub(%r{\<dependencyManagement\>[\s\S]*\</dependencyManagement\>},
-                     dependency_management.to_s)
+        content.gsub(
+          %r{\<dependencyManagement\>[\s\S]*\</dependencyManagement\>},
+          dependency_management.to_s
+        )
       end
 
       sig do
@@ -267,8 +276,10 @@ module Dependabot
       end
 
       sig do
-        params(project: REXML::Element,
-               indent_config: T::Hash[Symbol, T.untyped]).returns([REXML::Element, T::Boolean])
+        params(
+          project: REXML::Element,
+          indent_config: T::Hash[Symbol, T.untyped]
+        ).returns([REXML::Element, T::Boolean])
       end
       def ensure_dependency_management_element(project, indent_config)
         dependency_management = project.get_elements("dependencyManagement").first
@@ -284,8 +295,10 @@ module Dependabot
       end
 
       sig do
-        params(dependency_management: REXML::Element,
-               indent_config: T::Hash[Symbol, T.untyped]).returns([REXML::Element, T::Boolean])
+        params(
+          dependency_management: REXML::Element,
+          indent_config: T::Hash[Symbol, T.untyped]
+        ).returns([REXML::Element, T::Boolean])
       end
       def ensure_dependencies_element(dependency_management, indent_config)
         dependencies = dependency_management.get_elements("dependencies").first
@@ -301,12 +314,21 @@ module Dependabot
       end
 
       sig do
-        params(dependency: Dependabot::Dependency, requirement: T::Hash[Symbol, T.untyped],
-               dependencies_node: REXML::Element, current_indentation_level: String,
-               parent_indentation_level: String).void
+        params(
+          dependency: Dependabot::Dependency,
+          requirement: T::Hash[Symbol, T.untyped],
+          dependencies_node: REXML::Element,
+          current_indentation_level: String,
+          parent_indentation_level: String
+        ).void
       end
-      def add_dependency_entry(dependency, requirement, dependencies_node, current_indentation_level,
-                               parent_indentation_level)
+      def add_dependency_entry(
+        dependency,
+        requirement,
+        dependencies_node,
+        current_indentation_level,
+        parent_indentation_level
+      )
         dependency_node = REXML::Element.new("dependency", dependencies_node)
         dependency_node.add_text("\n#{current_indentation_level}")
         group_id = REXML::Element.new("groupId", dependency_node)

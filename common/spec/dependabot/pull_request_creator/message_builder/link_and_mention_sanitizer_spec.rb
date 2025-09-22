@@ -22,8 +22,10 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
 
       it "sanitizes the text" do
         expect(sanitize_links_and_mentions)
-          .to eq("<p>Great work <a href=\"https://github.com/greysteil\">" \
-                 "<code>@\u200Bgreysteil</code></a>!</p>\n")
+          .to eq(
+            "<p>Great work <a href=\"https://github.com/greysteil\">" \
+            "<code>@\u200Bgreysteil</code></a>!</p>\n"
+          )
       end
 
       context "when the text includes a dash" do

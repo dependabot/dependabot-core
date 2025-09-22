@@ -74,8 +74,10 @@ module Dependabot
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def composer_json
-        @composer_json ||= T.let(get_original_file(PackageManager::MANIFEST_FILENAME),
-                                 T.nilable(Dependabot::DependencyFile))
+        @composer_json ||= T.let(
+          get_original_file(PackageManager::MANIFEST_FILENAME),
+          T.nilable(Dependabot::DependencyFile)
+        )
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }

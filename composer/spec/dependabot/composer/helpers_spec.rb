@@ -96,10 +96,12 @@ RSpec.describe Dependabot::Composer::Helpers do
     end
 
     it "fetches and parses composer and PHP versions correctly" do
-      expect(described_class.fetch_composer_and_php_versions).to eq({
-        composer: "2.7.7",
-        php: "7.4.33"
-      })
+      expect(described_class.fetch_composer_and_php_versions).to eq(
+        {
+          composer: "2.7.7",
+          php: "7.4.33"
+        }
+      )
     end
 
     it "logs the composer and PHP versions" do

@@ -15,8 +15,8 @@ RSpec.describe ExceptionSanitizer do
 
   before do
     allow(exception).to receive(:value=)
-    allow(event).to receive_message_chain("exception.values"). and_return([exception])
-    allow(event).to receive(:is_a?). and_return(true)
+    allow(event).to receive_message_chain("exception.values").and_return([exception])
+    allow(event).to receive(:is_a?).and_return(true)
     described_class.new.process(event, {})
   end
 

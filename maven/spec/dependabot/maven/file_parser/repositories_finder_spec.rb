@@ -33,11 +33,13 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
 
     context "when replaces-base is present" do
       let(:credentials) do
-        [Dependabot::Credential.new({
-          "type" => "maven_repository",
-          "url" => "https://example.com",
-          "replaces-base" => true
-        })]
+        [Dependabot::Credential.new(
+          {
+            "type" => "maven_repository",
+            "url" => "https://example.com",
+            "replaces-base" => true
+          }
+        )]
       end
 
       it "returns that URL instead" do

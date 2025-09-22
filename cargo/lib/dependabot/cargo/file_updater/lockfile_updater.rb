@@ -16,6 +16,7 @@ module Dependabot
       # rubocop:disable Metrics/ClassLength
       class LockfileUpdater
         extend T::Sig
+
         LOCKFILE_ENTRY_REGEX = /
           \[\[package\]\]\n
           (?:(?!^\[(?:\[package|metadata)).)+
@@ -123,7 +124,7 @@ module Dependabot
                   dependency.version
                 end
 
-          if ver && spec_options.count { |s| s.end_with?(ver) } == 1
+          if ver && spec_options.one? { |s| s.end_with?(ver) }
             @custom_specification = spec_options.find { |s| s.end_with?(ver) }
             return true
           elsif ver && spec_options.count { |s| s.end_with?(ver) } > 1

@@ -34,8 +34,12 @@ module Dependabot
           )
             .void
         end
-        def initialize(requirements:, latest_version:, source_url:,
-                       properties_to_update:)
+        def initialize(
+          requirements:,
+          latest_version:,
+          source_url:,
+          properties_to_update:
+        )
           @requirements = requirements
           @source_url = source_url
           @properties_to_update = properties_to_update

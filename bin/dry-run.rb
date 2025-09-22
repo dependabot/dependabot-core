@@ -157,8 +157,7 @@ $options = {
   vendor_dependencies: false,
   ignore_conditions: [],
   pull_request: false,
-  cooldown: nil,
-  exclude_paths: []
+  cooldown: nil
 }
 
 unless ENV["LOCAL_GITHUB_ACCESS_TOKEN"].to_s.strip.empty?
@@ -215,11 +214,6 @@ if ENV.key?("COOLDOWN") && !ENV["COOLDOWN"].to_s.strip.empty?
   $options[:cooldown] = JSON.parse(ENV.fetch("COOLDOWN", "{}"))
 end
 
-unless ENV["EXCLUDE_PATHS"].to_s.strip.empty?
-  # Comma separated list of paths to exclude
-  $options[:exclude_paths] = ENV.fetch("EXCLUDE_PATHS", "").split(",").map(&:strip)
-end
-
 # rubocop:disable Metrics/BlockLength
 option_parse = OptionParser.new do |opts|
   opts.banner = "usage: ruby bin/dry-run.rb [OPTIONS] PACKAGE_MANAGER REPO"
@@ -236,8 +230,10 @@ option_parse = OptionParser.new do |opts|
     $options[:branch] = value
   end
 
-  opts.on("--dep DEPENDENCIES",
-          "Comma separated list of dependencies to update") do |value|
+  opts.on(
+    "--dep DEPENDENCIES",
+    "Comma separated list of dependencies to update"
+  ) do |value|
     $options[:dependency_names] = value.split(",").map { |o| o.strip.downcase }
   end
 
@@ -295,18 +291,24 @@ option_parse = OptionParser.new do |opts|
     end
   end
 
-  opts.on("--security-updates-only",
-          "Only update vulnerable dependencies") do |_value|
+  opts.on(
+    "--security-updates-only",
+    "Only update vulnerable dependencies"
+  ) do |_value|
     $options[:security_updates_only] = true
   end
 
-  opts.on("--profile",
-          "Profile using Stackprof. Output in `tmp/stackprof-<datetime>.dump`") do
+  opts.on(
+    "--profile",
+    "Profile using Stackprof. Output in `tmp/stackprof-<datetime>.dump`"
+  ) do
     $options[:profile] = true
   end
 
-  opts.on("--pull-request",
-          "Output pull request information metadata: title, description") do
+  opts.on(
+    "--pull-request",
+    "Output pull request information metadata: title, description"
+  ) do
     $options[:pull_request] = true
   end
 
@@ -327,10 +329,6 @@ option_parse = OptionParser.new do |opts|
   rescue JSON::ParserError
     puts "Invalid JSON format for cooldown parameter. Please provide a valid JSON string."
     exit 1
-  end
-
-  opts.on("--exclude-paths PATHS", "Comma separated list of paths to exclude") do |value|
-    $options[:exclude_paths] = value.split(",").map(&:strip)
   end
 end
 # rubocop:enable Metrics/BlockLength
@@ -614,8 +612,7 @@ begin
     config = $config_file.update_config(
       $package_manager,
       directory: $options[:directory],
-      target_branch: $options[:branch],
-      exclude_paths: $options[:exclude_paths] || []
+      target_branch: $options[:branch]
     )
     config
   rescue KeyError

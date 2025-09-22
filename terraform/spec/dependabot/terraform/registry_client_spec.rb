@@ -90,10 +90,12 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
     token = SecureRandom.hex(16)
     credentials = [{ "type" => "terraform_registry", "host" => hostname, "token" => token }]
 
-    stub_request(:get, "https://#{hostname}/.well-known/terraform.json").and_return(body: {
-      "modules.v1": "/v1/modules/",
-      "providers.v1": "/v1/providers/"
-    }.to_json)
+    stub_request(:get, "https://#{hostname}/.well-known/terraform.json").and_return(
+      body: {
+        "modules.v1": "/v1/modules/",
+        "providers.v1": "/v1/providers/"
+      }.to_json
+    )
     stub_request(:get, "https://#{hostname}/v1/providers/x/y/versions")
       .and_return(body: { id: "x/y", versions: [{ version: "0.1.0" }] }.to_json)
     client = described_class.new(hostname: hostname, credentials: credentials)
@@ -111,24 +113,26 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
   it "fetches module versions from a custom registry" do
     hostname = "app.terraform.io"
     stub_request(:get, "https://#{hostname}/.well-known/terraform.json")
-      .and_return(status: 200, body: {
-        "modules.v1": "/api/registry/v1/modules/",
-        "motd.v1": "/api/terraform/motd",
-        "state.v2": "/api/v2/",
-        "tfe.v2": "/api/v2/",
-        "tfe.v2.1": "/api/v2/",
-        "tfe.v2.2": "/api/v2/",
-        "versions.v1": "https://checkpoint-api.hashicorp.com/v1/versions/"
-      }.to_json)
+      .and_return(status: 200,
+                  body: {
+                    "modules.v1": "/api/registry/v1/modules/",
+                    "motd.v1": "/api/terraform/motd",
+                    "state.v2": "/api/v2/",
+                    "tfe.v2": "/api/v2/",
+                    "tfe.v2.1": "/api/v2/",
+                    "tfe.v2.2": "/api/v2/",
+                    "versions.v1": "https://checkpoint-api.hashicorp.com/v1/versions/"
+                  }.to_json)
     stub_request(:get, "https://#{hostname}/api/registry/v1/modules/hashicorp/consul/aws/versions")
-      .and_return(status: 200, body: {
-        modules: [
-          {
-            source: "hashicorp/consul/aws",
-            versions: [{ version: "0.1.0" }, { version: "0.2.0" }]
-          }
-        ]
-      }.to_json)
+      .and_return(status: 200,
+                  body: {
+                    modules: [
+                      {
+                        source: "hashicorp/consul/aws",
+                        versions: [{ version: "0.1.0" }, { version: "0.2.0" }]
+                      }
+                    ]
+                  }.to_json)
     client = described_class.new(hostname: hostname)
     response = client.all_module_versions(identifier: "hashicorp/consul/aws")
     expect(response).to contain_exactly(Gem::Version.new("0.1.0"), Gem::Version.new("0.2.0"))
@@ -189,21 +193,23 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
   it "fetches the source for a provider from a custom registry", :vcr do
     hostname = "terraform.example.org"
     client = described_class.new(hostname: hostname)
-    source = client.source(dependency: Dependabot::Dependency.new(
-      name: "hashicorp/ciscoasa",
-      version: "1.2.0",
-      package_manager: "terraform",
-      requirements: [{
-        requirement: "~> 1.2",
-        groups: [],
-        file: "main.tf",
-        source: {
-          type: "provider",
-          registry_hostname: hostname,
-          module_identifier: "hashicorp/ciscoasa"
-        }
-      }]
-    ))
+    source = client.source(
+      dependency: Dependabot::Dependency.new(
+        name: "hashicorp/ciscoasa",
+        version: "1.2.0",
+        package_manager: "terraform",
+        requirements: [{
+          requirement: "~> 1.2",
+          groups: [],
+          file: "main.tf",
+          source: {
+            type: "provider",
+            registry_hostname: hostname,
+            module_identifier: "hashicorp/ciscoasa"
+          }
+        }]
+      )
+    )
 
     expect(source).to be_a Dependabot::Source
     expect(source.url).to eq("https://github.com/hashicorp/terraform-provider-ciscoasa")

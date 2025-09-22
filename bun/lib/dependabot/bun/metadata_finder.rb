@@ -73,7 +73,7 @@ module Dependabot
 
         all_version_listings
           .reject { |v, _| Time.parse(times[v]) > cutoff }
-          .filter_map { |_, d| d.fetch("_npmUser", nil)&.fetch("name", nil) }
+          .filter_map { |_, d| d.dig("_npmUser", "name") }
       end
 
       sig { returns(T.nilable(Source)) }
@@ -162,8 +162,10 @@ module Dependabot
       def latest_version_listing
         return @latest_version_listing unless @latest_version_listing.nil?
 
-        response = Dependabot::RegistryClient.get(url: "#{dependency_url}/latest",
-                                                  headers: registry_auth_headers)
+        response = Dependabot::RegistryClient.get(
+          url: "#{dependency_url}/latest",
+          headers: registry_auth_headers
+        )
         return @latest_version_listing = {} if response.status >= 500
 
         begin

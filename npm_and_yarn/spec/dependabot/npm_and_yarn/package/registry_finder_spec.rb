@@ -20,12 +20,14 @@ RSpec.describe Dependabot::NpmAndYarn::Package::RegistryFinder do
   let(:yarnrc_file) { nil }
   let(:yarnrc_yml_file) { nil }
   let(:credentials) do
-    [Dependabot::Credential.new({
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    })]
+    [Dependabot::Credential.new(
+      {
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    )]
   end
   let(:dependency_name) { "etag" }
   let(:requirements) do
@@ -55,11 +57,13 @@ RSpec.describe Dependabot::NpmAndYarn::Package::RegistryFinder do
 
     context "with no rc and with credentials" do
       let(:credentials) do
-        [Dependabot::Credential.new({
-          "type" => "npm_registry",
-          "registry" => "http://example.com",
-          "replaces-base" => true
-        })]
+        [Dependabot::Credential.new(
+          {
+            "type" => "npm_registry",
+            "registry" => "http://example.com",
+            "replaces-base" => true
+          }
+        )]
       end
 
       it { is_expected.to eq("http://example.com") }
@@ -67,11 +71,13 @@ RSpec.describe Dependabot::NpmAndYarn::Package::RegistryFinder do
 
     context "with no rc and with credentials containing spaces" do
       let(:credentials) do
-        [Dependabot::Credential.new({
-          "type" => "npm_registry",
-          "registry" => "http://example.com/registry  with spaces",
-          "replaces-base" => true
-        })]
+        [Dependabot::Credential.new(
+          {
+            "type" => "npm_registry",
+            "registry" => "http://example.com/registry  with spaces",
+            "replaces-base" => true
+          }
+        )]
       end
 
       it { is_expected.to eq("http://example.com/registry%20with%20spaces") }
@@ -123,8 +129,10 @@ RSpec.describe Dependabot::NpmAndYarn::Package::RegistryFinder do
 
     context "with a global yarn berry registry containing a space" do
       let(:yarnrc_yml_file) do
-        Dependabot::DependencyFile.new(name: ".yarnrc.yml",
-                                       content: 'npmRegistryServer: "https://example.com/registry  with spaces"')
+        Dependabot::DependencyFile.new(
+          name: ".yarnrc.yml",
+          content: 'npmRegistryServer: "https://example.com/registry  with spaces"'
+        )
       end
 
       it { is_expected.to eq("https://example.com/registry%20with%20spaces") }
@@ -243,16 +251,20 @@ RSpec.describe Dependabot::NpmAndYarn::Package::RegistryFinder do
 
     context "with credentials for a private registry" do
       let(:credentials) do
-        [Dependabot::Credential.new({
-          "type" => "git_source",
-          "host" => "github.com",
-          "username" => "x-access-token",
-          "password" => "token"
-        }), Dependabot::Credential.new({
-          "type" => "npm_registry",
-          "registry" => "https://npm.fury.io/dependabot",
-          "token" => "secret_token"
-        })]
+        [Dependabot::Credential.new(
+          {
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }
+        ), Dependabot::Credential.new(
+          {
+            "type" => "npm_registry",
+            "registry" => "https://npm.fury.io/dependabot",
+            "token" => "secret_token"
+          }
+        )]
       end
 
       context "when it doesn't list the dependency" do
@@ -287,15 +299,19 @@ RSpec.describe Dependabot::NpmAndYarn::Package::RegistryFinder do
 
         context "when it doesn't include auth" do
           let(:credentials) do
-            [Dependabot::Credential.new({
-              "type" => "git_source",
-              "host" => "github.com",
-              "username" => "x-access-token",
-              "password" => "token"
-            }), Dependabot::Credential.new({
-              "type" => "npm_registry",
-              "registry" => "npm.fury.io/dependabot"
-            })]
+            [Dependabot::Credential.new(
+              {
+                "type" => "git_source",
+                "host" => "github.com",
+                "username" => "x-access-token",
+                "password" => "token"
+              }
+            ), Dependabot::Credential.new(
+              {
+                "type" => "npm_registry",
+                "registry" => "npm.fury.io/dependabot"
+              }
+            )]
           end
 
           before do
@@ -472,10 +488,12 @@ RSpec.describe Dependabot::NpmAndYarn::Package::RegistryFinder do
 
     context "with credentials that don't have a registry" do
       before do
-        credentials << Dependabot::Credential.new({
-          "type" => "npm_registry",
-          "registry" => nil
-        })
+        credentials << Dependabot::Credential.new(
+          {
+            "type" => "npm_registry",
+            "registry" => nil
+          }
+        )
       end
 
       it { is_expected.to eq("registry.npmjs.org") }
@@ -484,12 +502,14 @@ RSpec.describe Dependabot::NpmAndYarn::Package::RegistryFinder do
     context "when both lockfile and dependabot config specify a registry, dependabot config takes precedence" do
       let(:credentials) do
         [
-          Dependabot::Credential.new({
-            "type" => "npm_registry",
-            "registry" => "https://registry.configured.org/dependabot",
-            "token" => "secret_token",
-            "replaces-base" => true
-          })
+          Dependabot::Credential.new(
+            {
+              "type" => "npm_registry",
+              "registry" => "https://registry.configured.org/dependabot",
+              "token" => "secret_token",
+              "replaces-base" => true
+            }
+          )
         ]
       end
 
@@ -511,12 +531,14 @@ RSpec.describe Dependabot::NpmAndYarn::Package::RegistryFinder do
       # .npmrc registry takes precedence over dependabot config
       let(:credentials) do
         [
-          Dependabot::Credential.new({
-            "type" => "npm_registry",
-            "registry" => "https://registry.configured.org/dependabot",
-            "token" => "secret_token",
-            "replaces-base" => true
-          })
+          Dependabot::Credential.new(
+            {
+              "type" => "npm_registry",
+              "registry" => "https://registry.configured.org/dependabot",
+              "token" => "secret_token",
+              "replaces-base" => true
+            }
+          )
         ]
       end
 
@@ -535,11 +557,13 @@ RSpec.describe Dependabot::NpmAndYarn::Package::RegistryFinder do
 
     context "with credentials for a private registry" do
       before do
-        credentials << Dependabot::Credential.new({
-          "type" => "npm_registry",
-          "registry" => "npm.fury.io/dependabot",
-          "token" => "secret_token"
-        })
+        credentials << Dependabot::Credential.new(
+          {
+            "type" => "npm_registry",
+            "registry" => "npm.fury.io/dependabot",
+            "token" => "secret_token"
+          }
+        )
       end
 
       context "when it doesn't list the dependency" do

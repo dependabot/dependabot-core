@@ -7,12 +7,15 @@ module Dependabot
     GITHUB_COM = T.let("github.com", String)
 
     # Regular expression to match a GitHub repository reference
-    GITHUB_REPO_REFERENCE = T.let(%r{
-      ^(?<owner>[\w.-]+)/
-      (?<repo>[\w.-]+)
-      (?<path>/[^\@]+)?
-      @(?<ref>.+)
-    }x, Regexp)
+    GITHUB_REPO_REFERENCE = T.let(
+      %r{
+            ^(?<owner>[\w.-]+)/
+            (?<repo>[\w.-]+)
+            (?<path>/[^\@]+)?
+            @(?<ref>.+)
+          }x,
+      Regexp
+    )
 
     # Matches .yml or .yaml files in the .github/workflows directories
     WORKFLOW_YAML_REGEX = %r{\.github/workflows/.+\.ya?ml$}

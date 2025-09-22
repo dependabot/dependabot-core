@@ -31,13 +31,13 @@ module Dependabot
         T.must(parsed_config_json["api"]).chomp("/")
       end
 
-      private
-
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def fetch_files
         fetched_files = []
         fetched_files << config_json
       end
+
+      private
 
       sig { returns(T::Hash[String, String]) }
       def parsed_config_json

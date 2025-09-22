@@ -61,8 +61,10 @@ module Dependabot
     private
 
     sig do
-      params(version_manager: T.nilable(Ecosystem::VersionManager),
-             version_manager_type: Symbol).returns(T.nilable(Dependabot::Notice))
+      params(
+        version_manager: T.nilable(Ecosystem::VersionManager),
+        version_manager_type: Symbol
+      ).returns(T.nilable(Dependabot::Notice))
     end
     def create_deprecation_notice(version_manager, version_manager_type)
       return unless version_manager

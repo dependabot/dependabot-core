@@ -96,7 +96,8 @@ RSpec.describe Dependabot::Terraform::MetadataFinder do
         stub_request(:get, "https://registry.terraform.io/.well-known/terraform.json")
           .to_return(status: 200, body: { "modules.v1": "/v1/modules/" }.to_json)
         stub_request(:get, registry_url)
-          .to_return(status: 204, body: "",
+          .to_return(status: 204,
+                     body: "",
                      headers: { "X-Terraform-Get": "git::https://github.com/hashicorp/terraform-aws-consul" })
       end
 

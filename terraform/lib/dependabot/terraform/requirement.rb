@@ -12,6 +12,7 @@ module Dependabot
   module Terraform
     class Requirement < Dependabot::Requirement
       extend T::Sig
+
       # Override regex PATTERN from Gem::Requirement to add support for the
       # optional 'v' prefix to release tag names, which Terraform supports.
       # https://www.terraform.io/docs/registry/modules/publish.html#requirements

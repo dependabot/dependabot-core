@@ -226,7 +226,72 @@ Your ecosystem implementation must support cooldown logic in the **UpdateChecker
 
 ## Phase 3: Testing and Validation
 
-### 1. Smoke Tests
+### 1. Local Testing with Dry-Run
+
+When adding a new ecosystem, you should validate your implementation locally before opening a PR. Dependabot provides a `bin/dry-run.rb` script that allows you to simulate update checks against real repositories.
+
+The dry-run script can be run in your `bin/docker-dev-shell your-new-ecosystem-name [--rebuild]`
+
+#### Running a Basic Dry-Run
+
+Create (or fork) a public repository with representative manifest and lockfiles for your ecosystem. Then run:
+
+```bash
+# Run all updates
+bin/dry-run.rb your-ecosystem your-github-user/your-sample-repo --enable-beta-ecosystems
+```
+
+You can also simulate security advisories by setting the `SECURITY_ADVISORIES` environment variable and use the `--security-updates-only` flag:
+
+```bash
+# Security updates only
+SECURITY_ADVISORIES='[{"dependency-name":"numpy","patched-versions":["1.28.0"],"unaffected-versions":[],"affected-versions":["< 1.27.0"]}]'
+
+bin/dry-run.rb your-ecosystem your-github-user/your-sample-repo --enable-beta-ecosystems --security-updates-only
+```
+
+#### Testing with Subdirectories
+
+You can structure your test repo with subfolders containing different manifest scenarios and run targeted dry-runs using `--dir`:
+
+```bash
+REPO="your-org/your-sample-repo"
+BASE_CMD="bin/dry-run.rb your-ecosystem $REPO --enable-beta-ecosystems"
+
+$BASE_CMD --dir="/special-cases/private-repository"
+$BASE_CMD --dir="/tier1-full-support/project-a"
+```
+
+This allows you to easily validate edge cases and multiple manifest types.
+
+#### Automating Dry-Run Scenarios
+
+For convenience, you can wrap your dry-run tests in a shell script inside the `dependabot-core-dev` shell:
+
+```bash
+#!/bin/bash
+REPO="your-org/your-sample-repo"
+BASE_CMD="bin/dry-run.rb your-ecosystem $REPO --enable-beta-ecosystems"
+
+echo "Running Tier 1 tests..."
+$BASE_CMD --dir="/tier1/project-one"
+$BASE_CMD --dir="/tier1/project-two"
+
+echo "Running Special Cases..."
+$BASE_CMD --dir="/special-cases/custom-lockfiles"
+```
+
+#### Avoiding GitHub API Rate Limits
+
+By default, the dry-run script runs without authentication and may hit GitHub API rate limits. To avoid this, set a personal access token:
+
+```bash
+export LOCAL_GITHUB_ACCESS_TOKEN=ghp_yourtokenhere
+```
+
+This will be automatically picked up by the dry-run script and give you higher rate limits.
+
+### 2. Smoke Tests
 
 Add smoke tests to the [dependabot/smoke-tests](https://github.com/dependabot/smoke-tests) repository. See the repository documentation for detailed instructions on creating and running smoke tests for your ecosystem.
 

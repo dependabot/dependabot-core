@@ -15,6 +15,7 @@ module Dependabot
     class FileParser
       class PyprojectFilesParser
         extend T::Sig
+
         POETRY_DEPENDENCY_TYPES = %w(dependencies dev-dependencies).freeze
 
         # https://python-poetry.org/docs/dependency-specification/
@@ -106,9 +107,11 @@ module Dependabot
         end
 
         sig do
-          params(type: String,
-                 deps_hash: T::Hash[String,
-                                    T.untyped]).returns(Dependabot::FileParsers::Base::DependencySet)
+          params(
+            type: String,
+            deps_hash: T::Hash[String,
+                               T.untyped]
+          ).returns(Dependabot::FileParsers::Base::DependencySet)
         end
         def parse_poetry_dependency_group(type, deps_hash)
           dependencies = Dependabot::FileParsers::Base::DependencySet.new
@@ -217,8 +220,10 @@ module Dependabot
 
         sig { returns(T::Array[T.nilable(String)]) }
         def production_dependency_names
-          @production_dependency_names ||= T.let(parse_production_dependency_names,
-                                                 T.nilable(T::Array[T.nilable(String)]))
+          @production_dependency_names ||= T.let(
+            parse_production_dependency_names,
+            T.nilable(T::Array[T.nilable(String)])
+          )
         end
 
         sig { returns(T::Array[T.nilable(String)]) }
@@ -282,8 +287,10 @@ module Dependabot
 
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def pyproject
-          @pyproject ||= T.let(dependency_files.find { |f| f.name == "pyproject.toml" },
-                               T.nilable(Dependabot::DependencyFile))
+          @pyproject ||= T.let(
+            dependency_files.find { |f| f.name == "pyproject.toml" },
+            T.nilable(Dependabot::DependencyFile)
+          )
         end
 
         sig { returns(T.untyped) }
@@ -318,14 +325,18 @@ module Dependabot
 
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def poetry_lock
-          @poetry_lock ||= T.let(dependency_files.find { |f| f.name == "poetry.lock" },
-                                 T.nilable(Dependabot::DependencyFile))
+          @poetry_lock ||= T.let(
+            dependency_files.find { |f| f.name == "poetry.lock" },
+            T.nilable(Dependabot::DependencyFile)
+          )
         end
 
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def pdm_lock
-          @pdm_lock ||= T.let(dependency_files.find { |f| f.name == "pdm.lock" },
-                              T.nilable(Dependabot::DependencyFile))
+          @pdm_lock ||= T.let(
+            dependency_files.find { |f| f.name == "pdm.lock" },
+            T.nilable(Dependabot::DependencyFile)
+          )
         end
       end
     end

@@ -63,7 +63,7 @@ module Dependabot
         sig { void }
         def perform
           run_grouped_dependency_updates if dependency_snapshot.groups.any?
-          run_ungrouped_dependency_updates
+          run_ungrouped_dependency_updates unless job.multi_ecosystem_update?
         end
 
         private
@@ -71,7 +71,7 @@ module Dependabot
         sig { returns(Dependabot::Job) }
         attr_reader :job
 
-        sig { returns(Dependabot::Service) }
+        sig { override.returns(Dependabot::Service) }
         attr_reader :service
 
         sig { returns(Dependabot::DependencySnapshot) }

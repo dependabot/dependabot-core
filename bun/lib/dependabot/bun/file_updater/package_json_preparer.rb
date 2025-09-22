@@ -1,5 +1,7 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
+
+require "sorbet-runtime"
 
 require "dependabot/bun/file_updater"
 require "dependabot/bun/file_parser"
@@ -8,10 +10,14 @@ module Dependabot
   module Bun
     class FileUpdater < Dependabot::FileUpdaters::Base
       class PackageJsonPreparer
+        extend T::Sig
+
+        sig { params(package_json_content: String).void }
         def initialize(package_json_content:)
           @package_json_content = package_json_content
         end
 
+        sig { returns(String) }
         def prepared_content
           content = package_json_content
           content = replace_ssh_sources(content)
@@ -20,6 +26,7 @@ module Dependabot
           content
         end
 
+        sig { params(content: String).returns(String) }
         def replace_ssh_sources(content)
           updated_content = content
 
@@ -33,6 +40,7 @@ module Dependabot
 
         # A bug prevents Yarn recognising that a directory is part of a
         # workspace if it is specified with a `./` prefix.
+        sig { params(content: String).returns(String) }
         def remove_workspace_path_prefixes(content)
           json = JSON.parse(content)
           return content unless json.key?("workspaces")
@@ -52,6 +60,7 @@ module Dependabot
           JSON.pretty_generate(json)
         end
 
+        sig { params(content: String).returns(String) }
         def remove_invalid_characters(content)
           content
             .gsub(/\{\{[^\}]*?\}\}/, "something") # {{ nm }} syntax not allowed
@@ -59,28 +68,31 @@ module Dependabot
             .gsub(%r{^\s*//.*}, " ") # comments are not allowed
         end
 
+        sig { returns(T::Array[String]) }
         def swapped_ssh_requirements
           git_ssh_requirements_to_swap
         end
 
         private
 
+        sig { returns(String) }
         attr_reader :package_json_content
 
+        sig { returns(T::Array[String]) }
         def git_ssh_requirements_to_swap
           return @git_ssh_requirements_to_swap if @git_ssh_requirements_to_swap
 
-          @git_ssh_requirements_to_swap = []
+          @git_ssh_requirements_to_swap = T.let([], T.nilable(T::Array[String]))
 
           Bun::FileParser.each_dependency(JSON.parse(package_json_content)) do |_, req, _t|
             next unless req.is_a?(String)
             next unless req.start_with?("git+ssh:")
 
             req = req.split("#").first
-            @git_ssh_requirements_to_swap << req
+            T.must(@git_ssh_requirements_to_swap) << T.must(req)
           end
 
-          @git_ssh_requirements_to_swap
+          T.must(@git_ssh_requirements_to_swap)
         end
       end
     end

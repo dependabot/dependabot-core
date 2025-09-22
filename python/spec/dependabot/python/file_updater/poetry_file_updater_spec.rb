@@ -54,12 +54,14 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
   end
   let(:dependency_name) { "requests" }
   let(:credentials) do
-    [Dependabot::Credential.new({
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    })]
+    [Dependabot::Credential.new(
+      {
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    )]
   end
 
   describe "#updated_dependency_files" do
@@ -843,12 +845,14 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
         )
       end
       let(:credentials) do
-        [Dependabot::Credential.new({
-          "type" => "python_index",
-          "index-url" => "https://some.internal.registry.com/pypi/",
-          "username" => "test",
-          "password" => "test"
-        })]
+        [Dependabot::Credential.new(
+          {
+            "type" => "python_index",
+            "index-url" => "https://some.internal.registry.com/pypi/",
+            "username" => "test",
+            "password" => "test"
+          }
+        )]
       end
 
       it "prepares a pyproject file without credentials in" do

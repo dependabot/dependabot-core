@@ -1,4 +1,4 @@
-# typed: true
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -19,17 +19,17 @@ module Dependabot
 
       abstract!
 
-      sig { returns(Dependabot::Service) }
-      attr_reader :service
+      sig { abstract.returns(Dependabot::Updater::ErrorHandler) }
+      def error_handler; end
 
-      sig { returns(Dependabot::Updater::ErrorHandler) }
-      attr_reader :error_handler
+      sig { abstract.returns(Dependabot::Job) }
+      def job; end
 
-      sig { returns(Dependabot::Job) }
-      attr_reader :job
+      sig { abstract.returns(Dependabot::DependencySnapshot) }
+      def dependency_snapshot; end
 
-      sig { returns(Dependabot::DependencySnapshot) }
-      attr_reader :dependency_snapshot
+      sig { abstract.returns(Dependabot::Service) }
+      def service; end
 
       sig { params(dependency_change: Dependabot::DependencyChange, group: Dependabot::DependencyGroup).void }
       def upsert_pull_request_with_error_handling(dependency_change, group)

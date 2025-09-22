@@ -59,8 +59,10 @@ module Dependabot
         def fetch_lowest_security_fix_version(language_version: nil) # rubocop:disable Lint/UnusedMethodArgument
           releases = available_versions
           releases = filter_prerelease_versions(releases)
-          releases = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(releases,
-                                                                                           security_advisories)
+          releases = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(
+            releases,
+            security_advisories
+          )
           releases = filter_ignored_versions(releases)
           releases = filter_lower_versions(releases)
           releases.min_by(&:version)&.version

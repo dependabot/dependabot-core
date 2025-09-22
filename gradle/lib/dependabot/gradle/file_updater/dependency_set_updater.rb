@@ -25,10 +25,12 @@ module Dependabot
             updated_requirement: String
           ).returns(T::Array[Dependabot::DependencyFile])
         end
-        def update_files_for_dep_set_change(dependency_set:,
-                                            buildfile:,
-                                            previous_requirement:,
-                                            updated_requirement:)
+        def update_files_for_dep_set_change(
+          dependency_set:,
+          buildfile:,
+          previous_requirement:,
+          updated_requirement:
+        )
           declaration_string =
             original_declaration_string(dependency_set, buildfile)
 

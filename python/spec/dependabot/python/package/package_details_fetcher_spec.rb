@@ -66,8 +66,10 @@ RSpec.describe Dependabot::Python::Package::PackageDetailsFetcher do
         language: Dependabot::Package::PackageLanguage.new(
           name: "python",
           version: nil,
-          requirement: Dependabot::Python::Requirement.new([">=2.7", "!=3.0.*", "!=3.1.*", "!=3.2.*", "!=3.3.*",
-                                                            "!=3.4.*", "!=3.5.*"])
+          requirement: Dependabot::Python::Requirement.new(
+            [">=2.7", "!=3.0.*", "!=3.1.*", "!=3.2.*", "!=3.3.*",
+             "!=3.4.*", "!=3.5.*"]
+          )
         )
       )
     ]
@@ -78,10 +80,14 @@ RSpec.describe Dependabot::Python::Package::PackageDetailsFetcher do
 
     context "with a valid JSON response" do
       before do
-        stub_request(:get, json_url).to_return(status: 200,
-                                               body: fixture("releases_api", "pypi", "pypi_json_response.json"))
-        stub_request(:get, registry_url).to_return(status: 200,
-                                                   body: fixture("releases_api", "simple", "simple_index.html"))
+        stub_request(:get, json_url).to_return(
+          status: 200,
+          body: fixture("releases_api", "pypi", "pypi_json_response.json")
+        )
+        stub_request(:get, registry_url).to_return(
+          status: 200,
+          body: fixture("releases_api", "simple", "simple_index.html")
+        )
       end
 
       it "fetches data from JSON registry first and returns correct package releases" do
@@ -97,10 +103,14 @@ RSpec.describe Dependabot::Python::Package::PackageDetailsFetcher do
 
     context "when JSON response is empty" do
       before do
-        stub_request(:get, json_url).to_return(status: 200,
-                                               body: fixture("releases_api", "pypi", "pypi_json_response_empty.json"))
-        stub_request(:get, registry_url).to_return(status: 200,
-                                                   body: fixture("releases_api", "simple", "simple_index.html"))
+        stub_request(:get, json_url).to_return(
+          status: 200,
+          body: fixture("releases_api", "pypi", "pypi_json_response_empty.json")
+        )
+        stub_request(:get, registry_url).to_return(
+          status: 200,
+          body: fixture("releases_api", "simple", "simple_index.html")
+        )
       end
 
       it "falls back to HTML registry and fetches versions correctly" do

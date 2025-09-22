@@ -749,8 +749,10 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
           let(:project_name) { "git_source_reordered" }
 
           it "doesn't update the order of the git dependencies" do
-            old_lock = bundler_project_dependency_file("git_source_reordered",
-                                                       filename: "Gemfile.lock").content.split(/^/)
+            old_lock = bundler_project_dependency_file(
+              "git_source_reordered",
+              filename: "Gemfile.lock"
+            ).content.split(/^/)
             new_lock = file.content.split(/^/)
 
             %w(business prius uk_phone_numbers).each do |dep|

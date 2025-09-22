@@ -58,34 +58,37 @@ module Dependabot
 
       private
 
-      PACKAGE_MANAGER_LOOKUP = T.let({
-        "bun" => "bun",
-        "bundler" => "bundler",
-        "cargo" => "cargo",
-        "composer" => "composer",
-        "conda" => "conda",
-        "devcontainer" => "devcontainers",
-        "docker-compose" => "docker_compose",
-        "docker" => "docker",
-        "dotnet-sdk" => "dotnet_sdk",
-        "elm" => "elm",
-        "github-actions" => "github_actions",
-        "gitsubmodule" => "submodules",
-        "gomod" => "go_modules",
-        "gradle" => "gradle",
-        "helm" => "helm",
-        "maven" => "maven",
-        "mix" => "hex",
-        "npm" => "npm_and_yarn",
-        "nuget" => "nuget",
-        "pip" => "pip",
-        "pub" => "pub",
-        "rust-toolchain" => "rust_toolchain",
-        "swift" => "swift",
-        "terraform" => "terraform",
-        "uv" => "uv",
-        "vcpkg" => "vcpkg"
-      }.freeze, T::Hash[String, String])
+      PACKAGE_MANAGER_LOOKUP = T.let(
+        {
+          "bun" => "bun",
+          "bundler" => "bundler",
+          "cargo" => "cargo",
+          "composer" => "composer",
+          "conda" => "conda",
+          "devcontainer" => "devcontainers",
+          "docker-compose" => "docker_compose",
+          "docker" => "docker",
+          "dotnet-sdk" => "dotnet_sdk",
+          "elm" => "elm",
+          "github-actions" => "github_actions",
+          "gitsubmodule" => "submodules",
+          "gomod" => "go_modules",
+          "gradle" => "gradle",
+          "helm" => "helm",
+          "maven" => "maven",
+          "mix" => "hex",
+          "npm" => "npm_and_yarn",
+          "nuget" => "nuget",
+          "pip" => "pip",
+          "pub" => "pub",
+          "rust-toolchain" => "rust_toolchain",
+          "swift" => "swift",
+          "terraform" => "terraform",
+          "uv" => "uv",
+          "vcpkg" => "vcpkg"
+        }.freeze,
+        T::Hash[String, String]
+      )
 
       REVERSE_PACKAGE_MANAGER_LOOKUP = T.let(
         PACKAGE_MANAGER_LOOKUP.invert.freeze,

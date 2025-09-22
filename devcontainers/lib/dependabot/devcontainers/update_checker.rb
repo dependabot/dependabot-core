@@ -52,16 +52,18 @@ module Dependabot
 
       sig { returns(T.nilable(Dependabot::Devcontainers::UpdateChecker::LatestVersionFinder)) }
       def latest_version_finder
-        @latest_version_finder ||= T.let(LatestVersionFinder.new(
-                                           dependency: dependency,
-                                           credentials: credentials,
-                                           dependency_files: dependency_files,
-                                           security_advisories: security_advisories,
-                                           ignored_versions: ignored_versions,
-                                           raise_on_ignored: raise_on_ignored,
-                                           cooldown_options: update_cooldown
-                                         ),
-                                         T.nilable(Dependabot::Devcontainers::UpdateChecker::LatestVersionFinder))
+        @latest_version_finder ||= T.let(
+          LatestVersionFinder.new(
+            dependency: dependency,
+            credentials: credentials,
+            dependency_files: dependency_files,
+            security_advisories: security_advisories,
+            ignored_versions: ignored_versions,
+            raise_on_ignored: raise_on_ignored,
+            cooldown_options: update_cooldown
+          ),
+          T.nilable(Dependabot::Devcontainers::UpdateChecker::LatestVersionFinder)
+        )
       end
 
       sig { returns(T.nilable(T::Array[Dependabot::Version])) }

@@ -13,13 +13,16 @@ module Dependabot
       extend T::Sig
       extend T::Helpers
 
-      PRERELEASE_QUALIFIERS = T.let([
-        Dependabot::Maven::VersionParser::ALPHA,
-        Dependabot::Maven::VersionParser::BETA,
-        Dependabot::Maven::VersionParser::MILESTONE,
-        Dependabot::Maven::VersionParser::RC,
-        Dependabot::Maven::VersionParser::SNAPSHOT
-      ].freeze, T::Array[Integer])
+      PRERELEASE_QUALIFIERS = T.let(
+        [
+          Dependabot::Maven::VersionParser::ALPHA,
+          Dependabot::Maven::VersionParser::BETA,
+          Dependabot::Maven::VersionParser::MILESTONE,
+          Dependabot::Maven::VersionParser::RC,
+          Dependabot::Maven::VersionParser::SNAPSHOT
+        ].freeze,
+        T::Array[Integer]
+      )
 
       VERSION_PATTERN =
         "[0-9a-zA-Z]+" \

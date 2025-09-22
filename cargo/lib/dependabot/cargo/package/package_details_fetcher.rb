@@ -222,7 +222,8 @@ module Dependabot
             Dependabot::Package::PackageDetails.new(
               dependency: dependency,
               releases: releases.reverse.uniq(&:version)
-            ), T.nilable(Dependabot::Package::PackageDetails)
+            ),
+            T.nilable(Dependabot::Package::PackageDetails)
           )
         end
       end

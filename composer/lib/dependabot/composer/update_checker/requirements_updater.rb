@@ -41,8 +41,11 @@ module Dependabot
             latest_resolvable_version: T.nilable(T.any(String, Composer::Version))
           ).void
         end
-        def initialize(requirements:, update_strategy:,
-                       latest_resolvable_version:)
+        def initialize(
+          requirements:,
+          update_strategy:,
+          latest_resolvable_version:
+        )
           @requirements = requirements
           @update_strategy = update_strategy
 
@@ -252,7 +255,7 @@ module Dependabot
           range_requirements =
             req_string.split(SEPARATOR).select { |r| r.match?(/<|(\s+-\s+)/) }
 
-          if range_requirements.count == 1
+          if range_requirements.one?
             range_requirement = T.must(range_requirements.first)
             versions = range_requirement.scan(VERSION_REGEX)
             # Convert version strings to Version objects and find the maximum

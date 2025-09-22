@@ -14,6 +14,7 @@ module Dependabot
     class UpdateChecker
       class VersionResolver # rubocop:disable Metrics/ClassLength
         extend T::Sig
+
         UNABLE_TO_UPDATE = /Unable to update (?<url>.*?)$/
         BRANCH_NOT_FOUND_REGEX = /#{UNABLE_TO_UPDATE}.*to find branch `(?<branch>[^`]+)`/m
         REVSPEC_PATTERN = /revspec '.*' not found/
@@ -35,8 +36,12 @@ module Dependabot
             prepared_dependency_files: T::Array[Dependabot::DependencyFile]
           ).void
         end
-        def initialize(dependency:, credentials:,
-                       original_dependency_files:, prepared_dependency_files:)
+        def initialize(
+          dependency:,
+          credentials:,
+          original_dependency_files:,
+          prepared_dependency_files:
+        )
           @dependency = dependency
           @prepared_dependency_files = prepared_dependency_files
           @original_dependency_files = original_dependency_files
@@ -133,7 +138,7 @@ module Dependabot
                   dependency.version
                 end
 
-          if spec_options.count { |s| s.end_with?(T.must(ver)) } == 1
+          if spec_options.one? { |s| s.end_with?(T.must(ver)) }
             @custom_specification = spec_options.find { |s| s.end_with?(T.must(ver)) }
             return true
           elsif spec_options.count { |s| s.end_with?(T.must(ver)) } > 1
@@ -250,8 +255,10 @@ module Dependabot
             urls = unreachable_git_urls
 
             if T.must(urls).none?
-              url = T.must(T.must(error.message.match(UNABLE_TO_UPDATE))
-                            .named_captures.fetch("url")).split(/[#?]/).first
+              url = T.must(
+                T.must(error.message.match(UNABLE_TO_UPDATE))
+                                            .named_captures.fetch("url")
+              ).split(/[#?]/).first
               raise if T.must(reachable_git_urls).include?(url)
 
               # Fix: Wrap url in T.must since split().first can return nil
@@ -484,21 +491,30 @@ module Dependabot
 
         sig { returns(T.nilable(DependencyFile)) }
         def lockfile
-          @lockfile ||= T.let(prepared_dependency_files
-                                .find { |f| f.name == "Cargo.lock" }, T.nilable(Dependabot::DependencyFile))
+          @lockfile ||= T.let(
+            prepared_dependency_files
+                                            .find { |f| f.name == "Cargo.lock" },
+            T.nilable(Dependabot::DependencyFile)
+          )
         end
 
         sig { returns(T.nilable(DependencyFile)) }
         def toolchain
-          @toolchain ||= T.let(original_dependency_files
-                                 .find { |f| f.name == "rust-toolchain" }, T.nilable(Dependabot::DependencyFile))
+          @toolchain ||= T.let(
+            original_dependency_files
+                                             .find { |f| f.name == "rust-toolchain" },
+            T.nilable(Dependabot::DependencyFile)
+          )
         end
 
         sig { returns(T.nilable(DependencyFile)) }
         def config
-          @config ||= T.let(original_dependency_files.find do |f|
-            f.name == ".cargo/config.toml"
-          end, T.nilable(Dependabot::DependencyFile))
+          @config ||= T.let(
+            original_dependency_files.find do |f|
+              f.name == ".cargo/config.toml"
+            end,
+            T.nilable(Dependabot::DependencyFile)
+          )
         end
 
         sig { returns(T::Boolean) }

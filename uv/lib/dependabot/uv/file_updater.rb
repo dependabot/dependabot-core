@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "toml-rb"
@@ -78,7 +78,7 @@ module Dependabot
         ).updated_dependency_files
       end
 
-      sig { returns(T::Array[String]) }
+      sig { returns(T::Array[T.nilable(String)]) }
       def pip_compile_index_urls
         if credentials.any?(&:replaces_base?)
           credentials.select(&:replaces_base?).map { |cred| AuthedUrlBuilder.authed_url(credential: cred) }

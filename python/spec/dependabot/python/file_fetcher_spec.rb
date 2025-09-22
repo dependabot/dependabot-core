@@ -87,12 +87,14 @@ RSpec.describe Dependabot::Python::FileFetcher do
     let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
     let(:url_with_directory) { File.join(url, directory) }
     let(:credentials) do
-      [Dependabot::Credential.new({
-        "type" => "git_source",
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      })]
+      [Dependabot::Credential.new(
+        {
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }
+      )]
     end
 
     let(:json_header) { { "content-type" => "application/json" } }
@@ -523,9 +525,11 @@ RSpec.describe Dependabot::Python::FileFetcher do
       end
 
       it "exposes the expected ecosystem_versions metric" do
-        expect(file_fetcher_instance.ecosystem_versions).to eq({
-          languages: { python: { "max" => "3.9", "raw" => "unknown" } }
-        })
+        expect(file_fetcher_instance.ecosystem_versions).to eq(
+          {
+            languages: { python: { "max" => "3.9", "raw" => "unknown" } }
+          }
+        )
       end
     end
 
@@ -1060,8 +1064,10 @@ RSpec.describe Dependabot::Python::FileFetcher do
             .with(headers: { "Authorization" => "token token" })
             .to_return(
               status: 200,
-              body: fixture("github",
-                            "contents_python_pipfile_with_path_dep.json"),
+              body: fixture(
+                "github",
+                "contents_python_pipfile_with_path_dep.json"
+              ),
               headers: { "content-type" => "application/json" }
             )
           stub_request(:get, url + "docs/Pipfile.lock?ref=sha")
@@ -1178,8 +1184,11 @@ RSpec.describe Dependabot::Python::FileFetcher do
 
       it "doesn't raise a path dependency error" do
         expect(file_fetcher_instance.files.count).to eq(3)
-        expect(file_fetcher_instance.files.map(&:name)).to contain_exactly("requirements-test.txt", "pyproject.toml",
-                                                                           "setup.cfg")
+        expect(file_fetcher_instance.files.map(&:name)).to contain_exactly(
+          "requirements-test.txt",
+          "pyproject.toml",
+          "setup.cfg"
+        )
       end
     end
 

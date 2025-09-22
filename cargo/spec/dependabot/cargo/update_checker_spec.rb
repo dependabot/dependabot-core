@@ -529,7 +529,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
     before do
       latest_version = instance_double(Dependabot::Cargo::UpdateChecker::LatestVersionFinder)
       allow(latest_version)
-        .to receive(:latest_version).and_return({ version: Gem::Version.new("1.5.0") })
+        .to receive(:latest_version).and_return(Gem::Version.new("1.5.0"))
       allow(Dependabot::Cargo::UpdateChecker::LatestVersionFinder)
         .to receive(:new).and_return(latest_version)
     end
@@ -538,14 +538,16 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
       checker.latest_version
 
       expect(Dependabot::Cargo::UpdateChecker::LatestVersionFinder).to have_received(:new).with(
-        hash_including(cooldown_options: an_object_having_attributes(
-          default_days: expected_cooldown_options.default_days,
-          semver_major_days: expected_cooldown_options.semver_major_days,
-          semver_minor_days: expected_cooldown_options.semver_minor_days,
-          semver_patch_days: expected_cooldown_options.semver_patch_days,
-          include: expected_cooldown_options.include,
-          exclude: expected_cooldown_options.exclude
-        ))
+        hash_including(
+          cooldown_options: an_object_having_attributes(
+            default_days: expected_cooldown_options.default_days,
+            semver_major_days: expected_cooldown_options.semver_major_days,
+            semver_minor_days: expected_cooldown_options.semver_minor_days,
+            semver_patch_days: expected_cooldown_options.semver_patch_days,
+            include: expected_cooldown_options.include,
+            exclude: expected_cooldown_options.exclude
+          )
+        )
       )
     end
   end

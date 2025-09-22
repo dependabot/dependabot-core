@@ -85,11 +85,24 @@ module Dependabot
         )
           .void
       end
-      def initialize(source:, branch_name:, base_commit:, credentials:,
-                     files:, commit_message:, pr_description:, pr_name:,
-                     author_details:, signature_key:, custom_headers:,
-                     labeler:, reviewers:, assignees:, milestone:,
-                     require_up_to_date_base:)
+      def initialize(
+        source:,
+        branch_name:,
+        base_commit:,
+        credentials:,
+        files:,
+        commit_message:,
+        pr_description:,
+        pr_name:,
+        author_details:,
+        signature_key:,
+        custom_headers:,
+        labeler:,
+        reviewers:,
+        assignees:,
+        milestone:,
+        require_up_to_date_base:
+      )
         @source                  = source
         @branch_name             = branch_name
         @base_commit             = base_commit
@@ -431,7 +444,7 @@ module Dependabot
                      .map { |rv| "#{source.repo.split('/').first}/#{rv}" }
 
         reviewers_string =
-          if reviewers.count == 1
+          if reviewers.one?
             "`@#{reviewers.first}`"
           else
             names = reviewers.map { |rv| "`@#{rv}`" }

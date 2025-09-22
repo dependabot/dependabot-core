@@ -82,10 +82,12 @@ RSpec.describe Dependabot::Updater::Operations::RefreshVersionUpdatePullRequest 
   let(:deprecated_versions) { %w(1) }
 
   let(:job_definition_with_fetched_files) do
-    job_definition.merge({
-      "base_commit_sha" => "mock-sha",
-      "base64_dependency_files" => encode_dependency_files(dependency_files)
-    })
+    job_definition.merge(
+      {
+        "base_commit_sha" => "mock-sha",
+        "base64_dependency_files" => encode_dependency_files(dependency_files)
+      }
+    )
   end
 
   let(:dependency_files) do
@@ -120,8 +122,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshVersionUpdatePullRequest 
       updated_dependencies: [dependency],
       dependency: dependency,
       requirements_unlocked_or_can_be?: true,
-      can_update?: true,
-      excluded?: false
+      can_update?: true
     )
   end
 

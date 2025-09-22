@@ -86,7 +86,6 @@ module Dependabot
       timeout: TIMEOUTS::DEFAULT,
       output_observer: nil
     )
-
       stdout = T.let("", String)
       stderr = T.let("", String)
       status = T.let(nil, T.nilable(ProcessStatus))

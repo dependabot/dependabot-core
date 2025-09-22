@@ -48,8 +48,11 @@ module Dependabot
       end
 
       sig do
-        params(file: Dependabot::DependencyFile, details: T::Hash[String, T.nilable(String)],
-               version: String).returns(Dependabot::Dependency)
+        params(
+          file: Dependabot::DependencyFile,
+          details: T::Hash[String, T.nilable(String)],
+          version: String
+        ).returns(Dependabot::Dependency)
       end
       def build_dependency(file, details, version)
         Dependency.new(

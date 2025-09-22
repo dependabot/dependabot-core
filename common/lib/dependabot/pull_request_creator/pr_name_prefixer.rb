@@ -43,8 +43,13 @@ module Dependabot
         )
           .void
       end
-      def initialize(source:, dependencies:, credentials:, security_fix: false,
-                     commit_message_options: {})
+      def initialize(
+        source:,
+        dependencies:,
+        credentials:,
+        security_fix: false,
+        commit_message_options: {}
+      )
         @dependencies           = dependencies
         @source                 = source
         @credentials            = credentials

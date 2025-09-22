@@ -27,6 +27,7 @@ module OpenTelemetry
   end
 
   module Trace
+    sig { returns(Span) }
     def self.current_span; end
 
     module Status
@@ -85,6 +86,19 @@ module OpenTelemetry
           .returns(T.self_type)
       end
       def set_attribute(key, value); end
+
+      sig { params(attributes: T::Hash[String, T.untyped]).returns(T.self_type) }
+      def add_attributes(attributes); end
+
+      sig { params(name: T.any(String, Symbol), attributes: T.nilable(T::Hash[String, T.untyped])).void }
+      def add_event(name, attributes: nil); end
+
+      sig { params(exception: Exception).void }
+      def record_exception(exception); end
+
+      sig { params(status: T.untyped).void }
+      def status=(status); end
+
       sig { void }
       def finish; end
     end

@@ -4,6 +4,7 @@
 require "sorbet-runtime"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
+require "dependabot/file_filtering"
 
 module Dependabot
   module Hex
@@ -34,7 +35,12 @@ module Dependabot
         fetched_files << lockfile if lockfile
         fetched_files += subapp_mixfiles
         fetched_files += support_files
-        fetched_files
+        # Apply final filtering to exclude any files that match the exclude_paths configuration
+        filtered_files = fetched_files.compact.reject do |file|
+          Dependabot::FileFiltering.should_exclude_path?(file.name, "file from final collection", @exclude_paths)
+        end
+
+        filtered_files
       end
 
       private
@@ -62,14 +68,22 @@ module Dependabot
                      &.named_captures&.fetch("path")
         return [] unless apps_path
 
-        repo_contents(dir: apps_path)
-          .select { |f| f.type == "dir" }
-          .map { |f| File.join(apps_path, f.name) }
+        directories = repo_contents(dir: apps_path)
+                      .select { |f| f.type == "dir" }
+                      .map { |f| File.join(apps_path, f.name) }
+
+        directories.reject do |dir|
+          Dependabot::FileFiltering.should_exclude_path?(dir, "umbrella app directory", @exclude_paths)
+        end
       end
 
       sig { returns(T::Array[String]) }
       def sub_project_directories
-        T.must(T.must(mixfile).content).scan(PATH_DEPS_REGEX).flatten
+        directories = T.must(T.must(mixfile).content).scan(PATH_DEPS_REGEX).flatten
+
+        directories.reject do |dir|
+          Dependabot::FileFiltering.should_exclude_path?(dir, "path dependency directory", @exclude_paths)
+        end
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }

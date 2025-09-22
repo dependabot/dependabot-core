@@ -20,6 +20,7 @@ module Dependabot
   module Bundler
     class FileParser < Dependabot::FileParsers::Base # rubocop:disable Metrics/ClassLength
       extend T::Sig
+
       require "dependabot/file_parsers/base/dependency_set"
       require "dependabot/bundler/file_parser/file_preparer"
       require "dependabot/bundler/file_parser/gemfile_declaration_finder"
@@ -208,8 +209,10 @@ module Dependabot
       sig { returns(T::Array[T::Hash[String, T.untyped]]) }
       def parsed_gemfile
         @parsed_gemfile ||= T.let(
-          SharedHelpers.in_a_temporary_repo_directory(T.must(base_directory),
-                                                      repo_contents_path) do
+          SharedHelpers.in_a_temporary_repo_directory(
+            T.must(base_directory),
+            repo_contents_path
+          ) do
             write_temporary_dependency_files
 
             NativeHelpers.run_bundler_subprocess(

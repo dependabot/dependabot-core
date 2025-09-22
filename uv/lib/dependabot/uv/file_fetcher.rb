@@ -13,20 +13,24 @@ require "dependabot/uv/requirement_parser"
 require "dependabot/uv/file_parser/pyproject_files_parser"
 require "dependabot/uv/file_parser/python_requirement_parser"
 require "dependabot/errors"
+require "dependabot/file_filtering"
 
 module Dependabot
   module Uv
-    class FileFetcher < Dependabot::FileFetchers::Base
+    class FileFetcher < Dependabot::FileFetchers::Base # rubocop:disable Metrics/ClassLength
       extend T::Sig
       extend T::Helpers
 
       CHILD_REQUIREMENT_REGEX = /^-r\s?(?<path>.*\.(?:txt|in))/
       CONSTRAINT_REGEX = /^-c\s?(?<path>.*\.(?:txt|in))/
       DEPENDENCY_TYPES = %w(packages dev-packages).freeze
-      REQUIREMENT_FILE_PATTERNS = T.let({
-        extensions: [".txt", ".in"],
-        filenames: ["uv.lock"]
-      }.freeze, T::Hash[Symbol, T::Array[String]])
+      REQUIREMENT_FILE_PATTERNS = T.let(
+        {
+          extensions: [".txt", ".in"],
+          filenames: ["uv.lock"]
+        }.freeze,
+        T::Hash[Symbol, T::Array[String]]
+      )
 
       MAX_FILE_SIZE = 500_000
 
@@ -87,7 +91,12 @@ module Dependabot
         fetched_files += project_files
         fetched_files << python_version_file if python_version_file
 
-        uniq_files(fetched_files)
+        uniques = uniq_files(fetched_files)
+        filtered_files = uniques.reject do |file|
+          Dependabot::FileFiltering.should_exclude_path?(file.name, "file from final collection", @exclude_paths)
+        end
+
+        filtered_files
       end
 
       private
@@ -211,7 +220,8 @@ module Dependabot
               fetched_files += child_files
               child_files
             end
-          end, T.nilable(T::Array[Dependabot::DependencyFile])
+          end,
+          T.nilable(T::Array[Dependabot::DependencyFile])
         )
       end
 
@@ -234,6 +244,14 @@ module Dependabot
 
           next if previously_fetched_files.map(&:name).include?(path)
           next if file.name == path
+
+          if Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files) &&
+             !@exclude_paths.empty? && Dependabot::FileFiltering.exclude_path?(path, @exclude_paths)
+            raise Dependabot::DependencyFileNotEvaluatable,
+                  "Cannot process requirements: '#{file.name}' references excluded file '#{path}'. " \
+                  "Please either remove the reference from '#{file.name}' " \
+                  "or update your exclude_paths configuration."
+          end
 
           fetched_file = fetch_file_from_host(path)
           grandchild_requirement_files = fetch_child_requirement_files(
@@ -390,8 +408,10 @@ module Dependabot
 
       sig { returns(Dependabot::Uv::RequiremenstFileMatcher) }
       def requirements_in_file_matcher
-        @requirements_in_file_matcher ||= T.let(RequiremenstFileMatcher.new(requirements_in_files),
-                                                T.nilable(Dependabot::Uv::RequiremenstFileMatcher))
+        @requirements_in_file_matcher ||= T.let(
+          RequiremenstFileMatcher.new(requirements_in_files),
+          T.nilable(Dependabot::Uv::RequiremenstFileMatcher)
+        )
       end
 
       sig { returns(T::Array[PathDependency]) }

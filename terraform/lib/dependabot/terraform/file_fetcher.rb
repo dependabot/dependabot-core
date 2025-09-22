@@ -6,6 +6,7 @@ require "sorbet-runtime"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 require "dependabot/terraform/file_selector"
+require "dependabot/file_filtering"
 
 module Dependabot
   module Terraform
@@ -35,7 +36,12 @@ module Dependabot
         fetched_files += terragrunt_files
         fetched_files += local_path_module_files(terraform_files)
         fetched_files += [lockfile] if lockfile
-        fetched_files
+
+        filtered_files = fetched_files.compact.reject do |file|
+          Dependabot::FileFiltering.should_exclude_path?(file.name, "file from final collection", @exclude_paths)
+        end
+
+        filtered_files
       end
 
       private
@@ -73,6 +79,12 @@ module Dependabot
         files.each do |file|
           terraform_file_local_module_details(file).each do |path|
             base_path = Pathname.new(File.join(dir, path)).cleanpath.to_path
+
+            # Skip excluded local module paths
+            if Dependabot::FileFiltering.should_exclude_path?(base_path, "local path module directory", @exclude_paths)
+              next
+            end
+
             nested_terraform_files =
               repo_contents(dir: base_path)
               .select { |f| f.type == "file" && f.name.end_with?(".tf") }

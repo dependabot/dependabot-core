@@ -10,8 +10,12 @@ module Functions
     attr_reader :gemfile_name
     attr_reader :lockfile_name
 
-    def initialize(dependency_name:, dependency_requirements:,
-                   gemfile_name:, lockfile_name:)
+    def initialize(
+      dependency_name:,
+      dependency_requirements:,
+      gemfile_name:,
+      lockfile_name:
+    )
       @dependency_name = dependency_name
       @dependency_requirements = dependency_requirements
       @gemfile_name = gemfile_name

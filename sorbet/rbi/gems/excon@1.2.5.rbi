@@ -10,7 +10,7 @@
 # source://excon//lib/excon/version.rb#3
 module Excon
   class << self
-    # source://excon//lib/excon.rb#251
+    # source://excon//lib/excon.rb#250
     def connect(url, params = T.unsafe(nil), &block); end
 
     # @return [Hash] defaults for Excon connections
@@ -25,7 +25,7 @@ module Excon
     # source://excon//lib/excon.rb#56
     def defaults=(_arg0); end
 
-    # source://excon//lib/excon.rb#251
+    # source://excon//lib/excon.rb#250
     def delete(url, params = T.unsafe(nil), &block); end
 
     # @raise [Error::Warning]
@@ -33,10 +33,10 @@ module Excon
     # source://excon//lib/excon.rb#58
     def display_warning(warning); end
 
-    # source://excon//lib/excon.rb#251
+    # source://excon//lib/excon.rb#250
     def get(url, params = T.unsafe(nil), &block); end
 
-    # source://excon//lib/excon.rb#251
+    # source://excon//lib/excon.rb#250
     def head(url, params = T.unsafe(nil), &block); end
 
     # Status of mocking
@@ -62,16 +62,16 @@ module Excon
     # source://excon//lib/excon.rb#116
     def new(url, params = T.unsafe(nil)); end
 
-    # source://excon//lib/excon.rb#251
+    # source://excon//lib/excon.rb#250
     def options(url, params = T.unsafe(nil), &block); end
 
-    # source://excon//lib/excon.rb#251
+    # source://excon//lib/excon.rb#250
     def patch(url, params = T.unsafe(nil), &block); end
 
-    # source://excon//lib/excon.rb#251
+    # source://excon//lib/excon.rb#250
     def post(url, params = T.unsafe(nil), &block); end
 
-    # source://excon//lib/excon.rb#251
+    # source://excon//lib/excon.rb#250
     def put(url, params = T.unsafe(nil), &block); end
 
     # source://excon//lib/excon.rb#67
@@ -122,7 +122,7 @@ module Excon
     # source://excon//lib/excon.rb#230
     def stubs; end
 
-    # source://excon//lib/excon.rb#251
+    # source://excon//lib/excon.rb#250
     def trace(url, params = T.unsafe(nil), &block); end
 
     # remove first/oldest stub matching request_params or nil if none match
@@ -179,7 +179,7 @@ class Excon::Connection
   # source://excon//lib/excon/connection.rb#357
   def batch_requests(pipeline_params, limit = T.unsafe(nil)); end
 
-  # source://excon//lib/excon/connection.rb#378
+  # source://excon//lib/excon/connection.rb#377
   def connect(params = T.unsafe(nil), &block); end
 
   # source://excon//lib/excon/connection.rb#9
@@ -193,16 +193,16 @@ class Excon::Connection
   # source://excon//lib/excon/connection.rb#7
   def data; end
 
-  # source://excon//lib/excon/connection.rb#378
+  # source://excon//lib/excon/connection.rb#377
   def delete(params = T.unsafe(nil), &block); end
 
   # source://excon//lib/excon/connection.rb#108
   def error_call(datum); end
 
-  # source://excon//lib/excon/connection.rb#378
+  # source://excon//lib/excon/connection.rb#377
   def get(params = T.unsafe(nil), &block); end
 
-  # source://excon//lib/excon/connection.rb#378
+  # source://excon//lib/excon/connection.rb#377
   def head(params = T.unsafe(nil), &block); end
 
   # source://excon//lib/excon/connection.rb#394
@@ -214,7 +214,7 @@ class Excon::Connection
   # source://excon//lib/excon/connection.rb#41
   def logger=(logger); end
 
-  # source://excon//lib/excon/connection.rb#378
+  # source://excon//lib/excon/connection.rb#377
   def options(params = T.unsafe(nil), &block); end
 
   # source://excon//lib/excon/connection.rb#18
@@ -223,10 +223,10 @@ class Excon::Connection
   # source://excon//lib/excon/connection.rb#22
   def params=(new_params); end
 
-  # source://excon//lib/excon/connection.rb#378
+  # source://excon//lib/excon/connection.rb#377
   def patch(params = T.unsafe(nil), &block); end
 
-  # source://excon//lib/excon/connection.rb#378
+  # source://excon//lib/excon/connection.rb#377
   def post(params = T.unsafe(nil), &block); end
 
   # source://excon//lib/excon/connection.rb#27
@@ -235,7 +235,7 @@ class Excon::Connection
   # source://excon//lib/excon/connection.rb#31
   def proxy=(new_proxy); end
 
-  # source://excon//lib/excon/connection.rb#378
+  # source://excon//lib/excon/connection.rb#377
   def put(params = T.unsafe(nil), &block); end
 
   # Sends the supplied request to the destination host.
@@ -272,7 +272,7 @@ class Excon::Connection
   # source://excon//lib/excon/connection.rb#384
   def retry_limit=(new_retry_limit); end
 
-  # source://excon//lib/excon/connection.rb#378
+  # source://excon//lib/excon/connection.rb#377
   def trace(params = T.unsafe(nil), &block); end
 
   # source://excon//lib/excon/connection.rb#408
@@ -309,11 +309,6 @@ class Excon::Connection
 
   # source://excon//lib/excon/connection.rb#439
   def validate_params(validation, params, middlewares); end
-
-  class << self
-    # source://webmock/3.19.1/lib/webmock/http_lib_adapters/excon_adapter.rb#157
-    def new(args = T.unsafe(nil)); end
-  end
 end
 
 # these come last as they rely on the above
@@ -899,12 +894,12 @@ class Excon::Headers < ::Hash
 
   # @return [Boolean]
   #
-  # source://excon//lib/excon/headers.rb#58
+  # source://excon//lib/excon/headers.rb#61
   def key?(key); end
 
   # @return [Boolean]
   #
-  # source://excon//lib/excon/headers.rb#58
+  # source://excon//lib/excon/headers.rb#62
   def member?(key); end
 
   # source://excon//lib/excon/headers.rb#64
@@ -913,25 +908,52 @@ class Excon::Headers < ::Hash
   # source://excon//lib/excon/headers.rb#68
   def merge!(other_hash); end
 
+  # source://excon//lib/excon/headers.rb#10
   def raw_assoc(_arg0); end
+
+  # source://excon//lib/excon/headers.rb#12
   def raw_delete(_arg0); end
+
+  # source://excon//lib/excon/headers.rb#13
   def raw_fetch(*_arg0); end
+
+  # source://excon//lib/excon/headers.rb#14
   def raw_has_key?(_arg0); end
+
+  # source://excon//lib/excon/headers.rb#15
   def raw_include?(_arg0); end
+
+  # source://excon//lib/excon/headers.rb#16
   def raw_key?(_arg0); end
+
+  # source://excon//lib/excon/headers.rb#17
   def raw_member?(_arg0); end
+
+  # source://excon//lib/excon/headers.rb#18
   def raw_merge(*_arg0); end
+
+  # source://excon//lib/excon/headers.rb#19
   def raw_merge!(*_arg0); end
+
+  # source://excon//lib/excon/headers.rb#8
   def raw_reader(_arg0); end
+
+  # source://excon//lib/excon/headers.rb#20
   def raw_rehash; end
+
+  # source://excon//lib/excon/headers.rb#21
   def raw_store(_arg0, _arg1); end
+
+  # source://excon//lib/excon/headers.rb#22
   def raw_values_at(*_arg0); end
+
+  # source://excon//lib/excon/headers.rb#7
   def raw_writer(_arg0, _arg1); end
 
   # source://excon//lib/excon/headers.rb#75
   def rehash; end
 
-  # source://excon//lib/excon/headers.rb#33
+  # source://excon//lib/excon/headers.rb#37
   def store(key, value); end
 
   # source://excon//lib/excon/headers.rb#80
@@ -1250,7 +1272,7 @@ class Excon::Socket
   # source://excon//lib/excon/socket.rb#51
   def initialize(data = T.unsafe(nil)); end
 
-  # source://forwardable/1.3.3/forwardable.rb#231
+  # source://excon//lib/excon/socket.rb#48
   def close(*args, **_arg1, &block); end
 
   # Returns the value of attribute data.

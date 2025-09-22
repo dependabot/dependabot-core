@@ -27,9 +27,15 @@ module Dependabot
             raise_on_ignored: T::Boolean
           ).void
         end
-        def initialize(dependency:, dependency_files:, credentials:,
-                       ignored_versions:, security_advisories:,
-                       cooldown_options: nil, raise_on_ignored: false)
+        def initialize(
+          dependency:,
+          dependency_files:,
+          credentials:,
+          ignored_versions:,
+          security_advisories:,
+          cooldown_options: nil,
+          raise_on_ignored: false
+        )
           @forbidden_urls      = T.let([], T::Array[String])
           @dependency_metadata = T.let({}, T::Hash[T.untyped, Nokogiri::XML::Document])
           @auth_headers_finder = T.let(nil, T.nilable(Utils::AuthHeadersFinder))

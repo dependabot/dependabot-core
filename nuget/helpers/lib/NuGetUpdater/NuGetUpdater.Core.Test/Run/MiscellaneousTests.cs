@@ -515,9 +515,9 @@ public class MiscellaneousTests
 
     [Theory]
     [MemberData(nameof(DependencyInfoFromJobData))]
-    public void DependencyInfoFromJob(Job job, Dependency dependency, bool enableCooldown, DependencyInfo expectedDependencyInfo)
+    public void DependencyInfoFromJob(Job job, Dependency dependency, DependencyInfo expectedDependencyInfo)
     {
-        var actualDependencyInfo = RunWorker.GetDependencyInfo(job, dependency, enableCooldown);
+        var actualDependencyInfo = RunWorker.GetDependencyInfo(job, dependency, allowCooldown: true);
         var expectedString = JsonSerializer.Serialize(expectedDependencyInfo, AnalyzeWorker.SerializerOptions);
         var actualString = JsonSerializer.Serialize(actualDependencyInfo, AnalyzeWorker.SerializerOptions);
         Assert.Equal(expectedString, actualString);
@@ -634,8 +634,6 @@ public class MiscellaneousTests
             },
             // dependency
             new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
-            // enableCooldown
-            true,
             // expectedDependencyInfo
             new DependencyInfo()
             {
@@ -681,8 +679,6 @@ public class MiscellaneousTests
             },
             // dependency
             new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
-            // enableCooldown
-            true,
             // expectedDependencyInfo
             new DependencyInfo()
             {
@@ -716,8 +712,6 @@ public class MiscellaneousTests
             },
             // dependency
             new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
-            // enableCooldown
-            true,
             // expectedDependencyInfo
             new DependencyInfo()
             {
@@ -759,8 +753,6 @@ public class MiscellaneousTests
             },
             // dependency
             new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
-            // enableCooldown
-            true,
             // expectedDependencyInfo
             new DependencyInfo()
             {
@@ -803,8 +795,6 @@ public class MiscellaneousTests
             },
             // dependency
             new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
-            // enableCooldown
-            true,
             // expectedDependencyInfo
             new DependencyInfo()
             {
@@ -818,41 +808,6 @@ public class MiscellaneousTests
             },
         ];
 
-        // with cooldown object when `include` matches but experiment flag is false
-        yield return
-        [
-            // job
-            new Job()
-            {
-                Source = new()
-                {
-                    Provider = "github",
-                    Repo = "some/repo",
-                },
-                Cooldown = new()
-                {
-                    DefaultDays = 4,
-                    SemVerMajorDays = 3,
-                    SemVerMinorDays = 2,
-                    SemVerPatchDays = 1,
-                    Include = ["Some.*"],
-                }
-            },
-            // dependency
-            new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
-            // enableCooldown
-            false,
-            // expectedDependencyInfo
-            new DependencyInfo()
-            {
-                Name = "Some.Dependency",
-                Version = "1.0.0",
-                IsVulnerable = false,
-                IgnoredVersions = [],
-                Vulnerabilities = [],
-                IgnoredUpdateTypes = [],
-                Cooldown = null
-            },
-        ];
+
     }
 }

@@ -44,10 +44,12 @@ module Dependabot
       end
 
       sig do
-        params(modules: T::Hash[String, T::Array[T::Hash[String, T.untyped]]],
-               base_modules: T::Hash[String,
-                                     T::Array[T::Hash[String,
-                                                      T.untyped]]])
+        params(
+          modules: T::Hash[String, T::Array[T::Hash[String, T.untyped]]],
+          base_modules: T::Hash[String,
+                                T::Array[T::Hash[String,
+                                                 T.untyped]]]
+        )
           .returns(T::Hash[String,
                            T::Array[T::Hash[String,
                                             T.untyped]]])

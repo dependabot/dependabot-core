@@ -406,14 +406,16 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         checker.latest_version
 
         expect(Dependabot::Bundler::UpdateChecker::LatestVersionFinder).to have_received(:new).with(
-          hash_including(cooldown_options: an_object_having_attributes(
-            default_days: expected_cooldown_options.default_days,
-            semver_major_days: expected_cooldown_options.semver_major_days,
-            semver_minor_days: expected_cooldown_options.semver_minor_days,
-            semver_patch_days: expected_cooldown_options.semver_patch_days,
-            include: expected_cooldown_options.include,
-            exclude: expected_cooldown_options.exclude
-          ))
+          hash_including(
+            cooldown_options: an_object_having_attributes(
+              default_days: expected_cooldown_options.default_days,
+              semver_major_days: expected_cooldown_options.semver_major_days,
+              semver_minor_days: expected_cooldown_options.semver_minor_days,
+              semver_patch_days: expected_cooldown_options.semver_patch_days,
+              include: expected_cooldown_options.include,
+              exclude: expected_cooldown_options.exclude
+            )
+          )
         )
       end
     end
@@ -538,21 +540,24 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         end
 
         it "returns the right array of updated dependencies" do
-          expect(updated_dependencies_after_full_unlock).to contain_exactly(Dependabot::Dependency.new(
-                                                                              name: "rspec-mocks",
-                                                                              version: "3.6.0",
-                                                                              previous_version: "3.5.0",
-                                                                              requirements: expected_requirements,
-                                                                              previous_requirements: requirements,
-                                                                              package_manager: "bundler"
-                                                                            ), Dependabot::Dependency.new(
-                                                                                 name: "rspec-support",
-                                                                                 version: "3.6.0",
-                                                                                 previous_version: "3.5.0",
-                                                                                 requirements: expected_requirements,
-                                                                                 previous_requirements: requirements,
-                                                                                 package_manager: "bundler"
-                                                                               ))
+          expect(updated_dependencies_after_full_unlock).to contain_exactly(
+            Dependabot::Dependency.new(
+              name: "rspec-mocks",
+              version: "3.6.0",
+              previous_version: "3.5.0",
+              requirements: expected_requirements,
+              previous_requirements: requirements,
+              package_manager: "bundler"
+            ),
+            Dependabot::Dependency.new(
+              name: "rspec-support",
+              version: "3.6.0",
+              previous_version: "3.5.0",
+              requirements: expected_requirements,
+              previous_requirements: requirements,
+              package_manager: "bundler"
+            )
+          )
         end
 
         context "with a gem.rb and gems.locked setup" do
@@ -576,21 +581,24 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           end
 
           it "returns the right array of updated dependencies" do
-            expect(updated_dependencies_after_full_unlock).to contain_exactly(Dependabot::Dependency.new(
-                                                                                name: "rspec-mocks",
-                                                                                version: "3.6.0",
-                                                                                previous_version: "3.5.0",
-                                                                                requirements: expected_requirements,
-                                                                                previous_requirements: requirements,
-                                                                                package_manager: "bundler"
-                                                                              ), Dependabot::Dependency.new(
-                                                                                   name: "rspec-support",
-                                                                                   version: "3.6.0",
-                                                                                   previous_version: "3.5.0",
-                                                                                   requirements: expected_requirements,
-                                                                                   previous_requirements: requirements,
-                                                                                   package_manager: "bundler"
-                                                                                 ))
+            expect(updated_dependencies_after_full_unlock).to contain_exactly(
+              Dependabot::Dependency.new(
+                name: "rspec-mocks",
+                version: "3.6.0",
+                previous_version: "3.5.0",
+                requirements: expected_requirements,
+                previous_requirements: requirements,
+                package_manager: "bundler"
+              ),
+              Dependabot::Dependency.new(
+                name: "rspec-support",
+                version: "3.6.0",
+                previous_version: "3.5.0",
+                requirements: expected_requirements,
+                previous_requirements: requirements,
+                package_manager: "bundler"
+              )
+            )
           end
         end
       end
@@ -641,6 +649,77 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           "requirement" => "< 2.0.0"
         }]
       )
+    end
+
+    context "when lowest_security_fix_version returns a Version object" do
+      let(:version_object) { Dependabot::Bundler::Version.new("2.0.0") }
+      let(:mock_resolver) { instance_double(Dependabot::Bundler::UpdateChecker::ConflictingDependencyResolver) }
+
+      before do
+        allow(checker)
+          .to receive(:lowest_security_fix_version)
+          .and_return(version_object)
+
+        # Mock the ConflictingDependencyResolver constructor to return our mock
+        allow(Dependabot::Bundler::UpdateChecker::ConflictingDependencyResolver)
+          .to receive(:new)
+          .and_return(mock_resolver)
+
+        # Set up the mock to expect the string version and return a result
+        allow(mock_resolver)
+          .to receive(:conflicting_dependencies)
+          .with(
+            dependency: dependency,
+            target_version: "2.0.0" # Should be a string, not Version object
+          )
+          .and_return([
+            {
+              "explanation" => "dummy-pkg-b (1.0.0) requires dummy-pkg-a (< 2.0.0)",
+              "name" => "dummy-pkg-b",
+              "version" => "1.0.0",
+              "requirement" => "< 2.0.0"
+            }
+          ])
+      end
+
+      it "converts the Version object to string before passing to ConflictingDependencyResolver" do
+        result = conflicting_dependencies
+
+        expect(result).to eq(
+          [
+            {
+              "explanation" => "dummy-pkg-b (1.0.0) requires dummy-pkg-a (< 2.0.0)",
+              "name" => "dummy-pkg-b",
+              "version" => "1.0.0",
+              "requirement" => "< 2.0.0"
+            }
+          ]
+        )
+
+        # Verify that the ConflictingDependencyResolver was called with a string target_version
+        expect(mock_resolver)
+          .to have_received(:conflicting_dependencies)
+          .with(
+            dependency: dependency,
+            target_version: "2.0.0"
+          )
+      end
+
+      it "does not raise a Sorbet type error when converting Version to String" do
+        expect { conflicting_dependencies }.not_to raise_error
+      end
+
+      it "preserves the version semantics when converting to string" do
+        conflicting_dependencies
+
+        # Verify the exact string representation matches what .to_s produces
+        expect(mock_resolver)
+          .to have_received(:conflicting_dependencies)
+          .with(
+            dependency: dependency,
+            target_version: version_object.to_s
+          )
+      end
     end
   end
 
@@ -1082,9 +1161,11 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             stub_request(:get, git_url + "/info/refs?service=git-upload-pack")
               .to_return(
                 status: 200,
-                body: fixture("git",
-                              "upload_packs",
-                              "dependabot-test-ruby-package"),
+                body: fixture(
+                  "git",
+                  "upload_packs",
+                  "dependabot-test-ruby-package"
+                ),
                 headers: git_header
               )
           end
@@ -1641,9 +1722,11 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           stub_request(:get, git_url + "/info/refs?service=git-upload-pack")
             .to_return(
               status: 200,
-              body: fixture("git",
-                            "upload_packs",
-                            "dependabot-test-ruby-package"),
+              body: fixture(
+                "git",
+                "upload_packs",
+                "dependabot-test-ruby-package"
+              ),
               headers: git_header
             )
         end

@@ -25,13 +25,15 @@ RSpec.describe Dependabot::ApiClient do
       instance_double(Dependabot::Source, provider: "github", repo: "gocardless/bump", directory: "/")
     end
     let(:job) do
-      instance_double(Dependabot::Job,
-                      source: source,
-                      credentials: [],
-                      commit_message_options: [],
-                      updating_a_pull_request?: false,
-                      ignore_conditions: [],
-                      cooldown: cooldown)
+      instance_double(
+        Dependabot::Job,
+        source: source,
+        credentials: [],
+        commit_message_options: [],
+        updating_a_pull_request?: false,
+        ignore_conditions: [],
+        cooldown: cooldown
+      )
     end
     let(:cooldown) do
       nil
@@ -97,60 +99,66 @@ RSpec.describe Dependabot::ApiClient do
     it "encodes the payload correctly fields" do
       client.create_pull_request(dependency_change, base_commit)
 
-      expect(WebMock).to(have_requested(:post, create_pull_request_url).with do |req|
-        data = JSON.parse(req.body)["data"]
+      expect(WebMock).to(
+        have_requested(:post, create_pull_request_url).with do |req|
+          data = JSON.parse(req.body)["data"]
 
-        expect(data["dependencies"]).to eq([
-          {
-            "name" => "business",
-            "previous-requirements" =>
+          expect(data["dependencies"]).to eq(
             [
               {
-                "file" => "Gemfile",
-                "groups" => [],
-                "requirement" => "~> 1.7.0",
-                "source" => nil
+                "name" => "business",
+                "previous-requirements" =>
+                [
+                  {
+                    "file" => "Gemfile",
+                    "groups" => [],
+                    "requirement" => "~> 1.7.0",
+                    "source" => nil
+                  }
+                ],
+                "previous-version" => "1.7.0",
+                "requirements" =>
+                  [
+                    {
+                      "file" => "Gemfile",
+                      "groups" => [],
+                      "requirement" => "~> 1.8.0",
+                      "source" => nil
+                    }
+                  ],
+                "version" => "1.8.0",
+                "directory" => "/"
               }
-            ],
-            "previous-version" => "1.7.0",
-            "requirements" =>
-              [
-                {
-                  "file" => "Gemfile",
-                  "groups" => [],
-                  "requirement" => "~> 1.8.0",
-                  "source" => nil
-                }
-              ],
-            "version" => "1.8.0",
-            "directory" => "/"
-          }
-        ])
-        expect(data["updated-dependency-files"]).to eql([
-          {
-            "content" => "some things",
-            "content_encoding" => "utf-8",
-            "deleted" => false,
-            "directory" => "/",
-            "name" => "Gemfile",
-            "operation" => "update",
-            "support_file" => false,
-            "type" => "file"
-          },
-          { "content" => "more things",
-            "content_encoding" => "utf-8",
-            "deleted" => false,
-            "directory" => "/",
-            "name" => "Gemfile.lock",
-            "operation" => "update",
-            "support_file" => false,
-            "type" => "file" }
-        ])
-        expect(data["base-commit-sha"]).to eql("sha")
-        expect(data["commit-message"]).to eq("Commit message")
-        expect(data["pr-title"]).to eq("PR name")
-        expect(data["pr-body"]).to eq("PR message")
-      end)
+            ]
+          )
+          expect(data["updated-dependency-files"]).to eql(
+            [
+              {
+                "content" => "some things",
+                "content_encoding" => "utf-8",
+                "deleted" => false,
+                "directory" => "/",
+                "name" => "Gemfile",
+                "operation" => "update",
+                "support_file" => false,
+                "type" => "file"
+              },
+              { "content" => "more things",
+                "content_encoding" => "utf-8",
+                "deleted" => false,
+                "directory" => "/",
+                "name" => "Gemfile.lock",
+                "operation" => "update",
+                "support_file" => false,
+                "type" => "file" }
+            ]
+          )
+          expect(data["base-commit-sha"]).to eql("sha")
+          expect(data["commit-message"]).to eq("Commit message")
+          expect(data["pr-title"]).to eq("PR name")
+          expect(data["pr-body"]).to eq("PR message")
+        end
+      )
     end
 
     context "with a removed dependency" do
@@ -252,11 +260,13 @@ RSpec.describe Dependabot::ApiClient do
       instance_double(Dependabot::Source, provider: "github", repo: "gocardless/bump", directory: "/")
     end
     let(:job) do
-      instance_double(Dependabot::Job,
-                      source: source,
-                      credentials: [],
-                      commit_message_options: [],
-                      updating_a_pull_request?: true)
+      instance_double(
+        Dependabot::Job,
+        source: source,
+        credentials: [],
+        commit_message_options: [],
+        updating_a_pull_request?: true
+      )
     end
     let(:dependency) do
       Dependabot::Dependency.new(
@@ -314,26 +324,28 @@ RSpec.describe Dependabot::ApiClient do
               data = JSON.parse(req.body)["data"]
 
               expect(data["dependency-names"]).to eq(["business"])
-              expect(data["updated-dependency-files"]).to eql([
-                {
-                  "content" => "some things",
-                  "content_encoding" => "utf-8",
-                  "deleted" => false,
-                  "directory" => "/",
-                  "name" => "Gemfile",
-                  "operation" => "update",
-                  "support_file" => false,
-                  "type" => "file"
-                },
-                { "content" => "more things",
-                  "content_encoding" => "utf-8",
-                  "deleted" => false,
-                  "directory" => "/",
-                  "name" => "Gemfile.lock",
-                  "operation" => "update",
-                  "support_file" => false,
-                  "type" => "file" }
-              ])
+              expect(data["updated-dependency-files"]).to eql(
+                [
+                  {
+                    "content" => "some things",
+                    "content_encoding" => "utf-8",
+                    "deleted" => false,
+                    "directory" => "/",
+                    "name" => "Gemfile",
+                    "operation" => "update",
+                    "support_file" => false,
+                    "type" => "file"
+                  },
+                  { "content" => "more things",
+                    "content_encoding" => "utf-8",
+                    "deleted" => false,
+                    "directory" => "/",
+                    "name" => "Gemfile.lock",
+                    "operation" => "update",
+                    "support_file" => false,
+                    "type" => "file" }
+                ]
+              )
               expect(data["base-commit-sha"]).to eql("sha")
               expect(data).not_to have_key("commit-message")
               expect(data).not_to have_key("pr-title")
@@ -432,13 +444,15 @@ RSpec.describe Dependabot::ApiClient do
         warn_description: warn_description
       )
 
-      expect(WebMock).to(have_requested(:post, record_update_job_warning_url).with do |req|
-        data = JSON.parse(req.body)["data"]
+      expect(WebMock).to(
+        have_requested(:post, record_update_job_warning_url).with do |req|
+          data = JSON.parse(req.body)["data"]
 
-        expect(data["warn-type"]).to eq(warn_type)
-        expect(data["warn-title"]).to eq(warn_title)
-        expect(data["warn-description"]).to eq(warn_description)
-      end)
+          expect(data["warn-type"]).to eq(warn_type)
+          expect(data["warn-title"]).to eq(warn_title)
+          expect(data["warn-description"]).to eq(warn_description)
+        end
+      )
     end
   end
 
@@ -526,17 +540,19 @@ RSpec.describe Dependabot::ApiClient do
     it "encodes the payload correctly" do
       client.create_dependency_submission(dependency_submission_payload)
 
-      expect(WebMock).to(have_requested(:post, url).with do |req|
-        data = JSON.parse(req.body)["data"]
+      expect(WebMock).to(
+        have_requested(:post, url).with do |req|
+          data = JSON.parse(req.body)["data"]
 
-        expect(data["version"]).to eq(0)
-        expect(data["sha"]).to eq("mock-sha")
-        expect(data["ref"]).to eq("main")
-        expect(data["job"]["correlator"]).to eq("dependabot-experimental")
-        expect(data["job"]["id"]).to eq("9999")
-        expect(data["detector"]["name"]).to eq("dependabot")
-        expect(data["manifests"]["Gemfile"]["name"]).to eq("Gemfile")
-      end)
+          expect(data["version"]).to eq(0)
+          expect(data["sha"]).to eq("mock-sha")
+          expect(data["ref"]).to eq("main")
+          expect(data["job"]["correlator"]).to eq("dependabot-experimental")
+          expect(data["job"]["id"]).to eq("9999")
+          expect(data["detector"]["name"]).to eq("dependabot")
+          expect(data["manifests"]["Gemfile"]["name"]).to eq("Gemfile")
+        end
+      )
     end
 
     context "when API returns a 400 Bad Request" do
@@ -657,28 +673,30 @@ RSpec.describe Dependabot::ApiClient do
     it "encodes the payload correctly" do
       client.record_ecosystem_meta(ecosystem)
 
-      expect(WebMock).to(have_requested(:post, record_ecosystem_meta_url).with do |req|
-        data = JSON.parse(req.body)["data"][0]["ecosystem"]
+      expect(WebMock).to(
+        have_requested(:post, record_ecosystem_meta_url).with do |req|
+          data = JSON.parse(req.body)["data"][0]["ecosystem"]
 
-        expect(data).not_to be_nil # Ensure data is present
-        expect(data["name"]).to eq("bundler")
-        expect(data["package_manager"]).to include(
-          "name" => "bundler",
-          "raw_version" => "2.1.4",
-          "version" => "2.1.4",
-          "requirement" => {
-            "max_raw_version" => "3.0.0",
-            "max_version" => "3.0.0",
-            "min_raw_version" => "2.0.0",
-            "min_version" => "2.0.0",
-            "raw_constraint" => ">= 2.0"
-          }
-        )
-        expect(data["language"]).to include(
-          "name" => "ruby",
-          "version" => "2.7.0"
-        )
-      end)
+          expect(data).not_to be_nil # Ensure data is present
+          expect(data["name"]).to eq("bundler")
+          expect(data["package_manager"]).to include(
+            "name" => "bundler",
+            "raw_version" => "2.1.4",
+            "version" => "2.1.4",
+            "requirement" => {
+              "max_raw_version" => "3.0.0",
+              "max_version" => "3.0.0",
+              "min_raw_version" => "2.0.0",
+              "min_version" => "2.0.0",
+              "raw_constraint" => ">= 2.0"
+            }
+          )
+          expect(data["language"]).to include(
+            "name" => "ruby",
+            "version" => "2.7.0"
+          )
+        end
+      )
     end
 
     context "when ecosystem is nil" do
@@ -702,14 +720,16 @@ RSpec.describe Dependabot::ApiClient do
 
   describe "record_cooldown_meta" do
     let(:job) do
-      instance_double(Dependabot::Job,
-                      source: source,
-                      credentials: [],
-                      package_manager: package_manager,
-                      commit_message_options: [],
-                      updating_a_pull_request?: false,
-                      ignore_conditions: [],
-                      cooldown: cooldown)
+      instance_double(
+        Dependabot::Job,
+        source: source,
+        credentials: [],
+        package_manager: package_manager,
+        commit_message_options: [],
+        updating_a_pull_request?: false,
+        ignore_conditions: [],
+        cooldown: cooldown
+      )
     end
 
     let(:source) do
@@ -743,15 +763,17 @@ RSpec.describe Dependabot::ApiClient do
     it "encodes the payload correctly" do
       client.record_cooldown_meta(job)
 
-      expect(WebMock).to(have_requested(:post, record_cooldown_meta_url).with do |req|
-        data = JSON.parse(req.body)["data"]
+      expect(WebMock).to(
+        have_requested(:post, record_cooldown_meta_url).with do |req|
+          data = JSON.parse(req.body)["data"]
 
-        expect(data).not_to be_nil
-        expect(data[0]["cooldown"]["config"]["default_days"]).to eq(11)
-        expect(data[0]["cooldown"]["config"]["semver_major_days"]).to eq(2)
-        expect(data[0]["cooldown"]["config"]["semver_minor_days"]).to eq(3)
-        expect(data[0]["cooldown"]["config"]["semver_patch_days"]).to eq(4)
-      end)
+          expect(data).not_to be_nil
+          expect(data[0]["cooldown"]["config"]["default_days"]).to eq(11)
+          expect(data[0]["cooldown"]["config"]["semver_major_days"]).to eq(2)
+          expect(data[0]["cooldown"]["config"]["semver_minor_days"]).to eq(3)
+          expect(data[0]["cooldown"]["config"]["semver_patch_days"]).to eq(4)
+        end
+      )
     end
 
     context "when cooldown is nil" do

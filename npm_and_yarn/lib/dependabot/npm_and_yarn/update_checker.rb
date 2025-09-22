@@ -11,6 +11,7 @@ module Dependabot
   module NpmAndYarn
     class UpdateChecker < Dependabot::UpdateCheckers::Base # rubocop:disable Metrics/ClassLength
       extend T::Sig
+
       require_relative "update_checker/requirements_updater"
       require_relative "update_checker/library_detector"
       require_relative "update_checker/latest_version_finder"
@@ -31,16 +32,23 @@ module Dependabot
           requirements_update_strategy: T.nilable(Dependabot::RequirementsUpdateStrategy),
           dependency_group: T.nilable(Dependabot::DependencyGroup),
           update_cooldown: T.nilable(Dependabot::Package::ReleaseCooldownOptions),
-          exclude_paths: T.nilable(T::Array[String]),
           options: T::Hash[Symbol, T.untyped]
         )
           .void
       end
-      def initialize(dependency:, dependency_files:, credentials:, # rubocop:disable Metrics/AbcSize
-                     repo_contents_path: nil, ignored_versions: [],
-                     raise_on_ignored: false, security_advisories: [],
-                     requirements_update_strategy: nil, dependency_group: nil,
-                     update_cooldown: nil, exclude_paths: [], options: {})
+      def initialize( # rubocop:disable Metrics/AbcSize
+        dependency:,
+        dependency_files:,
+        credentials:,
+        repo_contents_path: nil,
+        ignored_versions: [],
+        raise_on_ignored: false,
+        security_advisories: [],
+        requirements_update_strategy: nil,
+        dependency_group: nil,
+        update_cooldown: nil,
+        options: {}
+      )
         @latest_version = T.let(nil, T.nilable(T.any(String, Gem::Version)))
         @latest_resolvable_version = T.let(nil, T.nilable(T.any(String, Dependabot::Version)))
         @updated_requirements = T.let(nil, T.nilable(T::Array[T::Hash[Symbol, T.untyped]]))
@@ -391,8 +399,10 @@ module Dependabot
       def latest_version_for_git_dependency
         @latest_version_for_git_dependency ||=
           if version_class.correct?(dependency.version)
-            T.unsafe(latest_git_version_details[:version] &&
-              version_class.new(latest_git_version_details[:version]))
+            T.unsafe(
+              latest_git_version_details[:version] &&
+                            version_class.new(latest_git_version_details[:version])
+            )
           else
             latest_git_version_details[:sha]
           end

@@ -25,16 +25,23 @@ module Dependabot
           requirements_update_strategy: T.nilable(Dependabot::RequirementsUpdateStrategy),
           dependency_group: T.nilable(Dependabot::DependencyGroup),
           update_cooldown: T.nilable(Dependabot::Package::ReleaseCooldownOptions),
-          exclude_paths: T.nilable(T::Array[String]),
           options: T::Hash[Symbol, T.untyped]
         )
           .void
       end
-      def initialize(dependency:, dependency_files:, credentials:,
-                     repo_contents_path: nil, ignored_versions: [],
-                     raise_on_ignored: false, security_advisories: [],
-                     requirements_update_strategy: nil, dependency_group: nil,
-                     update_cooldown: nil, exclude_paths: [], options: {})
+      def initialize(
+        dependency:,
+        dependency_files:,
+        credentials:,
+        repo_contents_path: nil,
+        ignored_versions: [],
+        raise_on_ignored: false,
+        security_advisories: [],
+        requirements_update_strategy: nil,
+        dependency_group: nil,
+        update_cooldown: nil,
+        options: {}
+      )
         super
         @latest_version = T.let(nil, T.nilable(T.any(String, Dependabot::Version)))
         @lowest_resolvable_security_fix_version = T.let(nil, T.nilable(Dependabot::Version))
@@ -135,19 +142,26 @@ module Dependabot
       def fetch_lowest_resolvable_security_fix_version
         # Delegate to latest_version_finder for security fix resolution
         # This leverages Python ecosystem's security advisory infrastructure
-        latest_version_finder.lowest_security_fix_version
+        fix_version = latest_version_finder.lowest_security_fix_version
+
+        # If no security fix version is found, fall back to latest_resolvable_version
+        if fix_version.nil?
+          fallback = latest_resolvable_version
+          return fallback.is_a?(String) ? Dependabot::Conda::Version.new(fallback) : fallback
+        end
+
+        fix_version
       end
 
       sig { override.returns(T::Boolean) }
       def latest_version_resolvable_with_full_unlock?
-        # For Phase 3, return false as placeholder since we're not doing full dependency resolution
+        # No lock file support for Conda
         false
       end
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def updated_dependencies_after_full_unlock
-        # For Phase 3, return empty array as placeholder
-        []
+        raise NotImplementedError
       end
 
       sig { params(requirement_string: String, new_version: String).returns(String) }

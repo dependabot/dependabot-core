@@ -23,12 +23,14 @@ RSpec.describe Dependabot::Conda::FileFetcher do
     let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
     let(:url_with_directory) { File.join(url, directory) }
     let(:credentials) do
-      [Dependabot::Credential.new({
-        "type" => "git_source",
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      })]
+      [Dependabot::Credential.new(
+        {
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }
+      )]
     end
 
     let(:json_header) { { "content-type" => "application/json" } }
@@ -93,8 +95,10 @@ RSpec.describe Dependabot::Conda::FileFetcher do
 
       it "raises a DependencyFileNotFound error with beta message" do
         expect { file_fetcher_instance.files }
-          .to raise_error(Dependabot::DependencyFileNotFound,
-                          "Conda support is currently in beta. Set ALLOW_BETA_ECOSYSTEMS=true to enable it.")
+          .to raise_error(
+            Dependabot::DependencyFileNotFound,
+            "Conda support is currently in beta. Set ALLOW_BETA_ECOSYSTEMS=true to enable it."
+          )
       end
     end
 

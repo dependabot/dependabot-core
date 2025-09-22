@@ -25,11 +25,16 @@ RSpec.describe Dependabot::FileFetcherCommand do
     allow(api_client).to receive(:record_ecosystem_versions)
     allow(api_client).to receive(:is_a?).with(Dependabot::ApiClient).and_return(true)
 
-    allow(Dependabot::Environment).to receive_messages(job_id: job_id, job_token: "job_token",
-                                                       output_path: File.join(Dir.mktmpdir,
-                                                                              "output.json"),
-                                                       job_definition: job_definition,
-                                                       job_path: nil)
+    allow(Dependabot::Environment).to receive_messages(
+      job_id: job_id,
+      job_token: "job_token",
+      output_path: File.join(
+        Dir.mktmpdir,
+        "output.json"
+      ),
+      job_definition: job_definition,
+      job_path: nil
+    )
   end
 
   describe "#perform_job" do
@@ -455,15 +460,17 @@ RSpec.describe Dependabot::FileFetcherCommand do
             .to receive(:new)
             .and_call_original
           allow(Octokit::Client)
-            .to receive(:new).with({
-              api_endpoint: "https://api.github.com/",
-              connection_options: {
-                request: {
-                  open_timeout: 20,
-                  timeout: 5
+            .to receive(:new).with(
+              {
+                api_endpoint: "https://api.github.com/",
+                connection_options: {
+                  request: {
+                    open_timeout: 20,
+                    timeout: 5
+                  }
                 }
               }
-            })
+            )
                              .and_return(mock_octokit)
           allow(mock_octokit).to receive(:repository)
             .and_raise(Octokit::Error)

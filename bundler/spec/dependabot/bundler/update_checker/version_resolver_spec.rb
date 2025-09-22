@@ -28,7 +28,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
   let(:ignored_versions) { [] }
   let(:latest_allowable_version) { nil }
   let(:unlock_requirement) { false }
-  let(:cooldown_options) { {} }
+  let(:cooldown_options) { Dependabot::Package::ReleaseCooldownOptions.new }
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -476,14 +476,16 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
         latest_resolvable_version_details
 
         expect(Dependabot::Bundler::UpdateChecker::LatestVersionFinder).to have_received(:new).with(
-          hash_including(cooldown_options: an_object_having_attributes(
-            default_days: expected_cooldown_options.default_days,
-            semver_major_days: expected_cooldown_options.semver_major_days,
-            semver_minor_days: expected_cooldown_options.semver_minor_days,
-            semver_patch_days: expected_cooldown_options.semver_patch_days,
-            include: expected_cooldown_options.include,
-            exclude: expected_cooldown_options.exclude
-          ))
+          hash_including(
+            cooldown_options: an_object_having_attributes(
+              default_days: expected_cooldown_options.default_days,
+              semver_major_days: expected_cooldown_options.semver_major_days,
+              semver_minor_days: expected_cooldown_options.semver_minor_days,
+              semver_patch_days: expected_cooldown_options.semver_patch_days,
+              include: expected_cooldown_options.include,
+              exclude: expected_cooldown_options.exclude
+            )
+          )
         )
       end
     end

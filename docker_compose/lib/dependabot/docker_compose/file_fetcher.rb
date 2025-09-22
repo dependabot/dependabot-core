@@ -26,9 +26,12 @@ module Dependabot
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def docker_compose_files
         @docker_compose_files ||=
-          T.let(repo_contents(raise_errors: false)
-          .select { |f| f.type == "file" && f.name.match?(FILENAME_REGEX) }
-          .map { |f| fetch_file_from_host(f.name) }, T.nilable(T::Array[DependencyFile]))
+          T.let(
+            repo_contents(raise_errors: false)
+                      .select { |f| f.type == "file" && f.name.match?(FILENAME_REGEX) }
+                      .map { |f| fetch_file_from_host(f.name) },
+            T.nilable(T::Array[DependencyFile])
+          )
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }

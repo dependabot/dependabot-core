@@ -54,10 +54,12 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
   end
 
   let(:job_definition_with_fetched_files) do
-    job_definition.merge({
-      "base_commit_sha" => "mock-sha",
-      "base64_dependency_files" => encode_dependency_files(dependency_files)
-    })
+    job_definition.merge(
+      {
+        "base_commit_sha" => "mock-sha",
+        "base64_dependency_files" => encode_dependency_files(dependency_files)
+      }
+    )
   end
 
   let(:mock_error_handler) do
@@ -213,8 +215,10 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
         refresh_group.perform
 
         # It added all of the other existing grouped PRs to the handled list
-        expect(dependency_snapshot.handled_dependencies).to match_array(%w(dummy-pkg-a dummy-pkg-b dummy-pkg-c
-                                                                           dummy-pkg-d))
+        expect(dependency_snapshot.handled_dependencies).to match_array(
+          %w(dummy-pkg-a dummy-pkg-b dummy-pkg-c
+             dummy-pkg-d)
+        )
       end
     end
 

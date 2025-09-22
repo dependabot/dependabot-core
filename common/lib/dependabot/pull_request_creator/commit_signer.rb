@@ -35,8 +35,13 @@ module Dependabot
           signature_key: String
         ).void
       end
-      def initialize(author_details:, commit_message:, tree_sha:, parent_sha:,
-                     signature_key:)
+      def initialize(
+        author_details:,
+        commit_message:,
+        tree_sha:,
+        parent_sha:,
+        signature_key:
+      )
         @author_details = author_details
         @commit_message = commit_message
         @tree_sha = tree_sha
@@ -49,8 +54,9 @@ module Dependabot
         begin
           require "gpgme"
         rescue LoadError
-          raise LoadError, "Please add `gpgme` to your Gemfile or gemspec " \
-                           "enable commit signatures"
+          raise LoadError,
+                "Please add `gpgme` to your Gemfile or gemspec " \
+                "enable commit signatures"
         end
 
         email = author_details[:email]

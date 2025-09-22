@@ -10,19 +10,21 @@ require "dependabot/bundler"
 
 RSpec.describe Dependabot::DependencyChangeBuilder do
   let(:job) do
-    instance_double(Dependabot::Job,
-                    package_manager: "bundler",
-                    repo_contents_path: nil,
-                    credentials: [
-                      {
-                        "type" => "git_source",
-                        "host" => "github.com",
-                        "username" => "x-access-token",
-                        "password" => "github-token"
-                      }
-                    ],
-                    experiments: {},
-                    source: source)
+    instance_double(
+      Dependabot::Job,
+      package_manager: "bundler",
+      repo_contents_path: nil,
+      credentials: [
+        {
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "github-token"
+        }
+      ],
+      experiments: {},
+      source: source
+    )
   end
 
   let(:source) { Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directory: "/.") }

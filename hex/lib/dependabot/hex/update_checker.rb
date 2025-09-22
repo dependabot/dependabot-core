@@ -13,6 +13,7 @@ module Dependabot
   module Hex
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       extend T::Sig
+
       require_relative "update_checker/file_preparer"
       require_relative "update_checker/requirements_updater"
       require_relative "update_checker/version_resolver"
@@ -20,26 +21,26 @@ module Dependabot
 
       sig { override.returns(T.nilable(T.any(String, Dependabot::Version, Gem::Version))) }
       def latest_version
-        @latest_version = T.let(nil, T.nilable(T.any(String, Dependabot::Version, Gem::Version)))
-
-        @latest_version ||=
+        @latest_version ||= T.let(
           if git_dependency?
             latest_version_for_git_dependency
           else
             latest_release_from_hex_registry || latest_resolvable_version
-          end
+          end,
+          T.nilable(T.any(String, Dependabot::Version, Gem::Version))
+        )
       end
 
       sig { override.returns(T.nilable(T.any(String, Dependabot::Version, Gem::Version))) }
       def latest_resolvable_version
-        @latest_resolvable_version = T.let(nil, T.nilable(T.any(String, Dependabot::Version, Gem::Version)))
-
-        @latest_resolvable_version ||=
+        @latest_resolvable_version ||= T.let(
           if git_dependency?
             latest_resolvable_version_for_git_dependency
           else
             fetch_latest_resolvable_version(unlock_requirement: true)
-          end
+          end,
+          T.nilable(T.any(String, Dependabot::Version, Gem::Version))
+        )
       end
 
       sig { override.returns(T.any(String, T.nilable(Dependabot::Version))) }
@@ -157,11 +158,13 @@ module Dependabot
         ).latest_resolvable_version
 
         @git_tag_resolvable = !resolver_result.nil?
+        @git_tag_resolvable
       rescue SharedHelpers::HelperSubprocessFailed,
              Dependabot::DependencyFileNotResolvable => e
         raise e unless e.message.include?("resolution failed")
 
         @git_tag_resolvable = T.let(false, T.nilable(T::Boolean))
+        false
       end
 
       sig { returns(T.nilable(T::Hash[T.untyped, T.untyped])) }
@@ -216,12 +219,16 @@ module Dependabot
       end
 
       sig do
-        params(unlock_requirement: T.any(T.nilable(Symbol), T::Boolean),
-               latest_allowable_version: T.nilable(Dependabot::Version))
+        params(
+          unlock_requirement: T.any(T.nilable(Symbol), T::Boolean),
+          latest_allowable_version: T.nilable(Dependabot::Version)
+        )
           .returns(T::Array[Dependabot::DependencyFile])
       end
-      def prepared_dependency_files(unlock_requirement:,
-                                    latest_allowable_version: nil)
+      def prepared_dependency_files(
+        unlock_requirement:,
+        latest_allowable_version: nil
+      )
         FilePreparer.new(
           dependency: dependency,
           dependency_files: dependency_files,
@@ -233,27 +240,29 @@ module Dependabot
       sig { returns(T.nilable(Dependabot::Version)) }
       def latest_release_from_hex_registry
         @latest_release_from_hex_registry ||=
-          T.let(LatestVersionFinder.new(
-            dependency: dependency,
-            credentials: credentials,
-            dependency_files: dependency_files,
-            security_advisories: security_advisories,
-            ignored_versions: ignored_versions,
-            raise_on_ignored: raise_on_ignored,
-            cooldown_options: update_cooldown
-          ).release_version,
-                T.nilable(T.nilable(Dependabot::Version)))
+          T.let(
+            LatestVersionFinder.new(
+              dependency: dependency,
+              credentials: credentials,
+              dependency_files: dependency_files,
+              security_advisories: security_advisories,
+              ignored_versions: ignored_versions,
+              raise_on_ignored: raise_on_ignored,
+              cooldown_options: update_cooldown
+            ).release_version,
+            T.nilable(T.nilable(Dependabot::Version))
+          )
       end
 
       sig { returns(Dependabot::GitCommitChecker) }
       def git_commit_checker
-        @git_commit_checker = T.let(nil, T.nilable(Dependabot::GitCommitChecker))
-
-        @git_commit_checker ||=
+        @git_commit_checker ||= T.let(
           GitCommitChecker.new(
             dependency: dependency,
             credentials: credentials
-          )
+          ),
+          T.nilable(Dependabot::GitCommitChecker)
+        )
       end
     end
   end

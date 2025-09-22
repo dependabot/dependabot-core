@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "dependabot/file_updaters"
@@ -99,7 +99,8 @@ module Dependabot
               dependency_files: dependency_files,
               updated_dependencies: dependencies
             ).files_requiring_update
-          end, T.nilable(T::Array[DependencyFile])
+          end,
+          T.nilable(T::Array[DependencyFile])
         )
       end
 
@@ -131,7 +132,8 @@ module Dependabot
         @package_files ||= T.let(
           filtered_dependency_files.select do |f|
             f.name.end_with?("package.json")
-          end, T.nilable(T::Array[DependencyFile])
+          end,
+          T.nilable(T::Array[DependencyFile])
         )
       end
 
@@ -179,7 +181,7 @@ module Dependabot
           BunLockfileUpdater.new(
             dependencies: dependencies,
             dependency_files: dependency_files,
-            repo_contents_path: repo_contents_path,
+            repo_contents_path: T.must(repo_contents_path),
             credentials: credentials
           ),
           T.nilable(Dependabot::Bun::FileUpdater::BunLockfileUpdater)

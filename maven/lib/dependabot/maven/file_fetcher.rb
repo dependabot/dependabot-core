@@ -6,6 +6,7 @@ require "sorbet-runtime"
 
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
+require "dependabot/file_filtering"
 
 module Dependabot
   module Maven
@@ -33,7 +34,13 @@ module Dependabot
         fetched_files += child_poms
         fetched_files += relative_path_parents(fetched_files)
         fetched_files << extensions if extensions
-        fetched_files.uniq
+
+        # Filter excluded files from final collection
+        filtered_files = fetched_files.uniq.reject do |file|
+          Dependabot::FileFiltering.should_exclude_path?(file.name, "file from final collection", @exclude_paths)
+        end
+
+        filtered_files
       end
 
       private
@@ -64,8 +71,10 @@ module Dependabot
       end
 
       sig do
-        params(pom: Dependabot::DependencyFile,
-               fetched_filenames: T::Array[String]).returns(T::Array[Dependabot::DependencyFile])
+        params(
+          pom: Dependabot::DependencyFile,
+          fetched_filenames: T::Array[String]
+        ).returns(T::Array[Dependabot::DependencyFile])
       end
       def recursively_fetch_child_poms(pom, fetched_filenames:)
         base_path = File.dirname(pom.name)
@@ -81,6 +90,8 @@ module Dependabot
           path = Pathname.new(File.join(name_parts)).cleanpath.to_path
 
           next [] if fetched_filenames.include?(path)
+
+          next [] if Dependabot::FileFiltering.should_exclude_path?(path, "file from final collection", @exclude_paths)
 
           child_pom = fetch_file_from_host(path)
           fetched_files = [
@@ -100,8 +111,10 @@ module Dependabot
       end
 
       sig do
-        params(pom: Dependabot::DependencyFile,
-               fetched_filenames: T::Array[String]).returns(T::Array[Dependabot::DependencyFile])
+        params(
+          pom: Dependabot::DependencyFile,
+          fetched_filenames: T::Array[String]
+        ).returns(T::Array[Dependabot::DependencyFile])
       end
       def recursively_fetch_relative_path_parents(pom, fetched_filenames:)
         path = parent_path_for_pom(pom)

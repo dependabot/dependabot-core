@@ -82,6 +82,7 @@ module Dependabot
 
       sig { returns(T.nilable(String)) }
       attr_reader :repo_contents_path
+
       sig { returns(T.nilable(String)) }
       attr_reader :target_directory
 

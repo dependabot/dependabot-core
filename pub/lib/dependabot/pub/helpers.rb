@@ -425,9 +425,11 @@ module Dependabot
             end
             obj
           end
-          JSON.generate({
-            "dependencyChanges" => deps
-          })
+          JSON.generate(
+            {
+              "dependencyChanges" => deps
+            }
+          )
         end
       end
     end

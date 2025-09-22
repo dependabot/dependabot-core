@@ -20,6 +20,7 @@ module Dependabot
     # rubocop:disable Metrics/ClassLength
     class FileParser < Dependabot::FileParsers::Base
       extend T::Sig
+
       require "dependabot/file_parsers/base/dependency_set"
       require_relative "file_parser/maven_dependency_parser"
       require_relative "file_parser/property_value_finder"
@@ -58,8 +59,7 @@ module Dependabot
               name: dep.name,
               version: dep.version,
               package_manager: "maven",
-              requirements: requirements,
-              origin_files: dep.origin_files
+              requirements: requirements
             )
           end
         else
@@ -95,9 +95,12 @@ module Dependabot
 
       sig { returns(T.nilable(Ecosystem::VersionManager)) }
       def language
-        @language ||= T.let(begin
-          Language.new("NOT-AVAILABLE")
-        end, T.nilable(Dependabot::Maven::Language))
+        @language ||= T.let(
+          begin
+            Language.new("NOT-AVAILABLE")
+          end,
+          T.nilable(Dependabot::Maven::Language)
+        )
       end
 
       sig { params(pom: Dependabot::DependencyFile).returns(DependencySet) }
@@ -148,8 +151,10 @@ module Dependabot
       end
 
       sig do
-        params(pom: Dependabot::DependencyFile,
-               dependency_node: Nokogiri::XML::Element).returns(T.nilable(Dependabot::Dependency))
+        params(
+          pom: Dependabot::DependencyFile,
+          dependency_node: Nokogiri::XML::Element
+        ).returns(T.nilable(Dependabot::Dependency))
       end
       def dependency_from_dependency_node(pom, dependency_node)
         return unless (name = dependency_name(dependency_node, pom))
@@ -159,8 +164,10 @@ module Dependabot
       end
 
       sig do
-        params(pom: Dependabot::DependencyFile,
-               dependency_node: Nokogiri::XML::Element).returns(T.nilable(Dependabot::Dependency))
+        params(
+          pom: Dependabot::DependencyFile,
+          dependency_node: Nokogiri::XML::Element
+        ).returns(T.nilable(Dependabot::Dependency))
       end
       def dependency_from_plugin_node(pom, dependency_node)
         return unless (name = plugin_name(dependency_node, pom))
@@ -170,8 +177,11 @@ module Dependabot
       end
 
       sig do
-        params(pom: Dependabot::DependencyFile, dependency_node: Nokogiri::XML::Element,
-               name: String).returns(T.nilable(Dependabot::Dependency))
+        params(
+          pom: Dependabot::DependencyFile,
+          dependency_node: Nokogiri::XML::Element,
+          name: String
+        ).returns(T.nilable(Dependabot::Dependency))
       end
       def build_dependency(pom, dependency_node, name)
         property_details =
@@ -193,14 +203,15 @@ module Dependabot
               packaging_type: packaging_type(pom, dependency_node),
               classifier: dependency_classifier(dependency_node, pom)
             }.merge(property_details).compact
-          }],
-          origin_files: [pom.name]
+          }]
         )
       end
 
       sig do
-        params(dependency_node: Nokogiri::XML::Element,
-               pom: Dependabot::DependencyFile).returns(T.nilable(String))
+        params(
+          dependency_node: Nokogiri::XML::Element,
+          pom: Dependabot::DependencyFile
+        ).returns(T.nilable(String))
       end
       def dependency_name(dependency_node, pom)
         return unless dependency_node.at_xpath("./groupId")
@@ -464,8 +475,10 @@ module Dependabot
 
       # Merge metadata from two requirements, combining all keys
       sig do
-        params(metadata1: T::Hash[Symbol, T.untyped],
-               metadata2: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped])
+        params(
+          metadata1: T::Hash[Symbol, T.untyped],
+          metadata2: T::Hash[Symbol, T.untyped]
+        ).returns(T::Hash[Symbol, T.untyped])
       end
       def merge_metadata(metadata1, metadata2)
         metadata1.merge(metadata2) do |_key, old_value, new_value|

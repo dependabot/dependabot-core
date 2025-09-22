@@ -11,6 +11,7 @@ require "dependabot/bun/helpers"
 require "dependabot/bun/package_manager"
 require "dependabot/bun/file_parser"
 require "dependabot/bun/file_parser/lockfile_parser"
+require "dependabot/file_filtering"
 
 module Dependabot
   module Bun
@@ -27,8 +28,10 @@ module Dependabot
       # when it specifies a path. Only include Yarn "link:"'s that start with a
       # path and ignore symlinked package names that have been registered with
       # "yarn link", e.g. "link:react"
-      PATH_DEPENDENCY_STARTS = T.let(%w(file: link:. link:/ link:~/ / ./ ../ ~/).freeze,
-                                     [String, String, String, String, String, String, String, String])
+      PATH_DEPENDENCY_STARTS = T.let(
+        %w(file: link:. link:/ link:~/ / ./ ../ ~/).freeze,
+        [String, String, String, String, String, String, String, String]
+      )
       PATH_DEPENDENCY_CLEAN_REGEX = /^file:|^link:/
       DEFAULT_NPM_REGISTRY = "https://registry.npmjs.org"
 
@@ -81,7 +84,12 @@ module Dependabot
         fetched_files += workspace_package_jsons
         fetched_files += path_dependencies(fetched_files)
 
-        fetched_files.uniq
+        # Filter excluded files from final collection
+        filtered_files = fetched_files.uniq.reject do |file|
+          Dependabot::FileFiltering.should_exclude_path?(file.name, "file from final collection", @exclude_paths)
+        end
+
+        filtered_files
       end
 
       private
@@ -112,7 +120,8 @@ module Dependabot
             lockfiles,
             registry_config_files,
             credentials
-          ), T.nilable(PackageManagerHelper)
+          ),
+          T.nilable(PackageManagerHelper)
         )
       end
 
@@ -185,6 +194,9 @@ module Dependabot
           cleaned_name = Pathname.new(filename).cleanpath.to_path
           next if fetched_files.map(&:name).include?(cleaned_name)
 
+          # Skip excluded path dependencies
+          next if Dependabot::FileFiltering.should_exclude_path?(cleaned_name, "path dependency file", @exclude_paths)
+
           begin
             file = fetch_file_from_host(filename, fetch_submodules: true)
             package_json_files << file
@@ -241,8 +253,10 @@ module Dependabot
           # skip dependencies that contain invalid values such as inline comments, null, etc.
 
           unless value.is_a?(String)
-            Dependabot.logger.warn("File fetcher: Skipping dependency \"#{path}\" " \
-                                   "with value: \"#{value}\"")
+            Dependabot.logger.warn(
+              "File fetcher: Skipping dependency \"#{path}\" " \
+              "with value: \"#{value}\""
+            )
 
             next
           end
@@ -291,6 +305,9 @@ module Dependabot
         return [] unless parsed_package_json["workspaces"]
 
         workspace_paths(parsed_package_json["workspaces"]).filter_map do |workspace|
+          # Skip excluded workspace directories
+          next if Dependabot::FileFiltering.should_exclude_path?(workspace, "workspace directory", @exclude_paths)
+
           fetch_package_json_if_present(workspace)
         end
       end

@@ -120,7 +120,7 @@ end
 # source://toml-rb//lib/toml-rb/string.rb#4
 TomlRB::BasicString::SPECIAL_CHARS = T.let(T.unsafe(nil), Hash)
 
-# source://toml-rb//lib/toml-rb.rb#0
+# source://toml-rb//lib/toml-rb.rb#17
 module TomlRB::Document
   include ::Citrus::Grammar
   include ::TomlRB::Helper
@@ -186,7 +186,7 @@ end
 # source://toml-rb//lib/toml-rb/errors.rb#3
 class TomlRB::Error < ::StandardError; end
 
-# source://toml-rb//lib/toml-rb.rb#0
+# source://toml-rb//lib/toml-rb.rb#15
 module TomlRB::Helper
   include ::Citrus::Grammar
   extend ::Citrus::GrammarMethods
@@ -329,7 +329,7 @@ class TomlRB::Parser
   def visit_table_array(table_array); end
 end
 
-# source://toml-rb//lib/toml-rb.rb#0
+# source://toml-rb//lib/toml-rb.rb#16
 module TomlRB::Primitive
   include ::Citrus::Grammar
   include ::TomlRB::Helper

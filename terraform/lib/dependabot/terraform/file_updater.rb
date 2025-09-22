@@ -449,8 +449,9 @@ module Dependabot
           return
         end
 
-        raise Dependabot::DependencyFileNotResolvable, "Error while updating lockfile, " \
-                                                       "no matching constraints found."
+        raise Dependabot::DependencyFileNotResolvable,
+              "Error while updating lockfile, " \
+              "no matching constraints found."
       end
 
       sig { params(message: String).returns(String) }
