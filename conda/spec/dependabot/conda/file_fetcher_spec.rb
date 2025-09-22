@@ -6,7 +6,7 @@ require "dependabot/conda/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::Conda::FileFetcher do
-  before(:all) { skip("Disabling Conda file fetcher tests") }
+  before(:all) { skip("Disabling Conda file fetcher tests") } # rubocop:disable RSpec/BeforeAfterAll
 
   it_behaves_like "a dependency file fetcher"
 
