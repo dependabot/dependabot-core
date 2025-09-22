@@ -2,7 +2,7 @@ FROM ghcr.io/dependabot/dependabot-updater-core
 RUN apt-get update \
   && apt-get upgrade -y \
   && apt-get install -y --no-install-recommends \
-    gnupg2 sudo curl apt-transport-https
+  gnupg2 sudo curl apt-transport-https
 
 ARG ERLANG_MAJOR_VERSION=26
 
@@ -41,7 +41,7 @@ USER dependabot
 COPY --chown=dependabot:dependabot hex/helpers /opt/hex/helpers
 ENV MIX_HOME="/opt/hex/mix"
 # https://github.com/hexpm/hex/releases
-ENV HEX_VERSION="2.2.1"
+ENV HEX_VERSION="2.2.2"
 ENV HEX_CACERTS_PATH /etc/ssl/certs/ca-certificates.crt
 RUN bash /opt/hex/helpers/build
 
