@@ -18,14 +18,19 @@ module GithubApi
 
     sig { returns(String) }
     attr_reader :job_id
+
     sig { returns(String) }
     attr_reader :branch
+
     sig { returns(String) }
     attr_reader :sha
+
     sig { returns(String) }
     attr_reader :package_manager
+
     sig { returns(T::Hash[String, T.untyped]) }
     attr_reader :manifests
+
     sig { returns(Dependabot::DependencyGraphers::Base) }
     attr_reader :grapher
 
@@ -45,10 +50,13 @@ module GithubApi
       @sha = sha
       @package_manager = package_manager
 
-      @grapher = T.let(Dependabot::DependencyGraphers.for_package_manager(package_manager).new(
-                         dependency_files:,
-                         dependencies:
-                       ), Dependabot::DependencyGraphers::Base)
+      @grapher = T.let(
+        Dependabot::DependencyGraphers.for_package_manager(package_manager).new(
+          dependency_files:,
+          dependencies:
+        ),
+        Dependabot::DependencyGraphers::Base
+      )
       @manifests = T.let(build_manifests(dependencies), T::Hash[String, T.untyped])
     end
 

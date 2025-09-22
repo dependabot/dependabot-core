@@ -87,12 +87,14 @@ RSpec.describe Dependabot::GoModules::DependencyGrapher do
 
         expect(resolved_dependencies.count).to be(4)
 
-        expect(resolved_dependencies.keys).to eql(%w(
-          github.com/fatih/Color
-          github.com/mattn/go-colorable
-          github.com/mattn/go-isatty
-          rsc.io/quote
-        )) # rsc.io/qr is absent due to the replace directive, this is working as intended.
+        expect(resolved_dependencies.keys).to eql(
+          %w(
+            github.com/fatih/Color
+            github.com/mattn/go-colorable
+            github.com/mattn/go-isatty
+            rsc.io/quote
+          )
+        ) # rsc.io/qr is absent due to the replace directive, this is working as intended.
 
         color = resolved_dependencies["github.com/fatih/Color"]
         expect(color[:package_url]).to eql("pkg:go_modules/github.com/fatih/Color@1.7.0")

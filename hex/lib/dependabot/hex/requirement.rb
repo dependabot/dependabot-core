@@ -17,9 +17,11 @@ module Dependabot
 
       # Add the double-equality matcher to the list of allowed operations
       OPS = T.let(
-        OPS.merge("==" => lambda { |v, r|
-          v == r
-        }),
+        OPS.merge(
+          "==" => lambda { |v, r|
+                    v == r
+                  }
+        ),
         T::Hash[String, T.proc.params(arg0: Gem::Version, arg1: Gem::Version).returns(T::Boolean)]
       )
 

@@ -46,10 +46,12 @@ module Dependabot
               options: T::Hash[Symbol, T.untyped]
             ).void
           end
-          def initialize(dependency:,
-                         dependency_files:,
-                         credentials:,
-                         options:)
+          def initialize(
+            dependency:,
+            dependency_files:,
+            credentials:,
+            options:
+          )
             @dependency          = dependency
             @dependency_files    = dependency_files
             @repo_contents_path  = T.let(nil, T.nilable(String))

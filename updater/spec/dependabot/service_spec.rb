@@ -20,15 +20,18 @@ RSpec.describe Dependabot::Service do
   let(:base_sha) { "mock-sha" }
 
   let(:mock_client) do
-    api_client = instance_double(Dependabot::ApiClient, {
-      create_pull_request: nil,
-      update_pull_request: nil,
-      close_pull_request: nil,
-      record_update_job_error: nil,
-      record_update_job_unknown_error: nil,
-      record_update_job_warning: nil,
-      create_dependency_submission: nil
-    })
+    api_client = instance_double(
+      Dependabot::ApiClient,
+      {
+        create_pull_request: nil,
+        update_pull_request: nil,
+        close_pull_request: nil,
+        record_update_job_error: nil,
+        record_update_job_unknown_error: nil,
+        record_update_job_warning: nil,
+        create_dependency_submission: nil
+      }
+    )
     allow(api_client).to receive(:is_a?).with(Dependabot::ApiClient).and_return(true)
     api_client
   end
@@ -36,8 +39,10 @@ RSpec.describe Dependabot::Service do
   let(:enable_enhanced_error_details_for_updater) { false }
 
   before do
-    Dependabot::Experiments.register(:enable_enhanced_error_details_for_updater,
-                                     enable_enhanced_error_details_for_updater)
+    Dependabot::Experiments.register(
+      :enable_enhanced_error_details_for_updater,
+      enable_enhanced_error_details_for_updater
+    )
   end
 
   shared_context "with a created pr" do
@@ -46,11 +51,13 @@ RSpec.describe Dependabot::Service do
     end
 
     let(:job) do
-      instance_double(Dependabot::Job,
-                      source: source,
-                      credentials: [],
-                      commit_message_options: [],
-                      ignore_conditions: [])
+      instance_double(
+        Dependabot::Job,
+        source: source,
+        credentials: [],
+        commit_message_options: [],
+        ignore_conditions: []
+      )
     end
 
     let(:dependency_change) do
@@ -115,11 +122,13 @@ RSpec.describe Dependabot::Service do
     end
 
     let(:job) do
-      instance_double(Dependabot::Job,
-                      source: source,
-                      credentials: [],
-                      commit_message_options: [],
-                      ignore_conditions: [])
+      instance_double(
+        Dependabot::Job,
+        source: source,
+        credentials: [],
+        commit_message_options: [],
+        ignore_conditions: []
+      )
     end
 
     let(:dependency_change) do
@@ -319,9 +328,11 @@ RSpec.describe Dependabot::Service do
       let(:enable_enhanced_error_details_for_updater) { true }
 
       it "memoizes a shorthand summary of the error" do
-        expect(service.errors).to eql([["epoch_error", {
-          message: "What is fortran doing here?!"
-        }, nil]])
+        expect(service.errors).to eql(
+          [["epoch_error", {
+            message: "What is fortran doing here?!"
+          }, nil]]
+        )
       end
     end
   end
@@ -415,8 +426,13 @@ RSpec.describe Dependabot::Service do
     end
 
     it "extracts information from a security job if provided" do
-      job = OpenStruct.new(id: 1234, package_manager: "npm_and_yarn", repo_private?: false, repo_owner: "foo",
-                           security_updates_only?: true)
+      job = OpenStruct.new(
+        id: 1234,
+        package_manager: "npm_and_yarn",
+        repo_private?: false,
+        repo_owner: "foo",
+        security_updates_only?: true
+      )
       service.capture_exception(error: error, job: job)
 
       expect(mock_client)
@@ -453,39 +469,41 @@ RSpec.describe Dependabot::Service do
 
   describe "#update_dependency_list" do
     let(:dependency_snapshot) do
-      dependency_snapshot = instance_double(Dependabot::DependencySnapshot,
-                                            all_dependencies: [
-                                              Dependabot::Dependency.new(
-                                                name: "dummy-pkg-a",
-                                                package_manager: "bundler",
-                                                version: "2.0.0",
-                                                requirements: [
-                                                  { file: "Gemfile", requirement: "~> 2.0.0", groups: [:default],
-                                                    source: nil }
-                                                ]
-                                              ),
-                                              Dependabot::Dependency.new(
-                                                name: "dummy-pkg-b",
-                                                package_manager: "bundler",
-                                                version: "1.1.0",
-                                                requirements: [
-                                                  { file: "Gemfile", requirement: "~> 1.1.0", groups: [:default],
-                                                    source: nil }
-                                                ]
-                                              )
-                                            ],
-                                            all_dependency_files: [
-                                              Dependabot::DependencyFile.new(
-                                                name: "Gemfile",
-                                                content: fixture("bundler/original/Gemfile"),
-                                                directory: "/"
-                                              ),
-                                              Dependabot::DependencyFile.new(
-                                                name: "Gemfile.lock",
-                                                content: fixture("bundler/original/Gemfile.lock"),
-                                                directory: "/"
-                                              )
-                                            ])
+      dependency_snapshot = instance_double(
+        Dependabot::DependencySnapshot,
+        all_dependencies: [
+          Dependabot::Dependency.new(
+            name: "dummy-pkg-a",
+            package_manager: "bundler",
+            version: "2.0.0",
+            requirements: [
+              { file: "Gemfile", requirement: "~> 2.0.0", groups: [:default],
+                source: nil }
+            ]
+          ),
+          Dependabot::Dependency.new(
+            name: "dummy-pkg-b",
+            package_manager: "bundler",
+            version: "1.1.0",
+            requirements: [
+              { file: "Gemfile", requirement: "~> 1.1.0", groups: [:default],
+                source: nil }
+            ]
+          )
+        ],
+        all_dependency_files: [
+          Dependabot::DependencyFile.new(
+            name: "Gemfile",
+            content: fixture("bundler/original/Gemfile"),
+            directory: "/"
+          ),
+          Dependabot::DependencyFile.new(
+            name: "Gemfile.lock",
+            content: fixture("bundler/original/Gemfile.lock"),
+            directory: "/"
+          )
+        ]
+      )
       allow(dependency_snapshot).to receive(:is_a?).and_return(true)
       dependency_snapshot
     end
@@ -607,8 +625,10 @@ RSpec.describe Dependabot::Service do
         service.create_pull_request(dependency_change, base_sha)
 
         expect(service.summary)
-          .to include("created",
-                      "dependabot-fortran ( from 1.7.0 to 1.8.0 ), dependabot-pascal ( from 2.7.0 to 2.8.0 )")
+          .to include(
+            "created",
+            "dependabot-fortran ( from 1.7.0 to 1.8.0 ), dependabot-pascal ( from 2.7.0 to 2.8.0 )"
+          )
       end
     end
 
@@ -721,8 +741,10 @@ RSpec.describe Dependabot::Service do
 
       it "includes the summary of the created PR" do
         expect(service.summary)
-          .to include("created",
-                      "dependabot-fortran ( from 1.7.0 to 1.8.0 ), dependabot-pascal ( from 2.7.0 to 2.8.0 )")
+          .to include(
+            "created",
+            "dependabot-fortran ( from 1.7.0 to 1.8.0 ), dependabot-pascal ( from 2.7.0 to 2.8.0 )"
+          )
       end
 
       it "includes the summary of the closed PR" do

@@ -32,8 +32,13 @@ module Dependabot
             latest_resolvable_version: T.nilable(String)
           ).void
         end
-        def initialize(requirements:, update_strategy:, updated_source:,
-                       latest_version:, latest_resolvable_version:)
+        def initialize(
+          requirements:,
+          update_strategy:,
+          updated_source:,
+          latest_version:,
+          latest_resolvable_version:
+        )
           @requirements = requirements
           @latest_version = T.let(
             (T.cast(Dependabot::Bundler::Version.new(latest_version), Dependabot::Bundler::Version) if latest_version),
@@ -71,12 +76,16 @@ module Dependabot
 
         sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
         attr_reader :requirements
+
         sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
         attr_reader :updated_source
+
         sig { returns(T.nilable(Dependabot::Bundler::Version)) }
         attr_reader :latest_version
+
         sig { returns(T.nilable(Dependabot::Bundler::Version)) }
         attr_reader :latest_resolvable_version
+
         sig { returns(Dependabot::RequirementsUpdateStrategy) }
         attr_reader :update_strategy
 
@@ -302,8 +311,10 @@ module Dependabot
 
         # Updates the version in a "~>" constraint to allow the given version
         sig do
-          params(requirement: Gem::Requirement,
-                 version_to_be_permitted: Dependabot::Bundler::Version).returns(Gem::Requirement)
+          params(
+            requirement: Gem::Requirement,
+            version_to_be_permitted: Dependabot::Bundler::Version
+          ).returns(Gem::Requirement)
         end
         def update_twiddle_version(requirement, version_to_be_permitted)
           old_version = requirement.requirements.first.last
@@ -314,8 +325,10 @@ module Dependabot
         # Updates the version in a "<" or "<=" constraint to allow the given
         # version
         sig do
-          params(requirement: Gem::Requirement,
-                 version_to_be_permitted: Dependabot::Bundler::Version).returns(Gem::Requirement)
+          params(
+            requirement: Gem::Requirement,
+            version_to_be_permitted: Dependabot::Bundler::Version
+          ).returns(Gem::Requirement)
         end
         def update_greatest_version(requirement, version_to_be_permitted)
           op, version = requirement.requirements.first

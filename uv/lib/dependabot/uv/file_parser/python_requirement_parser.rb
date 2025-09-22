@@ -122,8 +122,10 @@ module Dependabot
 
         sig { returns(T.nilable(RequiremenstFileMatcher)) }
         def requirements_in_file_matcher
-          @requirements_in_file_matcher = T.let(RequiremenstFileMatcher.new(pip_compile_files),
-                                                T.nilable(RequiremenstFileMatcher))
+          @requirements_in_file_matcher = T.let(
+            RequiremenstFileMatcher.new(pip_compile_files),
+            T.nilable(RequiremenstFileMatcher)
+          )
         end
 
         sig { returns(T.class_of(Dependabot::Uv::Requirement)) }

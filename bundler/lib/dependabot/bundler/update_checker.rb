@@ -354,8 +354,10 @@ module Dependabot
       sig { returns(Dependabot::Bundler::UpdateChecker::ForceUpdater) }
       def force_updater
         if @force_updater.nil?
-          @force_updater = T.let(@force_updater,
-                                 T.nilable(Dependabot::Bundler::UpdateChecker::ForceUpdater))
+          @force_updater = T.let(
+            @force_updater,
+            T.nilable(Dependabot::Bundler::UpdateChecker::ForceUpdater)
+          )
         end
         @force_updater ||=
           ForceUpdater.new(
@@ -372,8 +374,10 @@ module Dependabot
       sig { returns(Dependabot::GitCommitChecker) }
       def git_commit_checker
         if @git_commit_checker.nil?
-          @git_commit_checker = T.let(@git_commit_checker,
-                                      T.nilable(Dependabot::GitCommitChecker))
+          @git_commit_checker = T.let(
+            @git_commit_checker,
+            T.nilable(Dependabot::GitCommitChecker)
+          )
         end
         @git_commit_checker ||=
           GitCommitChecker.new(
@@ -432,8 +436,11 @@ module Dependabot
           latest_allowable_version: T.nilable(T.any(String, Dependabot::Bundler::Version))
         ).returns(T::Array[Dependabot::DependencyFile])
       end
-      def prepared_dependency_files(remove_git_source:, unlock_requirement:,
-                                    latest_allowable_version: nil)
+      def prepared_dependency_files(
+        remove_git_source:,
+        unlock_requirement:,
+        latest_allowable_version: nil
+      )
         FilePreparer.new(
           dependency: dependency,
           dependency_files: dependency_files,

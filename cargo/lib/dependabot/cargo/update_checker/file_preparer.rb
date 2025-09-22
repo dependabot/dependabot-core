@@ -26,10 +26,13 @@ module Dependabot
           )
             .void
         end
-        def initialize(dependency_files:, dependency:,
-                       unlock_requirement: true,
-                       replacement_git_pin: nil,
-                       latest_allowable_version: nil)
+        def initialize(
+          dependency_files:,
+          dependency:,
+          unlock_requirement: true,
+          replacement_git_pin: nil,
+          latest_allowable_version: nil
+        )
           @dependency_files         = dependency_files
           @dependency               = dependency
           @unlock_requirement       = unlock_requirement

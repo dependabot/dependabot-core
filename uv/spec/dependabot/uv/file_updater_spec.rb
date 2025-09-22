@@ -13,12 +13,14 @@ require_common_spec "file_updaters/shared_examples_for_file_updaters"
 RSpec.describe Dependabot::Uv::FileUpdater do
   let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
   let(:credentials) do
-    [Dependabot::Credential.new({
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    })]
+    [Dependabot::Credential.new(
+      {
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    )]
   end
   let(:dependency) do
     Dependabot::Dependency.new(

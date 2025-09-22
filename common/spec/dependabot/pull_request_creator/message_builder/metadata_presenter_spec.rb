@@ -34,17 +34,19 @@ RSpec.describe namespace::MetadataPresenter do
   end
 
   let(:metadata_finder) do
-    instance_double(Dependabot::MetadataFinders::Base,
-                    changelog_url: "http://localhost/changelog.md",
-                    changelog_text: "",
-                    commits_url: "http://localhost/commits",
-                    commits: [],
-                    maintainer_changes: "",
-                    releases_url: "http://localhost/releases",
-                    releases_text: "",
-                    source_url: "http://localhost/",
-                    upgrade_guide_url: "http://localhost/upgrade.md",
-                    upgrade_guide_text: "")
+    instance_double(
+      Dependabot::MetadataFinders::Base,
+      changelog_url: "http://localhost/changelog.md",
+      changelog_text: "",
+      commits_url: "http://localhost/commits",
+      commits: [],
+      maintainer_changes: "",
+      releases_url: "http://localhost/releases",
+      releases_text: "",
+      source_url: "http://localhost/",
+      upgrade_guide_url: "http://localhost/upgrade.md",
+      upgrade_guide_text: ""
+    )
   end
 
   let(:vulnerabilities_fixed) { [] }

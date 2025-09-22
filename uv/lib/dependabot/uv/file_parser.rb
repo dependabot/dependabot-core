@@ -25,16 +25,19 @@ module Dependabot
       require_relative "file_parser/pyproject_files_parser"
       require_relative "file_parser/python_requirement_parser"
 
-      DEPENDENCY_GROUP_KEYS = T.let([
-        {
-          pipfile: "packages",
-          lockfile: "default"
-        },
-        {
-          pipfile: "dev-packages",
-          lockfile: "develop"
-        }
-      ].freeze, T::Array[T::Hash[Symbol, String]])
+      DEPENDENCY_GROUP_KEYS = T.let(
+        [
+          {
+            pipfile: "packages",
+            lockfile: "default"
+          },
+          {
+            pipfile: "dev-packages",
+            lockfile: "develop"
+          }
+        ].freeze,
+        T::Array[T::Hash[Symbol, String]]
+      )
       REQUIREMENT_FILE_EVALUATION_ERRORS = %w(
         InstallationError RequirementsFileParseError InvalidMarker
         InvalidRequirement ValueError RecursionError
@@ -78,14 +81,24 @@ module Dependabot
 
       sig { returns(LanguageVersionManager) }
       def language_version_manager
-        @language_version_manager ||= T.let(LanguageVersionManager.new(python_requirement_parser:
-                                        python_requirement_parser), T.nilable(LanguageVersionManager))
+        @language_version_manager ||= T.let(
+          LanguageVersionManager.new(
+            python_requirement_parser:
+                                                    python_requirement_parser
+          ),
+          T.nilable(LanguageVersionManager)
+        )
       end
 
       sig { returns(FileParser::PythonRequirementParser) }
       def python_requirement_parser
-        @python_requirement_parser ||= T.let(PythonRequirementParser.new(dependency_files:
-                                         dependency_files), T.nilable(PythonRequirementParser))
+        @python_requirement_parser ||= T.let(
+          PythonRequirementParser.new(
+            dependency_files:
+                                                     dependency_files
+          ),
+          T.nilable(PythonRequirementParser)
+        )
       end
 
       sig { returns(Ecosystem::VersionManager) }
@@ -192,8 +205,13 @@ module Dependabot
 
       sig { returns(DependencySet) }
       def pyproject_file_dependencies
-        @pyproject_file_dependencies ||= T.let(PyprojectFilesParser.new(dependency_files:
-                                          dependency_files).dependency_set, T.nilable(DependencySet))
+        @pyproject_file_dependencies ||= T.let(
+          PyprojectFilesParser.new(
+            dependency_files:
+                                                      dependency_files
+          ).dependency_set,
+          T.nilable(DependencySet)
+        )
       end
 
       sig { returns(DependencySet) }
@@ -290,8 +308,10 @@ module Dependabot
       end
 
       sig do
-        params(condition: T.untyped,
-               python_version: T.any(String, Integer, Gem::Version)).returns(T::Boolean)
+        params(
+          condition: T.untyped,
+          python_version: T.any(String, Integer, Gem::Version)
+        ).returns(T::Boolean)
       end
       def evaluate_condition?(condition, python_version)
         operator, version = condition.match(/([<>=!]=?)\s*"?([\d.]+)"?/)&.captures
@@ -391,8 +411,10 @@ module Dependabot
 
       sig { returns(RequiremenstFileMatcher) }
       def requirements_in_file_matcher
-        @requirements_in_file_matcher ||= T.let(RequiremenstFileMatcher.new(requirements_in_files),
-                                                T.nilable(RequiremenstFileMatcher))
+        @requirements_in_file_matcher ||= T.let(
+          RequiremenstFileMatcher.new(requirements_in_files),
+          T.nilable(RequiremenstFileMatcher)
+        )
       end
     end
   end

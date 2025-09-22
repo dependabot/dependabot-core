@@ -109,10 +109,13 @@ module SilentPackageManager
 
     sig { returns(T::Array[SilentPackageManager::Version]) }
     def available_versions
-      @available_versions ||= T.let(begin
-        versions = fetch_dependency_metadata["versions"]
-        versions.map { |v| SilentPackageManager::Version.new(v) }
-      end, T.nilable(T::Array[SilentPackageManager::Version]))
+      @available_versions ||= T.let(
+        begin
+          versions = fetch_dependency_metadata["versions"]
+          versions.map { |v| SilentPackageManager::Version.new(v) }
+        end,
+        T.nilable(T::Array[SilentPackageManager::Version])
+      )
     end
   end
 end

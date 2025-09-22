@@ -53,12 +53,15 @@ module Dependabot
             lock_ruby_version: T::Boolean
           ).void
         end
-        def initialize(dependency_files:, dependency:,
-                       remove_git_source: false,
-                       unlock_requirement: true,
-                       replacement_git_pin: nil,
-                       latest_allowable_version: nil,
-                       lock_ruby_version: true)
+        def initialize(
+          dependency_files:,
+          dependency:,
+          remove_git_source: false,
+          unlock_requirement: true,
+          replacement_git_pin: nil,
+          latest_allowable_version: nil,
+          lock_ruby_version: true
+        )
           @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
           @dependency = T.let(dependency, Dependabot::Dependency)
           @remove_git_source = T.let(remove_git_source, T::Boolean)
@@ -127,10 +130,13 @@ module Dependabot
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
+
         sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
+
         sig { returns(T.nilable(String)) }
         attr_reader :replacement_git_pin
+
         sig { returns(T.nilable(String)) }
         attr_reader :latest_allowable_version
 

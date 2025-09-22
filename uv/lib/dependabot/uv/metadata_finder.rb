@@ -94,7 +94,8 @@ module Dependabot
             next unless response.status == 200
 
             response.body.include?(normalised_dependency_name)
-          end, T.nilable(String)
+          end,
+          T.nilable(String)
         )
       end
       # rubocop:enable Metrics/PerceivedComplexity
@@ -126,7 +127,8 @@ module Dependabot
             next unless response.status == 200
 
             response.body.include?(normalised_dependency_name)
-          end, T.nilable(String)
+          end,
+          T.nilable(String)
         )
       end
       # rubocop:enable Metrics/PerceivedComplexity
@@ -147,7 +149,8 @@ module Dependabot
           rescue Excon::Error::Timeout, Excon::Error::Socket,
                  Excon::Error::TooManyRedirects, ArgumentError
             nil
-          end, T.nilable(Excon::Response)
+          end,
+          T.nilable(Excon::Response)
         )
 
         return unless @homepage_response&.status == 200

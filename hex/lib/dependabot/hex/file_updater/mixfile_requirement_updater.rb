@@ -21,9 +21,13 @@ module Dependabot
             insert_if_bare: T::Boolean
           ).void
         end
-        def initialize(dependency_name:, mixfile_content:,
-                       previous_requirement:, updated_requirement:,
-                       insert_if_bare: false)
+        def initialize(
+          dependency_name:,
+          mixfile_content:,
+          previous_requirement:,
+          updated_requirement:,
+          insert_if_bare: false
+        )
           @dependency_name      = T.let(dependency_name, String)
           @mixfile_content      = T.let(mixfile_content, String)
           @previous_requirement = T.let(previous_requirement, T.nilable(String))

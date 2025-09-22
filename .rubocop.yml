@@ -25,16 +25,18 @@ Gemspec/DevelopmentDependencies:
 Gemspec/RequireMFA:
   Enabled: false
 
-Layout/EmptyLinesAroundAttributeAccessor:
-  Enabled: false
 Layout/FirstArrayElementIndentation:
   EnforcedStyle: consistent
 Layout/FirstHashElementIndentation:
   EnforcedStyle: consistent
-Layout/RescueEnsureAlignment:
-  Enabled: false
-Layout/SpaceAroundMethodCallOperator:
-  Enabled: false
+Layout/FirstMethodArgumentLineBreak:
+  Enabled: true
+Layout/MultilineMethodArgumentLineBreaks:
+  Enabled: true
+Layout/FirstMethodParameterLineBreak:
+  Enabled: true
+Layout/MultilineMethodParameterLineBreaks:
+  Enabled: true
 Layout/LineContinuationLeadingSpace:
   Enabled: false
 
@@ -106,7 +108,7 @@ Sorbet/StrongSigil:
     - "**/spec/**/*"
 
 Style/AccessorGrouping:
-  EnforcedStyle: 'separated'
+  EnforcedStyle: "separated"
 Style/ArgumentsForwarding:
   Enabled: false
 Style/BisectedAttrAccessor:

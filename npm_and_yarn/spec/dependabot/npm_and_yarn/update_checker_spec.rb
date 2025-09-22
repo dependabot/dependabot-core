@@ -27,12 +27,14 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   let(:escaped_dependency_name) { dependency_name.gsub("/", "%2F") }
   let(:dependency_name) { "etag" }
   let(:credentials) do
-    [Dependabot::Credential.new({
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    })]
+    [Dependabot::Credential.new(
+      {
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    )]
   end
   let(:options) { {} }
   let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
@@ -1283,12 +1285,14 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         # With npm 10.9.3's improved peer dependency resolution,
         # deprecated dependencies can now be successfully resolved
         expect(checker.updated_requirements)
-          .to eq([{
-            file: "package.json",
-            requirement: "^16.3.1",
-            groups: ["dependencies"],
-            source: nil
-          }])
+          .to eq(
+            [{
+              file: "package.json",
+              requirement: "^16.3.1",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          )
       end
     end
 
@@ -1519,41 +1523,43 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
 
       it "correctly updates the transitive dependency" do
         expect(checker.send(:updated_dependencies_after_full_unlock))
-          .to eq_including_metadata([
-            Dependabot::Dependency.new(
-              name: "@dependabot-fixtures/npm-transitive-dependency",
-              version: "1.0.1",
-              package_manager: "npm_and_yarn",
-              previous_version: "1.0.0",
-              requirements: [],
-              previous_requirements: [],
-              metadata: { information_only: true }
-            ),
-            Dependabot::Dependency.new(
-              name: "@dependabot-fixtures/npm-parent-dependency",
-              version: "2.0.2",
-              package_manager: "npm_and_yarn",
-              previous_version: "2.0.0",
-              requirements: [{
-                file: "package.json",
-                requirement: "2.0.2",
-                groups: ["dependencies"],
-                source: {
-                  type: "registry",
-                  url: "https://registry.npmjs.org"
-                }
-              }],
-              previous_requirements: [{
-                file: "package.json",
-                requirement: "2.0.0",
-                groups: ["dependencies"],
-                source: {
-                  type: "registry",
-                  url: "https://registry.npmjs.org"
-                }
-              }]
-            )
-          ])
+          .to eq_including_metadata(
+            [
+              Dependabot::Dependency.new(
+                name: "@dependabot-fixtures/npm-transitive-dependency",
+                version: "1.0.1",
+                package_manager: "npm_and_yarn",
+                previous_version: "1.0.0",
+                requirements: [],
+                previous_requirements: [],
+                metadata: { information_only: true }
+              ),
+              Dependabot::Dependency.new(
+                name: "@dependabot-fixtures/npm-parent-dependency",
+                version: "2.0.2",
+                package_manager: "npm_and_yarn",
+                previous_version: "2.0.0",
+                requirements: [{
+                  file: "package.json",
+                  requirement: "2.0.2",
+                  groups: ["dependencies"],
+                  source: {
+                    type: "registry",
+                    url: "https://registry.npmjs.org"
+                  }
+                }],
+                previous_requirements: [{
+                  file: "package.json",
+                  requirement: "2.0.0",
+                  groups: ["dependencies"],
+                  source: {
+                    type: "registry",
+                    url: "https://registry.npmjs.org"
+                  }
+                }]
+              )
+            ]
+          )
       end
 
       context "when a transitive dependency is locked by an intermediate transitive dependency" do
@@ -1561,25 +1567,27 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         let(:registry_listing_url) { "https://registry.npmjs.org/transitive-dependency-locked-by-intermediate" }
 
         it "correctly updates the transitive dependency" do
-          expect(checker.send(:updated_dependencies_after_full_unlock)).to eq_including_metadata([
-            Dependabot::Dependency.new(
-              name: "@dependabot-fixtures/npm-transitive-dependency",
-              package_manager: "npm_and_yarn",
-              previous_requirements: [],
-              previous_version: "1.0.0",
-              requirements: [],
-              version: "1.0.1",
-              metadata: { information_only: true }
-            ),
-            Dependabot::Dependency.new(
-              name: "@dependabot-fixtures/npm-intermediate-dependency",
-              package_manager: "npm_and_yarn",
-              previous_requirements: [],
-              previous_version: "0.0.1",
-              requirements: [],
-              version: "0.0.2"
-            )
-          ])
+          expect(checker.send(:updated_dependencies_after_full_unlock)).to eq_including_metadata(
+            [
+              Dependabot::Dependency.new(
+                name: "@dependabot-fixtures/npm-transitive-dependency",
+                package_manager: "npm_and_yarn",
+                previous_requirements: [],
+                previous_version: "1.0.0",
+                requirements: [],
+                version: "1.0.1",
+                metadata: { information_only: true }
+              ),
+              Dependabot::Dependency.new(
+                name: "@dependabot-fixtures/npm-intermediate-dependency",
+                package_manager: "npm_and_yarn",
+                previous_requirements: [],
+                previous_version: "0.0.1",
+                requirements: [],
+                version: "0.0.2"
+              )
+            ]
+          )
         end
       end
 
@@ -1741,41 +1749,43 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         end
 
         it "correctly updates the transitive dependency by unlocking the parent" do
-          expect(checker.send(:updated_dependencies_after_full_unlock)).to eq_including_metadata([
-            Dependabot::Dependency.new(
-              name: "@dependabot-fixtures/npm-transitive-dependency-with-more-versions",
-              package_manager: "npm_and_yarn",
-              previous_requirements: [],
-              previous_version: "1.0.0",
-              requirements: [],
-              version: "2.0.0",
-              metadata: { information_only: true }
-            ),
-            Dependabot::Dependency.new(
-              name: "@dependabot-fixtures/npm-parent-dependency-with-more-versions",
-              package_manager: "npm_and_yarn",
-              previous_requirements: [{
-                requirement: "^1.0.0",
-                file: "package.json",
-                groups: ["dependencies"],
-                source: {
-                  type: "registry",
-                  url: "https://registry.npmjs.org"
-                }
-              }],
-              previous_version: "1.0.0",
-              requirements: [{
-                requirement: "^1.0.0",
-                file: "package.json",
-                groups: ["dependencies"],
-                source: {
-                  type: "registry",
-                  url: "https://registry.npmjs.org"
-                }
-              }],
-              version: "1.0.1"
-            )
-          ])
+          expect(checker.send(:updated_dependencies_after_full_unlock)).to eq_including_metadata(
+            [
+              Dependabot::Dependency.new(
+                name: "@dependabot-fixtures/npm-transitive-dependency-with-more-versions",
+                package_manager: "npm_and_yarn",
+                previous_requirements: [],
+                previous_version: "1.0.0",
+                requirements: [],
+                version: "2.0.0",
+                metadata: { information_only: true }
+              ),
+              Dependabot::Dependency.new(
+                name: "@dependabot-fixtures/npm-parent-dependency-with-more-versions",
+                package_manager: "npm_and_yarn",
+                previous_requirements: [{
+                  requirement: "^1.0.0",
+                  file: "package.json",
+                  groups: ["dependencies"],
+                  source: {
+                    type: "registry",
+                    url: "https://registry.npmjs.org"
+                  }
+                }],
+                previous_version: "1.0.0",
+                requirements: [{
+                  requirement: "^1.0.0",
+                  file: "package.json",
+                  groups: ["dependencies"],
+                  source: {
+                    type: "registry",
+                    url: "https://registry.npmjs.org"
+                  }
+                }],
+                version: "1.0.1"
+              )
+            ]
+          )
         end
       end
     end
@@ -1804,52 +1814,56 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
 
       it "correctly updates the transitive dependency" do
         expect(checker.send(:updated_dependencies_after_full_unlock))
-          .to eq_including_metadata([
-            Dependabot::Dependency.new(
-              name: "@msgpack/msgpack",
-              version: "2.8.0",
-              package_manager: "npm_and_yarn",
-              previous_version: "2.7.2",
-              requirements: [{
-                requirement: "^2.8.0",
-                file: "package.json",
-                groups: ["dependencies"],
-                source: {
-                  type: "registry",
-                  url: "https://registry.npmjs.org"
-                }
-              }],
-              previous_requirements: [{
-                requirement: "^2.7.2",
-                file: "package.json",
-                groups: ["dependencies"],
-                source: {
-                  type: "registry",
-                  url: "https://registry.npmjs.org"
-                }
-              }]
-            ),
-            Dependabot::Dependency.new(
-              name: "@msgpack/msgpack",
-              version: "3.1.2",
-              package_manager: "npm_and_yarn",
-              previous_version: "3.0.0",
-              requirements: [],
-              previous_requirements: []
-            )
-          ])
+          .to eq_including_metadata(
+            [
+              Dependabot::Dependency.new(
+                name: "@msgpack/msgpack",
+                version: "2.8.0",
+                package_manager: "npm_and_yarn",
+                previous_version: "2.7.2",
+                requirements: [{
+                  requirement: "^2.8.0",
+                  file: "package.json",
+                  groups: ["dependencies"],
+                  source: {
+                    type: "registry",
+                    url: "https://registry.npmjs.org"
+                  }
+                }],
+                previous_requirements: [{
+                  requirement: "^2.7.2",
+                  file: "package.json",
+                  groups: ["dependencies"],
+                  source: {
+                    type: "registry",
+                    url: "https://registry.npmjs.org"
+                  }
+                }]
+              ),
+              Dependabot::Dependency.new(
+                name: "@msgpack/msgpack",
+                version: "3.1.2",
+                package_manager: "npm_and_yarn",
+                previous_version: "3.0.0",
+                requirements: [],
+                previous_requirements: []
+              )
+            ]
+          )
       end
     end
   end
 
   describe "#conflicting_dependencies" do
     let(:credentials) do
-      [Dependabot::Credential.new({
-        "type" => "git_source",
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      })]
+      [Dependabot::Credential.new(
+        {
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }
+      )]
     end
 
     let(:dependency_name) { "@dependabot-fixtures/npm-transitive-dependency" }

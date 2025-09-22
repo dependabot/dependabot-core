@@ -26,8 +26,13 @@ module Dependabot
       attr_reader :pr_number
 
       sig do
-        params(name: String, version: T.nilable(String), removed: T::Boolean, directory: T.nilable(String),
-               pr_number: T.nilable(Integer)).void
+        params(
+          name: String,
+          version: T.nilable(String),
+          removed: T::Boolean,
+          directory: T.nilable(String),
+          pr_number: T.nilable(Integer)
+        ).void
       end
       def initialize(name:, version:, removed: false, directory: nil, pr_number: nil)
         @name = name
@@ -67,7 +72,7 @@ module Dependabot
               version: dep.fetch("dependency-version", nil),
               removed: dep.fetch("dependency-removed", false),
               directory: dep.fetch("directory", nil),
-              pr_number: dep.fetch("pr_number", nil)&.to_i
+              pr_number: dep.fetch("pr-number", nil)&.to_i
             )
           end
         )

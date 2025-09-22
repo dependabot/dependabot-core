@@ -59,14 +59,19 @@ module Dependabot
 
         sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
+
         sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
+
         sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
         attr_reader :cooldown_options
+
         sig { returns(T::Array[String]) }
         attr_reader :ignored_versions
+
         sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
         attr_reader :security_advisories
+
         sig { override.returns(T.nilable(Dependabot::Package::PackageDetails)) }
         def package_details; end
 
@@ -83,9 +88,12 @@ module Dependabot
 
         sig { returns(T.nilable(T::Array[Dependabot::Package::PackageRelease])) }
         def package_releases
-          @package_releases = T.let(Dependabot::Elm::Package::PackageDetailsFetcher
-            .new(dependency: dependency)
-            .fetch_package_releases, T.nilable(T::Array[Dependabot::Package::PackageRelease]))
+          @package_releases = T.let(
+            Dependabot::Elm::Package::PackageDetailsFetcher
+                        .new(dependency: dependency)
+                        .fetch_package_releases,
+            T.nilable(T::Array[Dependabot::Package::PackageRelease])
+          )
         end
 
         sig { override.returns(T::Boolean) }
@@ -175,9 +183,12 @@ module Dependabot
 
         sig { returns(T.nilable(T::Array[Dependabot::Package::PackageRelease])) }
         def package_releases
-          T.let(Dependabot::Elm::Package::PackageDetailsFetcher
-           .new(dependency: dependency)
-           .fetch_package_releases, T.nilable(T::Array[Dependabot::Package::PackageRelease]))
+          T.let(
+            Dependabot::Elm::Package::PackageDetailsFetcher
+                       .new(dependency: dependency)
+                       .fetch_package_releases,
+            T.nilable(T::Array[Dependabot::Package::PackageRelease])
+          )
         end
 
         sig { params(unlock_requirement: Symbol).returns(T.nilable(Dependabot::Elm::Version)) }
@@ -190,8 +201,10 @@ module Dependabot
           new_release = package_releases&.find { |release| release.version == version_after_install }
 
           if cooldown_options && in_cooldown_period?(T.must(new_release))
-            Dependabot.logger.info("#{dependency.name} #{new_release} is in cooldown period," \
-                                   " returning current version #{current_version}")
+            Dependabot.logger.info(
+              "#{dependency.name} #{new_release} is in cooldown period," \
+              " returning current version #{current_version}"
+            )
             return current_version
           end
 

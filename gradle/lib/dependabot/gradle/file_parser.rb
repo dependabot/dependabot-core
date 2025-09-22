@@ -27,8 +27,10 @@ module Dependabot
       require "dependabot/file_parsers/base/dependency_set"
       require_relative "file_parser/property_value_finder"
 
-      SUPPORTED_BUILD_FILE_NAMES = T.let(%w(build.gradle build.gradle.kts settings.gradle settings.gradle.kts).freeze,
-                                         T::Array[String])
+      SUPPORTED_BUILD_FILE_NAMES = T.let(
+        %w(build.gradle build.gradle.kts settings.gradle settings.gradle.kts).freeze,
+        T::Array[String]
+      )
 
       PROPERTY_REGEX = T.let(
         /
@@ -109,9 +111,12 @@ module Dependabot
 
       sig { returns(T.nilable(Ecosystem::VersionManager)) }
       def language
-        @language ||= T.let(begin
-          Language.new("NOT-AVAILABLE")
-        end, T.nilable(Dependabot::Gradle::Language))
+        @language ||= T.let(
+          begin
+            Language.new("NOT-AVAILABLE")
+          end,
+          T.nilable(Dependabot::Gradle::Language)
+        )
       end
 
       sig { params(toml_file: Dependabot::DependencyFile).returns(DependencySet) }
@@ -460,10 +465,13 @@ module Dependabot
         metadata = T.let({}, T::Hash[Symbol, T.any(String, T::Hash[Symbol, String])])
         metadata[:property_name] = version_property_name if version_property_name
         if in_dependency_set
-          metadata[:dependency_set] = T.let({
-            group: details_hash[:group],
-            version: details_hash[:version]
-          }, T::Hash[Symbol, String])
+          metadata[:dependency_set] = T.let(
+            {
+              group: details_hash[:group],
+              version: details_hash[:version]
+            },
+            T::Hash[Symbol, String]
+          )
         end
         metadata
       end
@@ -472,8 +480,10 @@ module Dependabot
       def evaluated_value(value, buildfile)
         return value unless value&.scan(PROPERTY_REGEX)&.one?
 
-        property_name  = T.must(T.must(value).match(PROPERTY_REGEX)
-                          &.named_captures&.fetch("property_name"))
+        property_name = T.must(
+          T.must(value).match(PROPERTY_REGEX)
+                                    &.named_captures&.fetch("property_name")
+        )
         property_value = property_value_finder.property_value(
           property_name: property_name,
           callsite_buildfile: buildfile

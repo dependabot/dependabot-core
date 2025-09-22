@@ -11,7 +11,7 @@ module Dependabot
   module GithubActions
     # Lifted from the bundler package manager
     class Requirement < Dependabot::Requirement
-      extend T:: Sig
+      extend T::Sig
 
       # For consistency with other languages, we define a requirements array.
       # Ruby doesn't have an `OR` separator for requirements, so it always
