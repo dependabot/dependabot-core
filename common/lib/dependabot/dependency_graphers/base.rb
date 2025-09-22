@@ -77,7 +77,7 @@ module Dependabot
       end
 
       # We should ensure we don't include an `@` if there isn't a resolved version, but some ecosystems
-      # specifically include the version or allow certain prefixes
+      # specifically include the `v` or allow certain prefixes
       sig { params(dependency: Dependabot::Dependency).returns(String) }
       def purl_version_for(dependency)
         return "" unless dependency.version
