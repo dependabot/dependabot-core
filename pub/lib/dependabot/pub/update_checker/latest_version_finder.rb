@@ -139,9 +139,9 @@ module Dependabot
           return unparsed_version unless in_cooldown_period?(version_release)
 
           dependency.version
-          rescue StandardError => e
-            Dependabot.logger.error("Failed to filter cooldown versions for \"#{dependency.name}\": #{e.backtrace}")
-            unparsed_version
+        rescue StandardError => e
+          Dependabot.logger.error("Failed to filter cooldown versions for \"#{dependency.name}\": #{e.backtrace}")
+          unparsed_version
         end
 
         sig { params(release: Dependabot::Package::PackageRelease).returns(T::Boolean) }
