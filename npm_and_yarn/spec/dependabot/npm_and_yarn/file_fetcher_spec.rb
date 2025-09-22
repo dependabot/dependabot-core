@@ -497,6 +497,29 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
       end
     end
 
+    context "when using 9.0 as lockfile format" do
+      before do
+        stub_request(:get, File.join(url, "pnpm-lock.yaml?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "pnpm_lock_9.0_content.json"),
+            headers: json_header
+          )
+      end
+
+      it "fetches the package.json and pnpm-lock.yaml" do
+        expect(file_fetcher_instance.files.map(&:name))
+          .to match_array(%w(package.json pnpm-lock.yaml))
+      end
+
+      it "parses the version as 10" do
+        expect(file_fetcher_instance.ecosystem_versions).to eq(
+          { package_managers: { "pnpm" => 10 } }
+        )
+      end
+    end
+
     context "when using double quotes to surround lockfileVersion" do
       before do
         stub_request(:get, File.join(url, "pnpm-lock.yaml?ref=sha"))
