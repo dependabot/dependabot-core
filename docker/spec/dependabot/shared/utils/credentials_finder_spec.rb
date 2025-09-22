@@ -11,12 +11,14 @@ RSpec.describe Dependabot::Shared::Utils::CredentialsFinder do
   subject(:finder) { described_class.new(credentials) }
 
   let(:credentials) do
-    [Dependabot::Credential.new({
-      "type" => "docker_registry",
-      "registry" => "695729449481.dkr.ecr.eu-west-2.amazonaws.com",
-      "username" => "grey",
-      "password" => "pa55word"
-    })]
+    [Dependabot::Credential.new(
+      {
+        "type" => "docker_registry",
+        "registry" => "695729449481.dkr.ecr.eu-west-2.amazonaws.com",
+        "username" => "grey",
+        "password" => "pa55word"
+      }
+    )]
   end
 
   describe "#credentials_for_registry" do
@@ -33,12 +35,14 @@ RSpec.describe Dependabot::Shared::Utils::CredentialsFinder do
     context "with a non-AWS registry" do
       let(:registry) { "my.registry.com" }
       let(:credentials) do
-        [Dependabot::Credential.new({
-          "type" => "docker_registry",
-          "registry" => "my.registry.com",
-          "username" => "grey",
-          "password" => "pa55word"
-        })]
+        [Dependabot::Credential.new(
+          {
+            "type" => "docker_registry",
+            "registry" => "my.registry.com",
+            "username" => "grey",
+            "password" => "pa55word"
+          }
+        )]
       end
 
       it { is_expected.to eq(credentials.first) }
@@ -50,12 +54,14 @@ RSpec.describe Dependabot::Shared::Utils::CredentialsFinder do
       let(:finder) { described_class.new(credentials, private_repository_type: "helm_registry") }
       let(:registry) { "my.registry.com" }
       let(:credentials) do
-        [Dependabot::Credential.new({
-          "type" => "helm_registry",
-          "registry" => "my.registry.com",
-          "username" => "grey",
-          "password" => "pa55word"
-        })]
+        [Dependabot::Credential.new(
+          {
+            "type" => "helm_registry",
+            "registry" => "my.registry.com",
+            "username" => "grey",
+            "password" => "pa55word"
+          }
+        )]
       end
 
       it { is_expected.to eq(credentials.first) }
@@ -66,12 +72,14 @@ RSpec.describe Dependabot::Shared::Utils::CredentialsFinder do
 
       context "with 'AWS' as the username" do
         let(:credentials) do
-          [Dependabot::Credential.new({
-            "type" => "docker_registry",
-            "registry" => "695729449481.dkr.ecr.eu-west-2.amazonaws.com",
-            "username" => "AWS",
-            "password" => "pa55word"
-          })]
+          [Dependabot::Credential.new(
+            {
+              "type" => "docker_registry",
+              "registry" => "695729449481.dkr.ecr.eu-west-2.amazonaws.com",
+              "username" => "AWS",
+              "password" => "pa55word"
+            }
+          )]
         end
 
         it { is_expected.to eq(credentials.first) }
@@ -79,10 +87,12 @@ RSpec.describe Dependabot::Shared::Utils::CredentialsFinder do
 
       context "without a username or password" do
         let(:credentials) do
-          [Dependabot::Credential.new({
-            "type" => "docker_registry",
-            "registry" => "695729449481.dkr.ecr.eu-west-2.amazonaws.com"
-          })]
+          [Dependabot::Credential.new(
+            {
+              "type" => "docker_registry",
+              "registry" => "695729449481.dkr.ecr.eu-west-2.amazonaws.com"
+            }
+          )]
         end
 
         context "when there is a valid AWS response (via proxying)" do
@@ -105,12 +115,14 @@ RSpec.describe Dependabot::Shared::Utils::CredentialsFinder do
 
       context "with as AKID as the username" do
         let(:credentials) do
-          [Dependabot::Credential.new({
-            "type" => "docker_registry",
-            "registry" => "695729449481.dkr.ecr.eu-west-2.amazonaws.com",
-            "username" => "AKIAIHYCC4QXL4X2OTCQ",
-            "password" => "pa55word"
-          })]
+          [Dependabot::Credential.new(
+            {
+              "type" => "docker_registry",
+              "registry" => "695729449481.dkr.ecr.eu-west-2.amazonaws.com",
+              "username" => "AKIAIHYCC4QXL4X2OTCQ",
+              "password" => "pa55word"
+            }
+          )]
         end
 
         context "when using an invalid secret key as the password" do
@@ -177,10 +189,12 @@ RSpec.describe Dependabot::Shared::Utils::CredentialsFinder do
 
       context "when using the default credentials provider" do
         let(:credentials) do
-          [Dependabot::Credential.new({
-            "type" => "docker_registry",
-            "registry" => "695729449481.dkr.ecr.eu-west-2.amazonaws.com"
-          })]
+          [Dependabot::Credential.new(
+            {
+              "type" => "docker_registry",
+              "registry" => "695729449481.dkr.ecr.eu-west-2.amazonaws.com"
+            }
+          )]
         end
 
         context "when there is a valid AWS response" do
@@ -214,13 +228,15 @@ RSpec.describe Dependabot::Shared::Utils::CredentialsFinder do
 
     context "with private registry and replaces-base true" do
       let(:credentials) do
-        [Dependabot::Credential.new({
-          "type" => "docker_registry",
-          "registry" => "registry-host.io:5000",
-          "username" => "grey",
-          "password" => "pa55word",
-          "replaces-base" => true
-        })]
+        [Dependabot::Credential.new(
+          {
+            "type" => "docker_registry",
+            "registry" => "registry-host.io:5000",
+            "username" => "grey",
+            "password" => "pa55word",
+            "replaces-base" => true
+          }
+        )]
       end
 
       it { is_expected.to eq("registry-host.io:5000") }
@@ -228,13 +244,15 @@ RSpec.describe Dependabot::Shared::Utils::CredentialsFinder do
 
     context "with private registry and replaces-base false" do
       let(:credentials) do
-        [Dependabot::Credential.new({
-          "type" => "docker_registry",
-          "registry" => "registry-host.io:5000",
-          "username" => "grey",
-          "password" => "pa55word",
-          "replaces-base" => false
-        })]
+        [Dependabot::Credential.new(
+          {
+            "type" => "docker_registry",
+            "registry" => "registry-host.io:5000",
+            "username" => "grey",
+            "password" => "pa55word",
+            "replaces-base" => false
+          }
+        )]
       end
 
       it { is_expected.to eq("registry.hub.docker.com") }
@@ -242,19 +260,23 @@ RSpec.describe Dependabot::Shared::Utils::CredentialsFinder do
 
     context "with multiple private registries and mixed value of replaces-base" do
       let(:credentials) do
-        [Dependabot::Credential.new({
-          "type" => "docker_registry",
-          "registry" => "registry-host.io:5000",
-          "username" => "grey",
-          "password" => "pa55word",
-          "replaces-base" => false
-        }), Dependabot::Credential.new({
-          "type" => "docker_registry",
-          "registry" => "registry-host-new.io:5000",
-          "username" => "ankit",
-          "password" => "pa55word",
-          "replaces-base" => true
-        })]
+        [Dependabot::Credential.new(
+          {
+            "type" => "docker_registry",
+            "registry" => "registry-host.io:5000",
+            "username" => "grey",
+            "password" => "pa55word",
+            "replaces-base" => false
+          }
+        ), Dependabot::Credential.new(
+          {
+            "type" => "docker_registry",
+            "registry" => "registry-host-new.io:5000",
+            "username" => "ankit",
+            "password" => "pa55word",
+            "replaces-base" => true
+          }
+        )]
       end
 
       it { is_expected.to eq("registry-host-new.io:5000") }

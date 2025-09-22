@@ -61,9 +61,19 @@ module Dependabot
         )
           .void
       end
-      def initialize(source:, branch_name:, base_commit:, credentials:,
-                     files:, commit_message:, pr_description:, pr_name:,
-                     author_details:, labeler:, require_up_to_date_base:)
+      def initialize(
+        source:,
+        branch_name:,
+        base_commit:,
+        credentials:,
+        files:,
+        commit_message:,
+        pr_description:,
+        pr_name:,
+        author_details:,
+        labeler:,
+        require_up_to_date_base:
+      )
         @source                  = source
         @branch_name             = branch_name
         @base_commit             = base_commit
@@ -132,8 +142,11 @@ module Dependabot
       sig { params(commit: String).returns(String) }
       def create_branch(commit)
         # codecommit returns an empty response on create branch success
-        codecommit_client_for_source.create_branch(source.repo, branch_name,
-                                                   commit)
+        codecommit_client_for_source.create_branch(
+          source.repo,
+          branch_name,
+          commit
+        )
         @branch_name = branch_name
         branch_name
       end

@@ -25,8 +25,12 @@ module Dependabot
             prepared_dependency_files: T::Array[Dependabot::DependencyFile]
           ).void
         end
-        def initialize(dependency:, credentials:,
-                       original_dependency_files:, prepared_dependency_files:)
+        def initialize(
+          dependency:,
+          credentials:,
+          original_dependency_files:,
+          prepared_dependency_files:
+        )
           @dependency = T.let(dependency, Dependabot::Dependency)
           @original_dependency_files = T.let(original_dependency_files, T::Array[Dependabot::DependencyFile])
           @prepared_dependency_files = T.let(prepared_dependency_files, T::Array[Dependabot::DependencyFile])
@@ -126,8 +130,13 @@ module Dependabot
         end
 
         sig do
-          params(error: Dependabot::SharedHelpers::HelperSubprocessFailed).returns(T.any(Dependabot::Version, String,
-                                                                                         T::Boolean))
+          params(error: Dependabot::SharedHelpers::HelperSubprocessFailed).returns(
+            T.any(
+              Dependabot::Version,
+              String,
+              T::Boolean
+            )
+          )
         end
         def error_result(error)
           return false unless includes_result?(error)

@@ -118,9 +118,18 @@ module Dependabot
         metadata: T.nilable(T::Hash[T.any(Symbol, String), String])
       ).void
     end
-    def initialize(name:, requirements:, package_manager:, version: nil,
-                   previous_version: nil, previous_requirements: nil, directory: nil,
-                   subdependency_metadata: [], removed: false, metadata: {})
+    def initialize(
+      name:,
+      requirements:,
+      package_manager:,
+      version: nil,
+      previous_version: nil,
+      previous_requirements: nil,
+      directory: nil,
+      subdependency_metadata: [],
+      removed: false,
+      metadata: {}
+    )
       @name = name
       @version = T.let(
         case version
@@ -399,10 +408,11 @@ module Dependabot
       optional_keys = %i(metadata)
       unless requirement_fields.flatten
                                .all? { |r| required_keys.sort == (r.keys - optional_keys).sort }
-        raise ArgumentError, "each requirement must have the following " \
-                             "required keys: #{required_keys.join(', ')}." \
-                             "Optionally, it may have the following keys: " \
-                             "#{optional_keys.join(', ')}."
+        raise ArgumentError,
+              "each requirement must have the following " \
+              "required keys: #{required_keys.join(', ')}." \
+              "Optionally, it may have the following keys: " \
+              "#{optional_keys.join(', ')}."
       end
 
       return if requirement_fields.flatten.none? { |r| r[:requirement] == "" }

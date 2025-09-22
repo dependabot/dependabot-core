@@ -5,8 +5,13 @@ module Functions
   class ForceUpdater
     class TopLevelDependencyDowngradedError < StandardError; end
 
-    def initialize(dependency_name:, target_version:, gemfile_name:,
-                   lockfile_name:, update_multiple_dependencies:)
+    def initialize(
+      dependency_name:,
+      target_version:,
+      gemfile_name:,
+      lockfile_name:,
+      update_multiple_dependencies:
+    )
       @dependency_name = dependency_name
       @target_version = target_version
       @gemfile_name = gemfile_name

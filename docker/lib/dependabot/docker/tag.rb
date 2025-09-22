@@ -58,8 +58,11 @@ module Dependabot
       end
 
       sig do
-        params(other_format: Symbol, other_prefix: T.nilable(String),
-               other_suffix: T.nilable(String)).returns(T::Boolean)
+        params(
+          other_format: Symbol,
+          other_prefix: T.nilable(String),
+          other_suffix: T.nilable(String)
+        ).returns(T::Boolean)
       end
       def comparable_formats(other_format, other_prefix, other_suffix)
         # Allow comparison between different year/month formats

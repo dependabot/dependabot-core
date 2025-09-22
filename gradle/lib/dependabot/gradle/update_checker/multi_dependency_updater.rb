@@ -25,9 +25,14 @@ module Dependabot
             raise_on_ignored: T::Boolean
           ).void
         end
-        def initialize(dependency:, dependency_files:, credentials:,
-                       target_version_details:, ignored_versions:,
-                       raise_on_ignored: false)
+        def initialize(
+          dependency:,
+          dependency_files:,
+          credentials:,
+          target_version_details:,
+          ignored_versions:,
+          raise_on_ignored: false
+        )
           @dependency = T.let(dependency, Dependabot::Dependency)
           @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
           @credentials = T.let(credentials, T::Array[Dependabot::Credential])

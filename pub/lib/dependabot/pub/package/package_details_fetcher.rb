@@ -47,9 +47,14 @@ module Dependabot
           )
             .void
         end
-        def initialize(dependency:, dependency_files:, credentials:,
-                       ignored_versions: [],
-                       security_advisories: [], options: {})
+        def initialize(
+          dependency:,
+          dependency_files:,
+          credentials:,
+          ignored_versions: [],
+          security_advisories: [],
+          options: {}
+        )
           @dependency = dependency
           @dependency_files = dependency_files
           @credentials = credentials
@@ -80,8 +85,10 @@ module Dependabot
             package_details_metadata = JSON.parse(response.body)
 
             package_details_metadata["versions"].select do |v|
-              package_releases << package_release(version: v["version"],
-                                                  publish_date: Time.parse(v["published"]))
+              package_releases << package_release(
+                version: v["version"],
+                publish_date: Time.parse(v["published"])
+              )
             end
 
             package_releases

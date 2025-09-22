@@ -136,6 +136,31 @@ RSpec.describe Dependabot::Helm::FileParser do
       end
     end
 
+    context "with a numeric version" do
+      let(:helmfile_fixture_name) { "numeric_version.yaml" }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            metadata: { type: :helm_chart },
+            file: "Chart.yaml",
+            source: { registry: "https://charts.bitnami.com/bitnami", tag: "105" }
+          }]
+        end
+
+        it "handles YAML parsing that converts numeric strings to integers" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("redis")
+          expect(dependency.version).to eq("105")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+    end
+
     describe "YAML.safe_load with permitted_classes" do
       context "with Chart.yaml" do
         subject(:dependency) { dependencies.first }

@@ -203,8 +203,10 @@ module Dependabot
 
     sig { returns(PullRequest) }
     def new_pr
-      @new_pr ||= T.let(PullRequest.create_from_updated_dependencies(updated_dependencies),
-                        T.nilable(Dependabot::PullRequest))
+      @new_pr ||= T.let(
+        PullRequest.create_from_updated_dependencies(updated_dependencies),
+        T.nilable(Dependabot::PullRequest)
+      )
     end
 
     sig { returns(T::Array[Dependabot::Dependency]) }

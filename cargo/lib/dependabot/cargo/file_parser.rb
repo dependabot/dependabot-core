@@ -47,13 +47,16 @@ module Dependabot
 
       sig { returns(Ecosystem) }
       def ecosystem
-        @ecosystem ||= T.let(begin
-          Ecosystem.new(
-            name: ECOSYSTEM,
-            package_manager: package_manager,
-            language: language
-          )
-        end, T.nilable(Dependabot::Ecosystem))
+        @ecosystem ||= T.let(
+          begin
+            Ecosystem.new(
+              name: ECOSYSTEM,
+              package_manager: package_manager,
+              language: language
+            )
+          end,
+          T.nilable(Dependabot::Ecosystem)
+        )
       end
 
       private
@@ -68,25 +71,34 @@ module Dependabot
 
       sig { returns(T.nilable(Ecosystem::VersionManager)) }
       def language
-        @language ||= T.let(begin
-          Language.new(T.must(rust_version))
-        end, T.nilable(Dependabot::Cargo::Language))
+        @language ||= T.let(
+          begin
+            Language.new(T.must(rust_version))
+          end,
+          T.nilable(Dependabot::Cargo::Language)
+        )
       end
 
       sig { returns(T.nilable(String)) }
       def rust_version
-        @rust_version ||= T.let(begin
-          version = SharedHelpers.run_shell_command("rustc --version")
-          version.match(/rustc\s*(\d+\.\d+(.\d+)*)/)&.captures&.first
-        end, T.nilable(String))
+        @rust_version ||= T.let(
+          begin
+            version = SharedHelpers.run_shell_command("rustc --version")
+            version.match(/rustc\s*(\d+\.\d+(.\d+)*)/)&.captures&.first
+          end,
+          T.nilable(String)
+        )
       end
 
       sig { returns(T.nilable(String)) }
       def cargo_version
-        @cargo_version ||= T.let(begin
-          version = SharedHelpers.run_shell_command("cargo --version")
-          version.match(/cargo\s*(\d+\.\d+(.\d+)*)/)&.captures&.first
-        end, T.nilable(String))
+        @cargo_version ||= T.let(
+          begin
+            version = SharedHelpers.run_shell_command("cargo --version")
+            version.match(/cargo\s*(\d+\.\d+(.\d+)*)/)&.captures&.first
+          end,
+          T.nilable(String)
+        )
       end
 
       sig { void }
@@ -163,8 +175,12 @@ module Dependabot
       # rubocop:enable Metrics/PerceivedComplexity
 
       sig do
-        params(name: String, requirement: T.any(String, T::Hash[String, String]), type: String,
-               file: Dependabot::DependencyFile).returns(Dependency)
+        params(
+          name: String,
+          requirement: T.any(String, T::Hash[String, String]),
+          type: String,
+          file: Dependabot::DependencyFile
+        ).returns(Dependency)
       end
       def build_dependency(name, requirement, type, file)
         Dependency.new(

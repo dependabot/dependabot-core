@@ -15,10 +15,13 @@ module Dependabot
       OR_SEPARATOR = T.let(/(?<=[a-zA-Z0-9)*])\s*\|+/, Regexp)
 
       # Add equality and arbitrary-equality matchers
-      OPS = T.let(OPS.merge(
-                    "==" => ->(v, r) { v == r },
-                    "===" => ->(v, r) { v.to_s == r.to_s }
-                  ), T::Hash[String, T.proc.params(arg0: T.untyped, arg1: T.untyped).returns(T.untyped)])
+      OPS = T.let(
+        OPS.merge(
+          "==" => ->(v, r) { v == r },
+          "===" => ->(v, r) { v.to_s == r.to_s }
+        ),
+        T::Hash[String, T.proc.params(arg0: T.untyped, arg1: T.untyped).returns(T.untyped)]
+      )
 
       quoted = OPS.keys.sort_by(&:length).reverse
                   .map { |k| Regexp.quote(k) }.join("|")

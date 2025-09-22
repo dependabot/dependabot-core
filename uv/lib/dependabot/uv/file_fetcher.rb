@@ -24,10 +24,13 @@ module Dependabot
       CHILD_REQUIREMENT_REGEX = /^-r\s?(?<path>.*\.(?:txt|in))/
       CONSTRAINT_REGEX = /^-c\s?(?<path>.*\.(?:txt|in))/
       DEPENDENCY_TYPES = %w(packages dev-packages).freeze
-      REQUIREMENT_FILE_PATTERNS = T.let({
-        extensions: [".txt", ".in"],
-        filenames: ["uv.lock"]
-      }.freeze, T::Hash[Symbol, T::Array[String]])
+      REQUIREMENT_FILE_PATTERNS = T.let(
+        {
+          extensions: [".txt", ".in"],
+          filenames: ["uv.lock"]
+        }.freeze,
+        T::Hash[Symbol, T::Array[String]]
+      )
 
       MAX_FILE_SIZE = 500_000
 
@@ -217,7 +220,8 @@ module Dependabot
               fetched_files += child_files
               child_files
             end
-          end, T.nilable(T::Array[Dependabot::DependencyFile])
+          end,
+          T.nilable(T::Array[Dependabot::DependencyFile])
         )
       end
 
@@ -404,8 +408,10 @@ module Dependabot
 
       sig { returns(Dependabot::Uv::RequiremenstFileMatcher) }
       def requirements_in_file_matcher
-        @requirements_in_file_matcher ||= T.let(RequiremenstFileMatcher.new(requirements_in_files),
-                                                T.nilable(Dependabot::Uv::RequiremenstFileMatcher))
+        @requirements_in_file_matcher ||= T.let(
+          RequiremenstFileMatcher.new(requirements_in_files),
+          T.nilable(Dependabot::Uv::RequiremenstFileMatcher)
+        )
       end
 
       sig { returns(T::Array[PathDependency]) }

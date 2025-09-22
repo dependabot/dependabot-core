@@ -55,7 +55,7 @@ class Gitlab::API < ::Gitlab::Request
 
   # @private
   #
-  # source://gitlab//lib/gitlab/api.rb#7
+  # source://gitlab//lib/gitlab/api.rb#9
   def auth_token=(_arg0); end
 
   # source://gitlab//lib/gitlab/api.rb#7
@@ -95,10 +95,10 @@ class Gitlab::API < ::Gitlab::Request
   def user_agent=(_arg0); end
 
   class << self
-    # source://httparty/0.22.0/lib/httparty/module_inheritable_attributes.rb#46
+    # source://gitlab//lib/gitlab/api.rb#5
     def default_cookies; end
 
-    # source://httparty/0.22.0/lib/httparty/module_inheritable_attributes.rb#46
+    # source://gitlab//lib/gitlab/api.rb#5
     def default_options; end
   end
 end
@@ -491,10 +491,10 @@ class Gitlab::Client < ::Gitlab::API
   def redact_private_token(inspected, private_token); end
 
   class << self
-    # source://httparty/0.22.0/lib/httparty/module_inheritable_attributes.rb#46
+    # source://gitlab//lib/gitlab/client.rb#5
     def default_cookies; end
 
-    # source://httparty/0.22.0/lib/httparty/module_inheritable_attributes.rb#46
+    # source://gitlab//lib/gitlab/client.rb#5
     def default_options; end
   end
 end
@@ -1161,7 +1161,7 @@ module Gitlab::Client::Branches
   # @param branch [String] The name of the branch.
   # @return [Gitlab::ObjectifiedHash]
   #
-  # source://gitlab//lib/gitlab/client/branches.rb#31
+  # source://gitlab//lib/gitlab/client/branches.rb#34
   def repo_branch(project, branch); end
 
   # Gets a list of project repositiory branches.
@@ -1174,7 +1174,7 @@ module Gitlab::Client::Branches
   # @param options [Hash] A customizable set of options.
   # @return [Array<Gitlab::ObjectifiedHash>]
   #
-  # source://gitlab//lib/gitlab/client/branches.rb#17
+  # source://gitlab//lib/gitlab/client/branches.rb#20
   def repo_branches(project, options = T.unsafe(nil)); end
 
   # Creates a repository branch.  Requires Gitlab >= 6.8.x
@@ -1187,7 +1187,7 @@ module Gitlab::Client::Branches
   # @param ref [String] Create branch from commit sha or existing branch
   # @return [Gitlab::ObjectifiedHash] Details about the branch
   #
-  # source://gitlab//lib/gitlab/client/branches.rb#80
+  # source://gitlab//lib/gitlab/client/branches.rb#83
   def repo_create_branch(project, branch, ref); end
 
   # Deletes a repository branch.  Requires Gitlab >= 6.8.x
@@ -1198,7 +1198,7 @@ module Gitlab::Client::Branches
   # @param project [Integer, String] The ID or name of a project.
   # @param branch [String] The name of the branch to delete
   #
-  # source://gitlab//lib/gitlab/client/branches.rb#93
+  # source://gitlab//lib/gitlab/client/branches.rb#96
   def repo_delete_branch(project, branch); end
 
   # Delete all branches that are merged into the project default branch. Protected branches will not be deleted as part of this operation.
@@ -1208,7 +1208,7 @@ module Gitlab::Client::Branches
   # @param project [Integer, String] The ID or name of a project.
   # @return [nil] This API call returns an empty response body.
   #
-  # source://gitlab//lib/gitlab/client/branches.rb#105
+  # source://gitlab//lib/gitlab/client/branches.rb#108
   def repo_delete_merged_branches(project); end
 
   # Protects a repository branch.
@@ -1226,7 +1226,7 @@ module Gitlab::Client::Branches
   # @param options [Hash] A customizable set of options.
   # @return [Gitlab::ObjectifiedHash] Details about the branch
   #
-  # source://gitlab//lib/gitlab/client/branches.rb#51
+  # source://gitlab//lib/gitlab/client/branches.rb#54
   def repo_protect_branch(project, branch, options = T.unsafe(nil)); end
 
   # Gets a single protected branch or wildcard protected branch
@@ -1237,7 +1237,7 @@ module Gitlab::Client::Branches
   # @param name [String] The name of the branch or wildcard
   # @return [Gitlab::ObjectifiedHash]
   #
-  # source://gitlab//lib/gitlab/client/branches.rb#130
+  # source://gitlab//lib/gitlab/client/branches.rb#133
   def repo_protected_branch(project, branch); end
 
   # Gets a list of protected branches from a project.
@@ -1247,7 +1247,7 @@ module Gitlab::Client::Branches
   # @param project [Integer, String] The ID or name of a project.
   # @return [Array<Gitlab::ObjectifiedHash>]
   #
-  # source://gitlab//lib/gitlab/client/branches.rb#117
+  # source://gitlab//lib/gitlab/client/branches.rb#120
   def repo_protected_branches(project); end
 
   # Unprotects a repository branch.
@@ -1259,7 +1259,7 @@ module Gitlab::Client::Branches
   # @param branch [String] The name of the branch.
   # @return [Gitlab::ObjectifiedHash] Details about the branch
   #
-  # source://gitlab//lib/gitlab/client/branches.rb#65
+  # source://gitlab//lib/gitlab/client/branches.rb#68
   def repo_unprotect_branch(project, branch); end
 
   # Unprotects a repository branch.
@@ -1728,7 +1728,7 @@ module Gitlab::Client::Commits
   # @param sha [String] The commit hash or name of a repository branch or tag
   # @return [Gitlab::ObjectifiedHash]
   #
-  # source://gitlab//lib/gitlab/client/commits.rb#33
+  # source://gitlab//lib/gitlab/client/commits.rb#36
   def repo_commit(project, sha); end
 
   # Gets a list of comments for a commit.
@@ -1742,7 +1742,7 @@ module Gitlab::Client::Commits
   # @param options [Hash] a customizable set of options
   # @return [Array<Gitlab::ObjectifiedHash>]
   #
-  # source://gitlab//lib/gitlab/client/commits.rb#112
+  # source://gitlab//lib/gitlab/client/commits.rb#115
   def repo_commit_comments(project, commit, options = T.unsafe(nil)); end
 
   # Get the diff of a commit in a project.
@@ -1754,7 +1754,7 @@ module Gitlab::Client::Commits
   # @param sha [String] The name of a repository branch or tag or if not given the default branch.
   # @return [Gitlab::ObjectifiedHash]
   #
-  # source://gitlab//lib/gitlab/client/commits.rb#97
+  # source://gitlab//lib/gitlab/client/commits.rb#100
   def repo_commit_diff(project, sha); end
 
   # Gets a list of merge requests for a commit.
@@ -1771,7 +1771,7 @@ module Gitlab::Client::Commits
   # @return [Array<Gitlab::ObjectifiedHash>]
   # @see https://docs.gitlab.com/ce/api/commits.html#list-merge-requests-associated-with-a-commit
   #
-  # source://gitlab//lib/gitlab/client/commits.rb#211
+  # source://gitlab//lib/gitlab/client/commits.rb#214
   def repo_commit_merge_requests(project, commit, options = T.unsafe(nil)); end
 
   # Get the status of a commit
@@ -1788,7 +1788,7 @@ module Gitlab::Client::Commits
   # @param sha [String] The commit hash
   # @param options [Hash] A customizable set of options.
   #
-  # source://gitlab//lib/gitlab/client/commits.rb#149
+  # source://gitlab//lib/gitlab/client/commits.rb#152
   def repo_commit_status(project, sha, options = T.unsafe(nil)); end
 
   # Gets a list of project commits.
@@ -1803,7 +1803,7 @@ module Gitlab::Client::Commits
   # @param options [Hash] A customizable set of options.
   # @return [Array<Gitlab::ObjectifiedHash>]
   #
-  # source://gitlab//lib/gitlab/client/commits.rb#19
+  # source://gitlab//lib/gitlab/client/commits.rb#22
   def repo_commits(project, options = T.unsafe(nil)); end
 
   # Creates a new comment for a commit.
@@ -1819,7 +1819,7 @@ module Gitlab::Client::Commits
   # @param options [Hash] A customizable set of options.
   # @return [Gitlab::ObjectifiedHash] Information about created comment.
   #
-  # source://gitlab//lib/gitlab/client/commits.rb#130
+  # source://gitlab//lib/gitlab/client/commits.rb#133
   def repo_create_commit_comment(project, commit, note, options = T.unsafe(nil)); end
 
   # Adds or updates a status of a commit.
@@ -1836,7 +1836,7 @@ module Gitlab::Client::Commits
   # @param state [String] of the status. Can be: pending, running, success, failed, canceled
   # @param options [Hash] A customizable set of options.
   #
-  # source://gitlab//lib/gitlab/client/commits.rb#168
+  # source://gitlab//lib/gitlab/client/commits.rb#171
   def repo_update_commit_status(project, sha, state, options = T.unsafe(nil)); end
 
   # Reverts a commit in a given branch.
@@ -3356,7 +3356,7 @@ module Gitlab::Client::Jobs
   # @param job(required) [String] The name of the job.
   # @return [Gitlab::FileResponse]
   #
-  # source://gitlab//lib/gitlab/client/jobs.rb#138
+  # source://gitlab//lib/gitlab/client/jobs.rb#151
   def download_tag_artifact_file(project_id, ref_name, artifact_path, job); end
 
   # Gets a single job
@@ -4539,7 +4539,7 @@ module Gitlab::Client::Notes
   # @param merge_request [Integer] The ID of a merge request.
   # @param body [String] The content of a note.
   #
-  # source://gitlab//lib/gitlab/client/notes.rb#174
+  # source://gitlab//lib/gitlab/client/notes.rb#177
   def create_merge_request_comment(project, merge_request, body); end
 
   # Creates a new note for a single merge request.
@@ -4597,7 +4597,7 @@ module Gitlab::Client::Notes
   # @param id [Integer] The ID of a note.
   # @return [Gitlab::ObjectifiedHash]
   #
-  # source://gitlab//lib/gitlab/client/notes.rb#239
+  # source://gitlab//lib/gitlab/client/notes.rb#242
   def delete_merge_request_comment(project, merge_request, id); end
 
   # Deletes a merge_request note.
@@ -4658,7 +4658,7 @@ module Gitlab::Client::Notes
   # @param body [String] The content of a note.
   # @return [Gitlab::ObjectifiedHash]
   #
-  # source://gitlab//lib/gitlab/client/notes.rb#295
+  # source://gitlab//lib/gitlab/client/notes.rb#298
   def edit_merge_request_comment(project, merge_request, id, body); end
 
   # Modifies a merge_request note.
@@ -4750,7 +4750,7 @@ module Gitlab::Client::Notes
   # @param options [Hash] a customizable set of options
   # @return [Array<Gitlab::ObjectifiedHash>]
   #
-  # source://gitlab//lib/gitlab/client/notes.rb#58
+  # source://gitlab//lib/gitlab/client/notes.rb#61
   def merge_request_comments(project, merge_request, options = T.unsafe(nil)); end
 
   # Gets a single merge_request note.
@@ -5087,7 +5087,7 @@ module Gitlab::Client::PipelineTriggers
   # @param trigger_id [Integer] The trigger ID.
   # @return [void] This API call returns an empty response body.
   #
-  # source://gitlab//lib/gitlab/client/pipeline_triggers.rb#77
+  # source://gitlab//lib/gitlab/client/pipeline_triggers.rb#80
   def delete_trigger(project, trigger_id); end
 
   # Remove a project's pipeline trigger.
@@ -6208,7 +6208,7 @@ module Gitlab::Client::Projects
   # @param options [Hash] A customizable set of options.
   # @return [Array<Gitlab::ObjectifiedHash>]
   #
-  # source://gitlab//lib/gitlab/client/projects.rb#35
+  # source://gitlab//lib/gitlab/client/projects.rb#38
   def search_projects(query, options = T.unsafe(nil)); end
 
   # Share project with group.
@@ -6562,7 +6562,7 @@ module Gitlab::Client::Repositories
   # @param to [String] The commit SHA or branch name of to branch.
   # @return [Gitlab::ObjectifiedHash]
   #
-  # source://gitlab//lib/gitlab/client/repositories.rb#58
+  # source://gitlab//lib/gitlab/client/repositories.rb#61
   def repo_compare(project, from, to); end
 
   # Get project repository contributors.
@@ -6576,7 +6576,7 @@ module Gitlab::Client::Repositories
   # @param options [Hash] A customizable set of options.
   # @return [Array<Gitlab::ObjectifiedHash>]
   #
-  # source://gitlab//lib/gitlab/client/repositories.rb#87
+  # source://gitlab//lib/gitlab/client/repositories.rb#90
   def repo_contributors(project, options = T.unsafe(nil)); end
 
   # Get file tree project (root level).
@@ -6591,7 +6591,7 @@ module Gitlab::Client::Repositories
   # @param options [Hash] A customizable set of options.
   # @return [Gitlab::ObjectifiedHash]
   #
-  # source://gitlab//lib/gitlab/client/repositories.rb#19
+  # source://gitlab//lib/gitlab/client/repositories.rb#22
   def repo_tree(project, options = T.unsafe(nil)); end
 
   # Get file tree project (root level).
@@ -6713,7 +6713,7 @@ module Gitlab::Client::RepositoryFiles
   # @param ref [String] The name of a repository branch or tag or if not given the default branch.
   # @return [String]
   #
-  # source://gitlab//lib/gitlab/client/repository_files.rb#19
+  # source://gitlab//lib/gitlab/client/repository_files.rb#26
   def repo_file_contents(project, filepath, ref = T.unsafe(nil)); end
 
   private
@@ -7397,7 +7397,7 @@ module Gitlab::Client::SystemHooks
   # @param options [Hash] Additional options, as allowed by Gitlab API, including but not limited to:
   # @return [Gitlab::ObjectifiedHash]
   #
-  # source://gitlab//lib/gitlab/client/system_hooks.rb#33
+  # source://gitlab//lib/gitlab/client/system_hooks.rb#36
   def add_system_hook(url, options = T.unsafe(nil)); end
 
   # Deletes a new system hook.
@@ -7419,7 +7419,7 @@ module Gitlab::Client::SystemHooks
   # @param id [Integer] The ID of a system hook.
   # @return [Gitlab::ObjectifiedHash]
   #
-  # source://gitlab//lib/gitlab/client/system_hooks.rb#59
+  # source://gitlab//lib/gitlab/client/system_hooks.rb#62
   def delete_system_hook(id); end
 
   # Tests a system hook.
@@ -7454,7 +7454,7 @@ module Gitlab::Client::SystemHooks
   # @param id [Integer] The ID of a system hook.
   # @return [Array<Gitlab::ObjectifiedHash>]
   #
-  # source://gitlab//lib/gitlab/client/system_hooks.rb#46
+  # source://gitlab//lib/gitlab/client/system_hooks.rb#49
   def system_hook(id); end
 
   # Gets a list of system hooks.
@@ -7467,7 +7467,7 @@ module Gitlab::Client::SystemHooks
   # @param options [Hash] A customizable set of options.
   # @return [Array<Gitlab::ObjectifiedHash>]
   #
-  # source://gitlab//lib/gitlab/client/system_hooks.rb#17
+  # source://gitlab//lib/gitlab/client/system_hooks.rb#20
   def system_hooks(options = T.unsafe(nil)); end
 end
 
@@ -7527,7 +7527,7 @@ module Gitlab::Client::Tags
   # @param description [String] Release notes with markdown support
   # @return [Gitlab::ObjectifiedHash]
   #
-  # source://gitlab//lib/gitlab/client/tags.rb#77
+  # source://gitlab//lib/gitlab/client/tags.rb#80
   def repo_create_release(project, tag, description); end
 
   # Creates a new project repository tag.
@@ -7542,7 +7542,7 @@ module Gitlab::Client::Tags
   # @param description [String] Optional release notes for tag.
   # @return [Gitlab::ObjectifiedHash]
   #
-  # source://gitlab//lib/gitlab/client/tags.rb#34
+  # source://gitlab//lib/gitlab/client/tags.rb#37
   def repo_create_tag(project, tag_name, ref, message = T.unsafe(nil), description = T.unsafe(nil)); end
 
   # Deletes a repository tag.  Requires Gitlab >= 6.8.x
@@ -7554,7 +7554,7 @@ module Gitlab::Client::Tags
   # @param tag [String] The name of the tag to delete
   # @return [Gitlab::ObjectifiedHash]
   #
-  # source://gitlab//lib/gitlab/client/tags.rb#62
+  # source://gitlab//lib/gitlab/client/tags.rb#65
   def repo_delete_tag(project, tag); end
 
   # Gets information about a repository tag.
@@ -7566,7 +7566,7 @@ module Gitlab::Client::Tags
   # @param tag [String] The name of the tag.
   # @return [Gitlab::ObjectifiedHash]
   #
-  # source://gitlab//lib/gitlab/client/tags.rb#48
+  # source://gitlab//lib/gitlab/client/tags.rb#51
   def repo_tag(project, tag); end
 
   # Gets a list of project repository tags.
@@ -7579,7 +7579,7 @@ module Gitlab::Client::Tags
   # @param options [Hash] A customizable set of options.
   # @return [Array<Gitlab::ObjectifiedHash>]
   #
-  # source://gitlab//lib/gitlab/client/tags.rb#17
+  # source://gitlab//lib/gitlab/client/tags.rb#20
   def repo_tags(project, options = T.unsafe(nil)); end
 
   # Updates the release notes of a given release.  Requires Gitlab >= 8.2.0
@@ -7592,7 +7592,7 @@ module Gitlab::Client::Tags
   # @param description [String] Release notes with markdown support
   # @return [Gitlab::ObjectifiedHash]
   #
-  # source://gitlab//lib/gitlab/client/tags.rb#92
+  # source://gitlab//lib/gitlab/client/tags.rb#95
   def repo_update_release(project, tag, description); end
 
   # Gets information about a repository tag.
@@ -8393,6 +8393,8 @@ end
 # source://gitlab//lib/gitlab/configuration.rb#6
 module Gitlab::Configuration
   # @private
+  #
+  # source://gitlab//lib/gitlab/configuration.rb#16
   def auth_token=(_arg0); end
 
   # Convenience method to allow configuration options to be set in a block.
@@ -8671,7 +8673,7 @@ class Gitlab::FileResponse
 
   # @return [Hash] A hash consisting of filename and io object
   #
-  # source://gitlab//lib/gitlab/file_response.rb#20
+  # source://gitlab//lib/gitlab/file_response.rb#23
   def to_h; end
 
   # @return [Hash] A hash consisting of filename and io object
@@ -8802,7 +8804,7 @@ class Gitlab::ObjectifiedHash
 
   # @return [Hash] The original hash.
   #
-  # source://gitlab//lib/gitlab/objectified_hash.rb#17
+  # source://gitlab//lib/gitlab/objectified_hash.rb#20
   def to_h; end
 
   # @return [Hash] The original hash.
@@ -8878,22 +8880,22 @@ class Gitlab::PaginatedResponse
 
   # @return [Boolean]
   #
-  # source://gitlab//lib/gitlab/paginated_response.rb#77
+  # source://gitlab//lib/gitlab/paginated_response.rb#80
   def has_first_page?; end
 
   # @return [Boolean]
   #
-  # source://gitlab//lib/gitlab/paginated_response.rb#66
+  # source://gitlab//lib/gitlab/paginated_response.rb#69
   def has_last_page?; end
 
   # @return [Boolean]
   #
-  # source://gitlab//lib/gitlab/paginated_response.rb#88
+  # source://gitlab//lib/gitlab/paginated_response.rb#91
   def has_next_page?; end
 
   # @return [Boolean]
   #
-  # source://gitlab//lib/gitlab/paginated_response.rb#99
+  # source://gitlab//lib/gitlab/paginated_response.rb#102
   def has_prev_page?; end
 
   # source://gitlab//lib/gitlab/paginated_response.rb#16
@@ -9043,16 +9045,16 @@ class Gitlab::Request
     # source://gitlab//lib/gitlab/request.rb#35
     def decode(response); end
 
-    # source://httparty/0.22.0/lib/httparty/module_inheritable_attributes.rb#32
+    # source://gitlab//lib/gitlab/request.rb#9
     def default_cookies; end
 
-    # source://httparty/0.22.0/lib/httparty/module_inheritable_attributes.rb#32
+    # source://gitlab//lib/gitlab/request.rb#9
     def default_cookies=(_arg0); end
 
-    # source://httparty/0.22.0/lib/httparty/module_inheritable_attributes.rb#32
+    # source://gitlab//lib/gitlab/request.rb#9
     def default_options; end
 
-    # source://httparty/0.22.0/lib/httparty/module_inheritable_attributes.rb#32
+    # source://gitlab//lib/gitlab/request.rb#9
     def default_options=(_arg0); end
 
     # Converts the response body to an ObjectifiedHash.

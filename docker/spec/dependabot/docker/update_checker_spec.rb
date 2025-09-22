@@ -32,12 +32,14 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
     )
   end
   let(:credentials) do
-    [Dependabot::Credential.new({
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    })]
+    [Dependabot::Credential.new(
+      {
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    )]
   end
   let(:raise_on_ignored) { false }
   let(:ignored_versions) { [] }
@@ -823,8 +825,10 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       let(:dependency_name) { "dated_image" }
       let(:ignore_conditions) do
         [
-          Dependabot::Config::IgnoreCondition.new(dependency_name: dependency_name,
-                                                  update_types: update_types)
+          Dependabot::Config::IgnoreCondition.new(
+            dependency_name: dependency_name,
+            update_types: update_types
+          )
         ]
       end
       let(:update_types) { ["version-update:semver-major"] }
@@ -1244,17 +1248,21 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       context "with authentication credentials" do
         let(:credentials) do
-          [Dependabot::Credential.new({
-            "type" => "git_source",
-            "host" => "github.com",
-            "username" => "x-access-token",
-            "password" => "token"
-          }), Dependabot::Credential.new({
-            "type" => "docker_registry",
-            "registry" => "registry-host.io:5000",
-            "username" => "grey",
-            "password" => "pa55word"
-          })]
+          [Dependabot::Credential.new(
+            {
+              "type" => "git_source",
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            }
+          ), Dependabot::Credential.new(
+            {
+              "type" => "docker_registry",
+              "registry" => "registry-host.io:5000",
+              "username" => "grey",
+              "password" => "pa55word"
+            }
+          )]
         end
 
         before do
@@ -1267,15 +1275,19 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
         context "when there is no username or password" do
           let(:credentials) do
-            [Dependabot::Credential.new({
-              "type" => "git_source",
-              "host" => "github.com",
-              "username" => "x-access-token",
-              "password" => "token"
-            }), Dependabot::Credential.new({
-              "type" => "docker_registry",
-              "registry" => "registry-host.io:5000"
-            })]
+            [Dependabot::Credential.new(
+              {
+                "type" => "git_source",
+                "host" => "github.com",
+                "username" => "x-access-token",
+                "password" => "token"
+              }
+            ), Dependabot::Credential.new(
+              {
+                "type" => "docker_registry",
+                "registry" => "registry-host.io:5000"
+              }
+            )]
           end
 
           it { is_expected.to eq("17.10") }
@@ -1302,18 +1314,22 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       context "with replaces-base set to false" do
         let(:credentials) do
-          [Dependabot::Credential.new({
-            "type" => "git_source",
-            "host" => "github.com",
-            "username" => "x-access-token",
-            "password" => "token"
-          }), Dependabot::Credential.new({
-            "type" => "docker_registry",
-            "registry" => "registry-host.io:5000",
-            "username" => "grey",
-            "password" => "pa55word",
-            "replaces-base" => false
-          })]
+          [Dependabot::Credential.new(
+            {
+              "type" => "git_source",
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            }
+          ), Dependabot::Credential.new(
+            {
+              "type" => "docker_registry",
+              "registry" => "registry-host.io:5000",
+              "username" => "grey",
+              "password" => "pa55word",
+              "replaces-base" => false
+            }
+          )]
         end
 
         before do
@@ -1327,18 +1343,22 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       context "with replaces-base set to true and with authentication credentials" do
         let(:credentials) do
-          [Dependabot::Credential.new({
-            "type" => "git_source",
-            "host" => "github.com",
-            "username" => "x-access-token",
-            "password" => "token"
-          }), Dependabot::Credential.new({
-            "type" => "docker_registry",
-            "registry" => "registry-host.io:5000",
-            "username" => "grey",
-            "password" => "pa55word",
-            "replaces-base" => true
-          })]
+          [Dependabot::Credential.new(
+            {
+              "type" => "git_source",
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            }
+          ), Dependabot::Credential.new(
+            {
+              "type" => "docker_registry",
+              "registry" => "registry-host.io:5000",
+              "username" => "grey",
+              "password" => "pa55word",
+              "replaces-base" => true
+            }
+          )]
         end
 
         before do
@@ -1361,16 +1381,20 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
           end
 
           let(:credentials) do
-            [Dependabot::Credential.new({
-              "type" => "git_source",
-              "host" => "github.com",
-              "username" => "x-access-token",
-              "password" => "token"
-            }), Dependabot::Credential.new({
-              "type" => "docker_registry",
-              "registry" => "registry-host.io:5000",
-              "replaces-base" => true
-            })]
+            [Dependabot::Credential.new(
+              {
+                "type" => "git_source",
+                "host" => "github.com",
+                "username" => "x-access-token",
+                "password" => "token"
+              }
+            ), Dependabot::Credential.new(
+              {
+                "type" => "docker_registry",
+                "registry" => "registry-host.io:5000",
+                "replaces-base" => true
+              }
+            )]
           end
 
           it "raises a to PrivateSourceAuthenticationFailure error" do

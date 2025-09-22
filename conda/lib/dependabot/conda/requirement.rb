@@ -16,11 +16,14 @@ module Dependabot
       # pip: ==, >=, >, <, <=, !=, ~=
 
       # Support both conda and pip operators
-      OPS = T.let(OPS.merge(
-                    "=" => ->(v, r) { v == r },         # conda equality
-                    "==" => ->(v, r) { v == r },        # pip equality
-                    "~=" => ->(v, r) { v >= r && v.release < r.bump } # pip compatible release
-                  ), T::Hash[String, T.proc.params(arg0: T.untyped, arg1: T.untyped).returns(T.untyped)])
+      OPS = T.let(
+        OPS.merge(
+          "=" => ->(v, r) { v == r },         # conda equality
+          "==" => ->(v, r) { v == r },        # pip equality
+          "~=" => ->(v, r) { v >= r && v.release < r.bump } # pip compatible release
+        ),
+        T::Hash[String, T.proc.params(arg0: T.untyped, arg1: T.untyped).returns(T.untyped)]
+      )
 
       quoted = OPS.keys.sort_by(&:length).reverse
                   .map { |k| Regexp.quote(k) }.join("|")

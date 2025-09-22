@@ -52,13 +52,15 @@ RSpec.describe Dependabot::FileFetchers::Base do
   let(:branch) { nil }
   let(:source_commit) { nil }
   let(:credentials) do
-    [Dependabot::Credential.new({
-      "type" => "git_source",
-      "host" => "github.com",
-      "region" => "us-east-1",
-      "username" => "x-access-token",
-      "password" => "token"
-    })]
+    [Dependabot::Credential.new(
+      {
+        "type" => "git_source",
+        "host" => "github.com",
+        "region" => "us-east-1",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    )]
   end
   let(:stubbed_cc_client) { Aws::CodeCommit::Client.new(stub_responses: true) }
 

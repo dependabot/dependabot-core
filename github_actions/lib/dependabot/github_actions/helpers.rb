@@ -30,9 +30,14 @@ module Dependabot
           )
             .void
         end
-        def initialize(dependency:, credentials:,
-                       ignored_versions: [], raise_on_ignored: false,
-                       consider_version_branches_pinned: false, dependency_source_details: nil)
+        def initialize(
+          dependency:,
+          credentials:,
+          ignored_versions: [],
+          raise_on_ignored: false,
+          consider_version_branches_pinned: false,
+          dependency_source_details: nil
+        )
           @dependency = dependency
           @credentials = credentials
           @ignored_versions = ignored_versions
@@ -43,10 +48,13 @@ module Dependabot
 
         sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
+
         sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
+
         sig { returns(T::Array[String]) }
         attr_reader :ignored_versions
+
         sig { returns(T::Boolean) }
         attr_reader :raise_on_ignored
 

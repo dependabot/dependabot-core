@@ -16,11 +16,14 @@ module Dependabot
       PNPM_V8 = "8"
       PNPM_V9 = "9"
 
-      SUPPORTED_VERSIONS = T.let([
-        Version.new(PNPM_V7),
-        Version.new(PNPM_V8),
-        Version.new(PNPM_V9)
-      ].freeze, T::Array[Dependabot::Version])
+      SUPPORTED_VERSIONS = T.let(
+        [
+          Version.new(PNPM_V7),
+          Version.new(PNPM_V8),
+          Version.new(PNPM_V9)
+        ].freeze,
+        T::Array[Dependabot::Version]
+      )
 
       DEPRECATED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
 

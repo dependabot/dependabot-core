@@ -168,9 +168,11 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
     end
 
     it "provides the Rust channel" do
-      expect(file_fetcher_instance.ecosystem_versions).to eq({
-        package_managers: { "cargo" => "default" }
-      })
+      expect(file_fetcher_instance.ecosystem_versions).to eq(
+        {
+          package_managers: { "cargo" => "default" }
+        }
+      )
     end
   end
 
@@ -228,9 +230,11 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
     end
 
     it "provides the Rust channel" do
-      expect(file_fetcher_instance.ecosystem_versions).to eq({
-        package_managers: { "cargo" => "1.2.3" }
-      })
+      expect(file_fetcher_instance.ecosystem_versions).to eq(
+        {
+          package_managers: { "cargo" => "1.2.3" }
+        }
+      )
     end
   end
 
@@ -365,8 +369,11 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         end
 
         before do
-          stub_request(:get, "https://api.github.com/repos/gocardless/bump/" \
-                             "contents/my_dir?ref=sha")
+          stub_request(
+            :get,
+            "https://api.github.com/repos/gocardless/bump/" \
+            "contents/my_dir?ref=sha"
+          )
             .with(headers: { "Authorization" => "token token" })
             .to_return(
               status: 200,
@@ -756,16 +763,22 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         .with(headers: { "Authorization" => "token token" })
         .to_return(
           status: 200,
-          body: fixture("github", "path_dependency_in_workspace_root",
-                        "contents_cargo_manifest_workspace.json"),
+          body: fixture(
+            "github",
+            "path_dependency_in_workspace_root",
+            "contents_cargo_manifest_workspace.json"
+          ),
           headers: json_header
         )
       stub_request(:get, url + "child/Cargo.toml?ref=sha")
         .with(headers: { "Authorization" => "token token" })
         .to_return(
           status: 200,
-          body: fixture("github", "path_dependency_in_workspace_root",
-                        "contents_cargo_manifest_child.json"),
+          body: fixture(
+            "github",
+            "path_dependency_in_workspace_root",
+            "contents_cargo_manifest_child.json"
+          ),
           headers: json_header
         )
     end
@@ -818,48 +831,66 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         .with(headers: { "Authorization" => "token token" })
         .to_return(
           status: 200,
-          body: fixture("github", "path_dependency_workspace_member",
-                        "contents_cargo_manifest_detached_crate_fail_1.json"),
+          body: fixture(
+            "github",
+            "path_dependency_workspace_member",
+            "contents_cargo_manifest_detached_crate_fail_1.json"
+          ),
           headers: json_header
         )
       stub_request(:get, url + "detached_crate_fail_2/Cargo.toml?ref=sha")
         .with(headers: { "Authorization" => "token token" })
         .to_return(
           status: 200,
-          body: fixture("github", "path_dependency_workspace_member",
-                        "contents_cargo_manifest_detached_crate_fail_2.json"),
+          body: fixture(
+            "github",
+            "path_dependency_workspace_member",
+            "contents_cargo_manifest_detached_crate_fail_2.json"
+          ),
           headers: json_header
         )
       stub_request(:get, url + "detached_crate_success/Cargo.toml?ref=sha")
         .with(headers: { "Authorization" => "token token" })
         .to_return(
           status: 200,
-          body: fixture("github", "path_dependency_workspace_member",
-                        "contents_cargo_manifest_detached_crate_success.json"),
+          body: fixture(
+            "github",
+            "path_dependency_workspace_member",
+            "contents_cargo_manifest_detached_crate_success.json"
+          ),
           headers: json_header
         )
       stub_request(:get, url + "detached_workspace_member/Cargo.toml?ref=sha")
         .with(headers: { "Authorization" => "token token" })
         .to_return(
           status: 200,
-          body: fixture("github", "path_dependency_workspace_member",
-                        "contents_cargo_manifest_detached_workspace_member.json"),
+          body: fixture(
+            "github",
+            "path_dependency_workspace_member",
+            "contents_cargo_manifest_detached_workspace_member.json"
+          ),
           headers: json_header
         )
       stub_request(:get, url + "incorrect_detached_workspace_member/Cargo.toml?ref=sha")
         .with(headers: { "Authorization" => "token token" })
         .to_return(
           status: 200,
-          body: fixture("github", "path_dependency_workspace_member",
-                        "contents_cargo_manifest_incorrect_detached_workspace_member.json"),
+          body: fixture(
+            "github",
+            "path_dependency_workspace_member",
+            "contents_cargo_manifest_incorrect_detached_workspace_member.json"
+          ),
           headers: json_header
         )
       stub_request(:get, url + "incorrect_workspace/Cargo.toml?ref=sha")
         .with(headers: { "Authorization" => "token token" })
         .to_return(
           status: 200,
-          body: fixture("github", "path_dependency_workspace_member",
-                        "contents_cargo_manifest_incorrect_workspace.json"),
+          body: fixture(
+            "github",
+            "path_dependency_workspace_member",
+            "contents_cargo_manifest_incorrect_workspace.json"
+          ),
           headers: json_header
         )
       stub_request(:get, url + "workspace/Cargo.toml?ref=sha")
@@ -873,8 +904,11 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         .with(headers: { "Authorization" => "token token" })
         .to_return(
           status: 200,
-          body: fixture("github", "path_dependency_workspace_member",
-                        "contents_cargo_manifest_workspace_nested_one_nested_two.json"),
+          body: fixture(
+            "github",
+            "path_dependency_workspace_member",
+            "contents_cargo_manifest_workspace_nested_one_nested_two.json"
+          ),
           headers: json_header
         )
 
@@ -898,19 +932,23 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
 
       it "fetches the dependencies successfully" do
         expect(file_fetcher_instance.files.map(&:name))
-          .to match_array(%w(
-            Cargo.toml
-            ../detached_workspace_member/Cargo.toml
-            ../workspace/Cargo.toml
-            ../workspace/nested_one/nested_two/Cargo.toml
-          ))
+          .to match_array(
+            %w(
+              Cargo.toml
+              ../detached_workspace_member/Cargo.toml
+              ../workspace/Cargo.toml
+              ../workspace/nested_one/nested_two/Cargo.toml
+            )
+          )
         expect(file_fetcher_instance.files.map(&:path))
-          .to match_array(%w(
-            /detached_crate_success/Cargo.toml
-            /detached_workspace_member/Cargo.toml
-            /workspace/Cargo.toml
-            /workspace/nested_one/nested_two/Cargo.toml
-          ))
+          .to match_array(
+            %w(
+              /detached_crate_success/Cargo.toml
+              /detached_workspace_member/Cargo.toml
+              /workspace/Cargo.toml
+              /workspace/nested_one/nested_two/Cargo.toml
+            )
+          )
       end
     end
 
@@ -925,13 +963,17 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
 
       it "fetches as many dependencies as possible, without erroring" do
         expect(file_fetcher_instance.files.map(&:name))
-          .to match_array(%w(
-            ../incorrect_workspace/Cargo.toml Cargo.toml
-          ))
+          .to match_array(
+            %w(
+              ../incorrect_workspace/Cargo.toml Cargo.toml
+            )
+          )
         expect(file_fetcher_instance.files.map(&:path))
-          .to match_array(%w(
-            /detached_crate_fail_1/Cargo.toml /incorrect_workspace/Cargo.toml
-          ))
+          .to match_array(
+            %w(
+              /detached_crate_fail_1/Cargo.toml /incorrect_workspace/Cargo.toml
+            )
+          )
       end
     end
 
@@ -946,13 +988,17 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
 
       it "fetches as many dependencies as possible, without erroring" do
         expect(file_fetcher_instance.files.map(&:name))
-          .to match_array(%w(
-            ../incorrect_detached_workspace_member/Cargo.toml Cargo.toml
-          ))
+          .to match_array(
+            %w(
+              ../incorrect_detached_workspace_member/Cargo.toml Cargo.toml
+            )
+          )
         expect(file_fetcher_instance.files.map(&:path))
-          .to match_array(%w(
-            /detached_crate_fail_2/Cargo.toml /incorrect_detached_workspace_member/Cargo.toml
-          ))
+          .to match_array(
+            %w(
+              /detached_crate_fail_2/Cargo.toml /incorrect_detached_workspace_member/Cargo.toml
+            )
+          )
       end
     end
   end

@@ -258,12 +258,14 @@ RSpec.describe Dependabot::NpmAndYarn::ConstraintHelper do
     it "parses valid constraints into hashes" do
       constraints = ">=1.2.3 <2.0.0 || ~2.3.4 || ^3.0.0"
       result = helper.parse_constraints(constraints)
-      expect(result).to eq([
-        { constraint: ">=1.2.3", version: nil },
-        { constraint: "<2.0.0", version: nil },
-        { constraint: ">=2.3.4 <2.4.0", version: "2.3.4" },
-        { constraint: ">=3.0.0 <4.0.0", version: "3.0.0" }
-      ])
+      expect(result).to eq(
+        [
+          { constraint: ">=1.2.3", version: nil },
+          { constraint: "<2.0.0", version: nil },
+          { constraint: ">=2.3.4 <2.4.0", version: "2.3.4" },
+          { constraint: ">=3.0.0 <4.0.0", version: "3.0.0" }
+        ]
+      )
     end
 
     it "returns nil for invalid constraints" do
@@ -275,11 +277,13 @@ RSpec.describe Dependabot::NpmAndYarn::ConstraintHelper do
     it "handles multiple constraints with spaces and commas" do
       constraints = ">= 1.2.3 , <= 2.0.0 , ~ 3.4.5"
       result = helper.parse_constraints(constraints)
-      expect(result).to eq([
-        { constraint: ">=1.2.3", version: nil },
-        { constraint: "<=2.0.0", version: "2.0.0" },
-        { constraint: ">=3.4.5 <3.5.0", version: "3.4.5" }
-      ])
+      expect(result).to eq(
+        [
+          { constraint: ">=1.2.3", version: nil },
+          { constraint: "<=2.0.0", version: "2.0.0" },
+          { constraint: ">=3.4.5 <3.5.0", version: "3.4.5" }
+        ]
+      )
     end
   end
 

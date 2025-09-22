@@ -76,12 +76,16 @@ module Dependabot
 
         sig { returns(Dependabot::Job) }
         attr_reader :job
+
         sig { override.returns(Dependabot::Service) }
         attr_reader :service
+
         sig { returns(Dependabot::DependencySnapshot) }
         attr_reader :dependency_snapshot
+
         sig { returns(Dependabot::Updater::ErrorHandler) }
         attr_reader :error_handler
+
         # A list of notices that will be used in PR messages and/or sent to the dependabot github alerts.
         sig { returns(T::Array[Dependabot::Notice]) }
         attr_reader :notices
@@ -181,16 +185,20 @@ module Dependabot
 
         sig { params(dependency_change: Dependabot::DependencyChange).void }
         def create_pull_request(dependency_change)
-          Dependabot.logger.info("Submitting #{dependency_change.updated_dependencies.map(&:name).join(', ')} " \
-                                 "pull request for creation")
+          Dependabot.logger.info(
+            "Submitting #{dependency_change.updated_dependencies.map(&:name).join(', ')} " \
+            "pull request for creation"
+          )
 
           service.create_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
         end
 
         sig { params(dependency_change: Dependabot::DependencyChange).void }
         def update_pull_request(dependency_change)
-          Dependabot.logger.info("Submitting #{dependency_change.updated_dependencies.map(&:name).join(', ')} " \
-                                 "pull request for update")
+          Dependabot.logger.info(
+            "Submitting #{dependency_change.updated_dependencies.map(&:name).join(', ')} " \
+            "pull request for update"
+          )
 
           service.update_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
         end
@@ -200,8 +208,10 @@ module Dependabot
           job_dependencies = T.must(job.dependencies)
 
           reason_string = reason.to_s.tr("_", " ")
-          Dependabot.logger.info("Telling backend to close pull request for " \
-                                 "#{job_dependencies.join(', ')} - #{reason_string}")
+          Dependabot.logger.info(
+            "Telling backend to close pull request for " \
+            "#{job_dependencies.join(', ')} - #{reason_string}"
+          )
           service.close_pull_request(job_dependencies, reason)
         end
 
