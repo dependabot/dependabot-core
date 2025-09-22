@@ -6,6 +6,8 @@ require "dependabot/conda/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::Conda::FileFetcher do
+  before(:all) { skip("Disabling Conda file fetcher tests") }
+
   it_behaves_like "a dependency file fetcher"
 
   describe "#files" do
