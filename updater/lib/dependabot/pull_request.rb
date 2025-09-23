@@ -48,7 +48,7 @@ module Dependabot
           name: name,
           version: version,
           removed: removed? || nil,
-          directory: directory,
+          directory: directory
         }.compact
       end
 
