@@ -163,7 +163,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       context "when nothing has changed" do
         let(:requirements) { previous_requirements }
 
-        specify { expect { updated_files }.to raise_error(/No files/) }
+        specify { expect(updated_files).to eq([]) }
       end
     end
 
@@ -1800,10 +1800,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             }]
           end
 
-          it "doesn't update any files and raises" do
-            expect { updated_files }.to raise_error(
-              described_class::NoChangeError, "No files were updated!"
-            )
+          it "doesn't update any files and returns empty array" do
+            expect(updated_files).to eq([])
           end
         end
 
