@@ -203,3 +203,8 @@ updates:
       interval: "weekly"
       day: "sunday"
       time: "16:00"
+    groups:
+      regclient:
+        patterns:
+          - "regclient/regctl*"
+          - "sigstore/cosign/cosign*"
