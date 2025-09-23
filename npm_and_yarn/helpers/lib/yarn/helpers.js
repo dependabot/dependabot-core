@@ -1,7 +1,7 @@
-const { Add } = require("@dependabot/yarn-lib/lib/cli/commands/add");
-const { Install } = require("@dependabot/yarn-lib/lib/cli/commands/install");
+import { Add } from "@dependabot/yarn-lib/lib/cli/commands/add";
+import { Install } from "@dependabot/yarn-lib/lib/cli/commands/install";
 
-function isString(value) {
+export function isString(value) {
   return Object.prototype.toString.call(value) === "[object String]";
 }
 
@@ -15,7 +15,7 @@ function isString(value) {
 // We only care about the first and last steps: resolve, then save the new
 // manifest. Fortunately, overriding bailout() gives us an opportunity to skip
 // over the intermediate steps in a relatively painless fashion.
-class LightweightAdd extends Add {
+export class LightweightAdd extends Add {
   // This method is called by init() at the end of the resolve step, and is
   // responsible for checking if any dependencies need to be updated locally.
   // If everything is up to date, it'll save a new lockfile and return true,
@@ -37,18 +37,11 @@ class LightweightAdd extends Add {
   }
 }
 
-class LightweightInstall extends Install {
+export class LightweightInstall extends Install {
   async bailout(patterns, workspaceLayout) {
     await this.saveLockfileAndIntegrity(patterns, workspaceLayout);
     return true;
   }
 }
 
-const LOCKFILE_ENTRY_REGEX = /^(.*)@([^@]*?)$/;
-
-module.exports = {
-  isString,
-  LightweightAdd,
-  LightweightInstall,
-  LOCKFILE_ENTRY_REGEX,
-};
+export const LOCKFILE_ENTRY_REGEX = /^(.*)@([^@]*?)$/;
