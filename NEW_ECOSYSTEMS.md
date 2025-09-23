@@ -370,7 +370,7 @@ After successful beta testing:
 - Follow existing code patterns and conventions
 - Write comprehensive tests with good coverage
 - Handle edge cases and error conditions gracefully
-- Add clear documentation and comments where needd
+- Add clear documentation and comments where needed
 
 ### Reliability
 
