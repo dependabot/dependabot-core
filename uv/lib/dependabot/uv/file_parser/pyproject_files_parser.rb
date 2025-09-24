@@ -86,15 +86,15 @@ module Dependabot
             # probably blocked. Ignore it.
             next if dep["markers"].include?("<")
 
-            # If no requirement, don't add it
-            next if dep["requirement"].empty?
+            # In uv no constraint means any version is acceptable
+            requirement_value = dep["requirement"].empty? ? "*" : dep["requirement"]
 
             dependencies <<
               Dependency.new(
                 name: normalised_name(dep["name"], dep["extras"]),
                 version: dep["version"]&.include?("*") ? nil : dep["version"],
                 requirements: [{
-                  requirement: dep["requirement"],
+                  requirement: requirement_value,
                   file: Pathname.new(dep["file"]).cleanpath.to_path,
                   source: nil,
                   groups: [dep["requirement_type"]].compact
