@@ -248,6 +248,7 @@ module Dependabot
     sig { returns(T.nilable(String)) }
     def humanized_version
       return "removed" if removed?
+      return nil if version.nil?
 
       if T.must(version).match?(/^[0-9a-f]{40}/)
         return new_ref if ref_changed? && new_ref

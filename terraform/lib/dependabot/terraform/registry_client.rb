@@ -176,7 +176,14 @@ module Dependabot
         @services ||= T.let(
           begin
             response = http_get(url_for("/.well-known/terraform.json"))
-            response.status == 200 ? JSON.parse(response.body) : {}
+            if response.status == 200 && !response.body.empty?
+              JSON.parse(response.body)
+            else
+              {}
+            end
+          rescue JSON::ParserError => e
+            Dependabot.logger.warn("Failed to parse Terraform registry services: #{e.message}")
+            {}
           end,
           T.nilable(T::Hash[String, String])
         )

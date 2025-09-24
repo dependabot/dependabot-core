@@ -36,9 +36,9 @@ module Dependabot
       end
 
       # TODO: Delegate this to ecosystem-specific base classes
-      sig { override.params(package_manager: String).returns(String) }
-      def purl_pkg_for(package_manager)
-        case package_manager
+      sig { override.params(dependency: Dependabot::Dependency).returns(String) }
+      def purl_pkg_for(dependency)
+        case dependency.package_manager
         when "bundler"
           "gem"
         when "npm_and_yarn", "bun"

@@ -9,6 +9,8 @@ module Dependabot
       extend T::Sig
       extend T::Helpers
 
+      PURL_TEMPLATE = "pkg:%<type>s/%<name>s%<version>s"
+
       abstract!
 
       # TODO(brrygrdn): Inject the Dependency parser instead of pre-parsed `dependencies`
@@ -64,13 +66,34 @@ module Dependabot
       # Each grapher is expected to implement a method to map the various package managers it supports to
       # the correct Package-URL type, see:
       #   https://github.com/package-url/purl-spec/blob/main/PURL-TYPES.rst
-      sig { abstract.params(package_manager: String).returns(String) }
-      def purl_pkg_for(package_manager); end
+      sig { abstract.params(dependency: Dependabot::Dependency).returns(String) }
+      def purl_pkg_for(dependency); end
+
+      # Our basic strategy is just to use the dependency name, but specific graphers may need to override this
+      # to meet formal specifics
+      sig { params(dependency: Dependabot::Dependency).returns(String) }
+      def purl_name_for(dependency)
+        dependency.name
+      end
+
+      # We should ensure we don't include an `@` if there isn't a resolved version, but some ecosystems
+      # specifically include the `v` or allow certain prefixes
+      sig { params(dependency: Dependabot::Dependency).returns(String) }
+      def purl_version_for(dependency)
+        return "" unless dependency.version
+
+        "@#{dependency.version}"
+      end
 
       # Generate a purl for the provided Dependency object
       sig { params(dependency: Dependabot::Dependency).returns(String) }
       def build_purl(dependency)
-        "pkg:#{purl_pkg_for(dependency.package_manager)}/#{dependency.name}@#{dependency.version}".chomp("@")
+        format(
+          PURL_TEMPLATE,
+          type: purl_pkg_for(dependency),
+          name: purl_name_for(dependency),
+          version: purl_version_for(dependency)
+        )
       end
 
       sig { params(dep: Dependabot::Dependency).returns(String) }
