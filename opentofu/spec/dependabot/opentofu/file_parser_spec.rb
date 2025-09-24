@@ -45,6 +45,17 @@ RSpec.describe Dependabot::Opentofu::FileParser do
       end
     end
 
+    context "with an early evaluation module source" do
+      let(:files) { project_dependency_files("early_evaluation") }
+
+      it "is warned and skipped" do
+        expect(Dependabot.logger).to receive(:warn).with(
+          "Cannot parse module source name with early evaluation for interpolated_module in main.tofu."
+        )
+        expect(dependencies).to be_empty
+      end
+    end
+
     context "with an unparseable source" do
       let(:files) { project_dependency_files("unparseable") }
 

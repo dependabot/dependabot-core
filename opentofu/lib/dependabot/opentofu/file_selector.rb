@@ -27,7 +27,12 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def opentofu_files
-        dependency_files.select { |f| f.name.end_with?(TF_EXTENSION, TOFU_EXTENSION) && !f.name.end_with?(OVERRIDE_TF_EXTENSION, OVERRIDE_TOFU_EXTENSION) }
+        dependency_files.select do |f|
+          f.name.end_with?(
+            TF_EXTENSION,
+            TOFU_EXTENSION
+          ) && !f.name.end_with?(OVERRIDE_TF_EXTENSION, OVERRIDE_TOFU_EXTENSION)
+        end
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
