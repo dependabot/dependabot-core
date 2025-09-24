@@ -130,17 +130,15 @@ module Dependabot
       sig { returns(T.nilable(Ecosystem::VersionManager)) }
       def language
         @language ||= T.let(
-          begin
-            Language.new(go_version)
-          end,
+          go_version ? Language.new(T.must(go_version)) : nil,
           T.nilable(Dependabot::GoModules::Language)
         )
       end
 
-      sig { returns(String) }
+      sig { returns(T.nilable(String)) }
       def go_version
         @go_version ||= T.let(
-          T.must(go_mod&.content&.match(/^go\s(\d+\.\d+(.\d+)*)/)&.captures&.first),
+          go_mod&.content&.match(/^go\s(\d+\.\d+(.\d+)*)/)&.captures&.first,
           T.nilable(String)
         )
       end
