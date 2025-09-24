@@ -79,6 +79,14 @@ module Dependabot
             # Cannot update local path modules, skip
             next if source && source[:type] == "path"
 
+            # Cannot update modules using early evaluation yet
+            if T.must(source)[:type] == "interpolation"
+              Dependabot.logger.warn(
+                "Cannot parse module source name with early evaluation for #{name} in #{file.name}."
+              )
+              next
+            end
+
             dependency_set << build_opentofu_dependency(file, name, T.must(source), details)
           end
 
@@ -92,7 +100,6 @@ module Dependabot
           end
         end
       end
-      # rubocop:enable Metrics/PerceivedComplexity
 
       sig { params(dependency_set: Dependabot::FileParsers::Base::DependencySet).void }
       def parse_terragrunt_files(dependency_set)
@@ -220,17 +227,18 @@ module Dependabot
       def source_from(details_hash)
         raw_source = details_hash.fetch("source")
         bare_source = RegistryClient.get_proxied_source(raw_source)
+        source_type = source_type(bare_source)
 
         source_details =
-          case source_type(bare_source)
+          case source_type
           when :http_archive, :path, :mercurial, :s3
-            { type: source_type(bare_source).to_s, url: bare_source }
+            { type: source_type.to_s, url: bare_source }
           when :github, :bitbucket, :git
             git_source_details_from(bare_source)
           when :registry
             registry_source_details_from(bare_source)
           when :interpolation
-            return nil
+            { type: source_type.to_s, name: bare_source }
           end
 
         T.must(source_details)[:proxy_url] = raw_source if raw_source != bare_source
@@ -317,7 +325,6 @@ module Dependabot
         ref.match(version_regex)&.named_captures&.fetch("version")
       end
 
-      # rubocop:disable Metrics/PerceivedComplexity
       # rubocop:disable Metrics/CyclomaticComplexity
       sig { params(source_string: String).returns(Symbol) }
       def source_type(source_string)
