@@ -80,4 +80,4 @@ job:
         - dependency-name: dependency-b
           dependency-version: 2.2.5
           directory: /
-          pr-number: 124
+          pr-number: 123
