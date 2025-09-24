@@ -65,6 +65,14 @@ jobs:
         run: |
           brew install --cask docker
           brew install docker-buildx
+          CONFIG="$HOME/.docker/config.json"
+          PLUGIN_DIR="/opt/homebrew/lib/docker/cli-plugins"
+
+          if [ ! -f "$CONFIG" ]; then
+            echo '{ "cliPluginsExtraDirs": ["'"$PLUGIN_DIR"'"] }' > "$CONFIG"
+          else
+            jq '.cliPluginsExtraDirs |= ( . // [] | . + ["'"$PLUGIN_DIR"'"] | unique )' "$CONFIG" > "$CONFIG.tmp" && mv "$CONFIG.tmp" "$CONFIG"
+          fi
 
       - name: Build ecosystem image
         if: steps.changes.outputs[matrix.suite.path] == 'true'
