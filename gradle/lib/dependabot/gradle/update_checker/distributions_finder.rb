@@ -18,8 +18,13 @@ module Dependabot
           return @available_versions if @available_versions.any?
 
           response = Dependabot::RegistryClient.get(url: "https://services.gradle.org/versions/all")
-          versions = T.let(JSON.parse(T.let(response.body, String),
-                                      object_class: OpenStruct), T::Array[OpenStruct])
+          versions = T.let(
+            JSON.parse(
+              T.let(response.body, String),
+              object_class: OpenStruct
+            ),
+            T::Array[OpenStruct]
+          )
           @available_versions += versions
                                  .select { |v| release_version?(version: v) }
                                  .map { |v| T.let(v["version"], String) }

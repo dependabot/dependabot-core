@@ -34,8 +34,10 @@ RSpec.describe Dependabot::Gradle::FileParser::DistributionsFinder do
       let(:properties_file) do
         Dependabot::DependencyFile.new(
           name: "gradle/wrapper/gradle-wrapper.properties",
-          content: fixture("wrapper_files",
-                           "gradle-wrapper-#{version}-#{type}#{checksum ? '-checksum' : ''}.properties")
+          content: fixture(
+            "wrapper_files",
+            "gradle-wrapper-#{version}-#{type}#{'-checksum' if checksum}.properties"
+          )
         )
       end
 
@@ -78,7 +80,9 @@ RSpec.describe Dependabot::Gradle::FileParser::DistributionsFinder do
     end
 
     it_behaves_like "distribution dependency", "8.14.2", "all", nil
-    it_behaves_like "distribution dependency", "9.0.0", "bin",
+    it_behaves_like "distribution dependency",
+                    "9.0.0",
+                    "bin",
                     "8fad3d78296ca518113f3d29016617c7f9367dc005f932bd9d93bf45ba46072b"
   end
 end

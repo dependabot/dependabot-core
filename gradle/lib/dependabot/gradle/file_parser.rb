@@ -25,7 +25,7 @@ module Dependabot
       extend T::Sig
 
       require "dependabot/file_parsers/base/dependency_set"
-      require_relative "file_parser/distributions_finder.rb"
+      require_relative "file_parser/distributions_finder"
       require_relative "file_parser/property_value_finder"
 
       SUPPORTED_BUILD_FILE_NAMES = T.let(

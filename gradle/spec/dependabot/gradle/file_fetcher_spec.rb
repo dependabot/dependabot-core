@@ -78,13 +78,15 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
       end
 
       it "fetches the wrapper files" do
-        expect(file_fetcher_instance.files.map(&:name)).to eq(%w(
-          build.gradle
-          gradlew
-          gradlew.bat
-          gradle/wrapper/gradle-wrapper.jar
-          gradle/wrapper/gradle-wrapper.properties
-        ))
+        expect(file_fetcher_instance.files.map(&:name)).to eq(
+          %w(
+            build.gradle
+            gradlew
+            gradlew.bat
+            gradle/wrapper/gradle-wrapper.jar
+            gradle/wrapper/gradle-wrapper.properties
+          )
+        )
         expect(file_fetcher_instance.files.map(&:content_encoding)).to eq(%w(utf-8 utf-8 utf-8 base64 utf-8))
       end
     end
@@ -290,8 +292,10 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
           stub_content_request("included/included/included/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
           stub_no_content_request("included/included/included/gradle.lockfile?ref=sha")
           stub_content_request("included/included/included/buildSrc?ref=sha", "contents_java.json")
-          stub_content_request("included/included/included/buildSrc/build.gradle?ref=sha",
-                               "contents_java_basic_buildfile.json")
+          stub_content_request(
+            "included/included/included/buildSrc/build.gradle?ref=sha",
+            "contents_java_basic_buildfile.json"
+          )
         end
 
         it "fetches all buildfiles transitively" do

@@ -15,7 +15,7 @@ module Dependabot
           /.*?(?<version>(\d+(?:\.\d+){1,3}(?:-(?!bin|all)\w++)*(?:\+\w++)*))(?:-bin|-all)?.*?/
 
         sig { params(properties_file: DependencyFile).returns(T.nilable(Dependency)) }
-        def self.resolve_dependency(properties_file)
+        def self.resolve_dependency(properties_file) # rubocop:disable Metrics/MethodLength
           content = properties_file.content
           return nil unless content
 
@@ -25,16 +25,19 @@ module Dependabot
 
           version = match.fetch("version")
 
-          requirements = T.let([{
-            requirement: version,
-            file: properties_file.name,
-            source: {
-              type: Distributions::DISTRIBUTION_DEPENDENCY_TYPE,
-              url: distribution_url,
-              property: "distributionUrl"
-            },
-            groups: []
-          }], T::Array[T::Hash[Symbol, T.untyped]])
+          requirements = T.let(
+            [{
+              requirement: version,
+              file: properties_file.name,
+              source: {
+                type: Distributions::DISTRIBUTION_DEPENDENCY_TYPE,
+                url: distribution_url,
+                property: "distributionUrl"
+              },
+              groups: []
+            }],
+            T::Array[T::Hash[Symbol, T.untyped]]
+          )
 
           if checksum
             requirements << {
