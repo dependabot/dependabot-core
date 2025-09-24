@@ -14,7 +14,6 @@ jobs:
           - { path: bun, name: bun, ecosystem: bun }
           - { path: bundler, name: bundler, ecosystem: bundler }
           - { path: cargo, name: cargo, ecosystem: cargo }
-          - { path: common, name: common, ecosystem: common }
           - { path: composer, name: composer, ecosystem: composer }
           - { path: conda, name: conda, ecosystem: conda }
           - { path: devcontainers, name: devcontainers, ecosystem: devcontainers }
