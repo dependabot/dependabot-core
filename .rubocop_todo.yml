@@ -147,6 +147,16 @@ Metrics/CyclomaticComplexity:
   Exclude:
     - 'updater/lib/github_api/dependency_submission.rb'
 
+# Offense count: 354/350
+Metrics/AbcSize:
+  Exclude:
+    - 'opentofu/lib/dependabot/opentofu/file_parser.rb'
+
+# Offense count: 354/350
+Metrics/ClassLength:
+  Exclude:
+    - 'opentofu/lib/dependabot/opentofu/file_parser.rb'
+
 # Offense count: 8
 RSpec/RepeatedExampleGroupBody:
   Exclude:
