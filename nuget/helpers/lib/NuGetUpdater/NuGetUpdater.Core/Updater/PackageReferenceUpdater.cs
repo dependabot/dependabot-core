@@ -9,6 +9,16 @@ using NuGetUpdater.Core.Utilities;
 
 namespace NuGetUpdater.Core;
 
+public delegate Task<IEnumerable<UpdateOperationBase>> ComputeUpdateOperations(
+    string repoRoot,
+    string projectPath,
+    string targetFramework,
+    ImmutableArray<Dependency> topLevelDependencies,
+    ImmutableArray<Dependency> requestedUpdates,
+    ImmutableArray<Dependency> resolvedDependencies,
+    ILogger logger
+);
+
 /// <summary>
 /// Handles package updates for projects containing `<PackageReference>` MSBuild items.
 /// </summary>

@@ -31,4 +31,20 @@ internal class TestDiscoveryWorker : IDiscoveryWorker
             throw new NotImplementedException($"No saved response for {input}");
         });
     }
+
+    public static TestDiscoveryWorker InOrder(params WorkspaceDiscoveryResult[] results)
+    {
+        var index = 0;
+        return new TestDiscoveryWorker(((string _RepoRootPath, string WorkspacePath) input) =>
+        {
+            if (index >= results.Length)
+            {
+                throw new InvalidOperationException("No more results available");
+            }
+
+            var result = results[index];
+            index++;
+            return Task.FromResult(result);
+        });
+    }
 }

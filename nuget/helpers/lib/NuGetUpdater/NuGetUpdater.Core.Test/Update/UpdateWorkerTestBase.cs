@@ -1,10 +1,13 @@
 using System.Text.Json;
 
+using NuGetUpdater.Core.DependencySolver;
+using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Run;
 using NuGetUpdater.Core.Run.ApiModel;
 using NuGetUpdater.Core.Test.Updater;
 using NuGetUpdater.Core.Test.Utilities;
 using NuGetUpdater.Core.Updater;
+using NuGetUpdater.Core.Updater.FileWriters;
 
 using Xunit;
 
@@ -153,7 +156,17 @@ public abstract class UpdateWorkerTestBase : TestBase
 
             // run update
             experimentsManager ??= new ExperimentsManager();
-            var worker = new UpdaterWorker("TEST-JOB-ID", experimentsManager, new TestLogger());
+            var jobId = "TEST-JOB-ID";
+            var logger = new TestLogger();
+            var discoveryWorker = new DiscoveryWorker(jobId, experimentsManager, logger);
+            var worker = new UpdaterWorker(
+                jobId,
+                discoveryWorker,
+                workspacePath => new MSBuildDependencySolver(new DirectoryInfo(temporaryDirectory), new FileInfo(workspacePath), logger),
+                [new XmlFileWriter(logger)],
+                PackageReferenceUpdater.ComputeUpdateOperations,
+                experimentsManager,
+                logger);
             var projectPath = placeFilesInSrc ? $"src/{projectFilePath}" : projectFilePath;
             var actualResult = await worker.RunWithErrorHandlingAsync(temporaryDirectory, projectPath, dependencyName, oldVersion, newVersion, isTransitive);
             ValidateUpdateOperationResult(expectedResult, actualResult!);
@@ -275,7 +288,17 @@ public abstract class UpdateWorkerTestBase : TestBase
 
             experimentsManager ??= new ExperimentsManager();
             var slnPath = Path.Combine(temporaryDirectory, slnName);
-            var worker = new UpdaterWorker("TEST-JOB-ID", experimentsManager, new TestLogger());
+            var jobId = "TEST-JOB-ID";
+            var logger = new TestLogger();
+            var discoveryWorker = new DiscoveryWorker(jobId, experimentsManager, logger);
+            var worker = new UpdaterWorker(
+                jobId,
+                discoveryWorker,
+                workspacePath => new MSBuildDependencySolver(new DirectoryInfo(temporaryDirectory), new FileInfo(workspacePath), logger),
+                [new XmlFileWriter(logger)],
+                PackageReferenceUpdater.ComputeUpdateOperations,
+                experimentsManager,
+                logger);
             await worker.RunAsync(temporaryDirectory, slnPath, dependencyName, oldVersion, newVersion, isTransitive);
         });
 
