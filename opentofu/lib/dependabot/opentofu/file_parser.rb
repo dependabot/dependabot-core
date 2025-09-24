@@ -97,7 +97,7 @@ module Dependabot
       sig { params(dependency_set: Dependabot::FileParsers::Base::DependencySet).void }
       def parse_terragrunt_files(dependency_set)
         terragrunt_files.each do |file|
-          modules = parsed_file(file).fetch("opentofu", [])
+          modules = parsed_file(file).fetch("terraform", [])
           modules.each do |details|
             next unless details["source"]
 

@@ -21,7 +21,7 @@ module Dependabot
 
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
-        filenames.any? { |f| f.end_with?(".tf", ".hcl") }
+        filenames.any? { |f| f.end_with?(".tf", ".tofu", ".hcl") }
       end
 
       sig { override.returns(String) }
@@ -56,7 +56,7 @@ module Dependabot
       def opentofu_files
         @opentofu_files ||= T.let(
           repo_contents(raise_errors: false)
-          .select { |f| f.type == "file" && f.name.end_with?(".tf") }
+          .select { |f| f.type == "file" && f.name.end_with?(".tf", ".tofu") }
           .map { |f| fetch_file_from_host(f.name) },
           T.nilable(T::Array[Dependabot::DependencyFile])
         )
@@ -93,7 +93,7 @@ module Dependabot
 
             nested_opentofu_files =
               repo_contents(dir: base_path)
-              .select { |f| f.type == "file" && f.name.end_with?(".tf") }
+              .select { |f| f.type == "file" && f.name.end_with?(".tf", ".tofu") }
               .map { |f| fetch_file_from_host(File.join(base_path, f.name)) }
             opentofu_files += nested_opentofu_files
             opentofu_files += local_path_module_files(nested_opentofu_files, dir: path)
@@ -107,7 +107,7 @@ module Dependabot
 
       sig { params(file: Dependabot::DependencyFile).returns(T::Array[String]) }
       def opentofu_file_local_module_details(file)
-        return [] unless file.name.end_with?(".tf")
+        return [] unless file.name.end_with?(".tf", ".tofu")
         return [] unless file.content&.match?(LOCAL_PATH_SOURCE)
 
         T.must(file.content).scan(LOCAL_PATH_SOURCE).flatten.map do |path|

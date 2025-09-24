@@ -147,7 +147,7 @@ module Dependabot
       def service_url_for(service_key)
         url_for(services.fetch(service_key))
       rescue KeyError
-        raise Dependabot::PrivateSourceAuthenticationFailure, "Host does not support required Terraform-native service"
+        raise Dependabot::PrivateSourceAuthenticationFailure, "Host does not support required OpenTofu-native service"
       end
 
       private
