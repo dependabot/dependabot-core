@@ -1,0 +1,56 @@
+name: ARM64 Build
+
+on:
+  pull_request:
+
+jobs:
+  build-arm64:
+    runs-on: macos-latest # arm64 runner
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - { path: bin, name: dry_run, ecosystem: common }
+          - { path: bun, name: bun, ecosystem: bun }
+          - { path: bundler, name: bundler, ecosystem: bundler }
+          - { path: cargo, name: cargo, ecosystem: cargo }
+          - { path: common, name: common, ecosystem: common }
+          - { path: composer, name: composer, ecosystem: composer }
+          - { path: conda, name: conda, ecosystem: conda }
+          - { path: devcontainers, name: devcontainers, ecosystem: devcontainers }
+          - { path: docker_compose, name: docker_compose, ecosystem: docker-compose }
+          - { path: docker, name: docker, ecosystem: docker }
+          - { path: dotnet_sdk, name: dotnet_sdk, ecosystem: dotnet-sdk }
+          - { path: elm, name: elm, ecosystem: elm }
+          - { path: git_submodules, name: git_submodules, ecosystem: gitsubmodule }
+          - { path: github_actions, name: github_actions, ecosystem: github-actions }
+          - { path: go_modules, name: go_module, ecosystem: gomod }
+          - { path: gradle, name: gradle, ecosystem: gradle }
+          - { path: helm, name: helm, ecosystem: helm }
+          - { path: hex, name: hex, ecosystem: mix }
+          - { path: maven, name: maven, ecosystem: maven }
+          - { path: npm_and_yarn, name: npm_and_yarn, ecosystem: npm }
+          - { path: nuget, name: nuget, ecosystem: nuget }
+          - { path: pub, name: pub, ecosystem: pub }
+          - { path: python, name: python_slow, ecosystem: pip }
+          - { path: python, name: python, ecosystem: pip }
+          - { path: rust_toolchain, name: rust_toolchain, ecosystem: rust-toolchain }
+          - { path: swift, name: swift, ecosystem: swift }
+          - { path: terraform, name: terraform, ecosystem: terraform }
+          - { path: uv, name: uv, ecosystem: uv }
+          - { path: vcpkg, name: vcpkg, ecosystem: vcpkg }
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          submodules: recursive
+
+      - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        id: changes
+        with:
+          token: '' # use git commands to avoid excessive rate limit usage
+          filters: .github/ci-filters.yml
+
+      - name: Build ${{ matrix.suite.name }} image
+        if: steps.changes.outputs[matrix.suite.path] == 'true'
+        run: script/build ${{ matrix.suite.path }}
