@@ -22,12 +22,14 @@ Types: deb
 URIs: http://azure.archive.ubuntu.com/ubuntu/
 Suites: ${release} ${release}-updates ${release}-backports
 Components: main universe restricted multiverse
+Architectures: i386,amd64
 Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
 
 Types: deb
 URIs: http://azure.archive.ubuntu.com/ubuntu/
 Suites: ${release}-security
 Components: main universe restricted multiverse
+Architectures: i386,amd64
 Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
 
 # Fallback to the main Ubuntu archive if the above is not available
@@ -35,12 +37,22 @@ Types: deb
 URIs: http://archive.ubuntu.com/ubuntu/
 Suites: ${release} ${release}-updates ${release}-backports
 Components: main universe restricted multiverse
+Architectures: i386,amd64
+Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+
+# Ports Ubuntu archive is the only mirror with arm64 support
+Types: deb
+URIs: http://ports.ubuntu.com/
+Suites: ${release} ${release}-updates ${release}-backports
+Components: main universe restricted multiverse
+Architectures: arm64
 Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
 
 Types: deb
 URIs: http://security.ubuntu.com/ubuntu/
 Suites: ${release}-security
 Components: main universe restricted multiverse
+Architectures: i386,amd64
 Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
 
 EOF
