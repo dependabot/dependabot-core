@@ -19,10 +19,10 @@ RSpec.describe Dependabot::PullRequest do
         [
           Dependabot::PullRequest::Dependency.new(
             name: "foo",
-            version: "1.0.0",
-            pr_number: 123
+            version: "1.0.0"
           )
-        ]
+        ],
+        pr_number: 123
       )
 
       expect(pr1).to eq(pr2)
@@ -33,19 +33,19 @@ RSpec.describe Dependabot::PullRequest do
         [
           Dependabot::PullRequest::Dependency.new(
             name: "foo",
-            version: "1.0.0",
-            pr_number: 123
+            version: "1.0.0"
           )
-        ]
+        ],
+        pr_number: 123
       )
       pr2 = described_class.new(
         [
           Dependabot::PullRequest::Dependency.new(
             name: "bar",
-            version: "1.0.0",
-            pr_number: 123
+            version: "1.0.0"
           )
-        ]
+        ],
+        pr_number: 123
       )
 
       expect(pr1).not_to eq(pr2)
@@ -56,19 +56,19 @@ RSpec.describe Dependabot::PullRequest do
         [
           Dependabot::PullRequest::Dependency.new(
             name: "foo",
-            version: "1.0.0",
-            pr_number: 123
+            version: "1.0.0"
           )
-        ]
+        ],
+        pr_number: 123
       )
       pr2 = described_class.new(
         [
           Dependabot::PullRequest::Dependency.new(
             name: "foo",
-            version: "2.0.0",
-            pr_number: 123
+            version: "2.0.0"
           )
-        ]
+        ],
+        pr_number: 123
       )
 
       expect(pr1).not_to eq(pr2)
@@ -79,20 +79,20 @@ RSpec.describe Dependabot::PullRequest do
         [
           Dependabot::PullRequest::Dependency.new(
             name: "foo",
-            version: "1.0.0",
-            pr_number: 123
+            version: "1.0.0"
           )
-        ]
+        ],
+        pr_number: 123
       )
       pr2 = described_class.new(
         [
           Dependabot::PullRequest::Dependency.new(
             name: "foo",
             version: "1.0.0",
-            removed: true,
-            pr_number: 123
+            removed: true
           )
-        ]
+        ],
+        pr_number: 123
       )
 
       expect(pr1).not_to eq(pr2)
@@ -104,20 +104,20 @@ RSpec.describe Dependabot::PullRequest do
           Dependabot::PullRequest::Dependency.new(
             name: "foo",
             version: "1.0.0",
-            directory: "/foo",
-            pr_number: 123
+            directory: "/foo"
           )
-        ]
+        ],
+        pr_number: 123
       )
       pr2 = described_class.new(
         [
           Dependabot::PullRequest::Dependency.new(
             name: "foo",
             version: "1.0.0",
-            directory: "/bar",
-            pr_number: 123
+            directory: "/bar"
           )
-        ]
+        ],
+        pr_number: 123
       )
 
       expect(pr1).not_to eq(pr2)
@@ -128,24 +128,23 @@ RSpec.describe Dependabot::PullRequest do
         [
           Dependabot::PullRequest::Dependency.new(
             name: "foo",
-            version: "1.0.0",
-            pr_number: 123
+            version: "1.0.0"
           ),
           Dependabot::PullRequest::Dependency.new(
             name: "bar",
-            version: "2.0.0",
-            pr_number: 456
+            version: "2.0.0"
           )
-        ]
+        ],
+        pr_number: 123
       )
       pr2 = described_class.new(
         [
           Dependabot::PullRequest::Dependency.new(
             name: "foo",
-            version: "1.0.0",
-            pr_number: 123
+            version: "1.0.0"
           )
-        ]
+        ],
+        pr_number: 123
       )
 
       expect(pr1).not_to eq(pr2)
@@ -156,24 +155,23 @@ RSpec.describe Dependabot::PullRequest do
         [
           Dependabot::PullRequest::Dependency.new(
             name: "foo",
-            version: "1.0.0",
-            pr_number: 123
+            version: "1.0.0"
           )
-        ]
+        ],
+        pr_number: 123
       )
       pr2 = described_class.new(
         [
           Dependabot::PullRequest::Dependency.new(
             name: "foo",
-            version: "1.0.0",
-            pr_number: 123
+            version: "1.0.0"
           ),
           Dependabot::PullRequest::Dependency.new(
             name: "bar",
-            version: "2.0.0",
-            pr_number: 456
+            version: "2.0.0"
           )
-        ]
+        ],
+        pr_number: 456
       )
 
       expect(pr1).not_to eq(pr2)
