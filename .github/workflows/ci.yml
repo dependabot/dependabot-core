@@ -64,6 +64,7 @@ jobs:
         if: matrix.os == 'macos-latest'
         run: |
           brew install --cask docker
+          brew install docker-buildx
 
       - name: Build ecosystem image
         if: steps.changes.outputs[matrix.suite.path] == 'true'
