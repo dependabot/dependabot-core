@@ -10,10 +10,13 @@ concurrency:
 
 jobs:
   ci:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest # arm64 runner
         suite:
           - { path: bin, name: dry_run, ecosystem: common }
           - { path: bun, name: bun, ecosystem: bun }
