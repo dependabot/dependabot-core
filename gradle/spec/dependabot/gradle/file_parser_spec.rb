@@ -824,8 +824,10 @@ RSpec.describe Dependabot::Gradle::FileParser do
             [
               Dependabot::DependencyFile.new(
                 name: "#{folder}gradle/wrapper/gradle-wrapper.properties",
-                content: fixture("wrapper_files",
-                                 "gradle-wrapper-#{version}-#{type}#{checksum ? '-checksum' : ''}.properties")
+                content: fixture(
+                  "wrapper_files",
+                  "gradle-wrapper-#{version}-#{type}#{'-checksum' if checksum}.properties"
+                )
               )
             ]
           end
@@ -872,12 +874,21 @@ RSpec.describe Dependabot::Gradle::FileParser do
 
       it_behaves_like "wrapper_properties_test", "/", "8.14.2", "bin", nil
       it_behaves_like "wrapper_properties_test", "/", "8.14.2", "all", nil
-      it_behaves_like "wrapper_properties_test", "/", "9.0.0", "bin",
+      it_behaves_like "wrapper_properties_test",
+                      "/",
+                      "9.0.0",
+                      "bin",
                       "8fad3d78296ca518113f3d29016617c7f9367dc005f932bd9d93bf45ba46072b"
-      it_behaves_like "wrapper_properties_test", "/", "9.0.0", "all",
+      it_behaves_like "wrapper_properties_test",
+                      "/",
+                      "9.0.0",
+                      "all",
                       "f759b8dd5204e2e3fa4ca3e73f452f087153cf81bac9561eeb854229cc2c5365"
       it_behaves_like "wrapper_properties_test", "/buildSrc/", "8.14.2", "bin", nil
-      it_behaves_like "wrapper_properties_test", "/buildSrc/", "9.0.0", "all",
+      it_behaves_like "wrapper_properties_test",
+                      "/buildSrc/",
+                      "9.0.0",
+                      "all",
                       "f759b8dd5204e2e3fa4ca3e73f452f087153cf81bac9561eeb854229cc2c5365"
     end
 

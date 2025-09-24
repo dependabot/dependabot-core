@@ -190,36 +190,8 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::RequirementsUpdater do
 
       it "updates url and checksum" do
         expect(updater.updated_requirements).not_to eq(requirements)
-        expect(updater.updated_requirements).to eq([
-          {
-            requirement: "9.0.0",
-            file: "gradle/wrapper/gradle-wrapper.properties",
-            source: {
-              type: "gradle-distribution",
-              url: "https://services.gradle.org/distributions/gradle-9.0.0-all.zip",
-              property: "distributionUrl"
-            },
-            groups: []
-          },
-          {
-            requirement: "f759b8dd5204e2e3fa4ca3e73f452f087153cf81bac9561eeb854229cc2c5365",
-            file: "gradle/wrapper/gradle-wrapper.properties",
-            source: {
-              type: "gradle-distribution",
-              url: "https://services.gradle.org/distributions/gradle-9.0.0-all.zip.sha256",
-              property: "distributionSha256Sum"
-            },
-            groups: []
-          }
-        ])
-      end
-
-      context "when no checksum is available" do
-        let(:requirements) { [distribution_req] }
-
-        it "only updates url" do
-          expect(updater.updated_requirements).not_to eq(requirements)
-          expect(updater.updated_requirements).to eq([
+        expect(updater.updated_requirements).to eq(
+          [
             {
               requirement: "9.0.0",
               file: "gradle/wrapper/gradle-wrapper.properties",
@@ -229,8 +201,40 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::RequirementsUpdater do
                 property: "distributionUrl"
               },
               groups: []
+            },
+            {
+              requirement: "f759b8dd5204e2e3fa4ca3e73f452f087153cf81bac9561eeb854229cc2c5365",
+              file: "gradle/wrapper/gradle-wrapper.properties",
+              source: {
+                type: "gradle-distribution",
+                url: "https://services.gradle.org/distributions/gradle-9.0.0-all.zip.sha256",
+                property: "distributionSha256Sum"
+              },
+              groups: []
             }
-          ])
+          ]
+        )
+      end
+
+      context "when no checksum is available" do
+        let(:requirements) { [distribution_req] }
+
+        it "only updates url" do
+          expect(updater.updated_requirements).not_to eq(requirements)
+          expect(updater.updated_requirements).to eq(
+            [
+              {
+                requirement: "9.0.0",
+                file: "gradle/wrapper/gradle-wrapper.properties",
+                source: {
+                  type: "gradle-distribution",
+                  url: "https://services.gradle.org/distributions/gradle-9.0.0-all.zip",
+                  property: "distributionUrl"
+                },
+                groups: []
+              }
+            ]
+          )
         end
       end
 
@@ -239,15 +243,19 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::RequirementsUpdater do
           [distribution_req, checksum_req, distribution_req.merge(
             requirement: "8.14.3",
             file: "another/gradle/wrapper/gradle-wrapper.properties",
-            source: distribution_req[:source].merge({
-              url: "https://services.gradle.org/distributions/gradle-8.14.3-bin.zip"
-            })
+            source: distribution_req[:source].merge(
+              {
+                url: "https://services.gradle.org/distributions/gradle-8.14.3-bin.zip"
+              }
+            )
           ), checksum_req.merge(
             requirement: "bd71102213493060956ec229d946beee57158dbd89d0e62b91bca0fa2c5f3531",
             file: "another/gradle/wrapper/gradle-wrapper.properties",
-            source: checksum_req[:source].merge({
-              url: "https://services.gradle.org/distributions/gradle-8.14.3-bin.zip.sha256"
-            })
+            source: checksum_req[:source].merge(
+              {
+                url: "https://services.gradle.org/distributions/gradle-8.14.3-bin.zip.sha256"
+              }
+            )
           )]
         end
 
@@ -258,45 +266,47 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::RequirementsUpdater do
 
         it "updates all of them" do
           expect(updater.updated_requirements).not_to eq(requirements)
-          expect(updater.updated_requirements).to eq([
-            {
-              requirement: "9.0.0",
-              file: "gradle/wrapper/gradle-wrapper.properties",
-              source: {
-                type: "gradle-distribution",
-                url: "https://services.gradle.org/distributions/gradle-9.0.0-all.zip",
-                property: "distributionUrl"
-              },
-              groups: []
-            }, {
-              requirement: "f759b8dd5204e2e3fa4ca3e73f452f087153cf81bac9561eeb854229cc2c5365",
-              file: "gradle/wrapper/gradle-wrapper.properties",
-              source: {
-                type: "gradle-distribution",
-                url: "https://services.gradle.org/distributions/gradle-9.0.0-all.zip.sha256",
-                property: "distributionSha256Sum"
-              },
-              groups: []
-            }, {
-              requirement: "9.0.0",
-              file: "another/gradle/wrapper/gradle-wrapper.properties",
-              source: {
-                type: "gradle-distribution",
-                url: "https://services.gradle.org/distributions/gradle-9.0.0-bin.zip",
-                property: "distributionUrl"
-              },
-              groups: []
-            }, {
-              requirement: "8fad3d78296ca518113f3d29016617c7f9367dc005f932bd9d93bf45ba46072b",
-              file: "another/gradle/wrapper/gradle-wrapper.properties",
-              source: {
-                type: "gradle-distribution",
-                url: "https://services.gradle.org/distributions/gradle-9.0.0-bin.zip.sha256",
-                property: "distributionSha256Sum"
-              },
-              groups: []
-            }
-          ])
+          expect(updater.updated_requirements).to eq(
+            [
+              {
+                requirement: "9.0.0",
+                file: "gradle/wrapper/gradle-wrapper.properties",
+                source: {
+                  type: "gradle-distribution",
+                  url: "https://services.gradle.org/distributions/gradle-9.0.0-all.zip",
+                  property: "distributionUrl"
+                },
+                groups: []
+              }, {
+                requirement: "f759b8dd5204e2e3fa4ca3e73f452f087153cf81bac9561eeb854229cc2c5365",
+                file: "gradle/wrapper/gradle-wrapper.properties",
+                source: {
+                  type: "gradle-distribution",
+                  url: "https://services.gradle.org/distributions/gradle-9.0.0-all.zip.sha256",
+                  property: "distributionSha256Sum"
+                },
+                groups: []
+              }, {
+                requirement: "9.0.0",
+                file: "another/gradle/wrapper/gradle-wrapper.properties",
+                source: {
+                  type: "gradle-distribution",
+                  url: "https://services.gradle.org/distributions/gradle-9.0.0-bin.zip",
+                  property: "distributionUrl"
+                },
+                groups: []
+              }, {
+                requirement: "8fad3d78296ca518113f3d29016617c7f9367dc005f932bd9d93bf45ba46072b",
+                file: "another/gradle/wrapper/gradle-wrapper.properties",
+                source: {
+                  type: "gradle-distribution",
+                  url: "https://services.gradle.org/distributions/gradle-9.0.0-bin.zip.sha256",
+                  property: "distributionSha256Sum"
+                },
+                groups: []
+              }
+            ]
+          )
         end
       end
     end

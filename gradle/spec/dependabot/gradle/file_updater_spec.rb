@@ -636,8 +636,10 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
           let(:buildfile) do
             Dependabot::DependencyFile.new(
               name: "gradle/wrapper/gradle-wrapper.properties",
-              content: fixture("wrapper_files",
-                               "gradle-wrapper-#{version}-#{type}#{checksum ? '-checksum' : ''}.properties")
+              content: fixture(
+                "wrapper_files",
+                "gradle-wrapper-#{version}-#{type}#{'-checksum' if checksum}.properties"
+              )
             )
           end
 
@@ -697,10 +699,14 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
 
         it_behaves_like "wrapper", "8.14.2", "all", nil, nil
         it_behaves_like "wrapper", "8.14.2", "bin", nil, nil
-        it_behaves_like "wrapper", "8.14.2", "bin",
+        it_behaves_like "wrapper",
+                        "8.14.2",
+                        "bin",
                         "7197a12f450794931532469d4ff21a59ea2c1cd59a3ec3f89c035c3c420a6999",
                         "8fad3d78296ca518113f3d29016617c7f9367dc005f932bd9d93bf45ba46072b"
-        it_behaves_like "wrapper", "8.14.2", "all",
+        it_behaves_like "wrapper",
+                        "8.14.2",
+                        "all",
                         "443c9c8ee2ac1ee0e11881a40f2376d79c66386264a44b24a9f8ca67e633375f",
                         "f759b8dd5204e2e3fa4ca3e73f452f087153cf81bac9561eeb854229cc2c5365"
       end

@@ -18,18 +18,24 @@ module Dependabot
         def initialize(dependency_files:, dependency:)
           super(dependency_files: dependency_files)
           @dependency = dependency
-          @target_files = T.let(%w(
-            /gradlew
-            /gradlew.bat
-            /gradle/wrapper/gradle-wrapper.properties
-            /gradle/wrapper/gradle-wrapper.jar
-          ), T::Array[String])
-          @build_files = T.let(%w(
-            build.gradle
-            build.gradle.kts
-            settings.gradle
-            settings.gradle.kts
-          ), T::Array[String])
+          @target_files = T.let(
+            %w(
+              /gradlew
+              /gradlew.bat
+              /gradle/wrapper/gradle-wrapper.properties
+              /gradle/wrapper/gradle-wrapper.jar
+            ),
+            T::Array[String]
+          )
+          @build_files = T.let(
+            %w(
+              build.gradle
+              build.gradle.kts
+              settings.gradle
+              settings.gradle.kts
+            ),
+            T::Array[String]
+          )
         end
 
         sig { override.params(file: Dependabot::DependencyFile).returns(T::Boolean) }

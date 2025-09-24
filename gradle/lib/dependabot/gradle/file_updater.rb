@@ -123,8 +123,10 @@ module Dependabot
       # rubocop:enable Metrics/AbcSize
 
       sig do
-        params(files: T::Array[Dependabot::DependencyFile],
-               dependency: Dependabot::Dependency).returns(T::Array[GradleUpdaterBase])
+        params(
+          files: T::Array[Dependabot::DependencyFile],
+          dependency: Dependabot::Dependency
+        ).returns(T::Array[GradleUpdaterBase])
       end
       def native_updaters(files, dependency)
         updaters = T.let([], T::Array[GradleUpdaterBase])
