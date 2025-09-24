@@ -285,10 +285,10 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
             [
               Dependabot::PullRequest::Dependency.new(
                 name: "dummy-pkg-a",
-                version: "2.0.1",
-                pr_number: 123
+                version: "2.0.1"
               )
-            ]
+            ],
+            pr_number: 123
           )
         ])
       end
