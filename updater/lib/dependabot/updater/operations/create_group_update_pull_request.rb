@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "dependabot/updater/group_update_creation"
+require "dependabot/updater/group_dependency_selector"
 require "sorbet-runtime"
 
 # This class implements our strategy for creating a single Pull Request which
@@ -49,6 +50,7 @@ module Dependabot
           @group = group
         end
 
+        # rubocop:disable Metrics/AbcSize
         sig { returns(T.nilable(Dependabot::DependencyChange)) }
         def perform
           if group.dependencies.empty?
@@ -60,26 +62,39 @@ module Dependabot
 
           if dependency_change&.updated_dependencies&.any?
             Dependabot.logger.info("Creating a pull request for '#{group.name}'")
+
+            # Report any failed dependency updates before creating the PR
+            if Dependabot::Experiments.enabled?(:enhanced_grouped_security_error_reporting)
+              report_failed_dependency_updates_for_security_updates
+            end
+
             begin
               service.create_pull_request(T.must(dependency_change), dependency_snapshot.base_commit_sha)
             rescue StandardError => e
               error_handler.handle_job_error(error: e, dependency_group: group)
             ensure
               service.record_ecosystem_meta(dependency_snapshot.ecosystem)
+              service.record_cooldown_meta(job)
             end
           else
             Dependabot.logger.info("Nothing to update for Dependency Group: '#{group.name}'")
+
+            # If there are no updates, we still want to report them as failed updates
+            if Dependabot::Experiments.enabled?(:enhanced_grouped_security_error_reporting)
+              report_failed_dependency_updates_for_security_updates
+            end
           end
 
           dependency_change
         end
+        # rubocop:enable Metrics/AbcSize
 
         private
 
         sig { returns(Dependabot::Job) }
         attr_reader :job
 
-        sig { returns(Dependabot::Service) }
+        sig { override.returns(Dependabot::Service) }
         attr_reader :service
 
         sig { returns(Dependabot::DependencySnapshot) }
@@ -108,6 +123,45 @@ module Dependabot
             dependency_change = T.let(T.must(dependency_changes.first), Dependabot::DependencyChange)
             dependency_change.merge_changes!(T.must(dependency_changes[1..-1])) if dependency_changes.count > 1
             @dependency_change = T.let(dependency_change, T.nilable(Dependabot::DependencyChange))
+          end
+
+          # Apply GroupDependencySelector filtering to ensure only group-eligible dependencies
+          if @dependency_change
+            selector = Dependabot::Updater::GroupDependencySelector.new(
+              group: group,
+              dependency_snapshot: dependency_snapshot
+            )
+            selector.filter_to_group!(@dependency_change)
+          end
+
+          @dependency_change
+        end
+
+        sig { void }
+        def report_failed_dependency_updates_for_security_updates
+          # Only report failed updates if the group applies to security updates
+          return unless job.security_updates_only?
+
+          original_dependencies = group.dependencies
+          updated_dependency_names = dependency_change&.updated_dependencies&.map(&:name) || []
+
+          failed_dependencies = original_dependencies.reject do |dep|
+            updated_dependency_names.include?(dep.name)
+          end
+
+          # Filter out dependencies that were already handled (i.e., had errors reported during processing)
+          unhandled_failed_dependencies = failed_dependencies.reject do |dep|
+            dependency_snapshot.handled_dependencies.include?(dep.name)
+          end
+
+          unhandled_failed_dependencies.each do |failed_dependency|
+            error_handler.handle_dependency_error(
+              error: Dependabot::DependabotError.new(
+                "Security update failed for #{failed_dependency.name} #{failed_dependency.version}"
+              ),
+              dependency: failed_dependency,
+              dependency_group: group
+            )
           end
         end
       end

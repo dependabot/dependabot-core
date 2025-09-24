@@ -26,8 +26,8 @@ job:
   source:
     directory: "/"
     provider: example
-    hostname: example.com
-    api-endpoint: https://example.com/api/v3
+    hostname: 127.0.0.1
+    api-endpoint: http://127.0.0.1/api/v3
     repo: dependabot/smoke-tests
   security-advisories:
     - dependency-name: dependency-a
@@ -40,3 +40,4 @@ job:
     - - dependency-name: dependency-a
         dependency-version: 1.2.4
         directory: "/"
+        pr-number: 123

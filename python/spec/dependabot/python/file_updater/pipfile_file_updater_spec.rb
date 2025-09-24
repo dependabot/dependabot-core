@@ -53,12 +53,14 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
   end
   let(:dependency_name) { "requests" }
   let(:credentials) do
-    [Dependabot::Credential.new({
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    })]
+    [Dependabot::Credential.new(
+      {
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    )]
   end
   let(:repo_contents_path) { nil }
 
@@ -185,16 +187,20 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
     context "with a source not included in the original Pipfile" do
       let(:credentials) do
         [
-          Dependabot::Credential.new({
-            "type" => "git_source",
-            "host" => "github.com",
-            "username" => "x-access-token",
-            "password" => "token"
-          }),
-          Dependabot::Credential.new({
-            "type" => "python_index",
-            "index-url" => "https://pypi.posrip.com/pypi/"
-          })
+          Dependabot::Credential.new(
+            {
+              "type" => "git_source",
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            }
+          ),
+          Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://pypi.posrip.com/pypi/"
+            }
+          )
         ]
       end
 
@@ -215,16 +221,20 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
       let(:lockfile_fixture_name) { "environment_variable_source.lock" }
       let(:credentials) do
         [
-          Dependabot::Credential.new({
-            "type" => "git_source",
-            "host" => "github.com",
-            "username" => "x-access-token",
-            "password" => "token"
-          }),
-          Dependabot::Credential.new({
-            "type" => "python_index",
-            "index-url" => "https://pypi.org/simple"
-          })
+          Dependabot::Credential.new(
+            {
+              "type" => "git_source",
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            }
+          ),
+          Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://pypi.org/simple"
+            }
+          )
         ]
       end
 
@@ -261,8 +271,10 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
         expect(json_lockfile["default"]["requests"]["version"])
           .to eq("==2.18.4")
         expect(json_lockfile["_meta"]["sources"])
-          .to eq([{ "url" => "https://pypi.org/${ENV_VAR}",
-                    "verify_ssl" => true }])
+          .to eq(
+            [{ "url" => "https://pypi.org/${ENV_VAR}",
+               "verify_ssl" => true }]
+          )
         expect(updated_lockfile.content)
           .not_to include("pypi.org/simple")
         expect(json_lockfile["develop"]["pytest"]["version"]).to eq("==3.4.0")
@@ -477,16 +489,20 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
       let(:lockfile_fixture_name) { "environment_variable_verify_ssl_false.lock" }
       let(:credentials) do
         [
-          Dependabot::Credential.new({
-            "type" => "git_source",
-            "host" => "github.com",
-            "username" => "x-access-token",
-            "password" => "token"
-          }),
-          Dependabot::Credential.new({
-            "type" => "python_index",
-            "index-url" => "https://pypi.org/simple"
-          })
+          Dependabot::Credential.new(
+            {
+              "type" => "git_source",
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            }
+          ),
+          Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://pypi.org/simple"
+            }
+          )
         ]
       end
 
@@ -523,11 +539,61 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
         expect(json_lockfile["default"]["requests"]["version"])
           .to eq("==2.18.4")
         expect(json_lockfile["_meta"]["sources"])
-          .to eq([{ "url" => "https://pypi.org/${ENV_VAR}",
-                    "verify_ssl" => true }])
+          .to eq(
+            [{ "url" => "https://pypi.org/${ENV_VAR}",
+               "verify_ssl" => true }]
+          )
         expect(updated_lockfile.content)
           .not_to include("pypi.org/simple")
         expect(json_lockfile["develop"]["pytest"]["version"]).to eq("==3.4.0")
+      end
+    end
+
+    context "when the Pipfile is unresolvable" do
+      let(:pipfile_fixture_name) { "malformed_pipfile_source_missing" }
+      let(:lockfile_fixture_name) { "malformed_pipfile_source_missing.lock" }
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            {
+              "type" => "git_source",
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            }
+          ),
+          Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://pypi.org/simple"
+            }
+          )
+        ]
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: "2.18.4",
+          previous_version: "2.18.0",
+          package_manager: "pip",
+          requirements: [{
+            requirement: "==2.18.4",
+            file: "Pipfile",
+            source: nil,
+            groups: ["default"]
+          }],
+          previous_requirements: [{
+            requirement: "==2.18.0",
+            file: "Pipfile",
+            source: nil,
+            groups: ["default"]
+          }]
+        )
+      end
+
+      it "raise DependencyFileNotResolvable error" do
+        expect { updated_files }.to raise_error(Dependabot::DependencyFileNotResolvable)
       end
     end
 

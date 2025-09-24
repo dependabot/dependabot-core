@@ -1,8 +1,10 @@
 # typed: strict
 # frozen_string_literal: true
 
-require "stringio"
+require "ostruct"
 require "sorbet-runtime"
+require "stringio"
+
 require "dependabot/config"
 require "dependabot/dependency_file"
 require "dependabot/source"
@@ -98,20 +100,29 @@ module Dependabot
             source: Dependabot::Source,
             credentials: T::Array[Dependabot::Credential],
             repo_contents_path: T.nilable(String),
-            options: T::Hash[String, String]
+            options: T::Hash[String, String],
+            update_config: T.nilable(Dependabot::Config::UpdateConfig)
           )
           .void
       end
-      def initialize(source:, credentials:, repo_contents_path: nil, options: {})
+      def initialize(source:, credentials:, repo_contents_path: nil, options: {}, update_config: nil)
         @source = source
         @credentials = credentials
         @repo_contents_path = repo_contents_path
+        @exclude_paths = T.let(update_config&.exclude_paths || [], T::Array[String])
         @linked_paths = T.let({}, T::Hash[T.untyped, T.untyped])
         @submodules = T.let([], T::Array[T.untyped])
         @options = options
 
         @files = T.let([], T::Array[DependencyFile])
       end
+
+      # rubocop:disable Style/TrivialAccessors
+      sig { params(excludes: T::Array[String]).void }
+      def exclude_paths=(excludes)
+        @exclude_paths = excludes
+      end
+      # rubocop:enable Style/TrivialAccessors
 
       sig { returns(String) }
       def repo
@@ -128,6 +139,11 @@ module Dependabot
         source.branch
       end
 
+      sig { returns(T::Boolean) }
+      def allow_beta_ecosystems?
+        Experiments.enabled?(:enable_beta_ecosystems)
+      end
+
       sig { returns(T::Array[DependencyFile]) }
       def files
         return @files if @files.any?
@@ -141,9 +157,6 @@ module Dependabot
 
         @files = files
       end
-
-      sig { abstract.returns(T::Array[DependencyFile]) }
-      def fetch_files; end
 
       sig { returns(T.nilable(String)) }
       def commit
@@ -178,6 +191,9 @@ module Dependabot
 
       sig { overridable.returns(T.nilable(T::Hash[Symbol, T.untyped])) }
       def ecosystem_versions; end
+
+      sig { abstract.returns(T::Array[DependencyFile]) }
+      def fetch_files; end
 
       private
 
@@ -291,8 +307,12 @@ module Dependabot
         )
           .returns(T::Array[T.untyped])
       end
-      def repo_contents(dir: ".", ignore_base_directory: false,
-                        raise_errors: true, fetch_submodules: false)
+      def repo_contents(
+        dir: ".",
+        ignore_base_directory: false,
+        raise_errors: true,
+        fetch_submodules: false
+      )
         dir = File.join(directory, dir) unless ignore_base_directory
         path = Pathname.new(dir).cleanpath.to_path.gsub(%r{^/*}, "")
 
@@ -300,8 +320,11 @@ module Dependabot
         @repo_contents[dir.to_s] ||= if repo_contents_path
                                        _cloned_repo_contents(path)
                                      else
-                                       _fetch_repo_contents(path, raise_errors: raise_errors,
-                                                                  fetch_submodules: fetch_submodules)
+                                       _fetch_repo_contents(
+                                         path,
+                                         raise_errors: raise_errors,
+                                         fetch_submodules: fetch_submodules
+                                       )
                                      end
       end
 
@@ -311,7 +334,7 @@ module Dependabot
 
         SharedHelpers.with_git_configured(credentials: credentials) do
           Dir.chdir(T.must(repo_contents_path)) do
-            return SharedHelpers.run_shell_command("git rev-parse HEAD").strip
+            return SharedHelpers.run_shell_command("git rev-parse HEAD", stderr_to_stdout: false).strip
           end
         end
       end
@@ -446,14 +469,18 @@ module Dependabot
         params(path: String, fetch_submodules: T::Boolean, raise_errors: T::Boolean)
           .returns(T::Array[OpenStruct])
       end
-      def _fetch_repo_contents(path, fetch_submodules: false,
-                               raise_errors: true)
+      def _fetch_repo_contents(path, fetch_submodules: false, raise_errors: true) # rubocop:disable Metrics/PerceivedComplexity
         path = path.gsub(" ", "%20")
         provider, repo, tmp_path, commit =
           _full_specification_for(path, fetch_submodules: fetch_submodules)
           .values_at(:provider, :repo, :path, :commit)
 
-        _fetch_repo_contents_fully_specified(provider, repo, tmp_path, commit)
+        entries = _fetch_repo_contents_fully_specified(provider, repo, tmp_path, commit)
+        if Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files)
+          filter_excluded(entries)
+        else
+          entries
+        end
       rescue *CLIENT_NOT_FOUND_ERRORS
         raise Dependabot::DirectoryNotFound, directory if path == directory.gsub(%r{^/*}, "")
 
@@ -515,7 +542,7 @@ module Dependabot
         repo_path = File.join(clone_repo_contents, relative_path)
         return [] unless Dir.exist?(repo_path)
 
-        Dir.entries(repo_path).sort.filter_map do |name|
+        entries = Dir.entries(repo_path).sort.filter_map do |name|
           next if name == "." || name == ".."
 
           absolute_path = File.join(repo_path, name)
@@ -534,6 +561,32 @@ module Dependabot
             size: 0 # NOTE: added for parity with github contents API
           )
         end
+        if Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files)
+          filter_excluded(entries)
+        else
+          entries
+        end
+      end
+
+      # Filters out any entries whose paths match one of the exclude_paths globs.
+      sig { params(entries: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
+      def filter_excluded(entries)
+        Dependabot.logger.info("DEBUG filter_excluded: entries=#{entries.length}, exclude_paths=#{@exclude_paths.inspect}") # rubocop:disable Layout/LineLength
+
+        return entries if @exclude_paths.empty?
+
+        filtered_entries = entries.reject do |entry|
+          full_entry_path = entry.path
+          Dependabot.logger.info("DEBUG: Checking entry path: #{full_entry_path}")
+
+          Dependabot::FileFiltering.exclude_path?(full_entry_path, @exclude_paths)
+        end
+
+        Dependabot.logger.info("DEBUG filter_excluded: Filtered from #{entries.length} to #{filtered_entries.length} entries") # rubocop:disable Layout/LineLength
+        filtered_entries
+      rescue StandardError => e
+        Dependabot.logger.warn("Error while filtering exclude paths patterns: #{e.message}")
+        entries
       end
 
       sig { params(file: Sawyer::Resource).returns(OpenStruct) }

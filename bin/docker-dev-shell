@@ -109,9 +109,22 @@ if [ "$#" -gt "1" ]; then
   CONTAINER_ARGS=("${@:2}")
 fi
 
+# for Mac with Docker Desktop or Rancher Desktop
+if [[ "$(uname)" == "Darwin" ]]; then
+  # Use Docker Desktop's special SSH agent path
+  export SSH_AUTH_SOCK=/run/host-services/ssh-auth.sock
+fi
+
+# for Mac with Docker Desktop or Rancher Desktop, use:Add commentMore actions
+# SSH_AUTH_SOCK=/run/host-services/ssh-auth.sock ./bin/docker-dev-shell go_modules -r
+if [ -n "$SSH_AUTH_SOCK" ]; then
+  DOCKER_OPTS+=("-v" "$SSH_AUTH_SOCK:/tmp/ssh-auth.sock")
+  DOCKER_OPTS+=("-e" "SSH_AUTH_SOCK=/tmp/ssh-auth.sock")
+fi
+
 echo "$(tput setaf 2)=> running docker development shell$(tput sgr0)"
 CODE_DIR="/home/dependabot"
-touch .core-bash_history
+touch .core-bash_history # allow bash history to persist across invocations
 mkdir -p dry-run tmp
 docker run --rm -ti \
   -v "$(pwd)/.core-bash_history:/home/dependabot/.bash_history" \
@@ -119,6 +132,12 @@ docker run --rm -ti \
   -v "$(pwd)/.rubocop_todo.yml:$CODE_DIR/.rubocop_todo.yml" \
   -v "$(pwd)/.ruby-version:$CODE_DIR/.ruby-version" \
   -v "$(pwd)/bin:$CODE_DIR/bin" \
+  -v "$(pwd)/bun/.rubocop.yml:$CODE_DIR/bun/.rubocop.yml" \
+  -v "$(pwd)/bun/dependabot-bun.gemspec:$CODE_DIR/bun/dependabot-bun.gemspec" \
+  -v "$(pwd)/bun/helpers:$CODE_DIR/bun/helpers" \
+  -v "$(pwd)/bun/lib:$CODE_DIR/bun/lib" \
+  -v "$(pwd)/bun/script:$CODE_DIR/bun/script" \
+  -v "$(pwd)/bun/spec:$CODE_DIR/bun/spec" \
   -v "$(pwd)/bundler/.rubocop.yml:$CODE_DIR/bundler/.rubocop.yml" \
   -v "$(pwd)/bundler/dependabot-bundler.gemspec:$CODE_DIR/bundler/dependabot-bundler.gemspec" \
   -v "$(pwd)/bundler/helpers:$CODE_DIR/bundler/helpers" \
@@ -142,6 +161,11 @@ docker run --rm -ti \
   -v "$(pwd)/composer/lib:$CODE_DIR/composer/lib" \
   -v "$(pwd)/composer/script:$CODE_DIR/composer/script" \
   -v "$(pwd)/composer/spec:$CODE_DIR/composer/spec" \
+  -v "$(pwd)/conda/.rubocop.yml:$CODE_DIR/conda/.rubocop.yml" \
+  -v "$(pwd)/conda/dependabot-conda.gemspec:$CODE_DIR/conda/dependabot-conda.gemspec" \
+  -v "$(pwd)/conda/lib:$CODE_DIR/conda/lib" \
+  -v "$(pwd)/conda/script:$CODE_DIR/conda/script" \
+  -v "$(pwd)/conda/spec:$CODE_DIR/conda/spec" \
   -v "$(pwd)/devcontainers/.rubocop.yml:$CODE_DIR/devcontainers/.rubocop.yml" \
   -v "$(pwd)/devcontainers/dependabot-devcontainers.gemspec:$CODE_DIR/devcontainers/dependabot-devcontainers.gemspec" \
   -v "$(pwd)/devcontainers/lib:$CODE_DIR/devcontainers/lib" \
@@ -152,6 +176,11 @@ docker run --rm -ti \
   -v "$(pwd)/docker/lib:$CODE_DIR/docker/lib" \
   -v "$(pwd)/docker/script:$CODE_DIR/docker/script" \
   -v "$(pwd)/docker/spec:$CODE_DIR/docker/spec" \
+  -v "$(pwd)/docker_compose/.rubocop.yml:$CODE_DIR/docker_compose/.rubocop.yml" \
+  -v "$(pwd)/docker_compose/dependabot-docker_compose.gemspec:$CODE_DIR/docker_compose/dependabot-docker_compose.gemspec" \
+  -v "$(pwd)/docker_compose/lib:$CODE_DIR/docker_compose/lib" \
+  -v "$(pwd)/docker_compose/script:$CODE_DIR/docker_compose/script" \
+  -v "$(pwd)/docker_compose/spec:$CODE_DIR/docker_compose/spec" \
   -v "$(pwd)/dotnet_sdk/.rubocop.yml:$CODE_DIR/dotnet_sdk/.rubocop.yml" \
   -v "$(pwd)/dotnet_sdk/dependabot-dotnet_sdk.gemspec:$CODE_DIR/dotnet_sdk/dependabot-dotnet_sdk.gemspec" \
   -v "$(pwd)/dotnet_sdk/lib:$CODE_DIR/dotnet_sdk/lib" \
@@ -184,6 +213,11 @@ docker run --rm -ti \
   -v "$(pwd)/gradle/lib:$CODE_DIR/gradle/lib" \
   -v "$(pwd)/gradle/script:$CODE_DIR/gradle/script" \
   -v "$(pwd)/gradle/spec:$CODE_DIR/gradle/spec" \
+  -v "$(pwd)/helm/.rubocop.yml:$CODE_DIR/helm/.rubocop.yml" \
+  -v "$(pwd)/helm/dependabot-helm.gemspec:$CODE_DIR/helm/dependabot-helm.gemspec" \
+  -v "$(pwd)/helm/lib:$CODE_DIR/helm/lib" \
+  -v "$(pwd)/helm/script:$CODE_DIR/helm/script" \
+  -v "$(pwd)/helm/spec:$CODE_DIR/helm/spec" \
   -v "$(pwd)/hex/.rubocop.yml:$CODE_DIR/hex/.rubocop.yml" \
   -v "$(pwd)/hex/dependabot-hex.gemspec:$CODE_DIR/hex/dependabot-hex.gemspec" \
   -v "$(pwd)/hex/helpers:$CODE_DIR/hex/helpers" \
@@ -222,6 +256,11 @@ docker run --rm -ti \
   -v "$(pwd)/python/lib:$CODE_DIR/python/lib" \
   -v "$(pwd)/python/script:$CODE_DIR/python/script" \
   -v "$(pwd)/python/spec:$CODE_DIR/python/spec" \
+  -v "$(pwd)/rust_toolchain/.rubocop.yml:$CODE_DIR/rust_toolchain/.rubocop.yml" \
+  -v "$(pwd)/rust_toolchain/dependabot-rust_toolchain.gemspec:$CODE_DIR/rust_toolchain/dependabot-rust_toolchain.gemspec" \
+  -v "$(pwd)/rust_toolchain/lib:$CODE_DIR/rust_toolchain/lib" \
+  -v "$(pwd)/rust_toolchain/script:$CODE_DIR/rust_toolchain/script" \
+  -v "$(pwd)/rust_toolchain/spec:$CODE_DIR/rust_toolchain/spec" \
   -v "$(pwd)/swift/.rubocop.yml:$CODE_DIR/swift/.rubocop.yml" \
   -v "$(pwd)/swift/dependabot-swift.gemspec:$CODE_DIR/swift/dependabot-swift.gemspec" \
   -v "$(pwd)/swift/lib:$CODE_DIR/swift/lib" \
@@ -233,6 +272,17 @@ docker run --rm -ti \
   -v "$(pwd)/terraform/lib:$CODE_DIR/terraform/lib" \
   -v "$(pwd)/terraform/script:$CODE_DIR/terraform/script" \
   -v "$(pwd)/terraform/spec:$CODE_DIR/terraform/spec" \
+  -v "$(pwd)/uv/.rubocop.yml:$CODE_DIR/uv/.rubocop.yml" \
+  -v "$(pwd)/uv/dependabot-uv.gemspec:$CODE_DIR/uv/dependabot-uv.gemspec" \
+  -v "$(pwd)/uv/helpers:$CODE_DIR/uv/helpers" \
+  -v "$(pwd)/uv/lib:$CODE_DIR/uv/lib" \
+  -v "$(pwd)/uv/script:$CODE_DIR/uv/script" \
+  -v "$(pwd)/uv/spec:$CODE_DIR/uv/spec" \
+  -v "$(pwd)/vcpkg/.rubocop.yml:$CODE_DIR/vcpkg/.rubocop.yml" \
+  -v "$(pwd)/vcpkg/dependabot-vcpkg.gemspec:$CODE_DIR/vcpkg/dependabot-vcpkg.gemspec" \
+  -v "$(pwd)/vcpkg/lib:$CODE_DIR/vcpkg/lib" \
+  -v "$(pwd)/vcpkg/script:$CODE_DIR/vcpkg/script" \
+  -v "$(pwd)/vcpkg/spec:$CODE_DIR/vcpkg/spec" \
   -v "$(pwd)/tmp:/$CODE_DIR/tmp" \
   -v "$(pwd)/updater/.rubocop.yml:$CODE_DIR/dependabot-updater/.rubocop.yml" \
   -v "$(pwd)/updater/bin:$CODE_DIR/dependabot-updater/bin" \

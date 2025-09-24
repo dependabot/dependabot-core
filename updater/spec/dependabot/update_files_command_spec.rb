@@ -10,14 +10,16 @@ RSpec.describe Dependabot::UpdateFilesCommand do
   subject(:job) { described_class.new }
 
   let(:service) do
-    instance_double(Dependabot::Service,
-                    capture_exception: nil,
-                    mark_job_as_processed: nil,
-                    record_update_job_error: nil,
-                    record_update_job_unknown_error: nil,
-                    update_dependency_list: nil,
-                    increment_metric: nil,
-                    wait_for_calls_to_finish: nil)
+    instance_double(
+      Dependabot::Service,
+      capture_exception: nil,
+      mark_job_as_processed: nil,
+      record_update_job_error: nil,
+      record_update_job_unknown_error: nil,
+      update_dependency_list: nil,
+      increment_metric: nil,
+      wait_for_calls_to_finish: nil
+    )
   end
   let(:job_definition) do
     JSON.parse(fixture("file_fetcher_output/output.json"))
@@ -26,8 +28,12 @@ RSpec.describe Dependabot::UpdateFilesCommand do
 
   before do
     allow(Dependabot::Service).to receive(:new).and_return(service)
-    allow(Dependabot::Environment).to receive_messages(job_id: job_id, job_token: "mock_token",
-                                                       job_definition: job_definition, repo_contents_path: nil)
+    allow(Dependabot::Environment).to receive_messages(
+      job_id: job_id,
+      job_token: "mock_token",
+      job_definition: job_definition,
+      repo_contents_path: nil
+    )
   end
 
   describe "#perform_job" do
@@ -60,8 +66,10 @@ RSpec.describe Dependabot::UpdateFilesCommand do
 
     context "with vendoring_dependencies" do
       let(:snapshot) do
-        instance_double(Dependabot::DependencySnapshot,
-                        base_commit_sha: "1c6331732c41e4557a16dacb82534f1d1c831848")
+        instance_double(
+          Dependabot::DependencySnapshot,
+          base_commit_sha: "1c6331732c41e4557a16dacb82534f1d1c831848"
+        )
       end
       let(:repo_contents_path) { "repo/path" }
 
@@ -273,7 +281,10 @@ RSpec.describe Dependabot::UpdateFilesCommand do
         expect(service).not_to receive(:capture_exception)
         expect(service).to receive(:record_update_job_error).with(
           error_type: "branch_not_found",
-          error_details: { "branch-name": "my_branch" }
+          error_details: {
+            "branch-name": "my_branch",
+            message: anything # The original tests don't specify custom messages
+          }
         )
 
         perform_job
@@ -284,6 +295,42 @@ RSpec.describe Dependabot::UpdateFilesCommand do
       let(:error) { Dependabot::DependencyFileNotParseable.new("path/to/file", "a") }
 
       it_behaves_like "a fast-failed job"
+
+      it "only records a job error" do
+        expect(service).not_to receive(:capture_exception)
+        expect(service).to receive(:record_update_job_error).with(
+          error_type: "dependency_file_not_parseable",
+          error_details: { "file-path": "path/to/file", message: "a" }
+        )
+
+        perform_job
+      end
+    end
+
+    context "with a Dependabot::DependencyFileNotParseable error" do
+      let(:error) { Dependabot::DependencyFileNotParseable.new("path/to/file", "a") }
+
+      let(:snapshot) do
+        instance_double(
+          Dependabot::DependencySnapshot,
+          base_commit_sha: "1c6331732c41e4557a16dacb82534f1d1c831848"
+        )
+      end
+
+      let(:updater) do
+        instance_double(
+          Dependabot::Updater,
+          service: service,
+          job: job,
+          dependency_snapshot: snapshot
+        )
+      end
+
+      before do
+        allow(Dependabot::DependencySnapshot).to receive(:create_from_job_definition).and_return(snapshot)
+        allow(Dependabot::Updater).to receive(:new).and_return(updater)
+        allow(updater).to receive(:run).and_raise(error)
+      end
 
       it "only records a job error" do
         expect(service).not_to receive(:capture_exception)

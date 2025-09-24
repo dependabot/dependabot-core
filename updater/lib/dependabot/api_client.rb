@@ -5,6 +5,7 @@ require "http"
 require "dependabot/job"
 require "dependabot/opentelemetry"
 require "sorbet-runtime"
+require "dependabot/errors"
 
 # Provides a client to access the internal Dependabot Service's API
 #
@@ -18,10 +19,11 @@ require "sorbet-runtime"
 module Dependabot
   class ApiError < StandardError; end
 
-  class ApiClient
+  class ApiClient # rubocop:disable Metrics/ClassLength
     extend T::Sig
 
     MAX_REQUEST_RETRIES = 3
+    INVALID_REQUEST_MSG = /The request contains invalid or unauthorized changes/
 
     sig { params(base_url: String, job_id: T.any(String, Integer), job_token: String).void }
     def initialize(base_url, job_id, job_token)
@@ -41,7 +43,12 @@ module Dependabot
         api_url = "#{base_url}/update_jobs/#{job_id}/create_pull_request"
         data = create_pull_request_data(dependency_change, base_commit_sha)
         response = http_client.post(api_url, json: { data: data })
-        raise ApiError, response.body if response.code >= 400
+
+        if response.code >= 400 && dependency_file_not_supported_error?(response.body.to_s)
+          raise Dependabot::DependencyFileNotSupported, response.body.to_s
+        elsif response.code >= 400
+          raise ApiError, response.body
+        end
       rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
         retry_count ||= 0
         retry_count += 1
@@ -167,8 +174,11 @@ module Dependabot
     def record_update_job_unknown_error(error_type:, error_details:)
       error_type = "unknown_error" if error_type.nil?
       ::Dependabot::OpenTelemetry.tracer.in_span("record_update_job_unknown_error", kind: :internal) do |_span|
-        ::Dependabot::OpenTelemetry.record_update_job_error(job_id: job_id, error_type: error_type,
-                                                            error_details: error_details)
+        ::Dependabot::OpenTelemetry.record_update_job_error(
+          job_id: job_id,
+          error_type: error_type,
+          error_details: error_details
+        )
 
         api_url = "#{base_url}/update_jobs/#{job_id}/record_update_job_unknown_error"
         body = {
@@ -220,6 +230,27 @@ module Dependabot
             dependencies: dependencies,
             dependency_files: dependency_files
           }
+        }
+        response = http_client.post(api_url, json: body)
+        raise ApiError, response.body if response.code >= 400
+      rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
+        retry_count ||= 0
+        retry_count += 1
+        raise if retry_count > MAX_REQUEST_RETRIES
+
+        sleep(rand(3.0..10.0))
+        retry
+      end
+    end
+
+    sig { params(dependency_submission: T::Hash[Symbol, T.untyped]).void }
+    def create_dependency_submission(dependency_submission)
+      ::Dependabot::OpenTelemetry.tracer.in_span("create_dependency_submission", kind: :internal) do |span|
+        span.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id.to_s)
+
+        api_url = "#{base_url}/update_jobs/#{job_id}/create_dependency_submission"
+        body = {
+          data: dependency_submission
         }
         response = http_client.post(api_url, json: body)
         raise ApiError, response.body if response.code >= 400
@@ -320,6 +351,57 @@ module Dependabot
       end
     end
 
+    # rubocop:disable Metrics/MethodLength
+    sig { params(job: T.nilable(Dependabot::Job)).void }
+    def record_cooldown_meta(job)
+      return if job&.cooldown.nil?
+
+      cooldown = T.must(job).cooldown
+
+      begin
+        ::Dependabot::OpenTelemetry.tracer.in_span("record_cooldown_meta", kind: :internal) do |_span|
+          api_url = "#{base_url}/update_jobs/#{job_id}/record_cooldown_meta"
+
+          body = {
+            data: [
+              {
+                cooldown: {
+                  ecosystem_name: T.must(job).package_manager,
+                  config:
+                  {
+                    default_days: T.must(cooldown).default_days,
+                    semver_major_days: T.must(cooldown).semver_major_days,
+                    semver_minor_days: T.must(cooldown).semver_minor_days,
+                    semver_patch_days: T.must(cooldown).semver_patch_days
+                  }
+                }
+              }
+            ]
+          }
+
+          retry_count = 0
+
+          begin
+            response = http_client.post(api_url, json: body)
+            raise ApiError, response.body if response.code >= 400
+          rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError, ApiError => e
+            retry_count += 1
+            if retry_count <= MAX_REQUEST_RETRIES
+              sleep(rand(3.0..10.0))
+              retry
+            else
+              Dependabot.logger.error(
+                "Failed to record cooldown meta after #{MAX_REQUEST_RETRIES} retries: #{e.message}"
+              )
+            end
+          end
+        end
+      rescue StandardError => e
+        Dependabot.logger.error("Failed to record cooldown meta: #{e.message}")
+      end
+    end
+    # rubocop:enable Metrics/MethodLength
+
     private
 
     # Update return type to allow returning a Hash or nil
@@ -330,10 +412,13 @@ module Dependabot
     def version_manager_json(version_manager)
       return nil unless version_manager
 
+      version = version_manager.version_to_s
+      raw_version = version_manager.version_to_raw_s
+
       {
         name: version_manager.name,
-        raw_version: version_manager.version.to_semver.to_s,
-        version: version_manager.version.to_s,
+        version: version.empty? ? "N/A" : version,
+        raw_version: raw_version.empty? ? "N/A" : raw_version,
         requirement: version_manager_requirement_json(version_manager)
       }
     end
@@ -387,8 +472,10 @@ module Dependabot
     end
 
     sig do
-      params(dependency_change: Dependabot::DependencyChange,
-             base_commit_sha: String).returns(T::Hash[String, T.untyped])
+      params(
+        dependency_change: Dependabot::DependencyChange,
+        base_commit_sha: String
+      ).returns(T::Hash[String, T.untyped])
     end
     def create_pull_request_data(dependency_change, base_commit_sha)
       data = {
@@ -401,7 +488,7 @@ module Dependabot
             directory: dep.directory
           }.merge({
             version: dep.version,
-            removed: dep.removed? ? true : nil
+            removed: dep.removed? || nil
           }.compact)
         end,
         "updated-dependency-files": dependency_change.updated_dependency_files_hash,
@@ -412,6 +499,16 @@ module Dependabot
       data["pr-title"] = dependency_change.pr_message.pr_name
       data["pr-body"] = dependency_change.pr_message.pr_message
       data
+    end
+
+    sig { params(response: String).returns(T::Boolean) }
+    def dependency_file_not_supported_error?(response)
+      body = JSON.parse(response)
+
+      return false unless body.is_a?(Hash)
+      return false unless body["errors"]
+
+      INVALID_REQUEST_MSG.match? body["errors"].first["detail"]
     end
   end
 end

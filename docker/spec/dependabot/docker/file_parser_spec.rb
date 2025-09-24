@@ -302,11 +302,13 @@ RSpec.describe Dependabot::Docker::FileParser do
           context "when replaces-base is false" do
             let(:repo_url) { "https://registry.hub.docker.com/v2/library/ubuntu/" }
             let(:credentials) do
-              [Dependabot::Credential.new({
-                "type" => "docker_registry",
-                "registry" => "registry-host.io:5000",
-                "replaces-base" => false
-              })]
+              [Dependabot::Credential.new(
+                {
+                  "type" => "docker_registry",
+                  "registry" => "registry-host.io:5000",
+                  "replaces-base" => false
+                }
+              )]
             end
             let(:parser) do
               described_class.new(
@@ -344,8 +346,10 @@ RSpec.describe Dependabot::Docker::FileParser do
               it "has the right details" do
                 expect(dependency).to be_a(Dependabot::Dependency)
                 expect(dependency.name).to eq("ubuntu")
-                expect(dependency.version).to eq("18305429afa14ea462f810146ba44d4363ae76e4c8d" \
-                                                 "fc38288cf73aa07485005")
+                expect(dependency.version).to eq(
+                  "18305429afa14ea462f810146ba44d4363ae76e4c8d" \
+                  "fc38288cf73aa07485005"
+                )
                 expect(dependency.requirements).to eq(expected_requirements)
               end
             end
@@ -381,15 +385,17 @@ RSpec.describe Dependabot::Docker::FileParser do
         expect(dependency).to be_a(Dependabot::Dependency)
         expect(dependency.name).to eq("ubuntu")
         expect(dependency.version).to eq("12.04.5")
-        expect(dependency.requirements).to eq([{
-          requirement: nil,
-          groups: [],
-          file: "Dockerfile",
-          source: {
-            tag: "12.04.5",
-            digest: "18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005"
-          }
-        }])
+        expect(dependency.requirements).to eq(
+          [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: {
+              tag: "12.04.5",
+              digest: "18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005"
+            }
+          }]
+        )
       end
     end
 
@@ -677,6 +683,14 @@ RSpec.describe Dependabot::Docker::FileParser do
           expect(dependency.name).to eq("ubuntu")
           expect(dependency.version).to eq("artful")
           expect(dependency.requirements).to eq(expected_requirements)
+
+          ecosystem = parser.ecosystem
+
+          expect(ecosystem.name).to eq("docker")
+          expect(ecosystem.package_manager.name).to eq("docker")
+
+          expect(ecosystem.package_manager.deprecated?).to be false
+          expect(ecosystem.package_manager.unsupported?).to be false
         end
       end
     end
@@ -866,15 +880,17 @@ RSpec.describe Dependabot::Docker::FileParser do
         expect(dependency).to be_a(Dependabot::Dependency)
         expect(dependency.name).to eq("ubuntu")
         expect(dependency.version).to eq("12.04.5")
-        expect(dependency.requirements).to eq([{
-          requirement: nil,
-          groups: [],
-          file: "digest_and_tag.yaml",
-          source: {
-            tag: "12.04.5",
-            digest: "18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005"
-          }
-        }])
+        expect(dependency.requirements).to eq(
+          [{
+            requirement: nil,
+            groups: [],
+            file: "digest_and_tag.yaml",
+            source: {
+              tag: "12.04.5",
+              digest: "18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005"
+            }
+          }]
+        )
       end
     end
 
@@ -1242,6 +1258,14 @@ RSpec.describe Dependabot::Docker::FileParser do
           expect(dependency.version).to eq("18.04")
           expect(dependency.requirements).to eq(expected_requirements)
         end
+      end
+    end
+
+    context "with images with unparseable versions" do
+      let(:helmfile_fixture_name) { "multi-image-with-bad-version.yaml" }
+
+      it "omits the images with unparseable version numbers" do
+        expect(dependencies.map(&:version)).to eq(["some-name_123"])
       end
     end
   end

@@ -8,6 +8,7 @@ require "dependabot/dependency_file"
 require "dependabot/dependency"
 require "dependabot/pub/update_checker"
 require "dependabot/requirements_update_strategy"
+require "dependabot/pub/update_checker/latest_version_finder"
 
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
@@ -18,7 +19,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
   let(:can_update) { checker.can_update?(requirements_to_unlock: requirements_to_unlock) }
   let(:directory) { nil }
   let(:project) { "can_update" }
-  let(:dev_null) { WEBrick::Log.new("/dev/null", 7) }
+  let(:dev_null) { WEBrick::Log.new(File::NULL, 7) }
   let(:server) { WEBrick::HTTPServer.new({ Port: 0, AccessLog: [], Logger: dev_null }) }
   let(:dependency_files) do
     files = project_dependency_files(project)
@@ -65,11 +66,13 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
       },
       raise_on_ignored: raise_on_ignored,
       security_advisories: security_advisories,
-      requirements_update_strategy: requirements_update_strategy
+      requirements_update_strategy: requirements_update_strategy,
+      update_cooldown: expected_cooldown_options
     )
   end
   let(:sample) { "simple" }
   let(:sample_files) { Dir.glob(File.join("spec", "fixtures", "pub_dev_responses", sample, "*")) }
+  let(:expected_cooldown_options) { nil }
 
   after do
     sample_files.each do |f|
@@ -486,6 +489,41 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
         expect(can_update).to be_falsey
       end
     end
+
+    context "with cooldown option enabled" do
+      let(:requirements_to_unlock) { :all }
+      let(:dependency_name) { "collection" }
+      let(:dependency_version) { "1.18.0" }
+
+      let(:expected_cooldown_options) do
+        Dependabot::Package::ReleaseCooldownOptions.new(
+          default_days: 90,
+          semver_major_days: 90,
+          semver_minor_days: 90,
+          semver_patch_days: 90,
+          include: [],
+          exclude: []
+        )
+      end
+
+      before do
+        WebMock.allow_net_connect!
+        stub_request(:get, "http://localhost:#{server[:Port]}/api/packages/#{dependency.name}").to_return(
+          status: 200,
+          body: fixture("pub_dev_responses/simple/#{dependency.name}.json"),
+          headers: {}
+        )
+        allow(Time).to receive(:now).and_return(Time.parse("2024-06-13T17:30:00.000Z"))
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:enable_shared_helpers_command_timeout).and_return(false)
+      end
+
+      it "filters out latest version from latest version list" do
+        expect(checker.latest_version).to eq(Gem::Version.new("1.18.0"))
+
+        expect(updated_dependencies).to eq []
+      end
+    end
   end
 
   context "when given an up-to-date dependency" do
@@ -712,6 +750,61 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
 
       it "raises an error" do
         expect { checker.latest_version }.to raise_error(Dependabot::AllVersionsIgnored)
+      end
+    end
+  end
+
+  context "when there is an error while running a subshell command" do
+    let(:status) { instance_double(Process::Status, success?: false) }
+
+    before do
+      allow(Open3).to receive(:capture3).and_call_original
+      allow(Open3).to receive(:capture3).with(Hash, String, "report", Hash).and_return(["", stderr, status])
+    end
+
+    context "with a git error" do
+      let(:stderr) { "Git error. Command: `git clone --mirror https://github.com/***`" }
+
+      it "raises the correct error" do
+        expect { checker.latest_version }.to raise_error(Dependabot::InvalidGitAuthToken)
+      end
+    end
+
+    context "when parsing the lockfile fails" do
+      let(:stderr) { "Failed parsing lock file" }
+
+      it "raises the correct error" do
+        expect { checker.latest_version }.to raise_error(Dependabot::DependencyFileNotEvaluatable)
+      end
+    end
+
+    context "when version resolution fails" do
+      let(:stderr) do
+        "Because care_share_nepal depends on both freezed ^3.0.0-0.0.dev and freezed ^2.3.5, version solving failed."
+      end
+
+      it "raises the correct error" do
+        expect { checker.latest_version }.to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "when pubspec.yaml is missing" do
+      let(:stderr) do
+        "Could not find a file named \"pubspec.yaml\" in https://github.com/Iconica-Development"
+      end
+
+      it "raises the correct error" do
+        expect { checker.latest_version }.to raise_error(Dependabot::DependencyFileNotFound)
+      end
+    end
+
+    context "when dependency file has unsupported syntax" do
+      let(:stderr) do
+        "Unsupported operation: Encountered an alias node along [dependencies, isar, version]!"
+      end
+
+      it "raises the correct error" do
+        expect { checker.latest_version }.to raise_error(Dependabot::DependencyFileNotEvaluatable)
       end
     end
   end

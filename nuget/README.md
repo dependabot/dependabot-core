@@ -2,7 +2,11 @@
 
 NuGet support for [`dependabot-core`][core-repo].
 
-### Running locally
+### Developing locally
+
+Open the solution file at `helpers/lib/NuGetUpdater/NuGetUpdater.sln` in your preferred IDE.
+
+### Running Nuget-ruby locally
 
 1. Start a development shell
 

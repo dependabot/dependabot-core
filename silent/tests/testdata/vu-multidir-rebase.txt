@@ -39,8 +39,8 @@ job:
 #     - "/frontend" It's important that the API doesn't send unrelated directories.
       - "/backend"
     provider: example
-    hostname: example.com
-    api-endpoint: https://example.com/api/v3
+    hostname: 127.0.0.1
+    api-endpoint: http://127.0.0.1/api/v3
     repo: dependabot/smoke-tests
   dependencies:
     - dependency-a
@@ -49,3 +49,4 @@ job:
     - - dependency-name: dependency-a
         dependency-version: 1.2.4
         directory: "/backend"
+        pr-number: 123

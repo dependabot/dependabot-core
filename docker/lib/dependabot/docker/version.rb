@@ -15,6 +15,7 @@ module Dependabot
     #
     class Version < Dependabot::Version
       extend T::Sig
+
       # The regex has limits for the 0,255 and 1,255 repetitions to avoid infinite limits which makes codeql angry.
       # A docker image cannot be longer than 255 characters anyways.
       DOCKER_VERSION_REGEX = /^(?<prefix>[a-z._\-]{0,255})[_\-v]?(?<version>.{1,255})$/
@@ -47,7 +48,9 @@ module Dependabot
         return false if parsed_version.nil?
 
         release_part, = T.must(parsed_version[:version]).split("_", 2)
-        release_part = Tag.new(T.must(release_part).chomp(".").chomp("-").chomp("_")).numeric_version || parsed_version
+        release_part = Tag.new(T.must(release_part).chomp(".").chomp("-").chomp("_")).numeric_version
+        return false unless release_part
+
         super(release_part.to_s)
       rescue ArgumentError
         # if we can't instantiate a version, it can't be correct

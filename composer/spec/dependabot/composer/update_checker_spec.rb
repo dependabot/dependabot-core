@@ -720,14 +720,22 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       it { is_expected.to be_nil }
     end
 
+    context "with an invalid composer.json file" do
+      let(:project_name) { "invalid_manifest" }
+
+      it "raises a helpful error" do
+        expect { latest_resolvable_version }.to raise_error(Dependabot::DependencyFileNotParseable)
+      end
+    end
+
     context "when a sub-dependency would block the update" do
       let(:project_name) { "subdependency_update_required" }
       let(:dependency_name) { "illuminate/support" }
-      let(:dependency_version) { "5.2.0" }
+      let(:dependency_version) { "6.20.44" }
       let(:requirements) do
         [{
           file: "composer.json",
-          requirement: "^5.2.0",
+          requirement: "^6.0.0",
           groups: ["runtime"],
           source: nil
         }]
@@ -735,19 +743,11 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
 
       before do
         allow(checker).to receive(:latest_version_from_registry)
-          .and_return(Gem::Version.new("5.6.23"))
+          .and_return(Gem::Version.new("9.52.16"))
       end
 
-      # 5.5.0 series and up require an update to illuminate/contracts
-      it { is_expected.to be >= Gem::Version.new("5.6.23") }
-    end
-
-    context "with an invalid composer.json file" do
-      let(:project_name) { "invalid_manifest" }
-
-      it "raises a helpful error" do
-        expect { latest_resolvable_version }.to raise_error(Dependabot::DependencyFileNotParseable)
-      end
+      # Should be able to update to a newer version
+      it { is_expected.to be >= Gem::Version.new("6.20.44") }
     end
   end
 

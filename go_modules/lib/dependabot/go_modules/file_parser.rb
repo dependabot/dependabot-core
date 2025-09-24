@@ -12,44 +12,159 @@ require "dependabot/errors"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/go_modules/version"
+require "dependabot/go_modules/language"
+require "dependabot/go_modules/package_manager"
 
 module Dependabot
   module GoModules
     class FileParser < Dependabot::FileParsers::Base
       extend T::Sig
 
+      sig do
+        params(
+          dependency_files: T::Array[Dependabot::DependencyFile],
+          source: T.nilable(Dependabot::Source),
+          repo_contents_path: T.nilable(String),
+          credentials: T::Array[Dependabot::Credential],
+          reject_external_code: T::Boolean,
+          options: T::Hash[Symbol, T.untyped]
+        ).void
+      end
+      def initialize(
+        dependency_files:,
+        source: nil,
+        repo_contents_path: nil,
+        credentials: [],
+        reject_external_code: false,
+        options: {}
+      )
+        super
+
+        set_go_environment_variables
+      end
+
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
-        set_gotoolchain_env
-
         dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
-        required_packages.each do |dep|
-          dependency_set << dependency_from_details(dep) unless skip_dependency?(dep)
+        required_packages.each do |hsh|
+          unless skip_dependency?(hsh) # rubocop:disable Style/Next
+
+            dep = dependency_from_details(hsh)
+            dependency_set << dep
+          end
         end
 
         dependency_set.dependencies
       end
 
+      sig { returns(Ecosystem) }
+      def ecosystem
+        @ecosystem ||= T.let(
+          begin
+            Ecosystem.new(
+              name: ECOSYSTEM,
+              package_manager: package_manager,
+              language: language
+            )
+          end,
+          T.nilable(Dependabot::Ecosystem)
+        )
+      end
+
       private
 
-      # set GOTOOLCHAIN=local+auto if go version >= 1.21
       sig { void }
-      def set_gotoolchain_env
-        go_directive = go_mod&.content&.match(/^go\s(\d+\.\d+)/)&.captures&.first
-        return ENV["GOTOOLCHAIN"] = ENV.fetch("GO_LEGACY") unless go_directive
+      def set_go_environment_variables
+        set_goenv_variable
+        set_goproxy_variable
+        set_goprivate_variable
+      end
 
-        go_version = Dependabot::GoModules::Version.new(go_directive)
-        ENV["GOTOOLCHAIN"] = if go_version >= "1.21"
-                               "local+auto"
-                             else
-                               ENV.fetch("GO_LEGACY")
-                             end
+      sig { void }
+      def set_goenv_variable
+        return unless go_env
+
+        env_file = T.must(go_env)
+        File.write(env_file.name, env_file.content)
+        ENV["GOENV"] = Pathname.new(env_file.name).realpath.to_s
+      end
+
+      sig { void }
+      def set_goprivate_variable
+        return if go_env&.content&.include?("GOPRIVATE")
+        return if go_env&.content&.include?("GOPROXY")
+        return if goproxy_credentials.any?
+
+        goprivate = options.fetch(:goprivate, "*")
+        ENV["GOPRIVATE"] = goprivate if goprivate
+      end
+
+      sig { void }
+      def set_goproxy_variable
+        return if go_env&.content&.include?("GOPROXY")
+        return if goproxy_credentials.empty?
+
+        urls = goproxy_credentials.filter_map { |cred| cred["url"] }
+        ENV["GOPROXY"] = "#{urls.join(',')},direct"
+      end
+
+      sig { returns(T::Array[Dependabot::Credential]) }
+      def goproxy_credentials
+        @goproxy_credentials ||= T.let(
+          credentials.select do |cred|
+            cred["type"] == "goproxy_server"
+          end,
+          T.nilable(T::Array[Dependabot::Credential])
+        )
+      end
+
+      sig { returns(Ecosystem::VersionManager) }
+      def package_manager
+        @package_manager ||= T.let(
+          PackageManager.new(T.must(go_toolchain_version)),
+          T.nilable(Dependabot::GoModules::PackageManager)
+        )
+      end
+
+      sig { returns(T.nilable(Ecosystem::VersionManager)) }
+      def language
+        @language ||= T.let(
+          begin
+            Language.new(go_version)
+          end,
+          T.nilable(Dependabot::GoModules::Language)
+        )
+      end
+
+      sig { returns(String) }
+      def go_version
+        @go_version ||= T.let(
+          T.must(go_mod&.content&.match(/^go\s(\d+\.\d+(.\d+)*)/)&.captures&.first),
+          T.nilable(String)
+        )
+      end
+
+      sig { returns(T.nilable(String)) }
+      def go_toolchain_version
+        @go_toolchain_version ||= T.let(
+          begin
+            # Checks version based on the GOTOOLCHAIN in ENV
+            version = SharedHelpers.run_shell_command("go version")
+            version.match(/go\s*(\d+\.\d+(.\d+)*)/)&.captures&.first
+          end,
+          T.nilable(String)
+        )
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def go_mod
         @go_mod ||= T.let(get_original_file("go.mod"), T.nilable(Dependabot::DependencyFile))
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def go_env
+        @go_env ||= T.let(get_original_file("go.env"), T.nilable(Dependabot::DependencyFile))
       end
 
       sig { override.void }
@@ -80,23 +195,26 @@ module Dependabot
       sig { returns(T::Array[T::Hash[String, T.untyped]]) }
       def required_packages
         @required_packages ||=
-          T.let(SharedHelpers.in_a_temporary_directory do |path|
-            # Create a fake empty module for each local module so that
-            # `go mod edit` works, even if some modules have been `replace`d with
-            # a local module that we don't have access to.
-            local_replacements.each do |_, stub_path|
-              FileUtils.mkdir_p(stub_path)
-              FileUtils.touch(File.join(stub_path, "go.mod"))
-            end
+          T.let(
+            SharedHelpers.in_a_temporary_directory do |path|
+              # Create a fake empty module for each local module so that
+              # `go mod edit` works, even if some modules have been `replace`d with
+              # a local module that we don't have access to.
+              local_replacements.each do |_, stub_path|
+                FileUtils.mkdir_p(stub_path)
+                FileUtils.touch(File.join(stub_path, "go.mod"))
+              end
 
-            File.write("go.mod", go_mod_content)
+              File.write("go.mod", go_mod_content)
 
-            command = "go mod edit -json"
+              command = "go mod edit -json"
 
-            stdout, stderr, status = Open3.capture3(command)
-            handle_parser_error(path, stderr) unless status.success?
-            JSON.parse(stdout)["Require"] || []
-          end, T.nilable(T::Array[T::Hash[String, T.untyped]]))
+              stdout, stderr, status = Open3.capture3(command)
+              handle_parser_error(path, stderr) unless status.success?
+              JSON.parse(stdout)["Require"] || []
+            end,
+            T.nilable(T::Array[T::Hash[String, T.untyped]])
+          )
       end
 
       sig { returns(T::Hash[String, String]) }
@@ -106,25 +224,30 @@ module Dependabot
           # we can use in their place. Using generated paths is safer as it
           # means we don't need to worry about references to parent
           # directories, etc.
-          T.let(ReplaceStubber.new(repo_contents_path).stub_paths(manifest, go_mod&.directory),
-                T.nilable(T::Hash[String, String]))
+          T.let(
+            ReplaceStubber.new(repo_contents_path).stub_paths(manifest, go_mod&.directory),
+            T.nilable(T::Hash[String, String])
+          )
       end
 
       sig { returns(T::Hash[String, T.untyped]) }
       def manifest
         @manifest ||=
-          T.let(SharedHelpers.in_a_temporary_directory do |path|
-                  File.write("go.mod", go_mod&.content)
+          T.let(
+            SharedHelpers.in_a_temporary_directory do |path|
+              File.write("go.mod", go_mod&.content)
 
-                  # Parse the go.mod to get a JSON representation of the replace
-                  # directives
-                  command = "go mod edit -json"
+              # Parse the go.mod to get a JSON representation of the replace
+              # directives
+              command = "go mod edit -json"
 
-                  stdout, stderr, status = Open3.capture3(command)
-                  handle_parser_error(path, stderr) unless status.success?
+              stdout, stderr, status = Open3.capture3(command)
+              handle_parser_error(path, stderr) unless status.success?
 
-                  JSON.parse(stdout)
-                end, T.nilable(T::Hash[String, T.untyped]))
+              JSON.parse(stdout)
+            end,
+            T.nilable(T::Hash[String, T.untyped])
+          )
       end
 
       sig { returns(T.nilable(String)) }

@@ -35,7 +35,7 @@ module Dependabot
             .returns(T.nilable(T::Hash[String, T.untyped]))
         end
         def details(dependency_name, _requirement, manifest_name)
-          if Helpers.npm8?(@dependency_file)
+          if Helpers.parse_npm8?(@dependency_file)
             # NOTE: npm 8 sometimes doesn't install workspace dependencies in the
             # workspace folder so we need to fallback to checking top-level
             nested_details = parsed.dig("packages", node_modules_path(manifest_name, dependency_name))
@@ -64,13 +64,17 @@ module Dependabot
             version = Version.semver_for(details["version"])
             next unless version
 
+            package_name = name.split("node_modules/").last
             version = version.to_s
 
             dependency_args = {
-              name: name.split("node_modules/").last,
+              name: package_name,
               version: version,
               package_manager: "npm_and_yarn",
-              requirements: []
+              requirements: [],
+              metadata: {
+                depends_on: details&.fetch("dependencies", {})&.keys || []
+              }
             }
 
             if details["bundled"]

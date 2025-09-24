@@ -14,9 +14,11 @@ module Dependabot
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       extend T::Sig
 
+      require_relative "update_checker/latest_version_finder"
+
       sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
       def latest_version
-        @latest_version ||= T.let(fetch_latest_version, T.nilable(Gem::Version))
+        @latest_version ||= T.let(T.must(release_versions).last, T.nilable(Gem::Version))
       end
 
       sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
@@ -24,12 +26,19 @@ module Dependabot
         latest_version # TODO
       end
 
+      sig { override.returns(T.nilable(Dependabot::Version)) }
+      def latest_resolvable_version_with_no_unlock
+        raise NotImplementedError
+      end
+
       sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
       def updated_requirements
         dependency.requirements.map do |requirement|
           required_version = T.cast(version_class.new(requirement[:requirement]), Dependabot::Devcontainers::Version)
-          updated_requirement = remove_precision_changes(viable_candidates, required_version).last
-
+          updated_requirement = remove_precision_changes(
+            T.cast(release_versions, T::Array[Dependabot::Devcontainers::Version]),
+            required_version
+          ).last
           {
             file: requirement[:file],
             requirement: updated_requirement,
@@ -39,33 +48,30 @@ module Dependabot
         end
       end
 
-      sig { override.returns(T.nilable(Dependabot::Version)) }
-      def latest_resolvable_version_with_no_unlock
-        raise NotImplementedError
-      end
-
       private
 
-      sig { returns(T::Array[Dependabot::Devcontainers::Version]) }
-      def viable_candidates
-        @viable_candidates ||= T.let(
-          fetch_viable_candidates,
-          T.nilable(T::Array[Dependabot::Devcontainers::Version])
+      sig { returns(T.nilable(Dependabot::Devcontainers::UpdateChecker::LatestVersionFinder)) }
+      def latest_version_finder
+        @latest_version_finder ||= T.let(
+          LatestVersionFinder.new(
+            dependency: dependency,
+            credentials: credentials,
+            dependency_files: dependency_files,
+            security_advisories: security_advisories,
+            ignored_versions: ignored_versions,
+            raise_on_ignored: raise_on_ignored,
+            cooldown_options: update_cooldown
+          ),
+          T.nilable(Dependabot::Devcontainers::UpdateChecker::LatestVersionFinder)
         )
       end
 
-      sig { returns(T::Array[Dependabot::Devcontainers::Version]) }
-      def fetch_viable_candidates
-        candidates = comparable_versions_from_registry
-        candidates = filter_ignored(candidates)
-        candidates.sort
-      end
-
-      sig { returns(Dependabot::Devcontainers::Version) }
-      def fetch_latest_version
-        return T.cast(current_version, Dependabot::Devcontainers::Version) unless viable_candidates.any?
-
-        T.must(viable_candidates.last)
+      sig { returns(T.nilable(T::Array[Dependabot::Version])) }
+      def release_versions
+        @release_versions ||= T.let(
+          T.must(T.must(latest_version_finder).release_versions),
+          T.nilable(T::Array[Dependabot::Version])
+        )
       end
 
       sig do
@@ -78,57 +84,6 @@ module Dependabot
       def remove_precision_changes(versions, required_version)
         versions.select do |version|
           version.same_precision?(required_version)
-        end
-      end
-
-      sig do
-        params(
-          versions: T::Array[Dependabot::Devcontainers::Version]
-        )
-          .returns(T::Array[Dependabot::Devcontainers::Version])
-      end
-      def filter_ignored(versions)
-        filtered =
-          versions.reject do |version|
-            ignore_requirements.any? { |r| version.satisfies?(r) }
-          end
-
-        if raise_on_ignored &&
-           filter_lower_versions(filtered).empty? &&
-           filter_lower_versions(versions).any?
-          raise AllVersionsIgnored
-        end
-
-        filtered
-      end
-
-      sig { returns(T::Array[Dependabot::Devcontainers::Version]) }
-      def comparable_versions_from_registry
-        tags_from_registry.filter_map do |tag|
-          version_class.correct?(tag) && T.cast(version_class.new(tag), Dependabot::Devcontainers::Version)
-        end
-      end
-
-      sig { returns(T::Array[String]) }
-      def tags_from_registry
-        @tags_from_registry ||= T.let(fetch_tags_from_registry, T.nilable(T::Array[String]))
-      end
-
-      sig { returns(T::Array[String]) }
-      def fetch_tags_from_registry
-        cmd = "devcontainer features info tags #{dependency.name} --output-format json"
-
-        Dependabot.logger.info("Running command: `#{cmd}`")
-
-        output = SharedHelpers.run_shell_command(cmd, stderr_to_stdout: false)
-
-        JSON.parse(output).fetch("publishedTags")
-      end
-
-      sig { params(versions: T::Array[Gem::Version]).returns(T::Array[Gem::Version]) }
-      def filter_lower_versions(versions)
-        versions.select do |version|
-          version > current_version
         end
       end
 

@@ -18,14 +18,25 @@ SimpleCov.start do
   if ENV["CI"]
     formatter SimpleCov::Formatter::SimpleFormatter
   else
-    formatter SimpleCov::Formatter::MultiFormatter.new([
-      SimpleCov::Formatter::SimpleFormatter,
-      SimpleCov::Formatter::HTMLFormatter
-    ])
+    formatter SimpleCov::Formatter::MultiFormatter.new(
+      [
+        SimpleCov::Formatter::SimpleFormatter,
+        SimpleCov::Formatter::HTMLFormatter
+      ]
+    )
   end
   enable_coverage :branch
   primary_coverage :branch
   minimum_coverage line: 0, branch: 0
+end
+
+# Don't print the "Coverage report generated for..." messages
+# https://github.com/simplecov-ruby/simplecov/issues/992
+SimpleCov.at_exit do
+  original_file_descriptor = $stdout
+  $stdout.reopen(File::NULL)
+  SimpleCov.result.format!
+  $stdout.reopen(original_file_descriptor)
 end
 
 require "dependabot/dependency_file"
@@ -108,9 +119,11 @@ end
 # Creates a temporary directory and writes the provided files into it.
 #
 # @param files [DependencyFile] the files to be written into the temporary directory
-def write_tmp_repo(files,
-                   tmp_dir_path: Dependabot::Utils::BUMP_TMP_DIR_PATH,
-                   tmp_dir_prefix: Dependabot::Utils::BUMP_TMP_FILE_PREFIX)
+def write_tmp_repo(
+  files,
+  tmp_dir_path: Dependabot::Utils::BUMP_TMP_DIR_PATH,
+  tmp_dir_prefix: Dependabot::Utils::BUMP_TMP_FILE_PREFIX
+)
   FileUtils.mkdir_p(tmp_dir_path)
   tmp_repo = Dir.mktmpdir(tmp_dir_prefix, tmp_dir_path)
   tmp_repo_path = Pathname.new(tmp_repo).expand_path
@@ -139,10 +152,12 @@ end
 # @param project [String] the project directory, located in
 # "spec/fixtures/projects"
 # @return [String] the path to the new temp repo.
-def build_tmp_repo(project,
-                   path: "projects",
-                   tmp_dir_path: Dependabot::Utils::BUMP_TMP_DIR_PATH,
-                   tmp_dir_prefix: Dependabot::Utils::BUMP_TMP_FILE_PREFIX)
+def build_tmp_repo(
+  project,
+  path: "projects",
+  tmp_dir_path: Dependabot::Utils::BUMP_TMP_DIR_PATH,
+  tmp_dir_prefix: Dependabot::Utils::BUMP_TMP_FILE_PREFIX
+)
   project_path = File.expand_path(File.join("spec/fixtures", path, project))
 
   FileUtils.mkdir_p(tmp_dir_path)
@@ -193,4 +208,26 @@ def github_credentials
       "password" => ENV["DEPENDABOT_TEST_ACCESS_TOKEN"] || ENV.fetch("LOCAL_GITHUB_ACCESS_TOKEN", nil)
     }]
   end
+end
+
+# Load a command from the fixtures/commands directory
+def command_fixture(name)
+  path = File.join("spec", "fixtures", "commands", name)
+  raise "Command fixture '#{name}' does not exist" unless File.exist?(path)
+
+  File.expand_path(path)
+end
+
+# Define an anonymous subclass of Dependabot::Requirement for testing purposes
+TestRequirement = Class.new(Dependabot::Requirement) do
+  # Initialize with comma-separated requirement constraints
+  def initialize(constraint_string)
+    requirements = constraint_string.split(",").map(&:strip)
+    super(requirements)
+  end
+end
+
+# Define an anonymous subclass of Dependabot::Requirement for testing purposes
+TestVersion = Class.new(Dependabot::Version) do
+  # Initialize with a version string
 end

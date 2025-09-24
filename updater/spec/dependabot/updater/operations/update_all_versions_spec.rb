@@ -40,7 +40,8 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
       record_update_job_error: nil,
       create_pull_request: nil,
       record_update_job_warning: nil,
-      record_ecosystem_meta: nil
+      record_ecosystem_meta: nil,
+      record_cooldown_meta: nil
     )
   end
 
@@ -85,10 +86,12 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
   let(:deprecated_versions) { %w(1) }
 
   let(:job_definition_with_fetched_files) do
-    job_definition.merge({
-      "base_commit_sha" => "mock-sha",
-      "base64_dependency_files" => encode_dependency_files(dependency_files)
-    })
+    job_definition.merge(
+      {
+        "base_commit_sha" => "mock-sha",
+        "base64_dependency_files" => encode_dependency_files(dependency_files)
+      }
+    )
   end
 
   let(:dependency_files) do
@@ -165,9 +168,12 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
     allow(Dependabot::DependencyChangeBuilder).to receive(
       :create_from
     ).and_return(stub_dependency_change)
-    allow(dependency_snapshot).to receive_messages(ecosystem: ecosystem, notices: [
-      warning_deprecation_notice
-    ])
+    allow(dependency_snapshot).to receive_messages(
+      ecosystem: ecosystem,
+      notices: [
+        warning_deprecation_notice
+      ]
+    )
   end
 
   after do
@@ -274,10 +280,17 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
         )
         allow(job).to receive(
           :existing_pull_requests
-        ).and_return([[{
-          "dependency-name" => "dummy-pkg-a",
-          "dependency-version" => "2.0.1"
-        }]])
+        ).and_return([
+          Dependabot::PullRequest.new(
+            [
+              Dependabot::PullRequest::Dependency.new(
+                name: "dummy-pkg-a",
+                version: "2.0.1",
+                pr_number: 123
+              )
+            ]
+          )
+        ])
       end
 
       it "does not create a pull request" do

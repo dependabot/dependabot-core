@@ -3,16 +3,35 @@
 
 require "spec_helper"
 require "dependabot/nuget"
-require_common_spec "shared_examples_for_autoloading"
-
-time_limit_seconds = 5 * 60 # 5 minutes
-
-RSpec.configure do |config|
-  config.around do |example|
-    Timeout.timeout(time_limit_seconds) { example.run }
-  end
-end
+require "dependabot/utils"
+require "dependabot/pull_request_creator/labeler"
+require "dependabot/dependency"
 
 RSpec.describe Dependabot::Nuget do
-  it_behaves_like "it registers the required classes", "nuget"
+  let(:package_manager) { "nuget" }
+
+  describe "registration" do
+    it "registers a version class" do
+      klass = Dependabot::Utils.version_class_for_package_manager(package_manager)
+      expect(klass.ancestors).to include(Gem::Version)
+    end
+
+    it "registers a requirement class" do
+      klass = Dependabot::Utils.requirement_class_for_package_manager(package_manager)
+      expect(klass.ancestors).to include(Gem::Requirement)
+    end
+
+    it "registers its label details" do
+      expect(
+        Dependabot::PullRequestCreator::Labeler
+          .label_details_for_package_manager(package_manager)
+      ).to be_a(Hash)
+    end
+
+    it "registers its production check" do
+      expect(
+        Dependabot::Dependency.production_check_for_package_manager(package_manager)
+      ).to be_a(Proc)
+    end
+  end
 end

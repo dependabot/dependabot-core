@@ -5,6 +5,12 @@ export DOCKER_BUILDKIT=1
 
 function set_tag() {
     case $ECOSYSTEM in
+      docker_compose)
+        TAG=docker-compose
+        ;;
+      dotnet_sdk)
+        TAG=dotnet-sdk
+        ;;
       go_modules)
         TAG=gomod
         ;;
@@ -23,8 +29,8 @@ function set_tag() {
       github_actions)
         TAG=github-actions
         ;;
-      dotnet_sdk)
-        TAG=dotnet-sdk
+      rust_toolchain)
+        TAG=rust-toolchain
         ;;
       *)
         TAG=$ECOSYSTEM

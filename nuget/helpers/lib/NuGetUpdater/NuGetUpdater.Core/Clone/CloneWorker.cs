@@ -9,12 +9,14 @@ namespace NuGetUpdater.Core.Clone;
 
 public class CloneWorker
 {
+    private readonly string _jobId;
     private readonly IApiHandler _apiHandler;
     private readonly IGitCommandHandler _gitCommandHandler;
     private readonly ILogger _logger;
 
-    public CloneWorker(IApiHandler apiHandler, IGitCommandHandler gitCommandHandler, ILogger logger)
+    public CloneWorker(string jobId, IApiHandler apiHandler, IGitCommandHandler gitCommandHandler, ILogger logger)
     {
+        _jobId = jobId;
         _apiHandler = apiHandler;
         _gitCommandHandler = gitCommandHandler;
         _logger = logger;
@@ -24,8 +26,34 @@ public class CloneWorker
     public async Task<int> RunAsync(FileInfo jobFilePath, DirectoryInfo repoContentsPath)
     {
         var jobFileContent = await File.ReadAllTextAsync(jobFilePath.FullName);
-        var jobWrapper = RunWorker.Deserialize(jobFileContent);
-        var result = await RunAsync(jobWrapper.Job, repoContentsPath.FullName);
+
+        // only a limited set of errors can occur here
+        JobFile? jobFile = null;
+        JobErrorBase? parseError = null;
+        try
+        {
+            jobFile = RunWorker.Deserialize(jobFileContent);
+            if (jobFile is null)
+            {
+                parseError = new UnknownError(new Exception("Job file could not be deserialized"), _jobId);
+            }
+        }
+        catch (BadRequirementException ex)
+        {
+            parseError = new BadRequirement(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            parseError = new UnknownError(ex, _jobId);
+        }
+
+        if (parseError is not null)
+        {
+            await ReportError(parseError);
+            return 1;
+        }
+
+        var result = await RunAsync(jobFile!.Job, repoContentsPath.FullName);
         return result;
     }
 
@@ -44,21 +72,27 @@ public class CloneWorker
         catch (HttpRequestException ex)
         when (ex.StatusCode == HttpStatusCode.Unauthorized || ex.StatusCode == HttpStatusCode.Forbidden)
         {
+            // this is a _very_ specific case we want to handle before the common error handling kicks in
             error = new JobRepoNotFound(ex.Message);
         }
         catch (Exception ex)
         {
-            error = new UnknownError(ex.ToString());
+            error = JobErrorBase.ErrorFromException(ex, _jobId, repoContentsPath);
         }
 
         if (error is not null)
         {
-            await _apiHandler.RecordUpdateJobError(error);
-            await _apiHandler.MarkAsProcessed(new("unknown"));
+            await ReportError(error);
             return 1;
         }
 
         return 0;
+    }
+
+    private async Task ReportError(JobErrorBase error)
+    {
+        await _apiHandler.RecordUpdateJobError(error, _logger);
+        await _apiHandler.MarkAsProcessed(new("unknown"));
     }
 
     internal static CommandArguments[] GetAllCommandArgs(Job job, string repoContentsPath)
@@ -136,6 +170,7 @@ public class CloneWorker
     {
         return job.Source.Provider switch
         {
+            "azure" or "github" when !string.IsNullOrWhiteSpace(job.Source.Hostname) => $"https://{job.Source.Hostname}/{job.Source.Repo}",
             "azure" => $"https://dev.azure.com/{job.Source.Repo}",
             "github" => $"https://github.com/{job.Source.Repo}",
             _ => throw new ArgumentException($"Unknown provider: {job.Source.Provider}")

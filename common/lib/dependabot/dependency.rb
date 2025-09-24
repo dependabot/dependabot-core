@@ -88,6 +88,19 @@ module Dependabot
     sig { returns(T::Hash[Symbol, T.untyped]) }
     attr_reader :metadata
 
+    # Attribution metadata for group membership tracking
+    sig { returns(T.nilable(String)) }
+    attr_accessor :attribution_source_group
+
+    sig { returns(T.nilable(Symbol)) }
+    attr_accessor :attribution_selection_reason
+
+    sig { returns(T.nilable(String)) }
+    attr_accessor :attribution_directory
+
+    sig { returns(T.nilable(Time)) }
+    attr_accessor :attribution_timestamp
+
     # rubocop:disable Metrics/AbcSize
     # rubocop:disable Metrics/PerceivedComplexity
     sig do
@@ -105,9 +118,18 @@ module Dependabot
         metadata: T.nilable(T::Hash[T.any(Symbol, String), String])
       ).void
     end
-    def initialize(name:, requirements:, package_manager:, version: nil,
-                   previous_version: nil, previous_requirements: nil, directory: nil,
-                   subdependency_metadata: [], removed: false, metadata: {})
+    def initialize(
+      name:,
+      requirements:,
+      package_manager:,
+      version: nil,
+      previous_version: nil,
+      previous_requirements: nil,
+      directory: nil,
+      subdependency_metadata: [],
+      removed: false,
+      metadata: {}
+    )
       @name = name
       @version = T.let(
         case version
@@ -134,7 +156,6 @@ module Dependabot
       end
       @removed = removed
       @metadata = T.let(symbolize_keys(metadata || {}), T::Hash[Symbol, T.untyped])
-
       check_values
     end
     # rubocop:enable Metrics/AbcSize
@@ -168,7 +189,7 @@ module Dependabot
         "directory" => directory,
         "package_manager" => package_manager,
         "subdependency_metadata" => subdependency_metadata,
-        "removed" => removed? ? true : nil
+        "removed" => removed? || nil
       }.compact
     end
 
@@ -227,6 +248,7 @@ module Dependabot
     sig { returns(T.nilable(String)) }
     def humanized_version
       return "removed" if removed?
+      return nil if version.nil?
 
       if T.must(version).match?(/^[0-9a-f]{40}/)
         return new_ref if ref_changed? && new_ref
@@ -255,7 +277,7 @@ module Dependabot
       previous_refs = T.must(previous_requirements).filter_map do |r|
         r.dig(:source, "ref") || r.dig(:source, :ref)
       end.uniq
-      previous_refs.first if previous_refs.count == 1
+      previous_refs.first if previous_refs.one?
     end
 
     sig { returns(T.nilable(String)) }
@@ -263,7 +285,7 @@ module Dependabot
       new_refs = requirements.filter_map do |r|
         r.dig(:source, "ref") || r.dig(:source, :ref)
       end.uniq
-      new_refs.first if new_refs.count == 1
+      new_refs.first if new_refs.one?
     end
 
     sig { returns(T::Boolean) }
@@ -387,10 +409,11 @@ module Dependabot
       optional_keys = %i(metadata)
       unless requirement_fields.flatten
                                .all? { |r| required_keys.sort == (r.keys - optional_keys).sort }
-        raise ArgumentError, "each requirement must have the following " \
-                             "required keys: #{required_keys.join(', ')}." \
-                             "Optionally, it may have the following keys: " \
-                             "#{optional_keys.join(', ')}."
+        raise ArgumentError,
+              "each requirement must have the following " \
+              "required keys: #{required_keys.join(', ')}." \
+              "Optionally, it may have the following keys: " \
+              "#{optional_keys.join(', ')}."
       end
 
       return if requirement_fields.flatten.none? { |r| r[:requirement] == "" }

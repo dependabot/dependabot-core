@@ -12,6 +12,7 @@ require "dependabot/experiments"
 require "dependabot/requirements_update_strategy"
 require "dependabot/source"
 require "dependabot/pull_request"
+require "dependabot/package/release_cooldown_options"
 
 # Describes a single Dependabot workload within the GitHub-integrated Service
 #
@@ -24,33 +25,39 @@ require "dependabot/pull_request"
 # This class should eventually be promoted to common/lib and augmented to
 # validate job description files.
 module Dependabot
-  class Job
+  class Job # rubocop:disable Metrics/ClassLength
     extend T::Sig
 
     TOP_LEVEL_DEPENDENCY_TYPES = T.let(%w(direct production development).freeze, T::Array[String])
-    PERMITTED_KEYS = T.let(%i(
-      allowed_updates
-      commit_message_options
-      dependencies
-      existing_pull_requests
-      existing_group_pull_requests
-      experiments
-      ignore_conditions
-      lockfile_only
-      package_manager
-      reject_external_code
-      repo_contents_path
-      requirements_update_strategy
-      security_advisories
-      security_updates_only
-      source
-      update_subdependencies
-      updating_a_pull_request
-      vendor_dependencies
-      dependency_groups
-      dependency_group_to_refresh
-      repo_private
-    ).freeze, T::Array[Symbol])
+    PERMITTED_KEYS = T.let(
+      %i(
+        allowed_updates
+        commit_message_options
+        dependencies
+        exclude_paths
+        existing_pull_requests
+        existing_group_pull_requests
+        experiments
+        ignore_conditions
+        lockfile_only
+        package_manager
+        reject_external_code
+        repo_contents_path
+        requirements_update_strategy
+        security_advisories
+        security_updates_only
+        source
+        update_subdependencies
+        updating_a_pull_request
+        vendor_dependencies
+        dependency_groups
+        dependency_group_to_refresh
+        cooldown
+        repo_private
+        multi_ecosystem_update
+      ).freeze,
+      T::Array[Symbol]
+    )
 
     sig { returns(T::Array[T::Hash[String, T.untyped]]) }
     attr_reader :allowed_updates
@@ -60,6 +67,9 @@ module Dependabot
 
     sig { returns(T.nilable(T::Array[String])) }
     attr_reader :dependencies
+
+    sig { returns(T.nilable(T::Array[String])) }
+    attr_reader :exclude_paths
 
     sig { returns(T::Array[PullRequest]) }
     attr_reader :existing_pull_requests
@@ -100,23 +110,36 @@ module Dependabot
     sig { returns(T.nilable(String)) }
     attr_reader :dependency_group_to_refresh
 
+    sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
+    attr_reader :cooldown
+
+    sig { returns(Dependabot::Config::UpdateConfig) }
+    attr_reader :update_config
+
     sig do
-      params(job_id: String, job_definition: T::Hash[String, T.untyped],
-             repo_contents_path: T.nilable(String)).returns(Job)
+      params(
+        job_id: String,
+        job_definition: T::Hash[String, T.untyped],
+        repo_contents_path: T.nilable(String)
+      ).returns(Job)
     end
     def self.new_fetch_job(job_id:, job_definition:, repo_contents_path: nil)
-      attrs = standardise_keys(job_definition["job"]).select { |k, _| PERMITTED_KEYS.include?(k) }
+      standardised = standardise_keys(job_definition["job"])
+      attrs = standardised.slice(*T.unsafe(PERMITTED_KEYS))
 
       new(attrs.merge(id: job_id, repo_contents_path: repo_contents_path))
     end
 
     sig do
-      params(job_id: String, job_definition: T::Hash[String, T.untyped],
-             repo_contents_path: T.nilable(String)).returns(Job)
+      params(
+        job_id: String,
+        job_definition: T::Hash[String, T.untyped],
+        repo_contents_path: T.nilable(String)
+      ).returns(Job)
     end
     def self.new_update_job(job_id:, job_definition:, repo_contents_path: nil)
       job_hash = standardise_keys(job_definition["job"])
-      attrs = job_hash.select { |k, _| PERMITTED_KEYS.include?(k) }
+      attrs = job_hash.slice(*T.unsafe(PERMITTED_KEYS))
       attrs[:credentials] = job_hash[:credentials_metadata] || []
 
       new(attrs.merge(id: job_id, repo_contents_path: repo_contents_path))
@@ -130,34 +153,46 @@ module Dependabot
     # NOTE: "attributes" are fetched and injected at run time from
     # dependabot-api using the UpdateJobPrivateSerializer
     sig { params(attributes: T.untyped).void }
-    def initialize(attributes) # rubocop:disable Metrics/AbcSize
+    def initialize(attributes) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
       @id                             = T.let(attributes.fetch(:id), String)
       @allowed_updates                = T.let(attributes.fetch(:allowed_updates), T::Array[T.untyped])
-      @commit_message_options         = T.let(attributes.fetch(:commit_message_options, {}),
-                                              T.nilable(T::Hash[T.untyped, T.untyped]))
-      @credentials                    = T.let(attributes.fetch(:credentials, []).map do |data|
-                                                Dependabot::Credential.new(data)
-                                              end,
-                                              T::Array[Dependabot::Credential])
+      @commit_message_options         = T.let(
+        attributes.fetch(:commit_message_options, {}),
+        T.nilable(T::Hash[T.untyped, T.untyped])
+      )
+      @credentials = T.let(
+        attributes.fetch(:credentials, []).map do |data|
+          Dependabot::Credential.new(data)
+        end,
+        T::Array[Dependabot::Credential]
+      )
       @dependencies                   = T.let(attributes.fetch(:dependencies), T.nilable(T::Array[T.untyped]))
+      @exclude_paths                  = T.let(attributes.fetch(:exclude_paths, []), T.nilable(T::Array[String]))
       @existing_pull_requests         = T.let(PullRequest.create_from_job_definition(attributes), T::Array[PullRequest])
       # TODO: Make this hash required
       #
       # We will need to do a pass updating the CLI and smoke tests before this is possible,
       # so let's consider it optional for now. If we get a nil value, let's force it to be
       # an array.
-      @existing_group_pull_requests   =  T.let(attributes.fetch(:existing_group_pull_requests, []) || [],
-                                               T::Array[T::Hash[String, T.untyped]])
-      @experiments                    =  T.let(attributes.fetch(:experiments, {}),
-                                               T.nilable(T::Hash[T.untyped, T.untyped]))
+      @existing_group_pull_requests = T.let(
+        attributes.fetch(:existing_group_pull_requests, []) || [],
+        T::Array[T::Hash[String, T.untyped]]
+      )
+      @experiments = T.let(
+        attributes.fetch(:experiments, {}),
+        T.nilable(T::Hash[T.untyped, T.untyped])
+      )
       @ignore_conditions              =  T.let(attributes.fetch(:ignore_conditions), T::Array[T.untyped])
       @package_manager                =  T.let(attributes.fetch(:package_manager), String)
       @reject_external_code           =  T.let(attributes.fetch(:reject_external_code, false), T::Boolean)
       @repo_contents_path             =  T.let(attributes.fetch(:repo_contents_path, nil), T.nilable(String))
 
-      @requirements_update_strategy   = T.let(build_update_strategy(
-                                                **attributes.slice(:requirements_update_strategy, :lockfile_only)
-                                              ), T.nilable(Dependabot::RequirementsUpdateStrategy))
+      @requirements_update_strategy   = T.let(
+        build_update_strategy(
+          **attributes.slice(:requirements_update_strategy, :lockfile_only)
+        ),
+        T.nilable(Dependabot::RequirementsUpdateStrategy)
+      )
 
       @security_advisories            = T.let(attributes.fetch(:security_advisories), T::Array[T.untyped])
       @security_updates_only          = T.let(attributes.fetch(:security_updates_only), T::Boolean)
@@ -166,6 +201,11 @@ module Dependabot
       @update_subdependencies         = T.let(attributes.fetch(:update_subdependencies), T::Boolean)
       @updating_a_pull_request        = T.let(attributes.fetch(:updating_a_pull_request), T::Boolean)
       @vendor_dependencies            = T.let(attributes.fetch(:vendor_dependencies, false), T::Boolean)
+      @cooldown = T.let(
+        build_cooldown(attributes.fetch(:cooldown, nil)),
+        T.nilable(Dependabot::Package::ReleaseCooldownOptions)
+      )
+      @multi_ecosystem_update         = T.let(attributes.fetch(:multi_ecosystem_update, false), T::Boolean)
       # TODO: Make this hash required
       #
       # We will need to do a pass updating the CLI and smoke tests before this is possible,
@@ -209,6 +249,11 @@ module Dependabot
     sig { returns(T::Boolean) }
     def updating_a_pull_request?
       @updating_a_pull_request
+    end
+
+    sig { returns(T::Boolean) }
+    def multi_ecosystem_update?
+      @multi_ecosystem_update
     end
 
     sig { returns(T::Boolean) }
@@ -382,9 +427,6 @@ module Dependabot
 
     private
 
-    sig { returns(Dependabot::Config::UpdateConfig) }
-    attr_reader :update_config
-
     sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
     def completely_ignored?(dependency)
       ignore_conditions_for(dependency).any?(Dependabot::Config::IgnoreCondition::ALL_VERSIONS)
@@ -428,6 +470,7 @@ module Dependabot
     sig { params(source_details: T::Hash[String, T.untyped]).returns(Dependabot::Source) }
     def build_source(source_details)
       # Immediately normalize the source directory, ensure it starts with a "/"
+      # Uses Pathname#cleanpath to prevent users from maliciously using paths like ../.. to access other directories.
       directory, directories = clean_directories(source_details)
 
       Dependabot::Source.new(
@@ -439,6 +482,27 @@ module Dependabot
         commit: T.let(source_details["commit"], T.nilable(String)),
         hostname: T.let(source_details["hostname"], T.nilable(String)),
         api_endpoint: T.let(source_details["api-endpoint"], T.nilable(String))
+      )
+    end
+
+    sig do
+      params(
+        cooldown: T.nilable(
+          T::Hash[String,
+                  T.untyped]
+        )
+      ).returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions))
+    end
+    def build_cooldown(cooldown)
+      return nil unless cooldown
+
+      Dependabot::Package::ReleaseCooldownOptions.new(
+        default_days: cooldown["default-days"] || 0,
+        semver_major_days: cooldown["semver-major-days"] || 0,
+        semver_minor_days: cooldown["semver-minor-days"] || 0,
+        semver_patch_days: cooldown["semver-patch-days"] || 0,
+        include: cooldown["include"] || [],
+        exclude: cooldown["exclude"] || []
       )
     end
 
@@ -475,7 +539,8 @@ module Dependabot
       end
 
       update_config = Dependabot::Config::UpdateConfig.new(
-        ignore_conditions: T.let(update_config_ignore_conditions, T::Array[Dependabot::Config::IgnoreCondition])
+        ignore_conditions: T.let(update_config_ignore_conditions, T::Array[Dependabot::Config::IgnoreCondition]),
+        exclude_paths: T.let(exclude_paths, T.nilable(T::Array[String]))
       )
       T.let(update_config, Dependabot::Config::UpdateConfig)
     end

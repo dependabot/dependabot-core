@@ -32,9 +32,11 @@ RSpec.describe Dependabot::Devcontainers::UpdateChecker do
       credentials: github_credentials,
       security_advisories: security_advisories,
       ignored_versions: ignored_versions,
-      raise_on_ignored: raise_on_ignored
+      raise_on_ignored: raise_on_ignored,
+      update_cooldown: update_cooldown
     )
   end
+  let(:update_cooldown) { nil }
 
   it_behaves_like "an update checker"
 
@@ -113,6 +115,47 @@ RSpec.describe Dependabot::Devcontainers::UpdateChecker do
 
         it { is_expected.to eq("2.0.0") }
       end
+    end
+  end
+
+  describe "#latest_version with cooldown filter" do
+    subject(:latest_version) { checker.latest_version.to_s }
+
+    include_context "when the config is in root"
+
+    let(:devcontainer_url) { "https://ghcr.io/v2/codspace/versioning/foo/manifests/2.11.1" }
+    let(:name) { "ghcr.io/codspace/versioning/foo" }
+    let(:current_version) { "1.1.0" }
+    let(:update_cooldown) do
+      Dependabot::Package::ReleaseCooldownOptions.new(
+        default_days: 90,
+        semver_major_days: 90,
+        semver_minor_days: 90,
+        semver_patch_days: 90,
+        include: [],
+        exclude: []
+      )
+    end
+
+    before do
+      allow(Time).to receive(:now).and_return(Time.parse("2024-01-01T17:30:00.000Z"))
+      allow(Dependabot::Experiments).to receive(:enabled?)
+        .with(:enable_shared_helpers_command_timeout).and_return(true)
+
+      # stubbing the token request and devcontainer metadata
+      stub_request(:get, "https://ghcr.io/token?scope=repository:codspace/versioning/foo:pull&service=ghcr.io")
+        .to_return(status: 200, body: fixture("projects/cooldown", "token.json"))
+      stub_request(:get, devcontainer_url).to_return(
+        status: 200, body: fixture("projects/cooldown", "package_metadata.json")
+      )
+    end
+
+    after do
+      Dependabot::Experiments.reset!
+    end
+
+    context "when latest version is required with cooldown applied" do
+      it { is_expected.to eq("2.11.0") }
     end
   end
 end

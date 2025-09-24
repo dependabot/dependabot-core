@@ -29,9 +29,11 @@ RSpec.describe Dependabot::Environment do
     end
 
     it "is true if enabled in the job definition" do
-      allow(environment).to receive(:job_definition).and_return({
-        "job" => { "debug" => true }
-      })
+      allow(environment).to receive(:job_definition).and_return(
+        {
+          "job" => { "debug" => true }
+        }
+      )
       allow(ENV).to receive(:fetch).with("DEPENDABOT_DEBUG", false).and_return(false)
 
       expect(environment).to be_debug_enabled

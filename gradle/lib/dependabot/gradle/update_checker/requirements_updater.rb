@@ -29,13 +29,17 @@ module Dependabot
           params(
             requirements: T::Array[T::Hash[Symbol, T.untyped]],
             latest_version: T.nilable(T.any(Version, String)),
-            source_url: String,
+            source_url: T.nilable(String),
             properties_to_update: T::Array[String]
           )
             .void
         end
-        def initialize(requirements:, latest_version:, source_url:,
-                       properties_to_update:)
+        def initialize(
+          requirements:,
+          latest_version:,
+          source_url:,
+          properties_to_update:
+        )
           @requirements = requirements
           @source_url = source_url
           @properties_to_update = properties_to_update
@@ -71,7 +75,7 @@ module Dependabot
         sig { returns(T.nilable(Version)) }
         attr_reader :latest_version
 
-        sig { returns(String) }
+        sig { returns(T.nilable(String)) }
         attr_reader :source_url
 
         sig { returns(T::Array[String]) }

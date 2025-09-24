@@ -143,9 +143,15 @@ module Dependabot
                 else
                   registry_declaration_regex
                 end
+
+        # Define and break down the version regex for better clarity
+        version_key_pattern = /^\s*version\s*=\s*/
+        version_value_pattern = /["'].*#{Regexp.escape(old_req&.fetch(:requirement))}.*['"]/
+        version_regex = /#{version_key_pattern}#{version_value_pattern}/
+
         updated_content.gsub!(regex) do |regex_match|
-          regex_match.sub(/^\s*version\s*=.*/) do |req_line_match|
-            req_line_match.sub(old_req&.fetch(:requirement), new_req[:requirement])
+          regex_match.sub(version_regex) do |req_line_match|
+            req_line_match.sub!(old_req&.fetch(:requirement), new_req[:requirement])
           end
         end
       end
@@ -294,6 +300,9 @@ module Dependabot
             content.sub!(declaration_regex, updated_dependency)
           end
         rescue SharedHelpers::HelperSubprocessFailed => e
+          error_handler = FileUpdaterErrorHandler.new
+          error_handler.handle_helper_subprocess_failed_error(e)
+
           if @retrying_lock && e.message.match?(MODULE_NOT_INSTALLED_ERROR)
             mod = T.must(e.message.match(MODULE_NOT_INSTALLED_ERROR)).named_captures.fetch("mod")
             raise Dependabot::DependencyFileNotResolvable, "Attempt to install module #{mod} failed"
@@ -423,6 +432,31 @@ module Dependabot
           provider\s*["']#{Regexp.escape(provider_source)}["']\s*\{
           (?:(?!^\}).)*}
         /mix
+      end
+    end
+
+    class FileUpdaterErrorHandler
+      extend T::Sig
+
+      RESOLVE_ERROR = /Could not retrieve providers for locking/
+      CONSTRAINTS_ERROR = /no available releases match/
+
+      # Handles errors with specific to yarn error codes
+      sig { params(error: SharedHelpers::HelperSubprocessFailed).void }
+      def handle_helper_subprocess_failed_error(error)
+        unless sanitize_message(error.message).match?(RESOLVE_ERROR) &&
+               sanitize_message(error.message).match?(CONSTRAINTS_ERROR)
+          return
+        end
+
+        raise Dependabot::DependencyFileNotResolvable,
+              "Error while updating lockfile, " \
+              "no matching constraints found."
+      end
+
+      sig { params(message: String).returns(String) }
+      def sanitize_message(message)
+        message.gsub(/\e\[[\d;]*[A-Za-z]/, "").delete("\n").delete("│").squeeze(" ")
       end
     end
   end

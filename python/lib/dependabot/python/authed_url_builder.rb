@@ -1,12 +1,17 @@
-# typed: true
+# typed: strong
 # frozen_string_literal: true
+
+require "sorbet-runtime"
 
 module Dependabot
   module Python
     class AuthedUrlBuilder
+      extend T::Sig
+
+      sig { params(credential: Credential).returns(String) }
       def self.authed_url(credential:)
-        token = credential.fetch("token", nil)
-        url = credential.fetch("index-url", nil)
+        token = T.let(credential.fetch("token", nil), T.nilable(String))
+        url = T.let(credential.fetch("index-url", nil), T.nilable(String))
         return "" unless url
         return url unless token
 

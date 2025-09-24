@@ -114,12 +114,14 @@ module Dependabot
 
       sig { returns(T::Array[DependencyFile]) }
       def updated_pip_compile_based_files
-        PipCompileFileUpdater.new(
-          dependencies: dependencies,
-          dependency_files: dependency_files,
-          credentials: credentials,
-          index_urls: pip_compile_index_urls
-        ).updated_dependency_files
+        T.must(
+          PipCompileFileUpdater.new(
+            dependencies: dependencies,
+            dependency_files: dependency_files,
+            credentials: credentials,
+            index_urls: pip_compile_index_urls
+          ).updated_dependency_files
+        )
       end
 
       sig { returns(T::Array[DependencyFile]) }
@@ -132,7 +134,7 @@ module Dependabot
         ).updated_dependency_files
       end
 
-      sig { returns(T::Array[String]) }
+      sig { returns(T::Array[T.nilable(String)]) }
       def pip_compile_index_urls
         if credentials.any?(&:replaces_base?)
           credentials.select(&:replaces_base?).map { |cred| AuthedUrlBuilder.authed_url(credential: cred) }

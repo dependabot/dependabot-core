@@ -2,7 +2,6 @@
 # frozen_string_literal: true
 
 require "tmpdir"
-require "set"
 require "sorbet-runtime"
 
 require "dependabot/requirement"
@@ -57,7 +56,7 @@ module Dependabot
     sig { params(package_manager: String).void }
     def self.validate_package_manager!(package_manager)
       # Official package manager
-      return if Config::File::PACKAGE_MANAGER_LOOKUP.invert.key?(package_manager)
+      return if Config::File::REVERSE_PACKAGE_MANAGER_LOOKUP.key?(package_manager)
 
       # Used by specs
       return if package_manager == "dummy" || package_manager == "silent"

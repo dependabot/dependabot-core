@@ -8,6 +8,14 @@ require "dependabot/go_modules/update_checker"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::GoModules::UpdateChecker do
+  before do
+    ENV["GOPRIVATE"] = "*"
+  end
+
+  after do
+    ENV.delete("GOPRIVATE")
+  end
+
   let(:dependency_files) do
     [
       Dependabot::DependencyFile.new(
@@ -41,13 +49,15 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
     )
   end
   let(:security_advisories) { [] }
+  let(:expected_cooldown_options) { nil }
   let(:checker) do
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
       credentials: github_credentials,
       security_advisories: security_advisories,
-      ignored_versions: []
+      ignored_versions: [],
+      update_cooldown: expected_cooldown_options
     )
   end
 
@@ -183,6 +193,27 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
 
       it "returns true" do
         expect(vulnerable?).to be(true)
+      end
+    end
+  end
+
+  describe "with cooldown options" do
+    subject(:latest_resolvable_version) { checker.latest_resolvable_version }
+
+    let(:expected_cooldown_options) do
+      Dependabot::Package::ReleaseCooldownOptions.new(
+        default_days: 7,
+        semver_major_days: 7,
+        semver_minor_days: 7,
+        semver_patch_days: 7,
+        include: [],
+        exclude: []
+      )
+    end
+
+    context "when a supported newer version is available" do
+      it "updates to the newer version" do
+        expect(latest_resolvable_version).to eq(Dependabot::GoModules::Version.new("1.1.0"))
       end
     end
   end

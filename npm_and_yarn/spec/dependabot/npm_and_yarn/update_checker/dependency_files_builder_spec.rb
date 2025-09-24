@@ -24,12 +24,14 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::DependencyFilesBuilder) do
   end
 
   let(:credentials) do
-    [Dependabot::Credential.new({
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    })]
+    [Dependabot::Credential.new(
+      {
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    )]
   end
   let!(:dependency_files) { project_dependency_files(project_name) }
   let(:project_name) { "npm6_and_yarn/simple" }
@@ -97,17 +99,21 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::DependencyFilesBuilder) do
   describe "a private registry in a .yarnrc with a configured Dependabot private registry and yarn.lock" do
     let(:project_name) { "yarn/all_private_global_registry" }
     let(:credentials) do
-      [Dependabot::Credential.new({
-        "type" => "git_source",
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      }), Dependabot::Credential.new({
-        "type" => "npm-registry",
-        "host" => "https://npm-proxy.fury.io/",
-        "username" => "dependabot",
-        "password" => "password"
-      })]
+      [Dependabot::Credential.new(
+        {
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }
+      ), Dependabot::Credential.new(
+        {
+          "type" => "npm-registry",
+          "host" => "https://npm-proxy.fury.io/",
+          "username" => "dependabot",
+          "password" => "password"
+        }
+      )]
     end
 
     it "writes the relevant files to disk" do
@@ -137,16 +143,20 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::DependencyFilesBuilder) do
     subject(:test_subject) { builder.lockfiles }
 
     it do
-      expect(test_subject).to contain_exactly(project_dependency_file("package-lock.json"),
-                                              project_dependency_file("yarn.lock"))
+      expect(test_subject).to contain_exactly(
+        project_dependency_file("package-lock.json"),
+        project_dependency_file("yarn.lock")
+      )
     end
 
     context "with shrinkwraps" do
       let(:project_name) { "npm6/shrinkwrap" }
 
       it do
-        expect(test_subject).to contain_exactly(project_dependency_file("package-lock.json"),
-                                                project_dependency_file("npm-shrinkwrap.json"))
+        expect(test_subject).to contain_exactly(
+          project_dependency_file("package-lock.json"),
+          project_dependency_file("npm-shrinkwrap.json")
+        )
       end
     end
   end

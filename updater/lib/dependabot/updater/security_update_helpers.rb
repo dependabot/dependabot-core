@@ -1,4 +1,4 @@
-# typed: true
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -14,8 +14,12 @@ module Dependabot
 
       abstract!
 
-      sig { returns(Dependabot::Service) }
-      attr_reader :service
+      private
+
+      sig { abstract.returns(Dependabot::Service) }
+      def service; end
+
+      public
 
       sig { params(dependency: Dependabot::Dependency).void }
       def record_security_update_not_needed_error(dependency)
@@ -69,7 +73,7 @@ module Dependabot
           (checker.lowest_resolvable_security_fix_version ||
            checker.dependency.version)&.to_s
         lowest_non_vulnerable_version =
-          checker.lowest_security_fix_version.to_s
+          checker.lowest_security_fix_version&.to_s
         conflicting_dependencies = checker.conflicting_dependencies
 
         Dependabot.logger.info(
@@ -126,7 +130,7 @@ module Dependabot
           {
             "dependency-name": dep.name,
             "dependency-version": dep.version,
-            "dependency-removed": dep.removed? ? true : nil
+            "dependency-removed": dep.removed? || nil
           }.compact
         end
 
@@ -148,10 +152,10 @@ module Dependabot
 
       sig { params(lowest_non_vulnerable_version: T.nilable(String)).returns(String) }
       def earliest_fixed_version_message(lowest_non_vulnerable_version)
-        if lowest_non_vulnerable_version
+        if lowest_non_vulnerable_version && !lowest_non_vulnerable_version.empty?
           "The earliest fixed version is #{lowest_non_vulnerable_version}."
         else
-          "Dependabot could not find a non-vulnerable version"
+          "Dependabot could not find an allowed non-vulnerable version"
         end
       end
 
@@ -186,10 +190,14 @@ module Dependabot
       extend T::Sig
       extend T::Helpers
 
-      sig { returns(Dependabot::Service) }
-      attr_reader :service
-
       abstract!
+
+      private
+
+      sig { abstract.returns(Dependabot::Service) }
+      def service; end
+
+      public
 
       sig { params(notices: T.nilable(T::Array[Dependabot::Notice])).void }
       def record_warning_notices(notices)
@@ -202,15 +210,15 @@ module Dependabot
           # If alert is enabled, sending the deprecation notice to the service for showing on the UI insight page
           send_alert_notice(notice) if notice.show_alert
         end
-        rescue StandardError => e
-          Dependabot.logger.error(
-            "Failed to send notice warning: #{e.message}"
-          )
+      rescue StandardError => e
+        Dependabot.logger.error(
+          "Failed to send notice warning: #{e.message}"
+        )
       end
 
       private
 
-      # Resurns unique warning notices which are going to be shown on insight page.
+      # Returns unique warning notices which are going to be shown on insight page.
       sig { params(notices: T::Array[Dependabot::Notice]).returns(T::Array[Dependabot::Notice]) }
       def unique_warn_notices(notices)
         notices

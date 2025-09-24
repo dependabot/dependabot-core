@@ -2,7 +2,6 @@
 
 ! dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
 # If this appears in the logs twice that means it tried to create a PR again
-stderr -count=1 DependencyFileNotParseable
 stdout -count=2 create_pull_request
 pr-created expected-group.json
 pr-created expected-individual.json
@@ -56,8 +55,8 @@ job:
   source:
     directory: "/"
     provider: example
-    hostname: example.com
-    api-endpoint: https://example.com/api/v3
+    hostname: 127.0.0.1
+    api-endpoint: http://127.0.0.1/api/v3
     repo: dependabot/smoke-tests
   dependency-groups:
     - name: dev

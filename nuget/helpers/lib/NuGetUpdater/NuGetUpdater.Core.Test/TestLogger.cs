@@ -4,7 +4,7 @@ namespace NuGetUpdater.Core.Test;
 
 public class TestLogger : ILogger
 {
-    public void Log(string message)
+    public void LogRaw(string message)
     {
         Debug.WriteLine(message);
     }

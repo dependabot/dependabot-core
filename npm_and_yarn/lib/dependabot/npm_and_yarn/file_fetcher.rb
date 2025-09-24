@@ -7,6 +7,7 @@ require "dependabot/experiments"
 require "dependabot/logger"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
+require "dependabot/file_filtering"
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/package_manager"
 require "dependabot/npm_and_yarn/file_parser"
@@ -27,8 +28,10 @@ module Dependabot
       # when it specifies a path. Only include Yarn "link:"'s that start with a
       # path and ignore symlinked package names that have been registered with
       # "yarn link", e.g. "link:react"
-      PATH_DEPENDENCY_STARTS = T.let(%w(file: link:. link:/ link:~/ / ./ ../ ~/).freeze,
-                                     [String, String, String, String, String, String, String, String])
+      PATH_DEPENDENCY_STARTS = T.let(
+        %w(file: link:. link:/ link:~/ / ./ ../ ~/).freeze,
+        [String, String, String, String, String, String, String, String]
+      )
       PATH_DEPENDENCY_CLEAN_REGEX = /^file:|^link:/
       DEFAULT_NPM_REGISTRY = "https://registry.npmjs.org"
 
@@ -68,6 +71,7 @@ module Dependabot
         package_managers["npm"] = npm_version if npm_version
         package_managers["yarn"] = yarn_version if yarn_version
         package_managers["pnpm"] = pnpm_version if pnpm_version
+        package_managers["bun"] = bun_version if bun_version
         package_managers["unknown"] = 1 if package_managers.empty?
 
         {
@@ -83,11 +87,18 @@ module Dependabot
         fetched_files += npm_files if npm_version
         fetched_files += yarn_files if yarn_version
         fetched_files += pnpm_files if pnpm_version
+        fetched_files += bun_files if bun_version
         fetched_files += lerna_files
         fetched_files += workspace_package_jsons
         fetched_files += path_dependencies(fetched_files)
 
-        fetched_files.uniq
+        # Filter excluded files from final collection
+        filtered_files = fetched_files.uniq.reject do |file|
+          Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files) &&
+            !@exclude_paths.empty? && Dependabot::FileFiltering.exclude_path?(file.name, @exclude_paths)
+        end
+
+        filtered_files
       end
 
       private
@@ -107,6 +118,7 @@ module Dependabot
         fetched_yarn_files << yarn_lock if yarn_lock
         fetched_yarn_files << yarnrc if yarnrc
         fetched_yarn_files << yarnrc_yml if yarnrc_yml
+        create_yarn_cache
         fetched_yarn_files
       end
 
@@ -117,6 +129,13 @@ module Dependabot
         fetched_pnpm_files << pnpm_workspace_yaml if pnpm_workspace_yaml
         fetched_pnpm_files += pnpm_workspace_package_jsons
         fetched_pnpm_files
+      end
+
+      sig { returns(T::Array[DependencyFile]) }
+      def bun_files
+        fetched_bun_files = []
+        fetched_bun_files << bun_lock if bun_lock
+        fetched_bun_files
       end
 
       sig { returns(T::Array[DependencyFile]) }
@@ -138,8 +157,10 @@ module Dependabot
         return @inferred_npmrc ||= T.let(nil, T.nilable(DependencyFile)) unless npmrc.nil? && package_lock
 
         known_registries = []
-        FileParser::JsonLock.new(T.must(package_lock)).parsed.fetch("dependencies",
-                                                                    {}).each do |dependency_name, details|
+        FileParser::JsonLock.new(T.must(package_lock)).parsed.fetch(
+          "dependencies",
+          {}
+        ).each do |dependency_name, details|
           resolved = details.fetch("resolved", DEFAULT_NPM_REGISTRY)
 
           begin
@@ -201,13 +222,26 @@ module Dependabot
         )
       end
 
+      sig { returns(T.nilable(T.any(Integer, String))) }
+      def bun_version
+        return @bun_version = nil unless allow_beta_ecosystems?
+
+        @bun_version ||= T.let(
+          package_manager_helper.setup(BunPackageManager::NAME),
+          T.nilable(T.any(Integer, String))
+        )
+      end
+
       sig { returns(PackageManagerHelper) }
       def package_manager_helper
         @package_manager_helper ||= T.let(
           PackageManagerHelper.new(
             parsed_package_json,
-            lockfiles: lockfiles
-          ), T.nilable(PackageManagerHelper)
+            lockfiles,
+            registry_config_files,
+            credentials
+          ),
+          T.nilable(PackageManagerHelper)
         )
       end
 
@@ -216,7 +250,19 @@ module Dependabot
         {
           npm: package_lock || shrinkwrap,
           yarn: yarn_lock,
-          pnpm: pnpm_lock
+          pnpm: pnpm_lock,
+          bun: bun_lock
+        }
+      end
+
+      # Returns the .npmrc, and .yarnrc files for the repository.
+      # @return [Hash{Symbol => Dependabot::DependencyFile}]
+      sig { returns(T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)]) }
+      def registry_config_files
+        {
+          npmrc: npmrc,
+          yarnrc: yarnrc,
+          yarnrc_yml: yarnrc_yml
         }
       end
 
@@ -244,6 +290,21 @@ module Dependabot
         return @pnpm_lock if defined?(@pnpm_lock)
 
         @pnpm_lock ||= T.let(fetch_file_if_present(PNPMPackageManager::LOCKFILE_NAME), T.nilable(DependencyFile))
+
+        return @pnpm_lock if @pnpm_lock || directory == "/"
+
+        @pnpm_lock = fetch_file_from_parent_directories(PNPMPackageManager::LOCKFILE_NAME)
+      end
+
+      sig { returns(T.nilable(DependencyFile)) }
+      def bun_lock
+        return @bun_lock if defined?(@bun_lock)
+
+        @bun_lock ||= T.let(fetch_file_if_present(BunPackageManager::LOCKFILE_NAME), T.nilable(DependencyFile))
+
+        return @bun_lock if @bun_lock || directory == "/"
+
+        @bun_lock = fetch_file_from_parent_directories(BunPackageManager::LOCKFILE_NAME)
       end
 
       sig { returns(T.nilable(DependencyFile)) }
@@ -266,17 +327,7 @@ module Dependabot
 
         return @npmrc if @npmrc || directory == "/"
 
-        # Loop through parent directories looking for an npmrc
-        (1..directory.split("/").count).each do |i|
-          @npmrc = fetch_file_from_host(("../" * i) + NpmPackageManager::RC_FILENAME)
-                   .tap { |f| f.support_file = true }
-          break if @npmrc
-        rescue Dependabot::DependencyFileNotFound
-          # Ignore errors (.npmrc may not be present)
-          nil
-        end
-
-        @npmrc
+        @npmrc = fetch_file_from_parent_directories(NpmPackageManager::RC_FILENAME)
       end
 
       sig { returns(T.nilable(DependencyFile)) }
@@ -287,17 +338,7 @@ module Dependabot
 
         return @yarnrc if @yarnrc || directory == "/"
 
-        # Loop through parent directories looking for an yarnrc
-        (1..directory.split("/").count).each do |i|
-          @yarnrc = fetch_file_from_host(("../" * i) + YarnPackageManager::RC_FILENAME)
-                    .tap { |f| f.support_file = true }
-          break if @yarnrc
-        rescue Dependabot::DependencyFileNotFound
-          # Ignore errors (.yarnrc may not be present)
-          nil
-        end
-
-        @yarnrc
+        @yarnrc = fetch_file_from_parent_directories(YarnPackageManager::RC_FILENAME)
       end
 
       sig { returns(T.nilable(DependencyFile)) }
@@ -310,9 +351,12 @@ module Dependabot
         return @pnpm_workspace_yaml if defined?(@pnpm_workspace_yaml)
 
         @pnpm_workspace_yaml = T.let(
-          fetch_support_file(PNPMPackageManager::PNPM_WS_YML_FILENAME),
+          fetch_file_if_present(PNPMPackageManager::PNPM_WS_YML_FILENAME),
           T.nilable(DependencyFile)
         )
+
+        # Only fetch from parent directories if the file wasn't found initially
+        @pnpm_workspace_yaml ||= fetch_file_from_parent_directories(PNPMPackageManager::PNPM_WS_YML_FILENAME)
       end
 
       sig { returns(T.nilable(DependencyFile)) }
@@ -339,7 +383,7 @@ module Dependabot
 
       # rubocop:disable Metrics/PerceivedComplexity
       sig { params(fetched_files: T::Array[DependencyFile]).returns(T::Array[DependencyFile]) }
-      def path_dependencies(fetched_files)
+      def path_dependencies(fetched_files) # rubocop:disable Metrics/AbcSize
         package_json_files = T.let([], T::Array[DependencyFile])
         unfetchable_deps = T.let([], T::Array[[String, String]])
 
@@ -357,6 +401,16 @@ module Dependabot
           filename = File.join(filename, MANIFEST_FILENAME) unless filename.end_with?(".tgz", ".tar", ".tar.gz")
           cleaned_name = Pathname.new(filename).cleanpath.to_path
           next if fetched_files.map(&:name).include?(cleaned_name)
+
+          # Skip excluded path dependencies
+          if Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files) &&
+             !@exclude_paths.empty? && Dependabot::FileFiltering.exclude_path?(cleaned_name, @exclude_paths)
+            Dependabot.logger.warn(
+              "Skipping excluded path dependency '#{cleaned_name}' for package '#{name}'. " \
+              "This file is excluded by exclude_paths configuration: #{@exclude_paths}"
+            )
+            next
+          end
 
           begin
             file = fetch_file_from_host(filename, fetch_submodules: true)
@@ -424,6 +478,17 @@ module Dependabot
 
         resolution_deps = resolution_objects.flat_map(&:to_a)
                                             .map do |path, value|
+          # skip dependencies that contain invalid values such as inline comments, null, etc.
+
+          unless value.is_a?(String)
+            Dependabot.logger.warn(
+              "File fetcher: Skipping dependency \"#{path}\" " \
+              "with value: \"#{value}\""
+            )
+
+            next
+          end
+
           convert_dependency_path_to_name(path, value)
         end
 
@@ -569,6 +634,16 @@ module Dependabot
       def fetch_package_json_if_present(workspace)
         file = File.join(workspace, MANIFEST_FILENAME)
 
+        # Skip excluded workspace packages
+        if Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files) &&
+           !@exclude_paths.empty? && Dependabot::FileFiltering.exclude_path?(file, @exclude_paths)
+          Dependabot.logger.info(
+            "Skipping excluded workspace package '#{file}' from workspace '#{workspace}'. " \
+            "This file is excluded by exclude_paths configuration: #{@exclude_paths}"
+          )
+          return nil
+        end
+
         begin
           fetch_file_from_host(file)
         rescue Dependabot::DependencyFileNotFound
@@ -586,7 +661,10 @@ module Dependabot
 
       sig { returns(T.untyped) }
       def parsed_package_json
-        JSON.parse(T.must(package_json.content))
+        parsed = JSON.parse(T.must(package_json.content))
+        raise Dependabot::DependencyFileNotParseable, package_json.path unless parsed.is_a?(Hash)
+
+        parsed
       rescue JSON::ParserError
         raise Dependabot::DependencyFileNotParseable, package_json.path
       end
@@ -613,8 +691,8 @@ module Dependabot
       def parsed_pnpm_workspace_yaml
         return {} unless pnpm_workspace_yaml
 
-        YAML.safe_load(T.must(T.must(pnpm_workspace_yaml).content))
-      rescue Psych::SyntaxError
+        YAML.safe_load(T.must(T.must(pnpm_workspace_yaml).content), aliases: true)
+      rescue Psych::SyntaxError, Psych::BadAlias
         raise Dependabot::DependencyFileNotParseable, T.must(pnpm_workspace_yaml).path
       end
 
@@ -654,6 +732,35 @@ module Dependabot
         JSON.parse(T.must(T.must(lerna_json).content))
       rescue JSON::ParserError
         raise Dependabot::DependencyFileNotParseable, T.must(lerna_json).path
+      end
+
+      sig { void }
+      def create_yarn_cache
+        if repo_contents_path.nil?
+          Dependabot.logger.info("Repository contents path is nil")
+        elsif Dir.exist?(T.must(repo_contents_path))
+          Dir.chdir(T.must(repo_contents_path)) do
+            FileUtils.mkdir_p(".yarn/cache")
+          end
+        else
+          Dependabot.logger.info("Repository contents path does not exist")
+        end
+      end
+
+      sig { params(filename: String).returns(T.nilable(DependencyFile)) }
+      def fetch_file_with_support(filename)
+        fetch_file_from_host(filename).tap { |f| f.support_file = true }
+      rescue Dependabot::DependencyFileNotFound
+        nil
+      end
+
+      sig { params(filename: String).returns(T.nilable(DependencyFile)) }
+      def fetch_file_from_parent_directories(filename)
+        (1..directory.split("/").count).each do |i|
+          file = fetch_file_with_support(("../" * i) + filename)
+          return file if file
+        end
+        nil
       end
     end
   end

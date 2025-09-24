@@ -5,6 +5,7 @@ require "sorbet-runtime"
 
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
+require "dependabot/file_filtering"
 
 module Dependabot
   module Gradle
@@ -14,6 +15,8 @@ module Dependabot
 
       require_relative "file_parser"
       require_relative "file_fetcher/settings_file_parser"
+
+      SUPPORTED_LOCK_FILE_NAMES = T.let(%w(gradle.lockfile).freeze, T::Array[String])
 
       SUPPORTED_BUILD_FILE_NAMES =
         T.let(%w(build.gradle build.gradle.kts).freeze, T::Array[String])
@@ -31,13 +34,15 @@ module Dependabot
             source: Dependabot::Source,
             credentials: T::Array[Dependabot::Credential],
             repo_contents_path: T.nilable(String),
-            options: T::Hash[String, String]
+            options: T::Hash[String, String],
+            update_config: T.nilable(Dependabot::Config::UpdateConfig)
           )
           .void
       end
-      def initialize(source:, credentials:, repo_contents_path: nil, options: {})
+      def initialize(source:, credentials:, repo_contents_path: nil, options: {}, update_config: nil)
         super
 
+        @lockfile_name = T.let(T.must(SUPPORTED_LOCK_FILE_NAMES.first), String)
         @buildfile_name = T.let(nil, T.nilable(String))
       end
 
@@ -55,15 +60,24 @@ module Dependabot
 
       sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
-        all_buildfiles_in_build(".")
+        fetched_files = all_buildfiles_in_build(".")
+
+        # Filter excluded files from final collection
+        filtered_files = fetched_files.reject do |file|
+          Dependabot::FileFiltering.should_exclude_path?(file.name, "file from final collection", @exclude_paths)
+        end
+
+        filtered_files
       end
 
       private
 
       sig { params(root_dir: String).returns(T::Array[DependencyFile]) }
       def all_buildfiles_in_build(root_dir)
-        files = [buildfile(root_dir), settings_file(root_dir), version_catalog_file(root_dir)].compact
+        files = [buildfile(root_dir), settings_file(root_dir), version_catalog_file(root_dir), lockfile(root_dir)]
+                .compact
         files += subproject_buildfiles(root_dir)
+        files += subproject_lockfiles(root_dir)
         files += dependency_script_plugins(root_dir)
         files + included_builds(root_dir)
                 .flat_map { |dir| all_buildfiles_in_build(dir) }
@@ -94,6 +108,32 @@ module Dependabot
       end
 
       sig { params(root_dir: String).returns(T::Array[DependencyFile]) }
+      def subproject_lockfiles(root_dir)
+        return [] unless settings_file(root_dir)
+
+        subproject_paths =
+          SettingsFileParser
+          .new(settings_file: T.must(settings_file(root_dir)))
+          .subproject_paths
+
+        subproject_paths.filter_map do |path|
+          lockfile_path = File.join(root_dir, path, @lockfile_name)
+
+          # Skip excluded subproject lockfiles
+          next nil if Dependabot::FileFiltering.should_exclude_path?(
+            lockfile_path,
+            "subproject lockfile in subproject '#{path}'",
+            @exclude_paths
+          )
+
+          fetch_file_from_host(lockfile_path)
+        rescue Dependabot::DependencyFileNotFound
+          # Gradle itself doesn't worry about missing subprojects, so we don't
+          nil
+        end
+      end
+
+      sig { params(root_dir: String).returns(T::Array[DependencyFile]) }
       def subproject_buildfiles(root_dir)
         return [] unless settings_file(root_dir)
 
@@ -105,9 +145,26 @@ module Dependabot
         subproject_paths.filter_map do |path|
           if @buildfile_name
             buildfile_path = File.join(root_dir, path, @buildfile_name)
+
+            # Skip excluded subproject buildfiles
+            next nil if Dependabot::FileFiltering.should_exclude_path?(
+              buildfile_path,
+              "subproject buildfile in subproject '#{path}'",
+              @exclude_paths
+            )
+
             fetch_file_from_host(buildfile_path)
           else
-            buildfile(File.join(root_dir, path))
+            subproject_dir = File.join(root_dir, path)
+
+            # Skip excluded subproject directories
+            next nil if Dependabot::FileFiltering.should_exclude_path?(
+              subproject_dir,
+              "subproject directory for subproject '#{path}'",
+              @exclude_paths
+            )
+
+            buildfile(subproject_dir)
           end
         rescue Dependabot::DependencyFileNotFound
           # Gradle itself doesn't worry about missing subprojects, so we don't
@@ -137,6 +194,13 @@ module Dependabot
                     .uniq
 
         dependency_plugin_paths.filter_map do |path|
+          # Skip excluded dependency script plugins
+          next nil if Dependabot::FileFiltering.should_exclude_path?(
+            path,
+            "dependency script plugin",
+            @exclude_paths
+          )
+
           fetch_file_from_host(path)
         rescue Dependabot::DependencyFileNotFound
           next nil if file_exists_in_submodule?(path)
@@ -153,6 +217,11 @@ module Dependabot
         true
       rescue Dependabot::DependencyFileNotFound
         false
+      end
+
+      sig { params(dir: String).returns(T.nilable(DependencyFile)) }
+      def lockfile(dir)
+        fetch_file_if_present(File.join(dir, @lockfile_name))
       end
 
       sig { params(dir: String).returns(T.nilable(DependencyFile)) }

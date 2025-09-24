@@ -1,6 +1,7 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "ostruct"
 require "sorbet-runtime"
 
 require "dependabot/credential"
@@ -302,7 +303,7 @@ module Dependabot
 
           # Previous version looks like a git SHA and there's a previous ref, we
           # could be changing to a nil previous ref in which case we want to
-          # fall back to tge sha version
+          # fall back to the sha version
           if T.must(dependency.previous_version).match?(/^[0-9a-f]{40}$/) &&
              ref_changed? && previous_ref
             previous_ref
@@ -329,7 +330,7 @@ module Dependabot
           previous_refs = T.must(dependency.previous_requirements).filter_map do |r|
             r.dig(:source, "ref") || r.dig(:source, :ref)
           end.uniq
-          previous_refs.first if previous_refs.count == 1
+          previous_refs.first if previous_refs.one?
         end
 
         sig { returns(T.nilable(String)) }
@@ -337,7 +338,7 @@ module Dependabot
           new_refs = dependency.requirements.filter_map do |r|
             r.dig(:source, "ref") || r.dig(:source, :ref)
           end.uniq
-          new_refs.first if new_refs.count == 1
+          new_refs.first if new_refs.one?
         end
 
         sig { returns(T::Boolean) }

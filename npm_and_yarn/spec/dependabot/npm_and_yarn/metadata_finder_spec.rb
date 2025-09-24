@@ -15,12 +15,14 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
 
   let(:dependency_name) { "etag" }
   let(:credentials) do
-    [Dependabot::Credential.new({
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    })]
+    [Dependabot::Credential.new(
+      {
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    )]
   end
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -236,17 +238,21 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
         context "with credentials" do
           let(:credentials) do
             [
-              Dependabot::Credential.new({
-                "type" => "git_source",
-                "host" => "github.com",
-                "username" => "x-access-token",
-                "password" => "token"
-              }),
-              Dependabot::Credential.new({
-                "type" => "npm_registry",
-                "registry" => "registry.npmjs.org",
-                "token" => "secret_token"
-              })
+              Dependabot::Credential.new(
+                {
+                  "type" => "git_source",
+                  "host" => "github.com",
+                  "username" => "x-access-token",
+                  "password" => "token"
+                }
+              ),
+              Dependabot::Credential.new(
+                {
+                  "type" => "npm_registry",
+                  "registry" => "registry.npmjs.org",
+                  "token" => "secret_token"
+                }
+              )
             ]
           end
 
@@ -300,17 +306,21 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
         context "with credentials" do
           let(:credentials) do
             [
-              Dependabot::Credential.new({
-                "type" => "git_source",
-                "host" => "github.com",
-                "username" => "x-access-token",
-                "password" => "token"
-              }),
-              Dependabot::Credential.new({
-                "type" => "npm_registry",
-                "registry" => "npm.fury.io/dependabot",
-                "token" => "secret_token"
-              })
+              Dependabot::Credential.new(
+                {
+                  "type" => "git_source",
+                  "host" => "github.com",
+                  "username" => "x-access-token",
+                  "password" => "token"
+                }
+              ),
+              Dependabot::Credential.new(
+                {
+                  "type" => "npm_registry",
+                  "registry" => "npm.fury.io/dependabot",
+                  "token" => "secret_token"
+                }
+              )
             ]
           end
 
@@ -344,17 +354,21 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
 
       let(:credentials) do
         [
-          Dependabot::Credential.new({
-            "type" => "git_source",
-            "host" => "github.com",
-            "username" => "x-access-token",
-            "password" => "token"
-          }),
-          Dependabot::Credential.new({
-            "type" => "npm_registry",
-            "registry" => "npm.fury.io/dependabot",
-            "token" => "secret_token"
-          })
+          Dependabot::Credential.new(
+            {
+              "type" => "git_source",
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            }
+          ),
+          Dependabot::Credential.new(
+            {
+              "type" => "npm_registry",
+              "registry" => "npm.fury.io/dependabot",
+              "token" => "secret_token"
+            }
+          )
         ]
       end
 
@@ -400,6 +414,48 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
       end
 
       it "prefers to fetch metadata from the private registry" do
+        expect(source_url).to eq("https://github.com/jshttp/etag")
+      end
+    end
+
+    context "when there is a space in the package resolved URL" do
+      let(:npm_latest_version_response) { nil }
+      let(:npm_all_versions_response) { nil }
+      let(:dependency_name) { "@etag/etag" }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: "1.0",
+          requirements: [
+            {
+              file: "package.json",
+              requirement: "^1.0",
+              groups: [],
+              source: {
+                type: "registry",
+                url: "https://npm.example.com/registry with spaces"
+              }
+            }
+          ],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      before do
+        # the URL reported above has spaces, but we only stub the escaped versions
+        stub_request(
+          :get, "https://npm.example.com/registry%20with%20spaces/@etag%2Fetag/latest"
+        ).to_return(status: 404, body: '{"error":"Not found"}').times(2)
+
+        stub_request(:get, "https://npm.example.com/registry%20with%20spaces/@etag%2Fetag")
+          .to_return(
+            status: 200,
+            body: fixture("gemfury_responses", "gemfury_response_etag.json")
+          )
+      end
+
+      it "escapes the spaces before querying the content" do
         expect(source_url).to eq("https://github.com/jshttp/etag")
       end
     end
@@ -468,6 +524,146 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
           "[dougwilson](https://www.npmjs.com/~dougwilson), a new releaser " \
           "for etag since your current version."
         )
+      end
+    end
+  end
+
+  describe "#dependency_url" do
+    subject(:dependency_url) { finder.send(:dependency_url) }
+
+    context "when no source information is available" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: "1.6.0",
+          requirements: [
+            { file: "package.json", requirement: "^1.0", groups: [], source: nil }
+          ],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      context "without credentials" do
+        let(:credentials) { [] }
+
+        it "falls back to public npm registry" do
+          expect(dependency_url).to eq("https://registry.npmjs.org/etag")
+        end
+      end
+
+      context "with replaces-base credential" do
+        let(:credentials) do
+          [Dependabot::Credential.new(
+            {
+              "type" => "npm_registry",
+              "registry" => "jfrogghdemo.jfrog.io/artifactory/api/npm/e2e-tests-dependabot-npm/",
+              "token" => "secret_token",
+              "replaces-base" => true
+            }
+          )]
+        end
+
+        it "uses private registry from credentials" do
+          expect(dependency_url).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/e2e-tests-dependabot-npm/etag")
+        end
+
+        it "removes trailing slashes from registry URL" do
+          expect(dependency_url).not_to include("npm//etag")
+        end
+      end
+
+      context "with registry URL that has no protocol" do
+        let(:credentials) do
+          [Dependabot::Credential.new(
+            {
+              "type" => "npm_registry",
+              "registry" => "npm.fury.io/dependabot",
+              "token" => "secret_token",
+              "replaces-base" => true
+            }
+          )]
+        end
+
+        it "adds https protocol" do
+          expect(dependency_url).to eq("https://npm.fury.io/dependabot/etag")
+        end
+      end
+
+      context "with multiple credentials" do
+        let(:credentials) do
+          [
+            Dependabot::Credential.new(
+              {
+                "type" => "npm_registry",
+                "registry" => "https://npm.fury.io/dependabot",
+                "token" => "secret_token",
+                "replaces-base" => true
+              }
+            ),
+            Dependabot::Credential.new(
+              {
+                "type" => "npm_registry",
+                "registry" => "another.registry.com",
+                "token" => "another_secret_token"
+              }
+            )
+          ]
+        end
+
+        it "takes precedence over other credentials" do
+          expect(dependency_url).to eq("https://npm.fury.io/dependabot/etag")
+        end
+      end
+
+      context "with scoped dependency name" do
+        let(:dependency_name) { "@babel/core" }
+        let(:credentials) do
+          [Dependabot::Credential.new(
+            {
+              "type" => "npm_registry",
+              "registry" => "npm.fury.io/dependabot",
+              "token" => "secret_token",
+              "replaces-base" => true
+            }
+          )]
+        end
+
+        it "escapes dependency name properly" do
+          expect(dependency_url).to eq("https://npm.fury.io/dependabot/@babel%2Fcore")
+        end
+      end
+    end
+
+    context "when source information is available from lockfile" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: "1.6.0",
+          requirements: [
+            {
+              file: "package.json",
+              requirement: "^1.0",
+              groups: [],
+              source: { type: "registry", url: "https://npm.fury.io/dependabot" }
+            }
+          ],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      let(:credentials) do
+        [Dependabot::Credential.new(
+          {
+            "type" => "npm_registry",
+            "registry" => "different.registry.com",
+            "token" => "secret_token",
+            "replaces-base" => true
+          }
+        )]
+      end
+
+      it "uses source from lockfile, not credentials" do
+        expect(dependency_url).to eq("https://npm.fury.io/dependabot/etag")
       end
     end
   end

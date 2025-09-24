@@ -7,6 +7,8 @@ require "sorbet-runtime"
 require "dependabot/requirements_update_strategy"
 require "dependabot/security_advisory"
 require "dependabot/utils"
+require "dependabot/package/release_cooldown_options"
+require "dependabot/file_filtering"
 
 module Dependabot
   module UpdateCheckers
@@ -41,6 +43,9 @@ module Dependabot
       sig { returns(T.nilable(Dependabot::DependencyGroup)) }
       attr_reader :dependency_group
 
+      sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
+      attr_reader :update_cooldown
+
       sig { returns(T::Hash[Symbol, T.untyped]) }
       attr_reader :options
 
@@ -55,15 +60,24 @@ module Dependabot
           security_advisories: T::Array[Dependabot::SecurityAdvisory],
           requirements_update_strategy: T.nilable(Dependabot::RequirementsUpdateStrategy),
           dependency_group: T.nilable(Dependabot::DependencyGroup),
+          update_cooldown: T.nilable(Dependabot::Package::ReleaseCooldownOptions),
           options: T::Hash[Symbol, T.untyped]
         )
           .void
       end
-      def initialize(dependency:, dependency_files:, credentials:,
-                     repo_contents_path: nil, ignored_versions: [],
-                     raise_on_ignored: false, security_advisories: [],
-                     requirements_update_strategy: nil, dependency_group: nil,
-                     options: {})
+      def initialize(
+        dependency:,
+        dependency_files:,
+        credentials:,
+        repo_contents_path: nil,
+        ignored_versions: [],
+        raise_on_ignored: false,
+        security_advisories: [],
+        requirements_update_strategy: nil,
+        dependency_group: nil,
+        update_cooldown: nil,
+        options: {}
+      )
         @dependency = dependency
         @dependency_files = dependency_files
         @repo_contents_path = repo_contents_path
@@ -73,6 +87,7 @@ module Dependabot
         @raise_on_ignored = raise_on_ignored
         @security_advisories = security_advisories
         @dependency_group = dependency_group
+        @update_cooldown = update_cooldown
         @options = options
       end
 
@@ -136,17 +151,17 @@ module Dependabot
 
       # Lowest available security fix version not checking resolvability
       # @return [Dependabot::<package manager>::Version, #to_s] version class
-      sig { overridable.returns(T.nilable(Dependabot::Version)) }
+      sig { overridable.returns(T.nilable(Gem::Version)) }
       def lowest_security_fix_version
         raise NotImplementedError, "#{self.class} must implement #lowest_security_fix_version"
       end
 
-      sig { overridable.returns(T.nilable(Dependabot::Version)) }
+      sig { overridable.returns(T.nilable(Gem::Version)) }
       def lowest_resolvable_security_fix_version
         raise NotImplementedError, "#{self.class} must implement #lowest_resolvable_security_fix_version"
       end
 
-      sig { overridable.returns(T.nilable(T.any(String, Dependabot::Version))) }
+      sig { overridable.returns(T.nilable(T.any(String, Gem::Version))) }
       def latest_resolvable_version_with_no_unlock
         raise NotImplementedError, "#{self.class} must implement #latest_resolvable_version_with_no_unlock"
       end
@@ -355,9 +370,7 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def requirements_up_to_date?
-        if can_compare_requirements?
-          return (T.must(version_from_requirements) >= version_class.new(latest_version.to_s))
-        end
+        return T.must(version_from_requirements) >= version_class.new(latest_version.to_s) if can_compare_requirements?
 
         changed_requirements.none?
       end

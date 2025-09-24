@@ -21,20 +21,23 @@ module Dependabot
 
       # These are possible npm versioning tags that can be used in place of a version.
       # See https://docs.npmjs.com/cli/v10/commands/npm-dist-tag#purpose for more details.
-      VERSION_TAGS = T.let([
-        "alpha",        # Alpha version, early testing phase
-        "beta",         # Beta version, more stable than alpha
-        "canary",       # Canary version, often used for cutting-edge builds
-        "dev",          # Development version, ongoing development
-        "experimental", # Experimental version, unstable and new features
-        "latest",       # Latest stable version, used by npm to identify the current version of a package
-        "legacy",       # Legacy version, older version maintained for compatibility
-        "next",         # Next version, used by some projects to identify the upcoming version
-        "nightly",      # Nightly build, daily builds often including latest changes
-        "rc",           # Release candidate, potential final version
-        "release",      # General release version
-        "stable"        # Stable version, thoroughly tested and stable
-      ].freeze.map(&:freeze), T::Array[String])
+      VERSION_TAGS = T.let(
+        [
+          "alpha", # Alpha version, early testing phase
+          "beta",         # Beta version, more stable than alpha
+          "canary",       # Canary version, often used for cutting-edge builds
+          "dev",          # Development version, ongoing development
+          "experimental", # Experimental version, unstable and new features
+          "latest",       # Latest stable version, used by npm to identify the current version of a package
+          "legacy",       # Legacy version, older version maintained for compatibility
+          "next",         # Next version, used by some projects to identify the upcoming version
+          "nightly",      # Nightly build, daily builds often including latest changes
+          "rc",           # Release candidate, potential final version
+          "release",      # General release version
+          "stable"        # Stable version, thoroughly tested and stable
+        ].freeze.map(&:freeze),
+        T::Array[String]
+      )
 
       VERSION_PATTERN = T.let(Gem::Version::VERSION_PATTERN + '(\+[0-9a-zA-Z\-.]+)?', String)
       ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/
@@ -62,13 +65,33 @@ module Dependabot
 
       sig { override.params(version: VersionParameter).void }
       def initialize(version)
+        version = clean_version(version)
+
         @version_string = T.let(version.to_s, String)
-        version = version.gsub(/^v/, "") if version.is_a?(String)
+
         @build_info = T.let(nil, T.nilable(String))
 
         version, @build_info = version.to_s.split("+") if version.to_s.include?("+")
 
         super(T.must(version))
+      end
+
+      sig { params(version: VersionParameter).returns(VersionParameter) }
+      def clean_version(version)
+        # Check if version is a string before attempting to match
+        if version.is_a?(String)
+          # Matches @ followed by x.y.z (digits separated by dots)
+          if (match = version.match(/@(\d+\.\d+\.\d+)/))
+            version = match[1] # Just "4.5.3"
+
+          # Extract version in case the output contains Corepack verbose data
+          elsif version.include?("Corepack")
+            version = T.must(T.must(version.tr("\n", " ").match(/(\d+\.\d+\.\d+)/))[-1])
+          end
+          version = version&.gsub(/^v/, "")
+        end
+
+        version
       end
 
       sig { override.params(version: VersionParameter).returns(Dependabot::NpmAndYarn::Version) }

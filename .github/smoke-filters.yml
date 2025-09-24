@@ -7,6 +7,9 @@ common: &common
 github_actions:
   - *common
   - 'github_actions/**'
+bun:
+  - *common
+  - 'bun/**'
 bundler:
   - *common
   - 'bundler/**'
@@ -56,9 +59,24 @@ pub:
 git_submodules:
   - *common
   - 'git_submodules/**'
+rust_toolchain:
+  - *common
+  - 'rust_toolchain/**'
 swift:
   - *common
   - 'swift/**'
 terraform:
   - *common
   - 'terraform/**'
+uv:
+  - *common
+  - 'uv/**'
+helm:
+  - *common
+  - 'helm/**'
+vcpkg:
+  - *common
+  - 'vcpkg/**'
+conda:
+  - *common
+  - 'conda/**'

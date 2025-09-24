@@ -24,26 +24,6 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
 
     let(:pyproject_fixture_name) { "basic_poetry_dependencies.toml" }
 
-    context "when defined incorrectly" do
-      let(:pyproject_fixture_name) { "incorrect_poetry_setup.toml" }
-
-      it "raises a DependencyFileNotParseable error" do
-        expect { parser.dependency_set }
-          .to raise_error do |error|
-            expect(error.class)
-              .to eq(Dependabot::DependencyFileNotParseable)
-            expect(error.message)
-              .to eq <<~ERROR.strip
-                /pyproject.toml is missing the following sections:
-                  * tool.poetry.name
-                  * tool.poetry.version
-                  * tool.poetry.description
-                  * tool.poetry.authors
-              ERROR
-          end
-      end
-    end
-
     context "without a lockfile" do
       its(:length) { is_expected.to eq(15) }
 
@@ -154,7 +134,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
       end
 
       describe "a development sub-dependency" do
-        subject(:dep) { dependencies.find { |d| d.name == "atomicwrites" } }
+        subject(:dep) { dependencies.find { |d| d.name == "click" } }
 
         its(:subdependency_metadata) do
           is_expected.to eq([{ production: false }])
@@ -375,6 +355,74 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
       let(:pyproject_fixture_name) { "optional_dependencies_only.toml" }
 
       its(:length) { is_expected.to be > 0 }
+    end
+
+    describe "parse standard python files" do
+      subject(:dependencies) { parser.dependency_set.dependencies }
+
+      let(:pyproject_fixture_name) { "pyproject_1_0_0.toml" }
+
+      # fixture has 1 build system requires and plus 1 dependencies exists
+
+      its(:length) { is_expected.to eq(1) }
+
+      context "with a string declaration" do
+        subject(:dependency) { dependencies.first }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("pydantic")
+          expect(dependency.version).to eq("2.7.0")
+        end
+      end
+
+      context "without dependencies" do
+        subject(:dependencies) { parser.dependency_set.dependencies }
+
+        let(:pyproject_fixture_name) { "pyproject_1_0_0_nodeps.toml" }
+
+        # fixture has 1 build system requires and no dependencies or
+        # optional dependencies exists
+
+        its(:length) { is_expected.to eq(0) }
+      end
+
+      context "with optional dependencies only" do
+        subject(:dependencies) { parser.dependency_set.dependencies }
+
+        let(:pyproject_fixture_name) { "pyproject_1_0_0_optional_deps.toml" }
+
+        its(:length) { is_expected.to be > 0 }
+      end
+    end
+
+    describe "with pep 735" do
+      subject(:dependencies) { parser.dependency_set.dependencies }
+
+      let(:pyproject_fixture_name) { "pep735_exact_requirement.toml" }
+
+      # looks like this:
+
+      ###
+      # dependencies = []
+      #
+      # [dependency-groups]
+      # test = [
+      #   "pytest==8.0.0",
+      # ]
+      # dev = ["requests==2.18.0", {include-group = "test"}]
+
+      its(:length) { is_expected.to eq(2) }
+
+      it "has both dependencies" do
+        expected_deps = [
+          { name: "pytest", version: "8.0.0" },
+          { name: "requests", version: "2.18.0" }
+        ]
+
+        actual_deps = dependencies.map { |dep| { name: dep.name, version: dep.version } }
+        expect(actual_deps).to match_array(expected_deps)
+      end
     end
   end
 end

@@ -1,6 +1,7 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
+require "sorbet-runtime"
 require "dependabot/bundler/file_parser"
 require "dependabot/bundler/file_updater/lockfile_updater"
 require "dependabot/bundler/native_helpers"
@@ -14,14 +15,34 @@ module Dependabot
   module Bundler
     class UpdateChecker
       class ForceUpdater
+        extend T::Sig
+
         require_relative "shared_bundler_helpers"
+
         include SharedBundlerHelpers
 
-        def initialize(dependency:, dependency_files:, repo_contents_path: nil,
-                       credentials:, target_version:,
-                       requirements_update_strategy:,
-                       update_multiple_dependencies: true,
-                       options:)
+        sig do
+          params(
+            dependency: Dependabot::Dependency,
+            dependency_files: T::Array[Dependabot::DependencyFile],
+            credentials: T::Array[Dependabot::Credential],
+            target_version: Dependabot::Version,
+            requirements_update_strategy: Dependabot::RequirementsUpdateStrategy,
+            options: T::Hash[Symbol, T.untyped],
+            repo_contents_path: T.nilable(String),
+            update_multiple_dependencies: T::Boolean
+          ).void
+        end
+        def initialize(
+          dependency:,
+          dependency_files:,
+          credentials:,
+          target_version:,
+          requirements_update_strategy:,
+          options:,
+          repo_contents_path: nil,
+          update_multiple_dependencies: true
+        )
           @dependency                   = dependency
           @dependency_files             = dependency_files
           @repo_contents_path           = repo_contents_path
@@ -30,28 +51,53 @@ module Dependabot
           @requirements_update_strategy = requirements_update_strategy
           @update_multiple_dependencies = update_multiple_dependencies
           @options                      = options
+
+          @updated_dependencies         = T.let(nil, T.nilable(T::Array[Dependabot::Dependency]))
+          @original_dependencies        = T.let(nil, T.nilable(T::Array[Dependabot::Dependency]))
+          @bundler_version              = T.let(nil, T.nilable(String))
         end
 
+        sig { returns(T::Array[Dependabot::Dependency]) }
         def updated_dependencies
           @updated_dependencies ||= force_update
         end
 
-        private
-
-        attr_reader :dependency
+        # Abstract method implementations
+        sig { override.returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
+
+        sig { override.returns(T.nilable(String)) }
         attr_reader :repo_contents_path
+
+        sig { override.returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
-        attr_reader :target_version
-        attr_reader :requirements_update_strategy
+
+        sig { override.returns(T::Hash[Symbol, T.untyped]) }
         attr_reader :options
 
+        private
+
+        sig { returns(Dependabot::Dependency) }
+        attr_reader :dependency
+
+        sig { returns(Dependabot::Version) }
+        attr_reader :target_version
+
+        sig { returns(Dependabot::RequirementsUpdateStrategy) }
+        attr_reader :requirements_update_strategy
+
+        sig { returns(T::Boolean) }
         def update_multiple_dependencies?
           @update_multiple_dependencies
         end
 
+        # rubocop:disable Metrics/AbcSize
+        sig { returns(T::Array[Dependabot::Dependency]) }
         def force_update
-          requirement = dependency.requirements.find { |req| req[:file] == gemfile.name }
+          requirement = dependency.requirements.find { |req| req[:file] == T.must(gemfile).name }
+
+          valid_gem_version?(target_version)
+
           manifest_requirement_not_satisfied = requirement && !Requirement.satisfied_by?(requirement, target_version)
 
           if manifest_requirement_not_satisfied && requirements_update_strategy.lockfile_only?
@@ -68,8 +114,8 @@ module Dependabot
                 dependency_name: dependency.name,
                 target_version: target_version,
                 credentials: credentials,
-                gemfile_name: gemfile.name,
-                lockfile_name: lockfile.name,
+                gemfile_name: T.must(gemfile).name,
+                lockfile_name: T.must(lockfile).name,
                 update_multiple_dependencies: update_multiple_dependencies?
               }
             )
@@ -79,7 +125,19 @@ module Dependabot
             raise Dependabot::DependencyFileNotResolvable, msg
           end
         end
+        # rubocop:enable Metrics/AbcSize
 
+        sig { params(target_version: T.nilable(Dependabot::Version)).returns(TrueClass) }
+        def valid_gem_version?(target_version)
+          # to rule out empty, non gem info ending up in as target_version
+          return true if target_version.is_a?(Gem::Version)
+
+          Dependabot.logger.warn("Bundler force update called with a non-Gem::Version #{target_version}")
+
+          raise Dependabot::DependencyFileNotResolvable
+        end
+
+        sig { returns(T::Array[Dependabot::Dependency]) }
         def original_dependencies
           @original_dependencies ||=
             FileParser.new(
@@ -89,6 +147,13 @@ module Dependabot
             ).parse
         end
 
+        sig do
+          params(
+            updated_deps: T::Array[T::Hash[String, T.untyped]],
+            specs: T::Array[T::Hash[String, T.untyped]]
+          )
+            .returns(T::Array[Dependabot::Dependency])
+        end
         def dependencies_from(updated_deps, specs)
           # You might think we'd want to remove dependencies whose version
           # hadn't changed from this array. We don't. We still need to unlock
@@ -102,12 +167,13 @@ module Dependabot
               original_dependencies.find { |d| d.name == dep.fetch("name") }
             spec = specs.find { |d| d.fetch("name") == dep.fetch("name") }
 
-            next if spec.fetch("version") == original_dep.version
+            next if T.must(spec).fetch("version") == T.must(original_dep).version
 
             build_dependency(original_dep, spec)
           end
         end
 
+        sig { params(original_dep: T.untyped, updated_spec: T.untyped).returns(Dependabot::Dependency) }
         def build_dependency(original_dep, updated_spec)
           Dependency.new(
             name: updated_spec.fetch("name"),
@@ -126,27 +192,32 @@ module Dependabot
           )
         end
 
+        sig { params(dependency: Dependabot::Dependency).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
         def source_for(dependency)
           dependency.requirements
                     .find { |r| r.fetch(:source) }
                     &.fetch(:source)
         end
 
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def gemfile
           dependency_files.find { |f| f.name == "Gemfile" } ||
             dependency_files.find { |f| f.name == "gems.rb" }
         end
 
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def lockfile
           dependency_files.find { |f| f.name == "Gemfile.lock" } ||
             dependency_files.find { |f| f.name == "gems.locked" }
         end
 
+        sig { returns(String) }
         def sanitized_lockfile_body
           re = FileUpdater::LockfileUpdater::LOCKFILE_ENDING
-          lockfile.content.gsub(re, "")
+          T.must(T.must(lockfile).content).gsub(re, "")
         end
 
+        sig { void }
         def write_temporary_dependency_files
           dependency_files.each do |file|
             path = file.name
@@ -154,9 +225,10 @@ module Dependabot
             File.write(path, file.content)
           end
 
-          File.write(lockfile.name, sanitized_lockfile_body) if lockfile
+          File.write(T.must(lockfile).name, sanitized_lockfile_body) if lockfile
         end
 
+        sig { override.returns(String) }
         def bundler_version
           @bundler_version ||= Helpers.bundler_version(lockfile)
         end

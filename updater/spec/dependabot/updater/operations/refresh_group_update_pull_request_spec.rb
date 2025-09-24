@@ -10,6 +10,7 @@ require "dependabot/dependency_snapshot"
 require "dependabot/service"
 require "dependabot/updater/error_handler"
 require "dependabot/updater/operations/refresh_group_update_pull_request"
+require "dependabot/updater/group_dependency_selector"
 
 require "dependabot/bundler"
 
@@ -33,7 +34,8 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
       record_update_job_error: nil,
       create_pull_request: nil,
       record_update_job_warning: nil,
-      record_ecosystem_meta: nil
+      record_ecosystem_meta: nil,
+      record_cooldown_meta: nil
     )
   end
 
@@ -52,10 +54,12 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
   end
 
   let(:job_definition_with_fetched_files) do
-    job_definition.merge({
-      "base_commit_sha" => "mock-sha",
-      "base64_dependency_files" => encode_dependency_files(dependency_files)
-    })
+    job_definition.merge(
+      {
+        "base_commit_sha" => "mock-sha",
+        "base64_dependency_files" => encode_dependency_files(dependency_files)
+      }
+    )
   end
 
   let(:mock_error_handler) do
@@ -203,13 +207,18 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
       end
 
       it "considers the dependencies in the other PRs as handled, and closes the duplicate PR" do
-        expect(mock_service).to receive(:close_pull_request).with(["dummy-pkg-b"], :update_no_longer_possible)
+        # As per this implementation, if a dependency is part of overlapping groups
+        # Both the groups condition will be validated and the dependency will be updated in both the groups PRs.
+        # It is up to customer to decide which group should take precedence and update the dependency accordingly
+        expect(mock_service).not_to receive(:close_pull_request).with(["dummy-pkg-b"], :update_no_longer_possible)
 
         refresh_group.perform
 
         # It added all of the other existing grouped PRs to the handled list
-        expect(dependency_snapshot.handled_dependencies).to match_array(%w(dummy-pkg-a dummy-pkg-b dummy-pkg-c
-                                                                           dummy-pkg-d))
+        expect(dependency_snapshot.handled_dependencies).to match_array(
+          %w(dummy-pkg-a dummy-pkg-b dummy-pkg-c
+             dummy-pkg-d)
+        )
       end
     end
 
@@ -266,6 +275,148 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
         expect(mock_service).to receive(:close_pull_request).with(["dummy-pkg-b"], :dependency_group_empty)
 
         refresh_group.perform
+      end
+    end
+
+    context "when there is an existing PR for the same group it has a minor version in another group" do
+      let(:job_definition) do
+        job_definition_fixture("bundler/version_updates/group_update_refresh_multiple_groups_unchaged")
+      end
+
+      let(:dependency_files) do
+        original_bundler_files(fixture: "bundler_multiple_groups")
+      end
+
+      before do
+        stub_rubygems_calls
+        allow(Dependabot::Experiments).to receive(:enabled?).and_call_original
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:allow_refresh_for_existing_pr_dependencies)
+          .and_return(true)
+      end
+
+      after do
+        Dependabot::Experiments.reset!
+      end
+
+      it "updates the existing pull request without errors" do
+        expect(mock_service).not_to receive(:close_pull_request)
+        expect(mock_service).to receive(:update_pull_request) do |dependency_change|
+          expect(dependency_change.dependency_group.name).to eql("major")
+          expect(dependency_change.updated_dependency_files_hash)
+            .to eql(updated_bundler_files_hash(fixture: "bundler_multiple_groups"))
+        end
+
+        refresh_group.perform
+      end
+    end
+
+    context "when there is an existing group PR but group configured second" do
+      let(:job_definition) do
+        job_definition_fixture("bundler/version_updates/group_update_refresh_multiple_groups_unchaged_second_group")
+      end
+
+      let(:dependency_files) do
+        original_bundler_files(fixture: "bundler_multiple_groups")
+      end
+
+      before do
+        stub_rubygems_calls
+        allow(Dependabot::Experiments).to receive(:enabled?).and_call_original
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:allow_refresh_for_existing_pr_dependencies)
+          .and_return(true)
+      end
+
+      after do
+        Dependabot::Experiments.reset!
+      end
+
+      it "updates the existing pull request without errors" do
+        expect(mock_service).not_to receive(:close_pull_request)
+        expect(mock_service).to receive(:update_pull_request) do |dependency_change|
+          expect(dependency_change.dependency_group.name).to eql("major")
+          expect(dependency_change.updated_dependency_files_hash)
+            .to eql(updated_bundler_files_hash(fixture: "bundler_multiple_groups"))
+        end
+
+        refresh_group.perform
+      end
+    end
+  end
+
+  describe "#dependency_change" do
+    let(:job_definition) do
+      job_definition_fixture("bundler/version_updates/group_update_refresh")
+    end
+
+    before do
+      stub_rubygems_calls
+    end
+
+    context "when group membership enforcement is disabled" do
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?).and_return(false)
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:group_membership_enforcement)
+          .and_return(false)
+      end
+
+      it "creates GroupDependencySelector but does not filter" do
+        # When feature flag is disabled, GroupDependencySelector is created but filtering is skipped internally
+        mock_selector = instance_double(Dependabot::Updater::GroupDependencySelector)
+        allow(Dependabot::Updater::GroupDependencySelector).to receive(:new)
+          .and_return(mock_selector)
+        allow(mock_selector).to receive(:filter_to_group!) # No-op when feature flag disabled
+
+        refresh_group.send(:dependency_change)
+
+        expect(Dependabot::Updater::GroupDependencySelector).to have_received(:new)
+        expect(mock_selector).to have_received(:filter_to_group!)
+      end
+    end
+
+    context "when group membership enforcement is enabled" do
+      let(:mock_selector) { instance_double(Dependabot::Updater::GroupDependencySelector) }
+
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?).and_return(false)
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:group_membership_enforcement)
+          .and_return(true)
+      end
+
+      it "creates and uses GroupDependencySelector to filter dependencies" do
+        allow(Dependabot::Updater::GroupDependencySelector).to receive(:new)
+          .with(group: dependency_snapshot.job_group, dependency_snapshot: dependency_snapshot)
+          .and_return(mock_selector)
+        allow(mock_selector).to receive(:filter_to_group!)
+
+        refresh_group.send(:dependency_change)
+
+        expect(mock_selector).to have_received(:filter_to_group!)
+      end
+
+      it "applies filtering with the correct parameters" do
+        job_group = dependency_snapshot.job_group
+        allow(Dependabot::Updater::GroupDependencySelector).to receive(:new)
+          .with(group: job_group, dependency_snapshot: dependency_snapshot)
+          .and_return(mock_selector)
+        allow(mock_selector).to receive(:filter_to_group!)
+
+        refresh_group.send(:dependency_change)
+
+        expect(Dependabot::Updater::GroupDependencySelector).to have_received(:new)
+          .with(group: job_group, dependency_snapshot: dependency_snapshot)
+      end
+
+      it "calls filter_to_group! on the dependency change" do
+        allow(Dependabot::Updater::GroupDependencySelector).to receive(:new)
+          .and_return(mock_selector)
+        allow(mock_selector).to receive(:filter_to_group!)
+
+        dependency_change = refresh_group.send(:dependency_change)
+        expect(mock_selector).to have_received(:filter_to_group!).with(dependency_change)
       end
     end
   end

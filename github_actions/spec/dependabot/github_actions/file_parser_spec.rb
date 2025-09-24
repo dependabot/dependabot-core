@@ -560,5 +560,296 @@ RSpec.describe Dependabot::GithubActions::FileParser do
         end
       end
     end
+
+    context "with path based semver tag pinned to workflow action" do
+      let(:workflow_file_fixture_name) { "workflow_monorepo_path_based_semver.yml" }
+
+      let(:service_pack_url) do
+        "https://github.com/gopidesupavan/monorepo-actions.git/info/refs" \
+          "?service=git-upload-pack"
+      end
+
+      before do
+        stub_request(:get, service_pack_url)
+          .to_return(
+            status: 200,
+            body: fixture("git", "upload_packs", "github-monorepo-path-based"),
+            headers: {
+              "content-type" => "application/x-git-upload-pack-advertisement"
+            }
+          )
+      end
+
+      it "has dependencies" do
+        expect(dependencies.count).to be(2)
+      end
+
+      describe "the path based first dependency" do
+        subject(:dependency) { dependencies.first }
+
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow.yml",
+            source: {
+              type: "git",
+              url: "https://github.com/gopidesupavan/monorepo-actions",
+              ref: "init/v1.0.0",
+              branch: nil
+            },
+            metadata: { declaration_string: "gopidesupavan/monorepo-actions/first/init@init/v1.0.0" }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("gopidesupavan/monorepo-actions/first/init@init/v1.0.0")
+          expect(dependency.version).to eq("1.0.0")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+
+      describe "the path based last dependency" do
+        subject(:dependency) { dependencies.last }
+
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow.yml",
+            source: {
+              type: "git",
+              url: "https://github.com/gopidesupavan/monorepo-actions",
+              ref: "run/v2.0.0",
+              branch: nil
+            },
+            metadata: { declaration_string: "gopidesupavan/monorepo-actions/first/run@run/v2.0.0" }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("gopidesupavan/monorepo-actions/first/run@run/v2.0.0")
+          expect(dependency.version).to eq("2.0.0")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+    end
+
+    context "with path based without semver tag pinned to workflow action" do
+      let(:workflow_file_fixture_name) { "workflow_monorepo_path_based_without_semver.yml" }
+
+      let(:service_pack_url) do
+        "https://github.com/gopidesupavan/monorepo-actions.git/info/refs" \
+          "?service=git-upload-pack"
+      end
+
+      before do
+        stub_request(:get, service_pack_url)
+          .to_return(
+            status: 200,
+            body: fixture("git", "upload_packs", "github-monorepo-path-based"),
+            headers: {
+              "content-type" => "application/x-git-upload-pack-advertisement"
+            }
+          )
+      end
+
+      it "has dependencies" do
+        expect(dependencies.count).to be(1)
+      end
+
+      describe "the path based first dependency" do
+        subject(:dependency) { dependencies.first }
+
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow.yml",
+            source: {
+              type: "git",
+              url: "https://github.com/gopidesupavan/monorepo-actions",
+              ref: "exec/1.0.0",
+              branch: nil
+            },
+            metadata: { declaration_string: "gopidesupavan/monorepo-actions/second/exec@exec/1.0.0" }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("gopidesupavan/monorepo-actions/second/exec@exec/1.0.0")
+          expect(dependency.version).to eq("1.0.0")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+    end
+
+    context "with mix of path based semver tag pinned to workflow action and direct ref" do
+      let(:workflow_file_fixture_name) { "workflow_monorepo_path_based_semver_and_direct_ref.yml" }
+
+      let(:service_pack_url) do
+        "https://github.com/gopidesupavan/monorepo-actions.git/info/refs" \
+          "?service=git-upload-pack"
+      end
+
+      before do
+        stub_request(:get, service_pack_url)
+          .to_return(
+            status: 200,
+            body: fixture("git", "upload_packs", "github-monorepo-path-based"),
+            headers: {
+              "content-type" => "application/x-git-upload-pack-advertisement"
+            }
+          )
+        mock_service_pack_request("actions/checkout")
+      end
+
+      it "has dependencies" do
+        expect(dependencies.count).to be(3)
+      end
+
+      describe "the path based first dependency" do
+        subject(:dependency) { dependencies.first }
+
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow.yml",
+            source: {
+              type: "git",
+              url: "https://github.com/gopidesupavan/monorepo-actions",
+              ref: "init/v1.0.0",
+              branch: nil
+            },
+            metadata: { declaration_string: "gopidesupavan/monorepo-actions/first/init@init/v1.0.0" }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("gopidesupavan/monorepo-actions/first/init@init/v1.0.0")
+          expect(dependency.version).to eq("1.0.0")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+
+      describe "the path based last dependency" do
+        subject(:dependency) { dependencies.last }
+
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow.yml",
+            source: {
+              type: "git",
+              url: "https://github.com/actions/checkout",
+              ref: "v1",
+              branch: nil
+            },
+            metadata: { declaration_string: "actions/checkout@v1" }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("actions/checkout")
+          expect(dependency.version).to eq("1")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+    end
+
+    context "with mix of path based without semver tag pinned to workflow action and direct ref" do
+      let(:workflow_file_fixture_name) { "workflow_monorepo_path_based_without_semver_and_direct_ref.yml" }
+
+      let(:service_pack_url) do
+        "https://github.com/gopidesupavan/monorepo-actions.git/info/refs" \
+          "?service=git-upload-pack"
+      end
+
+      before do
+        stub_request(:get, service_pack_url)
+          .to_return(
+            status: 200,
+            body: fixture("git", "upload_packs", "github-monorepo-path-based"),
+            headers: {
+              "content-type" => "application/x-git-upload-pack-advertisement"
+            }
+          )
+        mock_service_pack_request("actions/checkout")
+      end
+
+      it "has dependencies" do
+        expect(dependencies.count).to be(2)
+      end
+
+      describe "the path based first dependency" do
+        subject(:dependency) { dependencies.first }
+
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow.yml",
+            source: {
+              type: "git",
+              url: "https://github.com/gopidesupavan/monorepo-actions",
+              ref: "init/1.0.0",
+              branch: nil
+            },
+            metadata: { declaration_string: "gopidesupavan/monorepo-actions/first/init@init/1.0.0" }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("gopidesupavan/monorepo-actions/first/init@init/1.0.0")
+          expect(dependency.version).to eq("1.0.0")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+
+      describe "the path based last dependency" do
+        subject(:dependency) { dependencies.last }
+
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow.yml",
+            source: {
+              type: "git",
+              url: "https://github.com/actions/checkout",
+              ref: "v1",
+              branch: nil
+            },
+            metadata: { declaration_string: "actions/checkout@v1" }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("actions/checkout")
+          expect(dependency.version).to eq("1")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+    end
+  end
+
+  describe "#ecosystem" do
+    it "returns the correct ecosystem" do
+      expect(parser.ecosystem).to be_a(Dependabot::Ecosystem)
+    end
+
+    it "returns package manager with version" do
+      expect(parser.ecosystem.package_manager).to be_a(Dependabot::GithubActions::PackageManager)
+      expect(parser.ecosystem.package_manager.version.to_s).to eq("1.0.0")
+    end
   end
 end

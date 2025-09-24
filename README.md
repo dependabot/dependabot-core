@@ -67,7 +67,7 @@ may be useful for advanced users looking for examples of how to hack on Dependab
 
 ## Dependabot on CI
 
-In an environment such as GitHub where Dependabot is running in a container, if you want to change your build or installation process depending on whether Dependabot is checking, you can determine it by the existence of `DEPENDABOT` environment variable.
+In an environment such as GitHub where Dependabot runs in a container, if you want to change your build or installation process depending on whether it's running within the context of the Dependabot container, you can check the existence of the `DEPENDABOT` environment variable.
 
 # Contributing to Dependabot
 
@@ -177,8 +177,10 @@ To (re)build a specific one:
 
   ```shell
   $ docker pull ghcr.io/dependabot/dependabot-updater-core # OR
-  $ docker build -f Dockerfile.updater-core . # recommended on ARM
+  $ docker build -f Dockerfile.updater-core . --tag=dependabot-manual-build/updater-core # recommended on ARM
   ```
+
+Each language/ecosystem sits on top of the core image. You need to rebuild whichever one you’re working on so it picks up your new core bits. For instance, if you’re working on **Go Modules**:
 
 - The Updater ecosystem image:
 
@@ -187,10 +189,33 @@ To (re)build a specific one:
   $ script/build go_modules # recommended on ARM
   ```
 
-- The development container using the `--rebuild` flag:
+  Or explicitly:
+  ```shell
+  $ docker build \
+  --platform linux/amd64 \
+  --file go_modules/Dockerfile \
+  --build-arg UPDATER_CORE_IMAGE=dependabot-manual-build/updater-core \
+  --tag dependabot-manual-build/updater-gomod \
+  .
+  ```
+
+- Spin-up the development container using the `--rebuild` flag:
 
   ```shell
   $ bin/docker-dev-shell go_modules --rebuild
+  ```
+
+  If successful, you should be inside the shell:
+
+  ```shell
+  => running docker development shell
+  [dependabot-core-dev] ~ $
+  ```
+
+- Once inside the shell, you can run tests, e.g.:
+
+  ```shell
+  rspec common/spec/dependabot/file_fetchers/base_exclude_spec.rb
   ```
 
 ### Making Changes to native Package Manager helpers
@@ -232,8 +257,8 @@ It has a [dedicated debugging guide](https://github.com/dependabot/cli#debugging
 
 You can use the `bin/dry-run.rb` script to simulate a dependency update job, printing
 the diff that would be generated to the terminal. It takes two positional
-arguments: the package manager and the GitHub repo name (including the
-account):
+arguments: the [package manager](https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file#package-ecosystem)
+and the GitHub repo name (including the account):
 
 ```bash
 $ bin/docker-dev-shell go_modules

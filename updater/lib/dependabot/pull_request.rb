@@ -22,12 +22,24 @@ module Dependabot
       sig { returns(T.nilable(String)) }
       attr_reader :directory
 
-      sig { params(name: String, version: T.nilable(String), removed: T::Boolean, directory: T.nilable(String)).void }
-      def initialize(name:, version:, removed: false, directory: nil)
+      sig { returns(T.nilable(Integer)) }
+      attr_reader :pr_number
+
+      sig do
+        params(
+          name: String,
+          version: T.nilable(String),
+          removed: T::Boolean,
+          directory: T.nilable(String),
+          pr_number: T.nilable(Integer)
+        ).void
+      end
+      def initialize(name:, version:, removed: false, directory: nil, pr_number: nil)
         @name = name
         @version = version
         @removed = removed
         @directory = directory
+        @pr_number = pr_number
       end
 
       sig { returns(T::Hash[Symbol, T.untyped]) }
@@ -35,7 +47,7 @@ module Dependabot
         {
           name: name,
           version: version,
-          removed: removed? ? true : nil,
+          removed: removed? || nil,
           directory: directory
         }.compact
       end
@@ -58,7 +70,8 @@ module Dependabot
               name: dep.fetch("dependency-name"),
               version: dep.fetch("dependency-version", nil),
               removed: dep.fetch("dependency-removed", false),
-              directory: dep.fetch("directory", nil)
+              directory: dep.fetch("directory", nil),
+              pr_number: dep.fetch("pr-number", nil)&.to_i
             )
           end
         )
@@ -87,11 +100,10 @@ module Dependabot
     sig { params(other: PullRequest).returns(T::Boolean) }
     def ==(other)
       if using_directory? && other.using_directory?
-        dependencies.map(&:to_h).difference(other.dependencies.map(&:to_h)).none?
+        dependencies.to_set(&:to_h) == other.dependencies.to_set(&:to_h)
       else
-        dependencies.map { |dep| dep.to_h.except(:directory) }.difference(
-          other.dependencies.map { |dep| dep.to_h.except(:directory) }
-        ).none?
+        dependencies.to_set { |dep| dep.to_h.except(:directory) } ==
+          other.dependencies.to_set { |dep| dep.to_h.except(:directory) }
       end
     end
 

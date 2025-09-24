@@ -1,7 +1,7 @@
 # typed: strict
 # frozen_string_literal: true
 
-require "parser/current"
+require "prism"
 require "sorbet-runtime"
 
 require "dependabot/file_parsers/base"
@@ -16,7 +16,7 @@ module Dependabot
         sig { params(gemfile: Dependabot::DependencyFile).void }
         def initialize(gemfile:)
           @gemfile = gemfile
-          @declaration_nodes = T.let({}, T::Hash[T::Hash[String, String], T.nilable(Parser::AST::Node)])
+          @declaration_nodes = T.let({}, T::Hash[T::Hash[String, String], T.nilable(Prism::Node)])
         end
 
         sig { params(dependency: T::Hash[String, String]).returns(T::Boolean) }
@@ -30,13 +30,16 @@ module Dependabot
           return unless gemfile_includes_dependency?(dependency)
 
           fallback_string = dependency.fetch("requirement")
-          req_nodes = declaration_node(dependency)&.children&.[](3..-1)
-          req_nodes = req_nodes.reject { |child| child.type == :hash }
+          call_node = declaration_node(dependency)
+          return fallback_string unless call_node.is_a?(Prism::CallNode)
+
+          req_nodes = call_node.arguments&.arguments&.[](1..-1) || []
+          req_nodes = req_nodes.reject { |child| child.is_a?(Prism::HashNode) || child.is_a?(Prism::KeywordHashNode) }
 
           return fallback_string if req_nodes.none?
-          return fallback_string unless req_nodes.all? { |n| n.type == :str }
+          return fallback_string unless req_nodes.all?(Prism::StringNode)
 
-          original_req_string = req_nodes.map { |n| n.children.last }
+          original_req_string = T.cast(req_nodes, T::Array[Prism::StringNode]).map(&:unescaped)
           fallback_requirement =
             Gem::Requirement.new(fallback_string.split(", "))
           if fallback_requirement == Gem::Requirement.new(original_req_string)
@@ -52,21 +55,21 @@ module Dependabot
         sig { returns(Dependabot::DependencyFile) }
         attr_reader :gemfile
 
-        sig { returns(T.nilable(Parser::AST::Node)) }
+        sig { returns(T.nilable(Prism::Node)) }
         def parsed_gemfile
           @parsed_gemfile ||= T.let(
-            Parser::CurrentRuby.parse(gemfile.content),
-            T.nilable(Parser::AST::Node)
+            Prism.parse(gemfile.content).value,
+            T.nilable(Prism::Node)
           )
         end
 
-        sig { params(dependency: T::Hash[String, String]).returns(T.nilable(Parser::AST::Node)) }
+        sig { params(dependency: T::Hash[String, String]).returns(T.nilable(Prism::Node)) }
         def declaration_node(dependency)
           return @declaration_nodes[dependency] if @declaration_nodes.key?(dependency)
           return unless parsed_gemfile
 
           @declaration_nodes[dependency] = nil
-          T.must(parsed_gemfile).children.any? do |node|
+          T.must(parsed_gemfile).child_nodes.any? do |node|
             @declaration_nodes[dependency] = deep_search_for_gem(node, dependency)
           end
           @declaration_nodes[dependency]
@@ -77,14 +80,14 @@ module Dependabot
             node: T.untyped,
             dependency: T::Hash[String, String]
           )
-            .returns(T.nilable(Parser::AST::Node))
+            .returns(T.nilable(Prism::Node))
         end
         def deep_search_for_gem(node, dependency)
-          return T.cast(node, Parser::AST::Node) if declares_targeted_gem?(node, dependency)
-          return unless node.is_a?(Parser::AST::Node)
+          return unless node.is_a?(Prism::Node)
+          return node if declares_targeted_gem?(node, dependency)
 
-          declaration_node = T.let(nil, T.nilable(Parser::AST::Node))
-          node.children.find do |child_node|
+          declaration_node = T.let(nil, T.nilable(Prism::Node))
+          node.child_nodes.find do |child_node|
             declaration_node = deep_search_for_gem(child_node, dependency)
           end
           declaration_node
@@ -98,10 +101,13 @@ module Dependabot
             .returns(T::Boolean)
         end
         def declares_targeted_gem?(node, dependency)
-          return false unless node.is_a?(Parser::AST::Node)
-          return false unless node.children[1] == :gem
+          return false unless node.is_a?(Prism::CallNode)
+          return false unless node.name == :gem
 
-          node.children[2].children.first == dependency.fetch("name")
+          gem_name_node = node.arguments&.arguments&.first
+          return false unless gem_name_node.is_a?(Prism::StringNode)
+
+          gem_name_node.unescaped == dependency.fetch("name")
         end
       end
     end

@@ -10,7 +10,7 @@ require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/file_updater"
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/native_helpers"
-require "dependabot/npm_and_yarn/update_checker/registry_finder"
+require "dependabot/npm_and_yarn/package/registry_finder"
 require "dependabot/shared_helpers"
 
 # rubocop:disable Metrics/ClassLength
@@ -84,8 +84,11 @@ module Dependabot
         NPM_PACKAGE_REGISTRY = "https://npm.pkg.github.com"
         EOVERRIDE = /EOVERRIDE\n *.* Override for (?<deps>.*) conflicts with direct dependency/
         NESTED_ALIAS = /nested aliases not supported/
-        PEER_DEPS_PATTERNS = T.let([/Cannot read properties of null/,
-                                    /ERESOLVE overriding peer dependency/].freeze, T::Array[Regexp])
+        PEER_DEPS_PATTERNS = T.let(
+          [/Cannot read properties of null/,
+           /ERESOLVE overriding peer dependency/].freeze,
+          T::Array[Regexp]
+        )
         PREMATURE_CLOSE = /premature close/
         EMPTY_OBJECT_ERROR = /Object for dependency "(?<package>.*)" is empty/
         ERROR_E401 = /code E401/
@@ -93,10 +96,13 @@ module Dependabot
         REQUEST_ERROR_E403 = /Request "(?<pkg>.*)" returned a 403/
         ERROR_EAI_AGAIN = /request to (?<url>.*) failed, reason: getaddrinfo EAI_AGAIN/
 
-        NPM_PACKAGE_NOT_FOUND_CODES = T.let([
-          /Couldn't find package "(?<pkg>.*)" on the "(?<regis>.*)" registry./,
-          /Couldn't find package "(?<pkg>.*)" required by "(?<dep>.*)" on the "(?<regis>.*)" registry./
-        ].freeze, T::Array[Regexp])
+        NPM_PACKAGE_NOT_FOUND_CODES = T.let(
+          [
+            /Couldn't find package "(?<pkg>.*)" on the "(?<regis>.*)" registry./,
+            /Couldn't find package "(?<pkg>.*)" required by "(?<dep>.*)" on the "(?<regis>.*)" registry./
+          ].freeze,
+          T::Array[Regexp]
+        )
 
         # dependency access protocol not supported by packagemanager
         UNSUPPORTED_PROTOCOL = /EUNSUPPORTEDPROTOCOL\n(.*?)Unsupported URL Type "(?<access_method>.*)"/
@@ -222,8 +228,10 @@ module Dependabot
             )
           end
 
-          run_npm_updater(top_level_dependencies: previous_top_level_dependencies,
-                          sub_dependencies: previous_sub_dependencies)
+          run_npm_updater(
+            top_level_dependencies: previous_top_level_dependencies,
+            sub_dependencies: previous_sub_dependencies
+          )
         end
 
         sig do
@@ -248,22 +256,7 @@ module Dependabot
 
         sig { params(top_level_dependencies: T::Array[Dependabot::Dependency]).returns(T::Hash[String, String]) }
         def run_npm_top_level_updater(top_level_dependencies:)
-          if npm8?
-            run_npm8_top_level_updater(top_level_dependencies: top_level_dependencies)
-          else
-            T.cast(
-              SharedHelpers.run_helper_subprocess(
-                command: NativeHelpers.helper_path,
-                function: "npm6:update",
-                args: [
-                  Dir.pwd,
-                  lockfile_basename,
-                  top_level_dependencies.map(&:to_h)
-                ]
-              ),
-              T::Hash[String, String]
-            )
-          end
+          run_npm8_top_level_updater(top_level_dependencies: top_level_dependencies)
         end
 
         sig { params(top_level_dependencies: T::Array[Dependabot::Dependency]).returns(T::Hash[String, String]) }
@@ -301,18 +294,7 @@ module Dependabot
           params(sub_dependencies: T::Array[Dependabot::Dependency]).returns(T.nilable(T::Hash[String, String]))
         end
         def run_npm_subdependency_updater(sub_dependencies:)
-          if npm8?
-            run_npm8_subdependency_updater(sub_dependencies: sub_dependencies)
-          else
-            T.cast(
-              SharedHelpers.run_helper_subprocess(
-                command: NativeHelpers.helper_path,
-                function: "npm6:updateSubdependency",
-                args: [Dir.pwd, lockfile_basename, sub_dependencies.map(&:to_h)]
-              ),
-              T.nilable(T::Hash[String, String])
-            )
-          end
+          run_npm8_subdependency_updater(sub_dependencies: sub_dependencies)
         end
 
         sig { params(sub_dependencies: T::Array[Dependabot::Dependency]).returns(T::Hash[String, String]) }
@@ -669,15 +651,15 @@ module Dependabot
 
           raise_resolvability_error(error_message) unless missing_dep
 
-          reg = NpmAndYarn::UpdateChecker::RegistryFinder.new(
+          reg = Package::RegistryFinder.new(
             dependency: missing_dep,
             credentials: credentials,
-            npmrc_file: dependency_files. find { |f| f.name.end_with?(".npmrc") },
-            yarnrc_file: dependency_files. find { |f| f.name.end_with?(".yarnrc") },
+            npmrc_file: dependency_files.find { |f| f.name.end_with?(".npmrc") },
+            yarnrc_file: dependency_files.find { |f| f.name.end_with?(".yarnrc") },
             yarnrc_yml_file: dependency_files.find { |f| f.name.end_with?(".yarnrc.yml") }
           ).registry
 
-          return if UpdateChecker::RegistryFinder.central_registry?(reg) && !package_name.start_with?("@")
+          return if Package::RegistryFinder.central_registry?(reg) && !package_name.start_with?("@")
 
           raise Dependabot::PrivateSourceAuthenticationFailure, reg
         end
@@ -894,8 +876,6 @@ module Dependabot
             .returns(String)
         end
         def restore_packages_name(updated_lockfile_content, parsed_updated_lockfile_content)
-          return updated_lockfile_content unless npm8?
-
           current_name = parsed_updated_lockfile_content.dig("packages", "", "name")
           original_name = parsed_lockfile.dig("packages", "", "name")
 
@@ -973,8 +953,6 @@ module Dependabot
             .returns(String)
         end
         def restore_locked_package_dependencies(updated_lockfile_content, parsed_updated_lockfile_content)
-          return updated_lockfile_content unless npm8?
-
           dependency_names_to_restore = (dependencies.map(&:name) + git_dependencies_to_lock.keys).uniq
 
           NpmAndYarn::FileParser.each_dependency(parsed_package_json) do |dependency_name, original_requirement, type|
@@ -1014,14 +992,8 @@ module Dependabot
             # updates the lockfile "from" field to the new git commit when we
             # run npm install
             original_from = %("from": "#{details[:from]}")
-            if npm8?
-              # NOTE: The `from` syntax has changed in npm 7 to include the dependency name
-              npm8_locked_from = %("from": "#{dependency_name}@#{details[:version]}")
-              updated_lockfile_content = updated_lockfile_content.gsub(npm8_locked_from, original_from)
-            else
-              npm6_locked_from = %("from": "#{details[:version]}")
-              updated_lockfile_content = updated_lockfile_content.gsub(npm6_locked_from, original_from)
-            end
+            npm8_locked_from = %("from": "#{dependency_name}@#{details[:version]}")
+            updated_lockfile_content = updated_lockfile_content.gsub(npm8_locked_from, original_from)
           end
 
           updated_lockfile_content
@@ -1101,16 +1073,6 @@ module Dependabot
         sig { returns(T::Boolean) }
         def npmrc_disables_lockfile?
           npmrc_content.match?(/^package-lock\s*=\s*false/)
-        end
-
-        sig { returns(T::Boolean) }
-        def npm8?
-          return T.must(@npm8) if defined?(@npm8)
-
-          @npm8 ||= T.let(
-            Dependabot::NpmAndYarn::Helpers.npm8?(lockfile),
-            T.nilable(T::Boolean)
-          )
         end
 
         sig { params(package_name: String).returns(String) }

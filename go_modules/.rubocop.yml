@@ -1,4 +1,5 @@
 inherit_from: ../.rubocop.yml
 
-Sorbet/StrictSigil:
-  Enabled: true
+Sorbet/ForbidTUnsafe:
+  Exclude:
+    - lib/dependabot/go_modules/version.rb

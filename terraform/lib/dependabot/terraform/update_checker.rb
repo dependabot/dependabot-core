@@ -16,6 +16,8 @@ module Dependabot
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       extend T::Sig
 
+      require_relative "update_checker/latest_version_resolver"
+
       ELIGIBLE_SOURCE_TYPES = T.let(
         %w(git provider registry).freeze,
         T::Array[String]
@@ -79,9 +81,12 @@ module Dependabot
         return @latest_version_for_registry_dependency if @latest_version_for_registry_dependency
 
         versions = all_module_versions
+        # Filter versions which are in cooldown period
+        if cooldown_enabled? # rubocop:disable Style/IfUnlessModifier
+          versions = latest_version_resolver.filter_versions_in_cooldown_period_from_module(versions)
+        end
         versions.reject!(&:prerelease?) unless wants_prerelease?
         versions.reject! { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }
-
         @latest_version_for_registry_dependency = T.let(
           versions.max,
           T.nilable(Dependabot::Terraform::Version)
@@ -118,6 +123,10 @@ module Dependabot
         return @latest_version_for_provider_dependency if @latest_version_for_provider_dependency
 
         versions = all_provider_versions
+        # Filter versions which are in cooldown period
+        if cooldown_enabled?
+          versions = latest_version_resolver.filter_versions_in_cooldown_period_from_provider(versions)
+        end
         versions.reject!(&:prerelease?) unless wants_prerelease?
         versions.reject! { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }
 
@@ -153,8 +162,8 @@ module Dependabot
         # we want to update that tag. Because we don't have a lockfile, the
         # latest version is the tag itself.
         if git_commit_checker.pinned_ref_looks_like_version?
-          latest_tag = git_commit_checker.local_tag_for_latest_version
-                                         &.fetch(:tag)
+          # Filter version tags that are in cooldown period
+          latest_tag =  latest_version_resolver.latest_version_tag&.fetch(:tag)
           version_rgx = GitCommitChecker::VERSION_REGEX
           return unless latest_tag.match(version_rgx)
 
@@ -214,6 +223,16 @@ module Dependabot
         git_commit_checker.git_dependency?
       end
 
+      sig { returns(LatestVersionResolver) }
+      def latest_version_resolver
+        LatestVersionResolver.new(
+          dependency: dependency,
+          credentials: credentials,
+          cooldown_options: update_cooldown,
+          git_commit_checker: git_commit_checker
+        )
+      end
+
       sig { returns(Dependabot::GitCommitChecker) }
       def git_commit_checker
         @git_commit_checker ||= T.let(
@@ -225,6 +244,17 @@ module Dependabot
           ),
           T.nilable(Dependabot::GitCommitChecker)
         )
+      end
+
+      sig { returns(T::Boolean) }
+      def cooldown_enabled?
+        # This is a simple check to see if user has put cooldown days.
+        # If not set, then we aassume user does not want cooldown.
+        # Since Terraform does not support Semver versioning, So option left
+        # for the user is to set cooldown default days.
+        return false if update_cooldown.nil?
+
+        T.must(update_cooldown&.default_days).positive?
       end
     end
   end

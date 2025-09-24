@@ -2,8 +2,6 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-using NuGetUpdater.Core.Run.ApiModel;
-
 namespace NuGetUpdater.Core.Run;
 
 public class HttpApiHandler : IApiHandler
@@ -25,29 +23,27 @@ public class HttpApiHandler : IApiHandler
         _jobId = jobId;
     }
 
-    public async Task RecordUpdateJobError(JobErrorBase error)
+    public async Task SendAsync(string endpoint, object body, string method)
     {
-        await PostAsJson("record_update_job_error", error);
-    }
+        var uri = $"{_apiUrl}/update_jobs/{_jobId}/{endpoint}";
+        var payload = Serialize(body);
+        var content = new StringContent(payload, Encoding.UTF8, "application/json");
+        var httpMethod = new HttpMethod(method);
+        var message = new HttpRequestMessage(httpMethod, uri)
+        {
+            Content = content
+        };
+        var response = await HttpClient.SendAsync(message);
+        if (!response.IsSuccessStatusCode)
+        {
+            var responseContent = await response.Content.ReadAsStringAsync();
+            if (!string.IsNullOrEmpty(responseContent))
+            {
+                responseContent = string.Concat(": ", responseContent);
+            }
 
-    public async Task UpdateDependencyList(UpdatedDependencyList updatedDependencyList)
-    {
-        await PostAsJson("update_dependency_list", updatedDependencyList);
-    }
-
-    public async Task IncrementMetric(IncrementMetric incrementMetric)
-    {
-        await PostAsJson("increment_metric", incrementMetric);
-    }
-
-    public async Task CreatePullRequest(CreatePullRequest createPullRequest)
-    {
-        await PostAsJson("create_pull_request", createPullRequest);
-    }
-
-    public async Task MarkAsProcessed(MarkAsProcessed markAsProcessed)
-    {
-        await PostAsJson("mark_as_processed", markAsProcessed);
+            throw new HttpRequestException(message: $"{(int)response.StatusCode} ({response.StatusCode}){responseContent}", inner: null, statusCode: response.StatusCode);
+        }
     }
 
     internal static string Serialize(object body)
@@ -58,13 +54,5 @@ public class HttpApiHandler : IApiHandler
         };
         var payload = JsonSerializer.Serialize(wrappedBody, SerializerOptions);
         return payload;
-    }
-
-    private async Task PostAsJson(string endpoint, object body)
-    {
-        var payload = Serialize(body);
-        var content = new StringContent(payload, Encoding.UTF8, "application/json");
-        var response = await HttpClient.PostAsync($"{_apiUrl}/update_jobs/{_jobId}/{endpoint}", content);
-        var _ = response.EnsureSuccessStatusCode();
     }
 }

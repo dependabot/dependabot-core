@@ -54,12 +54,14 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
   end
   let(:dependency_name) { "requests" }
   let(:credentials) do
-    [Dependabot::Credential.new({
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    })]
+    [Dependabot::Credential.new(
+      {
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    )]
   end
 
   describe "#updated_dependency_files" do
@@ -126,9 +128,9 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
     end
 
     context "with the oldest python version currently supported by Dependabot" do
-      let(:python_version) { "3.8.17" }
-      let(:pyproject_fixture_name) { "python_38.toml" }
-      let(:lockfile_fixture_name) { "python_38.lock" }
+      let(:python_version) { "3.9.21" }
+      let(:pyproject_fixture_name) { "python_39.toml" }
+      let(:lockfile_fixture_name) { "python_39.lock" }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "django",
@@ -729,6 +731,36 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
           end
         end
       end
+
+      context "when the requirement has not changed" do
+        let(:pyproject_fixture_name) { "caret_version.toml" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: dependency_name,
+            version: "2.19.1",
+            previous_version: nil,
+            package_manager: "pip",
+            requirements: [{
+              requirement: "^2.19.1",
+              file: "pyproject.toml",
+              source: nil,
+              groups: ["dependencies"]
+            }],
+            previous_requirements: [{
+              requirement: ">=2.19.1",
+              file: "pyproject.toml",
+              source: nil,
+              groups: ["dependencies"]
+            }]
+          )
+        end
+
+        it "raises the correct error" do
+          expect do
+            updated_files.map(&:name)
+          end.to raise_error(Dependabot::DependencyFileContentNotChanged, "Content did not change!")
+        end
+      end
     end
 
     context "with a poetry.lock" do
@@ -813,12 +845,14 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
         )
       end
       let(:credentials) do
-        [Dependabot::Credential.new({
-          "type" => "python_index",
-          "index-url" => "https://some.internal.registry.com/pypi/",
-          "username" => "test",
-          "password" => "test"
-        })]
+        [Dependabot::Credential.new(
+          {
+            "type" => "python_index",
+            "index-url" => "https://some.internal.registry.com/pypi/",
+            "username" => "test",
+            "password" => "test"
+          }
+        )]
       end
 
       it "prepares a pyproject file without credentials in" do

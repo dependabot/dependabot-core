@@ -5,6 +5,8 @@ require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "sorbet-runtime"
+require "dependabot/dotnet_sdk/package_manager"
+require "dependabot/dotnet_sdk/language"
 
 module Dependabot
   module DotnetSdk
@@ -17,12 +19,24 @@ module Dependabot
       def parse
         dependency_set = DependencySet.new
 
-        config_dependency_files.each do |config_dependency_file|
-          dependency = parse_dependency_file(config_dependency_file)
+        config_dependency_files.each do |dependency_file|
+          dependency = parse_dependency_file(dependency_file)
           dependency_set << dependency if dependency
         end
 
         dependency_set.dependencies
+      end
+
+      sig { returns(Ecosystem) }
+      def ecosystem
+        @ecosystem ||= T.let(
+          Ecosystem.new(
+            name: ECOSYSTEM,
+            package_manager: package_manager,
+            language: dotnetsdk
+          ),
+          T.nilable(Ecosystem)
+        )
       end
 
       private
@@ -32,45 +46,72 @@ module Dependabot
         return unless dependency_file.content
 
         begin
-          contents = JSON.parse(T.must(dependency_file.content))
+          # Remove UTF-8 BOM if present
+          content = T.must(dependency_file.content).delete_prefix("\uFEFF")
+          contents = JSON.parse(content)
         rescue JSON::ParserError
           raise Dependabot::DependencyFileNotParseable, T.must(dependency_files.first).path
         end
 
-        return unless contents["sdk"]
+        sdk_info = contents["sdk"]
+        return unless sdk_info
+
+        version = sdk_info["version"]
+        return unless version
 
         Dependabot::Dependency.new(
           name: "dotnet-sdk",
-          version: contents["sdk"]["version"],
+          version: version,
           package_manager: "dotnet_sdk",
           requirements: [{
             file: dependency_file.name,
-            requirement: contents["sdk"]["version"],
+            requirement: version,
             groups: [],
             source: nil
           }],
           metadata: {
-            allow_prerelease: contents["sdk"]["allowPrerelease"] || false,
-            roll_forward: contents["sdk"]["rollForward"] || "latestPatch"
+            allow_prerelease: sdk_info["allowPrerelease"] || false,
+            roll_forward: sdk_info["rollForward"] || "latestPatch"
           }
         )
+      end
+
+      sig { returns(T.nilable(Ecosystem::VersionManager)) }
+      def dotnetsdk
+        DotnetSDK.new(T.must(sdk_version))
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def config_dependency_files
         @config_dependency_files ||= T.let(
-          dependency_files.select do |f|
-            f.name.end_with?("global.json")
-          end,
+          dependency_files.filter { |f| f.name.end_with?("global.json") },
           T.nilable(T::Array[Dependabot::DependencyFile])
         )
       end
 
       sig { override.void }
       def check_required_files
-        return if dependency_files.any?
+        raise "No dependency files!" if dependency_files.empty?
+      end
 
-        raise "No dependency files!"
+      sig { returns(Ecosystem::VersionManager) }
+      def package_manager
+        DotNetSdkPackageManager.new
+      end
+
+      sig { returns(T.nilable(String)) }
+      def sdk_version
+        @sdk_version ||= T.let(
+          config_dependency_files.filter_map do |dependency_file|
+            # Remove UTF-8 BOM if present
+            content = T.must(dependency_file.content).delete_prefix("\uFEFF")
+            contents = JSON.parse(content)
+            contents.dig("sdk", "version")
+          rescue JSON::ParserError
+            raise Dependabot::DependencyFileNotParseable, dependency_file.path
+          end.first,
+          T.nilable(String)
+        )
       end
     end
   end

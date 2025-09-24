@@ -3,7 +3,7 @@ stderr 'created \| dependency-a \( from 1.2.3 to 1.2.5 \)'
 pr-created expected.json
 
 dependabot update -f input-pr-exists.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
-stderr 'Pull request already exists for dependency-a with latest version 1.2.5'
+stderr 'Pull request #123 already exists for dependency-a with latest version 1.2.5'
 ! stdout create_pull_request
 ! stdout update_pull_request
 
@@ -40,8 +40,8 @@ job:
   source:
     directory: "/"
     provider: example
-    hostname: example.com
-    api-endpoint: https://example.com/api/v3
+    hostname: 127.0.0.1
+    api-endpoint: http://127.0.0.1/api/v3
     repo: dependabot/smoke-tests
 
 -- input-pr-exists.yml --
@@ -50,13 +50,14 @@ job:
   source:
     directory: "/"
     provider: example
-    hostname: example.com
-    api-endpoint: https://example.com/api/v3
+    hostname: 127.0.0.1
+    api-endpoint: http://127.0.0.1/api/v3
     repo: dependabot/smoke-tests
   existing-pull-requests:
     - - dependency-name: dependency-a
         dependency-version: 1.2.5
         directory: "/"
+        pr-number: 123
 
 -- input-rebase-old.yml --
 job:
@@ -64,8 +65,8 @@ job:
   source:
     directory: "/"
     provider: example
-    hostname: example.com
-    api-endpoint: https://example.com/api/v3
+    hostname: 127.0.0.1
+    api-endpoint: http://127.0.0.1/api/v3
     repo: dependabot/smoke-tests
   dependencies:
     - dependency-a
@@ -73,6 +74,7 @@ job:
   existing-pull-requests:
     - - dependency-name: dependency-a
         dependency-version: 1.2.5
+        pr-number: 123
 
 -- input-rebase-new.yml --
 job:
@@ -80,8 +82,8 @@ job:
   source:
     directory: "/"
     provider: example
-    hostname: example.com
-    api-endpoint: https://example.com/api/v3
+    hostname: 127.0.0.1
+    api-endpoint: http://127.0.0.1/api/v3
     repo: dependabot/smoke-tests
   dependencies:
     - dependency-a
@@ -90,3 +92,4 @@ job:
     - - dependency-name: dependency-a
         dependency-version: 1.2.5
         directory: "/"
+        pr-number: 123

@@ -1,4 +1,11 @@
 version: 2
+multi-ecosystem-groups:
+  uv-ecosystem:
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "16:00"
+
 updates:
   - package-ecosystem: "bundler"
     directories:
@@ -32,7 +39,6 @@ updates:
   # Watch the per-ecosystem native helpers
   - package-ecosystem: "composer"
     directories:
-      - "/composer/helpers/v1"
       - "/composer/helpers/v2"
     schedule:
       interval: "weekly"
@@ -124,13 +130,15 @@ updates:
     groups:
       common:
         patterns:
-          - pip
+          - hashin
           - cython
           - flake8
-      poetry:
+      # Keep the package managers themselves separate because they are higher risk
+      # and also higher visibility--ie, users generally want latest, so we don't
+      # want breakage in the `common` group to prevent updating package manager versions
+      pip:
         patterns:
-          - poetry
-          - hashin
+          - pip
       pip-tools:
         patterns:
           - pip-tools
@@ -138,9 +146,65 @@ updates:
         patterns:
           - pipfile
           - pipenv
+      poetry:
+        patterns:
+          - poetry
   - package-ecosystem: "pub"
     directory: "/pub/helpers"
     schedule:
       interval: "weekly"
       day: "sunday"
       time: "16:00"
+  - package-ecosystem: "nuget"
+    directory: "/nuget/helpers/lib/NuGetUpdater"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "16:00"
+  - package-ecosystem: "dotnet-sdk"
+    directory: "/nuget/helpers/lib/NuGetUpdater"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "16:00"
+  - package-ecosystem: "gitsubmodule"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "16:00"
+  - package-ecosystem: "maven"
+    directory: "/maven/lib/dependabot/maven/"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "16:00"
+  - package-ecosystem: "docker"
+    directory: "/maven"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "16:00"
+  - package-ecosystem: "docker"
+    directory: "/uv"
+    multi-ecosystem-group: "uv-ecosystem"
+    patterns: ["*"]
+  - package-ecosystem: "pip"
+    directory: "/uv/helpers"
+    multi-ecosystem-group: "uv-ecosystem"
+    patterns: ["*"]
+    ignore:
+      # Ignore major updates as most major updates will need manual intervention
+      - dependency-name: "*"
+        update-types: [ "version-update:semver-major" ]
+  - package-ecosystem: "docker"
+    directory: "/docker"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "16:00"
+    groups:
+      regclient:
+        patterns:
+          - "regclient/regctl*"
+          - "sigstore/cosign/cosign*"

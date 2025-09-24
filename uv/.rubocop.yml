@@ -1,0 +1,6 @@
+inherit_from: ../.rubocop.yml
+
+Sorbet/ForbidTUnsafe:
+  Exclude:
+    - lib/dependabot/uv/file_fetcher.rb
+    - lib/dependabot/uv/file_updater/compile_file_updater.rb

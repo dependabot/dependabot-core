@@ -31,7 +31,39 @@ public partial class DiscoveryWorkerTests
                     {
                         FilePath = "global.json",
                         Dependencies = [
-                            new("Microsoft.NET.Sdk", "2.2.104", DependencyType.MSBuildSdk),
+                            new("Microsoft.Build.Traversal", "1.0.45", DependencyType.MSBuildSdk),
+                        ]
+                    },
+                    ExpectedProjectCount = 0,
+                }
+            );
+        }
+
+        [Fact]
+        public async Task DiscoversDependencies_HandlesTrailingComma()
+        {
+            await TestDiscoveryAsync(
+                packages: [],
+                workspacePath: "",
+                files: [
+                    ("global.json", """
+                        {
+                          "sdk": {
+                            "version": "2.2.104"
+                          },
+                          "msbuild-sdks": {
+                            "Microsoft.Build.Traversal": "1.0.45"
+                          },
+                        }
+                        """),
+                ],
+                expectedResult: new()
+                {
+                    Path = "",
+                    GlobalJson = new()
+                    {
+                        FilePath = "global.json",
+                        Dependencies = [
                             new("Microsoft.Build.Traversal", "1.0.45", DependencyType.MSBuildSdk),
                         ]
                     },
@@ -50,7 +82,7 @@ public partial class DiscoveryWorkerTests
                     ("global.json", """
                         {
                           "sdk": {
-                            "version": "2.2.104",
+                            "version": "2.2.104", INVALID JSON
                           },
                           "msbuild-sdks": {
                             "Microsoft.Build.Traversal": "1.0.45"

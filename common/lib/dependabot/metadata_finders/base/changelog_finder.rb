@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "excon"
+require "ostruct"
 require "sorbet-runtime"
 
 require "dependabot/clients/github_with_retries"
@@ -47,8 +48,12 @@ module Dependabot
           )
             .void
         end
-        def initialize(source:, dependency:, credentials:,
-                       suggested_changelog_url: nil)
+        def initialize(
+          source:,
+          dependency:,
+          credentials:,
+          suggested_changelog_url: nil
+        )
           @source = source
           @dependency = dependency
           @credentials = credentials
@@ -289,7 +294,7 @@ module Dependabot
           @dependency_file_list[ref] ||= fetch_dependency_file_list(ref)
         end
 
-        sig { params(ref: T.nilable(String)).returns(T::Array[T.untyped,]) }
+        sig { params(ref: T.nilable(String)).returns(T::Array[T.untyped]) }
         def fetch_dependency_file_list(ref)
           case T.must(source).provider
           when "github" then fetch_github_file_list(ref)
@@ -410,7 +415,7 @@ module Dependabot
           previous_refs = dependency.previous_requirements&.filter_map do |r|
             r.dig(:source, "ref") || r.dig(:source, :ref)
           end&.uniq
-          previous_refs&.first if previous_refs&.count == 1
+          previous_refs.first if previous_refs&.one?
         end
 
         sig { returns(T.nilable(String)) }
@@ -418,7 +423,7 @@ module Dependabot
           new_refs = dependency.requirements.filter_map do |r|
             r.dig(:source, "ref") || r.dig(:source, :ref)
           end.uniq
-          new_refs.first if new_refs.count == 1
+          new_refs.first if new_refs.one?
         end
 
         sig { returns(T::Boolean) }

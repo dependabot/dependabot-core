@@ -7,7 +7,18 @@ public sealed record WorkspaceDiscoveryResult : NativeResult
     public required string Path { get; init; }
     public bool IsSuccess { get; init; } = true;
     public ImmutableArray<ProjectDiscoveryResult> Projects { get; init; }
-    public DirectoryPackagesPropsDiscoveryResult? DirectoryPackagesProps { get; init; }
     public GlobalJsonDiscoveryResult? GlobalJson { get; init; }
     public DotNetToolsJsonDiscoveryResult? DotNetToolsJson { get; init; }
+
+    public ProjectDiscoveryResult? GetProjectDiscoveryFromPath(string repoPath)
+    {
+        var projectDiscovery = Projects.FirstOrDefault(p => System.IO.Path.Join(Path, p.FilePath).FullyNormalizedRootedPath().Equals(repoPath, StringComparison.OrdinalIgnoreCase));
+        return projectDiscovery;
+    }
+
+    public ProjectDiscoveryResult? GetProjectDiscoveryFromFullPath(DirectoryInfo repoContentsPath, FileInfo projectPath)
+    {
+        var projectDiscovery = Projects.FirstOrDefault(p => System.IO.Path.Join(repoContentsPath.FullName, Path, p.FilePath).FullyNormalizedRootedPath().Equals(projectPath.FullName.FullyNormalizedRootedPath(), StringComparison.OrdinalIgnoreCase));
+        return projectDiscovery;
+    }
 }

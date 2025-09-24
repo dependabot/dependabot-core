@@ -14,17 +14,21 @@ on: # yamllint disable-line rule:truthy
     inputs:
       pr:
         required: true
-        type: string
+        type: number
         description: PR number
 
 jobs:
   approval:
+    # Skip when triggered by pull request events on PR's from forks because the GITHUB_TOKEN on
+    # those PR's does not have write access, and thus cannot deploy to GHCR.
+    # Running this workflow against PR's from forks requires manually triggering it via `workflow_dispatch`.
+    if: ${{ !github.event.pull_request.head.repo.fork }}
     runs-on: ubuntu-latest
     outputs:
       decision: ${{ steps.decision.outputs.decision }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           submodules: recursive
 
@@ -32,7 +36,7 @@ jobs:
         run: echo "PR=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
         if: github.event_name != 'workflow_dispatch'
 
-      - name: Set PR (forks)
+      - name: Set PR when manually triggered (intended for forks)
         run: echo "PR=${{ inputs.pr }}" >> $GITHUB_ENV
         if: github.event_name == 'workflow_dispatch'
 
@@ -40,20 +44,26 @@ jobs:
       - name: Check if pull request is approved
         id: decision
         run: |
-          DECISION=$(gh pr view ${{ env.PR }} --json reviewDecision,state -t '{{.reviewDecision}}:{{.state}}')
+          # For security, the `gh` call that retrieves the PR approval status *must* also retrieve the commit at the
+          # tip of the PR to ensure that any subsequent unreviewed commits are not pulled into this action workflow.
+          DECISION=$(gh pr view ${{ env.PR }} --json reviewDecision,state,commits --jq '"\(.reviewDecision):\(.state):\(.commits | last .oid)"')
           echo "decision=$DECISION" >> $GITHUB_OUTPUT
 
   push-updater-images:
     runs-on: ubuntu-latest
     needs: approval
-    if: needs.approval.outputs.decision == 'APPROVED:OPEN' && !github.event.pull_request.head.repo.fork
+    if: startsWith(needs.approval.outputs.decision, 'APPROVED:OPEN')
     strategy:
       fail-fast: false
       matrix:
         suite:
+          - { name: bun, ecosystem: bun }
           - { name: bundler, ecosystem: bundler }
           - { name: cargo, ecosystem: cargo }
+          - { name: conda, ecosystem: conda }
           - { name: composer, ecosystem: composer }
+          - { name: devcontainers, ecosystem: devcontainers }
+          - { name: docker_compose, ecosystem: docker-compose }
           - { name: docker, ecosystem: docker }
           - { name: dotnet_sdk, ecosystem: dotnet-sdk }
           - { name: elm, ecosystem: elm }
@@ -61,15 +71,18 @@ jobs:
           - { name: github_actions, ecosystem: github-actions }
           - { name: go_modules, ecosystem: gomod }
           - { name: gradle, ecosystem: gradle }
+          - { name: helm, ecosystem: helm }
           - { name: hex, ecosystem: mix }
           - { name: maven, ecosystem: maven }
           - { name: npm_and_yarn, ecosystem: npm }
           - { name: nuget, ecosystem: nuget }
           - { name: pub, ecosystem: pub }
           - { name: python, ecosystem: pip }
+          - { name: rust_toolchain, ecosystem: rust-toolchain }
           - { name: swift, ecosystem: swift }
-          - { name: devcontainers, ecosystem: devcontainers }
           - { name: terraform, ecosystem: terraform }
+          - { name: uv, ecosystem: uv }
+          - { name: vcpkg, ecosystem: vcpkg }
     permissions:
       contents: read
       id-token: write
@@ -78,11 +91,11 @@ jobs:
       DEPENDABOT_UPDATER_VERSION: ${{ github.sha }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           submodules: recursive
 
-      - uses: sigstore/cosign-installer@dc72c7d5c4d10cd6bcb8cf6e3fd625a9e5e537da # v3.7.0
+      - uses: sigstore/cosign-installer@d58896d6a1865668819e1d91763c7751a165e159 # v3.9.2
 
       - name: Prepare tag
         run: echo "DEPENDABOT_UPDATER_VERSION=${{ github.sha }}" >> $GITHUB_ENV
@@ -91,15 +104,23 @@ jobs:
       - name: Prepare tag (forks)
         run: |
           gh pr checkout ${{ inputs.pr }}
+
+          # Ensure the commit we've checked out matches our expected SHA from when we checked the PR's approval status above.
+          # This is a security measure to prevent any unreviewed commits from getting pulled into this action workflow.
+          # The format is "APPROVED:OPEN:<PR_COMMIT_SHA>", so compare the end of the string to the current commit.
+          [[ ${{needs.approval.outputs.decision}} =~ $(git rev-parse HEAD)$ ]]
+
           git fetch origin main
           git merge origin/main --ff-only || exit 1
           git submodule update --init --recursive
           echo "DEPENDABOT_UPDATER_VERSION=$(git rev-parse HEAD)" >> $GITHUB_ENV
         if: github.event_name == 'workflow_dispatch'
 
-      - name: Log in to GHCR
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3.5.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build ecosystem image
         run: script/build ${{ matrix.suite.name }}
@@ -115,4 +136,12 @@ jobs:
           echo "updater uploaded with tag \`$DEPENDABOT_UPDATER_VERSION\`" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:$DEPENDABOT_UPDATER_VERSION" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "deploy for ${{ matrix.suite.ecosystem }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo ".dependabot set-ecosystem-version staging ${{ matrix.suite.ecosystem }} $DEPENDABOT_UPDATER_VERSION" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "deploy for all ecosystems" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo ".dependabot set-ecosystem-version staging * $DEPENDABOT_UPDATER_VERSION" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

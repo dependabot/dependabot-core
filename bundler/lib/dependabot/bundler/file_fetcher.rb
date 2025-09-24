@@ -4,6 +4,7 @@
 require "sorbet-runtime"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
+require "dependabot/file_filtering"
 require "dependabot/bundler/file_updater/lockfile_updater"
 require "dependabot/bundler/cached_lockfile_parser"
 require "dependabot/errors"
@@ -52,7 +53,13 @@ module Dependabot
         fetched_files += path_gemspecs
         fetched_files += find_included_files(fetched_files)
 
-        uniq_files(fetched_files)
+        # Filter excluded files from final collection
+        unique_files = uniq_files(fetched_files)
+        filtered_files = unique_files.reject do |file|
+          Dependabot::FileFiltering.should_exclude_path?(file.name, "file from final collection", @exclude_paths)
+        end
+
+        filtered_files
       end
 
       private
@@ -68,16 +75,20 @@ module Dependabot
       def gemfile
         return @gemfile if defined?(@gemfile)
 
-        @gemfile = T.let(fetch_file_if_present("gems.rb") || fetch_file_if_present("Gemfile"),
-                         T.nilable(Dependabot::DependencyFile))
+        @gemfile = T.let(
+          fetch_file_if_present("gems.rb") || fetch_file_if_present("Gemfile"),
+          T.nilable(Dependabot::DependencyFile)
+        )
       end
 
       sig { returns(T.nilable(DependencyFile)) }
       def lockfile
         return @lockfile if defined?(@lockfile)
 
-        @lockfile = T.let(fetch_file_if_present("gems.locked") || fetch_file_if_present("Gemfile.lock"),
-                          T.nilable(Dependabot::DependencyFile))
+        @lockfile = T.let(
+          fetch_file_if_present("gems.locked") || fetch_file_if_present("Gemfile.lock"),
+          T.nilable(Dependabot::DependencyFile)
+        )
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
@@ -174,8 +185,12 @@ module Dependabot
         end
 
         @find_included_files ||= T.let(
-          paths.map { |path| fetch_file_from_host(path) }
-               .tap { |req_files| req_files.each { |f| f.support_file = true } },
+          paths.filter_map do |path|
+            # Skip excluded included files
+            next nil if Dependabot::FileFiltering.should_exclude_path?(path, "included file", @exclude_paths)
+
+            fetch_file_from_host(path)
+          end.tap { |req_files| req_files.each { |f| f.support_file = true } }, # rubocop:disable Style/MultilineBlockChain
           T.nilable(T::Array[DependencyFile])
         )
       end
@@ -228,8 +243,10 @@ module Dependabot
       end
 
       sig do
-        params(file: DependencyFile,
-               previously_fetched_files: T::Array[DependencyFile]).returns(T::Array[DependencyFile])
+        params(
+          file: DependencyFile,
+          previously_fetched_files: T::Array[DependencyFile]
+        ).returns(T::Array[DependencyFile])
       end
       def fetch_child_gemfiles(file:, previously_fetched_files:)
         paths = ChildGemfileFinder.new(gemfile: file).child_gemfile_paths
@@ -237,6 +254,15 @@ module Dependabot
         paths.flat_map do |path|
           next if previously_fetched_files.map(&:name).include?(path)
           next if file.name == path
+
+          # Skip excluded child Gemfiles
+          if Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files) &&
+             !@exclude_paths.empty? && Dependabot::FileFiltering.exclude_path?(path, @exclude_paths)
+            raise Dependabot::DependencyFileNotEvaluatable,
+                  "Cannot process requirements: '#{file.name}' references excluded file '#{path}'. " \
+                  "Please either remove the reference from '#{file.name}' " \
+                  "or update your exclude_paths configuration."
+          end
 
           fetched_file = fetch_file_from_host(path)
           grandchild_gemfiles = fetch_child_gemfiles(

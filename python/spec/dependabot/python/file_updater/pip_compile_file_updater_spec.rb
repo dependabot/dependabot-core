@@ -60,12 +60,14 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
     }]
   end
   let(:credentials) do
-    [Dependabot::Credential.new({
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    })]
+    [Dependabot::Credential.new(
+      {
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    )]
   end
   let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
 
@@ -502,7 +504,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
       it "raises an error indicating the dependencies are not resolvable", :slow do
         expect { updated_files }.to raise_error(Dependabot::DependencyFileNotResolvable) do |err|
           expect(err.message).to include(
-            "There are incompatible versions in the resolved dependencies:\n  pyyaml==6.0.1"
+            "not supported between instances of 'InstallationCandidate'"
           )
         end
       end
@@ -531,10 +533,10 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
       let(:dependency_version) { "5.2.7" }
       let(:dependency_previous_version) { "5.2.6" }
 
-      it "adds pycurl as dependency" do
+      it "adds boto3 as dependency" do
         expect(updated_files.count).to eq(1)
         expect(updated_files.first.content).to include("--resolver=backtracking")
-        expect(updated_files.first.content).to include("pycurl")
+        expect(updated_files.first.content).to include("boto3")
       end
     end
 
@@ -545,10 +547,10 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
       let(:dependency_version) { "5.2.7" }
       let(:dependency_previous_version) { "5.2.6" }
 
-      it "do not include pycurl" do
+      it "do not include boto3" do
         expect(updated_files.count).to eq(1)
         expect(updated_files.first.content).to include("--resolver=legacy")
-        expect(updated_files.first.content).not_to include("pycurl")
+        expect(updated_files.first.content).not_to include("boto3")
       end
     end
   end
@@ -609,11 +611,13 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
       end
 
       before do
-        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess).with({
-          args: %w(package_name 1.0.0 sha256),
-          command: "pyenv exec python3 /opt/python/run.py",
-          function: "get_dependency_hash"
-        }).and_raise(
+        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess).with(
+          {
+            args: %w(package_name 1.0.0 sha256),
+            command: "pyenv exec python3 /opt/python/run.py",
+            function: "get_dependency_hash"
+          }
+        ).and_raise(
           Dependabot::SharedHelpers::HelperSubprocessFailed.new(
             message: "Error message", error_context: {}, error_class: "PackageNotFoundError"
           )

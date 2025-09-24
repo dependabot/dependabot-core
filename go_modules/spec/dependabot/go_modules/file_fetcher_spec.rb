@@ -8,8 +8,11 @@ require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 RSpec.describe Dependabot::GoModules::FileFetcher do
   let(:directory) { "/" }
   let(:file_fetcher_instance) do
-    described_class.new(source: source, credentials: github_credentials,
-                        repo_contents_path: repo_contents_path)
+    described_class.new(
+      source: source,
+      credentials: github_credentials,
+      repo_contents_path: repo_contents_path
+    )
   end
   let(:repo_contents_path) { Dir.mktmpdir }
   let(:source) do
@@ -35,9 +38,11 @@ RSpec.describe Dependabot::GoModules::FileFetcher do
   end
 
   it "provides the Go modules version" do
-    expect(file_fetcher_instance.ecosystem_versions).to eq({
-      package_managers: { "gomod" => "unknown" }
-    })
+    expect(file_fetcher_instance.ecosystem_versions).to eq(
+      {
+        package_managers: { "gomod" => "unknown" }
+      }
+    )
   end
 
   context "without a go.mod" do
@@ -54,6 +59,14 @@ RSpec.describe Dependabot::GoModules::FileFetcher do
 
     it "doesn't raise an error" do
       expect { file_fetcher_instance.files }.not_to raise_error
+    end
+  end
+
+  context "with a go.env file" do
+    let(:branch) { "with-go-env" }
+
+    it "fetches the go.env file" do
+      expect(file_fetcher_instance.files.map(&:name)).to include("go.env")
     end
   end
 
@@ -77,9 +90,11 @@ RSpec.describe Dependabot::GoModules::FileFetcher do
     end
 
     it "provides the Go modules version" do
-      expect(file_fetcher_instance.ecosystem_versions).to eq({
-        package_managers: { "gomod" => "1.19" }
-      })
+      expect(file_fetcher_instance.ecosystem_versions).to eq(
+        {
+          package_managers: { "gomod" => "1.19" }
+        }
+      )
     end
   end
 end

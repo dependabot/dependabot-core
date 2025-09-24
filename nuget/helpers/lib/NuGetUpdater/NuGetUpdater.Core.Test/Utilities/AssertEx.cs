@@ -97,7 +97,7 @@ public static class AssertEx
             return;
         }
 
-        Assert.True(false, GetAssertMessage(expected, actual, comparer, message));
+        Assert.Fail(GetAssertMessage(expected, actual, comparer, message));
     }
 
     private static bool SequenceEqual<T>(

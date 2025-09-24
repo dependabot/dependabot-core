@@ -7,9 +7,9 @@ require "excon"
 require "fileutils"
 require "json"
 require "open3"
-require "shellwords"
 require "sorbet-runtime"
 require "tmpdir"
+require "securerandom"
 
 require "dependabot/credential"
 require "dependabot/simple_instrumentor"
@@ -17,12 +17,12 @@ require "dependabot/utils"
 require "dependabot/errors"
 require "dependabot/workspace"
 require "dependabot"
+require "dependabot/command_helpers"
 
 module Dependabot
-  module SharedHelpers
+  module SharedHelpers # rubocop:disable Metrics/ModuleLength
     extend T::Sig
 
-    GIT_CONFIG_GLOBAL_PATH = T.let(File.expand_path(".gitconfig", Utils::BUMP_TMP_DIR_PATH), String)
     USER_AGENT = T.let(
       "dependabot-core/#{Dependabot::VERSION} " \
       "#{Excon::USER_AGENT} ruby/#{RUBY_VERSION} " \
@@ -90,7 +90,7 @@ module Dependabot
       sig { returns(String) }
       attr_reader :error_class
 
-      sig { returns(T::Hash[Symbol, String]) }
+      sig { returns(T::Hash[Symbol, T.untyped]) }
       attr_reader :error_context
 
       sig { returns(T.nilable(T::Array[String])) }
@@ -121,8 +121,7 @@ module Dependabot
     # Escapes all special characters, e.g. = & | <>
     sig { params(command: String).returns(String) }
     def self.escape_command(command)
-      command_parts = command.split.map(&:strip).reject(&:empty?)
-      Shellwords.join(command_parts)
+      CommandHelpers.escape_command(command)
     end
 
     # rubocop:disable Metrics/MethodLength
@@ -131,18 +130,25 @@ module Dependabot
       params(
         command: String,
         function: String,
-        args: T.any(T::Array[T.any(String, T::Array[T::Hash[String, T.untyped]])], T::Hash[Symbol, String]),
+        args: T.untyped,
         env: T.nilable(T::Hash[String, String]),
         stderr_to_stdout: T::Boolean,
         allow_unsafe_shell_command: T::Boolean,
-        error_class: T.class_of(HelperSubprocessFailed)
+        error_class: T.class_of(HelperSubprocessFailed),
+        timeout: Integer
       )
-        .returns(T.nilable(T.any(String, T::Hash[String, T.untyped], T::Array[T::Hash[String, T.untyped]])))
+        .returns(T.untyped)
     end
-    def self.run_helper_subprocess(command:, function:, args:, env: nil,
-                                   stderr_to_stdout: false,
-                                   allow_unsafe_shell_command: false,
-                                   error_class: HelperSubprocessFailed)
+    def self.run_helper_subprocess(
+      command:,
+      function:,
+      args:,
+      env: nil,
+      stderr_to_stdout: false,
+      allow_unsafe_shell_command: false,
+      error_class: HelperSubprocessFailed,
+      timeout: CommandHelpers::TIMEOUTS::DEFAULT
+    )
       start = Time.now
       stdin_data = JSON.dump(function: function, args: args)
       cmd = allow_unsafe_shell_command ? command : escape_command(command)
@@ -157,7 +163,15 @@ module Dependabot
       end
 
       env_cmd = [env, cmd].compact
-      stdout, stderr, process = T.unsafe(Open3).capture3(*env_cmd, stdin_data: stdin_data)
+      if Experiments.enabled?(:enable_shared_helpers_command_timeout)
+        stdout, stderr, process = CommandHelpers.capture3_with_timeout(
+          env_cmd,
+          stdin_data: stdin_data,
+          timeout: timeout
+        )
+      else
+        stdout, stderr, process = T.unsafe(Open3).capture3(*env_cmd, stdin_data: stdin_data)
+      end
       time_taken = Time.now - start
 
       if ENV["DEBUG_HELPERS"] == "true"
@@ -177,16 +191,16 @@ module Dependabot
         function: function,
         args: args,
         time_taken: time_taken,
-        stderr_output: stderr ? stderr[0..50_000] : "", # Truncate to ~100kb
+        stderr_output: stderr[0..50_000], # Truncate to ~100kb
         process_exit_value: process.to_s,
-        process_termsig: process.termsig
+        process_termsig: process&.termsig
       }
 
       check_out_of_memory_error(stderr, error_context, error_class)
 
       begin
         response = JSON.parse(stdout)
-        return response["result"] if process.success?
+        return response["result"] if process&.success?
 
         raise error_class.new(
           message: response["error"],
@@ -200,8 +214,12 @@ module Dependabot
     end
 
     sig do
-      params(stdout: String, stderr: String, error_context: T::Hash[Symbol, T.untyped],
-             error_class: T.class_of(HelperSubprocessFailed))
+      params(
+        stdout: String,
+        stderr: String,
+        error_context: T::Hash[Symbol, T.untyped],
+        error_class: T.class_of(HelperSubprocessFailed)
+      )
         .returns(HelperSubprocessFailed)
     end
     def self.handle_json_parse_error(stdout, stderr, error_context, error_class)
@@ -223,8 +241,11 @@ module Dependabot
 
     # rubocop:enable Metrics/MethodLength
     sig do
-      params(stderr: T.nilable(String), error_context: T::Hash[Symbol, String],
-             error_class: T.class_of(HelperSubprocessFailed)).void
+      params(
+        stderr: T.nilable(String),
+        error_context: T::Hash[Symbol, String],
+        error_class: T.class_of(HelperSubprocessFailed)
+      ).void
     end
     def self.check_out_of_memory_error(stderr, error_context, error_class)
       return unless stderr&.include?("JavaScript heap out of memory")
@@ -281,12 +302,15 @@ module Dependabot
       FileUtils.mkdir_p(Utils::BUMP_TMP_DIR_PATH)
 
       previous_config = ENV.fetch("GIT_CONFIG_GLOBAL", nil)
+      # adding a random suffix to avoid conflicts when running in parallel
+      # some package managers like bundler will modify the global git config
+      git_config_global_path = File.expand_path("#{SecureRandom.hex(16)}.gitconfig", Utils::BUMP_TMP_DIR_PATH)
       previous_terminal_prompt = ENV.fetch("GIT_TERMINAL_PROMPT", nil)
 
       begin
-        ENV["GIT_CONFIG_GLOBAL"] = GIT_CONFIG_GLOBAL_PATH
+        ENV["GIT_CONFIG_GLOBAL"] = git_config_global_path
         ENV["GIT_TERMINAL_PROMPT"] = "false"
-        configure_git_to_use_https_with_credentials(credentials, safe_directories)
+        configure_git_to_use_https_with_credentials(credentials, safe_directories, git_config_global_path)
         yield
       ensure
         ENV["GIT_CONFIG_GLOBAL"] = previous_config
@@ -295,7 +319,7 @@ module Dependabot
     rescue Errno::ENOSPC => e
       raise Dependabot::OutOfDisk, e.message
     ensure
-      FileUtils.rm_f(GIT_CONFIG_GLOBAL_PATH)
+      FileUtils.rm_f(T.must(git_config_global_path))
     end
 
     # Handle SCP-style git URIs
@@ -312,9 +336,15 @@ module Dependabot
     end
 
     # rubocop:disable Metrics/PerceivedComplexity
-    sig { params(credentials: T::Array[Dependabot::Credential], safe_directories: T::Array[String]).void }
-    def self.configure_git_to_use_https_with_credentials(credentials, safe_directories)
-      File.open(GIT_CONFIG_GLOBAL_PATH, "w") do |file|
+    sig do
+      params(
+        credentials: T::Array[Dependabot::Credential],
+        safe_directories: T::Array[String],
+        git_config_global_path: String
+      ).void
+    end
+    def self.configure_git_to_use_https_with_credentials(credentials, safe_directories, git_config_global_path)
+      File.open(git_config_global_path, "w") do |file|
         file << "# Generated by dependabot/dependabot-core"
       end
 
@@ -356,11 +386,13 @@ module Dependabot
       git_store_content = ""
       deduped_credentials.each do |cred|
         next unless cred["type"] == "git_source"
-        next unless cred["username"] && cred["password"]
+        next unless cred["host"]
 
-        authenticated_url =
-          "https://#{cred.fetch('username')}:#{cred.fetch('password')}" \
-          "@#{cred.fetch('host')}"
+        has_creds = cred["username"] && cred["password"]
+
+        # Build authenticated URL with credentials if available
+        creds = has_creds ? "#{cred.fetch('username')}:#{cred.fetch('password')}@" : ""
+        authenticated_url = "https://#{creds}#{cred.fetch('host')}"
 
         git_store_content += authenticated_url + "\n"
         configure_git_to_use_https(cred.fetch("host"))
@@ -415,6 +447,7 @@ module Dependabot
       safe_directories
     end
 
+    # rubocop:disable Metrics/PerceivedComplexity
     sig do
       params(
         command: String,
@@ -422,15 +455,21 @@ module Dependabot
         cwd: T.nilable(String),
         env: T.nilable(T::Hash[String, String]),
         fingerprint: T.nilable(String),
-        stderr_to_stdout: T::Boolean
+        stderr_to_stdout: T::Boolean,
+        timeout: Integer,
+        output_observer: CommandHelpers::OutputObserver
       ).returns(String)
     end
-    def self.run_shell_command(command,
-                               allow_unsafe_shell_command: false,
-                               cwd: nil,
-                               env: {},
-                               fingerprint: nil,
-                               stderr_to_stdout: true)
+    def self.run_shell_command(
+      command,
+      allow_unsafe_shell_command: false,
+      cwd: nil,
+      env: {},
+      fingerprint: nil,
+      stderr_to_stdout: true,
+      timeout: CommandHelpers::TIMEOUTS::DEFAULT,
+      output_observer: nil
+    )
       start = Time.now
       cmd = allow_unsafe_shell_command ? command : escape_command(command)
 
@@ -439,7 +478,19 @@ module Dependabot
       opts = {}
       opts[:chdir] = cwd if cwd
 
-      if stderr_to_stdout
+      env_cmd = [env || {}, cmd, opts].compact
+      if Experiments.enabled?(:enable_shared_helpers_command_timeout)
+        kwargs = {
+          stderr_to_stdout: stderr_to_stdout,
+          timeout: timeout
+        }
+        kwargs[:output_observer] = output_observer if output_observer
+
+        stdout, stderr, process = CommandHelpers.capture3_with_timeout(
+          env_cmd,
+          **kwargs
+        )
+      elsif stderr_to_stdout
         stdout, process = Open3.capture2e(env || {}, cmd, opts)
       else
         stdout, stderr, process = Open3.capture3(env || {}, cmd, opts)
@@ -449,7 +500,7 @@ module Dependabot
 
       # Raise an error with the output from the shell session if the
       # command returns a non-zero status
-      return stdout if process.success?
+      return stdout || "" if process&.success?
 
       error_context = {
         command: cmd,
@@ -461,10 +512,11 @@ module Dependabot
       check_out_of_disk_memory_error(stderr, error_context)
 
       raise SharedHelpers::HelperSubprocessFailed.new(
-        message: stderr_to_stdout ? stdout : "#{stderr}\n#{stdout}",
+        message: stderr_to_stdout ? (stdout || "") : "#{stderr}\n#{stdout}",
         error_context: error_context
       )
     end
+    # rubocop:enable Metrics/PerceivedComplexity
 
     sig { params(stderr: T.nilable(String), error_context: T::Hash[Symbol, String]).void }
     def self.check_out_of_disk_memory_error(stderr, error_context)

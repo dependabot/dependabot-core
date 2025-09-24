@@ -2,7 +2,7 @@ namespace NuGetUpdater.Core;
 
 internal static class DotNetToolsJsonUpdater
 {
-    public static async Task UpdateDependencyAsync(
+    public static async Task<string?> UpdateDependencyAsync(
         string repoRootPath,
         string workspacePath,
         string dependencyName,
@@ -12,19 +12,19 @@ internal static class DotNetToolsJsonUpdater
     {
         if (!MSBuildHelper.TryGetDotNetToolsJsonPath(repoRootPath, workspacePath, out var dotnetToolsJsonPath))
         {
-            logger.Log("  No dotnet-tools.json file found.");
-            return;
+            logger.Info("  No dotnet-tools.json file found.");
+            return null;
         }
 
         var dotnetToolsJsonFile = DotNetToolsJsonBuildFile.Open(repoRootPath, dotnetToolsJsonPath, logger);
 
-        logger.Log($"  Updating [{dotnetToolsJsonFile.RelativePath}] file.");
+        logger.Info($"  Updating [{dotnetToolsJsonFile.RelativePath}] file.");
 
         var containsDependency = dotnetToolsJsonFile.GetDependencies().Any(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase));
         if (!containsDependency)
         {
-            logger.Log($"    Dependency [{dependencyName}] not found.");
-            return;
+            logger.Info($"    Dependency [{dependencyName}] not found.");
+            return null;
         }
 
         var tool = dotnetToolsJsonFile.Tools
@@ -39,8 +39,11 @@ internal static class DotNetToolsJsonUpdater
 
             if (await dotnetToolsJsonFile.SaveAsync())
             {
-                logger.Log($"    Saved [{dotnetToolsJsonFile.RelativePath}].");
+                logger.Info($"    Saved [{dotnetToolsJsonFile.RelativePath}].");
+                return dotnetToolsJsonFile.Path;
             }
         }
+
+        return null;
     }
 }

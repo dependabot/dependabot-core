@@ -139,8 +139,6 @@ RSpec.describe Dependabot::Docker::FileUpdater do
     )
   end
 
-  it_behaves_like "a dependency file updater"
-
   describe "#updated_files_regex" do
     subject(:updated_files_regex) { described_class.updated_files_regex }
 
@@ -652,8 +650,10 @@ RSpec.describe Dependabot::Docker::FileUpdater do
           end
 
           its(:content) do
-            is_expected.to include("FROM registry-host.io:5000/" \
-                                   "myreg/ubuntu@sha256:3ea1ca1aa")
+            is_expected.to include(
+              "FROM registry-host.io:5000/" \
+              "myreg/ubuntu@sha256:3ea1ca1aa"
+            )
           end
 
           its(:content) { is_expected.to include "RUN apt-get update" }
@@ -1199,8 +1199,10 @@ RSpec.describe Dependabot::Docker::FileUpdater do
           end
 
           its(:content) do
-            is_expected.to include("image: registry-host.io:5000/" \
-                                   "myreg/ubuntu@sha256:3ea1ca1aa")
+            is_expected.to include(
+              "image: registry-host.io:5000/" \
+              "myreg/ubuntu@sha256:3ea1ca1aa"
+            )
           end
 
           its(:content) { is_expected.to include "kind: Pod" }

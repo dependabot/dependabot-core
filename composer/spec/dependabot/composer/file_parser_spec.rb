@@ -62,29 +62,23 @@ RSpec.describe Dependabot::Composer::FileParser do
       end
     end
 
-    context "with a version specified (composer v1)" do
-      let(:project_name) { "v1/minor_version" }
+    context "with the local package as dependency" do
+      before do
+        Dependabot::Experiments.register(:exclude_local_composer_packages, true)
+      end
 
-      describe "the first dependency" do
-        subject { dependencies.first }
+      after do
+        Dependabot::Experiments.register(:exclude_local_composer_packages, false)
+      end
 
-        it { is_expected.to be_a(Dependabot::Dependency) }
-        its(:name) { is_expected.to eq("monolog/monolog") }
-        its(:version) { is_expected.to eq("1.0.2") }
+      let(:project_name) { "local_package_as_dep" }
 
-        its(:requirements) do
-          is_expected.to eq(
-            [{
-              requirement: "1.0.*",
-              file: "composer.json",
-              groups: ["runtime"],
-              source: {
-                type: "git",
-                url: "https://github.com/Seldaek/monolog.git"
-              }
-            }]
-          )
-        end
+      its(:length) { is_expected.to eq(4) }
+
+      describe "top level dependencies" do
+        subject { dependencies.select(&:top_level?) }
+
+        its(:length) { is_expected.to eq(2) }
       end
     end
 
@@ -410,9 +404,40 @@ RSpec.describe Dependabot::Composer::FileParser do
     end
   end
 
-  describe "#package_manager" do
-    it "returns the correct package manager" do
+  describe "#ecosystem" do
+    it "returns the correct ecosystem" do
+      expect(parser.ecosystem).to be_a(Dependabot::Ecosystem)
+    end
+
+    it "returns package manager with version" do
       expect(parser.ecosystem.package_manager).to be_a(Dependabot::Composer::PackageManager)
+      expect(parser.ecosystem.package_manager.version).to eq(Gem::Version.new("2.8.10"))
+    end
+
+    it "returns language with version" do
+      expect(parser.ecosystem.language).to be_a(Dependabot::Composer::Language)
+      expect(parser.ecosystem.language.version.to_s).to include("8.4")
+    end
+  end
+
+  describe "REQUIREMENT_SEPARATOR" do
+    let(:requirements) do
+      [
+        "php >=7.4 || php >=8.0",
+        "php >=7.4, || php >=8.0",
+        "php >=7.4 |||| php >=8.0"
+      ]
+    end
+
+    it "splits requirements correctly" do
+      results = requirements.map { |req| req.split(Dependabot::Composer::REQUIREMENT_SEPARATOR) }
+      expect(results).to eq(
+        [
+          ["php >=7.4", "php >=8.0"],
+          ["php >=7.4", "php >=8.0"],
+          ["php >=7.4", "", "php >=8.0"]
+        ]
+      )
     end
   end
 end

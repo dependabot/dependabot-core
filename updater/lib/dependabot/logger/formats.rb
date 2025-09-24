@@ -1,4 +1,4 @@
-# typed: true
+# typed: strong
 # frozen_string_literal: true
 
 require "logger"
@@ -10,19 +10,32 @@ module Dependabot
     TIME_FORMAT = "%Y/%m/%d %H:%M:%S"
 
     class BasicFormatter < ::Logger::Formatter
+      extend T::Sig
+
+      sig do
+        params(severity: String, _datetime: T.nilable(Time), _progname: T.nilable(String), msg: T.nilable(String))
+          .returns(String)
+      end
       def call(severity, _datetime, _progname, msg)
         "#{Time.now.strftime(TIME_FORMAT)} #{severity} #{msg2str(msg)}\n"
       end
     end
 
     class JobFormatter < ::Logger::Formatter
+      extend T::Sig
+
       CLI_ID = "cli"
       UNKNOWN_ID = "unknown_id"
 
+      sig { params(job_id: T.nilable(String)).void }
       def initialize(job_id)
         @job_id = job_id
       end
 
+      sig do
+        params(severity: String, _datetime: T.nilable(Time), _progname: T.nilable(String), msg: T.nilable(String))
+          .returns(String)
+      end
       def call(severity, _datetime, _progname, msg)
         [
           Time.now.strftime(TIME_FORMAT),
@@ -34,15 +47,16 @@ module Dependabot
 
       private
 
+      sig { returns(T.nilable(String)) }
       def job_prefix
-        return @job_prefix if defined? @job_prefix
-        # The dependabot/cli tool uses a placeholder value since it does not
-        # have an actual Job ID issued by the service.
-        #
-        # Let's just omit the prefix if this is the case.
-        return @job_prefix = nil if @job_id == CLI_ID
+        @job_prefix ||= T.let(
+          begin
+            return nil if @job_id == CLI_ID
 
-        @job_prefix = "<job_#{@job_id || UNKNOWN_ID}>"
+            "<job_#{@job_id || UNKNOWN_ID}>"
+          end,
+          T.nilable(String)
+        )
       end
     end
   end

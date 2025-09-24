@@ -1,35 +1,52 @@
 using System.Text.Json;
 
 using NuGetUpdater.Core.Run;
+using NuGetUpdater.Core.Run.ApiModel;
 
 namespace NuGetUpdater.Core;
 
 public record ExperimentsManager
 {
-    public bool UseLegacyDependencySolver { get; init; } = false;
+    public bool GenerateSimplePrBody { get; init; } = false;
+
+    public Dictionary<string, object> ToDictionary()
+    {
+        return new()
+        {
+            ["nuget_generate_simple_pr_body"] = GenerateSimplePrBody,
+        };
+    }
 
     public static ExperimentsManager GetExperimentsManager(Dictionary<string, object>? experiments)
     {
         return new ExperimentsManager()
         {
-            UseLegacyDependencySolver = IsEnabled(experiments, "nuget_legacy_dependency_solver"),
+            GenerateSimplePrBody = IsEnabled(experiments, "nuget_generate_simple_pr_body"),
         };
     }
 
-    public static async Task<ExperimentsManager> FromJobFileAsync(string jobFilePath, ILogger logger)
+    public static async Task<(ExperimentsManager ExperimentsManager, JobErrorBase? Error)> FromJobFileAsync(string jobId, string jobFilePath)
     {
-        var jobFileContent = await File.ReadAllTextAsync(jobFilePath);
+        var experimentsManager = new ExperimentsManager();
+        JobErrorBase? error = null;
+        var jobFileContent = string.Empty;
         try
         {
+            jobFileContent = await File.ReadAllTextAsync(jobFilePath);
             var jobWrapper = RunWorker.Deserialize(jobFileContent);
-            return GetExperimentsManager(jobWrapper.Job.Experiments);
+            experimentsManager = GetExperimentsManager(jobWrapper.Job.Experiments);
         }
         catch (JsonException ex)
         {
-            // the following message has been specifically designed to match the format of `Dependabot.logger.info(...)` from Ruby
-            logger.Log($"{DateTime.UtcNow:yyyy/MM/dd HH:mm:ss} INFO Error deserializing job file: {ex.ToString()}: {jobFileContent}");
-            return new ExperimentsManager();
+            // this is a very specific case where we want to log the JSON contents for easier debugging
+            error = JobErrorBase.ErrorFromException(new NotSupportedException($"Error deserializing job file contents: {jobFileContent}", ex), jobId, Environment.CurrentDirectory); // TODO
         }
+        catch (Exception ex)
+        {
+            error = JobErrorBase.ErrorFromException(ex, jobId, Environment.CurrentDirectory); // TODO
+        }
+
+        return (experimentsManager, error);
     }
 
     private static bool IsEnabled(Dictionary<string, object>? experiments, string experimentName)
@@ -39,9 +56,13 @@ public record ExperimentsManager
             return false;
         }
 
-        if (experiments.TryGetValue(experimentName, out var value))
+        // prefer experiments named with underscores, but hyphens are also allowed as an alternate
+        object? experimentValue;
+        var experimentNameAlternate = experimentName.Replace("_", "-");
+        if (experiments.TryGetValue(experimentName, out experimentValue) ||
+            experiments.TryGetValue(experimentNameAlternate, out experimentValue))
         {
-            if ((value?.ToString() ?? "").Equals("true", StringComparison.OrdinalIgnoreCase))
+            if ((experimentValue?.ToString() ?? "").Equals("true", StringComparison.OrdinalIgnoreCase))
             {
                 return true;
             }

@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -21,12 +21,29 @@ module Dependabot
   class Updater
     extend T::Sig
 
+    # rubocop:disable Metrics/ModuleLength
     module GroupUpdateCreation
       extend T::Sig
       extend T::Helpers
       include PullRequestHelpers
+      include SecurityUpdateHelpers
 
       abstract!
+
+      sig do
+        params(
+          dependency_snapshot: Dependabot::DependencySnapshot,
+          error_handler: Dependabot::Updater::ErrorHandler,
+          job: Dependabot::Job,
+          group: Dependabot::DependencyGroup
+        ).void
+      end
+      def initialize(dependency_snapshot, error_handler, job, group)
+        @dependency_snapshot = T.let(dependency_snapshot, Dependabot::DependencySnapshot)
+        @error_handler = T.let(error_handler, Dependabot::Updater::ErrorHandler)
+        @job = T.let(job, Dependabot::Job)
+        @group = T.let(group, Dependabot::DependencyGroup)
+      end
 
       sig { returns(Dependabot::DependencySnapshot) }
       attr_reader :dependency_snapshot
@@ -46,14 +63,39 @@ module Dependabot
       # rubocop:disable Metrics/AbcSize
       # rubocop:disable Metrics/MethodLength
       # rubocop:disable Metrics/PerceivedComplexity
+      # rubocop:disable Metrics/CyclomaticComplexity
       sig { params(group: Dependabot::DependencyGroup).returns(T.nilable(Dependabot::DependencyChange)) }
       def compile_all_dependency_changes_for(group)
+        # Check feature flag once for all enhanced security error reporting in this method
+        enhanced_security_reporting = Dependabot::Experiments.enabled?(:enhanced_grouped_security_error_reporting)
+
         prepare_workspace
 
         group_changes = Dependabot::Updater::DependencyGroupChangeBatch.new(
           initial_dependency_files: dependency_snapshot.dependency_files
         )
+
+        # deduplicate the dependencies.
         original_dependencies = dependency_snapshot.dependencies
+        job_dependencies = Set.new(job.dependencies || []).to_a
+
+        # log the original dependencies and job specified dependencies.
+        Dependabot.logger.info("Dependency Snapshot: #{original_dependencies.map(&:name).join(', ')}")
+        Dependabot.logger.info("Job specified dependencies: #{job_dependencies.join(', ')}")
+
+        # If there are job dependencies not present in the dependency snapshot, record an error.
+        # Skip this check for pull request updates as dependencies may have changed since the original PR.
+        if enhanced_security_reporting
+          dependency_names = original_dependencies.map(&:name)
+          missing_dependencies = job_dependencies - dependency_names
+          if missing_dependencies.any? && !job.updating_a_pull_request?
+            error_handler.handle_job_error(
+              error: Dependabot::DependencyNotFound.new(
+                "Job dependencies not found in the dependency snapshot: #{missing_dependencies.join(', ')}"
+              )
+            )
+          end
+        end
 
         # A list of notices that will be used in PR messages and/or sent to the dependabot github alerts.
         notices = dependency_snapshot.notices
@@ -62,12 +104,7 @@ module Dependabot
         group.dependencies.each do |dependency|
           # We still want to update a dependency if it's been updated in another manifest files,
           # but we should skip it if it's been updated in _the same_ manifest file
-          if dependency_snapshot.handled_dependencies.include?(dependency.name)
-            Dependabot.logger.info(
-              "Skipping #{dependency.name} as it has already been handled by a previous group"
-            )
-            next
-          end
+          next if skip_dependency?(dependency, group)
 
           # Get the current state of the dependency files for use in this iteration, filter by directory
           dependency_files = group_changes.current_dependency_files(job)
@@ -97,11 +134,17 @@ module Dependabot
 
           next unless lead_dependency
 
-          dependency_change = create_change_for(T.must(lead_dependency), updated_dependencies, dependency_files, group)
+          dependency_change = create_change_for(lead_dependency, updated_dependencies, dependency_files, group)
 
           # Move on to the next dependency using the existing files if we
           # could not create a change for any reason
-          next unless dependency_change
+          unless dependency_change
+            Dependabot.logger.info(
+              "Skipping #{lead_dependency.name} in group #{group.name}: " \
+              "No dependency change was created"
+            )
+            next
+          end
 
           # Store the updated files for the next loop
           group_changes.merge(dependency_change)
@@ -132,9 +175,35 @@ module Dependabot
         cleanup_workspace
       end
 
+      sig { params(dependency: Dependabot::Dependency, group: Dependabot::DependencyGroup).returns(T::Boolean) }
+      def skip_dependency?(dependency, group)
+        # Check if dependency has already been handled
+        handled_dependency = dependency_snapshot.handled_dependencies.include?(dependency.name)
+
+        # Check if this is a group update
+        is_group_update = if Dependabot::Experiments.enabled?(:allow_refresh_group_with_all_dependencies)
+                            # this ensures dependency_group_to_refresh is set to the group name
+                            job.dependency_group_to_refresh == group.name
+                          else
+                            false
+                          end
+
+        # Include all dependencies when performing a group update.
+        if handled_dependency && !is_group_update
+          Dependabot.logger.info(
+            "Skipping #{dependency.name} in group #{group.name} as it has already been handled by a previous group"
+          )
+          return true
+        end
+
+        false
+      end
+
+      # rubocop:enable Metrics/CyclomaticComplexity
       # rubocop:enable Metrics/PerceivedComplexity
       # rubocop:enable Metrics/AbcSize
       # rubocop:enable Metrics/MethodLength
+      sig { params(dependency_change: Dependabot::DependencyChange).void }
       def log_missing_previous_version(dependency_change)
         deps_no_previous_version = dependency_change.updated_dependencies.reject(&:previous_version).map(&:name)
         deps_no_change = dependency_change.updated_dependencies.reject(&:requirements_changed?).map(&:name)
@@ -172,6 +241,11 @@ module Dependabot
           .returns(T.any(Dependabot::DependencyChange, FalseClass))
       end
       def create_change_for(lead_dependency, updated_dependencies, dependency_files, dependency_group)
+        Dependabot.logger.info(
+          "Creating dependency change for #{lead_dependency.name} (#{lead_dependency.version}) " \
+          "in group #{dependency_group.name}"
+        )
+
         Dependabot::DependencyChangeBuilder.create_from(
           job: job,
           dependency_files: dependency_files,
@@ -219,7 +293,10 @@ module Dependabot
 
         log_checking_for_update(dependency)
 
-        return [] if all_versions_ignored?(dependency, checker)
+        if all_versions_ignored?(dependency, checker)
+          record_security_update_ignored_if_applicable(dependency, checker, group)
+          return []
+        end
         return [] unless semver_rules_allow_grouping?(group, dependency, checker)
 
         # Consider the dependency handled so no individual PR is raised since it is in this group.
@@ -228,6 +305,9 @@ module Dependabot
 
         if checker.up_to_date?
           log_up_to_date(dependency)
+
+          # Check if this up-to-date dependency has security advisories but no fix
+          record_security_update_not_found_if_applicable(dependency, checker, group)
           return []
         end
 
@@ -238,6 +318,9 @@ module Dependabot
           Dependabot.logger.info(
             "No update possible for #{dependency.name} #{dependency.version}"
           )
+
+          # Check if this is a security update with vulnerability audit explanation
+          record_security_update_error_if_applicable(dependency, checker, group)
           return []
         end
 
@@ -293,6 +376,7 @@ module Dependabot
           raise_on_ignored: raise_on_ignored,
           requirements_update_strategy: job.requirements_update_strategy,
           dependency_group: dependency_group,
+          update_cooldown: job.cooldown,
           options: job.experiments
         )
       end
@@ -466,6 +550,94 @@ module Dependabot
 
         Dependabot::Dependency.new(**dependency_params)
       end
+
+      # Records appropriate security update errors when vulnerability auditor
+      # reports that fixes are unavailable in group updates
+      sig do
+        params(
+          dependency: Dependabot::Dependency,
+          checker: Dependabot::UpdateCheckers::Base,
+          group: Dependabot::DependencyGroup
+        ).void
+      end
+      def record_security_update_error_if_applicable(dependency, checker, group)
+        return unless Dependabot::Experiments.enabled?(:enhanced_grouped_security_error_reporting)
+
+        # Only record errors for dependencies with security advisories
+        security_advisories = job.security_advisories_for(dependency)
+        return unless security_advisories.any?
+
+        # Check if vulnerability audit was performed and has explanations
+        if checker.respond_to?(:conflicting_dependencies)
+          conflicting_deps = checker.conflicting_dependencies
+          vulnerability_conflicts = conflicting_deps.select do |conflict|
+            conflict.key?("explanation") && !conflict.key?("dependency_name")
+          end
+
+          if vulnerability_conflicts.any?
+            # This indicates vulnerability auditor found fix unavailable
+            first_conflict = vulnerability_conflicts.first
+            explanation = first_conflict["explanation"] if first_conflict
+            Dependabot.logger.info(
+              "Security update not possible for #{dependency.name} in group #{group.name}: #{explanation}"
+            )
+
+            # Use the SecurityUpdateHelpers method for consistency
+            record_security_update_not_possible_error(checker)
+            return
+          end
+        end
+
+        # Fallback: record generic security update not possible error
+        Dependabot.logger.info(
+          "Security update not possible for #{dependency.name} in group #{group.name}"
+        )
+        record_security_update_not_possible_error(checker)
+      end
+
+      # Records security update not found error for up-to-date dependencies with advisories
+      sig do
+        params(
+          dependency: Dependabot::Dependency,
+          checker: Dependabot::UpdateCheckers::Base,
+          group: Dependabot::DependencyGroup
+        ).void
+      end
+      def record_security_update_not_found_if_applicable(dependency, checker, group)
+        return unless Dependabot::Experiments.enabled?(:enhanced_grouped_security_error_reporting)
+
+        # Only record errors for dependencies with security advisories
+        security_advisories = job.security_advisories_for(dependency)
+        return unless security_advisories.any?
+
+        Dependabot.logger.info(
+          "Security update not found for #{dependency.name} in group #{group.name} - " \
+          "dependency is up to date but still vulnerable"
+        )
+        record_security_update_not_found(checker)
+      end
+
+      # Records security update ignored error for dependencies with all versions ignored
+      sig do
+        params(
+          dependency: Dependabot::Dependency,
+          checker: Dependabot::UpdateCheckers::Base,
+          group: Dependabot::DependencyGroup
+        ).void
+      end
+      def record_security_update_ignored_if_applicable(dependency, checker, group)
+        return unless Dependabot::Experiments.enabled?(:enhanced_grouped_security_error_reporting)
+
+        # Only record errors for dependencies with security advisories
+        security_advisories = job.security_advisories_for(dependency)
+        return unless security_advisories.any?
+
+        Dependabot.logger.info(
+          "All versions ignored for #{dependency.name} in group #{group.name} but security advisories exist"
+        )
+        record_security_update_ignored(checker)
+      end
     end
+    # rubocop:enable Metrics/ModuleLength
   end
 end

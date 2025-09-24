@@ -3,6 +3,7 @@
 
 require "dependabot/updater/group_update_creation"
 require "dependabot/updater/group_update_refreshing"
+require "dependabot/updater/group_dependency_selector"
 require "sorbet-runtime"
 
 # This class implements our strategy for refreshing a single Pull Request which
@@ -71,8 +72,20 @@ module Dependabot
           @error_handler = error_handler
         end
 
+        sig { override.returns(Dependabot::Job) }
+        attr_reader :job
+
+        sig { override.returns(Dependabot::DependencySnapshot) }
+        attr_reader :dependency_snapshot
+
+        sig { override.returns(Dependabot::Updater::ErrorHandler) }
+        attr_reader :error_handler
+
+        sig { override.returns(Dependabot::Service) }
+        attr_reader :service
+
         sig { void }
-        def perform # rubocop:disable Metrics/AbcSize
+        def perform
           # This guards against any jobs being performed where the data is malformed, this should not happen unless
           # there was is defect in the service and we emitted a payload where the job and configuration data objects
           # were out of sync.
@@ -100,39 +113,46 @@ module Dependabot
             # so users are informed this group is no longer actionable by Dependabot.
             warn_group_is_empty(job_group)
             close_pull_request(reason: :dependency_group_empty, group: job_group)
-          else
-            Dependabot.logger.info("Updating the '#{job_group.name}' group")
-
-            # Preprocess to discover existing group PRs and add their dependencies to the handled list before processing
-            # the refresh. This prevents multiple PRs from being created for the same dependency during the refresh.
-            dependency_snapshot.groups.each do |group|
-              next unless group.name != job_group.name && pr_exists_for_dependency_group?(group)
-
-              dependency_snapshot.mark_group_handled(group)
-            end
-
-            if dependency_change.nil?
-              Dependabot.logger.info("Nothing could update for Dependency Group: '#{job_group.name}'")
-              return
-            end
-
-            upsert_pull_request_with_error_handling(T.must(dependency_change), job_group)
+            return
           end
+
+          process_group_dependencies(job_group)
+        end
+
+        sig { params(job_group: Dependabot::DependencyGroup).void }
+        def process_group_dependencies(job_group)
+          Dependabot.logger.info("Updating the '#{job_group.name}' group")
+
+          existing_pr_dependencies = {}
+
+          # Preprocess to discover existing group PRs and add their dependencies to the handled list before processing
+          # the refresh. This prevents multiple PRs from being created for the same dependency during the refresh.
+          dependency_snapshot.groups.each do |group|
+            if Dependabot::Experiments.enabled?(:allow_refresh_for_existing_pr_dependencies)
+              # Gather all dependencies in existing PRs so other groups will not consider them as handled when they
+              # are not also in the PR of the group being checked, preventing erroneous PR closures
+              group_pr_deps = dependency_snapshot.dependencies_in_existing_pr_for_group(group)
+              group_pr_deps.each do |dep|
+                dep_dir = dep["directory"] || "/"
+                existing_pr_dependencies[dep_dir] ||= Set.new
+                existing_pr_dependencies[dep_dir].add(dep["dependency-name"])
+              end
+            end
+
+            next unless group.name != job_group.name && pr_exists_for_dependency_group?(group)
+
+            dependency_snapshot.mark_group_handled(group, existing_pr_dependencies)
+          end
+
+          if dependency_change.nil?
+            Dependabot.logger.info("Nothing could update for Dependency Group: '#{job_group.name}'")
+            return
+          end
+
+          upsert_pull_request_with_error_handling(T.must(dependency_change), job_group)
         end
 
         private
-
-        sig { returns(Dependabot::Job) }
-        attr_reader :job
-
-        sig { returns(Dependabot::Service) }
-        attr_reader :service
-
-        sig { returns(DependencySnapshot) }
-        attr_reader :dependency_snapshot
-
-        sig { returns(Dependabot::Updater::ErrorHandler) }
-        attr_reader :error_handler
 
         sig { returns(T.nilable(Dependabot::DependencyChange)) }
         def dependency_change
@@ -143,17 +163,31 @@ module Dependabot
           if job.source.directories.nil?
             @dependency_change = compile_all_dependency_changes_for(job_group)
           else
-            dependency_changes = T.let(T.must(job.source.directories).filter_map do |directory|
-              job.source.directory = directory
-              dependency_snapshot.current_directory = directory
-              compile_all_dependency_changes_for(job_group)
-            end, T::Array[Dependabot::DependencyChange])
+            dependency_changes = T.let(
+              T.must(job.source.directories).filter_map do |directory|
+                job.source.directory = directory
+                dependency_snapshot.current_directory = directory
+                compile_all_dependency_changes_for(job_group)
+              end,
+              T::Array[Dependabot::DependencyChange]
+            )
 
             # merge the changes together into one
             dependency_change = T.let(T.must(dependency_changes.first), Dependabot::DependencyChange)
             dependency_change.merge_changes!(T.must(dependency_changes[1..-1])) if dependency_changes.count > 1
             @dependency_change = T.let(dependency_change, T.nilable(Dependabot::DependencyChange))
           end
+
+          # Apply GroupDependencySelector filtering to ensure only group-eligible dependencies
+          if @dependency_change
+            selector = Dependabot::Updater::GroupDependencySelector.new(
+              group: job_group,
+              dependency_snapshot: dependency_snapshot
+            )
+            selector.filter_to_group!(@dependency_change)
+          end
+
+          @dependency_change
         end
       end
     end

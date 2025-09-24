@@ -10,6 +10,7 @@ require "dependabot/dependency_snapshot"
 require "dependabot/service"
 require "dependabot/updater/error_handler"
 require "dependabot/updater/operations/create_group_update_pull_request"
+require "dependabot/updater/group_dependency_selector"
 require "dependabot/dependency_change_builder"
 require "dependabot/notices"
 
@@ -38,7 +39,8 @@ RSpec.describe Dependabot::Updater::Operations::CreateGroupUpdatePullRequest do
       record_update_job_error: nil,
       create_pull_request: nil,
       record_update_job_warning: nil,
-      record_ecosystem_meta: nil
+      record_ecosystem_meta: nil,
+      record_cooldown_meta: nil
     )
   end
   let(:mock_error_handler) { instance_double(Dependabot::Updater::ErrorHandler) }
@@ -62,10 +64,12 @@ RSpec.describe Dependabot::Updater::Operations::CreateGroupUpdatePullRequest do
   end
 
   let(:job_definition_with_fetched_files) do
-    job_definition.merge({
-      "base_commit_sha" => "mock-sha",
-      "base64_dependency_files" => encode_dependency_files(dependency_files)
-    })
+    job_definition.merge(
+      {
+        "base_commit_sha" => "mock-sha",
+        "base64_dependency_files" => encode_dependency_files(dependency_files)
+      }
+    )
   end
 
   let(:dependency_files) do
@@ -170,6 +174,108 @@ RSpec.describe Dependabot::Updater::Operations::CreateGroupUpdatePullRequest do
             .to include(warning_deprecation_notice)
 
           create_group_update_pull_request.perform
+        end
+      end
+
+      context "when GroupDependencySelector filtering is enabled" do
+        let(:dependency_b) do
+          Dependabot::Dependency.new(
+            name: "dummy-pkg-b",
+            version: "1.0.0",
+            requirements: [{
+              file: "Gemfile",
+              requirement: "~> 1.0.0",
+              groups: ["default"],
+              source: nil
+            }],
+            package_manager: "bundler",
+            metadata: { all_versions: ["1.0.0"] }
+          )
+        end
+
+        let(:dependency_group) do
+          Dependabot::DependencyGroup.new(
+            name: "dummy-group",
+            rules: { "patterns" => ["dummy-pkg-a"] }
+          )
+        end
+
+        let(:stub_dependency_change_with_multiple_deps) do
+          Dependabot::DependencyChange.new(
+            job: job,
+            updated_dependencies: [dependency, dependency_b],
+            updated_dependency_files: []
+          )
+        end
+
+        before do
+          Dependabot::Experiments.register(:group_membership_enforcement, true)
+          # Mock the job to allow all updates for simplicity
+          allow(job).to receive(:allowed_update?).and_return(true)
+        end
+
+        it "filters out dependencies not in the group" do
+          # Override the dependency change builder to return our test change
+          allow(create_group_update_pull_request).to receive(:compile_all_dependency_changes_for)
+            .with(dependency_group)
+            .and_return(stub_dependency_change_with_multiple_deps)
+
+          result = create_group_update_pull_request.send(:dependency_change)
+
+          # Only dummy-pkg-a should remain after filtering (dummy-pkg-b should be filtered out)
+          expect(result.updated_dependencies.map(&:name)).to eq(["dummy-pkg-a"])
+        end
+
+        it "does not filter when group_membership_enforcement is disabled" do
+          Dependabot::Experiments.register(:group_membership_enforcement, false)
+
+          # Override the dependency change builder to return our test change
+          allow(create_group_update_pull_request).to receive(:compile_all_dependency_changes_for)
+            .with(dependency_group)
+            .and_return(stub_dependency_change_with_multiple_deps)
+
+          result = create_group_update_pull_request.send(:dependency_change)
+
+          # Both dependencies should remain when filtering is disabled
+          expect(result.updated_dependencies.map(&:name)).to contain_exactly("dummy-pkg-a", "dummy-pkg-b")
+        end
+
+        it "handles empty dependency changes gracefully" do
+          empty_change = Dependabot::DependencyChange.new(
+            job: job,
+            updated_dependencies: [],
+            updated_dependency_files: []
+          )
+
+          allow(create_group_update_pull_request).to receive(:compile_all_dependency_changes_for)
+            .with(dependency_group)
+            .and_return(empty_change)
+
+          result = create_group_update_pull_request.send(:dependency_change)
+
+          expect(result.updated_dependencies).to be_empty
+        end
+
+        it "preserves dependency files during filtering" do
+          dependency_file = instance_double(
+            Dependabot::DependencyFile,
+            name: "Gemfile.lock",
+            directory: "."
+          )
+          change_with_files = Dependabot::DependencyChange.new(
+            job: job,
+            updated_dependencies: [dependency, dependency_b],
+            updated_dependency_files: [dependency_file]
+          )
+
+          allow(create_group_update_pull_request).to receive(:compile_all_dependency_changes_for)
+            .with(dependency_group)
+            .and_return(change_with_files)
+
+          result = create_group_update_pull_request.send(:dependency_change)
+
+          # Files should be preserved even after dependency filtering
+          expect(result.updated_dependency_files).to eq([dependency_file])
         end
       end
     end

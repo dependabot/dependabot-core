@@ -63,8 +63,10 @@ module Dependabot
       (?:#{CODECOMMIT_SOURCE})
     /x
 
-    IGNORED_PROVIDER_HOSTS = T.let(%w(gitbox.apache.org svn.apache.org fuchsia.googlesource.com).freeze,
-                                   T::Array[String])
+    IGNORED_PROVIDER_HOSTS = T.let(
+      %w(gitbox.apache.org svn.apache.org fuchsia.googlesource.com).freeze,
+      T::Array[String]
+    )
 
     sig { returns(String) }
     attr_accessor :provider
@@ -147,8 +149,16 @@ module Dependabot
         api_endpoint: T.nilable(String)
       ).void
     end
-    def initialize(provider:, repo:, directory: nil, directories: nil, branch: nil, commit: nil,
-                   hostname: nil, api_endpoint: nil)
+    def initialize(
+      provider:,
+      repo:,
+      directory: nil,
+      directories: nil,
+      branch: nil,
+      commit: nil,
+      hostname: nil,
+      api_endpoint: nil
+    )
       if (hostname.nil? ^ api_endpoint.nil?) && (provider != "codecommit")
         msg = "Both hostname and api_endpoint must be specified if either " \
               "are. Alternatively, both may be left blank to use the " \
@@ -194,7 +204,13 @@ module Dependabot
 
     sig { returns(String) }
     def organization
-      T.must(repo.split("/").first)
+      case provider
+      when "azure"
+        parts = repo.split("/_git/")
+        T.must(T.must(parts.first).split("/").last(2).first)
+      else
+        T.must(repo.split("/").first)
+      end
     end
 
     sig { returns(String) }
@@ -202,7 +218,7 @@ module Dependabot
       raise "Project is an Azure DevOps concept only" unless provider == "azure"
 
       parts = repo.split("/_git/")
-      return T.must(T.must(parts.first).split("/").last) if parts.first&.split("/")&.count == 2
+      return T.must(T.must(parts.first).split("/").last) if parts.first&.split("/")&.count&.>=(2)
 
       T.must(parts.last)
     end

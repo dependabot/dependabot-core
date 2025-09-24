@@ -45,7 +45,8 @@ RSpec.describe Dependabot::Job do
       commit_message_options: commit_message_options,
       security_updates_only: security_updates_only,
       dependency_groups: dependency_groups,
-      repo_private: repo_private
+      repo_private: repo_private,
+      cooldown: cooldown
     }
   end
 
@@ -73,6 +74,7 @@ RSpec.describe Dependabot::Job do
   let(:vendor_dependencies) { false }
   let(:dependency_groups) { [] }
   let(:repo_private) { false }
+  let(:cooldown) { nil }
 
   describe "::new_update_job" do
     let(:job_json) { fixture("jobs/job_with_credentials.json") }
@@ -95,6 +97,29 @@ RSpec.describe Dependabot::Job do
       ruby_credential = new_update_job.credentials.find { |creds| creds["type"] == "rubygems_index" }
       expect(ruby_credential["host"]).to eql("my.rubygems-host.org")
       expect(ruby_credential.keys).not_to include("token")
+    end
+
+    context "when the job definition includes cooldown settings" do
+      let(:cooldown) do
+        {
+          "default-days" => 7,
+          "semver-major-days" => 14,
+          "semver-minor-days" => 7,
+          "semver-patch-days" => 3,
+          "include" => ["included-package"],
+          "exclude" => ["excluded-package"]
+        }
+      end
+
+      it "correctly initializes cooldown settings" do
+        expect(job.cooldown).to be_a(Dependabot::Package::ReleaseCooldownOptions)
+        expect(job.cooldown.default_days).to eq(7)
+        expect(job.cooldown.semver_major_days).to eq(14)
+        expect(job.cooldown.semver_minor_days).to eq(7)
+        expect(job.cooldown.semver_patch_days).to eq(3)
+        expect(job.cooldown.include).to include("included-package")
+        expect(job.cooldown.exclude).to include("excluded-package")
+      end
     end
 
     context "when the directory does not start with a slash" do
@@ -520,6 +545,60 @@ RSpec.describe Dependabot::Job do
       attrs[:reject_external_code] = true
       job = described_class.new(attrs)
       expect(job.reject_external_code?).to be(true)
+    end
+  end
+
+  describe "#cooldown" do
+    context "when cooldown is provided" do
+      let(:cooldown) do
+        {
+          "default-days" => 7,
+          "semver-major-days" => 14,
+          "semver-minor-days" => 7,
+          "semver-patch-days" => 3,
+          "include" => ["included-package"],
+          "exclude" => ["excluded-package"]
+        }
+      end
+
+      it "correctly parses cooldown values" do
+        expect(job.cooldown).to be_a(Dependabot::Package::ReleaseCooldownOptions)
+        expect(job.cooldown.default_days).to eq(7)
+        expect(job.cooldown.semver_major_days).to eq(14)
+        expect(job.cooldown.semver_minor_days).to eq(7)
+        expect(job.cooldown.semver_patch_days).to eq(3)
+      end
+
+      it "includes specified packages" do
+        expect(job.cooldown.include).to include("included-package")
+      end
+
+      it "excludes specified packages" do
+        expect(job.cooldown.exclude).to include("excluded-package")
+      end
+    end
+
+    context "when cooldown is nil" do
+      let(:cooldown) { nil }
+
+      it "returns nil" do
+        expect(job.cooldown).to be_nil
+      end
+    end
+  end
+
+  describe "#exclude_paths" do
+    it "defaults to false" do
+      expect(job.exclude_paths).to eq([])
+    end
+
+    context "when exclude_paths is provided" do
+      it "returns the exclude_paths array" do
+        attrs = attributes
+        attrs[:exclude_paths] = ["vendor/*", "spec/fixtures/*"]
+        job = described_class.new(attrs)
+        expect(job.exclude_paths).to eq(["vendor/*", "spec/fixtures/*"])
+      end
     end
   end
 end

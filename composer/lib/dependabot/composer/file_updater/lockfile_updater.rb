@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/shared_helpers"
@@ -10,19 +10,26 @@ require "dependabot/composer/requirement"
 require "dependabot/composer/native_helpers"
 require "dependabot/composer/helpers"
 require "dependabot/composer/update_checker/version_resolver"
+require "sorbet-runtime"
 
 # rubocop:disable Metrics/ClassLength
 module Dependabot
   module Composer
     class FileUpdater
       class LockfileUpdater
+        extend T::Sig
+
         require_relative "manifest_updater"
 
         class MissingExtensions < StandardError
+          extend T::Sig
+
+          sig { returns(T::Array[T::Hash[Symbol, String]]) }
           attr_reader :extensions
 
+          sig { params(extensions: T::Array[T::Hash[Symbol, String]]).void }
           def initialize(extensions)
-            @extensions = extensions
+            @extensions = T.let(extensions, T::Array[T::Hash[Symbol, String]])
             super
           end
         end
@@ -39,15 +46,27 @@ module Dependabot
           }x
         MISSING_ENV_VAR_REGEX = /Environment variable '(?<env_var>.[^']+)' is not set/
 
+        sig do
+          params(
+            dependencies: T::Array[Dependabot::Dependency],
+            dependency_files: T::Array[Dependabot::DependencyFile],
+            credentials: T::Array[Dependabot::Credential]
+          ).void
+        end
         def initialize(dependencies:, dependency_files:, credentials:)
           @dependencies = dependencies
           @dependency_files = dependency_files
           @credentials = credentials
-          @composer_platform_extensions = initial_platform
+          @composer_platform_extensions = T.let(initial_platform, T::Hash[String, T::Array[String]])
+          @lock_git_deps = T.let(true, T::Boolean)
         end
 
+        sig { returns(String) }
         def updated_lockfile_content
-          @updated_lockfile_content ||= generate_updated_lockfile_content
+          @updated_lockfile_content ||= T.let(
+            generate_updated_lockfile_content,
+            T.nilable(String)
+          )
         rescue MissingExtensions => e
           previous_extensions = composer_platform_extensions.dup
           update_required_extensions(e.extensions)
@@ -58,17 +77,25 @@ module Dependabot
 
         private
 
+        sig { returns(T::Array[Dependabot::Dependency]) }
         attr_reader :dependencies
+
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
+
+        sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
+
+        sig { returns(T::Hash[String, T::Array[String]]) }
         attr_reader :composer_platform_extensions
 
+        sig { returns(String) }
         def generate_updated_lockfile_content
-          base_directory = dependency_files.first.directory
+          base_directory = T.must(dependency_files.first).directory
           SharedHelpers.in_a_temporary_directory(base_directory) do
             write_temporary_dependency_files
 
-            updated_content = run_update_helper.fetch("composer.lock")
+            updated_content = run_update_helper.fetch(PackageManager::LOCKFILE_FILENAME)
 
             updated_content = post_process_lockfile(updated_content)
             raise "Expected content to change!" if lockfile.content == updated_content
@@ -87,13 +114,15 @@ module Dependabot
           handle_composer_errors(e)
         end
 
+        sig { returns(Dependabot::Dependency) }
         def dependency
           # For now, we'll only ever be updating a single dependency for PHP
-          dependencies.first
+          T.must(dependencies.first)
         end
 
+        sig { returns(T::Hash[String, String]) }
         def run_update_helper
-          SharedHelpers.with_git_configured(credentials: credentials) do
+          SharedHelpers.with_git_configured(credentials: T.unsafe(credentials)) do
             SharedHelpers.run_helper_subprocess(
               command: "php -d memory_limit=-1 #{php_helper_path}",
               allow_unsafe_shell_command: true,
@@ -110,6 +139,7 @@ module Dependabot
           end
         end
 
+        sig { returns(String) }
         def updated_composer_json_content
           ManifestUpdater.new(
             dependencies: dependencies,
@@ -117,6 +147,7 @@ module Dependabot
           ).updated_manifest_content
         end
 
+        sig { params(error: SharedHelpers::HelperSubprocessFailed).returns(T::Boolean) }
         def transitory_failure?(error)
           return true if error.message.include?("404 Not Found")
           return true if error.message.include?("timed out")
@@ -125,6 +156,7 @@ module Dependabot
           error.message.include?("Content-Length mismatch")
         end
 
+        sig { params(error: SharedHelpers::HelperSubprocessFailed).returns(T::Boolean) }
         def locked_git_dep_error?(error)
           error.message.start_with?("Could not authenticate against")
         end
@@ -135,6 +167,7 @@ module Dependabot
         # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/MethodLength
         # rubocop:disable Metrics/PerceivedComplexity
+        sig { params(error: SharedHelpers::HelperSubprocessFailed).returns(T.noreturn) }
         def handle_composer_errors(error)
           if error.message.match?(MISSING_EXPLICIT_PLATFORM_REQ_REGEX)
             # These errors occur when platform requirements declared explicitly
@@ -142,7 +175,7 @@ module Dependabot
             missing_extensions =
               error.message.scan(MISSING_EXPLICIT_PLATFORM_REQ_REGEX)
                    .map do |extension_string|
-                name, requirement = extension_string.strip.split(" ", 2)
+                name, requirement = T.cast(extension_string, String).strip.split(" ", 2)
                 { name: name, requirement: requirement }
               end
             raise MissingExtensions, missing_extensions
@@ -153,7 +186,7 @@ module Dependabot
             missing_extensions =
               error.message.scan(MISSING_IMPLICIT_PLATFORM_REQ_REGEX)
                    .map do |extension_string|
-                name, requirement = extension_string.strip.split(" ", 2)
+                name, requirement = T.cast(extension_string, String).strip.split(" ", 2)
                 { name: name, requirement: requirement }
               end
 
@@ -162,10 +195,10 @@ module Dependabot
               version_for_reqs(existing_reqs + [hash[:requirement]])
             end
 
-            raise MissingExtensions, [missing_extension]
+            raise(MissingExtensions, T.must(missing_extension).then { |ext| [ext] })
           end
 
-          raise git_dependency_reference_error(error) if error.message.start_with?("Failed to execute git checkout")
+          git_dependency_reference_error(error) if error.message.start_with?("Failed to execute git checkout")
 
           # Special case for Laravel Nova, which will fall back to attempting
           # to close a private repo if given invalid (or no) credentials
@@ -185,9 +218,10 @@ module Dependabot
 
           # NOTE: This matches error output from a composer plugin (private-composer-installer):
           # https://github.com/ffraenz/private-composer-installer/blob/8655e3da4e8f99203f13ccca33b9ab953ad30a31/src/Exception/MissingEnvException.php#L22
-          if error.message.match?(MISSING_ENV_VAR_REGEX)
-            env_var = error.message.match(MISSING_ENV_VAR_REGEX).named_captures.fetch("env_var")
-            raise MissingEnvironmentVariable, env_var
+          match_data = error.message.match(MISSING_ENV_VAR_REGEX)
+          if match_data
+            env_var = match_data.named_captures.fetch("env_var")
+            raise MissingEnvironmentVariable, T.must(env_var)
           end
 
           if error.message.start_with?("Unknown downloader type: npm-sign") ||
@@ -198,18 +232,10 @@ module Dependabot
 
           raise Dependabot::OutOfMemory if error.message.start_with?("Allowed memory size")
 
-          if error.message.include?("403 Forbidden")
-            source = error.message.match(%r{https?://(?<source>[^/]+)/})
-                          .named_captures.fetch("source")
+          match_data = error.message.match(%r{https?://(?<source>[^/]+)/})
+          if error.message.include?("403 Forbidden") && match_data
+            source = match_data.named_captures.fetch("source")
             raise PrivateSourceAuthenticationFailure, source
-          end
-
-          # NOTE: This error is raised by composer v1
-          if error.message.include?("Argument 1 passed to Composer")
-            msg = "One of your Composer plugins is not compatible with the " \
-                  "latest version of Composer. Please update Composer and " \
-                  "try running `composer update` to debug further."
-            raise DependencyFileNotResolvable, msg
           end
 
           # NOTE: This error is raised by composer v2 and includes helpful
@@ -225,15 +251,17 @@ module Dependabot
         # rubocop:enable Metrics/MethodLength
         # rubocop:enable Metrics/PerceivedComplexity
 
+        sig { returns(T::Boolean) }
         def library?
           parsed_composer_json["type"] == "library"
         end
 
+        sig { params(message: String).returns(T::Boolean) }
         def implicit_platform_reqs_satisfiable?(message)
           missing_extensions =
             message.scan(MISSING_IMPLICIT_PLATFORM_REQ_REGEX)
                    .map do |extension_string|
-              name, requirement = extension_string.strip.split(" ", 2)
+              name, requirement = T.cast(extension_string, String).strip.split(" ", 2)
               { name: name, requirement: requirement }
             end
 
@@ -243,6 +271,7 @@ module Dependabot
           end
         end
 
+        sig { void }
         def write_temporary_dependency_files
           artifact_dependencies.each do |file|
             path = file.name
@@ -256,11 +285,12 @@ module Dependabot
             File.write(file.name, file.content)
           end
 
-          File.write("composer.json", locked_composer_json_content)
-          File.write("composer.lock", lockfile.content)
-          File.write("auth.json", auth_json.content) if auth_json
+          File.write(PackageManager::MANIFEST_FILENAME, locked_composer_json_content)
+          File.write(PackageManager::LOCKFILE_FILENAME, lockfile.content)
+          File.write(PackageManager::AUTH_FILENAME, T.must(auth_json).content) if auth_json
         end
 
+        sig { returns(String) }
         def locked_composer_json_content
           content = updated_composer_json_content
           content = lock_dependencies_being_updated(content)
@@ -269,6 +299,7 @@ module Dependabot
           content
         end
 
+        sig { params(content: String).returns(String) }
         def add_temporary_platform_extensions(content)
           json = JSON.parse(content)
 
@@ -282,13 +313,14 @@ module Dependabot
           JSON.dump(json)
         end
 
+        sig { params(original_content: String).returns(String) }
         def lock_dependencies_being_updated(original_content)
           dependencies.reduce(original_content) do |content, dep|
             updated_req = dep.version
             next content unless Composer::Version.correct?(updated_req)
 
             old_req =
-              dep.requirements.find { |r| r[:file] == "composer.json" }
+              dep.requirements.find { |r| r[:file] == PackageManager::MANIFEST_FILENAME }
                  &.fetch(:requirement)
 
             # When updating a subdep there won't be an old requirement
@@ -306,6 +338,7 @@ module Dependabot
           end
         end
 
+        sig { params(content: String).returns(String) }
         def lock_git_dependencies(content)
           json = JSON.parse(content)
 
@@ -317,7 +350,7 @@ module Dependabot
               next if req.include?("#")
 
               commit_sha = parsed_lockfile
-                           .fetch(keys[:lockfile], [])
+                           .fetch(T.must(keys[:lockfile]), [])
                            .find { |d| d["name"] == name }
                            &.dig("source", "reference")
               updated_req_parts = req.split
@@ -329,11 +362,13 @@ module Dependabot
           JSON.dump(json)
         end
 
+        sig { params(error: SharedHelpers::HelperSubprocessFailed).returns(T.noreturn) }
         def git_dependency_reference_error(error)
           ref = error.message.match(/checkout '(?<ref>.*?)'/)
-                     .named_captures.fetch("ref")
+                     &.named_captures
+                     &.fetch("ref")
           dependency_name =
-            JSON.parse(lockfile.content)
+            JSON.parse(T.must(lockfile.content))
                 .values_at("packages", "packages-dev").flatten(1)
                 .find { |dep| dep.dig("source", "reference") == ref }
                 &.fetch("name")
@@ -343,23 +378,20 @@ module Dependabot
           raise GitDependencyReferenceNotFound, dependency_name
         end
 
-        def post_process_lockfile(content)
-          content = replace_patches(content)
-          content = replace_content_hash(content)
-          replace_platform_overrides(content)
-        end
-
+        sig { params(updated_content: String).returns(String) }
         def replace_patches(updated_content)
           content = updated_content
           %w(packages packages-dev).each do |package_type|
-            JSON.parse(lockfile.content).fetch(package_type).each do |details|
+            JSON.parse(T.must(lockfile.content))
+                .fetch(package_type, [])
+                .each do |details|
               next unless details["extra"].is_a?(Hash)
               next unless (patches = details.dig("extra", "patches_applied"))
 
               updated_object = JSON.parse(content)
               updated_object_package =
                 updated_object
-                .fetch(package_type)
+                .fetch(package_type, [])
                 .find { |d| d["name"] == details["name"] }
 
               next unless updated_object_package
@@ -376,14 +408,15 @@ module Dependabot
           content
         end
 
+        sig { params(content: String).returns(String) }
         def replace_content_hash(content)
           existing_hash = JSON.parse(content).fetch("content-hash")
           SharedHelpers.in_a_temporary_directory do
-            File.write("composer.json", updated_composer_json_content)
+            File.write(PackageManager::MANIFEST_FILENAME, updated_composer_json_content)
 
             content_hash =
               SharedHelpers.run_helper_subprocess(
-                command: "php #{php_helper_path}",
+                command: "#{Language::NAME} #{php_helper_path}",
                 function: "get_content_hash",
                 env: credentials_env,
                 args: [Dir.pwd]
@@ -393,8 +426,9 @@ module Dependabot
           end
         end
 
+        sig { params(content: String).returns(String) }
         def replace_platform_overrides(content)
-          original_object = JSON.parse(lockfile.content)
+          original_object = JSON.parse(T.must(lockfile.content))
           original_overrides = original_object.fetch("platform-overrides", nil)
 
           updated_object = JSON.parse(content)
@@ -410,6 +444,7 @@ module Dependabot
               .gsub(/\}\z/, "}\n")
         end
 
+        sig { params(requirements: T::Array[String]).returns(String) }
         def version_for_reqs(requirements)
           req_arrays =
             requirements
@@ -434,60 +469,79 @@ module Dependabot
           version.to_s
         end
 
+        sig { params(additional_extensions: T::Array[T::Hash[Symbol, String]]).void }
         def update_required_extensions(additional_extensions)
           additional_extensions.each do |ext|
             composer_platform_extensions[ext.fetch(:name)] ||= []
-            composer_platform_extensions[ext.fetch(:name)] +=
-              [ext.fetch(:requirement)]
+            existing_reqs = composer_platform_extensions[ext.fetch(:name)]
             composer_platform_extensions[ext.fetch(:name)] =
-              composer_platform_extensions[ext.fetch(:name)].uniq
+              T.must(existing_reqs) + [ext.fetch(:requirement)]
+            composer_platform_extensions[ext.fetch(:name)] =
+              T.must(composer_platform_extensions[ext.fetch(:name)]).uniq
           end
         end
 
+        sig { returns(String) }
         def php_helper_path
           NativeHelpers.composer_helper_path(composer_version: composer_version)
         end
 
-        def composer_version
-          @composer_version ||= Helpers.composer_version(parsed_composer_json, parsed_lockfile)
+        sig { params(content: String).returns(String) }
+        def post_process_lockfile(content)
+          content = replace_patches(content)
+          content = replace_content_hash(content)
+          replace_platform_overrides(content)
         end
 
+        sig { returns(String) }
+        def composer_version
+          @composer_version ||= T.let(
+            Helpers.composer_version(parsed_composer_json, parsed_lockfile),
+            T.nilable(String)
+          )
+        end
+
+        sig { returns(T::Hash[String, String]) }
         def credentials_env
           credentials
             .select { |c| c.fetch("type") == "php_environment_variable" }
-            .to_h { |cred| [cred["env-key"], cred.fetch("env-value", "-")] }
+            .to_h { |cred| [T.cast(cred["env-key"], String), cred.fetch("env-value", "-")] }
         end
 
+        sig { returns(T::Array[Dependabot::Credential]) }
         def git_credentials
           credentials
             .select { |cred| cred.fetch("type") == "git_source" }
             .select { |cred| cred["password"] }
         end
 
+        sig { returns(T::Array[Dependabot::Credential]) }
         def registry_credentials
           credentials
-            .select { |cred| cred.fetch("type") == "composer_repository" }
+            .select { |cred| cred.fetch("type") == PackageManager::REPOSITORY_KEY }
             .select { |cred| cred["password"] }
         end
 
+        sig { returns(T::Hash[String, T::Array[String]]) }
         def initial_platform
-          platform_php = parsed_composer_json.dig("config", "platform", "php")
+          platform_php = Helpers.capture_platform_php(parsed_composer_json)
 
           platform = {}
-          platform["php"] = [platform_php] if platform_php.is_a?(String) && requirement_valid?(platform_php)
+          platform[Language::NAME] = [platform_php] if platform_php.is_a?(String) && requirement_valid?(platform_php)
 
           # NOTE: We *don't* include the require-dev PHP version in our initial
           # platform. If we fail to resolve with the PHP version specified in
           # `require` then it will be picked up in a subsequent iteration.
-          requirement_php = parsed_composer_json.dig("require", "php")
+          requirement_php = Helpers.php_constraint(parsed_composer_json)
           return platform unless requirement_php.is_a?(String)
           return platform unless requirement_valid?(requirement_php)
 
-          platform["php"] ||= []
-          platform["php"] << requirement_php
+          platform[Language::NAME] ||= []
+          platform[Language::NAME] << requirement_php
           platform
         end
 
+        sig { params(req_string: String).returns(T::Boolean) }
         def requirement_valid?(req_string)
           Composer::Requirement.requirements_array(req_string)
           true
@@ -495,36 +549,60 @@ module Dependabot
           false
         end
 
+        sig { returns(T::Hash[String, T.untyped]) }
         def parsed_composer_json
-          @parsed_composer_json ||= JSON.parse(composer_json.content)
+          @parsed_composer_json ||= T.let(
+            JSON.parse(T.must(composer_json.content)),
+            T.nilable(T::Hash[String, T.untyped])
+          )
         end
 
+        sig { returns(T::Hash[String, T.untyped]) }
         def parsed_lockfile
-          @parsed_lockfile ||= JSON.parse(lockfile.content)
+          @parsed_lockfile ||= T.let(
+            JSON.parse(T.must(lockfile.content)),
+            T.nilable(T::Hash[String, T.untyped])
+          )
         end
 
+        sig { returns(Dependabot::DependencyFile) }
         def composer_json
-          @composer_json ||=
-            dependency_files.find { |f| f.name == "composer.json" }
+          @composer_json ||= T.let(
+            T.must(dependency_files.find { |f| f.name == PackageManager::MANIFEST_FILENAME }),
+            T.nilable(Dependabot::DependencyFile)
+          )
         end
 
+        sig { returns(Dependabot::DependencyFile) }
         def lockfile
-          @lockfile ||=
-            dependency_files.find { |f| f.name == "composer.lock" }
+          @lockfile ||= T.let(
+            T.must(dependency_files.find { |f| f.name == PackageManager::LOCKFILE_FILENAME }),
+            T.nilable(Dependabot::DependencyFile)
+          )
         end
 
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def auth_json
-          @auth_json ||= dependency_files.find { |f| f.name == "auth.json" }
+          @auth_json ||= T.let(
+            dependency_files.find { |f| f.name == PackageManager::AUTH_FILENAME },
+            T.nilable(Dependabot::DependencyFile)
+          )
         end
 
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
         def artifact_dependencies
-          @artifact_dependencies ||=
-            dependency_files.select { |f| f.name.end_with?(".zip", ".gitkeep") }
+          @artifact_dependencies ||= T.let(
+            dependency_files.select { |f| f.name.end_with?(".zip", ".gitkeep") },
+            T.nilable(T::Array[Dependabot::DependencyFile])
+          )
         end
 
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
         def path_dependencies
-          @path_dependencies ||=
-            dependency_files.select { |f| f.name.end_with?("/composer.json") }
+          @path_dependencies ||= T.let(
+            dependency_files.select { |f| f.name.end_with?("/#{PackageManager::MANIFEST_FILENAME}") },
+            T.nilable(T::Array[Dependabot::DependencyFile])
+          )
         end
       end
     end

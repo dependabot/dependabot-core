@@ -27,10 +27,12 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
   let(:dependency_files) { project_dependency_files("yarn/git_dependency_local_file") }
 
   let(:credentials) do
-    [Dependabot::Credential.new({
-      "type" => "git_source",
-      "host" => "github.com"
-    })]
+    [Dependabot::Credential.new(
+      {
+        "type" => "git_source",
+        "host" => "github.com"
+      }
+    )]
   end
 
   let(:dependency_name) { "@segment/analytics.js-integration-facebook-pixel" }
@@ -133,6 +135,30 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
       end
     end
 
+    context "when the error message contains a deps resolution failed error" do
+      let(:error_message) do
+        "[YN0001]: Exception error, Detail: ➤ YN0000: · Yarn 4.5.1" \
+          "➤ YN0000: ┌ Resolution step" \
+          "::group::Resolution step" \
+          "➤ YN0085: │ + @testing-library/user-event@npm:14.6.1" \
+          "::endgroup::" \
+          "➤ YN0000: └ Completed in 0s 466ms" \
+          "➤ YN0060: │ react-dom is ...... non-overlapping ranges." \
+          "➤ YN0060: │ redux is listed by your non-overlapping ranges." \
+          "➤ YN0086: │ Some peer dependencies are incorrectly met by your project;" \
+          "➤ YN0086: │ Some peer dependencies are incorrectly met by dependencies;" \
+      end
+
+      it "raises a DependencyFileNotResolvable error" do
+        expect do
+          error_handler.handle_yarn_error(error, { yarn_lock: yarn_lock })
+        end.to raise_error(
+          Dependabot::DependencyFileNotResolvable,
+          /peer dependencies are incorrectly met/
+        )
+      end
+    end
+
     context "when the error message contains SUB_DEP_LOCAL_PATH_TEXT" do
       let(:error_message) { "Some error occurred: refers to a non-existing file" }
 
@@ -179,8 +205,10 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
       it "raises a DependencyFileNotResolvable error with the correct message" do
         expect do
           error_handler.handle_yarn_error(error, { yarn_lock: yarn_lock })
-        end.to raise_error(Dependabot::DependencyFileNotResolvable,
-                           "YN0001: │ Error: @mui/material@npm:>5.16.7: No candidates found")
+        end.to raise_error(
+          Dependabot::DependencyFileNotResolvable,
+          "YN0001: │ Error: @mui/material@npm:>5.16.7: No candidates found"
+        )
       end
     end
 
@@ -204,9 +232,11 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
       it "raises a DependencyFileNotResolvable error with the correct message" do
         expect do
           error_handler.handle_yarn_error(error, { yarn_lock: yarn_lock })
-        end.to raise_error(Dependabot::DependencyFileNotResolvable,
-                           "YN0001: │ Libzip Error: Failed to open the cache entry " \
-                           "for @swc/core-darwin-arm64@npm:1.4.13: Not a zip archive")
+        end.to raise_error(
+          Dependabot::DependencyFileNotResolvable,
+          "YN0001: │ Libzip Error: Failed to open the cache entry " \
+          "for @swc/core-darwin-arm64@npm:1.4.13: Not a zip archive"
+        )
       end
     end
 
@@ -219,8 +249,10 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
       it "raises a DependencyFileNotResolvable error with the correct message" do
         expect do
           error_handler.handle_yarn_error(error, { yarn_lock: yarn_lock })
-        end.to raise_error(Dependabot::DependencyFileNotResolvable,
-                           "provides @angular/core (pc7ae5) with version 16.2.1, which doesn't satisfy what codelyzer requests") # rubocop:disable Layout/LineLength
+        end.to raise_error(
+          Dependabot::DependencyFileNotResolvable,
+          "provides @angular/core (pc7ae5) with version 16.2.1, which doesn't satisfy what codelyzer requests"
+        )
       end
     end
 
@@ -236,10 +268,12 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
       it "raises a PrivateSourceAuthenticationFailure error with the correct message" do
         expect do
           error_handler.handle_yarn_error(error, { yarn_lock: yarn_lock })
-        end.to raise_error(Dependabot::PrivateSourceAuthenticationFailure,
-                           "The following source could not be reached as it requires " \
-                           "authentication (and any provided details were invalid or lacked the " \
-                           "required permissions): npm.pkg.github.com")
+        end.to raise_error(
+          Dependabot::PrivateSourceAuthenticationFailure,
+          "The following source could not be reached as it requires " \
+          "authentication (and any provided details were invalid or lacked the " \
+          "required permissions): npm.pkg.github.com"
+        )
       end
     end
 
@@ -299,8 +333,10 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
       it "raises a DependencyFileNotResolvable error with the correct message" do
         expect do
           error_handler.handle_yarn_error(error, { yarn_lock: yarn_lock })
-        end.to raise_error(Dependabot::DependencyFileNotResolvable,
-                           "YN0001: UsageError: Couldn't find the node_modules state file")
+        end.to raise_error(
+          Dependabot::DependencyFileNotResolvable,
+          "YN0001: UsageError: Couldn't find the node_modules state file"
+        )
       end
     end
 
@@ -324,9 +360,11 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
       it "raises a DependencyFileNotResolvable error with the correct message" do
         expect do
           error_handler.handle_yarn_error(error, { yarn_lock: yarn_lock })
-        end.to raise_error(Dependabot::DependencyFileNotResolvable,
-                           "YN0001: │ Error: @babel/plugin-proposal-decorators@^7.10.05 isn't supported by any" \
-                           " available resolver")
+        end.to raise_error(
+          Dependabot::DependencyFileNotResolvable,
+          "YN0001: │ Error: @babel/plugin-proposal-decorators@^7.10.05 isn't supported by any" \
+          " available resolver"
+        )
       end
     end
 
@@ -350,8 +388,10 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
       it "raises a DependencyFileNotResolvable error with the correct message" do
         expect do
           error_handler.handle_yarn_error(error, { yarn_lock: yarn_lock })
-        end.to raise_error(Dependabot::DependencyFileNotResolvable,
-                           "YN0001: Error: @reelbi/revideo-components@workspace:^: Workspace not found")
+        end.to raise_error(
+          Dependabot::DependencyFileNotResolvable,
+          "YN0001: Error: @reelbi/revideo-components@workspace:^: Workspace not found"
+        )
       end
     end
 
@@ -373,8 +413,10 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
       it "raises a DependencyFileNotResolvable error with the correct message" do
         expect do
           error_handler.handle_yarn_error(error, { yarn_lock: yarn_lock })
-        end.to raise_error(Dependabot::DependencyFileNotResolvable,
-                           "YN0001:   Thrown Error: spawn gcloud ENOENT")
+        end.to raise_error(
+          Dependabot::DependencyFileNotResolvable,
+          "YN0001:   Thrown Error: spawn gcloud ENOENT"
+        )
       end
     end
 
@@ -394,10 +436,12 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
       it "raises a DependencyFileNotResolvable error with the correct message" do
         expect do
           error_handler.handle_yarn_error(error, { yarn_lock: yarn_lock })
-        end.to raise_error(Dependabot::DependencyFileNotResolvable,
-                           "YN0001: Error: dior-ds@portal:../../submodules/crp-design-system::" \
-                           "locator=%40onedior%2Fcdc-header-v3%40workspace%3Apackages%2Flib-cdc-header-v3" \
-                           ": Manifest not found")
+        end.to raise_error(
+          Dependabot::DependencyFileNotResolvable,
+          "YN0001: Error: dior-ds@portal:../../submodules/crp-design-system::" \
+          "locator=%40onedior%2Fcdc-header-v3%40workspace%3Apackages%2Flib-cdc-header-v3" \
+          ": Manifest not found"
+        )
       end
     end
 
@@ -410,9 +454,11 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
 
       it "raises a DependencyFileNotResolvable error with the correct message" do
         expect { error_handler.handle_error(error, { yarn_lock: yarn_lock }) }
-          .to raise_error(Dependabot::InconsistentRegistryResponse,
-                          "Couldn't find any versions for \"@types/react-test-renderer\" that " \
-                          "matches \"~18.2.0\"")
+          .to raise_error(
+            Dependabot::InconsistentRegistryResponse,
+            "Couldn't find any versions for \"@types/react-test-renderer\" that " \
+            "matches \"~18.2.0\""
+          )
       end
     end
 
@@ -436,10 +482,12 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
       it "raises a GitDependenciesNotReachable error with the repo URL" do
         expect do
           error_handler.handle_yarn_error(error, { yarn_lock: yarn_lock })
-        end.to raise_error(Dependabot::PrivateSourceAuthenticationFailure,
-                           "The following source could not be reached as it " \
-                           "requires authentication (and any provided details were invalid or lacked " \
-                           "the required permissions): https://npk.src.com/makerinc/")
+        end.to raise_error(
+          Dependabot::PrivateSourceAuthenticationFailure,
+          "The following source could not be reached as it " \
+          "requires authentication (and any provided details were invalid or lacked " \
+          "the required permissions): https://npk.src.com/makerinc/"
+        )
       end
     end
 
@@ -594,6 +642,28 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
         end
       end
 
+      context "when error message doesn't match any YN0001.* regex patterns" do
+        let(:error_message) do
+          "[YN0001]: Exception error, Detail: ➤ YN0000: · Yarn 4.0.2" \
+            "➤ YN0000: ┌ Resolution step" \
+            "::group::Resolution step" \
+            "➤ YN0001: │ TypeError: @moonpig/common-logging-sqs-lambda@npm:1.1.2: Invalid URL" \
+            "at new URL (node:internal/url:806:29)" \
+            "at Q1t (/home/dependabot/dependabot-updater/repo/.yarn/releases/yarn-4.0.2.cjs:676:20388)" \
+            "at /home/dependabot/dependabot-updater/repo/.yarn/releases/yarn-4.0.2.cjs:676:18667" \
+            "at Object.ol (/home/dependabot/dependabot-updater/repo/.yarn/releases/yarn-4.0.2.cjs:140:53564)" \
+            "at KC (/home/dependabot/dependabot-updater/repo/.yarn/releases/yarn-4.0.2.cjs:676:18561)"
+        end
+
+        it "raises error with the raw message" do
+          expect do
+            error_handler.handle_yarn_error(error, { yarn_lock: yarn_lock })
+          end.to raise_error(
+            Dependabot::DependencyFileNotResolvable
+          )
+        end
+      end
+
       context "when out of diskspace error" do
         let(:error_message) do
           "fatal: sha1 file '/home/dependabot/dependabot-updater/repo/.git/index.lock' write error. Out of diskspace"
@@ -602,9 +672,11 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
 
         it "raises the corresponding error class with the correct message" do
           expect { error_handler.handle_group_patterns(error, usage_error_message, { yarn_lock: yarn_lock }) }
-            .to raise_error(Dependabot::OutOfDisk,
-                            "fatal: sha1 file '/home/dependabot/dependabot-updater/repo/.git/index.lock' " \
-                            "write error. Out of diskspace")
+            .to raise_error(
+              Dependabot::OutOfDisk,
+              "fatal: sha1 file '/home/dependabot/dependabot-updater/repo/.git/index.lock' " \
+              "write error. Out of diskspace"
+            )
         end
       end
     end
@@ -649,9 +721,12 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
 
       it "raises the corresponding error class with the correct message" do
         expect { error_handler.handle_group_patterns(error, usage_error_message, { yarn_lock: yarn_lock }) }
-          .to raise_error(Dependabot::PrivateSourceTimedOut, "The following source timed out: " \
-                                                             "registry.us.gympass.cloud/repository/" \
-                                                             "npm-group/@gympass%2fmep-utils")
+          .to raise_error(
+            Dependabot::PrivateSourceTimedOut,
+            "The following source timed out: " \
+            "registry.us.gympass.cloud/repository/" \
+            "npm-group/@gympass%2fmep-utils"
+          )
       end
     end
 
@@ -662,8 +737,10 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
 
       it "raises the corresponding error class with the correct message" do
         expect { error_handler.handle_group_patterns(error, usage_error_message, { yarn_lock: yarn_lock }) }
-          .to raise_error(Dependabot::DependencyFileNotResolvable,
-                          "Cannot read properties of undefined (reading 'manifest')")
+          .to raise_error(
+            Dependabot::DependencyFileNotResolvable,
+            "Cannot read properties of undefined (reading 'manifest')"
+          )
       end
     end
 
@@ -676,11 +753,13 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
 
       it "raises the corresponding error class with the correct message" do
         expect { error_handler.handle_group_patterns(error, usage_error_message, { yarn_lock: yarn_lock }) }
-          .to raise_error(Dependabot::PrivateSourceAuthenticationFailure,
-                          "The following source could not be reached" \
-                          " as it requires authentication " \
-                          "(and any provided details were invalid or lacked " \
-                          "the required permissions): artifactory.wikia-inc.com")
+          .to raise_error(
+            Dependabot::PrivateSourceAuthenticationFailure,
+            "The following source could not be reached" \
+            " as it requires authentication " \
+            "(and any provided details were invalid or lacked " \
+            "the required permissions): artifactory.wikia-inc.com"
+          )
       end
     end
 
@@ -691,11 +770,13 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
 
       it "raises the corresponding error class with the correct message" do
         expect { error_handler.handle_group_patterns(error, usage_error_message, { yarn_lock: yarn_lock }) }
-          .to raise_error(Dependabot::PrivateSourceAuthenticationFailure,
-                          "The following source could not be reached" \
-                          " as it requires authentication " \
-                          "(and any provided details were invalid or lacked " \
-                          "the required permissions): npm.shopify.io")
+          .to raise_error(
+            Dependabot::PrivateSourceAuthenticationFailure,
+            "The following source could not be reached" \
+            " as it requires authentication " \
+            "(and any provided details were invalid or lacked " \
+            "the required permissions): npm.shopify.io"
+          )
       end
     end
 
@@ -706,8 +787,10 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
 
       it "raises the corresponding error class with the correct message" do
         expect { error_handler.handle_group_patterns(error, usage_error_message, { yarn_lock: yarn_lock }) }
-          .to raise_error(Dependabot::DependencyFileNotResolvable,
-                          "Received malformed response from registry for \"teste-react-jv\". The registry may be down.")
+          .to raise_error(
+            Dependabot::DependencyFileNotResolvable,
+            "Received malformed response from registry for \"teste-react-jv\". The registry may be down."
+          )
       end
     end
 
@@ -718,11 +801,13 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
 
       it "raises the corresponding error class with the correct message" do
         expect { error_handler.handle_group_patterns(error, usage_error_message, { yarn_lock: yarn_lock }) }
-          .to raise_error(Dependabot::PrivateSourceAuthenticationFailure,
-                          "The following source could not be reached" \
-                          " as it requires authentication " \
-                          "(and any provided details were invalid or lacked " \
-                          "the required permissions): npm.pkg.github.com")
+          .to raise_error(
+            Dependabot::PrivateSourceAuthenticationFailure,
+            "The following source could not be reached" \
+            " as it requires authentication " \
+            "(and any provided details were invalid or lacked " \
+            "the required permissions): npm.pkg.github.com"
+          )
       end
     end
 
@@ -733,11 +818,13 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
 
       it "raises the corresponding error class with the correct message" do
         expect { error_handler.handle_group_patterns(error, usage_error_message, { yarn_lock: yarn_lock }) }
-          .to raise_error(Dependabot::PrivateSourceAuthenticationFailure,
-                          "The following source could not be reached" \
-                          " as it requires authentication " \
-                          "(and any provided details were invalid or lacked " \
-                          "the required permissions): npm-proxy.fury.io")
+          .to raise_error(
+            Dependabot::PrivateSourceAuthenticationFailure,
+            "The following source could not be reached" \
+            " as it requires authentication " \
+            "(and any provided details were invalid or lacked " \
+            "the required permissions): npm-proxy.fury.io"
+          )
       end
     end
 
@@ -749,8 +836,10 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
 
       it "raises the corresponding error class with the correct message" do
         expect { error_handler.handle_group_patterns(error, usage_error_message, { yarn_lock: yarn_lock }) }
-          .to raise_error(Dependabot::DependencyFileNotResolvable,
-                          "Request failed \"500 Internal Server Error\"")
+          .to raise_error(
+            Dependabot::DependencyFileNotResolvable,
+            "Request failed \"500 Internal Server Error\""
+          )
       end
     end
 
@@ -762,8 +851,10 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
 
       it "raises the corresponding error class with the correct message" do
         expect { error_handler.handle_group_patterns(error, usage_error_message, { yarn_lock: yarn_lock }) }
-          .to raise_error(Dependabot::DependencyFileNotResolvable,
-                          "npm package \"typescript-react-apollo\" does not exist under owner \"graphql-codegen\"")
+          .to raise_error(
+            Dependabot::DependencyFileNotResolvable,
+            "npm package \"typescript-react-apollo\" does not exist under owner \"graphql-codegen\""
+          )
       end
     end
 
@@ -774,8 +865,10 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
 
       it "raises the corresponding error class with the correct message" do
         expect { error_handler.handle_group_patterns(error, usage_error_message, { yarn_lock: yarn_lock }) }
-          .to raise_error(Dependabot::DependencyFileNotResolvable,
-                          "Couldn't find package \"source-map-explorer\" on the \"npm\" registry.")
+          .to raise_error(
+            Dependabot::DependencyFileNotResolvable,
+            "Couldn't find package \"source-map-explorer\" on the \"npm\" registry."
+          )
       end
     end
 
@@ -786,9 +879,11 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
 
       it "raises the corresponding error class with the correct message" do
         expect { error_handler.handle_group_patterns(error, usage_error_message, { yarn_lock: yarn_lock }) }
-          .to raise_error(Dependabot::DependencyFileNotResolvable,
-                          "Couldn't find package \"dl-core-js@^1.0.0\" required" \
-                          " by \"mahso-slide-gen@0.1.0\" on the \"npm\" registry.")
+          .to raise_error(
+            Dependabot::DependencyFileNotResolvable,
+            "Couldn't find package \"dl-core-js@^1.0.0\" required" \
+            " by \"mahso-slide-gen@0.1.0\" on the \"npm\" registry."
+          )
       end
     end
 
@@ -807,8 +902,11 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
 
       it "raises the corresponding error class with the correct message" do
         expect { error_handler.handle_group_patterns(error, usage_error_message, { yarn_lock: yarn_lock }) }
-          .to raise_error(Dependabot::MissingEnvironmentVariable, "Environment variable \"GITHUB_TOKEN\" not" \
-                                                                  " found in \".yarnrc.yml\".")
+          .to raise_error(
+            Dependabot::MissingEnvironmentVariable,
+            "Environment variable \"GITHUB_TOKEN\" not" \
+            " found in \".yarnrc.yml\"."
+          )
       end
     end
 
@@ -862,8 +960,11 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
 
       it "raises the corresponding error class with the correct message" do
         expect { error_handler.handle_group_patterns(error, usage_error_message, { yarn_lock: yarn_lock }) }
-          .to raise_error(Dependabot::DependencyFileNotResolvable, "Internal error while resolving dependency." \
-                                                                   "File not found \"yarn-4.3.1.cjs\"")
+          .to raise_error(
+            Dependabot::DependencyFileNotResolvable,
+            "Internal error while resolving dependency." \
+            "File not found \"yarn-4.3.1.cjs\""
+          )
       end
     end
 
@@ -874,8 +975,11 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
 
       it "raises the corresponding error class with the correct message" do
         expect { error_handler.handle_group_patterns(error, usage_error_message, { yarn_lock: yarn_lock }) }
-          .to raise_error(Dependabot::PrivateSourceTimedOut, "The following source timed out: " \
-                                                             "registry.npm.taobao.org/vue-template-compiler")
+          .to raise_error(
+            Dependabot::PrivateSourceTimedOut,
+            "The following source timed out: " \
+            "registry.npm.taobao.org/vue-template-compiler"
+          )
       end
     end
 

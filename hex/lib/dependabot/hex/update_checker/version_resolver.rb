@@ -1,5 +1,7 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
+
+require "sorbet-runtime"
 
 require "dependabot/hex/version"
 require "dependabot/hex/update_checker"
@@ -13,25 +15,49 @@ module Dependabot
   module Hex
     class UpdateChecker
       class VersionResolver
-        def initialize(dependency:, credentials:,
-                       original_dependency_files:, prepared_dependency_files:)
-          @dependency = dependency
-          @original_dependency_files = original_dependency_files
-          @prepared_dependency_files = prepared_dependency_files
-          @credentials = credentials
+        extend T::Sig
+
+        sig do
+          params(
+            dependency: Dependabot::Dependency,
+            credentials: T::Array[Dependabot::Credential],
+            original_dependency_files: T::Array[Dependabot::DependencyFile],
+            prepared_dependency_files: T::Array[Dependabot::DependencyFile]
+          ).void
+        end
+        def initialize(
+          dependency:,
+          credentials:,
+          original_dependency_files:,
+          prepared_dependency_files:
+        )
+          @dependency = T.let(dependency, Dependabot::Dependency)
+          @original_dependency_files = T.let(original_dependency_files, T::Array[Dependabot::DependencyFile])
+          @prepared_dependency_files = T.let(prepared_dependency_files, T::Array[Dependabot::DependencyFile])
+          @credentials = T.let(credentials, T::Array[Dependabot::Credential])
+          @latest_resolvable_version = T.let(nil, T.nilable(T.any(Dependabot::Version, String, T::Boolean)))
         end
 
+        sig { returns(T.nilable(T.any(Dependabot::Version, String, T::Boolean))) }
         def latest_resolvable_version
           @latest_resolvable_version ||= fetch_latest_resolvable_version
         end
 
         private
 
+        sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
+
+        sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
+
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :original_dependency_files
+
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :prepared_dependency_files
 
+        sig { returns(T.nilable(T.any(Dependabot::Version, String, T::Boolean))) }
         def fetch_latest_resolvable_version
           latest_resolvable_version =
             SharedHelpers.in_a_temporary_directory do
@@ -51,6 +77,7 @@ module Dependabot
           handle_hex_errors(e)
         end
 
+        sig { returns(String) }
         def run_elixir_update_checker
           SharedHelpers.run_helper_subprocess(
             env: mix_env,
@@ -61,6 +88,10 @@ module Dependabot
           )
         end
 
+        sig do
+          params(error: Dependabot::SharedHelpers::HelperSubprocessFailed)
+            .returns(T.nilable(T.any(Dependabot::Version, String, T::Boolean)))
+        end
         def handle_hex_errors(error)
           if (match = error.message.match(/No authenticated organization found for (?<repo>[a-z_]+)\./))
             raise Dependabot::PrivateSourceAuthenticationFailure, match[:repo]
@@ -98,25 +129,36 @@ module Dependabot
           raise error
         end
 
+        sig do
+          params(error: Dependabot::SharedHelpers::HelperSubprocessFailed).returns(
+            T.any(
+              Dependabot::Version,
+              String,
+              T::Boolean
+            )
+          )
+        end
         def error_result(error)
           return false unless includes_result?(error)
 
-          result_json = error.message&.split("\n")&.last
-          result = JSON.parse(result_json)["result"]
+          result_json = error.message.split("\n").last
+          result = JSON.parse(T.must(result_json))["result"]
           return version_class.new(result) if version_class.correct?(result)
 
           result
         end
 
+        sig { params(error: Dependabot::SharedHelpers::HelperSubprocessFailed).returns(T::Boolean) }
         def includes_result?(error)
-          result = error.message&.split("\n")&.last
+          result = error.message.split("\n").last
           return false unless result
 
-          JSON.parse(error.message&.split("\n")&.last).key?("result")
+          JSON.parse(result).key?("result")
         rescue JSON::ParserError
           false
         end
 
+        sig { returns(T.any(T::Boolean, Dependabot::Version, String)) }
         def check_original_requirements_resolvable
           SharedHelpers.in_a_temporary_directory do
             write_temporary_sanitized_dependency_files(prepared: false)
@@ -141,6 +183,7 @@ module Dependabot
           raise Dependabot::DependencyFileNotResolvable, e.message
         end
 
+        sig { params(prepared: T::Boolean).void }
         def write_temporary_sanitized_dependency_files(prepared: true)
           files = if prepared then prepared_dependency_files
                   else
@@ -150,33 +193,36 @@ module Dependabot
           files.each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
-            File.write(path, sanitize_mixfile(file.content))
+            File.write(path, sanitize_mixfile(T.must(file.content)))
           end
         end
 
+        sig { params(content: String).returns(String) }
         def sanitize_mixfile(content)
           Hex::FileUpdater::MixfileSanitizer.new(
             mixfile_content: content
           ).sanitized_content
         end
 
+        sig { returns(T.class_of(Dependabot::Version)) }
         def version_class
           dependency.version_class
         end
 
+        sig { returns(T::Hash[String, String]) }
         def mix_env
           {
             "MIX_EXS" => File.join(NativeHelpers.hex_helpers_dir, "mix.exs"),
-            "MIX_LOCK" => File.join(NativeHelpers.hex_helpers_dir, "mix.lock"),
-            "MIX_DEPS" => File.join(NativeHelpers.hex_helpers_dir, "deps"),
             "MIX_QUIET" => "1"
           }
         end
 
+        sig { returns(String) }
         def elixir_helper_path
           File.join(NativeHelpers.hex_helpers_dir, "lib/run.exs")
         end
 
+        sig { returns(String) }
         def elixir_helper_check_update_path
           File.join(NativeHelpers.hex_helpers_dir, "lib/check_update.exs")
         end

@@ -27,7 +27,6 @@ Gem::Specification.new do |spec|
   spec.files        = []
 
   spec.add_dependency "dependabot-common", Dependabot::VERSION
-  spec.add_dependency "rubyzip", ">= 2.3.2", "< 3.0"
 
   common_gemspec.development_dependencies.each do |dep|
     spec.add_development_dependency dep.name, *dep.requirement.as_list

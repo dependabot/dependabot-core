@@ -1,5 +1,12 @@
+# Log to stderr instead of stdout
+:logger.remove_handler(:default)
+:logger.add_handler(:to_stderr, :logger_std_h, %{config: %{type: :standard_error}})
+
 defmodule UpdateChecker do
   def run(dependency_name) do
+    # This is necessary because we can't specify :extra_applications to have :hex in other mixfiles.
+    Mix.ensure_application!(:hex)
+
     # Update the lockfile in a session that we can time out
     task = Task.async(fn -> do_resolution(dependency_name) end)
 
@@ -45,24 +52,28 @@ end
 
 [dependency_name] = System.argv()
 
-case UpdateChecker.run(dependency_name) do
-  {:ok, version} ->
-    version = :erlang.term_to_binary({:ok, version})
-    IO.write(:stdio, version)
+result =
+  case UpdateChecker.run(dependency_name) do
+    {:ok, version} ->
+      {:ok, version}
 
-  {:error, %Version.InvalidRequirementError{} = error}  ->
-    result = :erlang.term_to_binary({:error, "Invalid requirement: #{error.requirement}"})
-    IO.write(:stdio, result)
+    {:error, %Version.InvalidRequirementError{} = error}  ->
+      {:error, "Invalid requirement: #{error.requirement}"}
 
-  {:error, %Mix.Error{} = error} ->
-    result = :erlang.term_to_binary({:error, "Dependency resolution failed: #{error.message}"})
-    IO.write(:stdio, result)
+    {:error, %Mix.Error{} = error} ->
+      {:error, "Dependency resolution failed: #{error.message}"}
 
-  {:error, :dependency_resolution_timed_out} ->
-    # We do nothing here because Hex is already printing out a message in stdout
-    nil
+    {:error, :dependency_resolution_timed_out} ->
+      # We do nothing here because Hex is already printing out a message in stdout
+      nil
 
-  {:error, error} ->
-    result = :erlang.term_to_binary({:error, "Unknown error in check_update: #{inspect(error)}"})
-    IO.write(:stdio, result)
+    {:error, error} ->
+      {:error, "Unknown error in check_update: #{inspect(error)}"}
+  end
+
+if not is_nil(result) do
+  result
+  |> :erlang.term_to_binary()
+  |> Base.encode64()
+  |> IO.write()
 end

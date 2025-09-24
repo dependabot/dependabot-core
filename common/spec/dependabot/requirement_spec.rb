@@ -1,18 +1,9 @@
-# typed: true
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
 require "dependabot/requirement"
 require "dependabot/version"
-
-# Define an anonymous subclass of Dependabot::Requirement for testing purposes
-TestRequirement = Class.new(Dependabot::Requirement) do
-  # Initialize with comma-separated requirement constraints
-  def initialize(constraint_string)
-    requirements = constraint_string.split(",").map(&:strip)
-    super(requirements)
-  end
-end
 
 RSpec.describe Dependabot::Requirement do
   subject(:requirement) { TestRequirement.new(constraint_string) }
@@ -108,6 +99,72 @@ RSpec.describe Dependabot::Requirement do
       let(:constraint_string) { ">= 1.0" }
 
       it { is_expected.to be_nil }
+    end
+  end
+
+  describe "#handle_min_operator" do
+    subject(:min_operator_result) { requirement.handle_min_operator(operator, version) }
+
+    let(:version) { Dependabot::Version.new("1.5.0") }
+
+    context "when operator is '>='" do
+      let(:operator) { ">=" }
+      let(:constraint_string) { ">= 1.5.0" }
+
+      it "returns the version itself" do
+        expect(min_operator_result).to eq(version)
+      end
+    end
+
+    context "when operator is '>'" do
+      let(:operator) { ">" }
+      let(:constraint_string) { "> 1.5.0" }
+
+      it "returns the version itself" do
+        expect(min_operator_result).to eq(version)
+      end
+    end
+
+    context "when operator is '~>'" do
+      let(:operator) { "~>" }
+      let(:constraint_string) { "~> 1.5.0" }
+
+      it "returns the version itself" do
+        expect(min_operator_result).to eq(version)
+      end
+    end
+  end
+
+  describe "#handle_max_operator" do
+    subject(:max_operator_result) { requirement.handle_max_operator(operator, version) }
+
+    let(:version) { Dependabot::Version.new("1.5.0") }
+
+    context "when operator is '<='" do
+      let(:operator) { "<=" }
+      let(:constraint_string) { "<= 1.5.0" }
+
+      it "returns the version itself" do
+        expect(max_operator_result).to eq(version)
+      end
+    end
+
+    context "when operator is '<'" do
+      let(:operator) { "<" }
+      let(:constraint_string) { "< 1.5.0" }
+
+      it "returns the version itself" do
+        expect(max_operator_result).to eq(version)
+      end
+    end
+
+    context "when operator is '~>'" do
+      let(:operator) { "~>" }
+      let(:constraint_string) { "~> 1.5.0" }
+
+      it "returns the effective upper bound of the '~>' constraint" do
+        expect(max_operator_result).to eq(Dependabot::Version.new("1.6.0"))
+      end
     end
   end
 end

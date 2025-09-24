@@ -17,12 +17,14 @@ RSpec.describe namespace::PipCompileVersionResolver do
     )
   end
   let(:credentials) do
-    [Dependabot::Credential.new({
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    })]
+    [Dependabot::Credential.new(
+      {
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    )]
   end
   let(:dependency_files) { [manifest_file, generated_file] }
   let(:manifest_file) do
@@ -191,8 +193,10 @@ RSpec.describe namespace::PipCompileVersionResolver do
             expect { latest_resolvable_version }
               .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
                 expect(error.message)
-                  .to include("Cannot install -r requirements/dev.in (line 1) and botocore==1.10.84 because these " \
-                              "package versions have conflicting dependencies.")
+                  .to include(
+                    "Cannot install -r requirements/dev.in (line 1) and botocore==1.10.84 because these " \
+                    "package versions have conflicting dependencies."
+                  )
               end
           end
         end
@@ -222,8 +226,10 @@ RSpec.describe namespace::PipCompileVersionResolver do
         expect { latest_resolvable_version }
           .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             expect(error.message)
-              .to include("Cannot install jupyter-server<=18.1.0 and >=17.3.0 because these package versions have " \
-                          "conflicting dependencies.")
+              .to include(
+                "Cannot install jupyter-server<=18.1.0 and >=17.3.0 because these package versions have " \
+                "conflicting dependencies."
+              )
           end
       end
     end
@@ -378,7 +384,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
         let(:dependency_files) { [manifest_file] }
         let(:dependency_name) { "boto3" }
         let(:dependency_version) { nil }
-        let(:version) { "1.9.28" }
+        let(:version) { Gem::Version.new("1.9.28") }
         let(:dependency_requirements) do
           [{
             file: "requirements/test.in",
@@ -392,8 +398,10 @@ RSpec.describe namespace::PipCompileVersionResolver do
           expect { resolvable }
             .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
               expect(error.message)
-                .to include("Cannot install -r requirements/test.in (line 1) and botocore==1.10.84 because these " \
-                            "package versions have conflicting dependencies.")
+                .to include(
+                  "Cannot install -r requirements/test.in (line 1) and botocore==1.10.84 because these " \
+                  "package versions have conflicting dependencies."
+                )
             end
         end
       end
@@ -441,6 +449,54 @@ RSpec.describe namespace::PipCompileVersionResolver do
         it "raises a helpful error" do
           expect { resolvable }
             .to raise_error(Dependabot::OutOfMemory)
+        end
+      end
+
+      context "when HelperSubprocessFailed exception is raised" do
+        let(:error_handler) { Dependabot::Python::PipCompileErrorHandler.new }
+
+        let(:exception_message) { "HelperSubprocessFailed" }
+
+        context "when dealing with subprocess-exited-with-error error" do
+          let(:exception_message) do
+            "Preparing metadata (setup.py): finished with status 'error'
+          error: subprocess-exited-with-error
+
+          × python setup.py egg_info did not run successfully.
+          │ exit code: 1
+          ╰─> [18 lines of output]
+              Traceback (most recent call last):
+                File \"<string>\", line 2, in <module>
+                  exec(compile('''
+                  ~~~~^^^^^^^^^^^^
+                  # This is <pip-setuptools-caller> -- a caller that pip uses to run setup.py
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                  ...<31 lines>...
+                  exec(compile(setup_py_code, filename, \"exec\"))
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                  ''' % ('/tmp/pip-resolve-84tqp2g1/pillow_f28c34dffdb342a49c27519580a49fd3/setup.py',)"
+          end
+
+          it "raises a helpful error" do
+            expect { error_handler.handle_pipcompile_error(exception_message) }
+              .to raise_error(Dependabot::DependencyFileNotResolvable)
+          end
+        end
+
+        context "when dealing with an installation error" do
+          let(:exception_message) do
+            "pip._internal.exceptions.InstallationError: Could not install requirement" \
+              " rugby-[FILTERED_REPO]@ https://****@github.com/compute-cloud/a300cfb3a4070c923246dd4.zip " \
+              "from https://****@github.com/compute-cloud/[FILTERED_REPO]/archive/s.zip" \
+              " (from -r requirements.in (line 23)) because of HTTP error 404 Client Error: Not" \
+              " Found for url: https://github.com/compute-cloud/[FILTERED_REPO]/archive/a3246dd4.zip for" \
+              " URL https://****@github.com/compute-cloud/[FILTERED_REPO]/archive/a3dd4.zip"
+          end
+
+          it "raises a helpful error" do
+            expect { error_handler.handle_pipcompile_error(exception_message) }
+              .to raise_error(Dependabot::DependencyFileNotResolvable)
+          end
         end
       end
     end

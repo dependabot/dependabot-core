@@ -76,14 +76,19 @@ module Dependabot
 
         sig { returns(Dependabot::Job) }
         attr_reader :job
-        sig { returns(Dependabot::Service) }
+
+        sig { override.returns(Dependabot::Service) }
         attr_reader :service
+
         sig { returns(Dependabot::DependencySnapshot) }
         attr_reader :dependency_snapshot
+
         sig { returns(Dependabot::Updater::ErrorHandler) }
         attr_reader :error_handler
+
         sig { returns(T::Array[PullRequest]) }
         attr_reader :created_pull_requests
+
         # A list of notices that will be used in PR messages and/or sent to the dependabot github alerts.
         sig { returns(T::Array[Dependabot::Notice]) }
         attr_reader :notices
@@ -135,6 +140,13 @@ module Dependabot
           # version (uses a different version suffix for gradle/maven)
           return record_security_update_not_found(checker) if checker.up_to_date?
 
+          # if checker.excluded?
+          #   return Dependabot.logger.info(
+          #     "Skipping update for #{dependency.name} #{dependency.version} " \
+          #     "(excluded by config)"
+          #   )
+          # end
+
           if pr_exists_for_latest_version?(checker)
             Dependabot.logger.info(
               "Pull request already exists for #{checker.dependency.name} " \
@@ -185,6 +197,7 @@ module Dependabot
             change_source: checker.dependency,
             # Sending notices to the pr message builder to be used in the PR message if show_in_pr is true
             notices: @notices
+            # exclude_paths: job.exclude_paths || []
           )
 
           # Send warning alerts to the API if any warning notices are present.
@@ -202,7 +215,7 @@ module Dependabot
         # rubocop:enable Metrics/PerceivedComplexity
         sig { params(dependency: Dependabot::Dependency).returns(Dependabot::Dependency) }
         def vulnerable_version(dependency)
-          return dependency if dependency.metadata[:all_versions].count == 1
+          return dependency if dependency.metadata[:all_versions].one?
 
           vulnerable_dependency = dependency.metadata[:all_versions].find do |dep|
             checker = update_checker_for(dep)
@@ -226,6 +239,7 @@ module Dependabot
             security_advisories: job.security_advisories_for(dependency),
             raise_on_ignored: true, # always true for security updates
             requirements_update_strategy: job.requirements_update_strategy,
+            # exclude_paths: job.exclude_paths,
             options: job.experiments
           )
         end
@@ -293,8 +307,10 @@ module Dependabot
 
         sig { params(dependency_change: Dependabot::DependencyChange).void }
         def create_pull_request(dependency_change)
-          Dependabot.logger.info("Submitting #{dependency_change.updated_dependencies.map(&:name).join(', ')} " \
-                                 "pull request for creation")
+          Dependabot.logger.info(
+            "Submitting #{dependency_change.updated_dependencies.map(&:name).join(', ')} " \
+            "pull request for creation"
+          )
 
           service.create_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
 

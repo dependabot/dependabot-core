@@ -150,7 +150,6 @@ module Dependabot
               (old_dep.subdependency_metadata || []) +
               (new_dep.subdependency_metadata || [])
             ).uniq
-
             Dependency.new(
               name: old_dep.name,
               version: version,

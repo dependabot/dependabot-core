@@ -224,6 +224,259 @@ RSpec.describe Dependabot::Maven::FileUpdater do
         its(:content) { is_expected.to include("<version>0.7.9</version>") }
       end
 
+      context "with a transitive dependency not added to dependencyManagement with indentation 2" do
+        let(:pom_body) do
+          fixture("poms", "transitive_dependency_pom_version_not_defined.xml")
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "org.apache.zookeeper:zookeeper",
+            version: "3.7.2",
+            requirements: [{
+              file: "pom.xml",
+              requirement: "3.7.2",
+              groups: [],
+              source: nil,
+              metadata: { packaging_type: "jar" }
+            }],
+            previous_requirements: [{
+              file: "pom.xml",
+              requirement: "3.4.6",
+              groups: [],
+              source: nil,
+              metadata: { packaging_type: "jar" }
+            }],
+            package_manager: "maven"
+          )
+        end
+
+        its(:content) do
+          is_expected.to include(
+            "  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.apache.zookeeper</groupId>
+        <artifactId>zookeeper</artifactId>
+        <version>3.7.2</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>"
+          )
+        end
+      end
+
+      context "with a transitive dependency not added to dependencyManagement with mixed indentation" do
+        let(:pom_body) do
+          fixture("poms", "transitive_dependency_pom_version_not_defined_mixed_indentation.xml")
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "org.apache.zookeeper:zookeeper",
+            version: "3.7.2",
+            requirements: [{
+              file: "pom.xml",
+              requirement: "3.7.2",
+              groups: [],
+              source: nil,
+              metadata: { packaging_type: "jar" }
+            }],
+            previous_requirements: [{
+              file: "pom.xml",
+              requirement: "3.4.6",
+              groups: [],
+              source: nil,
+              metadata: { packaging_type: "jar" }
+            }],
+            package_manager: "maven"
+          )
+        end
+
+        its(:content) do
+          is_expected.to include(
+            "  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.apache.zookeeper</groupId>
+        <artifactId>zookeeper</artifactId>
+        <version>3.7.2</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>"
+          )
+        end
+      end
+
+      context "with a transitive dependency not in dependencyManagement and pom file doesn't have XML namespace" do
+        let(:pom_body) do
+          fixture("poms", "transitive_dependency_pom_version_not_defined_no_namespace.xml")
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "org.apache.zookeeper:zookeeper",
+            version: "3.7.2",
+            requirements: [{
+              file: "pom.xml",
+              requirement: "3.7.2",
+              groups: [],
+              source: nil,
+              metadata: { packaging_type: "jar" }
+            }],
+            previous_requirements: [{
+              file: "pom.xml",
+              requirement: "3.4.6",
+              groups: [],
+              source: nil,
+              metadata: { packaging_type: "jar" }
+            }],
+            package_manager: "maven"
+          )
+        end
+
+        its(:content) do
+          is_expected.to include(
+            "    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.apache.zookeeper</groupId>
+                <artifactId>zookeeper</artifactId>
+                <version>3.7.2</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>"
+          )
+        end
+      end
+
+      context "with a transitive dependency already exists in dependencyManagement section" do
+        let(:pom_body) do
+          fixture("poms", "transitive_dependency_pom_version_defined.xml")
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "org.apache.zookeeper:zookeeper",
+            version: "3.7.2",
+            requirements: [{
+              file: "pom.xml",
+              requirement: "3.7.2",
+              groups: [],
+              source: nil,
+              metadata: { packaging_type: "jar" }
+            }],
+            previous_requirements: [{
+              file: "pom.xml",
+              requirement: "3.4.6",
+              groups: [],
+              source: nil,
+              metadata: { packaging_type: "jar" }
+            }],
+            package_manager: "maven"
+          )
+        end
+
+        its(:content) do
+          is_expected.to include(
+            "    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.apache.zookeeper</groupId>
+                <artifactId>zookeeper</artifactId>
+                <version>3.7.2</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>"
+          )
+        end
+      end
+
+      context "with a new transitive dependency in existing dependencyManagement that is consistently formatted" do
+        let(:pom_body) do
+          fixture("poms", "transitive_dependency_pom_dep_management_exist.xml")
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "org.apache.zookeeper:zookeeper",
+            version: "3.7.2",
+            requirements: [{
+              file: "pom.xml",
+              requirement: "3.7.2",
+              groups: [],
+              source: nil,
+              metadata: { packaging_type: "jar" }
+            }],
+            previous_requirements: [{
+              file: "pom.xml",
+              requirement: "3.4.6",
+              groups: [],
+              source: nil,
+              metadata: { packaging_type: "jar" }
+            }],
+            package_manager: "maven"
+          )
+        end
+
+        its(:content) do
+          is_expected.to include(
+            "  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.junit</groupId>
+        <artifactId>junit-bom</artifactId>
+        <version>5.11.0</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.zookeeper</groupId>
+        <artifactId>zookeeper</artifactId>
+        <version>3.7.2</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>"
+          )
+        end
+      end
+
+      context "with a new transitive dependency that is consistently formatted with tabs" do
+        let(:pom_body) do
+          fixture("poms", "transitive_dependency_pom_version_not_defined_with_tabs.xml")
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "org.apache.zookeeper:zookeeper",
+            version: "3.7.2",
+            requirements: [{
+              file: "pom.xml",
+              requirement: "3.7.2",
+              groups: [],
+              source: nil,
+              metadata: { packaging_type: "jar" }
+            }],
+            previous_requirements: [{
+              file: "pom.xml",
+              requirement: "3.4.6",
+              groups: [],
+              source: nil,
+              metadata: { packaging_type: "jar" }
+            }],
+            package_manager: "maven"
+          )
+        end
+
+        its(:content) do
+          is_expected.to include(
+            "	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.apache.zookeeper</groupId>
+				<artifactId>zookeeper</artifactId>
+				<version>3.7.2</version>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>"
+          )
+        end
+      end
+
       context "with a repeated dependency" do
         let(:pom_body) { fixture("poms", "repeated_pom.xml") }
         let(:dependency) do
@@ -644,8 +897,10 @@ RSpec.describe Dependabot::Maven::FileUpdater do
 
           it "updates the version in the POM" do
             expect(updated_pom_file.content)
-              .to include("<artifactId>basic-pom</artifactId>\n  " \
-                          "<version>5.0.0.RELEASE</version>")
+              .to include(
+                "<artifactId>basic-pom</artifactId>\n  " \
+                "<version>5.0.0.RELEASE</version>"
+              )
             expect(updated_pom_file.content)
               .to include("<version>4.5.3</version>")
           end

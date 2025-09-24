@@ -52,9 +52,18 @@ module Dependabot
     end
 
     class Mode
+      EXECUTABLE = "100755"
       FILE = "100644"
+      TREE = "040000"
       SUBMODULE = "160000"
+      SYMLINK = "120000"
     end
+
+    # See https://github.com/git/git/blob/a36e024e989f4d35f35987a60e3af8022cac3420/object.h#L144-L153
+    VALID_MODES = T.let(
+      [Mode::FILE, Mode::EXECUTABLE, Mode::TREE, Mode::SUBMODULE, Mode::SYMLINK].freeze,
+      T::Array[String]
+    )
 
     sig do
       params(
@@ -72,10 +81,19 @@ module Dependabot
       )
         .void
     end
-    def initialize(name:, content:, directory: "/", type: "file",
-                   support_file: false, vendored_file: false, symlink_target: nil,
-                   content_encoding: ContentEncoding::UTF_8, deleted: false,
-                   operation: Operation::UPDATE, mode: nil)
+    def initialize(
+      name:,
+      content:,
+      directory: "/",
+      type: "file",
+      support_file: false,
+      vendored_file: false,
+      symlink_target: nil,
+      content_encoding: ContentEncoding::UTF_8,
+      deleted: false,
+      operation: Operation::UPDATE,
+      mode: nil
+    )
       @name = name
       @content = content
       @directory = T.let(clean_directory(directory), String)
@@ -84,6 +102,8 @@ module Dependabot
       @vendored_file = vendored_file
       @content_encoding = content_encoding
       @operation = operation
+      @mode = mode
+      raise ArgumentError, "Invalid Git mode: #{mode}" if mode && !VALID_MODES.include?(mode)
 
       # Make deleted override the operation. Deleted is kept when operation
       # was introduced to keep compatibility with downstream dependants.
@@ -95,12 +115,6 @@ module Dependabot
       # New use cases should be avoided if at all possible (and use the
       # support_file flag instead)
       @type = type
-
-      begin
-        @mode = T.let(File.stat(realpath).mode.to_s(8), T.nilable(String))
-      rescue StandardError
-        @mode = mode
-      end
 
       return unless (type == "symlink") ^ symlink_target
 
@@ -118,9 +132,9 @@ module Dependabot
         "support_file" => support_file,
         "content_encoding" => content_encoding,
         "deleted" => deleted,
-        "operation" => operation,
-        "mode" => mode
+        "operation" => operation
       }
+      details["mode"] = mode if mode
 
       details["symlink_target"] = symlink_target if symlink_target
       details

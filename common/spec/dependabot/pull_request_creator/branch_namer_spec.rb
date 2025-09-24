@@ -38,7 +38,6 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
   let(:previous_version) { "1.4.0" }
   let(:files) { [gemfile] }
   let(:target_branch) { nil }
-  let(:existing_branches) { [] }
 
   let(:gemfile) do
     Dependabot::DependencyFile.new(
@@ -695,6 +694,25 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
         expect(strategy).to receive(:new_branch_name).and_return("dependabot/dummy/business-1.1.0")
 
         branch_namer.new_branch_name
+      end
+    end
+
+    context "when a multi-ecosystem is present" do
+      it "delegates to a multi-ecosystem strategy" do
+        strategy = instance_double(described_class::MultiEcosystemStrategy)
+        allow(described_class::MultiEcosystemStrategy).to receive(:new).and_return(strategy)
+
+        branch_namer =
+          described_class.new(
+            dependencies: dependencies,
+            files: files,
+            target_branch: target_branch,
+            multi_ecosystem_name: "multi_ecosystem"
+          )
+
+        expect(strategy).to receive(:new_branch_name).and_return("dependabot/multi_ecosystem")
+
+        expect(branch_namer.new_branch_name).to eq("dependabot/multi_ecosystem")
       end
     end
   end

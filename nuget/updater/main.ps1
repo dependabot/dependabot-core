@@ -1,9 +1,9 @@
 Set-StrictMode -version 2.0
 $ErrorActionPreference = "Stop"
 
+. $PSScriptRoot\common.ps1
+
 $updaterTool = "$env:DEPENDABOT_NATIVE_HELPERS_PATH/nuget/NuGetUpdater/NuGetUpdater.Cli"
-$jobString = Get-Content -Path $env:DEPENDABOT_JOB_PATH
-$job = (ConvertFrom-Json -InputObject $jobString).job
 
 # Function return values in PowerShell are wacky and contain all of the output produced during the function call.
 # Because of this, we need a reliable way to communicate _only_ the result of executing a single command, not its
@@ -13,76 +13,67 @@ $job = (ConvertFrom-Json -InputObject $jobString).job
 $operationExitCode = 0
 
 function Get-Files {
-    Write-Host "Job: $($job | ConvertTo-Json)"
-    & $updaterTool clone `
-        --job-path $env:DEPENDABOT_JOB_PATH `
-        --repo-contents-path $env:DEPENDABOT_REPO_CONTENTS_PATH `
-        --api-url $env:DEPENDABOT_API_URL `
-        --job-id $env:DEPENDABOT_JOB_ID
-    $script:operationExitCode = $LASTEXITCODE
-}
-
-function Install-Sdks {
-    $installedSdks = dotnet --list-sdks | ForEach-Object { $_.Split(' ')[0] }
-    if ($installedSdks.GetType().Name -eq "String") {
-        # if only a single value was returned (expected in the container), then force it to an array
-        $installedSdks = @($installedSdks)
+    $job = Get-Job -jobFilePath $env:DEPENDABOT_JOB_PATH
+    Write-Host "Job: $($job | ConvertTo-Json -Depth 99)"
+    if (Test-Path (Join-Path $env:DEPENDABOT_REPO_CONTENTS_PATH ".git")) {
+        # this can happen if the CLI specified the `--local` option
+        Write-Host "Git repository already exists, skipping clone."
+        $script:operationExitCode = 0
     }
-    Write-Host "Currently installed SDKs: $installedSdks"
-    $rootDir = Convert-Path $env:DEPENDABOT_REPO_CONTENTS_PATH
-
-    $candidateDirectories = @()
-    if ("directory" -in $job.source.PSobject.Properties.Name) {
-        $candidateDirectories += $job.source.directory
-    }
-    if ("directories" -in $job.source.PSobject.Properties.Name) {
-        $candidateDirectories += $job.source.directories
+    else {
+        & $updaterTool clone `
+            --job-path $env:DEPENDABOT_JOB_PATH `
+            --repo-contents-path $env:DEPENDABOT_REPO_CONTENTS_PATH `
+            --api-url $env:DEPENDABOT_API_URL `
+            --job-id $env:DEPENDABOT_JOB_ID
+        $script:operationExitCode = $LASTEXITCODE
     }
 
-    foreach ($candidateDirName in $candidateDirectories) {
-        $candidateFullPath = "$rootDir/$candidateDirName"
-        if (Test-Path $candidateFullPath) {
-            $candidateDir = Convert-Path $candidateFullPath
-            while ($true) {
-                $globalJsonPath = Join-Path $candidateDir "global.json"
-                if (Test-Path $globalJsonPath) {
-                    $globalJson = Get-Content $globalJsonPath | ConvertFrom-Json
-                    $sdkVersion = $globalJson.sdk.version
-                    if (-Not ($sdkVersion -in $installedSdks)) {
-                        $installedSdks += $sdkVersion
-                        Write-Host "Installing SDK $sdkVersion as specified in $globalJsonPath"
-                        & $env:DOTNET_INSTALL_SCRIPT_PATH --version $sdkVersion --install-dir $env:DOTNET_INSTALL_DIR
-                    }
-                }
-
-                $candidateDir = Split-Path -Parent $candidateDir
-                if ($candidateDir -eq $rootDir) {
-                    break
-                }
-            }
-        }
+    if (($script:operationExitCode -eq 0) -and ("$env:DEPENDABOT_CASE_INSENSITIVE_REPO_CONTENTS_PATH" -eq "")) {
+        # this only makes sense if the native clone operation succeeded and we're not running in case-insensitive mode
+        Repair-FileCasing
     }
-
-    # report the final set
-    dotnet --list-sdks
 }
 
 function Update-Files {
     # install relevant SDKs
-    Install-Sdks
+    Install-Sdks `
+        -jobFilePath $env:DEPENDABOT_JOB_PATH `
+        -repoContentsPath $env:DEPENDABOT_REPO_CONTENTS_PATH `
+        -dotnetInstallScriptPath $env:DOTNET_INSTALL_SCRIPT_PATH `
+        -dotnetInstallDir $env:DOTNET_INSTALL_DIR
     # TODO: install workloads?
+
+    Set-NuGetConfig
 
     Push-Location $env:DEPENDABOT_REPO_CONTENTS_PATH
     $baseCommitSha = git rev-parse HEAD
     Pop-Location
+    Write-Host "Base commit SHA: $baseCommitSha"
 
-    & $updaterTool run `
-        --job-path $env:DEPENDABOT_JOB_PATH `
-        --repo-contents-path $env:DEPENDABOT_REPO_CONTENTS_PATH `
-        --api-url $env:DEPENDABOT_API_URL `
-        --job-id $env:DEPENDABOT_JOB_ID `
-        --output-path $env:DEPENDABOT_OUTPUT_PATH `
-        --base-commit-sha $baseCommitSha
+    $arguments = @()
+    $arguments += "--job-path `"$env:DEPENDABOT_JOB_PATH`""
+    $arguments += "--repo-contents-path `"$env:DEPENDABOT_REPO_CONTENTS_PATH`""
+    $arguments += "--api-url `"$env:DEPENDABOT_API_URL`""
+    $arguments += "--job-id `"$env:DEPENDABOT_JOB_ID`""
+    $arguments += "--output-path `"$env:DEPENDABOT_OUTPUT_PATH`""
+    $arguments += "--base-commit-sha `"$baseCommitSha`""
+    if ("$env:DEPENDABOT_CASE_INSENSITIVE_REPO_CONTENTS_PATH" -ne "") {
+        # ensure the updater gets this optional path
+        $arguments += "--case-insensitive-repo-contents-path `"$env:DEPENDABOT_CASE_INSENSITIVE_REPO_CONTENTS_PATH`""
+
+        # redirect the local package cache to the case-insensitive path...
+        $caseInsensitiveRoot = Join-Path $env:DEPENDABOT_CASE_INSENSITIVE_REPO_CONTENTS_PATH ".."
+        $env:NUGET_PACKAGES = "$caseInsensitiveRoot/.nuget/packages"
+        $env:NUGET_HTTP_CACHE_PATH = "$caseInsensitiveRoot/.nuget/http-cache"
+        $env:NUGET_SCRATCH = "$caseInsensitiveRoot/.nuget/scratch"
+        $env:NUGET_PLUGINS_CACHE_PATH = "$caseInsensitiveRoot/.nuget/plugins-cache"
+
+        # ...but still allow read access to the pre-populated packages
+        $env:NUGET_FALLBACK_PACKAGES = "$env:DEPENDABOT_HOME/.nuget/packages"
+    }
+
+    Invoke-Expression -Command "$updaterTool run $arguments"
     $script:operationExitCode = $LASTEXITCODE
 }
 

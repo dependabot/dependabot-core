@@ -39,7 +39,7 @@ internal abstract class JsonBuildFile : BuildFile<string>
             {
                 // We can't police that people have legal JSON files.
                 // If they don't, we just return null.
-                logger.Log($"Failed to parse JSON file: {RelativePath}, got {ex}");
+                logger.Warn($"Failed to parse JSON file: {RelativePath}, got {ex}");
                 FailedToParse = true;
                 return null;
             }

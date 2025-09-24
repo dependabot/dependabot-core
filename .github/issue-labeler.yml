@@ -4,14 +4,23 @@
 "L: rust:cargo":
     - '(rust|cargo)'
 
+"L: rust:rust-toolchain":
+    - '(rust[-_]toolchain)'
+
 "L: php:composer":
     - '(php|composer)'
+
+"L: cpp:vcpkg":
+    - '(vcpkg)'
 
 "L: devcontainers":
     - '(devcontainers)'
 
 "L: docker":
     - '(docker|kubernetes)'
+
+"L: docker:compose":
+    - '(docker_compose)'
 
 "L: elm":
     - '(elm)'
@@ -23,10 +32,10 @@
     - '(actions)'
 
 "L: go:modules":
-    - '(go|gomod)'
+    - '(golang|gomod)'
 
 "L: javascript":
-    - '(javascript|npm|pnpm|yarn)'
+    - '(javascript|npm|pnpm|yarn|bun)'
 
 "L: java:gradle":
     - '(gradle)'
@@ -40,14 +49,26 @@
 "L: dotnet:nuget":
     - '(nuget)'
 
+"L: dotnet:dotnet-sdk":
+    - '(dotnet(?:[-_]sdk)?|\.NET)'
+
 "L: dart:pub":
     - '(dart|pub)'
 
 "L: python":
-    - '(python|pip|poetry)'
+    - '(python|pip|poetry|uv|conda)'
+
+"L: python:uv":
+    - '(uv)'
+
+"L: python:conda":
+    - '(conda)'
 
 "L: terraform":
     - '(terraform)'
 
 "L: swift":
     - '(swift)'
+
+"L: helm":
+    - '(helm)'

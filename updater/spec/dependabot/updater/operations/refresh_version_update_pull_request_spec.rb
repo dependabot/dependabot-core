@@ -37,7 +37,8 @@ RSpec.describe Dependabot::Updater::Operations::RefreshVersionUpdatePullRequest 
       create_pull_request: nil,
       update_pull_request: nil,
       close_pull_request: nil,
-      record_ecosystem_meta: nil
+      record_ecosystem_meta: nil,
+      record_cooldown_meta: nil
     )
   end
   let(:mock_error_handler) { instance_double(Dependabot::Updater::ErrorHandler) }
@@ -81,10 +82,12 @@ RSpec.describe Dependabot::Updater::Operations::RefreshVersionUpdatePullRequest 
   let(:deprecated_versions) { %w(1) }
 
   let(:job_definition_with_fetched_files) do
-    job_definition.merge({
-      "base_commit_sha" => "mock-sha",
-      "base64_dependency_files" => encode_dependency_files(dependency_files)
-    })
+    job_definition.merge(
+      {
+        "base_commit_sha" => "mock-sha",
+        "base64_dependency_files" => encode_dependency_files(dependency_files)
+      }
+    )
   end
 
   let(:dependency_files) do
@@ -140,6 +143,12 @@ RSpec.describe Dependabot::Updater::Operations::RefreshVersionUpdatePullRequest 
 
   before do
     allow(Dependabot::Experiments).to receive(:enabled?).with(:lead_security_dependency).and_return(false)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_shared_helpers_command_timeout)
+      .and_return(true)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_exclude_paths_subdirectory_manifest_files)
+      .and_return(true)
 
     allow(Dependabot::UpdateCheckers).to receive(:for_package_manager).and_return(stub_update_checker_class)
     allow(Dependabot::DependencyChangeBuilder)

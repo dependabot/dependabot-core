@@ -1,14 +1,20 @@
-using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
+using NuGet.Versioning;
+
 using NuGetUpdater.Core.Analyze;
+using NuGetUpdater.Core.DependencySolver;
+using NuGetUpdater.Core.Discover;
+using NuGetUpdater.Core.Run.ApiModel;
 using NuGetUpdater.Core.Updater;
+using NuGetUpdater.Core.Updater.FileWriters;
 
 namespace NuGetUpdater.Core;
 
 public class UpdaterWorker : IUpdaterWorker
 {
+    private readonly string _jobId;
     private readonly ExperimentsManager _experimentsManager;
     private readonly ILogger _logger;
     private readonly HashSet<string> _processedProjectPaths = new(StringComparer.OrdinalIgnoreCase);
@@ -16,11 +22,12 @@ public class UpdaterWorker : IUpdaterWorker
     internal static readonly JsonSerializerOptions SerializerOptions = new()
     {
         WriteIndented = true,
-        Converters = { new JsonStringEnumConverter() },
+        Converters = { new JsonStringEnumConverter(), new VersionConverter() },
     };
 
-    public UpdaterWorker(ExperimentsManager experimentsManager, ILogger logger)
+    public UpdaterWorker(string jobId, ExperimentsManager experimentsManager, ILogger logger)
     {
+        _jobId = jobId;
         _experimentsManager = experimentsManager;
         _logger = logger;
     }
@@ -37,198 +44,67 @@ public class UpdaterWorker : IUpdaterWorker
     // this is a convenient method for tests
     internal async Task<UpdateOperationResult> RunWithErrorHandlingAsync(string repoRootPath, string workspacePath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, bool isTransitive)
     {
-        UpdateOperationResult result = new(); // assumed to be ok until proven otherwise
         try
         {
-            result = await RunAsync(repoRootPath, workspacePath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive);
+            var result = await RunAsync(repoRootPath, workspacePath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive);
+            return result;
         }
-        catch (HttpRequestException ex)
-        when (ex.StatusCode == HttpStatusCode.Unauthorized || ex.StatusCode == HttpStatusCode.Forbidden)
+        catch (Exception ex)
         {
             if (!Path.IsPathRooted(workspacePath) || !File.Exists(workspacePath))
             {
                 workspacePath = Path.GetFullPath(Path.Join(repoRootPath, workspacePath));
             }
 
-            result = new()
+            var error = JobErrorBase.ErrorFromException(ex, _jobId, workspacePath);
+            var result = new UpdateOperationResult()
             {
-                ErrorType = ErrorType.AuthenticationFailure,
-                ErrorDetails = "(" + string.Join("|", NuGetContext.GetPackageSourceUrls(workspacePath)) + ")",
+                UpdateOperations = [],
+                Error = error,
             };
+            return result;
         }
-        catch (MissingFileException ex)
-        {
-            result = new()
-            {
-                ErrorType = ErrorType.MissingFile,
-                ErrorDetails = ex.FilePath,
-            };
-        }
-        catch (UpdateNotPossibleException ex)
-        {
-            result = new()
-            {
-                ErrorType = ErrorType.UpdateNotPossible,
-                ErrorDetails = ex.Dependencies,
-            };
-        }
-        catch (Exception ex)
-        {
-            result = new()
-            {
-                ErrorType = ErrorType.Unknown,
-                ErrorDetails = ex.ToString(),
-            };
-        }
-
-        return result;
     }
 
     public async Task<UpdateOperationResult> RunAsync(string repoRootPath, string workspacePath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, bool isTransitive)
     {
-        MSBuildHelper.RegisterMSBuild(Environment.CurrentDirectory, repoRootPath);
+        MSBuildHelper.RegisterMSBuild(Environment.CurrentDirectory, repoRootPath, _logger);
 
         if (!Path.IsPathRooted(workspacePath) || !File.Exists(workspacePath))
         {
             workspacePath = Path.GetFullPath(Path.Join(repoRootPath, workspacePath));
         }
 
-        if (!isTransitive)
+        var worker = new FileWriterWorker(
+            new DiscoveryWorker(_jobId, _experimentsManager, _logger),
+            new MSBuildDependencySolver(new DirectoryInfo(repoRootPath), new FileInfo(workspacePath), _logger),
+            new XmlFileWriter(_logger),
+            _logger
+        );
+        var updateOperations = await worker.RunAsync(
+            new DirectoryInfo(repoRootPath),
+            new FileInfo(workspacePath),
+            dependencyName,
+            NuGetVersion.Parse(previousDependencyVersion),
+            NuGetVersion.Parse(newDependencyVersion)
+        );
+        return new UpdateOperationResult()
         {
-            await DotNetToolsJsonUpdater.UpdateDependencyAsync(repoRootPath, workspacePath, dependencyName, previousDependencyVersion, newDependencyVersion, _logger);
-            await GlobalJsonUpdater.UpdateDependencyAsync(repoRootPath, workspacePath, dependencyName, previousDependencyVersion, newDependencyVersion, _logger);
-        }
+            UpdateOperations = updateOperations,
+        };
+    }
 
-        var extension = Path.GetExtension(workspacePath).ToLowerInvariant();
-        switch (extension)
-        {
-            case ".sln":
-                await RunForSolutionAsync(repoRootPath, workspacePath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive);
-                break;
-            case ".proj":
-                await RunForProjFileAsync(repoRootPath, workspacePath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive);
-                break;
-            case ".csproj":
-            case ".fsproj":
-            case ".vbproj":
-                await RunForProjectAsync(repoRootPath, workspacePath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive);
-                break;
-            default:
-                _logger.Log($"File extension [{extension}] is not supported.");
-                break;
-        }
-
-        _logger.Log("Update complete.");
-
-        _processedProjectPaths.Clear();
-        return new UpdateOperationResult();
+    internal static string Serialize(UpdateOperationResult result)
+    {
+        var resultJson = JsonSerializer.Serialize(result, SerializerOptions);
+        return resultJson;
     }
 
     internal static async Task WriteResultFile(UpdateOperationResult result, string resultOutputPath, ILogger logger)
     {
-        logger.Log($"  Writing update result to [{resultOutputPath}].");
+        logger.Info($"  Writing update result to [{resultOutputPath}].");
 
-        var resultJson = JsonSerializer.Serialize(result, SerializerOptions);
+        var resultJson = Serialize(result);
         await File.WriteAllTextAsync(resultOutputPath, resultJson);
-    }
-
-    private async Task RunForSolutionAsync(
-        string repoRootPath,
-        string solutionPath,
-        string dependencyName,
-        string previousDependencyVersion,
-        string newDependencyVersion,
-        bool isTransitive)
-    {
-        _logger.Log($"Running for solution [{Path.GetRelativePath(repoRootPath, solutionPath)}]");
-        var projectPaths = MSBuildHelper.GetProjectPathsFromSolution(solutionPath);
-        foreach (var projectPath in projectPaths)
-        {
-            await RunForProjectAsync(repoRootPath, projectPath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive);
-        }
-    }
-
-    private async Task RunForProjFileAsync(
-        string repoRootPath,
-        string projFilePath,
-        string dependencyName,
-        string previousDependencyVersion,
-        string newDependencyVersion,
-        bool isTransitive)
-    {
-        _logger.Log($"Running for proj file [{Path.GetRelativePath(repoRootPath, projFilePath)}]");
-        if (!File.Exists(projFilePath))
-        {
-            _logger.Log($"File [{projFilePath}] does not exist.");
-            return;
-        }
-
-        var projectFilePaths = MSBuildHelper.GetProjectPathsFromProject(projFilePath);
-        foreach (var projectFullPath in projectFilePaths)
-        {
-            // If there is some MSBuild logic that needs to run to fully resolve the path skip the project
-            if (File.Exists(projectFullPath))
-            {
-                await RunForProjectAsync(repoRootPath, projectFullPath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive);
-            }
-        }
-    }
-
-    private async Task RunForProjectAsync(
-        string repoRootPath,
-        string projectPath,
-        string dependencyName,
-        string previousDependencyVersion,
-        string newDependencyVersion,
-        bool isTransitive)
-    {
-        _logger.Log($"Running for project file [{Path.GetRelativePath(repoRootPath, projectPath)}]");
-        if (!File.Exists(projectPath))
-        {
-            _logger.Log($"File [{projectPath}] does not exist.");
-            return;
-        }
-
-        var projectFilePaths = MSBuildHelper.GetProjectPathsFromProject(projectPath);
-        foreach (var projectFullPath in projectFilePaths.Concat([projectPath]))
-        {
-            // If there is some MSBuild logic that needs to run to fully resolve the path skip the project
-            if (File.Exists(projectFullPath))
-            {
-                await RunUpdaterAsync(repoRootPath, projectFullPath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive);
-            }
-        }
-    }
-
-    private async Task RunUpdaterAsync(
-        string repoRootPath,
-        string projectPath,
-        string dependencyName,
-        string previousDependencyVersion,
-        string newDependencyVersion,
-        bool isTransitive)
-    {
-        if (_processedProjectPaths.Contains(projectPath))
-        {
-            return;
-        }
-
-        _processedProjectPaths.Add(projectPath);
-
-        _logger.Log($"Updating project [{projectPath}]");
-
-        if (NuGetHelper.TryGetPackagesConfigFile(projectPath, out var packagesConfigPath))
-        {
-            await PackagesConfigUpdater.UpdateDependencyAsync(repoRootPath, projectPath, dependencyName, previousDependencyVersion, newDependencyVersion, packagesConfigPath, _logger);
-        }
-
-        // Some repos use a mix of packages.config and PackageReference
-        await PackageReferenceUpdater.UpdateDependencyAsync(repoRootPath, projectPath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive, _experimentsManager, _logger);
-
-        // Update lock file if exists
-        if (File.Exists(Path.Combine(Path.GetDirectoryName(projectPath), "packages.lock.json")))
-        {
-            await LockFileUpdater.UpdateLockFileAsync(repoRootPath, projectPath, _logger);
-        }
     }
 }

@@ -31,8 +31,10 @@ RSpec.describe Dependabot::GoModules::FileParser do
   let(:parser) { described_class.new(dependency_files: files, source: source, repo_contents_path: repo_contents_path) }
 
   after do
-    # Reset to the default go toolchain after each test
-    ENV["GOTOOLCHAIN"] = ENV.fetch("GO_LEGACY")
+    # Reset the environment variable after each test to avoid side effects
+    ENV.delete("GOENV")
+    ENV.delete("GOPROXY")
+    ENV.delete("GOPRIVATE")
   end
 
   it_behaves_like "a dependency file parser"
@@ -41,6 +43,68 @@ RSpec.describe Dependabot::GoModules::FileParser do
     expect do
       described_class.new(dependency_files: [], source: source)
     end.to raise_error(RuntimeError)
+  end
+
+  describe "#initialize" do
+    it "configures the Go toolchain with the values from the go.env file" do
+      go_env = Dependabot::DependencyFile.new(
+        name: "go.env",
+        content: "GOPRIVATE=github.com/dependabot-fixtures",
+        directory: directory
+      )
+      described_class.new(dependency_files: [go_mod, go_env], source: source)
+      expect(`go env GOPRIVATE`.strip).to eq("github.com/dependabot-fixtures")
+    end
+
+    it "does not set the GOENV environment variable if no go.env file is present" do
+      expect(ENV.fetch("GOENV", nil)).to be_nil
+    end
+
+    it "sets the GOPROXY environment variable if there are any goproxy_server credentials passed" do
+      credentials = [
+        Dependabot::Credential.new(
+          {
+            "type" => "goproxy_server",
+            "url" => "https://proxy.example.com"
+          }
+        )
+      ]
+      described_class.new(dependency_files: [go_mod], source: source, credentials: credentials)
+      expect(`go env GOPROXY`.strip).to eq("https://proxy.example.com,direct")
+    end
+
+    it "does not set the GOPROXY environment variable if there are no goproxy_server credentials" do
+      described_class.new(dependency_files: [go_mod], source: source)
+      expect(`go env GOPROXY`.strip).to eq("https://proxy.golang.org,direct")
+    end
+
+    it "does not override the GOPROXY environment variable if it is already set in the go.env file" do
+      go_env = Dependabot::DependencyFile.new(
+        name: "go.env",
+        content: "GOPROXY=https://proxy.example.com",
+        directory: directory
+      )
+      described_class.new(dependency_files: [go_mod, go_env], source: source)
+      expect(`go env GOPROXY`.strip).to eq("https://proxy.example.com")
+    end
+
+    it "does not set the GOPRIVATE environment variable if a goproxy_server credential is passed" do
+      credentials = [
+        Dependabot::Credential.new(
+          {
+            "type" => "goproxy_server",
+            "url" => "https://proxy.example.com"
+          }
+        )
+      ]
+      described_class.new(
+        dependency_files: [go_mod],
+        source: source,
+        credentials: credentials,
+        options: { goprivate: "*" }
+      )
+      expect(`go env GOPRIVATE`.strip).to be_empty
+    end
   end
 
   describe "parse" do
@@ -127,16 +191,6 @@ RSpec.describe Dependabot::GoModules::FileParser do
               }]
             )
           end
-        end
-      end
-
-      context "with a go.mod that has go 1.21 but no toolchain" do
-        let(:go_mod_fixture_name) { "go_1_21_no_toolchain.mod" }
-
-        it "sets GOTOOLCHAIN=local+auto" do
-          parser.parse
-
-          expect(ENV.fetch("GOTOOLCHAIN", nil)).to eq("local+auto")
         end
       end
     end
@@ -252,8 +306,10 @@ RSpec.describe Dependabot::GoModules::FileParser do
     describe "a non-existent dependency with a pseudo-version" do
       let(:go_mod_content) do
         go_mod = fixture("go_mods", go_mod_fixture_name)
-        go_mod.sub("rsc.io/quote v1.4.0",
-                   "github.com/hmarr/404 v0.0.0-20181216014959-b89dc648a159")
+        go_mod.sub(
+          "rsc.io/quote v1.4.0",
+          "github.com/hmarr/404 v0.0.0-20181216014959-b89dc648a159"
+        )
       end
 
       it "does not raise an error" do
@@ -268,8 +324,10 @@ RSpec.describe Dependabot::GoModules::FileParser do
 
       let(:go_mod_content) do
         go_mod = fixture("go_mods", go_mod_fixture_name)
-        go_mod.sub("rsc.io/quote v1.4.0",
-                   "gonum.org/v1/plot v0.0.0-20181116082555-59819fff2fb9")
+        go_mod.sub(
+          "rsc.io/quote v1.4.0",
+          "gonum.org/v1/plot v0.0.0-20181116082555-59819fff2fb9"
+        )
       end
 
       it "has the right details" do
@@ -327,9 +385,11 @@ RSpec.describe Dependabot::GoModules::FileParser do
 
       it "parses root file" do
         expect(dependencies.map(&:name))
-          .to eq(%w(
-            rsc.io/qr
-          ))
+          .to eq(
+            %w(
+              rsc.io/qr
+            )
+          )
       end
 
       context "when there is a nested file" do
@@ -338,9 +398,11 @@ RSpec.describe Dependabot::GoModules::FileParser do
 
         it "parses nested file" do
           expect(dependencies.map(&:name))
-            .to eq(%w(
-              rsc.io/qr
-            ))
+            .to eq(
+              %w(
+                rsc.io/qr
+              )
+            )
         end
       end
     end
@@ -352,6 +414,34 @@ RSpec.describe Dependabot::GoModules::FileParser do
 
       it "parses ignores invalid dependency" do
         expect(dependencies.map(&:name)).to eq([])
+      end
+    end
+  end
+
+  describe "#ecosystem" do
+    subject(:ecosystem) { parser.ecosystem }
+
+    it "has the correct name" do
+      expect(ecosystem.name).to eq "go"
+    end
+
+    describe "#package_manager" do
+      subject(:package_manager) { ecosystem.package_manager }
+
+      it "returns the correct package manager" do
+        expect(package_manager.name).to eq "go_modules"
+        expect(package_manager.requirement).to be_nil
+        expect(package_manager.version.to_s).to eq "1.25.0"
+      end
+    end
+
+    describe "#language" do
+      subject(:language) { ecosystem.language }
+
+      it "returns the correct language" do
+        expect(language.name).to eq "go"
+        expect(language.requirement).to be_nil
+        expect(language.version.to_s).to eq "1.12"
       end
     end
   end

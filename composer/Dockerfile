@@ -1,6 +1,6 @@
 FROM ghcr.io/dependabot/dependabot-updater-core
-ARG COMPOSER_V1_VERSION=1.10.27
-ARG COMPOSER_V2_VERSION=2.7.7
+ARG COMPOSER_V2_VERSION=2.8.10
+ARG PHP_VERSION=8.4
 ENV COMPOSER_ALLOW_SUPERUSER=1
 RUN apt-get update \
   && apt-get upgrade -y \
@@ -9,36 +9,33 @@ RUN apt-get update \
 RUN add-apt-repository ppa:ondrej/php \
   && apt-get update \
   && apt-get install -y --no-install-recommends \
-    php7.4 \
-    php7.4-apcu \
-    php7.4-bcmath \
-    php7.4-cli \
-    php7.4-common \
-    php7.4-curl \
-    php7.4-gd \
-    php7.4-geoip \
-    php7.4-gettext \
-    php7.4-gmp \
-    php7.4-imagick \
-    php7.4-imap \
-    php7.4-intl \
-    php7.4-json \
-    php7.4-ldap \
-    php7.4-mbstring \
-    php7.4-memcached \
-    php7.4-mongodb \
-    php7.4-mysql \
-    php7.4-redis \
-    php7.4-soap \
-    php7.4-sqlite3 \
-    php7.4-tidy \
-    php7.4-xml \
-    php7.4-zip \
-    php7.4-zmq \
-    php7.4-mcrypt \
+    php${PHP_VERSION} \
+    php${PHP_VERSION}-apcu \
+    php${PHP_VERSION}-bcmath \
+    php${PHP_VERSION}-cli \
+    php${PHP_VERSION}-common \
+    php${PHP_VERSION}-curl \
+    php${PHP_VERSION}-gd \
+    php${PHP_VERSION}-gettext \
+    php${PHP_VERSION}-gmp \
+    php${PHP_VERSION}-imagick \
+    php${PHP_VERSION}-imap \
+    php${PHP_VERSION}-intl \
+    php${PHP_VERSION}-ldap \
+    php${PHP_VERSION}-mbstring \
+    php${PHP_VERSION}-memcached \
+    php${PHP_VERSION}-mongodb \
+    php${PHP_VERSION}-mysql \
+    php${PHP_VERSION}-redis \
+    php${PHP_VERSION}-soap \
+    php${PHP_VERSION}-sqlite3 \
+    php${PHP_VERSION}-tidy \
+    php${PHP_VERSION}-xml \
+    php${PHP_VERSION}-zip \
+    php${PHP_VERSION}-zmq \
+    php${PHP_VERSION}-mcrypt \
   && rm -rf /var/lib/apt/lists/*
 
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer1 --version=${COMPOSER_V1_VERSION}
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer --version=${COMPOSER_V2_VERSION}
 
 USER dependabot

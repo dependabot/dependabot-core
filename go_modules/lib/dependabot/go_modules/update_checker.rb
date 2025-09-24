@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -66,7 +66,7 @@ module Dependabot
             ignored_versions: ignored_versions,
             security_advisories: security_advisories,
             raise_on_ignored: raise_on_ignored,
-            goprivate: options.fetch(:goprivate, "*")
+            cooldown_options: update_cooldown
           ),
           T.nilable(Dependabot::GoModules::UpdateChecker::LatestVersionFinder)
         )

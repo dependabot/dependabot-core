@@ -28,6 +28,15 @@ public partial class EntryPointTests
                 ],
                 files:
                 [
+                    ("Directory.Build.props", "<Project />"),
+                    ("Directory.Build.targets", "<Project />"),
+                    ("Directory.Packages.props", """
+                        <Project>
+                          <PropertyGroup>
+                            <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+                          </PropertyGroup>
+                        </Project>
+                        """),
                     ("src/project.csproj", """
                         <Project Sdk="Microsoft.NET.Sdk">
                           <PropertyGroup>
@@ -41,12 +50,6 @@ public partial class EntryPointTests
                 ],
                 job: new Job()
                 {
-                    AllowedUpdates = [
-                        new()
-                        {
-                            UpdateType = "all"
-                        }
-                    ],
                     Source = new()
                     {
                         Provider = "github",
@@ -56,15 +59,15 @@ public partial class EntryPointTests
                 },
                 expectedUrls:
                 [
-                    "/update_jobs/TEST-ID/update_dependency_list",
-                    "/update_jobs/TEST-ID/increment_metric",
-                    "/update_jobs/TEST-ID/create_pull_request",
-                    "/update_jobs/TEST-ID/mark_as_processed",
+                    "POST /update_jobs/TEST-ID/increment_metric",
+                    "POST /update_jobs/TEST-ID/update_dependency_list",
+                    "POST /update_jobs/TEST-ID/create_pull_request",
+                    "PATCH /update_jobs/TEST-ID/mark_as_processed",
                 ]
             );
         }
 
-        private static async Task RunAsync(TestFile[] files, Job job, string[] expectedUrls, MockNuGetPackage[]? packages = null)
+        private static async Task RunAsync(TestFile[] files, Job job, string[] expectedUrls, MockNuGetPackage[]? packages = null, string? repoContentsPath = null)
         {
             using var tempDirectory = new TemporaryDirectory();
 
@@ -85,9 +88,9 @@ public partial class EntryPointTests
             await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(packages, tempDirectory.DirectoryPath);
 
             var actualUrls = new List<string>();
-            using var http = TestHttpServer.CreateTestStringServer(url =>
+            using var http = TestHttpServer.CreateTestStringServer((method, url) =>
             {
-                actualUrls.Add(new Uri(url).PathAndQuery);
+                actualUrls.Add($"{method} {new Uri(url).PathAndQuery}");
                 return (200, "ok");
             });
             var args = new List<string>()
@@ -96,7 +99,7 @@ public partial class EntryPointTests
                 "--job-path",
                 jobPath,
                 "--repo-contents-path",
-                tempDirectory.DirectoryPath,
+                repoContentsPath ?? tempDirectory.DirectoryPath,
                 "--api-url",
                 http.BaseUrl,
                 "--job-id",

@@ -35,6 +35,11 @@ module Dependabot
       )
       FAILED_GIT_CLONE = T.let(/^Failed to clone (?<url>.*?)/, Regexp)
 
+      GIT_REPO_URL = T.let(
+        %r{((git|ssh|http(s)?)|(git@[\w\.]+))(:(//)?)([\w\.@\:/\-~]+)(/)?},
+        Regexp
+      )
+
       sig do
         params(
           composer_json: T::Hash[String, T.untyped],
@@ -45,8 +50,8 @@ module Dependabot
       def self.composer_version(composer_json, parsed_lockfile = nil)
         # If the parsed lockfile has a plugin API version, we return either V1 or V2
         # based on the major version of the lockfile.
-        if parsed_lockfile && parsed_lockfile["plugin-api-version"]
-          version = Composer::Version.new(parsed_lockfile["plugin-api-version"])
+        if parsed_lockfile && parsed_lockfile[PackageManager::PLUGIN_API_VERSION_KEY]
+          version = Composer::Version.new(parsed_lockfile[PackageManager::PLUGIN_API_VERSION_KEY])
           major_version = version.canonical_segments.first
 
           return major_version.nil? || major_version > 1 ? V2 : V1
@@ -78,8 +83,8 @@ module Dependabot
 
       sig { params(message: String, regex: Regexp).returns(T.nilable(String)) }
       def self.extract_and_clean_dependency_url(message, regex)
-        if (match_data = message.match(regex))
-          dependency_url = match_data.named_captures.fetch("url")
+        if message.match(regex)
+          dependency_url = message[GIT_REPO_URL]
           if dependency_url.nil? || dependency_url.empty?
             raise "Could not parse dependency_url from git clone error: #{message}"
           end
@@ -89,11 +94,84 @@ module Dependabot
         nil
       end
 
+      # Run single composer command returning stdout/stderr
+      sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
+      def self.package_manager_run_command(command, fingerprint: nil)
+        full_command = "composer #{command}"
+
+        Dependabot.logger.info("Running composer command: #{full_command}")
+
+        result = Dependabot::SharedHelpers.run_shell_command(
+          full_command,
+          fingerprint: "composer #{fingerprint || command}"
+        ).strip
+
+        Dependabot.logger.info("Command executed successfully: #{full_command}")
+        result
+      rescue StandardError => e
+        Dependabot.logger.error("Error running composer command: #{full_command}, Error: #{e.message}")
+        raise
+      end
+
+      # Example output:
+      # [dependabot] ~ $ composer --version
+      # Composer version 2.7.7 2024-06-10 22:11:12
+      # PHP version 7.4.33 (/usr/bin/php7.4)
+      # Run the "diagnose" command to get more detailed diagnostics output.
+      # Get the version of the composer and php form the command output
+      # @return [Hash] with the composer and php version
+      # => { composer: "2.7.7", php: "7.4.33" }
+      sig { returns(T::Hash[Symbol, T.nilable(String)]) }
+      def self.fetch_composer_and_php_versions
+        output = package_manager_run_command("--version").strip
+
+        composer_version = capture_version(output, /Composer version (?<version>\d+\.\d+\.\d+)/)
+        php_version = capture_version(output, /PHP version (?<version>\d+\.\d+\.\d+)/)
+
+        Dependabot.logger.info("Dependabot running with Composer version: #{composer_version}")
+        Dependabot.logger.info("Dependabot running with PHP version: #{php_version}")
+
+        { composer: composer_version, php: php_version }
+      rescue StandardError => e
+        Dependabot.logger.error("Error fetching versions for package manager and language #{name}: #{e.message}")
+        {}
+      end
+
+      sig { params(output: String, regex: Regexp).returns(T.nilable(String)) }
+      def self.capture_version(output, regex)
+        match = output.match(regex)
+        match&.named_captures&.fetch("version", nil)
+      end
+
+      # Capture the platform PHP version from composer.json
+      sig { params(parsed_composer_json: T::Hash[String, T.untyped]).returns(T.nilable(String)) }
+      def self.capture_platform_php(parsed_composer_json)
+        capture_platform(parsed_composer_json, Language::NAME)
+      end
+
+      # Capture the platform extension from composer.json
+      sig { params(parsed_composer_json: T::Hash[String, T.untyped], name: String).returns(T.nilable(String)) }
+      def self.capture_platform(parsed_composer_json, name)
+        parsed_composer_json.dig(PackageManager::CONFIG_KEY, PackageManager::PLATFORM_KEY, name)
+      end
+
+      # Capture PHP version constraint from composer.json
+      sig { params(parsed_composer_json: T::Hash[String, T.untyped]).returns(T.nilable(String)) }
+      def self.php_constraint(parsed_composer_json)
+        dependency_constraint(parsed_composer_json, Language::NAME)
+      end
+
+      # Capture extension version constraint from composer.json
+      sig { params(parsed_composer_json: T::Hash[String, T.untyped], name: String).returns(T.nilable(String)) }
+      def self.dependency_constraint(parsed_composer_json, name)
+        parsed_composer_json.dig(PackageManager::REQUIRE_KEY, name)
+      end
+
       sig { params(composer_json: T::Hash[String, T.untyped]).returns(T::Boolean) }
       def self.invalid_v2_requirement?(composer_json)
-        return false unless composer_json.key?("require")
+        return false unless composer_json.key?(PackageManager::REQUIRE_KEY)
 
-        composer_json["require"].keys.any? do |key|
+        composer_json[PackageManager::REQUIRE_KEY].keys.any? do |key|
           key !~ PLATFORM_PACKAGE_REGEX && key !~ COMPOSER_V2_NAME_REGEX
         end
       end
@@ -101,7 +179,7 @@ module Dependabot
 
       sig { params(dependency_url: String).returns(String) }
       def self.clean_dependency_url(dependency_url)
-        return dependency_url unless URI::DEFAULT_PARSER.regexp[:ABS_URI].match?(dependency_url)
+        return dependency_url unless URI::RFC2396_PARSER.regexp[:ABS_URI].match?(dependency_url)
 
         url = URI.parse(dependency_url)
         url.user = nil

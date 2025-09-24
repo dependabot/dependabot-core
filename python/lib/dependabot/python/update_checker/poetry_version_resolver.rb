@@ -1,6 +1,7 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
+require "sorbet-runtime"
 require "excon"
 require "toml-rb"
 require "open3"
@@ -43,23 +44,55 @@ module Dependabot
 
         INCOMPATIBLE_CONSTRAINTS = /Incompatible constraints in requirements of (?<dep>.+?) ((?<ver>.+?)):/
 
+        PACKAGE_RESOLVER_ERRORS = T.let(
+          {
+            package_info_error: /Unable to determine package info/,
+            self_dep_error: /Package '(?<path>.*)' is listed as a dependency of itself./,
+            incompatible_constraints: /Incompatible constraints in requirements/
+          }.freeze,
+          T::Hash[T.nilable(String), Regexp]
+        )
+
+        sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
+
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
+
+        sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
+
+        sig { returns(T.nilable(String)) }
         attr_reader :repo_contents_path
 
         sig { returns(Dependabot::Python::PoetryErrorHandler) }
         attr_reader :error_handler
 
+        sig do
+          params(
+            dependency: Dependabot::Dependency,
+            dependency_files: T::Array[Dependabot::DependencyFile],
+            credentials: T::Array[Dependabot::Credential],
+            repo_contents_path: T.nilable(String)
+          ).void
+        end
         def initialize(dependency:, dependency_files:, credentials:, repo_contents_path:)
-          @dependency               = dependency
-          @dependency_files         = dependency_files
-          @credentials              = credentials
-          @repo_contents_path       = repo_contents_path
-          @error_handler = PoetryErrorHandler.new(dependencies: dependency,
-                                                  dependency_files: dependency_files)
+          @dependency               = T.let(dependency, Dependabot::Dependency)
+          @dependency_files         = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
+          @credentials              = T.let(credentials, T::Array[Dependabot::Credential])
+          @repo_contents_path       = T.let(repo_contents_path, T.nilable(String))
+          @error_handler = T.let(
+            PoetryErrorHandler.new(dependencies: dependency, dependency_files: dependency_files),
+            Dependabot::Python::PoetryErrorHandler
+          )
+          @resolvable = T.let({}, T::Hash[Gem::Version, T::Boolean])
+          @latest_resolvable_version_string = T.let({}, T::Hash[T.nilable(String), T.nilable(String)])
+          @original_reqs_resolvable = T.let(nil, T.nilable(T::Boolean))
+          @python_requirement_parser = T.let(nil, T.nilable(FileParser::PythonRequirementParser))
+          @language_version_manager = T.let(nil, T.nilable(LanguageVersionManager))
         end
 
+        sig { params(requirement: T.nilable(String)).returns(T.nilable(Dependabot::Python::Version)) }
         def latest_resolvable_version(requirement: nil)
           version_string =
             fetch_latest_resolvable_version_string(requirement: requirement)
@@ -67,9 +100,9 @@ module Dependabot
           version_string.nil? ? nil : Python::Version.new(version_string)
         end
 
+        sig { params(version: Gem::Version).returns(T::Boolean) }
         def resolvable?(version:)
-          @resolvable ||= {}
-          return @resolvable[version] if @resolvable.key?(version)
+          return T.must(@resolvable[version]) if @resolvable.key?(version)
 
           @resolvable[version] = if fetch_latest_resolvable_version_string(requirement: "==#{version}")
                                    true
@@ -84,8 +117,8 @@ module Dependabot
 
         private
 
+        sig { params(requirement: T.nilable(String)).returns(T.nilable(String)) }
         def fetch_latest_resolvable_version_string(requirement:)
-          @latest_resolvable_version_string ||= {}
           return @latest_resolvable_version_string[requirement] if @latest_resolvable_version_string.key?(requirement)
 
           @latest_resolvable_version_string[requirement] ||=
@@ -97,7 +130,7 @@ module Dependabot
                 language_version_manager.install_required_python
 
                 # use system git instead of the pure Python dulwich
-                run_poetry_command("pyenv exec poetry config experimental.system-git-client true")
+                run_poetry_command("pyenv exec poetry config system-git-client true")
 
                 # Shell out to Poetry, which handles everything for us.
                 run_poetry_update_command
@@ -112,6 +145,7 @@ module Dependabot
             end
         end
 
+        sig { params(updated_lockfile: T::Hash[String, T.untyped]).returns(T.nilable(String)) }
         def fetch_version_from_parsed_lockfile(updated_lockfile)
           version =
             updated_lockfile.fetch("package", [])
@@ -124,25 +158,26 @@ module Dependabot
         end
 
         # rubocop:disable Metrics/AbcSize
+        sig { params(error: StandardError).returns(T.nilable(String)) }
         def handle_poetry_errors(error)
           error_handler.handle_poetry_error(error)
 
           if error.message.gsub(/\s/, "").match?(GIT_REFERENCE_NOT_FOUND_REGEX)
             message = error.message.gsub(/\s/, "")
             match = message.match(GIT_REFERENCE_NOT_FOUND_REGEX)
-            name = if (url = match.named_captures.fetch("url"))
+            name = if (url = T.must(match).named_captures.fetch("url"))
                      File.basename(T.must(URI.parse(url).path))
                    else
-                     message.match(GIT_REFERENCE_NOT_FOUND_REGEX)
-                            .named_captures.fetch("name")
+                     T.must(message.match(GIT_REFERENCE_NOT_FOUND_REGEX))
+                      .named_captures.fetch("name")
                    end
-            raise GitDependencyReferenceNotFound, name
+            raise GitDependencyReferenceNotFound, T.must(name)
           end
 
           if error.message.match?(GIT_DEPENDENCY_UNREACHABLE_REGEX)
-            url = error.message.match(GIT_DEPENDENCY_UNREACHABLE_REGEX)
-                       .named_captures.fetch("url")
-            raise GitDependenciesNotReachable, url
+            url = T.must(error.message.match(GIT_DEPENDENCY_UNREACHABLE_REGEX))
+                   .named_captures.fetch("url")
+            raise GitDependenciesNotReachable, T.must(url)
           end
 
           raise unless error.message.include?("SolverProblemError") ||
@@ -163,6 +198,7 @@ module Dependabot
 
         # Using `--lock` avoids doing an install.
         # Using `--no-interaction` avoids asking for passwords.
+        sig { void }
         def run_poetry_update_command
           run_poetry_command(
             "pyenv exec poetry update #{dependency.name} --lock --no-interaction",
@@ -170,6 +206,7 @@ module Dependabot
           )
         end
 
+        sig { returns(T::Boolean) }
         def check_original_requirements_resolvable
           return @original_reqs_resolvable if @original_reqs_resolvable
 
@@ -189,13 +226,22 @@ module Dependabot
           end
         end
 
+        sig { params(message: String).returns(String) }
         def clean_error_message(message)
           # Redact any URLs, as they may include credentials
           message.gsub(/http.*?(?=\s)/, "<redacted>")
         end
 
-        def write_temporary_dependency_files(updated_req: nil,
-                                             update_pyproject: true)
+        sig do
+          params(
+            updated_req: T.nilable(String),
+            update_pyproject: T::Boolean
+          ).void
+        end
+        def write_temporary_dependency_files(
+          updated_req: nil,
+          update_pyproject: true
+        )
           dependency_files.each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
@@ -216,14 +262,16 @@ module Dependabot
           end
         end
 
+        sig { void }
         def add_auth_env_vars
           Python::FileUpdater::PyprojectPreparer
-            .new(pyproject_content: pyproject.content)
+            .new(pyproject_content: T.must(T.must(pyproject).content))
             .add_auth_env_vars(credentials)
         end
 
+        sig { params(updated_requirement: T.nilable(String)).returns(String) }
         def updated_pyproject_content(updated_requirement:)
-          content = pyproject.content
+          content = T.must(T.must(pyproject).content)
           content = sanitize_pyproject_content(content)
           content = update_python_requirement(content)
           content = freeze_other_dependencies(content)
@@ -231,31 +279,36 @@ module Dependabot
           content
         end
 
+        sig { returns(String) }
         def sanitized_pyproject_content
-          content = pyproject.content
+          content = T.must(T.must(pyproject).content)
           content = sanitize_pyproject_content(content)
           content = update_python_requirement(content)
           content
         end
 
+        sig { params(pyproject_content: String).returns(String) }
         def sanitize_pyproject_content(pyproject_content)
           Python::FileUpdater::PyprojectPreparer
             .new(pyproject_content: pyproject_content)
             .sanitize
         end
 
+        sig { params(pyproject_content: String).returns(String) }
         def update_python_requirement(pyproject_content)
           Python::FileUpdater::PyprojectPreparer
             .new(pyproject_content: pyproject_content)
             .update_python_requirement(language_version_manager.python_version)
         end
 
+        sig { params(pyproject_content: String).returns(String) }
         def freeze_other_dependencies(pyproject_content)
           Python::FileUpdater::PyprojectPreparer
             .new(pyproject_content: pyproject_content, lockfile: lockfile)
             .freeze_top_level_dependencies_except([dependency])
         end
 
+        sig { params(pyproject_content: String, updated_requirement: T.nilable(String)).returns(String) }
         def set_target_dependency_req(pyproject_content, updated_requirement)
           return pyproject_content unless updated_requirement
 
@@ -275,7 +328,7 @@ module Dependabot
           end
 
           # If this is a sub-dependency, add the new requirement
-          unless dependency.requirements.find { |r| r[:file] == pyproject.name }
+          unless dependency.requirements.find { |r| r[:file] == T.must(pyproject).name }
             poetry_object[subdep_type] ||= {}
             poetry_object[subdep_type][dependency.name] = updated_requirement
           end
@@ -283,6 +336,7 @@ module Dependabot
           TomlRB.dump(pyproject_object)
         end
 
+        sig { params(toml_node: T::Hash[String, T.untyped], requirement: String).void }
         def update_dependency_requirement(toml_node, requirement)
           names = toml_node.keys
           pkg_name = names.find { |nm| normalise(nm) == dependency.name }
@@ -295,10 +349,12 @@ module Dependabot
           end
         end
 
+        sig { returns(String) }
         def subdep_type
           dependency.production? ? "dependencies" : "dev-dependencies"
         end
 
+        sig { returns(FileParser::PythonRequirementParser) }
         def python_requirement_parser
           @python_requirement_parser ||=
             FileParser::PythonRequirementParser.new(
@@ -306,6 +362,7 @@ module Dependabot
             )
         end
 
+        sig { returns(LanguageVersionManager) }
         def language_version_manager
           @language_version_manager ||=
             LanguageVersionManager.new(
@@ -313,22 +370,27 @@ module Dependabot
             )
         end
 
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def pyproject
           dependency_files.find { |f| f.name == "pyproject.toml" }
         end
 
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def poetry_lock
           dependency_files.find { |f| f.name == "poetry.lock" }
         end
 
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def lockfile
           poetry_lock
         end
 
+        sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
         def run_poetry_command(command, fingerprint: nil)
           SharedHelpers.run_shell_command(command, fingerprint: fingerprint)
         end
 
+        sig { params(name: String).returns(String) }
         def normalise(name)
           NameNormaliser.normalise(name)
         end
@@ -354,20 +416,51 @@ module Dependabot
       PACKAGE_NOT_FOUND = /Package (?<pkg>.*) ((?<req_ver>.*)) not found./
 
       # client access error codes while accessing package index
-      CLIENT_ERROR_CODES = T.let({
-        error401: /401 Client Error/,
-        error403: /403 Client Error/,
-        error404: /404 Client Error/,
-        http403: /HTTP error 403/,
-        http404: /HTTP error 404/
-      }.freeze, T::Hash[T.nilable(String), Regexp])
+      CLIENT_ERROR_CODES = T.let(
+        {
+          error401: /401 Client Error/,
+          error403: /403 Client Error/,
+          error404: /404 Client Error/,
+          http403: /HTTP error 403/,
+          http404: /HTTP error 404/
+        }.freeze,
+        T::Hash[T.nilable(String), Regexp]
+      )
 
       # server response error codes while accessing package index
-      SERVER_ERROR_CODES = T.let({
-        server502: /502 Server Error/,
-        server503: /503 Server Error/,
-        server504: /504 Server Error/
-      }.freeze, T::Hash[T.nilable(String), Regexp])
+      SERVER_ERROR_CODES = T.let(
+        {
+          server500: /500 Server Error/,
+          server502: /502 Server Error/,
+          server503: /503 Server Error/,
+          server504: /504 Server Error/
+        }.freeze,
+        T::Hash[T.nilable(String), Regexp]
+      )
+
+      # invalid configuration in pyproject.toml
+      POETRY_VIRTUAL_ENV_CONFIG = %r{pypoetry/virtualenvs(.|\n)*list index out of range}
+
+      # error related to local project as dependency in pyproject.toml
+      ERR_LOCAL_PROJECT_PATH = /Path (?<path>.*) for (?<dep>.*) does not exist/
+
+      TIME_OUT_ERRORS = T.let(
+        {
+          time_out_max_retries: /Max retries exceeded/,
+          time_out_read_timed_out: /Read timed out/,
+          time_out_inactivity: /Timed out due to inactivity/
+        }.freeze,
+        T::Hash[T.nilable(String), Regexp]
+      )
+
+      PACKAGE_RESOLVER_ERRORS = T.let(
+        {
+          package_info_error: /Unable to determine package info/,
+          self_dep_error: /Package '(?<path>.*)' is listed as a dependency of itself./,
+          incompatible_constraints: /Incompatible constraints in requirements/
+        }.freeze,
+        T::Hash[T.nilable(String), Regexp]
+      )
 
       sig do
         params(
@@ -376,8 +469,8 @@ module Dependabot
         ).void
       end
       def initialize(dependencies:, dependency_files:)
-        @dependencies = dependencies
-        @dependency_files = dependency_files
+        @dependencies = T.let(dependencies, Dependabot::Dependency)
+        @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
       end
 
       private
@@ -401,6 +494,7 @@ module Dependabot
 
       # rubocop:disable Metrics/AbcSize
       # rubocop:disable Metrics/PerceivedComplexity
+      # rubocop:disable Metrics/CyclomaticComplexity
       sig { params(error: Exception).void }
       def handle_poetry_error(error)
         Dependabot.logger.warn(error.message)
@@ -418,22 +512,42 @@ module Dependabot
 
         raise DependencyFileNotResolvable, error.message if error.message.match(PYTHON_RANGE_NOT_SATISFIED)
 
+        if error.message.match(POETRY_VIRTUAL_ENV_CONFIG) || error.message.match(ERR_LOCAL_PROJECT_PATH)
+          msg = "Error while resolving pyproject.toml file"
+
+          raise DependencyFileNotResolvable, msg
+        end
+
         SERVER_ERROR_CODES.each do |(_error_codes, error_regex)|
           next unless error.message.match?(error_regex)
 
-          index_url = URI.extract(error.message.to_s).last .then { sanitize_url(_1) }
+          index_url = URI.extract(error.message.to_s).last.then { sanitize_url(_1) }
           raise InconsistentRegistryResponse, index_url
+        end
+
+        TIME_OUT_ERRORS.each do |(_error_codes, error_regex)|
+          next unless error.message.match?(error_regex)
+
+          raise InconsistentRegistryResponse, "Inconsistent registry response"
         end
 
         CLIENT_ERROR_CODES.each do |(_error_codes, error_regex)|
           next unless error.message.match?(error_regex)
 
-          index_url = URI.extract(error.message.to_s).last .then { sanitize_url(_1) }
+          index_url = URI.extract(error.message.to_s).last.then { sanitize_url(_1) }
           raise PrivateSourceAuthenticationFailure, index_url
+        end
+
+        PACKAGE_RESOLVER_ERRORS.each do |(_error_codes, error_regex)|
+          next unless error.message.match?(error_regex)
+
+          message = "Package solving failed while resolving manifest file"
+          raise DependencyFileNotResolvable, message
         end
       end
       # rubocop:enable Metrics/AbcSize
       # rubocop:enable Metrics/PerceivedComplexity
+      # rubocop:enable Metrics/CyclomaticComplexity
     end
   end
 end

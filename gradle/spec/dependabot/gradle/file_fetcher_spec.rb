@@ -53,6 +53,7 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
       stub_no_content_request("gradle?ref=sha")
       stub_content_request("?ref=sha", "contents_java.json")
       stub_content_request("build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+      stub_no_content_request("gradle.lockfile?ref=sha")
     end
 
     it "fetches the buildfile" do
@@ -79,6 +80,7 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
         stub_content_request("?ref=sha", "contents_java_with_settings.json")
         stub_content_request("settings.gradle?ref=sha", "contents_java_simple_settings.json")
         stub_content_request("app/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+        stub_no_content_request("app/gradle.lockfile?ref=sha")
       end
 
       it "fetches the main buildfile and subproject buildfile" do
@@ -120,6 +122,7 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
         before do
           stub_content_request("buildSrc?ref=sha", "contents_java.json")
           stub_content_request("buildSrc/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+          stub_no_content_request("buildSrc/gradle.lockfile?ref=sha")
         end
 
         context "when the buildSrc is implicitly included" do
@@ -151,15 +154,18 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
             stub_content_request("settings.gradle?ref=sha", "contents_java_settings_explicit_buildsrc.json")
             stub_content_request("included?ref=sha", "contents_java.json")
             stub_content_request("included/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+            stub_no_content_request("included/gradle.lockfile?ref=sha")
           end
 
           it "doesn't fetch buildSrc buildfiles twice" do
             expect(file_fetcher_instance.files.map(&:name))
-              .to match_array(%w(
-                build.gradle settings.gradle
-                buildSrc/build.gradle
-                included/build.gradle
-              ))
+              .to match_array(
+                %w(
+                  build.gradle settings.gradle
+                  buildSrc/build.gradle
+                  included/build.gradle
+                )
+              )
           end
         end
       end
@@ -169,21 +175,27 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
           stub_content_request("?ref=sha", "contents_java_with_settings.json")
           stub_content_request("settings.gradle?ref=sha", "contents_java_settings_1_included_build.json")
           stub_content_request("build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+          stub_no_content_request("gradle.lockfile?ref=sha")
           stub_content_request("app/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+          stub_no_content_request("app/gradle.lockfile?ref=sha")
           stub_content_request("included?ref=sha", "contents_java_with_settings.json")
           stub_content_request("included/settings.gradle?ref=sha", "contents_java_simple_settings.json")
           stub_content_request("included/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+          stub_no_content_request("included/gradle.lockfile?ref=sha")
           stub_content_request("included/app/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+          stub_no_content_request("included/app/gradle.lockfile?ref=sha")
         end
 
         it "fetches all buildfiles" do
           expect(file_fetcher_instance.files.map(&:name))
-            .to match_array(%w(
-              build.gradle settings.gradle
-              app/build.gradle
-              included/build.gradle included/settings.gradle
-              included/app/build.gradle
-            ))
+            .to match_array(
+              %w(
+                build.gradle settings.gradle
+                app/build.gradle
+                included/build.gradle included/settings.gradle
+                included/app/build.gradle
+              )
+            )
         end
       end
 
@@ -192,27 +204,35 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
           stub_content_request("?ref=sha", "contents_java_with_settings.json")
           stub_content_request("settings.gradle?ref=sha", "contents_java_settings_2_included_builds.json")
           stub_content_request("build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+          stub_no_content_request("gradle.lockfile?ref=sha")
           stub_content_request("app/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+          stub_no_content_request("app/gradle.lockfile?ref=sha")
           stub_content_request("included?ref=sha", "contents_java_with_settings.json")
           stub_content_request("included/settings.gradle?ref=sha", "contents_java_simple_settings.json")
           stub_content_request("included/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+          stub_no_content_request("included/gradle.lockfile?ref=sha")
           stub_content_request("included/app/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+          stub_no_content_request("included/app/gradle.lockfile?ref=sha")
           stub_content_request("included2?ref=sha", "contents_java_with_settings.json")
           stub_content_request("included2/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+          stub_no_content_request("included2/gradle.lockfile?ref=sha")
           stub_content_request("included2/settings.gradle?ref=sha", "contents_java_simple_settings.json")
           stub_content_request("included2/app/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+          stub_no_content_request("included2/app/gradle.lockfile?ref=sha")
         end
 
         it "fetches all buildfiles" do
           expect(file_fetcher_instance.files.map(&:name))
-            .to match_array(%w(
-              build.gradle settings.gradle
-              app/build.gradle
-              included/build.gradle included/settings.gradle
-              included/app/build.gradle
-              included2/build.gradle included2/settings.gradle
-              included2/app/build.gradle
-            ))
+            .to match_array(
+              %w(
+                build.gradle settings.gradle
+                app/build.gradle
+                included/build.gradle included/settings.gradle
+                included/app/build.gradle
+                included2/build.gradle included2/settings.gradle
+                included2/app/build.gradle
+              )
+            )
         end
       end
 
@@ -221,35 +241,48 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
           stub_content_request("?ref=sha", "contents_java_with_settings.json")
           stub_content_request("settings.gradle?ref=sha", "contents_java_settings_1_included_build.json")
           stub_content_request("build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+          stub_no_content_request("app/gradle.lockfile?ref=sha")
           stub_content_request("app/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+          stub_no_content_request("app/gradle.lockfile?ref=sha")
           stub_content_request("included?ref=sha", "contents_java_with_settings.json")
           stub_content_request("included/settings.gradle?ref=sha", "contents_java_settings_1_included_build.json")
           stub_content_request("included/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+          stub_no_content_request("included/gradle.lockfile?ref=sha")
           stub_content_request("included/app/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+          stub_no_content_request("included/app/gradle.lockfile?ref=sha")
           stub_content_request("included/included?ref=sha", "contents_java_with_settings.json")
           stub_content_request("included/included/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
-          stub_content_request("included/included/settings.gradle?ref=sha",
-                               "contents_java_settings_1_included_build.json")
+          stub_no_content_request("included/included/gradle.lockfile?ref=sha")
+          stub_content_request(
+            "included/included/settings.gradle?ref=sha",
+            "contents_java_settings_1_included_build.json"
+          )
           stub_content_request("included/included/app/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+          stub_no_content_request("included/included/app/gradle.lockfile?ref=sha")
           stub_content_request("included/included/included?ref=sha", "contents_java_with_buildsrc.json")
           stub_content_request("included/included/included/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+          stub_no_content_request("included/included/included/gradle.lockfile?ref=sha")
           stub_content_request("included/included/included/buildSrc?ref=sha", "contents_java.json")
-          stub_content_request("included/included/included/buildSrc/build.gradle?ref=sha",
-                               "contents_java_basic_buildfile.json")
+          stub_content_request(
+            "included/included/included/buildSrc/build.gradle?ref=sha",
+            "contents_java_basic_buildfile.json"
+          )
         end
 
         it "fetches all buildfiles transitively" do
           expect(file_fetcher_instance.files.map(&:name))
-            .to match_array(%w(
-              build.gradle settings.gradle
-              app/build.gradle
-              included/build.gradle included/settings.gradle
-              included/app/build.gradle
-              included/included/build.gradle included/included/settings.gradle
-              included/included/app/build.gradle
-              included/included/included/build.gradle
-              included/included/included/buildSrc/build.gradle
-            ))
+            .to match_array(
+              %w(
+                build.gradle settings.gradle
+                app/build.gradle
+                included/build.gradle included/settings.gradle
+                included/app/build.gradle
+                included/included/build.gradle included/included/settings.gradle
+                included/included/app/build.gradle
+                included/included/included/build.gradle
+                included/included/included/buildSrc/build.gradle
+              )
+            )
         end
       end
 
@@ -258,22 +291,27 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
           stub_content_request("?ref=sha", "contents_java_with_settings.json")
           stub_content_request("settings.gradle?ref=sha", "contents_java_settings_1_included_build.json")
           stub_content_request("build.gradle?ref=sha", "contents_java_buildfile_with_script_plugins.json")
+          stub_no_content_request("gradle.lockfile?ref=sha")
           stub_content_request("gradle/dependencies.gradle?ref=sha", "contents_java_simple_settings.json")
           stub_content_request("app/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+          stub_no_content_request("app/gradle.lockfile?ref=sha")
           stub_content_request("included?ref=sha", "contents_java.json")
           stub_content_request("included/build.gradle?ref=sha", "contents_java_buildfile_with_script_plugins.json")
+          stub_no_content_request("included/gradle.lockfile?ref=sha")
           stub_content_request("included/gradle/dependencies.gradle?ref=sha", "contents_java_simple_settings.json")
         end
 
         it "fetches script plugin of main and included build" do
           expect(file_fetcher_instance.files.map(&:name))
-            .to match_array(%w(
-              settings.gradle build.gradle
-              app/build.gradle
-              gradle/dependencies.gradle
-              included/build.gradle
-              included/gradle/dependencies.gradle
-            ))
+            .to match_array(
+              %w(
+                settings.gradle build.gradle
+                app/build.gradle
+                gradle/dependencies.gradle
+                included/build.gradle
+                included/gradle/dependencies.gradle
+              )
+            )
         end
       end
     end
@@ -284,6 +322,7 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
         stub_content_request("app?ref=sha", "contents_java_subproject.json")
         stub_content_request("settings.gradle?ref=sha", "contents_java_simple_settings.json")
         stub_content_request("app/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+        stub_no_content_request("app/gradle.lockfile?ref=sha")
       end
 
       it "fetches the main buildfile and subproject buildfile" do
@@ -309,6 +348,7 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
       before do
         stub_content_request("?ref=sha", "contents_kotlin.json")
         stub_content_request("build.gradle.kts?ref=sha", "contents_kotlin_basic_buildfile.json")
+        stub_no_content_request("gradle.lockfile?ref=sha")
         stub_request(:get, File.join(url, "settings.gradle.kts?ref=sha"))
           .with(headers: { "Authorization" => "token token" })
           .to_return(status: 404)
@@ -325,6 +365,7 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
           stub_content_request("?ref=sha", "contents_kotlin_with_settings.json")
           stub_content_request("settings.gradle.kts?ref=sha", "contents_kotlin_simple_settings.json")
           stub_content_request("app/build.gradle.kts?ref=sha", "contents_kotlin_basic_buildfile.json")
+          stub_no_content_request("app/gradle.lockfile?ref=sha")
         end
 
         it "fetches the main buildfile and subproject buildfile" do

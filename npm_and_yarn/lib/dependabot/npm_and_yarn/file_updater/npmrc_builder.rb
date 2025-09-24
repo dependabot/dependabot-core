@@ -10,7 +10,7 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base
       # Build a .npmrc file from the lockfile content, credentials, and any
       # committed .npmrc
-      # We should refactor this to use UpdateChecker::RegistryFinder
+      # We should refactor this to use Package::RegistryFinder
       class NpmrcBuilder
         extend T::Sig
 
@@ -167,7 +167,6 @@ module Dependabot
           end
         end
 
-        # rubocop:disable Metrics/AbcSize
         sig { returns(T.nilable(T::Array[String])) }
         def dependency_urls
           return @dependency_urls if defined?(@dependency_urls)
@@ -176,7 +175,7 @@ module Dependabot
 
           if dependencies.any?
             @dependency_urls = dependencies.map do |dependency|
-              UpdateChecker::RegistryFinder.new(
+              Package::RegistryFinder.new(
                 dependency: dependency,
                 credentials: credentials,
                 npmrc_file: npmrc_file,
@@ -191,8 +190,7 @@ module Dependabot
           if npm_lockfile
             @dependency_urls +=
               T.must(npm_lockfile.content).scan(/"resolved"\s*:\s*"(.*)"/)
-               .flatten
-               .select { |url| url.is_a?(String) }
+               .flatten.grep(String)
                .reject { |url| url.start_with?("git") }
           end
           if yarn_lock
@@ -210,8 +208,6 @@ module Dependabot
             T.nilable(T::Array[String])
           )
         end
-        # rubocop:enable Metrics/AbcSize
-
         sig { returns(String) }
         def complete_npmrc_from_credentials
           # removes attribute timeout to allow for job update,
@@ -249,7 +245,7 @@ module Dependabot
             yarnrc_file&.content
                        &.lines
                        &.find { |line| line.match?(/^\s*registry\s/) }
-                       &.match(NpmAndYarn::UpdateChecker::RegistryFinder::YARN_GLOBAL_REGISTRY_REGEX)
+                       &.match(Package::RegistryFinder::YARN_GLOBAL_REGISTRY_REGEX)
                        &.named_captures&.fetch("registry")
 
           return "registry = #{yarnrc_global_registry}\n" if yarnrc_global_registry

@@ -2,7 +2,7 @@ using Xunit;
 
 namespace NuGetUpdater.Core.Test.Update;
 
-public class BindingRedirectsTests
+public class BindingRedirectsTests : TestBase
 {
     [Fact]
     public async Task SimpleBindingRedirectIsPerformed()

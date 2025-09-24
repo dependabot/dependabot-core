@@ -1,5 +1,4 @@
 using NuGetUpdater.Core.Run;
-using NuGetUpdater.Core.Run.ApiModel;
 
 namespace NuGetUpdater.Core.Test;
 
@@ -9,33 +8,9 @@ internal class TestApiHandler : IApiHandler
 
     public IEnumerable<(Type Type, object Object)> ReceivedMessages => _receivedMessages;
 
-    public Task RecordUpdateJobError(JobErrorBase error)
+    public Task SendAsync(string endpoint, object body, string method)
     {
-        _receivedMessages.Add((error.GetType(), error));
-        return Task.CompletedTask;
-    }
-
-    public Task UpdateDependencyList(UpdatedDependencyList updatedDependencyList)
-    {
-        _receivedMessages.Add((updatedDependencyList.GetType(), updatedDependencyList));
-        return Task.CompletedTask;
-    }
-
-    public Task IncrementMetric(IncrementMetric incrementMetric)
-    {
-        _receivedMessages.Add((incrementMetric.GetType(), incrementMetric));
-        return Task.CompletedTask;
-    }
-
-    public Task CreatePullRequest(CreatePullRequest createPullRequest)
-    {
-        _receivedMessages.Add((createPullRequest.GetType(), createPullRequest));
-        return Task.CompletedTask;
-    }
-
-    public Task MarkAsProcessed(MarkAsProcessed markAsProcessed)
-    {
-        _receivedMessages.Add((markAsProcessed.GetType(), markAsProcessed));
+        _receivedMessages.Add((body.GetType(), body));
         return Task.CompletedTask;
     }
 }

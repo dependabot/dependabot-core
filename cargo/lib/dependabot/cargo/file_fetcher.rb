@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "pathname"
@@ -7,6 +7,7 @@ require "toml-rb"
 
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
+require "dependabot/file_filtering"
 require "dependabot/cargo/file_parser"
 
 # Docs on Cargo workspaces:
@@ -17,17 +18,20 @@ module Dependabot
       extend T::Sig
       extend T::Helpers
 
+      sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
         filenames.include?("Cargo.toml")
       end
 
+      sig { override.returns(String) }
       def self.required_files_message
         "Repo must contain a Cargo.toml."
       end
 
+      sig { override.returns(T.nilable(T::Hash[Symbol, T.untyped])) }
       def ecosystem_versions
         channel = if rust_toolchain
-                    TomlRB.parse(rust_toolchain.content).fetch("toolchain", nil)&.fetch("channel", nil)
+                    TomlRB.parse(T.must(rust_toolchain).content).dig("toolchain", "channel")
                   else
                     "default"
                   end
@@ -39,7 +43,7 @@ module Dependabot
         }
       rescue TomlRB::ParseError
         raise Dependabot::DependencyFileNotParseable.new(
-          rust_toolchain.path,
+          T.must(rust_toolchain).path,
           "only rust-toolchain files formatted as TOML are supported, the non-TOML format was deprecated by Rust"
         )
       end
@@ -48,15 +52,24 @@ module Dependabot
       def fetch_files
         fetched_files = T.let([], T::Array[DependencyFile])
         fetched_files << cargo_toml
-        fetched_files << cargo_lock if cargo_lock
-        fetched_files << cargo_config if cargo_config
-        fetched_files << rust_toolchain if rust_toolchain
+        fetched_files << T.must(cargo_lock) if cargo_lock
+        fetched_files << T.must(cargo_config) if cargo_config
+        fetched_files << T.must(rust_toolchain) if rust_toolchain
         fetched_files += fetch_path_dependency_and_workspace_files
-        fetched_files.uniq
+
+        # Filter excluded files from final collection
+        filtered_files = fetched_files.reject do |file|
+          Dependabot::FileFiltering.should_exclude_path?(file.name, "file from final collection", @exclude_paths)
+        end
+
+        filtered_files.uniq
       end
 
       private
 
+      sig do
+        params(files: T.nilable(T::Array[Dependabot::DependencyFile])).returns(T::Array[Dependabot::DependencyFile])
+      end
       def fetch_path_dependency_and_workspace_files(files = nil)
         fetched_files = files || [cargo_toml]
 
@@ -73,8 +86,9 @@ module Dependabot
         fetch_path_dependency_and_workspace_files(updated_files)
       end
 
+      sig { params(cargo_toml: Dependabot::DependencyFile).returns(T::Array[Dependabot::DependencyFile]) }
       def workspace_files(cargo_toml)
-        @workspace_files ||= {}
+        @workspace_files ||= T.let({}, T.nilable(T::Hash[String, T::Array[Dependabot::DependencyFile]]))
         @workspace_files[cargo_toml.name] ||=
           fetch_workspace_files(
             file: cargo_toml,
@@ -82,8 +96,9 @@ module Dependabot
           )
       end
 
+      sig { params(fetched_files: T::Array[Dependabot::DependencyFile]).returns(T::Array[Dependabot::DependencyFile]) }
       def path_dependency_files(fetched_files)
-        @path_dependency_files ||= {}
+        @path_dependency_files ||= T.let({}, T.nilable(T::Hash[String, T::Array[Dependabot::DependencyFile]]))
         fetched_path_dependency_files = T.let([], T::Array[Dependabot::DependencyFile])
         fetched_files.each do |file|
           @path_dependency_files[file.name] ||=
@@ -93,12 +108,19 @@ module Dependabot
                                         fetched_path_dependency_files
             )
 
-          fetched_path_dependency_files += @path_dependency_files[file.name]
+          fetched_path_dependency_files += T.must(@path_dependency_files[file.name])
         end
 
         fetched_path_dependency_files
       end
 
+      sig do
+        params(
+          file: Dependabot::DependencyFile,
+          previously_fetched_files: T::Array[Dependabot::DependencyFile]
+        )
+          .returns(T::Array[Dependabot::DependencyFile])
+      end
       def fetch_workspace_files(file:, previously_fetched_files:)
         current_dir = file.name.rpartition("/").first
         current_dir = nil if current_dir == ""
@@ -109,6 +131,8 @@ module Dependabot
 
           next if previously_fetched_files.map(&:name).include?(path)
           next if file.name == path
+
+          next if Dependabot::FileFiltering.should_exclude_path?(path, "file from final collection", @exclude_paths)
 
           fetched_file = fetch_file_from_host(path, fetch_submodules: true)
           previously_fetched_files << fetched_file
@@ -125,6 +149,13 @@ module Dependabot
       end
 
       # rubocop:disable Metrics/PerceivedComplexity
+      sig do
+        params(
+          file: Dependabot::DependencyFile,
+          previously_fetched_files: T::Array[Dependabot::DependencyFile]
+        )
+          .returns(T::Array[Dependabot::DependencyFile])
+      end
       def fetch_path_dependency_files(file:, previously_fetched_files:)
         current_dir = file.name.rpartition("/").first
         current_dir = nil if current_dir == ""
@@ -138,6 +169,8 @@ module Dependabot
             next if previously_fetched_files.map(&:name).include?(path)
             next if file.name == path
 
+            next if Dependabot::FileFiltering.should_exclude_path?(path, "file from final collection", @exclude_paths)
+
             fetched_file = fetch_file_from_host(path, fetch_submodules: true)
                            .tap { |f| f.support_file = true }
             previously_fetched_files << fetched_file
@@ -146,7 +179,13 @@ module Dependabot
                 file: fetched_file,
                 previously_fetched_files: previously_fetched_files
               )
-            [fetched_file, *grandchild_requirement_files]
+
+            # If this path dependency file is a workspace member that inherits from
+            # its root workspace, we search for the root to include it so Cargo can
+            # resolve the path dependency file manifest properly.
+            root = find_workspace_root(fetched_file) if workspace_member?(parsed_file(fetched_file))
+
+            [fetched_file, *grandchild_requirement_files, root]
           rescue Dependabot::DependencyFileNotFound
             next unless required_path?(file, path)
 
@@ -159,6 +198,7 @@ module Dependabot
               unfetchable_required_path_deps
       end
 
+      sig { params(dependencies: T::Hash[T.untyped, T.untyped]).returns(T::Array[String]) }
       def collect_path_dependencies_paths(dependencies)
         paths = []
         dependencies.each do |_, details|
@@ -170,6 +210,7 @@ module Dependabot
       end
 
       # rubocop:enable Metrics/PerceivedComplexity
+      sig { params(file: Dependabot::DependencyFile).returns(T::Array[String]) }
       def path_dependency_paths_from_file(file)
         paths = T.let([], T::Array[String])
 
@@ -192,6 +233,7 @@ module Dependabot
         paths
       end
 
+      sig { params(file: Dependabot::DependencyFile).returns(T::Array[String]) }
       def replacement_path_dependency_paths_from_file(file)
         paths = []
 
@@ -218,6 +260,61 @@ module Dependabot
         paths
       end
 
+      # See if this Cargo manifest inherits any property from a workspace
+      # (e.g. edition = { workspace = true }).
+      sig { params(hash: T::Hash[T.untyped, T.untyped]).returns(T::Boolean) }
+      def workspace_member?(hash)
+        hash.each do |key, value|
+          if key == "workspace" && value == true
+            return true
+          elsif value.is_a?(Hash)
+            return workspace_member?(value)
+          end
+        end
+        false
+      end
+
+      # Find workspace root of this workspace member, first via package.workspace
+      # manifest key if present, otherwise resort to searching parent directories
+      # up till the repository root.
+      sig do
+        params(workspace_member: Dependabot::DependencyFile).returns(T.nilable(Dependabot::DependencyFile))
+      end
+      def find_workspace_root(workspace_member)
+        current_dir = workspace_member.name.rpartition("/").first
+
+        workspace_root_dir = parsed_file(workspace_member).dig("package", "workspace")
+        unless workspace_root_dir.nil?
+          workspace_root = fetch_file_from_host(
+            File.join(current_dir, workspace_root_dir, "Cargo.toml"),
+            fetch_submodules: true
+          )
+          return workspace_root if parsed_file(workspace_root)["workspace"]
+
+          # To avoid accidentally breaking backward compatibility, we don't throw errors
+          return nil
+        end
+
+        parent_dirs = current_dir.scan("/").length
+        while parent_dirs >= 0
+          current_dir = File.join(current_dir, "..")
+          begin
+            parent_manifest = fetch_file_from_host(
+              File.join(current_dir, "Cargo.toml"),
+              fetch_submodules: true
+            )
+            return parent_manifest if parsed_file(parent_manifest)["workspace"]
+          rescue Dependabot::DependencyFileNotFound
+            # Cargo.toml not found in this parent, keep searching up
+          end
+          parent_dirs -= 1
+        end
+
+        # To avoid accidentally breaking backward compatibility, we don't throw errors
+        nil
+      end
+
+      sig { params(file: Dependabot::DependencyFile).returns(T::Array[String]) }
       def workspace_dependency_paths_from_file(file)
         if parsed_file(file)["workspace"] &&
            !parsed_file(file)["workspace"].key?("members")
@@ -247,6 +344,7 @@ module Dependabot
       # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/PerceivedComplexity
       # rubocop:disable Metrics/AbcSize
+      sig { params(file: Dependabot::DependencyFile, path: String).returns(T::Boolean) }
       def required_path?(file, path)
         # Paths specified in dependency declaration
         Cargo::FileParser::DEPENDENCY_TYPES.each do |type|
@@ -297,6 +395,7 @@ module Dependabot
       # rubocop:enable Metrics/PerceivedComplexity
       # rubocop:enable Metrics/CyclomaticComplexity
 
+      sig { params(path: String).returns(T::Array[String]) }
       def expand_workspaces(path)
         path = Pathname.new(path).cleanpath.to_path
         dir = directory.gsub(%r{(^/|/$)}, "")
@@ -308,31 +407,39 @@ module Dependabot
           .select { |filename| File.fnmatch?(path, filename) }
       end
 
+      sig { params(file: Dependabot::DependencyFile).returns(T::Hash[T.untyped, T.untyped]) }
       def parsed_file(file)
         TomlRB.parse(file.content)
       rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
         raise Dependabot::DependencyFileNotParseable, file.path
       end
 
+      sig { returns(Dependabot::DependencyFile) }
       def cargo_toml
-        @cargo_toml ||= fetch_file_from_host("Cargo.toml")
+        @cargo_toml ||= T.let(fetch_file_from_host("Cargo.toml"), T.nilable(Dependabot::DependencyFile))
       end
 
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def cargo_lock
-        return @cargo_lock if defined?(@cargo_lock)
-
-        @cargo_lock = fetch_file_if_present("Cargo.lock")
+        @cargo_lock ||= T.let(
+          fetch_file_if_present("Cargo.lock"),
+          T.nilable(Dependabot::DependencyFile)
+        )
       end
 
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def cargo_config
         return @cargo_config if defined?(@cargo_config)
 
         @cargo_config = fetch_support_file(".cargo/config.toml")
 
-        @cargo_config ||= fetch_support_file(".cargo/config")
-                          &.tap { |f| f.name = ".cargo/config.toml" }
+        @cargo_config ||= T.let(
+          fetch_support_file(".cargo/config")&.tap { |f| f.name = ".cargo/config.toml" },
+          T.nilable(Dependabot::DependencyFile)
+        )
       end
 
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def rust_toolchain
         return @rust_toolchain if defined?(@rust_toolchain)
 
@@ -341,8 +448,10 @@ module Dependabot
         # Per https://rust-lang.github.io/rustup/overrides.html the file can
         # have a `.toml` extension, but the non-extension version is preferred.
         # Renaming here to simplify finding it later in the code.
-        @rust_toolchain ||= fetch_support_file("rust-toolchain.toml")
-                            &.tap { |f| f.name = "rust-toolchain" }
+        @rust_toolchain ||= T.let(
+          fetch_support_file("rust-toolchain.toml")&.tap { |f| f.name = "rust-toolchain" },
+          T.nilable(Dependabot::DependencyFile)
+        )
       end
     end
   end

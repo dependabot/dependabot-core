@@ -73,10 +73,22 @@ module Dependabot
         )
           .void
       end
-      def initialize(source:, branch_name:, base_commit:, credentials:,
-                     files:, commit_message:, pr_description:, pr_name:,
-                     author_details:, labeler:, approvers:, assignees:,
-                     milestone:, target_project_id:)
+      def initialize(
+        source:,
+        branch_name:,
+        base_commit:,
+        credentials:,
+        files:,
+        commit_message:,
+        pr_description:,
+        pr_name:,
+        author_details:,
+        labeler:,
+        approvers:,
+        assignees:,
+        milestone:,
+        target_project_id:
+      )
         @source            = source
         @branch_name       = branch_name
         @base_commit       = base_commit
@@ -170,7 +182,7 @@ module Dependabot
 
       sig { returns(::Gitlab::ObjectifiedHash) }
       def create_commit
-        return create_submodule_update_commit if files.count == 1 && T.must(files.first).type == "submodule"
+        return create_submodule_update_commit if files.one? && T.must(files.first).type == "submodule"
 
         options = {}
         options[:author_email] = author_details&.fetch(:email) if author_details&.key?(:email)

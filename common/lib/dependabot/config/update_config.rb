@@ -16,15 +16,20 @@ module Dependabot
       sig { returns(T::Array[IgnoreCondition]) }
       attr_reader :ignore_conditions
 
+      sig { returns(T.nilable(T::Array[String])) }
+      attr_reader :exclude_paths
+
       sig do
         params(
           ignore_conditions: T.nilable(T::Array[IgnoreCondition]),
-          commit_message_options: T.nilable(CommitMessageOptions)
+          commit_message_options: T.nilable(CommitMessageOptions),
+          exclude_paths: T.nilable(T::Array[String])
         ).void
       end
-      def initialize(ignore_conditions: nil, commit_message_options: nil)
+      def initialize(ignore_conditions: nil, commit_message_options: nil, exclude_paths: nil)
         @ignore_conditions = T.let(ignore_conditions || [], T::Array[IgnoreCondition])
         @commit_message_options = commit_message_options
+        @exclude_paths = exclude_paths
       end
 
       sig { params(dependency: Dependency, security_updates_only: T::Boolean).returns(T::Array[String]) }
@@ -32,12 +37,29 @@ module Dependabot
         normalizer = name_normaliser_for(dependency)
         dep_name = T.must(normalizer).call(dependency.name)
 
+        if dependency.version.nil? && dependency.requirements.any?
+          dependency = extract_base_version_from_requirement(dependency)
+        end
+
         @ignore_conditions
           .select { |ic| self.class.wildcard_match?(T.must(normalizer).call(ic.dependency_name), dep_name) }
           .map { |ic| ic.ignored_versions(dependency, security_updates_only) }
           .flatten
           .compact
           .uniq
+      end
+
+      sig { params(dependency: Dependency).returns(Dependency) }
+      def extract_base_version_from_requirement(dependency)
+        requirements = dependency.requirements
+        requirement = T.must(requirements.first)[:requirement]
+        version = requirement&.match(/\d+\.\d+\.\d+/)&.to_s
+        Dependabot::Dependency.new(
+          name: dependency.name,
+          version: version,
+          requirements: dependency.requirements,
+          package_manager: dependency.package_manager
+        )
       end
 
       sig { params(wildcard_string: T.nilable(String), candidate_string: T.nilable(String)).returns(T::Boolean) }

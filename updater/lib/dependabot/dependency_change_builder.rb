@@ -57,8 +57,10 @@ module Dependabot
       @job = job
 
       dir = Pathname.new(job.source.directory).cleanpath
-      @dependency_files = T.let(dependency_files.select { |f| Pathname.new(f.directory).cleanpath == dir },
-                                T::Array[Dependabot::DependencyFile])
+      @dependency_files = T.let(
+        dependency_files.select { |f| Pathname.new(f.directory).cleanpath == dir },
+        T::Array[Dependabot::DependencyFile]
+      )
 
       raise "Missing directory in dependency files: #{dir}" unless @dependency_files.any?
 
@@ -126,11 +128,13 @@ module Dependabot
 
     sig { returns(T::Array[Dependabot::DependencyFile]) }
     def generate_dependency_files
-      if updated_dependencies.count == 1
+      if updated_dependencies.one?
         updated_dependency = T.must(updated_dependencies.first)
-        Dependabot.logger.info("Updating #{updated_dependency.name} from " \
-                               "#{updated_dependency.previous_version} to " \
-                               "#{updated_dependency.version}")
+        Dependabot.logger.info(
+          "Updating #{updated_dependency.name} from " \
+          "#{updated_dependency.previous_version} to " \
+          "#{updated_dependency.version}"
+        )
       else
         dependency_names = updated_dependencies.map(&:name)
         Dependabot.logger.info("Updating #{dependency_names.join(', ')}")
@@ -140,9 +144,10 @@ module Dependabot
       # updated indirectly as a result of a parent dependency update and are
       # only included here to be included in the PR info.
       relevant_dependencies = updated_dependencies.reject(&:informational_only?)
-      file_updater_for(relevant_dependencies).updated_dependency_files
+      # Exclude support files since they are not manifests, just needed for supporting the update
+      update_files = file_updater_for(relevant_dependencies).updated_dependency_files.reject(&:support_file)
+      update_files
     end
-
     sig { params(dependencies: T::Array[Dependabot::Dependency]).returns(Dependabot::FileUpdaters::Base) }
     def file_updater_for(dependencies)
       Dependabot::FileUpdaters.for_package_manager(job.package_manager).new(

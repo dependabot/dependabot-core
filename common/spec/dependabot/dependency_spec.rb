@@ -99,7 +99,7 @@ RSpec.describe Dependabot::Dependency do
 
     context "when two dependencies are not equal" do
       let(:dependency1) { described_class.new(**args) }
-      let(:dependency2) { described_class.new(**args.merge(name: "dep2")) }
+      let(:dependency2) { described_class.new(**args, name: "dep2") }
 
       specify { expect(dependency1).not_to eq(dependency2) }
     end
@@ -126,7 +126,7 @@ RSpec.describe Dependabot::Dependency do
 
       it { is_expected.to be(true) }
 
-      context "with subdependency metadata" do
+      context "with false subdependency metadata" do
         let(:dependency_args) do
           {
             name: "dep",

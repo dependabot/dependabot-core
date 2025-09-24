@@ -20,15 +20,19 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfilePreparer do
     subject(:updated_content) { preparer.replace_sources(credentials) }
 
     let(:credentials) do
-      [Dependabot::Credential.new({
-        "type" => "git_source",
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      }), Dependabot::Credential.new({
-        "type" => "python_index",
-        "index-url" => "https://username:password@pypi.posrip.com/pypi/"
-      })]
+      [Dependabot::Credential.new(
+        {
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }
+      ), Dependabot::Credential.new(
+        {
+          "type" => "python_index",
+          "index-url" => "https://username:password@pypi.posrip.com/pypi/"
+        }
+      )]
     end
     let(:pipfile_fixture_name) { "version_not_specified" }
 
@@ -42,16 +46,20 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfilePreparer do
 
     context "with auth details provided as a token" do
       let(:credentials) do
-        [Dependabot::Credential.new({
-          "type" => "git_source",
-          "host" => "github.com",
-          "username" => "x-access-token",
-          "password" => "token"
-        }), Dependabot::Credential.new({
-          "type" => "python_index",
-          "index-url" => "https://pypi.posrip.com/pypi/",
-          "token" => "username:password"
-        })]
+        [Dependabot::Credential.new(
+          {
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }
+        ), Dependabot::Credential.new(
+          {
+            "type" => "python_index",
+            "index-url" => "https://pypi.posrip.com/pypi/",
+            "token" => "username:password"
+          }
+        )]
       end
 
       it "adds the source" do
@@ -65,16 +73,20 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfilePreparer do
 
     context "with auth details provided in Pipfile" do
       let(:credentials) do
-        [Dependabot::Credential.new({
-          "type" => "git_source",
-          "host" => "github.com",
-          "username" => "x-access-token",
-          "password" => "token"
-        }), Dependabot::Credential.new({
-          "type" => "python_index",
-          "index-url" => "https://pypi.posrip.com/pypi/",
-          "token" => "username:password"
-        })]
+        [Dependabot::Credential.new(
+          {
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }
+        ), Dependabot::Credential.new(
+          {
+            "type" => "python_index",
+            "index-url" => "https://pypi.posrip.com/pypi/",
+            "token" => "username:password"
+          }
+        )]
       end
 
       let(:pipfile_fixture_name) { "private_source_auth" }

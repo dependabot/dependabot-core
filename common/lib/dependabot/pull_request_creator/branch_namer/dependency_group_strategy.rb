@@ -17,20 +17,26 @@ module Dependabot
             target_branch: T.nilable(String),
             dependency_group: Dependabot::DependencyGroup,
             includes_security_fixes: T::Boolean,
-            existing_branches: T::Array[String],
             separator: String,
             prefix: String,
             max_length: T.nilable(Integer)
           )
             .void
         end
-        def initialize(dependencies:, files:, target_branch:, dependency_group:, includes_security_fixes:,
-                       existing_branches: [], separator: "/", prefix: "dependabot", max_length: nil)
+        def initialize(
+          dependencies:,
+          files:,
+          target_branch:,
+          dependency_group:,
+          includes_security_fixes:,
+          separator: "/",
+          prefix: "dependabot",
+          max_length: nil
+        )
           super(
             dependencies: dependencies,
             files: files,
             target_branch: target_branch,
-            existing_branches: existing_branches,
             separator: separator,
             prefix: prefix,
             max_length: max_length,
@@ -78,9 +84,11 @@ module Dependabot
         sig { returns(T.nilable(String)) }
         def dependency_digest
           @dependency_digest ||= T.let(
-            Digest::MD5.hexdigest(dependencies.map do |dependency|
-                                    "#{dependency.name}-#{dependency.removed? ? 'removed' : dependency.version}"
-                                  end.sort.join(",")).slice(0, 10),
+            Digest::MD5.hexdigest(
+              dependencies.map do |dependency|
+                "#{dependency.name}-#{dependency.removed? ? 'removed' : dependency.version}"
+              end.sort.join(",")
+            ).slice(0, 10),
             T.nilable(String)
           )
         end
@@ -90,8 +98,10 @@ module Dependabot
           T.must(dependencies.first).package_manager
         end
 
-        sig { returns(String) }
+        sig { returns(T.nilable(String)) }
         def directory
+          return if files.empty?
+
           T.must(files.first).directory.tr(" ", "-")
         end
       end

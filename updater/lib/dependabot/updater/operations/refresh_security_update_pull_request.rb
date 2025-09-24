@@ -70,12 +70,16 @@ module Dependabot
 
         sig { returns(Dependabot::Job) }
         attr_reader :job
-        sig { returns(Dependabot::Service) }
+
+        sig { override.returns(Dependabot::Service) }
         attr_reader :service
+
         sig { returns(Dependabot::DependencySnapshot) }
         attr_reader :dependency_snapshot
+
         sig { returns(Dependabot::Updater::ErrorHandler) }
         attr_reader :error_handler
+
         # A list of notices that will be used in PR messages and/or sent to the dependabot github alerts.
         sig { returns(T::Array[Dependabot::Notice]) }
         attr_reader :notices
@@ -92,7 +96,7 @@ module Dependabot
         sig { params(dependencies: T::Array[Dependabot::Dependency]).void }
         def check_and_update_pull_request(dependencies)
           # If the job dependencies are empty, then we should close the PR
-          job_dependencies = job.dependencies
+          job_dependencies = job.dependencies&.uniq
           unless job_dependencies
             Dependabot.logger.info("No dependencies to update")
             close_pull_request(reason: :dependencies_removed)
@@ -103,6 +107,11 @@ module Dependabot
             # If the job dependencies mismatch the parsed dependencies, then
             # we should close the PR as at least one thing we changed has been
             # removed from the project.
+            Dependabot.logger.info(
+              "Job dependencies do not match parsed dependencies. " \
+              "Job dependencies: #{job_dependencies}, " \
+              "Parsed dependencies: #{dependencies.map(&:name)}"
+            )
             close_pull_request(reason: :dependency_removed)
             return
           end
@@ -194,8 +203,13 @@ module Dependabot
           # NOTE: Gradle, Maven and Nuget dependency names can be case-insensitive
           # and the dependency name in the security advisory often doesn't match
           # what users have specified in their manifest.
-          job_dependencies = job_dependencies.map(&:downcase)
-          changed_dependencies = dependency_change.updated_dependencies.map { |x| x.name.downcase }
+          job_dependencies = job_dependencies.map(&:downcase).uniq
+          changed_dependencies = dependency_change.updated_dependencies.map { |x| x.name.downcase }.uniq
+
+          Dependabot.logger.info(
+            "Job Dependencies (current): #{job_dependencies}, " \
+            "Changed Dependencies (new): #{changed_dependencies}"
+          )
 
           if changed_dependencies.sort_by(&:downcase) != job_dependencies.sort_by(&:downcase)
             # The dependencies being updated have changed. Close the existing
@@ -286,16 +300,20 @@ module Dependabot
 
         sig { params(dependency_change: Dependabot::DependencyChange).void }
         def create_pull_request(dependency_change)
-          Dependabot.logger.info("Submitting #{dependency_change.updated_dependencies.map(&:name).join(', ')} " \
-                                 "pull request for creation")
+          Dependabot.logger.info(
+            "Submitting #{dependency_change.updated_dependencies.map(&:name).join(', ')} " \
+            "pull request for creation"
+          )
 
           service.create_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
         end
 
         sig { params(dependency_change: Dependabot::DependencyChange).void }
         def update_pull_request(dependency_change)
-          Dependabot.logger.info("Submitting #{dependency_change.updated_dependencies.map(&:name).join(', ')} " \
-                                 "pull request for update")
+          Dependabot.logger.info(
+            "Submitting #{dependency_change.updated_dependencies.map(&:name).join(', ')} " \
+            "pull request for update"
+          )
 
           service.update_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
         end
@@ -306,8 +324,10 @@ module Dependabot
 
           job_dependencies = job.dependencies || []
 
-          Dependabot.logger.info("Telling backend to close pull request for " \
-                                 "#{job_dependencies.join(', ')} - #{reason_string}")
+          Dependabot.logger.info(
+            "Telling backend to close pull request for " \
+            "#{job_dependencies.join(', ')} - #{reason_string}"
+          )
 
           service.close_pull_request(job_dependencies, reason)
         end
