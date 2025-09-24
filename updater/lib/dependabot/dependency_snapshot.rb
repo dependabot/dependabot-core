@@ -147,9 +147,13 @@ module Dependabot
             excluding_dependencies[directory]&.include?(dep)
           end
 
-          add_handled_dependencies(current_dependencies.concat(dependencies_in_existing_prs.filter_map do |dep|
-            dep["dependency-name"]
-          end))
+          add_handled_dependencies(
+            current_dependencies.concat(
+              dependencies_in_existing_prs.filter_map do |dep|
+                dep["dependency-name"]
+              end
+            )
+          )
         else
           # add the existing dependencies in the group so individual updates don't try to update them
           add_handled_dependencies(dependencies_in_existing_pr_for_group(group).filter_map { |d| d["dependency-name"] })
@@ -230,8 +234,10 @@ module Dependabot
         @dependencies[dir] = parse_files!
       end
 
-      @dependency_group_engine = T.let(DependencyGroupEngine.from_job_config(job: job),
-                                       Dependabot::DependencyGroupEngine)
+      @dependency_group_engine = T.let(
+        DependencyGroupEngine.from_job_config(job: job),
+        Dependabot::DependencyGroupEngine
+      )
       directories.each do |dir|
         @current_directory = dir
         @dependency_group_engine.assign_to_groups!(dependencies: allowed_dependencies)

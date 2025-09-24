@@ -230,8 +230,10 @@ option_parse = OptionParser.new do |opts|
     $options[:branch] = value
   end
 
-  opts.on("--dep DEPENDENCIES",
-          "Comma separated list of dependencies to update") do |value|
+  opts.on(
+    "--dep DEPENDENCIES",
+    "Comma separated list of dependencies to update"
+  ) do |value|
     $options[:dependency_names] = value.split(",").map { |o| o.strip.downcase }
   end
 
@@ -289,18 +291,24 @@ option_parse = OptionParser.new do |opts|
     end
   end
 
-  opts.on("--security-updates-only",
-          "Only update vulnerable dependencies") do |_value|
+  opts.on(
+    "--security-updates-only",
+    "Only update vulnerable dependencies"
+  ) do |_value|
     $options[:security_updates_only] = true
   end
 
-  opts.on("--profile",
-          "Profile using Stackprof. Output in `tmp/stackprof-<datetime>.dump`") do
+  opts.on(
+    "--profile",
+    "Profile using Stackprof. Output in `tmp/stackprof-<datetime>.dump`"
+  ) do
     $options[:profile] = true
   end
 
-  opts.on("--pull-request",
-          "Output pull request information metadata: title, description") do
+  opts.on(
+    "--pull-request",
+    "Output pull request information metadata: title, description"
+  ) do
     $options[:pull_request] = true
   end
 

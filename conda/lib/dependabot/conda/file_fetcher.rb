@@ -11,10 +11,13 @@ module Dependabot
     class FileFetcher < Dependabot::FileFetchers::Base
       extend T::Sig
 
-      ENVIRONMENT_FILE_NAMES = T.let(%w(
-        environment.yml
-        environment.yaml
-      ).freeze, T::Array[String])
+      ENVIRONMENT_FILE_NAMES = T.let(
+        %w(
+          environment.yml
+          environment.yaml
+        ).freeze,
+        T::Array[String]
+      )
 
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
@@ -28,29 +31,7 @@ module Dependabot
 
       sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
-        unless allow_beta_ecosystems?
-          raise Dependabot::DependencyFileNotFound.new(
-            nil,
-            "Conda support is currently in beta. Set ALLOW_BETA_ECOSYSTEMS=true to enable it."
-          )
-        end
-
-        fetched_files = []
-
-        ENVIRONMENT_FILE_NAMES.each do |filename|
-          environment_file = fetch_file_if_present(filename)
-          fetched_files << environment_file if environment_file
-        end
-
-        # If no environment files found, return empty (will cause appropriate error)
-        return fetched_files if fetched_files.empty?
-
-        # Validate that at least one environment file contains manageable Python packages
-        fetched_files.each do |file|
-          return fetched_files if environment_contains_manageable_packages?(file)
-        end
-
-        raise Dependabot::DependencyFileNotFound, unsupported_environment_message
+        []
       end
 
       private

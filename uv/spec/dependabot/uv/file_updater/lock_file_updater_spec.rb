@@ -19,12 +19,14 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
 
   let(:dependencies) { [dependency] }
   let(:credentials) do
-    [Dependabot::Credential.new({
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    })]
+    [Dependabot::Credential.new(
+      {
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    )]
   end
   let(:index_urls) { [] }
 
@@ -257,18 +259,22 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
 
     let(:credentials) do
       [
-        Dependabot::Credential.new({
-          "type" => "python_index",
-          "index-url" => "https://example.com/simple",
-          "token" => "token",
-          "replaces-base" => false
-        }),
-        Dependabot::Credential.new({
-          "type" => "python_index",
-          "index-url" => "https://another.com/simple",
-          "token" => "another_token",
-          "replaces-base" => true
-        })
+        Dependabot::Credential.new(
+          {
+            "type" => "python_index",
+            "index-url" => "https://example.com/simple",
+            "token" => "token",
+            "replaces-base" => false
+          }
+        ),
+        Dependabot::Credential.new(
+          {
+            "type" => "python_index",
+            "index-url" => "https://another.com/simple",
+            "token" => "another_token",
+            "replaces-base" => true
+          }
+        )
       ]
     end
 
@@ -295,18 +301,22 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
 
     let(:credentials) do
       [
-        Dependabot::Credential.new({
-          "type" => "python_index",
-          "index-url" => "https://example.com/simple",
-          "token" => "token",
-          "replaces-base" => false
-        }),
-        Dependabot::Credential.new({
-          "type" => "python_index",
-          "index-url" => "https://another.com/simple",
-          "token" => "another_token",
-          "replaces-base" => true
-        })
+        Dependabot::Credential.new(
+          {
+            "type" => "python_index",
+            "index-url" => "https://example.com/simple",
+            "token" => "token",
+            "replaces-base" => false
+          }
+        ),
+        Dependabot::Credential.new(
+          {
+            "type" => "python_index",
+            "index-url" => "https://another.com/simple",
+            "token" => "another_token",
+            "replaces-base" => true
+          }
+        )
       ]
     end
 

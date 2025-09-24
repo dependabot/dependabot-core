@@ -75,18 +75,21 @@ module Dependabot
     end
 
     # https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
-    SEMVER_REGEX = T.let(/
-      # major.minor.patch
-      ^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)
-      # pre-release
-      (?:-(
-        (?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)
-        (?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*
-      ))?
-      # build metadata
-      (?:\+(
-        [0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*
-      ))?$/x, Regexp)
+    SEMVER_REGEX = T.let(
+      /
+            # major.minor.patch
+            ^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)
+            # pre-release
+            (?:-(
+              (?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)
+              (?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*
+            ))?
+            # build metadata
+            (?:\+(
+              [0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*
+            ))?$/x,
+      Regexp
+    )
 
     sig { params(version: String).returns(T::Boolean) }
     def self.valid_semver?(version)

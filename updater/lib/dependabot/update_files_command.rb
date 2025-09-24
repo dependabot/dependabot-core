@@ -39,12 +39,6 @@ module Dependabot
         # Update the service's metadata about this project
         service.update_dependency_list(dependency_snapshot: dependency_snapshot)
 
-        # POC: Emit the dependency data formatted for the GitHub Dependency Submission API
-        #
-        # We only want to run this experiment on Version Updates as Security Updates are downstream of
-        # Dependency Submission so this could create an unhelpful feedback loop.
-        dependency_submission_experiment(dependency_snapshot) unless job.security_updates_only?
-
         # TODO: Pull fatal error handling handling up into this class
         #
         # As above, we can remove the responsibility for handling fatal/job halting
@@ -167,28 +161,6 @@ module Dependabot
         error_type: T.must(error_details).fetch(:"error-type"),
         error_details: T.must(error_details)[:"error-detail"]
       )
-    end
-
-    sig { params(dependency_snapshot: Dependabot::DependencySnapshot).void }
-    def dependency_submission_experiment(dependency_snapshot)
-      return unless Dependabot::Experiments.enabled?(:enable_dependency_submission_poc)
-
-      ecosystem = dependency_snapshot.ecosystem
-      return unless ecosystem
-
-      submission = GithubApi::DependencySubmission.new(
-        job_id: job.id.to_s,
-        branch: job.source.branch || "main",
-        sha: dependency_snapshot.base_commit_sha,
-        ecosystem: ecosystem,
-        dependency_files: dependency_snapshot.dependency_files,
-        dependencies: dependency_snapshot.dependencies
-      )
-
-      # TODO(brrygrdn): Drop this back down to debug logging
-      Dependabot.logger.info("Dependency submission payload:\n#{JSON.pretty_generate(submission.payload)}")
-
-      service.create_dependency_submission(dependency_submission: submission)
     end
   end
 end

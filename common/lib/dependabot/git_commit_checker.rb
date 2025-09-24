@@ -38,9 +38,14 @@ module Dependabot
       )
         .void
     end
-    def initialize(dependency:, credentials:,
-                   ignored_versions: [], raise_on_ignored: false,
-                   consider_version_branches_pinned: false, dependency_source_details: nil)
+    def initialize(
+      dependency:,
+      credentials:,
+      ignored_versions: [],
+      raise_on_ignored: false,
+      consider_version_branches_pinned: false,
+      dependency_source_details: nil
+    )
       @dependency = dependency
       @credentials = credentials
       @ignored_versions = ignored_versions
@@ -110,13 +115,15 @@ module Dependabot
 
     sig { params(ref: String).returns(Excon::Response) }
     def ref_details(ref)
-      T.must(T.let(
-               GitMetadataFetcher.new(
-                 url: dependency.source_details&.fetch(:url, nil),
-                 credentials: credentials
-               ).ref_details_for_pinned_ref(ref),
-               T.nilable(Excon::Response)
-             ))
+      T.must(
+        T.let(
+          GitMetadataFetcher.new(
+            url: dependency.source_details&.fetch(:url, nil),
+            credentials: credentials
+          ).ref_details_for_pinned_ref(ref),
+          T.nilable(Excon::Response)
+        )
+      )
     end
 
     sig { returns(Excon::Response) }

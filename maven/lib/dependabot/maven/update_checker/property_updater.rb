@@ -27,8 +27,11 @@ module Dependabot
           ).void
         end
         def initialize(
-          dependency:, dependency_files:, credentials:,
-          ignored_versions:, target_version_details:,
+          dependency:,
+          dependency_files:,
+          credentials:,
+          ignored_versions:,
+          target_version_details:,
           update_cooldown: nil
         )
           @dependency       = dependency

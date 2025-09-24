@@ -1,5 +1,7 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
+
+require "sorbet-runtime"
 
 require "dependabot/dependency_file"
 require "dependabot/bundler/update_checker"
@@ -26,10 +28,13 @@ module Dependabot
       #   version allowed by the gemspec, if the gemspec has a required ruby
       #   version range
       class FilePreparer
+        extend T::Sig
+
         VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/
 
         # Can't be a constant because some of these don't exist in bundler
         # 1.15, which Heroku uses, which causes an exception on boot.
+        sig { returns(T::Array[T.class_of(::Bundler::Source::Path)]) }
         def gemspec_sources
           [
             ::Bundler::Source::Path,
@@ -37,31 +42,50 @@ module Dependabot
           ]
         end
 
-        def initialize(dependency_files:, dependency:,
-                       remove_git_source: false,
-                       unlock_requirement: true,
-                       replacement_git_pin: nil,
-                       latest_allowable_version: nil,
-                       lock_ruby_version: true)
-          @dependency_files         = dependency_files
-          @dependency               = dependency
-          @remove_git_source        = remove_git_source
-          @unlock_requirement       = unlock_requirement
-          @replacement_git_pin      = replacement_git_pin
-          @latest_allowable_version = latest_allowable_version
-          @lock_ruby_version        = lock_ruby_version
+        sig do
+          params(
+            dependency_files: T::Array[Dependabot::DependencyFile],
+            dependency: Dependabot::Dependency,
+            remove_git_source: T::Boolean,
+            unlock_requirement: T::Boolean,
+            replacement_git_pin: T.nilable(String),
+            latest_allowable_version: T.nilable(T.any(String, Dependabot::Version)),
+            lock_ruby_version: T::Boolean
+          ).void
+        end
+        def initialize(
+          dependency_files:,
+          dependency:,
+          remove_git_source: false,
+          unlock_requirement: true,
+          replacement_git_pin: nil,
+          latest_allowable_version: nil,
+          lock_ruby_version: true
+        )
+          @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
+          @dependency = T.let(dependency, Dependabot::Dependency)
+          @remove_git_source = T.let(remove_git_source, T::Boolean)
+          @unlock_requirement = T.let(unlock_requirement, T::Boolean)
+          @replacement_git_pin = T.let(replacement_git_pin, T.nilable(String))
+          @latest_allowable_version = T.let(
+            latest_allowable_version&.to_s,
+            T.nilable(String)
+          )
+          @lock_ruby_version = T.let(lock_ruby_version, T::Boolean)
         end
 
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/MethodLength
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
         def prepared_dependency_files
           files = []
 
-          if gemfile
+          gemfile_file = gemfile
+          if gemfile_file
             files << DependencyFile.new(
-              name: gemfile.name,
-              content: gemfile_content_for_update_check(gemfile),
-              directory: gemfile.directory
+              name: gemfile_file.name,
+              content: gemfile_content_for_update_check(gemfile_file),
+              directory: gemfile_file.directory
             )
           end
 
@@ -76,7 +100,7 @@ module Dependabot
           path_gemspecs.each do |file|
             files << DependencyFile.new(
               name: file.name,
-              content: sanitize_gemspec_content(file.content),
+              content: sanitize_gemspec_content(T.must(file.content)),
               directory: file.directory,
               support_file: file.support_file?
             )
@@ -104,28 +128,40 @@ module Dependabot
 
         private
 
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
+
+        sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
+
+        sig { returns(T.nilable(String)) }
         attr_reader :replacement_git_pin
+
+        sig { returns(T.nilable(String)) }
         attr_reader :latest_allowable_version
 
+        sig { returns(T::Boolean) }
         def remove_git_source?
           @remove_git_source
         end
 
+        sig { returns(T::Boolean) }
         def unlock_requirement?
           @unlock_requirement
         end
 
+        sig { returns(T::Boolean) }
         def replace_git_pin?
           !replacement_git_pin.nil?
         end
 
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def gemfile
           dependency_files.find { |f| f.name == "Gemfile" } ||
             dependency_files.find { |f| f.name == "gems.rb" }
         end
 
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
         def evaled_gemfiles
           dependency_files
             .reject { |f| f.name.end_with?(".gemspec") }
@@ -137,41 +173,49 @@ module Dependabot
             .reject(&:support_file?)
         end
 
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def lockfile
           dependency_files.find { |f| f.name == "Gemfile.lock" } ||
             dependency_files.find { |f| f.name == "gems.locked" }
         end
 
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
         def specification_files
           dependency_files.select { |f| f.name.end_with?(".specification") }
         end
 
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
         def top_level_gemspecs
           dependency_files
             .select { |f| f.name.end_with?(".gemspec") }
         end
 
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def ruby_version_file
           dependency_files.find { |f| f.name == ".ruby-version" }
         end
 
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def tool_versions_file
           dependency_files.find { |f| f.name == ".tool-versions" }
         end
 
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
         def path_gemspecs
           all = dependency_files.select { |f| f.name.end_with?(".gemspec") }
           all - top_level_gemspecs
         end
 
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
         def imported_ruby_files
           dependency_files
             .select { |f| f.name.end_with?(".rb") }
             .reject { |f| f.name == "gems.rb" }
         end
 
+        sig { params(file: Dependabot::DependencyFile).returns(String) }
         def gemfile_content_for_update_check(file)
-          content = file.content
+          content = T.must(file.content)
           content = replace_gemfile_constraint(content, file.name)
           content = remove_git_source(content) if remove_git_source?
           content = replace_git_pin(content) if replace_git_pin?
@@ -179,12 +223,14 @@ module Dependabot
           content
         end
 
+        sig { params(gemspec: Dependabot::DependencyFile).returns(String) }
         def gemspec_content_for_update_check(gemspec)
-          content = gemspec.content
+          content = T.must(gemspec.content)
           content = replace_gemspec_constraint(content, gemspec.name)
           sanitize_gemspec_content(content)
         end
 
+        sig { params(content: String, filename: String).returns(String) }
         def replace_gemfile_constraint(content, filename)
           FileUpdater::RequirementReplacer.new(
             dependency: dependency,
@@ -194,6 +240,7 @@ module Dependabot
           ).rewrite(content)
         end
 
+        sig { params(content: String, filename: String).returns(String) }
         def replace_gemspec_constraint(content, filename)
           FileUpdater::RequirementReplacer.new(
             dependency: dependency,
@@ -203,6 +250,7 @@ module Dependabot
           ).rewrite(content)
         end
 
+        sig { params(gemspec_content: String).returns(String) }
         def sanitize_gemspec_content(gemspec_content)
           new_version = replacement_version_for_gemspec(gemspec_content)
 
@@ -211,6 +259,7 @@ module Dependabot
             .rewrite(gemspec_content)
         end
 
+        sig { params(filename: String).returns(String) }
         def updated_version_requirement_string(filename)
           lower_bound_req = updated_version_req_lower_bound(filename)
 
@@ -221,6 +270,7 @@ module Dependabot
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
+        sig { params(filename: String).returns(String) }
         def updated_version_req_lower_bound(filename) # rubocop:disable Metrics/CyclomaticComplexity
           original_req = dependency.requirements
                                    .find { |r| r.fetch(:file) == filename }
@@ -243,19 +293,22 @@ module Dependabot
         end
         # rubocop:enable Metrics/PerceivedComplexity
 
+        sig { params(content: String).returns(String) }
         def remove_git_source(content)
           FileUpdater::GitSourceRemover.new(
             dependency: dependency
           ).rewrite(content)
         end
 
+        sig { params(content: String).returns(String) }
         def replace_git_pin(content)
           FileUpdater::GitPinReplacer.new(
             dependency: dependency,
-            new_pin: replacement_git_pin
+            new_pin: T.must(replacement_git_pin)
           ).rewrite(content)
         end
 
+        sig { params(gemfile_content: String).returns(String) }
         def lock_ruby_version(gemfile_content)
           top_level_gemspecs.each do |gs|
             gemfile_content = FileUpdater::RubyRequirementSetter
@@ -265,11 +318,13 @@ module Dependabot
           gemfile_content
         end
 
+        sig { params(file: Dependabot::DependencyFile).returns(T::Boolean) }
         def lock_ruby_version?(file)
           @lock_ruby_version && file == gemfile
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
+        sig { params(gemspec_content: String).returns(String) }
         def replacement_version_for_gemspec(gemspec_content)
           return "0.0.1" unless lockfile
 
@@ -282,17 +337,18 @@ module Dependabot
             .new(gemspec_content: gemspec_content)
             .dependency_name
 
-          return gemspec_specs.first&.version || "0.0.1" unless gem_name
+          return gemspec_specs.first&.version&.to_s || "0.0.1" unless gem_name
 
           spec = gemspec_specs.find { |s| s.name == gem_name }
-          spec&.version || gemspec_specs.first&.version || "0.0.1"
+          spec&.version&.to_s || gemspec_specs.first&.version&.to_s || "0.0.1"
         end
         # rubocop:enable Metrics/PerceivedComplexity
 
         # TODO: Stop sanitizing the lockfile once we have bundler 2 installed
+        sig { returns(String) }
         def sanitized_lockfile_content
           re = FileUpdater::LockfileUpdater::LOCKFILE_ENDING
-          lockfile.content.gsub(re, "")
+          T.must(T.must(lockfile).content).gsub(re, "")
         end
       end
     end

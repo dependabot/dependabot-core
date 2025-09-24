@@ -83,10 +83,12 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
   let(:deprecated_versions) { %w(1) }
 
   let(:job_definition_with_fetched_files) do
-    job_definition.merge({
-      "base_commit_sha" => "mock-sha",
-      "base64_dependency_files" => encode_dependency_files(dependency_files)
-    })
+    job_definition.merge(
+      {
+        "base_commit_sha" => "mock-sha",
+        "base64_dependency_files" => encode_dependency_files(dependency_files)
+      }
+    )
   end
 
   let(:dependency_files) do
@@ -366,11 +368,13 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
         allow(job)
           .to receive(:existing_pull_requests).and_return(
             [
-              Dependabot::PullRequest.new([
-                Dependabot::PullRequest::Dependency.new(
-                  name: "dummy-pkg-a", version: "4.0.1"
-                )
-              ])
+              Dependabot::PullRequest.new(
+                [
+                  Dependabot::PullRequest::Dependency.new(
+                    name: "dummy-pkg-a", version: "4.0.1"
+                  )
+                ]
+              )
             ]
           )
       end
@@ -457,12 +461,14 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
 
       it "does not create a pull request if there is a conflict" do
         allow(transitive_stub_update_checker)
-          .to receive(:conflicting_dependencies).and_return([{
-            "explanation" => "dummy-pkg-b@0.2.0 requires dummy-pkg-a@~2.0.1",
-            "name" => "dummy-pkg-b",
-            "version" => "0.2.0",
-            "requirement" => "~2.0.1"
-          }])
+          .to receive(:conflicting_dependencies).and_return(
+            [{
+              "explanation" => "dummy-pkg-b@0.2.0 requires dummy-pkg-a@~2.0.1",
+              "name" => "dummy-pkg-b",
+              "version" => "0.2.0",
+              "requirement" => "~2.0.1"
+            }]
+          )
         expect(mock_service).not_to receive(:create_pull_request)
         create_security_update_pull_request
           .send(:check_and_create_pull_request, transitive_dependency)

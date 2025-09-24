@@ -25,8 +25,11 @@ module Dependabot
             updated_source: T.nilable(T::Hash[Symbol, T.nilable(String)])
           ).void
         end
-        def initialize(requirements:, latest_resolvable_version:,
-                       updated_source:)
+        def initialize(
+          requirements:,
+          latest_resolvable_version:,
+          updated_source:
+        )
           @requirements = T.let(requirements, T::Array[T::Hash[Symbol, T.untyped]])
           @updated_source = T.let(updated_source, T.nilable(T::Hash[Symbol, T.nilable(String)]))
           @latest_resolvable_version = T.let(nil, T.nilable(Dependabot::Version))
@@ -52,6 +55,7 @@ module Dependabot
 
         sig { returns(T.nilable(T::Hash[Symbol, T.nilable(String)])) }
         attr_reader :updated_source
+
         # rubocop:disable Metrics/PerceivedComplexity
         # rubocop:disable Metrics/AbcSize
         sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }

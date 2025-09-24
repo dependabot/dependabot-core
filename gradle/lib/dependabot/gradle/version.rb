@@ -16,20 +16,26 @@ module Dependabot
       extend T::Sig
 
       NULL_VALUES = T.let(%w(0 final ga).freeze, T::Array[String])
-      PREFIXED_TOKEN_HIERARCHY = T.let({
-        "." => { qualifier: 1, number: 4 },
-        "-" => { qualifier: 2, number: 3 },
-        "_" => { qualifier: 2, number: 3 }
-      }.freeze, T::Hash[String, T::Hash[Symbol, Integer]])
-      NAMED_QUALIFIERS_HIERARCHY = T.let({
-        "a" => 1, "alpha"     => 1,
-        "b" => 2, "beta"      => 2,
-        "m" => 3, "milestone" => 3,
-        "rc" => 4, "cr" => 4, "pr" => 4, "pre" => 4,
-        "snapshot" => 5, "dev" => 5,
-        "ga" => 6, "" => 6, "final" => 6,
-        "sp" => 7
-      }.freeze, T::Hash[String, Integer])
+      PREFIXED_TOKEN_HIERARCHY = T.let(
+        {
+          "." => { qualifier: 1, number: 4 },
+          "-" => { qualifier: 2, number: 3 },
+          "_" => { qualifier: 2, number: 3 }
+        }.freeze,
+        T::Hash[String, T::Hash[Symbol, Integer]]
+      )
+      NAMED_QUALIFIERS_HIERARCHY = T.let(
+        {
+          "a" => 1, "alpha" => 1,
+          "b" => 2, "beta"      => 2,
+          "m" => 3, "milestone" => 3,
+          "rc" => 4, "cr" => 4, "pr" => 4, "pre" => 4,
+          "snapshot" => 5, "dev" => 5,
+          "ga" => 6, "" => 6, "final" => 6,
+          "sp" => 7
+        }.freeze,
+        T::Hash[String, Integer]
+      )
       VERSION_PATTERN = T.let(
         "[0-9a-zA-Z]+" \
         '(?>\.[0-9a-zA-Z]*)*' \

@@ -57,8 +57,11 @@ module Dependabot
       end
 
       sig do
-        params(chart_name: String, repo_name: T.nilable(String),
-               repo_url: T.nilable(String)).returns(T.nilable(Gem::Version))
+        params(
+          chart_name: String,
+          repo_name: T.nilable(String),
+          repo_url: T.nilable(String)
+        ).returns(T.nilable(Gem::Version))
       end
       def fetch_releases_with_helm_cli(chart_name, repo_name, repo_url)
         Dependabot.logger.info("Attempting to search for #{chart_name} using helm CLI")
@@ -162,8 +165,11 @@ module Dependabot
       end
 
       sig do
-        params(chart_name: String, repo_name: T.nilable(String),
-               repo_url: T.nilable(String)).returns(T.nilable(T::Array[T::Hash[String, T.untyped]]))
+        params(
+          chart_name: String,
+          repo_name: T.nilable(String),
+          repo_url: T.nilable(String)
+        ).returns(T.nilable(T::Array[T::Hash[String, T.untyped]]))
       end
       def fetch_chart_releases(chart_name, repo_name = nil, repo_url = nil)
         Dependabot.logger.info("Fetching releases for Helm chart: #{chart_name}")

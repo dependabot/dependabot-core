@@ -16,6 +16,7 @@ module Dependabot
     extend T::Sig
 
     KNOWN_HOSTS = /github\.com|bitbucket\.org|gitlab.com/i
+    MAX_COMMITS_PER_PAGE = 100
 
     sig do
       params(
@@ -97,8 +98,10 @@ module Dependabot
 
     sig { returns(T::Array[GitTagWithDetail]) }
     def refs_for_tag_with_detail
-      @refs_for_tag_with_detail ||= T.let(parse_refs_for_tag_with_detail,
-                                          T.nilable(T::Array[GitTagWithDetail]))
+      @refs_for_tag_with_detail ||= T.let(
+        parse_refs_for_tag_with_detail,
+        T.nilable(T::Array[GitTagWithDetail])
+      )
     end
 
     sig { returns(T::Array[GitTagWithDetail]) }
@@ -363,8 +366,6 @@ module Dependabot
     rescue Errno::ENOENT => e # Thrown when `git` isn't installed
       OpenStruct.new(body: e.message, status: 500)
     end
-
-    MAX_COMMITS_PER_PAGE = 100
 
     sig do
       params(ref: String).returns(String)

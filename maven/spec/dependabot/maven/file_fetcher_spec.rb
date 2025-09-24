@@ -460,8 +460,10 @@ RSpec.describe Dependabot::Maven::FileFetcher do
           headers: { "content-type" => "application/json" }
         )
 
-      stub_request(:get,
-                   File.join(url, "parent_modules_project/pom_with_parent_groupid/pom_with_parent/pom.xml?ref=sha"))
+      stub_request(
+        :get,
+        File.join(url, "parent_modules_project/pom_with_parent_groupid/pom_with_parent/pom.xml?ref=sha")
+      )
         .with(headers: { "Authorization" => "token token" })
         .to_return(
           status: 200,

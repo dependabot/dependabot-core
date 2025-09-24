@@ -121,6 +121,14 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
         end
       end
 
+      before do
+        Dependabot::Experiments.register(:record_update_job_unknown_error, false)
+      end
+
+      after do
+        Dependabot::Experiments.reset!
+      end
+
       it "records error with only update job error api service, logs the backtrace and captures the exception" do
         expect(mock_service).not_to receive(:record_update_job_unknown_error)
 
@@ -157,8 +165,10 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
       end
 
       let(:error) do
-        Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: "the kernal is full of bees",
-                                                              error_context: error_context).tap do |err|
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "the kernal is full of bees",
+          error_context: error_context
+        ).tap do |err|
           err.set_backtrace ["****** ERROR 8335 -- 101"]
         end
       end
@@ -217,10 +227,12 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
           expect(args[:error].message)
             .to eq('Subprocess ["123456789"] failed to run. Check the job logs for error messages')
           expect(args[:error].sentry_context)
-            .to eq(fingerprint: ["123456789"],
-                   extra: {
-                     bumblebees: "many", honeybees: "few", wasps: "none"
-                   })
+            .to eq(
+              fingerprint: ["123456789"],
+              extra: {
+                bumblebees: "many", honeybees: "few", wasps: "none"
+              }
+            )
         end
 
         handle_dependency_error
@@ -233,10 +245,20 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
       end
 
       let(:error) do
-        Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: "the kernal is full of bees",
-                                                              error_context: error_context).tap do |err|
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "the kernal is full of bees",
+          error_context: error_context
+        ).tap do |err|
           err.set_backtrace ["****** ERROR 8335 -- 101"]
         end
+      end
+
+      before do
+        Dependabot::Experiments.register(:record_update_job_unknown_error, false)
+      end
+
+      after do
+        Dependabot::Experiments.reset!
       end
 
       it "records the error with the service and logs the backtrace" do
@@ -270,10 +292,12 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
           expect(args[:error].message)
             .to eq('Subprocess ["123456789"] failed to run. Check the job logs for error messages')
           expect(args[:error].sentry_context)
-            .to eq(fingerprint: ["123456789"],
-                   extra: {
-                     bumblebees: "many", honeybees: "few", wasps: "none"
-                   })
+            .to eq(
+              fingerprint: ["123456789"],
+              extra: {
+                bumblebees: "many", honeybees: "few", wasps: "none"
+              }
+            )
         end
 
         handle_dependency_error
@@ -365,6 +389,14 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
         StandardError.new("There are bees everywhere").tap do |err|
           err.set_backtrace ["bees.rb:5:in `buzz`"]
         end
+      end
+
+      before do
+        Dependabot::Experiments.register(:record_update_job_unknown_error, false)
+      end
+
+      after do
+        Dependabot::Experiments.reset!
       end
 
       it "records the error with the update job error services, logs the backtrace and captures the exception" do

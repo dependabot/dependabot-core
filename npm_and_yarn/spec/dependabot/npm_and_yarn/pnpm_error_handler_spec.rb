@@ -27,10 +27,12 @@ RSpec.describe Dependabot::NpmAndYarn::PnpmErrorHandler do
   let(:dependency_files) { project_dependency_files("pnpm/git_dependency_local_file") }
 
   let(:credentials) do
-    [Dependabot::Credential.new({
-      "type" => "git_source",
-      "host" => "github.com"
-    })]
+    [Dependabot::Credential.new(
+      {
+        "type" => "git_source",
+        "host" => "github.com"
+      }
+    )]
   end
 
   let(:dependency_name) { "@segment/analytics.js-integration-facebook-pixel" }

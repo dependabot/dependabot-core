@@ -37,14 +37,10 @@ module Dependabot
           return service.mark_job_as_processed(Environment.job_definition["base_commit_sha"])
         end
 
+        # TODO(brrygdn): This should be called once per directory in future
         submission = build_submission(dependency_snapshot)
         Dependabot.logger.info("Dependency submission payload:\n#{JSON.pretty_generate(submission.payload)}")
-
-        # For now, we require the experiment to actually submit data as this alters repository dependency state
-        # so we should be very intentional in the event this is called by accident.
-        if Dependabot::Experiments.enabled?(:enable_dependency_submission_poc)
-          service.create_dependency_submission(dependency_submission: submission)
-        end
+        service.create_dependency_submission(dependency_submission: submission)
 
         service.mark_job_as_processed(dependency_snapshot.base_commit_sha)
       end
@@ -75,7 +71,7 @@ module Dependabot
         job_id: job.id.to_s,
         branch: job.source.branch || "main",
         sha: dependency_snapshot.base_commit_sha,
-        ecosystem: T.must(dependency_snapshot.ecosystem),
+        package_manager: job.package_manager,
         dependency_files: dependency_snapshot.dependency_files,
         dependencies: dependency_snapshot.dependencies
       )

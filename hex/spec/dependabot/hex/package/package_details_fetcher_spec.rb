@@ -35,8 +35,12 @@ RSpec.describe Dependabot::Hex::Package::PackageDetailsFetcher do
 
     context "when the response is successful" do
       let(:response) do
-        instance_double(Excon::Response, status: 200, body:
-      fixture("package_fetch_response", "hex-parser.json"))
+        instance_double(
+          Excon::Response,
+          status: 200,
+          body:
+                fixture("package_fetch_response", "hex-parser.json")
+        )
       end
 
       before do

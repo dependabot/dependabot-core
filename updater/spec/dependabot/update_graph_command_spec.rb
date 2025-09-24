@@ -10,14 +10,16 @@ RSpec.describe Dependabot::UpdateGraphCommand do
   subject(:job) { described_class.new }
 
   let(:service) do
-    instance_double(Dependabot::Service,
-                    capture_exception: nil,
-                    mark_job_as_processed: nil,
-                    record_update_job_error: nil,
-                    record_update_job_unknown_error: nil,
-                    update_dependency_list: nil,
-                    increment_metric: nil,
-                    wait_for_calls_to_finish: nil)
+    instance_double(
+      Dependabot::Service,
+      capture_exception: nil,
+      mark_job_as_processed: nil,
+      record_update_job_error: nil,
+      record_update_job_unknown_error: nil,
+      update_dependency_list: nil,
+      increment_metric: nil,
+      wait_for_calls_to_finish: nil
+    )
   end
   let(:job_definition) do
     JSON.parse(fixture("file_fetcher_output/output.json"))
@@ -37,45 +39,15 @@ RSpec.describe Dependabot::UpdateGraphCommand do
   describe "#perform_job" do
     subject(:perform_job) { job.perform_job }
 
-    describe "experiment: enable_dependency_submission_poc" do
-      context "when it is enabled" do
-        before do
-          Dependabot::Experiments.register(:enable_dependency_submission_poc, true)
-        end
+    it "emits a create_dependency_submission call to the Dependabot service" do
+      expect(service).to receive(:create_dependency_submission) do |args|
+        expect(args[:dependency_submission]).to be_a(GithubApi::DependencySubmission)
 
-        after do
-          Dependabot::Experiments.reset!
-        end
-
-        it "emits a create_dependency_submission call to the Dependabot service" do
-          expect(service).to receive(:create_dependency_submission) do |args|
-            expect(args[:dependency_submission]).to be_a(GithubApi::DependencySubmission)
-
-            expect(args[:dependency_submission].job_id).to eql(job_id)
-            expect(args[:dependency_submission].package_manager).to eql("bundler")
-          end
-
-          perform_job
-        end
+        expect(args[:dependency_submission].job_id).to eql(job_id)
+        expect(args[:dependency_submission].package_manager).to eql("bundler")
       end
 
-      context "when it is disabled" do
-        subject(:perform_job) { job.perform_job }
-
-        before do
-          Dependabot::Experiments.register(:enable_dependency_submission_poc, false)
-        end
-
-        after do
-          Dependabot::Experiments.reset!
-        end
-
-        it "does not emits a create_dependency_submission call to the Dependabot service" do
-          expect(service).not_to receive(:create_dependency_submission)
-
-          perform_job
-        end
-      end
+      perform_job
     end
   end
 
@@ -300,15 +272,19 @@ RSpec.describe Dependabot::UpdateGraphCommand do
       let(:error) { Dependabot::DependencyFileNotParseable.new("path/to/file", "a") }
 
       let(:snapshot) do
-        instance_double(Dependabot::DependencySnapshot,
-                        base_commit_sha: "1c6331732c41e4557a16dacb82534f1d1c831848")
+        instance_double(
+          Dependabot::DependencySnapshot,
+          base_commit_sha: "1c6331732c41e4557a16dacb82534f1d1c831848"
+        )
       end
 
       let(:updater) do
-        instance_double(Dependabot::Updater,
-                        service: service,
-                        job: job,
-                        dependency_snapshot: snapshot)
+        instance_double(
+          Dependabot::Updater,
+          service: service,
+          job: job,
+          dependency_snapshot: snapshot
+        )
       end
 
       before do

@@ -57,8 +57,10 @@ module Dependabot
 
       sig { returns(Dependabot::Dependency) }
       attr_reader :dependency
+
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       attr_reader :lockfile
+
       sig { returns(LanguageVersionManager) }
       attr_reader :language_version_manager
 

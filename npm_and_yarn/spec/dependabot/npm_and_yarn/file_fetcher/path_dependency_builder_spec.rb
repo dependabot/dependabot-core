@@ -53,11 +53,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher::PathDependencyBuilder do
           expect(dependency_file.name).to eq("other_package/package.json")
           expect(dependency_file.support_file?).to be(true)
           expect(dependency_file.content)
-            .to eq({
-              name: "other_package",
-              version: "0.0.1",
-              dependencies: { lodash: "^1.3.1" }
-            }.to_json)
+            .to eq(
+              {
+                name: "other_package",
+                version: "0.0.1",
+                dependencies: { lodash: "^1.3.1" }
+              }.to_json
+            )
         end
       end
     end
@@ -97,15 +99,17 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher::PathDependencyBuilder do
           expect(dependency_file.name).to eq("other_package/package.json")
           expect(dependency_file.support_file?).to be(true)
           expect(dependency_file.content)
-            .to eq({
-              name: "other_package",
-              version: "0.0.2",
-              dependencies: {
-                lodash: "^1.3.1",
-                filedep: "file:../../../correct/path/filedep"
-              },
-              optionalDependencies: { etag: "^1.0.0" }
-            }.to_json)
+            .to eq(
+              {
+                name: "other_package",
+                version: "0.0.2",
+                dependencies: {
+                  lodash: "^1.3.1",
+                  filedep: "file:../../../correct/path/filedep"
+                },
+                optionalDependencies: { etag: "^1.0.0" }
+              }.to_json
+            )
         end
       end
 

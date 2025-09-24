@@ -60,8 +60,10 @@ module Dependabot
     end
 
     # See https://github.com/git/git/blob/a36e024e989f4d35f35987a60e3af8022cac3420/object.h#L144-L153
-    VALID_MODES = T.let([Mode::FILE, Mode::EXECUTABLE, Mode::TREE, Mode::SUBMODULE, Mode::SYMLINK].freeze,
-                        T::Array[String])
+    VALID_MODES = T.let(
+      [Mode::FILE, Mode::EXECUTABLE, Mode::TREE, Mode::SUBMODULE, Mode::SYMLINK].freeze,
+      T::Array[String]
+    )
 
     sig do
       params(
@@ -79,10 +81,19 @@ module Dependabot
       )
         .void
     end
-    def initialize(name:, content:, directory: "/", type: "file",
-                   support_file: false, vendored_file: false, symlink_target: nil,
-                   content_encoding: ContentEncoding::UTF_8, deleted: false,
-                   operation: Operation::UPDATE, mode: nil)
+    def initialize(
+      name:,
+      content:,
+      directory: "/",
+      type: "file",
+      support_file: false,
+      vendored_file: false,
+      symlink_target: nil,
+      content_encoding: ContentEncoding::UTF_8,
+      deleted: false,
+      operation: Operation::UPDATE,
+      mode: nil
+    )
       @name = name
       @content = content
       @directory = T.let(clean_directory(directory), String)
