@@ -63,10 +63,7 @@ jobs:
       - name: Install Docker
         if: matrix.os == 'macos-latest'
         run: |
-          brew install docker
-          mkdir -p ~/.docker/cli-plugins
-          curl -L https://github.com/docker/buildx/releases/download/v0.28.0/buildx-v0.28.0.darwin-arm64 -o ~/.docker/cli-plugins/docker-buildx
-          chmod +x ~/.docker/cli-plugins/docker-buildx
+          brew install --cask docker
 
       - name: Build ecosystem image
         if: steps.changes.outputs[matrix.suite.path] == 'true'
