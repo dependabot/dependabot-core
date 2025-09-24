@@ -355,6 +355,8 @@ module Dependabot
           ].join(" ")
 
           Helpers.run_npm_command(command, fingerprint: fingerprint)
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          handle_npm_updater_error(e)
         end
 
         sig { params(dependency: Dependabot::Dependency).returns(String) }
@@ -476,7 +478,7 @@ module Dependabot
           # This happens if a new version has been published but npm is having
           # consistency issues and the version isn't fully available on all
           # queries
-          if error_message.include?("No matching vers") &&
+          if (error_message.include?("No matching vers") || error_message.include?("No matching version found")) &&
              dependencies_in_error_message?(error_message) &&
              resolvable_before_update?
 
@@ -522,6 +524,8 @@ module Dependabot
           end
 
           if (error_message.include?("No matching vers") ||
+             error_message.include?("No matching version found") ||
+             error_message.include?("ETARGET") ||
              error_message.include?("404 Not Found") ||
              error_message.include?("Non-registry package missing package") ||
              error_message.include?("Invalid tag name") ||
