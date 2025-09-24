@@ -133,7 +133,16 @@ module Dependabot
         sig { params(response: Excon::Response, index: T.untyped).returns(T::Hash[T.untyped, T.untyped]) }
         def parse_response(response, index)
           if index.start_with?("sparse+")
-            parsed_response = response.body.lines.map { |line| JSON.parse(line) }
+            parsed_response = response.body.lines
+                                      .map(&:strip)
+                                      .reject(&:empty?)
+                                      .filter_map do |line|
+              JSON.parse(line)
+            rescue JSON::ParserError => e
+              Dependabot.logger.warn("Failed to parse line in sparse index: #{e.message}")
+              nil
+            end
+
             { "versions" => parsed_response }
           else
             JSON.parse(response.body)
