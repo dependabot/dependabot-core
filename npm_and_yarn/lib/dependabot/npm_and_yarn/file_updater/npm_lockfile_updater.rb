@@ -119,6 +119,9 @@ module Dependabot
         # Invalid version format found for dependency in package.json file
         INVALID_VERSION = /Invalid Version: (?<ver>.*)/
 
+        # Invalid package manager specification in package.json
+        INVALID_PACKAGE_MANAGER_SPEC = /Invalid package manager specification/
+
         # TODO: look into fixing this in npm, seems like a bug in the git
         # downloader introduced in npm 7
         #
@@ -355,8 +358,6 @@ module Dependabot
           ].join(" ")
 
           Helpers.run_npm_command(command, fingerprint: fingerprint)
-        rescue SharedHelpers::HelperSubprocessFailed => e
-          handle_npm_updater_error(e)
         end
 
         sig { params(dependency: Dependabot::Dependency).returns(String) }
@@ -478,7 +479,7 @@ module Dependabot
           # This happens if a new version has been published but npm is having
           # consistency issues and the version isn't fully available on all
           # queries
-          if (error_message.include?("No matching vers") || error_message.include?("No matching version found")) &&
+          if error_message.include?("No matching vers") &&
              dependencies_in_error_message?(error_message) &&
              resolvable_before_update?
 
@@ -524,8 +525,6 @@ module Dependabot
           end
 
           if (error_message.include?("No matching vers") ||
-             error_message.include?("No matching version found") ||
-             error_message.include?("ETARGET") ||
              error_message.include?("404 Not Found") ||
              error_message.include?("Non-registry package missing package") ||
              error_message.include?("Invalid tag name") ||
@@ -614,6 +613,14 @@ module Dependabot
 
           if (error_msg = error_message.match(INVALID_VERSION))
             msg = "Found invalid version \"#{error_msg.named_captures.fetch('ver')}\" while updating"
+            raise Dependabot::DependencyFileNotResolvable, msg
+          end
+
+          # Handle invalid package manager specification in package.json
+          if error_message.match?(INVALID_PACKAGE_MANAGER_SPEC)
+            msg = "Invalid package manager specification in package.json. " \
+                  "The packageManager field must specify a valid semver version " \
+                  "(e.g., 'npm@8.0.0' instead of 'npm@*')."
             raise Dependabot::DependencyFileNotResolvable, msg
           end
 
