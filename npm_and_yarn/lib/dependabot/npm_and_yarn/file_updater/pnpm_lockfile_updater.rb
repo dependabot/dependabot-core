@@ -171,8 +171,6 @@ module Dependabot
             "update #{dependency_updates}  --lockfile-only --no-save -r",
             fingerprint: "update <dependency_updates>  --lockfile-only --no-save -r"
           )
-        rescue SharedHelpers::HelperSubprocessFailed => e
-          error_handler.handle_pnpm_updater_error(e)
         end
 
         sig { returns(T.nilable(String)) }
@@ -180,8 +178,6 @@ module Dependabot
           Helpers.run_pnpm_command(
             "install --lockfile-only"
           )
-        rescue SharedHelpers::HelperSubprocessFailed => e
-          error_handler.handle_pnpm_updater_error(e)
         end
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
@@ -546,26 +542,6 @@ module Dependabot
         return unless error.message.match?(ECONNRESET_ERROR) || error.message.match?(SOCKET_HANG_UP)
 
         raise InconsistentRegistryResponse, "Inconsistent registry response while resolving dependency"
-      end
-
-      sig { params(error: Exception).returns(T.noreturn) }
-      def handle_pnpm_updater_error(error)
-        Dependabot.logger.warn("PNPM: " + error.message)
-        error_message = error.message
-
-        if error_message.include?("packages field missing or empty")
-          raise Dependabot::MisconfiguredTooling.new(
-            "pnpm",
-            "The pnpm workspace is misconfigured. The 'packages' field in pnpm-workspace.yaml " \
-            "is missing or empty. Please check your workspace configuration."
-          )
-        end
-
-        if error_message.include?("No matching version found") || error_message.include?("ETARGET")
-          raise Dependabot::InconsistentRegistryResponse, error_message
-        end
-
-        raise error
       end
     end
   end
