@@ -62,8 +62,12 @@ module Dependabot
     sig { params(attributes: T::Hash[Symbol, T.untyped]).returns(T::Array[Dependabot::PullRequest]) }
     def self.create_from_job_definition(attributes)
       attributes.fetch(:existing_pull_requests).map do |pr|
-        # Extract pr_number from PR level, or fallback to first dependency if available
-        pr_number = pr.first&.fetch("pr-number", nil)&.to_i
+        pr_number = case pr
+                    when Array
+                      pr.first["pr-number"]
+                    when Hash
+                      pr["pr-number"]
+                    end
 
         new(
           pr.map do |dep|
