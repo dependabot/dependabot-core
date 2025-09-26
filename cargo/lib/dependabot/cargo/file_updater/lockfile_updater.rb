@@ -184,7 +184,25 @@ module Dependabot
         sig { params(command: String, fingerprint: String).void }
         def run_cargo_command(command, fingerprint:)
           start = Time.now
+
+          # Validate cargo update commands before executing
+          command_parts = command.split.map(&:strip).reject(&:empty?)
+          if command_parts.size > 3 &&
+             command_parts[0] == "cargo" &&
+             command_parts[1] == "update" &&
+             command_parts[2] == "-p" &&
+             command_parts[3] == "error:"
+            error_msg = "Invalid cargo update command: #{command}. The package specification contains an error message instead of a valid package name."
+            Dependabot.logger.error(error_msg)
+            raise Dependabot::DependencyFileNotResolvable, error_msg
+          end
+
           command = SharedHelpers.escape_command(command)
+
+          # debugger if command.include?('error')
+          # debugger if command.include?('scap')
+
+
           Helpers.setup_credentials_in_environment(credentials)
           # Pass through any registry tokens supplied via CARGO_REGISTRIES_...
           # environment variables.
