@@ -67,18 +67,14 @@ module Dependabot
             raise_miss_configured_tooling_if_pnpm_subdirectory
           end
 
-          raise NoChangeError.new(
-            message: "No files were updated!",
-            error_context: error_context(updated_files: updated_files)
-          )
+          # Return empty array instead of raising error when no updates needed
+          return []
         end
 
         sorted_updated_files = updated_files.sort_by(&:name)
         if sorted_updated_files == filtered_dependency_files.sort_by(&:name)
-          raise NoChangeError.new(
-            message: "Updated files are unchanged!",
-            error_context: error_context(updated_files: updated_files)
-          )
+          # Return empty array instead of raising error when files are unchanged
+          return []
         end
 
         vendor_updated_files(updated_files)
