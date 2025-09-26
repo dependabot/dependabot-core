@@ -62,14 +62,15 @@ module Dependabot
     sig { params(attributes: T::Hash[Symbol, T.untyped]).returns(T::Array[Dependabot::PullRequest]) }
     def self.create_from_job_definition(attributes)
       attributes.fetch(:existing_pull_requests).map do |pr|
-        pr_number = case pr
-                    when Array
-                      pr.first["pr-number"]
-                    when Hash
-                      pr["pr-number"]
-                    end
+        case pr
+        when Array
+          pr_number = pr.first["pr-number"]
+        when Hash
+          pr_number = pr["pr-number"]
+          pr = pr["dependencies"] # now pr becomes the dependencies array from the pr
+        end
 
-        new(
+        dependencies =
           pr.map do |dep|
             Dependency.new(
               name: dep.fetch("dependency-name"),
@@ -77,9 +78,9 @@ module Dependabot
               removed: dep.fetch("dependency-removed", false),
               directory: dep.fetch("directory", nil)
             )
-          end,
-          pr_number: pr_number
-        )
+          end
+
+        new(dependencies, pr_number: pr_number)
       end
     end
 
