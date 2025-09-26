@@ -209,6 +209,32 @@ module Dependabot
             raise Dependabot::DependencyFileNotResolvable, match[1]
           end
 
+          # Handle binary specification errors
+          if stdout.include?("can't find") && stdout.include?("bin at") && stdout.include?("Please specify bin.path")
+            last_line = stdout.lines.last&.strip || "Path not found"
+            raise Dependabot::DependencyFileNotResolvable,
+                  "A binary specified in the manifest could not be found. #{last_line}"
+          end
+
+          # Handle version selection failures
+          if stdout.include?("failed to select a version for the requirement")
+            error_msg = stdout.lines.grep(/failed to select a version/).first&.strip ||
+                        "Failed to select a compatible version"
+            raise Dependabot::DependencyFileNotResolvable, error_msg
+          end
+
+          # Handle dependency conflicts
+          if stdout.include?("failed to select a version for") && stdout.include?("which could resolve this conflict")
+            error_msg = "Dependency version conflict: #{stdout.lines.grep(/failed to select a version for/).first&.strip}"
+            raise Dependabot::DependencyFileNotResolvable, error_msg
+          end
+
+          # Handle links to libraries without build scripts
+          if stdout.include?("package specifies that it links to") && stdout.include?("but does not have a custom build script")
+            error_msg = stdout.lines.grep(/package specifies that it links to/).first&.strip
+            raise Dependabot::DependencyFileNotResolvable, error_msg
+          end
+
           raise SharedHelpers::HelperSubprocessFailed.new(
             message: stdout,
             error_context: {
