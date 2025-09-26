@@ -66,7 +66,13 @@ module Dependabot
 
       sig { params(updated_lockfile: T::Hash[String, T.untyped]).returns(T.nilable(String)) }
       def fetch_version_from_parsed_lockfile(updated_lockfile)
-        deps = updated_lockfile[lockfile_section] || {}
+        # deps = updated_lockfile[lockfile_section] || {}
+        section = lockfile_section
+        return nil unless section
+
+        deps = updated_lockfile[section]
+
+        return nil unless deps.is_a?(Hash)
 
         deps.dig(dependency_name, "version")
             &.gsub(/^==/, "")
@@ -77,7 +83,7 @@ module Dependabot
         SharedHelpers.run_shell_command(command, env: pipenv_env_variables, fingerprint: fingerprint)
       end
 
-      sig { returns(String) }
+      sig { returns(T.nilable(String)) }
       def lockfile_section
         if dependency.requirements.any?
           T.must(dependency.requirements.first)[:groups].first
@@ -86,6 +92,7 @@ module Dependabot
             section = keys.fetch(:lockfile)
             return section if JSON.parse(T.must(T.must(lockfile).content))[section].keys.any?(dependency_name)
           end
+          nil
         end
       end
 
