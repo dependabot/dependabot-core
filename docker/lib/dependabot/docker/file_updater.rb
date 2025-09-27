@@ -12,22 +12,28 @@ module Dependabot
       extend T::Sig
 
       YAML_REGEXP = /^[^\.].*\.ya?ml$/i
+      ENV_REGEXP = /\.env($|\.)/i
       DOCKER_REGEXP = /(docker|container)file/i
       FROM_REGEX = /FROM(\s+--platform\=\S+)?/i
 
       sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
-        [DOCKER_REGEXP, YAML_REGEXP]
+        [DOCKER_REGEXP, YAML_REGEXP, ENV_REGEXP]
       end
 
       sig { override.returns(String) }
       def file_type
-        "Dockerfile or Containerfile"
+        "Dockerfile, Containerfile, or .env file"
       end
 
       sig { override.returns(Regexp) }
       def yaml_file_pattern
         YAML_REGEXP
+      end
+
+      sig { returns(Regexp) }
+      def env_file_pattern
+        ENV_REGEXP
       end
 
       sig { override.returns(Regexp) }
