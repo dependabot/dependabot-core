@@ -18,3 +18,6 @@ f8acdfb85fdc4749f9cd1f29eb428cafd11478cd
 
 # Enabled Layout/SpaceAroundMethodCallOperator
 cdeed7e3a9e4fb5d2ac4c47e1c0409c64c2c76ef
+
+# Enabled Layout/RescueEnsureAlignment
+f94250eddf49c168fb1dcc2dfdd4a924ce648370

@@ -37,9 +37,18 @@ module Dependabot
         )
       end
 
-      sig { override.params(_package_manager: String).returns(String) }
-      def purl_pkg_for(_package_manager)
-        "go_modules"
+      # In Go, the `v` is considered a canonical part of the version and omitting it can make
+      # comparisons tricky
+      sig { params(dependency: Dependabot::Dependency).returns(String) }
+      def purl_version_for(dependency)
+        return "" unless dependency.version
+
+        "@v#{dependency.version}"
+      end
+
+      sig { override.params(_dependency: Dependabot::Dependency).returns(String) }
+      def purl_pkg_for(_dependency)
+        "golang"
       end
     end
   end
