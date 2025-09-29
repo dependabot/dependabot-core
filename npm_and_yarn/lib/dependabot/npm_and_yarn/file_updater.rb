@@ -57,6 +57,8 @@ module Dependabot
         raise Dependabot::DependencyFileContentNotChanged, e.message
       end
 
+      private
+
       sig { returns(T::Array[DependencyFile]) }
       def perform_update
         updated_files = T.let([], T::Array[DependencyFile])
@@ -90,8 +92,6 @@ module Dependabot
 
         vendor_updated_files(updated_files)
       end
-
-      private
 
       sig { void }
       def raise_tool_not_supported_for_pnpm_if_transitive
