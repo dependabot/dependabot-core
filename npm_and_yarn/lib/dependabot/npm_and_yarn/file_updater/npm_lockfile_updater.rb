@@ -119,6 +119,13 @@ module Dependabot
         # Invalid version format found for dependency in package.json file
         INVALID_VERSION = /Invalid Version: (?<ver>.*)/
 
+        # Invalid package manager specification in package.json
+        INVALID_PACKAGE_MANAGER_SPEC = /Invalid package manager specification/
+
+        # Invalid npm authentication configuration
+        ERR_INVALID_AUTH = /npm error code ERR_INVALID_AUTH/
+        INVALID_AUTH_CONFIG = /Invalid auth configuration found.*_auth.*must be renamed to/
+
         # TODO: look into fixing this in npm, seems like a bug in the git
         # downloader introduced in npm 7
         #
@@ -611,6 +618,20 @@ module Dependabot
           if (error_msg = error_message.match(INVALID_VERSION))
             msg = "Found invalid version \"#{error_msg.named_captures.fetch('ver')}\" while updating"
             raise Dependabot::DependencyFileNotResolvable, msg
+          end
+
+          # Handle invalid package manager specification in package.json
+          if error_message.match?(INVALID_PACKAGE_MANAGER_SPEC)
+            msg = "Invalid package manager specification in package.json. " \
+                  "The packageManager field must specify a valid semver version"
+            raise Dependabot::DependencyFileNotResolvable, msg
+          end
+
+          if error_message.match?(ERR_INVALID_AUTH) || error_message.match?(INVALID_AUTH_CONFIG)
+            msg = "Invalid npm authentication configuration found " \
+            "The _auth setting in .npmrc needs to be scoped to the specific registry." \
+            "Please update your .npmrc configuration to use registry-specific auth settings."
+            raise Dependabot::PrivateSourceAuthenticationFailure, msg
           end
 
           raise error
