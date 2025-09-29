@@ -732,7 +732,10 @@ RSpec.describe Dependabot::Uv::FileParser do
         )
       end
 
-      its(:length) { is_expected.to eq(1) }
+      # pydantic (from project.dependencies)
+      # setuptools (from build-system.requires)
+      # setuptools-scm (from build-system.requires)
+      its(:length) { is_expected.to eq(3) }
     end
 
     context "with a pyproject.toml file with no dependencies" do
@@ -744,7 +747,9 @@ RSpec.describe Dependabot::Uv::FileParser do
         )
       end
 
-      its(:length) { is_expected.to eq(0) }
+      # setuptools
+      # setuptools-scm
+      its(:length) { is_expected.to eq(2) }
     end
 
     context "with a pyproject.toml in poetry format and a lock file" do
@@ -898,12 +903,12 @@ RSpec.describe Dependabot::Uv::FileParser do
         )
       end
 
-      its(:length) { is_expected.to eq(7) }
+      its(:length) { is_expected.to eq(8) }
 
       describe "top level dependencies" do
         subject(:dependencies) { parser.parse.select(&:top_level?) }
 
-        its(:length) { is_expected.to eq(2) }
+        its(:length) { is_expected.to eq(3) }
 
         describe "the first dependency" do
           subject(:dependency) { dependencies.first }

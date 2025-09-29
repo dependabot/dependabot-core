@@ -635,6 +635,14 @@ internal static class SdkProjectDiscovery
 
                         if (doAddOperation)
                         {
+                            var isImplicitlyDefined = GetChildMetadataBooleanValue(child, "IsImplicitlyDefined");
+                            if (isImplicitlyDefined)
+                            {
+                                // packages with `IsImplicitlyDefined="true"` aren't to be treated as top-level packages and shouldn't be candidates for regular update operations
+                                // they should still appear in the discovery list, though, so security jobs can update them as necessary
+                                continue;
+                            }
+
                             topLevelPackagesPerTfm.Add(packageName);
                             var packageVersion = GetChildMetadataValue(child, "Version");
                             if (packageVersion is not null)
@@ -725,6 +733,13 @@ internal static class SdkProjectDiscovery
         var metadata = node.Children.OfType<Metadata>();
         var metadataValue = metadata.FirstOrDefault(m => m.Name.Equals(metadataItemName, StringComparison.OrdinalIgnoreCase))?.Value;
         return metadataValue;
+    }
+
+    private static bool GetChildMetadataBooleanValue(TreeNode node, string metadataItemName)
+    {
+        var metadataString = GetChildMetadataValue(node, metadataItemName);
+        var metadataBooleanValue = bool.TryParse(metadataString, out var parsedMetadataValue) && parsedMetadataValue;
+        return metadataBooleanValue;
     }
 
     private static ProjectEvaluation? GetNearestProjectEvaluation(BaseNode node)

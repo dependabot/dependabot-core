@@ -6,13 +6,12 @@ require "dependabot/pull_request"
 
 RSpec.describe Dependabot::PullRequest do
   describe "==" do
-    it "is true when all the dependencies are the same" do
+    it "is true when all the dependencies are the same, excluding pr_number" do
       pr1 = described_class.new(
         [
           Dependabot::PullRequest::Dependency.new(
             name: "foo",
-            version: "1.0.0",
-            pr_number: 123
+            version: "1.0.0"
           )
         ]
       )
