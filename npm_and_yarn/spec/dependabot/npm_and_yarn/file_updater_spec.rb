@@ -1820,7 +1820,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
           it "doesn't update any files and raises" do
             expect { updated_files }.to raise_error(
-              Dependabot::DependencyFileContentNotChanged, "No files were updated!"
+              described_class::NoChangeError, "No files were updated!"
             )
           end
         end

@@ -42,15 +42,6 @@ module Dependabot
 
       sig { override.returns(T::Array[DependencyFile]) }
       def updated_dependency_files
-        perform_update
-      rescue NoChangeError => e
-        raise Dependabot::DependencyFileContentNotChanged, e.message
-      end
-
-      private
-
-      sig { returns(T::Array[DependencyFile]) }
-      def perform_update
         updated_files = T.let([], T::Array[DependencyFile])
 
         updated_files += updated_manifest_files
@@ -74,6 +65,8 @@ module Dependabot
 
         vendor_updated_files(updated_files)
       end
+
+      private
 
       sig { params(updated_files: T::Array[Dependabot::DependencyFile]).returns(T::Array[Dependabot::DependencyFile]) }
       def vendor_updated_files(updated_files)
