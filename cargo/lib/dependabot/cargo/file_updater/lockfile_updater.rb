@@ -185,6 +185,16 @@ module Dependabot
         def run_cargo_command(command, fingerprint:)
           start = Time.now
 
+          # Check if any manifest file contains a workspace
+          workspace_manifest = detect_workspace_manifest
+          if workspace_manifest
+            Dependabot.logger.info("Detected workspace in #{workspace_manifest.name}")
+            raise Dependabot::DependencyFileNotResolvable,
+                  "Dependabot does not currently support Cargo workspaces. " \
+                  "Please update dependencies in individual crates instead."
+          end
+
+
           # Validate cargo update commands before executing
           command_parts = command.split.map(&:strip).reject(&:empty?)
           if command_parts.size > 3 &&
@@ -198,11 +208,6 @@ module Dependabot
           end
 
           command = SharedHelpers.escape_command(command)
-
-          # debugger if command.include?('error')
-          # debugger if command.include?('scap')
-
-
           Helpers.setup_credentials_in_environment(credentials)
           # Pass through any registry tokens supplied via CARGO_REGISTRIES_...
           # environment variables.
@@ -252,7 +257,6 @@ module Dependabot
             error_msg = stdout.lines.grep(/package specifies that it links to/).first&.strip
             raise Dependabot::DependencyFileNotResolvable, error_msg
           end
-
           raise SharedHelpers::HelperSubprocessFailed.new(
             message: stdout,
             error_context: {
@@ -568,6 +572,21 @@ module Dependabot
           return nil if versions.empty?
 
           versions.max_by { |v| version_class.new(v) }
+        end
+
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
+        def detect_workspace_manifest
+          manifest_files.find { |file| workspace_section?(file) }
+        end
+
+        sig { params(file: Dependabot::DependencyFile).returns(T::Boolean) }
+        def workspace_section?(file)
+          return false unless file.content
+
+          parsed_manifest = TomlRB.parse(file.content)
+          parsed_manifest.key?("workspace")
+        rescue TomlRB::ParseError
+          false
         end
       end
       # rubocop:enable Metrics/ClassLength
