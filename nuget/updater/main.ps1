@@ -52,15 +52,16 @@ function Update-Files {
     Write-Host "Base commit SHA: $baseCommitSha"
 
     $arguments = @()
-    $arguments += "--job-path `"$env:DEPENDABOT_JOB_PATH`""
-    $arguments += "--repo-contents-path `"$env:DEPENDABOT_REPO_CONTENTS_PATH`""
-    $arguments += "--api-url `"$env:DEPENDABOT_API_URL`""
-    $arguments += "--job-id `"$env:DEPENDABOT_JOB_ID`""
-    $arguments += "--output-path `"$env:DEPENDABOT_OUTPUT_PATH`""
-    $arguments += "--base-commit-sha `"$baseCommitSha`""
+    $arguments += "run"
+    $arguments += "--job-path", $env:DEPENDABOT_JOB_PATH
+    $arguments += "--repo-contents-path", $env:DEPENDABOT_REPO_CONTENTS_PATH
+    $arguments += "--api-url", $env:DEPENDABOT_API_URL
+    $arguments += "--job-id", $env:DEPENDABOT_JOB_ID
+    $arguments += "--output-path", $env:DEPENDABOT_OUTPUT_PATH
+    $arguments += "--base-commit-sha", $baseCommitSha
     if ("$env:DEPENDABOT_CASE_INSENSITIVE_REPO_CONTENTS_PATH" -ne "") {
         # ensure the updater gets this optional path
-        $arguments += "--case-insensitive-repo-contents-path `"$env:DEPENDABOT_CASE_INSENSITIVE_REPO_CONTENTS_PATH`""
+        $arguments += "--case-insensitive-repo-contents-path", $env:DEPENDABOT_CASE_INSENSITIVE_REPO_CONTENTS_PATH
 
         # redirect the local package cache to the case-insensitive path...
         $caseInsensitiveRoot = Join-Path $env:DEPENDABOT_CASE_INSENSITIVE_REPO_CONTENTS_PATH ".."
@@ -73,8 +74,9 @@ function Update-Files {
         $env:NUGET_FALLBACK_PACKAGES = "$env:DEPENDABOT_HOME/.nuget/packages"
     }
 
-    Invoke-Expression -Command "$updaterTool run $arguments"
-    $script:operationExitCode = $LASTEXITCODE
+    $process = Start-Process -FilePath $updaterTool -ArgumentList $arguments -NoNewWindow -Wait -PassThru
+    $process.WaitForExit()
+    $script:operationExitCode = $process.ExitCode
 }
 
 try {

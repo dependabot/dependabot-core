@@ -45,6 +45,9 @@ module Dependabot
         ).returns(T::Boolean)
       end
       def dependency_belongs_to_more_specific_group?(current_group, dep, groups, contains_checker, directory)
+        patterns = T.unsafe(current_group.rules["patterns"])
+        return false unless patterns&.any?
+
         current_group_specificity = calculate_group_specificity_for_dependency(current_group, dep)
 
         return false if current_group_specificity >= EXPLICIT_MEMBER_SCORE
