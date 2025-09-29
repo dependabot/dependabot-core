@@ -47,6 +47,8 @@ module Dependabot
         raise Dependabot::DependencyFileContentNotChanged, e.message
       end
 
+      private
+
       sig { returns(T::Array[DependencyFile]) }
       def perform_update
         updated_files = T.let([], T::Array[DependencyFile])
@@ -72,8 +74,6 @@ module Dependabot
 
         vendor_updated_files(updated_files)
       end
-
-      private
 
       sig { params(updated_files: T::Array[Dependabot::DependencyFile]).returns(T::Array[Dependabot::DependencyFile]) }
       def vendor_updated_files(updated_files)
