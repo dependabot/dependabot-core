@@ -72,7 +72,7 @@ module Dependabot
     sig { returns(Dependabot::DependencyChange) }
     def run
       updated_files = generate_dependency_files
-      raise DependabotError, "FileUpdater failed" unless updated_files.any?
+      # raise DependabotError, "FileUpdater failed" unless updated_files.any?
 
       # Remove any unchanged dependencies from the updated list
       updated_deps = updated_dependencies.reject do |d|
@@ -144,8 +144,22 @@ module Dependabot
       # updated indirectly as a result of a parent dependency update and are
       # only included here to be included in the PR info.
       relevant_dependencies = updated_dependencies.reject(&:informational_only?)
+
+      if relevant_dependencies.empty?
+        dependency_names = updated_dependencies.map(&:name).join(", ")
+        raise Dependabot::DependencyFileContentNotChanged,
+              "All dependencies (#{dependency_names}) are marked as informational_only"
+      end
       # Exclude support files since they are not manifests, just needed for supporting the update
       update_files = file_updater_for(relevant_dependencies).updated_dependency_files.reject(&:support_file)
+
+      if update_files.empty?
+        dependency_names = relevant_dependencies.map(&:name).join(", ")
+        raise Dependabot::DependencyFileContentNotChanged,
+              "No files changed when updating dependencies: #{dependency_names} " \
+              "This typically means the dependencies were already up-to-date or " \
+              "all updated files were support files."
+      end
       update_files
     end
     sig { params(dependencies: T::Array[Dependabot::Dependency]).returns(Dependabot::FileUpdaters::Base) }

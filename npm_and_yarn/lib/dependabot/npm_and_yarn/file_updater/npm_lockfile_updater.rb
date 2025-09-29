@@ -119,6 +119,9 @@ module Dependabot
         # Invalid version format found for dependency in package.json file
         INVALID_VERSION = /Invalid Version: (?<ver>.*)/
 
+        # Invalid package manager specification in package.json
+        INVALID_PACKAGE_MANAGER_SPEC = /Invalid package manager specification/
+
         # TODO: look into fixing this in npm, seems like a bug in the git
         # downloader introduced in npm 7
         #
@@ -610,6 +613,14 @@ module Dependabot
 
           if (error_msg = error_message.match(INVALID_VERSION))
             msg = "Found invalid version \"#{error_msg.named_captures.fetch('ver')}\" while updating"
+            raise Dependabot::DependencyFileNotResolvable, msg
+          end
+
+          # Handle invalid package manager specification in package.json
+          if error_message.match?(INVALID_PACKAGE_MANAGER_SPEC)
+            msg = "Invalid package manager specification in package.json. " \
+                  "The packageManager field must specify a valid semver version " \
+                  "(e.g., 'npm@8.0.0' instead of 'npm@*')."
             raise Dependabot::DependencyFileNotResolvable, msg
           end
 

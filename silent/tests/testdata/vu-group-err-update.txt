@@ -8,7 +8,7 @@ stdout -count=1 close_pull_request
 # It creates a new PR with the updated "dependency-a"
 stdout -count=1 create_pull_request
 
-stderr 'Error processing dont-update-any-files'
+stderr 'Handled error whilst updating dont-update-any-files: dependency_file_content_not_changed'
 pr-created expected.json
 
 # Testing what happens when a rebase job fails to update one dependency.

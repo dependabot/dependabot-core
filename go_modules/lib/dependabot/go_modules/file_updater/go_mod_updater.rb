@@ -81,6 +81,17 @@ module Dependabot
           T::Array[Regexp]
         )
 
+        GO_MOD_PARSE_ERROR_REGEXES = T.let(
+          [
+            # go.mod file parsing errors
+            /go: error loading go\.mod:/,
+            /go\.mod:\d+: .*unknown.*/,
+            /go\.mod:\d+: .*syntax error.*/,
+            /go\.mod:\d+: .*invalid.*/
+          ].freeze,
+          T::Array[Regexp]
+        )
+
         GO_LANG = "Go"
 
         AMBIGUOUS_ERROR_MESSAGE = /ambiguous import: found package (?<package>.*) in multiple modules/
@@ -310,8 +321,14 @@ module Dependabot
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/PerceivedComplexity
         sig { params(stderr: String).returns(T.noreturn) }
-        def handle_subprocess_error(stderr) # rubocop:disable Metrics/AbcSize
+        def handle_subprocess_error(stderr) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           stderr = stderr.gsub(Dir.getwd, "")
+
+          go_mod_parse_error_regex = GO_MOD_PARSE_ERROR_REGEXES.find { |r| stderr =~ r }
+          if go_mod_parse_error_regex
+            error_message = filter_error_message(message: stderr, regex: go_mod_parse_error_regex)
+            raise Dependabot::DependencyFileNotParseable.new(go_mod_path, error_message)
+          end
 
           # Package version doesn't match the module major version
           error_regex = RESOLVABILITY_ERROR_REGEXES.find { |r| stderr =~ r }
