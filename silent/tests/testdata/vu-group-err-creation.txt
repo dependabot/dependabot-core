@@ -5,7 +5,7 @@ stdout -count=1 record_update_job_error
 # It updates "dependency-a" to 1.3.0
 stdout -count=1 create_pull_request
 
-stderr -count=1 'Error processing dont-update-any-files'
+stderr -count=1 'Handled error whilst updating dont-update-any-files: dependency_file_content_not_changed'
 pr-created expected.json
 
 # Testing if one dependency fails to update, the other dependencies are still updated in a grouped update.
