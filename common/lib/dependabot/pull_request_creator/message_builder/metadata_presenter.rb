@@ -48,8 +48,13 @@ module Dependabot
           )
             .void
         end
-        def initialize(dependency:, source:, metadata_finder:,
-                       vulnerabilities_fixed:, github_redirection_service:)
+        def initialize(
+          dependency:,
+          source:,
+          metadata_finder:,
+          vulnerabilities_fixed:,
+          github_redirection_service:
+        )
           @dependency = dependency
           @source = source
           @metadata_finder = metadata_finder

@@ -11,14 +11,17 @@ module Dependabot
     extend T::Sig
 
     # Selection reasons for why a dependency was included in a group update
-    SELECTION_REASONS = T.let(%i(
-      direct
-      already_updated
-      dependency_drift
-      not_in_group
-      filtered_by_config
-      unknown
-    ).freeze, T::Array[Symbol])
+    SELECTION_REASONS = T.let(
+      %i(
+        direct
+        already_updated
+        dependency_drift
+        not_in_group
+        filtered_by_config
+        unknown
+      ).freeze,
+      T::Array[Symbol]
+    )
 
     # Add attribution metadata to a dependency
     sig do

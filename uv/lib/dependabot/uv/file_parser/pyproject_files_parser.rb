@@ -86,15 +86,15 @@ module Dependabot
             # probably blocked. Ignore it.
             next if dep["markers"].include?("<")
 
-            # If no requirement, don't add it
-            next if dep["requirement"].empty?
+            # In uv no constraint means any version is acceptable
+            requirement_value = dep["requirement"].empty? ? "*" : dep["requirement"]
 
             dependencies <<
               Dependency.new(
                 name: normalised_name(dep["name"], dep["extras"]),
                 version: dep["version"]&.include?("*") ? nil : dep["version"],
                 requirements: [{
-                  requirement: dep["requirement"],
+                  requirement: requirement_value,
                   file: Pathname.new(dep["file"]).cleanpath.to_path,
                   source: nil,
                   groups: [dep["requirement_type"]].compact
@@ -107,9 +107,11 @@ module Dependabot
         end
 
         sig do
-          params(type: String,
-                 deps_hash: T::Hash[String,
-                                    T.untyped]).returns(Dependabot::FileParsers::Base::DependencySet)
+          params(
+            type: String,
+            deps_hash: T::Hash[String,
+                               T.untyped]
+          ).returns(Dependabot::FileParsers::Base::DependencySet)
         end
         def parse_poetry_dependency_group(type, deps_hash)
           dependencies = Dependabot::FileParsers::Base::DependencySet.new
@@ -218,8 +220,10 @@ module Dependabot
 
         sig { returns(T::Array[T.nilable(String)]) }
         def production_dependency_names
-          @production_dependency_names ||= T.let(parse_production_dependency_names,
-                                                 T.nilable(T::Array[T.nilable(String)]))
+          @production_dependency_names ||= T.let(
+            parse_production_dependency_names,
+            T.nilable(T::Array[T.nilable(String)])
+          )
         end
 
         sig { returns(T::Array[T.nilable(String)]) }
@@ -283,8 +287,10 @@ module Dependabot
 
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def pyproject
-          @pyproject ||= T.let(dependency_files.find { |f| f.name == "pyproject.toml" },
-                               T.nilable(Dependabot::DependencyFile))
+          @pyproject ||= T.let(
+            dependency_files.find { |f| f.name == "pyproject.toml" },
+            T.nilable(Dependabot::DependencyFile)
+          )
         end
 
         sig { returns(T.untyped) }
@@ -319,14 +325,18 @@ module Dependabot
 
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def poetry_lock
-          @poetry_lock ||= T.let(dependency_files.find { |f| f.name == "poetry.lock" },
-                                 T.nilable(Dependabot::DependencyFile))
+          @poetry_lock ||= T.let(
+            dependency_files.find { |f| f.name == "poetry.lock" },
+            T.nilable(Dependabot::DependencyFile)
+          )
         end
 
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def pdm_lock
-          @pdm_lock ||= T.let(dependency_files.find { |f| f.name == "pdm.lock" },
-                              T.nilable(Dependabot::DependencyFile))
+          @pdm_lock ||= T.let(
+            dependency_files.find { |f| f.name == "pdm.lock" },
+            T.nilable(Dependabot::DependencyFile)
+          )
         end
       end
     end

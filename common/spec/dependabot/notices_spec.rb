@@ -9,8 +9,14 @@ require "debug"
 
 # A stub package manager for testing purposes.
 class StubVersionManager < Dependabot::Ecosystem::VersionManager
-  def initialize(name:, detected_version:, raw_version:, deprecated_versions: [], supported_versions: [],
-                 support_later_versions: false)
+  def initialize(
+    name:,
+    detected_version:,
+    raw_version:,
+    deprecated_versions: [],
+    supported_versions: [],
+    support_later_versions: false
+  )
     @support_later_versions = support_later_versions
     super(
       name: name,
@@ -125,16 +131,18 @@ RSpec.describe Dependabot::Notice do
 
         it "returns a deprecation notice using detected_version" do
           expect(deprecation_notice.to_hash)
-            .to eq({
-              mode: "WARN",
-              type: "bundler_deprecated_warn",
-              package_manager_name: "bundler",
-              title: "Package manager deprecation notice",
-              description: "Dependabot will stop supporting `bundler v1`!" \
-                           "\n\nPlease upgrade to one of the following versions: `v2`, or `v3`.\n",
-              show_in_pr: true,
-              show_alert: true
-            })
+            .to eq(
+              {
+                mode: "WARN",
+                type: "bundler_deprecated_warn",
+                package_manager_name: "bundler",
+                title: "Package manager deprecation notice",
+                description: "Dependabot will stop supporting `bundler v1`!" \
+                             "\n\nPlease upgrade to one of the following versions: `v2`, or `v3`.\n",
+                show_in_pr: true,
+                show_alert: true
+              }
+            )
         end
       end
 
@@ -143,16 +151,18 @@ RSpec.describe Dependabot::Notice do
 
         it "returns a deprecation notice using detected_version" do
           expect(deprecation_notice.to_hash)
-            .to eq({
-              mode: "WARN",
-              type: "bundler_deprecated_warn",
-              package_manager_name: "bundler",
-              title: "Package manager deprecation notice",
-              description: "Dependabot will stop supporting `bundler v1`!" \
-                           "\n\nPlease upgrade to one of the following versions: `v2`, or `v3`.\n",
-              show_in_pr: true,
-              show_alert: true
-            })
+            .to eq(
+              {
+                mode: "WARN",
+                type: "bundler_deprecated_warn",
+                package_manager_name: "bundler",
+                title: "Package manager deprecation notice",
+                description: "Dependabot will stop supporting `bundler v1`!" \
+                             "\n\nPlease upgrade to one of the following versions: `v2`, or `v3`.\n",
+                show_in_pr: true,
+                show_alert: true
+              }
+            )
         end
       end
     end

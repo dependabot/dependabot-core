@@ -38,10 +38,12 @@ RSpec.describe Dependabot::Bun::FileUpdater do
     )
   end
   let(:credentials) do
-    [Dependabot::Credential.new({
-      "type" => "git_source",
-      "host" => "github.com"
-    })]
+    [Dependabot::Credential.new(
+      {
+        "type" => "git_source",
+        "host" => "github.com"
+      }
+    )]
   end
   let(:dependencies) { [dependency] }
   let(:updater) do
@@ -326,10 +328,12 @@ RSpec.describe Dependabot::Bun::FileUpdater do
       Class.new(described_class) do
         def check_required_files
           %w(manifest).each do |filename|
-            unless get_original_file(filename)
-              raise Dependabot::DependencyFileNotFound.new(nil,
-                                                           "package.json not found.")
-            end
+            next if get_original_file(filename)
+
+            raise Dependabot::DependencyFileNotFound.new(
+              nil,
+              "package.json not found."
+            )
           end
         end
       end

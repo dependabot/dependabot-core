@@ -37,6 +37,7 @@ module Dependabot
 
         sig { returns(T::Array[Dependency]) }
         attr_reader :dependencies
+
         sig { returns(DependencyFile) }
         attr_reader :manifest
 

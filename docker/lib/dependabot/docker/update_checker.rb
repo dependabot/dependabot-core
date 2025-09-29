@@ -261,9 +261,12 @@ module Dependabot
 
       sig { returns(T::Hash[String, T.nilable(Dependabot::Package::PackageRelease)]) }
       def publication_details
-        @publication_details ||= T.let({}, T.nilable(
-                                             T::Hash[String, T.nilable(Dependabot::Package::PackageRelease)]
-                                           ))
+        @publication_details ||= T.let(
+          {},
+          T.nilable(
+            T::Hash[String, T.nilable(Dependabot::Package::PackageRelease)]
+          )
+        )
       end
 
       sig { params(tags: T::Array[Dependabot::Docker::Tag]).returns(T::Array[String]) }

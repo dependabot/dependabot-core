@@ -17,10 +17,10 @@ module Dependabot
     # BaseCommand does not implement this method, so we should expose
     # the instance variable for error handling to avoid raising a
     # NotImplementedError if it is referenced
-    sig { returns(T.nilable(String)) }
+    sig { override.returns(T.nilable(String)) }
     attr_reader :base_commit_sha
 
-    sig { returns(T.nilable(Integer)) }
+    sig { override.returns(T.nilable(Integer)) }
     def perform_job # rubocop:disable Metrics/AbcSize
       @base_commit_sha = T.let(nil, T.nilable(String))
 
@@ -46,8 +46,10 @@ module Dependabot
           @base_commit_sha ||= "unknown"
           if Octokit::RATE_LIMITED_ERRORS.include?(e.class)
             remaining = rate_limit_error_remaining(e)
-            Dependabot.logger.error("Repository is rate limited, attempting to retry in " \
-                                    "#{remaining}s")
+            Dependabot.logger.error(
+              "Repository is rate limited, attempting to retry in " \
+              "#{remaining}s"
+            )
           else
             Dependabot.logger.error("Error during file fetching; aborting: #{e.message}")
           end
@@ -61,6 +63,18 @@ module Dependabot
 
         save_job_details
       end
+    end
+
+    sig { override.returns(Dependabot::Job) }
+    def job
+      @job ||= T.let(
+        Job.new_fetch_job(
+          job_id: job_id,
+          job_definition: Environment.job_definition,
+          repo_contents_path: Environment.repo_contents_path
+        ),
+        T.nilable(Dependabot::Job)
+      )
     end
 
     private
@@ -261,17 +275,6 @@ module Dependabot
       end
     end
 
-    sig { returns(Dependabot::Job) }
-    def job
-      @job ||= T.let(
-        Job.new_fetch_job(
-          job_id: job_id,
-          job_definition: Environment.job_definition,
-          repo_contents_path: Environment.repo_contents_path
-        ), T.nilable(Dependabot::Job)
-      )
-    end
-
     sig { returns(T::Boolean) }
     def already_cloned?
       return false unless Environment.repo_contents_path
@@ -294,22 +297,28 @@ module Dependabot
       if error_details.nil?
         log_error(error)
 
-        unknown_error_details = T.let({
-          ErrorAttributes::CLASS => error.class.to_s,
-          ErrorAttributes::MESSAGE => error.message,
-          ErrorAttributes::BACKTRACE => error.backtrace&.join("\n"),
-          ErrorAttributes::FINGERPRINT =>
-          (T.unsafe(error).sentry_context[:fingerprint] if error.respond_to?(:sentry_context)),
-          ErrorAttributes::PACKAGE_MANAGER => job.package_manager,
-          ErrorAttributes::JOB_ID => job.id,
-          ErrorAttributes::DEPENDENCIES => job.dependencies,
-          ErrorAttributes::DEPENDENCY_GROUPS => job.dependency_groups
-        }.compact, T::Hash[Symbol, T.untyped])
+        unknown_error_details = T.let(
+          {
+            ErrorAttributes::CLASS => error.class.to_s,
+            ErrorAttributes::MESSAGE => error.message,
+            ErrorAttributes::BACKTRACE => error.backtrace&.join("\n"),
+            ErrorAttributes::FINGERPRINT =>
+                    (T.unsafe(error).sentry_context[:fingerprint] if error.respond_to?(:sentry_context)),
+            ErrorAttributes::PACKAGE_MANAGER => job.package_manager,
+            ErrorAttributes::JOB_ID => job.id,
+            ErrorAttributes::DEPENDENCIES => job.dependencies,
+            ErrorAttributes::DEPENDENCY_GROUPS => job.dependency_groups
+          }.compact,
+          T::Hash[Symbol, T.untyped]
+        )
 
-        error_details = T.let({
-          "error-type": "file_fetcher_error",
-          "error-detail": unknown_error_details
-        }, T::Hash[Symbol, T.untyped])
+        error_details = T.let(
+          {
+            "error-type": "file_fetcher_error",
+            "error-detail": unknown_error_details
+          },
+          T::Hash[Symbol, T.untyped]
+        )
       end
 
       service.record_update_job_error(
@@ -367,15 +376,17 @@ module Dependabot
 
     sig { params(job: Dependabot::Job).returns(Octokit::Client) }
     def github_connectivity_client(job)
-      Octokit::Client.new({
-        api_endpoint: job.source.api_endpoint,
-        connection_options: {
-          request: {
-            open_timeout: 20,
-            timeout: 5
+      Octokit::Client.new(
+        {
+          api_endpoint: job.source.api_endpoint,
+          connection_options: {
+            request: {
+              open_timeout: 20,
+              timeout: 5
+            }
           }
         }
-      })
+      )
     end
 
     sig { params(directory: String).returns(T::Boolean) }

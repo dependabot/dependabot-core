@@ -63,10 +63,12 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
   end
 
   let(:job_definition_with_fetched_files) do
-    job_definition.merge({
-      "base_commit_sha" => "mock-sha",
-      "base64_dependency_files" => encode_dependency_files(dependency_files)
-    })
+    job_definition.merge(
+      {
+        "base_commit_sha" => "mock-sha",
+        "base64_dependency_files" => encode_dependency_files(dependency_files)
+      }
+    )
   end
 
   let(:dependency_files) do
@@ -244,28 +246,32 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
 
       context "when pull request does not already exist" do
         before do
-          allow(job).to receive(:existing_pull_requests).and_return([
+          allow(job).to receive(:existing_pull_requests).and_return(
             [
-              {
-                "dependency-name" => "dummy-pkg-a",
-                "dependency-version" => "2.0.0"
-              }
+              [
+                {
+                  "dependency-name" => "dummy-pkg-a",
+                  "dependency-version" => "2.0.0"
+                }
+              ]
             ]
-          ])
+          )
           allow(refresh_security_update_pull_request).to receive(:check_and_update_pull_request).and_call_original
         end
 
         it "creates a pull request with deprecation notice" do
-          allow(Dependabot::Notice).to receive(:generate_deprecation_notice).and_return([{
-            mode: "WARN",
-            type: "bundler_deprecated_warn",
-            package_manager_name: "bundler",
-            title: "Package manager deprecation notice",
-            description: "Dependabot will stop supporting `bundler v1`!\n" \
-                         "\n\nPlease upgrade to one of the following versions: `v2`, or `v3`.\n",
-            show_in_pr: true,
-            show_alert: true
-          }])
+          allow(Dependabot::Notice).to receive(:generate_deprecation_notice).and_return(
+            [{
+              mode: "WARN",
+              type: "bundler_deprecated_warn",
+              package_manager_name: "bundler",
+              title: "Package manager deprecation notice",
+              description: "Dependabot will stop supporting `bundler v1`!\n" \
+                           "\n\nPlease upgrade to one of the following versions: `v2`, or `v3`.\n",
+              show_in_pr: true,
+              show_alert: true
+            }]
+          )
           expect(refresh_security_update_pull_request).to receive(:create_pull_request)
           refresh_security_update_pull_request.send(:check_and_update_pull_request, [dependency])
         end
@@ -302,8 +308,10 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
           up_to_date?: false,
           requirements_unlocked_or_can_be?: true
         )
-        allow(job).to receive_messages(allowed_update?: true,
-                                       security_advisories: [{ "dependency-name" => "dummy-pkg-a" }])
+        allow(job).to receive_messages(
+          allowed_update?: true,
+          security_advisories: [{ "dependency-name" => "dummy-pkg-a" }]
+        )
       end
 
       after do
@@ -321,8 +329,10 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
           .to receive(:info)
           .with matching(/Security advisory dependency: dummy-pkg-a\nFirst dependency in list: dummy-pkg-b/)
 
-        refresh_security_update_pull_request.send(:check_and_update_pull_request,
-                                                  [dependency, dependency_b, dependency_c])
+        refresh_security_update_pull_request.send(
+          :check_and_update_pull_request,
+          [dependency, dependency_b, dependency_c]
+        )
       end
     end
 
@@ -333,8 +343,10 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
           up_to_date?: false,
           requirements_unlocked_or_can_be?: true
         )
-        allow(job).to receive_messages(allowed_update?: true,
-                                       security_advisories: [{ "dependency-name" => "dummy-pkg-a" }])
+        allow(job).to receive_messages(
+          allowed_update?: true,
+          security_advisories: [{ "dependency-name" => "dummy-pkg-a" }]
+        )
       end
 
       after do
@@ -352,8 +364,10 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
           .to receive(:info)
           .with matching(/Security advisory dependency: dummy-pkg-a/)
 
-        refresh_security_update_pull_request.send(:check_and_update_pull_request,
-                                                  [dependency])
+        refresh_security_update_pull_request.send(
+          :check_and_update_pull_request,
+          [dependency]
+        )
       end
     end
 
@@ -364,8 +378,10 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
           up_to_date?: false,
           requirements_unlocked_or_can_be?: true
         )
-        allow(job).to receive_messages(allowed_update?: true,
-                                       security_advisories: [{ "dependency-name" => "Dummy-Pkg-A" }])
+        allow(job).to receive_messages(
+          allowed_update?: true,
+          security_advisories: [{ "dependency-name" => "Dummy-Pkg-A" }]
+        )
       end
 
       after do
@@ -398,8 +414,10 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
           .to receive(:info)
           .with matching(/Security advisory dependency: dummy-pkg-a/)
 
-        refresh_security_update_pull_request.send(:check_and_update_pull_request,
-                                                  [dependency])
+        refresh_security_update_pull_request.send(
+          :check_and_update_pull_request,
+          [dependency]
+        )
       end
     end
   end

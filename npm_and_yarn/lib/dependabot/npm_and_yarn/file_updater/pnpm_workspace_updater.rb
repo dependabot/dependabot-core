@@ -23,7 +23,7 @@ module Dependabot
           params(
             workspace_file: Dependabot::DependencyFile,
             dependencies: T::Array[Dependabot::Dependency]
-          ) .void
+          ).void
         end
         def initialize(workspace_file:, dependencies:)
           @dependencies = dependencies
@@ -119,8 +119,10 @@ module Dependabot
         end
 
         sig do
-          params(dependency: Dependabot::Dependency,
-                 new_requirement: DependencyRequirement).returns(T.nilable(DependencyRequirement))
+          params(
+            dependency: Dependabot::Dependency,
+            new_requirement: DependencyRequirement
+          ).returns(T.nilable(DependencyRequirement))
         end
         def old_requirement(dependency, new_requirement)
           matching_req = T.must(dependency.previous_requirements).find { |r| r[:groups] == new_requirement.groups }

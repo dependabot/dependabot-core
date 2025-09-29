@@ -13,7 +13,8 @@ module Dependabot
 
         sig do
           params(
-            content: String, old_requirements: T::Array[T::Hash[Symbol, T.untyped]],
+            content: String,
+            old_requirements: T::Array[T::Hash[Symbol, T.untyped]],
             new_requirements: T::Array[T::Hash[Symbol, T.untyped]]
           )
             .void

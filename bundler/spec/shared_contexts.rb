@@ -34,8 +34,12 @@ RSpec.shared_context "when stubbing rubygems versions api" do
     # Stub the Rubygems response for each dependency we have a fixture for
     fixtures =
       Dir[
-        File.join("spec", "fixtures", "rubygems_responses",
-                  "versions-*")
+        File.join(
+          "spec",
+          "fixtures",
+          "rubygems_responses",
+          "versions-*"
+        )
       ]
     fixtures.each do |path|
       dep_name = path.split("/").last.gsub("versions-", "")

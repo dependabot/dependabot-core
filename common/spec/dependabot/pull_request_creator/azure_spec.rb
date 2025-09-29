@@ -32,12 +32,14 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
   let(:branch_name) { "dependabot/bundler/business-1.5.0" }
   let(:base_commit) { "basecommitsha" }
   let(:credentials) do
-    [Dependabot::Credential.new({
-      "type" => "git_source",
-      "host" => "dev.azure.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    })]
+    [Dependabot::Credential.new(
+      {
+        "type" => "git_source",
+        "host" => "dev.azure.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    )]
   end
   let(:files) { [gemfile, gemfile_lock] }
   let(:commit_message) { "Commit msg" }

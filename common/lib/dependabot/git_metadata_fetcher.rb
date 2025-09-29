@@ -97,8 +97,10 @@ module Dependabot
 
     sig { returns(T::Array[GitTagWithDetail]) }
     def refs_for_tag_with_detail
-      @refs_for_tag_with_detail ||= T.let(parse_refs_for_tag_with_detail,
-                                          T.nilable(T::Array[GitTagWithDetail]))
+      @refs_for_tag_with_detail ||= T.let(
+        parse_refs_for_tag_with_detail,
+        T.nilable(T::Array[GitTagWithDetail])
+      )
     end
 
     sig { returns(T::Array[GitTagWithDetail]) }

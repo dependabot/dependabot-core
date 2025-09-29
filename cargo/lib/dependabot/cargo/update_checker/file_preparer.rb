@@ -1,7 +1,9 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
+require "sorbet-runtime"
 require "toml-rb"
+
 require "dependabot/dependency_file"
 require "dependabot/cargo/file_parser"
 require "dependabot/cargo/update_checker"
@@ -12,17 +14,37 @@ module Dependabot
       # This class takes a set of dependency files and sanitizes them for use
       # in UpdateCheckers::Rust::Cargo.
       class FilePreparer
-        def initialize(dependency_files:, dependency:,
-                       unlock_requirement: true,
-                       replacement_git_pin: nil,
-                       latest_allowable_version: nil)
+        extend T::Sig
+
+        sig do
+          params(
+            dependency_files: T::Array[Dependabot::DependencyFile],
+            dependency: Dependabot::Dependency,
+            unlock_requirement: T::Boolean,
+            replacement_git_pin: T.nilable(String),
+            latest_allowable_version: T.nilable(T.any(String, Gem::Version))
+          )
+            .void
+        end
+        def initialize(
+          dependency_files:,
+          dependency:,
+          unlock_requirement: true,
+          replacement_git_pin: nil,
+          latest_allowable_version: nil
+        )
           @dependency_files         = dependency_files
           @dependency               = dependency
           @unlock_requirement       = unlock_requirement
           @replacement_git_pin      = replacement_git_pin
           @latest_allowable_version = latest_allowable_version
+          @lower_bound_version = T.let(nil, T.nilable(T.any(String, Integer)))
+          @manifest_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
+          @lockfile = T.let(nil, T.nilable(Dependabot::DependencyFile))
+          @toolchain = T.let(nil, T.nilable(Dependabot::DependencyFile))
         end
 
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
         def prepared_dependency_files
           files = []
           files += manifest_files.map do |file|
@@ -39,21 +61,31 @@ module Dependabot
 
         private
 
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
+
+        sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
+
+        sig { returns(T.nilable(String)) }
         attr_reader :replacement_git_pin
+
+        sig { returns(T.nilable(T.any(String, Gem::Version))) }
         attr_reader :latest_allowable_version
 
+        sig { returns(T::Boolean) }
         def unlock_requirement?
           @unlock_requirement
         end
 
+        sig { returns(T::Boolean) }
         def replace_git_pin?
           !replacement_git_pin.nil?
         end
 
+        sig { params(file: Dependabot::DependencyFile).returns(String) }
         def manifest_content_for_update_check(file)
-          content = file.content
+          content = T.must(file.content)
 
           unless file.support_file?
             content = replace_version_constraint(content, file.name)
@@ -67,6 +99,7 @@ module Dependabot
 
         # NOTE: We don't need to care about formatting in this method, since
         # we're only using the manifest to find the latest resolvable version
+        sig { params(content: String, filename: String).returns(String) }
         def replace_version_constraint(content, filename)
           parsed_manifest = TomlRB.parse(content)
 
@@ -89,6 +122,7 @@ module Dependabot
           TomlRB.dump(parsed_manifest)
         end
 
+        sig { params(parsed_manifest: T::Hash[String, T.untyped], filename: String).void }
         def replace_req_on_target_specific_deps!(parsed_manifest, filename)
           parsed_manifest.fetch("target", {}).each do |target, _|
             Cargo::FileParser::DEPENDENCY_TYPES.each do |type|
@@ -114,6 +148,7 @@ module Dependabot
           end
         end
 
+        sig { params(content: String).returns(String) }
         def replace_git_pin(content)
           parsed_manifest = TomlRB.parse(content)
 
@@ -134,6 +169,7 @@ module Dependabot
           TomlRB.dump(parsed_manifest)
         end
 
+        sig { params(parsed_manifest: T::Hash[String, T.untyped]).void }
         def replace_git_pin_on_target_specific_deps!(parsed_manifest)
           parsed_manifest.fetch("target", {}).each do |target, _|
             Cargo::FileParser::DEPENDENCY_TYPES.each do |type|
@@ -162,6 +198,7 @@ module Dependabot
           end
         end
 
+        sig { params(content: String).returns(String) }
         def replace_ssh_urls(content)
           parsed_manifest = TomlRB.parse(content)
 
@@ -178,6 +215,7 @@ module Dependabot
           TomlRB.dump(parsed_manifest)
         end
 
+        sig { params(filename: String).returns(String) }
         def temporary_requirement_for_resolution(filename)
           original_req = dependency.requirements
                                    .find { |r| r.fetch(:file) == filename }
@@ -201,6 +239,7 @@ module Dependabot
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
+        sig { returns(T.any(String, Integer)) }
         def lower_bound_version
           @lower_bound_version ||=
             if git_dependency? && git_dependency_version
@@ -221,16 +260,18 @@ module Dependabot
         end
         # rubocop:enable Metrics/PerceivedComplexity
 
+        sig { returns(T.nilable(String)) }
         def git_dependency_version
           return unless lockfile
 
-          TomlRB.parse(lockfile.content)
+          TomlRB.parse(T.must(lockfile).content)
                 .fetch("package", [])
                 .select { |p| p["name"] == dependency.name }
                 .find { |p| p["source"].end_with?(dependency.version) }
                 .fetch("version")
         end
 
+        sig { params(parsed_manifest: T::Hash[String, T.untyped], type: String).returns(T::Array[String]) }
         def dependency_names_for_type(parsed_manifest, type)
           names = []
           parsed_manifest.fetch(type, {}).each do |nm, req|
@@ -241,6 +282,9 @@ module Dependabot
           names
         end
 
+        sig do
+          params(parsed_manifest: T::Hash[String, T.untyped], type: String, target: String).returns(T::Array[String])
+        end
         def dependency_names_for_type_and_target(parsed_manifest, type, target)
           names = []
           (parsed_manifest.dig("target", target, type) || {}).each do |nm, req|
@@ -251,13 +295,16 @@ module Dependabot
           names
         end
 
+        sig { params(name: String, declaration: T.untyped).returns(String) }
         def name_from_declaration(name, declaration)
           return name if declaration.is_a?(String)
+
           raise "Unexpected dependency declaration: #{declaration}" unless declaration.is_a?(Hash)
 
           declaration.fetch("package", name)
         end
 
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
         def manifest_files
           @manifest_files ||=
             dependency_files.select { |f| f.name.end_with?("Cargo.toml") }
@@ -267,15 +314,18 @@ module Dependabot
           @manifest_files
         end
 
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def lockfile
           @lockfile ||= dependency_files.find { |f| f.name == "Cargo.lock" }
         end
 
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def toolchain
           @toolchain ||=
             dependency_files.find { |f| f.name == "rust-toolchain" }
         end
 
+        sig { returns(T::Boolean) }
         def git_dependency?
           GitCommitChecker
             .new(dependency: dependency, credentials: [])
