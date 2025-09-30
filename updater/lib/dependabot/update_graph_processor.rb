@@ -97,6 +97,18 @@ module Dependabot
       ).returns(GithubApi::DependencySubmission)
     end
     def create_submission(source, files)
+      # return an empty submission if there are no files
+      if files.empty?
+        return GithubApi::DependencySubmission.new(
+          job_id: job.id.to_s,
+          branch: T.must(source.branch),
+          sha: base_commit_sha,
+          package_manager: job.package_manager,
+          manifest_file: DependencyFile.new(name: "", content: "", directory: source.directory),
+          resolved_dependencies: {}
+        )
+      end
+
       # TODO(brrygrdn): Refactor the grapher to wrap the parser call
       parser = Dependabot::FileParsers.for_package_manager(job.package_manager).new(
         dependency_files: files,
