@@ -43,33 +43,16 @@ module Dependabot
 
     sig { void }
     def run
-      parser = Dependabot::FileParsers.for_package_manager(job.package_manager).new(
-        dependency_files: dependency_files,
-        repo_contents_path: job.repo_contents_path,
-        source: job.source,
-        credentials: job.credentials,
-        reject_external_code: job.reject_external_code?,
-        options: job.experiments
-      )
+      # TODO: Handle empty directory set
+      directories.each do |directory|
+        job.source.directory = directory
+        directory_dependency_files = dependency_files_for(directory)
 
-      grapher = Dependabot::DependencyGraphers.for_package_manager(job.package_manager).new(
-        dependency_files: dependency_files,
-        dependencies: parser.parse
-      )
+        submission = create_submission(directory_dependency_files)
 
-      # TODO(brrygdn): This should be called once per directory in future
-      submission = GithubApi::DependencySubmission.new(
-        job_id: job.id.to_s,
-        # TODO(brrygrdn): We should not tolerate this being null for graph jobs
-        branch: job.source.branch || "main",
-        sha: base_commit_sha,
-        package_manager: job.package_manager,
-        manifest_file: grapher.relevant_dependency_file,
-        resolved_dependencies: grapher.resolved_dependencies
-      )
-
-      Dependabot.logger.info("Dependency submission payload:\n#{JSON.pretty_generate(submission.payload)}")
-      service.create_dependency_submission(dependency_submission: submission)
+        Dependabot.logger.info("Dependency submission payload:\n#{JSON.pretty_generate(submission.payload)}")
+        service.create_dependency_submission(dependency_submission: submission)
+      end
     end
 
     private
@@ -88,5 +71,43 @@ module Dependabot
 
     sig { returns(Dependabot::Updater::ErrorHandler) }
     attr_reader :error_handler
+
+    sig { returns(T::Array[String]) }
+    def directories
+      @directories ||= T.must(job.source.directories)
+    end
+
+    sig { params(directory: String).returns(T::Array[Dependabot::DependencyFile]) }
+    def dependency_files_for(directory)
+      dependency_files.select { |f| f.directory == directory }
+    end
+
+    sig { params(files: T::Array[Dependabot::DependencyFile]).returns(GithubApi::DependencySubmission) }
+    def create_submission(files)
+      # TODO(brrygrdn): Refactor the grapher to wrap the parser call
+      parser = Dependabot::FileParsers.for_package_manager(job.package_manager).new(
+        dependency_files: files,
+        repo_contents_path: job.repo_contents_path,
+        source: job.source,
+        credentials: job.credentials,
+        reject_external_code: job.reject_external_code?,
+        options: job.experiments
+      )
+
+      grapher = Dependabot::DependencyGraphers.for_package_manager(job.package_manager).new(
+        dependency_files: files,
+        dependencies: parser.parse
+      )
+
+      GithubApi::DependencySubmission.new(
+        job_id: job.id.to_s,
+        # TODO(brrygrdn): We should not tolerate this being null for graph jobs
+        branch: job.source.branch || "main",
+        sha: base_commit_sha,
+        package_manager: job.package_manager,
+        manifest_file: grapher.relevant_dependency_file,
+        resolved_dependencies: grapher.resolved_dependencies
+      )
+    end
   end
 end

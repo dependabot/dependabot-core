@@ -192,6 +192,84 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
     end
   end
 
+  context "with a job that specifies multiple directories" do
+    let(:directories) { [dir1, dir2] }
+
+    let(:dir1) { "/" }
+    let(:dir2) { "/subproject/" }
+
+    let(:dependency_files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "Gemfile",
+          content: fixture("bundler_sinatra_app/original/Gemfile"),
+          directory: dir1
+        ),
+        Dependabot::DependencyFile.new(
+          name: "Gemfile.lock",
+          content: fixture("bundler_sinatra_app/original/Gemfile.lock"),
+          directory: dir1
+        ),
+        Dependabot::DependencyFile.new(
+          name: "Gemfile",
+          content: fixture("bundler/original/Gemfile"),
+          directory: dir2
+        ),
+        Dependabot::DependencyFile.new(
+          name: "Gemfile.lock",
+          content: fixture("bundler/original/Gemfile.lock"),
+          directory: dir2
+        )
+      ]
+    end
+
+    it "emits a snapshot for each directory" do
+      expect(service).to receive(:create_dependency_submission).twice
+
+      update_graph_processor.run
+    end
+
+    it "correctly snapshots the first directory" do
+      expect(service).to receive(:create_dependency_submission) do |args|
+        payload = args[:dependency_submission].payload
+
+        next unless payload[:job][:correlator] == "dependabot-bundler-Gemfile.lock"
+
+        # Check we have a Sinatra app with 28 dependencies
+        expect(payload[:manifests].length).to eq(1)
+        lockfile = payload[:manifests].fetch("/Gemfile.lock")
+
+        expect(lockfile[:resolved].length).to eq(28)
+
+        expect(lockfile[:resolved].values.count { |dep| dep[:relationship] == "direct" }).to eq(4)
+        expect(lockfile[:resolved].values.count { |dep| dep[:relationship] == "indirect" }).to eq(24)
+      end
+
+      update_graph_processor.run
+    end
+
+    it "correctly snapshots the second directory" do
+      expect(service).to receive(:create_dependency_submission) do |args|
+        payload = args[:dependency_submission].payload
+
+        next unless payload[:job][:correlator] == "dependabot-bundler-subproj-Gemfile.lock"
+
+        # Check we have the simple app with 2 dependencies
+        expect(payload[:manifests].length).to eq(1)
+        lockfile = payload[:manifests].fetch("/Gemfile.lock")
+
+        expect(lockfile[:resolved].length).to eq(2)
+
+        dependency1 = lockfile[:resolved]["dummy-pkg-a"]
+        expect(dependency1[:package_url]).to eql("pkg:gem/dummy-pkg-a@2.0.0")
+        dependency2 = lockfile[:resolved]["dummy-pkg-b"]
+        expect(dependency2[:package_url]).to eql("pkg:gem/dummy-pkg-b@1.1.0")
+      end
+
+      update_graph_processor.run
+    end
+  end
+
   context "with vendored files" do
     let(:directories) { [directory] }
     let(:directory) { "/" }
