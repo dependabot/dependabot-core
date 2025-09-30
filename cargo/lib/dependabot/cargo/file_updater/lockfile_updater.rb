@@ -186,8 +186,13 @@ module Dependabot
           start = Time.now
 
           # Check if any manifest file contains a workspace
-          # workspace_manifest = detect_workspace_manifest
-          # Dependabot.logger.info("Detected workspace in #{workspace_manifest.name}") if workspace_manifest
+          workspace_manifest = detect_workspace_manifest
+
+          if workspace_manifest
+            error_msg = "Dependabot does not currently support Cargo workspaces"
+            Dependabot.logger.error(error_msg)
+            raise Dependabot::DependencyFileNotResolvable, error_msg
+          end
 
           # Validate cargo update commands before executing
           command_parts = command.split.map(&:strip).reject(&:empty?)
@@ -200,8 +205,6 @@ module Dependabot
             Dependabot.logger.error(error_msg)
             raise Dependabot::DependencyFileNotResolvable, error_msg
           end
-
-          # debugger if command.include?("error:")
 
           command = SharedHelpers.escape_command(command)
           Helpers.setup_credentials_in_environment(credentials)
@@ -569,6 +572,19 @@ module Dependabot
           return nil if versions.empty?
 
           versions.max_by { |v| version_class.new(v) }
+        end
+
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
+        def detect_workspace_manifest
+          manifest_files.find { |file| workspace_section?(file) }
+        end
+
+        sig { params(file: Dependabot::DependencyFile).returns(T::Boolean) }
+        def workspace_section?(file)
+          return false unless file.content
+
+          parsed_manifest = TomlRB.parse(file.content)
+          parsed_manifest.key?("workspace")
         end
       end
       # rubocop:enable Metrics/ClassLength

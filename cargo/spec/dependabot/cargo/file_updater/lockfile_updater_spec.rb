@@ -460,15 +460,11 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
           )
         end
 
-        it "updates the dependency version in the lockfile" do
-          expect(updated_lockfile_content)
-            .to include(%(name = "log"\nversion = "0.4.1"))
-          expect(updated_lockfile_content).to include(
-            "89f010e843f2b1a31dbd316b3b8d443758bc634bed37aabade59c686d644e0a2"
-          )
-          expect(updated_lockfile_content).not_to include(
-            "b3a89a0c46ba789b8a247d4c567aed4d7c68e624672d238b45cc3ec20dc9f940"
-          )
+        it "raises a helpful error about workspaces not being supported" do
+          expect { updated_lockfile_content }
+            .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+              expect(error.message).to include("Dependabot does not currently support Cargo workspaces")
+            end
         end
       end
 
@@ -506,15 +502,11 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
           )
         end
 
-        it "updates the dependency version in the lockfile" do
-          expect(updated_lockfile_content)
-            .to include(%(name = "log"\nversion = "0.4.1"))
-          expect(updated_lockfile_content).to include(
-            "89f010e843f2b1a31dbd316b3b8d443758bc634bed37aabade59c686d644e0a2"
-          )
-          expect(updated_lockfile_content).not_to include(
-            "b3a89a0c46ba789b8a247d4c567aed4d7c68e624672d238b45cc3ec20dc9f940"
-          )
+        it "raises a helpful error about workspaces not being supported" do
+          expect { updated_lockfile_content }
+            .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+              expect(error.message).to include("Dependabot does not currently support Cargo workspaces")
+            end
         end
       end
 
