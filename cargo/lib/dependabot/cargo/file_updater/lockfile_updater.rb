@@ -184,6 +184,25 @@ module Dependabot
         sig { params(command: String, fingerprint: String).void }
         def run_cargo_command(command, fingerprint:)
           start = Time.now
+
+          # Check if any manifest file contains a workspace
+          # workspace_manifest = detect_workspace_manifest
+          # Dependabot.logger.info("Detected workspace in #{workspace_manifest.name}") if workspace_manifest
+
+          # Validate cargo update commands before executing
+          command_parts = command.split.map(&:strip).reject(&:empty?)
+          if command_parts.size > 3 &&
+             command_parts[0] == "cargo" &&
+             command_parts[1] == "update" &&
+             command_parts[2] == "-p" &&
+             command_parts[3] == "error:"
+            error_msg = "Invalid cargo update command: #{command}. The package specification contains an error message instead of a valid package name."
+            Dependabot.logger.error(error_msg)
+            raise Dependabot::DependencyFileNotResolvable, error_msg
+          end
+
+          # debugger if command.include?("error:")
+
           command = SharedHelpers.escape_command(command)
           Helpers.setup_credentials_in_environment(credentials)
           # Pass through any registry tokens supplied via CARGO_REGISTRIES_...
@@ -208,6 +227,32 @@ module Dependabot
           if (match = /error: no matching package found\nsearched package name: `([^`]+)`/m.match(stdout))
             raise Dependabot::DependencyFileNotResolvable, match[1]
           end
+
+          # Handle binary specification errors
+          # if stdout.include?("can't find") && stdout.include?("bin at") && stdout.include?("Please specify bin.path")
+          #   last_line = stdout.lines.last&.strip || "Path not found"
+          #   raise Dependabot::DependencyFileNotResolvable,
+          #         "A binary specified in the manifest could not be found. #{last_line}"
+          # end
+
+          # # Handle version selection failures
+          # if stdout.include?("failed to select a version for the requirement")
+          #   error_msg = stdout.lines.grep(/failed to select a version/).first&.strip ||
+          #               "Failed to select a compatible version"
+          #   raise Dependabot::DependencyFileNotResolvable, error_msg
+          # end
+
+          # # Handle dependency conflicts
+          # if stdout.include?("failed to select a version for") && stdout.include?("which could resolve this conflict")
+          #   error_msg = "Dependency version conflict: #{stdout.lines.grep(/failed to select a version for/).first&.strip}"
+          #   raise Dependabot::DependencyFileNotResolvable, error_msg
+          # end
+
+          # # Handle links to libraries without build scripts
+          # if stdout.include?("package specifies that it links to") && stdout.include?("but does not have a custom build script")
+          #   error_msg = stdout.lines.grep(/package specifies that it links to/).first&.strip
+          #   raise Dependabot::DependencyFileNotResolvable, error_msg
+          # end
 
           raise SharedHelpers::HelperSubprocessFailed.new(
             message: stdout,
