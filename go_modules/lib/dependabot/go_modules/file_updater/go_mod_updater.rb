@@ -332,7 +332,6 @@ module Dependabot
             raise Dependabot::DependencyFileNotParseable.new(go_mod_path, error_message)
           end
 
-
           # Package version doesn't match the module major version
           error_regex = RESOLVABILITY_ERROR_REGEXES.find { |r| stderr =~ r }
           if error_regex
