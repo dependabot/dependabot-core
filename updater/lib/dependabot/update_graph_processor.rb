@@ -48,7 +48,6 @@ module Dependabot
     def run
       raise Dependabot::DependabotError, "job.source.directories is nil" if job.source.directories.nil?
       raise Dependabot::DependabotError, "job.source.directories is empty" unless job.source.directories&.any?
-      raise Dependabot::DependabotError, "job.source.branch is nil" if job.source.branch.nil?
 
       T.must(job.source.directories).each do |directory|
         directory_source = create_source_for(directory)
@@ -114,7 +113,8 @@ module Dependabot
 
       GithubApi::DependencySubmission.new(
         job_id: job.id.to_s,
-        branch: T.must(source.branch),
+        # FIXME(brrygrdn): We should obtain the ref from git -or- inject it via the backend service
+        branch: source.branch || "main",
         sha: base_commit_sha,
         package_manager: job.package_manager,
         manifest_file: grapher.relevant_dependency_file,
