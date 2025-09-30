@@ -380,4 +380,46 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
       update_graph_processor.run
     end
   end
+
+  describe "job validation" do
+    let(:dependency_files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "Gemfile",
+          content: fixture("bundler/original/Gemfile"),
+          directory: "/"
+        ),
+        Dependabot::DependencyFile.new(
+          name: "Gemfile.lock",
+          content: fixture("bundler/original/Gemfile.lock"),
+          directory: "/"
+        )
+      ]
+    end
+
+    context "when the source has no directories defined" do
+      let(:directories) { nil }
+
+      it "raises an error" do
+        expect { update_graph_processor.run }.to raise_error(Dependabot::DependabotError)
+      end
+    end
+
+    context "when the source directories are empty" do
+      let(:directories) { [] }
+
+      it "raises an error" do
+        expect { update_graph_processor.run }.to raise_error(Dependabot::DependabotError)
+      end
+    end
+
+    context "when the source does not specify a branch" do
+      let(:directories) { ["/"] }
+      let(:branch) { nil }
+
+      it "raises an error" do
+        expect { update_graph_processor.run }.to raise_error(Dependabot::DependabotError)
+      end
+    end
+  end
 end

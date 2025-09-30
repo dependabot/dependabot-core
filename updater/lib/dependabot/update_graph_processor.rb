@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -38,13 +38,19 @@ module Dependabot
       @base_commit_sha = base_commit_sha
       @dependency_files = dependency_files
 
-      @error_handler = Dependabot::Updater::ErrorHandler.new(service: service, job: job)
+      @error_handler = T.let(
+        Dependabot::Updater::ErrorHandler.new(service: service, job: job),
+        Dependabot::Updater::ErrorHandler
+      )
     end
 
     sig { void }
     def run
-      # TODO: Handle empty directory set
-      directories.each do |directory|
+      raise Dependabot::DependabotError, "job.source.directories is nil" if job.source.directories.nil?
+      raise Dependabot::DependabotError, "job.source.directories is empty" unless job.source.directories&.any?
+      raise Dependabot::DependabotError, "job.source.branch is nil" if job.source.branch.nil?
+
+      T.must(job.source.directories).each do |directory|
         directory_source = create_source_for(directory)
         directory_dependency_files = dependency_files_for(directory)
 
@@ -71,11 +77,6 @@ module Dependabot
 
     sig { returns(Dependabot::Updater::ErrorHandler) }
     attr_reader :error_handler
-
-    sig { returns(T::Array[String]) }
-    def directories
-      @directories ||= T.must(job.source.directories)
-    end
 
     sig { params(directory: String).returns(Dependabot::Source) }
     def create_source_for(directory)
@@ -113,8 +114,7 @@ module Dependabot
 
       GithubApi::DependencySubmission.new(
         job_id: job.id.to_s,
-        # TODO(brrygrdn): We should not tolerate this being null for graph jobs
-        branch: source.branch || "main",
+        branch: T.must(source.branch),
         sha: base_commit_sha,
         package_manager: job.package_manager,
         manifest_file: grapher.relevant_dependency_file,
