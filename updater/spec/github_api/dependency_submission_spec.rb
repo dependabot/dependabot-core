@@ -11,7 +11,7 @@ require "dependabot/job"
 
 require "github_api/dependency_submission"
 
-RSpec.describe GithubApi::DependencySubmission, skip: "The WIP refactor is changing this call significantly" do
+RSpec.describe GithubApi::DependencySubmission do
   include DependencyFileHelpers
 
   subject(:dependency_submission) do
@@ -20,56 +20,44 @@ RSpec.describe GithubApi::DependencySubmission, skip: "The WIP refactor is chang
       branch: branch,
       sha: sha,
       package_manager: "bundler",
-      dependency_files: dependency_files,
-      dependencies: parsed_dependencies
+      manifest_file: lockfile,
+      resolved_dependencies: resolved_dependencies
     )
   end
 
-  let(:parser) do
-    Dependabot::FileParsers.for_package_manager("bundler").new(
-      dependency_files: dependency_files,
-      repo_contents_path: nil,
-      source: source,
-      credentials: [],
-      reject_external_code: false
-    )
-  end
-
-  let(:repo) { "dependabot-fixtures/dependabot-test-ruby-package" }
   let(:branch) { "main" }
   let(:sha) { "fake-sha" }
 
-  let(:parsed_dependencies) do
-    parser.parse
-  end
+  let(:directory) { "/" }
 
-  let(:source) do
-    Dependabot::Source.new(
-      provider: "github",
-      repo: repo,
-      directory: "/",
-      branch: branch
+  let(:lockfile) do
+    Dependabot::DependencyFile.new(
+      name: "Gemfile.lock",
+      content: fixture("bundler/original/Gemfile.lock"),
+      directory: directory
     )
   end
 
-  let(:directory) { "/" }
+  let(:resolved_dependencies) do
+    {
+      "dummy-pkg-a" => {
+        package_url: "pkg:gem/dummy-pkg-a@2.0.0",
+        relationship: "direct",
+        scope: "runtime",
+        dependencies: [],
+        metadata: {}
+      },
+      "dummy-pkg-b" => {
+        package_url: "pkg:gem/dummy-pkg-b@1.1.0",
+        relationship: "direct",
+        scope: "runtime",
+        dependencies: [],
+        metadata: {}
+      }
+    }
+  end
 
   describe "::job_correlator" do
-    let(:dependency_files) do
-      [
-        Dependabot::DependencyFile.new(
-          name: "Gemfile",
-          content: fixture("bundler/original/Gemfile"),
-          directory: directory
-        ),
-        Dependabot::DependencyFile.new(
-          name: "Gemfile.lock",
-          content: fixture("bundler/original/Gemfile.lock"),
-          directory: directory
-        )
-      ]
-    end
-
     [
       {
         context: "with a typical RubyGems project in directory root",
@@ -107,22 +95,7 @@ RSpec.describe GithubApi::DependencySubmission, skip: "The WIP refactor is chang
     end
   end
 
-  context "with a basic Gemfile project" do
-    let(:dependency_files) do
-      [
-        Dependabot::DependencyFile.new(
-          name: "Gemfile",
-          content: fixture("bundler/original/Gemfile"),
-          directory: directory
-        ),
-        Dependabot::DependencyFile.new(
-          name: "Gemfile.lock",
-          content: fixture("bundler/original/Gemfile.lock"),
-          directory: directory
-        )
-      ]
-    end
-
+  describe "payload" do
     it "generates submission metadata correctly" do
       payload = dependency_submission.payload
 
