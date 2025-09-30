@@ -22,7 +22,7 @@ RSpec.describe Dependabot::UpdateGraphCommand do
     )
   end
   let(:job_definition) do
-    JSON.parse(fixture("file_fetcher_output/output.json"))
+    JSON.parse(fixture("file_fetcher_output/output-directories-only.json"))
   end
   let(:job_id) { "123123" }
 
