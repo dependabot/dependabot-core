@@ -629,8 +629,8 @@ module Dependabot
 
           if error_message.match?(ERR_INVALID_AUTH) || error_message.match?(INVALID_AUTH_CONFIG)
             msg = "Invalid npm authentication configuration found " \
-            "The _auth setting in .npmrc needs to be scoped to the specific registry." \
-            "Please update your .npmrc configuration to use registry-specific auth settings."
+                  "The _auth setting in .npmrc needs to be scoped to the specific registry." \
+                  "Please update your .npmrc configuration to use registry-specific auth settings."
             raise Dependabot::PrivateSourceAuthenticationFailure, msg
           end
 
