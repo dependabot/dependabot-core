@@ -185,11 +185,12 @@ module Dependabot
         def run_cargo_command(command, fingerprint:)
           start = Time.now
 
-          # Check if any manifest file contains a workspace
-          workspace_manifest = detect_workspace_manifest
+          # Check if any manifest file is a virtual workspace (has [workspace] with members but no [package])
+          # Virtual workspaces are not supported as they complicate dependency resolution
+          virtual_workspace = detect_virtual_workspace
 
-          if workspace_manifest
-            error_msg = "Dependabot does not currently support Cargo workspaces"
+          if virtual_workspace
+            error_msg = "Dependabot does not currently support Cargo virtual workspaces"
             Dependabot.logger.error(error_msg)
             raise Dependabot::DependencyFileNotResolvable, error_msg
           end
@@ -230,32 +231,6 @@ module Dependabot
           if (match = /error: no matching package found\nsearched package name: `([^`]+)`/m.match(stdout))
             raise Dependabot::DependencyFileNotResolvable, match[1]
           end
-
-          # Handle binary specification errors
-          # if stdout.include?("can't find") && stdout.include?("bin at") && stdout.include?("Please specify bin.path")
-          #   last_line = stdout.lines.last&.strip || "Path not found"
-          #   raise Dependabot::DependencyFileNotResolvable,
-          #         "A binary specified in the manifest could not be found. #{last_line}"
-          # end
-
-          # # Handle version selection failures
-          # if stdout.include?("failed to select a version for the requirement")
-          #   error_msg = stdout.lines.grep(/failed to select a version/).first&.strip ||
-          #               "Failed to select a compatible version"
-          #   raise Dependabot::DependencyFileNotResolvable, error_msg
-          # end
-
-          # # Handle dependency conflicts
-          # if stdout.include?("failed to select a version for") && stdout.include?("which could resolve this conflict")
-          #   error_msg = "Dependency version conflict: #{stdout.lines.grep(/failed to select a version for/).first&.strip}"
-          #   raise Dependabot::DependencyFileNotResolvable, error_msg
-          # end
-
-          # # Handle links to libraries without build scripts
-          # if stdout.include?("package specifies that it links to") && stdout.include?("but does not have a custom build script")
-          #   error_msg = stdout.lines.grep(/package specifies that it links to/).first&.strip
-          #   raise Dependabot::DependencyFileNotResolvable, error_msg
-          # end
 
           raise SharedHelpers::HelperSubprocessFailed.new(
             message: stdout,
@@ -575,16 +550,22 @@ module Dependabot
         end
 
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
-        def detect_workspace_manifest
-          manifest_files.find { |file| workspace_section?(file) }
+        def detect_virtual_workspace
+          manifest_files.find { |file| virtual_workspace?(file) }
         end
 
         sig { params(file: Dependabot::DependencyFile).returns(T::Boolean) }
-        def workspace_section?(file)
+        def virtual_workspace?(file)
           return false unless file.content
 
           parsed_manifest = TomlRB.parse(file.content)
-          parsed_manifest.key?("workspace")
+          # A virtual workspace has [workspace] with members but no [package]
+          # Regular workspaces and workspace.dependencies are fine
+          parsed_manifest.key?("workspace") &&
+            parsed_manifest.dig("workspace", "members")&.any? &&
+            !parsed_manifest.key?("package")
+        rescue TomlRB::ParseError
+          false
         end
       end
       # rubocop:enable Metrics/ClassLength

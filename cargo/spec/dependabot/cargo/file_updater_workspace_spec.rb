@@ -76,23 +76,11 @@ RSpec.describe Dependabot::Cargo::FileUpdater do
     describe "#updated_dependency_files" do
       subject(:updated_files) { updater.updated_dependency_files }
 
-      it "updates the workspace dependency in root Cargo.toml" do
-        updated_cargo_toml = updated_files.find { |f| f.name == "Cargo.toml" }
-        expect(updated_cargo_toml).not_to be_nil
-        expect(updated_cargo_toml.content).to include('wasmtime = "35.0.0"')
-        expect(updated_cargo_toml.content).not_to include('wasmtime = "31.0.0"')
-      end
-
-      it "does not modify member Cargo.toml files with workspace references" do
-        member_cargo_toml = updated_files.find { |f| f.name == "fvm/Cargo.toml" }
-        # Member file should not be included in updated files if unchanged
-        expect(member_cargo_toml).to be_nil
-      end
-
-      it "updates the Cargo.lock file" do
-        updated_lock = updated_files.find { |f| f.name == "Cargo.lock" }
-        expect(updated_lock).not_to be_nil
-        # Lock file updater should handle version changes
+      it "raises a helpful error about virtual workspaces not being supported" do
+        expect { updated_files }
+          .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+            expect(error.message).to include("Dependabot does not currently support Cargo virtual workspaces")
+          end
       end
     end
 
