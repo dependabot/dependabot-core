@@ -151,7 +151,7 @@ module Dependabot
       return @dependency_files_for_multi_directories if @dependency_files_for_multi_directories
 
       @dependency_files_for_multi_directories = files_from_multidirectories
-      if @dependency_files_for_multi_directories&.empty?
+      if @dependency_files_for_multi_directories&.empty? && job.command != "graph"
         raise Dependabot::DependencyFileNotFound, job.source.directories&.join(", ")
       end
 

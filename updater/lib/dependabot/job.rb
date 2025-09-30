@@ -32,6 +32,7 @@ module Dependabot
     PERMITTED_KEYS = T.let(
       %i(
         allowed_updates
+        command
         commit_message_options
         dependencies
         exclude_paths
@@ -79,6 +80,9 @@ module Dependabot
 
     sig { returns(String) }
     attr_reader :id
+
+    sig { returns(String) }
+    attr_reader :command
 
     sig { returns(T::Array[T.untyped]) }
     attr_reader :ignore_conditions
@@ -155,6 +159,7 @@ module Dependabot
     sig { params(attributes: T.untyped).void }
     def initialize(attributes) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
       @id                             = T.let(attributes.fetch(:id), String)
+      @command                        = T.let(attributes.fetch(:command, ""), String)
       @allowed_updates                = T.let(attributes.fetch(:allowed_updates), T::Array[T.untyped])
       @commit_message_options         = T.let(
         attributes.fetch(:commit_message_options, {}),
