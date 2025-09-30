@@ -45,10 +45,10 @@ module Dependabot
     def run
       # TODO: Handle empty directory set
       directories.each do |directory|
-        job.source.directory = directory
+        directory_source = create_source_for(directory)
         directory_dependency_files = dependency_files_for(directory)
 
-        submission = create_submission(directory_dependency_files)
+        submission = create_submission(directory_source, directory_dependency_files)
 
         Dependabot.logger.info("Dependency submission payload:\n#{JSON.pretty_generate(submission.payload)}")
         service.create_dependency_submission(dependency_submission: submission)
@@ -77,18 +77,30 @@ module Dependabot
       @directories ||= T.must(job.source.directories)
     end
 
+    sig { params(directory: String).returns(Dependabot::Source) }
+    def create_source_for(directory)
+      job.source.dup.tap do |s|
+        s.directory = directory
+      end
+    end
+
     sig { params(directory: String).returns(T::Array[Dependabot::DependencyFile]) }
     def dependency_files_for(directory)
       dependency_files.select { |f| f.directory == directory }
     end
 
-    sig { params(files: T::Array[Dependabot::DependencyFile]).returns(GithubApi::DependencySubmission) }
-    def create_submission(files)
+    sig do
+      params(
+        source: Dependabot::Source,
+        files: T::Array[Dependabot::DependencyFile]
+      ).returns(GithubApi::DependencySubmission)
+    end
+    def create_submission(source, files)
       # TODO(brrygrdn): Refactor the grapher to wrap the parser call
       parser = Dependabot::FileParsers.for_package_manager(job.package_manager).new(
         dependency_files: files,
         repo_contents_path: job.repo_contents_path,
-        source: job.source,
+        source: source,
         credentials: job.credentials,
         reject_external_code: job.reject_external_code?,
         options: job.experiments
@@ -102,7 +114,7 @@ module Dependabot
       GithubApi::DependencySubmission.new(
         job_id: job.id.to_s,
         # TODO(brrygrdn): We should not tolerate this being null for graph jobs
-        branch: job.source.branch || "main",
+        branch: source.branch || "main",
         sha: base_commit_sha,
         package_manager: job.package_manager,
         manifest_file: grapher.relevant_dependency_file,
