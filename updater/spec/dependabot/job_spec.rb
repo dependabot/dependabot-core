@@ -175,7 +175,7 @@ RSpec.describe Dependabot::Job do
   end
 
   describe "#allowed_update?" do
-    subject { job.allowed_update?(dependency) }
+    subject(:allowed_update) { job.allowed_update?(dependency, has_update_completed: has_update_completed) }
 
     let(:dependency) do
       Dependabot::Dependency.new(
@@ -189,6 +189,7 @@ RSpec.describe Dependabot::Job do
     let(:requirements) do
       [{ file: "Gemfile", requirement: "~> 1.8.0", groups: [], source: nil }]
     end
+    let(:has_update_completed) { false }
 
     context "with default allowed updates on a dependency with no requirements" do
       let(:allowed_updates) do
@@ -320,6 +321,37 @@ RSpec.describe Dependabot::Job do
           ]
 
           expect(job.allowed_update?(dependency)).to be(true)
+        end
+
+        context "when has_update_completed is true" do
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: dependency_name,
+              package_manager: "bundler",
+              version: "1.8.0",
+              previous_version: "1.9.0",
+              requirements: []
+            )
+          end
+
+          it "checks vulnerability based on previous version" do
+            dependency.metadata[:all_versions] = [
+              Dependabot::Dependency.new(
+                name: dependency_name,
+                package_manager: "bundler",
+                version: "1.8.0",
+                requirements: []
+              ),
+              Dependabot::Dependency.new(
+                name: dependency_name,
+                package_manager: "bundler",
+                version: "1.9.0",
+                requirements: []
+              )
+            ]
+
+            expect(job.allowed_update?(dependency, has_update_completed: true)).to be(true)
+          end
         end
       end
     end
@@ -501,7 +533,7 @@ RSpec.describe Dependabot::Job do
   end
 
   describe "#security_fix?" do
-    subject { job.security_fix?(dependency) }
+    subject(:security_fix) { job.security_fix?(dependency) }
 
     let(:dependency) do
       Dependabot::Dependency.new(
@@ -598,6 +630,372 @@ RSpec.describe Dependabot::Job do
         attrs[:exclude_paths] = ["vendor/*", "spec/fixtures/*"]
         job = described_class.new(attrs)
         expect(job.exclude_paths).to eq(["vendor/*", "spec/fixtures/*"])
+      end
+    end
+  end
+
+  describe "#vulnerable_for_update?" do
+    subject(:vulnerable_for_update) { job.vulnerable_for_update?(dependency, has_update_completed) }
+
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "business",
+        package_manager: "bundler",
+        version: "1.8.0",
+        previous_version: "1.7.0",
+        requirements: []
+      )
+    end
+    let(:security_advisories) do
+      [
+        {
+          "dependency-name" => "business",
+          "affected-versions" => ["= 1.7.0"],
+          "patched-versions" => [],
+          "unaffected-versions" => []
+        }
+      ]
+    end
+
+    context "when has_update_completed is false" do
+      let(:has_update_completed) { false }
+
+      context "when current version is vulnerable" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "business",
+            package_manager: "bundler",
+            version: "1.7.0",
+            previous_version: "1.6.0",
+            requirements: []
+          )
+        end
+
+        it "returns true" do
+          expect(vulnerable_for_update).to be(true)
+        end
+      end
+
+      context "when current version is not vulnerable" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "business",
+            package_manager: "bundler",
+            version: "1.8.0",
+            previous_version: "1.7.0",
+            requirements: []
+          )
+        end
+
+        it "returns false" do
+          expect(vulnerable_for_update).to be(false)
+        end
+      end
+    end
+
+    context "when has_update_completed is true" do
+      let(:has_update_completed) { true }
+
+      context "when previous version was vulnerable" do
+        it "returns true" do
+          expect(vulnerable_for_update).to be(true)
+        end
+      end
+
+      context "when previous version was not vulnerable" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "business",
+            package_manager: "bundler",
+            version: "1.8.0",
+            previous_version: "1.8.0",
+            requirements: []
+          )
+        end
+
+        it "returns false" do
+          expect(vulnerable_for_update).to be(false)
+        end
+      end
+    end
+  end
+
+  describe "#vulnerable_in_previous_version?" do
+    subject(:vulnerable_in_previous_version) { job.vulnerable_in_previous_version?(dependency) }
+
+    let(:security_advisories) do
+      [
+        {
+          "dependency-name" => "business",
+          "affected-versions" => ["= 1.7.0"],
+          "patched-versions" => [],
+          "unaffected-versions" => []
+        }
+      ]
+    end
+
+    context "when dependency has no previous version" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "business",
+          package_manager: "bundler",
+          version: "1.8.0",
+          requirements: []
+        )
+      end
+
+      it "returns false" do
+        expect(vulnerable_in_previous_version).to be(false)
+      end
+    end
+
+    context "when dependency has previous version" do
+      context "when previous version was vulnerable" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "business",
+            package_manager: "bundler",
+            version: "1.8.0",
+            previous_version: "1.7.0",
+            requirements: []
+          )
+        end
+
+        it "returns true" do
+          expect(vulnerable_in_previous_version).to be(true)
+        end
+      end
+
+      context "when previous version was not vulnerable" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "business",
+            package_manager: "bundler",
+            version: "1.8.0",
+            previous_version: "1.6.0",
+            requirements: []
+          )
+        end
+
+        it "returns false" do
+          expect(vulnerable_in_previous_version).to be(false)
+        end
+      end
+
+      context "when previous version is invalid" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "business",
+            package_manager: "bundler",
+            version: "1.8.0",
+            previous_version: "invalid-version",
+            requirements: []
+          )
+        end
+
+        it "returns false" do
+          expect(vulnerable_in_previous_version).to be(false)
+        end
+      end
+    end
+  end
+
+  describe "#parse_version_if_valid" do
+    subject(:parse_version_if_valid) { job.send(:parse_version_if_valid, version_string, package_manager) }
+
+    let(:package_manager) { "bundler" }
+
+    context "with valid version string" do
+      let(:version_string) { "1.2.3" }
+
+      it "returns a version object" do
+        expect(parse_version_if_valid).to be_a(Gem::Version)
+        expect(parse_version_if_valid.to_s).to eq("1.2.3")
+      end
+    end
+
+    context "with invalid version string" do
+      let(:version_string) { "not-a-version" }
+
+      it "returns nil" do
+        expect(parse_version_if_valid).to be_nil
+      end
+    end
+
+    context "with nil version string" do
+      let(:version_string) { nil }
+
+      it "returns nil" do
+        expect(parse_version_if_valid).to be_nil
+      end
+    end
+  end
+
+  describe "#check_vulnerability" do
+    subject(:check_vulnerability) { job.send(:check_vulnerability, dependency, versions) }
+
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "business",
+        package_manager: "bundler",
+        version: "1.8.0",
+        requirements: []
+      )
+    end
+    let(:security_advisories) do
+      [
+        {
+          "dependency-name" => "business",
+          "affected-versions" => ["< 1.8.0"],
+          "patched-versions" => [],
+          "unaffected-versions" => []
+        }
+      ]
+    end
+
+    context "when no security advisories exist" do
+      let(:security_advisories) { [] }
+      let(:versions) { [Gem::Version.new("1.7.0")] }
+
+      it "returns false" do
+        expect(check_vulnerability).to be(false)
+      end
+    end
+
+    context "when no versions provided" do
+      let(:versions) { [] }
+
+      it "returns false" do
+        expect(check_vulnerability).to be(false)
+      end
+    end
+
+    context "when versions are vulnerable" do
+      let(:versions) { [Gem::Version.new("1.7.0")] }
+
+      it "returns true" do
+        expect(check_vulnerability).to be(true)
+      end
+    end
+
+    context "when versions are not vulnerable" do
+      let(:versions) { [Gem::Version.new("1.8.0")] }
+
+      it "returns false" do
+        expect(check_vulnerability).to be(false)
+      end
+    end
+
+    context "when some versions are vulnerable" do
+      let(:versions) { [Gem::Version.new("1.7.0"), Gem::Version.new("1.8.0")] }
+
+      it "returns true when any version is vulnerable" do
+        expect(check_vulnerability).to be(true)
+      end
+    end
+
+    context "with multiple security advisories" do
+      let(:security_advisories) do
+        [
+          {
+            "dependency-name" => "business",
+            "affected-versions" => ["= 1.7.0"],
+            "patched-versions" => [],
+            "unaffected-versions" => []
+          },
+          {
+            "dependency-name" => "business",
+            "affected-versions" => ["= 1.6.0"],
+            "patched-versions" => [],
+            "unaffected-versions" => []
+          }
+        ]
+      end
+      let(:versions) { [Gem::Version.new("1.6.0")] }
+
+      it "returns true when any advisory matches" do
+        expect(check_vulnerability).to be(true)
+      end
+    end
+  end
+
+  describe "#allowed_update? with has_update_completed parameter" do
+    subject(:allowed_update_with_completed) do
+      job.allowed_update?(dependency, has_update_completed: has_update_completed)
+    end
+
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "business",
+        package_manager: "bundler",
+        version: "1.8.0",
+        previous_version: "1.7.0",
+        requirements: []
+      )
+    end
+    let(:security_advisories) do
+      [
+        {
+          "dependency-name" => "business",
+          "affected-versions" => ["= 1.7.0"],
+          "patched-versions" => [],
+          "unaffected-versions" => []
+        }
+      ]
+    end
+    let(:allowed_updates) do
+      [{ "update-type" => "security" }]
+    end
+
+    context "when has_update_completed is false" do
+      let(:has_update_completed) { false }
+
+      context "when current version is vulnerable" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "business",
+            package_manager: "bundler",
+            version: "1.7.0",
+            previous_version: "1.6.0",
+            requirements: []
+          )
+        end
+
+        it "allows the update" do
+          expect(allowed_update_with_completed).to be(true)
+        end
+      end
+
+      context "when current version is not vulnerable" do
+        it "does not allow the update" do
+          expect(allowed_update_with_completed).to be(false)
+        end
+      end
+    end
+
+    context "when has_update_completed is true" do
+      let(:has_update_completed) { true }
+
+      context "when previous version was vulnerable" do
+        it "allows the update (security fix was applied)" do
+          expect(allowed_update_with_completed).to be(true)
+        end
+      end
+
+      context "when previous version was not vulnerable" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "business",
+            package_manager: "bundler",
+            version: "1.8.0",
+            previous_version: "1.8.0",
+            requirements: []
+          )
+        end
+
+        it "does not allow the update" do
+          expect(allowed_update_with_completed).to be(false)
+        end
       end
     end
   end

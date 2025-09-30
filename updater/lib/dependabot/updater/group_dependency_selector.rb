@@ -231,7 +231,7 @@ module Dependabot
         ignore_conditions = job.ignore_conditions_for(dep)
         return false if ignore_conditions.any?(Dependabot::Config::IgnoreCondition::ALL_VERSIONS)
 
-        job.allowed_update?(dep)
+        job.allowed_update?(dep, has_update_completed: true)
       end
 
       sig { params(dep_name: String, pattern: String).returns(T::Boolean) }
