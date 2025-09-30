@@ -118,6 +118,7 @@ module Dependabot
           end
 
           replace_req_on_target_specific_deps!(parsed_manifest, filename)
+          replace_req_on_workspace_deps!(parsed_manifest, filename)
 
           TomlRB.dump(parsed_manifest)
         end
@@ -144,6 +145,24 @@ module Dependabot
                   parsed_manifest["target"][target][type][name] = updated_req
                 end
               end
+            end
+          end
+        end
+
+        sig { params(parsed_manifest: T::Hash[String, T.untyped], filename: String).void }
+        def replace_req_on_workspace_deps!(parsed_manifest, filename)
+          workspace = parsed_manifest.fetch("workspace", {})
+          workspace_deps = workspace.fetch("dependencies", {})
+
+          workspace_deps.each do |name, req|
+            next unless dependency.name == name_from_declaration(name, req)
+
+            updated_req = temporary_requirement_for_resolution(filename)
+
+            if req.is_a?(Hash)
+              parsed_manifest["workspace"]["dependencies"][name]["version"] = updated_req
+            else
+              parsed_manifest["workspace"]["dependencies"][name] = updated_req
             end
           end
         end
