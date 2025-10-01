@@ -13,23 +13,16 @@ module Dependabot
 
       abstract!
 
-      # TODO(brrygrdn): Inject the Dependency parser instead of pre-parsed `dependencies`
-      #
-      # Semantically it makes sense for the grapher to wrap the parser as a higher order function, but we already know
-      # that some package managers will require extra native commands before, after or during the parse - in extreme
-      # cases it may make sense to use an alternative parser that is more optimal.
-      #
-      # By injecting the parser, this allows the ecosystem to encapsulate the package manager specifics without the
-      # executor needing to manage parser modes / feature flags.
+      sig { returns(T::Boolean) }
+      attr_reader :prepared
+
       sig do
-        params(
-          dependency_files: T::Array[Dependabot::DependencyFile],
-          dependencies: T::Array[Dependabot::Dependency]
-        ).void
+        params(file_parser: Dependabot::FileParsers::Base).void
       end
-      def initialize(dependency_files:, dependencies:)
-        @dependency_files = dependency_files
-        @dependencies = dependencies
+      def initialize(file_parser:)
+        @file_parser = file_parser
+        @dependencies = T.let([], T::Array[Dependabot::Dependency])
+        @prepared = T.let(false, T::Boolean)
       end
 
       # Each grapher must implement a heuristic to determine which dependency file should be used as the owner
@@ -40,8 +33,21 @@ module Dependabot
       sig { abstract.returns(Dependabot::DependencyFile) }
       def relevant_dependency_file; end
 
+      # A grapher may override this method if it needs to perform extra steps around the normal file parser for
+      # the ecosystem.
+      sig { void }
+      def prepare!
+        @dependencies = @file_parser.parse
+        @prepared = true
+      end
+
       sig { returns(T::Hash[String, T.untyped]) }
       def resolved_dependencies
+        unless prepared
+          raise Dependabot::DependabotError,
+                "prepare! must be called before accessing resolved_dependencies"
+        end
+
         @dependencies.each_with_object({}) do |dep, resolved|
           resolved[dep.name] = {
             package_url: build_purl(dep),
@@ -54,6 +60,14 @@ module Dependabot
       end
 
       private
+
+      sig { returns(Dependabot::FileParsers::Base) }
+      attr_reader :file_parser
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def dependency_files
+        file_parser.dependency_files
+      end
 
       # Each grapher is expected to implement a method to look up the parents of a given dependency.
       #

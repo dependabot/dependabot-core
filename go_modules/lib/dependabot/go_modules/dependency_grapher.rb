@@ -11,6 +11,8 @@ module Dependabot
     class DependencyGrapher < Dependabot::DependencyGraphers::Base
       sig { override.returns(Dependabot::DependencyFile) }
       def relevant_dependency_file
+        # This cannot realistically happen as the parser will throw a runtime error on init without a go_mod file,
+        # but this will avoid surprises if anything changes.
         raise DependabotError, "No go.mod present in dependency files." unless go_mod
 
         T.must(go_mod)
@@ -32,7 +34,7 @@ module Dependabot
         return @go_mod if defined?(@go_mod)
 
         @go_mod = T.let(
-          @dependency_files.find { |f| f.name = "go.mod" },
+          dependency_files.find { |f| f.name = "go.mod" },
           T.nilable(Dependabot::DependencyFile)
         )
       end

@@ -7,8 +7,7 @@ require "dependabot/go_modules"
 RSpec.describe Dependabot::GoModules::DependencyGrapher do
   subject(:grapher) do
     Dependabot::DependencyGraphers.for_package_manager("go_modules").new(
-      dependency_files:,
-      dependencies:
+      file_parser: parser
     )
   end
 
@@ -34,36 +33,13 @@ RSpec.describe Dependabot::GoModules::DependencyGrapher do
   let(:dependencies) { parser.parse }
   let(:dependency_files) { [go_mod] }
 
+  before { grapher.prepare! }
+
   after do
     # Reset the environment variable after each test to avoid side effects
     ENV.delete("GOENV")
     ENV.delete("GOPROXY")
     ENV.delete("GOPRIVATE")
-  end
-
-  context "when the go.mod is unexpectedly missing from dependency_files" do
-    # This scenario is very unlikely, it would most likely result from
-    # programmer error where the set of files passed in is malformed.
-    subject(:grapher) do
-      Dependabot::DependencyGraphers.for_package_manager("go_modules").new(
-        dependency_files: [],
-        dependencies:
-      )
-    end
-
-    let(:go_mod) do
-      Dependabot::DependencyFile.new(
-        name: "go.mod",
-        content: fixture("go_mods", "go.mod"),
-        directory: "/"
-      )
-    end
-
-    describe "#relevant_dependency_file" do
-      it "throws an exception" do
-        expect { grapher.relevant_dependency_file }.to raise_error(Dependabot::DependabotError, /No go.mod present/)
-      end
-    end
   end
 
   context "with a simple project" do

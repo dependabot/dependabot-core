@@ -10,8 +10,7 @@ RSpec.describe "Dependabot::DependencyGraphers::Generic" do
   context "with a bundler project" do
     subject(:grapher) do
       Dependabot::DependencyGraphers.for_package_manager("bundler").new(
-        dependency_files:,
-        dependencies:
+        file_parser: parser
       )
     end
 
@@ -35,6 +34,8 @@ RSpec.describe "Dependabot::DependencyGraphers::Generic" do
     end
 
     let(:dependencies) { parser.parse }
+
+    before { grapher.prepare! }
 
     # NOTE: This documents existing behaviour where Gemfile PURLs do not include a resolved version
     #
