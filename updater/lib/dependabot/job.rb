@@ -231,6 +231,11 @@ module Dependabot
       true
     end
 
+    sig { returns(T::Boolean) }
+    def update_graph?
+      command == "graph"
+    end
+
     # Some Core components test for a non-nil repo_contents_path as an implicit
     # signal they should use cloning behaviour, so we present it as nil unless
     # cloning is enabled to avoid unexpected behaviour.
