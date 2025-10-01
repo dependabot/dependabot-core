@@ -40,7 +40,7 @@ module Dependabot
       sig { abstract.returns(Dependabot::DependencyFile) }
       def relevant_dependency_file; end
 
-      sig { returns(T::Hash[Symbol, T.untyped]) }
+      sig { returns(T::Hash[String, T.untyped]) }
       def resolved_dependencies
         @dependencies.each_with_object({}) do |dep, resolved|
           resolved[dep.name] = {
