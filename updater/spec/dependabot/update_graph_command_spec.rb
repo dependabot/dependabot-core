@@ -52,10 +52,11 @@ RSpec.describe Dependabot::UpdateGraphCommand do
   end
 
   describe "#perform_job when the directory is empty or doesn't exist" do
+    subject(:perform_job) { job.perform_job }
+
     let(:job_definition) do
       JSON.parse(fixture("file_fetcher_output/output-empty-directory.json"))
     end
-    subject(:perform_job) { job.perform_job }
 
     before do
       allow(Dependabot::FileParsers).to receive(:for_package_manager)

@@ -75,10 +75,10 @@ RSpec.describe Dependabot::FileFetcherCommand do
         it "raises a DependencyFileNotFound error" do
           expect(api_client)
             .to receive(:record_update_job_error)
-                  .with(
-                    error_details: { "file-path": "/foo", message: "/foo not found" },
-                    error_type: "dependency_file_not_found"
-                  )
+            .with(
+              error_details: { "file-path": "/foo", message: "/foo not found" },
+              error_type: "dependency_file_not_found"
+            )
           expect(api_client).to receive(:mark_job_as_processed)
 
           expect { perform_job }.to output(/Error during file fetching; aborting/).to_stdout_from_any_process
