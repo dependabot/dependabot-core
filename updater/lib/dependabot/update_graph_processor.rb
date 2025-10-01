@@ -104,7 +104,7 @@ module Dependabot
           branch: source.branch || "main",
           sha: base_commit_sha,
           package_manager: job.package_manager,
-          manifest_file: DependencyFile.new(name: "", content: "", directory: source.directory),
+          manifest_file: DependencyFile.new(name: "", content: "", directory: T.must(source.directory)),
           resolved_dependencies: {}
         )
       end
