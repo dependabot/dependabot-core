@@ -5,6 +5,21 @@ require "sorbet-runtime"
 
 module Dependabot
   module DependencyGraphers
+    # This is a small value class that specifies the information we expect to be returned for each
+    # dependency strictly.
+    class ResolvedDependency < T::Struct
+      # A valid purl for the dependency, e.g. pkg:/npm/tunnel@0.0.6
+      prop :package_url, String
+      # Is this a direct dependency?
+      prop :direct, T::Boolean
+      # Is this a runtime dependency?
+      prop :runtime, T::Boolean
+      # A list of packages this dependency itself depends on if direct is false. Note that:
+      # - a valid purl for the parent dependency is preferable
+      # - the package name is acceptable **unless the ecosystem allows multiple versions of a package to be used**
+      prop :dependencies, T::Array[String]
+    end
+
     class Base
       extend T::Sig
       extend T::Helpers
@@ -41,18 +56,17 @@ module Dependabot
         @prepared = true
       end
 
-      sig { returns(T::Hash[String, T.untyped]) }
+      sig { returns(T::Hash[String, ResolvedDependency]) }
       def resolved_dependencies
         prepare! unless prepared
 
         @dependencies.each_with_object({}) do |dep, resolved|
-          resolved[dep.name] = {
+          resolved[dep.name] = ResolvedDependency.new(
             package_url: build_purl(dep),
-            relationship: relationship_for(dep),
-            scope: scope_for(dep),
-            dependencies: fetch_subdependencies(dep),
-            metadata: {}
-          }
+            direct: dep.top_level?,
+            runtime: dep.production?,
+            dependencies: fetch_subdependencies(dep)
+          )
         end
       end
 
@@ -105,24 +119,6 @@ module Dependabot
           name: purl_name_for(dependency),
           version: purl_version_for(dependency)
         )
-      end
-
-      sig { params(dep: Dependabot::Dependency).returns(String) }
-      def relationship_for(dep)
-        if dep.top_level?
-          "direct"
-        else
-          "indirect"
-        end
-      end
-
-      sig { params(dependency: Dependabot::Dependency).returns(String) }
-      def scope_for(dependency)
-        if dependency.production?
-          "runtime"
-        else
-          "development"
-        end
       end
     end
   end
