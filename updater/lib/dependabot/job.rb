@@ -355,7 +355,6 @@ module Dependabot
       security_advisories_for(dependency).any? { |a| a.fixed_by?(dependency) }
     end
 
-    # Parse a version string if it's valid for the given package manager
     sig { params(version_string: T.nilable(String), package_manager: String).returns(T.nilable(Gem::Version)) }
     def parse_version_if_valid(version_string, package_manager)
       return nil unless version_string
