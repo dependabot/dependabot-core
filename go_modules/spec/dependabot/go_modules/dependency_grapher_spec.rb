@@ -30,10 +30,7 @@ RSpec.describe Dependabot::GoModules::DependencyGrapher do
     )
   end
 
-  let(:dependencies) { parser.parse }
   let(:dependency_files) { [go_mod] }
-
-  before { grapher.prepare! }
 
   after do
     # Reset the environment variable after each test to avoid side effects

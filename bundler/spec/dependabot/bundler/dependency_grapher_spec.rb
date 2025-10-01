@@ -33,10 +33,6 @@ RSpec.describe "Dependabot::DependencyGraphers::Generic" do
       )
     end
 
-    let(:dependencies) { parser.parse }
-
-    before { grapher.prepare! }
-
     # NOTE: This documents existing behaviour where Gemfile PURLs do not include a resolved version
     #
     # Package URLs deal in resolved versions, so for a Gemfile only project we only have a range

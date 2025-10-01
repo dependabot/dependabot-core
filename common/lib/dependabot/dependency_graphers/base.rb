@@ -43,10 +43,7 @@ module Dependabot
 
       sig { returns(T::Hash[String, T.untyped]) }
       def resolved_dependencies
-        unless prepared
-          raise Dependabot::DependabotError,
-                "prepare! must be called before accessing resolved_dependencies"
-        end
+        prepare! unless prepared
 
         @dependencies.each_with_object({}) do |dep, resolved|
           resolved[dep.name] = {
