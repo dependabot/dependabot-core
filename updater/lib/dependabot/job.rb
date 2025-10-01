@@ -366,7 +366,6 @@ module Dependabot
       version_class.new(version_string)
     end
 
-    # Check if any of the given versions are vulnerable according to security advisories
     sig { params(dependency: Dependabot::Dependency, versions: T::Array[Gem::Version]).returns(T::Boolean) }
     def check_vulnerability(dependency, versions)
       security_advisories = security_advisories_for(dependency)
