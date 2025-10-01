@@ -58,10 +58,10 @@ RSpec.describe "Dependabot::DependencyGraphers::Generic" do
         expect(grapher.resolved_dependencies.count).to be(1)
 
         ibandit = grapher.resolved_dependencies["ibandit"]
-        expect(ibandit[:package_url]).to eql("pkg:gem/ibandit")
-        expect(ibandit[:relationship]).to eql("direct")
-        expect(ibandit[:scope]).to eql("runtime")
-        expect(ibandit[:dependencies]).to be_empty
+        expect(ibandit.package_url).to eql("pkg:gem/ibandit")
+        expect(ibandit.direct).to be(true)
+        expect(ibandit.runtime).to be(true)
+        expect(ibandit.dependencies).to be_empty
       end
     end
 
@@ -90,16 +90,16 @@ RSpec.describe "Dependabot::DependencyGraphers::Generic" do
         expect(resolved_dependencies.keys).to eql(%w(ibandit i18n))
 
         ibandit = resolved_dependencies["ibandit"]
-        expect(ibandit[:package_url]).to eql("pkg:gem/ibandit@0.7.0")
-        expect(ibandit[:relationship]).to eql("direct")
-        expect(ibandit[:scope]).to eql("runtime")
-        expect(ibandit[:dependencies]).to be_empty # NYI: We don't set any subdependencies yet, this should contain i18n
+        expect(ibandit.package_url).to eql("pkg:gem/ibandit@0.7.0")
+        expect(ibandit.direct).to be(true)
+        expect(ibandit.runtime).to be(true)
+        expect(ibandit.dependencies).to be_empty
 
         i18n = resolved_dependencies["i18n"]
-        expect(i18n[:package_url]).to eql("pkg:gem/i18n@0.7.0.beta1")
-        expect(i18n[:relationship]).to eql("indirect")
-        expect(i18n[:scope]).to eql("runtime")
-        expect(i18n[:dependencies]).to be_empty
+        expect(i18n.package_url).to eql("pkg:gem/i18n@0.7.0.beta1")
+        expect(i18n.direct).to be(false)
+        expect(i18n.runtime).to be(true)
+        expect(i18n.dependencies).to be_empty
       end
     end
   end
