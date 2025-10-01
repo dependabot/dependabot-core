@@ -243,7 +243,6 @@ GEM
     faraday-retry (2.2.0)
       faraday (~> 2.0)
     ffi (1.17.2-arm64-darwin)
-    ffi (1.17.2-x86_64-darwin)
     ffi (1.17.2-x86_64-linux-gnu)
     ffi-compiler (1.3.2)
       ffi (>= 1.15.5)
@@ -387,27 +386,14 @@ GEM
       simplecov_json_formatter (~> 0.1)
     simplecov-html (0.12.3)
     simplecov_json_formatter (0.1.4)
-<<<<<<< HEAD
     sorbet (0.6.12544)
       sorbet-static (= 0.6.12544)
     sorbet-runtime (0.6.12544)
     sorbet-static (0.6.12544-universal-darwin)
-    sorbet-static (0.6.12544-x86_64-linux)
     sorbet-static-and-runtime (0.6.12544)
       sorbet (= 0.6.12544)
       sorbet-runtime (= 0.6.12544)
     spoom (1.7.6)
-=======
-    sorbet (0.5.11952)
-      sorbet-static (= 0.5.11952)
-    sorbet-runtime (0.5.11952)
-    sorbet-static (0.5.11952-universal-darwin)
-    sorbet-static (0.5.11952-x86_64-linux)
-    sorbet-static-and-runtime (0.5.11952)
-      sorbet (= 0.5.11952)
-      sorbet-runtime (= 0.5.11952)
-    spoom (1.5.1)
->>>>>>> fbd5f08c8 (pull from main)
       erubi (>= 1.10.0)
       prism (>= 0.28.0)
       rbi (>= 0.3.3)
@@ -451,12 +437,7 @@ GEM
     zeitwerk (2.7.1)
 
 PLATFORMS
-<<<<<<< HEAD
-  arm64-darwin
-  universal-darwin
-=======
   arm64-darwin-24
->>>>>>> fbd5f08c8 (pull from main)
   x86_64-linux
 
 DEPENDENCIES
@@ -564,7 +545,6 @@ CHECKSUMS
   faraday-net_http (3.0.2) sha256=6882929abed8094e1ee30344a3369e856fe34530044630d1f652bf70ebd87e8d
   faraday-retry (2.2.0) sha256=80824a5454dd0ce7d8074013454d163569b909001a64bdb3499c9968df4f41c5
   ffi (1.17.2-arm64-darwin) sha256=54dd9789be1d30157782b8de42d8f887a3c3c345293b57ffb6b45b4d1165f813
-  ffi (1.17.2-x86_64-darwin) sha256=981f2d4e32ea03712beb26e55e972797c2c5a7b0257955d8667ba58f2da6440e
   ffi (1.17.2-x86_64-linux-gnu) sha256=05d2026fc9dbb7cfd21a5934559f16293815b7ce0314846fee2ac8efbdb823ea
   ffi-compiler (1.3.2) sha256=a94f3d81d12caf5c5d4ecf13980a70d0aeaa72268f3b9cc13358bcc6509184a0
   gitlab (5.1.0) sha256=021c27807a98f379c0cfeda459327c026d3756dbd6531dc1479f0e3df03572c7
@@ -632,21 +612,11 @@ CHECKSUMS
   simplecov (0.22.0) sha256=fe2622c7834ff23b98066bb0a854284b2729a569ac659f82621fc22ef36213a5
   simplecov-html (0.12.3) sha256=4b1aad33259ffba8b29c6876c12db70e5750cb9df829486e4c6e5da4fa0aa07b
   simplecov_json_formatter (0.1.4) sha256=529418fbe8de1713ac2b2d612aa3daa56d316975d307244399fa4838c601b428
-<<<<<<< HEAD
-  sorbet (0.6.12544) sha256=361b71af6813ef8bdcfaf92633993c84ea03100f63530dde005db5e2be4f7003
-  sorbet-runtime (0.6.12544) sha256=7758a353f132d97e671d6a311baa4cf3fd887273b96f0cbd1445b8fcc3b174c1
-  sorbet-static (0.6.12544-universal-darwin) sha256=c6822aeb883b5caa7d44406c0d9de999acebf21b40d38ee7715c0096fc8f9149
-  sorbet-static (0.6.12544-x86_64-linux) sha256=032c9cf963ee73a97083750ac40f9497ec6fa0afba742b9f38c2a5db2fe1ccff
-  sorbet-static-and-runtime (0.6.12544) sha256=47ac40cf3dbfa3ee8da67719387c90468930c1d60be6ab01fcf1693d014d0d3d
-  spoom (1.7.6) sha256=32d1a38977c7c2e21b5e148c644ccacb90d8d779dc5401c8e641cd3e15afa0b0
-=======
-  sorbet (0.5.11952) sha256=0e5ed931243e140cd2fa42baca4a4f571fa779cbcccda40b4e44c12483120425
-  sorbet-runtime (0.5.11952) sha256=03261787bff1d400bce3cc0d81a2aa9bc9899cdd0dfbdc2c019e427697d87edf
-  sorbet-static (0.5.11952-universal-darwin) sha256=e24575b632d9ce90950cc64066a2cad6a2c583bb5cf1a6872a031b8d0dcd6e2f
-  sorbet-static (0.5.11952-x86_64-linux) sha256=d6cff58d2b215a6b5c66af0df016ce45b3deb0641cfa0fe88a3072d74ad74605
-  sorbet-static-and-runtime (0.5.11952) sha256=cb94d25267ac0d65055b4651e08c6cc81c00bbdc79735cb5099a7103a739ece8
-  spoom (1.5.1) sha256=61dbab2059a094506210886455a513615c6915654048e3d2447223790e423095
->>>>>>> fbd5f08c8 (pull from main)
+  sorbet (0.6.12544)
+  sorbet-runtime (0.6.12544)
+  sorbet-static (0.6.12544-universal-darwin)
+  sorbet-static-and-runtime (0.6.12544)
+  spoom (1.7.6)
   stackprof (0.2.25) sha256=28db0e2d22b817ae35def7163822505a04a026b02ef119b6aa89d70b967b0d2e
   stringio (3.1.2) sha256=204f1828f85cdb39d57cac4abc6dc44b04505a223f131587f2e20ae3729ba131
   tapioca (0.17.7) sha256=1efb7be004f269a9cf23c97ed419338598bddfd653e3a5ac0760694e0ebfba9b
