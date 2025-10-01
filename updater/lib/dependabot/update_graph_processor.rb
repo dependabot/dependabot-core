@@ -54,7 +54,7 @@ module Dependabot
         directory_dependency_files = dependency_files_for(directory)
 
         submission = if directory_dependency_files.empty?
-                       empty_submission(source)
+                       empty_submission(directory_source)
                      else
                        create_submission(directory_source, directory_dependency_files)
                      end
