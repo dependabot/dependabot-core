@@ -100,7 +100,8 @@ module Dependabot
       if files.empty?
         return GithubApi::DependencySubmission.new(
           job_id: job.id.to_s,
-          branch: T.must(source.branch),
+          # FIXME(brrygrdn): We should obtain the ref from git -or- inject it via the backend service
+          branch: source.branch || "main",
           sha: base_commit_sha,
           package_manager: job.package_manager,
           manifest_file: DependencyFile.new(name: "", content: "", directory: source.directory),
