@@ -634,8 +634,8 @@ RSpec.describe Dependabot::Job do
     end
   end
 
-  describe "#vulnerable_for_update?" do
-    subject(:vulnerable_for_update) { job.vulnerable_for_update?(dependency, check_previous_version) }
+  describe "#vulnerable?" do
+    subject(:vulnerable_for_update) { job.vulnerable?(dependency, check_previous_version) }
 
     let(:dependency) do
       Dependabot::Dependency.new(
@@ -720,8 +720,8 @@ RSpec.describe Dependabot::Job do
     end
   end
 
-  describe "#vulnerable_in_previous_version?" do
-    subject(:vulnerable_in_previous_version) { job.vulnerable_in_previous_version?(dependency) }
+  describe "#previous_version_vulnerable?" do
+    subject(:previous_version_vulnerable) { job.previous_version_vulnerable?(dependency) }
 
     let(:security_advisories) do
       [
@@ -745,7 +745,7 @@ RSpec.describe Dependabot::Job do
       end
 
       it "returns false" do
-        expect(vulnerable_in_previous_version).to be(false)
+        expect(previous_version_vulnerable).to be(false)
       end
     end
 
@@ -762,7 +762,7 @@ RSpec.describe Dependabot::Job do
         end
 
         it "returns true" do
-          expect(vulnerable_in_previous_version).to be(true)
+          expect(previous_version_vulnerable).to be(true)
         end
       end
 
@@ -778,7 +778,7 @@ RSpec.describe Dependabot::Job do
         end
 
         it "returns false" do
-          expect(vulnerable_in_previous_version).to be(false)
+          expect(previous_version_vulnerable).to be(false)
         end
       end
 
@@ -794,7 +794,7 @@ RSpec.describe Dependabot::Job do
         end
 
         it "returns false" do
-          expect(vulnerable_in_previous_version).to be(false)
+          expect(previous_version_vulnerable).to be(false)
         end
       end
     end
@@ -831,8 +831,8 @@ RSpec.describe Dependabot::Job do
     end
   end
 
-  describe "#check_vulnerability" do
-    subject(:check_vulnerability) { job.send(:check_vulnerability, dependency, versions) }
+  describe "#vulnerability?" do
+    subject(:vulnerability?) { job.send(:vulnerability?, dependency, versions) }
 
     let(:dependency) do
       Dependabot::Dependency.new(
@@ -858,7 +858,7 @@ RSpec.describe Dependabot::Job do
       let(:versions) { [Gem::Version.new("1.7.0")] }
 
       it "returns false" do
-        expect(check_vulnerability).to be(false)
+        expect(vulnerability?).to be(false)
       end
     end
 
@@ -866,7 +866,7 @@ RSpec.describe Dependabot::Job do
       let(:versions) { [] }
 
       it "returns false" do
-        expect(check_vulnerability).to be(false)
+        expect(vulnerability?).to be(false)
       end
     end
 
@@ -874,7 +874,7 @@ RSpec.describe Dependabot::Job do
       let(:versions) { [Gem::Version.new("1.7.0")] }
 
       it "returns true" do
-        expect(check_vulnerability).to be(true)
+        expect(vulnerability?).to be(true)
       end
     end
 
@@ -882,7 +882,7 @@ RSpec.describe Dependabot::Job do
       let(:versions) { [Gem::Version.new("1.8.0")] }
 
       it "returns false" do
-        expect(check_vulnerability).to be(false)
+        expect(vulnerability?).to be(false)
       end
     end
 
@@ -890,7 +890,7 @@ RSpec.describe Dependabot::Job do
       let(:versions) { [Gem::Version.new("1.7.0"), Gem::Version.new("1.8.0")] }
 
       it "returns true when any version is vulnerable" do
-        expect(check_vulnerability).to be(true)
+        expect(vulnerability?).to be(true)
       end
     end
 
@@ -914,7 +914,7 @@ RSpec.describe Dependabot::Job do
       let(:versions) { [Gem::Version.new("1.6.0")] }
 
       it "returns true when any advisory matches" do
-        expect(check_vulnerability).to be(true)
+        expect(vulnerability?).to be(true)
       end
     end
   end
