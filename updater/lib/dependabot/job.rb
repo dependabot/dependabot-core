@@ -286,8 +286,8 @@ module Dependabot
     #
     # rubocop:disable Metrics/PerceivedComplexity
     # rubocop:disable Metrics/CyclomaticComplexity
-    sig { params(dependency: Dependency, has_update_completed: T::Boolean).returns(T::Boolean) }
-    def allowed_update?(dependency, has_update_completed: false)
+    sig { params(dependency: Dependency, check_previous_version: T::Boolean).returns(T::Boolean) }
+    def allowed_update?(dependency, check_previous_version: false)
       # Ignoring all versions is another way to say no updates allowed
       if completely_ignored?(dependency)
         Dependabot.logger.info("All versions of #{dependency.name} ignored, no update allowed")
@@ -300,7 +300,7 @@ module Dependabot
         # NOTE: Preview supports specifying a "security" update type whereas
         # native will say "security-updates-only"
         security_update = update_type == "security" || security_updates_only?
-        next false if security_update && !vulnerable_for_update?(dependency, has_update_completed)
+        next false if security_update && !vulnerable_for_update?(dependency, check_previous_version)
 
         # Check the dependency-name (defaulting to matching)
         condition_name = update.fetch("dependency-name", dependency.name)
@@ -324,9 +324,9 @@ module Dependabot
     # rubocop:enable Metrics/PerceivedComplexity
     # rubocop:enable Metrics/CyclomaticComplexity
 
-    sig { params(dependency: Dependabot::Dependency, has_update_completed: T::Boolean).returns(T::Boolean) }
-    def vulnerable_for_update?(dependency, has_update_completed)
-      has_update_completed ? vulnerable_in_previous_version?(dependency) : vulnerable?(dependency)
+    sig { params(dependency: Dependabot::Dependency, check_previous_version: T::Boolean).returns(T::Boolean) }
+    def vulnerable_for_update?(dependency, check_previous_version)
+      check_previous_version ? vulnerable_in_previous_version?(dependency) : vulnerable?(dependency)
     end
 
     sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }

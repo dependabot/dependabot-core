@@ -175,7 +175,7 @@ RSpec.describe Dependabot::Job do
   end
 
   describe "#allowed_update?" do
-    subject(:allowed_update) { job.allowed_update?(dependency, has_update_completed: has_update_completed) }
+    subject(:allowed_update) { job.allowed_update?(dependency, check_previous_version: check_previous_version) }
 
     let(:dependency) do
       Dependabot::Dependency.new(
@@ -189,7 +189,7 @@ RSpec.describe Dependabot::Job do
     let(:requirements) do
       [{ file: "Gemfile", requirement: "~> 1.8.0", groups: [], source: nil }]
     end
-    let(:has_update_completed) { false }
+    let(:check_previous_version) { false }
 
     context "with default allowed updates on a dependency with no requirements" do
       let(:allowed_updates) do
@@ -323,7 +323,7 @@ RSpec.describe Dependabot::Job do
           expect(job.allowed_update?(dependency)).to be(true)
         end
 
-        context "when has_update_completed is true" do
+        context "when check_previous_version is true" do
           let(:dependency) do
             Dependabot::Dependency.new(
               name: dependency_name,
@@ -350,7 +350,7 @@ RSpec.describe Dependabot::Job do
               )
             ]
 
-            expect(job.allowed_update?(dependency, has_update_completed: true)).to be(true)
+            expect(job.allowed_update?(dependency, check_previous_version: true)).to be(true)
           end
         end
       end
@@ -635,7 +635,7 @@ RSpec.describe Dependabot::Job do
   end
 
   describe "#vulnerable_for_update?" do
-    subject(:vulnerable_for_update) { job.vulnerable_for_update?(dependency, has_update_completed) }
+    subject(:vulnerable_for_update) { job.vulnerable_for_update?(dependency, check_previous_version) }
 
     let(:dependency) do
       Dependabot::Dependency.new(
@@ -657,8 +657,8 @@ RSpec.describe Dependabot::Job do
       ]
     end
 
-    context "when has_update_completed is false" do
-      let(:has_update_completed) { false }
+    context "when check_previous_version is false" do
+      let(:check_previous_version) { false }
 
       context "when current version is vulnerable" do
         let(:dependency) do
@@ -693,8 +693,8 @@ RSpec.describe Dependabot::Job do
       end
     end
 
-    context "when has_update_completed is true" do
-      let(:has_update_completed) { true }
+    context "when check_previous_version is true" do
+      let(:check_previous_version) { true }
 
       context "when previous version was vulnerable" do
         it "returns true" do
@@ -919,9 +919,9 @@ RSpec.describe Dependabot::Job do
     end
   end
 
-  describe "#allowed_update? with has_update_completed parameter" do
+  describe "#allowed_update? with check_previous_version parameter" do
     subject(:allowed_update_with_completed) do
-      job.allowed_update?(dependency, has_update_completed: has_update_completed)
+      job.allowed_update?(dependency, check_previous_version: check_previous_version)
     end
 
     let(:dependency) do
@@ -947,8 +947,8 @@ RSpec.describe Dependabot::Job do
       [{ "update-type" => "security" }]
     end
 
-    context "when has_update_completed is false" do
-      let(:has_update_completed) { false }
+    context "when check_previous_version is false" do
+      let(:check_previous_version) { false }
 
       context "when current version is vulnerable" do
         let(:dependency) do
@@ -973,8 +973,8 @@ RSpec.describe Dependabot::Job do
       end
     end
 
-    context "when has_update_completed is true" do
-      let(:has_update_completed) { true }
+    context "when check_previous_version is true" do
+      let(:check_previous_version) { true }
 
       context "when previous version was vulnerable" do
         it "allows the update (security fix was applied)" do
