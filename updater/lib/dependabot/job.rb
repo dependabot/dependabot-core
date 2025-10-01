@@ -289,10 +289,15 @@ module Dependabot
     # The calling operation should be responsible for checking vulnerability
     # separately, if required.
     #
+    # @param dependency [Dependabot::Dependency] The dependency to check
+    # @param check_previous_version [Boolean] When true, checks if the previous version
+    #   was vulnerable instead of the current version. This prevents security updates
+    #   from being filtered out after the dependency has already been updated in group scenarios.
+    #
     # rubocop:disable Metrics/PerceivedComplexity
     # rubocop:disable Metrics/CyclomaticComplexity
-    sig { params(dependency: Dependency).returns(T::Boolean) }
-    def allowed_update?(dependency)
+    sig { params(dependency: Dependency, check_previous_version: T::Boolean).returns(T::Boolean) }
+    def allowed_update?(dependency, check_previous_version: false)
       # Ignoring all versions is another way to say no updates allowed
       if completely_ignored?(dependency)
         Dependabot.logger.info("All versions of #{dependency.name} ignored, no update allowed")
@@ -305,7 +310,7 @@ module Dependabot
         # NOTE: Preview supports specifying a "security" update type whereas
         # native will say "security-updates-only"
         security_update = update_type == "security" || security_updates_only?
-        next false if security_update && !vulnerable?(dependency)
+        next false if security_update && !vulnerable?(dependency, check_previous_version)
 
         # Check the dependency-name (defaulting to matching)
         condition_name = update.fetch("dependency-name", dependency.name)
@@ -329,29 +334,54 @@ module Dependabot
     # rubocop:enable Metrics/PerceivedComplexity
     # rubocop:enable Metrics/CyclomaticComplexity
 
-    sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
-    def vulnerable?(dependency)
-      security_advisories = security_advisories_for(dependency)
-      return false if security_advisories.none?
+    sig { params(dependency: Dependabot::Dependency, check_previous_version: T::Boolean).returns(T::Boolean) }
+    def vulnerable?(dependency, check_previous_version)
+      check_previous_version ? previous_version_vulnerable?(dependency) : current_version_vulnerable?(dependency)
+    end
 
-      # Can't (currently) detect whether dependencies without a version
-      # (i.e., for repos without a lockfile) are vulnerable
+    sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
+    def current_version_vulnerable?(dependency)
       return false unless dependency.version
 
-      # Can't (currently) detect whether git dependencies are vulnerable
-      version_class =
-        Dependabot::Utils
-        .version_class_for_package_manager(dependency.package_manager)
-      return false unless version_class.correct?(dependency.version)
+      versions_to_check = dependency.all_versions
+                                    .filter_map { |v| parse_version_if_valid(v, dependency.package_manager) }
+      vulnerability?(dependency, versions_to_check)
+    end
 
-      all_versions = dependency.all_versions
-                               .filter_map { |v| version_class.new(v) if version_class.correct?(v) }
-      security_advisories.any? { |a| all_versions.any? { |v| a.vulnerable?(v) } }
+    # Check if the dependency was vulnerable in its previous version
+    # This is useful to determine if an update was allowed because it fixes a vulnerability
+    sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
+    def previous_version_vulnerable?(dependency)
+      return false unless dependency.previous_version
+
+      previous_version = parse_version_if_valid(dependency.previous_version, dependency.package_manager)
+      return false unless previous_version
+
+      vulnerability?(dependency, [previous_version])
     end
 
     sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
     def security_fix?(dependency)
       security_advisories_for(dependency).any? { |a| a.fixed_by?(dependency) }
+    end
+
+    sig { params(version_string: T.nilable(String), package_manager: String).returns(T.nilable(Gem::Version)) }
+    def parse_version_if_valid(version_string, package_manager)
+      return nil unless version_string
+
+      version_class = Dependabot::Utils.version_class_for_package_manager(package_manager)
+      return nil unless version_class.correct?(version_string)
+
+      version_class.new(version_string)
+    end
+
+    sig { params(dependency: Dependabot::Dependency, versions: T::Array[Gem::Version]).returns(T::Boolean) }
+    def vulnerability?(dependency, versions)
+      security_advisories = security_advisories_for(dependency)
+      return false if security_advisories.none?
+      return false if versions.none?
+
+      security_advisories.any? { |advisory| versions.any? { |version| advisory.vulnerable?(version) } }
     end
 
     sig { returns(T.nilable(T.proc.params(arg0: String).returns(String))) }

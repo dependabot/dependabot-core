@@ -417,8 +417,15 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
       let(:directories) { ["/"] }
       let(:branch) { nil }
 
-      it "raises an error" do
-        expect { update_graph_processor.run }.to raise_error(Dependabot::DependabotError)
+      # FIXME(brrygrdn): We should obtain the ref from git -or- inject it via the backend service
+      it "assumes refs/heads/main instead of using the real default branch" do
+        expect(service).to receive(:create_dependency_submission) do |args|
+          payload = args[:dependency_submission].payload
+
+          expect(payload[:ref]).to eql("refs/heads/main")
+        end
+
+        update_graph_processor.run
       end
     end
   end
