@@ -121,12 +121,12 @@ module GithubApi
           metadata: {
             ecosystem: package_manager
           },
-          resolved: resolved_dependencies.each_with_object({}) do |(name, dep), resolved|
-            resolved[name] = {
-              package_url: dep.package_url,
-              relationship: dep.direct ? "direct" : "indirect",
-              scope: dep.runtime ? "runtime" : "development",
-              dependencies: dep.dependencies
+          resolved: resolved_dependencies.transform_values do |resolved|
+            {
+              package_url: resolved.package_url,
+              relationship: resolved.direct ? "direct" : "indirect",
+              scope: resolved.runtime ? "runtime" : "development",
+              dependencies: resolved.dependencies
             }
           end
         }
