@@ -68,7 +68,7 @@ RSpec.shared_examples "dependency_submission" do |empty|
       {
         context: "with a typical RubyGems project in directory root",
         directory: "/",
-        expected_correlator: "dependabot-bundler-"
+        expected_correlator: "dependabot-bundler"
       },
       {
         context: "with a RubyGems project in a subdirectory",
@@ -110,7 +110,7 @@ RSpec.shared_examples "dependency_submission" do |empty|
       expect(payload[:detector][:name]).to eq(described_class::SNAPSHOT_DETECTOR_NAME)
       expect(payload[:detector][:url]).to eq(described_class::SNAPSHOT_DETECTOR_URL)
       expect(payload[:detector][:version]).to eq(Dependabot::VERSION)
-      expect(payload[:job][:correlator]).to eq("dependabot-bundler-")
+      expect(payload[:job][:correlator]).to eq("dependabot-bundler")
       expect(payload[:job][:id]).to eq("9999")
     end
 

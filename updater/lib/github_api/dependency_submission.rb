@@ -96,7 +96,7 @@ module GithubApi
                          dirname.tr("/", "-")
                        end
 
-      "#{base}-#{sanitized_path}"
+      sanitized_path.empty? ? base : "#{base}-#{sanitized_path}"
     end
 
     sig { returns(String) }

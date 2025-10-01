@@ -89,7 +89,7 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
         payload = args[:dependency_submission].payload
 
         # Job references are as expected
-        expect(payload[:job][:correlator]).to eq("dependabot-bundler-")
+        expect(payload[:job][:correlator]).to eq("dependabot-bundler")
         expect(payload[:job][:id]).to eq("42")
 
         # Git references are as expected
@@ -373,7 +373,7 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
       expect(service).to receive(:create_dependency_submission) do |args|
         payload = args[:dependency_submission].payload
 
-        expect(payload[:job][:correlator]).to eq("dependabot-bundler-")
+        expect(payload[:job][:correlator]).to eq("dependabot-bundler")
         expect(payload[:manifests]).to be_empty
       end
 
