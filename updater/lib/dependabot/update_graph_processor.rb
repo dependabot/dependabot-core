@@ -53,7 +53,11 @@ module Dependabot
         directory_source = create_source_for(directory)
         directory_dependency_files = dependency_files_for(directory)
 
-        submission = create_submission(directory_source, directory_dependency_files)
+        submission = if directory_dependency_files.empty?
+                       empty_submission(source)
+                     else
+                       create_submission(directory_source, directory_dependency_files)
+                     end
 
         Dependabot.logger.info("Dependency submission payload:\n#{JSON.pretty_generate(submission.payload)}")
         service.create_dependency_submission(dependency_submission: submission)
@@ -89,6 +93,19 @@ module Dependabot
       dependency_files.select { |f| f.directory == directory }
     end
 
+    sig { params(source: Dependabot::Source).returns(GithubApi::DependencySubmission) }
+    def empty_submission(source)
+      GithubApi::DependencySubmission.new(
+        job_id: job.id.to_s,
+        # FIXME(brrygrdn): We should obtain the ref from git -or- inject it via the backend service
+        branch: source.branch || "main",
+        sha: base_commit_sha,
+        package_manager: job.package_manager,
+        manifest_file: DependencyFile.new(name: "", content: "", directory: T.must(source.directory)),
+        resolved_dependencies: {}
+      )
+    end
+
     sig do
       params(
         source: Dependabot::Source,
@@ -96,19 +113,6 @@ module Dependabot
       ).returns(GithubApi::DependencySubmission)
     end
     def create_submission(source, files)
-      # return an empty submission if there are no files
-      if files.empty?
-        return GithubApi::DependencySubmission.new(
-          job_id: job.id.to_s,
-          # FIXME(brrygrdn): We should obtain the ref from git -or- inject it via the backend service
-          branch: source.branch || "main",
-          sha: base_commit_sha,
-          package_manager: job.package_manager,
-          manifest_file: DependencyFile.new(name: "", content: "", directory: T.must(source.directory)),
-          resolved_dependencies: {}
-        )
-      end
-
       # TODO(brrygrdn): Refactor the grapher to wrap the parser call
       parser = Dependabot::FileParsers.for_package_manager(job.package_manager).new(
         dependency_files: files,
