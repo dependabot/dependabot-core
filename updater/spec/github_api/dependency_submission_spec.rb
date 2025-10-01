@@ -11,17 +11,15 @@ require "dependabot/job"
 
 require "github_api/dependency_submission"
 
-RSpec.describe GithubApi::DependencySubmission do
-  include DependencyFileHelpers
-
+RSpec.shared_examples "dependency_submission" do |empty|
   subject(:dependency_submission) do
     described_class.new(
       job_id: "9999",
       branch: branch,
       sha: sha,
       package_manager: "bundler",
-      manifest_file: lockfile,
-      resolved_dependencies: resolved_dependencies
+      manifest_file: empty ? empty_file : lockfile,
+      resolved_dependencies: empty ? {} : resolved_dependencies
     )
   end
 
@@ -34,6 +32,14 @@ RSpec.describe GithubApi::DependencySubmission do
     Dependabot::DependencyFile.new(
       name: "Gemfile.lock",
       content: fixture("bundler/original/Gemfile.lock"),
+      directory: directory
+    )
+  end
+
+  let(:empty_file) do
+    Dependabot::DependencyFile.new(
+      name: "",
+      content: "",
       directory: directory
     )
   end
@@ -62,17 +68,17 @@ RSpec.describe GithubApi::DependencySubmission do
       {
         context: "with a typical RubyGems project in directory root",
         directory: "/",
-        expected_correlator: "dependabot-bundler-Gemfile.lock"
+        expected_correlator: "dependabot-bundler"
       },
       {
         context: "with a RubyGems project in a subdirectory",
         directory: "ruby/backend-api/",
-        expected_correlator: "dependabot-bundler-ruby-backend-api-Gemfile.lock"
+        expected_correlator: "dependabot-bundler-ruby-backend-api"
       },
       {
         context: "with mixed case in the file path",
         directory: "Ruby/backend-api/",
-        expected_correlator: "dependabot-bundler-Ruby-backend-api-Gemfile.lock"
+        expected_correlator: "dependabot-bundler-Ruby-backend-api"
       },
       # If we're given something pathologically long, we use a SHA256 to limit length
       {
@@ -80,7 +86,7 @@ RSpec.describe GithubApi::DependencySubmission do
         directory: "lorem/ipsum/dolor/sit/amet/consectetur/adipiscing/elit/nunc/turpis/justo/" \
                    "maximus/ac/eleifend/sit/amet/malesuada/eu/nisi/donec/faucibus/lobortis/" \
                    "augue/vitae/venenatis/nunc/euismod/auctor/suspendisse/eget",
-        expected_correlator: /dependabot-bundler-[a-fA-F0-9]{64}-Gemfile.lock/
+        expected_correlator: /dependabot-bundler-[a-fA-F0-9]{64}/
       }
     ].each do |tc|
       context tc[:context] do
@@ -104,7 +110,7 @@ RSpec.describe GithubApi::DependencySubmission do
       expect(payload[:detector][:name]).to eq(described_class::SNAPSHOT_DETECTOR_NAME)
       expect(payload[:detector][:url]).to eq(described_class::SNAPSHOT_DETECTOR_URL)
       expect(payload[:detector][:version]).to eq(Dependabot::VERSION)
-      expect(payload[:job][:correlator]).to eq("dependabot-bundler-Gemfile.lock")
+      expect(payload[:job][:correlator]).to eq("dependabot-bundler")
       expect(payload[:job][:id]).to eq("9999")
     end
 
@@ -140,6 +146,11 @@ RSpec.describe GithubApi::DependencySubmission do
     it "generates a valid manifest list" do
       payload = dependency_submission.payload
 
+      if dependency_submission.resolved_dependencies.empty?
+        expect(payload[:manifests]).to be_empty
+        next
+      end
+
       # We only expect a lockfile to be returned
       expect(payload[:manifests].length).to eq(1)
 
@@ -157,5 +168,17 @@ RSpec.describe GithubApi::DependencySubmission do
       dependency2 = lockfile[:resolved]["dummy-pkg-b"]
       expect(dependency2[:package_url]).to eql("pkg:gem/dummy-pkg-b@1.1.0")
     end
+  end
+end
+
+RSpec.describe GithubApi::DependencySubmission do
+  include DependencyFileHelpers
+
+  context "with resolved dependencies" do
+    it_behaves_like "dependency_submission", false
+  end
+
+  context "without resolved dependencies" do
+    it_behaves_like "dependency_submission", true
   end
 end

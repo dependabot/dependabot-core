@@ -53,7 +53,11 @@ module Dependabot
         directory_source = create_source_for(directory)
         directory_dependency_files = dependency_files_for(directory)
 
-        submission = create_submission(directory_source, directory_dependency_files)
+        submission = if directory_dependency_files.empty?
+                       empty_submission(directory_source)
+                     else
+                       create_submission(directory_source, directory_dependency_files)
+                     end
 
         Dependabot.logger.info("Dependency submission payload:\n#{JSON.pretty_generate(submission.payload)}")
         service.create_dependency_submission(dependency_submission: submission)
@@ -87,6 +91,19 @@ module Dependabot
     sig { params(directory: String).returns(T::Array[Dependabot::DependencyFile]) }
     def dependency_files_for(directory)
       dependency_files.select { |f| f.directory == directory }
+    end
+
+    sig { params(source: Dependabot::Source).returns(GithubApi::DependencySubmission) }
+    def empty_submission(source)
+      GithubApi::DependencySubmission.new(
+        job_id: job.id.to_s,
+        # FIXME(brrygrdn): We should obtain the ref from git -or- inject it via the backend service
+        branch: source.branch || "main",
+        sha: base_commit_sha,
+        package_manager: job.package_manager,
+        manifest_file: DependencyFile.new(name: "", content: "", directory: T.must(source.directory)),
+        resolved_dependencies: {}
+      )
     end
 
     sig do
