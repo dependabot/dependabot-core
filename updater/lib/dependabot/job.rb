@@ -373,7 +373,7 @@ module Dependabot
       return false if security_advisories.none?
       return false if versions.none?
 
-      security_advisories.any? { |a| versions.any? { |v| a.vulnerable?(v) } }
+      security_advisories.any? { |advisory| versions.any? { |version| advisory.vulnerable?(version) } }
     end
 
     sig { returns(T.nilable(T.proc.params(arg0: String).returns(String))) }
