@@ -85,7 +85,8 @@ module Dependabot
 
       sig { params(lockfile: DependencyFile).returns(T::Boolean) }
       def workspaces_lockfile?(lockfile)
-        return false unless ["yarn.lock", "package-lock.json", "pnpm-lock.yaml", "bun.lock"].include?(lockfile.name)
+        return false unless ["yarn.lock", "package-lock.json", "pnpm-lock.yaml", "bun.lock", "npm-shrinkwrap.json"]
+                            .include?(lockfile.name)
 
         return false unless parsed_root_package_json["workspaces"] || dependency_files.any? do |file|
           file.name.end_with?("pnpm-workspace.yaml") && File.dirname(file.name) == File.dirname(lockfile.name)
