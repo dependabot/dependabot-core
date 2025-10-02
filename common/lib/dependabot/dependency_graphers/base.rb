@@ -7,17 +7,17 @@ module Dependabot
   module DependencyGraphers
     # This is a small value class that specifies the information we expect to be returned for each
     # dependency strictly.
-    class ResolvedDependency < T::Struct
+    class ResolvedDependency < T::ImmutableStruct
       # A valid purl for the dependency, e.g. pkg:/npm/tunnel@0.0.6
-      prop :package_url, String
+      const :package_url, String
       # Is this a direct dependency?
-      prop :direct, T::Boolean
+      const :direct, T::Boolean
       # Is this a runtime dependency?
-      prop :runtime, T::Boolean
+      const :runtime, T::Boolean
       # A list of packages this dependency itself depends on if direct is false. Note that:
       # - a valid purl for the parent dependency is preferable
       # - the package name is acceptable **unless the ecosystem allows multiple versions of a package to be used**
-      prop :dependencies, T::Array[String]
+      const :dependencies, T::Array[String]
     end
 
     class Base
