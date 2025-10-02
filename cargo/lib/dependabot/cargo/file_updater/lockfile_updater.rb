@@ -184,6 +184,17 @@ module Dependabot
         sig { params(command: String, fingerprint: String).void }
         def run_cargo_command(command, fingerprint:)
           start = Time.now
+
+          # Check if any manifest file is a virtual workspace (has [workspace] with members but no [package])
+          # Virtual workspaces are not supported as they complicate dependency resolution
+          virtual_workspace = detect_virtual_workspace
+
+          if virtual_workspace
+            error_msg = "Dependabot does not currently support Cargo virtual workspaces"
+            Dependabot.logger.error(error_msg)
+            raise Dependabot::DependencyFileNotResolvable, error_msg
+          end
+
           command = SharedHelpers.escape_command(command)
           Helpers.setup_credentials_in_environment(credentials)
           # Pass through any registry tokens supplied via CARGO_REGISTRIES_...
@@ -198,6 +209,11 @@ module Dependabot
 
           if using_old_toolchain?(stdout)
             raise Dependabot::DependencyFileNotEvaluatable, "Dependabot only supports toolchain 1.68 and up."
+          end
+
+          # ambiguous package specification
+          if (match = stdout.match(/There are multiple `([^`]+)` packages in your project, and the specification `([^`]+)` is ambiguous\./))
+            raise Dependabot::DependencyFileNotEvaluatable, "Ambiguous package specification: #{match[2]}"
           end
 
           # package doesn't exist in the index
@@ -524,6 +540,25 @@ module Dependabot
           return nil if versions.empty?
 
           versions.max_by { |v| version_class.new(v) }
+        end
+
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
+        def detect_virtual_workspace
+          manifest_files.find { |file| virtual_workspace?(file) }
+        end
+
+        sig { params(file: Dependabot::DependencyFile).returns(T::Boolean) }
+        def virtual_workspace?(file)
+          return false unless file.content
+
+          parsed_manifest = TomlRB.parse(file.content)
+          # A virtual workspace has [workspace] with members but no [package]
+          # Regular workspaces and workspace.dependencies are fine
+          parsed_manifest.key?("workspace") &&
+            parsed_manifest.dig("workspace", "members")&.any? &&
+            !parsed_manifest.key?("package")
+        rescue TomlRB::ParseError
+          false
         end
       end
       # rubocop:enable Metrics/ClassLength
