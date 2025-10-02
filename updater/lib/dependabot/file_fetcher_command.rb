@@ -151,7 +151,9 @@ module Dependabot
       return @dependency_files_for_multi_directories if @dependency_files_for_multi_directories
 
       @dependency_files_for_multi_directories = files_from_multidirectories
-      if @dependency_files_for_multi_directories&.empty?
+
+      # missing dependency files is not fatal for update_graph jobs as they need to process deletions
+      if @dependency_files_for_multi_directories&.empty? && !job.update_graph?
         raise Dependabot::DependencyFileNotFound, job.source.directories&.join(", ")
       end
 

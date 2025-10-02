@@ -82,12 +82,12 @@ module GithubApi
     def job_correlator
       base = "#{SNAPSHOT_DETECTOR_NAME}-#{package_manager}"
 
+      # If the manifest file does not have a name (e.g.,
+      # it is an empty file representing a deleted manifest),
+      # `path` will refer to the directory instead of a file.
       path = manifest_file.path
-      dirname = File.dirname(path).gsub(%r{^/}, "")
-      basename = File.basename(path)
-
-      # If manifest is at repository root, append the file name
-      return "#{base}-#{basename}" if dirname == ""
+      dirname = manifest_file.name.empty? ? path : File.dirname(path)
+      dirname = dirname.gsub(%r{^/}, "")
 
       sanitized_path = if dirname.bytesize > 32
                          # If the dirname is pathologically long, we replace it with a SHA256
@@ -96,7 +96,7 @@ module GithubApi
                          dirname.tr("/", "-")
                        end
 
-      "#{base}-#{sanitized_path}-#{basename}"
+      sanitized_path.empty? ? base : "#{base}-#{sanitized_path}"
     end
 
     sig { returns(String) }
