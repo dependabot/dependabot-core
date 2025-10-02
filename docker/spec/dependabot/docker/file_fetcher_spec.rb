@@ -357,5 +357,97 @@ RSpec.describe Dependabot::Docker::FileFetcher do
           .to match_array(matching_filenames)
       end
     end
+
+    context "with a .env file" do
+      before do
+        stub_request(:get, url + "?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_env_repo.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, File.join(url, ".env?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: env_fixture,
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      let(:env_fixture) { fixture("github", "contents_env.json") }
+
+      it "fetches the .env file" do
+        expect(file_fetcher_instance.files.count).to eq(1)
+        expect(file_fetcher_instance.files.map(&:name))
+          .to match_array(%w(.env))
+      end
+
+      context "when an invalid encoding is present" do
+        let(:env_fixture) { fixture("github", "contents_image.json") }
+
+        it "raises a helpful error" do
+          expect { file_fetcher_instance.files }
+            .to raise_error(Dependabot::DependencyFileNotParseable)
+        end
+      end
+    end
+
+    context "with multiple .env files" do
+      before do
+        stub_request(:get, url + "?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_env_repo_multiple.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, File.join(url, ".env?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: env_fixture,
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, File.join(url, ".env.local?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: env_2_fixture,
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, File.join(url, "app.env?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: env_fixture,
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      let(:env_fixture) { fixture("github", "contents_env.json") }
+      let(:env_2_fixture) { fixture("github", "contents_env.json") }
+
+      it "fetches all .env files" do
+        expect(file_fetcher_instance.files.count).to eq(3)
+        expect(file_fetcher_instance.files.map(&:name))
+          .to match_array(%w(.env .env.local app.env))
+      end
+
+      context "when an invalid encoding is present" do
+        let(:env_2_fixture) { fixture("github", "contents_image.json") }
+
+        it "fetches the valid env files and ignores the invalid one" do
+          expect(file_fetcher_instance.files.count).to eq(2)
+          expect(file_fetcher_instance.files.map(&:name))
+            .to match_array(%w(.env app.env))
+        end
+      end
+    end
   end
 end

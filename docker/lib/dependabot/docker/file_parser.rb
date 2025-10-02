@@ -10,6 +10,7 @@ module Dependabot
       extend T::Sig
 
       YAML_REGEXP = /^[^\.].*\.ya?ml$/i
+      ENV_REGEXP = /\.env($|\.)/i
       FROM = /FROM/i
       PLATFORM = /--platform\=(?<platform>\S+)/
       TAG_NO_PREFIX = /(?<tag>[\w][\w.-]{0,127})/
@@ -22,6 +23,10 @@ module Dependabot
 
       IMAGE_SPEC = %r{^(#{REGISTRY}/)?#{IMAGE}#{TAG}?(?:@sha256:#{DIGEST})?#{NAME}?}x
       TAG_WITH_DIGEST = /^#{TAG_NO_PREFIX}(?:@sha256:#{DIGEST})?/x
+
+      # Pattern for .env file entries with container image references
+      # Matches lines like: VARIABLE_NAME=registry.com/image:tag@sha256:digest
+      ENV_IMAGE_LINE = /^(?<var_name>[A-Z_][A-Z0-9_]*)=(?<image_ref>.+)$/
 
       sig { returns(Ecosystem) }
       def ecosystem
@@ -56,6 +61,10 @@ module Dependabot
           dependency_set += workfile_file_dependencies(file)
         end
 
+        envfiles.each do |file|
+          dependency_set += env_file_dependencies(file)
+        end
+
         dependency_set.dependencies
       end
 
@@ -80,6 +89,11 @@ module Dependabot
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def manifest_files
         dependency_files.select { |f| f.type == "file" && f.name.match?(YAML_REGEXP) }
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def envfiles
+        dependency_files.select { |f| f.type == "file" && f.name.match?(ENV_REGEXP) }
       end
 
       sig { params(file: Dependabot::DependencyFile).returns(DependencySet) }
@@ -158,6 +172,38 @@ module Dependabot
         image.prepend("#{registry}/") if registry
         image << "@sha256:#{digest}/" if digest
         [image]
+      end
+
+      sig { params(file: Dependabot::DependencyFile).returns(DependencySet) }
+      def env_file_dependencies(file)
+        dependency_set = DependencySet.new
+
+        T.must(file.content).each_line do |line|
+          line = line.strip
+          next if line.empty? || line.start_with?("#")
+
+          match = ENV_IMAGE_LINE.match(line)
+          next unless match
+
+          image_ref = match[:image_ref]
+          next unless image_ref
+
+          # Parse the image reference to extract registry, image, tag, and digest
+          details = image_ref.match(IMAGE_SPEC)&.named_captures
+          next if details.nil?
+
+          details["registry"] = nil if details["registry"] == "docker.io"
+
+          version = version_from(details)
+          next unless version
+
+          dependency_set << build_dependency(file, details, version)
+        end
+
+        dependency_set
+      rescue StandardError => e
+        Dependabot.logger.error("Failed to parse .env file #{file.path}: #{e.message}")
+        raise Dependabot::DependencyFileNotParseable.new(file.path, e.message)
       end
 
       sig { override.void }
