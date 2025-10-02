@@ -31,7 +31,7 @@ module GithubApi
     sig { returns(Dependabot::DependencyFile) }
     attr_reader :manifest_file
 
-    sig { returns(T::Hash[String, T.untyped]) }
+    sig { returns(T::Hash[String, Dependabot::DependencyGraphers::ResolvedDependency]) }
     attr_reader :resolved_dependencies
 
     sig do
@@ -41,7 +41,7 @@ module GithubApi
         sha: String,
         package_manager: String,
         manifest_file: Dependabot::DependencyFile,
-        resolved_dependencies: T::Hash[String, T.untyped]
+        resolved_dependencies: T::Hash[String, Dependabot::DependencyGraphers::ResolvedDependency]
       ).void
     end
     def initialize(job_id:, branch:, sha:, package_manager:, manifest_file:, resolved_dependencies:)
@@ -121,7 +121,14 @@ module GithubApi
           metadata: {
             ecosystem: package_manager
           },
-          resolved: resolved_dependencies
+          resolved: resolved_dependencies.transform_values do |resolved|
+            {
+              package_url: resolved.package_url,
+              relationship: resolved.direct ? "direct" : "indirect",
+              scope: resolved.runtime ? "runtime" : "development",
+              dependencies: resolved.dependencies
+            }
+          end
         }
       }
     end
