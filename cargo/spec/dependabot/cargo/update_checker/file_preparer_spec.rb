@@ -300,5 +300,57 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::FilePreparer do
 
       its(:length) { is_expected.to eq(1) }
     end
+
+    context "with workspace dependencies" do
+      let(:unlock_requirement) { true }
+      let(:manifest_fixture_name) { "workspace_for_resolution" }
+      let(:manifest) do
+        Dependabot::DependencyFile.new(
+          name: "Cargo.toml",
+          content: fixture("manifests", manifest_fixture_name)
+        )
+      end
+      let(:lockfile) do
+        Dependabot::DependencyFile.new(
+          name: "Cargo.lock",
+          content: ""
+        )
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "tokio",
+          version: "0.1.22",
+          requirements: [{
+            file: "Cargo.toml",
+            requirement: "0.1.22",
+            groups: ["workspace.dependencies"],
+            source: nil
+          }],
+          package_manager: "cargo"
+        )
+      end
+
+      let(:latest_allowable_version) { Gem::Version.new("1.47.1") }
+
+      it "updates workspace dependency constraints for resolution" do
+        prepared_manifest = prepared_dependency_files.find { |f| f.name == "Cargo.toml" }
+
+        expect(prepared_manifest.content).to include('tokio = ">= 0.1.22, <= 1.47.1"')
+
+        expect(prepared_manifest.content).to include('regex = "0.1.41"')
+      end
+
+      context "with inline table format" do
+        let(:manifest_fixture_name) { "workspace_for_resolution_inline_table" }
+
+        it "updates the version within the inline table" do
+          prepared_manifest = prepared_dependency_files.find { |f| f.name == "Cargo.toml" }
+
+          expect(prepared_manifest.content).to include('version = ">= 0.1.22, <= 1.47.1"')
+          expect(prepared_manifest.content).to include('features = ["rt-full"]')
+        end
+      end
+    end
   end
 end
