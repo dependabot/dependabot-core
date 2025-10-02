@@ -195,18 +195,6 @@ module Dependabot
             raise Dependabot::DependencyFileNotResolvable, error_msg
           end
 
-          # Validate cargo update commands before executing
-          command_parts = command.split.map(&:strip).reject(&:empty?)
-          if command_parts.size > 3 &&
-             command_parts[0] == "cargo" &&
-             command_parts[1] == "update" &&
-             command_parts[2] == "-p" &&
-             command_parts[3] == "error:"
-            error_msg = "Invalid cargo update command: #{command}. The package specification contains an error message instead of a valid package name."
-            Dependabot.logger.error(error_msg)
-            raise Dependabot::DependencyFileNotResolvable, error_msg
-          end
-
           command = SharedHelpers.escape_command(command)
           Helpers.setup_credentials_in_environment(credentials)
           # Pass through any registry tokens supplied via CARGO_REGISTRIES_...
@@ -221,6 +209,11 @@ module Dependabot
 
           if using_old_toolchain?(stdout)
             raise Dependabot::DependencyFileNotEvaluatable, "Dependabot only supports toolchain 1.68 and up."
+          end
+
+          # ambiguous package specification
+          if (match = stdout.match(/There are multiple `([^`]+)` packages in your project, and the specification `([^`]+)` is ambiguous\./))
+            raise Dependabot::DependencyFileNotEvaluatable, "Ambiguous package specification: #{match[2]}"
           end
 
           # package doesn't exist in the index
