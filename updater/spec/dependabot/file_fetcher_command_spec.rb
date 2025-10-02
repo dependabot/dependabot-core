@@ -62,6 +62,46 @@ RSpec.describe Dependabot::FileFetcherCommand do
       expect(dependency_file["content_encoding"]).to eq("utf-8")
     end
 
+    context "when empty directories are specified" do
+      before do
+        allow(Dependabot::Environment).to receive(:repo_contents_path).and_return(Dir.mktmpdir)
+      end
+
+      context "with non-graph jobs" do
+        let(:job_definition) do
+          JSON.parse(fixture("jobs/job_with_directories.json"))
+        end
+
+        it "raises a DependencyFileNotFound error" do
+          expect(api_client)
+            .to receive(:record_update_job_error)
+            .with(
+              error_details: { "file-path": "/foo", message: "/foo not found" },
+              error_type: "dependency_file_not_found"
+            )
+          expect(api_client).to receive(:mark_job_as_processed)
+
+          expect { perform_job }.to output(/Error during file fetching; aborting/).to_stdout_from_any_process
+        end
+      end
+
+      context "with graph jobs" do
+        let(:job_definition) do
+          JSON.parse(fixture("jobs/job_with_graph_command.json"))
+        end
+
+        it "does not raise an error" do
+          expect(api_client).not_to receive(:mark_job_as_processed)
+
+          expect { perform_job }.not_to raise_error
+
+          output = JSON.parse(File.read(Dependabot::Environment.output_path))
+          dependency_files = output["base64_dependency_files"]
+          expect(dependency_files).to be_empty
+        end
+      end
+    end
+
     context "when the fetcher raises a ToolVersionNotSupported error", :vcr do
       before do
         allow_any_instance_of(Dependabot::Bundler::FileFetcher)

@@ -28,11 +28,11 @@ module GithubApi
     sig { returns(String) }
     attr_reader :package_manager
 
-    sig { returns(T::Hash[String, T.untyped]) }
-    attr_reader :manifests
+    sig { returns(Dependabot::DependencyFile) }
+    attr_reader :manifest_file
 
-    sig { returns(Dependabot::DependencyGraphers::Base) }
-    attr_reader :grapher
+    sig { returns(T::Hash[String, T.untyped]) }
+    attr_reader :resolved_dependencies
 
     sig do
       params(
@@ -40,24 +40,18 @@ module GithubApi
         branch: String,
         sha: String,
         package_manager: String,
-        dependency_files: T::Array[Dependabot::DependencyFile],
-        dependencies: T::Array[Dependabot::Dependency]
+        manifest_file: Dependabot::DependencyFile,
+        resolved_dependencies: T::Hash[String, T.untyped]
       ).void
     end
-    def initialize(job_id:, branch:, sha:, package_manager:, dependency_files:, dependencies:)
+    def initialize(job_id:, branch:, sha:, package_manager:, manifest_file:, resolved_dependencies:)
       @job_id = job_id
       @branch = branch
       @sha = sha
       @package_manager = package_manager
 
-      @grapher = T.let(
-        Dependabot::DependencyGraphers.for_package_manager(package_manager).new(
-          dependency_files:,
-          dependencies:
-        ),
-        Dependabot::DependencyGraphers::Base
-      )
-      @manifests = T.let(build_manifests(dependencies), T::Hash[String, T.untyped])
+      @manifest_file = manifest_file
+      @resolved_dependencies = resolved_dependencies
     end
 
     # TODO: Change to a typed structure?
@@ -88,15 +82,12 @@ module GithubApi
     def job_correlator
       base = "#{SNAPSHOT_DETECTOR_NAME}-#{package_manager}"
 
-      # If we don't have any manifests (e.g. empty snapshot) fall back to the base
-      return base if manifests.empty?
-
-      path = grapher.relevant_dependency_file.path
-      dirname = File.dirname(path).gsub(%r{^/}, "")
-      basename = File.basename(path)
-
-      # If manifest is at repository root, append the file name
-      return "#{base}-#{basename}" if dirname == ""
+      # If the manifest file does not have a name (e.g.,
+      # it is an empty file representing a deleted manifest),
+      # `path` will refer to the directory instead of a file.
+      path = manifest_file.path
+      dirname = manifest_file.name.empty? ? path : File.dirname(path)
+      dirname = dirname.gsub(%r{^/}, "")
 
       sanitized_path = if dirname.bytesize > 32
                          # If the dirname is pathologically long, we replace it with a SHA256
@@ -105,7 +96,7 @@ module GithubApi
                          dirname.tr("/", "-")
                        end
 
-      "#{base}-#{sanitized_path}-#{basename}"
+      sanitized_path.empty? ? base : "#{base}-#{sanitized_path}"
     end
 
     sig { returns(String) }
@@ -116,24 +107,21 @@ module GithubApi
     end
 
     sig do
-      params(
-        dependencies: T::Array[Dependabot::Dependency]
-      ).returns(T::Hash[String, T.untyped])
+      returns(T::Hash[String, T.untyped])
     end
-    def build_manifests(dependencies)
-      return {} if dependencies.empty?
+    def manifests
+      return {} if resolved_dependencies.empty?
 
-      file = grapher.relevant_dependency_file
       {
-        file.path => {
-          name: file.path,
+        manifest_file.path => {
+          name: manifest_file.path,
           file: {
-            source_location: file.path.gsub(%r{^/}, "")
+            source_location: manifest_file.path.gsub(%r{^/}, "")
           },
           metadata: {
             ecosystem: package_manager
           },
-          resolved: grapher.resolved_dependencies.to_h
+          resolved: resolved_dependencies
         }
       }
     end
