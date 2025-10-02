@@ -113,7 +113,6 @@ module Dependabot
       ).returns(GithubApi::DependencySubmission)
     end
     def create_submission(source, files)
-      # TODO(brrygrdn): Refactor the grapher to wrap the parser call
       parser = Dependabot::FileParsers.for_package_manager(job.package_manager).new(
         dependency_files: files,
         repo_contents_path: job.repo_contents_path,
@@ -123,10 +122,8 @@ module Dependabot
         options: job.experiments
       )
 
-      grapher = Dependabot::DependencyGraphers.for_package_manager(job.package_manager).new(
-        dependency_files: files,
-        dependencies: parser.parse
-      )
+      grapher = Dependabot::DependencyGraphers.for_package_manager(job.package_manager).new(file_parser: parser)
+      grapher.prepare!
 
       GithubApi::DependencySubmission.new(
         job_id: job.id.to_s,
