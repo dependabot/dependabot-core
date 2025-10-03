@@ -419,11 +419,14 @@ module Dependabot
       return unless error.is_a?(Dependabot::DependencyFileNotFound) ||
                     error.is_a?(Dependabot::DirectoryNotFound)
 
+      dependencies = job.dependencies
+      return unless dependencies
+
       Dependabot.logger.info(
-        "Closing pull request for #{job.dependencies&.join(', ') || 'unknown'} " \
+        "Closing pull request for #{dependencies.join(', ')} " \
         "as the directory or dependency files are no longer present"
       )
-      service.close_pull_request(T.must(job.dependencies), :dependency_removed)
+      service.close_pull_request(dependencies, :dependency_removed)
     end
   end
 end
