@@ -25,7 +25,7 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def filtered_dependency_files
-        @dependency_files.reject { |f| f.support_file? || f.vendored_file? }
+        dependency_files.reject { |f| f.support_file? || f.vendored_file? }
       end
 
       # Our generic strategy is to check if the parser has attached a `depends_on` key to the Dependency's
