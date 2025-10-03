@@ -399,7 +399,8 @@ module Dependabot
       def expand_workspaces(path)
         path = Pathname.new(path).cleanpath.to_path
         dir = directory.gsub(%r{(^/|/$)}, "")
-        unglobbed_path = T.must(path.split("*").first).gsub(%r{(?<=/)[^/]*$}, "")
+
+        unglobbed_path = (path.split("*").first || "").gsub(%r{(?<=/)[^/]*$}, "")
 
         repo_contents(dir: unglobbed_path, raise_errors: false)
           .select { |file| file.type == "dir" }

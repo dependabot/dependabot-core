@@ -1002,4 +1002,107 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
       end
     end
   end
+
+  describe "#expand_workspaces" do
+    let(:file_fetcher_instance) do
+      described_class.new(source: source, credentials: credentials)
+    end
+    let(:source) do
+      Dependabot::Source.new(
+        provider: "github",
+        repo: "test/repo",
+        directory: "/"
+      )
+    end
+
+    before do
+      allow(file_fetcher_instance).to receive_messages(commit: "sha", directory: "")
+    end
+
+    context "when workspace path is a simple glob pattern" do
+      it "expands workspace paths with wildcards" do
+        allow(file_fetcher_instance).to receive(:repo_contents)
+          .with(dir: "packages/", raise_errors: false)
+          .and_return([
+            OpenStruct.new(type: "dir", path: "packages/crate1"),
+            OpenStruct.new(type: "dir", path: "packages/crate2"),
+            OpenStruct.new(type: "file", path: "packages/README.md")
+          ])
+
+        result = file_fetcher_instance.send(:expand_workspaces, "packages/*")
+        expect(result).to contain_exactly("packages/crate1", "packages/crate2")
+      end
+    end
+
+    context "when workspace path is exactly '*'" do
+      it "handles the edge case without throwing nil error" do
+        allow(file_fetcher_instance).to receive(:repo_contents)
+          .with(dir: "", raise_errors: false)
+          .and_return([
+            OpenStruct.new(type: "dir", path: "crate1"),
+            OpenStruct.new(type: "dir", path: "crate2"),
+            OpenStruct.new(type: "file", path: "README.md")
+          ])
+
+        result = file_fetcher_instance.send(:expand_workspaces, "*")
+        expect(result).to match_array(%w(crate1 crate2))
+      end
+    end
+
+    context "when workspace path starts with '*'" do
+      it "handles paths that start with wildcard" do
+        allow(file_fetcher_instance).to receive(:repo_contents)
+          .with(dir: "", raise_errors: false)
+          .and_return([
+            OpenStruct.new(type: "dir", path: "test-crate"),
+            OpenStruct.new(type: "dir", path: "prod-crate"),
+            OpenStruct.new(type: "file", path: "README.md")
+          ])
+
+        result = file_fetcher_instance.send(:expand_workspaces, "*-crate")
+        expect(result).to match_array(%w(test-crate prod-crate))
+      end
+    end
+
+    context "when workspace path contains multiple wildcards" do
+      it "handles multiple wildcards correctly" do
+        allow(file_fetcher_instance).to receive(:repo_contents)
+          .with(dir: "src/", raise_errors: false)
+          .and_return([
+            OpenStruct.new(type: "dir", path: "src/bin-crate-v1"),
+            OpenStruct.new(type: "dir", path: "src/lib-crate-v2"),
+            OpenStruct.new(type: "dir", path: "src/other")
+          ])
+
+        result = file_fetcher_instance.send(:expand_workspaces, "src/*-crate-*")
+        expect(result).to contain_exactly("src/bin-crate-v1", "src/lib-crate-v2")
+      end
+    end
+
+    context "when no directories match the pattern" do
+      it "returns empty array when no matches found" do
+        allow(file_fetcher_instance).to receive(:repo_contents)
+          .with(dir: "nonexistent/", raise_errors: false)
+          .and_return([])
+
+        result = file_fetcher_instance.send(:expand_workspaces, "nonexistent/*")
+        expect(result).to eq([])
+      end
+    end
+
+    context "when workspace path has nested wildcards" do
+      it "handles nested directory patterns" do
+        allow(file_fetcher_instance).to receive(:repo_contents)
+          .with(dir: "apps/", raise_errors: false)
+          .and_return([
+            OpenStruct.new(type: "dir", path: "apps/web/frontend"),
+            OpenStruct.new(type: "dir", path: "apps/api/backend"),
+            OpenStruct.new(type: "file", path: "apps/config.json")
+          ])
+
+        result = file_fetcher_instance.send(:expand_workspaces, "apps/*/frontend")
+        expect(result).to contain_exactly("apps/web/frontend")
+      end
+    end
+  end
 end
