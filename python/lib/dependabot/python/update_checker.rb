@@ -110,6 +110,45 @@ module Dependabot
         library? ? RequirementsUpdateStrategy::WidenRanges : RequirementsUpdateStrategy::BumpVersions
       end
 
+      sig { override.returns(T::Array[T::Hash[String, String]]) }
+      def conflicting_dependencies
+        return [] unless vulnerable?
+
+        target_version = lowest_security_fix_version
+        return [] unless target_version
+
+        # Get the Python version requirement for the target version
+        target_python_requirement = python_requirement_for_version(target_version.to_s)
+        return [] unless target_python_requirement
+
+        # Get the current Python version being used
+        # We need to get the language version manager from the pip version resolver
+        # since it's the component that determines Python version
+        language_version_mgr = if resolver_type == :requirements
+                                 pip_version_resolver.language_version_manager
+                               else
+                                 # For other resolver types, we don't have easy access to Python version
+                                 # Return empty array for now
+                                 return []
+                               end
+
+        current_python_version = language_version_mgr.python_version
+        current_python = Dependabot::Python::Version.new(current_python_version)
+
+        # Check if the target version's Python requirement is satisfied by current Python
+        unless target_python_requirement.satisfied_by?(current_python)
+          [{
+            "explanation" => "#{dependency.name} #{target_version} requires Python " \
+                             "#{target_python_requirement}, but the current environment uses Python #{current_python_version}"
+          }]
+        else
+          []
+        end
+      rescue StandardError => e
+        Dependabot.logger.warn("Error checking conflicting dependencies: #{e.message}")
+        []
+      end
+
       private
 
       sig { override.returns(T::Boolean) }
@@ -452,6 +491,23 @@ module Dependabot
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def pip_compile_files
         dependency_files.select { |f| f.name.end_with?(".in") }
+      end
+
+      sig { params(version: String).returns(T.nilable(Dependabot::Python::Requirement)) }
+      def python_requirement_for_version(version)
+        # Get package details for the dependency
+        package_details = latest_version_finder.package_details
+        return nil unless package_details
+
+        # Find the release for the target version
+        target_release = package_details.releases.find { |r| r.version.to_s == version }
+        return nil unless target_release
+
+        # Get the language requirement
+        language_info = target_release.language
+        return nil unless language_info
+
+        language_info.requirement
       end
     end
   end

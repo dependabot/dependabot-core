@@ -62,6 +62,14 @@ module Dependabot
             .lowest_security_fix_version(language_version: language_version_manager.python_version)
         end
 
+        sig { returns(LanguageVersionManager) }
+        def language_version_manager
+          @language_version_manager ||=
+            LanguageVersionManager.new(
+              python_requirement_parser: python_requirement_parser
+            )
+        end
+
         private
 
         sig { returns(Dependabot::Dependency) }
@@ -98,14 +106,6 @@ module Dependabot
           @python_requirement_parser ||=
             FileParser::PythonRequirementParser.new(
               dependency_files: dependency_files
-            )
-        end
-
-        sig { returns(LanguageVersionManager) }
-        def language_version_manager
-          @language_version_manager ||=
-            LanguageVersionManager.new(
-              python_requirement_parser: python_requirement_parser
             )
         end
       end
