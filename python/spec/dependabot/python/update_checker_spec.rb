@@ -946,4 +946,62 @@ RSpec.describe Dependabot::Python::UpdateChecker do
       end
     end
   end
+
+  describe "#conflicting_dependencies" do
+    subject(:conflicting_dependencies) { checker.conflicting_dependencies }
+
+    let(:dependency_name) { "luigi" }
+    let(:dependency_version) { "2.0.0" }
+
+    context "when not vulnerable" do
+      it { is_expected.to eq([]) }
+    end
+
+    context "when vulnerable but no Python version conflict" do
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "pip",
+            vulnerable_versions: ["< 3.0.0"]
+          )
+        ]
+      end
+
+      before do
+        allow(checker).to receive(:lowest_security_fix_version).and_return(Gem::Version.new("3.0.0"))
+        # Stub python_requirement_for_version to return a requirement compatible with Python 3.9
+        allow(checker).to receive(:python_requirement_for_version)
+          .with("3.0.0")
+          .and_return(Dependabot::Python::Requirement.new(">= 3.8"))
+      end
+
+      it { is_expected.to eq([]) }
+    end
+
+    context "when vulnerable with Python version conflict" do
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "pip",
+            vulnerable_versions: ["< 3.0.0"]
+          )
+        ]
+      end
+
+      before do
+        allow(checker).to receive(:lowest_security_fix_version).and_return(Gem::Version.new("3.0.0"))
+        # Stub python_requirement_for_version to return a requirement that needs Python >= 3.10
+        allow(checker).to receive(:python_requirement_for_version)
+          .with("3.0.0")
+          .and_return(Dependabot::Python::Requirement.new(">= 3.10"))
+      end
+
+      it "returns conflicting dependency information" do
+        expect(conflicting_dependencies.length).to eq(1)
+        expect(conflicting_dependencies.first["explanation"]).to include("luigi 3.0.0 requires Python >= 3.10")
+      end
+    end
+  end
 end
