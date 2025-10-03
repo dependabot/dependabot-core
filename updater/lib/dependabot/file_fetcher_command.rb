@@ -415,12 +415,12 @@ module Dependabot
     # been removed from the project.
     sig { params(error: StandardError).void }
     def handle_missing_directory_for_pr_update(error)
+      dependencies = job.dependencies
+
       return unless job.updating_a_pull_request?
+      return unless dependencies
       return unless error.is_a?(Dependabot::DependencyFileNotFound) ||
                     error.is_a?(Dependabot::DirectoryNotFound)
-
-      dependencies = job.dependencies
-      return unless dependencies
 
       Dependabot.logger.info(
         "Closing pull request for #{dependencies.join(', ')} " \
