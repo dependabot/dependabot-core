@@ -136,13 +136,14 @@ module Dependabot
         current_python = Dependabot::Python::Version.new(current_python_version)
 
         # Check if the target version's Python requirement is satisfied by current Python
-        unless target_python_requirement.satisfied_by?(current_python)
+        if target_python_requirement.satisfied_by?(current_python)
+          []
+        else
           [{
             "explanation" => "#{dependency.name} #{target_version} requires Python " \
-                             "#{target_python_requirement}, but the current environment uses Python #{current_python_version}"
+                             "#{target_python_requirement}, but the current environment uses " \
+                             "Python #{current_python_version}"
           }]
-        else
-          []
         end
       rescue StandardError => e
         Dependabot.logger.warn("Error checking conflicting dependencies: #{e.message}")
@@ -493,7 +494,7 @@ module Dependabot
         dependency_files.select { |f| f.name.end_with?(".in") }
       end
 
-      sig { params(version: String).returns(T.nilable(Dependabot::Python::Requirement)) }
+      sig { params(version: String).returns(T.nilable(Dependabot::Requirement)) }
       def python_requirement_for_version(version)
         # Get package details for the dependency
         package_details = latest_version_finder.package_details
