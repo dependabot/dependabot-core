@@ -49,14 +49,16 @@ module Dependabot
       raise Dependabot::DependabotError, "job.source.directories is nil" if job.source.directories.nil?
       raise Dependabot::DependabotError, "job.source.directories is empty" unless job.source.directories&.any?
 
+      branch = job.source.branch || fetch_default_branch_from_github
+
       T.must(job.source.directories).each do |directory|
         directory_source = create_source_for(directory)
         directory_dependency_files = dependency_files_for(directory)
 
         submission = if directory_dependency_files.empty?
-                       empty_submission(directory_source)
+                       empty_submission(branch, directory_source)
                      else
-                       create_submission(directory_source, directory_dependency_files)
+                       create_submission(branch, directory_source, directory_dependency_files)
                      end
 
         Dependabot.logger.info("Dependency submission payload:\n#{JSON.pretty_generate(submission.payload)}")
@@ -93,12 +95,11 @@ module Dependabot
       dependency_files.select { |f| f.directory == directory }
     end
 
-    sig { params(source: Dependabot::Source).returns(GithubApi::DependencySubmission) }
-    def empty_submission(source)
+    sig { params(branch: String, source: Dependabot::Source).returns(GithubApi::DependencySubmission) }
+    def empty_submission(branch, source)
       GithubApi::DependencySubmission.new(
         job_id: job.id.to_s,
-        # FIXME(brrygrdn): We should obtain the ref from git -or- inject it via the backend service
-        branch: source.branch || "main",
+        branch: branch,
         sha: base_commit_sha,
         package_manager: job.package_manager,
         manifest_file: DependencyFile.new(name: "", content: "", directory: T.must(source.directory)),
@@ -108,11 +109,12 @@ module Dependabot
 
     sig do
       params(
+        branch: String,
         source: Dependabot::Source,
         files: T::Array[Dependabot::DependencyFile]
       ).returns(GithubApi::DependencySubmission)
     end
-    def create_submission(source, files)
+    def create_submission(branch, source, files)
       parser = Dependabot::FileParsers.for_package_manager(job.package_manager).new(
         dependency_files: files,
         repo_contents_path: job.repo_contents_path,
@@ -127,13 +129,36 @@ module Dependabot
 
       GithubApi::DependencySubmission.new(
         job_id: job.id.to_s,
-        # FIXME(brrygrdn): We should obtain the ref from git -or- inject it via the backend service
-        branch: source.branch || "main",
+        branch: branch,
         sha: base_commit_sha,
         package_manager: job.package_manager,
         manifest_file: grapher.relevant_dependency_file,
         resolved_dependencies: grapher.resolved_dependencies
       )
+    end
+
+    sig { returns(String) }
+    def fetch_default_branch_from_github
+      @fetch_default_branch_from_github ||= T.let(
+        github_client.fetch_default_branch(job.source.repo),
+        T.nilable(String)
+      )
+    rescue Octokit::NotFound
+      # This is unlikely to happen, but if it does it means the repository has been deleted
+      # while we are working, so let's handle it properly.
+      raise Dependabot::RepoNotFound, job.source
+    end
+
+    sig { returns(Dependabot::Clients::GithubWithRetries) }
+    def github_client
+      @github_client ||=
+        T.let(
+          Dependabot::Clients::GithubWithRetries.for_source(
+            source: job.source,
+            credentials: job.credentials
+          ),
+          T.nilable(Dependabot::Clients::GithubWithRetries)
+        )
     end
   end
 end
