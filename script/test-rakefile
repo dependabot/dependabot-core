@@ -128,13 +128,15 @@ puts "=" * 60
 puts "Rakefile Integration Tests"
 puts "=" * 60
 
-all_passed = true
+results = [
+  test_rakefile_structure,
+  test_task_list,
+  test_gems_clean,
+  test_rubocop_sort,
+  test_helpers_loaded
+]
 
-all_passed &= test_rakefile_structure
-all_passed &= test_task_list
-all_passed &= test_gems_clean
-all_passed &= test_rubocop_sort
-all_passed &= test_helpers_loaded
+all_passed = results.all?
 
 puts "\n" + "=" * 60
 if all_passed
