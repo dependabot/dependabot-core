@@ -196,7 +196,7 @@ module Dependabot
         def log_existing_pr_for_latest_version(dependency_name, latest_version, latest_version_obj)
           pr_number = job.existing_pull_requests
                          .find { |pr| pr.contains_dependency?(dependency_name, latest_version) }
-                         &.dependencies&.first&.pr_number
+                         &.pr_number
 
           pr_number_text = pr_number ? "##{pr_number} " : ""
 
