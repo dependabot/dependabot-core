@@ -550,3 +550,38 @@ In a nutshell the process will be:
 
 </p>
 </details>
+
+<details><summary>:wrench: Rake tasks and project structure</summary>
+<p>
+
+The project uses Rake for build automation and common tasks. The Rakefile has been modularized for better maintainability:
+
+### Structure
+
+```
+Rakefile                      # Main entry point (loads tasks from rakelib/)
+rakelib/                      # Modular task definitions
+├── gems.rake                 # Gem building and release tasks
+├── rubocop.rake             # RuboCop configuration tasks
+└── support/
+    └── helpers.rb           # Shared constants and helper methods
+```
+
+### Available Tasks
+
+- `rake gems:build` - Build all gem packages
+- `rake gems:release` - Release gems to RubyGems (with sigstore signing in CI)
+- `rake gems:clean` - Clean up built gem artifacts
+- `rake rubocop:sort` - Sort RuboCop configuration keys
+
+### Adding New Tasks
+
+When adding new Rake tasks:
+
+1. Create a new `.rake` file in the `rakelib/` directory
+2. Use namespaces to organize related tasks
+3. Put shared helper methods in `rakelib/support/helpers.rb`
+4. Rake automatically loads all `.rake` files from `rakelib/`
+
+</p>
+</details>
