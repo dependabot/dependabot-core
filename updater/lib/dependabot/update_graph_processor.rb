@@ -49,7 +49,7 @@ module Dependabot
       raise Dependabot::DependabotError, "job.source.directories is nil" if job.source.directories.nil?
       raise Dependabot::DependabotError, "job.source.directories is empty" unless job.source.directories&.any?
 
-      branch = job.source.branch || fetch_default_branch_from_github
+      branch = job.source.branch || default_branch
 
       T.must(job.source.directories).each do |directory|
         directory_source = create_source_for(directory)
@@ -135,6 +135,17 @@ module Dependabot
         manifest_file: grapher.relevant_dependency_file,
         resolved_dependencies: grapher.resolved_dependencies
       )
+    end
+
+    sig { returns(String) }
+    def default_branch
+      return fetch_default_branch_from_github if job.source.provider == "github"
+
+      Dependabot.logger.warn(
+        "Dependency submissions are not fully support for provider '#{job.source.provider}'. " \
+        "Substituting 'main' as default branch."
+      )
+      "main"
     end
 
     sig { returns(String) }
