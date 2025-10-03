@@ -652,5 +652,107 @@ RSpec.describe Dependabot::FileFetcherCommand do
         expect(root_files.map(&:name)).to include("a.dummy")
       end
     end
+
+    context "when updating a pull request and directory is not found" do
+      let(:job_definition) do
+        job_def = JSON.parse(fixture("jobs/job_with_credentials.json"))
+        job_def["job"]["updating-a-pull-request"] = true
+        job_def["job"]["dependencies"] = ["dummy-pkg-a"]
+        job_def
+      end
+
+      before do
+        allow_any_instance_of(Dependabot::Bundler::FileFetcher)
+          .to receive(:commit)
+          .and_return("a" * 40)
+        allow_any_instance_of(Dependabot::Bundler::FileFetcher)
+          .to receive(:files)
+          .and_raise(Dependabot::DependencyFileNotFound.new("/some/deleted/directory"))
+      end
+
+      it "closes the pull request and records the error" do
+        expect(api_client)
+          .to receive(:record_update_job_error)
+          .with(
+            error_details: {
+              "file-path": "/some/deleted/directory",
+              message: "/some/deleted/directory not found"
+            },
+            error_type: "dependency_file_not_found"
+          )
+        expect(api_client)
+          .to receive(:close_pull_request)
+          .with(["dummy-pkg-a"], :dependency_removed)
+        expect(api_client).to receive(:mark_job_as_processed)
+
+        expect { perform_job }.to output(/Error during file fetching; aborting/).to_stdout_from_any_process
+      end
+    end
+
+    context "when updating a pull request and DirectoryNotFound is raised" do
+      let(:job_definition) do
+        job_def = JSON.parse(fixture("jobs/job_with_credentials.json"))
+        job_def["job"]["updating-a-pull-request"] = true
+        job_def["job"]["dependencies"] = ["dummy-pkg-b"]
+        job_def
+      end
+
+      before do
+        allow_any_instance_of(Dependabot::Bundler::FileFetcher)
+          .to receive(:commit)
+          .and_return("b" * 40)
+        allow_any_instance_of(Dependabot::Bundler::FileFetcher)
+          .to receive(:files)
+          .and_raise(Dependabot::DirectoryNotFound.new("/deleted/dir"))
+      end
+
+      it "closes the pull request and records the error" do
+        expect(api_client)
+          .to receive(:record_update_job_error)
+          .with(
+            error_details: { "directory-name": "/deleted/dir" },
+            error_type: "directory_not_found"
+          )
+        expect(api_client)
+          .to receive(:close_pull_request)
+          .with(["dummy-pkg-b"], :dependency_removed)
+        expect(api_client).to receive(:mark_job_as_processed)
+
+        expect { perform_job }.to output(/Error during file fetching; aborting/).to_stdout_from_any_process
+      end
+    end
+
+    context "when not updating a pull request and directory is not found" do
+      let(:job_definition) do
+        job_def = JSON.parse(fixture("jobs/job_with_credentials.json"))
+        job_def["job"]["updating-a-pull-request"] = false
+        job_def
+      end
+
+      before do
+        allow_any_instance_of(Dependabot::Bundler::FileFetcher)
+          .to receive(:commit)
+          .and_return("c" * 40)
+        allow_any_instance_of(Dependabot::Bundler::FileFetcher)
+          .to receive(:files)
+          .and_raise(Dependabot::DependencyFileNotFound.new("/some/directory"))
+      end
+
+      it "records the error but does not close any pull request" do
+        expect(api_client)
+          .to receive(:record_update_job_error)
+          .with(
+            error_details: {
+              "file-path": "/some/directory",
+              message: "/some/directory not found"
+            },
+            error_type: "dependency_file_not_found"
+          )
+        expect(api_client).not_to receive(:close_pull_request)
+        expect(api_client).to receive(:mark_job_as_processed)
+
+        expect { perform_job }.to output(/Error during file fetching; aborting/).to_stdout_from_any_process
+      end
+    end
   end
 end
