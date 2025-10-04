@@ -131,6 +131,7 @@ PATH
   specs:
     dependabot-maven (0.336.0)
       dependabot-common (= 0.336.0)
+      rexml (~> 3.4.1)
 
 PATH
   remote: npm_and_yarn
