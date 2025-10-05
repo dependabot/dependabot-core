@@ -1,5 +1,5 @@
 # From https://github.com/sigstore/cosign/releases
-FROM ghcr.io/sigstore/cosign/cosign:v2.6.0 AS cosign
+FROM ghcr.io/sigstore/cosign/cosign:v2.6.1 AS cosign
 # From https://github.com/regclient/regclient/releases
 FROM ghcr.io/regclient/regctl:v0.9.2 AS regctl
 
