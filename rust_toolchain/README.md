@@ -6,11 +6,12 @@ Rust toolchain support for [`dependabot-core`][core-repo].
 
 1. Start a development shell
 
-  ```
-  $ bin/docker-dev-shell rust-toolchain
-  ```
+   ```
+   $ bin/docker-dev-shell rust-toolchain
+   ```
 
 2. Run tests
+
    ```
    [dependabot-core-dev] ~ $ cd rust_toolchain && rspec
    ```

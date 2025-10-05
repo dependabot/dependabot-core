@@ -19,9 +19,9 @@ Updating the list of known versions might be tricky, here are the steps:
 
 1. Start a development shell
 
-  ```shell
-  $ bin/docker-dev-shell uv
-  ```
+   ```shell
+   $ bin/docker-dev-shell uv
+   ```
 
 2. Run tests
 
