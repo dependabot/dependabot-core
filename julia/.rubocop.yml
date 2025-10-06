@@ -1,0 +1,21 @@
+inherit_from: ../.rubocop.yml
+
+inherit_mode:
+  merge:
+    - Exclude
+
+# All Julia files are properly typed with strict or strong sigils
+
+# Disable RSpec/AnyInstance for test files - would require significant refactoring
+RSpec/AnyInstance:
+  Enabled: false
+
+# Allow integration tests to have different file naming conventions
+RSpec/SpecFilePathFormat:
+  Exclude:
+    - 'spec/integration/*'
+
+# Test script files can use looser typing
+Sorbet/StrictSigil:
+  Exclude:
+    - 'test_*.rb'
