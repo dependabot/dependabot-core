@@ -142,7 +142,7 @@ module Dependabot
       return fetch_default_branch_from_github if job.source.provider == "github"
 
       Dependabot.logger.warn(
-        "Dependency submissions are not fully support for provider '#{job.source.provider}'. " \
+        "Dependency submissions are not fully supported for provider '#{job.source.provider}'. " \
         "Substituting 'main' as default branch."
       )
       "main"
