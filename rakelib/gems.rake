@@ -1,3 +1,4 @@
+# typed: strict
 # frozen_string_literal: true
 
 require_relative "support/helpers"
@@ -9,7 +10,7 @@ namespace :gems do
     pkg_path = File.join(root_path, "pkg")
     Dir.mkdir(pkg_path) unless File.directory?(pkg_path)
 
-    GEMSPECS.each do |gemspec_path|
+    RakeHelpers::GEMSPECS.each do |gemspec_path|
       puts "> Building #{gemspec_path}"
       Dir.chdir(File.dirname(gemspec_path)) do
         gemspec = Bundler.load_gemspec_uncached(File.basename(gemspec_path))
@@ -20,9 +21,9 @@ namespace :gems do
   end
 
   task release: [:build] do
-    guard_tag_match
+    RakeHelpers.guard_tag_match
 
-    GEMSPECS.each do |gemspec_path|
+    RakeHelpers::GEMSPECS.each do |gemspec_path|
       gem_name = File.basename(gemspec_path).sub(/\.gemspec$/, "")
       gem_name_and_version = "#{gem_name}-#{Dependabot::VERSION}"
       gem_path = "pkg/#{gem_name_and_version}.gem"
@@ -30,7 +31,7 @@ namespace :gems do
 
       attempts = 0
       loop do
-        if rubygems_release_exists?(gem_name, Dependabot::VERSION)
+        if RakeHelpers.rubygems_release_exists?(gem_name, Dependabot::VERSION)
           puts "- Skipping #{gem_path} as it already exists on rubygems"
           break
         else
