@@ -381,6 +381,19 @@ RSpec.describe Dependabot::Uv::FileParser::PyprojectFilesParser do
         # setuptools-scm (from build-system.requires)
         its(:length) { is_expected.to eq(2) }
       end
+
+      context "with uv path dependencies" do
+        subject(:dependency) { dependencies[1] }
+
+        let(:pyproject_fixture_name) { "uv_path_dependencies.toml" }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("protos")
+          expect(dependency.version).to be_nil
+          expect(dependency.package_manager).to eq("uv")
+        end
+      end
     end
 
     describe "with pep 735" do
