@@ -42,7 +42,29 @@ Fork the [dependabot-core](https://github.com/dependabot/dependabot-core) reposi
 
 ### 2. Create the Ecosystem Structure
 
-Create a new top-level ecosystem directory. Your ecosystem should be implemented as a standalone ecosystem rather than piggybacking off existing ones. You'll need to implement several key classes:
+**Using the Scaffold Rake Task (Recommended)**
+
+To quickly generate the boilerplate structure for your ecosystem, use the provided Rake task:
+
+```bash
+rake ecosystem:scaffold[your_ecosystem_name]
+```
+
+This will automatically create:
+- Directory structure with all required folders
+- Boilerplate for required classes (FileFetcher, FileParser, UpdateChecker, FileUpdater)
+- Optional classes with deletion comments (MetadataFinder, Version, Requirement)
+- Test files and fixtures directory
+- Supporting configuration files (gemspec, README, .gitignore, etc.)
+
+After scaffolding, you'll need to:
+1. Implement the TODO sections in each generated file
+2. Add comprehensive tests
+3. Update supporting infrastructure (see section 5)
+
+**Manual Setup**
+
+Alternatively, you can create the structure manually. Create a new top-level ecosystem directory. Your ecosystem should be implemented as a standalone ecosystem rather than piggybacking off existing ones. You'll need to implement several key classes:
 
 #### Required Classes
 
