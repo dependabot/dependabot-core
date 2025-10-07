@@ -1,4 +1,5 @@
-# shellcheck shell=bash
+#!/usr/bin/env bash
+
 export UPDATER_CORE_IMAGE="ghcr.io/dependabot/dependabot-updater-core"
 export UPDATER_IMAGE="ghcr.io/dependabot/dependabot-updater-"
 export DOCKER_BUILDKIT=1
@@ -55,7 +56,9 @@ function docker_build() {
   DOCKER_CONTENT_TRUST=1
 
   # shellcheck disable=SC2086  # as $DOCKER_BUILD_ARGS relies on word-splitting
-  docker build \
+    docker buildx build \
+    --output="type=image" \
+    --attest type=provenance \
     $DOCKER_BUILD_ARGS \
     --build-arg BUILDKIT_INLINE_CACHE=1 \
     --build-arg USER_UID=$DEPENDABOT_USER_UID \
@@ -72,7 +75,9 @@ function docker_build() {
   export UPDATER_IMAGE_NAME="$UPDATER_IMAGE$TAG"
 
   # shellcheck disable=SC2086  # as $DOCKER_BUILD_ARGS relies on word-splitting
-  docker build \
+    docker buildx build \
+    --output="type=image"
+    --attest type=provenance \
     $DOCKER_BUILD_ARGS \
     --build-arg BUILDKIT_INLINE_CACHE=1 \
     --cache-from "$UPDATER_IMAGE_NAME" \
