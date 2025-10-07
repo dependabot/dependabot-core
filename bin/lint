@@ -10,6 +10,7 @@ shellcheck \
   ./*/helpers/*/build \
   ./*/helpers/build \
   ./*/script/* \
+  ./script/_common \
   ./script/build \
   ./script/ci-test-updater \
   ./script/dependabot \
