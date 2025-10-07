@@ -41,6 +41,7 @@ class EcosystemScaffolder
     directories = [
       "#{ecosystem_name}/lib/dependabot/#{ecosystem_name}",
       "#{ecosystem_name}/lib/dependabot/#{ecosystem_name}/helpers",
+      "#{ecosystem_name}/spec",
       "#{ecosystem_name}/spec/dependabot/#{ecosystem_name}",
       "#{ecosystem_name}/spec/dependabot/#{ecosystem_name}/fixtures",
       "#{ecosystem_name}/.bundle",
@@ -102,6 +103,12 @@ class EcosystemScaffolder
     puts ""
     puts "Creating test files..."
 
+    # Spec helper
+    create_file_from_template(
+      "spec_helper.rb.erb",
+      "#{ecosystem_name}/spec/spec_helper.rb"
+    )
+
     # Test files
     create_file_from_template(
       "file_fetcher_spec.rb.erb",
@@ -137,14 +144,17 @@ class EcosystemScaffolder
     puts "Creating supporting files..."
 
     create_file_from_template("README.md.erb", "#{ecosystem_name}/README.md")
+    create_file_from_template("Dockerfile.erb", "#{ecosystem_name}/Dockerfile")
     create_file_from_template("gemspec.erb", "#{ecosystem_name}/dependabot-#{ecosystem_name}.gemspec")
     create_file_from_template("gitignore.erb", "#{ecosystem_name}/.gitignore")
     create_file_from_template("rubocop.yml.erb", "#{ecosystem_name}/.rubocop.yml")
     create_file_from_template("bundle_config.erb", "#{ecosystem_name}/.bundle/config")
     create_file_from_template("build_script.erb", "#{ecosystem_name}/script/build")
+    create_file_from_template("ci-test.erb", "#{ecosystem_name}/script/ci-test")
 
-    # Make build script executable
+    # Make scripts executable
     FileUtils.chmod(0o755, "#{ecosystem_name}/script/build")
+    FileUtils.chmod(0o755, "#{ecosystem_name}/script/ci-test")
   end
 
   sig { params(template_name: String, output_path: String).void }
