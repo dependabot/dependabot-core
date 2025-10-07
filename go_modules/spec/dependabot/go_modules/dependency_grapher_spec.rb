@@ -70,22 +70,22 @@ RSpec.describe Dependabot::GoModules::DependencyGrapher do
         ) # rsc.io/qr is absent due to the replace directive, this is working as intended.
 
         color = resolved_dependencies["github.com/fatih/Color"]
-        expect(color[:package_url]).to eql("pkg:golang/github.com/fatih/Color@v1.7.0")
-        expect(color[:relationship]).to eql("direct")
-        expect(color[:scope]).to eql("runtime")
-        expect(color[:dependencies]).to be_empty # NYI: We don't set any subdependencies yet
+        expect(color.package_url).to eql("pkg:golang/github.com/fatih/Color@v1.7.0")
+        expect(color.direct).to be(true)
+        expect(color.runtime).to be(true)
+        expect(color.dependencies).to be_empty
 
         colorable = resolved_dependencies["github.com/mattn/go-colorable"]
-        expect(colorable[:package_url]).to eql("pkg:golang/github.com/mattn/go-colorable@v0.0.9")
-        expect(colorable[:relationship]).to eql("indirect")
-        expect(colorable[:scope]).to eql("runtime")
-        expect(colorable[:dependencies]).to be_empty
+        expect(colorable.package_url).to eql("pkg:golang/github.com/mattn/go-colorable@v0.0.9")
+        expect(colorable.direct).to be(false)
+        expect(colorable.runtime).to be(true)
+        expect(colorable.dependencies).to be_empty
 
         quote = resolved_dependencies["rsc.io/quote"]
-        expect(quote[:package_url]).to eql("pkg:golang/rsc.io/quote@v1.4.0")
-        expect(quote[:relationship]).to eql("direct")
-        expect(quote[:scope]).to eql("runtime")
-        expect(quote[:dependencies]).to be_empty
+        expect(quote.package_url).to eql("pkg:golang/rsc.io/quote@v1.4.0")
+        expect(quote.direct).to be(true)
+        expect(quote.runtime).to be(true)
+        expect(quote.dependencies).to be_empty
       end
     end
   end
