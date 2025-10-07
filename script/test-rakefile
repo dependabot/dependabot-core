@@ -126,6 +126,7 @@ def test_helpers_loaded?
   true
 end
 
+# rubocop:disable Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity
 def test_ecosystem_scaffold?
   puts "\n=== Testing rake ecosystem:scaffold ==="
 
@@ -186,24 +187,25 @@ def test_ecosystem_scaffold?
     end
 
     # Clean up
-    FileUtils.rm_rf("test_eco_temp") if Dir.exist?("test_eco_temp")
+    FileUtils.rm_rf("test_eco_temp")
 
     # Test error handling - invalid name
     result = run_command("bundle exec rake ecosystem:scaffold[Invalid-Name]")
-    if !result[:success]
-      puts "✓ Invalid name is rejected"
-    else
+    if result[:success]
       puts "✗ Invalid name was not rejected"
       all_exist = false
+    else
+      puts "✓ Invalid name is rejected"
     end
 
     all_exist
   ensure
     Dir.chdir(original_dir) if Dir.pwd != original_dir
     FileUtils.rm_rf(test_dir)
-    FileUtils.rm_rf("test_eco_temp") if Dir.exist?("test_eco_temp")
+    FileUtils.rm_rf("test_eco_temp")
   end
 end
+# rubocop:enable Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity
 
 # Run all tests
 puts "=" * 60
