@@ -255,17 +255,18 @@ module Dependabot
 
         sig { params(lockfile_json: T::Hash[String, T.untyped]).void }
         def preserve_dependency_extras(lockfile_json)
-          updated_dependency_names = dependencies.map(&:name)
-
           %w(default develop).each do |dep_group|
             next unless parsed_lockfile[dep_group] && lockfile_json[dep_group]
 
-            parsed_lockfile[dep_group].each do |dep_name, original_details|
+            T.must(parsed_lockfile[dep_group]).each do |dep_name, original_details|
               next unless lockfile_json[dep_group][dep_name]
-              next if updated_dependency_names.include?(dep_name)
+              next unless original_details["extras"]
 
-              # Preserve extras if they exist in the original lockfile
-              lockfile_json[dep_group][dep_name]["extras"] = original_details["extras"] if original_details["extras"]
+              # Preserve extras and ensure it appears first in the hash
+              dep_details = lockfile_json[dep_group][dep_name]
+              lockfile_json[dep_group][dep_name] = {
+                "extras" => original_details["extras"]
+              }.merge(dep_details)
             end
           end
         end
