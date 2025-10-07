@@ -234,17 +234,45 @@ module Dependabot
 
         sig { params(updated_lockfile_content: String).returns(String) }
         def post_process_lockfile(updated_lockfile_content)
+          new_lockfile_json = JSON.parse(updated_lockfile_content.dup)
+
+          update_lockfile_metadata(new_lockfile_json)
+          preserve_dependency_extras(new_lockfile_json)
+
+          format_lockfile_json(new_lockfile_json)
+        end
+
+        sig { params(lockfile_json: T::Hash[String, T.untyped]).void }
+        def update_lockfile_metadata(lockfile_json)
           pipfile_hash = pipfile_hash_for(updated_pipfile_content.to_s)
           original_reqs = T.must(parsed_lockfile["_meta"])["requires"]
           original_source = T.must(parsed_lockfile["_meta"])["sources"]
 
-          new_lockfile = updated_lockfile_content.dup
-          new_lockfile_json = JSON.parse(new_lockfile)
-          new_lockfile_json["_meta"]["hash"]["sha256"] = pipfile_hash
-          new_lockfile_json["_meta"]["requires"] = original_reqs
-          new_lockfile_json["_meta"]["sources"] = original_source
+          lockfile_json["_meta"]["hash"]["sha256"] = pipfile_hash
+          lockfile_json["_meta"]["requires"] = original_reqs
+          lockfile_json["_meta"]["sources"] = original_source
+        end
 
-          JSON.pretty_generate(new_lockfile_json, indent: "    ")
+        sig { params(lockfile_json: T::Hash[String, T.untyped]).void }
+        def preserve_dependency_extras(lockfile_json)
+          updated_dependency_names = dependencies.map(&:name)
+
+          %w(default develop).each do |dep_group|
+            next unless parsed_lockfile[dep_group] && lockfile_json[dep_group]
+
+            parsed_lockfile[dep_group].each do |dep_name, original_details|
+              next unless lockfile_json[dep_group][dep_name]
+              next if updated_dependency_names.include?(dep_name)
+
+              # Preserve extras if they exist in the original lockfile
+              lockfile_json[dep_group][dep_name]["extras"] = original_details["extras"] if original_details["extras"]
+            end
+          end
+        end
+
+        sig { params(lockfile_json: T::Hash[String, T.untyped]).returns(String) }
+        def format_lockfile_json(lockfile_json)
+          JSON.pretty_generate(lockfile_json, indent: "    ")
               .gsub(/\{\n\s*\}/, "{}")
               .gsub(/\}\z/, "}\n")
         end
