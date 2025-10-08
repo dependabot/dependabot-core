@@ -6,6 +6,7 @@ require_relative "support/ecosystem_scaffolder"
 require_relative "support/ecosystem_infrastructure_updater"
 
 # Rake task for scaffolding new ecosystems
+# rubocop:disable Metrics/BlockLength
 # sorbet: ignore
 namespace :ecosystem do
   desc "Scaffold a new ecosystem (e.g., rake ecosystem:scaffold[bazel,ask])"
@@ -72,3 +73,4 @@ namespace :ecosystem do
     updater.update_infrastructure
   end
 end
+# rubocop:enable Metrics/BlockLength

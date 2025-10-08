@@ -7,8 +7,15 @@ require "json"
 require "sorbet-runtime"
 
 # Class that updates supporting infrastructure files for a new ecosystem
+# rubocop:disable Metrics/ClassLength
 class EcosystemInfrastructureUpdater
   extend T::Sig
+
+  # Keys that should appear first in ci-filters.yml
+  FIRST_KEYS = T.let(%w(shared rakefile_tests dry_run).freeze, T::Array[String])
+
+  # Ecosystems to skip when sorting in script/dependabot
+  SKIP_ECOSYSTEMS = T.let(%w(updater bin common).freeze, T::Array[String])
 
   sig { params(name: String, overwrite_mode: String).void }
   def initialize(name, overwrite_mode = "ask")
@@ -25,7 +32,7 @@ class EcosystemInfrastructureUpdater
     puts ""
 
     # Detect ecosystem configuration
-    unless detect_ecosystem
+    unless ecosystem_exists?
       puts "Error: Ecosystem '#{@ecosystem_name}' not found. Please scaffold it first."
       exit 1
     end
@@ -68,7 +75,7 @@ class EcosystemInfrastructureUpdater
   end
 
   sig { returns(T::Boolean) }
-  def detect_ecosystem
+  def ecosystem_exists?
     # Check if the ecosystem directory exists
     ecosystem_dir = "#{ecosystem_name}/lib/dependabot/#{ecosystem_name}.rb"
     File.exist?(ecosystem_dir)
@@ -85,7 +92,7 @@ class EcosystemInfrastructureUpdater
     return unless File.exist?(file)
 
     yaml = YAML.load_file(file, aliases: true)
-    
+
     # Check if ecosystem already exists
     if yaml.key?(ecosystem_name)
       puts "  ⊘ Skipped #{file} (ecosystem already exists)"
@@ -103,8 +110,8 @@ class EcosystemInfrastructureUpdater
     sorted_yaml["shared"] = yaml["shared"]
     sorted_yaml["rakefile_tests"] = yaml["rakefile_tests"] if yaml.key?("rakefile_tests")
     sorted_yaml["dry_run"] = yaml["dry_run"] if yaml.key?("dry_run")
-    
-    yaml.keys.reject { |k| %w[shared rakefile_tests dry_run].include?(k) }.sort.each do |key|
+
+    yaml.keys.reject { |k| FIRST_KEYS.include?(k) }.sort.each do |key|
       sorted_yaml[key] = yaml[key]
     end
 
@@ -119,7 +126,7 @@ class EcosystemInfrastructureUpdater
     return unless File.exist?(file)
 
     yaml = YAML.load_file(file, aliases: true)
-    
+
     # Check if ecosystem already exists
     if yaml.key?(ecosystem_name)
       puts "  ⊘ Skipped #{file} (ecosystem already exists)"
@@ -149,7 +156,7 @@ class EcosystemInfrastructureUpdater
     return unless File.exist?(file)
 
     matrix = JSON.parse(File.read(file))
-    
+
     # Check if ecosystem already exists
     if matrix.any? { |entry| entry["core"] == ecosystem_name }
       puts "  ⊘ Skipped #{file} (ecosystem already exists)"
@@ -181,7 +188,7 @@ class EcosystemInfrastructureUpdater
     return unless File.exist?(file)
 
     content = File.read(file)
-    
+
     # Check if ecosystem already exists
     if content.include?("- { path: #{ecosystem_name},")
       puts "  ⊘ Skipped #{file} (ecosystem already exists)"
@@ -191,12 +198,13 @@ class EcosystemInfrastructureUpdater
     # Find the matrix.suite section and add new entry
     lines = content.lines
     suite_index = lines.index { |line| line.include?("suite:") }
-    
+
     if suite_index
       # Find the last suite entry
       last_suite_index = suite_index
-      (suite_index + 1...lines.size).each do |i|
+      ((suite_index + 1)...lines.size).each do |i|
         break unless lines[i].match?(/^\s*- \{/)
+
         last_suite_index = i
       end
 
@@ -205,12 +213,12 @@ class EcosystemInfrastructureUpdater
 
       # Insert new suite entry in alphabetical order
       new_entry = "          - { path: #{ecosystem_name}, name: #{ecosystem_name}, ecosystem: #{ecosystem_str} }\n"
-      
+
       # Find correct position
       insert_index = suite_index + 1
       while insert_index <= last_suite_index
         line = lines[insert_index]
-        if line.match(/- \{ path: (\w+),/)
+        if line =~ /- \{ path: (\w+),/
           existing_name = ::Regexp.last_match(1)
           break if existing_name > ecosystem_name
         end
@@ -225,50 +233,51 @@ class EcosystemInfrastructureUpdater
       puts "  ⚠ Warning: Could not find matrix.suite section in #{file}"
     end
   end
-
+  # rubocop:disable Metrics/MethodLength, Metrics/AbcSize, Metrics/PerceivedComplexity
   sig { void }
   def update_images_branch_workflow
     file = ".github/workflows/images-branch.yml"
     return unless File.exist?(file)
 
     content = File.read(file)
-    
+
     if content.include?("- { name: #{ecosystem_name},")
       puts "  ⊘ Skipped #{file} (ecosystem already exists)"
       return
     end
 
     lines = content.lines
-    
+
     # Find the suite: line in the push-updater-images job
     suite_start_index = -1
     in_push_updater_images = false
-    
+
     lines.each_with_index do |line, idx|
       in_push_updater_images = true if line.include?("push-updater-images:")
-      
+
       if in_push_updater_images && line.strip == "suite:"
         suite_start_index = idx
         break
       end
     end
-    
+
     if suite_start_index >= 0
       # Find the last suite entry
       last_suite_index = suite_start_index
       ((suite_start_index + 1)...lines.size).each do |i|
         break unless lines[i].match?(/^\s+- \{/)
+
         last_suite_index = i
       end
 
       ecosystem_str = ecosystem_name.tr("_", "-")
       new_entry = "          - { name: #{ecosystem_name}, ecosystem: #{ecosystem_str} }\n"
-      
+
       # Find correct alphabetical position
       insert_index = suite_start_index + 1
       while insert_index <= last_suite_index
         line = lines[insert_index]
-        if line.match(/- \{ name: (\w+),/)
+        if line =~ /- \{ name: (\w+),/
           existing_name = ::Regexp.last_match(1)
           break if existing_name > ecosystem_name
         end
@@ -283,53 +292,58 @@ class EcosystemInfrastructureUpdater
       puts "  ⚠ Warning: Could not find matrix.suite section in #{file}"
     end
   end
+  # rubocop:enable Metrics/MethodLength, Metrics/AbcSize, Metrics/PerceivedComplexity
 
+  # rubocop:disable Metrics/MethodLength, Metrics/AbcSize, Metrics/PerceivedComplexity, Metrics/CyclomaticComplexity
   sig { void }
   def update_images_latest_workflow
     file = ".github/workflows/images-latest.yml"
     return unless File.exist?(file)
 
     content = File.read(file)
-    
+
     if content.include?("- { name: #{ecosystem_name},")
       puts "  ⊘ Skipped #{file} (ecosystem already exists)"
       return
     end
 
     lines = content.lines
-    
+
     # Find the matrix suite section within push-updater-image job
     suite_start_index = -1
     lines.each_with_index do |line, idx|
-      if line.include?("matrix:") && idx > 0 && lines[idx - 10..idx].any? { |l| l.include?("push-updater-image") }
-        # Look for suite: line after matrix:
-        ((idx + 1)...lines.size).each do |j|
-          if lines[j].include?("suite:")
-            suite_start_index = j
-            break
-          end
-          break if lines[j].strip.empty? || !lines[j].start_with?(" ")
-        end
-        break if suite_start_index >= 0
+      next unless line.include?("matrix:") && idx.positive? && lines[(idx - 10)..idx].any? do |l|
+        l.include?("push-updater-image")
       end
+
+      # Look for suite: line after matrix:
+      ((idx + 1)...lines.size).each do |j|
+        if lines[j].include?("suite:")
+          suite_start_index = j
+          break
+        end
+        break if lines[j].strip.empty? || !lines[j].start_with?(" ")
+      end
+      break if suite_start_index >= 0
     end
-    
+
     if suite_start_index >= 0
       # Find the last suite entry
       last_suite_index = suite_start_index
       ((suite_start_index + 1)...lines.size).each do |i|
         break unless lines[i].match?(/^\s+- \{/)
+
         last_suite_index = i
       end
 
       ecosystem_str = ecosystem_name.tr("_", "-")
       new_entry = "          - { name: #{ecosystem_name}, ecosystem: #{ecosystem_str} }\n"
-      
+
       # Find correct alphabetical position
       insert_index = suite_start_index + 1
       while insert_index <= last_suite_index
         line = lines[insert_index]
-        if line.match(/- \{ name: (\w+),/)
+        if line =~ /- \{ name: (\w+),/
           existing_name = ::Regexp.last_match(1)
           break if existing_name > ecosystem_name
         end
@@ -344,6 +358,7 @@ class EcosystemInfrastructureUpdater
       puts "  ⚠ Warning: Could not find matrix.suite section in #{file}"
     end
   end
+  # rubocop:enable Metrics/MethodLength, Metrics/AbcSize, Metrics/PerceivedComplexity, Metrics/CyclomaticComplexity
 
   sig { void }
   def update_issue_labeler
@@ -351,15 +366,15 @@ class EcosystemInfrastructureUpdater
     return unless File.exist?(file)
 
     content = File.read(file)
-    
+
     # Generate label name based on ecosystem name
     label_parts = ecosystem_name.split("_")
-    if label_parts.size > 1
-      # Handle names like "go_modules" -> "L: go:modules"
-      label = "\"L: #{label_parts[0]}:#{label_parts[1..-1].join('-')}\""
-    else
-      label = "\"L: #{ecosystem_name}\""
-    end
+    label = if label_parts.size > 1
+              # Handle names like "go_modules" -> "L: go:modules"
+              "\"L: #{label_parts[0]}:#{label_parts[1..-1].join('-')}\""
+            else
+              "\"L: #{ecosystem_name}\""
+            end
 
     if content.include?(label)
       puts "  ⊘ Skipped #{file} (ecosystem already exists)"
@@ -372,10 +387,10 @@ class EcosystemInfrastructureUpdater
     # Find correct alphabetical position
     lines = content.lines
     insert_index = lines.size
-    
+
     lines.each_with_index do |line, idx|
       next unless line.start_with?('"L:')
-      
+
       if line > new_entry.lines.first
         insert_index = idx
         break
@@ -394,7 +409,7 @@ class EcosystemInfrastructureUpdater
     return unless File.exist?(file)
 
     content = File.read(file)
-    
+
     # Check if it needs updating (simple check - assumes the script is already comprehensive)
     if content.include?("ecosystem") || content.include?("ECOSYSTEM")
       puts "  ⊘ Skipped #{file} (script handles all ecosystems dynamically)"
@@ -404,13 +419,14 @@ class EcosystemInfrastructureUpdater
     puts "  ⊘ Skipped #{file} (script handles all ecosystems dynamically)"
   end
 
+  # rubocop:disable Metrics/MethodLength, Metrics/PerceivedComplexity
   sig { void }
   def update_dry_run_script
     file = "bin/dry-run.rb"
     return unless File.exist?(file)
 
     content = File.read(file)
-    
+
     # Check if ecosystem already exists in load paths
     if content.include?("$LOAD_PATH << \"./#{ecosystem_name}/lib\"")
       puts "  ⊘ Skipped #{file} (ecosystem already exists)"
@@ -420,7 +436,7 @@ class EcosystemInfrastructureUpdater
     # Find the LOAD_PATH section and add new entry
     lines = content.lines
     load_path_end = -1
-    
+
     lines.each_with_index do |line, idx|
       if line.include?("$LOAD_PATH << \"./") && line.include?("/lib\"")
         load_path_end = idx
@@ -432,19 +448,19 @@ class EcosystemInfrastructureUpdater
     if load_path_end >= 0
       # Insert in alphabetical order
       new_line = "$LOAD_PATH << \"./#{ecosystem_name}/lib\"\n"
-      
+
       insert_index = 0
       lines.each_with_index do |line, idx|
         next unless line.include?("$LOAD_PATH << \"./") && line.include?("/lib\"")
-        
-        if line.match(%r{\$LOAD_PATH << "\./([^/]+)/lib"})
-          existing_eco = ::Regexp.last_match(1)
-          if existing_eco > ecosystem_name
-            insert_index = idx
-            break
-          end
-          insert_index = idx + 1
+
+        next unless line =~ %r{\$LOAD_PATH << "\./([^/]+)/lib"}
+
+        existing_eco = ::Regexp.last_match(1)
+        if existing_eco > ecosystem_name
+          insert_index = idx
+          break
         end
+        insert_index = idx + 1
       end
 
       lines.insert(insert_index, new_line)
@@ -455,14 +471,16 @@ class EcosystemInfrastructureUpdater
       puts "  ⚠ Warning: Could not find LOAD_PATH section in #{file}"
     end
   end
+  # rubocop:enable Metrics/MethodLength, Metrics/PerceivedComplexity
 
+  # rubocop:disable Metrics/MethodLength, Metrics/PerceivedComplexity
   sig { void }
   def update_script_dependabot
     file = "script/dependabot"
     return unless File.exist?(file)
 
     content = File.read(file)
-    
+
     if content.include?("\"$(pwd)\"/#{ecosystem_name}:")
       puts "  ⊘ Skipped #{file} (ecosystem already exists)"
       return
@@ -470,22 +488,22 @@ class EcosystemInfrastructureUpdater
 
     lines = content.lines
     last_volume_index = -1
-    
+
     lines.each_with_index do |line, idx|
       last_volume_index = idx if line.include?("-v \"$(pwd)\"") && line.include?(":/home/dependabot/")
     end
 
     if last_volume_index >= 0
       new_line = "  -v \"$(pwd)\"/#{ecosystem_name}:/home/dependabot/#{ecosystem_name} \\\n"
-      
+
       # Find correct alphabetical position
       insert_index = 0
       lines.each_with_index do |line, idx|
         next unless line.include?("-v \"$(pwd)\"") && line.match(%r{/([^:]+):/home/dependabot/})
-        
+
         existing_eco = ::Regexp.last_match(1)
-        next if %w[updater bin common].include?(existing_eco)
-        
+        next if SKIP_ECOSYSTEMS.include?(existing_eco)
+
         if existing_eco > ecosystem_name
           insert_index = idx
           break
@@ -508,7 +526,7 @@ class EcosystemInfrastructureUpdater
     return unless File.exist?(file)
 
     content = File.read(file)
-    
+
     if content.include?("require \"dependabot/#{ecosystem_name}\"")
       puts "  ⊘ Skipped #{file} (ecosystem already exists)"
       return
@@ -516,21 +534,21 @@ class EcosystemInfrastructureUpdater
 
     lines = content.lines
     new_line = "require \"dependabot/#{ecosystem_name}\"\n"
-    
+
     # Find correct alphabetical position
     insert_index = lines.size
     lines.each_with_index do |line, idx|
       next unless line.include?("require \"dependabot/")
       next if line.include?("require \"dependabot/omnibus")
-      
-      if line.match(/require "dependabot\/([^"]+)"/)
-        existing_eco = ::Regexp.last_match(1)
-        if existing_eco > ecosystem_name
-          insert_index = idx
-          break
-        end
-        insert_index = idx + 1
+
+      next unless line =~ %r{require "dependabot/([^"]+)"}
+
+      existing_eco = ::Regexp.last_match(1)
+      if existing_eco > ecosystem_name
+        insert_index = idx
+        break
       end
+      insert_index = idx + 1
     end
 
     lines.insert(insert_index, new_line)
@@ -545,7 +563,7 @@ class EcosystemInfrastructureUpdater
     return unless File.exist?(file)
 
     content = File.read(file)
-    
+
     if content.include?("    #{ecosystem_name}|")
       puts "  ⊘ Skipped #{file} (ecosystem already exists)"
       return
@@ -555,7 +573,7 @@ class EcosystemInfrastructureUpdater
     lines = content.lines
     pattern_start = -1
     pattern_end = -1
-    
+
     lines.each_with_index do |line, idx|
       pattern_start = idx if line.include?("config.app_dirs_pattern = %r{")
       if pattern_start >= 0 && line.include?(")}")
@@ -567,12 +585,12 @@ class EcosystemInfrastructureUpdater
     if pattern_start >= 0 && pattern_end >= 0
       # Insert in alphabetical order before the closing pattern
       new_line = "    #{ecosystem_name}|\n"
-      
+
       insert_index = pattern_end
       ((pattern_start + 1)...pattern_end).each do |idx|
         line = lines[idx]
-        next unless line.match(/^\s+(\w+)\|/)
-        
+        next unless line =~ /^\s+(\w+)\|/
+
         existing_eco = ::Regexp.last_match(1)
         if existing_eco > ecosystem_name
           insert_index = idx
@@ -589,14 +607,16 @@ class EcosystemInfrastructureUpdater
       puts "  ⚠ Warning: Could not find app_dirs_pattern section in #{file}"
     end
   end
+  # rubocop:enable Metrics/MethodLength, Metrics/PerceivedComplexity
 
+  # rubocop:disable Metrics/MethodLength, Metrics/PerceivedComplexity, Metrics/AbcSize
   sig { void }
   def update_helpers_gemspecs
     file = "rakelib/support/helpers.rb"
     return unless File.exist?(file)
 
     content = File.read(file)
-    
+
     if content.include?("#{ecosystem_name}/dependabot-#{ecosystem_name}.gemspec")
       puts "  ⊘ Skipped #{file} (ecosystem already exists)"
       return
@@ -605,7 +625,7 @@ class EcosystemInfrastructureUpdater
     lines = content.lines
     gemspecs_start = -1
     gemspecs_end = -1
-    
+
     lines.each_with_index do |line, idx|
       gemspecs_start = idx if line.include?("GEMSPECS = T.let(")
       if gemspecs_start >= 0 && line.include?(").freeze,")
@@ -616,16 +636,16 @@ class EcosystemInfrastructureUpdater
 
     if gemspecs_start >= 0 && gemspecs_end >= 0
       new_line = "      #{ecosystem_name}/dependabot-#{ecosystem_name}.gemspec\n"
-      
+
       # Find correct alphabetical position
       insert_index = gemspecs_end
       ((gemspecs_start + 1)...gemspecs_end).each do |idx|
         line = lines[idx]
-        next unless line.match(%r{^\s+([^/]+)/dependabot-})
-        
+        next unless line =~ %r{^\s+([^/]+)/dependabot-}
+
         existing_eco = ::Regexp.last_match(1)
         next if existing_eco == "common"
-        
+
         if existing_eco > ecosystem_name
           insert_index = idx
           break
@@ -641,6 +661,7 @@ class EcosystemInfrastructureUpdater
       puts "  ⚠ Warning: Could not find GEMSPECS section in #{file}"
     end
   end
+  # rubocop:enable Metrics/MethodLength, Metrics/PerceivedComplexity, Metrics/AbcSize
 
   sig { void }
   def print_summary
@@ -673,3 +694,4 @@ class EcosystemInfrastructureUpdater
     puts "5. See NEW_ECOSYSTEMS.md for complete implementation guide"
   end
 end
+# rubocop:enable Metrics/ClassLength

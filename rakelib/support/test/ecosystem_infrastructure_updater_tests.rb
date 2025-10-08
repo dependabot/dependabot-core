@@ -11,7 +11,7 @@ module EcosystemInfrastructureUpdaterTests
 
   module_function
 
-  # rubocop:disable Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity, Metrics/CyclomaticComplexity
+  # rubocop:disable Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity
   def test_ecosystem_update_infrastructure?
     puts "\n=== Testing rake ecosystem:update_infrastructure ==="
 
@@ -22,7 +22,7 @@ module EcosystemInfrastructureUpdaterTests
       # First, scaffold a test ecosystem
       puts "  Setting up test ecosystem..."
       result = run_command("cd #{original_dir} && bundle exec rake ecosystem:scaffold[test_infra_eco,skip]")
-      
+
       unless result[:success]
         puts "✗ Failed to scaffold test ecosystem"
         puts "STDERR: #{result[:stderr]}"
@@ -76,7 +76,7 @@ module EcosystemInfrastructureUpdaterTests
       # Test idempotency - running again should skip files
       puts "  Testing idempotency..."
       result = run_command("cd #{original_dir} && bundle exec rake ecosystem:update_infrastructure[test_infra_eco]")
-      
+
       if result[:success]
         if result[:stdout].include?("No changes were made") || result[:stdout].include?("already exists")
           puts "✓ Infrastructure update is idempotent"
@@ -99,16 +99,16 @@ module EcosystemInfrastructureUpdaterTests
       Dir.chdir(original_dir) if Dir.exist?(original_dir)
     end
   end
-  # rubocop:enable Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity, Metrics/CyclomaticComplexity
+  # rubocop:enable Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity
 
   def test_ecosystem_update_infrastructure_validates_name?
     puts "\n=== Testing ecosystem:update_infrastructure name validation ==="
-    
+
     original_dir = Dir.pwd
-    
+
     # Test with invalid name
     result = run_command("cd #{original_dir} && bundle exec rake ecosystem:update_infrastructure[Invalid-Name]")
-    
+
     if result[:success]
       puts "✗ Should have failed with invalid ecosystem name"
       false
@@ -125,16 +125,17 @@ module EcosystemInfrastructureUpdaterTests
 
   def test_ecosystem_update_infrastructure_requires_name?
     puts "\n=== Testing ecosystem:update_infrastructure requires name ==="
-    
+
     original_dir = Dir.pwd
-    
+
     # Test without name
     result = run_command("cd #{original_dir} && bundle exec rake ecosystem:update_infrastructure 2>&1")
-    
+
     if result[:success]
       puts "✗ Should have failed without ecosystem name"
       false
-    elsif result[:stdout].include?("Ecosystem name is required") || result[:stderr].include?("Ecosystem name is required")
+    elsif result[:stdout].include?("Ecosystem name is required") ||
+          result[:stderr].include?("Ecosystem name is required")
       puts "✓ Correctly requires ecosystem name"
       true
     else
@@ -145,13 +146,13 @@ module EcosystemInfrastructureUpdaterTests
     end
   end
 
-  def run_all_tests
+  def all_tests?
     results = []
-    
+
     results << test_ecosystem_update_infrastructure_validates_name?
     results << test_ecosystem_update_infrastructure_requires_name?
     results << test_ecosystem_update_infrastructure?
-    
+
     results.all?
   end
 end
