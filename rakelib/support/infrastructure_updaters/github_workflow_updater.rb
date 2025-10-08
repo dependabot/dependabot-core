@@ -1,7 +1,6 @@
 # typed: strict
 # frozen_string_literal: true
 
-require "yaml"
 require "json"
 require_relative "base_updater"
 
@@ -30,28 +29,38 @@ class GitHubWorkflowUpdater < BaseUpdater
     file = ".github/ci-filters.yml"
     return unless file_exists?(file)
 
-    yaml = YAML.load_file(file, aliases: true)
+    content = File.read(file)
 
-    if yaml.key?(ecosystem_name)
+    # Check if ecosystem already exists
+    if content.match?(/^#{Regexp.escape(ecosystem_name)}:/)
       skip_message(file, "ecosystem already exists")
       return
     end
 
-    yaml[ecosystem_name] = [
-      yaml["shared"],
-      "#{ecosystem_name}/**"
-    ]
+    # Create new entry preserving original formatting style
+    new_entry = "#{ecosystem_name}:\n  - *shared\n  - '#{ecosystem_name}/**'\n"
 
-    sorted_yaml = {}
-    sorted_yaml["shared"] = yaml["shared"]
-    sorted_yaml["rakefile_tests"] = yaml["rakefile_tests"] if yaml.key?("rakefile_tests")
-    sorted_yaml["dry_run"] = yaml["dry_run"] if yaml.key?("dry_run")
+    # Find correct alphabetical position after FIRST_KEYS
+    lines = content.lines
+    insert_index = lines.size
 
-    yaml.keys.reject { |k| FIRST_KEYS.include?(k) }.sort.each do |key|
-      sorted_yaml[key] = yaml[key]
+    # Find insertion point - after FIRST_KEYS, in alphabetical order
+    lines.each_with_index do |line, idx|
+      # Check if this is a key line (not indented, ends with colon)
+      next unless line.match?(/^[a-z_]+:/)
+
+      key = line[/^([a-z_]+):/, 1]
+      next if FIRST_KEYS.include?(key)
+
+      # Found a non-FIRST_KEY, check if it should come after our ecosystem
+      if key && key > ecosystem_name
+        insert_index = idx
+        break
+      end
     end
 
-    write_file(file, YAML.dump(sorted_yaml))
+    lines.insert(insert_index, new_entry)
+    write_file(file, lines.join)
     record_change(file, "Added #{ecosystem_name} filters")
     success_message(file)
   end
@@ -61,24 +70,46 @@ class GitHubWorkflowUpdater < BaseUpdater
     file = ".github/smoke-filters.yml"
     return unless file_exists?(file)
 
-    yaml = YAML.load_file(file, aliases: true)
+    content = File.read(file)
 
-    if yaml.key?(ecosystem_name)
+    # Check if ecosystem already exists
+    if content.match?(/^#{Regexp.escape(ecosystem_name)}:/)
       skip_message(file, "ecosystem already exists")
       return
     end
 
-    yaml[ecosystem_name] = [
-      yaml["common"],
-      "#{ecosystem_name}/**"
-    ]
+    # Create new entry preserving original formatting style
+    new_entry = "#{ecosystem_name}:\n  - *common\n  - '#{ecosystem_name}/**'\n"
 
-    sorted_yaml = { "common" => yaml["common"] }
-    yaml.keys.reject { |k| k == "common" }.sort.each do |key|
-      sorted_yaml[key] = yaml[key]
+    # Find correct alphabetical position after 'common'
+    lines = content.lines
+    insert_index = lines.size
+
+    # Find insertion point - after 'common', in alphabetical order
+    found_common = T.let(false, T::Boolean)
+    lines.each_with_index do |line, idx|
+      # Check if this is a key line (not indented, ends with colon)
+      next unless line.match?(/^[a-z_]+:/)
+
+      key = line[/^([a-z_]+):/, 1]
+
+      if key == "common"
+        found_common = true
+        next
+      end
+
+      # Skip until we've found common
+      next unless found_common
+
+      # Found a non-common key, check if it should come after our ecosystem
+      if key && key > ecosystem_name
+        insert_index = idx
+        break
+      end
     end
 
-    write_file(file, YAML.dump(sorted_yaml))
+    lines.insert(insert_index, new_entry)
+    write_file(file, lines.join)
     record_change(file, "Added #{ecosystem_name} filters")
     success_message(file)
   end
