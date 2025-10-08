@@ -57,6 +57,26 @@ This will automatically create:
 - Test files and fixtures directory
 - Supporting configuration files (gemspec, README, .gitignore, etc.)
 
+**Overwrite Modes**
+
+If the ecosystem directory already exists, you can control how existing files are handled with the overwrite mode parameter:
+
+```bash
+# Interactive mode (default) - prompts for each existing file
+rake ecosystem:scaffold[your_ecosystem_name]
+rake ecosystem:scaffold[your_ecosystem_name,ask]
+
+# Skip mode - preserves all existing files without prompting
+rake ecosystem:scaffold[your_ecosystem_name,skip]
+
+# Force mode - overwrites all existing files without prompting
+rake ecosystem:scaffold[your_ecosystem_name,force]
+```
+
+- **ask** (default): Prompts you for each existing file, allowing selective overwrite
+- **skip**: Preserves all existing files, only creates new ones (useful for updating structure)
+- **force**: Overwrites all files without confirmation (use with caution!)
+
 After scaffolding, you'll need to:
 1. Implement the TODO sections in each generated file
 2. Add comprehensive tests
@@ -218,7 +238,7 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
-    
+
     # Cooldown configuration
     cooldown:
       default-days: 5
