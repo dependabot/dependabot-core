@@ -203,7 +203,7 @@ class EcosystemInfrastructureUpdater
       # Find the last suite entry
       last_suite_index = suite_index
       ((suite_index + 1)...lines.size).each do |i|
-        break unless lines[i].match?(/^\s*- \{/)
+        break unless T.must(lines[i]).match?(/^\s*- \{/)
 
         last_suite_index = i
       end
@@ -220,7 +220,7 @@ class EcosystemInfrastructureUpdater
         line = lines[insert_index]
         if line =~ /- \{ path: (\w+),/
           existing_name = ::Regexp.last_match(1)
-          break if existing_name > ecosystem_name
+          break if T.must(existing_name) > ecosystem_name
         end
         insert_index += 1
       end
@@ -250,7 +250,7 @@ class EcosystemInfrastructureUpdater
 
     # Find the suite: line in the push-updater-images job
     suite_start_index = -1
-    in_push_updater_images = false
+    in_push_updater_images = T.let(false, T::Boolean)
 
     lines.each_with_index do |line, idx|
       in_push_updater_images = true if line.include?("push-updater-images:")
@@ -265,7 +265,7 @@ class EcosystemInfrastructureUpdater
       # Find the last suite entry
       last_suite_index = suite_start_index
       ((suite_start_index + 1)...lines.size).each do |i|
-        break unless lines[i].match?(/^\s+- \{/)
+        break unless T.must(lines[i]).match?(/^\s+- \{/)
 
         last_suite_index = i
       end
@@ -279,7 +279,7 @@ class EcosystemInfrastructureUpdater
         line = lines[insert_index]
         if line =~ /- \{ name: (\w+),/
           existing_name = ::Regexp.last_match(1)
-          break if existing_name > ecosystem_name
+          break if T.must(existing_name) > ecosystem_name
         end
         insert_index += 1
       end
@@ -312,17 +312,17 @@ class EcosystemInfrastructureUpdater
     # Find the matrix suite section within push-updater-image job
     suite_start_index = -1
     lines.each_with_index do |line, idx|
-      next unless line.include?("matrix:") && idx.positive? && lines[(idx - 10)..idx].any? do |l|
+      next unless line.include?("matrix:") && idx.positive? && T.must(lines[(idx - 10)..idx]).any? do |l|
         l.include?("push-updater-image")
       end
 
       # Look for suite: line after matrix:
       ((idx + 1)...lines.size).each do |j|
-        if lines[j].include?("suite:")
+        if T.must(lines[j]).include?("suite:")
           suite_start_index = j
           break
         end
-        break if lines[j].strip.empty? || !lines[j].start_with?(" ")
+        break if T.must(lines[j]).strip.empty? || !T.must(lines[j]).start_with?(" ")
       end
       break if suite_start_index >= 0
     end
@@ -331,7 +331,7 @@ class EcosystemInfrastructureUpdater
       # Find the last suite entry
       last_suite_index = suite_start_index
       ((suite_start_index + 1)...lines.size).each do |i|
-        break unless lines[i].match?(/^\s+- \{/)
+        break unless T.must(lines[i]).match?(/^\s+- \{/)
 
         last_suite_index = i
       end
@@ -345,7 +345,7 @@ class EcosystemInfrastructureUpdater
         line = lines[insert_index]
         if line =~ /- \{ name: (\w+),/
           existing_name = ::Regexp.last_match(1)
-          break if existing_name > ecosystem_name
+          break if T.must(existing_name) > ecosystem_name
         end
         insert_index += 1
       end
@@ -371,7 +371,7 @@ class EcosystemInfrastructureUpdater
     label_parts = ecosystem_name.split("_")
     label = if label_parts.size > 1
               # Handle names like "go_modules" -> "L: go:modules"
-              "\"L: #{label_parts[0]}:#{label_parts[1..-1].join('-')}\""
+              "\"L: #{label_parts[0]}:#{T.must(label_parts[1..-1]).join('-')}\""
             else
               "\"L: #{ecosystem_name}\""
             end
@@ -456,7 +456,7 @@ class EcosystemInfrastructureUpdater
         next unless line =~ %r{\$LOAD_PATH << "\./([^/]+)/lib"}
 
         existing_eco = ::Regexp.last_match(1)
-        if existing_eco > ecosystem_name
+        if T.must(existing_eco) > ecosystem_name
           insert_index = idx
           break
         end
@@ -504,7 +504,7 @@ class EcosystemInfrastructureUpdater
         existing_eco = ::Regexp.last_match(1)
         next if SKIP_ECOSYSTEMS.include?(existing_eco)
 
-        if existing_eco > ecosystem_name
+        if T.must(existing_eco) > ecosystem_name
           insert_index = idx
           break
         end
@@ -544,7 +544,7 @@ class EcosystemInfrastructureUpdater
       next unless line =~ %r{require "dependabot/([^"]+)"}
 
       existing_eco = ::Regexp.last_match(1)
-      if existing_eco > ecosystem_name
+      if T.must(existing_eco) > ecosystem_name
         insert_index = idx
         break
       end
@@ -592,11 +592,11 @@ class EcosystemInfrastructureUpdater
         next unless line =~ /^\s+(\w+)\|/
 
         existing_eco = ::Regexp.last_match(1)
-        if existing_eco > ecosystem_name
+        if T.must(existing_eco) > ecosystem_name
           insert_index = idx
           break
         end
-        insert_index = idx + 1 if existing_eco < ecosystem_name
+        insert_index = idx + 1 if T.must(existing_eco) < ecosystem_name
       end
 
       lines.insert(insert_index, new_line)
@@ -646,11 +646,11 @@ class EcosystemInfrastructureUpdater
         existing_eco = ::Regexp.last_match(1)
         next if existing_eco == "common"
 
-        if existing_eco > ecosystem_name
+        if T.must(existing_eco) > ecosystem_name
           insert_index = idx
           break
         end
-        insert_index = idx + 1 if existing_eco < ecosystem_name
+        insert_index = idx + 1 if T.must(existing_eco) < ecosystem_name
       end
 
       lines.insert(insert_index, new_line)
