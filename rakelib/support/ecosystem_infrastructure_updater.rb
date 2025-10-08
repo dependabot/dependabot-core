@@ -12,10 +12,11 @@ require_relative "infrastructure_updaters/gem_infrastructure_updater"
 class EcosystemInfrastructureUpdater
   extend T::Sig
 
-  sig { params(name: String, overwrite_mode: String).void }
-  def initialize(name, overwrite_mode = "ask")
+  sig { params(name: String, overwrite_mode: String, quiet: T::Boolean).void }
+  def initialize(name, overwrite_mode = "ask", quiet: false)
     @ecosystem_name = T.let(name, String)
     @overwrite_mode = T.let(overwrite_mode, String)
+    @quiet = T.let(quiet, T::Boolean)
     @github_updater = T.let(
       GitHubWorkflowUpdater.new(name),
       GitHubWorkflowUpdater
@@ -32,9 +33,11 @@ class EcosystemInfrastructureUpdater
 
   sig { void }
   def update_infrastructure
-    puts "Updating supporting infrastructure for ecosystem: #{@ecosystem_name}"
-    puts "Overwrite mode: #{@overwrite_mode}"
-    puts ""
+    unless @quiet
+      puts "Updating supporting infrastructure for ecosystem: #{@ecosystem_name}"
+      puts "Overwrite mode: #{@overwrite_mode}"
+      puts ""
+    end
 
     # Verify ecosystem exists
     unless ecosystem_exists?
@@ -47,7 +50,7 @@ class EcosystemInfrastructureUpdater
     @script_updater.update_all
     @gem_updater.update_all
 
-    print_summary
+    print_summary unless @quiet
   end
 
   private
@@ -78,12 +81,5 @@ class EcosystemInfrastructureUpdater
     end
 
     puts "=" * 80
-    puts ""
-    puts "Next steps:"
-    puts "1. Review the changes made to ensure correctness"
-    puts "2. Update omnibus gem dependencies: cd omnibus && bundle install"
-    puts "3. Update updater dependencies: cd updater && bundle install"
-    puts "4. Test the ecosystem with: bin/docker-dev-shell #{@ecosystem_name}"
-    puts "5. See NEW_ECOSYSTEMS.md for complete implementation guide"
   end
 end

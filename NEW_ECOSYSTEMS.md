@@ -42,15 +42,34 @@ Fork the [dependabot-core](https://github.com/dependabot/dependabot-core) reposi
 
 ### 2. Create the Ecosystem Structure
 
-**Using the Scaffold Rake Task (Recommended)**
+**Using the Quick Create Rake Task (Recommended)**
 
-To quickly generate the boilerplate structure for your ecosystem, use the provided Rake task:
+To quickly generate a complete ecosystem with both scaffolding and infrastructure updates in one command:
 
 ```bash
-rake ecosystem:scaffold[your_ecosystem_name]
+rake ecosystem:create[your_ecosystem_name]
 ```
 
-This will automatically create:
+This single command will:
+1. Generate the complete boilerplate structure for your ecosystem
+2. Update all supporting infrastructure files automatically
+3. Configure CI/CD workflows, issue labels, and development scripts
+
+**Using Individual Rake Tasks**
+
+Alternatively, you can run the scaffold and infrastructure update tasks separately:
+
+```bash
+# Step 1: Generate the ecosystem structure
+rake ecosystem:scaffold[your_ecosystem_name]
+
+# Step 2: Update supporting infrastructure
+rake ecosystem:update_infrastructure[your_ecosystem_name]
+```
+
+**What Gets Created**
+
+The scaffold task automatically creates:
 - Directory structure with all required folders
 - Boilerplate for required classes (FileFetcher, FileParser, UpdateChecker, FileUpdater)
 - Optional classes with deletion comments (MetadataFinder, Version, Requirement)
@@ -63,11 +82,11 @@ If the ecosystem directory already exists, you can control how existing files ar
 
 ```bash
 # Interactive mode (default) - prompts for each existing file
-rake ecosystem:scaffold[your_ecosystem_name]
-rake ecosystem:scaffold[your_ecosystem_name,ask]
+rake ecosystem:create[your_ecosystem_name]
+rake ecosystem:create[your_ecosystem_name,ask]
 
 # Skip mode - preserves all existing files without prompting
-rake ecosystem:scaffold[your_ecosystem_name,skip]
+rake ecosystem:create[your_ecosystem_name,skip]
 
 # Force mode - overwrites all existing files without prompting
 rake ecosystem:scaffold[your_ecosystem_name,force]
@@ -193,7 +212,7 @@ When testing the scaffold and infrastructure automation tasks locally, you may w
   # Option 1: Reset to clean state
   git reset --hard HEAD    # Revert tracked files
   git clean -fd            # Remove untracked files and directories
-  
+
   # Option 2: Stash and restore
   git stash -u             # Save all current changes including untracked files
   rake ecosystem:scaffold[test_ecosystem]

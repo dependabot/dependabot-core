@@ -14,7 +14,7 @@ module RakefileStructureTests
     result = run_command("rake -AT")
 
     expected_tasks = ["gems:build", "gems:clean", "gems:release", "rubocop:sort", "ecosystem:scaffold",
-                      "ecosystem:update_infrastructure"]
+                      "ecosystem:update_infrastructure", "ecosystem:create"]
 
     expected_tasks.each do |task|
       if result[:stdout].include?(task)
