@@ -19,6 +19,7 @@
 #   ruby bin/dry-run.rb go_modules zonedb/zonedb
 #
 # Package managers:
+# - bazel
 # - bun
 # - bundler
 # - cargo
@@ -56,6 +57,7 @@ unless Etc.getpwuid(Process.uid).name == "dependabot" || ENV["ALLOW_DRY_RUN_STAN
   exit 1
 end
 
+$LOAD_PATH << "./bazel/lib"
 $LOAD_PATH << "./bun/lib"
 $LOAD_PATH << "./bundler/lib"
 $LOAD_PATH << "./cargo/lib"
@@ -110,6 +112,7 @@ require "dependabot/pull_request_creator"
 require "dependabot/config/file_fetcher"
 require "dependabot/simple_instrumentor"
 
+require "dependabot/bazel"
 require "dependabot/bun"
 require "dependabot/bundler"
 require "dependabot/cargo"
@@ -344,6 +347,7 @@ end
 
 # Validate package manager
 valid_package_managers = %w(
+  bazel
   bun
   bundler
   cargo
