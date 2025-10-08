@@ -419,41 +419,17 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
       let(:directories) { ["/"] }
       let(:branch) { nil }
 
-      context "when the source is GitHub" do
-        before do
-          stub_request(:get, "https://api.github.com/repos/#{repo}")
-            .to_return(
-              status: 200,
-              body: {
-                "default_branch" => "very-esoteric-naming"
-              }.to_json,
-              headers: { "content-type" => "application/json" }
-            )
+      it "retrieves the default branch via Git" do
+        allow(job).to receive(:repo_contents_path).and_return(Dir.pwd)
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("origin/very-esoteric-naming\n")
+
+        expect(service).to receive(:create_dependency_submission) do |args|
+          payload = args[:dependency_submission].payload
+
+          expect(payload[:ref]).to eql("refs/heads/very-esoteric-naming")
         end
 
-        it "retrieves the default branch via the GitHub API" do
-          expect(service).to receive(:create_dependency_submission) do |args|
-            payload = args[:dependency_submission].payload
-
-            expect(payload[:ref]).to eql("refs/heads/very-esoteric-naming")
-          end
-
-          update_graph_processor.run
-        end
-      end
-
-      context "when the source is not GitHub" do
-        let(:provider) { "azure" }
-
-        it "uses a placeholder value" do
-          expect(service).to receive(:create_dependency_submission) do |args|
-            payload = args[:dependency_submission].payload
-
-            expect(payload[:ref]).to eql("refs/heads/main")
-          end
-
-          update_graph_processor.run
-        end
+        update_graph_processor.run
       end
     end
   end
