@@ -702,5 +702,344 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
         end
       end
     end
+
+    describe "preserving extras information" do
+      context "when a dependency has extras in the original lockfile" do
+        let(:dependency_name) { "psycopg" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "psycopg",
+            version: "3.2.10",
+            previous_version: "3.2.3",
+            package_manager: "pip",
+            requirements: [{
+              requirement: "==3.2.10",
+              file: "Pipfile",
+              source: nil,
+              groups: ["default"]
+            }],
+            previous_requirements: [{
+              requirement: "==3.2.3",
+              file: "Pipfile",
+              source: nil,
+              groups: ["default"]
+            }]
+          )
+        end
+
+        let(:pipfile) do
+          Dependabot::DependencyFile.new(
+            name: "Pipfile",
+            content: <<~PIPFILE
+              [[source]]
+              name = "pypi"
+              url = "https://pypi.org/simple"
+              verify_ssl = true
+
+              [packages]
+              psycopg = {extras = ["binary"], version = "==3.2.3"}
+
+              [dev-packages]
+
+              [requires]
+              python_version = "3.9.13"
+            PIPFILE
+          )
+        end
+
+        let(:lockfile) do
+          Dependabot::DependencyFile.new(
+            name: "Pipfile.lock",
+            content: <<~LOCKFILE
+              {
+                  "_meta": {
+                      "hash": {
+                          "sha256": "a67e77742182039b1fc162fe41efb0c892133af3230bda467060a301a1f02bd5"
+                      },
+                      "pipfile-spec": 6,
+                      "requires": {
+                          "python_version": "3.9.13"
+                      },
+                      "sources": [
+                          {
+                              "name": "pypi",
+                              "url": "https://pypi.org/simple",
+                              "verify_ssl": true
+                          }
+                      ]
+                  },
+                  "default": {
+                      "psycopg": {
+                          "extras": [
+                              "binary"
+                          ],
+                          "hashes": [
+                              "sha256:old_hash_1",
+                              "sha256:old_hash_2"
+                          ],
+                          "index": "pypi",
+                          "markers": "python_version >= '3.8'",
+                          "version": "==3.2.3"
+                      },
+                      "psycopg-binary": {
+                          "hashes": [
+                              "sha256:binary_hash_1",
+                              "sha256:binary_hash_2"
+                          ],
+                          "markers": "python_version >= '3.8'",
+                          "version": "==3.2.3"
+                      }
+                  },
+                  "develop": {}
+              }
+            LOCKFILE
+          )
+        end
+
+        it "preserves extras in the updated lockfile" do
+          expect(updated_files.map(&:name)).to match_array(%w(Pipfile Pipfile.lock))
+
+          updated_lockfile = updated_files.find { |f| f.name == "Pipfile.lock" }
+          updated_pipfile = updated_files.find { |f| f.name == "Pipfile" }
+          json_lockfile = JSON.parse(updated_lockfile.content)
+
+          # Check that the version was updated
+          expect(json_lockfile["default"]["psycopg"]["version"]).to eq("==3.2.10")
+
+          # Check that extras are preserved and appear first in the hash
+          expect(json_lockfile["default"]["psycopg"]["extras"]).to eq(["binary"])
+          expect(json_lockfile["default"]["psycopg"].keys.first).to eq("extras")
+
+          # Check that the Pipfile was also updated
+          expect(updated_pipfile.content).to include('version = "==3.2.10"')
+          expect(updated_pipfile.content).to include('extras = ["binary"]')
+        end
+
+        it "places extras as the first key in the dependency hash" do
+          updated_lockfile = updated_files.find { |f| f.name == "Pipfile.lock" }
+          json_lockfile = JSON.parse(updated_lockfile.content)
+          psycopg_keys = json_lockfile["default"]["psycopg"].keys
+
+          expect(psycopg_keys.first).to eq("extras")
+        end
+      end
+
+      context "when dependency has extras in develop section" do
+        let(:dependency_name) { "pytest" }
+        let(:pipfile) do
+          Dependabot::DependencyFile.new(
+            name: "Pipfile",
+            content: <<~PIPFILE
+              [[source]]
+              name = "pypi"
+              url = "https://pypi.org/simple"
+              verify_ssl = true
+
+              [packages]
+
+              [dev-packages]
+              pytest = {extras = ["coverage"], version = "==6.0.0"}
+
+              [requires]
+              python_version = "3.9"
+            PIPFILE
+          )
+        end
+
+        let(:lockfile) do
+          Dependabot::DependencyFile.new(
+            name: "Pipfile.lock",
+            content: <<~LOCKFILE
+              {
+                  "_meta": {
+                      "hash": {
+                          "sha256": "example_hash"
+                      },
+                      "pipfile-spec": 6,
+                      "requires": {
+                          "python_version": "3.9"
+                      },
+                      "sources": [
+                          {
+                              "name": "pypi",
+                              "url": "https://pypi.org/simple",
+                              "verify_ssl": true
+                          }
+                      ]
+                  },
+                  "default": {},
+                  "develop": {
+                      "pytest": {
+                          "extras": [
+                              "coverage"
+                          ],
+                          "hashes": [
+                              "sha256:example_hash_1"
+                          ],
+                          "index": "pypi",
+                          "version": "==6.0.0"
+                      }
+                  }
+              }
+            LOCKFILE
+          )
+        end
+
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "pytest",
+            version: "6.2.0",
+            previous_version: "6.0.0",
+            package_manager: "pip",
+            requirements: [{
+              requirement: "==6.2.0",
+              file: "Pipfile",
+              source: nil,
+              groups: ["develop"]
+            }],
+            previous_requirements: [{
+              requirement: "==6.0.0",
+              file: "Pipfile",
+              source: nil,
+              groups: ["develop"]
+            }]
+          )
+        end
+
+        it "preserves extras in develop dependencies" do
+          updated_lockfile = updated_files.find { |f| f.name == "Pipfile.lock" }
+          json_lockfile = JSON.parse(updated_lockfile.content)
+
+          expect(json_lockfile["develop"]["pytest"]["extras"]).to eq(["coverage"])
+          expect(json_lockfile["develop"]["pytest"]["version"]).to eq("==6.2.0")
+          expect(json_lockfile["develop"]["pytest"].keys.first).to eq("extras")
+        end
+      end
+
+      context "when multiple dependencies have extras" do
+        let(:dependency_name) { "psycopg" }
+        let(:pipfile) do
+          Dependabot::DependencyFile.new(
+            name: "Pipfile",
+            content: <<~PIPFILE
+              [[source]]
+              name = "pypi"
+              url = "https://pypi.org/simple"
+              verify_ssl = true
+
+              [packages]
+              psycopg = {extras = ["binary"], version = "==3.2.3"}
+              django = {extras = ["bcrypt"], version = "==3.0.0"}
+
+              [dev-packages]
+              pytest = {extras = ["coverage"], version = "==6.0.0"}
+
+              [requires]
+              python_version = "3.9"
+            PIPFILE
+          )
+        end
+
+        let(:lockfile) do
+          Dependabot::DependencyFile.new(
+            name: "Pipfile.lock",
+            content: <<~LOCKFILE
+              {
+                  "_meta": {
+                      "hash": {
+                          "sha256": "example_hash"
+                      },
+                      "pipfile-spec": 6,
+                      "requires": {
+                          "python_version": "3.9"
+                      },
+                      "sources": [
+                          {
+                              "name": "pypi",
+                              "url": "https://pypi.org/simple",
+                              "verify_ssl": true
+                          }
+                      ]
+                  },
+                  "default": {
+                      "psycopg": {
+                          "extras": [
+                              "binary"
+                          ],
+                          "hashes": [
+                              "sha256:example_hash_1"
+                          ],
+                          "index": "pypi",
+                          "version": "==3.2.3"
+                      },
+                      "django": {
+                          "extras": [
+                              "bcrypt"
+                          ],
+                          "hashes": [
+                              "sha256:example_hash_2"
+                          ],
+                          "index": "pypi",
+                          "version": "==3.0.0"
+                      }
+                  },
+                  "develop": {
+                      "pytest": {
+                          "extras": [
+                              "coverage"
+                          ],
+                          "hashes": [
+                              "sha256:example_hash_3"
+                          ],
+                          "index": "pypi",
+                          "version": "==6.0.0"
+                      }
+                  }
+              }
+            LOCKFILE
+          )
+        end
+
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "psycopg",
+            version: "3.2.10",
+            previous_version: "3.2.3",
+            package_manager: "pip",
+            requirements: [{
+              requirement: "==3.2.10",
+              file: "Pipfile",
+              source: nil,
+              groups: ["default"]
+            }],
+            previous_requirements: [{
+              requirement: "==3.2.3",
+              file: "Pipfile",
+              source: nil,
+              groups: ["default"]
+            }]
+          )
+        end
+
+        it "preserves extras for all dependencies, only updating the target dependency" do
+          updated_lockfile = updated_files.find { |f| f.name == "Pipfile.lock" }
+          json_lockfile = JSON.parse(updated_lockfile.content)
+
+          # Updated dependency should have preserved extras and new version
+          expect(json_lockfile["default"]["psycopg"]["extras"]).to eq(["binary"])
+          expect(json_lockfile["default"]["psycopg"]["version"]).to eq("==3.2.10")
+          expect(json_lockfile["default"]["psycopg"].keys.first).to eq("extras")
+
+          # Other dependencies should remain unchanged with preserved extras
+          expect(json_lockfile["default"]["django"]["extras"]).to eq(["bcrypt"])
+          expect(json_lockfile["default"]["django"]["version"]).to eq("==3.0.0")
+          expect(json_lockfile["default"]["django"].keys.first).to eq("extras")
+
+          expect(json_lockfile["develop"]["pytest"]["extras"]).to eq(["coverage"])
+          expect(json_lockfile["develop"]["pytest"]["version"]).to eq("==6.0.0")
+          expect(json_lockfile["develop"]["pytest"].keys.first).to eq("extras")
+        end
+      end
+    end
   end
 end
