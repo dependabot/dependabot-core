@@ -43,7 +43,7 @@ RSpec.describe Dependabot::GoModules::DependencyGrapher do
     let(:go_mod) do
       Dependabot::DependencyFile.new(
         name: "go.mod",
-        content: fixture("go_mods", "go.mod"),
+        content: fixture("go_mods", "graphing_dependencies", "go.mod"),
         directory: "/"
       )
     end
@@ -58,34 +58,100 @@ RSpec.describe Dependabot::GoModules::DependencyGrapher do
       it "correctly serializes the resolved dependencies" do
         resolved_dependencies = grapher.resolved_dependencies
 
-        expect(resolved_dependencies.count).to be(4)
+        expect(resolved_dependencies.count).to be(8)
 
         expect(resolved_dependencies.keys).to eql(
           %w(
-            github.com/fatih/Color
+            github.com/fatih/color
+            rsc.io/qr
+            rsc.io/quote
             github.com/mattn/go-colorable
             github.com/mattn/go-isatty
-            rsc.io/quote
+            golang.org/x/sys
+            golang.org/x/text
+            rsc.io/sampler
           )
-        ) # rsc.io/qr is absent due to the replace directive, this is working as intended.
+        )
 
-        color = resolved_dependencies["github.com/fatih/Color"]
-        expect(color.package_url).to eql("pkg:golang/github.com/fatih/Color@v1.7.0")
+        # Direct dependencies
+        color = resolved_dependencies["github.com/fatih/color"]
+        expect(color.package_url).to eql("pkg:golang/github.com/fatih/color@v1.18.0")
         expect(color.direct).to be(true)
         expect(color.runtime).to be(true)
-        expect(color.dependencies).to be_empty
 
-        colorable = resolved_dependencies["github.com/mattn/go-colorable"]
-        expect(colorable.package_url).to eql("pkg:golang/github.com/mattn/go-colorable@v0.0.9")
-        expect(colorable.direct).to be(false)
-        expect(colorable.runtime).to be(true)
-        expect(colorable.dependencies).to be_empty
+        qr = resolved_dependencies["rsc.io/qr"]
+        expect(qr.package_url).to eql("pkg:golang/rsc.io/qr@v0.2.0")
+        expect(qr.direct).to be(true)
+        expect(qr.runtime).to be(true)
 
         quote = resolved_dependencies["rsc.io/quote"]
-        expect(quote.package_url).to eql("pkg:golang/rsc.io/quote@v1.4.0")
+        expect(quote.package_url).to eql("pkg:golang/rsc.io/quote@v1.5.2")
         expect(quote.direct).to be(true)
         expect(quote.runtime).to be(true)
-        expect(quote.dependencies).to be_empty
+
+        # Spot check indirect dependencies
+        colorable = resolved_dependencies["github.com/mattn/go-colorable"]
+        expect(colorable.package_url).to eql("pkg:golang/github.com/mattn/go-colorable@v0.1.14")
+        expect(colorable.direct).to be(false)
+        expect(colorable.runtime).to be(true)
+
+        isatty = resolved_dependencies["github.com/mattn/go-isatty"]
+        expect(isatty.package_url).to eql("pkg:golang/github.com/mattn/go-isatty@v0.0.20")
+        expect(isatty.direct).to be(false)
+        expect(isatty.runtime).to be(true)
+      end
+
+      describe "assigns child dependencies using go mod graph" do
+        let(:dependency_graph_expectations) do
+          [
+            {
+              name: "github.com/fatih/color",
+              depends_on: [
+                "github.com/mattn/go-colorable",
+                "github.com/mattn/go-isatty",
+                "golang.org/x/sys"
+              ]
+            },
+            {
+              name: "github.com/mattn/go-colorable",
+              depends_on: [
+                "github.com/mattn/go-isatty",
+                "golang.org/x/sys"
+              ]
+            },
+            {
+              name: "github.com/mattn/go-isatty",
+              depends_on: [
+                "golang.org/x/sys"
+              ]
+            },
+            {
+              name: "rsc.io/quote",
+              depends_on: [
+                "rsc.io/sampler"
+              ]
+            },
+            {
+              name: "rsc.io/sampler",
+              depends_on: [
+                "golang.org/x/text"
+              ]
+            },
+            {
+              name: "golang.org/x/text",
+              depends_on: []
+            }
+          ]
+        end
+
+        it "correctly assigns depends_on for each package" do
+          dependency_graph_expectations.each do |expectation|
+            dependency = grapher.resolved_dependencies.fetch(expectation[:name], nil)
+            expect(dependency).not_to be_nil
+
+            expect(dependency.dependencies).to eql(expectation[:depends_on])
+          end
+        end
       end
     end
   end

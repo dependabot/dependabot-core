@@ -72,6 +72,26 @@ module Dependabot
         )
       end
 
+      sig { returns(T::Hash[String, String]) }
+      def local_replacements
+        @local_replacements ||=
+          # Find all the local replacements, and return them with a stub path
+          # we can use in their place. Using generated paths is safer as it
+          # means we don't need to worry about references to parent
+          # directories, etc.
+          T.let(
+            ReplaceStubber.new(repo_contents_path).stub_paths(manifest, go_mod&.directory),
+            T.nilable(T::Hash[String, String])
+          )
+      end
+
+      sig { returns(T.nilable(String)) }
+      def go_mod_content
+        local_replacements.reduce(go_mod&.content) do |body, (path, stub_path)|
+          body&.sub(path, stub_path)
+        end
+      end
+
       private
 
       sig { void }
@@ -215,19 +235,6 @@ module Dependabot
           )
       end
 
-      sig { returns(T::Hash[String, String]) }
-      def local_replacements
-        @local_replacements ||=
-          # Find all the local replacements, and return them with a stub path
-          # we can use in their place. Using generated paths is safer as it
-          # means we don't need to worry about references to parent
-          # directories, etc.
-          T.let(
-            ReplaceStubber.new(repo_contents_path).stub_paths(manifest, go_mod&.directory),
-            T.nilable(T::Hash[String, String])
-          )
-      end
-
       sig { returns(T::Hash[String, T.untyped]) }
       def manifest
         @manifest ||=
@@ -246,13 +253,6 @@ module Dependabot
             end,
             T.nilable(T::Hash[String, T.untyped])
           )
-      end
-
-      sig { returns(T.nilable(String)) }
-      def go_mod_content
-        local_replacements.reduce(go_mod&.content) do |body, (path, stub_path)|
-          body&.sub(path, stub_path)
-        end
       end
 
       sig { params(path: T.any(Pathname, String), stderr: String).returns(T.noreturn) }
