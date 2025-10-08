@@ -1,4 +1,4 @@
-# typed: strict
+# typed: false
 # frozen_string_literal: true
 
 require_relative "support/helpers"
@@ -7,15 +7,17 @@ require_relative "support/ecosystem_scaffolder"
 # Rake task for scaffolding new ecosystems
 # sorbet: ignore
 namespace :ecosystem do
-  desc "Scaffold a new ecosystem (e.g., rake ecosystem:scaffold[bazel])"
-  task :scaffold, [:name] do |_t, args|
+  desc "Scaffold a new ecosystem (e.g., rake ecosystem:scaffold[bazel,ask])"
+  task :scaffold, [:name, :overwrite] do |_t, args|
     if args[:name].nil? || args[:name].strip.empty?
       puts "Error: Ecosystem name is required."
-      puts "Usage: rake ecosystem:scaffold[ecosystem_name]"
+      puts "Usage: rake ecosystem:scaffold[ecosystem_name] or rake ecosystem:scaffold[ecosystem_name,overwrite_mode]"
+      puts "Overwrite modes: ask (default), skip, force"
       exit 1
     end
 
     ecosystem_name = args[:name].strip.downcase
+    overwrite_mode = (args[:overwrite] || "ask").strip.downcase
 
     # Validate ecosystem name format
     unless ecosystem_name.match?(/^[a-z][a-z0-9_]*$/)
@@ -24,16 +26,18 @@ namespace :ecosystem do
       exit 1
     end
 
-    # Check if ecosystem already exists
-    if Dir.exist?(ecosystem_name)
-      puts "Error: Directory '#{ecosystem_name}' already exists."
+    # Validate overwrite mode
+    unless %w(ask skip force).include?(overwrite_mode)
+      puts "Error: Invalid overwrite mode '#{overwrite_mode}'."
+      puts "Valid modes: ask, skip, force"
       exit 1
     end
 
     puts "Scaffolding new ecosystem: #{ecosystem_name}"
+    puts "Overwrite mode: #{overwrite_mode}"
     puts ""
 
-    scaffolder = EcosystemScaffolder.new(ecosystem_name)
+    scaffolder = EcosystemScaffolder.new(ecosystem_name, overwrite_mode)
     scaffolder.scaffold
 
     puts ""

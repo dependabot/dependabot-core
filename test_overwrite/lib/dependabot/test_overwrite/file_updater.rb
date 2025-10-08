@@ -1,0 +1,48 @@
+# typed: strict
+# frozen_string_literal: true
+
+require "dependabot/file_updaters"
+require "dependabot/file_updaters/base"
+
+module Dependabot
+  module TestOverwrite
+    class FileUpdater < Dependabot::FileUpdaters::Base
+      extend T::Sig
+
+      sig { override.returns(T::Array[Regexp]) }
+      def self.updated_files_regex
+        # TODO: Define regex patterns for files this updater can handle
+        # Example: [/^manifest\.json$/]
+        []
+      end
+
+      sig { override.returns(T::Array[Dependabot::DependencyFile]) }
+      def updated_dependency_files
+        updated_files = []
+
+        # TODO: Implement file update logic
+        # For each file that needs updating:
+        # 1. Get the original file content
+        # 2. Update it with new dependency versions
+        # 3. Add to updated_files array
+        # Example:
+        # manifest = dependency_files.find { |f| f.name == "manifest.json" }
+        # updated_files << updated_file(file: manifest, content: new_content)
+
+        updated_files
+      end
+
+      private
+
+      sig { override.void }
+      def check_required_files
+        # TODO: Verify that all required files are present
+        # Example:
+        # return if get_original_file("manifest.json")
+        # raise "No manifest.json file found!"
+      end
+    end
+  end
+end
+
+Dependabot::FileUpdaters.register("test_overwrite", Dependabot::TestOverwrite::FileUpdater)

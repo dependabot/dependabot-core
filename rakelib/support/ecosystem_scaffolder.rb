@@ -3,16 +3,18 @@
 
 require "fileutils"
 require "erb"
+require "io/console"
 
 # Ecosystem scaffolder class that generates boilerplate files for a new ecosystem
 class EcosystemScaffolder
   extend T::Sig
 
-  sig { params(name: String).void }
-  def initialize(name)
+  sig { params(name: String, overwrite_mode: String).void }
+  def initialize(name, overwrite_mode = "ask")
     @ecosystem_name = T.let(name, String)
     @ecosystem_module = T.let(name.split("_").map(&:capitalize).join, String)
     @template_dir = T.let(File.expand_path("ecosystem_templates", __dir__), String)
+    @initial_overwrite_mode = T.let(overwrite_mode, String)
   end
 
   sig { void }
@@ -33,6 +35,19 @@ class EcosystemScaffolder
 
   sig { returns(String) }
   attr_reader :template_dir
+
+  sig { returns(String) }
+  attr_reader :initial_overwrite_mode
+
+  sig { returns(String) }
+  def current_overwrite_mode
+    @current_overwrite_mode ||= T.let(@initial_overwrite_mode, T.nilable(String))
+  end
+
+  sig { params(mode: String).void }
+  def set_overwrite_mode(mode)
+    @current_overwrite_mode = T.let(mode, T.nilable(String))
+  end
 
   sig { void }
   def create_directory_structure
@@ -159,6 +174,33 @@ class EcosystemScaffolder
 
   sig { params(template_name: String, output_path: String).void }
   def create_file_from_template(template_name, output_path)
+    # Check if file exists and handle based on overwrite mode
+    if File.exist?(output_path)
+      case current_overwrite_mode
+      when "skip"
+        puts "  ⊘ Skipped #{output_path} (already exists)"
+        return
+      when "ask"
+        print "  ? File #{output_path} exists. Overwrite? [y/N/a(ll)/s(kip all)]: "
+        response = $stdin.gets.to_s.strip.downcase
+        case response
+        when "a", "all"
+          set_overwrite_mode("force")
+        when "s", "skip", "skip all"
+          set_overwrite_mode("skip")
+          puts "  ⊘ Skipped #{output_path}"
+          return
+        when "y", "yes"
+          # Continue to create file
+        else
+          puts "  ⊘ Skipped #{output_path}"
+          return
+        end
+      when "force"
+        # Continue to create file
+      end
+    end
+
     template_path = File.join(template_dir, template_name)
     template_content = File.read(template_path)
     erb = ERB.new(template_content, trim_mode: "-")

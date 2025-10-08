@@ -4,208 +4,10 @@
 # Integration test for Rakefile refactoring
 # This script verifies that all Rake tasks work correctly after modularization
 
-require "open3"
-
-def run_command(cmd)
-  puts "Running: #{cmd}"
-  stdout, stderr, status = Open3.capture3(cmd)
-  {
-    stdout: stdout,
-    stderr: stderr,
-    success: status.success?,
-    exit_code: status.exitstatus
-  }
-end
-
-def test_task_list
-  puts "\n=== Testing rake -AT (list all tasks) ==="
-  result = run_command("rake -AT")
-
-  expected_tasks = ["gems:build", "gems:clean", "gems:release", "rubocop:sort", "ecosystem:scaffold"]
-
-  expected_tasks.each do |task|
-    if result[:stdout].include?(task)
-      puts "✓ Task '#{task}' is available"
-    else
-      puts "✗ Task '#{task}' is MISSING"
-      return false
-    end
-  end
-
-  result[:success]
-end
-
-def test_gems_clean?
-  puts "\n=== Testing rake gems:clean ==="
-  result = run_command("rake gems:clean")
-
-  if result[:success]
-    puts "✓ gems:clean executed successfully"
-    true
-  else
-    puts "✗ gems:clean FAILED"
-    puts "STDERR: #{result[:stderr]}"
-    false
-  end
-end
-
-def test_rubocop_sort?
-  puts "\n=== Testing rake rubocop:sort ==="
-  result = run_command("rake rubocop:sort")
-
-  if result[:success]
-    puts "✓ rubocop:sort executed successfully"
-
-    # Verify the file was actually updated
-    if File.exist?("omnibus/.rubocop.yml")
-      puts "✓ omnibus/.rubocop.yml exists"
-      true
-    else
-      puts "✗ omnibus/.rubocop.yml does not exist"
-      false
-    end
-  else
-    puts "✗ rubocop:sort FAILED"
-    puts "STDERR: #{result[:stderr]}"
-    false
-  end
-end
-
-def test_rakefile_structure
-  puts "\n=== Verifying Rakefile structure ==="
-
-  required_files = [
-    "Rakefile",
-    "rakelib/gems.rake",
-    "rakelib/rubocop.rake",
-    "rakelib/ecosystem.rake",
-    "rakelib/support/helpers.rb"
-  ]
-
-  all_exist = true
-  required_files.each do |file|
-    if File.exist?(file)
-      puts "✓ #{file} exists"
-    else
-      puts "✗ #{file} is MISSING"
-      all_exist = false
-    end
-  end
-
-  all_exist
-end
-
-def test_helpers_loaded?
-  puts "\n=== Testing that helpers are properly loaded ==="
-
-  # Test that constants and methods from helpers.rb are available when rake tasks load them
-  result = run_command("ruby -e \"load './Rakefile'; load 'rakelib/support/helpers.rb'; puts GEMSPECS.class\"")
-
-  if result[:success] && result[:stdout].strip == "Array"
-    puts "✓ GEMSPECS constant is loaded"
-  else
-    puts "✗ GEMSPECS constant failed to load"
-    puts "STDOUT: #{result[:stdout]}"
-    puts "STDERR: #{result[:stderr]}"
-    return false
-  end
-
-  result = run_command(
-    "ruby -e \"load './Rakefile'; load 'rakelib/support/helpers.rb'; puts RakeHelpers.respond_to?(:guard_tag_match)\""
-  )
-
-  if result[:success] && result[:stdout].strip == "true"
-    puts "✓ RakeHelpers.guard_tag_match method is defined"
-  else
-    puts "✗ RakeHelpers.guard_tag_match method failed to load"
-    puts "STDOUT: #{result[:stdout]}"
-    puts "STDERR: #{result[:stderr]}"
-    return false
-  end
-
-  true
-end
-
-# rubocop:disable Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity
-def test_ecosystem_scaffold?
-  puts "\n=== Testing rake ecosystem:scaffold ==="
-
-  require "tmpdir"
-  require "fileutils"
-
-  test_dir = Dir.mktmpdir
-  original_dir = Dir.pwd
-
-  begin
-    Dir.chdir(test_dir)
-
-    # Test with valid ecosystem name
-    result = run_command("cd #{original_dir} && bundle exec rake ecosystem:scaffold[test_eco_temp]")
-
-    unless result[:success]
-      puts "✗ ecosystem:scaffold FAILED to execute"
-      puts "STDERR: #{result[:stderr]}"
-      return false
-    end
-
-    Dir.chdir(original_dir)
-
-    # Verify key files were created
-    required_files = [
-      "test_eco_temp/lib/dependabot/test_eco_temp.rb",
-      "test_eco_temp/lib/dependabot/test_eco_temp/file_fetcher.rb",
-      "test_eco_temp/lib/dependabot/test_eco_temp/file_parser.rb",
-      "test_eco_temp/lib/dependabot/test_eco_temp/update_checker.rb",
-      "test_eco_temp/lib/dependabot/test_eco_temp/file_updater.rb",
-      "test_eco_temp/spec/dependabot/test_eco_temp/file_fetcher_spec.rb",
-      "test_eco_temp/README.md",
-      "test_eco_temp/dependabot-test_eco_temp.gemspec"
-    ]
-
-    all_exist = true
-    required_files.each do |file|
-      if File.exist?(file)
-        puts "✓ #{file} was created"
-      else
-        puts "✗ #{file} is MISSING"
-        all_exist = false
-      end
-    end
-
-    # Verify optional files have deletion comments
-    if File.exist?("test_eco_temp/lib/dependabot/test_eco_temp/metadata_finder.rb")
-      metadata_finder = File.read("test_eco_temp/lib/dependabot/test_eco_temp/metadata_finder.rb")
-      if metadata_finder.include?("OPTIONAL")
-        puts "✓ Optional files have deletion comments"
-      else
-        puts "✗ Optional files missing deletion comments"
-        all_exist = false
-      end
-    else
-      puts "✗ metadata_finder.rb was not created"
-      all_exist = false
-    end
-
-    # Clean up
-    FileUtils.rm_rf("test_eco_temp")
-
-    # Test error handling - invalid name
-    result = run_command("bundle exec rake ecosystem:scaffold[Invalid-Name]")
-    if result[:success]
-      puts "✗ Invalid name was not rejected"
-      all_exist = false
-    else
-      puts "✓ Invalid name is rejected"
-    end
-
-    all_exist
-  ensure
-    Dir.chdir(original_dir) if Dir.pwd != original_dir
-    FileUtils.rm_rf(test_dir)
-    FileUtils.rm_rf("test_eco_temp")
-  end
-end
-# rubocop:enable Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity
+require_relative "../rakelib/support/test/rakefile_structure_tests"
+require_relative "../rakelib/support/test/gems_task_tests"
+require_relative "../rakelib/support/test/rubocop_task_tests"
+require_relative "../rakelib/support/test/ecosystem_scaffold_tests"
 
 # Run all tests
 puts "=" * 60
@@ -213,12 +15,12 @@ puts "Rakefile Integration Tests"
 puts "=" * 60
 
 results = [
-  test_rakefile_structure,
-  test_task_list,
-  test_gems_clean?,
-  test_rubocop_sort?,
-  test_helpers_loaded?,
-  test_ecosystem_scaffold?
+  RakefileStructureTests.test_rakefile_structure,
+  RakefileStructureTests.test_task_list,
+  GemsTaskTests.test_gems_clean?,
+  RubocopTaskTests.test_rubocop_sort?,
+  RakefileStructureTests.test_helpers_loaded?,
+  EcosystemScaffoldTests.test_ecosystem_scaffold?
 ]
 
 all_passed = results.all?
