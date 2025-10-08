@@ -1,97 +1,101 @@
-shared: &shared
-  - .dockerignore
-  - Dockerfile.updater-core
-  - 'common/**'
-  - 'updater/Gemfil*'
-  - 'omnibus/**'
-  - '.github/workflows/ci.yml'
+---
+shared: &1
+- ".dockerignore"
+- Dockerfile.updater-core
+- common/**
+- updater/Gemfil*
+- omnibus/**
+- ".github/workflows/ci.yml"
 rakefile_tests:
-  - 'rakelib/**'
-  - 'Rakefile'
-  - 'script/test-rakefile'
+- rakelib/**
+- Rakefile
+- script/test-rakefile
 dry_run:
-  - *shared
-  - 'bin/dry-run.rb'
-  - 'bin/spec/**'
+- *1
+- bin/dry-run.rb
+- bin/spec/**
 bun:
-  - *shared
-  - 'bun/**'
+- *1
+- bun/**
 bundler:
-  - *shared
-  - 'bundler/**'
+- *1
+- bundler/**
 cargo:
-  - *shared
-  - 'cargo/**'
+- *1
+- cargo/**
 common:
-  - *shared
-  - '**/**'
+- *1
+- "**/**"
 composer:
-  - *shared
-  - 'composer/**'
+- *1
+- composer/**
 conda:
-  - *shared
-  - 'conda/**'
+- *1
+- conda/**
 devcontainers:
-  - *shared
-  - 'devcontainers/**'
+- *1
+- devcontainers/**
 docker:
-  - *shared
-  - 'docker/**'
+- *1
+- docker/**
 docker_compose:
-  - *shared
-  - 'docker_compose/**'
+- *1
+- docker_compose/**
 dotnet_sdk:
-  - *shared
-  - 'dotnet_sdk/**'
+- *1
+- dotnet_sdk/**
 elm:
-  - *shared
-  - 'elm/**'
+- *1
+- elm/**
 git_submodules:
-  - *shared
-  - 'git_submodules/**'
+- *1
+- git_submodules/**
 github_actions:
-  - *shared
-  - 'github_actions/**'
+- *1
+- github_actions/**
 go_modules:
-  - *shared
-  - 'go_modules/**'
+- *1
+- go_modules/**
 gradle:
-  - *shared
-  - 'maven/**'
-  - 'gradle/**'
-hex:
-  - *shared
-  - 'hex/**'
-maven:
-  - *shared
-  - 'maven/**'
-npm_and_yarn:
-  - *shared
-  - 'npm_and_yarn/**'
-nuget:
-  - *shared
-  - 'nuget/**'
-pub:
-  - *shared
-  - 'pub/**'
-python:
-  - *shared
-  - 'python/**'
-rust_toolchain:
-  - *shared
-  - 'rust_toolchain/**'
-swift:
-  - *shared
-  - 'swift/**'
-terraform:
-  - *shared
-  - 'terraform/**'
-uv:
-  - *shared
-  - 'uv/**'
+- *1
+- maven/**
+- gradle/**
 helm:
-  - *shared
-  - 'helm/**'
+- *1
+- helm/**
+hex:
+- *1
+- hex/**
+maven:
+- *1
+- maven/**
+npm_and_yarn:
+- *1
+- npm_and_yarn/**
+nuget:
+- *1
+- nuget/**
+pub:
+- *1
+- pub/**
+python:
+- *1
+- python/**
+rust_toolchain:
+- *1
+- rust_toolchain/**
+swift:
+- *1
+- swift/**
+terraform:
+- *1
+- terraform/**
+test_ecosystem:
+- *1
+- test_ecosystem/**
+uv:
+- *1
+- uv/**
 vcpkg:
-  - *shared
-  - 'vcpkg/**'
+- *1
+- vcpkg/**

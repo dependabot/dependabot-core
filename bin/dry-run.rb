@@ -81,6 +81,7 @@ $LOAD_PATH << "./python/lib"
 $LOAD_PATH << "./rust_toolchain/lib"
 $LOAD_PATH << "./swift/lib"
 $LOAD_PATH << "./terraform/lib"
+$LOAD_PATH << "./test_ecosystem/lib"
 $LOAD_PATH << "./uv/lib"
 $LOAD_PATH << "./vcpkg/lib"
 

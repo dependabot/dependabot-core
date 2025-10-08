@@ -10,14 +10,14 @@
     "ecosystem": "cargo"
   },
   {
-    "core": "conda",
-    "test": "conda",
-    "ecosystem": "conda"
-  },
-  {
     "core": "composer",
     "test": "composer",
     "ecosystem": "composer"
+  },
+  {
+    "core": "conda",
+    "test": "conda",
+    "ecosystem": "conda"
   },
   {
     "core": "devcontainers",
@@ -108,6 +108,11 @@
     "core": "terraform",
     "test": "terraform",
     "ecosystem": "terraform"
+  },
+  {
+    "core": "test_ecosystem",
+    "test": "test-ecosystem",
+    "ecosystem": "test-ecosystem"
   },
   {
     "core": "vcpkg",

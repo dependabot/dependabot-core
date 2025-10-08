@@ -4,6 +4,7 @@ touch .core-bash_history # allow bash history to persist across invocations
 
 dependabot \
   -v "$(pwd)"/.core-bash_history:/home/dependabot/.bash_history \
+  -v "$(pwd)"/test_ecosystem:/home/dependabot/test_ecosystem \
   -v "$(pwd)"/updater/bin:/home/dependabot/dependabot-updater/bin \
   -v "$(pwd)"/updater/lib:/home/dependabot/dependabot-updater/lib \
   -v "$(pwd)"/bin:/home/dependabot/bin \

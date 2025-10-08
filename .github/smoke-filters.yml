@@ -1,82 +1,86 @@
-common: &common
-  - .github/workflows/smoke.yml
-  - .dockerignore
-  - Dockerfile.updater-core
-  - 'common/**'
-  - 'updater/**'
-github_actions:
-  - *common
-  - 'github_actions/**'
+---
+common: &1
+- ".github/workflows/smoke.yml"
+- ".dockerignore"
+- Dockerfile.updater-core
+- common/**
+- updater/**
 bun:
-  - *common
-  - 'bun/**'
+- *1
+- bun/**
 bundler:
-  - *common
-  - 'bundler/**'
+- *1
+- bundler/**
 cargo:
-  - *common
-  - 'cargo/**'
+- *1
+- cargo/**
 composer:
-  - *common
-  - 'composer/**'
-devcontainers:
-  - *common
-  - 'devcontainers/**'
-docker:
-  - *common
-  - 'docker/**'
-dotnet_sdk:
-  - *common
-  - 'dotnet_sdk/**'
-elm:
-  - *common
-  - 'elm/**'
-go_modules:
-  - *common
-  - 'go_modules/**'
-gradle:
-  - *common
-  - 'gradle/**'
-  - 'maven/**'
-hex:
-  - *common
-  - 'hex/**'
-maven:
-  - *common
-  - 'maven/**'
-npm_and_yarn:
-  - *common
-  - 'npm_and_yarn/**'
-nuget:
-  - *common
-  - 'nuget/**'
-python:
-  - *common
-  - 'python/**'
-pub:
-  - *common
-  - 'pub/**'
-git_submodules:
-  - *common
-  - 'git_submodules/**'
-rust_toolchain:
-  - *common
-  - 'rust_toolchain/**'
-swift:
-  - *common
-  - 'swift/**'
-terraform:
-  - *common
-  - 'terraform/**'
-uv:
-  - *common
-  - 'uv/**'
-helm:
-  - *common
-  - 'helm/**'
-vcpkg:
-  - *common
-  - 'vcpkg/**'
+- *1
+- composer/**
 conda:
-  - *common
-  - 'conda/**'
+- *1
+- conda/**
+devcontainers:
+- *1
+- devcontainers/**
+docker:
+- *1
+- docker/**
+dotnet_sdk:
+- *1
+- dotnet_sdk/**
+elm:
+- *1
+- elm/**
+git_submodules:
+- *1
+- git_submodules/**
+github_actions:
+- *1
+- github_actions/**
+go_modules:
+- *1
+- go_modules/**
+gradle:
+- *1
+- gradle/**
+- maven/**
+helm:
+- *1
+- helm/**
+hex:
+- *1
+- hex/**
+maven:
+- *1
+- maven/**
+npm_and_yarn:
+- *1
+- npm_and_yarn/**
+nuget:
+- *1
+- nuget/**
+pub:
+- *1
+- pub/**
+python:
+- *1
+- python/**
+rust_toolchain:
+- *1
+- rust_toolchain/**
+swift:
+- *1
+- swift/**
+terraform:
+- *1
+- terraform/**
+test_ecosystem:
+- *1
+- test_ecosystem/**
+uv:
+- *1
+- uv/**
+vcpkg:
+- *1
+- vcpkg/**

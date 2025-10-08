@@ -47,6 +47,7 @@ class RakeHelpers
       silent/dependabot-silent.gemspec
       swift/dependabot-swift.gemspec
       terraform/dependabot-terraform.gemspec
+      test_ecosystem/dependabot-test_ecosystem.gemspec
       uv/dependabot-uv.gemspec
       vcpkg/dependabot-vcpkg.gemspec
     ).freeze,

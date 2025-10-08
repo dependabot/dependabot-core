@@ -51,6 +51,7 @@ Sentry.init do |config|
     silent|
     swift|
     terraform|
+    test_ecosystem|
     uv|
     vcpkg|
   )}x
