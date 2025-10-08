@@ -1,6 +1,3 @@
-
-"L: test:ecosystem":
-    - '(test[ecosystem)'
 "L: ruby:bundler":
     - '(ruby|bundler)'
 

@@ -58,7 +58,6 @@ jobs:
           - { name: rust_toolchain, ecosystem: rust-toolchain }
           - { name: swift, ecosystem: swift }
           - { name: terraform, ecosystem: terraform }
-          - { name: test_ecosystem, ecosystem: test-ecosystem }
           - { name: uv, ecosystem: uv }
           - { name: vcpkg, ecosystem: vcpkg }
     env:

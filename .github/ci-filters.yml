@@ -1,101 +1,97 @@
----
-shared: &1
-- ".dockerignore"
-- Dockerfile.updater-core
-- common/**
-- updater/Gemfil*
-- omnibus/**
-- ".github/workflows/ci.yml"
+shared: &shared
+  - .dockerignore
+  - Dockerfile.updater-core
+  - 'common/**'
+  - 'updater/Gemfil*'
+  - 'omnibus/**'
+  - '.github/workflows/ci.yml'
 rakefile_tests:
-- rakelib/**
-- Rakefile
-- script/test-rakefile
+  - 'rakelib/**'
+  - 'Rakefile'
+  - 'script/test-rakefile'
 dry_run:
-- *1
-- bin/dry-run.rb
-- bin/spec/**
+  - *shared
+  - 'bin/dry-run.rb'
+  - 'bin/spec/**'
 bun:
-- *1
-- bun/**
+  - *shared
+  - 'bun/**'
 bundler:
-- *1
-- bundler/**
+  - *shared
+  - 'bundler/**'
 cargo:
-- *1
-- cargo/**
+  - *shared
+  - 'cargo/**'
 common:
-- *1
-- "**/**"
+  - *shared
+  - '**/**'
 composer:
-- *1
-- composer/**
+  - *shared
+  - 'composer/**'
 conda:
-- *1
-- conda/**
+  - *shared
+  - 'conda/**'
 devcontainers:
-- *1
-- devcontainers/**
+  - *shared
+  - 'devcontainers/**'
 docker:
-- *1
-- docker/**
+  - *shared
+  - 'docker/**'
 docker_compose:
-- *1
-- docker_compose/**
+  - *shared
+  - 'docker_compose/**'
 dotnet_sdk:
-- *1
-- dotnet_sdk/**
+  - *shared
+  - 'dotnet_sdk/**'
 elm:
-- *1
-- elm/**
+  - *shared
+  - 'elm/**'
 git_submodules:
-- *1
-- git_submodules/**
+  - *shared
+  - 'git_submodules/**'
 github_actions:
-- *1
-- github_actions/**
+  - *shared
+  - 'github_actions/**'
 go_modules:
-- *1
-- go_modules/**
+  - *shared
+  - 'go_modules/**'
 gradle:
-- *1
-- maven/**
-- gradle/**
-helm:
-- *1
-- helm/**
+  - *shared
+  - 'maven/**'
+  - 'gradle/**'
 hex:
-- *1
-- hex/**
+  - *shared
+  - 'hex/**'
 maven:
-- *1
-- maven/**
+  - *shared
+  - 'maven/**'
 npm_and_yarn:
-- *1
-- npm_and_yarn/**
+  - *shared
+  - 'npm_and_yarn/**'
 nuget:
-- *1
-- nuget/**
+  - *shared
+  - 'nuget/**'
 pub:
-- *1
-- pub/**
+  - *shared
+  - 'pub/**'
 python:
-- *1
-- python/**
+  - *shared
+  - 'python/**'
 rust_toolchain:
-- *1
-- rust_toolchain/**
+  - *shared
+  - 'rust_toolchain/**'
 swift:
-- *1
-- swift/**
+  - *shared
+  - 'swift/**'
 terraform:
-- *1
-- terraform/**
-test_ecosystem:
-- *1
-- test_ecosystem/**
+  - *shared
+  - 'terraform/**'
 uv:
-- *1
-- uv/**
+  - *shared
+  - 'uv/**'
+helm:
+  - *shared
+  - 'helm/**'
 vcpkg:
-- *1
-- vcpkg/**
+  - *shared
+  - 'vcpkg/**'

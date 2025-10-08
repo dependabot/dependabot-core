@@ -179,6 +179,31 @@ This automated task will update the following files:
 
 The task is idempotent and will skip files that already contain your ecosystem configuration.
 
+**Rollback Strategy for Testing**
+
+When testing the scaffold and infrastructure automation tasks locally, you may want to rollback changes:
+
+**For CI Environments:**
+- No rollback is required - CI jobs run in isolated, temporary environments that are destroyed after completion.
+
+**For Local Development:**
+- Before running automation tasks, ensure your working tree is clean (no uncommitted changes).
+- Use git to rollback changes after testing:
+  ```bash
+  # Option 1: Reset to clean state
+  git reset --hard HEAD    # Revert tracked files
+  git clean -fd            # Remove untracked files and directories
+  
+  # Option 2: Stash and restore
+  git stash -u             # Save all current changes including untracked files
+  rake ecosystem:scaffold[test_ecosystem]
+  rake ecosystem:update_infrastructure[test_ecosystem]
+  # Run validation/tests
+  git reset --hard HEAD    # Revert tracked files
+  git clean -fd            # Remove untracked files
+  git stash pop            # Restore previous changes
+  ```
+
 **Manual Updates** (If Needed)
 
 For files not covered by the automated task or requiring ecosystem-specific customization:

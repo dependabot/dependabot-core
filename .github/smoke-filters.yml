@@ -1,86 +1,82 @@
----
-common: &1
-- ".github/workflows/smoke.yml"
-- ".dockerignore"
-- Dockerfile.updater-core
-- common/**
-- updater/**
-bun:
-- *1
-- bun/**
-bundler:
-- *1
-- bundler/**
-cargo:
-- *1
-- cargo/**
-composer:
-- *1
-- composer/**
-conda:
-- *1
-- conda/**
-devcontainers:
-- *1
-- devcontainers/**
-docker:
-- *1
-- docker/**
-dotnet_sdk:
-- *1
-- dotnet_sdk/**
-elm:
-- *1
-- elm/**
-git_submodules:
-- *1
-- git_submodules/**
+common: &common
+  - .github/workflows/smoke.yml
+  - .dockerignore
+  - Dockerfile.updater-core
+  - 'common/**'
+  - 'updater/**'
 github_actions:
-- *1
-- github_actions/**
+  - *common
+  - 'github_actions/**'
+bun:
+  - *common
+  - 'bun/**'
+bundler:
+  - *common
+  - 'bundler/**'
+cargo:
+  - *common
+  - 'cargo/**'
+composer:
+  - *common
+  - 'composer/**'
+devcontainers:
+  - *common
+  - 'devcontainers/**'
+docker:
+  - *common
+  - 'docker/**'
+dotnet_sdk:
+  - *common
+  - 'dotnet_sdk/**'
+elm:
+  - *common
+  - 'elm/**'
 go_modules:
-- *1
-- go_modules/**
+  - *common
+  - 'go_modules/**'
 gradle:
-- *1
-- gradle/**
-- maven/**
-helm:
-- *1
-- helm/**
+  - *common
+  - 'gradle/**'
+  - 'maven/**'
 hex:
-- *1
-- hex/**
+  - *common
+  - 'hex/**'
 maven:
-- *1
-- maven/**
+  - *common
+  - 'maven/**'
 npm_and_yarn:
-- *1
-- npm_and_yarn/**
+  - *common
+  - 'npm_and_yarn/**'
 nuget:
-- *1
-- nuget/**
-pub:
-- *1
-- pub/**
+  - *common
+  - 'nuget/**'
 python:
-- *1
-- python/**
+  - *common
+  - 'python/**'
+pub:
+  - *common
+  - 'pub/**'
+git_submodules:
+  - *common
+  - 'git_submodules/**'
 rust_toolchain:
-- *1
-- rust_toolchain/**
+  - *common
+  - 'rust_toolchain/**'
 swift:
-- *1
-- swift/**
+  - *common
+  - 'swift/**'
 terraform:
-- *1
-- terraform/**
-test_ecosystem:
-- *1
-- test_ecosystem/**
+  - *common
+  - 'terraform/**'
 uv:
-- *1
-- uv/**
+  - *common
+  - 'uv/**'
+helm:
+  - *common
+  - 'helm/**'
 vcpkg:
-- *1
-- vcpkg/**
+  - *common
+  - 'vcpkg/**'
+conda:
+  - *common
+  - 'conda/**'
