@@ -107,34 +107,34 @@ RSpec.describe Dependabot::GoModules::DependencyGrapher do
             {
               name: "github.com/fatih/color",
               depends_on: [
-                "github.com/mattn/go-colorable",
-                "github.com/mattn/go-isatty",
-                "golang.org/x/sys"
+                "pkg:golang/github.com/mattn/go-colorable@v0.1.13",
+                "pkg:golang/github.com/mattn/go-isatty@v0.0.20",
+                "pkg:golang/golang.org/x/sys@v0.25.0"
               ]
             },
             {
               name: "github.com/mattn/go-colorable",
               depends_on: [
-                "github.com/mattn/go-isatty",
-                "golang.org/x/sys"
+                "pkg:golang/github.com/mattn/go-isatty@v0.0.20",
+                "pkg:golang/golang.org/x/sys@v0.29.0"
               ]
             },
             {
               name: "github.com/mattn/go-isatty",
               depends_on: [
-                "golang.org/x/sys"
+                "pkg:golang/golang.org/x/sys@v0.6.0"
               ]
             },
             {
               name: "rsc.io/quote",
               depends_on: [
-                "rsc.io/sampler"
+                "pkg:golang/rsc.io/sampler@v1.3.0"
               ]
             },
             {
               name: "rsc.io/sampler",
               depends_on: [
-                "golang.org/x/text"
+                "pkg:golang/golang.org/x/text@v0.0.0-20170915032832-14c0d48ead0c"
               ]
             },
             {

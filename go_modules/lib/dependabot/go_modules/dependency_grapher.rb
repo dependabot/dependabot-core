@@ -9,7 +9,19 @@ require "dependabot/dependency_graphers/base"
 module Dependabot
   module GoModules
     class DependencyGrapher < Dependabot::DependencyGraphers::Base
-      GO_MOD_GRAPH_LINE_REGEX = /^(?<parent>[^@\s]+)@?[^\s]*\s+(?<child>[^@\s]+)/
+      # Used to capture output from `go mod graph`
+      #
+      # For the 'parent' dependency, we only want to capture the package name since that's what we match on
+      # in `fetch_subdependencies` but for the child we want the full version so we can serialise a PURL.
+      #
+      # The parent and child are space-separated and we process one line at a time.
+      #
+      # Example output:
+      #   github.com/dependabot/core-test rsc.io/sampler@v1.3.0
+      #   rsc.io/sampler@v1.3.0 golang.org/x/text@v0.0.0-20170915032832-14c0d48ead0c
+      #   <---parent--->        <----------------------child----------------------->
+      #
+      GO_MOD_GRAPH_LINE_REGEX = /^(?<parent>[^@\s]+)@?[^\s]*\s(?<child>.*)/
 
       sig { override.returns(Dependabot::DependencyFile) }
       def relevant_dependency_file
@@ -76,7 +88,12 @@ module Dependabot
           end
 
           rels[match[:parent]] ||= []
-          rels[match[:parent]] << match[:child]
+          rels[match[:parent]] << format(
+            PURL_TEMPLATE,
+            type: "golang",
+            name: match[:child],
+            version: "" # match[:child] includes the version
+          )
         end
       end
     end
