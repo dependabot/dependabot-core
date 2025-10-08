@@ -72,23 +72,23 @@ module Dependabot
         )
       end
 
-      sig { returns(T::Hash[String, String]) }
-      def local_replacements
-        @local_replacements ||=
-          # Find all the local replacements, and return them with a stub path
-          # we can use in their place. Using generated paths is safer as it
-          # means we don't need to worry about references to parent
-          # directories, etc.
-          T.let(
-            ReplaceStubber.new(repo_contents_path).stub_paths(manifest, go_mod&.directory),
-            T.nilable(T::Hash[String, String])
-          )
-      end
+      # Utility method to allow collaborators to check other go commands inside the parsed project's context
+      sig { params(command: String).returns(String) }
+      def run_in_parsed_context(command)
+        SharedHelpers.in_a_temporary_directory do |path|
+          # Create a fake empty module for each local module so that
+          # `go mod edit` works, even if some modules have been `replace`d with
+          # a local module that we don't have access to.
+          local_replacements.each do |_, stub_path|
+            FileUtils.mkdir_p(stub_path)
+            FileUtils.touch(File.join(stub_path, "go.mod"))
+          end
 
-      sig { returns(T.nilable(String)) }
-      def go_mod_content
-        local_replacements.reduce(go_mod&.content) do |body, (path, stub_path)|
-          body&.sub(path, stub_path)
+          File.write("go.mod", go_mod_content)
+          stdout, stderr, status = Open3.capture3(command)
+          handle_parser_error(path, stderr) unless status.success?
+
+          stdout
         end
       end
 
@@ -214,24 +214,21 @@ module Dependabot
       def required_packages
         @required_packages ||=
           T.let(
-            SharedHelpers.in_a_temporary_directory do |path|
-              # Create a fake empty module for each local module so that
-              # `go mod edit` works, even if some modules have been `replace`d with
-              # a local module that we don't have access to.
-              local_replacements.each do |_, stub_path|
-                FileUtils.mkdir_p(stub_path)
-                FileUtils.touch(File.join(stub_path, "go.mod"))
-              end
-
-              File.write("go.mod", go_mod_content)
-
-              command = "go mod edit -json"
-
-              stdout, stderr, status = Open3.capture3(command)
-              handle_parser_error(path, stderr) unless status.success?
-              JSON.parse(stdout)["Require"] || []
-            end,
+            JSON.parse(run_in_parsed_context("go mod edit -json"))["Require"] || [],
             T.nilable(T::Array[T::Hash[String, T.untyped]])
+          )
+      end
+
+      sig { returns(T::Hash[String, String]) }
+      def local_replacements
+        @local_replacements ||=
+          # Find all the local replacements, and return them with a stub path
+          # we can use in their place. Using generated paths is safer as it
+          # means we don't need to worry about references to parent
+          # directories, etc.
+          T.let(
+            ReplaceStubber.new(repo_contents_path).stub_paths(manifest, go_mod&.directory),
+            T.nilable(T::Hash[String, String])
           )
       end
 
@@ -253,6 +250,13 @@ module Dependabot
             end,
             T.nilable(T::Hash[String, T.untyped])
           )
+      end
+
+      sig { returns(T.nilable(String)) }
+      def go_mod_content
+        local_replacements.reduce(go_mod&.content) do |body, (path, stub_path)|
+          body&.sub(path, stub_path)
+        end
       end
 
       sig { params(path: T.any(Pathname, String), stderr: String).returns(T.noreturn) }
