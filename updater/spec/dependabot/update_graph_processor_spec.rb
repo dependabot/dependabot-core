@@ -37,12 +37,14 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
     )]
   end
 
+  let(:repo) { "dependabot-fixtures/dependabot-test-ruby-package" }
   let(:branch) { "develop" }
+  let(:provider) { "github" }
 
   let(:source) do
     Dependabot::Source.new(
-      provider: "github",
-      repo: "dependabot-fixtures/dependabot-test-ruby-package",
+      provider: provider,
+      repo: repo,
       directories: directories,
       branch: branch
     )
@@ -417,15 +419,41 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
       let(:directories) { ["/"] }
       let(:branch) { nil }
 
-      # FIXME(brrygrdn): We should obtain the ref from git -or- inject it via the backend service
-      it "assumes refs/heads/main instead of using the real default branch" do
-        expect(service).to receive(:create_dependency_submission) do |args|
-          payload = args[:dependency_submission].payload
-
-          expect(payload[:ref]).to eql("refs/heads/main")
+      context "when the source is GitHub" do
+        before do
+          stub_request(:get, "https://api.github.com/repos/#{repo}")
+            .to_return(
+              status: 200,
+              body: {
+                "default_branch" => "very-esoteric-naming"
+              }.to_json,
+              headers: { "content-type" => "application/json" }
+            )
         end
 
-        update_graph_processor.run
+        it "retrieves the default branch via the GitHub API" do
+          expect(service).to receive(:create_dependency_submission) do |args|
+            payload = args[:dependency_submission].payload
+
+            expect(payload[:ref]).to eql("refs/heads/very-esoteric-naming")
+          end
+
+          update_graph_processor.run
+        end
+      end
+
+      context "when the source is not GitHub" do
+        let(:provider) { "azure" }
+
+        it "uses a placeholder value" do
+          expect(service).to receive(:create_dependency_submission) do |args|
+            payload = args[:dependency_submission].payload
+
+            expect(payload[:ref]).to eql("refs/heads/main")
+          end
+
+          update_graph_processor.run
+        end
       end
     end
   end
