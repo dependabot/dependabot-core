@@ -347,20 +347,9 @@ class GitHubWorkflowUpdater < BaseUpdater
 
     new_entry = "\n#{label}:\n    - '(#{ecosystem_name})'\n"
 
-    lines = content.lines
-    insert_index = lines.size
-
-    lines.each_with_index do |line, idx|
-      next unless line.start_with?('"L:')
-
-      if line > new_entry.lines.first
-        insert_index = idx
-        break
-      end
-    end
-
-    lines.insert(insert_index, new_entry)
-    write_file(file, lines.join)
+    # Append to the end of the file
+    content += new_entry
+    write_file(file, content)
     record_change(file, "Added #{ecosystem_name} issue label")
     success_message(file)
   end
