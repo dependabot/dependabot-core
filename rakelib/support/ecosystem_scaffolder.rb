@@ -45,7 +45,7 @@ class EcosystemScaffolder
   end
 
   sig { params(mode: String).void }
-  def set_overwrite_mode(mode)
+  def overwrite_mode(mode)
     @current_overwrite_mode = T.let(mode, T.nilable(String))
   end
 
@@ -185,9 +185,9 @@ class EcosystemScaffolder
         response = $stdin.gets.to_s.strip.downcase
         case response
         when "a", "all"
-          set_overwrite_mode("force")
+          overwrite_mode("force")
         when "s", "skip", "skip all"
-          set_overwrite_mode("skip")
+          overwrite_mode("skip")
           puts "  ⊘ Skipped #{output_path}"
           return
         when "y", "yes"
