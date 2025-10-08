@@ -366,9 +366,8 @@ class EcosystemInfrastructureUpdater
       return
     end
 
-    # Add new label entry
-    ecosystem_pattern = ecosystem_name.tr("_", "[-_]")
-    new_entry = "\n#{label}:\n    - '(#{ecosystem_pattern})'\n"
+    # Add new label entry - use the ecosystem_name directly in the pattern
+    new_entry = "\n#{label}:\n    - '(#{ecosystem_name})'\n"
 
     # Find correct alphabetical position
     lines = content.lines
