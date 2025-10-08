@@ -8,6 +8,7 @@ require_relative "../rakelib/support/test/rakefile_structure_tests"
 require_relative "../rakelib/support/test/gems_task_tests"
 require_relative "../rakelib/support/test/rubocop_task_tests"
 require_relative "../rakelib/support/test/ecosystem_scaffold_tests"
+require_relative "../rakelib/support/test/ecosystem_infrastructure_updater_tests"
 
 # Run all tests
 puts "=" * 60
@@ -20,7 +21,8 @@ results = [
   GemsTaskTests.test_gems_clean?,
   RubocopTaskTests.test_rubocop_sort?,
   RakefileStructureTests.test_helpers_loaded?,
-  EcosystemScaffoldTests.test_ecosystem_scaffold?
+  EcosystemScaffoldTests.test_ecosystem_scaffold?,
+  EcosystemInfrastructureUpdaterTests.all_tests?
 ]
 
 all_passed = results.all?
