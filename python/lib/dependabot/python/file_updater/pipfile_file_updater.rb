@@ -237,7 +237,6 @@ module Dependabot
           new_lockfile_json = JSON.parse(updated_lockfile_content.dup)
 
           update_lockfile_metadata(new_lockfile_json)
-          preserve_dependency_extras(new_lockfile_json)
 
           format_lockfile_json(new_lockfile_json)
         end
@@ -251,24 +250,6 @@ module Dependabot
           lockfile_json["_meta"]["hash"]["sha256"] = pipfile_hash
           lockfile_json["_meta"]["requires"] = original_reqs
           lockfile_json["_meta"]["sources"] = original_source
-        end
-
-        sig { params(lockfile_json: T::Hash[String, T.untyped]).void }
-        def preserve_dependency_extras(lockfile_json)
-          %w(default develop).each do |dep_group|
-            next unless parsed_lockfile[dep_group] && lockfile_json[dep_group]
-
-            T.must(parsed_lockfile[dep_group]).each do |dep_name, original_details|
-              next unless lockfile_json[dep_group][dep_name]
-              next unless original_details["extras"]
-
-              # Preserve extras and ensure it appears first in the hash
-              dep_details = lockfile_json[dep_group][dep_name]
-              lockfile_json[dep_group][dep_name] = {
-                "extras" => original_details["extras"]
-              }.merge(dep_details)
-            end
-          end
         end
 
         sig { params(lockfile_json: T::Hash[String, T.untyped]).returns(String) }
