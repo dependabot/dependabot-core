@@ -105,6 +105,31 @@ jobs:
       # yamllint is installed in GitHub Actions base runner image: https://github.com/adrienverge/yamllint/pull/588
       - run: yamllint .
 
+  rakefile_tests:
+    name: Rakefile Tests
+    runs-on: ubuntu-latest
+    env:
+      BUNDLE_GEMFILE: updater/Gemfile
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        id: changes
+        with:
+          token: '' # use git commands to avoid excessive rate limit usage
+          filters: .github/ci-filters.yml
+
+      - name: Setup Ruby
+        if: steps.changes.outputs.rakefile_tests == 'true'
+        uses: ruby/setup-ruby@829114fc20da43a41d27359103ec7a63020954d4 # v1.255.0
+        with:
+          bundler-cache: true
+
+      - name: Run rakefile tests
+        if: steps.changes.outputs.rakefile_tests == 'true'
+        run: script/test-rakefile
+
   integration:
     env:
       DOCKER_BUILDKIT: 1

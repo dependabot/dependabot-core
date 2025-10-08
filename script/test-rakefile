@@ -4,126 +4,10 @@
 # Integration test for Rakefile refactoring
 # This script verifies that all Rake tasks work correctly after modularization
 
-require "open3"
-
-def run_command(cmd)
-  puts "Running: #{cmd}"
-  stdout, stderr, status = Open3.capture3(cmd)
-  {
-    stdout: stdout,
-    stderr: stderr,
-    success: status.success?,
-    exit_code: status.exitstatus
-  }
-end
-
-def test_task_list
-  puts "\n=== Testing rake -AT (list all tasks) ==="
-  result = run_command("rake -AT")
-
-  expected_tasks = ["gems:build", "gems:clean", "gems:release", "rubocop:sort"]
-
-  expected_tasks.each do |task|
-    if result[:stdout].include?(task)
-      puts "✓ Task '#{task}' is available"
-    else
-      puts "✗ Task '#{task}' is MISSING"
-      return false
-    end
-  end
-
-  result[:success]
-end
-
-def test_gems_clean?
-  puts "\n=== Testing rake gems:clean ==="
-  result = run_command("rake gems:clean")
-
-  if result[:success]
-    puts "✓ gems:clean executed successfully"
-    true
-  else
-    puts "✗ gems:clean FAILED"
-    puts "STDERR: #{result[:stderr]}"
-    false
-  end
-end
-
-def test_rubocop_sort?
-  puts "\n=== Testing rake rubocop:sort ==="
-  result = run_command("rake rubocop:sort")
-
-  if result[:success]
-    puts "✓ rubocop:sort executed successfully"
-
-    # Verify the file was actually updated
-    if File.exist?("omnibus/.rubocop.yml")
-      puts "✓ omnibus/.rubocop.yml exists"
-      true
-    else
-      puts "✗ omnibus/.rubocop.yml does not exist"
-      false
-    end
-  else
-    puts "✗ rubocop:sort FAILED"
-    puts "STDERR: #{result[:stderr]}"
-    false
-  end
-end
-
-def test_rakefile_structure
-  puts "\n=== Verifying Rakefile structure ==="
-
-  required_files = [
-    "Rakefile",
-    "rakelib/gems.rake",
-    "rakelib/rubocop.rake",
-    "rakelib/support/helpers.rb"
-  ]
-
-  all_exist = true
-  required_files.each do |file|
-    if File.exist?(file)
-      puts "✓ #{file} exists"
-    else
-      puts "✗ #{file} is MISSING"
-      all_exist = false
-    end
-  end
-
-  all_exist
-end
-
-def test_helpers_loaded?
-  puts "\n=== Testing that helpers are properly loaded ==="
-
-  # Test that constants and methods from helpers.rb are available when rake tasks load them
-  result = run_command("ruby -e \"load './Rakefile'; load 'rakelib/support/helpers.rb'; puts GEMSPECS.class\"")
-
-  if result[:success] && result[:stdout].strip == "Array"
-    puts "✓ GEMSPECS constant is loaded"
-  else
-    puts "✗ GEMSPECS constant failed to load"
-    puts "STDOUT: #{result[:stdout]}"
-    puts "STDERR: #{result[:stderr]}"
-    return false
-  end
-
-  result = run_command(
-    "ruby -e \"load './Rakefile'; load 'rakelib/support/helpers.rb'; puts defined?(guard_tag_match)\""
-  )
-
-  if result[:success] && result[:stdout].strip == "method"
-    puts "✓ guard_tag_match method is defined"
-  else
-    puts "✗ guard_tag_match method failed to load"
-    puts "STDOUT: #{result[:stdout]}"
-    puts "STDERR: #{result[:stderr]}"
-    return false
-  end
-
-  true
-end
+require_relative "../rakelib/support/test/rakefile_structure_tests"
+require_relative "../rakelib/support/test/gems_task_tests"
+require_relative "../rakelib/support/test/rubocop_task_tests"
+require_relative "../rakelib/support/test/ecosystem_scaffold_tests"
 
 # Run all tests
 puts "=" * 60
@@ -131,11 +15,12 @@ puts "Rakefile Integration Tests"
 puts "=" * 60
 
 results = [
-  test_rakefile_structure,
-  test_task_list,
-  test_gems_clean?,
-  test_rubocop_sort?,
-  test_helpers_loaded?
+  RakefileStructureTests.test_rakefile_structure,
+  RakefileStructureTests.test_task_list,
+  GemsTaskTests.test_gems_clean?,
+  RubocopTaskTests.test_rubocop_sort?,
+  RakefileStructureTests.test_helpers_loaded?,
+  EcosystemScaffoldTests.test_ecosystem_scaffold?
 ]
 
 all_passed = results.all?
