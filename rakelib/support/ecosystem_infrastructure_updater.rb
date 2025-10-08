@@ -200,38 +200,53 @@ class EcosystemInfrastructureUpdater
     suite_index = lines.index { |line| line.include?("suite:") }
 
     if suite_index
-      # Find the last suite entry
-      last_suite_index = suite_index
-      ((suite_index + 1)...lines.size).each do |i|
-        break unless T.must(lines[i]).match?(/^\s*- \{/)
-
-        last_suite_index = i
-      end
-
-      # Determine ecosystem string based on name
-      ecosystem_str = ecosystem_name.tr("_", "-")
-
-      # Insert new suite entry in alphabetical order
-      new_entry = "          - { path: #{ecosystem_name}, name: #{ecosystem_name}, ecosystem: #{ecosystem_str} }\n"
-
-      # Find correct position
-      insert_index = suite_index + 1
-      while insert_index <= last_suite_index
-        line = lines[insert_index]
-        if line =~ /- \{ path: (\w+),/
-          existing_name = ::Regexp.last_match(1)
-          break if T.must(existing_name) > ecosystem_name
-        end
-        insert_index += 1
-      end
-
-      lines.insert(insert_index, new_entry)
-      write_file(file, lines.join)
-      record_change(file, "Added #{ecosystem_name} to CI matrix")
-      puts "  ✓ Updated #{file}"
+      update_ci_workflow_matrix(lines, suite_index, file)
     else
       puts "  ⚠ Warning: Could not find matrix.suite section in #{file}"
     end
+  end
+
+  sig { params(lines: T::Array[String], suite_index: Integer, file: String).void }
+  def update_ci_workflow_matrix(lines, suite_index, file)
+    last_suite_index = find_last_suite_index(lines, suite_index)
+    new_entry = create_ci_suite_entry
+    insert_index = find_ci_insert_position(lines, suite_index, last_suite_index)
+
+    lines.insert(insert_index, new_entry)
+    write_file(file, lines.join)
+    record_change(file, "Added #{ecosystem_name} to CI matrix")
+    puts "  ✓ Updated #{file}"
+  end
+
+  sig { params(lines: T::Array[String], suite_index: Integer).returns(Integer) }
+  def find_last_suite_index(lines, suite_index)
+    last_index = suite_index
+    ((suite_index + 1)...lines.size).each do |i|
+      break unless T.must(lines[i]).match?(/^\s*- \{/)
+
+      last_index = i
+    end
+    last_index
+  end
+
+  sig { returns(String) }
+  def create_ci_suite_entry
+    ecosystem_str = ecosystem_name.tr("_", "-")
+    "          - { path: #{ecosystem_name}, name: #{ecosystem_name}, ecosystem: #{ecosystem_str} }\n"
+  end
+
+  sig { params(lines: T::Array[String], suite_index: Integer, last_suite_index: Integer).returns(Integer) }
+  def find_ci_insert_position(lines, suite_index, last_suite_index)
+    insert_index = suite_index + 1
+    while insert_index <= last_suite_index
+      line = lines[insert_index]
+      if line =~ /- \{ path: (\w+),/
+        existing_name = ::Regexp.last_match(1)
+        break if T.must(existing_name) > ecosystem_name
+      end
+      insert_index += 1
+    end
+    insert_index
   end
   # rubocop:disable Metrics/MethodLength, Metrics/AbcSize, Metrics/PerceivedComplexity
   sig { void }
@@ -473,7 +488,7 @@ class EcosystemInfrastructureUpdater
   end
   # rubocop:enable Metrics/MethodLength, Metrics/PerceivedComplexity
 
-  # rubocop:disable Metrics/MethodLength, Metrics/PerceivedComplexity
+  # rubocop:disable Metrics/PerceivedComplexity
   sig { void }
   def update_script_dependabot
     file = "script/dependabot"
@@ -569,8 +584,18 @@ class EcosystemInfrastructureUpdater
       return
     end
 
-    # Find the app_dirs_pattern section and add new ecosystem
     lines = content.lines
+    pattern_start, pattern_end = find_app_dirs_pattern_bounds(lines)
+
+    if pattern_start >= 0 && pattern_end >= 0
+      update_setup_rb_pattern(lines, pattern_start, pattern_end, file)
+    else
+      puts "  ⚠ Warning: Could not find app_dirs_pattern section in #{file}"
+    end
+  end
+
+  sig { params(lines: T::Array[String]).returns([Integer, Integer]) }
+  def find_app_dirs_pattern_bounds(lines)
     pattern_start = -1
     pattern_end = -1
 
@@ -582,32 +607,37 @@ class EcosystemInfrastructureUpdater
       end
     end
 
-    if pattern_start >= 0 && pattern_end >= 0
-      # Insert in alphabetical order before the closing pattern
-      new_line = "    #{ecosystem_name}|\n"
-
-      insert_index = pattern_end
-      ((pattern_start + 1)...pattern_end).each do |idx|
-        line = lines[idx]
-        next unless line =~ /^\s+(\w+)\|/
-
-        existing_eco = ::Regexp.last_match(1)
-        if T.must(existing_eco) > ecosystem_name
-          insert_index = idx
-          break
-        end
-        insert_index = idx + 1 if T.must(existing_eco) < ecosystem_name
-      end
-
-      lines.insert(insert_index, new_line)
-      write_file(file, lines.join)
-      record_change(file, "Added #{ecosystem_name} to app_dirs_pattern")
-      puts "  ✓ Updated #{file}"
-    else
-      puts "  ⚠ Warning: Could not find app_dirs_pattern section in #{file}"
-    end
+    [pattern_start, pattern_end]
   end
-  # rubocop:enable Metrics/MethodLength, Metrics/PerceivedComplexity
+
+  sig { params(lines: T::Array[String], pattern_start: Integer, pattern_end: Integer, file: String).void }
+  def update_setup_rb_pattern(lines, pattern_start, pattern_end, file)
+    new_line = "    #{ecosystem_name}|\n"
+    insert_index = find_setup_rb_insert_position(lines, pattern_start, pattern_end)
+
+    lines.insert(insert_index, new_line)
+    write_file(file, lines.join)
+    record_change(file, "Added #{ecosystem_name} to app_dirs_pattern")
+    puts "  ✓ Updated #{file}"
+  end
+
+  sig { params(lines: T::Array[String], pattern_start: Integer, pattern_end: Integer).returns(Integer) }
+  def find_setup_rb_insert_position(lines, pattern_start, pattern_end)
+    insert_index = pattern_end
+    ((pattern_start + 1)...pattern_end).each do |idx|
+      line = lines[idx]
+      next unless line =~ /^\s+(\w+)\|/
+
+      existing_eco = ::Regexp.last_match(1)
+      if T.must(existing_eco) > ecosystem_name
+        insert_index = idx
+        break
+      end
+      insert_index = idx + 1 if T.must(existing_eco) < ecosystem_name
+    end
+    insert_index
+  end
+  # rubocop:enable Metrics/PerceivedComplexity
 
   # rubocop:disable Metrics/MethodLength, Metrics/PerceivedComplexity, Metrics/AbcSize
   sig { void }
