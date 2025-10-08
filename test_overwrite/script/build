@@ -1,7 +1,0 @@
-#!/bin/bash
-
-set -e
-
-# Script for building native helpers (if needed)
-# TODO: Implement build logic for native helpers
-echo "No native helpers to build for test_overwrite"
