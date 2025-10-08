@@ -43,7 +43,7 @@ RSpec.describe Dependabot::GoModules::DependencyGrapher do
     let(:go_mod) do
       Dependabot::DependencyFile.new(
         name: "go.mod",
-        content: fixture("go_mods", "graphing_dependencies", "go.mod"),
+        content: fixture("projects", "graphing_dependencies", "go.mod"),
         directory: "/"
       )
     end

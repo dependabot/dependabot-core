@@ -55,52 +55,29 @@ module Dependabot
         "golang"
       end
 
-      # TODO: Expose a 'run this' method on the parser instead of copy-pasting this
       sig { returns(T::Hash[String, T.untyped]) }
       def package_relationships
         @package_relationships ||= T.let(
-          SharedHelpers.in_a_temporary_directory do |path|
-            # Create a fake empty module for each local module so that
-            # `go mod edit` works, even if some modules have been `replace`d with
-            # a local module that we don't have access to.
-            local_replacements.each do |_, stub_path|
-              FileUtils.mkdir_p(stub_path)
-              FileUtils.touch(File.join(stub_path, "go.mod"))
-            end
-
-            File.write("go.mod", go_mod_content)
-
-            command = "go mod graph"
-
-            stdout, stderr, status = Open3.capture3(command)
-            handle_parser_error(path, stderr) unless status.success?
-
-            stdout.lines.each_with_object({}) do |line, rels|
-              match = line.match(GO_MOD_GRAPH_LINE_REGEX)
-              next unless match # TODO: Warn if we get a weird line?
-
-              rels[match[:parent]] ||= []
-              rels[match[:parent]] << match[:child]
-            end
-          end,
+          fetch_package_relationships,
           T.nilable(T::Hash[String, T.untyped])
         )
       end
 
-      sig { returns(T::Hash[String, String]) }
-      def local_replacements
-        T.cast(file_parser, Dependabot::GoModules::FileParser).local_replacements
-      end
+      sig { returns(T::Hash[String, T.untyped]) }
+      def fetch_package_relationships
+        T.cast(
+          file_parser,
+          Dependabot::GoModules::FileParser
+        ).run_in_parsed_context("go mod graph").lines.each_with_object({}) do |line, rels|
+          match = line.match(GO_MOD_GRAPH_LINE_REGEX)
+          unless match
+            Dependabot.logger.warn("Unexpected output from 'go mod graph': 'line'")
+            next
+          end
 
-      sig { returns(T.nilable(String)) }
-      def go_mod_content
-        T.cast(file_parser, Dependabot::GoModules::FileParser).go_mod_content
-      end
-
-      sig { params(path: T.any(Pathname, String), stderr: String).returns(T.noreturn) }
-      def handle_parser_error(path, stderr)
-        msg = stderr.gsub(path.to_s, "").strip
-        raise Dependabot::DependencyFileNotParseable.new(T.must(go_mod).path, msg)
+          rels[match[:parent]] ||= []
+          rels[match[:parent]] << match[:child]
+        end
       end
     end
   end
