@@ -9,7 +9,16 @@ require "dependabot/dependency_graphers/base"
 module Dependabot
   module GoModules
     class DependencyGrapher < Dependabot::DependencyGraphers::Base
-      GO_MOD_GRAPH_LINE_REGEX = /^(?<parent>[^@\s]+)@?[^\s]*\s+(?<child>[^@\s]+)/
+      # Used to capture output from `go mod graph`
+      #
+      # The parent and child are space-separated and we process one line at a time.
+      #
+      # Example output:
+      #   github.com/dependabot/core-test rsc.io/sampler@v1.3.0
+      #   rsc.io/sampler@v1.3.0 golang.org/x/text@v0.0.0-20170915032832-14c0d48ead0c
+      #   <---parent--->        <----child------>
+      #
+      GO_MOD_GRAPH_LINE_REGEX = /^(?<parent>[^@\s]+)@?[^\s]*\s(?<child>[^@\s]+)/
 
       sig { override.returns(Dependabot::DependencyFile) }
       def relevant_dependency_file
