@@ -623,8 +623,9 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
           # Mock the run_cargo_command method directly to simulate the ambiguous error
           allow(updater).to receive(:run_cargo_command) do |_command, _options|
             # Simulate what run_cargo_command does when it encounters ambiguous specification
-            if /There are multiple `([^`]+)` packages.*specification `([^`]+)` is ambiguous/.match?(ambiguous_output)
-              match = ambiguous_output.match(/There are multiple `([^`]+)` packages.*specification `([^`]+)` is ambiguous/)
+            regex = /There are multiple `([^`]+)` packages.*specification `([^`]+)` is ambiguous/
+            if regex.match?(ambiguous_output)
+              match = ambiguous_output.match(regex)
               raise Dependabot::DependencyFileNotEvaluatable, "Ambiguous package specification: #{match[2]}"
             end
           end
