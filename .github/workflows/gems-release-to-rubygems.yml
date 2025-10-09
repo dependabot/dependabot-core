@@ -30,4 +30,4 @@ jobs:
 
       # We can't use the https://github.com/rubygems/release-gem workflow because it calls `rake release` rather than `rake gems:release`.
       # `rake release` causes problems because it tries to push a git tag, but we've already manually tagged the release as part of the `gems-bump-version` workflow.
-      - run: gem exec rake gems:release
+      - run: bundle exec rake gems:release
