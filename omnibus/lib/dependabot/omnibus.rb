@@ -1,6 +1,7 @@
 # typed: strong
 # frozen_string_literal: true
 
+require "dependabot/bazel"
 require "dependabot/python"
 require "dependabot/terraform"
 require "dependabot/elm"

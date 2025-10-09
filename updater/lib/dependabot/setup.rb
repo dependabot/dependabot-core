@@ -26,6 +26,7 @@ Sentry.init do |config|
     dependabot-updater/bin|
     dependabot-updater/config|
     dependabot-updater/lib|
+    bazel|
     common|
     bundler|
     cargo|

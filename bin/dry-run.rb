@@ -56,6 +56,7 @@ unless Etc.getpwuid(Process.uid).name == "dependabot" || ENV["ALLOW_DRY_RUN_STAN
   exit 1
 end
 
+$LOAD_PATH << "./bazel/lib"
 $LOAD_PATH << "./bun/lib"
 $LOAD_PATH << "./bundler/lib"
 $LOAD_PATH << "./cargo/lib"
