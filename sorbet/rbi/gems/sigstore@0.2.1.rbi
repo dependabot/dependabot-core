@@ -1672,7 +1672,7 @@ class Sigstore::TUF::TrustUpdater
 end
 
 # source://sigstore//lib/sigstore/tuf.rb#31
-Sigstore::TUF::TrustUpdater::Net = Gem::Net
+Sigstore::TUF::TrustUpdater::Net = Net
 
 # source://sigstore//lib/sigstore/tuf/trusted_metadata_set.rb#24
 class Sigstore::TUF::TrustedMetadataSet
