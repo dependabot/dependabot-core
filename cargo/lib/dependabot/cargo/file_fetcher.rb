@@ -55,6 +55,14 @@ module Dependabot
         fetched_files << T.must(cargo_lock) if cargo_lock
         fetched_files << T.must(cargo_config) if cargo_config
         fetched_files << T.must(rust_toolchain) if rust_toolchain
+
+        # Always try to include the workspace root to handle complex workspace dependencies
+        workspace_root = find_workspace_root_for_repo
+        if workspace_root && !fetched_files.any? { |f| f.name == workspace_root.name }
+          workspace_root.support_file = true unless workspace_root.name == cargo_toml.name
+          fetched_files << workspace_root
+        end
+
         fetched_files += fetch_path_dependency_and_workspace_files
 
         # Filter excluded files from final collection
@@ -274,6 +282,18 @@ module Dependabot
         false
       end
 
+      # Check if this manifest file is a workspace root that can resolve workspace dependencies
+      sig { params(manifest: Dependabot::DependencyFile).returns(T::Boolean) }
+      def workspace_root_with_dependencies?(manifest)
+        workspace_section = parsed_file(manifest)["workspace"]
+        return false unless workspace_section.is_a?(Hash)
+
+        # A workspace root should have either:
+        # 1. [workspace.dependencies] section for resolving workspace = true dependencies
+        # 2. [workspace.members] section indicating it manages workspace members
+        workspace_section.key?("dependencies") || workspace_section.key?("members")
+      end
+
       # Find workspace root of this workspace member, first via package.workspace
       # manifest key if present, otherwise resort to searching parent directories
       # up till the repository root.
@@ -282,6 +302,7 @@ module Dependabot
       end
       def find_workspace_root(workspace_member)
         current_dir = workspace_member.name.rpartition("/").first
+        current_dir = "." if current_dir.empty?
 
         workspace_root_dir = parsed_file(workspace_member).dig("package", "workspace")
         unless workspace_root_dir.nil?
@@ -289,29 +310,105 @@ module Dependabot
             File.join(current_dir, workspace_root_dir, "Cargo.toml"),
             fetch_submodules: true
           )
-          return workspace_root if parsed_file(workspace_root)["workspace"]
+          return workspace_root if workspace_root_with_dependencies?(workspace_root)
 
           # To avoid accidentally breaking backward compatibility, we don't throw errors
           return nil
         end
 
-        parent_dirs = current_dir.scan("/").length
-        while parent_dirs >= 0
-          current_dir = File.join(current_dir, "..")
-          begin
-            parent_manifest = fetch_file_from_host(
-              File.join(current_dir, "Cargo.toml"),
-              fetch_submodules: true
-            )
-            return parent_manifest if parsed_file(parent_manifest)["workspace"]
-          rescue Dependabot::DependencyFileNotFound
-            # Cargo.toml not found in this parent, keep searching up
+        # Search up the directory tree for a workspace root
+        search_path = current_dir == "." ? "" : current_dir
+
+        # Always try the root first (most common case for workspace roots)
+        begin
+          root_manifest = fetch_file_from_host("Cargo.toml", fetch_submodules: true)
+          return root_manifest if workspace_root_with_dependencies?(root_manifest)
+        rescue Dependabot::DependencyFileNotFound
+          # No Cargo.toml at root, continue searching
+        end
+
+        # If we have a path, search up the directory tree
+        unless search_path.empty?
+          path_parts = search_path.split("/").reject(&:empty?)
+
+          # Try each parent directory level
+          (path_parts.length - 1).downto(0) do |i|
+            parent_path = T.must(path_parts[0..i]).join("/")
+            manifest_path = File.join(parent_path, "Cargo.toml")
+
+            begin
+              parent_manifest = fetch_file_from_host(manifest_path, fetch_submodules: true)
+              return parent_manifest if workspace_root_with_dependencies?(parent_manifest)
+            rescue Dependabot::DependencyFileNotFound
+              # Cargo.toml not found at this level, try next parent
+            end
           end
-          parent_dirs -= 1
         end
 
         # To avoid accidentally breaking backward compatibility, we don't throw errors
         nil
+      end
+
+      sig do
+        params(cargo_toml: Dependabot::DependencyFile).returns(T.nilable(Dependabot::DependencyFile))
+      end
+      def find_workspace_root_if_needed(cargo_toml)
+        # Only look for workspace root if this Cargo.toml is a workspace member
+        # (has dependencies that inherit from workspace or explicit workspace declaration)
+        return nil unless workspace_member?(parsed_file(cargo_toml))
+
+        find_workspace_root(cargo_toml)
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def find_workspace_root_for_repo
+        # Always try to find the workspace root at the repository root first
+        # Calculate the relative path from current directory to repository root
+        begin
+          repo_root_path = calculate_repo_root_path
+          root_manifest = fetch_file_from_host(File.join(repo_root_path, "Cargo.toml"), fetch_submodules: true)
+          return root_manifest if workspace_root_with_dependencies?(root_manifest)
+        rescue Dependabot::DependencyFileNotFound
+          # No Cargo.toml at root
+        end
+
+        # Search parent directories upward from current directory
+        current_directory = directory.empty? ? "" : directory.sub(%r{^/}, "")
+
+        unless current_directory.empty?
+          path_parts = current_directory.split("/")
+
+          # Try each parent directory level, going upward toward root
+          (path_parts.length - 1).downto(0) do |level|
+            # Calculate relative path to this parent level
+            levels_up = path_parts.length - level
+            parent_relative_path = Array.new(levels_up, "..").join("/")
+            manifest_path = parent_relative_path.empty? ? "Cargo.toml" : File.join(parent_relative_path, "Cargo.toml")
+
+            begin
+              parent_manifest = fetch_file_from_host(manifest_path, fetch_submodules: true)
+              return parent_manifest if workspace_root_with_dependencies?(parent_manifest)
+            rescue Dependabot::DependencyFileNotFound
+              # Continue searching
+            end
+          end
+        end
+
+        nil
+      end
+
+      sig { returns(String) }
+      def calculate_repo_root_path
+        # Calculate relative path from current directory to repository root
+        current_dir = directory.empty? ? "/" : directory
+        return "" if current_dir == "/"
+
+        # Remove leading slash and count directory levels
+        clean_dir = current_dir.sub(%r{^/}, "")
+        levels = clean_dir.split("/").length
+
+        # Go up the required number of levels
+        Array.new(levels, "..").join("/")
       end
 
       sig { params(file: Dependabot::DependencyFile).returns(T::Array[String]) }

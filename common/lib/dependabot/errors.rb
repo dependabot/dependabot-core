@@ -368,6 +368,30 @@ module Dependabot
         "error-type": "git_token_auth_error",
         "error-detail": { message: error.message }
       }
+    when Timeout::Error, Errno::ETIMEDOUT, Errno::ECONNRESET, Errno::ECONNREFUSED, SocketError
+      # Handle common network and timeout errors
+      {
+        "error-type": "dependency_file_not_resolvable",
+        "error-detail": { message: "Network timeout or connection error: #{error.message}" }
+      }
+    when Errno::EACCES, Errno::EPERM
+      # Handle permission denied errors
+      {
+        "error-type": "dependency_file_not_resolvable",
+        "error-detail": { message: "Permission denied error: #{error.message}" }
+      }
+    when Errno::ENOENT, Errno::ENOTDIR
+      # Handle file not found errors
+      {
+        "error-type": "dependency_file_not_found",
+        "error-detail": { message: "File or directory not found: #{error.message}" }
+      }
+    when Errno::ENOSPC, Errno::EDQUOT
+      # Handle disk space errors
+      {
+        "error-type": "out_of_disk",
+        "error-detail": { message: "Insufficient disk space: #{error.message}" }
+      }
     when *Octokit::RATE_LIMITED_ERRORS
       # If we get a rate-limited error we let dependabot-api handle the
       # retry by re-enqueing the update job after the reset

@@ -181,37 +181,17 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
         Dependabot::Experiments.reset!
       end
 
-      it "records the error with the service and logs the backtrace" do
+      it "records the error with the service and logs it out" do
         expect(mock_service).to receive(:record_update_job_error).with(
-          error_type: "unknown_error",
-          error_details: nil,
+          error_type: "dependency_file_not_resolvable",
+          error_details: { message: 'Subprocess ["123456789"] failed to run. Check the job logs for error messages' },
           dependency: dependency
-        )
-
-        expect(mock_service).to receive(:record_update_job_unknown_error).with(
-          error_type: "unknown_error",
-          error_details: {
-            Dependabot::ErrorAttributes::BACKTRACE => "****** ERROR 8335 -- 101",
-            Dependabot::ErrorAttributes::MESSAGE => "the kernal is full of bees",
-            Dependabot::ErrorAttributes::CLASS => "Dependabot::SharedHelpers::HelperSubprocessFailed",
-            Dependabot::ErrorAttributes::FINGERPRINT => anything,
-            Dependabot::ErrorAttributes::PACKAGE_MANAGER => "bundler",
-            Dependabot::ErrorAttributes::JOB_ID => "123123",
-            Dependabot::ErrorAttributes::DEPENDENCIES => [],
-            Dependabot::ErrorAttributes::DEPENDENCY_GROUPS => []
-          }
         )
 
         expect(mock_service).to receive(:capture_exception)
 
-        expect(Dependabot.logger).to receive(:error).with(
-          "Error processing broken-biscuits (Dependabot::SharedHelpers::HelperSubprocessFailed)"
-        )
-        expect(Dependabot.logger).to receive(:error).with(
-          "the kernal is full of bees"
-        )
-        expect(Dependabot.logger).to receive(:error).with(
-          "****** ERROR 8335 -- 101"
+        expect(Dependabot.logger).to receive(:info).with(
+          a_string_starting_with("Handled error whilst updating broken-biscuits:")
         )
 
         handle_dependency_error
@@ -261,23 +241,17 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
         Dependabot::Experiments.reset!
       end
 
-      it "records the error with the service and logs the backtrace" do
+      it "records the error with the service and logs it out" do
         expect(mock_service).to receive(:record_update_job_error).with(
-          error_type: "unknown_error",
-          error_details: nil,
+          error_type: "dependency_file_not_resolvable",
+          error_details: { message: 'Subprocess ["123456789"] failed to run. Check the job logs for error messages' },
           dependency: dependency
         )
 
         expect(mock_service).to receive(:capture_exception)
 
-        expect(Dependabot.logger).to receive(:error).with(
-          "Error processing broken-biscuits (Dependabot::SharedHelpers::HelperSubprocessFailed)"
-        )
-        expect(Dependabot.logger).to receive(:error).with(
-          "the kernal is full of bees"
-        )
-        expect(Dependabot.logger).to receive(:error).with(
-          "****** ERROR 8335 -- 101"
+        expect(Dependabot.logger).to receive(:info).with(
+          a_string_starting_with("Handled error whilst updating broken-biscuits:")
         )
 
         handle_dependency_error

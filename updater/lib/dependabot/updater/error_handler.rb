@@ -185,6 +185,12 @@ module Dependabot
           sanitized_error = SubprocessFailed.new(msg, sentry_context: error.sentry_context)
           sanitized_error.set_backtrace(error.backtrace)
           service.capture_exception(error: sanitized_error, job: job)
+
+          # Return dependency_file_not_resolvable for HelperSubprocessFailed instead of unknown_error
+          return {
+            "error-type": "dependency_file_not_resolvable",
+            "error-detail": { message: msg }
+          }
         else
           service.capture_exception(
             error: error,
