@@ -42,15 +42,34 @@ Fork the [dependabot-core](https://github.com/dependabot/dependabot-core) reposi
 
 ### 2. Create the Ecosystem Structure
 
-**Using the Scaffold Rake Task (Recommended)**
+**Using the Quick Create Rake Task (Recommended)**
 
-To quickly generate the boilerplate structure for your ecosystem, use the provided Rake task:
+To quickly generate a complete ecosystem with both scaffolding and infrastructure updates in one command:
 
 ```bash
-rake ecosystem:scaffold[your_ecosystem_name]
+rake ecosystem:create[your_ecosystem_name]
 ```
 
-This will automatically create:
+This single command will:
+1. Generate the complete boilerplate structure for your ecosystem
+2. Update all supporting infrastructure files automatically
+3. Configure CI/CD workflows, issue labels, and development scripts
+
+**Using Individual Rake Tasks**
+
+Alternatively, you can run the scaffold and infrastructure update tasks separately:
+
+```bash
+# Step 1: Generate the ecosystem structure
+rake ecosystem:scaffold[your_ecosystem_name]
+
+# Step 2: Update supporting infrastructure
+rake ecosystem:update_infrastructure[your_ecosystem_name]
+```
+
+**What Gets Created**
+
+The scaffold task automatically creates:
 - Directory structure with all required folders
 - Boilerplate for required classes (FileFetcher, FileParser, UpdateChecker, FileUpdater)
 - Optional classes with deletion comments (MetadataFinder, Version, Requirement)
@@ -63,11 +82,11 @@ If the ecosystem directory already exists, you can control how existing files ar
 
 ```bash
 # Interactive mode (default) - prompts for each existing file
-rake ecosystem:scaffold[your_ecosystem_name]
-rake ecosystem:scaffold[your_ecosystem_name,ask]
+rake ecosystem:create[your_ecosystem_name]
+rake ecosystem:create[your_ecosystem_name,ask]
 
 # Skip mode - preserves all existing files without prompting
-rake ecosystem:scaffold[your_ecosystem_name,skip]
+rake ecosystem:create[your_ecosystem_name,skip]
 
 # Force mode - overwrites all existing files without prompting
 rake ecosystem:scaffold[your_ecosystem_name,force]
@@ -158,52 +177,77 @@ Ensure your tests cover:
 
 ### 5. Update Supporting Infrastructure
 
-Your ecosystem implementation requires updates to numerous supporting files throughout the repository:
+Your ecosystem implementation requires updates to numerous supporting files throughout the repository.
 
-#### GitHub Workflows (`.github/workflows/`)
-- Add your ecosystem to CI/CD workflows
-  - [ci.yml](https://github.com/dependabot/dependabot-core/blob/main/.github/workflows/ci.yml)
-  - [ci-filters.yml](https://github.com/dependabot/dependabot-core/blob/main/.github/ci-filters.yml)
-  - [issue-labeler.yml](https://github.com/dependabot/dependabot-core/blob/main/.github/issue-labeler.yml)
-- Update test matrices to include your ecosystem
-  - [smoke-filters.yml](https://github.com/dependabot/dependabot-core/blob/main/.github/smoke-filters.yml)
-  - [smoke-matrix.json](https://github.com/dependabot/dependabot-core/blob/main/.github/smoke-matrix.json)
-- Add any ecosystem-specific build steps
-  - [image-branch.yml](https://github.com/dependabot/dependabot-core/blob/main/.github/workflows/image-branch.yml)
-  - [image-latest.yml](https://github.com/dependabot/dependabot-core/blob/main/.github/workflows/image-latest.yml)
+**Automated Infrastructure Updates** (Recommended)
 
-#### Development Scripts
-- **Dry-run script**: Update the dry-run script to support your ecosystem for local testing
-  - [docker-dev-shell](https://github.com/dependabot/dependabot-core/blob/main/bin/docker-dev-shell)
-  - [dry-run.rb](https://github.com/dependabot/dependabot-core/blob/main/bin/dry-run.rb)
-- **Development scripts**: Update any development convenience scripts
-  - [script/dependabot](https://github.com/dependabot/dependabot-core/blob/main/script/dependabot)
+After scaffolding your ecosystem, you can automatically update most supporting infrastructure files using the provided Rake task:
+
+```bash
+bundle exec rake ecosystem:update_infrastructure[your_ecosystem_name]
+```
+
+This automated task will update the following files:
+- GitHub CI/CD workflows (ci.yml, images-branch.yml, images-latest.yml)
+- CI filter configurations (ci-filters.yml, smoke-filters.yml, smoke-matrix.json)
+- Issue labeler configuration (issue-labeler.yml)
+- Development scripts (bin/dry-run.rb, script/dependabot)
+- Omnibus gem configuration (omnibus/lib/dependabot/omnibus.rb)
+- Updater setup configuration (updater/lib/dependabot/setup.rb)
+- Rake helper gemspecs (rakelib/support/helpers.rb)
+
+The task is idempotent and will skip files that already contain your ecosystem configuration.
+
+**Rollback Strategy for Testing**
+
+When testing the scaffold and infrastructure automation tasks locally, you may want to rollback changes:
+
+**For CI Environments:**
+- No rollback is required - CI jobs run in isolated, temporary environments that are destroyed after completion.
+
+**For Local Development:**
+- Before running automation tasks, ensure your working tree is clean (no uncommitted changes).
+- Use git to rollback changes after testing:
+  ```bash
+  # Option 1: Reset to clean state
+  git reset --hard HEAD    # Revert tracked files
+  git clean -fd            # Remove untracked files and directories
+
+  # Option 2: Stash and restore
+  git stash -u             # Save all current changes including untracked files
+  rake ecosystem:scaffold[test_ecosystem]
+  rake ecosystem:update_infrastructure[test_ecosystem]
+  # Run validation/tests
+  git reset --hard HEAD    # Revert tracked files
+  git clean -fd            # Remove untracked files
+  git stash pop            # Restore previous changes
+  ```
+
+**Manual Updates** (If Needed)
+
+For files not covered by the automated task or requiring ecosystem-specific customization:
+
 #### Docker Configuration
-- **docker-dev-shell**: Add your ecosystem to the development Docker environment
-  - [Dockerfile.updater-core](https://github.com/dependabot/dependabot-core/blob/main/Dockerfile.updater-core)
-- **Ecosystem Dockerfile**: Update Docker configurations if your ecosystem requires specific dependencies
+- **Ecosystem Dockerfile**: Create or update Docker configurations if your ecosystem requires specific dependencies
   - [Example Helm Dockerfile](https://github.com/dependabot/dependabot-core/blob/main/helm/Dockerfile)
+- **Updater Core**: Add ecosystem-specific dependencies to the core updater image if needed
+  - [Dockerfile.updater-core](https://github.com/dependabot/dependabot-core/blob/main/Dockerfile.updater-core)
 
 #### Dependency Management
-- **Omnibus gem**: Add your ecosystem to the omnibus gem configuration
-  - [updater/GemFile](https://github.com/dependabot/dependabot-core/blob/main/updater/Gemfile)
-  - [updater/GemFile.lock](https://github.com/dependabot/dependabot-core/blob/main/updater/Gemfile.lock)
-  - [dependabot-omnibus.gemspec](https://github.com/dependabot/dependabot-core/blob/main/omnibus/dependabot-omnibus.gemspec)
-  - [omnibus.rb](https://github.com/dependabot/dependabot-core/blob/main/omnibus/lib/dependabot/omnibus.rb)
-  - [Rakefile](https://github.com/dependabot/dependabot-core/blob/main/Rakefile)
+- **Omnibus gem dependencies**: After running the infrastructure update task, update gem dependencies:
+  ```bash
+  cd omnibus && bundle install
+  cd ../updater && bundle install
+  ```
 - **Gemfile**: Update if your ecosystem introduces new Ruby dependencies
-  - [GemFile](https://github.com/dependabot/dependabot-core/blob/main/Gemfile)
-  - [GemFile.lock](https://github.com/dependabot/dependabot-core/blob/main/Gemfile.lock)
-- **Package manifests**: Update any relevant package management files
-  - [Example Helm Gemspec](https://github.com/dependabot/dependabot-core/blob/main/helm/dependabot-helm.gemspec)
-  - [Example Helm Bundle Config](https://github.com/dependabot/dependabot-core/blob/main/helm/.bundle/config)
+  - [Gemfile](https://github.com/dependabot/dependabot-core/blob/main/Gemfile)
+  - [Gemfile.lock](https://github.com/dependabot/dependabot-core/blob/main/Gemfile.lock)
 
-#### Documentation and Configuration
-- **README updates**: Add your ecosystem to relevant documentation
+#### Documentation
+- **README**: Create a README for your ecosystem explaining its purpose and any special considerations
   - [Example Helm README](https://github.com/dependabot/dependabot-core/blob/main/helm/README.md)
+- **Sorbet Config**: Update Sorbet configuration if needed
   - [Sorbet Config](https://github.com/dependabot/dependabot-core/blob/main/sorbet/config)
-- **Configuration schemas**: Update any configuration validation schemas
-  -  [setup.rb](https://github.com/dependabot/dependabot-core/blob/main/updater/lib/dependabot/setup.rb)
 
 
 ### 6. Implement Native Helpers (if needed)
