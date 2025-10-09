@@ -139,37 +139,15 @@ module Dependabot
 
     sig { returns(String) }
     def default_branch
-      return fetch_default_branch_from_github if job.source.provider == "github"
-
-      Dependabot.logger.warn(
-        "Dependency submissions are not fully supported for provider '#{job.source.provider}'. " \
-        "Substituting 'main' as default branch."
-      )
-      "main"
-    end
-
-    sig { returns(String) }
-    def fetch_default_branch_from_github
-      @fetch_default_branch_from_github ||= T.let(
-        github_client.fetch_default_branch(job.source.repo),
-        T.nilable(String)
-      )
-    rescue Octokit::NotFound
-      # This is unlikely to happen, but if it does it means the repository has been deleted
-      # while we are working, so let's handle it properly.
-      raise Dependabot::RepoNotFound, job.source
-    end
-
-    sig { returns(Dependabot::Clients::GithubWithRetries) }
-    def github_client
-      @github_client ||=
-        T.let(
-          Dependabot::Clients::GithubWithRetries.for_source(
-            source: job.source,
-            credentials: job.credentials
-          ),
-          T.nilable(Dependabot::Clients::GithubWithRetries)
-        )
+      SharedHelpers.with_git_configured(credentials: job.credentials) do
+        Dir.chdir(T.must(job.repo_contents_path)) do
+          branch = SharedHelpers.run_shell_command(
+            "git symbolic-ref --short refs/remotes/origin/HEAD",
+            stderr_to_stdout: false
+          )
+          branch.strip.sub("origin/", "refs/heads/")
+        end
+      end
     end
   end
 end
