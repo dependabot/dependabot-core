@@ -1040,6 +1040,149 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
           expect(json_lockfile["develop"]["pytest"].keys.first).to eq("extras")
         end
       end
+
+      context "when the same dependency exists in both default and develop sections" do
+        let(:dependency_name) { "pytest" }
+        let(:pipfile) do
+          Dependabot::DependencyFile.new(
+            name: "Pipfile",
+            content: <<~PIPFILE
+              [[source]]
+              name = "pypi"
+              url = "https://pypi.org/simple"
+              verify_ssl = true
+
+              [packages]
+              pytest = "==6.0.0"
+
+              [dev-packages]
+              pytest = {extras = ["coverage"], version = "==6.0.0"}
+
+              [requires]
+              python_version = "3.9"
+            PIPFILE
+          )
+        end
+
+        let(:lockfile) do
+          Dependabot::DependencyFile.new(
+            name: "Pipfile.lock",
+            content: <<~LOCKFILE
+              {
+                  "_meta": {
+                      "hash": {
+                          "sha256": "example_hash"
+                      },
+                      "pipfile-spec": 6,
+                      "requires": {
+                          "python_version": "3.9"
+                      },
+                      "sources": [
+                          {
+                              "name": "pypi",
+                              "url": "https://pypi.org/simple",
+                              "verify_ssl": true
+                          }
+                      ]
+                  },
+                  "default": {
+                      "pytest": {
+                          "hashes": [
+                              "sha256:default_hash_1"
+                          ],
+                          "index": "pypi",
+                          "version": "==6.0.0"
+                      }
+                  },
+                  "develop": {
+                      "pytest": {
+                          "extras": [
+                              "coverage"
+                          ],
+                          "hashes": [
+                              "sha256:develop_hash_1"
+                          ],
+                          "index": "pypi",
+                          "version": "==6.0.0"
+                      }
+                  }
+              }
+            LOCKFILE
+          )
+        end
+
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "pytest",
+            version: "6.2.0",
+            previous_version: "6.0.0",
+            package_manager: "pip",
+            requirements: [{
+              requirement: "==6.2.0",
+              file: "Pipfile",
+              source: nil,
+              groups: ["develop"]
+            }],
+            previous_requirements: [{
+              requirement: "==6.0.0",
+              file: "Pipfile",
+              source: nil,
+              groups: ["develop"]
+            }]
+          )
+        end
+
+        it "correctly scopes extras lookup to the specific section being updated" do
+          updated_lockfile = updated_files.find { |f| f.name == "Pipfile.lock" }
+          json_lockfile = JSON.parse(updated_lockfile.content)
+
+          # The develop section should be updated and preserve its extras
+          expect(json_lockfile["develop"]["pytest"]["version"]).to eq("==6.2.0")
+          expect(json_lockfile["develop"]["pytest"]["extras"]).to eq(["coverage"])
+          expect(json_lockfile["develop"]["pytest"].keys.first).to eq("extras")
+
+          # The default section should remain unchanged and not have extras
+          expect(json_lockfile["default"]["pytest"]["version"]).to eq("==6.0.0")
+          expect(json_lockfile["default"]["pytest"]).not_to have_key("extras")
+        end
+
+        context "when updating the default section instead" do
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "pytest",
+              version: "6.2.0",
+              previous_version: "6.0.0",
+              package_manager: "pip",
+              requirements: [{
+                requirement: "==6.2.0",
+                file: "Pipfile",
+                source: nil,
+                groups: ["default"]
+              }],
+              previous_requirements: [{
+                requirement: "==6.0.0",
+                file: "Pipfile",
+                source: nil,
+                groups: ["default"]
+              }]
+            )
+          end
+
+          it "correctly updates the default section without affecting develop section" do
+            updated_lockfile = updated_files.find { |f| f.name == "Pipfile.lock" }
+            json_lockfile = JSON.parse(updated_lockfile.content)
+
+            # The default section should be updated and remain without extras
+            expect(json_lockfile["default"]["pytest"]["version"]).to eq("==6.2.0")
+            expect(json_lockfile["default"]["pytest"]).not_to have_key("extras")
+
+            # The develop section should remain unchanged with its extras
+            expect(json_lockfile["develop"]["pytest"]["version"]).to eq("==6.0.0")
+            expect(json_lockfile["develop"]["pytest"]["extras"]).to eq(["coverage"])
+            expect(json_lockfile["develop"]["pytest"].keys.first).to eq("extras")
+          end
+        end
+      end
     end
   end
 end
