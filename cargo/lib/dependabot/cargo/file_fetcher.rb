@@ -332,7 +332,7 @@ module Dependabot
 
           # Try each parent directory level
           (path_parts.length - 1).downto(0) do |i|
-            parent_path = T.must(path_parts[0..i]).join("/")
+            parent_path = path_parts[0..i].join("/")
             manifest_path = File.join(parent_path, "Cargo.toml")
 
             begin
