@@ -301,8 +301,7 @@ module Dependabot
         params(workspace_member: Dependabot::DependencyFile).returns(T.nilable(Dependabot::DependencyFile))
       end
       def find_workspace_root(workspace_member)
-        current_dir = workspace_member.name.rpartition("/").first
-        current_dir = "." if current_dir.empty?
+        current_dir = workspace_member.name.rpartition("/").first.empty? ? "." : workspace_member.name.rpartition("/").first
 
         workspace_root_dir = parsed_file(workspace_member).dig("package", "workspace")
         unless workspace_root_dir.nil?
