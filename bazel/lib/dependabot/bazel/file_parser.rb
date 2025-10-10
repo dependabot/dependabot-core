@@ -39,8 +39,6 @@ module Dependabot
           dependencies.concat(parse_build_file(file))
         end
 
-        debugger
-
         dependencies.uniq { |dep| [dep.name, dep.version] }
       end
 
