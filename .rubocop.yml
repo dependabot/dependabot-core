@@ -37,8 +37,6 @@ Layout/FirstMethodParameterLineBreak:
   Enabled: true
 Layout/MultilineMethodParameterLineBreaks:
   Enabled: true
-Layout/RescueEnsureAlignment:
-  Enabled: false
 Layout/LineContinuationLeadingSpace:
   Enabled: false
 
@@ -100,14 +98,17 @@ Sorbet/TrueSigil:
   Enabled: true
   Exclude:
     - "**/spec/**/*"
+    - "rakelib/support/test/**/*"
 Sorbet/StrictSigil:
   Enabled: true
   Exclude:
     - "**/spec/**/*"
     - "bin/**/*"
+    - "rakelib/support/test/**/*"
 Sorbet/StrongSigil:
   Exclude:
     - "**/spec/**/*"
+    - "rakelib/support/test/**/*"
 
 Style/AccessorGrouping:
   EnforcedStyle: "separated"

@@ -22,24 +22,19 @@ module Dependabot
       sig { returns(T.nilable(String)) }
       attr_reader :directory
 
-      sig { returns(T.nilable(Integer)) }
-      attr_reader :pr_number
-
       sig do
         params(
           name: String,
           version: T.nilable(String),
           removed: T::Boolean,
-          directory: T.nilable(String),
-          pr_number: T.nilable(Integer)
+          directory: T.nilable(String)
         ).void
       end
-      def initialize(name:, version:, removed: false, directory: nil, pr_number: nil)
+      def initialize(name:, version:, removed: false, directory: nil)
         @name = name
         @version = version
         @removed = removed
         @directory = directory
-        @pr_number = pr_number
       end
 
       sig { returns(T::Hash[Symbol, T.untyped]) }
@@ -48,8 +43,7 @@ module Dependabot
           name: name,
           version: version,
           removed: removed? || nil,
-          directory: directory,
-          pr_number: pr_number
+          directory: directory
         }.compact
       end
 
@@ -62,20 +56,31 @@ module Dependabot
     sig { returns(T::Array[Dependency]) }
     attr_reader :dependencies
 
+    sig { returns(T.nilable(Integer)) }
+    attr_reader :pr_number
+
     sig { params(attributes: T::Hash[Symbol, T.untyped]).returns(T::Array[Dependabot::PullRequest]) }
     def self.create_from_job_definition(attributes)
       attributes.fetch(:existing_pull_requests).map do |pr|
-        new(
+        case pr
+        when Array
+          pr_number = pr.first["pr-number"]
+        when Hash
+          pr_number = pr["pr-number"]
+          pr = pr["dependencies"] # now pr becomes the dependencies array from the pr
+        end
+
+        dependencies =
           pr.map do |dep|
             Dependency.new(
               name: dep.fetch("dependency-name"),
               version: dep.fetch("dependency-version", nil),
               removed: dep.fetch("dependency-removed", false),
-              directory: dep.fetch("directory", nil),
-              pr_number: dep.fetch("pr-number", nil)&.to_i
+              directory: dep.fetch("directory", nil)
             )
           end
-        )
+
+        new(dependencies, pr_number: pr_number)
       end
     end
 
@@ -93,9 +98,10 @@ module Dependabot
       )
     end
 
-    sig { params(dependencies: T::Array[PullRequest::Dependency]).void }
-    def initialize(dependencies)
+    sig { params(dependencies: T::Array[PullRequest::Dependency], pr_number: T.nilable(Integer)).void }
+    def initialize(dependencies, pr_number: nil)
       @dependencies = dependencies
+      @pr_number = pr_number
     end
 
     sig { params(other: PullRequest).returns(T::Boolean) }

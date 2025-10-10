@@ -1,0 +1,62 @@
+{
+  "job": {
+    "command": "graph",
+    "allowed-updates": [
+      {
+        "dependency-type": "direct",
+        "update-type": "all"
+      },
+      {
+        "dependency-type": "indirect",
+        "update-type": "security"
+      }
+    ],
+    "credentials": [
+      {
+        "type": "git_source",
+        "host": "github.com",
+        "username": "x-access-token",
+        "password": "v1.exampletokenfromgithubinityesitisforsure"
+      },
+      {
+        "type": "rubygems_index",
+        "host": "my.rubygems-host.org",
+        "token": "secret"
+      }
+    ],
+    "credentials-metadata": [
+      {
+        "type": "git_source",
+        "host": "github.com"
+      },
+      {
+        "type": "rubygems_index",
+        "host": "my.rubygems-host.org"
+      }
+    ],
+    "dependencies": null,
+    "existing-pull-requests": [],
+    "ignore-conditions": [],
+    "security-advisories": [],
+    "package_manager": "bundler",
+    "repo-name": "dependabot-fixtures/dependabot-test-ruby-package",
+    "source": {
+      "provider": "github",
+      "repo": "dependabot-fixtures/dependabot-test-ruby-package",
+      "directories": [
+        "/foo"
+      ],
+      "branch": "develop",
+      "hostname": "github.com",
+      "api-endpoint": "https://api.github.com/"
+    },
+    "lockfile-only": false,
+    "requirements-update-strategy": null,
+    "update-subdependencies": false,
+    "updating-a-pull-request": false,
+    "vendor-dependencies": false,
+    "security-updates-only": false
+  },
+  "base64_dependency_files":[],
+  "base_commit_sha":"1c6331732c41e4557a16dacb82534f1d1c831848"
+}

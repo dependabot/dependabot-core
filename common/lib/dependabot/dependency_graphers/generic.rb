@@ -25,7 +25,7 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def filtered_dependency_files
-        @dependency_files.reject { |f| f.support_file? || f.vendored_file? }
+        dependency_files.reject { |f| f.support_file? || f.vendored_file? }
       end
 
       # Our generic strategy is to check if the parser has attached a `depends_on` key to the Dependency's
@@ -36,9 +36,9 @@ module Dependabot
       end
 
       # TODO: Delegate this to ecosystem-specific base classes
-      sig { override.params(package_manager: String).returns(String) }
-      def purl_pkg_for(package_manager)
-        case package_manager
+      sig { override.params(dependency: Dependabot::Dependency).returns(String) }
+      def purl_pkg_for(dependency)
+        case dependency.package_manager
         when "bundler"
           "gem"
         when "npm_and_yarn", "bun"

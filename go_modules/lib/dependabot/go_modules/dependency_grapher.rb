@@ -11,6 +11,8 @@ module Dependabot
     class DependencyGrapher < Dependabot::DependencyGraphers::Base
       sig { override.returns(Dependabot::DependencyFile) }
       def relevant_dependency_file
+        # This cannot realistically happen as the parser will throw a runtime error on init without a go_mod file,
+        # but this will avoid surprises if anything changes.
         raise DependabotError, "No go.mod present in dependency files." unless go_mod
 
         T.must(go_mod)
@@ -32,14 +34,23 @@ module Dependabot
         return @go_mod if defined?(@go_mod)
 
         @go_mod = T.let(
-          @dependency_files.find { |f| f.name = "go.mod" },
+          dependency_files.find { |f| f.name = "go.mod" },
           T.nilable(Dependabot::DependencyFile)
         )
       end
 
-      sig { override.params(_package_manager: String).returns(String) }
-      def purl_pkg_for(_package_manager)
-        "go_modules"
+      # In Go, the `v` is considered a canonical part of the version and omitting it can make
+      # comparisons tricky
+      sig { params(dependency: Dependabot::Dependency).returns(String) }
+      def purl_version_for(dependency)
+        return "" unless dependency.version
+
+        "@v#{dependency.version}"
+      end
+
+      sig { override.params(_dependency: Dependabot::Dependency).returns(String) }
+      def purl_pkg_for(_dependency)
+        "golang"
       end
     end
   end
