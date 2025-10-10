@@ -19,26 +19,18 @@ module Dependabot
     include NoticesHelpers
 
     sig do
-      params(job: Dependabot::Job, job_definition: T::Hash[String, T.untyped]).returns(Dependabot::DependencySnapshot)
+      params(job: Dependabot::Job, fetched_files: Dependabot::FetchedFiles).returns(Dependabot::DependencySnapshot)
     end
-    def self.create_from_job_definition(job:, job_definition:)
-      decoded_dependency_files = job_definition.fetch("base64_dependency_files").map do |a|
-        file = Dependabot::DependencyFile.new(**a.transform_keys(&:to_sym))
-        unless file.binary? && !file.deleted?
-          file.content = Base64.decode64(T.must(file.content)).force_encoding("utf-8")
-        end
-        file
-      end
-
+    def self.create_from_job_definition(job:, fetched_files:)
       if job.source.directories
         # The job.source.directory may contain globs, so we use the directories from the fetched files
-        job.source.directories = decoded_dependency_files.flat_map(&:directory).uniq
+        job.source.directories = fetched_files.dependency_files.flat_map(&:directory).uniq
       end
 
       new(
         job: job,
-        base_commit_sha: job_definition.fetch("base_commit_sha"),
-        dependency_files: decoded_dependency_files
+        base_commit_sha: fetched_files.base_commit_sha,
+        dependency_files: fetched_files.dependency_files
       )
     end
 

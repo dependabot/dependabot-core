@@ -7,7 +7,7 @@ require "dependabot/bundler"
 require "tmpdir"
 
 RSpec.describe Dependabot::UpdateGraphCommand do
-  subject(:job) { described_class.new }
+  subject(:job) { described_class.new(fetched_files) }
 
   let(:service) do
     instance_double(
@@ -23,6 +23,19 @@ RSpec.describe Dependabot::UpdateGraphCommand do
   end
   let(:job_definition) do
     JSON.parse(fixture("file_fetcher_output/output-directories-only.json"))
+  end
+  let(:fetched_files) do
+    # We no longer write encoded files to disk, need to migrate the fixtures in this test
+    Dependabot::FetchedFiles.new(
+      dependency_files: job_definition["base64_dependency_files"].map do |file|
+        Dependabot::DependencyFile.new(
+          name: file["name"],
+          content: Base64.decode64(file["content"]),
+          directory: file["directory"] || "/"
+        )
+      end,
+      base_commit_sha: job_definition["base_commit_sha"]
+    )
   end
   let(:job_id) { "123123" }
 
