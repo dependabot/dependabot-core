@@ -29,7 +29,7 @@ module Dependabot
         Dependabot::UpdateGraphProcessor.new(
           service: service,
           job: job,
-          base_commit_sha: base_commit_sha,
+          base_commit_sha: @fetched_files.base_commit_sha,
           dependency_files: @fetched_files.dependency_files
         ).run
       rescue StandardError => e
