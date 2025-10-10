@@ -30,7 +30,7 @@ module Dependabot
       new(
         job: job,
         base_commit_sha: fetched_files.base_commit_sha,
-        dependency_files: fetched_files.dependency_files,
+        dependency_files: fetched_files.dependency_files
       )
     end
 

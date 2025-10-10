@@ -77,8 +77,8 @@ module Dependabot
     sig { returns(Dependabot::FetchedFiles) }
     def files
       Dependabot::FetchedFiles.new(
-        dependency_files: job.source.directories ? dependency_files_for_multi_directories : dependency_files,
-        base_commit_sha:,
+        dependency_files: T.must(job.source.directories ? dependency_files_for_multi_directories : dependency_files),
+        base_commit_sha: T.must(base_commit_sha)
       )
     end
 
