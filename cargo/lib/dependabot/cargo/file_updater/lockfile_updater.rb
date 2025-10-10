@@ -211,11 +211,6 @@ module Dependabot
             raise Dependabot::DependencyFileNotEvaluatable, "Dependabot only supports toolchain 1.68 and up."
           end
 
-          # ambiguous package specification
-          if (match = stdout.match(/There are multiple `([^`]+)` packages in your project, and the specification `([^`]+)` is ambiguous\./))
-            raise Dependabot::DependencyFileNotEvaluatable, "Ambiguous package specification: #{match[2]}"
-          end
-
           # package doesn't exist in the index
           if (match = stdout.match(/no matching package named `([^`]+)` found/))
             raise Dependabot::DependencyFileNotResolvable, match[1]
