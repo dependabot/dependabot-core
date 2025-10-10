@@ -60,9 +60,10 @@ module Dependabot
 
       sig { params(pom: Nokogiri::XML::Document).returns(T.nilable(Dependabot::Source)) }
       def look_up_source_in_pom(pom)
+        # Prefer scm url, followed by project url, and finally issue management url (#2084)
         potential_source_urls = [
-          pom.at_css("project > url")&.content,
           pom.at_css("project > scm > url")&.content,
+          pom.at_css("project > url")&.content,
           pom.at_css("project > issueManagement > url")&.content
         ].compact
 
