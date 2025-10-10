@@ -1,0 +1,18 @@
+{
+  "name": "Cargo.toml",
+  "path": "Cargo.toml",
+  "sha": "workspace_root_with_members_abc123",
+  "size": 300,
+  "url": "https://api.github.com/repos/gocardless/bump/contents/Cargo.toml?ref=sha",
+  "html_url": "https://github.com/gocardless/bump/blob/sha/Cargo.toml",
+  "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/workspace_root_with_members_abc123",
+  "download_url": "https://raw.githubusercontent.com/gocardless/bump/sha/Cargo.toml",
+  "type": "file",
+  "content": "W3dvcmtzcGFjZV0KbWVtYmVycyA9IFsiaW50ZXJuYWwiLCAiZXhhbXBsZXMv\nKiJdCgpbd29ya3NwYWNlLmRlcGVuZGVuY2llc10KYW5zdHlsZSA9ICIxLjAu\nOCIKc2VyZGUgPSB7IHZlcnNpb24gPSAiMS4wLjIwNCIsIGZlYXR1cmVzID0g\nWyJkZXJpdmUiXSB9Cg==",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/gocardless/bump/contents/Cargo.toml?ref=sha",
+    "git": "https://api.github.com/repos/gocardless/bump/git/blobs/workspace_root_with_members_abc123",
+    "html": "https://github.com/gocardless/bump/blob/sha/Cargo.toml"
+  }
+}
