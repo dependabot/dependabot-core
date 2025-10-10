@@ -15,7 +15,9 @@ module Dependabot
 
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
-        filenames.include?(VCPKG_JSON_FILENAME)
+        filenames.any? do |filename|
+          [VCPKG_JSON_FILENAME, VCPKG_CONFIGURATION_JSON_FILENAME].include?(filename)
+        end
       end
 
       sig { override.returns(String) }
