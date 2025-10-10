@@ -20,7 +20,7 @@ module Dependabot
     sig { override.returns(T.nilable(String)) }
     attr_reader :base_commit_sha
 
-    sig { override.returns(T.untyped) }
+    sig { override.void }
     def perform_job # rubocop:disable Metrics/AbcSize
       @base_commit_sha = T.let(nil, T.nilable(String))
 
@@ -141,13 +141,11 @@ module Dependabot
 
     sig { returns(T.nilable(T::Array[Dependabot::DependencyFile])) }
     def files_from_multidirectories
-      has_glob = T.let(false, T::Boolean)
       path = T.must(job.repo_contents_path)
       directories = Dir.chdir(path) do
         job.source.directories&.map do |dir|
           next dir unless glob?(dir)
 
-          has_glob = true
           dir = dir.delete_prefix("/")
           Dir.glob(dir, File::FNM_DOTMATCH).select { |d| File.directory?(d) }.map { |d| "/#{d}" }
         end&.flatten
