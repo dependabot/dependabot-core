@@ -24,6 +24,10 @@ module Dependabot
 
     MAX_REQUEST_RETRIES = 3
     INVALID_REQUEST_MSG = /The request contains invalid or unauthorized changes/
+    NETWORK_ERRORS_TO_RESCUE_FROM = [
+      HTTP::ConnectionError,
+      OpenSSL::SSL::SSLError
+    ].freeze
 
     sig { params(base_url: String, job_id: T.any(String, Integer), job_token: String).void }
     def initialize(base_url, job_id, job_token)
@@ -49,7 +53,7 @@ module Dependabot
         elsif response.code >= 400
           raise ApiError, response.body
         end
-      rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
+      rescue *NETWORK_ERRORS_TO_RESCUE_FROM
         retry_count ||= 0
         retry_count += 1
         raise if retry_count > MAX_REQUEST_RETRIES
@@ -76,15 +80,7 @@ module Dependabot
             "base-commit-sha": base_commit_sha
           }
         }
-        response = http_client.post(api_url, json: body)
-        raise ApiError, response.body if response.code >= 400
-      rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
-        retry_count ||= 0
-        retry_count += 1
-        raise if retry_count > MAX_REQUEST_RETRIES
-
-        sleep(rand(3.0..10.0))
-        retry
+        send_http_request_with_retries(:post, api_url, body)
       end
     end
 
@@ -96,15 +92,7 @@ module Dependabot
 
         api_url = "#{base_url}/update_jobs/#{job_id}/close_pull_request"
         body = { data: { "dependency-names": dependency_names, reason: reason } }
-        response = http_client.post(api_url, json: body)
-        raise ApiError, response.body if response.code >= 400
-      rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
-        retry_count ||= 0
-        retry_count += 1
-        raise if retry_count > MAX_REQUEST_RETRIES
-
-        sleep(rand(3.0..10.0))
-        retry
+        send_http_request_with_retries(:post, api_url, body)
       end
     end
 
@@ -123,15 +111,7 @@ module Dependabot
             "error-details": error_details
           }
         }
-        response = http_client.post(api_url, json: body)
-        raise ApiError, response.body if response.code >= 400
-      rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
-        retry_count ||= 0
-        retry_count += 1
-        raise if retry_count > MAX_REQUEST_RETRIES
-
-        sleep(rand(3.0..10.0))
-        retry
+        send_http_request_with_retries(:post, api_url, body)
       end
     end
 
@@ -158,15 +138,7 @@ module Dependabot
             "warn-description": warn_description
           }
         }
-        response = http_client.post(api_url, json: body)
-        raise ApiError, response.body if response.code >= 400
-      rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
-        retry_count ||= 0
-        retry_count += 1
-        raise if retry_count > MAX_REQUEST_RETRIES
-
-        sleep(rand(3.0..10.0))
-        retry
+        send_http_request_with_retries(:post, api_url, body)
       end
     end
 
@@ -187,15 +159,7 @@ module Dependabot
             "error-details": error_details
           }
         }
-        response = http_client.post(api_url, json: body)
-        raise ApiError, response.body if response.code >= 400
-      rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
-        retry_count ||= 0
-        retry_count += 1
-        raise if retry_count > MAX_REQUEST_RETRIES
-
-        sleep(rand(3.0..10.0))
-        retry
+        send_http_request_with_retries(:post, api_url, body)
       end
     end
 
@@ -207,15 +171,7 @@ module Dependabot
 
         api_url = "#{base_url}/update_jobs/#{job_id}/mark_as_processed"
         body = { data: { "base-commit-sha": base_commit_sha } }
-        response = http_client.patch(api_url, json: body)
-        raise ApiError, response.body if response.code >= 400
-      rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
-        retry_count ||= 0
-        retry_count += 1
-        raise if retry_count > MAX_REQUEST_RETRIES
-
-        sleep(rand(3.0..10.0))
-        retry
+        send_http_request_with_retries(:patch, api_url, body)
       end
     end
 
@@ -231,15 +187,7 @@ module Dependabot
             dependency_files: dependency_files
           }
         }
-        response = http_client.post(api_url, json: body)
-        raise ApiError, response.body if response.code >= 400
-      rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
-        retry_count ||= 0
-        retry_count += 1
-        raise if retry_count > MAX_REQUEST_RETRIES
-
-        sleep(rand(3.0..10.0))
-        retry
+        send_http_request_with_retries(:post, api_url, body)
       end
     end
 
@@ -252,15 +200,7 @@ module Dependabot
         body = {
           data: dependency_submission
         }
-        response = http_client.post(api_url, json: body)
-        raise ApiError, response.body if response.code >= 400
-      rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
-        retry_count ||= 0
-        retry_count += 1
-        raise if retry_count > MAX_REQUEST_RETRIES
-
-        sleep(rand(3.0..10.0))
-        retry
+        send_http_request_with_retries(:post, api_url, body)
       end
     end
 
@@ -271,15 +211,7 @@ module Dependabot
         body = {
           data: { ecosystem_versions: ecosystem_versions }
         }
-        response = http_client.post(api_url, json: body)
-        raise ApiError, response.body if response.code >= 400
-      rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
-        retry_count ||= 0
-        retry_count += 1
-        raise if retry_count > MAX_REQUEST_RETRIES
-
-        sleep(rand(3.0..10.0))
-        retry
+        send_http_request_with_retries(:post, api_url, body)
       end
     end
 
@@ -302,7 +234,7 @@ module Dependabot
         response = http_client.post(api_url, json: body)
         # We treat metrics as fire-and-forget, so just warn if they fail.
         Dependabot.logger.debug("Unable to report metric '#{metric}'.") if response.code >= 400
-      rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
+      rescue *NETWORK_ERRORS_TO_RESCUE_FROM
         Dependabot.logger.debug("Unable to report metric '#{metric}'.")
       end
     end
@@ -403,6 +335,28 @@ module Dependabot
     # rubocop:enable Metrics/MethodLength
 
     private
+
+    sig do
+      params(
+        request_type: T.any(Symbol, String),
+        api_url: String,
+        json: T::Hash[T.untyped, T.untyped]
+      ).void
+    end
+    def send_http_request_with_retries(request_type, api_url, json)
+      retry_count ||= 0
+
+      begin
+        response = http_client.public_send(request_type, api_url, json: json)
+        raise ApiError, response.body if response.code >= 400
+      rescue *NETWORK_ERRORS_TO_RESCUE_FROM => e
+        retry_count += 1
+        raise e if retry_count > MAX_REQUEST_RETRIES
+
+        sleep(rand(3.0..10.0))
+        retry
+      end
+    end
 
     # Update return type to allow returning a Hash or nil
     sig do
