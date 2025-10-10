@@ -50,14 +50,14 @@ RSpec.describe Dependabot::Updater::Operations::RefreshVersionUpdatePullRequest 
   let(:job) do
     Dependabot::Job.new_update_job(
       job_id: "1558782000",
-      job_definition: job_definition_with_fetched_files
+      job_definition:
     )
   end
 
   let(:dependency_snapshot) do
     Dependabot::DependencySnapshot.create_from_job_definition(
       job: job,
-      job_definition: job_definition_with_fetched_files
+      fetched_files:,
     )
   end
 
@@ -81,13 +81,8 @@ RSpec.describe Dependabot::Updater::Operations::RefreshVersionUpdatePullRequest 
   let(:supported_versions) { %w(2 3) }
   let(:deprecated_versions) { %w(1) }
 
-  let(:job_definition_with_fetched_files) do
-    job_definition.merge(
-      {
-        "base_commit_sha" => "mock-sha",
-        "base64_dependency_files" => encode_dependency_files(dependency_files)
-      }
-    )
+  let(:fetched_files) do
+    Dependabot::FetchedFiles.new(base_commit_sha: "mock-sha", dependency_files:)
   end
 
   let(:dependency_files) do

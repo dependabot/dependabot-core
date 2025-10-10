@@ -1,8 +1,8 @@
 # typed: strict
 # frozen_string_literal: true
 
-require "base64"
 require "dependabot/base_command"
+require "dependabot/fetched_files"
 require "dependabot/errors"
 require "dependabot/git_metadata_fetcher"
 require "dependabot/opentelemetry"
@@ -20,7 +20,7 @@ module Dependabot
     sig { override.returns(T.nilable(String)) }
     attr_reader :base_commit_sha
 
-    sig { override.returns(T.nilable(Integer)) }
+    sig { override.returns(T.untyped) }
     def perform_job # rubocop:disable Metrics/AbcSize
       @base_commit_sha = T.let(nil, T.nilable(String))
 
@@ -59,9 +59,6 @@ module Dependabot
         end
 
         Dependabot.logger.info("Base commit SHA: #{@base_commit_sha}")
-        save_output_path
-
-        save_job_details
       end
     end
 
@@ -77,33 +74,15 @@ module Dependabot
       )
     end
 
+    sig { returns(Dependabot::FetchedFiles) }
+    def files
+      Dependabot::FetchedFiles.new(
+        dependency_files: job.source.directories ? dependency_files_for_multi_directories : dependency_files,
+        base_commit_sha:,
+      )
+    end
+
     private
-
-    sig { returns(T.nilable(Integer)) }
-    def save_output_path
-      File.write(
-        Environment.output_path,
-        JSON.dump(
-          base64_dependency_files: base64_dependency_files&.map(&:to_h),
-          base_commit_sha: @base_commit_sha
-        )
-      )
-    end
-
-    sig { returns(T.nilable(Integer)) }
-    def save_job_details
-      # TODO: Use the Dependabot::Environment helper for this
-      return unless ENV["UPDATER_ONE_CONTAINER"]
-
-      File.write(
-        Environment.job_path,
-        JSON.dump(
-          base64_dependency_files: base64_dependency_files&.map(&:to_h),
-          base_commit_sha: @base_commit_sha,
-          job: Environment.job_definition["job"]
-        )
-      )
-    end
 
     sig { params(directory: T.nilable(String)).returns(Dependabot::FileFetchers::Base) }
     def create_file_fetcher(directory: nil)
@@ -265,16 +244,6 @@ module Dependabot
       return unless job.clone?
 
       file_fetcher.clone_repo_contents
-    end
-
-    sig { returns(T.nilable(T::Array[Dependabot::DependencyFile])) }
-    def base64_dependency_files
-      files = job.source.directories ? dependency_files_for_multi_directories : dependency_files
-      files&.map do |file|
-        base64_file = file.dup
-        base64_file.content = Base64.encode64(T.must(file.content)) unless file.binary?
-        base64_file
-      end
     end
 
     sig { returns(T::Boolean) }
