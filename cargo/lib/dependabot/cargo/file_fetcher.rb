@@ -57,6 +57,13 @@ module Dependabot
         fetched_files << T.must(rust_toolchain) if rust_toolchain
         fetched_files += fetch_path_dependency_and_workspace_files
 
+        # If the main Cargo.toml uses workspace dependencies, ensure we have the workspace root
+        parsed_manifest = parsed_file(cargo_toml)
+        if uses_workspace_dependencies?(parsed_manifest) || workspace_member?(parsed_manifest)
+          workspace_root = find_workspace_root(cargo_toml)
+          fetched_files << workspace_root if workspace_root && !fetched_files.include?(workspace_root)
+        end
+
         # Filter excluded files from final collection
         filtered_files = fetched_files.reject do |file|
           Dependabot::FileFiltering.should_exclude_path?(file.name, "file from final collection", @exclude_paths)
@@ -141,7 +148,15 @@ module Dependabot
               file: fetched_file,
               previously_fetched_files: previously_fetched_files
             )
-          [fetched_file, *grandchild_requirement_files]
+
+          # If this workspace member uses workspace dependencies, we need to include
+          # the workspace root so Cargo can resolve workspace.dependencies properly.
+          parsed_manifest = parsed_file(fetched_file)
+          root = if uses_workspace_dependencies?(parsed_manifest) || workspace_member?(parsed_manifest)
+                   find_workspace_root(fetched_file)
+                 end
+
+          [fetched_file, *grandchild_requirement_files, root]
         end.compact
 
         files.each { |f| f.support_file = file != cargo_toml }
@@ -258,6 +273,35 @@ module Dependabot
         end
 
         paths
+      end
+
+      # Check if this Cargo manifest uses workspace dependencies
+      # (e.g. dependency = { workspace = true }).
+      sig { params(parsed_manifest: T::Hash[T.untyped, T.untyped]).returns(T::Boolean) }
+      def uses_workspace_dependencies?(parsed_manifest)
+        # Check regular dependencies
+        workspace_deps = Cargo::FileParser::DEPENDENCY_TYPES.any? do |type|
+          deps = parsed_manifest.fetch(type, {})
+          deps.any? do |_, details|
+            next false unless details.is_a?(Hash)
+
+            details["workspace"] == true
+          end
+        end
+
+        return true if workspace_deps
+
+        # Check target-specific dependencies
+        parsed_manifest.fetch("target", {}).any? do |_, target_details|
+          Cargo::FileParser::DEPENDENCY_TYPES.any? do |type|
+            deps = target_details.fetch(type, {})
+            deps.any? do |_, details|
+              next false unless details.is_a?(Hash)
+
+              details["workspace"] == true
+            end
+          end
+        end
       end
 
       # See if this Cargo manifest inherits any property from a workspace
