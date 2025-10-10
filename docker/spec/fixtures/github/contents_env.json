@@ -1,0 +1,13 @@
+{
+  "name": ".env",
+  "path": ".env",
+  "sha": "abc123def456",
+  "size": 234,
+  "url": "https://api.github.com/repos/gocardless/bump/contents/.env?ref=sha",
+  "html_url": "https://github.com/gocardless/bump/blob/sha/.env",
+  "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/abc123def456",
+  "download_url": "https://raw.githubusercontent.com/gocardless/bump/sha/.env",
+  "type": "file",
+  "content": "IyBDb250YWluZXIgSW1hZ2UgVGFncwpOR0lOWF9JTUFHRV9UQUc9bmdpbng6MS4yMS4wQHNoYTI1NjowYjAxYjkzYzNhOTNlNzQ3ZmJhOGQ5YmIxMDI1MDExYmYxMDhkNzdjOWNmODI1MmYxN2E2ZjNkNjNhMWI1ODA0ClJFRElTX0lNQUdFX1RBRz1yZWRpczo2LjIuNUBzaGEyNTY6NGM4NTRhYTAzZjZiN2U5YmIyYjk0NWU4ZTJhMTdmNTY1MjY2YTEwM2M3MGJiMzI3NWI1N2U0ZjgxYTdlOTJhMApQT1NUR1JFU19JTUFHRV9UQUc9cG9zdGdyZXM6MTMuNEBzaGEyNTY6YmZjNzE0ZTViMzU4MDU4ZDJjZDE1NWE5ZjJhYjNmMzYxNTMwODI5Y2FmMDcxMTExZTEwYzRiN2VmZTFjNTRiNgo=",
+  "encoding": "base64"
+}
