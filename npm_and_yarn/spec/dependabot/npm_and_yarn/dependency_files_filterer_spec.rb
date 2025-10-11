@@ -120,6 +120,31 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyFilesFilterer do
       end
     end
 
+    context "when using npm workspaces with a shrinkwrap" do
+      let(:project_name) { "npm8/workspaces_shrinkwrap" }
+      let(:updated_dependencies) { [nested_dependency] }
+      let(:nested_dependency) do
+        Dependabot::Dependency.new(
+          name: "chalk",
+          version: "0.4.0",
+          requirements: [{
+            file: "packages/package1/package.json",
+            requirement: "0.3.0",
+            groups: ["dependencies"],
+            source: nil
+          }],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      it do
+        expect(files_requiring_update).to contain_exactly(
+          project_dependency_file("npm-shrinkwrap.json"),
+          project_dependency_file("packages/package1/package.json")
+        )
+      end
+    end
+
     context "when using yarn workspaces" do
       let(:project_name) { "yarn/workspaces" }
       let(:dependency) do
