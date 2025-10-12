@@ -163,17 +163,8 @@ module Dependabot
 
       sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
       def updated_requirements
-        resolvable_version =
-          if preferred_resolvable_version.is_a?(version_class)
-            preferred_resolvable_version.to_s
-          elsif preferred_resolvable_version.nil?
-            nil
-          else
-            # If the preferred_resolvable_version came back as anything other
-            # than a version class or `nil` it must be because this is a git
-            # dependency, for which we don't check resolvability.
-            latest_version_details&.fetch(:version, nil)&.to_s
-          end
+        resolvable_version = determine_resolvable_version
+        resolvable_version = filter_ignored_version(resolvable_version)
 
         @updated_requirements ||=
           RequirementsUpdater.new(
@@ -567,6 +558,56 @@ module Dependabot
             ignored_versions: ignored_versions,
             raise_on_ignored: raise_on_ignored
           )
+      end
+
+      sig { returns(T.nilable(String)) }
+      def determine_resolvable_version
+        if preferred_resolvable_version.is_a?(version_class)
+          preferred_resolvable_version.to_s
+        elsif preferred_resolvable_version.nil?
+          nil
+        else
+          # If the preferred_resolvable_version came back as anything other
+          # than a version class or `nil` it must be because this is a git
+          # dependency, for which we don't check resolvability.
+          latest_version_details&.fetch(:version, nil)&.to_s
+        end
+      end
+
+      sig { params(resolvable_version: T.nilable(String)).returns(T.nilable(String)) }
+      def filter_ignored_version(resolvable_version)
+        return resolvable_version unless resolvable_version && version_ignored?(resolvable_version)
+
+        # This is a safety check to prevent widen_ranges from updating to ignored versions
+        Dependabot.logger.info("Filtering out ignored version #{resolvable_version} for #{dependency.name}")
+        fallback_version = latest_version_respecting_ignore_conditions
+
+        # Double-check that the fallback version is not also ignored
+        if fallback_version && !version_ignored?(fallback_version)
+          fallback_version
+        else
+          # If we can't find a non-ignored version, set to nil to prevent update
+          Dependabot.logger.info("No suitable non-ignored version found for #{dependency.name}")
+          nil
+        end
+      end
+
+      # Check if a version string is ignored by the ignore conditions
+      sig { params(version_string: String).returns(T::Boolean) }
+      def version_ignored?(version_string)
+        return false if ignored_versions.empty?
+
+        version = version_class.new(version_string)
+        ignore_requirements.any? { |req| req.satisfied_by?(version) }
+      rescue ArgumentError
+        false
+      end
+
+      # Get the latest version that respects ignore conditions
+      sig { returns(T.nilable(String)) }
+      def latest_version_respecting_ignore_conditions
+        # Use the latest_version_finder to get the latest version that isn't ignored
+        latest_version_finder.latest_version_from_registry&.to_s
       end
     end
   end
