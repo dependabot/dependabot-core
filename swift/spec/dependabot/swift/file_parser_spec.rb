@@ -305,7 +305,7 @@ RSpec.describe Dependabot::Swift::FileParser do
       it "returns the correct package manager" do
         expect(package_manager.name).to eq "swift"
         expect(package_manager.requirement).to be_nil
-        expect(package_manager.version.to_s).to eq "6.2"
+        expect(package_manager.version.to_s).to eq "6.2.0.pre.dev"
       end
     end
 
