@@ -29,10 +29,6 @@ jobs:
       - name: Install sorbet-runtime for typed code support
         run: |
           SORBET_RUNTIME_VERSION=$(grep 'sorbet-runtime (' Gemfile.lock | grep -v '~>' | grep -v '=' | head -n 1 | sed 's/.*(\(.*\))/\1/')
-          if [ -z "$SORBET_RUNTIME_VERSION" ]; then
-            echo "Error: Failed to extract sorbet-runtime version from Gemfile.lock"
-            exit 1
-          fi
           echo "Installing sorbet-runtime version $SORBET_RUNTIME_VERSION"
           gem install sorbet-runtime -v $SORBET_RUNTIME_VERSION
 
