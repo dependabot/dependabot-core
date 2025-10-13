@@ -34,19 +34,14 @@ module Dependabot
 
       sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
-        # Implement beta feature flag check
-        # unless allow_beta_ecosystems?
-        #   raise Dependabot::DependencyFileNotFound.new(
-        #     nil,
-        #     "Bazel is currently in beta. Please contact Dependabot support to enable it."
-        #   )
-        # end
-
-        fetched_files = []
-
-        # TODO: Implement file fetching logic
-        # Example:
-        # fetched_files << fetch_file_from_host("manifest.json")
+        unless allow_beta_ecosystems?
+          raise Dependabot::DependencyFileNotFound.new(
+            nil,
+            "Bazel support is currently in beta. To enable it, add `enable_beta_ecosystems: true` to the top-level of " \
+            "your `dependabot.yml`. See " \
+            "https://docs.github.com/en/code-security/dependabot/working-with-dependabot/dependabot-options-reference#enable-beta-ecosystems for details."
+         )
+        end
 
         fetched_files = T.let([], T::Array[DependencyFile])
 
