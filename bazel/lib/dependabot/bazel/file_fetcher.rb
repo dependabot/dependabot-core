@@ -37,10 +37,11 @@ module Dependabot
         unless allow_beta_ecosystems?
           raise Dependabot::DependencyFileNotFound.new(
             nil,
-            "Bazel support is currently in beta. To enable it, add `enable_beta_ecosystems: true` to the top-level of " \
-            "your `dependabot.yml`. See " \
-            "https://docs.github.com/en/code-security/dependabot/working-with-dependabot/dependabot-options-reference#enable-beta-ecosystems for details."
-         )
+            "Bazel support is currently in beta. To enable it, add `enable_beta_ecosystems: true` to the" \
+            " top-level of your `dependabot.yml`. See " \
+            "https://docs.github.com/en/code-security/dependabot/working-with-dependabot" \
+            "/dependabot-options-reference#enable-beta-ecosystems for details."
+          )
         end
 
         fetched_files = T.let([], T::Array[DependencyFile])

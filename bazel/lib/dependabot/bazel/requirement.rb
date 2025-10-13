@@ -19,14 +19,8 @@ module Dependabot
       # This abstract method must be implemented
       sig do
         override
-        .params(requirement_string: T.nilable(String))
-        .returns(T::Array[Dependabot::Requirement])
-      end
-      def self.requirements_array(requirement_string)
-        # TODO: Implement requirement parsing logic
-        # Example: Parse requirement_string and return array of requirements
-        # For now, use the default implementation
-        super
+          .params(requirement_string: T.nilable(String))
+          .returns(T::Array[Dependabot::Requirement])
       end
     end
   end

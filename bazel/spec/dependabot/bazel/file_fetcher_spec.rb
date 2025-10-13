@@ -32,7 +32,10 @@ RSpec.describe Dependabot::Bazel::FileFetcher do
     )
   end
 
-  before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
+  before do
+    allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+    allow(Dependabot::Experiments).to receive(:enable_beta_ecosystems).and_return(true)
+  end
 
   it_behaves_like "a dependency file fetcher"
 
@@ -65,7 +68,7 @@ RSpec.describe Dependabot::Bazel::FileFetcher do
   end
 
   describe "#fetch_files" do
-    subject { file_fetcher_instance.fetch_files }
+    subject(:fetched_files) { file_fetcher_instance.fetch_files }
 
     before do
       allow(file_fetcher_instance).to receive(:allow_beta_ecosystems?).and_return(true)
@@ -94,7 +97,7 @@ RSpec.describe Dependabot::Bazel::FileFetcher do
       end
 
       it "fetches the WORKSPACE and BUILD files" do
-        expect(subject.map(&:name)).to contain_exactly("WORKSPACE", "BUILD")
+        expect(fetched_files.map(&:name)).to contain_exactly("WORKSPACE", "BUILD")
       end
     end
 
@@ -115,7 +118,7 @@ RSpec.describe Dependabot::Bazel::FileFetcher do
       end
 
       it "fetches the MODULE.bazel file" do
-        expect(subject.map(&:name)).to include("MODULE.bazel")
+        expect(fetched_files.map(&:name)).to include("MODULE.bazel")
       end
     end
 
@@ -125,7 +128,7 @@ RSpec.describe Dependabot::Bazel::FileFetcher do
       end
 
       it "raises a DependencyFileNotFound error with beta message" do
-        expect { subject }.to raise_error(
+        expect { fetched_files }.to raise_error(
           Dependabot::DependencyFileNotFound,
           /Bazel is currently in beta/
         )
@@ -143,7 +146,7 @@ RSpec.describe Dependabot::Bazel::FileFetcher do
       end
 
       it "raises a DependencyFileNotFound error" do
-        expect { subject }.to raise_error(
+        expect { fetched_files }.to raise_error(
           Dependabot::DependencyFileNotFound,
           /must contain a WORKSPACE, WORKSPACE.bazel, or MODULE.bazel file/
         )
@@ -152,7 +155,7 @@ RSpec.describe Dependabot::Bazel::FileFetcher do
   end
 
   describe "#ecosystem_versions" do
-    subject { file_fetcher_instance.ecosystem_versions }
+    subject(:ecosystem_versions) { file_fetcher_instance.ecosystem_versions }
 
     before do
       allow(file_fetcher_instance).to receive(:allow_beta_ecosystems?).and_return(true)
@@ -169,7 +172,7 @@ RSpec.describe Dependabot::Bazel::FileFetcher do
       end
 
       it "returns the Bazel version from .bazelversion" do
-        expect(subject).to eq({ package_managers: { "bazel" => "6.0.0" } })
+        expect(ecosystem_versions).to eq({ package_managers: { "bazel" => "6.0.0" } })
       end
     end
 
@@ -180,7 +183,7 @@ RSpec.describe Dependabot::Bazel::FileFetcher do
       end
 
       it "returns unknown version" do
-        expect(subject).to eq({ package_managers: { "bazel" => "unknown" } })
+        expect(ecosystem_versions).to eq({ package_managers: { "bazel" => "unknown" } })
       end
     end
   end
