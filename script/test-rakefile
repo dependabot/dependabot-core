@@ -1,0 +1,39 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Integration test for Rakefile refactoring
+# This script verifies that all Rake tasks work correctly after modularization
+
+require_relative "../rakelib/support/test/rakefile_structure_tests"
+require_relative "../rakelib/support/test/gems_task_tests"
+require_relative "../rakelib/support/test/rubocop_task_tests"
+require_relative "../rakelib/support/test/ecosystem_scaffold_tests"
+require_relative "../rakelib/support/test/ecosystem_infrastructure_updater_tests"
+
+# Run all tests
+puts "=" * 60
+puts "Rakefile Integration Tests"
+puts "=" * 60
+
+results = [
+  RakefileStructureTests.test_rakefile_structure,
+  RakefileStructureTests.test_task_list,
+  GemsTaskTests.test_gems_clean?,
+  RubocopTaskTests.test_rubocop_sort?,
+  RakefileStructureTests.test_helpers_loaded?,
+  EcosystemScaffoldTests.test_ecosystem_scaffold?,
+  EcosystemInfrastructureUpdaterTests.all_tests?
+]
+
+all_passed = results.all?
+
+puts "\n" + ("=" * 60)
+if all_passed
+  puts "✓ ALL TESTS PASSED"
+  puts "=" * 60
+  exit 0
+else
+  puts "✗ SOME TESTS FAILED"
+  puts "=" * 60
+  exit 1
+end

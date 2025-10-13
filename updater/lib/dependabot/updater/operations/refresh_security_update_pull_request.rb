@@ -122,7 +122,7 @@ module Dependabot
           # pull request is rebased.
           if dependencies.none? { |d| job.allowed_update?(d) }
             lead_dependency = dependencies.first
-            if lead_dependency && job.vulnerable?(lead_dependency)
+            if lead_dependency && job.current_version_vulnerable?(lead_dependency)
               Dependabot.logger.info(
                 "Dependency no longer allowed to update #{lead_dependency.name} #{lead_dependency.version}"
               )

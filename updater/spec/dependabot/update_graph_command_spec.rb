@@ -7,7 +7,7 @@ require "dependabot/bundler"
 require "tmpdir"
 
 RSpec.describe Dependabot::UpdateGraphCommand do
-  subject(:job) { described_class.new }
+  subject(:job) { described_class.new(fetched_files) }
 
   let(:service) do
     instance_double(
@@ -22,7 +22,20 @@ RSpec.describe Dependabot::UpdateGraphCommand do
     )
   end
   let(:job_definition) do
-    JSON.parse(fixture("file_fetcher_output/output.json"))
+    JSON.parse(fixture("file_fetcher_output/output-directories-only.json"))
+  end
+  let(:fetched_files) do
+    # We no longer write encoded files to disk, need to migrate the fixtures in this test
+    Dependabot::FetchedFiles.new(
+      dependency_files: job_definition["base64_dependency_files"].map do |file|
+        Dependabot::DependencyFile.new(
+          name: file["name"],
+          content: Base64.decode64(file["content"]),
+          directory: file["directory"] || "/"
+        )
+      end,
+      base_commit_sha: job_definition["base_commit_sha"]
+    )
   end
   let(:job_id) { "123123" }
 
@@ -51,6 +64,38 @@ RSpec.describe Dependabot::UpdateGraphCommand do
     end
   end
 
+  describe "#perform_job when the directory is empty or doesn't exist" do
+    subject(:perform_job) { job.perform_job }
+
+    let(:job_definition) do
+      JSON.parse(fixture("file_fetcher_output/output-empty-directory.json"))
+    end
+
+    before do
+      allow(Dependabot::FileParsers).to receive(:for_package_manager)
+      allow(Dependabot::DependencyGraphers).to receive(:for_package_manager)
+    end
+
+    it "emits a create_dependency_submission call to the Dependabot service with an empty snapshot" do
+      expect(service).to receive(:create_dependency_submission) do |args|
+        expected_manifest_file = Dependabot::DependencyFile.new(name: "", content: "", directory: "/foo")
+
+        expect(args[:dependency_submission]).to be_a(GithubApi::DependencySubmission)
+
+        expect(args[:dependency_submission].job_id).to eql(job_id)
+        expect(args[:dependency_submission].package_manager).to eql("bundler")
+        expect(args[:dependency_submission].resolved_dependencies).to be_empty
+        expect(args[:dependency_submission].manifest_file).to eql(expected_manifest_file)
+
+        # parsers and graphers should not be invoked
+        expect(Dependabot::FileParsers).not_to have_received(:for_package_manager)
+        expect(Dependabot::DependencyGraphers).not_to have_received(:for_package_manager)
+      end
+
+      perform_job
+    end
+  end
+
   # TODO(brrygrdn): Share these tests with UpdateFilesCommand?
   #
   # These examples are copied and pasted from that suite with no real differences beyond
@@ -70,7 +115,13 @@ RSpec.describe Dependabot::UpdateGraphCommand do
       allow(Dependabot.logger).to receive(:info)
       allow(Dependabot.logger).to receive(:error)
       allow(Sentry).to receive(:capture_exception)
-      allow(Dependabot::DependencySnapshot).to receive(:create_from_job_definition).and_raise(error)
+
+      mock_parser = instance_double(Dependabot::FileParsers::Base)
+      allow(mock_parser).to receive(:parse).and_raise(error)
+
+      stub_const("MockParserClass", Dependabot::FileParsers::Base)
+      allow(MockParserClass).to receive(:new) { mock_parser }
+      allow(Dependabot::FileParsers).to receive(:for_package_manager).and_return(MockParserClass)
     end
 
     shared_examples "a fast-failed job" do
