@@ -72,6 +72,26 @@ module Dependabot
         )
       end
 
+      # Utility method to allow collaborators to check other go commands inside the parsed project's context
+      sig { params(command: String).returns(String) }
+      def run_in_parsed_context(command)
+        SharedHelpers.in_a_temporary_directory do |path|
+          # Create a fake empty module for each local module so that
+          # `go mod edit` works, even if some modules have been `replace`d with
+          # a local module that we don't have access to.
+          local_replacements.each do |_, stub_path|
+            FileUtils.mkdir_p(stub_path)
+            FileUtils.touch(File.join(stub_path, "go.mod"))
+          end
+
+          File.write("go.mod", go_mod_content)
+          stdout, stderr, status = Open3.capture3(command)
+          handle_parser_error(path, stderr) unless status.success?
+
+          stdout
+        end
+      end
+
       private
 
       sig { void }
@@ -194,23 +214,7 @@ module Dependabot
       def required_packages
         @required_packages ||=
           T.let(
-            SharedHelpers.in_a_temporary_directory do |path|
-              # Create a fake empty module for each local module so that
-              # `go mod edit` works, even if some modules have been `replace`d with
-              # a local module that we don't have access to.
-              local_replacements.each do |_, stub_path|
-                FileUtils.mkdir_p(stub_path)
-                FileUtils.touch(File.join(stub_path, "go.mod"))
-              end
-
-              File.write("go.mod", go_mod_content)
-
-              command = "go mod edit -json"
-
-              stdout, stderr, status = Open3.capture3(command)
-              handle_parser_error(path, stderr) unless status.success?
-              JSON.parse(stdout)["Require"] || []
-            end,
+            JSON.parse(run_in_parsed_context("go mod edit -json"))["Require"] || [],
             T.nilable(T::Array[T::Hash[String, T.untyped]])
           )
       end
