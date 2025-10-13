@@ -57,7 +57,7 @@ module Dependabot
         if incorrectly_encoded_files.none? && incorrectly_encoded_yamlfiles.none?
           raise Dependabot::DependencyFileNotFound.new(
             File.join(directory, "Dockerfile"),
-            "No Dockerfiles nor Kubernetes YAML found in #{directory}"
+            "No Dockerfiles, .env files, nor Kubernetes YAML found in #{directory}"
           )
         end
 
