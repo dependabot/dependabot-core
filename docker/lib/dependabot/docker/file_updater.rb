@@ -11,6 +11,7 @@ module Dependabot
     class FileUpdater < Dependabot::Shared::SharedFileUpdater
       extend T::Sig
 
+      YAML_REGEXP = /^[^\.].*\.ya?ml$/i
       FROM_REGEX = /FROM(\s+--platform\=\S+)?/i
 
       sig { override.returns(String) }
