@@ -41,7 +41,7 @@ RSpec.describe Dependabot::FileFetcherCommand do
     subject(:perform_job) { job.perform_job }
 
     let(:job_definition) do
-      JSON.parse(fixture("jobs/job_with_credentials.json"))
+      JSON.parse(fixture("jobs/job_without_credentials.json"))
     end
 
     after do
@@ -49,17 +49,16 @@ RSpec.describe Dependabot::FileFetcherCommand do
       Dependabot::Experiments.reset!
     end
 
-    it "fetches the files and writes the fetched files to output.json", :vcr do
+    it "fetches the files", :vcr do
       expect(api_client).not_to receive(:mark_job_as_processed)
 
       perform_job
 
-      output = JSON.parse(File.read(Dependabot::Environment.output_path))
-      dependency_file = output["base64_dependency_files"][0]
-      expect(dependency_file["name"]).to eq(
+      dependency_file = job.files.dependency_files.first
+      expect(dependency_file.name).to eq(
         "dependabot-test-ruby-package.gemspec"
       )
-      expect(dependency_file["content_encoding"]).to eq("utf-8")
+      expect(dependency_file.content_encoding).to eq("utf-8")
     end
 
     context "when empty directories are specified" do
@@ -95,9 +94,7 @@ RSpec.describe Dependabot::FileFetcherCommand do
 
           expect { perform_job }.not_to raise_error
 
-          output = JSON.parse(File.read(Dependabot::Environment.output_path))
-          dependency_files = output["base64_dependency_files"]
-          expect(dependency_files).to be_empty
+          expect(job.files.dependency_files).to be_empty
         end
       end
     end

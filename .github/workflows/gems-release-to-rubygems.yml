@@ -26,8 +26,13 @@ jobs:
           RUBYGEMS_VERSION=$(grep 'ARG RUBYGEMS_VERSION=' Dockerfile.updater-core | cut -d '=' -f 2)
           gem update --system $RUBYGEMS_VERSION
 
+      - name: Install sorbet-runtime for typed code support
+        run: |
+          SORBET_RUNTIME_VERSION=$(grep 'sorbet-runtime (' Gemfile.lock | grep -v '~>' | grep -v '=' | head -n 1 | sed 's/.*(\(.*\))/\1/')
+          gem install sorbet-runtime -v $SORBET_RUNTIME_VERSION
+
       - uses: rubygems/configure-rubygems-credentials@bc6dd217f8a4f919d6835fcfefd470ef821f5c44 # v1.0.0
 
       # We can't use the https://github.com/rubygems/release-gem workflow because it calls `rake release` rather than `rake gems:release`.
       # `rake release` causes problems because it tries to push a git tag, but we've already manually tagged the release as part of the `gems-bump-version` workflow.
-      - run: bundle exec rake gems:release
+      - run: gem exec rake gems:release
