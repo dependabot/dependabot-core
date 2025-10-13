@@ -4,6 +4,7 @@
 require "base64"
 require "json"
 require "dependabot/base_command"
+require "dependabot/fetched_files"
 require "dependabot/dependency_snapshot"
 require "dependabot/errors"
 require "dependabot/opentelemetry"
@@ -14,6 +15,11 @@ require "github_api/dependency_submission"
 module Dependabot
   class UpdateFilesCommand < BaseCommand
     extend T::Sig
+
+    sig { override.params(fetched_files: Dependabot::FetchedFiles).void }
+    def initialize(fetched_files)
+      @fetched_files = T.let(fetched_files, Dependabot::FetchedFiles)
+    end
 
     sig { override.void }
     def perform_job
@@ -27,7 +33,7 @@ module Dependabot
         begin
           dependency_snapshot = Dependabot::DependencySnapshot.create_from_job_definition(
             job: job,
-            job_definition: Environment.job_definition
+            fetched_files: @fetched_files
           )
         rescue StandardError => e
           handle_parser_error(e)
