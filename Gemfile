@@ -38,8 +38,6 @@ gem "http", "~> 5.1"
 gem "sorbet", "~> 0.6", group: :development
 gem "tapioca", "~> 0.17", require: false, group: :development
 
-gem "sigstore-cli", "~> 0.2.1"
-
 gem "zeitwerk", "~> 2.7"
 
 common_gemspec = File.expand_path("common/dependabot-common.gemspec", __dir__)
