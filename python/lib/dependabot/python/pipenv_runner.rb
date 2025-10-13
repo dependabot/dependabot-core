@@ -28,10 +28,15 @@ module Dependabot
       sig { params(constraint: T.nilable(String)).returns(String) }
       def run_upgrade(constraint)
         constraint = "" if constraint == "*"
-        command = "pyenv exec pipenv upgrade --verbose #{dependency_name}#{constraint}"
+
+        # Build the full package specification with extras
+        extras_spec = extras_specification
+        package_spec = "#{dependency_name}#{extras_spec}#{constraint}"
+
+        command = "pyenv exec pipenv upgrade --verbose #{package_spec}"
         command << " --dev" if lockfile_section == "develop"
 
-        run(command, fingerprint: "pyenv exec pipenv upgrade --verbose <dependency_name><constraint>")
+        run(command, fingerprint: "pyenv exec pipenv upgrade --verbose <dependency_name><extras><constraint>")
       end
 
       sig { params(constraint: T.nilable(String)).returns(T.nilable(String)) }
@@ -63,6 +68,30 @@ module Dependabot
 
       sig { returns(LanguageVersionManager) }
       attr_reader :language_version_manager
+
+      sig { returns(String) }
+      def extras_specification
+        extras = dependency_extras
+        return "" if extras.nil? || extras.empty?
+
+        "[#{extras.join(',')}]"
+      end
+
+      sig { returns(T.nilable(T::Array[String])) }
+      def dependency_extras
+        return nil unless lockfile
+
+        lockfile_content = T.must(lockfile).content
+        return nil unless lockfile_content
+
+        parsed_lockfile = JSON.parse(lockfile_content)
+        section = lockfile_section
+        dependency_data = parsed_lockfile.dig(section, dependency_name)
+
+        return nil unless dependency_data
+
+        dependency_data["extras"]
+      end
 
       sig { params(updated_lockfile: T::Hash[String, T.untyped]).returns(T.nilable(String)) }
       def fetch_version_from_parsed_lockfile(updated_lockfile)

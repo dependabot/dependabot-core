@@ -1,0 +1,19 @@
+# typed: strong
+# frozen_string_literal: true
+
+# These all need to be required so the various classes can be registered in a
+# lookup table of package manager names to concrete classes.
+require "dependabot/<%= ecosystem_name %>/file_fetcher"
+require "dependabot/<%= ecosystem_name %>/file_parser"
+require "dependabot/<%= ecosystem_name %>/update_checker"
+require "dependabot/<%= ecosystem_name %>/file_updater"
+require "dependabot/<%= ecosystem_name %>/metadata_finder"
+require "dependabot/<%= ecosystem_name %>/version"
+require "dependabot/<%= ecosystem_name %>/requirement"
+
+require "dependabot/pull_request_creator/labeler"
+Dependabot::PullRequestCreator::Labeler
+  .register_label_details("<%= ecosystem_name %>", name: "<%= ecosystem_name %>", colour: "000000")
+
+require "dependabot/dependency"
+Dependabot::Dependency.register_production_check("<%= ecosystem_name %>", ->(_) { true })
