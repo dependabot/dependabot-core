@@ -81,8 +81,8 @@ function Update-Files {
 
 try {
     Switch ($args[0]) {
-        "fetch_files" { Get-Files }
-        "update_files" { Update-Files }
+        "fetch_files" { }
+        "update_files" { Get-Files; Update-Files }
         default { throw "unknown command: $args[0]" }
     }
     exit $operationExitCode
