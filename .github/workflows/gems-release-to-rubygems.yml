@@ -29,7 +29,6 @@ jobs:
       - name: Install sorbet-runtime for typed code support
         run: |
           SORBET_RUNTIME_VERSION=$(grep 'sorbet-runtime (' Gemfile.lock | grep -v '~>' | grep -v '=' | head -n 1 | sed 's/.*(\(.*\))/\1/')
-          echo "Installing sorbet-runtime version $SORBET_RUNTIME_VERSION"
           gem install sorbet-runtime -v $SORBET_RUNTIME_VERSION
 
       - uses: rubygems/configure-rubygems-credentials@bc6dd217f8a4f919d6835fcfefd470ef821f5c44 # v1.0.0
