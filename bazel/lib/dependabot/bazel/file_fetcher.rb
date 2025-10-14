@@ -9,17 +9,11 @@ module Dependabot
     class FileFetcher < Dependabot::FileFetchers::Base
       extend T::Sig
 
-      # Bazel workspace files that define external dependencies
       WORKSPACE_FILES = T.let(%w(WORKSPACE WORKSPACE.bazel).freeze, T::Array[String])
-
-      # Bazel module files for Bzlmod (new module system)
       MODULE_FILES = T.let(%w(MODULE.bazel).freeze, T::Array[String])
-
-      # Bazel build files that define targets and local dependencies
       BUILD_FILES = T.let(%w(BUILD BUILD.bazel).freeze, T::Array[String])
-
-      # Configuration and lock files
       CONFIG_FILES = T.let(%w(.bazelrc MODULE.bazel.lock).freeze, T::Array[String])
+      SKIP_DIRECTORIES = T.let(%w(.git .bazel-* bazel-* node_modules .github).freeze, T::Array[String])
 
       sig { override.returns(String) }
       def self.required_files_message
@@ -28,7 +22,6 @@ module Dependabot
 
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
-        # Check for WORKSPACE or MODULE.bazel files (either indicates a Bazel project)
         filenames.any? { |name| WORKSPACE_FILES.include?(name) || MODULE_FILES.include?(name) }
       end
 
@@ -45,17 +38,9 @@ module Dependabot
         end
 
         fetched_files = T.let([], T::Array[DependencyFile])
-
-        # Fetch workspace files (WORKSPACE or WORKSPACE.bazel)
         fetched_files += workspace_files
-
-        # Fetch module files (MODULE.bazel for Bzlmod)
         fetched_files += module_files
-
-        # Fetch BUILD files from root and subdirectories
         fetched_files += build_files
-
-        # Fetch configuration and lock files
         fetched_files += config_files
 
         return fetched_files if fetched_files.any?
@@ -65,7 +50,6 @@ module Dependabot
 
       sig { override.returns(T.nilable(T::Hash[Symbol, T.untyped])) }
       def ecosystem_versions
-        # Try to detect Bazel version from .bazelversion file or return unknown
         bazel_version = "unknown"
 
         begin
@@ -108,13 +92,11 @@ module Dependabot
       def build_files
         files = T.let([], T::Array[DependencyFile])
 
-        # Fetch BUILD files from root directory
         BUILD_FILES.each do |filename|
           file = fetch_file_if_present(filename)
           files << file if file
         end
 
-        # Recursively fetch BUILD files from subdirectories
         files += fetch_build_files_from_subdirectories
 
         files
@@ -129,7 +111,6 @@ module Dependabot
           files << file if file
         end
 
-        # Also fetch .bazelversion if present
         bazelversion = fetch_file_if_present(".bazelversion")
         files << bazelversion if bazelversion
 
@@ -140,19 +121,14 @@ module Dependabot
       def fetch_build_files_from_subdirectories
         files = T.let([], T::Array[DependencyFile])
 
-        # Get all directories in the repo
         repo_contents.select { |item| item.type == "dir" }.each do |dir|
           next if should_skip_directory?(dir.name)
 
           BUILD_FILES.each do |build_filename|
             build_file_path = File.join(dir.name, build_filename)
 
-            begin
-              file = fetch_file_from_host(build_file_path)
-              files << file if file
-            rescue Dependabot::DependencyFileNotFound
-              # BUILD files are optional in subdirectories
-            end
+            file = fetch_file_from_host(build_file_path)
+            files << file if file
           end
         end
 
@@ -161,11 +137,7 @@ module Dependabot
 
       sig { params(dirname: String).returns(T::Boolean) }
       def should_skip_directory?(dirname)
-        # Skip common directories that shouldn't contain BUILD files or
-        # are likely to cause issues
-        skip_dirs = %w(.git .bazel-* bazel-* node_modules .github)
-
-        skip_dirs.any? { |skip_dir| dirname.start_with?(skip_dir) }
+        SKIP_DIRECTORIES.any? { |skip_dir| dirname.start_with?(skip_dir) }
       end
     end
   end
