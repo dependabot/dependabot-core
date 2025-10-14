@@ -34,7 +34,7 @@ RSpec.describe Dependabot::Bazel::FileFetcher do
 
   before do
     allow(file_fetcher_instance).to receive(:commit).and_return("sha")
-    allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_beta_ecosystems).and_return(true)
+    allow(file_fetcher_instance).to receive(:allow_beta_ecosystems?).and_return(true)
   end
 
   it_behaves_like "a dependency file fetcher"
@@ -124,13 +124,15 @@ RSpec.describe Dependabot::Bazel::FileFetcher do
 
     context "when beta ecosystems are not allowed" do
       before do
-        allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_beta_ecosystems).and_return(false)
+        allow(file_fetcher_instance).to receive(:allow_beta_ecosystems?).and_return(false)
       end
 
       it "raises a DependencyFileNotFound error with beta message" do
         expect { fetched_files }.to raise_error(
           Dependabot::DependencyFileNotFound,
-          /Bazel is currently in beta/
+          "Bazel support is currently in beta. To enable it, add `enable_beta_ecosystems: true` to the top-level of " \
+          "your `dependabot.yml`. See https://docs.github.com/en/code-security/dependabot/working-with-dependabot/" \
+          "dependabot-options-reference#enable-beta-ecosystems for details."
         )
       end
     end
@@ -159,6 +161,12 @@ RSpec.describe Dependabot::Bazel::FileFetcher do
 
     context "with a .bazelversion file" do
       before do
+        stub_request(:get, url + "?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_with_version.json"),
+            headers: { "content-type" => "application/json" }
+          )
         stub_request(:get, url + ".bazelversion?ref=sha")
           .to_return(
             status: 200,
@@ -174,6 +182,12 @@ RSpec.describe Dependabot::Bazel::FileFetcher do
 
     context "without a .bazelversion file" do
       before do
+        stub_request(:get, url + "?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_simple.json"),
+            headers: { "content-type" => "application/json" }
+          )
         stub_request(:get, url + ".bazelversion?ref=sha")
           .to_return(status: 404)
       end
