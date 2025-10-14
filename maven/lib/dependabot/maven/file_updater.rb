@@ -15,15 +15,6 @@ module Dependabot
       require_relative "file_updater/declaration_finder"
       require_relative "file_updater/property_value_updater"
 
-      sig { override.returns(T::Array[Regexp]) }
-      def self.updated_files_regex
-        [
-          /^pom\.xml$/, %r{/pom\.xml$},
-          /.*\.xml$/, %r{/.*\.xml$},
-          /^extensions.\.xml$/, %r{/extensions\.xml$}
-        ]
-      end
-
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
         updated_files = T.let(dependency_files.dup, T::Array[Dependabot::DependencyFile])
