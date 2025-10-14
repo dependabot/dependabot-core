@@ -18,7 +18,6 @@ internal static class RunCommand
         CustomParser = (argumentResult) => Uri.TryCreate(argumentResult.Tokens.Single().Value, UriKind.Absolute, out var uri) ? uri : throw new ArgumentException("Invalid API URL format.")
     };
     internal static readonly Option<string> JobIdOption = new("--job-id") { Required = true };
-    internal static readonly Option<FileInfo> OutputPathOption = new("--output-path") { Required = true };
     internal static readonly Option<string> BaseCommitShaOption = new("--base-commit-sha") { Required = true };
 
     internal static Command GetCommand(Action<int> setExitCode)
@@ -30,7 +29,6 @@ internal static class RunCommand
             CaseInsensitiveRepoContentsPathOption,
             ApiUrlOption,
             JobIdOption,
-            OutputPathOption,
             BaseCommitShaOption
         };
 
@@ -43,7 +41,6 @@ internal static class RunCommand
             var caseInsensitiveRepoContentsPath = parseResult.GetValue(CaseInsensitiveRepoContentsPathOption);
             var apiUrl = parseResult.GetValue(ApiUrlOption);
             var jobId = parseResult.GetValue(JobIdOption);
-            var outputPath = parseResult.GetValue(OutputPathOption);
             var baseCommitSha = parseResult.GetValue(BaseCommitShaOption);
 
             var apiHandler = new HttpApiHandler(apiUrl!.ToString(), jobId!);
@@ -53,7 +50,7 @@ internal static class RunCommand
             var analyzeWorker = new AnalyzeWorker(jobId!, experimentsManager, logger);
             var updateWorker = new UpdaterWorker(jobId!, experimentsManager, logger);
             var worker = new RunWorker(jobId!, apiHandler, discoverWorker, analyzeWorker, updateWorker, logger);
-            await worker.RunAsync(jobPath!, repoContentsPath!, caseInsensitiveRepoContentsPath, baseCommitSha!, outputPath!);
+            await worker.RunAsync(jobPath!, repoContentsPath!, caseInsensitiveRepoContentsPath, baseCommitSha!);
             return 0;
         });
 
