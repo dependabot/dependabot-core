@@ -151,7 +151,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
       end
 
       context "with RESOLUTION_IMPOSSIBLE_ERROR error" do
-       let(:error) do
+        let(:error) do
           Dependabot::SharedHelpers::HelperSubprocessFailed.new(
             message: "ResolutionImpossible: Could not find a version that satisfies the requirement",
             error_context: {}
