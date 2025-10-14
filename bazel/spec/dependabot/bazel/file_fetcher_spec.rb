@@ -33,8 +33,7 @@ RSpec.describe Dependabot::Bazel::FileFetcher do
   end
 
   before do
-    allow(file_fetcher_instance).to receive(:commit).and_return("sha")
-    allow(file_fetcher_instance).to receive(:allow_beta_ecosystems?).and_return(true)
+    allow(file_fetcher_instance).to receive_messages(commit: "sha", allow_beta_ecosystems?: true)
   end
 
   it_behaves_like "a dependency file fetcher"
