@@ -3,6 +3,8 @@
 
 # These all need to be required so the various classes can be registered in a
 # lookup table of package manager names to concrete classes.
+require "dependabot/bazel/language"
+require "dependabot/bazel/package_manager"
 require "dependabot/bazel/file_fetcher"
 require "dependabot/bazel/file_parser"
 require "dependabot/bazel/update_checker"
