@@ -19,11 +19,6 @@ module Dependabot
       YAML_REGEXP = /(Chart|values(?>\.[\w-]+)?)\.ya?ml/i
       IMAGE_REGEX = /(?:image:|repository:\s*)/i
 
-      sig { override.returns(T::Array[Regexp]) }
-      def self.updated_files_regex
-        [CHART_YAML_REGEXP, VALUES_YAML_REGEXP]
-      end
-
       sig { override.returns(String) }
       def file_type
         "Helm chart"

@@ -12,11 +12,6 @@ module Dependabot
       YAML_REGEXP = /(docker-)?compose(?>\.[\w-]+)?\.ya?ml/i
       IMAGE_REGEX = /(?:from|image:\s*)/i
 
-      sig { override.returns(T::Array[Regexp]) }
-      def self.updated_files_regex
-        [YAML_REGEXP]
-      end
-
       sig { override.returns(String) }
       def file_type
         "Docker compose"

@@ -28,11 +28,6 @@ module Dependabot
       sig { returns(T::Hash[Symbol, T.untyped]) }
       attr_reader :options
 
-      sig { overridable.returns(T::Array[Regexp]) }
-      def self.updated_files_regex
-        raise NotImplementedError
-      end
-
       sig do
         params(
           dependencies: T::Array[Dependabot::Dependency],
