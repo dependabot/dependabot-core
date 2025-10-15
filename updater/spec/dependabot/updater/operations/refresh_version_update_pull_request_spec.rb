@@ -137,7 +137,6 @@ RSpec.describe Dependabot::Updater::Operations::RefreshVersionUpdatePullRequest 
   end
 
   before do
-    allow(Dependabot::Experiments).to receive(:enabled?).with(:lead_security_dependency).and_return(false)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_shared_helpers_command_timeout)
       .and_return(true)
