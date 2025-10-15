@@ -3,7 +3,7 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <PropertyGroup>
-    <MSBuildPackageVersion>17.14.8</MSBuildPackageVersion>
+    <MSBuildPackageVersion>17.14.28</MSBuildPackageVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="DiffPlex" Version="1.8.0" />
