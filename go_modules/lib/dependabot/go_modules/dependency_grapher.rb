@@ -77,7 +77,7 @@ module Dependabot
         T.cast(
           file_parser,
           Dependabot::GoModules::FileParser
-        ).run_in_parsed_context("go mod graph").lines.each_with_object({}) do |line, rels|
+        ).run_in_repo("go mod graph").lines.each_with_object({}) do |line, rels|
           match = line.match(GO_MOD_GRAPH_LINE_REGEX)
           unless match
             Dependabot.logger.warn("Unexpected output from 'go mod graph': 'line'")

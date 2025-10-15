@@ -7,7 +7,6 @@ require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/logger"
 require "dependabot/go_modules/file_updater"
-require "dependabot/go_modules/replace_stubber"
 require "dependabot/go_modules/resolvability_errors"
 
 module Dependabot
@@ -164,24 +163,6 @@ module Dependabot
         sig { returns(T::Hash[Symbol, String]) }
         def update_files
           in_repo_path do
-            # During grouped updates, the dependency_files are from a previous dependency
-            # update, so we need to update them on disk after the git reset in in_repo_path.
-            dependency_files.each do |file|
-              path = Pathname.new(file.name).expand_path
-              FileUtils.mkdir_p(path.dirname)
-              File.write(path, file.content)
-            end
-
-            # Map paths in local replace directives to path hashes
-            original_manifest = parse_manifest
-            original_go_sum = File.read("go.sum") if File.exist?("go.sum")
-
-            substitutions = replace_directive_substitutions(original_manifest)
-            build_module_stubs(substitutions.values)
-
-            # Replace full paths with path hashes in the go.mod
-            substitute_all(substitutions)
-
             # Bump the deps we want to upgrade using `go get lib@version`
             run_go_get(dependencies)
 
@@ -190,18 +171,12 @@ module Dependabot
             # module declares itself using a different name than specified in our `go.mod` etc.
             run_go_get
 
-            # If we stubbed modules, don't run `go mod {tidy,vendor}` as
-            # dependencies are incomplete
-            if substitutions.empty?
-              # go mod tidy should run before go mod vendor to ensure any
-              # dependencies removed by go mod tidy are also removed from vendors.
-              run_go_mod_tidy
-              run_go_vendor
-            else
-              substitute_all(substitutions.invert)
-            end
+            # go mod tidy should run before go mod vendor to ensure any
+            # dependencies removed by go mod tidy are also removed from vendors.
+            run_go_mod_tidy
+            run_go_vendor
 
-            updated_go_sum = original_go_sum ? File.read("go.sum") : nil
+            updated_go_sum = File.exist?("go.sum") ? File.read("go.sum") : nil
             updated_go_mod = File.read("go.mod")
 
             { go_mod: updated_go_mod, go_sum: updated_go_sum }
@@ -281,45 +256,6 @@ module Dependabot
           end
         end
 
-        sig { params(stub_paths: T::Array[String]).void }
-        def build_module_stubs(stub_paths)
-          # Create a fake empty module for each local module so that
-          # `go get` works, even if some modules have been `replace`d
-          # with a local module that we don't have access to.
-          stub_paths.each do |stub_path|
-            FileUtils.mkdir_p(stub_path)
-            FileUtils.touch(File.join(stub_path, "go.mod"))
-            FileUtils.touch(File.join(stub_path, "main.go"))
-          end
-        end
-
-        # Given a go.mod file, find all `replace` directives pointing to a path
-        # on the local filesystem, and return an array of pairs mapping the
-        # original path to a hash of the path.
-        #
-        # This lets us substitute all parts of the go.mod that are dependent on
-        # the layout of the filesystem with a structure we can reproduce (i.e.
-        # no paths such as ../../../foo), run the Go tooling, then reverse the
-        # process afterwards.
-        sig { params(manifest: T::Hash[String, T.untyped]).returns(T::Hash[String, String]) }
-        def replace_directive_substitutions(manifest)
-          @replace_directive_substitutions ||=
-            T.let(
-              Dependabot::GoModules::ReplaceStubber.new(repo_contents_path)
-                                                               .stub_paths(manifest, directory),
-              T.nilable(T::Hash[String, String])
-            )
-        end
-
-        sig { params(substitutions: T::Hash[String, String]).void }
-        def substitute_all(substitutions)
-          body = substitutions.reduce(File.read("go.mod")) do |text, (a, b)|
-            text.sub(a, b)
-          end
-
-          write_go_mod(body)
-        end
-
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/PerceivedComplexity
         sig { params(stderr: String).returns(T.noreturn) }
@@ -392,11 +328,6 @@ module Dependabot
           return "go.mod" if directory == "/"
 
           File.join(directory, "go.mod")
-        end
-
-        sig { params(body: Object).void }
-        def write_go_mod(body)
-          File.write("go.mod", body)
         end
 
         sig { returns(T::Boolean) }

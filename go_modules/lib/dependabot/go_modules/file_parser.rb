@@ -7,7 +7,6 @@ require "open3"
 require "dependabot/dependency"
 require "dependabot/file_parsers/base/dependency_set"
 require "dependabot/go_modules/path_converter"
-require "dependabot/go_modules/replace_stubber"
 require "dependabot/errors"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
@@ -74,20 +73,10 @@ module Dependabot
 
       # Utility method to allow collaborators to check other go commands inside the parsed project's context
       sig { params(command: String).returns(String) }
-      def run_in_parsed_context(command)
-        SharedHelpers.in_a_temporary_directory do |path|
-          # Create a fake empty module for each local module so that
-          # `go mod edit` works, even if some modules have been `replace`d with
-          # a local module that we don't have access to.
-          local_replacements.each do |_, stub_path|
-            FileUtils.mkdir_p(stub_path)
-            FileUtils.touch(File.join(stub_path, "go.mod"))
-          end
-
-          File.write("go.mod", go_mod_content)
+      def run_in_repo(command)
+        SharedHelpers.in_a_temporary_repo_directory(T.must(source&.directory), repo_contents_path) do |path|
           stdout, stderr, status = Open3.capture3(command)
           handle_parser_error(path, stderr) unless status.success?
-
           stdout
         end
       end
@@ -214,21 +203,8 @@ module Dependabot
       def required_packages
         @required_packages ||=
           T.let(
-            JSON.parse(run_in_parsed_context("go mod edit -json"))["Require"] || [],
+            JSON.parse(run_in_repo("go mod edit -json"))["Require"] || [],
             T.nilable(T::Array[T::Hash[String, T.untyped]])
-          )
-      end
-
-      sig { returns(T::Hash[String, String]) }
-      def local_replacements
-        @local_replacements ||=
-          # Find all the local replacements, and return them with a stub path
-          # we can use in their place. Using generated paths is safer as it
-          # means we don't need to worry about references to parent
-          # directories, etc.
-          T.let(
-            ReplaceStubber.new(repo_contents_path).stub_paths(manifest, go_mod&.directory),
-            T.nilable(T::Hash[String, String])
           )
       end
 
