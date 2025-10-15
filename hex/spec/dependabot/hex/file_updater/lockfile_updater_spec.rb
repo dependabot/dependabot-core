@@ -227,9 +227,9 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
       before do
         allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
           .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(
-            message: error_message,
-            error_context: {}
-          ))
+                       message: error_message,
+                       error_context: {}
+                     ))
       end
 
       context "with unauthenticated access to a private repo" do
