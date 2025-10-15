@@ -52,12 +52,8 @@ module Dependabot
       def ecosystem_versions
         bazel_version = "unknown"
 
-        begin
-          bazelversion_file = fetch_file_if_present(".bazelversion")
-          bazel_version = T.must(bazelversion_file.content).strip if bazelversion_file
-        rescue Dependabot::DependencyFileNotFound
-          # .bazelversion file is optional
-        end
+        bazelversion_file = fetch_file_if_present(".bazelversion")
+        bazel_version = T.must(bazelversion_file.content).strip if bazelversion_file
 
         { package_managers: { "bazel" => bazel_version } }
       end
