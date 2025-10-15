@@ -39,7 +39,6 @@ module Dependabot
         [new(normalized)]
       end
 
-      # Override satisfied_by? to handle Bazel version specifics
       sig { override.params(version: Gem::Version).returns(T::Boolean) }
       def satisfied_by?(version)
         # For Bazel versions, delegate to the base class
