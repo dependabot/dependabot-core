@@ -1,0 +1,46 @@
+[
+  {
+    "name": "WORKSPACE",
+    "path": "WORKSPACE",
+    "sha": "abc123",
+    "size": 1234,
+    "url": "https://api.github.com/repos/example/repo/contents/WORKSPACE?ref=sha",
+    "html_url": "https://github.com/example/repo/blob/sha/WORKSPACE",
+    "git_url": "https://api.github.com/repos/example/repo/git/blobs/abc123",
+    "download_url": "https://raw.githubusercontent.com/example/repo/sha/WORKSPACE",
+    "type": "file"
+  },
+  {
+    "name": ".bazelversion",
+    "path": ".bazelversion",
+    "sha": "jkl012",
+    "size": 6,
+    "url": "https://api.github.com/repos/example/repo/contents/.bazelversion?ref=sha",
+    "html_url": "https://github.com/example/repo/blob/sha/.bazelversion",
+    "git_url": "https://api.github.com/repos/example/repo/git/blobs/jkl012",
+    "download_url": "https://raw.githubusercontent.com/example/repo/sha/.bazelversion",
+    "type": "file"
+  },
+  {
+    "name": "BUILD",
+    "path": "BUILD",
+    "sha": "def456",
+    "size": 567,
+    "url": "https://api.github.com/repos/example/repo/contents/BUILD?ref=sha",
+    "html_url": "https://github.com/example/repo/blob/sha/BUILD",
+    "git_url": "https://api.github.com/repos/example/repo/git/blobs/def456",
+    "download_url": "https://raw.githubusercontent.com/example/repo/sha/BUILD",
+    "type": "file"
+  },
+  {
+    "name": "README.md",
+    "path": "README.md",
+    "sha": "ghi789",
+    "size": 890,
+    "url": "https://api.github.com/repos/example/repo/contents/README.md?ref=sha",
+    "html_url": "https://github.com/example/repo/blob/sha/README.md",
+    "git_url": "https://api.github.com/repos/example/repo/git/blobs/ghi789",
+    "download_url": "https://raw.githubusercontent.com/example/repo/sha/README.md",
+    "type": "file"
+  }
+]

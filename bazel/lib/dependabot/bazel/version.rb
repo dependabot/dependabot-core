@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 # NOTE: This file was scaffolded automatically but is OPTIONAL.
@@ -19,3 +19,6 @@ module Dependabot
     end
   end
 end
+
+Dependabot::Utils
+  .register_version_class("bazel", Dependabot::Bazel::Version)
