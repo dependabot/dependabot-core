@@ -177,6 +177,8 @@ module Dependabot
 
         sig { params(dep: Dependabot::Dependency).returns(String) }
         def updated_version(dep)
+          raise "No target version available" unless target_version
+
           T.must(version_string(dep)).gsub("${#{property_name}}", T.must(target_version).to_s)
         end
 
