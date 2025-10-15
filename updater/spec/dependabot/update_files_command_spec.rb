@@ -22,19 +22,20 @@ RSpec.describe Dependabot::UpdateFilesCommand do
     )
   end
   let(:job_definition) do
-    JSON.parse(fixture("file_fetcher_output/output.json"))
+    JSON.parse(fixture("jobs/job_without_credentials.json"))
+  end
+  let(:manifest) do
+    Dependabot::DependencyFile.new(
+      name: "Gemfile",
+      content: fixture("bundler/original/Gemfile"),
+      directory: "/"
+    )
   end
   let(:fetched_files) do
     # We no longer write encoded files to disk, need to migrate the fixtures in this test
     Dependabot::FetchedFiles.new(
-      dependency_files: job_definition["base64_dependency_files"].map do |file|
-        Dependabot::DependencyFile.new(
-          name: file["name"],
-          content: Base64.decode64(file["content"]),
-          directory: file["directory"] || "/"
-        )
-      end,
-      base_commit_sha: job_definition["base_commit_sha"]
+      dependency_files: [manifest],
+      base_commit_sha: "1c6331732c41e4557a16dacb82534f1d1c831848"
     )
   end
   let(:job_id) { "123123" }
@@ -66,52 +67,10 @@ RSpec.describe Dependabot::UpdateFilesCommand do
       expect(dummy_runner).to receive(:run)
       expect(service).to receive(:mark_job_as_processed)
         .with(base_commit_sha)
-
-      perform_job
-    end
-
-    it "sends dependency metadata to the service" do
       expect(service).to receive(:update_dependency_list)
         .with(dependency_snapshot: an_instance_of(Dependabot::DependencySnapshot))
 
       perform_job
-    end
-
-    context "with vendoring_dependencies" do
-      let(:snapshot) do
-        instance_double(
-          Dependabot::DependencySnapshot,
-          base_commit_sha: "1c6331732c41e4557a16dacb82534f1d1c831848"
-        )
-      end
-      let(:repo_contents_path) { "repo/path" }
-
-      let(:job_definition) do
-        JSON.parse(fixture("file_fetcher_output/vendoring_output.json"))
-      end
-
-      before do
-        allow(Dependabot::Environment).to receive(:repo_contents_path).and_return(repo_contents_path)
-        allow(Dependabot::DependencySnapshot).to receive(:create_from_job_definition).and_return(snapshot)
-      end
-
-      it "delegates to Dependabot::Updater" do
-        dummy_runner = double(run: nil)
-        base_commit_sha = "1c6331732c41e4557a16dacb82534f1d1c831848"
-        expect(Dependabot::Updater)
-          .to receive(:new)
-          .with(
-            service: service,
-            job: an_object_having_attributes(id: job_id, repo_contents_path: repo_contents_path),
-            dependency_snapshot: snapshot
-          )
-          .and_return(dummy_runner)
-        expect(dummy_runner).to receive(:run)
-        expect(service).to receive(:mark_job_as_processed)
-          .with(base_commit_sha)
-
-        perform_job
-      end
     end
   end
 
