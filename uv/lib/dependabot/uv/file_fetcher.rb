@@ -32,6 +32,10 @@ module Dependabot
         T::Hash[Symbol, T::Array[String]]
       )
 
+      # Common README file names. Some projects specify an explicit file in the
+      # pyproject [project] table via `readme = "README.md"` or a readme table.
+      README_FILENAMES = T.let(%w(README.md README.rst README.txt README).freeze, T::Array[String])
+
       MAX_FILE_SIZE = 500_000
 
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
@@ -83,6 +87,8 @@ module Dependabot
         fetched_files = []
 
         fetched_files += pyproject_files
+        # Fetch README support files if referenced in pyproject metadata (required by hatchling)
+        fetched_files += readme_files
 
         fetched_files += requirements_in_files
         fetched_files += requirement_files if requirements_txt_files.any?
@@ -111,6 +117,38 @@ module Dependabot
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def pyproject_files
         [pyproject].compact
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def readme_files
+        return [] unless pyproject
+
+        # Attempt to read the readme declaration from the pyproject. Accept both simplified
+        # string form and table form ( { file = "..." } ). If not explicitly declared
+        # fall back to fetching common README variants (best-effort; missing optional files ignored).
+        readme_decl = nil
+        begin
+          readme_decl = parsed_pyproject.dig("project", "readme")
+        rescue StandardError
+          # If the pyproject is unparseable we'll fail later in parsed_pyproject; ignore here.
+        end
+
+        candidate_names =
+          case readme_decl
+          when String then [readme_decl]
+          when Hash
+            if readme_decl["file"].is_a?(String)
+              [T.cast(readme_decl["file"], String)]
+            else
+              README_FILENAMES
+            end
+          else
+            README_FILENAMES
+          end
+
+        candidate_names.filter_map do |filename|
+          fetch_file_if_present(filename)&.tap { |f| f.support_file = true }
+        end
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
