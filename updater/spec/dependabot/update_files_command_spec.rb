@@ -68,7 +68,7 @@ RSpec.describe Dependabot::UpdateFilesCommand do
       expect(service).to receive(:mark_job_as_processed)
         .with(base_commit_sha)
       expect(service).to receive(:update_dependency_list)
-                           .with(dependency_snapshot: an_instance_of(Dependabot::DependencySnapshot))
+        .with(dependency_snapshot: an_instance_of(Dependabot::DependencySnapshot))
 
       perform_job
     end
