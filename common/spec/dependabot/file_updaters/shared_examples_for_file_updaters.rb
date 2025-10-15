@@ -10,8 +10,6 @@ RSpec.shared_examples "a dependency file updater" do
 
     let(:base_class) { Dependabot::FileUpdaters::Base }
 
-    its(:updated_files_regex) { is_expected.to be_an_instance_of(Array) }
-
     def recent_ancestors
       ancestors = described_class.ancestors.take_while { |a| a != base_class }
       [described_class] + ancestors

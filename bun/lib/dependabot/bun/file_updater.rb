@@ -32,14 +32,6 @@ module Dependabot
         end
       end
 
-      sig { override.returns(T::Array[Regexp]) }
-      def self.updated_files_regex
-        [
-          %r{^(?:.*\/)?package\.json$},
-          %r{^(?:.*\/)?bun\.lock$}
-        ]
-      end
-
       sig { override.returns(T::Array[DependencyFile]) }
       def updated_dependency_files
         updated_files = T.let([], T::Array[DependencyFile])

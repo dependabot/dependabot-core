@@ -16,16 +16,6 @@ module Dependabot
       require_relative "file_updater/lock_file_updater"
       require_relative "file_updater/requirement_file_updater"
 
-      sig { override.returns(T::Array[Regexp]) }
-      def self.updated_files_regex
-        [
-          /^.*\.txt$/,               # Match any .txt files (e.g., requirements.txt) at any level
-          /^.*\.in$/,                # Match any .in files at any level
-          /^.*pyproject\.toml$/,     # Match pyproject.toml at any level
-          /^.*uv\.lock$/             # Match uv.lock at any level
-        ]
-      end
-
       sig { override.returns(T::Array[DependencyFile]) }
       def updated_dependency_files
         updated_files = updated_pip_compile_based_files

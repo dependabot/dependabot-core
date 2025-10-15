@@ -32,15 +32,6 @@ module Dependabot
         use_repo_contents_stub if repo_contents_path.nil?
       end
 
-      sig { override.returns(T::Array[Regexp]) }
-      def self.updated_files_regex
-        [
-          /^go\.mod$/,
-          /^go\.sum$/,
-          %r{^vendor/.*}
-        ]
-      end
-
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
         updated_files = []

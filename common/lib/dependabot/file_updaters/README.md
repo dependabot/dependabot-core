@@ -12,7 +12,6 @@ Each `Dependabot::FileUpdaters` class implements the following methods:
 
 | Method                       | Description                                                                                   |
 |------------------------------|-----------------------------------------------------------------------------------------------|
-| `.updated_files_regex`       | An array of regular expressions matching the names of the files this class updates. Intended to be used by integrators when checking whether a commit may cause merge-conflicts with a dependency update pull request. |
 | `#updated_dependency_files`  | Returns an array of updated `Dependabot::DependencyFile` instances, with their content updated to include the updated dependency. |
 
 An integration might look as follows:
@@ -49,7 +48,6 @@ implement the following methods:
 
 | Method                      | Description             |
 |-----------------------------|-------------------------|
-| `.updated_files_regex`      | See Public API section. |
 | `#updated_dependency_files` | See Public API section. |
 
 To ensure the above are implemented, you should include
