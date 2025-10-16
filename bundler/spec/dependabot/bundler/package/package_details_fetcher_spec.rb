@@ -129,7 +129,6 @@ RSpec.describe Dependabot::Bundler::Package::PackageDetailsFetcher do
         end
       end
 
-
       context "when response body is not an array" do
         before do
           stub_request(:get, json_url)
