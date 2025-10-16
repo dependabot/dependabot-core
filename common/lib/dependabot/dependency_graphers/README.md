@@ -2,7 +2,7 @@
 
 Dependency graphers are used to convert a set of parsed dependencies into a data structure we can use to output the dependency graph of a project in a generic data structure based on GitHub's [Dependency submission API](https://docs.github.com/en/rest/dependency-graph/dependency-submission).
 
-We will expect each language Dependabot supports to implement a `Dependabot::DependencyGraphers` class in future, but for now any modules that do not implement a specific class fail over to a 'best effort' generic implementation that works in most cases.
+We will expect each language Dependabot supports to implement a `Dependabot::DependencyGraphers` class in future, but for now any modules that do not implement a specific class fail over to a 'best effort' generic implementation.
 
 ## Public API
 
@@ -39,9 +39,9 @@ An example of a `.resolved_dependencies` hash for a Bundler project:
 }
 ```
 
-## Writing a file fetcher for a new language
+## Writing a dependency grapher for a new language
 
-All new file fetchers should inherit from `Dependabot::DependencyGraphers::Base` and
+All new dependency graphers should inherit from `Dependabot::DependencyGraphers::Base` and
 implement the following methods:
 
 | Method                           | Description                                                                                   |
@@ -52,3 +52,10 @@ implement the following methods:
 
 > [!WARNING]
 > While PURLs are preferred in all languages for `.fetch_subdependencies`, for languages where multiple versions of a single dependency are permitted they _must_ be provided to be precise.
+
+## Overriding file parser behaviour
+
+In most cases, an ecosystem's file parser should provide us the dependency data we need to build the graph, but in some cases we may need to tweak this behaviour or experiment with alternative parsing strategies.
+
+The `Dependabot::DependencyGraphers::Base` class provides the `prepare!` method as the hook that is called to generate the dependency list - if required this method can be redefined for a specific ecosystem to make
+additional or alternative calls.

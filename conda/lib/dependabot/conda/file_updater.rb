@@ -12,8 +12,6 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base
       extend T::Sig
 
-      ENVIRONMENT_REGEX = /^environment\.ya?ml$/i
-
       # Common version constraint pattern for conda and pip dependencies
       VERSION_CONSTRAINT_PATTERN = '(\s*[=<>!~]=?\s*[^#\s]\S*(?:\s*,\s*[=<>!~]=?\s*[^#\s]\S*)*)?'
 
@@ -38,11 +36,6 @@ module Dependabot
         end,
         T.proc.params(arg0: T.untyped).returns(Regexp)
       )
-
-      sig { override.returns(T::Array[Regexp]) }
-      def self.updated_files_regex
-        [ENVIRONMENT_REGEX]
-      end
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files

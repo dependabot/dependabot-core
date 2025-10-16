@@ -1056,5 +1056,19 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         end.to raise_error(Dependabot::DependencyFileNotResolvable)
       end
     end
+
+    context "with a go.mod parsing error" do
+      let(:stderr) do
+        <<~ERROR
+          go: error loading go.mod: go.mod:7: unknown godebug 'tlskyber'
+        ERROR
+      end
+
+      it "raises the correct error" do
+        expect do
+          updater.send(:handle_subprocess_error, stderr)
+        end.to raise_error(Dependabot::DependencyFileNotParseable)
+      end
+    end
   end
 end
