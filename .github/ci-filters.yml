@@ -13,6 +13,9 @@ dry_run:
   - *shared
   - 'bin/dry-run.rb'
   - 'bin/spec/**'
+bazel:
+  - *shared
+  - 'bazel/**'
 bun:
   - *shared
   - 'bun/**'

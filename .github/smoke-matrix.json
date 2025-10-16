@@ -1,5 +1,10 @@
 [
   {
+    "core": "bazel",
+    "test": "bazel",
+    "ecosystem": "bazel"
+  },
+  {
     "core": "bundler",
     "test": "bundler",
     "ecosystem": "bundler"
