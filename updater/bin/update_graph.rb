@@ -9,6 +9,7 @@ require "dependabot/api_client"
 require "dependabot/environment"
 require "dependabot/service"
 require "dependabot/setup"
+require "dependabot/file_fetcher_command"
 require "dependabot/update_graph_command"
 require "debug" if ENV["DEBUG"]
 
@@ -36,12 +37,15 @@ trap("TERM") do
 end
 
 begin
+  fetcher = Dependabot::FileFetcherCommand.new
+  fetcher.run
+
   if flamegraph
     Flamegraph.generate("/tmp/dependabot-flamegraph.html") do
-      Dependabot::UpdateGraphCommand.new.run
+      Dependabot::UpdateGraphCommand.new(fetcher.files).run
     end
   else
-    Dependabot::UpdateGraphCommand.new.run
+    Dependabot::UpdateGraphCommand.new(fetcher.files).run
   end
 rescue Dependabot::RunFailure
   exit 1

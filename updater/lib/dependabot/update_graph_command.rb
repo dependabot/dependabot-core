@@ -1,9 +1,9 @@
 # typed: strict
 # frozen_string_literal: true
 
-require "base64"
 require "json"
 require "dependabot/base_command"
+require "dependabot/fetched_files"
 require "dependabot/dependency_snapshot"
 require "dependabot/errors"
 require "dependabot/opentelemetry"
@@ -16,24 +16,21 @@ module Dependabot
 
     ERROR_TYPE_LABEL = "update_graph_error"
 
+    sig { params(fetched_files: Dependabot::FetchedFiles).void }
+    def initialize(fetched_files)
+      @fetched_files = T.let(fetched_files, Dependabot::FetchedFiles)
+    end
+
     sig { override.void }
     def perform_job
       ::Dependabot::OpenTelemetry.tracer.in_span("update_graph", kind: :internal) do |span|
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id.to_s)
 
-        dependency_files = Environment.job_definition.fetch("base64_dependency_files").map do |a|
-          file = Dependabot::DependencyFile.new(**a.transform_keys(&:to_sym))
-          unless file.binary? && !file.deleted?
-            file.content = Base64.decode64(T.must(file.content)).force_encoding("utf-8")
-          end
-          file
-        end
-
         Dependabot::UpdateGraphProcessor.new(
           service: service,
           job: job,
-          base_commit_sha: T.must(base_commit_sha),
-          dependency_files: dependency_files
+          base_commit_sha: @fetched_files.base_commit_sha,
+          dependency_files: @fetched_files.dependency_files
         ).run
       rescue StandardError => e
         handle_error(e)
@@ -56,7 +53,7 @@ module Dependabot
 
     sig { override.returns(T.nilable(String)) }
     def base_commit_sha
-      Environment.job_definition["base_commit_sha"]
+      @fetched_files.base_commit_sha
     end
 
     private
