@@ -153,6 +153,98 @@ RSpec.describe Dependabot::GoModules::DependencyGrapher do
           end
         end
       end
+
+      context "with a substituted project" do
+        let(:go_mod) do
+          Dependabot::DependencyFile.new(
+            name: "go.mod",
+            content: fixture("projects", "substituted", "go.mod"),
+            directory: "/"
+          )
+        end
+
+        it "only graphs non-substituted modules" do
+          resolved_dependencies = grapher.resolved_dependencies
+
+          expect(resolved_dependencies.count).to be(1)
+
+          expect(resolved_dependencies.keys).to eql(
+            %w(
+              rsc.io/qr
+            )
+          )
+        end
+      end
+
+      context "with a multi-line substituted project" do
+        let(:go_mod) do
+          Dependabot::DependencyFile.new(
+            name: "go.mod",
+            content: fixture("projects", "substituted_multiline", "go.mod"),
+            directory: "/"
+          )
+        end
+
+        it "only graphs non-substituted modules" do
+          resolved_dependencies = grapher.resolved_dependencies
+
+          expect(resolved_dependencies.count).to be(1)
+
+          expect(resolved_dependencies.keys).to eql(
+            %w(
+              rsc.io/qr
+            )
+          )
+        end
+      end
+
+      context "with a multi-line substituted project missing cloned modules" do
+        let(:go_mod) do
+          Dependabot::DependencyFile.new(
+            name: "go.mod",
+            content: fixture("projects", "substituted_not_cloned", "go.mod"),
+            directory: "/"
+          )
+        end
+
+        it "only graphs non-substituted modules" do
+          resolved_dependencies = grapher.resolved_dependencies
+
+          expect(resolved_dependencies.count).to be(1)
+
+          expect(resolved_dependencies.keys).to eql(
+            %w(
+              rsc.io/qr
+            )
+          )
+        end
+      end
+
+      context "with k8s" do
+        let(:go_mod) do
+          Dependabot::DependencyFile.new(
+            name: "go.mod",
+            content: fixture("projects", "kubernetes", "go.mod"),
+            directory: "/"
+          )
+        end
+
+        # To run this test, check out k8s/k8s into `spec/fixtures/projects` and unskip
+        # surprisingly it _does_ work unlike an end-to-end run.
+        #
+        # I wonder if something in the fetch/grouping logic is filtering paths out?
+        xit "only graphs non-substituted modules" do
+          resolved_dependencies = grapher.resolved_dependencies
+
+          expect(resolved_dependencies.count).to be(178)
+
+          expect(resolved_dependencies.keys).to eql(
+            %w(
+              rsc.io/qr
+            )
+          )
+        end
+      end
     end
   end
 end
