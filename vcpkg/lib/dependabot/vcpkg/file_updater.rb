@@ -13,13 +13,6 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base
       extend T::Sig
 
-      sig { override.returns(T::Array[Regexp]) }
-      def self.updated_files_regex
-        [
-          /#{VCPKG_JSON_FILENAME}$/o
-        ]
-      end
-
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
         vcpkg_json_file = get_original_file(VCPKG_JSON_FILENAME)

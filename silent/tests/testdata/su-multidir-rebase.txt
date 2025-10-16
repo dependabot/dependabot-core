@@ -73,6 +73,3 @@ job:
     repo: test/dependabot-testing
     branch: main
   package-manager: silent
-  experiments:
-    lead_security_dependency: true
-
