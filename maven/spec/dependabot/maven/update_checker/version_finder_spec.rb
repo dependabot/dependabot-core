@@ -720,7 +720,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
     context "when the release has a nil version" do
       before do
         allow(finder).to receive(:fetch_latest_release).and_return(
-          double(version: nil, url: "https://repo.maven.apache.org/maven2")
+          instance_double(Dependabot::Package::PackageRelease, version: nil, url: "https://repo.maven.apache.org/maven2")
         )
       end
 
@@ -811,7 +811,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
     context "when the release has a nil version" do
       before do
         allow(finder).to receive(:fetch_lowest_security_fix_release).and_return(
-          double(version: nil, url: "https://repo.maven.apache.org/maven2")
+          instance_double(Dependabot::Package::PackageRelease, version: nil, url: "https://repo.maven.apache.org/maven2")
         )
       end
 
