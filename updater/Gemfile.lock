@@ -561,6 +561,7 @@ DEPENDENCIES
   dependabot-gradle!
   dependabot-helm!
   dependabot-hex!
+  dependabot-julia!
   dependabot-maven!
   dependabot-npm_and_yarn!
   dependabot-nuget!
@@ -644,6 +645,7 @@ CHECKSUMS
   dependabot-gradle (0.341.0)
   dependabot-helm (0.341.0)
   dependabot-hex (0.341.0)
+  dependabot-julia (0.341.0)
   dependabot-maven (0.341.0)
   dependabot-npm_and_yarn (0.341.0)
   dependabot-nuget (0.341.0)
