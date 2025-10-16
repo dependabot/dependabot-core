@@ -156,20 +156,42 @@ module Dependabot
             return package_details([])
           end
 
-          registry_url = get_url_from_dependency(dependency) || "https://rubygems.org" # Get registry_url
-
-          package_releases = JSON.parse(response.body).map do |release|
-            gem_name_with_version = "#{@dependency.name}-#{release['number']}"
-            package_release(
-              version: release["number"],
-              released_at: Time.parse(release["created_at"]),
-              downloads: release["downloads_count"],
-              url: format(GEM_URL, registry_url, gem_name_with_version),
-              ruby_version: release["ruby_version"]
-            )
+          if response.body.nil? || response.body.strip.empty?
+            Dependabot.logger.info("Empty response body for '#{dependency.name}' from '#{registry_url}'")
+            return package_details([])
           end
 
-          package_details(package_releases)
+          registry_url = get_url_from_dependency(dependency) || "https://rubygems.org" # Get registry_url
+
+          begin
+            parsed_response = JSON.parse(response.body)
+
+            unless parsed_response.is_a?(Array)
+              Dependabot.logger.info("Unexpected response format for '#{dependency.name}' from '#{registry_url}'")
+              return package_details([])
+            end
+
+            package_releases = parsed_response.map do |release|
+              gem_name_with_version = "#{@dependency.name}-#{release['number']}"
+              package_release(
+                version: release["number"],
+                released_at: Time.parse(release["created_at"]),
+                downloads: release["downloads_count"],
+                url: format(GEM_URL, registry_url, gem_name_with_version),
+                ruby_version: release["ruby_version"]
+              )
+            end
+            package_details(package_releases)
+          rescue JSON::ParserError => e
+            error_msg = "Failed to parse JSON response for '#{dependency.name}' from '#{registry_url}'"
+            Dependabot.logger.info(error_msg)
+            package_details([])
+          rescue StandardError => e
+            error_msg = "Unexpected error processing response for '#{dependency.name}' from " \
+                        "'#{registry_url}': #{e.message}"
+            Dependabot.logger.info(error_msg)
+            package_details([])
+          end
         end
 
         sig { params(dependency: T.untyped).returns(T.nilable(String)) }
