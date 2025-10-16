@@ -898,6 +898,36 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
         end
       end
     end
+
+    context "with invalid package manager specification" do
+      let(:response) do
+        "Invalid package manager specification in package.json (npm@>=10.9.0); expected a semver version"
+      end
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message)
+            .to include("Invalid package manager specification in package.json")
+            .and include("The packageManager field must specify a valid semver version")
+        end
+      end
+    end
+
+    context "with invalid npm authentication configuration error" do
+      let(:response) do
+        "npm warn using --force Recommended protections disabled.
+        npm error code ERR_INVALID_AUTH
+        npm error Invalid auth configuration found: `_auth` must be renamed"
+      end
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
+          expect(error.message)
+            .to include("Invalid npm authentication configuration found")
+            .and include("The _auth setting in .npmrc needs to be scoped to the specific registry")
+        end
+      end
+    end
   end
 
   context "with a override that conflicts with direct dependency" do

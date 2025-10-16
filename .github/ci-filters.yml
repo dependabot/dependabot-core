@@ -5,6 +5,10 @@ shared: &shared
   - 'updater/Gemfil*'
   - 'omnibus/**'
   - '.github/workflows/ci.yml'
+rakefile_tests:
+  - 'rakelib/**'
+  - 'Rakefile'
+  - 'script/test-rakefile'
 dry_run:
   - *shared
   - 'bin/dry-run.rb'

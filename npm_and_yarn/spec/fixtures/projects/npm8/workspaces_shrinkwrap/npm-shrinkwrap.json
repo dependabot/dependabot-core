@@ -1,0 +1,39 @@
+{
+  "name": "workspaces-shrinkwrap",
+  "version": "1.0.0",
+  "lockfileVersion": 3,
+  "requires": true,
+  "packages": {
+    "": {
+      "name": "workspaces-shrinkwrap",
+      "version": "1.0.0",
+      "workspaces": [
+        "packages/*"
+      ]
+    },
+    "packages/package1": {
+      "name": "package-1",
+      "version": "1.0.0",
+      "dependencies": {
+        "chalk": "0.3.0"
+      }
+    },
+    "node_modules/chalk": {
+      "version": "0.3.0",
+      "resolved": "https://registry.npmjs.org/chalk/-/chalk-0.3.0.tgz",
+      "integrity": "sha512-placeholder"
+    },
+    "packages/package1/node_modules/chalk": {
+      "version": "0.3.0",
+      "resolved": "https://registry.npmjs.org/chalk/-/chalk-0.3.0.tgz",
+      "integrity": "sha512-placeholder"
+    }
+  },
+  "dependencies": {
+    "chalk": {
+      "version": "0.3.0",
+      "resolved": "https://registry.npmjs.org/chalk/-/chalk-0.3.0.tgz",
+      "integrity": "sha512-placeholder"
+    }
+  }
+}
