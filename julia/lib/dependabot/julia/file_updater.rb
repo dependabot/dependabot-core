@@ -12,7 +12,7 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base
       extend T::Sig
 
-      sig { override.returns(T::Array[Regexp]) }
+      sig { returns(T::Array[Regexp]) }
       def self.updated_files_regex
         [/(?:Julia)?Project\.toml$/i, /(?:Julia)?Manifest(?:-v[\d.]+)?\.toml$/i]
       end
