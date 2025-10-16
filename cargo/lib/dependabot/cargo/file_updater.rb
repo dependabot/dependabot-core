@@ -18,14 +18,6 @@ module Dependabot
       require_relative "file_updater/lockfile_updater"
       require_relative "file_updater/workspace_manifest_updater"
 
-      sig { override.returns(T::Array[Regexp]) }
-      def self.updated_files_regex
-        [
-          /Cargo\.toml$/, # Matches Cargo.toml in the root directory or any subdirectory
-          /Cargo\.lock$/  # Matches Cargo.lock in the root directory or any subdirectory
-        ]
-      end
-
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
         # Returns an array of updated files. Only files that have been updated

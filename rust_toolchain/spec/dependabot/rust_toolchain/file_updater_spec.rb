@@ -28,28 +28,6 @@ RSpec.describe Dependabot::RustToolchain::FileUpdater do
     )
   end
 
-  describe ".updated_files_regex" do
-    subject(:updated_files_regex) { described_class.updated_files_regex }
-
-    it "returns an array of regexes for rust toolchain files" do
-      expect(updated_files_regex).to be_an(Array)
-      expect(updated_files_regex).to all(be_a(Regexp))
-    end
-
-    it "matches rust-toolchain file" do
-      expect(updated_files_regex.any? { |regex| "rust-toolchain" =~ regex }).to be true
-    end
-
-    it "matches rust-toolchain.toml file" do
-      expect(updated_files_regex.any? { |regex| "rust-toolchain.toml" =~ regex }).to be true
-    end
-
-    it "does not match other files" do
-      expect(updated_files_regex.any? { |regex| "Cargo.toml" =~ regex }).to be false
-      expect(updated_files_regex.any? { |regex| "some-other-file" =~ regex }).to be false
-    end
-  end
-
   describe "#updated_dependency_files" do
     context "with rust-toolchain file" do
       let(:dependency_files) do
