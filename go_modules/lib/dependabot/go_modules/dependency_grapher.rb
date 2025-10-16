@@ -9,6 +9,17 @@ require "dependabot/dependency_graphers/base"
 module Dependabot
   module GoModules
     class DependencyGrapher < Dependabot::DependencyGraphers::Base
+      # Used to capture output from `go mod graph`
+      #
+      # The parent and child are space-separated and we process one line at a time.
+      #
+      # Example output:
+      #   github.com/dependabot/core-test rsc.io/sampler@v1.3.0
+      #   rsc.io/sampler@v1.3.0 golang.org/x/text@v0.0.0-20170915032832-14c0d48ead0c
+      #   <---parent--->        <----child------>
+      #
+      GO_MOD_GRAPH_LINE_REGEX = /^(?<parent>[^@\s]+)@?[^\s]*\s(?<child>[^@\s]+)/
+
       sig { override.returns(Dependabot::DependencyFile) }
       def relevant_dependency_file
         # This cannot realistically happen as the parser will throw a runtime error on init without a go_mod file,
@@ -26,7 +37,7 @@ module Dependabot
       # doing this in the parser shouldn't add a huge overhead.
       sig { override.params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
       def fetch_subdependencies(dependency)
-        dependency.metadata.fetch(:depends_on, [])
+        package_relationships.fetch(dependency.name, [])
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
@@ -51,6 +62,31 @@ module Dependabot
       sig { override.params(_dependency: Dependabot::Dependency).returns(String) }
       def purl_pkg_for(_dependency)
         "golang"
+      end
+
+      sig { returns(T::Hash[String, T.untyped]) }
+      def package_relationships
+        @package_relationships ||= T.let(
+          fetch_package_relationships,
+          T.nilable(T::Hash[String, T.untyped])
+        )
+      end
+
+      sig { returns(T::Hash[String, T.untyped]) }
+      def fetch_package_relationships
+        T.cast(
+          file_parser,
+          Dependabot::GoModules::FileParser
+        ).run_in_parsed_context("go mod graph").lines.each_with_object({}) do |line, rels|
+          match = line.match(GO_MOD_GRAPH_LINE_REGEX)
+          unless match
+            Dependabot.logger.warn("Unexpected output from 'go mod graph': 'line'")
+            next
+          end
+
+          rels[match[:parent]] ||= []
+          rels[match[:parent]] << match[:child]
+        end
       end
     end
   end

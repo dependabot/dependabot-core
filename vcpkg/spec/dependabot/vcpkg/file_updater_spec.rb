@@ -66,15 +66,6 @@ RSpec.describe Dependabot::Vcpkg::FileUpdater do
     )
   end
 
-  describe ".updated_files_regex" do
-    subject(:updated_files_regex) { described_class.updated_files_regex }
-
-    it "matches vcpkg.json files" do
-      expect(updated_files_regex).to include(match("vcpkg.json"))
-      expect(updated_files_regex).to include(match("path/to/vcpkg.json"))
-    end
-  end
-
   describe "#updated_dependency_files" do
     subject(:updated_dependency_files) { updater.updated_dependency_files }
 

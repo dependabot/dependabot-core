@@ -4,7 +4,7 @@
 require "spec_helper"
 require "support/dummy_pkg_helpers"
 require "support/dependency_file_helpers"
-
+require "dependabot/fetched_files"
 require "dependabot/dependency_change"
 require "dependabot/dependency_snapshot"
 require "dependabot/service"
@@ -51,24 +51,19 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
   let(:job) do
     Dependabot::Job.new_update_job(
       job_id: "1558782000",
-      job_definition: job_definition_with_fetched_files
+      job_definition:
     )
   end
 
   let(:dependency_snapshot) do
     Dependabot::DependencySnapshot.create_from_job_definition(
-      job: job,
-      job_definition: job_definition_with_fetched_files
+      job:,
+      fetched_files:
     )
   end
 
-  let(:job_definition_with_fetched_files) do
-    job_definition.merge(
-      {
-        "base_commit_sha" => "mock-sha",
-        "base64_dependency_files" => encode_dependency_files(dependency_files)
-      }
-    )
+  let(:fetched_files) do
+    Dependabot::FetchedFiles.new(base_commit_sha: "mock-sha", dependency_files:)
   end
 
   let(:dependency_files) do
@@ -157,8 +152,6 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
   end
 
   before do
-    allow(Dependabot::Experiments).to receive(:enabled?).with(:lead_security_dependency).and_return(false)
-
     allow(Dependabot::UpdateCheckers).to receive(:for_package_manager).and_return(stub_update_checker_class)
     allow(Dependabot::DependencyChangeBuilder)
       .to receive(:create_from)
@@ -235,7 +228,11 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
           latest_version: Dependabot::Version.new("4.0.1"),
           requirements_unlocked_or_can_be?: true
         )
-        allow(job).to receive_messages(allowed_update?: true, dependencies: ["dummy-pkg-a"])
+        allow(job).to receive_messages(
+          allowed_update?: true,
+          dependencies: ["dummy-pkg-a"],
+          security_advisories: [{ "dependency-name" => "dummy-pkg-a" }]
+        )
       end
 
       it "checks if a pull request already exists" do
@@ -303,7 +300,6 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
 
     context "when the update is allowed and lead dependency is out of order with security advisory" do
       before do
-        allow(Dependabot::Experiments).to receive(:enabled?).with(:lead_security_dependency).and_return(true)
         allow(stub_update_checker).to receive_messages(
           up_to_date?: false,
           requirements_unlocked_or_can_be?: true
@@ -312,10 +308,6 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
           allowed_update?: true,
           security_advisories: [{ "dependency-name" => "dummy-pkg-a" }]
         )
-      end
-
-      after do
-        allow(Dependabot::Experiments).to receive(:enabled?).with(:lead_security_dependency).and_return(false)
       end
 
       it "checks if a pull request already exists" do
@@ -338,7 +330,6 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
 
     context "when the update is allowed and lead dependency is out of order with security advisory" do
       before do
-        allow(Dependabot::Experiments).to receive(:enabled?).with(:lead_security_dependency).and_return(true)
         allow(stub_update_checker).to receive_messages(
           up_to_date?: false,
           requirements_unlocked_or_can_be?: true
@@ -347,10 +338,6 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
           allowed_update?: true,
           security_advisories: [{ "dependency-name" => "dummy-pkg-a" }]
         )
-      end
-
-      after do
-        allow(Dependabot::Experiments).to receive(:enabled?).with(:lead_security_dependency).and_return(false)
       end
 
       it "checks if a pull request already exists" do
@@ -373,7 +360,6 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
 
     context "when the dependency name has upper-case characters" do
       before do
-        allow(Dependabot::Experiments).to receive(:enabled?).with(:lead_security_dependency).and_return(true)
         allow(stub_update_checker).to receive_messages(
           up_to_date?: false,
           requirements_unlocked_or_can_be?: true
@@ -382,10 +368,6 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
           allowed_update?: true,
           security_advisories: [{ "dependency-name" => "Dummy-Pkg-A" }]
         )
-      end
-
-      after do
-        allow(Dependabot::Experiments).to receive(:enabled?).with(:lead_security_dependency).and_return(false)
       end
 
       let(:dependency) do
