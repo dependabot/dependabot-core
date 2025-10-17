@@ -158,6 +158,39 @@ RSpec.describe Dependabot::Docker::FileUpdater do
       its(:content) { is_expected.to include "RUN apt-get update" }
     end
 
+    context "when the old tag is a prefix of the new tag" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "python",
+          version: "3.6.30",
+          previous_version: "3.6.3",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { tag: "3.6.30" }
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { tag: "3.6.3" }
+          }],
+          package_manager: "docker"
+        )
+      end
+
+      describe "the updated Dockerfile" do
+        subject(:updated_dockerfile) do
+          updated_files.find { |f| f.name == "Dockerfile" }
+        end
+
+        its(:content) { is_expected.to include "FROM ubuntu:17.04\n" }
+        its(:content) { is_expected.to include "FROM python:3.6.30\n" }
+        its(:content) { is_expected.to include "RUN apt-get update" }
+      end
+    end
+
     context "when multiple identical lines need to be updated" do
       let(:dockerfile_body) do
         fixture("docker", "dockerfiles", "multiple_identical")
