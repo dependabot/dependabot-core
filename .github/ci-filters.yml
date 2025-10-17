@@ -62,6 +62,9 @@ gradle:
 hex:
   - *shared
   - 'hex/**'
+julia:
+  - *shared
+  - 'julia/**'
 maven:
   - *shared
   - 'maven/**'
