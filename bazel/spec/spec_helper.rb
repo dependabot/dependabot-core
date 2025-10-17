@@ -10,3 +10,7 @@ def require_common_spec(path)
 end
 
 require "#{common_dir}/spec/spec_helper.rb"
+
+def bazel_project_dependency_files(project, directory: "/")
+  project_dependency_files(project, directory: directory)
+end

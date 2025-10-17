@@ -1,4 +1,4 @@
-# typed: strong
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/dependency"
@@ -6,6 +6,7 @@ require "dependabot/dependency_file"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/bazel/version"
+require "dependabot/bazel/file_parser/starlark_parser"
 require "dependabot/errors"
 
 module Dependabot
@@ -13,33 +14,31 @@ module Dependabot
     class FileParser < Dependabot::FileParsers::Base
       extend T::Sig
 
-      # Regular expressions for parsing different dependency types
-      BAZEL_DEP_REGEX = /bazel_dep\(\s*name\s*=\s*"([^"]+)"\s*,\s*version\s*=\s*"([^"]+)"/m
-      HTTP_ARCHIVE_REGEX = /http_archive\(\s*name\s*=\s*"([^"]+)"\s*,(?:[^}])*?urls\s*=\s*\[[^\]]*"([^"]*)"[^\]]*\]/m
-      GIT_REPOSITORY_REGEX = /git_repository\(\s*name\s*=\s*"([^"]+)"\s*,(?:[^}])*?(?:tag\s*=\s*"([^"]+)"|commit\s*=\s*"([^"]+)")/m
-      LOAD_REGEX = /load\(\s*"@([^\/]+)(?:\/\/([^"]*))?"[^)]*\)/
-      DEPS_REGEX = /deps\s*=\s*\[\s*([^\]]+)\]/m
+      REPOSITORY_REFERENCE = "@([^/]+)"
+
+      DEPS_REGEX = /
+        deps\s*=\s*                           # deps parameter assignment
+        \[                                    # Opening bracket
+        \s*                                   # Optional whitespace
+        ([^\]]+)                              # Capture group 1: content within brackets
+        \]                                    # Closing bracket
+      /mx
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
         dependencies = T.let([], T::Array[Dependabot::Dependency])
 
-        # Parse MODULE.bazel files (Bzlmod dependencies)
         module_files.each do |file|
           dependencies.concat(parse_module_file(file))
         end
 
-        # Parse WORKSPACE files (legacy dependencies)
         workspace_files.each do |file|
           dependencies.concat(parse_workspace_file(file))
         end
 
-        # Parse BUILD files for load statements and external references
         build_files.each do |file|
           dependencies.concat(parse_build_file(file))
         end
-
-        debugger
 
         dependencies.uniq { |dep| [dep.name, dep.version] }
       end
@@ -77,14 +76,29 @@ module Dependabot
         )
       end
 
+      sig { returns(T.nilable(String)) }
+      def bazel_version
+        bazelversion_file = dependency_files.find { |f| f.name == ".bazelversion" }
+        bazelversion_file&.content&.strip
+      end
+
       sig { params(file: Dependabot::DependencyFile).returns(T::Array[Dependabot::Dependency]) }
       def parse_module_file(file)
         dependencies = T.let([], T::Array[Dependabot::Dependency])
         content = file.content
         return dependencies unless content
 
-        # Parse bazel_dep() declarations
-        content.scan(BAZEL_DEP_REGEX) do |name, version|
+        parser = StarlarkParser.new(content)
+        function_calls = parser.parse_function_calls
+
+        function_calls.each do |func_call|
+          next unless func_call.name == "bazel_dep"
+
+          name = func_call.arguments["name"]
+          version = func_call.arguments["version"]
+
+          next unless name && version
+
           dependencies << Dependabot::Dependency.new(
             name: name,
             version: version,
@@ -109,40 +123,130 @@ module Dependabot
         content = file.content
         return dependencies unless content
 
-        # Parse http_archive() declarations
-        content.scan(HTTP_ARCHIVE_REGEX) do |name, url|
-          version = extract_version_from_url(url)
-          next unless version
+        parser = StarlarkParser.new(content)
+        function_calls = parser.parse_function_calls
 
-          dependencies << Dependabot::Dependency.new(
-            name: name,
-            version: version,
-            requirements: [
-              {
-                file: file.name,
-                requirement: version,
-                groups: [],
-                source: { type: "http_archive", url: url }
-              }
-            ],
-            package_manager: "bazel"
-          )
+        function_calls.each do |func_call|
+          dependency = case func_call.name
+                       when "http_archive"
+                         parse_http_archive_dependency(func_call, file)
+                       when "git_repository"
+                         parse_git_repository_dependency(func_call, file)
+                       end
+
+          dependencies << dependency if dependency
         end
 
-        # Parse git_repository() declarations
-        content.scan(GIT_REPOSITORY_REGEX) do |name, tag, commit|
-          version = tag || commit
-          next unless version
+        dependencies
+      end
+
+      sig do
+        params(
+          func_call: StarlarkParser::FunctionCall,
+          file: Dependabot::DependencyFile
+        ).returns(T.nilable(Dependabot::Dependency))
+      end
+      def parse_http_archive_dependency(func_call, file)
+        name = func_call.arguments["name"]
+        urls = func_call.arguments["urls"]
+
+        url = urls.is_a?(Array) ? urls.first : urls
+        return nil unless name && url
+
+        version = extract_version_from_url(url)
+        return nil unless version
+
+        Dependabot::Dependency.new(
+          name: name,
+          version: version,
+          requirements: [
+            {
+              file: file.name,
+              requirement: version,
+              groups: [],
+              source: { type: "http_archive", url: url }
+            }
+          ],
+          package_manager: "bazel"
+        )
+      end
+
+      sig do
+        params(
+          func_call: StarlarkParser::FunctionCall,
+          file: Dependabot::DependencyFile
+        ).returns(T.nilable(Dependabot::Dependency))
+      end
+      def parse_git_repository_dependency(func_call, file)
+        name = func_call.arguments["name"]
+        tag = func_call.arguments["tag"]
+        commit = func_call.arguments["commit"]
+
+        version = tag || commit
+        return nil unless name && version
+
+        Dependabot::Dependency.new(
+          name: name,
+          version: version,
+          requirements: [
+            {
+              file: file.name,
+              requirement: version,
+              groups: [],
+              source: { type: "git_repository", tag: tag, commit: commit }
+            }
+          ],
+          package_manager: "bazel"
+        )
+      end
+
+      sig { params(file: Dependabot::DependencyFile).returns(T::Array[Dependabot::Dependency]) }
+      def parse_build_file(file)
+        # Parses BUILD files for load() statements and dependency references
+        dependencies = T.let([], T::Array[Dependabot::Dependency])
+        content = file.content
+        return dependencies unless content
+
+        parser = StarlarkParser.new(content)
+        function_calls = parser.parse_function_calls
+
+        dependencies.concat(parse_load_statements(function_calls, file))
+        dependencies.concat(parse_dependency_references(content, file))
+
+        dependencies
+      end
+
+      sig do
+        params(
+          function_calls: T::Array[StarlarkParser::FunctionCall],
+          file: Dependabot::DependencyFile
+        ).returns(T::Array[Dependabot::Dependency])
+      end
+      def parse_load_statements(function_calls, file)
+        dependencies = T.let([], T::Array[Dependabot::Dependency])
+
+        function_calls.each do |func_call|
+          next unless func_call.name == "load"
+
+          first_arg = func_call.positional_arguments.first
+          next unless first_arg.is_a?(String)
+
+          match = first_arg.match(%r{^@([^/]+)})
+          next unless match
+
+          repo_name = match[1]
+          next unless repo_name
+          next if repo_name == "bazel_tools"
 
           dependencies << Dependabot::Dependency.new(
-            name: name,
-            version: version,
+            name: repo_name,
+            version: nil,
             requirements: [
               {
                 file: file.name,
-                requirement: version,
-                groups: [],
-                source: { type: "git_repository", tag: tag, commit: commit }
+                requirement: nil,
+                groups: ["load_references"],
+                source: { type: "load_statement" }
               }
             ],
             package_manager: "bazel"
@@ -152,39 +256,23 @@ module Dependabot
         dependencies
       end
 
-      sig { params(file: Dependabot::DependencyFile).returns(T::Array[Dependabot::Dependency]) }
-      def parse_build_file(file)
+      sig do
+        params(
+          content: String,
+          file: Dependabot::DependencyFile
+        ).returns(T::Array[Dependabot::Dependency])
+      end
+      def parse_dependency_references(content, file)
         dependencies = T.let([], T::Array[Dependabot::Dependency])
-        content = file.content
-        return dependencies unless content
 
-        # Parse load() statements for external repository references
-        content.scan(LOAD_REGEX) do |repo_name, _path|
-          # Only include external repositories (those starting with @)
-          next if repo_name == "bazel_tools" # Skip built-in tools
-
-          # For BUILD file references, we don't have explicit versions
-          # so we mark them as dependency references without specific versions
-          dependencies << Dependabot::Dependency.new(
-            name: repo_name,
-            version: nil,
-            requirements: [
-              {
-                file: file.name,
-                requirement: nil,
-                groups: ["load"],
-                source: { type: "load_statement" }
-              }
-            ],
-            package_manager: "bazel"
-          )
-        end
-
-        # Parse deps attributes for external repository references
         content.scan(DEPS_REGEX) do |deps_content|
-          deps_content.scan(/"@([^\/]+)/) do |repo_name|
+          deps_content_str = deps_content[0] # Extract the string from the array
+
+          dependency_reference_pattern = /"#{REPOSITORY_REFERENCE}/o
+
+          deps_content_str.scan(dependency_reference_pattern) do |repo_name|
             repo_name = repo_name[0]
-            next if repo_name == "bazel_tools" # Skip built-in tools
+            next if repo_name == "bazel_tools"
 
             dependencies << Dependabot::Dependency.new(
               name: repo_name,
@@ -207,19 +295,30 @@ module Dependabot
 
       sig { params(url: String).returns(T.nilable(String)) }
       def extract_version_from_url(url)
-        # Try to extract version from common URL patterns
-        # GitHub releases: https://github.com/owner/repo/archive/v1.2.3.tar.gz
-        if url.match(%r{github\.com/[^/]+/[^/]+/archive/(?:v?([^/]+))\.})
-          return Regexp.last_match(1)
-        end
+        # GitHub archive URLs: /archive/v1.2.3.tar.gz
+        github_archive_pattern = %r{
+          github\.com/[^/]+/[^/]+/archive/  # GitHub archive path
+          (?:v?([^/]+))                     # Capture version (with optional 'v' prefix)
+          \.(?:tar\.gz|tar\.bz2|zip)$       # Archive extension
+        }x
 
-        # GitHub releases: https://github.com/owner/repo/releases/download/v1.2.3/file.tar.gz
-        if url.match(%r{github\.com/[^/]+/[^/]+/releases/download/(?:v?([^/]+))/})
-          return Regexp.last_match(1)
-        end
+        # GitHub release URLs: /releases/download/v1.2.3/
+        github_release_pattern = %r{
+          github\.com/[^/]+/[^/]+/releases/download/  # GitHub releases path
+          (?:v?([^/]+))/                              # Capture version (with optional 'v' prefix)
+        }x
 
-        # Generic version patterns in URL
-        if url.match(%r{/(?:v?([0-9]+(?:\.[0-9]+)*(?:[+-][^/]*)?))(?:\.tar\.gz|\.zip|$)})
+        # Generic version pattern in URLs
+        generic_version_pattern = %r{
+          /(?:v?([0-9]+(?:\.[0-9]+)*(?:[+-][^/]*)?))  # Capture semantic version
+          (?:\.tar\.gz|\.zip|$)                       # Optional archive extension or end
+        }x
+
+        if url =~ github_archive_pattern
+          return Regexp.last_match(1)
+        elsif url =~ github_release_pattern
+          return Regexp.last_match(1)
+        elsif url =~ generic_version_pattern
           return Regexp.last_match(1)
         end
 

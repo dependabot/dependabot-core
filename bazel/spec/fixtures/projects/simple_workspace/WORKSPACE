@@ -1,0 +1,13 @@
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+http_archive(
+    name = "rules_cc",
+    urls = ["https://github.com/bazelbuild/rules_cc/archive/v0.1.1.tar.gz"],
+    sha256 = "abc123...",
+)
+
+http_archive(
+    name = "abseil-cpp",
+    urls = ["https://github.com/abseil/abseil-cpp/archive/20230125.3.tar.gz"],
+    sha256 = "def456...",
+)

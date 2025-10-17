@@ -1,0 +1,5 @@
+http_archive(
+    name = "rules_python",
+    sha256 = "abc123",
+    urls = ["https://github.com/bazelbuild/rules_python/archive/0.25.0.tar.gz"],
+)

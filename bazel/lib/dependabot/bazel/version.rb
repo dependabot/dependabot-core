@@ -9,7 +9,9 @@ module Dependabot
     class Version < Dependabot::Version
       extend T::Sig
 
-      VERSION_PATTERN = T.let(/^v?(\d+(?:\.\d+)*(?:[-.]?(?:alpha|beta|rc|pre|dev|snapshot)\d*)?(?:\+[a-zA-Z0-9\-_.]+)?)$/i.freeze, Regexp)
+      VERSION_PATTERN = T.let(
+        /^v?(\d+(?:\.\d+)*(?:[-.]?(?:alpha|beta|rc|pre|dev|snapshot)\d*)?(?:\+[a-zA-Z0-9\-_.]+)?)$/i, Regexp
+      )
 
       sig { override.params(version: VersionParameter).returns(T::Boolean) }
       def self.correct?(version)
@@ -33,14 +35,11 @@ module Dependabot
         @version_string
       end
 
-      sig { params(other: T.untyped).returns(T.nilable(Integer)) }
+      sig { params(other: Dependabot::Version).returns(T.nilable(Integer)) }
       def <=>(other)
-        return nil unless other.is_a?(Dependabot::Version)
-
         version_without_prefix = @version_string.sub(/^v/, "")
         other_version_without_prefix = other.to_s.sub(/^v/, "")
 
-        # Handle semantic versioning comparison using Gem::Version
         Gem::Version.new(version_without_prefix) <=>
           Gem::Version.new(other_version_without_prefix)
       end
