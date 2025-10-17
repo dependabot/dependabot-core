@@ -162,8 +162,10 @@ module Dependabot
       def latest_version_listing
         return @latest_version_listing unless @latest_version_listing.nil?
 
-        response = Dependabot::RegistryClient.get(url: "#{dependency_url}/latest",
-                                                  headers: registry_auth_headers)
+        response = Dependabot::RegistryClient.get(
+          url: "#{dependency_url}/latest",
+          headers: registry_auth_headers
+        )
         return @latest_version_listing = {} if response.status >= 500
 
         begin

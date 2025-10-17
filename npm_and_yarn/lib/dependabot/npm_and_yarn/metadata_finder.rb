@@ -112,7 +112,7 @@ module Dependabot
 
       sig do
         params(
-          details: T.nilable(T.any(String, T::Hash[String, T.untyped]))
+          details: T.nilable(T.any(String, T::Array[T.untyped], T::Hash[String, T.untyped]))
         )
           .returns(T.nilable(Dependabot::Source))
       end
@@ -151,7 +151,7 @@ module Dependabot
 
       sig do
         params(
-          details: T.nilable(T.any(String, T::Hash[String, T.untyped]))
+          details: T.nilable(T.any(String, T::Array[T.untyped], T::Hash[String, T.untyped]))
         )
           .returns(T.nilable(String))
       end

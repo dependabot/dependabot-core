@@ -1,1 +1,5 @@
 inherit_from: ../.rubocop.yml
+
+Sorbet/ForbidTUnsafe:
+  Exclude:
+    - lib/dependabot/python/file_updater/pip_compile_file_updater.rb

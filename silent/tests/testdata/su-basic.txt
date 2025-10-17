@@ -92,6 +92,7 @@ job:
   existing-pull-requests:
     - - dependency-name: dependency-a
         dependency-version: 1.2.4
+        pr-number: 123
 
 -- input-rebase-new.yml --
 job:
@@ -122,3 +123,4 @@ job:
     - - dependency-name: dependency-a
         dependency-version: 1.2.4
         directory: "/"
+        pr-number: 456

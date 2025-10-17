@@ -224,6 +224,11 @@ docker run --rm -ti \
   -v "$(pwd)/hex/lib:$CODE_DIR/hex/lib" \
   -v "$(pwd)/hex/script:$CODE_DIR/hex/script" \
   -v "$(pwd)/hex/spec:$CODE_DIR/hex/spec" \
+  -v "$(pwd)/julia/.rubocop.yml:$CODE_DIR/julia/.rubocop.yml" \
+  -v "$(pwd)/julia/dependabot-julia.gemspec:$CODE_DIR/julia/dependabot-julia.gemspec" \
+  -v "$(pwd)/julia/lib:$CODE_DIR/julia/lib" \
+  -v "$(pwd)/julia/script:$CODE_DIR/julia/script" \
+  -v "$(pwd)/julia/spec:$CODE_DIR/julia/spec" \
   -v "$(pwd)/maven/.rubocop.yml:$CODE_DIR/maven/.rubocop.yml" \
   -v "$(pwd)/maven/dependabot-maven.gemspec:$CODE_DIR/maven/dependabot-maven.gemspec" \
   -v "$(pwd)/maven/lib:$CODE_DIR/maven/lib" \

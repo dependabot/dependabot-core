@@ -47,8 +47,10 @@ module Dependabot
               if T.must(old_version_changelog_line) < T.must(new_version_changelog_line)
                 Range.new(old_version_changelog_line, -1)
               else
-                Range.new(new_version_changelog_line,
-                          T.must(old_version_changelog_line) - 1)
+                Range.new(
+                  new_version_changelog_line,
+                  T.must(old_version_changelog_line) - 1
+                )
               end
             elsif old_version_changelog_line
               return if T.must(old_version_changelog_line).zero?

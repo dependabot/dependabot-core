@@ -422,8 +422,10 @@ RSpec.describe Dependabot::DockerCompose::FileUpdater do
           end
 
           its(:content) do
-            is_expected.to include("image: registry-host.io:5000/" \
-                                   "myreg/ubuntu@sha256:3ea1ca1aa")
+            is_expected.to include(
+              "image: registry-host.io:5000/" \
+              "myreg/ubuntu@sha256:3ea1ca1aa"
+            )
           end
 
           its(:content) do

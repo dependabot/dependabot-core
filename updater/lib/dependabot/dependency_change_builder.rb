@@ -57,8 +57,10 @@ module Dependabot
       @job = job
 
       dir = Pathname.new(job.source.directory).cleanpath
-      @dependency_files = T.let(dependency_files.select { |f| Pathname.new(f.directory).cleanpath == dir },
-                                T::Array[Dependabot::DependencyFile])
+      @dependency_files = T.let(
+        dependency_files.select { |f| Pathname.new(f.directory).cleanpath == dir },
+        T::Array[Dependabot::DependencyFile]
+      )
 
       raise "Missing directory in dependency files: #{dir}" unless @dependency_files.any?
 
@@ -128,9 +130,11 @@ module Dependabot
     def generate_dependency_files
       if updated_dependencies.one?
         updated_dependency = T.must(updated_dependencies.first)
-        Dependabot.logger.info("Updating #{updated_dependency.name} from " \
-                               "#{updated_dependency.previous_version} to " \
-                               "#{updated_dependency.version}")
+        Dependabot.logger.info(
+          "Updating #{updated_dependency.name} from " \
+          "#{updated_dependency.previous_version} to " \
+          "#{updated_dependency.version}"
+        )
       else
         dependency_names = updated_dependencies.map(&:name)
         Dependabot.logger.info("Updating #{dependency_names.join(', ')}")

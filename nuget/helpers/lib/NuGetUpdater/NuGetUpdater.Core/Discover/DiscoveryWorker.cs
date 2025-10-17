@@ -106,7 +106,11 @@ public partial class DiscoveryWorker : IDiscoveryWorker
             _logger.Info($"Workspace path [{workspacePath}] does not exist.");
         }
 
-        //if any projectResults are not successful, return a failed result
+        // filter to only projects in the repo that could possibly be updated
+        var repoRoot = new DirectoryInfo(repoRootPath);
+        projectResults = [.. projectResults.Where(p => PathHelper.IsFileUnderDirectory(repoRoot, new FileInfo(Path.Join(workspacePath, p.FilePath))))];
+
+        // if any projectResults are not successful, return a failed result
         if (projectResults.Any(p => p.IsSuccess == false))
         {
             var failedProjectResult = projectResults.Where(p => p.IsSuccess == false).First();

@@ -26,14 +26,17 @@ module Dependabot
 
       # These are errors that halt the update run and are handled in the main
       # backend. They do *not* raise a sentry.
-      RUN_HALTING_ERRORS = T.let({
-        Dependabot::OutOfDisk => "out_of_disk",
-        Dependabot::OutOfMemory => "out_of_memory",
-        Dependabot::AllVersionsIgnored => "all_versions_ignored",
-        Dependabot::UnexpectedExternalCode => "unexpected_external_code",
-        Errno::ENOSPC => "out_of_disk",
-        Octokit::Unauthorized => "octokit_unauthorized"
-      }.freeze, T::Hash[Module, String])
+      RUN_HALTING_ERRORS = T.let(
+        {
+          Dependabot::OutOfDisk => "out_of_disk",
+          Dependabot::OutOfMemory => "out_of_memory",
+          Dependabot::AllVersionsIgnored => "all_versions_ignored",
+          Dependabot::UnexpectedExternalCode => "unexpected_external_code",
+          Errno::ENOSPC => "out_of_disk",
+          Octokit::Unauthorized => "octokit_unauthorized"
+        }.freeze,
+        T::Hash[Module, String]
+      )
 
       sig { params(service: Service, job: Job).void }
       def initialize(service:, job:)
@@ -207,10 +210,13 @@ module Dependabot
           ErrorAttributes::DEPENDENCY_GROUPS => job.dependency_groups
         }.compact
 
-        service.increment_metric("updater.update_job_unknown_error", tags: {
-          package_manager: job.package_manager,
-          class_name: error.class.name
-        })
+        service.increment_metric(
+          "updater.update_job_unknown_error",
+          tags: {
+            package_manager: job.package_manager,
+            class_name: error.class.name
+          }
+        )
         service.record_update_job_unknown_error(error_type: "unknown_error", error_details: error_details)
       end
 

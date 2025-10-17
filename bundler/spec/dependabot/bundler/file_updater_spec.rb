@@ -54,50 +54,6 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
 
   it_behaves_like "a dependency file updater"
 
-  describe "#updated_files_regex" do
-    subject(:updated_files_regex) { described_class.updated_files_regex }
-
-    it "is not empty" do
-      expect(updated_files_regex).not_to be_empty
-    end
-
-    context "when files match the regex patterns" do
-      it "returns true for files that should be updated" do
-        matching_files = [
-          "Gemfile",
-          "Gemfile.lock",
-          "gems.rb",
-          "gems.locked",
-          "some_project.gemspec",
-          "vendor/cache/business-1.5.0.gem",
-          "backend/Gemfile",
-          "backend/Gemfile.lock",
-          "backend/gems.rb",
-          "backend/gems.locked"
-        ]
-
-        matching_files.each do |file_name|
-          expect(updated_files_regex).to(be_any { |regex| file_name.match?(regex) })
-        end
-      end
-
-      it "returns false for files that should not be updated" do
-        non_matching_files = [
-          "README.md",
-          ".github/workflow/main.yml",
-          "some_random_file.rb",
-          "requirements.txt",
-          "package-lock.json",
-          "package.json"
-        ]
-
-        non_matching_files.each do |file_name|
-          expect(updated_files_regex).not_to(be_any { |regex| file_name.match?(regex) })
-        end
-      end
-    end
-  end
-
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
 
@@ -749,8 +705,10 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
           let(:project_name) { "git_source_reordered" }
 
           it "doesn't update the order of the git dependencies" do
-            old_lock = bundler_project_dependency_file("git_source_reordered",
-                                                       filename: "Gemfile.lock").content.split(/^/)
+            old_lock = bundler_project_dependency_file(
+              "git_source_reordered",
+              filename: "Gemfile.lock"
+            ).content.split(/^/)
             new_lock = file.content.split(/^/)
 
             %w(business prius uk_phone_numbers).each do |dep|

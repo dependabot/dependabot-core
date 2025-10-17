@@ -36,9 +36,11 @@ module Dependabot
           relative_name = Pathname.new("/#{pubspec}").relative_path_from(directory)
 
           # Skip excluded workspace pubspec files
-          next nil if Dependabot::FileFiltering.should_exclude_path?(relative_name.to_s,
-                                                                     "workspace pubspec file",
-                                                                     @exclude_paths)
+          next nil if Dependabot::FileFiltering.should_exclude_path?(
+            relative_name.to_s,
+            "workspace pubspec file",
+            @exclude_paths
+          )
 
           fetch_file_from_host(relative_name)
         end
@@ -46,9 +48,11 @@ module Dependabot
         # Filter excluded files from final collection
         filtered_files = fetched_files.uniq.reject do |file|
           file_name = T.cast(file, DependencyFile).name
-          Dependabot::FileFiltering.should_exclude_path?(file_name,
-                                                         "file from final collection",
-                                                         @exclude_paths)
+          Dependabot::FileFiltering.should_exclude_path?(
+            file_name,
+            "file from final collection",
+            @exclude_paths
+          )
         end
 
         filtered_files

@@ -126,8 +126,10 @@ module Dependabot
             content.sub(T.must(declaration), new_declaration)
           else
             content.gsub(table_declaration_regex(dep, new_r)) do |match|
-              match.gsub(/(\s*version\s*=\s*["'])#{Regexp.escape(old_req)}/,
-                         '\1' + new_req)
+              match.gsub(
+                /(\s*version\s*=\s*["'])#{Regexp.escape(old_req)}/,
+                '\1' + new_req
+              )
             end
           end
         end
@@ -284,11 +286,13 @@ module Dependabot
         sig do
           params(
             pyproject_content: String
-          ).returns(T.nilable(T.any(
-                                T::Hash[String, T.untyped],
-                                String,
-                                T::Array[T::Hash[String, T.untyped]]
-                              )))
+          ).returns(T.nilable(
+                      T.any(
+                        T::Hash[String, T.untyped],
+                        String,
+                        T::Array[T::Hash[String, T.untyped]]
+                      )
+                    ))
         end
         def pyproject_hash_for(pyproject_content)
           SharedHelpers.in_a_temporary_directory do |dir|

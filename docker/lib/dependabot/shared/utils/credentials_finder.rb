@@ -43,8 +43,10 @@ module Dependabot
             end,
             T.nilable(Dependabot::Credential)
           )
-          @base_registry ||= Dependabot::Credential.new({ "registry" => DEFAULT_DOCKER_HUB_REGISTRY,
-                                                          "credentials" => nil })
+          @base_registry ||= Dependabot::Credential.new(
+            { "registry" => DEFAULT_DOCKER_HUB_REGISTRY,
+              "credentials" => nil }
+          )
           @base_registry["registry"]
         end
 

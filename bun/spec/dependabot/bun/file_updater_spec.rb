@@ -38,10 +38,12 @@ RSpec.describe Dependabot::Bun::FileUpdater do
     )
   end
   let(:credentials) do
-    [Dependabot::Credential.new({
-      "type" => "git_source",
-      "host" => "github.com"
-    })]
+    [Dependabot::Credential.new(
+      {
+        "type" => "git_source",
+        "host" => "github.com"
+      }
+    )]
   end
   let(:dependencies) { [dependency] }
   let(:updater) do
@@ -63,60 +65,6 @@ RSpec.describe Dependabot::Bun::FileUpdater do
 
   after do
     Dependabot::Experiments.reset!
-  end
-
-  describe "#updated_files_regex" do
-    subject(:updated_files_regex) { described_class.updated_files_regex }
-
-    it "is not empty" do
-      expect(updated_files_regex).not_to be_empty
-    end
-
-    context "when files match the regex patterns" do
-      it "returns true for files that should be updated" do
-        matching_files = [
-          "package.json",
-          "subdirectory/package.json",
-          "apps/dependabot_business/package.json",
-          "packages/package1/package.json",
-          "bun.lock",
-          "subdirectory/bun.lock"
-        ]
-
-        matching_files.each do |file_name|
-          expect(updated_files_regex).to(be_any { |regex| file_name.match?(regex) })
-        end
-      end
-
-      it "returns false for files that should not be updated" do
-        non_matching_files = [
-          "README.md",
-          ".github/workflow/main.yml",
-          "some_random_file.rb",
-          "requirements.txt",
-          "Gemfile",
-          "Gemfile.lock",
-          "package-lock.json",
-          "npm-shrinkwrap.json",
-          "yarn.lock",
-          "pnpm-lock.yaml",
-          "pnpm-workspace.yaml",
-          "subdirectory/package-lock.json",
-          "subdirectory/npm-shrinkwrap.json",
-          "subdirectory/yarn.lock",
-          "subdirectory/pnpm-lock.yaml",
-          "packages/package2/yarn.lock",
-          ".yarn/install-state.gz",
-          ".yarn/cache/@es-test-npm-0.46.0-d544b36047-96010ece49.zip",
-          ".pnp.js",
-          ".pnp.cjs"
-        ]
-
-        non_matching_files.each do |file_name|
-          expect(updated_files_regex).not_to(be_any { |regex| file_name.match?(regex) })
-        end
-      end
-    end
   end
 
   describe "#updated_dependency_files" do
@@ -326,10 +274,12 @@ RSpec.describe Dependabot::Bun::FileUpdater do
       Class.new(described_class) do
         def check_required_files
           %w(manifest).each do |filename|
-            unless get_original_file(filename)
-              raise Dependabot::DependencyFileNotFound.new(nil,
-                                                           "package.json not found.")
-            end
+            next if get_original_file(filename)
+
+            raise Dependabot::DependencyFileNotFound.new(
+              nil,
+              "package.json not found."
+            )
           end
         end
       end

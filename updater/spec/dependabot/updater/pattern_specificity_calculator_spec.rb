@@ -167,6 +167,58 @@ RSpec.describe Dependabot::Updater::PatternSpecificityCalculator do
       end
     end
 
+    context "when current group has no patterns" do
+      let(:no_patterns_group) do
+        instance_double(
+          Dependabot::DependencyGroup,
+          name: "patch-updates",
+          dependencies: [],
+          rules: { "update-types" => ["patch"] }
+        )
+      end
+
+      it "returns false immediately without checking other groups" do
+        # This test verifies the early return optimization
+        # The contains_checker should never be called since we return early
+        contains_checker_spy = proc do |_group, _dep, _directory|
+          raise "contains_checker should not be called when group has no patterns"
+        end
+
+        result = calculator.dependency_belongs_to_more_specific_group?(
+          no_patterns_group, dependency, all_groups, contains_checker_spy, directory
+        )
+        expect(result).to be false
+      end
+
+      it "returns false when group has nil patterns" do
+        nil_patterns_group = instance_double(
+          Dependabot::DependencyGroup,
+          name: "nil-patterns",
+          dependencies: [],
+          rules: { "patterns" => nil, "update-types" => ["patch"] }
+        )
+
+        result = calculator.dependency_belongs_to_more_specific_group?(
+          nil_patterns_group, dependency, all_groups, contains_checker, directory
+        )
+        expect(result).to be false
+      end
+
+      it "returns false when group has empty patterns array" do
+        empty_patterns_group = instance_double(
+          Dependabot::DependencyGroup,
+          name: "empty-patterns",
+          dependencies: [],
+          rules: { "patterns" => [], "update-types" => ["patch"] }
+        )
+
+        result = calculator.dependency_belongs_to_more_specific_group?(
+          empty_patterns_group, dependency, all_groups, contains_checker, directory
+        )
+        expect(result).to be false
+      end
+    end
+
     context "with complex pattern hierarchy" do
       let(:multi_wildcard_group) do
         instance_double(

@@ -17,21 +17,6 @@ module Dependabot
       require_relative "file_updater/poetry_file_updater"
       require_relative "file_updater/requirement_file_updater"
 
-      sig { override.returns(T::Array[Regexp]) }
-      def self.updated_files_regex
-        [
-          /^.*Pipfile$/,             # Match Pipfile at any level
-          /^.*Pipfile\.lock$/,       # Match Pipfile.lock at any level
-          /^.*\.txt$/,               # Match any .txt files (e.g., requirements.txt) at any level
-          /^.*\.in$/,                # Match any .in files at any level
-          /^.*setup\.py$/,           # Match setup.py at any level
-          /^.*setup\.cfg$/,          # Match setup.cfg at any level
-          /^.*pyproject\.toml$/,     # Match pyproject.toml at any level
-          /^.*pyproject\.lock$/,     # Match pyproject.lock at any level
-          /^.*poetry\.lock$/ # Match poetry.lock at any level
-        ]
-      end
-
       sig { override.returns(T::Array[DependencyFile]) }
       def updated_dependency_files
         updated_files =
@@ -114,12 +99,14 @@ module Dependabot
 
       sig { returns(T::Array[DependencyFile]) }
       def updated_pip_compile_based_files
-        T.must(PipCompileFileUpdater.new(
-          dependencies: dependencies,
-          dependency_files: dependency_files,
-          credentials: credentials,
-          index_urls: pip_compile_index_urls
-        ).updated_dependency_files)
+        T.must(
+          PipCompileFileUpdater.new(
+            dependencies: dependencies,
+            dependency_files: dependency_files,
+            credentials: credentials,
+            index_urls: pip_compile_index_urls
+          ).updated_dependency_files
+        )
       end
 
       sig { returns(T::Array[DependencyFile]) }

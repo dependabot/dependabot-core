@@ -58,12 +58,14 @@ RSpec.describe Dependabot::RustToolchain::UpdateChecker do
   let(:dependency_requirement) { "1.72" }
 
   let(:credentials) do
-    [Dependabot::Credential.new({
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    })]
+    [Dependabot::Credential.new(
+      {
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    )]
   end
   let(:ignored_versions) { [] }
   let(:security_advisories) { [] }
@@ -148,14 +150,16 @@ RSpec.describe Dependabot::RustToolchain::UpdateChecker do
     it "returns updated requirements with latest version" do
       updated_reqs = update_checker.updated_requirements
 
-      expect(updated_reqs).to eq([
-        {
-          file: "rust-toolchain.toml",
-          requirement: latest_version,
-          groups: [],
-          source: nil
-        }
-      ])
+      expect(updated_reqs).to eq(
+        [
+          {
+            file: "rust-toolchain.toml",
+            requirement: latest_version,
+            groups: [],
+            source: nil
+          }
+        ]
+      )
     end
 
     context "with multiple requirements" do
@@ -179,20 +183,22 @@ RSpec.describe Dependabot::RustToolchain::UpdateChecker do
       it "updates all requirements" do
         updated_reqs = update_checker.updated_requirements
 
-        expect(updated_reqs).to eq([
-          {
-            file: "rust-toolchain.toml",
-            requirement: latest_version,
-            groups: [],
-            source: nil
-          },
-          {
-            file: "other-file.toml",
-            requirement: latest_version,
-            groups: ["dev"],
-            source: { type: "git" }
-          }
-        ])
+        expect(updated_reqs).to eq(
+          [
+            {
+              file: "rust-toolchain.toml",
+              requirement: latest_version,
+              groups: [],
+              source: nil
+            },
+            {
+              file: "other-file.toml",
+              requirement: latest_version,
+              groups: ["dev"],
+              source: { type: "git" }
+            }
+          ]
+        )
       end
     end
 
@@ -202,14 +208,16 @@ RSpec.describe Dependabot::RustToolchain::UpdateChecker do
       it "uses the string version in requirements" do
         updated_reqs = update_checker.updated_requirements
 
-        expect(updated_reqs).to eq([
-          {
-            file: "rust-toolchain.toml",
-            requirement: "stable",
-            groups: [],
-            source: nil
-          }
-        ])
+        expect(updated_reqs).to eq(
+          [
+            {
+              file: "rust-toolchain.toml",
+              requirement: "stable",
+              groups: [],
+              source: nil
+            }
+          ]
+        )
       end
     end
   end

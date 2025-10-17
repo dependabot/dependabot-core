@@ -4,8 +4,8 @@
 class Hash
   extend T::Generic
 
-  sig { returns(String) }
-  def to_json; end
+  sig { params(args: T.untyped).returns(String) }
+  def to_json(*args); end
 
   sig { returns(Integer) }
   def hash; end

@@ -23,12 +23,14 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
         pyproject_content: fixture("pyproject_files", "private_source.toml"),
         lockfile: nil
       )
-      preparer.add_auth_env_vars([
-        {
-          "index-url" => "https://some.internal.registry.com/pypi/",
-          "token" => "hello:world"
-        }
-      ])
+      preparer.add_auth_env_vars(
+        [
+          {
+            "index-url" => "https://some.internal.registry.com/pypi/",
+            "token" => "hello:world"
+          }
+        ]
+      )
       expect(ENV.delete("POETRY_HTTP_BASIC_CUSTOM_SOURCE_1_USERNAME")).to eq("hello")
       expect(ENV.delete("POETRY_HTTP_BASIC_CUSTOM_SOURCE_1_PASSWORD")).to eq("world")
     end
@@ -38,11 +40,13 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
         pyproject_content: fixture("pyproject_files", "private_source.toml"),
         lockfile: nil
       )
-      preparer.add_auth_env_vars([
-        {
-          "index-url" => "https://some.internal.registry.com/pypi/"
-        }
-      ])
+      preparer.add_auth_env_vars(
+        [
+          {
+            "index-url" => "https://some.internal.registry.com/pypi/"
+          }
+        ]
+      )
       expect(ENV.delete("POETRY_HTTP_BASIC_CUSTOM_SOURCE_1_USERNAME")).to be_nil
       expect(ENV.delete("POETRY_HTTP_BASIC_CUSTOM_SOURCE_1_PASSWORD")).to be_nil
     end

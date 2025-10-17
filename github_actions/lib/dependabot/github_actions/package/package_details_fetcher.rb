@@ -32,11 +32,13 @@ module Dependabot
             security_advisories: T::Array[Dependabot::SecurityAdvisory]
           ).void
         end
-        def initialize(dependency:,
-                       credentials:,
-                       ignored_versions: [],
-                       raise_on_ignored: false,
-                       security_advisories: [])
+        def initialize(
+          dependency:,
+          credentials:,
+          ignored_versions: [],
+          raise_on_ignored: false,
+          security_advisories: []
+        )
           @dependency = dependency
           @credentials = credentials
           @raise_on_ignored = raise_on_ignored
@@ -48,12 +50,16 @@ module Dependabot
 
         sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
+
         sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
+
         sig { returns(T::Array[String]) }
         attr_reader :ignored_versions
+
         sig { returns(T::Boolean) }
         attr_reader :raise_on_ignored
+
         sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
         attr_reader :security_advisories
 
@@ -227,9 +233,14 @@ module Dependabot
 
         sig { returns(Dependabot::GithubActions::Helpers::Githelper) }
         def git_helper
-          Helpers::Githelper.new(dependency: dependency, credentials: credentials,
-                                 ignored_versions: ignored_versions, raise_on_ignored: raise_on_ignored,
-                                 consider_version_branches_pinned: false, dependency_source_details: nil)
+          Helpers::Githelper.new(
+            dependency: dependency,
+            credentials: credentials,
+            ignored_versions: ignored_versions,
+            raise_on_ignored: raise_on_ignored,
+            consider_version_branches_pinned: false,
+            dependency_source_details: nil
+          )
         end
       end
     end

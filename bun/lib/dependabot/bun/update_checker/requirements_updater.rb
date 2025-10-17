@@ -40,8 +40,12 @@ module Dependabot
           )
             .void
         end
-        def initialize(requirements:, updated_source:, update_strategy:,
-                       latest_resolvable_version:)
+        def initialize(
+          requirements:,
+          updated_source:,
+          update_strategy:,
+          latest_resolvable_version:
+        )
           @requirements = requirements
           @updated_source = updated_source
           @update_strategy = update_strategy

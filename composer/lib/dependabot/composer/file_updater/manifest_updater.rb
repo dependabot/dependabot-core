@@ -19,27 +19,29 @@ module Dependabot
 
         sig { returns(String) }
         def updated_manifest_content
-          T.must(dependencies.reduce(manifest.content.dup) do |content, dep|
-            updated_content = content
-            updated_requirements(dep).each do |new_req|
-              old_req = old_requirement(dep, new_req)&.fetch(:requirement)
-              updated_req = new_req.fetch(:requirement)
+          T.must(
+            dependencies.reduce(manifest.content.dup) do |content, dep|
+              updated_content = content
+              updated_requirements(dep).each do |new_req|
+                old_req = old_requirement(dep, new_req)&.fetch(:requirement)
+                updated_req = new_req.fetch(:requirement)
 
-              regex =
-                /
-                  "#{Regexp.escape(dep.name)}"\s*:\s*
-                  "#{Regexp.escape(old_req)}"
-                /x
+                regex =
+                  /
+                    "#{Regexp.escape(dep.name)}"\s*:\s*
+                    "#{Regexp.escape(old_req)}"
+                  /x
 
-              updated_content = content&.gsub(regex) do |declaration|
-                declaration.gsub(%("#{old_req}"), %("#{updated_req}"))
+                updated_content = content&.gsub(regex) do |declaration|
+                  declaration.gsub(%("#{old_req}"), %("#{updated_req}"))
+                end
+
+                raise "Expected content to change!" if content == updated_content
               end
 
-              raise "Expected content to change!" if content == updated_content
+              updated_content
             end
-
-            updated_content
-          end)
+          )
         end
 
         private

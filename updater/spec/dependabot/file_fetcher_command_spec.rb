@@ -25,18 +25,23 @@ RSpec.describe Dependabot::FileFetcherCommand do
     allow(api_client).to receive(:record_ecosystem_versions)
     allow(api_client).to receive(:is_a?).with(Dependabot::ApiClient).and_return(true)
 
-    allow(Dependabot::Environment).to receive_messages(job_id: job_id, job_token: "job_token",
-                                                       output_path: File.join(Dir.mktmpdir,
-                                                                              "output.json"),
-                                                       job_definition: job_definition,
-                                                       job_path: nil)
+    allow(Dependabot::Environment).to receive_messages(
+      job_id: job_id,
+      job_token: "job_token",
+      output_path: File.join(
+        Dir.mktmpdir,
+        "output.json"
+      ),
+      job_definition: job_definition,
+      job_path: nil
+    )
   end
 
   describe "#perform_job" do
     subject(:perform_job) { job.perform_job }
 
     let(:job_definition) do
-      JSON.parse(fixture("jobs/job_with_credentials.json"))
+      JSON.parse(fixture("jobs/job_without_credentials.json"))
     end
 
     after do
@@ -44,17 +49,54 @@ RSpec.describe Dependabot::FileFetcherCommand do
       Dependabot::Experiments.reset!
     end
 
-    it "fetches the files and writes the fetched files to output.json", :vcr do
+    it "fetches the files", :vcr do
       expect(api_client).not_to receive(:mark_job_as_processed)
 
       perform_job
 
-      output = JSON.parse(File.read(Dependabot::Environment.output_path))
-      dependency_file = output["base64_dependency_files"][0]
-      expect(dependency_file["name"]).to eq(
+      dependency_file = job.files.dependency_files.first
+      expect(dependency_file.name).to eq(
         "dependabot-test-ruby-package.gemspec"
       )
-      expect(dependency_file["content_encoding"]).to eq("utf-8")
+      expect(dependency_file.content_encoding).to eq("utf-8")
+    end
+
+    context "when empty directories are specified" do
+      before do
+        allow(Dependabot::Environment).to receive(:repo_contents_path).and_return(Dir.mktmpdir)
+      end
+
+      context "with non-graph jobs" do
+        let(:job_definition) do
+          JSON.parse(fixture("jobs/job_with_directories.json"))
+        end
+
+        it "raises a DependencyFileNotFound error" do
+          expect(api_client)
+            .to receive(:record_update_job_error)
+            .with(
+              error_details: { "file-path": "/foo", message: "/foo not found" },
+              error_type: "dependency_file_not_found"
+            )
+          expect(api_client).to receive(:mark_job_as_processed)
+
+          expect { perform_job }.to output(/Error during file fetching; aborting/).to_stdout_from_any_process
+        end
+      end
+
+      context "with graph jobs" do
+        let(:job_definition) do
+          JSON.parse(fixture("jobs/job_with_graph_command.json"))
+        end
+
+        it "does not raise an error" do
+          expect(api_client).not_to receive(:mark_job_as_processed)
+
+          expect { perform_job }.not_to raise_error
+
+          expect(job.files.dependency_files).to be_empty
+        end
+      end
     end
 
     context "when the fetcher raises a ToolVersionNotSupported error", :vcr do
@@ -455,15 +497,17 @@ RSpec.describe Dependabot::FileFetcherCommand do
             .to receive(:new)
             .and_call_original
           allow(Octokit::Client)
-            .to receive(:new).with({
-              api_endpoint: "https://api.github.com/",
-              connection_options: {
-                request: {
-                  open_timeout: 20,
-                  timeout: 5
+            .to receive(:new).with(
+              {
+                api_endpoint: "https://api.github.com/",
+                connection_options: {
+                  request: {
+                    open_timeout: 20,
+                    timeout: 5
+                  }
                 }
               }
-            })
+            )
                              .and_return(mock_octokit)
           allow(mock_octokit).to receive(:repository)
             .and_raise(Octokit::Error)

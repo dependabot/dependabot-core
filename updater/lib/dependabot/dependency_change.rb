@@ -173,10 +173,14 @@ module Dependabot
       if grouped_update?
         # We only want PRs for the same group that have the same versions
         job.existing_group_pull_requests.any? do |pr|
-          directories_in_use = pr["dependencies"].all? { |dep| dep["directory"] }
+          next false if pr["dependency-group-name"] != dependency_group&.name
 
-          pr["dependency-group-name"] == dependency_group&.name &&
-            Set.new(pr["dependencies"]) == updated_dependencies_set(should_consider_directory: directories_in_use)
+          directories_in_use = pr["dependencies"].all? { |dep| dep["directory"] }
+          dependencies = pr["dependencies"]
+          # Remove the pr-number key as it's not relevant to the comparison.
+          # To improve this code, use the PullRequest class which already contains this logic.
+          dependencies.each { |dep| dep.delete("pr-number") }
+          Set.new(dependencies) == updated_dependencies_set(should_consider_directory: directories_in_use)
         end
       else
         job.existing_pull_requests.any?(new_pr)
@@ -203,8 +207,10 @@ module Dependabot
 
     sig { returns(PullRequest) }
     def new_pr
-      @new_pr ||= T.let(PullRequest.create_from_updated_dependencies(updated_dependencies),
-                        T.nilable(Dependabot::PullRequest))
+      @new_pr ||= T.let(
+        PullRequest.create_from_updated_dependencies(updated_dependencies),
+        T.nilable(Dependabot::PullRequest)
+      )
     end
 
     sig { returns(T::Array[Dependabot::Dependency]) }

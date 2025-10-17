@@ -36,7 +36,7 @@ struggling to understand how anything works please don't hesitate to create an i
 
 ## Contributing new ecosystems
 
-If you are an ecosystem maintainer and are interested in integrating with Dependabot, and are willing to help provide the expertise necessary to build and support it, please open an issue and let us know so that we can discuss.
+If you are an ecosystem maintainer and are interested in integrating with Dependabot, and are willing to help provide the expertise necessary to build and support it, please see our [new ecosystems guide](https://github.com/dependabot/dependabot-core/blob/main/NEW_ECOSYSTEMS.md) for detailed information on the requirements and process.
 
 ### What's next?
 

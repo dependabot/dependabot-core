@@ -95,8 +95,13 @@ module Dependabot
         end
 
         sig do
-          params(group_id: String, artifact_id: String, version: String, snapshot_version: String,
-                 base_repo_url: String).returns(String)
+          params(
+            group_id: String,
+            artifact_id: String,
+            version: String,
+            snapshot_version: String,
+            base_repo_url: String
+          ).returns(String)
         end
         def remote_pom_snapshot_url(group_id, artifact_id, version, snapshot_version, base_repo_url)
           "#{base_repo_url}/" \

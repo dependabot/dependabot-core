@@ -23,9 +23,12 @@ module Dependabot
         3.9.23
       ).freeze
 
-      PRE_INSTALLED_PYTHON_VERSIONS = T.let(PRE_INSTALLED_PYTHON_VERSIONS_RAW.map do |v|
-        Version.new(v)
-      end.sort, T::Array[Dependabot::Python::Version])
+      PRE_INSTALLED_PYTHON_VERSIONS = T.let(
+        PRE_INSTALLED_PYTHON_VERSIONS_RAW.map do |v|
+          Version.new(v)
+        end.sort,
+        T::Array[Dependabot::Python::Version]
+      )
 
       PRE_INSTALLED_VERSIONS_MAP = T.let(
         PRE_INSTALLED_PYTHON_VERSIONS.to_h do |v|

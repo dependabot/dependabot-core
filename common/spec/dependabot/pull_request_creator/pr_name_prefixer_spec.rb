@@ -146,8 +146,10 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
 
       context "when dealing with Azure and no author email is present" do
         let(:source) do
-          Dependabot::Source.new(provider: "azure",
-                                 repo: "org/gocardless/_git/bump")
+          Dependabot::Source.new(
+            provider: "azure",
+            repo: "org/gocardless/_git/bump"
+          )
         end
         let(:watched_repo_url) do
           "https://dev.azure.com/org/gocardless/_apis/git/repositories/bump"

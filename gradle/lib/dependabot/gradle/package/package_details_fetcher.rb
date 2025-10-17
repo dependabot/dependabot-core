@@ -352,8 +352,10 @@ module Dependabot
 
         sig { returns(Dependabot::Maven::Utils::AuthHeadersFinder) }
         def auth_headers_finder
-          @auth_headers_finder ||= T.let(Dependabot::Maven::Utils::AuthHeadersFinder.new(credentials),
-                                         T.nilable(Dependabot::Maven::Utils::AuthHeadersFinder))
+          @auth_headers_finder ||= T.let(
+            Dependabot::Maven::Utils::AuthHeadersFinder.new(credentials),
+            T.nilable(Dependabot::Maven::Utils::AuthHeadersFinder)
+          )
         end
 
         sig { params(maven_repo_url: String).returns(T::Hash[String, String]) }

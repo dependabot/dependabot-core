@@ -253,8 +253,10 @@ RSpec.describe Dependabot::GoModules::Requirement do
       let(:requirement_string) { "^1.1.0 || ^2.1.0" }
 
       it "returns an array of requirements" do
-        expect(requirements).to contain_exactly(described_class.new(">= 1.1.0", "< 2.0.0.a"),
-                                                described_class.new(">= 2.1.0", "< 3.0.0.a"))
+        expect(requirements).to contain_exactly(
+          described_class.new(">= 1.1.0", "< 2.0.0.a"),
+          described_class.new(">= 2.1.0", "< 3.0.0.a")
+        )
       end
     end
   end

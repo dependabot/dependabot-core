@@ -365,8 +365,10 @@ module Dependabot
         sig do
           params(updated_req: T.nilable(String), update_requirement: T::Boolean).void
         end
-        def write_temporary_dependency_files(updated_req: nil,
-                                             update_requirement: true)
+        def write_temporary_dependency_files(
+          updated_req: nil,
+          update_requirement: true
+        )
           dependency_files.each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
@@ -526,7 +528,8 @@ module Dependabot
           @python_requirement_parser ||= T.let(
             FileParser::PythonRequirementParser.new(
               dependency_files: dependency_files
-            ), T.nilable(FileParser::PythonRequirementParser)
+            ),
+            T.nilable(FileParser::PythonRequirementParser)
           )
         end
 
@@ -535,7 +538,8 @@ module Dependabot
           @language_version_manager ||= T.let(
             LanguageVersionManager.new(
               python_requirement_parser: python_requirement_parser
-            ), T.nilable(LanguageVersionManager)
+            ),
+            T.nilable(LanguageVersionManager)
           )
         end
 

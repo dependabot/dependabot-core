@@ -192,16 +192,18 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker do
       end
 
       it "updates the git ref to the commit SHA from the latest release" do
-        expect(updated_requirements).to eq([{
-          requirement: nil,
-          groups: [],
-          source: {
-            type: "git",
-            url: "https://github.com/microsoft/vcpkg.git",
-            ref: commit_sha
-          },
-          file: "vcpkg.json"
-        }])
+        expect(updated_requirements).to eq(
+          [{
+            requirement: nil,
+            groups: [],
+            source: {
+              type: "git",
+              url: "https://github.com/microsoft/vcpkg.git",
+              ref: commit_sha
+            },
+            file: "vcpkg.json"
+          }]
+        )
       end
 
       context "when requirement has no source" do
@@ -220,12 +222,14 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker do
         end
 
         it "returns the original requirement unchanged" do
-          expect(updated_requirements).to eq([{
-            requirement: nil,
-            groups: [],
-            source: nil,
-            file: "vcpkg.json"
-          }])
+          expect(updated_requirements).to eq(
+            [{
+              requirement: nil,
+              groups: [],
+              source: nil,
+              file: "vcpkg.json"
+            }]
+          )
         end
       end
     end
@@ -343,12 +347,14 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker do
         end
 
         it "updates the version constraint" do
-          expect(updated_requirements).to eq([{
-            requirement: ">=#{latest_version}",
-            groups: [],
-            source: nil,
-            file: "vcpkg.json"
-          }])
+          expect(updated_requirements).to eq(
+            [{
+              requirement: ">=#{latest_version}",
+              groups: [],
+              source: nil,
+              file: "vcpkg.json"
+            }]
+          )
         end
       end
 

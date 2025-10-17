@@ -166,186 +166,189 @@ module Dependabot
     end
 
     # Group of patterns to validate error message and raise specific error
-    VALIDATION_GROUP_PATTERNS = T.let([
-      {
-        patterns: [INVALID_NAME_IN_PACKAGE_JSON],
-        handler: lambda { |message, _error, _params|
-          Dependabot::DependencyFileNotResolvable.new(message)
+    VALIDATION_GROUP_PATTERNS = T.let(
+      [
+        {
+          patterns: [INVALID_NAME_IN_PACKAGE_JSON],
+          handler: lambda { |message, _error, _params|
+            Dependabot::DependencyFileNotResolvable.new(message)
+          },
+          in_usage: false,
+          matchfn: nil
         },
-        in_usage: false,
-        matchfn: nil
-      },
-      {
-        # Check if sub dependency is using local path and raise a resolvability error
-        patterns: [INVALID_PACKAGE_REGEX, SUB_DEP_LOCAL_PATH_TEXT],
-        handler: lambda { |message, _error, params|
-          Dependabot::DependencyFileNotResolvable.new(
-            Utils.sanitize_resolvability_message(
-              message,
-              params[:dependencies],
-              params[:yarn_lock]
+        {
+          # Check if sub dependency is using local path and raise a resolvability error
+          patterns: [INVALID_PACKAGE_REGEX, SUB_DEP_LOCAL_PATH_TEXT],
+          handler: lambda { |message, _error, params|
+            Dependabot::DependencyFileNotResolvable.new(
+              Utils.sanitize_resolvability_message(
+                message,
+                params[:dependencies],
+                params[:yarn_lock]
+              )
             )
-          )
+          },
+          in_usage: false,
+          matchfn: nil
         },
-        in_usage: false,
-        matchfn: nil
-      },
-      {
-        patterns: [NODE_MODULES_STATE_FILE_NOT_FOUND],
-        handler: lambda { |message, _error, _params|
-          Dependabot::MisconfiguredTooling.new("Yarn", message)
+        {
+          patterns: [NODE_MODULES_STATE_FILE_NOT_FOUND],
+          handler: lambda { |message, _error, _params|
+            Dependabot::MisconfiguredTooling.new("Yarn", message)
+          },
+          in_usage: true,
+          matchfn: nil
         },
-        in_usage: true,
-        matchfn: nil
-      },
-      {
-        patterns: [TARBALL_IS_NOT_IN_NETWORK],
-        handler: lambda { |message, _error, _params|
-          Dependabot::DependencyFileNotResolvable.new(message)
+        {
+          patterns: [TARBALL_IS_NOT_IN_NETWORK],
+          handler: lambda { |message, _error, _params|
+            Dependabot::DependencyFileNotResolvable.new(message)
+          },
+          in_usage: false,
+          matchfn: nil
         },
-        in_usage: false,
-        matchfn: nil
-      },
-      {
-        patterns: [NODE_VERSION_NOT_SATISFY_REGEX],
-        handler: lambda { |message, _error, _params|
-          versions = Utils.extract_node_versions(message)
-          current_version = versions[:current_version]
-          required_version = versions[:required_version]
+        {
+          patterns: [NODE_VERSION_NOT_SATISFY_REGEX],
+          handler: lambda { |message, _error, _params|
+            versions = Utils.extract_node_versions(message)
+            current_version = versions[:current_version]
+            required_version = versions[:required_version]
 
-          return Dependabot::DependabotError.new(message) unless current_version && required_version
+            return Dependabot::DependabotError.new(message) unless current_version && required_version
 
-          Dependabot::ToolVersionNotSupported.new("Yarn", current_version, required_version)
+            Dependabot::ToolVersionNotSupported.new("Yarn", current_version, required_version)
+          },
+          in_usage: false,
+          matchfn: nil
         },
-        in_usage: false,
-        matchfn: nil
-      },
-      {
-        patterns: [AUTHENTICATION_TOKEN_NOT_PROVIDED, AUTHENTICATION_IS_NOT_CONFIGURED,
-                   AUTHENTICATION_HEADER_NOT_PROVIDED],
-        handler: lambda { |message, _error, _params|
-          Dependabot::PrivateSourceAuthenticationFailure.new(message)
+        {
+          patterns: [AUTHENTICATION_TOKEN_NOT_PROVIDED, AUTHENTICATION_IS_NOT_CONFIGURED,
+                     AUTHENTICATION_HEADER_NOT_PROVIDED],
+          handler: lambda { |message, _error, _params|
+            Dependabot::PrivateSourceAuthenticationFailure.new(message)
+          },
+          in_usage: false,
+          matchfn: nil
         },
-        in_usage: false,
-        matchfn: nil
-      },
-      {
-        patterns: [DEPENDENCY_FILE_NOT_RESOLVABLE],
-        handler: lambda { |message, _error, _params|
-          DependencyFileNotResolvable.new(message)
+        {
+          patterns: [DEPENDENCY_FILE_NOT_RESOLVABLE],
+          handler: lambda { |message, _error, _params|
+            DependencyFileNotResolvable.new(message)
+          },
+          in_usage: false,
+          matchfn: nil
         },
-        in_usage: false,
-        matchfn: nil
-      },
-      {
-        patterns: [ENV_VAR_NOT_RESOLVABLE],
-        handler: lambda { |message, _error, _params|
-          var = Utils.extract_var(message)
+        {
+          patterns: [ENV_VAR_NOT_RESOLVABLE],
+          handler: lambda { |message, _error, _params|
+            var = Utils.extract_var(message)
 
-          Dependabot::MissingEnvironmentVariable.new(var, message)
+            Dependabot::MissingEnvironmentVariable.new(var, message)
+          },
+          in_usage: false,
+          matchfn: nil
         },
-        in_usage: false,
-        matchfn: nil
-      },
-      {
-        patterns: [ONLY_PRIVATE_WORKSPACE_TEXT],
-        handler: lambda { |message, _error, _params|
-          Dependabot::DependencyFileNotEvaluatable.new(message)
+        {
+          patterns: [ONLY_PRIVATE_WORKSPACE_TEXT],
+          handler: lambda { |message, _error, _params|
+            Dependabot::DependencyFileNotEvaluatable.new(message)
+          },
+          in_usage: false,
+          matchfn: nil
         },
-        in_usage: false,
-        matchfn: nil
-      },
-      {
-        patterns: [UNREACHABLE_GIT_CHECK_REGEX],
-        handler: lambda { |message, _error, _params|
-          dependency_url = message.match(UNREACHABLE_GIT_CHECK_REGEX).named_captures.fetch(URL_CAPTURE)
+        {
+          patterns: [UNREACHABLE_GIT_CHECK_REGEX],
+          handler: lambda { |message, _error, _params|
+            dependency_url = message.match(UNREACHABLE_GIT_CHECK_REGEX).named_captures.fetch(URL_CAPTURE)
 
-          Dependabot::GitDependenciesNotReachable.new(dependency_url)
+            Dependabot::GitDependenciesNotReachable.new(dependency_url)
+          },
+          in_usage: false,
+          matchfn: nil
         },
-        in_usage: false,
-        matchfn: nil
-      },
-      {
-        patterns: [SOCKET_HANG_UP],
-        handler: lambda { |message, _error, _params|
-          url = message.match(SOCKET_HANG_UP).named_captures.fetch(URL_CAPTURE)
+        {
+          patterns: [SOCKET_HANG_UP],
+          handler: lambda { |message, _error, _params|
+            url = message.match(SOCKET_HANG_UP).named_captures.fetch(URL_CAPTURE)
 
-          Dependabot::PrivateSourceTimedOut.new(url.gsub(HTTP_CHECK_REGEX, ""))
+            Dependabot::PrivateSourceTimedOut.new(url.gsub(HTTP_CHECK_REGEX, ""))
+          },
+          in_usage: false,
+          matchfn: nil
         },
-        in_usage: false,
-        matchfn: nil
-      },
-      {
-        patterns: [ESOCKETTIMEDOUT],
-        handler: lambda { |message, _error, _params|
-          package_req = message.match(ESOCKETTIMEDOUT).named_captures.fetch("package")
+        {
+          patterns: [ESOCKETTIMEDOUT],
+          handler: lambda { |message, _error, _params|
+            package_req = message.match(ESOCKETTIMEDOUT).named_captures.fetch("package")
 
-          Dependabot::PrivateSourceTimedOut.new(package_req.gsub(HTTP_CHECK_REGEX, ""))
+            Dependabot::PrivateSourceTimedOut.new(package_req.gsub(HTTP_CHECK_REGEX, ""))
+          },
+          in_usage: false,
+          matchfn: nil
         },
-        in_usage: false,
-        matchfn: nil
-      },
-      {
-        patterns: [OUT_OF_DISKSPACE],
-        handler: lambda { |message, _error, _params|
-          Dependabot::OutOfDisk.new(message)
+        {
+          patterns: [OUT_OF_DISKSPACE],
+          handler: lambda { |message, _error, _params|
+            Dependabot::OutOfDisk.new(message)
+          },
+          in_usage: false,
+          matchfn: nil
         },
-        in_usage: false,
-        matchfn: nil
-      },
-      {
-        patterns: [YARN_PACKAGE_NOT_FOUND_CODE, YARN_PACKAGE_NOT_FOUND_CODE_1, YARN_PACKAGE_NOT_FOUND_CODE_2],
-        handler: lambda { |message, _error, _params|
-          msg = message.match(YARN_PACKAGE_NOT_FOUND_CODE) || message.match(YARN_PACKAGE_NOT_FOUND_CODE_1) ||
-          message.match(YARN_PACKAGE_NOT_FOUND_CODE_2)
+        {
+          patterns: [YARN_PACKAGE_NOT_FOUND_CODE, YARN_PACKAGE_NOT_FOUND_CODE_1, YARN_PACKAGE_NOT_FOUND_CODE_2],
+          handler: lambda { |message, _error, _params|
+            msg = message.match(YARN_PACKAGE_NOT_FOUND_CODE) || message.match(YARN_PACKAGE_NOT_FOUND_CODE_1) ||
+            message.match(YARN_PACKAGE_NOT_FOUND_CODE_2)
 
-          Dependabot::DependencyFileNotResolvable.new(msg)
+            Dependabot::DependencyFileNotResolvable.new(msg)
+          },
+          in_usage: false,
+          matchfn: nil
         },
-        in_usage: false,
-        matchfn: nil
-      },
-      {
-        patterns: [REQUEST_ERROR_E403, AUTH_REQUIRED_ERROR, PERMISSION_DENIED, BAD_REQUEST],
-        handler: lambda { |message, _error, _params|
-          dependency_url = T.must(URI.decode_www_form_component(message).split("https://").last).split("/").first
+        {
+          patterns: [REQUEST_ERROR_E403, AUTH_REQUIRED_ERROR, PERMISSION_DENIED, BAD_REQUEST],
+          handler: lambda { |message, _error, _params|
+            dependency_url = T.must(URI.decode_www_form_component(message).split("https://").last).split("/").first
 
-          Dependabot::PrivateSourceAuthenticationFailure.new(dependency_url)
+            Dependabot::PrivateSourceAuthenticationFailure.new(dependency_url)
+          },
+          in_usage: false,
+          matchfn: nil
         },
-        in_usage: false,
-        matchfn: nil
-      },
-      {
-        patterns: [MANIFEST_NOT_FOUND],
-        handler: lambda { |message, _error, _params|
-          msg = message.match(MANIFEST_NOT_FOUND)
-          Dependabot::DependencyFileNotResolvable.new(msg)
+        {
+          patterns: [MANIFEST_NOT_FOUND],
+          handler: lambda { |message, _error, _params|
+            msg = message.match(MANIFEST_NOT_FOUND)
+            Dependabot::DependencyFileNotResolvable.new(msg)
+          },
+          in_usage: false,
+          matchfn: nil
         },
-        in_usage: false,
-        matchfn: nil
-      },
-      {
-        patterns: [INTERNAL_SERVER_ERROR],
-        handler: lambda { |message, _error, _params|
-          msg = message.match(INTERNAL_SERVER_ERROR)
-          Dependabot::DependencyFileNotResolvable.new(msg)
+        {
+          patterns: [INTERNAL_SERVER_ERROR],
+          handler: lambda { |message, _error, _params|
+            msg = message.match(INTERNAL_SERVER_ERROR)
+            Dependabot::DependencyFileNotResolvable.new(msg)
+          },
+          in_usage: false,
+          matchfn: nil
         },
-        in_usage: false,
-        matchfn: nil
-      },
-      {
-        patterns: [REGISTRY_NOT_REACHABLE],
-        handler: lambda { |message, _error, _params|
-          msg = message.match(REGISTRY_NOT_REACHABLE)
-          Dependabot::DependencyFileNotResolvable.new(msg)
-        },
-        in_usage: false,
-        matchfn: nil
-      }
-    ].freeze, T::Array[{
-      patterns: T::Array[T.any(String, Regexp)],
-      handler: ErrorHandler,
-      in_usage: T.nilable(T::Boolean),
-      matchfn: T.nilable(T.proc.params(usage: String, message: String).returns(T::Boolean))
-    }])
+        {
+          patterns: [REGISTRY_NOT_REACHABLE],
+          handler: lambda { |message, _error, _params|
+            msg = message.match(REGISTRY_NOT_REACHABLE)
+            Dependabot::DependencyFileNotResolvable.new(msg)
+          },
+          in_usage: false,
+          matchfn: nil
+        }
+      ].freeze,
+      T::Array[{
+        patterns: T::Array[T.any(String, Regexp)],
+        handler: ErrorHandler,
+        in_usage: T.nilable(T::Boolean),
+        matchfn: T.nilable(T.proc.params(usage: String, message: String).returns(T::Boolean))
+      }]
+    )
   end
 end

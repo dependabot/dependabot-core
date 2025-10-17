@@ -62,10 +62,12 @@ RSpec.describe Dependabot::GoModules::FileParser do
 
     it "sets the GOPROXY environment variable if there are any goproxy_server credentials passed" do
       credentials = [
-        Dependabot::Credential.new({
-          "type" => "goproxy_server",
-          "url" => "https://proxy.example.com"
-        })
+        Dependabot::Credential.new(
+          {
+            "type" => "goproxy_server",
+            "url" => "https://proxy.example.com"
+          }
+        )
       ]
       described_class.new(dependency_files: [go_mod], source: source, credentials: credentials)
       expect(`go env GOPROXY`.strip).to eq("https://proxy.example.com,direct")
@@ -88,13 +90,19 @@ RSpec.describe Dependabot::GoModules::FileParser do
 
     it "does not set the GOPRIVATE environment variable if a goproxy_server credential is passed" do
       credentials = [
-        Dependabot::Credential.new({
-          "type" => "goproxy_server",
-          "url" => "https://proxy.example.com"
-        })
+        Dependabot::Credential.new(
+          {
+            "type" => "goproxy_server",
+            "url" => "https://proxy.example.com"
+          }
+        )
       ]
-      described_class.new(dependency_files: [go_mod], source: source, credentials: credentials,
-                          options: { goprivate: "*" })
+      described_class.new(
+        dependency_files: [go_mod],
+        source: source,
+        credentials: credentials,
+        options: { goprivate: "*" }
+      )
       expect(`go env GOPRIVATE`.strip).to be_empty
     end
   end
@@ -298,8 +306,10 @@ RSpec.describe Dependabot::GoModules::FileParser do
     describe "a non-existent dependency with a pseudo-version" do
       let(:go_mod_content) do
         go_mod = fixture("go_mods", go_mod_fixture_name)
-        go_mod.sub("rsc.io/quote v1.4.0",
-                   "github.com/hmarr/404 v0.0.0-20181216014959-b89dc648a159")
+        go_mod.sub(
+          "rsc.io/quote v1.4.0",
+          "github.com/hmarr/404 v0.0.0-20181216014959-b89dc648a159"
+        )
       end
 
       it "does not raise an error" do
@@ -314,8 +324,10 @@ RSpec.describe Dependabot::GoModules::FileParser do
 
       let(:go_mod_content) do
         go_mod = fixture("go_mods", go_mod_fixture_name)
-        go_mod.sub("rsc.io/quote v1.4.0",
-                   "gonum.org/v1/plot v0.0.0-20181116082555-59819fff2fb9")
+        go_mod.sub(
+          "rsc.io/quote v1.4.0",
+          "gonum.org/v1/plot v0.0.0-20181116082555-59819fff2fb9"
+        )
       end
 
       it "has the right details" do
@@ -373,9 +385,11 @@ RSpec.describe Dependabot::GoModules::FileParser do
 
       it "parses root file" do
         expect(dependencies.map(&:name))
-          .to eq(%w(
-            rsc.io/qr
-          ))
+          .to eq(
+            %w(
+              rsc.io/qr
+            )
+          )
       end
 
       context "when there is a nested file" do
@@ -384,9 +398,11 @@ RSpec.describe Dependabot::GoModules::FileParser do
 
         it "parses nested file" do
           expect(dependencies.map(&:name))
-            .to eq(%w(
-              rsc.io/qr
-            ))
+            .to eq(
+              %w(
+                rsc.io/qr
+              )
+            )
         end
       end
     end

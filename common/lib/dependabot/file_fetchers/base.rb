@@ -307,8 +307,12 @@ module Dependabot
         )
           .returns(T::Array[T.untyped])
       end
-      def repo_contents(dir: ".", ignore_base_directory: false,
-                        raise_errors: true, fetch_submodules: false)
+      def repo_contents(
+        dir: ".",
+        ignore_base_directory: false,
+        raise_errors: true,
+        fetch_submodules: false
+      )
         dir = File.join(directory, dir) unless ignore_base_directory
         path = Pathname.new(dir).cleanpath.to_path.gsub(%r{^/*}, "")
 
@@ -316,8 +320,11 @@ module Dependabot
         @repo_contents[dir.to_s] ||= if repo_contents_path
                                        _cloned_repo_contents(path)
                                      else
-                                       _fetch_repo_contents(path, raise_errors: raise_errors,
-                                                                  fetch_submodules: fetch_submodules)
+                                       _fetch_repo_contents(
+                                         path,
+                                         raise_errors: raise_errors,
+                                         fetch_submodules: fetch_submodules
+                                       )
                                      end
       end
 

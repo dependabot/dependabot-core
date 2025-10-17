@@ -9,12 +9,14 @@ RSpec.describe Dependabot::Clients::CodeCommit do
   let(:branch) { "master" }
   let(:repo) { "gocardless" }
   let(:credentials) do
-    [Dependabot::Credential.new({
-      "type" => "git_source",
-      "region" => "us-east-1",
-      "username" => "AWS_ACCESS_KEY_ID",
-      "password" => "AWS_SECRET_ACCESS_KEY"
-    })]
+    [Dependabot::Credential.new(
+      {
+        "type" => "git_source",
+        "region" => "us-east-1",
+        "username" => "AWS_ACCESS_KEY_ID",
+        "password" => "AWS_SECRET_ACCESS_KEY"
+      }
+    )]
   end
   let(:source) do
     Dependabot::Source.new(

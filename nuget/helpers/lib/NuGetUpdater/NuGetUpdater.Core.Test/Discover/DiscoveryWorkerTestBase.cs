@@ -20,15 +20,17 @@ public class DiscoveryWorkerTestBase : TestBase
         ExpectedWorkspaceDiscoveryResult expectedResult,
         MockNuGetPackage[]? packages = null,
         bool includeCommonPackages = true,
-        ExperimentsManager? experimentsManager = null)
+        ExperimentsManager? experimentsManager = null,
+        string? repoContentsPath = null)
     {
         experimentsManager ??= new ExperimentsManager();
         var actualResult = await RunDiscoveryAsync(files, async directoryPath =>
         {
             await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(packages, directoryPath, includeCommonPackages: includeCommonPackages);
 
+            repoContentsPath ??= directoryPath;
             var worker = new DiscoveryWorker("TEST-JOB-ID", experimentsManager, new TestLogger());
-            var result = await worker.RunWithErrorHandlingAsync(directoryPath, workspacePath);
+            var result = await worker.RunWithErrorHandlingAsync(repoContentsPath, workspacePath);
             return result;
         });
 

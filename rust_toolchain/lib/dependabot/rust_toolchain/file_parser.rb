@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -10,6 +10,7 @@ require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/file_parsers/base/dependency_set"
 
+require "dependabot/rust_toolchain/models/rust_toolchain_toml"
 require "dependabot/rust_toolchain/package_manager"
 
 module Dependabot
@@ -80,16 +81,8 @@ module Dependabot
 
       sig { params(content: String).returns(String) }
       def parse_toml_toolchain(content)
-        parsed = TomlRB.parse(content)
-
-        channel = parsed.dig("toolchain", "channel")
-        return channel if channel
-
-        Dependabot.logger.warn("No toolchain section found in rust-toolchain.toml file.")
-        raise Dependabot::DependencyFileNotParseable, "rust-toolchain.toml"
-      rescue TomlRB::ParseError => e
-        Dependabot.logger.warn("Failed to parse rust-toolchain.toml file: #{e.message}")
-        raise Dependabot::DependencyFileNotParseable, "rust-toolchain.toml"
+        toolchain_toml = Models::RustToolchainToml.from_toml(content)
+        toolchain_toml.channel
       end
 
       sig { params(content: String).returns(String) }
