@@ -13,7 +13,7 @@ Updating the list of known versions might be tricky, here are the steps:
 3. Update the list of known Python versions in [`language_version_manager.rb`](https://github.com/dependabot/dependabot-core/blob/main/uv/lib/dependabot/uv/language_version_manager.rb).
 4. Fix any broken tests.
 
-[Example PR](https://github.com/dependabot/dependabot-core/pull/8732) that does all these things for the `./python/` folder.
+[Example PR](https://github.com/dependabot/dependabot-core/pull/13321) that does all these things
 
 ### Running locally
 
