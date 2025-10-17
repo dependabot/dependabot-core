@@ -65,6 +65,24 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
       )
     end
 
+    context "when scm url, project url, and issue management url are present" do
+      let(:maven_response) { fixture("poms", "source_url_scm_pom.xml") }
+
+      it { is_expected.to eq("https://github.com/dependabot/source_url_scm_pom_scm") }
+    end
+
+    context "when project url and issue management url are present" do
+      let(:maven_response) { fixture("poms", "source_url_project_pom.xml") }
+
+      it { is_expected.to eq("https://github.com/dependabot/source_url_project_pom_project") }
+    end
+
+    context "when only issue management url is present" do
+      let(:maven_response) { fixture("poms", "source_url_issuemanagement_pom.xml") }
+
+      it { is_expected.to eq("https://github.com/dependabot/source_url_issuemanagement_pom_issues") }
+    end
+
     context "when the github link is buried in the pom" do
       let(:maven_response) { fixture("poms", "guava-23.3-jre.xml") }
 
