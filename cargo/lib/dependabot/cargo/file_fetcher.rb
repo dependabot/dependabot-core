@@ -57,6 +57,13 @@ module Dependabot
         fetched_files << T.must(rust_toolchain) if rust_toolchain
         fetched_files += fetch_path_dependency_and_workspace_files
 
+        # If the main Cargo.toml uses workspace dependencies, ensure we have the workspace root
+        parsed_manifest = parsed_file(cargo_toml)
+        if uses_workspace_dependencies?(parsed_manifest) || workspace_member?(parsed_manifest)
+          workspace_root = find_workspace_root(cargo_toml)
+          fetched_files << workspace_root if workspace_root && !fetched_files.include?(workspace_root)
+        end
+
         # Filter excluded files from final collection
         filtered_files = fetched_files.reject do |file|
           Dependabot::FileFiltering.should_exclude_path?(file.name, "file from final collection", @exclude_paths)
@@ -131,17 +138,17 @@ module Dependabot
 
           next if previously_fetched_files.map(&:name).include?(path)
           next if file.name == path
-
           next if Dependabot::FileFiltering.should_exclude_path?(path, "file from final collection", @exclude_paths)
 
           fetched_file = fetch_file_from_host(path, fetch_submodules: true)
           previously_fetched_files << fetched_file
-          grandchild_requirement_files =
-            fetch_workspace_files(
-              file: fetched_file,
-              previously_fetched_files: previously_fetched_files
-            )
-          [fetched_file, *grandchild_requirement_files]
+          grandchild_requirement_files = fetch_workspace_files(
+            file: fetched_file,
+            previously_fetched_files: previously_fetched_files
+          )
+
+          workspace_root = workspace_root_for_file(fetched_file)
+          [fetched_file, *grandchild_requirement_files, workspace_root]
         end.compact
 
         files.each { |f| f.support_file = file != cargo_toml }
@@ -168,24 +175,18 @@ module Dependabot
 
             next if previously_fetched_files.map(&:name).include?(path)
             next if file.name == path
-
             next if Dependabot::FileFiltering.should_exclude_path?(path, "file from final collection", @exclude_paths)
 
             fetched_file = fetch_file_from_host(path, fetch_submodules: true)
                            .tap { |f| f.support_file = true }
             previously_fetched_files << fetched_file
-            grandchild_requirement_files =
-              fetch_path_dependency_files(
-                file: fetched_file,
-                previously_fetched_files: previously_fetched_files
-              )
+            grandchild_requirement_files = fetch_path_dependency_files(
+              file: fetched_file,
+              previously_fetched_files: previously_fetched_files
+            )
 
-            # If this path dependency file is a workspace member that inherits from
-            # its root workspace, we search for the root to include it so Cargo can
-            # resolve the path dependency file manifest properly.
-            root = find_workspace_root(fetched_file) if workspace_member?(parsed_file(fetched_file))
-
-            [fetched_file, *grandchild_requirement_files, root]
+            workspace_root = workspace_root_for_file(fetched_file)
+            [fetched_file, *grandchild_requirement_files, workspace_root]
           rescue Dependabot::DependencyFileNotFound
             next unless required_path?(file, path)
 
@@ -198,15 +199,21 @@ module Dependabot
               unfetchable_required_path_deps
       end
 
+      sig { params(file: Dependabot::DependencyFile).returns(T.nilable(Dependabot::DependencyFile)) }
+      def workspace_root_for_file(file)
+        parsed_manifest = parsed_file(file)
+        return unless workspace_member?(parsed_manifest) || uses_workspace_dependencies?(parsed_manifest)
+
+        find_workspace_root(file)
+      end
+
       sig { params(dependencies: T::Hash[T.untyped, T.untyped]).returns(T::Array[String]) }
       def collect_path_dependencies_paths(dependencies)
-        paths = []
-        dependencies.each do |_, details|
+        dependencies.filter_map do |_, details|
           next unless details.is_a?(Hash) && details["path"]
 
-          paths << File.join(details["path"], "Cargo.toml").delete_prefix("/")
+          File.join(details["path"], "Cargo.toml").delete_prefix("/")
         end
-        paths
       end
 
       # rubocop:enable Metrics/PerceivedComplexity
@@ -229,8 +236,7 @@ module Dependabot
           end
         end
 
-        paths += replacement_path_dependency_paths_from_file(file)
-        paths
+        paths + replacement_path_dependency_paths_from_file(file)
       end
 
       sig { params(file: Dependabot::DependencyFile).returns(T::Array[String]) }
@@ -239,8 +245,7 @@ module Dependabot
 
         # Paths specified as replacements
         parsed_file(file).fetch("replace", {}).each do |_, details|
-          next unless details.is_a?(Hash)
-          next unless details["path"]
+          next unless details.is_a?(Hash) && details["path"]
 
           paths << File.join(details["path"], "Cargo.toml")
         end
@@ -250,14 +255,42 @@ module Dependabot
           next unless details.is_a?(Hash)
 
           details.each do |_, dep_details|
-            next unless dep_details.is_a?(Hash)
-            next unless dep_details["path"]
+            next unless dep_details.is_a?(Hash) && dep_details["path"]
 
             paths << File.join(dep_details["path"], "Cargo.toml")
           end
         end
 
         paths
+      end
+
+      # Check if this Cargo manifest uses workspace dependencies
+      # (e.g. dependency = { workspace = true }).
+      sig { params(parsed_manifest: T::Hash[T.untyped, T.untyped]).returns(T::Boolean) }
+      def uses_workspace_dependencies?(parsed_manifest)
+        # Check regular dependencies
+        workspace_deps = Cargo::FileParser::DEPENDENCY_TYPES.any? do |type|
+          deps = parsed_manifest.fetch(type, {})
+          deps.any? do |_, details|
+            next false unless details.is_a?(Hash)
+
+            details["workspace"] == true
+          end
+        end
+
+        return true if workspace_deps
+
+        # Check target-specific dependencies
+        parsed_manifest.fetch("target", {}).any? do |_, target_details|
+          Cargo::FileParser::DEPENDENCY_TYPES.any? do |type|
+            deps = target_details.fetch(type, {})
+            deps.any? do |_, details|
+              next false unless details.is_a?(Hash)
+
+              details["workspace"] == true
+            end
+          end
+        end
       end
 
       # See if this Cargo manifest inherits any property from a workspace

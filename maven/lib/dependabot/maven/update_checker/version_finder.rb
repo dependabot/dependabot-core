@@ -61,13 +61,13 @@ module Dependabot
         sig { returns(T.nilable(T::Hash[T.untyped, T.untyped])) }
         def latest_version_details
           release = fetch_latest_release
-          release ? { version: release.version, source_url: release.url } : nil
+          release&.version ? { version: release.version, source_url: release.url } : nil
         end
 
         sig { returns(T.nilable(T::Hash[T.untyped, T.untyped])) }
         def lowest_security_fix_version_details
           release = fetch_lowest_security_fix_release
-          release ? { version: release.version, source_url: release.url } : nil
+          release&.version ? { version: release.version, source_url: release.url } : nil
         end
 
         protected

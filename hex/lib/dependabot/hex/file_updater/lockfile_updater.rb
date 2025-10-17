@@ -50,6 +50,8 @@ module Dependabot
             end
 
           post_process_lockfile(@updated_lockfile_content)
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          handle_hex_errors(e)
         end
 
         private
@@ -77,6 +79,26 @@ module Dependabot
 
           # Substitute back old file beginning and ending
           content.sub(/\A%\{\n  "/, "%{\"").sub("},\n}", "}}")
+        end
+
+        sig { params(error: SharedHelpers::HelperSubprocessFailed).returns(T.noreturn) }
+        def handle_hex_errors(error)
+          match = error.message.match(/No authenticated organization found for (?<repo>[a-z_]+)\./)
+          match ||= error.message.match(/Public key fingerprint mismatch for repo "(?<repo>[a-z_]+)"/)
+          match ||= error.message.match(/Missing credentials for "(?<repo>[a-z_]+)"/)
+          match ||= error.message.match(/Downloading public key for repo "(?<repo>[a-z_]+)"/)
+          match ||= error.message.match(/Failed to fetch record for (?<repo>[a-z_]+)(?::(?<org>[a-z_]+))?/)
+
+          if match
+            name = match.names.include?("org") && match[:org] ? match[:org] : match[:repo]
+            raise Dependabot::PrivateSourceAuthenticationFailure, name
+          end
+
+          if error.message.include?("JSON") || error.message.include?("parse")
+            raise Dependabot::DependencyFileNotResolvable, "Failed to parse response from Hex helper: #{error.message}"
+          end
+
+          raise Dependabot::DependencyFileNotResolvable, "Failed to update lockfile: #{error.message}"
         end
 
         sig { void }

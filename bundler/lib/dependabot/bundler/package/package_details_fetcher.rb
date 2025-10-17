@@ -138,38 +138,82 @@ module Dependabot
           # curl  -H "Accept: application/json" \
           #       -H "Authorization: Bearer <<TOKEN>>" \
           #       https://api.github.com/orgs/dsp-testing/packages/rubygems/json/version
+
+          validate_and_check_registry(registry_url)
+        end
+
+        sig { params(registry_url: String).returns(Dependabot::Package::PackageDetails) }
+        def validate_and_check_registry(registry_url)
           parsed_url = begin
             URI.parse(registry_url)
           rescue URI::InvalidURIError
             raise "Invalid registry URL: #{registry_url}"
           end
 
-          # Handle GitHub Package Registry
           return github_packages_versions(registry_url) if parsed_url.host == "rubygems.pkg.github.com"
 
+          fetch_and_process_rubygems_response(registry_url)
+        end
+
+        sig { params(registry_url: String).returns(Dependabot::Package::PackageDetails) }
+        def fetch_and_process_rubygems_response(registry_url)
           response = registry_json_response_for_dependency(registry_url)
 
           unless response.status == 200
-            error_details = "Status: #{response.status}"
-            error_message = "Failed to fetch versions for '#{dependency.name}' from '#{registry_url}'. #{error_details}"
-            Dependabot.logger.info(error_message)
+            error_msg = "Failed to fetch versions for '#{dependency.name}' from '#{registry_url}'. " \
+                        "Status: #{response.status}"
+            log_error(error_msg)
             return package_details([])
           end
 
-          registry_url = get_url_from_dependency(dependency) || "https://rubygems.org" # Get registry_url
+          return handle_empty_response(registry_url) if response.body.nil? || response.body.strip.empty?
 
-          package_releases = JSON.parse(response.body).map do |release|
-            gem_name_with_version = "#{@dependency.name}-#{release['number']}"
+          parse_rubygems_response(response, registry_url)
+        end
+
+        sig do
+          params(response: Excon::Response, registry_url: String)
+            .returns(Dependabot::Package::PackageDetails)
+        end
+        def parse_rubygems_response(response, registry_url)
+          parsed_response = JSON.parse(response.body)
+
+          unless parsed_response.is_a?(Array)
+            log_error("Unexpected response format for '#{dependency.name}' from '#{registry_url}'")
+            return package_details([])
+          end
+
+          package_releases = parsed_response.map do |release|
+            gem_name_with_version = "#{dependency.name}-#{release['number']}"
             package_release(
               version: release["number"],
               released_at: Time.parse(release["created_at"]),
-              downloads: release["downloads_count"],
+              downloads: release["downloads_count"] || 0,
               url: format(GEM_URL, registry_url, gem_name_with_version),
               ruby_version: release["ruby_version"]
             )
           end
 
           package_details(package_releases)
+        rescue JSON::ParserError
+          log_error("Failed to parse JSON response for '#{dependency.name}' from '#{registry_url}'")
+          package_details([])
+        rescue StandardError => e
+          error_msg = "Unexpected error processing response for '#{dependency.name}' from " \
+                      "'#{registry_url}': #{e.message}"
+          log_error(error_msg)
+          package_details([])
+        end
+
+        sig { params(registry_url: String).returns(Dependabot::Package::PackageDetails) }
+        def handle_empty_response(registry_url)
+          log_error("Empty response body for '#{dependency.name}' from '#{registry_url}'")
+          package_details([])
+        end
+
+        sig { params(message: String).void }
+        def log_error(message)
+          Dependabot.logger.info(message)
         end
 
         sig { params(dependency: T.untyped).returns(T.nilable(String)) }

@@ -1,0 +1,6 @@
+[workspace]
+members = ["member"]
+
+[workspace.dependencies]
+tokio = "0.1.22"
+regex = "0.1.41"
