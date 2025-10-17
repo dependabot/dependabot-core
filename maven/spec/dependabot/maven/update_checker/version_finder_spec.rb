@@ -716,6 +716,18 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
         is_expected.to eq("http://repository.jboss.org/maven2")
       end
     end
+
+    context "when the release has a nil version" do
+      before do
+        allow(finder).to receive(:fetch_latest_release).and_return(
+          instance_double(Dependabot::Package::PackageRelease, version: nil, url: "https://repo.maven.apache.org/maven2")
+        )
+      end
+
+      it "returns nil" do
+        expect(latest_version_details).to be_nil
+      end
+    end
   end
 
   describe "#lowest_security_fix_version_details" do
@@ -793,6 +805,18 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
         it "doesn't raise an error" do
           expect { lowest_security_fix_version_details }.not_to raise_error
         end
+      end
+    end
+
+    context "when the release has a nil version" do
+      before do
+        allow(finder).to receive(:fetch_lowest_security_fix_release).and_return(
+          instance_double(Dependabot::Package::PackageRelease, version: nil, url: "https://repo.maven.apache.org/maven2")
+        )
+      end
+
+      it "returns nil" do
+        expect(lowest_security_fix_version_details).to be_nil
       end
     end
   end
