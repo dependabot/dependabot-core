@@ -34,7 +34,6 @@
       }
     ],
     "dependencies": null,
-    "directory": "/",
     "existing-pull-requests": [],
     "ignore-conditions": [],
     "security-advisories": [],
@@ -43,8 +42,10 @@
     "source": {
       "provider": "github",
       "repo": "dependabot-fixtures/dependabot-test-ruby-package",
-      "directory": "/",
-      "branch": null,
+      "directories": [
+        "/"
+      ],
+      "branch": "develop",
       "hostname": "github.com",
       "api-endpoint": "https://api.github.com/"
     },
@@ -52,7 +53,7 @@
     "requirements-update-strategy": null,
     "update-subdependencies": false,
     "updating-a-pull-request": false,
-    "vendor-dependencies": true,
+    "vendor-dependencies": false,
     "security-updates-only": false
   },
   "base64_dependency_files":[

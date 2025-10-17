@@ -170,8 +170,8 @@ module Dependabot
           T.nilable(String)
         )
         !@branch_ref.nil?
-        rescue Aws::CodeCommit::Errors::BranchDoesNotExistException
-          false
+      rescue Aws::CodeCommit::Errors::BranchDoesNotExistException
+        false
       end
 
       sig { returns(T::Boolean) }
