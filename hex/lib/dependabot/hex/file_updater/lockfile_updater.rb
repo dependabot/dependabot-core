@@ -90,7 +90,6 @@ module Dependabot
           match ||= error.message.match(/Failed to fetch record for (?<repo>[a-z_]+)(?::(?<org>[a-z_]+))?/)
 
           if match
-            # Check if the match has an :org group and use it, otherwise use :repo
             name = match.names.include?("org") && match[:org] ? match[:org] : match[:repo]
             raise Dependabot::PrivateSourceAuthenticationFailure, name
           end
