@@ -1,0 +1,16 @@
+module(name = "test")
+
+# Valid dependency
+bazel_dep(name = "good_dep", version = "1.0.0")
+
+# Malformed - missing closing paren
+bazel_dep(name = "bad_dep", version = "2.0.0"
+
+# Another valid dependency after the malformed one
+bazel_dep(name = "another_good_dep", version = "3.0.0")
+
+# Malformed - unclosed string
+bazel_dep(name = "unclosed_string_dep", version = "4.0.0
+
+# Final valid dependency
+bazel_dep(name = "final_dep", version = "5.0.0")
