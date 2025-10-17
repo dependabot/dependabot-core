@@ -83,24 +83,14 @@ module Dependabot
 
         sig { params(error: SharedHelpers::HelperSubprocessFailed).returns(T.noreturn) }
         def handle_hex_errors(error)
-          if (match = error.message.match(/No authenticated organization found for (?<repo>[a-z_]+)\./))
-            raise Dependabot::PrivateSourceAuthenticationFailure, match[:repo]
-          end
+          match = error.message.match(/No authenticated organization found for (?<repo>[a-z_]+)\./)
+          match ||= error.message.match(/Public key fingerprint mismatch for repo "(?<repo>[a-z_]+)"/)
+          match ||= error.message.match(/Missing credentials for "(?<repo>[a-z_]+)"/)
+          match ||= error.message.match(/Downloading public key for repo "(?<repo>[a-z_]+)"/)
+          match ||= error.message.match(/Failed to fetch record for (?<repo>[a-z_]+)(?::(?<org>[a-z_]+))?/)
 
-          if (match = error.message.match(/Public key fingerprint mismatch for repo "(?<repo>[a-z_]+)"/))
-            raise Dependabot::PrivateSourceAuthenticationFailure, match[:repo]
-          end
-
-          if (match = error.message.match(/Missing credentials for "(?<repo>[a-z_]+)"/))
-            raise Dependabot::PrivateSourceAuthenticationFailure, match[:repo]
-          end
-
-          if (match = error.message.match(/Downloading public key for repo "(?<repo>[a-z_]+)"/))
-            raise Dependabot::PrivateSourceAuthenticationFailure, match[:repo]
-          end
-
-          if (match = error.message.match(/Failed to fetch record for (?<repo>[a-z_]+)(?::(?<org>[a-z_]+))?/))
-            name = match[:org] || match[:repo]
+          if match
+            name = match.names.include?("org") && match[:org] ? match[:org] : match[:repo]
             raise Dependabot::PrivateSourceAuthenticationFailure, name
           end
 
