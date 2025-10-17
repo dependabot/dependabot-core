@@ -226,12 +226,17 @@ RSpec.describe Dependabot::Uv::FileFetcher do
             body: fixture("github", "contents_python_pyproject.json"),
             headers: { "content-type" => "application/json" }
           )
+        # New fetcher attempts common README variants when pyproject omits explicit readme.
+        Dependabot::Uv::FileFetcher::README_FILENAMES.each do |readme|
+          stub_request(:get, url + "#{readme}?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(status: 404)
+        end
       end
 
       it "fetches the pyproject.toml" do
-        expect(file_fetcher_instance.files.count).to eq(1)
-        expect(file_fetcher_instance.files.map(&:name))
-          .to match_array(%w(pyproject.toml))
+        primary_files = file_fetcher_instance.files.reject(&:support_file?)
+        expect(primary_files.map(&:name)).to eq(["pyproject.toml"])
       end
     end
 
@@ -745,11 +750,17 @@ RSpec.describe Dependabot::Uv::FileFetcher do
         stub_request(:get, url + "setup.py?ref=sha")
           .with(headers: { "Authorization" => "token token" })
           .to_return(status: 404)
+        # README support files are probed; ensure they 404 so they're ignored without VCR noise
+        Dependabot::Uv::FileFetcher::README_FILENAMES.each do |readme|
+          stub_request(:get, url + "#{readme}?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(status: 404)
+        end
       end
 
       it "doesn't raise a path dependency error" do
-        expect(file_fetcher_instance.files.count).to eq(2)
-        expect(file_fetcher_instance.files.map(&:name)).to contain_exactly("requirements-test.txt", "pyproject.toml")
+        primary_files = file_fetcher_instance.files.reject(&:support_file?)
+        expect(primary_files.map(&:name)).to contain_exactly("requirements-test.txt", "pyproject.toml")
       end
     end
 
