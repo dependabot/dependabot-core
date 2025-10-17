@@ -528,7 +528,7 @@ RSpec.describe Dependabot::Python::FileFetcher do
         expect(file_fetcher_instance.ecosystem_versions).to eq(
           {
             # When there is no version specified, we assume the max supported
-            languages: { python: { "max" => "3.13", "raw" => "unknown" } }
+            languages: { python: { "max" => "3.14", "raw" => "unknown" } }
           }
         )
       end
