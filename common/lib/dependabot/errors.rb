@@ -267,14 +267,6 @@ module Dependabot
         "error-type": "dependency_file_content_not_changed",
         "error-detail": { message: error.message }
       }
-    when Dependabot::NoFilesUpdatedError
-      {
-        "error-type": "no_files_updated",
-        "error-detail": { 
-          message: error.message,
-          **error.sentry_context.fetch(:extra, {})
-        }
-      }
     when Dependabot::ToolVersionNotSupported
       {
         "error-type": "tool_version_not_supported",
@@ -666,21 +658,6 @@ module Dependabot
   class DependencyFileNotSupported < DependabotError; end
 
   class DependencyFileContentNotChanged < DependabotError; end
-
-  class NoFilesUpdatedError < DependabotError
-    extend T::Sig
-
-    sig { params(message: String, error_context: T::Hash[Symbol, T.untyped]).void }
-    def initialize(message:, error_context:)
-      super(message)
-      @error_context = error_context
-    end
-
-    sig { returns(T::Hash[Symbol, T.untyped]) }
-    def sentry_context
-      { extra: @error_context }
-    end
-  end
 
   class BadRequirementError < Gem::Requirement::BadRequirementError; end
 
