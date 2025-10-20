@@ -129,7 +129,7 @@ module Dependabot
         readme_decl = nil
         begin
           readme_decl = parsed_pyproject.dig("project", "readme")
-        rescue StandardError
+        rescue TomlRB::ParseError
           # If the pyproject is unparseable we'll fail later in parsed_pyproject; ignore here.
         end
 
