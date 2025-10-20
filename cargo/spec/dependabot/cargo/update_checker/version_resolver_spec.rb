@@ -607,5 +607,77 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
         it { is_expected.to be >= Gem::Version.new("0.10.41") }
       end
     end
+
+    describe "#resolvability_error?" do
+      context "with binary path errors" do
+        it "detects couldn't find binary file error" do
+          message = "couldn't find `src/chargebee_codegen.rs`. " \
+                    "Please specify bin.path if you want to use a non-default path."
+          expect(resolver.send(:resolvability_error?, message)).to be(true)
+        end
+
+        it "detects failed to find binary file error" do
+          message = "failed to find `src/chargebee_codegen.rs` in package `my-package`"
+          expect(resolver.send(:resolvability_error?, message)).to be(true)
+        end
+
+        it "detects could not find binary file error" do
+          message = "could not find `src/main.rs` for binary `my-binary`"
+          expect(resolver.send(:resolvability_error?, message)).to be(true)
+        end
+
+        it "detects cannot find binary error" do
+          message = "cannot find binary `my_binary` in package `my_package`"
+          expect(resolver.send(:resolvability_error?, message)).to be(true)
+        end
+
+        it "detects binary target not found error" do
+          message = "binary target `my_target` not found in manifest"
+          expect(resolver.send(:resolvability_error?, message)).to be(true)
+        end
+
+        it "detects bin.path hint message" do
+          message = "error: cannot find binary file. Please specify bin.path if you want to use a non-default path."
+          expect(resolver.send(:resolvability_error?, message)).to be(true)
+        end
+      end
+
+      context "with existing error patterns" do
+        it "detects failed to parse lock error" do
+          message = "failed to parse lock file"
+          expect(resolver.send(:resolvability_error?, message)).to be(true)
+        end
+
+        it "detects workspace error" do
+          message = "believes it's in a workspace"
+          expect(resolver.send(:resolvability_error?, message)).to be(true)
+        end
+
+        it "detects feature requirement error" do
+          message = "feature `metabuild` is required"
+          expect(resolver.send(:resolvability_error?, message)).to be(true)
+        end
+      end
+
+      context "with non-resolvability errors" do
+        context "with non-resolvability errors" do
+          it "does not detect unrelated errors when original requirements are resolvable" do
+            # Create a new resolver instance to avoid stubbing the subject
+            non_error_resolver = described_class.new(
+              dependency: dependency,
+              prepared_dependency_files: dependency_files,
+              original_dependency_files: unprepared_dependency_files,
+              credentials: credentials
+            )
+
+            # Mock the original_requirements_resolvable? on the new instance
+            allow(non_error_resolver).to receive(:original_requirements_resolvable?).and_return(true)
+
+            message = "some other random error message"
+            expect(non_error_resolver.send(:resolvability_error?, message)).to be(false)
+          end
+        end
+      end
+    end
   end
 end
