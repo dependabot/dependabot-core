@@ -99,12 +99,44 @@ module Dependabot
 
         sig { params(error: StandardError).returns(T.noreturn) }
         def handle_cargo_error(error)
-          raise unless error.message.include?("failed to select a version") ||
-                       error.message.include?("no matching version") ||
-                       error.message.include?("unexpected end of input while parsing major version number")
+          raise unless resolvable_cargo_error?(error.message)
           raise if error.message.include?("`#{dependency.name} ")
 
-          raise Dependabot::DependencyFileNotResolvable, error.message
+          extract_binary_path_error(error.message)
+        end
+
+        sig { params(message: String).returns(T::Boolean) }
+        def resolvable_cargo_error?(message)
+          message.include?("failed to select a version") ||
+            message.include?("no matching version") ||
+            message.include?("unexpected end of input while parsing major version number") ||
+            message.match?(/couldn't find `[^`]+\.rs`/) ||
+            message.match?(/failed to find `[^`]+\.rs`/) ||
+            message.match?(/could not find `[^`]+\.rs`/) ||
+            message.match?(/cannot find binary `[^`]+`/) ||
+            message.include?("Please specify bin.path if you want to use a non-default path") ||
+            message.include?("binary target")
+        end
+
+        sig { params(message: String).returns(T.noreturn) }
+        def extract_binary_path_error(message)
+          if (match = message.match(/can't find `([^`]+)` bin at `([^`]+)`/))
+            binary_name = match[1]
+            expected_path = match[2]
+            raise Dependabot::DependencyFileNotResolvable,
+                  "Binary '#{binary_name}' not found at expected path '#{expected_path}'. " \
+                  "Please check the bin.path configuration in Cargo.toml."
+          elsif (match = message.match(/(couldn't find|failed to find|could not find) `([^`]+\.rs)`/))
+            file_path = match[2]
+            raise Dependabot::DependencyFileNotResolvable,
+                  "Source file '#{file_path}' not found. Please check the bin.path configuration in Cargo.toml."
+          elsif (match = message.match(/cannot find binary `([^`]+)`/))
+            binary_name = match[1]
+            raise Dependabot::DependencyFileNotResolvable,
+                  "Binary target '#{binary_name}' not found. Please check the [[bin]] configuration in Cargo.toml."
+          end
+
+          raise Dependabot::DependencyFileNotResolvable, message
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
@@ -186,34 +218,24 @@ module Dependabot
           start = Time.now
           command = SharedHelpers.escape_command(command)
           Helpers.setup_credentials_in_environment(credentials)
-          # Pass through any registry tokens supplied via CARGO_REGISTRIES_...
-          # environment variables.
           env = ENV.select { |key, _value| key.match(/^CARGO_REGISTRIES_/) }
           stdout, process = Open3.capture2e(env, command)
           time_taken = Time.now - start
 
-          # Raise an error with the output from the shell session if Cargo
-          # returns a non-zero status
           return if process.success?
 
+          handle_cargo_command_error(stdout, command, fingerprint, time_taken)
+        end
+
+        sig { params(stdout: String, command: String, fingerprint: String, time_taken: Float).returns(T.noreturn) }
+        def handle_cargo_command_error(stdout, command, fingerprint, time_taken)
           if using_old_toolchain?(stdout)
             raise Dependabot::DependencyFileNotEvaluatable, "Dependabot only supports toolchain 1.68 and up."
           end
 
-          # ambiguous package specification
-          ambiguous_match = stdout.match(/There are multiple `([^`]+)` packages.*specification `([^`]+)` is ambiguous/)
-          if ambiguous_match
-            raise Dependabot::DependencyFileNotEvaluatable, "Ambiguous package specification: #{ambiguous_match[2]}"
-          end
-
-          # package doesn't exist in the index
-          if (match = stdout.match(/no matching package named `([^`]+)` found/))
-            raise Dependabot::DependencyFileNotResolvable, match[1]
-          end
-
-          if (match = /error: no matching package found\nsearched package name: `([^`]+)`/m.match(stdout))
-            raise Dependabot::DependencyFileNotResolvable, match[1]
-          end
+          check_ambiguous_package_error(stdout)
+          check_missing_package_error(stdout)
+          check_binary_path_error(stdout)
 
           raise SharedHelpers::HelperSubprocessFailed.new(
             message: stdout,
@@ -221,9 +243,46 @@ module Dependabot
               command: command,
               fingerprint: fingerprint,
               time_taken: time_taken,
-              process_exit_value: process.to_s
+              process_exit_value: "non-zero"
             }
           )
+        end
+
+        sig { params(stdout: String).void }
+        def check_ambiguous_package_error(stdout)
+          ambiguous_match = stdout.match(/There are multiple `([^`]+)` packages.*specification `([^`]+)` is ambiguous/)
+          return unless ambiguous_match
+
+          raise Dependabot::DependencyFileNotEvaluatable, "Ambiguous package specification: #{ambiguous_match[2]}"
+        end
+
+        sig { params(stdout: String).void }
+        def check_missing_package_error(stdout)
+          if (match = stdout.match(/no matching package named `([^`]+)` found/))
+            raise Dependabot::DependencyFileNotResolvable, match[1]
+          end
+
+          if (match = /error: no matching package found\nsearched package name: `([^`]+)`/m.match(stdout))
+            raise Dependabot::DependencyFileNotResolvable, match[1]
+          end
+        end
+
+        sig { params(stdout: String).void }
+        def check_binary_path_error(stdout)
+          return unless binary_path_error?(stdout)
+
+          extract_binary_path_error(stdout)
+        end
+
+        sig { params(stdout: String).returns(T::Boolean) }
+        def binary_path_error?(stdout)
+          stdout.match?(/couldn't find `[^`]+\.rs`/) ||
+            stdout.match?(/failed to find `[^`]+\.rs`/) ||
+            stdout.match?(/could not find `[^`]+\.rs`/) ||
+            stdout.match?(/cannot find binary `[^`]+`/) ||
+            stdout.match?(/binary target `[^`]+` not found/) ||
+            stdout.include?("Please specify bin.path if you want to use a non-default path") ||
+            (stdout.include?("binary target") && stdout.include?("not found"))
         end
 
         sig { params(message: String).returns(T::Boolean) }

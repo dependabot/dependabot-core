@@ -360,18 +360,35 @@ module Dependabot
 
         sig { params(message: String).returns(T::Boolean) }
         def resolvability_error?(message)
-          return true if message.include?("failed to parse lock")
-          return true if message.include?("believes it's in a workspace")
-          return true if message.include?("wasn't a root")
-          return true if message.include?("requires a nightly version")
-          return true if message.match?(/feature `[^\`]+` is required/)
-          return true if message.include?("unexpected end of input while parsing major version number")
+          return true if common_resolvability_error?(message)
+          return true if binary_path_error?(message)
 
           original_requirements_resolvable = original_requirements_resolvable?
-
           return false if original_requirements_resolvable == :unknown
 
           !original_requirements_resolvable
+        end
+
+        sig { params(message: String).returns(T::Boolean) }
+        def common_resolvability_error?(message)
+          message.include?("failed to parse lock") ||
+            message.include?("believes it's in a workspace") ||
+            message.include?("wasn't a root") ||
+            message.include?("requires a nightly version") ||
+            message.match?(/feature `[^\`]+` is required/) ||
+            message.include?("unexpected end of input while parsing major version number")
+        end
+
+        sig { params(message: String).returns(T::Boolean) }
+        def binary_path_error?(message)
+          message.match?(/couldn't find `[^`]+\.rs`/) ||
+            message.match?(/failed to find `[^`]+\.rs`/) ||
+            message.match?(/could not find `[^`]+\.rs`/) ||
+            message.match?(/cannot find binary `[^`]+`/) ||
+            message.match?(/binary target `[^`]+` not found/) ||
+            message.include?("Please specify bin.path if you want to use a non-default path") ||
+            message.include?("binary target") ||
+            message.include?("target not found")
         end
 
         sig { returns(T.any(TrueClass, FalseClass, Symbol)) }
