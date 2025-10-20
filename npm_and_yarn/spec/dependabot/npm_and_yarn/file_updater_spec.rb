@@ -1760,7 +1760,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           let(:previous_requirements) do
             [{
               file: "package/package.json",
-              requirement: "^16.2.0",  # Same as requirements - unchanged
+              requirement: "^16.2.0",
               groups: ["dependencies"],
               source: nil
             }]
@@ -3950,30 +3950,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
               updated_files
             end
           end
-
-          # context "when catalog requirements are already up to date" do
-          #   let(:project_name) { "pnpm/catalog_prettier" }
-
-          #   let(:dependencies) do
-          #     [
-          #       create_dependency(
-          #         file: "pnpm-workspace.yaml",
-          #         name: "prettier",
-          #         version: "3.3.3",
-          #         previous_version: "3.3.0",
-          #         required_version: "^3.3.0",  # Same as previous - unchanged
-          #         previous_required_version: "^3.3.0"
-          #       )
-          #     ]
-          #   end
-
-          #   it "raises DependencyFileContentNotChanged for unchanged catalog requirements" do
-          #     expect { updated_files }.to raise_error(
-          #       Dependabot::DependencyFileContentNotChanged,
-          #       /No files were updated! All dependency requirements are unchanged/
-          #     )
-          #   end
-          # end
         end
       end
     end
