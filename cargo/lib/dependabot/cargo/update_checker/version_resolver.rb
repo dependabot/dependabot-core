@@ -438,9 +438,11 @@ module Dependabot
 
           T.must(manifest_files).each do |file|
             path = file.name
-            dir = Pathname.new(path).dirname
-            FileUtils.mkdir_p(dir)
-            File.write(file.name, sanitized_manifest_content(T.must(file.content)))
+            # Convert absolute paths to relative paths to avoid permission errors
+            relative_path = path.start_with?("/") ? path[1..-1] || "." : path
+            dir = Pathname.new(relative_path).dirname
+            FileUtils.mkdir_p(dir) unless dir.to_s == "."
+            File.write(relative_path, sanitized_manifest_content(T.must(file.content)))
 
             next if virtual_manifest?(file)
 
