@@ -6,7 +6,6 @@ require "dependabot/dependency_file"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/bazel/version"
-require "dependabot/bazel/file_parser/starlark_parser"
 require "dependabot/errors"
 
 module Dependabot
@@ -14,15 +13,11 @@ module Dependabot
     class FileParser < Dependabot::FileParsers::Base
       extend T::Sig
 
+      require_relative "file_parser/starlark_parser"
+
       REPOSITORY_REFERENCE = "@([^/]+)"
 
-      DEPS_REGEX = /
-        deps\s*=\s*                           # deps parameter assignment
-        \[                                    # Opening bracket
-        \s*                                   # Optional whitespace
-        ([^\]]+)                              # Capture group 1: content within brackets
-        \]                                    # Closing bracket
-      /mx
+      DEPS_REGEX = /deps\s*=\s*\[\s*([^\]]+)\]/mx
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse

@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "dependabot/bazel/file_parser"
 
 module Dependabot
   module Bazel
