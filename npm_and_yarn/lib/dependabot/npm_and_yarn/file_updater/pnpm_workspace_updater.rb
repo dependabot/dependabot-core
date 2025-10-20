@@ -48,25 +48,8 @@ module Dependabot
         sig { returns(T.nilable(String)) }
         def updated_pnpm_workspace_content
           content = workspace_file.content.dup
-          original_content = content.dup
-
           dependencies.each do |dependency|
-            Dependabot.logger.info("PNPM Workspace: Processing dependency #{dependency.name}")
-            Dependabot.logger.info("  Previous requirements: #{dependency.previous_requirements}")
-            Dependabot.logger.info("  New requirements: #{dependency.requirements}")
-
             content = update_dependency_versions(T.must(content), dependency)
-
-            if original_content != content
-              Dependabot.logger.info("  Content changed for #{dependency.name}")
-            else
-              Dependabot.logger.info("  No content change for #{dependency.name}")
-            end
-          end
-
-          if original_content == content
-            Dependabot.logger.info("PNPM Workspace: No changes made to workspace file")
-            return nil  # Return nil to indicate no changes
           end
 
           content
