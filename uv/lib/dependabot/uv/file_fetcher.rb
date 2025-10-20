@@ -148,7 +148,7 @@ module Dependabot
 
         candidate_names.filter_map do |filename|
           file = fetch_file_if_present(filename)
-          file&.support_file = true
+          file.support_file = true if file
           file
         rescue Dependabot::DependencyFileNotFound
           nil
