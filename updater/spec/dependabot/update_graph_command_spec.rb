@@ -7,7 +7,7 @@ require "dependabot/bundler"
 require "tmpdir"
 
 RSpec.describe Dependabot::UpdateGraphCommand do
-  subject(:job) { described_class.new }
+  subject(:job) { described_class.new(fetched_files) }
 
   let(:service) do
     instance_double(
@@ -22,7 +22,21 @@ RSpec.describe Dependabot::UpdateGraphCommand do
     )
   end
   let(:job_definition) do
-    JSON.parse(fixture("file_fetcher_output/output-directories-only.json"))
+    JSON.parse(fixture("jobs/bundler_directories.json"))
+  end
+  let(:manifest) do
+    Dependabot::DependencyFile.new(
+      name: "Gemfile",
+      content: fixture("bundler/original/Gemfile"),
+      directory: "/"
+    )
+  end
+  let(:fetched_files) do
+    # We no longer write encoded files to disk, need to migrate the fixtures in this test
+    Dependabot::FetchedFiles.new(
+      dependency_files: [manifest],
+      base_commit_sha: "1c6331732c41e4557a16dacb82534f1d1c831848"
+    )
   end
   let(:job_id) { "123123" }
 
@@ -54,8 +68,11 @@ RSpec.describe Dependabot::UpdateGraphCommand do
   describe "#perform_job when the directory is empty or doesn't exist" do
     subject(:perform_job) { job.perform_job }
 
-    let(:job_definition) do
-      JSON.parse(fixture("file_fetcher_output/output-empty-directory.json"))
+    let(:fetched_files) do
+      Dependabot::FetchedFiles.new(
+        dependency_files: [],
+        base_commit_sha: "1c6331732c41e4557a16dacb82534f1d1c831848"
+      )
     end
 
     before do
@@ -65,7 +82,7 @@ RSpec.describe Dependabot::UpdateGraphCommand do
 
     it "emits a create_dependency_submission call to the Dependabot service with an empty snapshot" do
       expect(service).to receive(:create_dependency_submission) do |args|
-        expected_manifest_file = Dependabot::DependencyFile.new(name: "", content: "", directory: "/foo")
+        expected_manifest_file = Dependabot::DependencyFile.new(name: "", content: "", directory: "/")
 
         expect(args[:dependency_submission]).to be_a(GithubApi::DependencySubmission)
 

@@ -10,14 +10,14 @@
     "ecosystem": "cargo"
   },
   {
-    "core": "conda",
-    "test": "conda",
-    "ecosystem": "conda"
-  },
-  {
     "core": "composer",
     "test": "composer",
     "ecosystem": "composer"
+  },
+  {
+    "core": "conda",
+    "test": "conda",
+    "ecosystem": "conda"
   },
   {
     "core": "devcontainers",
@@ -63,6 +63,11 @@
     "core": "hex",
     "test": "hex",
     "ecosystem": "mix"
+  },
+  {
+    "core": "julia",
+    "test": "julia",
+    "ecosystem": "julia"
   },
   {
     "core": "maven",

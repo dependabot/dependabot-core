@@ -103,6 +103,83 @@ RSpec.describe Dependabot::Bundler::Package::PackageDetailsFetcher do
       end
     end
 
+    context "with error responses" do
+      context "when response has empty body" do
+        before do
+          stub_request(:get, json_url)
+            .to_return(
+              status: 200,
+              body: "",
+              headers: { "Content-Type" => "application/json" }
+            )
+        end
+
+        it "return empty package details" do
+          result = fetch
+
+          expect(result).to be_a(Dependabot::Package::PackageDetails)
+          expect(result.releases).to be_empty
+        end
+
+        it "logs the error" do
+          expect(Dependabot.logger).to receive(:info)
+            .with("Empty response body for '#{dependency_name}' from 'https://rubygems.org'")
+
+          fetch
+        end
+      end
+
+      context "when response body is not an array" do
+        before do
+          stub_request(:get, json_url)
+            .to_return(
+              status: 200,
+              body: '{"error": "Something went wrong"}',
+              headers: { "Content-Type" => "application/json" }
+            )
+        end
+
+        it "returns empty package details" do
+          result = fetch
+
+          expect(result).to be_a(Dependabot::Package::PackageDetails)
+          expect(result.releases).to be_empty
+        end
+
+        it "logs the error" do
+          expect(Dependabot.logger).to receive(:info)
+            .with("Unexpected response format for '#{dependency.name}' from 'https://rubygems.org'")
+
+          fetch
+        end
+      end
+
+      context "when invalid JSON is returned" do
+        before do
+          stub_request(:get, json_url)
+            .to_return(
+              status: 200,
+              body: "invalid json{",
+              headers: { "Content-Type" => "application/json" }
+            )
+        end
+
+        it "returns empty package details" do
+          result = fetch
+
+          expect(result).to be_a(Dependabot::Package::PackageDetails)
+          expect(result.releases).to be_empty
+        end
+
+        it "logs the error" do
+          expect(Dependabot.logger).to receive(:info)
+            .with("Failed to parse JSON response for '#{dependency.name}' from 'https://rubygems.org'")
+
+          fetch
+        end
+      end
+    end
+
     describe "GitHub Package Registry support" do
       let(:dependency_name) { "json" }
       let(:source) do
