@@ -53,15 +53,28 @@ module Dependabot
             raise_miss_configured_tooling_if_pnpm_subdirectory
           end
 
-          raise NoChangeError.new(
-            message: "No files were updated!",
+          # Check if requirements haven't changed
+          unchanged_requirements = dependencies.all? do |dep|
+            dep.previous_requirements == dep.requirements
+          end
+
+          error_message = if unchanged_requirements
+                           "No files were updated! All dependency requirements are unchanged, " \
+                           "suggesting lockfiles are already at target versions." \
+                           "Consider running `pnpm install` to update lockfiles."
+                         else
+                           "No files were updated!"
+                         end
+
+          raise Dependabot::NoFilesUpdatedError.new(
+            message: error_message,
             error_context: error_context(updated_files: updated_files)
           )
         end
 
         sorted_updated_files = updated_files.sort_by(&:name)
         if sorted_updated_files == filtered_dependency_files.sort_by(&:name)
-          raise NoChangeError.new(
+          raise Dependabot::NoFilesUpdatedError.new(
             message: "Updated files are unchanged!",
             error_context: error_context(updated_files: updated_files)
           )
@@ -483,11 +496,20 @@ module Dependabot
       end
       def updated_pnpm_workspace_content(file)
         @updated_pnpm_workspace_content ||= T.let({}, T.nilable(T::Hash[String, T.nilable(String)]))
-        @updated_pnpm_workspace_content[file.name] ||=
-          PnpmWorkspaceUpdater.new(
+        @updated_pnpm_workspace_content[file.name] ||= begin
+          updater = PnpmWorkspaceUpdater.new(
             workspace_file: file,
             dependencies: dependencies
-          ).updated_pnpm_workspace.content
+          )
+          updated_workspace = updater.updated_pnpm_workspace
+
+          if updated_workspace.content == file.content
+            Dependabot.logger.info("PNPM workspace file #{file.name} has no changes")
+            nil
+          else
+            updated_workspace.content
+          end
+        end
       end
     end
   end

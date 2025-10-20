@@ -41,7 +41,7 @@ module Dependabot
 
         if updated_files.none?
 
-          raise NoChangeError.new(
+          raise Dependabot::NoFilesUpdatedError.new(
             message: "No files were updated!",
             error_context: error_context(updated_files: updated_files)
           )
@@ -49,7 +49,7 @@ module Dependabot
 
         sorted_updated_files = updated_files.sort_by(&:name)
         if sorted_updated_files == filtered_dependency_files.sort_by(&:name)
-          raise NoChangeError.new(
+          raise Dependabot::NoFilesUpdatedError.new(
             message: "Updated files are unchanged!",
             error_context: error_context(updated_files: updated_files)
           )
