@@ -59,9 +59,10 @@ job:
       affected-versions:
         - < 1.2.4
   existing-pull-requests:
-  - - dependency-name: dependency-a
-      dependency-version: 1.2.4
-      pr-number: 123
+  - pr-number: 123
+    dependencies:
+      - dependency-name: dependency-a
+        dependency-version: 1.2.4
   security-updates-only: true
   updating-a-pull-request: true
   source:
