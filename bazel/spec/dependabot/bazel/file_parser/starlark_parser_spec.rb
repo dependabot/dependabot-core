@@ -4,7 +4,7 @@
 require "spec_helper"
 require "dependabot/bazel/file_parser/starlark_parser"
 
-RSpec.describe Dependabot::Bazel::StarlarkParser do
+RSpec.describe Dependabot::Bazel::FileParser::StarlarkParser do
   let(:parser) { described_class.new(content) }
 
   describe "#parse_function_calls" do
