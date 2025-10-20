@@ -1743,7 +1743,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           end
         end
 
-        context "with a dependency that's actually up-to-date but has the wrong previous version" do
+        context "with a dependency that has unchanged requirements" do
           let(:files) { project_dependency_files("npm8/workspaces_incorrect_version") }
 
           let(:dependency_name) { "yargs" }
@@ -1760,15 +1760,16 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           let(:previous_requirements) do
             [{
               file: "package/package.json",
-              requirement: "^16.2.0",
+              requirement: "^16.2.0",  # Same as requirements - unchanged
               groups: ["dependencies"],
               source: nil
             }]
           end
 
-          it "doesn't update any files and raises" do
+          it "raises DependencyFileContentNotChanged when requirements are unchanged" do
             expect { updated_files }.to raise_error(
-              described_class::NoChangeError, "No files were updated!"
+              Dependabot::DependencyFileContentNotChanged,
+              /No files were updated! All dependency requirements are unchanged/
             )
           end
         end
@@ -3949,6 +3950,30 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
               updated_files
             end
           end
+
+          # context "when catalog requirements are already up to date" do
+          #   let(:project_name) { "pnpm/catalog_prettier" }
+
+          #   let(:dependencies) do
+          #     [
+          #       create_dependency(
+          #         file: "pnpm-workspace.yaml",
+          #         name: "prettier",
+          #         version: "3.3.3",
+          #         previous_version: "3.3.0",
+          #         required_version: "^3.3.0",  # Same as previous - unchanged
+          #         previous_required_version: "^3.3.0"
+          #       )
+          #     ]
+          #   end
+
+          #   it "raises DependencyFileContentNotChanged for unchanged catalog requirements" do
+          #     expect { updated_files }.to raise_error(
+          #       Dependabot::DependencyFileContentNotChanged,
+          #       /No files were updated! All dependency requirements are unchanged/
+          #     )
+          #   end
+          # end
         end
       end
     end

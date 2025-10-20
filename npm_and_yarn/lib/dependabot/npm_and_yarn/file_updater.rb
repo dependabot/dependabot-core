@@ -47,37 +47,8 @@ module Dependabot
                            updated_lockfiles
                          end
 
-        if updated_files.none?
-          if original_pnpm_locks.any?
-            raise_tool_not_supported_for_pnpm_if_transitive
-            raise_miss_configured_tooling_if_pnpm_subdirectory
-          end
-
-          # Check if requirements haven't changed
-          unchanged_requirements = dependencies.all? do |dep|
-            dep.previous_requirements == dep.requirements
-          end
-
-          if unchanged_requirements
-            raise DependencyFileContentNotChanged.new(
-              "No files were updated! All dependency requirements are unchanged, " \
-              "suggesting lockfiles are already at target versions."
-            )
-          else
-            raise NoChangeError.new(
-              message: "No files were updated!",
-              error_context: error_context(updated_files: updated_files)
-            )
-          end
-        end
-
-        sorted_updated_files = updated_files.sort_by(&:name)
-        if sorted_updated_files == filtered_dependency_files.sort_by(&:name)
-          raise NoChangeError.new(
-            message: "Updated files are unchanged!",
-            error_context: error_context(updated_files: updated_files)
-          )
-        end
+        handle_no_files_updated(updated_files) if updated_files.none?
+        handle_unchanged_files(updated_files)
 
         vendor_updated_files(updated_files)
       end
@@ -121,6 +92,41 @@ module Dependabot
         )
       end
       # rubocop:enable Metrics/PerceivedComplexity
+
+      sig { params(updated_files: T::Array[Dependabot::DependencyFile]).void }
+      def handle_no_files_updated(updated_files)
+        if original_pnpm_locks.any?
+          raise_tool_not_supported_for_pnpm_if_transitive
+          raise_miss_configured_tooling_if_pnpm_subdirectory
+        end
+
+        # Check if requirements haven't changed
+        unchanged_requirements = dependencies.all? do |dep|
+          dep.previous_requirements == dep.requirements
+        end
+
+        if unchanged_requirements
+          raise DependencyFileContentNotChanged,
+                "No files were updated! All dependency requirements are unchanged, " \
+                "suggesting lockfiles are already at target versions."
+        else
+          raise NoChangeError.new(
+            message: "No files were updated!",
+            error_context: error_context(updated_files: updated_files)
+          )
+        end
+      end
+
+      sig { params(updated_files: T::Array[Dependabot::DependencyFile]).void }
+      def handle_unchanged_files(updated_files)
+        sorted_updated_files = updated_files.sort_by(&:name)
+        return unless sorted_updated_files == filtered_dependency_files.sort_by(&:name)
+
+        raise NoChangeError.new(
+          message: "Updated files are unchanged!",
+          error_context: error_context(updated_files: updated_files)
+        )
+      end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def update_pnpm_workspace_and_locks
