@@ -415,6 +415,15 @@ module Dependabot
       # package version mentioned in .toml not found in package index
       PACKAGE_NOT_FOUND = /Package (?<pkg>.*) ((?<req_ver>.*)) not found./
 
+      # poetry error when attempting to enrich a dependency with two incompatible version constraints
+      # Example:
+      #   Cannot enrich dependency with incompatible constraints: json-repair (>=0.44.0) and json-repair (>=0.29.8,<0.30.0)
+      INCOMPATIBLE_ENRICH_CONSTRAINTS = /
+        Cannot\senrich\sdependency\swith\sincompatible\sconstraints:\s+
+        (?<dep>[^\s(]+)\s*\((?<ver_range_a>[^)]+)\)\s+and\s+
+        (?<dep_b>[^\s(]+)\s*\((?<ver_range_b>[^)]+)\)
+      /x
+
       # client access error codes while accessing package index
       CLIENT_ERROR_CODES = T.let(
         {
@@ -508,6 +517,15 @@ module Dependabot
 
         if (msg = error.message.match(PACKAGE_NOT_FOUND))
           raise DependencyFileNotResolvable, msg
+        end
+
+        # handle: Cannot enrich dependency with incompatible constraints
+        if (msg = error.message.match(INCOMPATIBLE_ENRICH_CONSTRAINTS))
+          dep   = msg[:dep]
+          ver_a = msg[:ver_range_a]
+          ver_b = msg[:ver_range_b]
+          raise DependencyFileNotResolvable,
+                "Incompatible version constraints for #{dep}: #{ver_a} vs #{ver_b}"
         end
 
         raise DependencyFileNotResolvable, error.message if error.message.match(PYTHON_RANGE_NOT_SATISFIED)
