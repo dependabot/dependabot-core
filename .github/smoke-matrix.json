@@ -70,6 +70,11 @@
     "ecosystem": "mix"
   },
   {
+    "core": "julia",
+    "test": "julia",
+    "ecosystem": "julia"
+  },
+  {
     "core": "maven",
     "test": "maven",
     "ecosystem": "maven"

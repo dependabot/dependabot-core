@@ -88,6 +88,38 @@ RSpec.describe Dependabot::DockerCompose::FileUpdater do
       end
     end
 
+    context "when the old tag is a prefix of the new tag" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "python",
+          version: "3.6.30",
+          previous_version: "3.6.3",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "docker-compose.yml",
+            source: { tag: "3.6.30" }
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "docker-compose.yml",
+            source: { tag: "3.6.3" }
+          }],
+          package_manager: "docker_compose"
+        )
+      end
+
+      describe "the updated docker-compose.yml" do
+        subject(:updated_dockerfile) do
+          updated_files.find { |f| f.name == "docker-compose.yml" }
+        end
+
+        its(:content) { is_expected.to include "image: ubuntu:17.04\n" }
+        its(:content) { is_expected.to include "image: python:3.6.30\n" }
+      end
+    end
+
     context "when multiple identical lines need to be updated" do
       let(:dockerfile_body) do
         fixture("docker_compose", "composefiles", "multiple_identical")

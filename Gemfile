@@ -19,6 +19,7 @@ gem "dependabot-go_modules", path: "go_modules"
 gem "dependabot-gradle", path: "gradle"
 gem "dependabot-helm", path: "helm"
 gem "dependabot-hex", path: "hex"
+gem "dependabot-julia", path: "julia"
 gem "dependabot-maven", path: "maven"
 gem "dependabot-npm_and_yarn", path: "npm_and_yarn"
 gem "dependabot-nuget", path: "nuget"
@@ -37,8 +38,6 @@ gem "http", "~> 5.1"
 # Sorbet
 gem "sorbet", "~> 0.6", group: :development
 gem "tapioca", "~> 0.17", require: false, group: :development
-
-gem "sigstore-cli", "~> 0.2.1"
 
 gem "zeitwerk", "~> 2.7"
 

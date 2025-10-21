@@ -1105,4 +1105,261 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
       end
     end
   end
+
+  describe "#uses_workspace_dependencies?" do
+    let(:file_fetcher_instance) do
+      described_class.new(source: source, credentials: credentials)
+    end
+
+    context "when manifest has regular workspace dependencies" do
+      let(:manifest_with_workspace_deps) do
+        {
+          "dependencies" => {
+            "serde" => { "workspace" => true },
+            "tokio" => "1.0"
+          }
+        }
+      end
+
+      it "returns true" do
+        expect(file_fetcher_instance.send(:uses_workspace_dependencies?, manifest_with_workspace_deps)).to be(true)
+      end
+    end
+
+    context "when manifest has dev workspace dependencies" do
+      let(:manifest_with_dev_workspace_deps) do
+        {
+          "dev-dependencies" => {
+            "criterion" => { "workspace" => true }
+          }
+        }
+      end
+
+      it "returns true" do
+        expect(file_fetcher_instance.send(:uses_workspace_dependencies?, manifest_with_dev_workspace_deps)).to be(true)
+      end
+    end
+
+    context "when manifest has build workspace dependencies" do
+      let(:manifest_with_build_workspace_deps) do
+        {
+          "build-dependencies" => {
+            "cc" => { "workspace" => true }
+          }
+        }
+      end
+
+      it "returns true" do
+        expect(
+          file_fetcher_instance.send(
+            :uses_workspace_dependencies?,
+            manifest_with_build_workspace_deps
+          )
+        ).to be(true)
+      end
+    end
+
+    context "when manifest has target-specific workspace dependencies" do
+      let(:manifest_with_target_workspace_deps) do
+        {
+          "target" => {
+            "wasm32-unknown-unknown" => {
+              "dependencies" => {
+                "wasm-bindgen" => { "workspace" => true }
+              }
+            }
+          }
+        }
+      end
+
+      it "returns true" do
+        expect(
+          file_fetcher_instance.send(
+            :uses_workspace_dependencies?,
+            manifest_with_target_workspace_deps
+          )
+        ).to be(true)
+      end
+    end
+
+    context "when manifest has no workspace dependencies" do
+      let(:manifest_without_workspace_deps) do
+        {
+          "dependencies" => {
+            "serde" => "1.0",
+            "tokio" => "1.0"
+          },
+          "dev-dependencies" => {
+            "criterion" => "0.4"
+          }
+        }
+      end
+
+      it "returns false" do
+        expect(file_fetcher_instance.send(:uses_workspace_dependencies?, manifest_without_workspace_deps)).to be(false)
+      end
+    end
+
+    context "when manifest is empty" do
+      let(:empty_manifest) { {} }
+
+      it "returns false" do
+        expect(file_fetcher_instance.send(:uses_workspace_dependencies?, empty_manifest)).to be(false)
+      end
+    end
+  end
+
+  describe "workspace root fetching for workspace dependencies" do
+    let(:file_fetcher_instance) do
+      described_class.new(source: source, credentials: credentials)
+    end
+
+    describe "integration with fetch_workspace_files" do
+      let(:workspace_member_file) do
+        Dependabot::DependencyFile.new(
+          name: "internal/Cargo.toml",
+          content: "[package]\nname = \"internal\"\n\n[dependencies]\nanstyle = { workspace = true }\n"
+        )
+      end
+
+      let(:workspace_root_file) do
+        Dependabot::DependencyFile.new(
+          name: "Cargo.toml",
+          content: "[workspace]\nmembers = [\"internal\"]\n\n[workspace.dependencies]\nanstyle = \"1.0.8\"\n"
+        )
+      end
+
+      before do
+        allow(file_fetcher_instance).to receive(:find_workspace_root)
+          .with(workspace_member_file)
+          .and_return(workspace_root_file)
+      end
+
+      it "includes workspace root when workspace member uses workspace dependencies" do
+        # Mock the workspace dependency paths from the root file
+        allow(file_fetcher_instance).to receive(:workspace_dependency_paths_from_file)
+          .with(workspace_root_file)
+          .and_return(["internal/Cargo.toml"])
+
+        # Mock the workspace dependency paths from the member file (recursive call)
+        allow(file_fetcher_instance).to receive(:workspace_dependency_paths_from_file)
+          .with(workspace_member_file)
+          .and_return([])
+
+        allow(file_fetcher_instance).to receive(:fetch_file_from_host)
+          .with("internal/Cargo.toml", fetch_submodules: true)
+          .and_return(workspace_member_file)
+
+        # Mock the cargo_toml method call
+        allow(file_fetcher_instance).to receive(:fetch_file_from_host)
+          .with("Cargo.toml")
+          .and_return(workspace_root_file)
+
+        # Call the method under test
+        result = file_fetcher_instance.send(
+          :fetch_workspace_files,
+          file: workspace_root_file,
+          previously_fetched_files: []
+        )
+
+        # Should include both the workspace member and the workspace root
+        expect(result.map(&:name)).to include("internal/Cargo.toml", "Cargo.toml")
+      end
+    end
+
+    describe "integration with fetch_files" do
+      let(:main_cargo_file) do
+        Dependabot::DependencyFile.new(
+          name: "Cargo.toml",
+          content: "[package]\nname = \"test\"\n\n[dependencies]\nserde = { workspace = true }\n"
+        )
+      end
+
+      let(:workspace_root_file) do
+        Dependabot::DependencyFile.new(
+          name: "../Cargo.toml",
+          content: "[workspace]\nmembers = [\"test\"]\n\n[workspace.dependencies]\nserde = \"1.0\"\n"
+        )
+      end
+
+      before do
+        allow(file_fetcher_instance).to receive_messages(
+          cargo_toml: main_cargo_file,
+          cargo_lock: nil,
+          cargo_config: nil,
+          rust_toolchain: nil,
+          fetch_path_dependency_and_workspace_files: []
+        )
+        allow(file_fetcher_instance).to receive(:find_workspace_root)
+          .with(main_cargo_file)
+          .and_return(workspace_root_file)
+      end
+
+      it "includes workspace root when main Cargo.toml uses workspace dependencies" do
+        files = file_fetcher_instance.fetch_files
+
+        expect(files.map(&:name)).to include("Cargo.toml", "../Cargo.toml")
+      end
+    end
+
+    describe "integration with fetch_path_dependency_files" do
+      let(:main_file) do
+        Dependabot::DependencyFile.new(
+          name: "Cargo.toml",
+          content: "[package]\nname = \"main\"\n\n[dependencies]\ninternal = { path = \"../internal\" }\n"
+        )
+      end
+
+      let(:path_dep_file) do
+        Dependabot::DependencyFile.new(
+          name: "../internal/Cargo.toml",
+          content: "[package]\nname = \"internal\"\n\n[dependencies]\nserde = { workspace = true }\n"
+        )
+      end
+
+      let(:workspace_root_file) do
+        Dependabot::DependencyFile.new(
+          name: "../Cargo.toml",
+          content: "[workspace]\nmembers = [\"internal\"]\n\n[workspace.dependencies]\nserde = \"1.0\"\n"
+        )
+      end
+
+      before do
+        allow(file_fetcher_instance).to receive(:path_dependency_paths_from_file)
+          .with(main_file)
+          .and_return(["../internal/Cargo.toml"])
+
+        # Mock for the path dependency file itself (no further path dependencies)
+        allow(file_fetcher_instance).to receive(:path_dependency_paths_from_file)
+          .with(path_dep_file)
+          .and_return([])
+
+        allow(file_fetcher_instance).to receive(:fetch_file_from_host)
+          .with("../internal/Cargo.toml", fetch_submodules: true)
+          .and_return(path_dep_file)
+
+        # Mock workspace_member? to return true for our test case
+        allow(file_fetcher_instance).to receive(:workspace_member?)
+          .and_return(false)
+        allow(file_fetcher_instance).to receive(:workspace_member?)
+          .with(hash_including("dependencies" => hash_including("serde" => { "workspace" => true })))
+          .and_return(true)
+
+        allow(file_fetcher_instance).to receive(:find_workspace_root)
+          .with(path_dep_file)
+          .and_return(workspace_root_file)
+      end
+
+      it "includes workspace root when path dependency uses workspace dependencies" do
+        result = file_fetcher_instance.send(
+          :fetch_path_dependency_files,
+          file: main_file,
+          previously_fetched_files: []
+        )
+
+        # Should include the path dependency and its workspace root
+        expect(result.map(&:name)).to include("../internal/Cargo.toml", "../Cargo.toml")
+      end
+    end
+  end
 end

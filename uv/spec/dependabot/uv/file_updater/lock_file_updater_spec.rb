@@ -115,6 +115,68 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
       end
     end
 
+    context "when UV dependency resolution fails" do
+      before do
+        allow(updater).to receive(:updated_lockfile_content_for).and_call_original
+        allow(updater).to receive(:run_command).and_raise(error)
+      end
+
+      context "with 'No solution found when resolving dependencies' error" do
+        let(:error) do
+          Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+            message: uv_dependency_conflict_error,
+            error_context: {}
+          )
+        end
+
+        let(:uv_dependency_conflict_error) do
+          <<~ERROR
+            Using CPython 3.12.11 interpreter at: /usr/local/.pyenv/versions/3.12.11/bin/python3.12
+            × No solution found when resolving dependencies:
+            ╰─▶ Because awscli==1.42.35 depends on botocore==1.40.35 and boto3==1.40.51
+                depends on botocore>=1.40.51,<1.41.0, we can conclude that
+                awscli==1.42.35 and boto3==1.40.51 are incompatible.
+                And because your project depends on awscli==1.42.35 and boto3==1.40.51,
+                we can conclude that your project's requirements are unsatisfiable.
+          ERROR
+        end
+
+        it "raises a DependencyFileNotResolvable error with the detailed UV error message" do
+          expect { updated_files }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+            expect(error.message).to include("No solution found when resolving dependencies")
+            expect(error.message).to include("Because awscli==1.42.35 depends on botocore==1.40.35")
+            expect(error.message).to include("we can conclude that your project's requirements are unsatisfiable")
+          end
+        end
+      end
+
+      context "with RESOLUTION_IMPOSSIBLE_ERROR error" do
+        let(:error) do
+          Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+            message: "ResolutionImpossible: Could not find a version that satisfies the requirement",
+            error_context: {}
+          )
+        end
+
+        it "raises a ResolutionImpossible error with the detailed UV error message" do
+          expect { updated_files }.to raise_error(Dependabot::DependencyFileNotResolvable, /ResolutionImpossible/)
+        end
+      end
+
+      context "when error is unrecognized" do
+        let(:error) do
+          Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+            message: "Some other error",
+            error_context: {}
+          )
+        end
+
+        it "raises the original error" do
+          expect { updated_files }.to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed, /Some other error/)
+        end
+      end
+    end
+
     context "with pyproject preparation" do
       before do
         pyproject_preparer = instance_double(Dependabot::Uv::FileUpdater::PyprojectPreparer)

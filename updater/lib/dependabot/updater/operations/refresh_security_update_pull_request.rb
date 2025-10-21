@@ -141,26 +141,18 @@ module Dependabot
           # Note: Gradle, Maven and Nuget dependency names can be case-insensitive
           # and the dependency name in the security advisory often doesn't match
           # what users have specified in their manifest.
-          # Dependabot::Experiments.register(:lead_security_dependency, true)
+          lead_dep_name = security_advisory_dependency.downcase
 
-          if Dependabot::Experiments.enabled?(:lead_security_dependency)
-            lead_dep_name = security_advisory_dependency.downcase
+          Dependabot.logger.info(
+            "Security advisory dependency: #{lead_dep_name}\n" \
+            "First dependency in list: #{job_dependencies.first&.downcase}"
+          )
 
-            # telemetry data collection
+          if lead_dep_name != job_dependencies.first&.downcase
             Dependabot.logger.info(
-              "Security advisory dependency: #{lead_dep_name}\n" \
-              "First dependency in list: #{job_dependencies.first&.downcase}"
+              "Difference found between security-advisory (#{lead_dep_name}) and " \
+              "first-dependency (#{job_dependencies.first&.downcase})"
             )
-
-            if lead_dep_name != job_dependencies.first&.downcase
-              Dependabot.logger.info(
-                "Difference found between security-advisory (#{lead_dep_name}) and " \
-                "first-dependency (#{job_dependencies.first&.downcase})"
-              )
-            end
-
-          else
-            lead_dep_name = job_dependencies.first&.downcase
           end
 
           lead_dependency = dependencies.find do |dep|

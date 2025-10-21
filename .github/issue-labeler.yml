@@ -75,3 +75,6 @@
 
 "L: bazel":
     - '(bazel)'
+
+"L: julia":
+    - '(julia)'
