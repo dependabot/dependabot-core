@@ -226,7 +226,7 @@ RSpec.describe Dependabot::Uv::FileFetcher do
             body: fixture("github", "contents_python_pyproject.json"),
             headers: { "content-type" => "application/json" }
           )
-        # New fetcher attempts common README variants when pyproject omits explicit readme.
+        # fetcher attempts common README variants when pyproject omits readme.
         Dependabot::Uv::FileFetcher::README_FILENAMES.each do |readme|
           stub_request(:get, url + "#{readme}?ref=sha")
             .with(headers: { "Authorization" => "token token" })
@@ -750,7 +750,6 @@ RSpec.describe Dependabot::Uv::FileFetcher do
         stub_request(:get, url + "setup.py?ref=sha")
           .with(headers: { "Authorization" => "token token" })
           .to_return(status: 404)
-        # README support files are probed; ensure they 404 so they're ignored without VCR noise
         Dependabot::Uv::FileFetcher::README_FILENAMES.each do |readme|
           stub_request(:get, url + "#{readme}?ref=sha")
             .with(headers: { "Authorization" => "token token" })
