@@ -46,7 +46,6 @@ module Dependabot
 
         dependencies = dependency_set.dependencies
 
-        # Remove duplicates based on name and version, similar to Cargo
         dependencies.uniq { |dep| [dep.name, dep.version] }
       end
 
