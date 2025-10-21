@@ -231,13 +231,19 @@ module Dependabot
             match_failed_to_build_regex = error_message.scan(UV_BUILD_FAILED_REGEX).last
 
             if match_unresolvable_regex
-              formatted_error = match_unresolvable_regex.is_a?(Array) ?
-                                match_unresolvable_regex.join : match_unresolvable_regex
+              formatted_error = if match_unresolvable_regex.is_a?(Array)
+                                  match_unresolvable_regex.join
+                                else
+                                  match_unresolvable_regex
+                                end
             end
 
             if match_failed_to_build_regex
-              formatted_error = match_failed_to_build_regex.is_a?(Array) ?
-                                match_failed_to_build_regex.join : match_failed_to_build_regex
+              formatted_error = if match_failed_to_build_regex.is_a?(Array)
+                                  match_failed_to_build_regex.join
+                                else
+                                  match_failed_to_build_regex
+                                end
             end
 
             raise Dependabot::DependencyFileNotResolvable, formatted_error
