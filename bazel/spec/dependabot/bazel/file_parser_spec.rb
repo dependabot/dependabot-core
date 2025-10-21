@@ -66,7 +66,7 @@ RSpec.describe Dependabot::Bazel::FileParser do
       # Should include MODULE.bazel deps plus load references
       expect(dependencies.length).to be >= 3
 
-      load_deps = dependencies.select { |d| d.requirements.first[:groups] == ["load_references"] }
+      load_deps = dependencies.select { |d| d.requirements.any? { |req| req[:groups] == ["load_references"] } }
       expect(load_deps.map(&:name)).to include("rules_go", "rules_cc")
     end
   end
@@ -133,7 +133,7 @@ RSpec.describe Dependabot::Bazel::FileParser do
       dependencies = parser.parse
 
       # Should include MODULE.bazel deps plus load references
-      load_deps = dependencies.select { |d| d.requirements.first[:groups] == ["load_references"] }
+      load_deps = dependencies.select { |d| d.requirements.any? { |req| req[:groups] == ["load_references"] } }
 
       expect(load_deps.map(&:name)).to include("rules_go", "rules_cc", "io_bazel_rules_docker")
 
@@ -157,7 +157,7 @@ RSpec.describe Dependabot::Bazel::FileParser do
       expect(workspace_deps.map(&:name)).to include("rules_python")
 
       # BUILD load deps
-      load_deps = dependencies.select { |d| d.requirements.first[:groups] == ["load_references"] }
+      load_deps = dependencies.select { |d| d.requirements.any? { |req| req[:groups] == ["load_references"] } }
       expect(load_deps.map(&:name)).to include("rules_cc")
 
       # Bazel version detection
