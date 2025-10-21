@@ -9,8 +9,8 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base
       extend T::Sig
 
-      sig { override.returns(T::Array[Regexp]) }
-      def self.updated_files_regex
+      sig { returns(T::Array[Regexp]) }
+      def updated_files_regex
         # TODO: Define regex patterns for files this updater can handle
         # Example: [/^manifest\.json$/]
         []
