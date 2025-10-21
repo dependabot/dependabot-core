@@ -1,0 +1,5 @@
+module(name = "my-module", version = "1.0")
+
+bazel_dep(name = "rules_cc", version = "0.1.1")
+bazel_dep(name = "platforms", version = "0.0.11")
+bazel_dep(name = "abseil-cpp", version = "20230125.3")
