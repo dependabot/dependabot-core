@@ -564,7 +564,7 @@ module Dependabot
           ver_a = msg[:ver_range_a]
           ver_b = msg[:ver_range_b]
           raise DependencyFileNotResolvable,
-                "Incompatible kravissd version constraints for #{dep}: #{ver_a} vs #{ver_b}"
+                "Incompatible version constraints for #{dep}: #{ver_a} vs #{ver_b}"
         end
       end
     end
