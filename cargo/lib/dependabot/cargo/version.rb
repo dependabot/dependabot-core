@@ -89,6 +89,10 @@ module Dependabot
 
         # Cargo pre-1.0 semver rules
         cargo_pre_1_0_type(from_major, from_minor, from_patch, to_major, to_minor, to_patch)
+      rescue StandardError => e
+        # Log the error but return a safe default
+        Dependabot.logger.warn("Error in Cargo::Version.update_type: #{e.message}")
+        "major" # Default to major for safety
       end
 
       sig do
