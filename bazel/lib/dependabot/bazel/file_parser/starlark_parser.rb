@@ -225,9 +225,8 @@ module Dependabot
           while current_char && current_char != quote_char
             if current_char == "\\"
               string_value += parse_escape_sequence
-            else
-              char = current_char
-              string_value += char if char
+            elsif current_char
+              string_value += T.must(current_char)
             end
             advance
           end
@@ -327,7 +326,7 @@ module Dependabot
               break if depth.zero?
 
             end
-            value += char if char
+            value += T.must(char)
 
             advance
           end

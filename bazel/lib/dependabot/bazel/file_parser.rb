@@ -12,12 +12,11 @@ require "dependabot/errors"
 module Dependabot
   module Bazel
     class FileParser < Dependabot::FileParsers::Base
-      require "dependabot/file_parsers/base/dependency_set"
       extend T::Sig
 
       require_relative "file_parser/starlark_parser"
 
-      REPOSITORY_REFERENCE = "@([^/]+)"
+      REPOSITORY_REFERENCE = %r{@([^/]+)}
 
       DEPS_REGEX = /deps\s*=\s*\[\s*([^\]]+)\]/mx
 
@@ -311,9 +310,7 @@ module Dependabot
         content.scan(DEPS_REGEX) do |deps_content|
           deps_content_str = deps_content[0]
 
-          dependency_reference_pattern = /"#{REPOSITORY_REFERENCE}/o
-
-          deps_content_str.scan(dependency_reference_pattern) do |repo_name|
+          deps_content_str.scan(REPOSITORY_REFERENCE) do |repo_name|
             repo_name = repo_name[0]
             next if repo_name == "bazel_tools"
 
