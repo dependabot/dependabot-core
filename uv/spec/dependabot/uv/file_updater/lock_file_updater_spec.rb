@@ -484,8 +484,10 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
       end
 
       it "raises DependencyFileNotResolvable with the full error message" do
-        expect { handle_uv_error }.to raise_error(Dependabot::DependencyFileNotResolvable,
-                                                  /ResolutionImpossible.*requests==99\.99\.99/)
+        expect { handle_uv_error }.to raise_error(
+          Dependabot::DependencyFileNotResolvable,
+          /ResolutionImpossible.*requests==99\.99\.99/
+        )
       end
     end
 
