@@ -240,8 +240,8 @@ module Dependabot
 
         sig { params(error: StandardError).void }
         def handle_cargo_errors(error)
-          return if feature_error?(error)
-          return if workspace_error_should_return_nil?(error)
+          return if missing_feature_error?(error)
+          return if recoverable_workspace_error?(error)
 
           handle_git_authentication_errors(error)
           handle_git_reference_errors(error)
@@ -252,7 +252,7 @@ module Dependabot
         end
 
         sig { params(error: StandardError).returns(T::Boolean) }
-        def feature_error?(error)
+        def missing_feature_error?(error)
           if error.message.include?("does not have these features") ||
              error.message.include?("does not have that feature")
             # TODO: Ideally we should update the declaration not to ask
@@ -294,7 +294,7 @@ module Dependabot
         end
 
         sig { params(error: StandardError).returns(T::Boolean) }
-        def workspace_error_should_return_nil?(error)
+        def recoverable_workspace_error?(error)
           if workspace_native_library_update_error?(error.message)
             # This happens when we're updating one part of a workspace which
             # triggers an update of a subdependency that uses a native library,
