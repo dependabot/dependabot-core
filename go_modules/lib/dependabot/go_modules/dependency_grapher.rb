@@ -72,21 +72,24 @@ module Dependabot
         )
       end
 
+      # TODO: Re-instate method once we consider how we are handling `replace` directives
       sig { returns(T::Hash[String, T.untyped]) }
       def fetch_package_relationships
-        T.cast(
-          file_parser,
-          Dependabot::GoModules::FileParser
-        ).run_in_parsed_context("go mod graph").lines.each_with_object({}) do |line, rels|
-          match = line.match(GO_MOD_GRAPH_LINE_REGEX)
-          unless match
-            Dependabot.logger.warn("Unexpected output from 'go mod graph': 'line'")
-            next
-          end
+        {}
 
-          rels[match[:parent]] ||= []
-          rels[match[:parent]] << match[:child]
-        end
+        # T.cast(
+        #   file_parser,
+        #   Dependabot::GoModules::FileParser
+        # ).run_in_parsed_context("go mod graph").lines.each_with_object({}) do |line, rels|
+        #   match = line.match(GO_MOD_GRAPH_LINE_REGEX)
+        #   unless match
+        #     Dependabot.logger.warn("Unexpected output from 'go mod graph': 'line'")
+        #     next
+        #   end
+
+        #   rels[match[:parent]] ||= []
+        #   rels[match[:parent]] << match[:child]
+        # end
       end
     end
   end

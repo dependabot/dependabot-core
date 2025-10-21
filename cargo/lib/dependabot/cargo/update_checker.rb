@@ -261,12 +261,25 @@ module Dependabot
           latest_allowable_version: latest_version
         ).prepared_dependency_files
 
-        VersionResolver.new(
+        result = VersionResolver.new(
           dependency: dependency,
           prepared_dependency_files: prepared_files,
           original_dependency_files: dependency_files,
           credentials: credentials
         ).latest_resolvable_version
+
+        # If the resolver returns a version higher than latest_version, cap it at latest_version
+        # This handles cases where the resolver might pick prereleases or incorrect versions
+        # Only apply this logic for semantic versions, not git SHAs
+        if result && latest_version &&
+           !git_dependency? &&
+           version_class.correct?(result.to_s) &&
+           version_class.correct?(latest_version.to_s) &&
+           version_class.new(result.to_s) > version_class.new(latest_version.to_s)
+          latest_version
+        else
+          result
+        end
       end
 
       sig { returns(T.nilable(T.any(String, Gem::Version))) }
