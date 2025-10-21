@@ -238,75 +238,100 @@ module Dependabot
           raise Dependabot::DependencyFileNotResolvable, msg
         end
 
-        # rubocop:disable Metrics/AbcSize
-        # rubocop:disable Metrics/PerceivedComplexity
         sig { params(error: StandardError).void }
         def handle_cargo_errors(error)
-          if error.message.include?("does not have these features")
+          return if missing_feature_error?(error)
+          return if recoverable_workspace_error?(error)
+
+          handle_git_authentication_errors(error)
+          handle_git_reference_errors(error)
+          handle_toolchain_errors(error)
+          handle_resolvability_errors(error)
+
+          raise
+        end
+
+        sig { params(error: StandardError).returns(T::Boolean) }
+        def missing_feature_error?(error)
+          if error.message.include?("does not have these features") ||
+             error.message.include?("does not have that feature")
             # TODO: Ideally we should update the declaration not to ask
             # for the specified features
-            return
+            return true
           end
 
-          if error.message.include?("authenticate when downloading repo") ||
-             error.message.include?("fatal: Authentication failed for")
-            # Check all dependencies for reachability (so that we raise a
-            # consistent error)
-            urls = unreachable_git_urls
+          false
+        end
 
-            if T.must(urls).none?
-              url = T.must(
-                T.must(error.message.match(UNABLE_TO_UPDATE))
-                                            .named_captures.fetch("url")
-              ).split(/[#?]/).first
-              raise if T.must(reachable_git_urls).include?(url)
+        sig { params(error: StandardError).void }
+        def handle_git_authentication_errors(error)
+          return unless error.message.include?("authenticate when downloading repo") ||
+                        error.message.include?("fatal: Authentication failed for")
 
-              # Fix: Wrap url in T.must since split().first can return nil
-              T.must(urls) << T.must(url)
-            end
+          urls = unreachable_git_urls
 
-            raise Dependabot::GitDependenciesNotReachable, T.must(urls)
+          if T.must(urls).none?
+            url = T.must(
+              T.must(error.message.match(UNABLE_TO_UPDATE))
+                                          .named_captures.fetch("url")
+            ).split(/[#?]/).first
+            raise if T.must(reachable_git_urls).include?(url)
+
+            T.must(urls) << T.must(url)
           end
 
+          raise Dependabot::GitDependenciesNotReachable, T.must(urls)
+        end
+
+        sig { params(error: StandardError).void }
+        def handle_git_reference_errors(error)
           [BRANCH_NOT_FOUND_REGEX, REF_NOT_FOUND_REGEX, GIT_REF_NOT_FOUND_REGEX, NOT_OUR_REF_REGEX].each do |regex|
             next unless error.message.match?(regex)
 
             dependency_url = T.must(T.must(error.message.match(regex)).named_captures.fetch("url")).split(/[#?]/).first
-            # Fix: Wrap dependency_url in T.must since split().first can return nil
             raise Dependabot::GitDependencyReferenceNotFound, T.must(dependency_url)
           end
+        end
 
+        sig { params(error: StandardError).returns(T::Boolean) }
+        def recoverable_workspace_error?(error)
           if workspace_native_library_update_error?(error.message)
             # This happens when we're updating one part of a workspace which
             # triggers an update of a subdependency that uses a native library,
             # whilst leaving another part of the workspace using an older
             # version. Ideally we would prevent the subdependency update.
-            return nil
+            return true
           end
 
           if git_dependency? && error.message.include?("no matching package")
             # This happens when updating a git dependency whose version has
             # changed from a release to a pre-release version
-            return nil
+            return true
           end
 
           if error.message.include?("all possible versions conflict")
             # This happens when a top-level requirement locks us to an old
             # patch release of a dependency that is a sub-dep of what we're
             # updating. It's (probably) a Cargo bug.
-            return nil
+            return true
           end
 
-          if using_old_toolchain?(error.message)
-            raise Dependabot::DependencyFileNotEvaluatable, "Dependabot only supports toolchain 1.68 and up."
-          end
-
-          raise Dependabot::DependencyFileNotResolvable, error.message if resolvability_error?(error.message)
-
-          raise
+          false
         end
-        # rubocop:enable Metrics/AbcSize
-        # rubocop:enable Metrics/PerceivedComplexity
+
+        sig { params(error: StandardError).void }
+        def handle_toolchain_errors(error)
+          return unless using_old_toolchain?(error.message)
+
+          raise Dependabot::DependencyFileNotEvaluatable, "Dependabot only supports toolchain 1.68 and up."
+        end
+
+        sig { params(error: StandardError).void }
+        def handle_resolvability_errors(error)
+          return unless resolvability_error?(error.message)
+
+          raise Dependabot::DependencyFileNotResolvable, error.message
+        end
 
         sig { params(message: T.nilable(String)).returns(T.any(Dependabot::Version, T::Boolean)) }
         def using_old_toolchain?(message)
@@ -438,9 +463,11 @@ module Dependabot
 
           T.must(manifest_files).each do |file|
             path = file.name
-            dir = Pathname.new(path).dirname
-            FileUtils.mkdir_p(dir)
-            File.write(file.name, sanitized_manifest_content(T.must(file.content)))
+            # Convert absolute paths to relative paths to avoid permission errors
+            relative_path = path.start_with?("/") ? path[1..-1] || "." : path
+            dir = Pathname.new(relative_path).dirname
+            FileUtils.mkdir_p(dir) unless dir.to_s == "."
+            File.write(relative_path, sanitized_manifest_content(T.must(file.content)))
 
             next if virtual_manifest?(file)
 

@@ -3,6 +3,7 @@
 
 require "spec_helper"
 require "dependabot/dependency_file"
+require "dependabot/shared_helpers"
 require "dependabot/cargo/update_checker/file_preparer"
 require "dependabot/cargo/update_checker/version_resolver"
 
@@ -193,6 +194,29 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
             expect(error.message)
               .to include("feature `metabuild` is required")
           end
+      end
+    end
+
+    context "when using a feature that doesn't exist on the dependency" do
+      it "doesn't raise an error for singular feature mismatch" do
+        error_message = "package `hashbrown` does not have that feature.\n" \
+                        " package `hashbrown` does have feature `rayon`"
+        error = Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: error_message,
+          error_context: {}
+        )
+
+        expect { resolver.send(:handle_cargo_errors, error) }.not_to raise_error
+      end
+
+      it "doesn't raise an error for plural feature mismatch" do
+        error_message = "package `example` does not have these features"
+        error = Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: error_message,
+          error_context: {}
+        )
+
+        expect { resolver.send(:handle_cargo_errors, error) }.not_to raise_error
       end
     end
 
@@ -675,6 +699,102 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
 
             message = "some other random error message"
             expect(non_error_resolver.send(:resolvability_error?, message)).to be(false)
+          end
+        end
+      end
+    end
+  end
+
+  describe "#write_manifest_files" do
+    let(:manifest_fixture_name) { "bare_version_specified" }
+    let(:lockfile_fixture_name) { "bare_version_specified" }
+    let!(:manifest_content) { fixture("manifests", "bare_version_specified") }
+    let!(:lockfile_content) { fixture("lockfiles", "bare_version_specified") }
+
+    context "when file names have absolute paths" do
+      let(:absolute_path_manifest) do
+        Dependabot::DependencyFile.new(
+          name: "/Cargo.toml", # Absolute path that would cause permission error
+          content: manifest_content
+        )
+      end
+      let(:absolute_path_lockfile) do
+        Dependabot::DependencyFile.new(
+          name: "/Cargo.lock",
+          content: lockfile_content
+        )
+      end
+      let(:unprepared_dependency_files) { [absolute_path_manifest, absolute_path_lockfile] }
+
+      it "converts absolute paths to relative paths to avoid permission errors" do
+        # Create a temporary directory to test file writing
+        Dir.mktmpdir do |temp_dir|
+          Dir.chdir(temp_dir) do
+            # This should not raise a permission error
+            expect { resolver.send(:write_manifest_files, prepared: false) }.not_to raise_error
+
+            # Verify that the files were written with relative paths
+            expect(File.exist?("Cargo.toml")).to be(true)
+            expect(File.read("Cargo.toml")).to include("[package]")
+          end
+        end
+      end
+    end
+
+    context "when file names have relative paths" do
+      let(:relative_path_manifest) do
+        Dependabot::DependencyFile.new(
+          name: "subdir/Cargo.toml",
+          content: manifest_content
+        )
+      end
+      let(:relative_path_lockfile) do
+        Dependabot::DependencyFile.new(
+          name: "subdir/Cargo.lock",
+          content: lockfile_content
+        )
+      end
+      let(:unprepared_dependency_files) { [relative_path_manifest, relative_path_lockfile] }
+
+      it "preserves relative paths and creates necessary directories" do
+        Dir.mktmpdir do |temp_dir|
+          Dir.chdir(temp_dir) do
+            expect { resolver.send(:write_manifest_files, prepared: false) }.not_to raise_error
+
+            # Verify that the subdirectory was created and files were written
+            expect(File.exist?("subdir/Cargo.toml")).to be(true)
+            expect(File.read("subdir/Cargo.toml")).to include("[package]")
+            expect(Dir.exist?("subdir/src")).to be(true)
+            expect(File.exist?("subdir/src/lib.rs")).to be(true)
+          end
+        end
+      end
+    end
+
+    context "when file names are just filenames without paths" do
+      let(:simple_manifest) do
+        Dependabot::DependencyFile.new(
+          name: "Cargo.toml",
+          content: manifest_content
+        )
+      end
+      let(:simple_lockfile) do
+        Dependabot::DependencyFile.new(
+          name: "Cargo.lock",
+          content: lockfile_content
+        )
+      end
+      let(:unprepared_dependency_files) { [simple_manifest, simple_lockfile] }
+
+      it "writes files in the current directory" do
+        Dir.mktmpdir do |temp_dir|
+          Dir.chdir(temp_dir) do
+            expect { resolver.send(:write_manifest_files, prepared: false) }.not_to raise_error
+
+            expect(File.exist?("Cargo.toml")).to be(true)
+            expect(File.read("Cargo.toml")).to include("[package]")
+            expect(Dir.exist?("src")).to be(true)
+            expect(File.exist?("src/lib.rs")).to be(true)
           end
         end
       end
