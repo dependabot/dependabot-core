@@ -38,7 +38,7 @@ module Dependabot
             function_call = try_parse_function_call
             function_calls << function_call if function_call
 
-            advance if @position == start_position
+            move_to_next_char if @position == start_position
           end
 
           function_calls
@@ -62,7 +62,7 @@ module Dependabot
         end
 
         sig { void }
-        def advance
+        def move_to_next_char
           @line += 1 if current_char == "\n"
           @position += 1
         end
@@ -72,10 +72,10 @@ module Dependabot
           while @position < @length
             case current_char
             when /\s/
-              advance
+              move_to_next_char
             when "#"
-              advance while current_char && current_char != "\n"
-              advance if current_char == "\n"
+              move_to_next_char while current_char && current_char != "\n"
+              move_to_next_char if current_char == "\n"
             else
               break
             end
@@ -93,14 +93,14 @@ module Dependabot
 
           return nil unless current_char == "("
 
-          advance
+          move_to_next_char
 
           keyword_arguments, positional_arguments = parse_function_arguments
 
           skip_whitespace_and_comments
           return nil unless current_char == ")"
 
-          advance
+          move_to_next_char
 
           FunctionCall.new(
             name: function_name,
@@ -109,8 +109,8 @@ module Dependabot
             line: start_line
           )
         rescue StandardError
-          advance while current_char && current_char != "\n"
-          advance if current_char == "\n"
+          move_to_next_char while current_char && current_char != "\n"
+          move_to_next_char if current_char == "\n"
           nil
         end
 
@@ -122,7 +122,7 @@ module Dependabot
           while current_char&.match?(/[a-zA-Z0-9_]/)
             char = current_char
             identifier += char if char
-            advance
+            move_to_next_char
           end
 
           identifier.empty? ? nil : identifier
@@ -154,7 +154,7 @@ module Dependabot
 
             break unless current_char == ","
 
-            advance
+            move_to_next_char
             skip_whitespace_and_comments
           end
 
@@ -177,7 +177,7 @@ module Dependabot
             return nil
           end
 
-          advance
+          move_to_next_char
           skip_whitespace_and_comments
 
           value = parse_value
@@ -219,7 +219,7 @@ module Dependabot
           quote_char = current_char
           return nil unless quote_char == '"' || quote_char == "'"
 
-          advance
+          move_to_next_char
           string_value = T.let("", String)
 
           while current_char && current_char != quote_char
@@ -228,16 +228,16 @@ module Dependabot
             elsif current_char
               string_value += T.must(current_char)
             end
-            advance
+            move_to_next_char
           end
 
-          advance if current_char == quote_char
+          move_to_next_char if current_char == quote_char
           string_value
         end
 
         sig { returns(String) }
         def parse_escape_sequence
-          advance
+          move_to_next_char
           case current_char
           when "n"
             "\n"
@@ -263,7 +263,7 @@ module Dependabot
           while current_char&.match?(/[0-9.]/)
             char = current_char
             number_str += char if char
-            advance
+            move_to_next_char
           end
 
           return nil if number_str.empty?
@@ -275,14 +275,14 @@ module Dependabot
         def parse_array
           return nil unless current_char == "["
 
-          advance
+          move_to_next_char
 
           array_items = T.let([], T::Array[T.untyped])
 
           skip_whitespace_and_comments
 
           if current_char == "]"
-            advance
+            move_to_next_char
             return array_items
           end
 
@@ -299,11 +299,11 @@ module Dependabot
 
             break unless current_char == ","
 
-            advance
+            move_to_next_char
             skip_whitespace_and_comments
           end
 
-          advance if current_char == "]"
+          move_to_next_char if current_char == "]"
           array_items
         end
 
@@ -328,7 +328,7 @@ module Dependabot
             end
             value += T.must(char)
 
-            advance
+            move_to_next_char
           end
 
           value.strip.empty? ? nil : value.strip
@@ -350,7 +350,7 @@ module Dependabot
               break if depth.zero?
 
             end
-            advance
+            move_to_next_char
           end
         end
       end
