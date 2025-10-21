@@ -241,10 +241,10 @@ module Dependabot
         sig { params(error: StandardError).void }
         def handle_cargo_errors(error)
           return if feature_error?(error)
+          return if workspace_error_should_return_nil?(error)
 
           handle_git_authentication_errors(error)
           handle_git_reference_errors(error)
-          handle_workspace_errors(error)
           handle_toolchain_errors(error)
           handle_resolvability_errors(error)
 
@@ -293,28 +293,30 @@ module Dependabot
           end
         end
 
-        sig { params(error: StandardError).void }
-        def handle_workspace_errors(error)
+        sig { params(error: StandardError).returns(T::Boolean) }
+        def workspace_error_should_return_nil?(error)
           if workspace_native_library_update_error?(error.message)
             # This happens when we're updating one part of a workspace which
             # triggers an update of a subdependency that uses a native library,
             # whilst leaving another part of the workspace using an older
             # version. Ideally we would prevent the subdependency update.
-            return nil
+            return true
           end
 
           if git_dependency? && error.message.include?("no matching package")
             # This happens when updating a git dependency whose version has
             # changed from a release to a pre-release version
-            return nil
+            return true
           end
 
-          return unless error.message.include?("all possible versions conflict")
+          if error.message.include?("all possible versions conflict")
+            # This happens when a top-level requirement locks us to an old
+            # patch release of a dependency that is a sub-dep of what we're
+            # updating. It's (probably) a Cargo bug.
+            return true
+          end
 
-          # This happens when a top-level requirement locks us to an old
-          # patch release of a dependency that is a sub-dep of what we're
-          # updating. It's (probably) a Cargo bug.
-          nil
+          false
         end
 
         sig { params(error: StandardError).void }

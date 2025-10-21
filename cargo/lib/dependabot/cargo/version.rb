@@ -98,8 +98,8 @@ module Dependabot
         ).returns([Dependabot::Cargo::Version, Dependabot::Cargo::Version])
       end
       def self.normalize_versions(from_version, to_version)
-        from_v = from_version.is_a?(String) ? new(from_version) : from_version
-        to_v = to_version.is_a?(String) ? new(to_version) : to_version
+        from_v = from_version.is_a?(String) ? T.cast(new(from_version), Dependabot::Cargo::Version) : from_version
+        to_v = to_version.is_a?(String) ? T.cast(new(to_version), Dependabot::Cargo::Version) : to_version
         [from_v, to_v]
       end
 
