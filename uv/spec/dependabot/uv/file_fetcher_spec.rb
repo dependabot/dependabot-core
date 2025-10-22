@@ -240,6 +240,149 @@ RSpec.describe Dependabot::Uv::FileFetcher do
       end
     end
 
+    context "with pyproject.toml that declares README in string format" do
+      let(:repo_contents) do
+        fixture("github", "contents_python_pyproject_with_readme_md.json")
+      end
+
+      before do
+        stub_request(:get, url + "pyproject.toml?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_python_pyproject_with_readme.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "README.md?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_readme.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "fetches the declared README as a support file" do
+        files = file_fetcher_instance.files
+        readme_files = files.select(&:support_file?)
+
+        expect(readme_files.map(&:name)).to include("README.md")
+        expect(readme_files.find { |f| f.name == "README.md" }.support_file?).to be true
+      end
+
+      it "fetches both pyproject.toml and README" do
+        files = file_fetcher_instance.files
+        expect(files.map(&:name)).to include("pyproject.toml", "README.md")
+      end
+    end
+
+    context "with pyproject.toml that declares README in table format" do
+      let(:repo_contents) do
+        fixture("github", "contents_python_only_pyproject.json")
+      end
+
+      before do
+        stub_request(:get, url + "pyproject.toml?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_python_pyproject_with_readme_table.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "docs?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_docs_dir.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "docs/README.rst?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_readme_rst.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "fetches the README file specified in table format" do
+        files = file_fetcher_instance.files
+        readme_files = files.select(&:support_file?)
+
+        expect(readme_files.map(&:name)).to include("docs/README.rst")
+        expect(readme_files.find { |f| f.name == "docs/README.rst" }.support_file?).to be true
+      end
+    end
+
+    context "with pyproject.toml without README declaration but common README exists" do
+      let(:repo_contents) do
+        fixture("github", "contents_python_pyproject_with_plain_readme.json")
+      end
+
+      before do
+        stub_request(:get, url + "pyproject.toml?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_python_pyproject.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        # Stub first three README variants as missing
+        stub_request(:get, url + "README.md?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+        stub_request(:get, url + "README.rst?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+        stub_request(:get, url + "README.txt?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+        # But plain README exists
+        stub_request(:get, url + "README?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_readme_plain.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "falls back to discovering common README filenames" do
+        files = file_fetcher_instance.files
+        readme_files = files.select(&:support_file?)
+
+        expect(readme_files.map(&:name)).to include("README")
+        expect(readme_files.find { |f| f.name == "README" }.support_file?).to be true
+      end
+    end
+
+    context "with pyproject.toml that declares a non-existent README" do
+      let(:repo_contents) do
+        fixture("github", "contents_python_only_pyproject.json")
+      end
+
+      before do
+        stub_request(:get, url + "pyproject.toml?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_python_pyproject_with_readme.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "README.md?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+      end
+
+      it "gracefully handles missing declared README files" do
+        expect { file_fetcher_instance.files }.not_to raise_error
+
+        files = file_fetcher_instance.files
+        readme_files = files.select(&:support_file?)
+        expect(readme_files).to be_empty
+      end
+    end
+
     context "with only a uv.lock" do
       let(:repo_contents) do
         fixture("github", "contents_python_only_uv_lock.json")
