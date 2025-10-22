@@ -72,13 +72,7 @@ module Dependabot
       return false if branch == ref
       return true if branch
       return true if dependency.version&.start_with?(T.must(ref))
-
-      # If the specified `ref` is actually a tag, we're pinned
-      # Handle tag prefixes (e.g., v0.0.13 for ref 0.0.13) by checking if any local tag matches the version
-      if version_tag?(T.must(ref))
-        return true if local_tags.any? { |tag| tag.name =~ /(?:[^0-9\.]|\A)#{Regexp.escape(T.must(ref))}\z/ }
-      end
-      return true if local_upload_pack&.match?(%r{ refs/tags/#{ref}$})
+      return true if ref_matches_tag?
 
       # Assume we're pinned unless the specified `ref` is actually a branch
       return true unless local_upload_pack&.match?(%r{ refs/heads/#{ref}$})
@@ -282,6 +276,22 @@ module Dependabot
     sig { params(tags: T::Array[Dependabot::GitRef]).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
     def max_local_tag_for_lower_precision(tags)
       max_local_tag(select_lower_precision(tags))
+    end
+
+    # Check if the current ref matches any Git tag (handling version tag prefixes)
+    sig { returns(T::Boolean) }
+    def ref_matches_tag?
+      return false unless ref
+
+      # Handle tag prefixes (e.g., v0.0.13 for ref 0.0.13) by checking if any local tag matches the version
+      if version_tag?(T.must(ref)) && local_tags.any? do |tag|
+        tag.name =~ /(?:[^0-9\.]|\A)#{Regexp.escape(T.must(ref))}\z/
+      end
+        return true
+      end
+
+      # Fallback to exact match for non-version refs
+      local_upload_pack&.match?(%r{ refs/tags/#{ref}$}) || false
     end
 
     # Find the latest version with the same precision as the pinned version.

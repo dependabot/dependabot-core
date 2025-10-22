@@ -274,7 +274,7 @@ RSpec.describe namespace::LatestVersionFinder do
     describe "#latest_version_tag" do
       subject(:latest_version_tag) { finder.latest_version_tag }
 
-      it "should return tag information for v0.0.24" do
+      it "returns tag information for v0.0.24" do
         expect(latest_version_tag).to include(
           tag: "v0.0.24",
           commit_sha: "b4cc9058ebd2336f73752f9d3c9b3835d52c66de",
