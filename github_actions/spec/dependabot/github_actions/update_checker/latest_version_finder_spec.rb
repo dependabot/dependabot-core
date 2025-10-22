@@ -222,18 +222,19 @@ RSpec.describe namespace::LatestVersionFinder do
     it { is_expected.to eq(Dependabot::GithubActions::Version.new("2.0.0")) }
   end
 
-  # Regression test for issue with virtusaEAG/.github-private
-  # Bug: Dependabot returns main branch commit instead of latest tag
-  describe "virtusaEAG/.github-private version resolution bug" do
-    let(:upload_pack_fixture) { "virtusaeag-github-private" }
-    let(:dependency_name) { "virtusaEAG/.github-private" }
+  # Regression test for version tag prefix handling
+  # Bug: Dependabot returns main branch commit instead of latest tag when
+  # dependency refs like "0.0.13" don't match prefixed tags like "v0.0.13"
+  describe "private repository with version tag prefixes" do
+    let(:upload_pack_fixture) { "private-repo-with-version-prefixes" }
+    let(:dependency_name) { "example-org/private-actions" }
     let(:reference) { "0.0.13" }
     let(:dependency_version) { "0.0.13" }
 
     let(:dependency_source) do
       {
         type: "git",
-        url: "https://github.com/virtusaEAG/.github-private",
+        url: "https://github.com/example-org/private-actions",
         ref: "0.0.13",
         branch: nil
       }
