@@ -36,7 +36,7 @@ module Dependabot
                             "annotationProcessorPaths > path"
       PLUGIN_SELECTOR     = "plugins > plugin"
       EXTENSION_SELECTOR  = "extensions > extension"
-	  TARGET_SELECTOR     = "target > locations > location[type='Maven'] > dependencies > dependency"
+      TARGET_SELECTOR = "target > locations > location[type='Maven'] > dependencies > dependency"
       PLUGIN_ARTIFACT_ITEMS_SELECTOR = "plugins > plugin > executions > execution > " \
                                        "configuration > artifactItems > artifactItem"
 
@@ -45,32 +45,11 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
-        dependency_set = DependencySet.new
-
-        dependencies = []
         if Dependabot::Experiments.enabled?(:maven_transitive_dependencies)
-          dependency_set += MavenDependencyParser.build_dependency_set(pomfiles)
-
-          pomfiles.each { |pom| dependency_set += pomfile_dependencies(pom) }
-          extensionfiles.each { |extension| dependency_set += extensionfile_dependencies(extension) }
-
-          dependency_set.dependencies.each do |dep|
-            requirements = merge_requirements(dep.requirements)
-            dependencies << Dependabot::Dependency.new(
-              name: dep.name,
-              version: dep.version,
-              package_manager: "maven",
-              requirements: requirements
-            )
-          end
+          parse_with_transitive_dependencies
         else
-          pomfiles.each { |pom| dependency_set += pomfile_dependencies(pom) }
-          extensionfiles.each { |extension| dependency_set += extensionfile_dependencies(extension) }
-          targetfiles.each { |target| dependency_set += targetfile_dependencies(target) }
-          dependencies = dependency_set.dependencies
+          parse_standard_dependencies
         end
-
-        dependencies
       end
 
       sig { returns(Ecosystem) }
@@ -86,6 +65,36 @@ module Dependabot
       end
 
       private
+
+      sig { returns(T::Array[Dependabot::Dependency]) }
+      def parse_with_transitive_dependencies
+        dependency_set = DependencySet.new
+        dependency_set += MavenDependencyParser.build_dependency_set(pomfiles)
+
+        pomfiles.each { |pom| dependency_set += pomfile_dependencies(pom) }
+        extensionfiles.each { |extension| dependency_set += extensionfile_dependencies(extension) }
+
+        dependencies = []
+        dependency_set.dependencies.each do |dep|
+          requirements = merge_requirements(dep.requirements)
+          dependencies << Dependabot::Dependency.new(
+            name: dep.name,
+            version: dep.version,
+            package_manager: "maven",
+            requirements: requirements
+          )
+        end
+        dependencies
+      end
+
+      sig { returns(T::Array[Dependabot::Dependency]) }
+      def parse_standard_dependencies
+        dependency_set = DependencySet.new
+        pomfiles.each { |pom| dependency_set += pomfile_dependencies(pom) }
+        extensionfiles.each { |extension| dependency_set += extensionfile_dependencies(extension) }
+        targetfiles.each { |target| dependency_set += targetfile_dependencies(target) }
+        dependency_set.dependencies
+      end
 
       sig { returns(Ecosystem::VersionManager) }
       def package_manager
@@ -156,7 +165,7 @@ module Dependabot
       def targetfile_dependencies(target)
         dependency_set = DependencySet.new
 
-        errors = []
+        errors = T.let([], T::Array[DependencyFileNotEvaluatable])
         doc = Nokogiri::XML(target.content)
         doc.remove_namespaces!
 
@@ -167,11 +176,11 @@ module Dependabot
           errors << e
         end
 
-        raise errors.first if errors.any? && dependency_set.dependencies.none?
+        raise T.must(errors.first) if errors.any? && dependency_set.dependencies.none?
 
         dependency_set
       end
-      
+
       sig do
         params(
           pom: Dependabot::DependencyFile,
@@ -426,10 +435,12 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def targetfiles
-        @targetfiles ||=
-          dependency_files.select { |f| f.name.end_with?(".target") }
+        @targetfiles ||= T.let(
+          dependency_files.select { |f| f.name.end_with?(".target") },
+          T.nilable(T::Array[Dependabot::DependencyFile])
+        )
       end
-      
+
       sig { returns(T::Array[String]) }
       def internal_dependency_names
         @internal_dependency_names ||= T.let(

@@ -55,13 +55,14 @@ module Dependabot
       def extensions
         @extensions ||= T.let(fetch_file_if_present(".mvn/extensions.xml"), T.nilable(Dependabot::DependencyFile))
       end
-      
+
       sig { returns(T::Array[DependencyFile]) }
       def targetfiles
-        @targetfiles ||= T.let(
-          repo_contents(raise_errors: false).
-          select { |f| f.type == "file" && f.name.end_with?(".target") }.
-          map { |f| fetch_file_from_host(f.name) })
+        repo_contents(raise_errors: false)
+          .select { |f| f.type == "file" && f.name.end_with?(".target") }
+          .map { |f| fetch_file_from_host(f.name) }
+      rescue Dependabot::DirectoryNotFound, Octokit::NotFound
+        []
       end
 
       sig { returns(T::Array[DependencyFile]) }
