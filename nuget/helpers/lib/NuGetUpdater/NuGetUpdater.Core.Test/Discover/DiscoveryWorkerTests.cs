@@ -1124,7 +1124,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             ],
             expectedResult: new()
             {
-                Error = new PrivateSourceBadResponse([$"{http.BaseUrl.TrimEnd('/')}/index.json"]),
+                Error = new PrivateSourceBadResponse([$"{http.BaseUrl.TrimEnd('/')}/index.json"], "unused"),
                 Path = "",
                 Projects = [],
             }
@@ -1199,7 +1199,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             ],
             expectedResult: new()
             {
-                Error = new PrivateSourceBadResponse([$"{http.BaseUrl.TrimEnd('/')}/index.json"]),
+                Error = new PrivateSourceBadResponse([$"{http.BaseUrl.TrimEnd('/')}/index.json"], "unused"),
                 Path = "",
                 Projects = [],
             }
