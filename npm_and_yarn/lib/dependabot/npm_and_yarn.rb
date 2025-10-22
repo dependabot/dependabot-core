@@ -404,7 +404,7 @@ module Dependabot
       }.freeze,
       T::Hash[String,
               {
-                message: T.any(String, NilClass),
+                message: T.nilable(String),
                 handler: ErrorHandler
               }]
     )
