@@ -27,6 +27,9 @@ module Dependabot
       )$
     /ix
 
+    # String pattern for matching version tags with optional prefixes (e.g., "v1.2.3" matches "1.2.3")
+    VERSION_TAG_MATCH_PATTERN = "(?:[^0-9\\.]|\\A)%s\\z"
+
     sig do
       params(
         dependency: Dependabot::Dependency,
@@ -285,7 +288,7 @@ module Dependabot
 
       # Handle tag prefixes (e.g., v0.0.13 for ref 0.0.13) by checking if any local tag matches the version
       if version_tag?(T.must(ref)) && local_tags.any? do |tag|
-        tag.name =~ /(?:[^0-9\.]|\A)#{Regexp.escape(T.must(ref))}\z/
+        tag.name =~ Regexp.new(VERSION_TAG_MATCH_PATTERN % Regexp.escape(T.must(ref)))
       end
         return true
       end
@@ -538,7 +541,7 @@ module Dependabot
     sig { params(version: String).returns(T.nilable(String)) }
     def listing_tag_for_version(version)
       listing_tags
-        .find { |t| t.name =~ /(?:[^0-9\.]|\A)#{Regexp.escape(version)}\z/ }
+        .find { |t| t.name =~ Regexp.new(VERSION_TAG_MATCH_PATTERN % Regexp.escape(version)) }
         &.name
     end
 
