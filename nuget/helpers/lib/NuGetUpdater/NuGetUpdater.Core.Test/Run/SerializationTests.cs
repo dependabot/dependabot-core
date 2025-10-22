@@ -766,7 +766,7 @@ public class SerializationTests : TestBase
 
         yield return
         [
-            new PrivateSourceBadResponse(["url1", "url2"]),
+            new PrivateSourceBadResponse(["url1", "url2"], "unused"),
             """
             {"data":{"error-type":"private_source_bad_response","error-details":{"source":"(url1|url2)"}}}
             """
