@@ -74,6 +74,10 @@ module Dependabot
       return true if dependency.version&.start_with?(T.must(ref))
 
       # If the specified `ref` is actually a tag, we're pinned
+      # Handle tag prefixes (e.g., v0.0.13 for ref 0.0.13) by checking if any local tag matches the version
+      if version_tag?(T.must(ref))
+        return true if local_tags.any? { |tag| tag.name =~ /(?:[^0-9\.]|\A)#{Regexp.escape(T.must(ref))}\z/ }
+      end
       return true if local_upload_pack&.match?(%r{ refs/tags/#{ref}$})
 
       # Assume we're pinned unless the specified `ref` is actually a branch
