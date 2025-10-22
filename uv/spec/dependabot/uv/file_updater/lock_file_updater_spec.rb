@@ -158,8 +158,48 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
           )
         end
 
-        it "raises a ResolutionImpossible error with the detailed UV error message" do
+        it "raises a DependencyFileNotResolvable error with the detailed UV error message" do
           expect { updated_files }.to raise_error(Dependabot::DependencyFileNotResolvable, /ResolutionImpossible/)
+        end
+      end
+
+      context "with 'Failed to build' error" do
+        let(:error) do
+          Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+            message: uv_build_failed_error,
+            error_context: {}
+          )
+        end
+
+        let(:uv_build_failed_error) do
+          <<~ERROR
+            Using CPython 3.12.11 interpreter at: /usr/local/.pyenv/versions/3.12.11/bin/python3.12
+            × Failed to build `pygraph @
+            │ file://dependabot_tmp_dir`
+            ├─▶ The build backend returned an error
+            ╰─▶ Call to `hatchling.build.prepare_metadata_for_build_editable` failed
+                (exit status: 1)
+
+                [stderr]
+                Traceback (most recent call last):
+                  File "<string>", line 14, in <module>
+                LookupError: Error getting the version from source
+                `vcs`: setuptools-scm was unable to detect version for
+                dependabot_tmp_dir.
+
+                Make sure you're either building from a fully intact git repository
+                or PyPI tarballs. Most other sources (such as GitHub's tarballs, a git
+                checkout without the .git folder) don't contain the necessary metadata
+                and will not work.
+          ERROR
+        end
+
+        it "raises a DependencyFileNotResolvable error with the detailed UV error message" do
+          expect { updated_files }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+            expect(error.message).to include("Failed to build")
+            expect(error.message).to include("setuptools-scm was unable to detect version")
+            expect(error.message).to include("Make sure you're either building from a fully intact git repository")
+          end
         end
       end
 
@@ -400,6 +440,82 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
         expected_command,
         fingerprint: expected_fingerprint
       )
+    end
+  end
+
+  # ADD DEDICATED ERROR HANDLING TESTS
+  describe "#handle_uv_error" do
+    subject(:handle_uv_error) { updater.send(:handle_uv_error, error) }
+
+    context "when error contains 'No solution found when resolving dependencies'" do
+      let(:error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: detailed_uv_error,
+          error_context: {}
+        )
+      end
+
+      let(:detailed_uv_error) do
+        <<~ERROR
+          × No solution found when resolving dependencies:
+          ╰─▶ Because package-a>=1.0.0 depends on package-b>=2.0.0
+              and package-c<1.0.0 depends on package-b<2.0.0,
+              we can conclude that package-a>=1.0.0 and package-c<1.0.0 are incompatible.
+              And because your project depends on both package-a>=1.0.0 and package-c<1.0.0,
+              we can conclude that your project's requirements are unsatisfiable.
+        ERROR
+      end
+
+      it "raises DependencyFileNotResolvable with the detailed error message" do
+        expect { handle_uv_error }.to raise_error(Dependabot::DependencyFileNotResolvable) do |raised_error|
+          expect(raised_error.message).to include("No solution found when resolving dependencies")
+          expect(raised_error.message).to include("package-a>=1.0.0 depends on package-b>=2.0.0")
+          expect(raised_error.message).to include("your project's requirements are unsatisfiable")
+        end
+      end
+    end
+
+    context "when error contains 'ResolutionImpossible'" do
+      let(:error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "ResolutionImpossible: Could not find a version that satisfies the requirement requests==99.99.99",
+          error_context: {}
+        )
+      end
+
+      it "raises DependencyFileNotResolvable with the full error message" do
+        expect { handle_uv_error }.to raise_error(
+          Dependabot::DependencyFileNotResolvable,
+          /ResolutionImpossible.*requests==99\.99\.99/
+        )
+      end
+    end
+
+    context "when error contains 'Failed to build'" do
+      let(:error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: failed_build_error,
+          error_context: {}
+        )
+      end
+
+      let(:failed_build_error) do
+        <<~ERROR
+          × Failed to build `some-package @
+          │ file://dependabot_tmp_dir`
+          ├─▶ The build backend returned an error
+          ╰─▶ setuptools-scm was unable to detect version for dependabot_tmp_dir.
+              Make sure you're either building from a fully intact git repository.
+        ERROR
+      end
+
+      it "raises DependencyFileNotResolvable with the detailed error message" do
+        expect { handle_uv_error }.to raise_error(Dependabot::DependencyFileNotResolvable) do |raised_error|
+          expect(raised_error.message).to include("Failed to build")
+          expect(raised_error.message).to include("setuptools-scm was unable to detect version")
+          expect(raised_error.message).to include("Make sure you're either building from a fully intact git repository")
+        end
+      end
     end
   end
 end
