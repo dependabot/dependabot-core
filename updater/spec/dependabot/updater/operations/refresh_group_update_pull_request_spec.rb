@@ -98,6 +98,20 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
     allow(job).to receive(:package_manager).and_return("bundler")
   end
 
+  describe "#group" do
+    context "when dependency_snapshot has a job_group" do
+      it "returns the dependency group from the snapshot" do
+        expect(refresh_group.group).to be_a(Dependabot::DependencyGroup)
+        expect(refresh_group.group.name).to eq("everything-everywhere-all-at-once")
+      end
+
+      it "allows access to group properties required by GroupUpdateCreation module" do
+        expect { refresh_group.group.name }.not_to raise_error
+        expect(refresh_group.group.name).to be_a(String)
+      end
+    end
+  end
+
   describe "#perform" do
     context "when the same dependencies need to be updated to the same target versions" do
       let(:job_definition) do

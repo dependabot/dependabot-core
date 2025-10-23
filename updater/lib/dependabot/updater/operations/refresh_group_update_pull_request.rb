@@ -70,6 +70,7 @@ module Dependabot
           @job = job
           @dependency_snapshot = dependency_snapshot
           @error_handler = error_handler
+          @group = T.let(dependency_snapshot.job_group, T.nilable(Dependabot::DependencyGroup))
         end
 
         sig { override.returns(Dependabot::Job) }
@@ -83,6 +84,11 @@ module Dependabot
 
         sig { override.returns(Dependabot::Service) }
         attr_reader :service
+
+        sig { override.returns(Dependabot::DependencyGroup) }
+        def group
+          T.must(@group)
+        end
 
         sig { void }
         def perform
