@@ -21,10 +21,12 @@ module Dependabot
         T::Array[String]
       )
       PUBLIC_HOSTNAME = "registry.opentofu.org"
+      API_BASE_URL = "api.opentofu.org"
 
       sig { params(hostname: String, credentials: T::Array[Dependabot::Credential]).void }
       def initialize(hostname: PUBLIC_HOSTNAME, credentials: [])
         @hostname = hostname
+        @api_base_url = API_BASE_URL
         @tokens = T.let(
           credentials.each_with_object({}) do |item, memo|
             memo[item["host"]] = item["token"] if item["type"] == "opentofu_registry"
@@ -76,7 +78,7 @@ module Dependabot
       # @raise [Dependabot::DependabotError] when the versions cannot be retrieved
       sig { params(identifier: String).returns(T::Array[Dependabot::Opentofu::Version]) }
       def all_provider_versions(identifier:)
-        base_url = service_url_for("providers.v1")
+        base_url = service_url_for_registry("providers.v1")
         response = http_get!(URI.join(base_url, "#{identifier}/versions"))
 
         JSON.parse(response.body)
@@ -95,7 +97,7 @@ module Dependabot
       # @raise [Dependabot::DependabotError] when the versions cannot be retrieved
       sig { params(identifier: String).returns(T::Array[Dependabot::Opentofu::Version]) }
       def all_module_versions(identifier:)
-        base_url = service_url_for("modules.v1")
+        base_url = service_url_for_registry("modules.v1")
         response = http_get!(URI.join(base_url, "#{identifier}/versions"))
 
         JSON.parse(response.body)
@@ -114,10 +116,10 @@ module Dependabot
       sig { params(dependency: Dependabot::Dependency).returns(T.nilable(Dependabot::Source)) }
       def source(dependency:)
         type = T.must(dependency.requirements.first)[:source][:type]
-        base_url = service_url_for(service_key_for(type))
+        base_url = url_for_api("/registry/docs/")
         case type
         when "module", "modules", "registry"
-          download_url = URI.join(base_url, "#{dependency.name}/#{dependency.version}/download")
+          download_url = URI.join(base_url, "modules/#{dependency.name}/#{dependency.version}/download")
           response = http_get(download_url)
           return nil unless response.status == 204
 
@@ -126,10 +128,11 @@ module Dependabot
             source_url.start_with?("/", "./", "../")
           source_url = RegistryClient.get_proxied_source(source_url) if source_url
         when "provider", "providers"
-          response = http_get(URI.join(base_url, "#{dependency.name}/#{dependency.version}"))
+          url = URI.join(base_url, "providers/#{dependency.name}/v#{dependency.version}/index.json")
+          response = http_get(url)
           return nil unless response.status == 200
 
-          source_url = JSON.parse(response.body).fetch("source")
+          source_url = JSON.parse(response.body).dig("docs", "index", "edit_link")
         end
 
         Source.from_url(source_url) if source_url
@@ -144,8 +147,8 @@ module Dependabot
       # @param return String
       # @raise [Dependabot::PrivateSourceAuthenticationFailure] when the service is not available
       sig { params(service_key: String).returns(String) }
-      def service_url_for(service_key)
-        url_for(services.fetch(service_key))
+      def service_url_for_registry(service_key)
+        url_for_registry(services.fetch(service_key))
       rescue KeyError
         raise Dependabot::PrivateSourceAuthenticationFailure, "Host does not support required OpenTofu-native service"
       end
@@ -153,7 +156,7 @@ module Dependabot
       private
 
       sig { returns(String) }
-      attr_reader :hostname
+      attr_reader :hostname, :api_base_url
 
       sig { returns(T::Hash[String, String]) }
       attr_reader :tokens
@@ -173,7 +176,7 @@ module Dependabot
       def services
         @services ||= T.let(
           begin
-            response = http_get(url_for("/.well-known/terraform.json"))
+            response = http_get(url_for_registry("/.well-known/terraform.json"))
             response.status == 200 ? JSON.parse(response.body) : {}
           end,
           T.nilable(T::Hash[String, String])
@@ -213,12 +216,22 @@ module Dependabot
       end
 
       sig { params(path: String).returns(String) }
-      def url_for(path)
+      def url_for_registry(path)
         uri = URI.parse(path)
         return uri.to_s if uri.scheme == "https"
         raise error("Unsupported scheme provided") if uri.host && uri.scheme
 
         uri.host = hostname
+        uri.scheme = "https"
+        uri.to_s
+      end
+
+      def url_for_api(path)
+        uri = URI.parse(path)
+        return uri.to_s if uri.scheme == "https"
+        raise error("Unsupported scheme provided") if uri.host && uri.scheme
+
+        uri.host = api_base_url
         uri.scheme = "https"
         uri.to_s
       end
