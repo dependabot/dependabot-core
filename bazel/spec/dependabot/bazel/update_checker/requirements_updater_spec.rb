@@ -28,12 +28,14 @@ RSpec.describe Dependabot::Bazel::UpdateChecker::RequirementsUpdater do
       it "updates the requirement to the latest version" do
         updated = updater.updated_requirements
 
-        expect(updated).to eq([{
-          file: "MODULE.bazel",
-          requirement: "0.57.0",
-          groups: [],
-          source: nil
-        }])
+        expect(updated).to eq(
+          [{
+            file: "MODULE.bazel",
+            requirement: "0.57.0",
+            groups: [],
+            source: nil
+          }]
+        )
       end
 
       it "preserves other requirement attributes" do
@@ -66,20 +68,22 @@ RSpec.describe Dependabot::Bazel::UpdateChecker::RequirementsUpdater do
       it "updates all requirements to the latest version" do
         updated = updater.updated_requirements
 
-        expect(updated).to eq([
-          {
-            file: "MODULE.bazel",
-            requirement: "0.57.0",
-            groups: [],
-            source: nil
-          },
-          {
-            file: "other/MODULE.bazel",
-            requirement: "0.57.0",
-            groups: ["dev"],
-            source: { type: "git" }
-          }
-        ])
+        expect(updated).to eq(
+          [
+            {
+              file: "MODULE.bazel",
+              requirement: "0.57.0",
+              groups: [],
+              source: nil
+            },
+            {
+              file: "other/MODULE.bazel",
+              requirement: "0.57.0",
+              groups: ["dev"],
+              source: { type: "git" }
+            }
+          ]
+        )
       end
 
       it "preserves individual requirement attributes" do
@@ -108,7 +112,7 @@ RSpec.describe Dependabot::Bazel::UpdateChecker::RequirementsUpdater do
         [{
           file: "MODULE.bazel",
           requirement: "0.33.0",
-          groups: ["main", "test"],
+          groups: %w(main test),
           source: {
             type: "registry",
             url: "https://registry.bazel.build",
@@ -124,20 +128,22 @@ RSpec.describe Dependabot::Bazel::UpdateChecker::RequirementsUpdater do
       it "preserves all attributes while updating version" do
         updated = updater.updated_requirements
 
-        expect(updated).to eq([{
-          file: "MODULE.bazel",
-          requirement: "0.57.0",
-          groups: ["main", "test"],
-          source: {
-            type: "registry",
-            url: "https://registry.bazel.build",
-            metadata: { yanked: false }
-          },
-          metadata: {
-            property_name: "rules_go_version",
-            property_source: "MODULE.bazel"
-          }
-        }])
+        expect(updated).to eq(
+          [{
+            file: "MODULE.bazel",
+            requirement: "0.57.0",
+            groups: %w(main test),
+            source: {
+              type: "registry",
+              url: "https://registry.bazel.build",
+              metadata: { yanked: false }
+            },
+            metadata: {
+              property_name: "rules_go_version",
+              property_source: "MODULE.bazel"
+            }
+          }]
+        )
       end
     end
 
