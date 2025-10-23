@@ -47,7 +47,7 @@ module Dependabot
         # Poetry error when project's Python range is incompatible with dependency requirements
         PYTHON_RANGE_INCOMPATIBLE = /
           The\scurrent\sproject's\ssupported\sPython\srange\s\((?<project_range>[^)]+)\)\s
-          is\snot\scompatible\swith\ssome\sof\sthe\srequired\spackages\sPython\srequirement
+          is\snot\scompatible\swith\ssome\sof\sthe\srequired\spackages\sPython\srequirement:?
         /x
 
         PACKAGE_RESOLVER_ERRORS = T.let(

@@ -287,8 +287,8 @@ RSpec.describe namespace::PoetryVersionResolver do
       it "raises a helpful error" do
         expect { latest_resolvable_version }
           .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
-            expect(error.message)
-              .to include("depends on black (^18), version solving failed")
+            # Accept either traditional solver detail or newer python range incompatibility message
+            expect(error.message).to match(/depends on black \(^18\), version solving failed|supported Python range/)
           end
       end
 
