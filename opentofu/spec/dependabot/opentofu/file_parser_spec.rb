@@ -928,7 +928,7 @@ RSpec.describe Dependabot::Opentofu::FileParser do
         dependency = dependencies.find { |d| d.name == "oci" }
 
         expect(dependency.version).to eq("3.27")
-        expect(dependency.requirements.first[:source][:module_identifier]).to eq("opentofu/oci")
+        expect(dependency.requirements.first[:source][:module_identifier]).to eq("hashicorp/oci")
       end
     end
 
@@ -961,10 +961,10 @@ RSpec.describe Dependabot::Opentofu::FileParser do
 
       it "has the right details" do
         expect(dependencies.length).to eq(2)
-        dependency = dependencies.find { |d| d.name == "opentofu/random" }
+        dependency = dependencies.find { |d| d.name == "hashicorp/random" }
         expect(dependency).to be_a(Dependabot::Dependency)
         expect(dependency.version).to eq("2.2.1")
-        expect(dependency.requirements.first[:source][:module_identifier]).to eq("opentofu/random")
+        expect(dependency.requirements.first[:source][:module_identifier]).to eq("hashicorp/random")
       end
     end
 
