@@ -22,7 +22,7 @@ module Dependabot
 
       sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
-        [/\.tf$/, /\.hcl$/]
+        [/\.tf$/, /\.hcl$/, /\.tofu$/]
       end
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }

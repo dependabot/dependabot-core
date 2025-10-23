@@ -41,7 +41,7 @@ module Dependabot
 
       sig { override.returns(T.nilable(T.any(String, Dependabot::Version))) }
       def latest_resolvable_version_with_no_unlock
-        # Irrelevant, since OpenTofu doesn't have a lockfile
+        # TODO: Update later to use lock files
         nil
       end
 
