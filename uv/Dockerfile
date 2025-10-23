@@ -1,16 +1,20 @@
 # This list must match the versions specified in
 # uv/lib/dependabot/uv/language.rb: PRE_INSTALLED_PYTHON_VERSIONS_RAW
 # Python versions are pinned to the release of each minor/patch version.
+ARG PY_3_14=3.14.0
 ARG PY_3_13=3.13.5
 ARG PY_3_12=3.12.11
 ARG PY_3_11=3.11.13
 ARG PY_3_10=3.10.18
 ARG PY_3_9=3.9.23
-ARG PYENV_VERSION=v2.5.2
+# https://github.com/pyenv/pyenv/releases
+ARG PYENV_VERSION=v2.6.11
+
 # This cannot be inlined below (e.g., COPY --from=...) because Dependabot does not support that syntax yet
 FROM ghcr.io/astral-sh/uv:0.8.4 AS uv
 
 FROM ghcr.io/dependabot/dependabot-updater-core AS python-core
+ARG PY_3_14
 ARG PY_3_13
 ARG PY_3_12
 ARG PY_3_11
@@ -123,6 +127,23 @@ RUN find $PYTHON_INSTALL_LOCATION/bin -type f -exec sed -i "1s|^#!/usr/local/bin
 # Ensure pyenv works and it's the python version we expect
 RUN PYENV_VERSION=$PY_3_13 pyenv exec python --version | grep "Python $PY_3_13" || exit 1
 RUN bash /opt/python/helpers/build $PY_3_13
+RUN cd $PYENV_ROOT/versions \
+  && tar -acf $PY_3_13.tar.zst $PY_3_13
+
+## 3.14
+# Docker doesn't support parametrizing `COPY --from:python:$PY_1_23-bookworm`, so work around it using an alias.
+# TODO: If upstream adds support for Ubuntu, use that instead of Debian as the base suffix: https://github.com/docker-library/python/pull/791
+FROM docker.io/library/python:$PY_3_14-bookworm AS upstream-python-3.14
+FROM python-core AS python-3.14
+ARG PYTHON_INSTALL_LOCATION="$PYENV_ROOT/versions/$PY_3_14"
+COPY --from=upstream-python-3.14 --chown=dependabot:dependabot /usr/local/bin $PYTHON_INSTALL_LOCATION/bin
+COPY --from=upstream-python-3.14 --chown=dependabot:dependabot /usr/local/include $PYTHON_INSTALL_LOCATION/include
+COPY --from=upstream-python-3.14 --chown=dependabot:dependabot /usr/local/lib $PYTHON_INSTALL_LOCATION/lib
+# `pip` and other scripts need their shebangs rewritten for the new location
+RUN find $PYTHON_INSTALL_LOCATION/bin -type f -exec sed -i "1s|^#!/usr/local/bin/python|#!${PYTHON_INSTALL_LOCATION}/bin/python|" {} +
+# Ensure pyenv works and it's the python version we expect
+RUN PYENV_VERSION=$PY_3_14 pyenv exec python --version | grep "Python $PY_3_14" || exit 1
+RUN bash /opt/python/helpers/build $PY_3_14
 # This is the default Python, so no need to tar it
 
 FROM python-core
@@ -155,12 +176,13 @@ COPY --from=python-3.9 $PYENV_ROOT/versions/$PY_3_9.tar.zst $PYENV_ROOT/versions
 COPY --from=python-3.10 $PYENV_ROOT/versions/$PY_3_10.tar.zst $PYENV_ROOT/versions/$PY_3_10.tar.zst
 COPY --from=python-3.11 $PYENV_ROOT/versions/$PY_3_11.tar.zst $PYENV_ROOT/versions/$PY_3_11.tar.zst
 COPY --from=python-3.12 $PYENV_ROOT/versions/$PY_3_12.tar.zst $PYENV_ROOT/versions/$PY_3_12.tar.zst
-COPY --from=python-3.13 $PYENV_ROOT/versions/ $PYENV_ROOT/versions/
+COPY --from=python-3.13 $PYENV_ROOT/versions/$PY_3_13.tar.zst $PYENV_ROOT/versions/$PY_3_13.tar.zst
+COPY --from=python-3.14 $PYENV_ROOT/versions/ $PYENV_ROOT/versions/
 
 # Copy the output of the build script, it should be identical across Python versions
-COPY --from=python-3.13 /opt/python/ /opt/python/
+COPY --from=python-3.14 /opt/python/ /opt/python/
 
-RUN pyenv global $PY_3_13
+RUN pyenv global $PY_3_14
 
 USER root
 
