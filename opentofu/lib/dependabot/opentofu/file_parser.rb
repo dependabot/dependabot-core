@@ -27,7 +27,7 @@ module Dependabot
       include FileSelector
 
       DEFAULT_REGISTRY = "registry.opentofu.org"
-      DEFAULT_NAMESPACE = "opentofu"
+      DEFAULT_NAMESPACE = "hashicorp"
       # https://opentofu.org/docs/language/providers/requirements/#source-addresses
       PROVIDER_SOURCE_ADDRESS = %r{\A((?<hostname>.+)/)?(?<namespace>.+)/(?<name>.+)\z}
 
@@ -191,9 +191,9 @@ module Dependabot
       def deprecated_provider_error(file)
         raise Dependabot::DependencyFileNotParseable.new(
           file.path,
-          "This terraform provider syntax is now deprecated.\n" \
-          "See https://www.terraform.io/docs/language/providers/requirements.html " \
-          "for the new Terraform v0.13+ provider syntax."
+          "This provider syntax is now deprecated.\n" \
+          "See https://opentofu.org/docs/language/providers/requirements/" \
+          "for the supported provider syntax."
         )
       end
 
@@ -222,7 +222,7 @@ module Dependabot
         )
       end
 
-      # Full docs at https://www.terraform.io/docs/modules/sources.html
+      # Full docs at https://opentofu.org/docs/language/modules/sources/
       sig { params(details_hash: T::Hash[String, String]).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
       def source_from(details_hash)
         raw_source = details_hash.fetch("source")
