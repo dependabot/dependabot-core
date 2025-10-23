@@ -110,6 +110,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
         expect(refresh_group.group.name).to be_a(String)
       end
     end
+  end
 
   describe "#perform" do
     context "when the same dependencies need to be updated to the same target versions" do
