@@ -44,6 +44,12 @@ module Dependabot
 
         INCOMPATIBLE_CONSTRAINTS = /Incompatible constraints in requirements of (?<dep>.+?) ((?<ver>.+?)):/
 
+        # Poetry error when project's Python range is incompatible with dependency requirements
+        PYTHON_RANGE_INCOMPATIBLE = /
+          The\scurrent\sproject's\ssupported\sPython\srange\s\((?<project_range>[^)]+)\)\s
+          is\snot\scompatible\swith\ssome\sof\sthe\srequired\spackages\sPython\srequirement
+        /x
+
         PACKAGE_RESOLVER_ERRORS = T.let(
           {
             package_info_error: /Unable to determine package info/,
@@ -517,6 +523,8 @@ module Dependabot
 
         handle_enrich_constraints(error)
 
+        handle_python_range_incompatible(error)
+
         raise DependencyFileNotResolvable, error.message if error.message.match(PYTHON_RANGE_NOT_SATISFIED)
 
         if error.message.match(POETRY_VIRTUAL_ENV_CONFIG) || error.message.match(ERR_LOCAL_PROJECT_PATH)
@@ -565,6 +573,13 @@ module Dependabot
           ver_b = msg[:ver_range_b]
           raise DependencyFileNotResolvable,
                 "Incompatible version constraints for #{dep}: #{ver_a} vs #{ver_b}"
+        end
+      end
+
+      sig { params(error: Exception).void }
+      def handle_python_range_incompatible(error)
+        if (msg = error.message.match(PoetryVersionResolver::PYTHON_RANGE_INCOMPATIBLE))
+          raise DependencyFileNotResolvable, msg
         end
       end
     end
