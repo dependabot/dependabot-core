@@ -231,6 +231,7 @@ module Dependabot
 
         source_details =
           case source_type
+          # TODO: add support for OCI Registries https://opentofu.org/docs/cli/oci_registries/
           when :http_archive, :path, :mercurial, :s3
             { type: source_type.to_s, url: bare_source }
           when :github, :bitbucket, :git
@@ -328,6 +329,7 @@ module Dependabot
       # rubocop:disable Metrics/CyclomaticComplexity
       sig { params(source_string: String).returns(Symbol) }
       def source_type(source_string)
+        # TODO: add support for OCI Registries https://opentofu.org/docs/cli/oci_registries/
         return :interpolation if source_string.include?("${")
         return :path if source_string.start_with?(".")
         return :github if source_string.start_with?("github.com/")
