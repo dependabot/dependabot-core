@@ -35,7 +35,7 @@ RSpec.describe Dependabot::Opentofu::FileFetcher do
 
     it "fetches the OpenTofu files" do
       expect(file_fetcher_instance.files.map(&:name))
-        .to match_array(%w(main.tf versions.tf))
+        .to match_array(%w(main.tf versions.tf main.tofu))
     end
   end
 
@@ -73,7 +73,7 @@ RSpec.describe Dependabot::Opentofu::FileFetcher do
       expect(file_fetcher_instance.files.map(&:name))
         .to match_array(
           %w(.terraform.lock.hcl loader.tf providers.tf
-             loader/providers.tf loader/projects.tf)
+             loader/providers.tf loader/projects.tf loader/projects.tofu)
         )
     end
   end
