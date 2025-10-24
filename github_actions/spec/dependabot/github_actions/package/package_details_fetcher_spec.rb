@@ -283,9 +283,7 @@ RSpec.describe Dependabot::GithubActions::Package::PackageDetailsFetcher do
 
       it "prioritizes version comparison over commit chronology" do
         # Mock the git_commit_checker to simulate the customer's scenario
-        allow(fetcher).to receive(:git_commit_checker).and_return(git_commit_checker)
-        allow(git_commit_checker).to receive(:pinned?).and_return(true)
-        allow(git_commit_checker).to receive(:pinned_ref_looks_like_version?).and_return(true)
+        allow(git_commit_checker).to receive_messages(pinned?: true, pinned_ref_looks_like_version?: true)
 
         # Mock latest_version_tag to return the expected version info
         latest_tag_info = {
@@ -293,7 +291,7 @@ RSpec.describe Dependabot::GithubActions::Package::PackageDetailsFetcher do
           version: Dependabot::GithubActions::Version.new("0.0.24"),
           commit_sha: "b4cc9058ebd2336f73752f9d3c9b3835d52c66de"
         }
-        allow(fetcher).to receive(:latest_version_tag).and_return(latest_tag_info)
+        allow(fetcher).to receive_messages(git_commit_checker: git_commit_checker, latest_version_tag: latest_tag_info)
 
         result = fetcher.release_list_for_git_dependency
 
@@ -306,16 +304,17 @@ RSpec.describe Dependabot::GithubActions::Package::PackageDetailsFetcher do
       let(:dependency_version) { "0.0.24" }
 
       it "returns current version (no update needed)" do
-        allow(fetcher).to receive(:git_commit_checker).and_return(git_commit_checker)
-        allow(git_commit_checker).to receive(:pinned?).and_return(true)
-        allow(git_commit_checker).to receive(:pinned_ref_looks_like_version?).and_return(true)
+        allow(git_commit_checker).to receive_messages(pinned?: true, pinned_ref_looks_like_version?: true)
 
         latest_tag_info = {
           version: Dependabot::GithubActions::Version.new("0.0.24")
         }
-        allow(fetcher).to receive(:latest_version_tag).and_return(latest_tag_info)
         allow(fetcher).to receive(:shortened_semver_eq?).with("0.0.24", "0.0.24").and_return(true)
-        allow(fetcher).to receive(:current_version).and_return(Dependabot::GithubActions::Version.new("0.0.24"))
+        allow(fetcher).to receive_messages(
+          git_commit_checker: git_commit_checker,
+          latest_version_tag: latest_tag_info,
+          current_version: Dependabot::GithubActions::Version.new("0.0.24")
+        )
 
         result = fetcher.release_list_for_git_dependency
 
@@ -328,16 +327,20 @@ RSpec.describe Dependabot::GithubActions::Package::PackageDetailsFetcher do
 
       describe "when commit SHA ref has corresponding version tag" do
         it "prioritizes version over commit SHA comparison" do
-          allow(fetcher).to receive(:git_commit_checker).and_return(git_commit_checker)
-          allow(git_commit_checker).to receive(:pinned?).and_return(true)
-          allow(git_commit_checker).to receive(:pinned_ref_looks_like_version?).and_return(false)
-          allow(git_commit_checker).to receive(:pinned_ref_looks_like_commit_sha?).and_return(true)
-          allow(git_commit_checker).to receive(:local_tag_for_pinned_sha).and_return("v0.0.24")
+          allow(git_commit_checker).to receive_messages(
+            pinned?: true,
+            pinned_ref_looks_like_version?: false,
+            pinned_ref_looks_like_commit_sha?: true,
+            local_tag_for_pinned_sha: "v0.0.24"
+          )
 
           latest_tag_info = {
             version: Dependabot::GithubActions::Version.new("0.0.24")
           }
-          allow(fetcher).to receive(:latest_version_tag).and_return(latest_tag_info)
+          allow(fetcher).to receive_messages(
+            git_commit_checker: git_commit_checker,
+            latest_version_tag: latest_tag_info
+          )
 
           result = fetcher.release_list_for_git_dependency
 
@@ -348,17 +351,21 @@ RSpec.describe Dependabot::GithubActions::Package::PackageDetailsFetcher do
 
       describe "when commit SHA ref has no corresponding version tag" do
         it "falls back to commit SHA comparison" do
-          allow(fetcher).to receive(:git_commit_checker).and_return(git_commit_checker)
-          allow(git_commit_checker).to receive(:pinned?).and_return(true)
-          allow(git_commit_checker).to receive(:pinned_ref_looks_like_version?).and_return(false)
-          allow(git_commit_checker).to receive(:pinned_ref_looks_like_commit_sha?).and_return(true)
-          allow(git_commit_checker).to receive(:local_tag_for_pinned_sha).and_return(nil)
+          allow(git_commit_checker).to receive_messages(
+            pinned?: true,
+            pinned_ref_looks_like_version?: false,
+            pinned_ref_looks_like_commit_sha?: true,
+            local_tag_for_pinned_sha: nil
+          )
 
           latest_tag_info = {
             version: Dependabot::GithubActions::Version.new("0.0.24")
           }
-          allow(fetcher).to receive(:latest_version_tag).and_return(latest_tag_info)
-          allow(fetcher).to receive(:latest_commit_for_pinned_ref).and_return("def456abc789def456abc789def456abc789def456")
+          allow(fetcher).to receive_messages(
+            git_commit_checker: git_commit_checker,
+            latest_version_tag: latest_tag_info,
+            latest_commit_for_pinned_ref: "def456abc789def456abc789def456abc789def456"
+          )
 
           result = fetcher.release_list_for_git_dependency
 
@@ -372,11 +379,12 @@ RSpec.describe Dependabot::GithubActions::Package::PackageDetailsFetcher do
       let(:dependency_version) { "commit123abc456def789abc456def789abc456def78" }
 
       it "falls back to commit SHA when no version tags exist" do
-        allow(fetcher).to receive(:git_commit_checker).and_return(git_commit_checker)
-        allow(git_commit_checker).to receive(:pinned?).and_return(true)
-        allow(git_commit_checker).to receive(:pinned_ref_looks_like_commit_sha?).and_return(true)
-        allow(fetcher).to receive(:latest_version_tag).and_return(nil) # No version tags
-        allow(fetcher).to receive(:latest_commit_for_pinned_ref).and_return("newest123abc456def789abc456def789abc456de")
+        allow(git_commit_checker).to receive_messages(pinned?: true, pinned_ref_looks_like_commit_sha?: true)
+        allow(fetcher).to receive_messages(
+          git_commit_checker: git_commit_checker,
+          latest_version_tag: nil,
+          latest_commit_for_pinned_ref: "newest123abc456def789abc456def789abc456de"
+        )
 
         result = fetcher.release_list_for_git_dependency
 
@@ -389,15 +397,16 @@ RSpec.describe Dependabot::GithubActions::Package::PackageDetailsFetcher do
       let(:dependency_version) { "feature-branch" } # Neither version nor commit SHA
 
       it "returns version when latest_version_tag is available" do
-        allow(fetcher).to receive(:git_commit_checker).and_return(git_commit_checker)
-        allow(git_commit_checker).to receive(:pinned?).and_return(true)
-        allow(git_commit_checker).to receive(:pinned_ref_looks_like_version?).and_return(false)
-        allow(git_commit_checker).to receive(:pinned_ref_looks_like_commit_sha?).and_return(false)
+        allow(git_commit_checker).to receive_messages(
+          pinned?: true,
+          pinned_ref_looks_like_version?: false,
+          pinned_ref_looks_like_commit_sha?: false
+        )
 
         latest_tag_info = {
           version: Dependabot::GithubActions::Version.new("0.0.24")
         }
-        allow(fetcher).to receive(:latest_version_tag).and_return(latest_tag_info)
+        allow(fetcher).to receive_messages(git_commit_checker: git_commit_checker, latest_version_tag: latest_tag_info)
 
         result = fetcher.release_list_for_git_dependency
 
@@ -411,11 +420,12 @@ RSpec.describe Dependabot::GithubActions::Package::PackageDetailsFetcher do
         let(:dependency_version) { "commit456def789abc456def789abc456def789abc45" }
 
         it "falls back to commit SHA logic" do
-          allow(fetcher).to receive(:git_commit_checker).and_return(git_commit_checker)
-          allow(git_commit_checker).to receive(:pinned?).and_return(true)
-          allow(git_commit_checker).to receive(:pinned_ref_looks_like_commit_sha?).and_return(true)
-          allow(fetcher).to receive(:latest_version_tag).and_return(nil)
-          allow(fetcher).to receive(:latest_commit_for_pinned_ref).and_return("latest789abc456def789abc456def789abc456def")
+          allow(git_commit_checker).to receive_messages(pinned?: true, pinned_ref_looks_like_commit_sha?: true)
+          allow(fetcher).to receive_messages(
+            git_commit_checker: git_commit_checker,
+            latest_version_tag: nil,
+            latest_commit_for_pinned_ref: "latest789abc456def789abc456def789abc456def"
+          )
 
           result = fetcher.release_list_for_git_dependency
 
@@ -427,10 +437,8 @@ RSpec.describe Dependabot::GithubActions::Package::PackageDetailsFetcher do
         let(:dependency_version) { "random-ref" }
 
         it "returns nil when no version tags and not a commit SHA" do
-          allow(fetcher).to receive(:git_commit_checker).and_return(git_commit_checker)
-          allow(git_commit_checker).to receive(:pinned?).and_return(true)
-          allow(git_commit_checker).to receive(:pinned_ref_looks_like_commit_sha?).and_return(false)
-          allow(fetcher).to receive(:latest_version_tag).and_return(nil)
+          allow(git_commit_checker).to receive_messages(pinned?: true, pinned_ref_looks_like_commit_sha?: false)
+          allow(fetcher).to receive_messages(git_commit_checker: git_commit_checker, latest_version_tag: nil)
 
           result = fetcher.release_list_for_git_dependency
 

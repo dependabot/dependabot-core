@@ -63,11 +63,10 @@ module Dependabot
         sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
         attr_reader :security_advisories
 
-        # rubocop:disable Metrics/PerceivedComplexity
         sig { returns(T.nilable(T.any(Dependabot::Version, String))) }
         def release_list_for_git_dependency
           # TODO: Support Docker sources
-          return unless git_dependency?
+          # All GitHub Actions dependencies are git dependencies, so no need to check
           return current_commit unless git_commit_checker.pinned?
 
           # First check if we have a latest version tag available
@@ -78,18 +77,18 @@ module Dependabot
             # If dependency is pinned to a version-like ref, prioritize version comparison
             if git_commit_checker.pinned_ref_looks_like_version?
               return current_version if shortened_semver_eq?(dependency.version, latest_version.to_s)
+
               return latest_version
             end
 
             # Secondary comparison: For commit SHA refs, only compare SHAs if versions are identical
             if git_commit_checker.pinned_ref_looks_like_commit_sha?
               # If we have a local tag for the pinned SHA, compare versions first
-              if git_commit_checker.local_tag_for_pinned_sha
-                return latest_version
-              else
-                # Only fall back to commit SHA comparison when no version tags are available
-                return latest_commit_for_pinned_ref
-              end
+              return latest_version if git_commit_checker.local_tag_for_pinned_sha
+
+              # Only fall back to commit SHA comparison when no version tags are available
+              return latest_commit_for_pinned_ref
+
             end
 
             # For any other pinned ref that has version tags available, return the version
@@ -97,20 +96,16 @@ module Dependabot
           end
 
           # Fallback: If no version tags exist and dependency looks like commit SHA
-          if git_commit_checker.pinned_ref_looks_like_commit_sha?
-            return latest_commit_for_pinned_ref
-          end
+          return latest_commit_for_pinned_ref if git_commit_checker.pinned_ref_looks_like_commit_sha?
 
           # If the dependency is pinned to a tag that doesn't look like a
           # version or a commit SHA then there's nothing we can do.
           nil
         end
-        # rubocop:enable Metrics/PerceivedComplexity
-
         sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
         def lowest_security_fix_version_tag
           # TODO: Support Docker sources
-          return unless git_dependency?
+          # All GitHub Actions dependencies are git dependencies, so no need to check
 
           @lowest_security_fix_version_tag ||= T.let(
             begin
@@ -239,11 +234,6 @@ module Dependabot
           return tags_array unless current_version
 
           tags_array.select { |tag| tag.fetch(:version) > current_version }
-        end
-
-        sig { returns(T::Boolean) }
-        def git_dependency?
-          git_commit_checker.git_dependency?
         end
 
         sig { returns(Dependabot::GithubActions::Helpers::Githelper) }
