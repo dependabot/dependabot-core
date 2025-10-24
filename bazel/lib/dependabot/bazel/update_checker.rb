@@ -1,6 +1,7 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
+require "time"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/bazel/version"
@@ -91,7 +92,10 @@ module Dependabot
 
       sig { returns(UpdateChecker::RegistryClient) }
       def registry_client
-        @registry_client ||= T.let(UpdateChecker::RegistryClient.new, T.nilable(UpdateChecker::RegistryClient))
+        @registry_client ||= T.let(
+          UpdateChecker::RegistryClient.new(credentials: credentials),
+          T.nilable(UpdateChecker::RegistryClient)
+        )
       end
 
       sig { params(versions: T::Array[String]).returns(T::Array[String]) }

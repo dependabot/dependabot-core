@@ -2,23 +2,32 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "ostruct"
+require "base64"
+require "octokit"
 require "dependabot/bazel/update_checker"
 
 RSpec.describe Dependabot::Bazel::UpdateChecker::RegistryClient do
-  let(:client) { described_class.new }
+  let(:credentials) { [] }
+  let(:client) { described_class.new(credentials: credentials) }
+  let(:github_client) { double("github_client") }
+
+  before do
+    allow(client).to receive(:github_client).and_return(github_client)
+  end
 
   describe "#all_module_versions" do
     context "when module exists" do
       it "returns a list of versions" do
         github_response = [
-          { "name" => "0.33.0", "type" => "dir" },
-          { "name" => "0.34.0", "type" => "dir" },
-          { "name" => "0.57.0", "type" => "dir" },
-          { "name" => "README.md", "type" => "file" }
+          { name: "0.33.0", type: "dir" },
+          { name: "0.34.0", type: "dir" },
+          { name: "0.57.0", type: "dir" },
+          { name: "README.md", type: "file" }
         ]
 
-        allow(client).to receive(:fetch_github_api)
-          .with("https://api.github.com/repos/bazelbuild/bazel-central-registry/contents/modules/rules_go")
+        allow(github_client).to receive(:contents)
+          .with("bazelbuild/bazel-central-registry", path: "modules/rules_go")
           .and_return(github_response)
 
         versions = client.all_module_versions("rules_go")
@@ -29,13 +38,13 @@ RSpec.describe Dependabot::Bazel::UpdateChecker::RegistryClient do
 
       it "sorts versions correctly" do
         github_response = [
-          { "name" => "0.10.0", "type" => "dir" },
-          { "name" => "0.2.0", "type" => "dir" },
-          { "name" => "0.1.0", "type" => "dir" }
+          { name: "0.10.0", type: "dir" },
+          { name: "0.2.0", type: "dir" },
+          { name: "0.1.0", type: "dir" }
         ]
 
-        allow(client).to receive(:fetch_github_api)
-          .with("https://api.github.com/repos/bazelbuild/bazel-central-registry/contents/modules/test_module")
+        allow(github_client).to receive(:contents)
+          .with("bazelbuild/bazel-central-registry", path: "modules/test_module")
           .and_return(github_response)
 
         versions = client.all_module_versions("test_module")
@@ -46,9 +55,8 @@ RSpec.describe Dependabot::Bazel::UpdateChecker::RegistryClient do
 
     context "when module does not exist" do
       it "returns empty array for 404 response" do
-        error = Dependabot::DependabotError.new("404 not found")
-        allow(client).to receive(:fetch_github_api)
-          .and_raise(error)
+        allow(github_client).to receive(:contents)
+          .and_raise(Octokit::NotFound)
 
         versions = client.all_module_versions("nonexistent_module")
 
@@ -56,20 +64,20 @@ RSpec.describe Dependabot::Bazel::UpdateChecker::RegistryClient do
       end
 
       it "re-raises other errors" do
-        error = Dependabot::DependabotError.new("500 server error")
-        allow(client).to receive(:fetch_github_api)
+        error = StandardError.new("500 server error")
+        allow(github_client).to receive(:contents)
           .and_raise(error)
 
         expect do
           client.all_module_versions("test_module")
-        end.to raise_error(Dependabot::DependabotError, "500 server error")
+        end.to raise_error(StandardError, "500 server error")
       end
     end
 
     context "when response is invalid" do
       it "handles non-array response gracefully" do
-        allow(client).to receive(:fetch_github_api)
-          .and_return({ "message" => "not an array" })
+        allow(github_client).to receive(:contents)
+          .and_return({ message: "not an array" })
 
         versions = client.all_module_versions("test_module")
 
@@ -151,9 +159,13 @@ RSpec.describe Dependabot::Bazel::UpdateChecker::RegistryClient do
           "integrity" => "sha256-pynI7SRHyQ/hQAd2iQecoKz7dYDsQWN/MS1lDOnZPZY="
         }.to_json
 
-        allow(client).to receive(:fetch_raw_content)
-          .with("https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_go/0.57.0/source.json")
-          .and_return(source_content)
+        # Simulate GitHub API returning base64 encoded content
+        encoded_content = Base64.encode64(source_content)
+        github_response = OpenStruct.new(content: encoded_content)
+
+        allow(github_client).to receive(:contents)
+          .with("bazelbuild/bazel-central-registry", path: "modules/rules_go/0.57.0/source.json")
+          .and_return(github_response)
 
         source = client.get_source("rules_go", "0.57.0")
 
@@ -166,8 +178,8 @@ RSpec.describe Dependabot::Bazel::UpdateChecker::RegistryClient do
 
     context "when source.json does not exist" do
       it "returns nil" do
-        allow(client).to receive(:fetch_raw_content)
-          .and_return(nil)
+        allow(github_client).to receive(:contents)
+          .and_raise(Octokit::NotFound)
 
         source = client.get_source("rules_go", "nonexistent")
 
@@ -177,8 +189,12 @@ RSpec.describe Dependabot::Bazel::UpdateChecker::RegistryClient do
 
     context "when source.json is invalid JSON" do
       it "returns nil and logs warning" do
-        allow(client).to receive(:fetch_raw_content)
-          .and_return("invalid json content")
+        # Simulate GitHub API returning base64 encoded invalid content
+        encoded_content = Base64.encode64("invalid json content")
+        github_response = OpenStruct.new(content: encoded_content)
+
+        allow(github_client).to receive(:contents)
+          .and_return(github_response)
 
         allow(Dependabot.logger).to receive(:warn)
 
@@ -186,7 +202,7 @@ RSpec.describe Dependabot::Bazel::UpdateChecker::RegistryClient do
 
         expect(source).to be_nil
         expect(Dependabot.logger).to have_received(:warn)
-          .with(a_string_matching(/Failed to parse source/))
+          .with(a_string_matching(/Failed to get source/))
       end
     end
   end
@@ -201,9 +217,13 @@ RSpec.describe Dependabot::Bazel::UpdateChecker::RegistryClient do
           )
         BAZEL
 
-        allow(client).to receive(:fetch_raw_content)
-          .with("https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_go/0.57.0/MODULE.bazel")
-          .and_return(module_content)
+        # Simulate GitHub API returning base64 encoded content
+        encoded_content = Base64.encode64(module_content)
+        github_response = OpenStruct.new(content: encoded_content)
+
+        allow(github_client).to receive(:contents)
+          .with("bazelbuild/bazel-central-registry", path: "modules/rules_go/0.57.0/MODULE.bazel")
+          .and_return(github_response)
 
         content = client.get_module_bazel("rules_go", "0.57.0")
 
@@ -213,8 +233,8 @@ RSpec.describe Dependabot::Bazel::UpdateChecker::RegistryClient do
 
     context "when MODULE.bazel does not exist" do
       it "returns nil" do
-        allow(client).to receive(:fetch_raw_content)
-          .and_return(nil)
+        allow(github_client).to receive(:contents)
+          .and_raise(Octokit::NotFound)
 
         content = client.get_module_bazel("rules_go", "nonexistent")
 

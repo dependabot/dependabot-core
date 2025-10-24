@@ -2,11 +2,13 @@
 # frozen_string_literal: true
 
 require "json"
-require "net/http"
-require "uri"
-
+require "base64"
+require "sorbet-runtime"
+require "dependabot/shared_helpers"
+require "dependabot/clients/github_with_retries"
 require "dependabot/dependency"
 require "dependabot/errors"
+require "base64"
 
 module Dependabot
   module Bazel
@@ -14,31 +16,29 @@ module Dependabot
       class RegistryClient
         extend T::Sig
 
-        GITHUB_API_BASE = "https://api.github.com/repos/bazelbuild/bazel-central-registry"
-        RAW_BASE = "https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main"
+        GITHUB_REPO = T.let("bazelbuild/bazel-central-registry", String)
+        RAW_BASE = T.let("https://raw.githubusercontent.com/#{GITHUB_REPO}/main", String)
+
+        sig { params(credentials: T::Array[Dependabot::Credential]).void }
+        def initialize(credentials:)
+          @credentials = credentials
+        end
 
         sig { params(module_name: String).returns(T::Array[String]) }
         def all_module_versions(module_name)
-          url = "#{GITHUB_API_BASE}/contents/modules/#{module_name}"
-          response = fetch_github_api(url)
-          return [] unless response
+          contents = T.unsafe(github_client).contents(GITHUB_REPO, path: "modules/#{module_name}")
+          return [] unless contents
+          return [] unless contents.is_a?(Array)
 
-          unless response.is_a?(Array)
-            Dependabot.logger.warn("Expected array for module versions, got #{response.class}")
-            return []
-          end
-
-          versions = response.filter_map do |item|
+          versions = contents.filter_map do |item|
             next unless item.is_a?(Hash)
-            next unless item["type"] == "dir"
+            next unless item[:type] == "dir"
 
-            item["name"]
+            item[:name]
           end
 
           versions.sort_by { |v| version_sort_key(v) }
-        rescue Dependabot::DependabotError => e
-          raise e unless e.message.include?("404")
-
+        rescue Octokit::NotFound
           Dependabot.logger.info("Module '#{module_name}' not found in registry")
           []
         end
@@ -65,20 +65,33 @@ module Dependabot
 
         sig { params(module_name: String, version: String).returns(T.nilable(T::Hash[String, T.untyped])) }
         def get_source(module_name, version)
-          url = "#{RAW_BASE}/modules/#{module_name}/#{version}/source.json"
-          response = fetch_raw_content(url)
-          return nil unless response
+          file_path = "modules/#{module_name}/#{version}/source.json"
 
-          JSON.parse(response)
-        rescue JSON::ParserError => e
-          Dependabot.logger.warn("Failed to parse source for #{module_name}@#{version}: #{e.message}")
-          nil
+          begin
+            content = T.unsafe(github_client).contents(GITHUB_REPO, path: file_path)
+            return nil unless content
+
+            decoded_content = Base64.decode64(content.content)
+            JSON.parse(decoded_content)
+          rescue => e
+            Dependabot.logger.warn("Failed to get source for #{module_name}@#{version}: #{e.message}")
+            nil
+          end
         end
 
         sig { params(module_name: String, version: String).returns(T.nilable(String)) }
         def get_module_bazel(module_name, version)
-          url = "#{RAW_BASE}/modules/#{module_name}/#{version}/MODULE.bazel"
-          fetch_raw_content(url)
+          file_path = "modules/#{module_name}/#{version}/MODULE.bazel"
+
+          begin
+            content = T.unsafe(github_client).contents(GITHUB_REPO, path: file_path)
+            return nil unless content
+
+            Base64.decode64(content.content)
+          rescue => e
+            Dependabot.logger.warn("Failed to get MODULE.bazel for #{module_name}@#{version}: #{e.message}")
+            nil
+          end
         end
 
         sig { params(module_name: String, version: String).returns(T::Boolean) }
@@ -88,80 +101,27 @@ module Dependabot
 
         sig { params(module_name: String, version: String).returns(T.nilable(Time)) }
         def get_version_release_date(module_name, version)
-          path = "modules/#{module_name}/#{version}"
-          url = "#{GITHUB_API_BASE}/commits?path=#{path}&per_page=1"
+          file_path = "modules/#{module_name}/#{version}/MODULE.bazel"
 
-          response = fetch_github_api(url)
-          return nil if response.nil? || response.empty?
+          begin
+            commits = T.unsafe(github_client).commits("bazelbuild/bazel-central-registry", path: file_path, per_page: 1)
+            return nil unless commits&.any?
 
-          commit = response.first
-          commit_date = commit.dig("commit", "committer", "date")
-          return nil unless commit_date
-
-          Time.parse(commit_date)
-        rescue StandardError => e
-          Dependabot.logger.warn("Failed to fetch release date for #{module_name} v#{version}: #{e.message}")
-          nil
+            commits.first.commit.committer.date
+          rescue => e
+            Dependabot.logger.warn("Failed to get release date for #{module_name} #{version}: #{e.message}")
+            nil
+          end
         end
 
         private
 
-        sig { params(url: String).returns(T.untyped) }
-        def fetch_github_api(url)
-          uri = URI.parse(url)
-          http = Net::HTTP.new(T.must(uri.host), uri.port)
-          http.use_ssl = true
-          http.read_timeout = 30
-          http.open_timeout = 10
-
-          request = Net::HTTP::Get.new(uri.path || "/")
-          request["User-Agent"] = "Dependabot"
-          request["Accept"] = "application/vnd.github.v3+json"
-
-          response = http.request(request)
-
-          case response.code
-          when "200"
-            JSON.parse(response.body)
-          when "404"
-            nil
-          else
-            raise Dependabot::DependabotError,
-                  "HTTP #{response.code} from GitHub API: #{response.message}"
-          end
-        rescue Net::HTTPError, SocketError, Timeout::Error => e
-          Dependabot.logger.warn("Failed to fetch #{url}: #{e.message}")
-          raise Dependabot::DependabotError, "GitHub API request failed: #{e.message}"
-        rescue JSON::ParserError => e
-          Dependabot.logger.warn("Failed to parse GitHub API response: #{e.message}")
-          raise Dependabot::DependabotError, "Invalid JSON response from GitHub API"
-        end
-
-        sig { params(url: String).returns(T.nilable(String)) }
-        def fetch_raw_content(url)
-          uri = URI.parse(url)
-          http = Net::HTTP.new(T.must(uri.host), uri.port)
-          http.use_ssl = true
-          http.read_timeout = 30
-          http.open_timeout = 10
-
-          request = Net::HTTP::Get.new(uri.path || "/")
-          request["User-Agent"] = "Dependabot"
-
-          response = http.request(request)
-
-          case response.code
-          when "200"
-            response.body
-          when "404"
-            nil
-          else
-            raise Dependabot::DependabotError,
-                  "HTTP #{response.code} from GitHub: #{response.message}"
-          end
-        rescue Net::HTTPError, SocketError, Timeout::Error => e
-          Dependabot.logger.warn("Failed to fetch #{url}: #{e.message}")
-          raise Dependabot::DependabotError, "GitHub request failed: #{e.message}"
+        sig { returns(Dependabot::Clients::GithubWithRetries) }
+        def github_client
+          @github_client ||= T.let(
+            Dependabot::Clients::GithubWithRetries.for_github_dot_com(credentials: @credentials),
+            T.nilable(Dependabot::Clients::GithubWithRetries)
+          )
         end
 
         sig { params(version: String).returns(T::Array[Integer]) }
