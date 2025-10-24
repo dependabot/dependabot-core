@@ -111,7 +111,7 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
   end
 
   it "fetches module versions from a custom registry" do
-    hostname = "app.opentofu.io"
+    hostname = "registry.opentofu.org"
     stub_request(:get, "https://#{hostname}/.well-known/terraform.json")
       .and_return(status: 200,
                   body: {

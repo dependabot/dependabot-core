@@ -36,9 +36,9 @@ RSpec.describe Dependabot::Opentofu do
     end
 
     context "when dealing with a registry source with special chars" do
-      let(:name) { "app.opentofu.io/example-corp/k8s-cluster/azurerm" }
+      let(:name) { "registry.opentofu.org/example-corp/k8s-cluster/azurerm" }
 
-      it { is_expected.to eq("app.opentofu.io/example-corp/k8s-cluster/azurerm") }
+      it { is_expected.to eq("registry.opentofu.org/example-corp/k8s-cluster/azurerm") }
     end
 
     context "when dealing with a git source with ref" do

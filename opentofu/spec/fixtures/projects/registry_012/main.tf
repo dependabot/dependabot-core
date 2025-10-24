@@ -4,7 +4,7 @@ module "consul" {
 }
 
 module "vpc" {
-  source  = "app.opentofu.io/example_corp/vpc/aws"
+  source  = "registry.opentofu.org/example_corp/vpc/aws"
   version = "0.9.3"
 }
 

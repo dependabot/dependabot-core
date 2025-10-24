@@ -92,7 +92,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
               file: "main.tf",
               source: {
                 type: "registry",
-                registry_hostname: "app.opentofu.io",
+                registry_hostname: "registry.opentofu.org",
                 module_identifier: "example-org-5d3190/s3-webapp/aws"
               }
             }],
@@ -102,7 +102,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
               file: "main.tf",
               source: {
                 type: "registry",
-                registry_hostname: "app.opentofu.io",
+                registry_hostname: "registry.opentofu.org",
                 module_identifier: "example-org-5d3190/s3-webapp/aws"
               }
             }],
@@ -116,7 +116,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
 
         expect(updated_file.content).to include(<<~HCL)
           module "s3-webapp" {
-            source  = "app.opentofu.io/example-org-5d3190/s3-webapp/aws"
+            source  = "registry.opentofu.org/example-org-5d3190/s3-webapp/aws"
             version = "1.0.1"
           }
         HCL
@@ -138,7 +138,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
               file: "main.tf",
               source: {
                 type: "registry",
-                registry_hostname: "app.opentofu.io",
+                registry_hostname: "registry.opentofu.org",
                 module_identifier: "example-org-5d3190/s3-webapp/aws"
               }
             }],
@@ -148,7 +148,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
               file: "main.tf",
               source: {
                 type: "registry",
-                registry_hostname: "app.opentofu.io",
+                registry_hostname: "registry.opentofu.org",
                 module_identifier: "example-org-5d3190/s3-webapp/aws"
               }
             }],
@@ -162,7 +162,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
 
         expect(updated_file.content).to include(<<~HCL)
           module "s3-webapp" {
-            source  = "app.opentofu.io/example-org-5d3190/s3-webapp/aws"
+            source  = "registry.opentofu.org/example-org-5d3190/s3-webapp/aws"
             version = "2.0.0"
           }
         HCL
@@ -184,7 +184,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
               file: "main.tf",
               source: {
                 type: "registry",
-                registry_hostname: "app.opentofu.io",
+                registry_hostname: "registry.opentofu.org",
                 module_identifier: "example-org-5d3190/s3-webapp/aws"
               }
             }, {
@@ -193,7 +193,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
               file: "main.tf",
               source: {
                 type: "registry",
-                registry_hostname: "app.opentofu.io",
+                registry_hostname: "registry.opentofu.org",
                 module_identifier: "example-org-5d3190/s3-webapp/aws"
               }
             }],
@@ -203,7 +203,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
               file: "main.tf",
               source: {
                 type: "registry",
-                registry_hostname: "app.opentofu.io",
+                registry_hostname: "registry.opentofu.org",
                 module_identifier: "example-org-5d3190/s3-webapp/aws"
               }
             }, {
@@ -212,7 +212,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
               file: "main.tf",
               source: {
                 type: "registry",
-                registry_hostname: "app.opentofu.io",
+                registry_hostname: "registry.opentofu.org",
                 module_identifier: "example-org-5d3190/s3-webapp/aws"
               }
             }],
@@ -226,12 +226,12 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
 
         expect(updated_file.content).to include(<<~HCL)
           module "s3-webapp-first" {
-            source  = "app.opentofu.io/example-org-5d3190/s3-webapp/aws"
+            source  = "registry.opentofu.org/example-org-5d3190/s3-webapp/aws"
             version = "0.11.0"
           }
 
           module "s3-webapp-second" {
-            source  = "app.opentofu.io/example-org-5d3190/s3-webapp/aws"
+            source  = "registry.opentofu.org/example-org-5d3190/s3-webapp/aws"
             version = "0.11.0"
           }
         HCL

@@ -103,7 +103,7 @@ RSpec.describe Dependabot::Opentofu::FileParser do
             file: "main.tf",
             source: {
               type: "registry",
-              registry_hostname: "app.opentofu.io",
+              registry_hostname: "registry.opentofu.org",
               module_identifier: "example_corp/vpc/aws"
             }
           }]
@@ -830,7 +830,7 @@ RSpec.describe Dependabot::Opentofu::FileParser do
               file: "main.tf",
               source: {
                 type: "registry",
-                registry_hostname: "app.opentofu.io",
+                registry_hostname: "registry.opentofu.org",
                 module_identifier: "example_corp/vpc/aws"
               }
             }]
