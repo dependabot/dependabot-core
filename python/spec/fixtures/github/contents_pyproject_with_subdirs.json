@@ -1,0 +1,50 @@
+[
+  {
+    "name": "pyproject.toml",
+    "path": "pyproject.toml",
+    "sha": "1234567890abcdef",
+    "size": 1000,
+    "url": "https://api.github.com/repos/test/repo/contents/pyproject.toml?ref=sha",
+    "html_url": "https://github.com/test/repo/blob/main/pyproject.toml",
+    "git_url": "https://api.github.com/repos/test/repo/git/blobs/1234567890abcdef",
+    "download_url": "https://raw.githubusercontent.com/test/repo/main/pyproject.toml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/test/repo/contents/pyproject.toml?ref=sha",
+      "git": "https://api.github.com/repos/test/repo/git/blobs/1234567890abcdef",
+      "html": "https://github.com/test/repo/blob/main/pyproject.toml"
+    }
+  },
+  {
+    "name": "docs",
+    "path": "docs",
+    "sha": "abcdef1234567890",
+    "size": 0,
+    "url": "https://api.github.com/repos/test/repo/contents/docs?ref=sha",
+    "html_url": "https://github.com/test/repo/tree/main/docs",
+    "git_url": "https://api.github.com/repos/test/repo/git/trees/abcdef1234567890",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/test/repo/contents/docs?ref=sha",
+      "git": "https://api.github.com/repos/test/repo/git/trees/abcdef1234567890",
+      "html": "https://github.com/test/repo/tree/main/docs"
+    }
+  },
+  {
+    "name": "tests",
+    "path": "tests",
+    "sha": "fedcba0987654321",
+    "size": 0,
+    "url": "https://api.github.com/repos/test/repo/contents/tests?ref=sha",
+    "html_url": "https://github.com/test/repo/tree/main/tests",
+    "git_url": "https://api.github.com/repos/test/repo/git/trees/fedcba0987654321",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/test/repo/contents/tests?ref=sha",
+      "git": "https://api.github.com/repos/test/repo/git/trees/fedcba0987654321",
+      "html": "https://github.com/test/repo/tree/main/tests"
+    }
+  }
+]

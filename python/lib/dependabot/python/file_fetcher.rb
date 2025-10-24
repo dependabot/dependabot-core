@@ -255,9 +255,11 @@ module Dependabot
               .select { |f| requirements_file?(f) }
               .each { |f| files << f }
 
-            repo_contents
-              .select { |f| f.type == "dir" }
-              .each { |f| files.concat(req_files_for_dir(f)) }
+            # Only fetch from the special "requirements" directory if it exists
+            # This is a common Python pattern for organizing multiple requirement files
+            # Other subdirectories (e.g., docs, tests) are not scanned automatically
+            requirements_dir = repo_contents.find { |f| f.type == "dir" && f.name == "requirements" }
+            files.concat(req_files_for_dir(requirements_dir)) if requirements_dir
 
             files
           end,
