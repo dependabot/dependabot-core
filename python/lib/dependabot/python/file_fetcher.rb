@@ -255,16 +255,23 @@ module Dependabot
               .select { |f| requirements_file?(f) }
               .each { |f| files << f }
 
-            # Only fetch from the special "requirements" directory if it exists
-            # This is a common Python pattern for organizing multiple requirement files
-            # Other subdirectories (e.g., docs, tests) are not scanned automatically
-            requirements_dir = repo_contents.find { |f| f.type == "dir" && f.name == "requirements" }
-            files.concat(req_files_for_dir(requirements_dir)) if requirements_dir
+            files.concat(requirements_folder_files)
 
             files
           end,
           T.nilable(T::Array[Dependabot::DependencyFile])
         )
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def requirements_folder_files
+        # Only fetch from the special "requirements" directory if it exists
+        # This is a common Python pattern for organizing multiple requirement files
+        # Other subdirectories (e.g., docs, tests) are not scanned automatically
+        requirements_dir = repo_contents.find { |f| f.type == "dir" && f.name == "requirements" }
+        return [] unless requirements_dir
+
+        req_files_for_dir(requirements_dir)
       end
 
       sig { params(requirements_dir: T.untyped).returns(T::Array[Dependabot::DependencyFile]) }
