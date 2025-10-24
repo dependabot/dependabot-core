@@ -85,7 +85,7 @@ module Dependabot
           end
 
           # This makes testing easier and should be a no-op in production.
-          File.write("go.mod", go_mod_content)
+          File.write("go.mod", go_mod.content)
 
           stdout, stderr, status = Open3.capture3(command)
           handle_parser_error(path, stderr) unless status.success?
@@ -252,13 +252,6 @@ module Dependabot
             end,
             T.nilable(T::Hash[String, T.untyped])
           )
-      end
-
-      sig { returns(T.nilable(String)) }
-      def go_mod_content
-        local_replacements.reduce(go_mod&.content) do |body, (path, stub_path)|
-          body&.sub(path, stub_path)
-        end
       end
 
       sig { params(path: T.any(Pathname, String), stderr: String).returns(T.noreturn) }
