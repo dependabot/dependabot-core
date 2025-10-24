@@ -411,5 +411,26 @@ RSpec.describe Dependabot::Uv::FileParser::PyprojectFilesParser do
         expect(actual_deps).to match_array(expected_deps)
       end
     end
+
+    describe "with uv path dependency" do
+      subject(:dependencies) { parser.dependency_set.dependencies }
+
+      let(:pyproject_fixture_name) { "uv_path_dependencies.toml" }
+
+      its(:length) { is_expected.to eq(5) }
+
+      it "has all dependencies" do
+        expected_deps = [
+          { name: "requests" },
+          { name: "protos" },
+          { name: "another-local" },
+          { name: "setuptools" },
+          { name: "wheel" }
+        ]
+
+        actual_deps = dependencies.map { |dep| { name: dep.name } }
+        expect(actual_deps).to match_array(expected_deps)
+      end
+    end
   end
 end
