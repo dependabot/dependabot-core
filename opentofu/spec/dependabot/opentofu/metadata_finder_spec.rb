@@ -89,7 +89,7 @@ RSpec.describe Dependabot::Opentofu::MetadataFinder do
       end
 
       let(:registry_url) do
-        "https://registry.opentofu.org/v1/modules/hashicorp/consul/aws/0.3.8/download"
+        "https://api.opentofu.org/registry/docs/modules/hashicorp/consul/aws/0.3.8/download"
       end
 
       before do
@@ -142,7 +142,7 @@ RSpec.describe Dependabot::Opentofu::MetadataFinder do
       end
 
       it do
-        expect(source_url).to eq("https://github.com/hashicorp/terraform-provider-aws")
+        expect(source_url).to eq("https://github.com/opentofu/terraform-provider-aws")
       end
     end
   end

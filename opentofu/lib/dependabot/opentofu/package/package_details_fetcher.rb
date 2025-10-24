@@ -51,7 +51,11 @@ module Dependabot
           url = RELEASES_URL_GIT + "#{truncate_github_url}/releases"
           result_lines = T.let([], T::Array[GitTagWithDetail])
           # Fetch the releases from the GitHub API
-          response = Excon.get(url, headers: { "User-Agent" => "Dependabot (dependabot.com)", "Accept" => "application/vnd.github.v3+json" })
+          response = Excon.get(
+            url,
+            headers: { "User-Agent" => "Dependabot (dependabot.com)",
+                       "Accept" => "application/vnd.github.v3+json" }
+          )
           Dependabot.logger.error("Failed call details: #{response.body}") unless response.status == 200
           return result_lines unless response.status == 200
 
@@ -74,7 +78,7 @@ module Dependabot
         end
 
         sig { returns(T::Array[GitTagWithDetail]) }
-        def fetch_tag_and_release_date_from_provider # rubocop:disable Metrics/AbcSize,Metrics/PerceivedComplexity
+        def fetch_tag_and_release_date_from_provider
           return [] unless dependency_source_details
 
           url = RELEASE_URL_FOR_PROVIDER + dependency_source_details&.fetch(:module_identifier) + "/index.json"

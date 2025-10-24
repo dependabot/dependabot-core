@@ -90,6 +90,7 @@ RSpec.describe Dependabot::Opentofu::Package::PackageDetailsFetcher do
         previous_requirements: []
       )
     end
+
     it "fetches and parses module release tags and dates", :vcr do
       result = fetcher.fetch_tag_and_release_date_from_module
       expect(result).to include(

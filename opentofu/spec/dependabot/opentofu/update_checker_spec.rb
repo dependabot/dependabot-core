@@ -84,7 +84,7 @@ RSpec.describe Dependabot::Opentofu::UpdateChecker do
         stub_request(:get, git_url + "/info/refs?service=git-upload-pack")
           .to_return(
             status: 200,
-            body: fixture("git", "upload_packs", "opentofu-null-label"),
+            body: fixture("git", "upload_packs", "terraform-null-label"),
             headers: git_header
           )
       end
@@ -171,7 +171,7 @@ RSpec.describe Dependabot::Opentofu::UpdateChecker do
         stub_request(:get, git_url + "/info/refs?service=git-upload-pack")
           .to_return(
             status: 200,
-            body: fixture("git", "upload_packs", "opentofu-null-label"),
+            body: fixture("git", "upload_packs", "terraform-null-label"),
             headers: git_header
           )
       end
@@ -239,7 +239,7 @@ RSpec.describe Dependabot::Opentofu::UpdateChecker do
         stub_request(:get, git_url + "/info/refs?service=git-upload-pack")
           .to_return(
             status: 200,
-            body: fixture("git", "upload_packs", "opentofu-null-label"),
+            body: fixture("git", "upload_packs", "terraform-null-label"),
             headers: git_header
           )
       end
