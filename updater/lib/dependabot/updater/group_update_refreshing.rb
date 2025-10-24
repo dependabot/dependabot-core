@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "dependabot/clients/github_with_retries"
 
 # This module contains the methods required to refresh (upsert or recreate)
 # existing grouped pull requests.
@@ -47,12 +48,22 @@ module Dependabot
       end
 
       # Having created the dependency_change, we need to determine the right strategy to apply it to the project:
-      # - Replace existing PR if the dependencies involved have changed
+      # - Replace existing PR if the dependencies involved have changed AND the PR hasn't been manually modified
       # - Update the existing PR if the dependencies and the target versions remain the same
       # - Supersede the existing PR if the dependencies are the same but the target versions have changed
+      # - Skip update if the PR has been manually modified to preserve manual work
       sig { params(dependency_change: Dependabot::DependencyChange, group: Dependabot::DependencyGroup).void }
       def upsert_pull_request(dependency_change, group)
         if dependency_change.should_replace_existing_pr?
+          # Check if the PR has been manually modified before closing it
+          if pr_was_manually_modified?(group)
+            Dependabot.logger.info(
+              "Skipping update for '#{group.name}' group as the pull request has been manually modified. " \
+              "Use '@dependabot recreate' to recreate the PR."
+            )
+            return
+          end
+
           Dependabot.logger.info("Dependencies have changed, closing existing Pull Request")
           close_pull_request(reason: :dependencies_changed, group: group)
           Dependabot.logger.info("Creating a new pull request for '#{group.name}'")
@@ -79,6 +90,64 @@ module Dependabot
         )
 
         service.close_pull_request(T.must(job.dependencies), reason)
+      end
+
+      private
+
+      # Checks if a grouped pull request has been manually modified by examining
+      # the number of commits on the PR. A PR is considered manually modified if
+      # it has more than one commit, indicating that commits beyond Dependabot's
+      # original commit have been added.
+      sig { params(group: Dependabot::DependencyGroup).returns(T::Boolean) }
+      def pr_was_manually_modified?(group)
+        return false unless job.source.provider == "github"
+
+        pr_number = existing_pull_request_number(group)
+        return false unless pr_number
+
+        begin
+          pull_request = github_client.pull_request(job.source.repo, pr_number)
+          # A PR with more than 1 commit indicates manual modifications
+          pull_request.commits > 1
+        rescue Octokit::NotFound
+          # PR doesn't exist, so it hasn't been modified
+          false
+        end
+      end
+
+      # Extracts the PR number for an existing grouped pull request
+      sig { params(group: Dependabot::DependencyGroup).returns(T.nilable(Integer)) }
+      def existing_pull_request_number(group)
+        existing_pr = job.existing_group_pull_requests.find do |pr|
+          pr["dependency-group-name"] == group.name
+        end
+
+        return nil unless existing_pr
+
+        # PR number can be in the dependencies or at the top level
+        dependencies = existing_pr["dependencies"]
+        return nil unless dependencies&.any?
+
+        # Extract pr-number from the first dependency that has it
+        dependencies.each do |dep|
+          pr_number = dep["pr-number"]
+          return pr_number if pr_number
+        end
+
+        nil
+      end
+
+      # Creates a GitHub client for making API requests
+      sig { returns(Dependabot::Clients::GithubWithRetries) }
+      def github_client
+        @github_client ||= T.let(
+          Dependabot::Clients::GithubWithRetries.for_source(
+            source: job.source,
+            credentials: job.credentials
+          ),
+          T.nilable(Dependabot::Clients::GithubWithRetries)
+        )
+        T.must(@github_client)
       end
     end
   end
