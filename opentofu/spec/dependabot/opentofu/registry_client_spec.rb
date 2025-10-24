@@ -229,7 +229,7 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
     end
   end
 
-  describe "#service_url_for" do
+  describe "#service_url_for_registry" do
     let(:metadata) { "https://registry.opentofu.org/.well-known/terraform.json" }
 
     context "when the metadata endpoint is not reachable" do
@@ -237,7 +237,7 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
         stub_request(:get, metadata).and_return(status: 404)
 
         expect do
-          client.service_url_for("modules.v1")
+          client.service_url_for_registry("modules.v1")
         end.to raise_error(/Host does not support required OpenTofu-native service/)
       end
     end
@@ -250,7 +250,7 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
         stub_request(:get, "https://example.org/terraform.json")
           .and_return(body: { "modules.v1": "https://example.org/v1/modules/" }.to_json)
 
-        expect(client.service_url_for("modules.v1")).to eql("https://example.org/v1/modules/")
+        expect(client.service_url_for_registry("modules.v1")).to eql("https://example.org/v1/modules/")
       end
     end
 
@@ -259,7 +259,7 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
         stub_request(:get, metadata)
           .and_return(body: { "modules.v1": "https://registry.example.org/v1/modules/" }.to_json)
 
-        expect(client.service_url_for("modules.v1")).to eql("https://registry.example.org/v1/modules/")
+        expect(client.service_url_for_registry("modules.v1")).to eql("https://registry.example.org/v1/modules/")
       end
     end
 
@@ -268,7 +268,7 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
         stub_request(:get, metadata)
           .and_return(body: { "modules.v1": "https://registry.example.org:4443/v1/modules/" }.to_json)
 
-        expect(client.service_url_for("modules.v1")).to eql("https://registry.example.org:4443/v1/modules/")
+        expect(client.service_url_for_registry("modules.v1")).to eql("https://registry.example.org:4443/v1/modules/")
       end
     end
 
@@ -277,7 +277,7 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
         stub_request(:get, metadata)
           .and_return(body: { "modules.v1": "http://registry.example.org/v1/modules/" }.to_json)
 
-        expect { client.service_url_for("modules.v1") }.to raise_error(/Unsupported scheme provided/)
+        expect { client.service_url_for_registry("modules.v1") }.to raise_error(/Unsupported scheme provided/)
       end
     end
 
@@ -285,7 +285,7 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
       it "returns the absolute url" do
         stub_request(:get, metadata).and_return(body: { "modules.v1": "/v1/modules/" }.to_json)
 
-        expect(client.service_url_for("modules.v1")).to eql("https://registry.opentofu.org/v1/modules/")
+        expect(client.service_url_for_registry("modules.v1")).to eql("https://registry.opentofu.org/v1/modules/")
       end
     end
 
@@ -294,7 +294,7 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
         stub_request(:get, metadata).to_raise(Excon::Error::Timeout)
 
         expect do
-          client.service_url_for("modules.v1")
+          client.service_url_for_registry("modules.v1")
         end.to raise_error(Dependabot::PrivateSourceBadResponse)
       end
     end
@@ -304,7 +304,7 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
         stub_request(:get, metadata).and_return(body: { "modules.v1": "/v1/modules/" }.to_json)
 
         expect do
-          client.service_url_for("providers.v1")
+          client.service_url_for_registry("providers.v1")
         end.to raise_error(/Host does not support required OpenTofu-native service/)
       end
     end

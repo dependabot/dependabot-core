@@ -26,7 +26,7 @@ module Dependabot
       sig { params(hostname: String, credentials: T::Array[Dependabot::Credential]).void }
       def initialize(hostname: PUBLIC_HOSTNAME, credentials: [])
         @hostname = hostname
-        @api_base_url = API_BASE_URL
+        @api_base_url = T.let(API_BASE_URL, String)
         @tokens = T.let(
           credentials.each_with_object({}) do |item, memo|
             memo[item["host"]] = item["token"] if item["type"] == "opentofu_registry"
@@ -226,6 +226,7 @@ module Dependabot
         uri.to_s
       end
 
+      sig { params(path: String).returns(String) }
       def url_for_api(path)
         uri = URI.parse(path)
         return uri.to_s if uri.scheme == "https"
