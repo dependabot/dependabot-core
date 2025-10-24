@@ -47,7 +47,8 @@ module Dependabot
         # Poetry error when project's Python range is incompatible with dependency requirements
         PYTHON_RANGE_INCOMPATIBLE = /
           The\scurrent\sproject's\ssupported\sPython\srange\s\((?<project_range>[^)]+)\)\s
-          is\snot\scompatible\swith\ssome\sof\sthe\srequired\spackages\sPython\srequirement:?
+          is\snot\scompatible\swith\ssome\sof\sthe\srequired\spackages\sPython\srequirement:?\s*
+          (?:-\s(?<package>\S+)\srequires\sPython\s(?<package_req>[^,]+,[^,]+).*?)?
         /x
 
         PACKAGE_RESOLVER_ERRORS = T.let(
@@ -578,9 +579,10 @@ module Dependabot
 
       sig { params(error: Exception).void }
       def handle_python_range_incompatible(error)
-        if (msg = error.message.match(PoetryVersionResolver::PYTHON_RANGE_INCOMPATIBLE))
-          raise DependencyFileNotResolvable, msg
-        end
+        return unless error.message.match(PoetryVersionResolver::PYTHON_RANGE_INCOMPATIBLE)
+
+        # Raise full original message so downstream error surfaces package details
+        raise DependencyFileNotResolvable, error.message
       end
     end
   end
