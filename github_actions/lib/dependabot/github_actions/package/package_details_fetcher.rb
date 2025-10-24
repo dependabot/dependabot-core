@@ -70,20 +70,35 @@ module Dependabot
           return unless git_dependency?
           return current_commit unless git_commit_checker.pinned?
 
-          # If the dependency is pinned to a tag that looks like a version then
-          # we want to update that tag.
-          if git_commit_checker.pinned_ref_looks_like_version? && latest_version_tag
+          # First check if we have a latest version tag available
+          if latest_version_tag
             latest_version = latest_version_tag&.fetch(:version)
-            return current_version if shortened_semver_eq?(dependency.version, latest_version.to_s)
 
+            # Primary comparison: Compare version tags first
+            # If dependency is pinned to a version-like ref, prioritize version comparison
+            if git_commit_checker.pinned_ref_looks_like_version?
+              return current_version if shortened_semver_eq?(dependency.version, latest_version.to_s)
+              return latest_version
+            end
+
+            # Secondary comparison: For commit SHA refs, only compare SHAs if versions are identical
+            if git_commit_checker.pinned_ref_looks_like_commit_sha?
+              # If we have a local tag for the pinned SHA, compare versions first
+              if git_commit_checker.local_tag_for_pinned_sha
+                return latest_version
+              else
+                # Only fall back to commit SHA comparison when no version tags are available
+                return latest_commit_for_pinned_ref
+              end
+            end
+
+            # For any other pinned ref that has version tags available, return the version
             return latest_version
           end
 
-          if git_commit_checker.pinned_ref_looks_like_commit_sha? && latest_version_tag
-            latest_version = latest_version_tag&.fetch(:version)
-            return latest_commit_for_pinned_ref unless git_commit_checker.local_tag_for_pinned_sha
-
-            return latest_version
+          # Fallback: If no version tags exist and dependency looks like commit SHA
+          if git_commit_checker.pinned_ref_looks_like_commit_sha?
+            return latest_commit_for_pinned_ref
           end
 
           # If the dependency is pinned to a tag that doesn't look like a

@@ -283,4 +283,166 @@ RSpec.describe namespace::LatestVersionFinder do
       end
     end
   end
+
+  # Comprehensive test coverage for the version-first comparison logic fix
+  # This addresses the bug where commit SHAs were returned instead of version tags
+  describe "version-first comparison logic" do
+    let(:upload_pack_fixture) { "private-repo-with-version-prefixes" }
+    let(:dependency_name) { "virtusaEAG/.github-private" }
+
+    let(:dependency_source) do
+      {
+        type: "git",
+        url: "https://github.com/#{dependency_name}",
+        ref: dependency_version,
+        branch: nil
+      }
+    end
+
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: dependency_name,
+        version: dependency_version,
+        requirements: [{
+          requirement: nil,
+          groups: [],
+          file: ".github/workflows/workflow.yml",
+          source: dependency_source,
+          metadata: { declaration_string: "#{dependency_name}@#{dependency_version}" }
+        }],
+        package_manager: "github_actions"
+      )
+    end
+
+    describe "when current version is older than latest tag" do
+      let(:dependency_version) { "0.0.14" }
+
+      describe "#latest_release" do
+        subject(:latest_release) { finder.latest_release }
+
+        it "returns the latest version tag, not commit SHA" do
+          # This is the core fix: prioritize version tags over commit SHAs
+          expect(latest_release).to be_a(Dependabot::GithubActions::Version)
+          expect(latest_release.to_s).to eq("0.0.24")
+        end
+
+        it "does not return a commit SHA" do
+          # Ensure we're not returning untagged commits
+          expect(latest_release.to_s).not_to match(/^[a-f0-9]{40}$/)
+        end
+      end
+
+      describe "PackageDetailsFetcher integration" do
+        it "prioritizes version comparison over commit SHA comparison" do
+          package_details_fetcher = Dependabot::GithubActions::Package::PackageDetailsFetcher.new(
+            dependency: dependency,
+            credentials: [],
+            ignored_versions: [],
+            raise_on_ignored: false,
+            security_advisories: []
+          )
+
+          result = package_details_fetcher.release_list_for_git_dependency
+
+          expect(result).to be_a(Dependabot::GithubActions::Version)
+          expect(result.to_s).to eq("0.0.24")
+          expect(result.to_s).not_to eq("01177ce7a176275e51f6657eead3466170f10047") # Customer's problematic commit SHA
+        end
+      end
+    end
+
+    describe "when current version equals latest tag" do
+      let(:dependency_version) { "0.0.24" }
+
+      describe "#latest_release" do
+        subject(:latest_release) { finder.latest_release }
+
+        it "recognizes no update is needed" do
+          # When versions are equal, should return current version
+          expect(latest_release).to eq(Dependabot::GithubActions::Version.new("0.0.24"))
+        end
+      end
+    end
+
+    describe "edge cases for version-first logic" do
+      describe "when dependency looks like commit SHA but has version tags" do
+        let(:dependency_version) { "abc123def456789" } # Looks like SHA
+
+        let(:dependency_source) do
+          {
+            type: "git",
+            url: "https://github.com/#{dependency_name}",
+            ref: dependency_version,
+            branch: nil
+          }
+        end
+
+        it "still prioritizes version tags over commit comparison" do
+          result = finder.latest_release
+
+          # Even when current ref looks like SHA, if version tags exist, use them
+          expect(result).to be_a(Dependabot::GithubActions::Version)
+          expect(result.to_s).to eq("0.0.24")
+        end
+      end
+
+      describe "backward compatibility with commit-only repositories" do
+        let(:upload_pack_fixture) { "setup-node" } # Repo without version tags
+        let(:dependency_name) { "actions/setup-node" }
+        let(:dependency_version) { "abc123def456789" }
+
+        let(:dependency_source) do
+          {
+            type: "git",
+            url: "https://github.com/#{dependency_name}",
+            ref: dependency_version,
+            branch: nil
+          }
+        end
+
+        it "falls back to commit SHA comparison when no version tags exist" do
+          # This ensures backward compatibility for repos without semantic version tags
+          result = finder.latest_release
+
+          # Should return commit SHA when no version tags are available
+          expect(result).to be_a(String)
+          expect(result).to match(/^[a-f0-9]{40}$/)
+        end
+      end
+
+      describe "version prefix handling" do
+        let(:dependency_version) { "0.0.13" } # Without 'v' prefix
+
+        it "correctly handles version tags with 'v' prefix" do
+          # Repository has tags like 'v0.0.24' but dependency refs like '0.0.13'
+          result = finder.latest_release
+
+          expect(result).to be_a(Dependabot::GithubActions::Version)
+          expect(result.to_s).to eq("0.0.24") # Strips 'v' prefix correctly
+        end
+      end
+    end
+
+    describe "integration with shortened_semver_eq logic" do
+      let(:dependency_version) { "0.0" } # Shortened version
+
+      it "handles shortened semver comparison correctly" do
+        package_details_fetcher = Dependabot::GithubActions::Package::PackageDetailsFetcher.new(
+          dependency: dependency,
+          credentials: [],
+          ignored_versions: [],
+          raise_on_ignored: false,
+          security_advisories: []
+        )
+
+        # Mock shortened_semver_eq to return true for testing
+        allow(package_details_fetcher).to receive(:shortened_semver_eq?).with("0.0", "0.0.24").and_return(true)
+
+        result = package_details_fetcher.release_list_for_git_dependency
+
+        # Should return current version when shortened versions match
+        expect(result).to eq(Dependabot::GithubActions::Version.new("0.0"))
+      end
+    end
+  end
 end

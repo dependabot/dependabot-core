@@ -252,4 +252,191 @@ RSpec.describe Dependabot::GithubActions::Package::PackageDetailsFetcher do
       end
     end
   end
+
+  # Comprehensive tests for the version-first comparison fix in release_list_for_git_dependency
+  describe "#release_list_for_git_dependency version prioritization fix" do
+    let(:upload_pack_fixture) { "private-repo-with-version-prefixes" }
+    let(:dependency_name) { "virtusaEAG/.github-private" }
+    let(:reference) { dependency_version }
+    let(:dependency_source) do
+      {
+        type: "git",
+        url: "https://github.com/#{dependency_name}",
+        ref: reference,
+        branch: nil
+      }
+    end
+
+    describe "when current version is older than latest tag" do
+      let(:dependency_version) { "0.0.14" }
+
+      it "returns version object, not commit SHA" do
+        result = fetcher.release_list_for_git_dependency
+
+        expect(result).to be_a(Dependabot::GithubActions::Version)
+        expect(result.to_s).to eq("0.0.24")
+
+        # Ensure it's not returning the problematic commit SHA
+        expect(result.to_s).not_to eq("01177ce7a176275e51f6657eead3466170f10047")
+        expect(result.to_s).not_to match(/^[a-f0-9]{40}$/)
+      end
+
+      it "prioritizes version comparison over commit chronology" do
+        # Mock the git_commit_checker to simulate the customer's scenario
+        allow(fetcher).to receive(:git_commit_checker).and_return(git_commit_checker)
+        allow(git_commit_checker).to receive(:pinned?).and_return(true)
+        allow(git_commit_checker).to receive(:pinned_ref_looks_like_version?).and_return(true)
+
+        # Mock latest_version_tag to return the expected version info
+        latest_tag_info = {
+          tag: "v0.0.24",
+          version: Dependabot::GithubActions::Version.new("0.0.24"),
+          commit_sha: "b4cc9058ebd2336f73752f9d3c9b3835d52c66de"
+        }
+        allow(fetcher).to receive(:latest_version_tag).and_return(latest_tag_info)
+
+        result = fetcher.release_list_for_git_dependency
+
+        # Should return the version from latest_version_tag, not a newer commit
+        expect(result).to eq(Dependabot::GithubActions::Version.new("0.0.24"))
+      end
+    end
+
+    describe "when current version equals latest tag" do
+      let(:dependency_version) { "0.0.24" }
+
+      it "returns current version (no update needed)" do
+        allow(fetcher).to receive(:git_commit_checker).and_return(git_commit_checker)
+        allow(git_commit_checker).to receive(:pinned?).and_return(true)
+        allow(git_commit_checker).to receive(:pinned_ref_looks_like_version?).and_return(true)
+
+        latest_tag_info = {
+          version: Dependabot::GithubActions::Version.new("0.0.24")
+        }
+        allow(fetcher).to receive(:latest_version_tag).and_return(latest_tag_info)
+        allow(fetcher).to receive(:shortened_semver_eq?).with("0.0.24", "0.0.24").and_return(true)
+        allow(fetcher).to receive(:current_version).and_return(Dependabot::GithubActions::Version.new("0.0.24"))
+
+        result = fetcher.release_list_for_git_dependency
+
+        expect(result).to eq(Dependabot::GithubActions::Version.new("0.0.24"))
+      end
+    end
+
+    describe "commit SHA handling scenarios" do
+      let(:dependency_version) { "abc123def456789012345678901234567890abcd" } # Looks like commit SHA
+
+      describe "when commit SHA ref has corresponding version tag" do
+        it "prioritizes version over commit SHA comparison" do
+          allow(fetcher).to receive(:git_commit_checker).and_return(git_commit_checker)
+          allow(git_commit_checker).to receive(:pinned?).and_return(true)
+          allow(git_commit_checker).to receive(:pinned_ref_looks_like_version?).and_return(false)
+          allow(git_commit_checker).to receive(:pinned_ref_looks_like_commit_sha?).and_return(true)
+          allow(git_commit_checker).to receive(:local_tag_for_pinned_sha).and_return("v0.0.24")
+
+          latest_tag_info = {
+            version: Dependabot::GithubActions::Version.new("0.0.24")
+          }
+          allow(fetcher).to receive(:latest_version_tag).and_return(latest_tag_info)
+
+          result = fetcher.release_list_for_git_dependency
+
+          # Should return version, not commit SHA
+          expect(result).to eq(Dependabot::GithubActions::Version.new("0.0.24"))
+        end
+      end
+
+      describe "when commit SHA ref has no corresponding version tag" do
+        it "falls back to commit SHA comparison" do
+          allow(fetcher).to receive(:git_commit_checker).and_return(git_commit_checker)
+          allow(git_commit_checker).to receive(:pinned?).and_return(true)
+          allow(git_commit_checker).to receive(:pinned_ref_looks_like_version?).and_return(false)
+          allow(git_commit_checker).to receive(:pinned_ref_looks_like_commit_sha?).and_return(true)
+          allow(git_commit_checker).to receive(:local_tag_for_pinned_sha).and_return(nil)
+
+          latest_tag_info = {
+            version: Dependabot::GithubActions::Version.new("0.0.24")
+          }
+          allow(fetcher).to receive(:latest_version_tag).and_return(latest_tag_info)
+          allow(fetcher).to receive(:latest_commit_for_pinned_ref).and_return("def456abc789def456abc789def456abc789def456")
+
+          result = fetcher.release_list_for_git_dependency
+
+          # Should return commit SHA when no local tag exists for the SHA
+          expect(result).to eq("def456abc789def456abc789def456abc789def456")
+        end
+      end
+    end
+
+    describe "backward compatibility with repos without version tags" do
+      let(:dependency_version) { "commit123abc456def789abc456def789abc456def78" }
+
+      it "falls back to commit SHA when no version tags exist" do
+        allow(fetcher).to receive(:git_commit_checker).and_return(git_commit_checker)
+        allow(git_commit_checker).to receive(:pinned?).and_return(true)
+        allow(git_commit_checker).to receive(:pinned_ref_looks_like_commit_sha?).and_return(true)
+        allow(fetcher).to receive(:latest_version_tag).and_return(nil) # No version tags
+        allow(fetcher).to receive(:latest_commit_for_pinned_ref).and_return("newest123abc456def789abc456def789abc456de")
+
+        result = fetcher.release_list_for_git_dependency
+
+        # Should return latest commit SHA when no version tags are available
+        expect(result).to eq("newest123abc456def789abc456def789abc456de")
+      end
+    end
+
+    describe "edge case: any pinned ref with version tags" do
+      let(:dependency_version) { "feature-branch" } # Neither version nor commit SHA
+
+      it "returns version when latest_version_tag is available" do
+        allow(fetcher).to receive(:git_commit_checker).and_return(git_commit_checker)
+        allow(git_commit_checker).to receive(:pinned?).and_return(true)
+        allow(git_commit_checker).to receive(:pinned_ref_looks_like_version?).and_return(false)
+        allow(git_commit_checker).to receive(:pinned_ref_looks_like_commit_sha?).and_return(false)
+
+        latest_tag_info = {
+          version: Dependabot::GithubActions::Version.new("0.0.24")
+        }
+        allow(fetcher).to receive(:latest_version_tag).and_return(latest_tag_info)
+
+        result = fetcher.release_list_for_git_dependency
+
+        # Should return version for any pinned ref when version tags exist
+        expect(result).to eq(Dependabot::GithubActions::Version.new("0.0.24"))
+      end
+    end
+
+    describe "no latest_version_tag available scenarios" do
+      describe "with commit SHA reference" do
+        let(:dependency_version) { "commit456def789abc456def789abc456def789abc45" }
+
+        it "falls back to commit SHA logic" do
+          allow(fetcher).to receive(:git_commit_checker).and_return(git_commit_checker)
+          allow(git_commit_checker).to receive(:pinned?).and_return(true)
+          allow(git_commit_checker).to receive(:pinned_ref_looks_like_commit_sha?).and_return(true)
+          allow(fetcher).to receive(:latest_version_tag).and_return(nil)
+          allow(fetcher).to receive(:latest_commit_for_pinned_ref).and_return("latest789abc456def789abc456def789abc456def")
+
+          result = fetcher.release_list_for_git_dependency
+
+          expect(result).to eq("latest789abc456def789abc456def789abc456def")
+        end
+      end
+
+      describe "with non-commit SHA reference" do
+        let(:dependency_version) { "random-ref" }
+
+        it "returns nil when no version tags and not a commit SHA" do
+          allow(fetcher).to receive(:git_commit_checker).and_return(git_commit_checker)
+          allow(git_commit_checker).to receive(:pinned?).and_return(true)
+          allow(git_commit_checker).to receive(:pinned_ref_looks_like_commit_sha?).and_return(false)
+          allow(fetcher).to receive(:latest_version_tag).and_return(nil)
+
+          result = fetcher.release_list_for_git_dependency
+
+          expect(result).to be_nil
+        end
+      end
+    end
+  end
 end
