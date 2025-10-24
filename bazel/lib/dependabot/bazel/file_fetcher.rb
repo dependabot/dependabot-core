@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "dependabot/file_fetchers"
@@ -11,7 +11,6 @@ module Dependabot
 
       WORKSPACE_FILES = T.let(%w(WORKSPACE WORKSPACE.bazel).freeze, T::Array[String])
       MODULE_FILES = T.let(%w(MODULE.bazel).freeze, T::Array[String])
-      BUILD_FILES = T.let(%w(BUILD BUILD.bazel).freeze, T::Array[String])
       CONFIG_FILES = T.let(%w(.bazelrc MODULE.bazel.lock).freeze, T::Array[String])
       SKIP_DIRECTORIES = T.let(%w(.git .bazel-* bazel-* node_modules .github).freeze, T::Array[String])
 
@@ -40,7 +39,6 @@ module Dependabot
         fetched_files = T.let([], T::Array[DependencyFile])
         fetched_files += workspace_files
         fetched_files += module_files
-        fetched_files += build_files
         fetched_files += config_files
 
         return fetched_files if fetched_files.any?
@@ -85,20 +83,6 @@ module Dependabot
       end
 
       sig { returns(T::Array[DependencyFile]) }
-      def build_files
-        files = T.let([], T::Array[DependencyFile])
-
-        BUILD_FILES.each do |filename|
-          file = fetch_file_if_present(filename)
-          files << file if file
-        end
-
-        files += fetch_build_files_from_subdirectories
-
-        files
-      end
-
-      sig { returns(T::Array[DependencyFile]) }
       def config_files
         files = T.let([], T::Array[DependencyFile])
 
@@ -109,24 +93,6 @@ module Dependabot
 
         bazelversion = fetch_file_if_present(".bazelversion")
         files << bazelversion if bazelversion
-
-        files
-      end
-
-      sig { returns(T::Array[DependencyFile]) }
-      def fetch_build_files_from_subdirectories
-        files = T.let([], T::Array[DependencyFile])
-
-        repo_contents.select { |item| item.type == "dir" }.each do |dir|
-          next if should_skip_directory?(dir.name)
-
-          BUILD_FILES.each do |build_filename|
-            build_file_path = File.join(dir.name, build_filename)
-
-            file = fetch_file_from_host(build_file_path)
-            files << file if file
-          end
-        end
 
         files
       end
