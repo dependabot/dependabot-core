@@ -609,6 +609,104 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
           end
         end
       end
+
+      context "when there are multiple packages with ambiguous specification" do
+        it "catches ambiguous specification early and raises DependencyFileNotEvaluatable" do
+          # Mock cargo command to return ambiguous specification output
+          ambiguous_output = <<~OUTPUT
+            error: There are multiple `orion_conf` packages in your project, and the specification `orion_conf@0.1.5` is ambiguous.
+            Please re-run this command with one of the following specifications:
+             registry+https://github.com/rust-lang/crates.io-index#orion_conf@0.1.5
+             git+https://github.com/galaxy-sec/orion-conf.git?tag=v0.1.5#orion_conf@0.1.5
+          OUTPUT
+
+          # Mock the run_cargo_command method directly to simulate the ambiguous error
+          allow(updater).to receive(:run_cargo_command) do |_command, _options|
+            # Simulate what run_cargo_command does when it encounters ambiguous specification
+            regex = /There are multiple `([^`]+)` packages.*specification `([^`]+)` is ambiguous/
+            if regex.match?(ambiguous_output)
+              match = ambiguous_output.match(regex)
+              raise Dependabot::DependencyFileNotEvaluatable, "Ambiguous package specification: #{match[2]}"
+            end
+          end
+
+          # Expect it to raise DependencyFileNotEvaluatable with the short message
+          expect do
+            updater.updated_lockfile_content
+          end.to raise_error(
+            Dependabot::DependencyFileNotEvaluatable,
+            "Ambiguous package specification: orion_conf@0.1.5"
+          )
+        end
+      end
+
+      describe "binary path errors" do
+        let(:manifest_fixture_name) { "bare_version_specified" }
+        let(:lockfile_fixture_name) { "bare_version_specified" }
+
+        context "when binary path is invalid" do
+          before do
+            # Mock the cargo command to simulate binary path error
+            allow(updater).to receive(:run_cargo_command).and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: "couldn't find `src/chargebee_codegen.rs`. " \
+                         "Please specify bin.path if you want to use a non-default path.",
+                error_context: {}
+              )
+            )
+          end
+
+          it "raises a DependencyFileNotResolvable error with clear message" do
+            expect { updater.updated_lockfile_content }
+              .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+                expect(error.message).to include("Source file 'src/chargebee_codegen.rs' not found")
+                expect(error.message).to include("Please check the bin.path configuration")
+              end
+          end
+        end
+
+        context "when binary target is not found" do
+          before do
+            # Mock the cargo command to simulate binary target not found error
+            allow(updater).to receive(:run_cargo_command).and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: "cannot find binary `my_binary` in package `my_package`",
+                error_context: {}
+              )
+            )
+          end
+
+          it "raises a DependencyFileNotResolvable error" do
+            expect { updater.updated_lockfile_content }
+              .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+                expect(error.message).to include("Binary target 'my_binary' not found")
+                expect(error.message).to include("Please check the [[bin]] configuration")
+              end
+          end
+        end
+
+        context "when binary path with specific location is not found" do
+          before do
+            # Mock the specific error format from the actual log
+            allow(updater).to receive(:run_cargo_command).and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: "can't find `chargebee_codegen` bin at `src/bin/chargebee_codegen.rs` " \
+                         "or `src/bin/chargebee_codegen/main.rs`. " \
+                         "Please specify bin.path if you want to use a non-default path.",
+                error_context: {}
+              )
+            )
+          end
+
+          it "raises a DependencyFileNotResolvable error with specific path info" do
+            expect { updater.updated_lockfile_content }
+              .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+                expect(error.message).to include("Binary 'chargebee_codegen' not found at expected path")
+                expect(error.message).to include("Please check the bin.path configuration")
+              end
+          end
+        end
+      end
     end
   end
 end

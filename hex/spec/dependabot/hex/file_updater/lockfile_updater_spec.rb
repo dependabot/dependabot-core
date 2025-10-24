@@ -223,6 +223,51 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
       end
     end
 
+    context "when SharedHelpers::HelperSubprocessFailed is raised" do
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+          .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                       message: error_message,
+                       error_context: {}
+                     ))
+      end
+
+      context "with unauthenticated access to a private repo" do
+        let(:error_message) do
+          "No authenticated organization found for dependabot."
+        end
+
+        it "raises a PrivateSourceAuthenticationFailure error" do
+          expect { updated_lockfile_content }
+            .to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
+              expect(error.source).to eq("dependabot")
+            end
+        end
+      end
+
+      context "with JSON parsing error" do
+        let(:error_message) { "Failed to parse JSON response from helper" }
+
+        it "raises a DependencyFileNotResolvable error" do
+          expect { updated_lockfile_content }
+            .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+              expect(error.message).to include("Failed to parse response from Hex helper")
+            end
+        end
+      end
+
+      context "with unknown mix run error" do
+        let(:error_message) { "Unknown subprocess error occurred" }
+
+        it "raises a DependencyFileNotResolvable error" do
+          expect { updated_lockfile_content }
+            .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+              expect(error.message).to include("Failed to update lockfile")
+            end
+        end
+      end
+    end
+
     context "with a mix.exs that opens another file in a required file" do
       let(:mixfile_fixture_name) { "loads_file_with_require" }
       let(:lockfile_fixture_name) { "exact_version" }

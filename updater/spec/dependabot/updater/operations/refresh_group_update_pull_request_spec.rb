@@ -42,24 +42,19 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
   let(:job) do
     Dependabot::Job.new_update_job(
       job_id: "1558782000",
-      job_definition: job_definition_with_fetched_files
+      job_definition:
     )
   end
 
   let(:dependency_snapshot) do
     Dependabot::DependencySnapshot.create_from_job_definition(
       job: job,
-      job_definition: job_definition_with_fetched_files
+      fetched_files:
     )
   end
 
-  let(:job_definition_with_fetched_files) do
-    job_definition.merge(
-      {
-        "base_commit_sha" => "mock-sha",
-        "base64_dependency_files" => encode_dependency_files(dependency_files)
-      }
-    )
+  let(:fetched_files) do
+    Dependabot::FetchedFiles.new(base_commit_sha: "mock-sha", dependency_files:)
   end
 
   let(:mock_error_handler) do
@@ -101,6 +96,20 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
   before do
     allow(dependency_snapshot).to receive(:ecosystem).and_return(ecosystem)
     allow(job).to receive(:package_manager).and_return("bundler")
+  end
+
+  describe "#group" do
+    context "when dependency_snapshot has a job_group" do
+      it "returns the dependency group from the snapshot" do
+        expect(refresh_group.group).to be_a(Dependabot::DependencyGroup)
+        expect(refresh_group.group.name).to eq("everything-everywhere-all-at-once")
+      end
+
+      it "allows access to group properties required by GroupUpdateCreation module" do
+        expect { refresh_group.group.name }.not_to raise_error
+        expect(refresh_group.group.name).to be_a(String)
+      end
+    end
   end
 
   describe "#perform" do

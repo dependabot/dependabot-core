@@ -177,6 +177,11 @@ module Dependabot
 
         sig { params(dep: Dependabot::Dependency).returns(String) }
         def updated_version(dep)
+          unless target_version
+            raise "Cannot update property: target version is nil. " \
+                  "This may indicate an issue with version resolution for dependency #{dep.name}"
+          end
+
           T.must(version_string(dep)).gsub("${#{property_name}}", T.must(target_version).to_s)
         end
 

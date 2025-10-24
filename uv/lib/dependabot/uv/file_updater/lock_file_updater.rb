@@ -23,6 +23,10 @@ module Dependabot
 
         REQUIRED_FILES = %w(pyproject.toml uv.lock).freeze # At least one of these files should be present
 
+        UV_UNRESOLVABLE_REGEX = T.let(/× No solution found when resolving dependencies.*[\s\S]*$/, Regexp)
+        RESOLUTION_IMPOSSIBLE_ERROR = T.let("ResolutionImpossible", String)
+        UV_BUILD_FAILED_REGEX = T.let(/× Failed to build.*[\s\S]*$/, Regexp)
+
         sig { returns(T::Array[Dependency]) }
         attr_reader :dependencies
 
@@ -208,6 +212,48 @@ module Dependabot
               File.read("uv.lock")
             end
           end
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          handle_uv_error(e)
+        end
+
+        sig do
+          params(
+            error: SharedHelpers::HelperSubprocessFailed
+          )
+            .returns(T.noreturn)
+        end
+        def handle_uv_error(error)
+          error_message = error.message
+          error_message_patterns = ["No solution found when resolving dependencies", "Failed to build"]
+
+          if error_message_patterns.any? { |value| error_message.include?(value) }
+            match_unresolvable_regex = error_message.scan(UV_UNRESOLVABLE_REGEX).last
+            match_failed_to_build_regex = error_message.scan(UV_BUILD_FAILED_REGEX).last
+
+            if match_unresolvable_regex
+              formatted_error = if match_unresolvable_regex.is_a?(Array)
+                                  match_unresolvable_regex.join
+                                else
+                                  match_unresolvable_regex
+                                end
+            end
+
+            if match_failed_to_build_regex
+              formatted_error = if match_failed_to_build_regex.is_a?(Array)
+                                  match_failed_to_build_regex.join
+                                else
+                                  match_failed_to_build_regex
+                                end
+            end
+
+            raise Dependabot::DependencyFileNotResolvable, formatted_error
+          end
+
+          if error_message.include?(RESOLUTION_IMPOSSIBLE_ERROR)
+            raise Dependabot::DependencyFileNotResolvable, error_message
+          end
+
+          raise error
         end
 
         sig { returns(T.nilable(String)) }

@@ -18,21 +18,6 @@ module Dependabot
 
       SUPPORTED_BUILD_FILE_NAMES = %w(build.gradle build.gradle.kts gradle.lockfile).freeze
 
-      sig { override.returns(T::Array[Regexp]) }
-      def self.updated_files_regex
-        [
-          # Matches build.gradle or build.gradle.kts in root directory
-          %r{(^|.*/)build\.gradle(\.kts)?$},
-          # Matches gradle/libs.versions.toml in root or any subdirectory
-          %r{(^|.*/)?gradle/libs\.versions\.toml$},
-          # Matches settings.gradle or settings.gradle.kts in root or any subdirectory
-          %r{(^|.*/)settings\.gradle(\.kts)?$},
-          # Matches dependencies.gradle in root or any subdirectory
-          %r{(^|.*/)dependencies\.gradle$},
-          %r{(^|.*/)?gradle.lockfile$}
-        ]
-      end
-
       sig { override.returns(T::Array[::Dependabot::DependencyFile]) }
       def updated_dependency_files
         updated_files = buildfiles.dup
