@@ -80,16 +80,15 @@ module Dependabot
       # Utility method to allow collaborators to check other go commands inside the parsed project's context
       sig { params(command: String).returns(String) }
       def run_in_parsed_context(command)
-        SharedHelpers.in_a_temporary_directory do |path|
-          # Create a fake empty module for each local module so that
-          # `go mod edit` works, even if some modules have been `replace`d with
-          # a local module that we don't have access to.
-          local_replacements.each do |_, stub_path|
-            FileUtils.mkdir_p(stub_path)
-            FileUtils.touch(File.join(stub_path, "go.mod"))
+        SharedHelpers.in_a_temporary_repo_directory(source.directory, repo_contents_path) do |path|
+          # Create a fake empty module for modules that are not inside the repository.
+          # This allows us to run go commands that require all modules to be present,
+          # however this is not appropriate for `go mod tidy` which will remove unused modules.
+          local_replacements.each do |local_path, _|
+            FileUtils.mkdir_p(local_path)
+            FileUtils.touch(File.join(local_path, "go.mod"))
           end
 
-          File.write("go.mod", go_mod_content)
           stdout, stderr, status = Open3.capture3(command)
           handle_parser_error(path, stderr) unless status.success?
 
