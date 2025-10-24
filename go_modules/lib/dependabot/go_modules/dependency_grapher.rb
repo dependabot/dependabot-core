@@ -75,8 +75,6 @@ module Dependabot
       # TODO: Re-instate method once we consider how we are handling `replace` directives
       sig { returns(T::Hash[String, T.untyped]) }
       def fetch_package_relationships
-        {}
-
         T.cast(
           file_parser,
           Dependabot::GoModules::FileParser
