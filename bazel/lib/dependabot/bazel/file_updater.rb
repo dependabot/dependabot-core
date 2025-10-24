@@ -1,4 +1,4 @@
-# typed: strong
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/file_updaters"
@@ -9,37 +9,105 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base
       extend T::Sig
 
+      require_relative "file_updater/bzlmod_file_updater"
+      require_relative "file_updater/workspace_file_updater"
+      require_relative "file_updater/declaration_parser"
+
       sig { returns(T::Array[Regexp]) }
-      def updated_files_regex
-        # TODO: Define regex patterns for files this updater can handle
-        # Example: [/^manifest\.json$/]
-        []
+      def self.updated_files_regex
+        [
+          /^MODULE\.bazel$/,
+          %r{^(?:.*/)?MODULE\.bazel$},
+          /^WORKSPACE$/,
+          %r{^(?:.*/)?WORKSPACE\.bazel$},
+          %r{^(?:.*/)?BUILD$},
+          %r{^(?:.*/)?BUILD\.bazel$}
+        ]
       end
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
-        updated_files = []
+        updated_files = T.let([], T::Array[Dependabot::DependencyFile])
 
-        # TODO: Implement file update logic
-        # For each file that needs updating:
-        # 1. Get the original file content
-        # 2. Update it with new dependency versions
-        # 3. Add to updated_files array
-        # Example:
-        # manifest = dependency_files.find { |f| f.name == "manifest.json" }
-        # updated_files << updated_file(file: manifest, content: new_content)
+        dependencies.each do |dependency|
+          if bzlmod_dependency?(dependency)
+            updated_files.concat(update_bzlmod_dependency(dependency))
+          elsif workspace_dependency?(dependency)
+            updated_files.concat(update_workspace_dependency(dependency))
+          end
+        end
 
-        updated_files
+        updated_files.uniq
       end
 
       private
 
       sig { override.void }
       def check_required_files
-        # TODO: Verify that all required files are present
-        # Example:
-        # return if get_original_file("manifest.json")
-        # raise "No manifest.json file found!"
+        return if module_files.any? || workspace_files.any?
+
+        raise Dependabot::DependencyFileNotFound.new(
+          nil,
+          "No MODULE.bazel or WORKSPACE file found!"
+        )
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def module_files
+        @module_files ||= T.let(
+          dependency_files.select { |f| f.name.end_with?("MODULE.bazel") },
+          T.nilable(T::Array[Dependabot::DependencyFile])
+        )
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def workspace_files
+        @workspace_files ||= T.let(
+          dependency_files.select do |f|
+            f.name == "WORKSPACE" || f.name.end_with?("WORKSPACE.bazel")
+          end,
+          T.nilable(T::Array[Dependabot::DependencyFile])
+        )
+      end
+
+      sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
+      def bzlmod_dependency?(dependency)
+        dependency.requirements.any? { |req| req[:file]&.end_with?("MODULE.bazel") }
+      end
+
+      sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
+      def workspace_dependency?(dependency)
+        dependency.requirements.any? do |req|
+          req[:file] == "WORKSPACE" || req[:file]&.end_with?("WORKSPACE.bazel")
+        end
+      end
+
+      sig { params(dependency: Dependabot::Dependency).returns(T::Array[Dependabot::DependencyFile]) }
+      def update_bzlmod_dependency(dependency)
+        bzlmod_updater = BzlmodFileUpdater.new(
+          dependency_files: dependency_files,
+          dependencies: [dependency],
+          credentials: credentials
+        )
+        bzlmod_updater.updated_module_files
+      end
+
+      sig { params(dependency: Dependabot::Dependency).returns(T::Array[Dependabot::DependencyFile]) }
+      def update_workspace_dependency(dependency)
+        workspace_updater = WorkspaceFileUpdater.new(
+          dependency_files: dependency_files,
+          dependencies: [dependency],
+          credentials: credentials
+        )
+        workspace_updater.updated_workspace_files
+      end
+
+      sig { params(file: Dependabot::DependencyFile).returns(T::Array[Dependabot::Dependency]) }
+      def relevant_dependencies_for_file(file)
+        dependencies.select do |dependency|
+          dependency.package_manager == "bazel" &&
+            dependency.requirements.any? { |req| req[:file] == file.name }
+        end
       end
     end
   end
