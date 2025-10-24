@@ -10,7 +10,7 @@ require "dependabot/bazel/update_checker"
 RSpec.describe Dependabot::Bazel::UpdateChecker::RegistryClient do
   let(:credentials) { [] }
   let(:client) { described_class.new(credentials: credentials) }
-  let(:github_client) { double("github_client") }
+  let(:github_client) { double("github_client") } # rubocop:disable RSpec/VerifiedDoubles
 
   before do
     allow(client).to receive(:github_client).and_return(github_client)

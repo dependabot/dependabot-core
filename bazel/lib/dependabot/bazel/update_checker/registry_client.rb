@@ -8,7 +8,6 @@ require "dependabot/shared_helpers"
 require "dependabot/clients/github_with_retries"
 require "dependabot/dependency"
 require "dependabot/errors"
-require "base64"
 
 module Dependabot
   module Bazel
@@ -17,7 +16,7 @@ module Dependabot
         extend T::Sig
 
         GITHUB_REPO = T.let("bazelbuild/bazel-central-registry", String)
-        RAW_BASE = T.let("https://raw.githubusercontent.com/#{GITHUB_REPO}/main", String)
+        RAW_BASE = T.let("https://raw.githubusercontent.com/#{GITHUB_REPO}/main".freeze, String)
 
         sig { params(credentials: T::Array[Dependabot::Credential]).void }
         def initialize(credentials:)
@@ -73,7 +72,7 @@ module Dependabot
 
             decoded_content = Base64.decode64(content.content)
             JSON.parse(decoded_content)
-          rescue => e
+          rescue StandardError => e
             Dependabot.logger.warn("Failed to get source for #{module_name}@#{version}: #{e.message}")
             nil
           end
@@ -88,7 +87,7 @@ module Dependabot
             return nil unless content
 
             Base64.decode64(content.content)
-          rescue => e
+          rescue StandardError => e
             Dependabot.logger.warn("Failed to get MODULE.bazel for #{module_name}@#{version}: #{e.message}")
             nil
           end
@@ -108,7 +107,7 @@ module Dependabot
             return nil unless commits&.any?
 
             commits.first.commit.committer.date
-          rescue => e
+          rescue StandardError => e
             Dependabot.logger.warn("Failed to get release date for #{module_name} #{version}: #{e.message}")
             nil
           end
