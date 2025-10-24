@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?pde version="3.8"?>
+<target name="example">
+	<locations>
+		<location path="/tmp/dummy/" type="Directory"/>
+		<location includeDependencyDepth="none" includeSource="true" label="An old version of commons-io" missingManifest="error" type="Maven">
+			<dependencies>
+				<dependency>
+					<groupId>commons-io</groupId>
+					<artifactId>commons-io</artifactId>
+					<version>2.11.0</version>
+					<type>jar</type>
+				</dependency>
+			</dependencies>
+		</location>
+		<location path="${eclipse_home}" type="Profile"/>
+	</locations>
+</target>

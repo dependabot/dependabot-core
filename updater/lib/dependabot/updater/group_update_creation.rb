@@ -427,6 +427,9 @@ module Dependabot
         version = version_class.new(dependency.version.to_s)
         latest_version = version_class.new(checker.latest_version)
 
+        # For Cargo, use the package manager's specific semantic versioning rules
+        return cargo_update_type_allowed?(group, version, latest_version) if job.package_manager == "cargo"
+
         # Not every version class implements .major, .minor, .patch so we calculate it here from the segments
         latest = semver_segments(latest_version)
         current = semver_segments(version)
@@ -449,6 +452,17 @@ module Dependabot
           minor: version.segments[1] || 0,
           patch: version.segments[2] || 0
         }
+      end
+
+      sig { params(group: T.untyped, version: Gem::Version, latest_version: Gem::Version).returns(T::Boolean) }
+      def cargo_update_type_allowed?(group, version, latest_version)
+        return true unless Dependabot::Cargo::Version.respond_to?(:update_type)
+
+        actual_update_type = Dependabot::Cargo::Version.update_type(version.to_s, latest_version.to_s)
+        group_update_types = T.cast(group.rules["update-types"], T.nilable(T::Array[String]))
+        return true unless group_update_types
+
+        group_update_types.include?(actual_update_type)
       end
 
       sig { params(checker: Dependabot::UpdateCheckers::Base).returns(Symbol) }

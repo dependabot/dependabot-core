@@ -77,7 +77,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
 
     after { FileUtils.rm_rf(repo_contents_path) }
 
-    it "pulls files from lfs after cloning" do
+    it "pulls files from lfs after cloning", skip: "External issue - waiting for resolution" do
       # Calling #files triggers the clone
       expect(file_fetcher_instance.files.map(&:name)).to contain_exactly("package.json", "yarn.lock", ".yarnrc.yml")
       expect(

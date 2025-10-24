@@ -1,4 +1,4 @@
-﻿using System.Collections.Immutable;
+using System.Collections.Immutable;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -10,16 +10,36 @@ public class PullRequestConverter : JsonConverter<PullRequest>
 {
     public override PullRequest? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        if (reader.TokenType != JsonTokenType.StartArray)
+        PullRequest? result;
+        switch (reader.TokenType)
         {
-            throw new JsonException("expected array of pull request dependencies");
+            case JsonTokenType.StartArray:
+                // old format, array of arrays of dependencies
+                var dependencies = JsonSerializer.Deserialize<ImmutableArray<PullRequestDependency>>(ref reader, options);
+                result = new PullRequest()
+                {
+                    Dependencies = dependencies
+                };
+                break;
+            case JsonTokenType.StartObject:
+                // new format, direct object
+                // use the same deserializer options but exclude this special converter
+                var optionsWithoutThisCustomConverter = new JsonSerializerOptions(options);
+                for (int i = optionsWithoutThisCustomConverter.Converters.Count - 1; i >= 0; i--)
+                {
+                    if (optionsWithoutThisCustomConverter.Converters[i].GetType() == typeof(PullRequestConverter))
+                    {
+                        optionsWithoutThisCustomConverter.Converters.RemoveAt(i);
+                    }
+                }
+
+                result = JsonSerializer.Deserialize<PullRequest>(ref reader, optionsWithoutThisCustomConverter);
+                break;
+            default:
+                throw new JsonException("expected pull request object or array of pull request dependencies");
         }
 
-        var dependencies = JsonSerializer.Deserialize<ImmutableArray<PullRequestDependency>>(ref reader, options);
-        return new PullRequest()
-        {
-            Dependencies = dependencies
-        };
+        return result;
     }
 
     public override void Write(Utf8JsonWriter writer, PullRequest value, JsonSerializerOptions options)

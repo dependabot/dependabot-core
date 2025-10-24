@@ -16,6 +16,7 @@ module Dependabot
       # ARG PY_3_13=3.13.2
       # When updating this list, also update python/lib/dependabot/python/language.rb
       PRE_INSTALLED_PYTHON_VERSIONS_RAW = %w(
+        3.14.0
         3.13.5
         3.12.11
         3.11.13
