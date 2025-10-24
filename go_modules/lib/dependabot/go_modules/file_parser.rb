@@ -89,6 +89,9 @@ module Dependabot
             FileUtils.touch(File.join(local_path, "go.mod"))
           end
 
+          # This makes testing easier and should be a no-op in production.
+          File.write("go.mod", go_mod_content)
+
           stdout, stderr, status = Open3.capture3(command)
           handle_parser_error(path, stderr) unless status.success?
 
