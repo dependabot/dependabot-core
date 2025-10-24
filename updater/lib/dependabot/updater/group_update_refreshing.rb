@@ -106,22 +106,16 @@ module Dependabot
         return false unless pr_number
 
         begin
-          pull_request = fetch_pull_request(pr_number)
+          pull_request = T.let(
+            T.unsafe(github_client).pull_request(job.source.repo, pr_number),
+            T.untyped
+          )
           # A PR with more than 1 commit indicates manual modifications
           pull_request.commits > 1
         rescue Octokit::NotFound
           # PR doesn't exist, so it hasn't been modified
           false
         end
-      end
-
-      # Fetches a pull request from GitHub
-      sig { params(pr_number: Integer).returns(T.untyped) }
-      def fetch_pull_request(pr_number)
-        T.let(
-          T.unsafe(github_client).pull_request(job.source.repo, pr_number),
-          T.untyped
-        )
       end
 
       # Extracts the PR number for an existing grouped pull request
