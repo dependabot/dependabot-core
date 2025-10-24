@@ -1229,6 +1229,88 @@ RSpec.describe Dependabot::Python::FileFetcher do
       end
     end
 
+    context "with pyproject.toml and requirements.txt in subdirectories" do
+      let(:repo_contents) do
+        fixture("github", "contents_pyproject_with_subdirs.json")
+      end
+
+      before do
+        stub_request(:get, url + "pyproject.toml?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "pyproject_simple_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        # Stub subdirectory listings - they contain requirements.txt files
+        stub_request(:get, url + "docs?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_docs_dir.json"),
+            headers: json_header
+          )
+
+        stub_request(:get, url + "tests?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_tests_dir.json"),
+            headers: json_header
+          )
+
+        # Stub the requirements.txt files in subdirectories
+        stub_request(:get, url + "docs/requirements.txt?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "docs_requirements_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "tests/requirements.txt?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "tests_requirements_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "fetches only the pyproject.toml and not subdirectory requirements.txt files" do
+        expect(file_fetcher_instance.files.count).to eq(1)
+        expect(file_fetcher_instance.files.map(&:name))
+          .to match_array(%w(pyproject.toml))
+        expect(file_fetcher_instance.files.map(&:name))
+          .not_to include("docs/requirements.txt")
+        expect(file_fetcher_instance.files.map(&:name))
+          .not_to include("tests/requirements.txt")
+      end
+
+      context "but requirements.txt references a subdirectory file" do
+        let(:repo_contents) do
+          fixture("github", "contents_pyproject_with_subdirs_and_root_req.json")
+        end
+
+        before do
+          stub_request(:get, url + "requirements.txt?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: fixture("github", "requirements_with_docs_ref.json"),
+              headers: { "content-type" => "application/json" }
+            )
+        end
+
+        it "fetches the root requirements.txt and the referenced docs/requirements.txt" do
+          expect(file_fetcher_instance.files.count).to eq(3)
+          expect(file_fetcher_instance.files.map(&:name))
+            .to match_array(%w(pyproject.toml requirements.txt docs/requirements.txt))
+        end
+      end
+    end
+
     context "with a very large requirements.txt file" do
       let(:repo_contents) do
         fixture("github", "contents_python_large_requirements_txt.json")

@@ -1,0 +1,18 @@
+{
+  "name": "pyproject.toml",
+  "path": "pyproject.toml",
+  "sha": "test1234567890",
+  "size": 145,
+  "url": "https://api.github.com/repos/test/repo/contents/pyproject.toml?ref=sha",
+  "html_url": "https://github.com/test/repo/blob/main/pyproject.toml",
+  "git_url": "https://api.github.com/repos/test/repo/git/blobs/test1234567890",
+  "download_url": "https://raw.githubusercontent.com/test/repo/main/pyproject.toml",
+  "type": "file",
+  "content": "W3Rvb2wucG9ldHJ5XQpuYW1lID0gInRlc3QtcHJvamVjdCIKdmVyc2lvbiA9ICIwLjEuMCIKZGVzY3JpcHRpb24gPSAiVGVzdCBwcm9qZWN0IgoKW3Rvb2wucG9ldHJ5LmRlcGVuZGVuY2llc10KcHl0aG9uID0gIl4zLjgiCnJlcXVlc3RzID0gIl4yLjI4LjAiCg==\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/test/repo/contents/pyproject.toml?ref=sha",
+    "git": "https://api.github.com/repos/test/repo/git/blobs/test1234567890",
+    "html": "https://github.com/test/repo/blob/main/pyproject.toml"
+  }
+}
