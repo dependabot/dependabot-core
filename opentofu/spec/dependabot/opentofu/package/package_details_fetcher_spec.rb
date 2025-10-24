@@ -11,10 +11,19 @@ require "excon"
 RSpec.describe Dependabot::Opentofu::Package::PackageDetailsFetcher do
   let(:dependency) do
     Dependabot::Dependency.new(
-      name: "github.com/terraform-aws-modules/iam/aws",
+      name: "github.com/integrations/terraform-provider-github",
       version: "1.0.0",
       package_manager: "opentofu",
-      requirements: [],
+      requirements: [{
+        requirement: "~> 6.6.0",
+        groups: [],
+        file: "main.tf",
+        source: {
+          type: "registry",
+          registry_hostname: "registry.opentofu.org",
+          module_identifier: "hashicorp/aws"
+        }
+      }],
       previous_requirements: []
     )
   end
@@ -43,63 +52,49 @@ RSpec.describe Dependabot::Opentofu::Package::PackageDetailsFetcher do
   end
 
   describe "#fetch_tag_and_release_date" do
-    let(:response_body) do
-      [
-        { "tag_name" => "v1.0.0", "published_at" => "2023-01-01T00:00:00Z" },
-        { "tag_name" => "v0.9.0", "published_at" => "2022-12-01T00:00:00Z" }
-      ].to_json
-    end
-
-    before do
-      allow(Excon).to receive(:get).and_return(instance_double(Excon::Response, status: 200, body: response_body))
-    end
-
-    it "fetches and parses release tags and dates" do
+    it "fetches and parses release tags and dates", :vcr do
       result = fetcher.fetch_tag_and_release_date
-      expect(result).to contain_exactly(
-        have_attributes(tag: "v1.0.0", release_date: "2023-01-01T00:00:00Z"),
-        have_attributes(tag: "v0.9.0", release_date: "2022-12-01T00:00:00Z")
+      expect(result).to include(
+        an_object_having_attributes(tag: "v6.5.0", release_date: "2025-01-17T01:19:11Z")
       )
     end
   end
 
   describe "#fetch_tag_and_release_date_from_provider" do
-    let(:response_body) do
-      {
-        "provider_versions" => [
-          { "version" => "v1.0.0", "published_at" => "2023-01-01T00:00:00Z" },
-          { "version" => "v0.9.0", "published_at" => "2022-12-01T00:00:00Z" }
-        ]
-      }.to_json
-    end
-
-    before do
-      allow(Excon).to receive(:get).and_return(instance_double(Excon::Response, status: 200, body: response_body))
-    end
-
-    it "fetches and parses provider release tags and dates since identifier is passed nil" do
+    it "fetches and parses provider release tags and dates", :vcr do
       result = fetcher.fetch_tag_and_release_date_from_provider
-      expect(result).to be_empty
+      expect(result).to include(
+        an_object_having_attributes(tag: "v6.9.0", release_date: "2025-08-14T17:01:10Z")
+      )
     end
   end
 
   describe "#fetch_tag_and_release_date_from_module" do
-    let(:response_body) do
-      {
-        "module-versions" => [
-          { "version" => "v1.0.0", "published_at" => "2023-01-01T00:00:00Z" },
-          { "version" => "v0.9.0", "published_at" => "2022-12-01T00:00:00Z" }
-        ]
-      }.to_json
+    # Create a new dependency for the module test since the dependency
+    # on the class is not a module
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "github.com/integrations/terraform-provider-github",
+        version: "1.0.0",
+        package_manager: "opentofu",
+        requirements: [{
+          requirement: "~> 6.6.0",
+          groups: [],
+          file: "main.tf",
+          source: {
+            type: "registry",
+            registry_hostname: "registry.opentofu.org",
+            module_identifier: "terraform-aws-modules/rds/aws"
+          }
+        }],
+        previous_requirements: []
+      )
     end
-
-    before do
-      allow(Excon).to receive(:get).and_return(instance_double(Excon::Response, status: 200, body: response_body))
-    end
-
-    it "fetches and parses module release tags and dates since identifier is passed nil" do
+    it "fetches and parses module release tags and dates", :vcr do
       result = fetcher.fetch_tag_and_release_date_from_module
-      expect(result).to be_empty
+      expect(result).to include(
+        an_object_having_attributes(tag: "v6.12.0", release_date: "2025-04-21T23:05:43Z")
+      )
     end
   end
 end
