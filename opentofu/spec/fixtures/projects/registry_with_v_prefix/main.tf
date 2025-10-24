@@ -1,15 +1,15 @@
 module "consul" {
-  source = "hashicorp/consul/aws"
+  source  = "hashicorp/consul/aws"
   version = "v0.1.0"
 }
 
 module "vpc" {
-  source = "app.opentofu.io/example_corp/vpc/aws"
+  source  = "registry.opentofu.org/example_corp/vpc/aws"
   version = "v0.9.3"
 }
 
 module "rds" {
-  source = "terraform-aws-modules/rds/aws"
+  source  = "terraform-aws-modules/rds/aws"
   version = "~> v1.0.0"
 }
 
