@@ -52,6 +52,7 @@ Sentry.init do |config|
     silent|
     swift|
     terraform|
+    opentofu|
     uv|
     vcpkg|
   )}x
@@ -92,5 +93,6 @@ require "dependabot/rust_toolchain"
 require "dependabot/silent"
 require "dependabot/swift"
 require "dependabot/terraform"
+require "dependabot/opentofu"
 require "dependabot/uv"
 require "dependabot/vcpkg"

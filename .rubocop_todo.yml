@@ -130,6 +130,7 @@ RSpec/OverwritingSetup:
     - 'docker/spec/dependabot/docker/file_updater_spec.rb'
     - 'gradle/spec/dependabot/gradle/update_checker/version_finder_spec.rb'
     - 'maven/spec/dependabot/maven/update_checker/version_finder_spec.rb'
+    - 'opentofu/spec/dependabot/opentofu/file_parser_spec.rb'
     - 'python/spec/dependabot/python/update_checker/pip_version_resolver_spec.rb'
     - 'python/spec/dependabot/python/update_checker_spec.rb'
     - 'terraform/spec/dependabot/terraform/file_parser_spec.rb'
@@ -139,6 +140,22 @@ RSpec/OverwritingSetup:
 RSpec/RepeatedExample:
   Exclude:
     - 'terraform/spec/dependabot/terraform/registry_client_spec.rb'
+    - 'opentofu/spec/dependabot/opentofu/registry_client_spec.rb'
+
+# Offense count: 15
+Metrics/CyclomaticComplexity:
+  Exclude:
+    - 'updater/lib/github_api/dependency_submission.rb'
+
+# Offense count: 354/350
+Metrics/AbcSize:
+  Exclude:
+    - 'opentofu/lib/dependabot/opentofu/file_parser.rb'
+
+# Offense count: 354/350
+Metrics/ClassLength:
+  Exclude:
+    - 'opentofu/lib/dependabot/opentofu/file_parser.rb'
 
 # Offense count: 8
 RSpec/RepeatedExampleGroupBody:
