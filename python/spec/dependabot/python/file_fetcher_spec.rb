@@ -1287,6 +1287,28 @@ RSpec.describe Dependabot::Python::FileFetcher do
         expect(file_fetcher_instance.files.map(&:name))
           .not_to include("tests/requirements.txt")
       end
+
+      context "but requirements.txt references a subdirectory file" do
+        let(:repo_contents) do
+          fixture("github", "contents_pyproject_with_subdirs_and_root_req.json")
+        end
+
+        before do
+          stub_request(:get, url + "requirements.txt?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: fixture("github", "requirements_with_docs_ref.json"),
+              headers: { "content-type" => "application/json" }
+            )
+        end
+
+        it "fetches the root requirements.txt and the referenced docs/requirements.txt" do
+          expect(file_fetcher_instance.files.count).to eq(3)
+          expect(file_fetcher_instance.files.map(&:name))
+            .to match_array(%w(pyproject.toml requirements.txt docs/requirements.txt))
+        end
+      end
     end
 
     context "with a very large requirements.txt file" do
