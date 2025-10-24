@@ -256,7 +256,7 @@ RSpec.describe Dependabot::GithubActions::Package::PackageDetailsFetcher do
   # Comprehensive tests for the version-first comparison fix in release_list_for_git_dependency
   describe "#release_list_for_git_dependency version prioritization fix" do
     let(:upload_pack_fixture) { "private-repo-with-version-prefixes" }
-    let(:dependency_name) { "virtusaEAG/.github-private" }
+    let(:dependency_name) { "example-org/.github-private" }
     let(:reference) { dependency_version }
     let(:dependency_source) do
       {

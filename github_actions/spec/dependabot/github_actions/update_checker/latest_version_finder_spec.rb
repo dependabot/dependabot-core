@@ -288,7 +288,7 @@ RSpec.describe namespace::LatestVersionFinder do
   # This addresses the bug where commit SHAs were returned instead of version tags
   describe "version-first comparison logic" do
     let(:upload_pack_fixture) { "private-repo-with-version-prefixes" }
-    let(:dependency_name) { "virtusaEAG/.github-private" }
+    let(:dependency_name) { "example-org/.github-private" }
 
     let(:dependency_source) do
       {
@@ -346,7 +346,7 @@ RSpec.describe namespace::LatestVersionFinder do
 
           expect(result).to be_a(Dependabot::GithubActions::Version)
           expect(result.to_s).to eq("0.0.24")
-          expect(result.to_s).not_to eq("01177ce7a176275e51f6657eead3466170f10047") # Customer's problematic commit SHA
+          expect(result.to_s).not_to eq("01177ce7a176275e51f6657eead3466170f10047") # Problematic commit SHA case
         end
       end
     end
