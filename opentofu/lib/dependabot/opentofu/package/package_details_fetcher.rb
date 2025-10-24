@@ -15,13 +15,11 @@ module Dependabot
         extend T::Sig
 
         RELEASES_URL_GIT = "https://api.github.com/repos/"
-        RELEASE_URL_FOR_PROVIDER = "https://registry.opentofu.org/v2/providers/"
-        RELEASE_URL_FOR_MODULE = "https://registry.opentofu.org/v2/modules/"
+        RELEASE_URL_FOR_PROVIDER = "https://api.opentofu.org/registry/docs/providers/"
+        RELEASE_URL_FOR_MODULE = "https://api.opentofu.org/registry/docs/modules/"
         APPLICATION_JSON = "JSON"
-        INCLUDE_FOR_PROVIDER = "?include=provider-versions"
-        INCLUDE_FOR_MODULE = "?include=module-versions"
-        # https://registry.opentofu.org/v2/providers/hashicorp/aws?include=provider-versions
-        # https://registry.opentofu.org/v2/modules/terraform-aws-modules/iam/aws?include=module-versions
+        # https://api.opentofu.org/registry/docs/providers/hashicorp/aws/index.json
+        # https://api.opentofu.org/registry/docs/modules/hashicorp/consul/aws/index.json
 
         ELIGIBLE_SOURCE_TYPES = T.let(
           %w(git provider registry).freeze,
@@ -53,7 +51,7 @@ module Dependabot
           url = RELEASES_URL_GIT + "#{truncate_github_url}/releases"
           result_lines = T.let([], T::Array[GitTagWithDetail])
           # Fetch the releases from the GitHub API
-          response = Excon.get(url, headers: { "Accept" => "application/vnd.github.v3+json" })
+          response = Excon.get(url, headers: { "User-Agent" => "Dependabot (dependabot.com)", "Accept" => "application/vnd.github.v3+json" })
           Dependabot.logger.error("Failed call details: #{response.body}") unless response.status == 200
           return result_lines unless response.status == 200
 
@@ -79,8 +77,7 @@ module Dependabot
         def fetch_tag_and_release_date_from_provider # rubocop:disable Metrics/AbcSize,Metrics/PerceivedComplexity
           return [] unless dependency_source_details
 
-          url = RELEASE_URL_FOR_PROVIDER + dependency_source_details&.fetch(:module_identifier) +
-                INCLUDE_FOR_PROVIDER
+          url = RELEASE_URL_FOR_PROVIDER + dependency_source_details&.fetch(:module_identifier) + "/index.json"
           Dependabot.logger.info("Fetching provider release details from URL: #{url}")
           result_lines = T.let([], T::Array[GitTagWithDetail])
           # Fetch the releases from the provider API
@@ -89,17 +86,15 @@ module Dependabot
           return result_lines unless response.status == 200
 
           # Parse the JSON response
-          releases = JSON.parse(response.body).fetch("included", [])
-                         .select { |item| item["type"] == "provider-versions" }
-          releases = releases.map { |release| release.fetch("attributes", {}) }
+          releases = JSON.parse(response.body).fetch("versions", [])
           # Check if releases is an array and not empty
           return result_lines unless releases.is_a?(Array) && !releases.empty?
 
           # Extract version names and release dates into result_lines
           releases.each do |release|
             result_lines << GitTagWithDetail.new(
-              tag: release["version"],
-              release_date: release["published-at"]
+              tag: release["id"],
+              release_date: release["published"]
             )
           end
           # Sort the result lines by tag in descending order
@@ -111,8 +106,7 @@ module Dependabot
         def fetch_tag_and_release_date_from_module
           return [] unless dependency_source_details
 
-          url = RELEASE_URL_FOR_MODULE + dependency_source_details&.fetch(:module_identifier) +
-                INCLUDE_FOR_MODULE
+          url = RELEASE_URL_FOR_MODULE + dependency_source_details&.fetch(:module_identifier) + "/index.json"
           Dependabot.logger.info("Fetching provider release details from URL: #{url}")
           result_lines = T.let([], T::Array[GitTagWithDetail])
           # Fetch the releases from the provider API
@@ -121,15 +115,13 @@ module Dependabot
           return result_lines unless response.status == 200
 
           # Parse the JSON response
-          releases = JSON.parse(response.body).fetch("included", [])
-                         .select { |item| item["type"] == "module-versions" }
-          releases = releases.map { |release| release.fetch("attributes", {}) }
+          releases = JSON.parse(response.body).fetch("versions", [])
 
           # Extract version names and release dates into result_lines
           releases.each do |release|
             result_lines << GitTagWithDetail.new(
-              tag: release["version"],
-              release_date: release["published-at"]
+              tag: release["id"],
+              release_date: release["published"]
             )
           end
           # Sort the result lines by tag in descending order

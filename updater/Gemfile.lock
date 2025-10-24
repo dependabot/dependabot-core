@@ -154,8 +154,8 @@ PATH
 PATH
   remote: ../opentofu
   specs:
-    dependabot-opentofu (0.334.0)
-      dependabot-common (= 0.334.0)
+    dependabot-opentofu (0.343.0)
+      dependabot-common (= 0.343.0)
 
 PATH
   remote: ../pub
@@ -635,6 +635,7 @@ CHECKSUMS
   dependabot-maven (0.343.0)
   dependabot-npm_and_yarn (0.343.0)
   dependabot-nuget (0.343.0)
+  dependabot-opentofu (0.343.0)
   dependabot-pub (0.343.0)
   dependabot-python (0.343.0)
   dependabot-rust_toolchain (0.343.0)
