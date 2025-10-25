@@ -15,6 +15,7 @@ jobs:
       fail-fast: false
       matrix:
         suite:
+          - { path: bazel, name: bazel, ecosystem: bazel }
           - { path: bin, name: dry_run, ecosystem: common }
           - { path: bun, name: bun, ecosystem: bun }
           - { path: bundler, name: bundler, ecosystem: bundler }

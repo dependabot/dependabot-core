@@ -34,6 +34,7 @@ jobs:
       fail-fast: false
       matrix:
         suite:
+          - { name: bazel, ecosystem: bazel }
           - { name: bun, ecosystem: bun }
           - { name: bundler, ecosystem: bundler }
           - { name: cargo, ecosystem: cargo }

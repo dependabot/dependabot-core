@@ -4,6 +4,9 @@ common: &common
   - Dockerfile.updater-core
   - 'common/**'
   - 'updater/**'
+bazel:
+  - *common
+  - 'bazel/**'
 github_actions:
   - *common
   - 'github_actions/**'
