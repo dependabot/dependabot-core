@@ -3,6 +3,7 @@
 
 require "spec_helper"
 require "dependabot/dependency_file"
+require "dependabot/shared_helpers"
 require "dependabot/cargo/update_checker/file_preparer"
 require "dependabot/cargo/update_checker/version_resolver"
 
@@ -193,6 +194,29 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
             expect(error.message)
               .to include("feature `metabuild` is required")
           end
+      end
+    end
+
+    context "when using a feature that doesn't exist on the dependency" do
+      it "doesn't raise an error for singular feature mismatch" do
+        error_message = "package `hashbrown` does not have that feature.\n" \
+                        " package `hashbrown` does have feature `rayon`"
+        error = Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: error_message,
+          error_context: {}
+        )
+
+        expect { resolver.send(:handle_cargo_errors, error) }.not_to raise_error
+      end
+
+      it "doesn't raise an error for plural feature mismatch" do
+        error_message = "package `example` does not have these features"
+        error = Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: error_message,
+          error_context: {}
+        )
+
+        expect { resolver.send(:handle_cargo_errors, error) }.not_to raise_error
       end
     end
 
