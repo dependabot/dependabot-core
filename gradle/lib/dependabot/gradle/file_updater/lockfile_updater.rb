@@ -31,7 +31,11 @@ module Dependabot
           SharedHelpers.in_a_temporary_directory do |temp_dir|
             populate_temp_directory(temp_dir)
             cwd = File.join(temp_dir, build_file.directory, build_file.name)
-            cwd = File.dirname(cwd)
+            cwd = if build_file.path.end_with?("/gradle/libs.versions.toml")
+                    File.dirname(cwd, 2)
+                  else
+                    File.dirname(cwd)
+                  end
 
             # Create gradle.properties file with proxy settings
             # Would prefer to use command line arguments, but they don't work.
