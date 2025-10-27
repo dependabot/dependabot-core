@@ -1,0 +1,1029 @@
+{
+    "modules": [
+        {
+            "source": "hashicorp/consul/aws",
+            "versions": [
+                {
+                    "root": {
+                        "dependencies": [],
+                        "providers": [
+                            {
+                                "name": "aws",
+                                "version": ""
+                            },
+                            {
+                                "name": "template",
+                                "version": ""
+                            }
+                        ]
+                    },
+                    "submodules": [
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-iam-policies",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        },
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-client-security-group-rules",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        },
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-security-group-rules",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        },
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-cluster",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        }
+                    ],
+                    "version": "0.3.8"
+                },
+                {
+                    "root": {
+                        "dependencies": [],
+                        "providers": [
+                            {
+                                "name": "aws",
+                                "version": ""
+                            },
+                            {
+                                "name": "template",
+                                "version": ""
+                            }
+                        ]
+                    },
+                    "submodules": [
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-iam-policies",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        },
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-client-security-group-rules",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        },
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-security-group-rules",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        },
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-cluster",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        }
+                    ],
+                    "version": "0.3.7"
+                },
+                {
+                    "root": {
+                        "dependencies": [],
+                        "providers": [
+                            {
+                                "name": "aws",
+                                "version": ""
+                            },
+                            {
+                                "name": "template",
+                                "version": ""
+                            }
+                        ]
+                    },
+                    "submodules": [
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-iam-policies",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        },
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-client-security-group-rules",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        },
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-security-group-rules",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        },
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-cluster",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        }
+                    ],
+                    "version": "0.3.6"
+                },
+                {
+                    "root": {
+                        "dependencies": [],
+                        "providers": [
+                            {
+                                "name": "aws",
+                                "version": ""
+                            },
+                            {
+                                "name": "template",
+                                "version": ""
+                            }
+                        ]
+                    },
+                    "submodules": [
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-iam-policies",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        },
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-client-security-group-rules",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        },
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-security-group-rules",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        },
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-cluster",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        }
+                    ],
+                    "version": "0.3.5"
+                },
+                {
+                    "root": {
+                        "dependencies": [],
+                        "providers": [
+                            {
+                                "name": "aws",
+                                "version": ""
+                            },
+                            {
+                                "name": "template",
+                                "version": ""
+                            }
+                        ]
+                    },
+                    "submodules": [
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-iam-policies",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        },
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-security-group-rules",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        },
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-cluster",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        }
+                    ],
+                    "version": "0.1.2"
+                },
+                {
+                    "root": {
+                        "dependencies": [],
+                        "providers": [
+                            {
+                                "name": "aws",
+                                "version": ""
+                            },
+                            {
+                                "name": "template",
+                                "version": ""
+                            }
+                        ]
+                    },
+                    "submodules": [
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-iam-policies",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        },
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-security-group-rules",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        },
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-cluster",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        }
+                    ],
+                    "version": "0.3.1"
+                },
+                {
+                    "root": {
+                        "dependencies": [],
+                        "providers": [
+                            {
+                                "name": "aws",
+                                "version": ""
+                            },
+                            {
+                                "name": "template",
+                                "version": ""
+                            }
+                        ]
+                    },
+                    "submodules": [
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-iam-policies",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        },
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-security-group-rules",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        },
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-cluster",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        }
+                    ],
+                    "version": "0.0.1"
+                },
+                {
+                    "root": {
+                        "dependencies": [],
+                        "providers": [
+                            {
+                                "name": "aws",
+                                "version": ""
+                            },
+                            {
+                                "name": "template",
+                                "version": ""
+                            }
+                        ]
+                    },
+                    "submodules": [
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-iam-policies",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        },
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-security-group-rules",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        },
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-cluster",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        }
+                    ],
+                    "version": "0.1.0"
+                },
+                {
+                    "root": {
+                        "dependencies": [],
+                        "providers": [
+                            {
+                                "name": "aws",
+                                "version": ""
+                            },
+                            {
+                                "name": "template",
+                                "version": ""
+                            }
+                        ]
+                    },
+                    "submodules": [
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-iam-policies",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        },
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-security-group-rules",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        },
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-cluster",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        }
+                    ],
+                    "version": "0.0.4"
+                },
+                {
+                    "root": {
+                        "dependencies": [],
+                        "providers": [
+                            {
+                                "name": "aws",
+                                "version": ""
+                            },
+                            {
+                                "name": "template",
+                                "version": ""
+                            }
+                        ]
+                    },
+                    "submodules": [
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-iam-policies",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        },
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-security-group-rules",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        },
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-cluster",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        }
+                    ],
+                    "version": "0.0.3"
+                },
+                {
+                    "root": {
+                        "dependencies": [],
+                        "providers": [
+                            {
+                                "name": "aws",
+                                "version": ""
+                            },
+                            {
+                                "name": "template",
+                                "version": ""
+                            }
+                        ]
+                    },
+                    "submodules": [
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-iam-policies",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        },
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-client-security-group-rules",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        },
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-security-group-rules",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        },
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-cluster",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        }
+                    ],
+                    "version": "0.3.4"
+                },
+                {
+                    "root": {
+                        "dependencies": [],
+                        "providers": [
+                            {
+                                "name": "aws",
+                                "version": ""
+                            },
+                            {
+                                "name": "template",
+                                "version": ""
+                            }
+                        ]
+                    },
+                    "submodules": [
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-iam-policies",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        },
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-client-security-group-rules",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        },
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-security-group-rules",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        },
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-cluster",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        }
+                    ],
+                    "version": "0.3.3"
+                },
+                {
+                    "root": {
+                        "dependencies": [],
+                        "providers": [
+                            {
+                                "name": "aws",
+                                "version": ""
+                            },
+                            {
+                                "name": "template",
+                                "version": ""
+                            }
+                        ]
+                    },
+                    "submodules": [
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-iam-policies",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        },
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-security-group-rules",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        },
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-cluster",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        }
+                    ],
+                    "version": "0.3.2"
+                },
+                {
+                    "root": {
+                        "dependencies": [],
+                        "providers": [
+                            {
+                                "name": "aws",
+                                "version": ""
+                            },
+                            {
+                                "name": "template",
+                                "version": ""
+                            }
+                        ]
+                    },
+                    "submodules": [
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-iam-policies",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        },
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-security-group-rules",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        },
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-cluster",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        }
+                    ],
+                    "version": "0.0.5"
+                },
+                {
+                    "root": {
+                        "dependencies": [],
+                        "providers": [
+                            {
+                                "name": "aws",
+                                "version": ""
+                            },
+                            {
+                                "name": "template",
+                                "version": ""
+                            }
+                        ]
+                    },
+                    "submodules": [
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-iam-policies",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        },
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-security-group-rules",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        },
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-cluster",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        }
+                    ],
+                    "version": "0.3.0"
+                },
+                {
+                    "root": {
+                        "dependencies": [],
+                        "providers": [
+                            {
+                                "name": "aws",
+                                "version": ""
+                            },
+                            {
+                                "name": "template",
+                                "version": ""
+                            }
+                        ]
+                    },
+                    "submodules": [
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-iam-policies",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        },
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-security-group-rules",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        },
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-cluster",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        }
+                    ],
+                    "version": "0.2.2"
+                },
+                {
+                    "root": {
+                        "dependencies": [],
+                        "providers": [
+                            {
+                                "name": "aws",
+                                "version": ""
+                            },
+                            {
+                                "name": "template",
+                                "version": ""
+                            }
+                        ]
+                    },
+                    "submodules": [
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-iam-policies",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        },
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-security-group-rules",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        },
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-cluster",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        }
+                    ],
+                    "version": "0.2.1"
+                },
+                {
+                    "root": {
+                        "dependencies": [],
+                        "providers": [
+                            {
+                                "name": "aws",
+                                "version": ""
+                            },
+                            {
+                                "name": "template",
+                                "version": ""
+                            }
+                        ]
+                    },
+                    "submodules": [
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-iam-policies",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        },
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-security-group-rules",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        },
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-cluster",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        }
+                    ],
+                    "version": "0.2.0"
+                },
+                {
+                    "root": {
+                        "dependencies": [],
+                        "providers": [
+                            {
+                                "name": "aws",
+                                "version": ""
+                            },
+                            {
+                                "name": "template",
+                                "version": ""
+                            }
+                        ]
+                    },
+                    "submodules": [
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-iam-policies",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        },
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-security-group-rules",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        },
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-cluster",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        }
+                    ],
+                    "version": "0.1.1"
+                },
+                {
+                    "root": {
+                        "dependencies": [],
+                        "providers": [
+                            {
+                                "name": "aws",
+                                "version": ""
+                            },
+                            {
+                                "name": "template",
+                                "version": ""
+                            }
+                        ]
+                    },
+                    "submodules": [
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-iam-policies",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        },
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-security-group-rules",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        },
+                        {
+                            "dependencies": [],
+                            "path": "modules/consul-cluster",
+                            "providers": [
+                                {
+                                    "name": "aws",
+                                    "version": ""
+                                }
+                            ]
+                        }
+                    ],
+                    "version": "0.0.2"
+                }
+            ]
+        }
+    ]
+}
