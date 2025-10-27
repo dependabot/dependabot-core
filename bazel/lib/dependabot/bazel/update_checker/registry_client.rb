@@ -26,12 +26,10 @@ module Dependabot
         sig { params(module_name: String).returns(T::Array[String]) }
         def all_module_versions(module_name)
           contents = T.unsafe(github_client).contents(GITHUB_REPO, path: "modules/#{module_name}")
-          return [] unless contents
-          return [] unless contents.is_a?(Array)
+          return [] unless contents&.is_a?(Array)
 
           versions = contents.filter_map do |item|
-            next unless item.is_a?(Hash)
-            next unless item[:type] == "dir"
+            next unless item.is_a?(Hash) && item[:type] == "dir"
 
             item[:name]
           end
@@ -102,15 +100,15 @@ module Dependabot
         def get_version_release_date(module_name, version)
           file_path = "modules/#{module_name}/#{version}/MODULE.bazel"
 
-          begin
-            commits = T.unsafe(github_client).commits("bazelbuild/bazel-central-registry", path: file_path, per_page: 1)
-            return nil unless commits&.any?
-
-            commits.first.commit.committer.date
-          rescue Octokit::NotFound
-            Dependabot.logger.info("MODULE.bazel not found for #{module_name} #{version}")
-            nil
+          commits = begin
+            T.unsafe(github_client).commits("bazelbuild/bazel-central-registry", path: file_path, per_page: 1)
+          rescue StandardError => e
+            Dependabot.logger.warn("Failed to get release date for #{module_name} #{version}: #{e.message}")
           end
+          
+          return nil unless commits&.any?
+
+          commits.first.commit.committer.date
         end
 
         private
