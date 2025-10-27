@@ -26,7 +26,7 @@ module Dependabot
         sig { params(module_name: String).returns(T::Array[String]) }
         def all_module_versions(module_name)
           contents = T.unsafe(github_client).contents(GITHUB_REPO, path: "modules/#{module_name}")
-          return [] unless contents&.is_a?(Array)
+          return [] unless contents.is_a?(Array)
 
           versions = contents.filter_map do |item|
             next unless item.is_a?(Hash) && item[:type] == "dir"
@@ -105,7 +105,7 @@ module Dependabot
           rescue StandardError => e
             Dependabot.logger.warn("Failed to get release date for #{module_name} #{version}: #{e.message}")
           end
-          
+
           return nil unless commits&.any?
 
           commits.first.commit.committer.date
