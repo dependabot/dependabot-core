@@ -19,6 +19,7 @@
 #   ruby bin/dry-run.rb go_modules zonedb/zonedb
 #
 # Package managers:
+# - bazel
 # - bun
 # - bundler
 # - cargo
@@ -112,6 +113,7 @@ require "dependabot/pull_request_creator"
 require "dependabot/config/file_fetcher"
 require "dependabot/simple_instrumentor"
 
+require "dependabot/bazel"
 require "dependabot/bun"
 require "dependabot/bundler"
 require "dependabot/cargo"
@@ -347,6 +349,7 @@ end
 
 # Validate package manager
 valid_package_managers = %w(
+  bazel
   bun
   bundler
   cargo

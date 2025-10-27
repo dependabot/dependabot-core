@@ -87,16 +87,10 @@ RSpec.describe Dependabot::Bazel::FileFetcher do
             body: fixture("github", "contents_bazel_workspace.json"),
             headers: { "content-type" => "application/json" }
           )
-        stub_request(:get, url + "BUILD?ref=sha")
-          .to_return(
-            status: 200,
-            body: fixture("github", "contents_bazel_build.json"),
-            headers: { "content-type" => "application/json" }
-          )
       end
 
-      it "fetches the WORKSPACE and BUILD files" do
-        expect(fetched_files.map(&:name)).to contain_exactly("WORKSPACE", "BUILD")
+      it "fetches the WORKSPACE file" do
+        expect(fetched_files.map(&:name)).to contain_exactly("WORKSPACE")
       end
     end
 
