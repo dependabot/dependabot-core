@@ -47,8 +47,7 @@ module Dependabot
 
         sig { returns(T.nilable(Dependabot::Version)) }
         def latest_resolvable_version
-          latest_version_finder
-            .latest_version_with_no_unlock(language_version: language_version_manager.python_version)
+          latest_resolvable_version_with_no_unlock
         end
 
         sig { returns(T.nilable(Dependabot::Version)) }
