@@ -554,7 +554,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
 
               context "when a 2-component version already supports the new version" do
                 let(:pyproject_req_string) { "~5.1" }
-                let(:latest_resolvable_version) { "5.2.0" }
+                let(:latest_resolvable_version) { "5.1.5" }
 
                 its([:requirement]) do
                   is_expected.to eq(
