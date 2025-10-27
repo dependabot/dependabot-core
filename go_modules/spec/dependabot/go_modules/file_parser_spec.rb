@@ -53,9 +53,7 @@ RSpec.describe Dependabot::GoModules::FileParser do
     ENV.delete("GOPRIVATE")
 
     # delete the temporary repo contents, if it is a tmp dir
-    if repo_contents_path.start_with?(Dir.tmpdir)
-      FileUtils.remove_entry(repo_contents_path)
-    end
+    FileUtils.remove_entry(repo_contents_path) if repo_contents_path.start_with?(Dir.tmpdir)
   end
 
   it_behaves_like "a dependency file parser"
