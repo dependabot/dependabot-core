@@ -342,7 +342,6 @@ module Dependabot
         releases = filter_unsupported_versions(releases, language_version)
         releases = filter_prerelease_versions(releases)
         releases = filter_ignored_versions(releases)
-        releases = filter_out_of_range_versions(releases)
         releases = apply_post_fetch_latest_versions_filter(releases)
         releases.max_by(&:version)&.version
       end
