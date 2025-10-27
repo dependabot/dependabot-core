@@ -21,9 +21,10 @@ module Dependabot
         constraints = requirement_string.split(",").map(&:strip)
 
         constraints.map do |constraint|
-          # Handle Julia-specific patterns
-          normalized_constraint = normalize_julia_constraint(constraint)
-          new(normalized_constraint)
+          # Handle Julia-specific patterns - returns an array of gem requirement strings
+          normalized_constraints = normalize_julia_constraint(constraint)
+          # Pass the array to Gem::Requirement, which accepts multiple conditions
+          new(normalized_constraints)
         end
       rescue Gem::Requirement::BadRequirementError
         [new(">= 0")]
@@ -41,7 +42,7 @@ module Dependabot
         version
       end
 
-      sig { params(constraint: String).returns(String) }
+      sig { params(constraint: String).returns(T::Array[String]) }
       def self.normalize_julia_constraint(constraint)
         return normalize_caret_constraint(constraint) if constraint.match?(/^\^(\d+(?:\.\d+)*)/)
         return normalize_tilde_constraint(constraint) if constraint.match?(/^~(\d+(?:\.\d+)*)/)
@@ -50,36 +51,60 @@ module Dependabot
         # Julia treats plain version numbers as caret constraints (implicit ^)
         # e.g., "1.2.3" is equivalent to "^1.2.3" which means ">= 1.2.3, < 2.0.0"
         # See: https://pkgdocs.julialang.org/v1/compatibility/
-        if constraint.match?(/^(\d+(?:\.\d+)*)$/)
-          return normalize_caret_constraint("^#{constraint}")
-        end
+        return normalize_caret_constraint("^#{constraint}") if constraint.match?(/^(\d+(?:\.\d+)*)$/)
 
         # Return as-is for standard gem requirements (>=, <=, ==, etc.)
-        constraint
+        [constraint]
       end
 
-      sig { params(constraint: String).returns(String) }
+      sig { params(constraint: String).returns(T::Array[String]) }
       private_class_method def self.normalize_caret_constraint(constraint)
         version = T.must(constraint[1..-1])
         parts = version.split(".")
-        major = T.must(parts[0])
-        return ">= #{version}.0.0, < #{major.to_i + 1}.0.0" if parts.length == 1
+        major = T.must(parts[0]).to_i
+        minor = parts[1].to_i
+        patch = parts[2].to_i
 
-        ">= #{version}, < #{major.to_i + 1}.0.0"
+        # Julia caret semantics:
+        # - For 0.0.x: compatible within patch (e.g., 0.0.5 -> 0.0.x, < 0.0.6 or < 0.1.0?)
+        # - For 0.x.y: compatible within minor (e.g., 0.34.6 -> 0.34.x, < 0.35.0)
+        # - For x.y.z (x > 0): compatible within major (e.g., 1.2.3 -> 1.x.x, < 2.0.0)
+        if major.zero? && minor.zero?
+          # 0.0.x versions: bump patch
+          [">= #{version}", "< 0.0.#{patch + 1}"]
+        elsif major.zero?
+          # 0.x.y versions: bump minor (0.34.6 -> < 0.35.0)
+          [">= #{version}", "< 0.#{minor + 1}.0"]
+        else
+          # x.y.z versions where x > 0: bump major
+          [">= #{version}", "< #{major + 1}.0.0"]
+        end
       end
 
-      sig { params(constraint: String).returns(String) }
+      sig { params(constraint: String).returns(T::Array[String]) }
       private_class_method def self.normalize_tilde_constraint(constraint)
         version = T.must(constraint[1..-1])
         parts = version.split(".")
-        return ">= #{version}, < #{T.must(parts[0]).to_i + 1}.0.0" unless parts.length >= 2
+        major = T.must(parts[0]).to_i
+        minor = parts[1].to_i
 
-        major = T.must(parts[0])
-        minor = T.must(parts[1])
-        ">= #{version}, < #{major}.#{minor.to_i + 1}.0"
+        # Julia tilde semantics (similar to npm):
+        # - For 0.0.x: compatible within patch (same as caret)
+        # - For 0.x.y or x.y.z: compatible within minor (bump minor)
+        if major.zero? && minor.zero?
+          # 0.0.x versions: bump patch
+          patch = parts[2].to_i
+          [">= #{version}", "< 0.0.#{patch + 1}"]
+        elsif major.zero?
+          # 0.x.y versions: bump minor (same as caret for 0.x)
+          [">= #{version}", "< 0.#{minor + 1}.0"]
+        else
+          # x.y.z versions where x > 0: bump minor only
+          [">= #{version}", "< #{major}.#{minor + 1}.0"]
+        end
       end
 
-      sig { params(constraint: String).returns(String) }
+      sig { params(constraint: String).returns(T::Array[String]) }
       private_class_method def self.normalize_range_constraint(constraint)
         start_version, end_version = constraint.split("-")
         end_parts = T.must(end_version).split(".")
@@ -92,7 +117,7 @@ module Dependabot
                        "#{T.must(end_parts[0]).to_i + 1}.0.0"
                      end
 
-        ">= #{start_version}, < #{next_minor}"
+        [">= #{start_version}", "< #{next_minor}"]
       end
     end
   end
