@@ -47,6 +47,13 @@ module Dependabot
         return normalize_tilde_constraint(constraint) if constraint.match?(/^~(\d+(?:\.\d+)*)/)
         return normalize_range_constraint(constraint) if constraint.match?(/^(\d+(?:\.\d+)*)-(\d+(?:\.\d+)*)$/)
 
+        # Julia treats plain version numbers as caret constraints (implicit ^)
+        # e.g., "1.2.3" is equivalent to "^1.2.3" which means ">= 1.2.3, < 2.0.0"
+        # See: https://pkgdocs.julialang.org/v1/compatibility/
+        if constraint.match?(/^(\d+(?:\.\d+)*)$/)
+          return normalize_caret_constraint("^#{constraint}")
+        end
+
         # Return as-is for standard gem requirements (>=, <=, ==, etc.)
         constraint
       end
