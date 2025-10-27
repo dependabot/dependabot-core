@@ -115,8 +115,7 @@ module Dependabot
 
           # If the requirement is a development dependency we always want to
           # bump it
-          is_dev_dependency = req.fetch(:groups).include?("dev-dependencies")
-          return update_pyproject_version(req, force_bump: is_dev_dependency) if is_dev_dependency
+          return update_pyproject_version(req, force_bump: true) if req.fetch(:groups).include?("dev-dependencies")
 
           case update_strategy
           when RequirementsUpdateStrategy::WidenRanges then widen_pyproject_requirement(req)
@@ -166,14 +165,15 @@ module Dependabot
           ).returns(String)
         end
         def update_pyproject_compatibility_requirement(req, requirement_strings, force_bump: false)
-          if !force_bump && new_version_satisfies?(req)
-            # If a compatibility operator is being used but the new version
-            # is already satisfied, no change is required (unless force_bump is true)
-            req.fetch(:requirement)
-          else
-            # Otherwise, bump the version (and remove any other requirements)
+          if force_bump || !new_version_satisfies?(req)
+            # Bump the version if forced (dev dependencies) or if new version
+            # is not already satisfied (and remove any other requirements)
             v_req = requirement_strings.find { |r| r.start_with?("~", "^") }
             bump_version(T.must(v_req), latest_resolvable_version.to_s)
+          else
+            # If a compatibility operator is being used but the new version
+            # is already satisfied, no change is required
+            req.fetch(:requirement)
           end
         end
 
