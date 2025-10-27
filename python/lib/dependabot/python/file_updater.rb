@@ -147,7 +147,17 @@ module Dependabot
       def poetry_based?
         return false unless pyproject
 
-        !TomlRB.parse(pyproject&.content).dig("tool", "poetry").nil?
+        parsed_pyproject = TomlRB.parse(pyproject&.content)
+
+        # Check for legacy Poetry format with [tool.poetry] section
+        return true unless parsed_pyproject.dig("tool", "poetry").nil?
+
+        # Check for Poetry 2 PEP 621 format: has poetry.core build backend
+        # and uses [project] section for metadata
+        build_backend = parsed_pyproject.dig("build-system", "build-backend")
+        has_project_section = !parsed_pyproject["project"].nil?
+
+        !!(!build_backend.nil? && build_backend.include?("poetry") && has_project_section)
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }

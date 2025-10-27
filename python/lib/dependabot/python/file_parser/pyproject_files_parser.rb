@@ -31,7 +31,7 @@ module Dependabot
           dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
           dependency_set += pyproject_dependencies if using_poetry? || using_pep621? || using_pep735?
-          dependency_set += lockfile_dependencies if using_poetry? && lockfile
+          dependency_set += lockfile_dependencies if (using_poetry? || using_poetry_v2_pep621?) && lockfile
 
           dependency_set
         end
@@ -103,6 +103,9 @@ module Dependabot
               )
           end
 
+          # For Poetry 2 PEP 621 projects, also parse [tool.poetry.group.*] dependencies
+          dependencies += parse_poetry_v2_groups if using_poetry_v2_pep621?
+
           dependencies
         end
 
@@ -129,6 +132,20 @@ module Dependabot
               package_manager: "pip"
             )
           end
+          dependencies
+        end
+
+        sig { returns(Dependabot::FileParsers::Base::DependencySet) }
+        def parse_poetry_v2_groups
+          dependencies = Dependabot::FileParsers::Base::DependencySet.new
+
+          # Parse [tool.poetry.group.*] sections in Poetry 2 PEP 621 projects
+          groups = parsed_pyproject.dig("tool", "poetry", "group") || {}
+          groups.each do |group, group_spec|
+            deps_hash = group_spec["dependencies"] || {}
+            dependencies += parse_poetry_dependency_group(group, deps_hash)
+          end
+
           dependencies
         end
 
@@ -166,6 +183,16 @@ module Dependabot
         sig { returns(T.nilable(T::Boolean)) }
         def using_poetry?
           !poetry_root.nil?
+        end
+
+        sig { returns(T::Boolean) }
+        def using_poetry_v2_pep621?
+          # Poetry 2 PEP 621 format: uses poetry.core build backend with [project] section
+          build_backend = parsed_pyproject.dig("build-system", "build-backend")
+          has_project_section = !parsed_pyproject["project"].nil?
+          has_no_poetry_root = poetry_root.nil?
+
+          !!(!build_backend.nil? && build_backend.include?("poetry") && has_project_section && has_no_poetry_root)
         end
 
         sig { returns(T::Boolean) }

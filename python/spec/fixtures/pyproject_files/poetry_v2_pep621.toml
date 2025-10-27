@@ -1,0 +1,28 @@
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[project]
+name = "example-project"
+version = "0.1.0"
+description = "An example Poetry 2 project using PEP 621"
+license = { text = "MIT" }
+readme = "README.md"
+requires-python = ">=3.10,<4.0.0"
+authors = [
+  { name = "Example Author", email = "author@example.com" },
+]
+dependencies = [
+  "requests==2.31.0",
+  "pytest>=7.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "black>=22.0.0",
+]
+
+[tool.poetry.group.dev.dependencies]
+mypy = "^1.13.0"
+pre-commit = "^4.0.1"
+pytest-cov = "^6.0.0"

@@ -256,6 +256,60 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
     end
   end
 
+  describe "parse poetry v2 PEP 621 files" do
+    subject(:dependencies) { parser.dependency_set.dependencies }
+
+    let(:pyproject_fixture_name) { "poetry_v2_pep621.toml" }
+
+    context "without a lockfile" do
+      its(:length) { is_expected.to eq(5) }
+
+      it "parses dependencies from [project] section" do
+        expect(dependencies.map(&:name)).to include("requests", "pytest", "black")
+      end
+
+      it "parses dependencies from [tool.poetry.group] sections" do
+        expect(dependencies.map(&:name)).to include("mypy", "pre-commit", "pytest-cov")
+      end
+
+      context "with a dependency from project section" do
+        subject(:dependency) { dependencies.find { |d| d.name == "requests" } }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("requests")
+          expect(dependency.version).to eq("2.31.0")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "==2.31.0",
+              file: "pyproject.toml",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          )
+        end
+      end
+
+      context "with a dependency from poetry group section" do
+        subject(:dependency) { dependencies.find { |d| d.name == "mypy" } }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("mypy")
+          expect(dependency.version).to be_nil
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "^1.13.0",
+              file: "pyproject.toml",
+              groups: ["dev"],
+              source: nil
+            }]
+          )
+        end
+      end
+    end
+  end
+
   describe "parse standard python files" do
     subject(:dependencies) { parser.dependency_set.dependencies }
 
