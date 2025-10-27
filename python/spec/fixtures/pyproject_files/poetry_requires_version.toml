@@ -1,0 +1,14 @@
+[tool.poetry]
+name = "test-project"
+version = "1.0.0"
+description = "Test project with requires-poetry field"
+authors = ["Dependabot <support@dependabot.com>"]
+requires-poetry = ">=2.1.2"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+requests = "^2.28.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
