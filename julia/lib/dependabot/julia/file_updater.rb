@@ -196,15 +196,24 @@ module Dependabot
 
       sig { params(content: String, dependency_name: String, new_requirement: String).returns(String) }
       def update_dependency_requirement_in_content(content, dependency_name, new_requirement)
-        # Pattern to match the dependency in [compat] section
-        # Handles various quote styles and spacing
-        pattern = /(^\s*#{Regexp.escape(dependency_name)}\s*=\s*)(?:"[^"]*"|'[^']*'|[^\s#\n]+)(\s*(?:\#.*)?$)/mx
+        # Extract the [compat] section to update it specifically
+        compat_section_match = content.match(/^\[compat\]\s*\n((?:.*\n)*?)(?=^\[|\z)/m)
 
-        if content.match?(pattern)
-          # Replace existing entry
-          content.gsub(pattern, "\\1\"#{new_requirement}\"\\2")
+        if compat_section_match
+          compat_section = compat_section_match[1]
+          # Pattern to match the dependency in the compat section
+          pattern = /^(\s*#{Regexp.escape(dependency_name)}\s*=\s*)(?:"[^"]*"|'[^']*'|[^\s#\n]+)(\s*(?:\#.*)?)$/
+
+          if compat_section.match?(pattern)
+            # Replace existing entry in compat section
+            updated_compat = compat_section.gsub(pattern, "\\1\"#{new_requirement}\"\\2")
+            content.sub(compat_section_match[0], "[compat]\n#{updated_compat}")
+          else
+            # Add new entry to existing [compat] section
+            add_compat_entry_to_content(content, dependency_name, new_requirement)
+          end
         else
-          # Add new entry to [compat] section
+          # Add new [compat] section
           add_compat_entry_to_content(content, dependency_name, new_requirement)
         end
       end
