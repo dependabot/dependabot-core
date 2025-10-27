@@ -29,13 +29,33 @@ RSpec.describe Dependabot::GoModules::FileParser do
     )
   end
   let(:files) { [go_mod] }
-  let(:parser) { described_class.new(dependency_files: files, source: source, repo_contents_path: repo_contents_path) }
+  let(:parser) { described_class.new(dependency_files: files, source:, repo_contents_path:) }
+
+  before do
+    # Write the go.mod file to the tmp repo contents path
+    manifest_path = File.join(repo_contents_path, directory)
+    FileUtils.mkdir_p(manifest_path)
+    File.write(File.join(manifest_path, "go.mod"), go_mod_content)
+    # Make it a git repository since Go uses SharedHelpers.with_git_configured often
+    Dir.chdir(repo_contents_path) do
+      `git init`
+      `git config user.name "rspec"`
+      `git config user.email "dependabot@github.com"`
+      `git add .`
+      `git commit -m "Initial commit"`
+    end
+  end
 
   after do
     # Reset the environment variable after each test to avoid side effects
     ENV.delete("GOENV")
     ENV.delete("GOPROXY")
     ENV.delete("GOPRIVATE")
+
+    # delete the temporary repo contents, if it is a tmp dir
+    if repo_contents_path.start_with?(Dir.tmpdir)
+      FileUtils.remove_entry(repo_contents_path)
+    end
   end
 
   it_behaves_like "a dependency file parser"
@@ -382,7 +402,6 @@ RSpec.describe Dependabot::GoModules::FileParser do
 
     context "when using a monorepo" do
       let(:project_name) { "monorepo" }
-      let(:repo_contents_path) { build_tmp_repo(project_name) }
       let(:go_mod_content) { fixture("projects", project_name, "go.mod") }
 
       it "parses root file" do
@@ -411,7 +430,6 @@ RSpec.describe Dependabot::GoModules::FileParser do
 
     context "when using a dependency without hostname" do
       let(:project_name) { "unrecognized_import" }
-      let(:repo_contents_path) { build_tmp_repo(project_name) }
       let(:go_mod_content) { fixture("projects", project_name, "go.mod") }
 
       it "parses ignores invalid dependency" do
