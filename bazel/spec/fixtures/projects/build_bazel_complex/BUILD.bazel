@@ -1,0 +1,23 @@
+load("@rules_go//go:def.bzl", "go_library", "go_binary", "go_test")
+load("@rules_cc//cc:defs.bzl", "cc_library", "cc_binary")
+load("@io_bazel_rules_docker//container:container.bzl", "container_image")
+
+go_library(
+    name = "go_default_library",
+    srcs = glob(["*.go"]),
+    deps = [
+        "@com_github_golang_protobuf//proto:go_default_library",
+        "@com_github_grpc_ecosystem_grpc_gateway//runtime:go_default_library",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "my_cc_lib",
+    srcs = ["lib.cc"],
+    hdrs = ["lib.h"],
+    deps = [
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/status",
+    ],
+)
