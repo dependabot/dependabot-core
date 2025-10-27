@@ -1,4 +1,10 @@
 PATH
+  remote: bazel
+  specs:
+    dependabot-bazel (0.344.0)
+      dependabot-common (= 0.344.0)
+
+PATH
   remote: bun
   specs:
     dependabot-bun (0.344.0)
@@ -452,6 +458,7 @@ PLATFORMS
 
 DEPENDENCIES
   debug (~> 1.9)
+  dependabot-bazel!
   dependabot-bun!
   dependabot-bundler!
   dependabot-cargo!
@@ -518,6 +525,7 @@ CHECKSUMS
   csv (3.3.0) sha256=0bbd1defdc31134abefed027a639b3723c2753862150f4c3ee61cab71b20d67d
   date (3.4.1) sha256=bf268e14ef7158009bfeaec40b5fa3c7271906e88b196d958a89d4b408abe64f
   debug (1.9.2) sha256=48e026c0852c7a10c60263e2e527968308958e266231e36d64e3efcabec7e7fc
+  dependabot-bazel (0.344.0)
   dependabot-bun (0.344.0)
   dependabot-bundler (0.344.0)
   dependabot-cargo (0.344.0)
