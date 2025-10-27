@@ -328,7 +328,16 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def poetry_based?
-        updating_pyproject? && !poetry_details.nil?
+        return true if updating_pyproject? && !poetry_details.nil?
+
+        # Check for Poetry 2 PEP 621 format
+        if updating_pyproject?
+          build_backend = build_system_details&.dig("build-backend")
+          has_project_section = !standard_details.nil?
+          return !!(!build_backend.nil? && build_backend.include?("poetry") && has_project_section)
+        end
+
+        false
       end
 
       sig { returns(T::Boolean) }
