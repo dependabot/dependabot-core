@@ -97,10 +97,11 @@ module Dependabot
 
         sig { params(dep: T::Hash[String, T.untyped], path_dep_names: T::Array[String]).returns(T::Boolean) }
         def should_skip_dependency?(dep, path_dep_names)
-          # Skip path dependencies - they are not updatable by Dependabot
+          # Skip entries from [tool.uv.sources] with path_dependency flag
           return true if dep["path_dependency"]
 
-          # Skip dependencies that have path sources defined
+          # Skip entries from [project.dependencies] that have a corresponding
+          # path source in [tool.uv.sources] (they appear twice in the helper output)
           return true if path_dep_names.include?(dep["name"])
 
           # If a requirement has a `<` or `<=` marker then updating it is
