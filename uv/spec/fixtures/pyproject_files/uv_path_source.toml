@@ -1,0 +1,11 @@
+[project]
+name = "dependabot-uv"
+version = "1.0.0"
+requires-python = "==3.12.*"
+dependencies = [
+    "example",
+    "requests>=2.28.0",
+]
+
+[tool.uv.sources]
+example = { path = "example-1.0.0-py3-none-any.whl" }

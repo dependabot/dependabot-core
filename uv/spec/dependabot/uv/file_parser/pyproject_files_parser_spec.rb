@@ -411,5 +411,29 @@ RSpec.describe Dependabot::Uv::FileParser::PyprojectFilesParser do
         expect(actual_deps).to match_array(expected_deps)
       end
     end
+
+    describe "with uv path sources" do
+      subject(:dependencies) { parser.dependency_set.dependencies }
+
+      let(:pyproject_fixture_name) { "uv_path_source.toml" }
+
+      # The fixture has:
+      # - 1 regular dependency (requests>=2.28.0)
+      # - 1 path dependency (example) which should be excluded (path dependencies are not updatable)
+      # The test should not crash with "undefined method 'include?' for nil"
+      its(:length) { is_expected.to eq(1) }
+
+      it "includes regular dependency" do
+        expect(dependencies.map(&:name)).to include("requests")
+      end
+
+      it "excludes path dependency" do
+        expect(dependencies.map(&:name)).not_to include("example")
+      end
+
+      it "parses without error" do
+        expect { parser.dependency_set }.not_to raise_error
+      end
+    end
   end
 end
