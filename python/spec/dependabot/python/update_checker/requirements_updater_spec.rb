@@ -166,7 +166,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
           context "when requirement supports the new version" do
             let(:requirement_txt_req_string) { "~=1.3" }
 
-            its([:requirement]) { is_expected.to eq("~=1.5") }
+            its([:requirement]) { is_expected.to eq("~=1.3") }
 
             context "with the bump_versions_if_necessary update strategy" do
               let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary }
@@ -530,26 +530,48 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
               let(:pyproject_req_string) { "~=1.3.0" }
 
               its([:requirement]) { is_expected.to eq("~=1.5.0") }
+
+              context "when a 2-component version already supports the new version" do
+                let(:pyproject_req_string) { "~=5.1" }
+                let(:latest_resolvable_version) { "5.2.0" }
+
+                its([:requirement]) do
+                  is_expected.to eq(
+                    if update_strategy == Dependabot::RequirementsUpdateStrategy::BumpVersions
+                      "~=5.1"
+                    else
+                      "~=5.1"
+                    end
+                  )
+                end
+              end
             end
 
             context "when a ~ requirement was specified" do
               let(:pyproject_req_string) { "~1.3.0" }
 
               its([:requirement]) { is_expected.to eq("~1.5.0") }
+
+              context "when a 2-component version already supports the new version" do
+                let(:pyproject_req_string) { "~5.1" }
+                let(:latest_resolvable_version) { "5.2.0" }
+
+                its([:requirement]) do
+                  is_expected.to eq(
+                    if update_strategy == Dependabot::RequirementsUpdateStrategy::BumpVersions
+                      "~5.1"
+                    else
+                      "~5.1"
+                    end
+                  )
+                end
+              end
             end
 
             context "when a ^ requirement was specified" do
               let(:pyproject_req_string) { "^1.3.0" }
 
-              its([:requirement]) do
-                is_expected.to eq(
-                  if update_strategy == Dependabot::RequirementsUpdateStrategy::BumpVersions
-                    "^1.5.0"
-                  else
-                    "^1.3.0"
-                  end
-                )
-              end
+              its([:requirement]) { is_expected.to eq("^1.3.0") }
 
               context "without a lockfile" do
                 let(:has_lockfile) { false }
