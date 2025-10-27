@@ -17,11 +17,11 @@ module Dependabot
       # When updating this list, also update python/lib/dependabot/python/language.rb
       PRE_INSTALLED_PYTHON_VERSIONS_RAW = %w(
         3.14.0
-        3.13.5
-        3.12.11
-        3.11.13
-        3.10.18
-        3.9.23
+        3.13.9
+        3.12.12
+        3.11.14
+        3.10.19
+        3.9.24
       ).freeze
 
       PRE_INSTALLED_PYTHON_VERSIONS = T.let(
