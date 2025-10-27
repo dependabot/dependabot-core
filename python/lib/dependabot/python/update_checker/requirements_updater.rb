@@ -144,10 +144,15 @@ module Dependabot
               # be binding and any other requirements will be being ignored
               find_and_update_equality_match(requirement_strings)
             elsif requirement_strings.any? { |r| r.start_with?("~", "^") }
-              # If a compatibility operator is being used, just bump its
-              # version (and remove any other requirements)
-              v_req = requirement_strings.find { |r| r.start_with?("~", "^") }
-              bump_version(v_req, latest_resolvable_version.to_s)
+              if new_version_satisfies?(req)
+                # If a compatibility operator is being used but the new version
+                # is already satisfied, no change is required
+                req.fetch(:requirement)
+              else
+                # Otherwise, bump the version (and remove any other requirements)
+                v_req = requirement_strings.find { |r| r.start_with?("~", "^") }
+                bump_version(v_req, latest_resolvable_version.to_s)
+              end
             elsif new_version_satisfies?(req)
               # Otherwise we're looking at a range operator. No change
               # required if it's already satisfied
@@ -253,8 +258,12 @@ module Dependabot
             if requirement_strings.any? { |r| r.match?(/^[=\d]/) }
               find_and_update_equality_match(requirement_strings)
             elsif requirement_strings.any? { |r| r.start_with?("~=") }
-              tw_req = requirement_strings.find { |r| r.start_with?("~=") }
-              bump_version(tw_req, latest_resolvable_version.to_s)
+              if new_version_satisfies?(req)
+                req.fetch(:requirement)
+              else
+                tw_req = requirement_strings.find { |r| r.start_with?("~=") }
+                bump_version(tw_req, latest_resolvable_version.to_s)
+              end
             elsif new_version_satisfies?(req)
               req.fetch(:requirement)
             else
