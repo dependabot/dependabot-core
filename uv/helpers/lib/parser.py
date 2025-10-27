@@ -42,7 +42,7 @@ def parse_pep621_pep735_dependencies(pyproject_path):
             data = {
                 "name": req.name,
                 "version": version_from_req(req.specifier),
-                "markers": str(req.marker) or None,
+                "markers": str(req.marker) if req.marker else None,
                 "file": pyproject_path,
                 "requirement": str(req.specifier),
                 "extras": sorted(list(req.extras)),
