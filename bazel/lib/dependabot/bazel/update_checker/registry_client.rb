@@ -107,8 +107,8 @@ module Dependabot
             return nil unless commits&.any?
 
             commits.first.commit.committer.date
-          rescue StandardError => e
-            Dependabot.logger.warn("Failed to get release date for #{module_name} #{version}: #{e.message}")
+          rescue Octokit::NotFound
+            Dependabot.logger.info("MODULE.bazel not found for #{module_name} #{version}")
             nil
           end
         end

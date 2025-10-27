@@ -107,7 +107,7 @@ module Dependabot
         filtered_versions = sorted_versions.reject do |version|
           details = publication_detail(version)
 
-          next false if !details || !details.released_at
+          next false unless details&.released_at
 
           if cooldown_period?(T.must(details.released_at))
             Dependabot.logger.info("Skipping version #{version} due to cooldown period")
