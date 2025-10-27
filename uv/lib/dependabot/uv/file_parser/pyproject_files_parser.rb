@@ -81,32 +81,51 @@ module Dependabot
           # undesirable. Leave PDM alone until properly supported
           return dependencies if using_pdm?
 
-          parse_pep621_pep735_dependencies.each do |dep|
-            # Skip path dependencies - they are not updatable by Dependabot
-            next if dep["path_dependency"]
+          parsed_deps = parse_pep621_pep735_dependencies
 
-            # If a requirement has a `<` or `<=` marker then updating it is
-            # probably blocked. Ignore it.
-            next if dep["markers"]&.include?("<")
+          # Collect names of path dependencies to exclude them
+          path_dep_names = parsed_deps.select { |d| d["path_dependency"] }.map { |d| d["name"] }
 
-            # In uv no constraint means any version is acceptable
-            requirement_value = dep["requirement"].nil? || dep["requirement"].empty? ? "*" : dep["requirement"]
+          parsed_deps.each do |dep|
+            next if should_skip_dependency?(dep, path_dep_names)
 
-            dependencies <<
-              Dependency.new(
-                name: normalised_name(dep["name"], dep["extras"]),
-                version: dep["version"]&.include?("*") ? nil : dep["version"],
-                requirements: [{
-                  requirement: requirement_value,
-                  file: Pathname.new(dep["file"]).cleanpath.to_path,
-                  source: nil,
-                  groups: [dep["requirement_type"]].compact
-                }],
-                package_manager: "uv"
-              )
+            dependencies << create_dependency_from(dep)
           end
 
           dependencies
+        end
+
+        sig { params(dep: T::Hash[String, T.untyped], path_dep_names: T::Array[String]).returns(T::Boolean) }
+        def should_skip_dependency?(dep, path_dep_names)
+          # Skip path dependencies - they are not updatable by Dependabot
+          return true if dep["path_dependency"]
+
+          # Skip dependencies that have path sources defined
+          return true if path_dep_names.include?(dep["name"])
+
+          # If a requirement has a `<` or `<=` marker then updating it is
+          # probably blocked. Ignore it.
+          return true if dep["markers"]&.include?("<")
+
+          false
+        end
+
+        sig { params(dep: T::Hash[String, T.untyped]).returns(Dependabot::Dependency) }
+        def create_dependency_from(dep)
+          # In uv no constraint means any version is acceptable
+          requirement_value = dep["requirement"].nil? || dep["requirement"].empty? ? "*" : dep["requirement"]
+
+          Dependency.new(
+            name: normalised_name(dep["name"], dep["extras"]),
+            version: dep["version"]&.include?("*") ? nil : dep["version"],
+            requirements: [{
+              requirement: requirement_value,
+              file: Pathname.new(dep["file"]).cleanpath.to_path,
+              source: nil,
+              groups: [dep["requirement_type"]].compact
+            }],
+            package_manager: "uv"
+          )
         end
 
         sig do
