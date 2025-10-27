@@ -70,19 +70,32 @@ module Dependabot
         # If current requirement already satisfied, keep it
         return requirement_string if req.satisfied_by?(target_version)
 
-        # Otherwise, create a new requirement that includes the target version
-        if requirement_string.start_with?("^")
-          # Caret requirement: ^1.2 -> update to ^new_major.new_minor if needed
-          "^#{target_version.segments[0]}.#{target_version.segments[1] || 0}"
-        elsif requirement_string.start_with?("~")
-          # Tilde requirement: ~1.2.3 -> update to ~new_version
-          "~#{target_version}"
-        elsif requirement_string.include?("-")
-          # Range requirement: keep as is or expand to include target
-          requirement_string
+        # Otherwise, append a new requirement that includes the target version
+        # Following CompatHelper.jl's approach: use major.minor for versions >= 1.0,
+        # 0.minor for 0.x versions, and 0.0.patch for 0.0.x versions
+        new_spec = simplified_version_spec(target_version, requirement_string)
+
+        # Append the new spec to the existing requirement (CompatHelper KeepEntry behavior)
+        "#{requirement_string}, #{new_spec}"
+      end
+
+      sig { params(target_version: Dependabot::Julia::Version, original_requirement: String).returns(String) }
+      def simplified_version_spec(target_version, original_requirement)
+        # Follow CompatHelper.jl's compat_version_number logic:
+        # - major > 0: use "major.minor"
+        # - major == 0, minor > 0: use "0.minor"
+        # - major == 0, minor == 0: use "0.0.patch"
+        # Note: CompatHelper always returns plain versions (no ^ or ~ prefix)
+        major = target_version.segments[0]
+        minor = target_version.segments[1] || 0
+        patch = target_version.segments[2] || 0
+
+        if major > 0
+          "#{major}.#{minor}"
+        elsif minor > 0
+          "0.#{minor}"
         else
-          # Exact version or other: use target version
-          target_version.to_s
+          "0.0.#{patch}"
         end
       end
     end
