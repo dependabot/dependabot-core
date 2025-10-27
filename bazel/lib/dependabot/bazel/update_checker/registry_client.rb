@@ -29,7 +29,7 @@ module Dependabot
           return [] unless contents.is_a?(Array)
 
           versions = contents.filter_map do |item|
-            next unless item.is_a?(Hash) && item[:type] == "dir"
+            next unless item[:type] == "dir"
 
             item[:name]
           end
