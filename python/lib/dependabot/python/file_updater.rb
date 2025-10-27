@@ -152,12 +152,12 @@ module Dependabot
         # Check for legacy Poetry format with [tool.poetry] section
         return true unless parsed_pyproject.dig("tool", "poetry").nil?
 
-        # Check for Poetry 2 PEP 621 format: has poetry.core build backend
-        # and uses [project] section for metadata
+        # Check for Poetry 2 PEP 621 format: poetry build backend + [project] section
         build_backend = parsed_pyproject.dig("build-system", "build-backend")
+        has_poetry_backend = !build_backend.nil? && build_backend.include?("poetry")
         has_project_section = !parsed_pyproject["project"].nil?
 
-        !!(!build_backend.nil? && build_backend.include?("poetry") && has_project_section)
+        (has_poetry_backend && has_project_section) == true
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }

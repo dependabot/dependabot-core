@@ -187,12 +187,13 @@ module Dependabot
 
         sig { returns(T::Boolean) }
         def using_poetry_v2_pep621?
-          # Poetry 2 PEP 621 format: uses poetry.core build backend with [project] section
+          # Poetry 2 PEP 621 format: poetry build backend + [project] section without [tool.poetry]
           build_backend = parsed_pyproject.dig("build-system", "build-backend")
+          has_poetry_backend = !build_backend.nil? && build_backend.include?("poetry")
           has_project_section = !parsed_pyproject["project"].nil?
           has_no_poetry_root = poetry_root.nil?
 
-          !!(!build_backend.nil? && build_backend.include?("poetry") && has_project_section && has_no_poetry_root)
+          (has_poetry_backend && has_project_section && has_no_poetry_root) == true
         end
 
         sig { returns(T::Boolean) }

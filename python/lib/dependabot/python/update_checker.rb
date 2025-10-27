@@ -330,11 +330,12 @@ module Dependabot
       def poetry_based?
         return true if updating_pyproject? && !poetry_details.nil?
 
-        # Check for Poetry 2 PEP 621 format
+        # Check for Poetry 2 PEP 621 format: poetry build backend + [project] section
         if updating_pyproject?
           build_backend = build_system_details&.dig("build-backend")
+          has_poetry_backend = !build_backend.nil? && build_backend.include?("poetry")
           has_project_section = !standard_details.nil?
-          return !!(!build_backend.nil? && build_backend.include?("poetry") && has_project_section)
+          return (has_poetry_backend && has_project_section) == true
         end
 
         false
