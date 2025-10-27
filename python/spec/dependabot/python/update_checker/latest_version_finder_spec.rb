@@ -594,6 +594,35 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
         end
       end
     end
+
+    context "when the requirement excludes the latest available version" do
+      let(:dependency_version) { "2.6.0" }
+      let(:dependency_requirements) do
+        [{
+          file: "requirements.txt",
+          requirement: "~=2.0",
+          groups: [],
+          source: nil
+        }]
+      end
+
+      context "when ignoring versions above 2.0" do
+        let(:ignored_versions) { [">= 2.0"] }
+
+        it "returns the latest version below 2.0" do
+          # When we ignore versions >= 2.0, the latest version should be 1.3.0
+          expect(latest_version).to eq(Gem::Version.new("1.3.0"))
+        end
+      end
+
+      context "without ignoring versions" do
+        it "returns the latest version within the requirement range (~=2.0)" do
+          # With requirement ~=2.0, we should get the latest 2.x version,
+          # not a version outside the range like 1.3.0
+          expect(latest_version).to eq(Gem::Version.new("2.6.0"))
+        end
+      end
+    end
   end
 
   describe "#latest_version_with_no_unlock" do
