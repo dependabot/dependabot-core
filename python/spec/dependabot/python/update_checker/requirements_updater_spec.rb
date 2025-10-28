@@ -535,15 +535,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
                 let(:pyproject_req_string) { "~=5.1" }
                 let(:latest_resolvable_version) { "5.2.0" }
 
-                its([:requirement]) do
-                  is_expected.to eq(
-                    if update_strategy == Dependabot::RequirementsUpdateStrategy::BumpVersions
-                      "~=5.1"
-                    else
-                      "~=5.1"
-                    end
-                  )
-                end
+                its([:requirement]) { is_expected.to eq("~=5.1") }
               end
             end
 
@@ -556,15 +548,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
                 let(:pyproject_req_string) { "~5.1" }
                 let(:latest_resolvable_version) { "5.1.5" }
 
-                its([:requirement]) do
-                  is_expected.to eq(
-                    if update_strategy == Dependabot::RequirementsUpdateStrategy::BumpVersions
-                      "~5.1"
-                    else
-                      "~5.1"
-                    end
-                  )
-                end
+                its([:requirement]) { is_expected.to eq("~5.1") }
               end
             end
 
