@@ -317,6 +317,9 @@ module Dependabot
             language: language
           )
           release
+        rescue Dependabot::BadRequirementError => e
+          Dependabot.logger.warn("Skipping invalid version #{version}: #{e.message}")
+          nil
         end
 
         sig do
