@@ -53,7 +53,7 @@ RSpec.describe Dependabot::GoModules::FileParser do
         content: "GOPRIVATE=github.com/dependabot-fixtures",
         directory: directory
       )
-      described_class.new(dependency_files: [go_mod, go_env], source: source)
+      described_class.new(dependency_files: [go_mod, go_env], source: source, repo_contents_path: repo_contents_path)
       expect(`go env GOPRIVATE`.strip).to eq("github.com/dependabot-fixtures")
     end
 
@@ -70,12 +70,12 @@ RSpec.describe Dependabot::GoModules::FileParser do
           }
         )
       ]
-      described_class.new(dependency_files: [go_mod], source: source, credentials: credentials)
+      described_class.new(dependency_files: [go_mod], source: source, credentials: credentials, repo_contents_path: repo_contents_path)
       expect(`go env GOPROXY`.strip).to eq("https://proxy.example.com,direct")
     end
 
     it "does not set the GOPROXY environment variable if there are no goproxy_server credentials" do
-      described_class.new(dependency_files: [go_mod], source: source)
+      described_class.new(dependency_files: [go_mod], source: source, repo_contents_path: repo_contents_path)
       expect(`go env GOPROXY`.strip).to eq("https://proxy.golang.org,direct")
     end
 
@@ -85,7 +85,7 @@ RSpec.describe Dependabot::GoModules::FileParser do
         content: "GOPROXY=https://proxy.example.com",
         directory: directory
       )
-      described_class.new(dependency_files: [go_mod, go_env], source: source)
+      described_class.new(dependency_files: [go_mod, go_env], source: source, repo_contents_path: repo_contents_path)
       expect(`go env GOPROXY`.strip).to eq("https://proxy.example.com")
     end
 
@@ -102,6 +102,7 @@ RSpec.describe Dependabot::GoModules::FileParser do
         dependency_files: [go_mod],
         source: source,
         credentials: credentials,
+        repo_contents_path: repo_contents_path,
         options: { goprivate: "*" }
       )
       expect(`go env GOPRIVATE`.strip).to be_empty
