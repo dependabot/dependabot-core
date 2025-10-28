@@ -20,6 +20,9 @@ module Dependabot
     class FileParser < Dependabot::FileParsers::Base
       extend T::Sig
 
+      # NOTE: repo_contents_path is typed as T.nilable(String) to maintain
+      # compatibility with the base FileParser class signature. However,
+      # we validate it's not nil at runtime since it's always required in production.
       sig do
         params(
           dependency_files: T::Array[Dependabot::DependencyFile],

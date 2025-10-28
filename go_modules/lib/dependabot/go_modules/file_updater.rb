@@ -15,6 +15,9 @@ module Dependabot
 
       require_relative "file_updater/go_mod_updater"
 
+      # NOTE: repo_contents_path is typed as T.nilable(String) to maintain
+      # compatibility with the base FileUpdater class signature. However,
+      # we validate it's not nil at runtime since it's always required in production.
       sig do
         override
           .params(
