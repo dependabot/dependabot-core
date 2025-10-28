@@ -44,14 +44,14 @@ module Dependabot
         sig { returns(Dependabot::FileParsers::Base::DependencySet) }
         def pyproject_dependencies
           dependencies = Dependabot::FileParsers::Base::DependencySet.new
-          
+
           # Parse Poetry dependencies if [tool.poetry] section exists
           dependencies += poetry_dependencies if using_poetry?
-          
+
           # Parse PEP 621/735 dependencies if those sections exist
           # This handles hybrid projects that have both Poetry and PEP 621 sections
           dependencies += pep621_pep735_dependencies if using_pep621? || using_pep735?
-          
+
           dependencies
         end
 
