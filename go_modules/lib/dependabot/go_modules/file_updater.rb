@@ -21,13 +21,15 @@ module Dependabot
             dependencies: T::Array[Dependabot::Dependency],
             dependency_files: T::Array[Dependabot::DependencyFile],
             credentials: T::Array[Dependabot::Credential],
-            repo_contents_path: String,
+            repo_contents_path: T.nilable(String),
             options: T::Hash[Symbol, T.untyped]
           )
           .void
       end
-      def initialize(dependencies:, dependency_files:, credentials:, repo_contents_path:, options: {})
+      def initialize(dependencies:, dependency_files:, credentials:, repo_contents_path: nil, options: {})
         super
+
+        raise ArgumentError, "repo_contents_path is required" if repo_contents_path.nil?
       end
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }

@@ -24,7 +24,7 @@ module Dependabot
         params(
           dependency_files: T::Array[Dependabot::DependencyFile],
           source: T.nilable(Dependabot::Source),
-          repo_contents_path: String,
+          repo_contents_path: T.nilable(String),
           credentials: T::Array[Dependabot::Credential],
           reject_external_code: T::Boolean,
           options: T::Hash[Symbol, T.untyped]
@@ -33,12 +33,14 @@ module Dependabot
       def initialize(
         dependency_files:,
         source: nil,
-        repo_contents_path:,
+        repo_contents_path: nil,
         credentials: [],
         reject_external_code: false,
         options: {}
       )
         super
+
+        raise ArgumentError, "repo_contents_path is required" if repo_contents_path.nil?
 
         set_go_environment_variables
       end
@@ -227,7 +229,7 @@ module Dependabot
           # means we don't need to worry about references to parent
           # directories, etc.
           T.let(
-            ReplaceStubber.new(repo_contents_path).stub_paths(manifest, go_mod&.directory),
+            ReplaceStubber.new(T.must(repo_contents_path)).stub_paths(manifest, go_mod&.directory),
             T.nilable(T::Hash[String, String])
           )
       end
