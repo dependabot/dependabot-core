@@ -66,7 +66,14 @@ module Dependabot
           target_dependencies = dependency_snapshot.job_dependencies
 
           if target_dependencies.empty?
-            record_security_update_dependency_not_found
+            # Pass expected dependency names (from job definition) and the list of
+            # available dependency names to improve troubleshooting.
+            expected = job.dependencies
+            available = dependency_snapshot.dependencies.map(&:name)
+            record_security_update_dependency_not_found(
+              expected: expected,
+              available: available
+            )
           else
             target_dependencies.each { |dep| check_and_create_pr_with_error_handling(dep) }
           end
