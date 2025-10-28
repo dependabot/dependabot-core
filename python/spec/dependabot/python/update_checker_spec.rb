@@ -170,6 +170,15 @@ RSpec.describe Dependabot::Python::UpdateChecker do
         ).and_call_original
       expect(checker.latest_version).to eq(Gem::Version.new("2.6.0"))
     end
+
+    it "passes the detected Python version to the finder" do
+      finder = instance_double(described_class::LatestVersionFinder)
+      allow(described_class::LatestVersionFinder).to receive(:new).and_return(finder)
+
+      expect(finder).to receive(:latest_version).with(language_version: kind_of(Dependabot::Python::Version))
+
+      checker.latest_version
+    end
   end
 
   describe "#lowest_security_fix_version" do
@@ -177,6 +186,16 @@ RSpec.describe Dependabot::Python::UpdateChecker do
 
     it "finds the lowest available non-vulnerable version" do
       expect(lowest_fix_version).to eq(Gem::Version.new("2.0.1"))
+    end
+
+    it "passes the detected Python version to the finder" do
+      finder = instance_double(described_class::LatestVersionFinder)
+      allow(described_class::LatestVersionFinder).to receive(:new).and_return(finder)
+
+      expect(finder).to receive(:lowest_security_fix_version)
+        .with(language_version: kind_of(Dependabot::Python::Version))
+
+      checker.lowest_security_fix_version
     end
 
     context "with a security vulnerability" do
