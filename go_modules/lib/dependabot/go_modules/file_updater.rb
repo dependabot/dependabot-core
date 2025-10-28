@@ -21,15 +21,13 @@ module Dependabot
             dependencies: T::Array[Dependabot::Dependency],
             dependency_files: T::Array[Dependabot::DependencyFile],
             credentials: T::Array[Dependabot::Credential],
-            repo_contents_path: T.nilable(String),
+            repo_contents_path: String,
             options: T::Hash[Symbol, T.untyped]
           )
           .void
       end
-      def initialize(dependencies:, dependency_files:, credentials:, repo_contents_path: nil, options: {})
+      def initialize(dependencies:, dependency_files:, credentials:, repo_contents_path:, options: {})
         super
-
-        use_repo_contents_stub if repo_contents_path.nil?
       end
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
@@ -77,31 +75,6 @@ module Dependabot
         raise "No go.mod!"
       end
 
-      sig { returns(String) }
-      def use_repo_contents_stub
-        @repo_contents_stub = T.let(true, T.nilable(T::Boolean))
-        @repo_contents_path = Dir.mktmpdir
-
-        Dir.chdir(@repo_contents_path) do
-          dependency_files.each do |file|
-            path = File.join(@repo_contents_path, directory, file.name)
-            path = Pathname.new(path).expand_path
-            FileUtils.mkdir_p(path.dirname)
-            File.write(path, file.content)
-          end
-
-          # Only used to create a backup git config that's reset
-          SharedHelpers.with_git_configured(credentials: []) do
-            `git config --global user.email "no-reply@github.com"`
-            `git config --global user.name "Dependabot"`
-            `git config --global init.defaultBranch "placeholder-default-branch"`
-            `git init .`
-            `git add .`
-            `git commit -m'fake repo_contents_path'`
-          end
-        end
-      end
-
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def go_mod
         @go_mod ||= T.let(get_original_file("go.mod"), T.nilable(Dependabot::DependencyFile))
@@ -147,7 +120,7 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def tidy?
-        !@repo_contents_stub
+        true
       end
 
       sig { returns(T::Boolean) }

@@ -24,7 +24,7 @@ module Dependabot
         params(
           dependency_files: T::Array[Dependabot::DependencyFile],
           source: T.nilable(Dependabot::Source),
-          repo_contents_path: T.nilable(String),
+          repo_contents_path: String,
           credentials: T::Array[Dependabot::Credential],
           reject_external_code: T::Boolean,
           options: T::Hash[Symbol, T.untyped]
@@ -33,7 +33,7 @@ module Dependabot
       def initialize(
         dependency_files:,
         source: nil,
-        repo_contents_path: nil,
+        repo_contents_path:,
         credentials: [],
         reject_external_code: false,
         options: {}

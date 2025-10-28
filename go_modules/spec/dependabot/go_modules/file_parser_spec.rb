@@ -10,7 +10,8 @@ require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
 RSpec.describe Dependabot::GoModules::FileParser do
   let(:directory) { "/" }
-  let(:repo_contents_path) { nil }
+  let(:project_name) { "simple" }
+  let(:repo_contents_path) { build_tmp_repo(project_name) }
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -41,7 +42,7 @@ RSpec.describe Dependabot::GoModules::FileParser do
 
   it "requires a go.mod to be present" do
     expect do
-      described_class.new(dependency_files: [], source: source)
+      described_class.new(dependency_files: [], source: source, repo_contents_path: repo_contents_path)
     end.to raise_error(RuntimeError)
   end
 
