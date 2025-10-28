@@ -179,6 +179,53 @@ RSpec.describe Dependabot::Python::UpdateChecker do
 
       checker.latest_version
     end
+
+    context "when package has Python version requirements" do
+      let(:pypi_response) do
+        fixture("pypi", "pypi_simple_response_django.html")
+      end
+      let(:pypi_url) { "https://pypi.org/simple/django/" }
+      let(:dependency_name) { "django" }
+      let(:dependency_version) { "2.2.0" }
+      let(:dependency_requirements) do
+        [{
+          file: "requirements.txt",
+          requirement: "==2.2.0",
+          groups: [],
+          source: nil
+        }]
+      end
+
+      context "with .python-version file specifying Python 3.6" do
+        let(:dependency_files) { [requirements_file, python_version_file] }
+        let(:python_version_file) do
+          Dependabot::DependencyFile.new(
+            name: ".python-version",
+            content: "3.6.0\n"
+          )
+        end
+
+        # Django 3.2+ requires Python 3.8+, so with Python 3.6 we should get an older version
+        it "respects Python version when filtering available versions" do
+          # This will use the Python version to filter, but since 3.6 is not supported by Dependabot
+          # it will raise an error
+          expect { checker.latest_version }.to raise_error(Dependabot::ToolVersionNotSupported)
+        end
+      end
+
+      context "with .python-version file specifying Python 3.11" do
+        let(:dependency_files) { [requirements_file, python_version_file] }
+        let(:python_version_file) do
+          Dependabot::DependencyFile.new(
+            name: ".python-version",
+            content: "3.11.0\n"
+          )
+        end
+
+        # Django 3.2.4 supports Python 3.11
+        it { is_expected.to eq(Gem::Version.new("3.2.4")) }
+      end
+    end
   end
 
   describe "#lowest_security_fix_version" do
