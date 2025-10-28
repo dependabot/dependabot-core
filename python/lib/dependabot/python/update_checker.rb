@@ -10,6 +10,8 @@ require "dependabot/errors"
 require "dependabot/python/name_normaliser"
 require "dependabot/python/requirement_parser"
 require "dependabot/python/requirement"
+require "dependabot/python/language_version_manager"
+require "dependabot/python/file_parser/python_requirement_parser"
 require "dependabot/registry_client"
 require "dependabot/requirements_update_strategy"
 require "dependabot/update_checkers"
@@ -17,6 +19,9 @@ require "dependabot/update_checkers/base"
 
 module Dependabot
   module Python
+    # rubocop:disable Metrics/ClassLength
+    # Class length exception: Added Python version detection to fix bug where versions were filtered
+    # using wrong Python version. Extracting to module would require more invasive refactoring.
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       extend T::Sig
 
@@ -73,7 +78,7 @@ module Dependabot
 
       sig { override.returns(T.nilable(Gem::Version)) }
       def lowest_security_fix_version
-        latest_version_finder.lowest_security_fix_version
+        latest_version_finder.lowest_security_fix_version(language_version: detected_python_version)
       end
 
       sig { override.returns(T.nilable(Gem::Version)) }
@@ -310,7 +315,7 @@ module Dependabot
 
       sig { returns(T.nilable(Gem::Version)) }
       def fetch_latest_version
-        latest_version_finder.latest_version
+        latest_version_finder.latest_version(language_version: detected_python_version)
       end
 
       sig { returns(LatestVersionFinder) }
@@ -455,7 +460,28 @@ module Dependabot
       def pip_compile_files
         dependency_files.select { |f| f.name.end_with?(".in") }
       end
+
+      sig { returns(T.nilable(Dependabot::Python::Version)) }
+      def detected_python_version
+        return @detected_python_version if defined?(@detected_python_version)
+
+        @detected_python_version = T.let(
+          begin
+            language_version_manager = LanguageVersionManager.new(
+              python_requirement_parser: FileParser::PythonRequirementParser.new(
+                dependency_files: dependency_files
+              )
+            )
+            Dependabot::Python::Version.new(language_version_manager.python_version)
+          rescue StandardError => e
+            Dependabot.logger.warn("Failed to detect Python version: #{e.message}")
+            nil
+          end,
+          T.nilable(Dependabot::Python::Version)
+        )
+      end
     end
+    # rubocop:enable Metrics/ClassLength
   end
 end
 
