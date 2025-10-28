@@ -70,7 +70,7 @@ RSpec.describe Dependabot::GoModules::FileParser do
           }
         )
       ]
-      described_class.new(dependency_files: [go_mod], source: source, credentials: credentials, repo_contents_path: repo_contents_path)
+      described_class.new(dependency_files: [go_mod], source:, credentials:, repo_contents_path:)
       expect(`go env GOPROXY`.strip).to eq("https://proxy.example.com,direct")
     end
 
