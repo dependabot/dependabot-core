@@ -22,7 +22,7 @@
         "version": "2.184.0",
         "requires_python": ">=3.7",
         "yanked": false,
-        "upload_time": "2025-10-10T12:00:00",
+        "upload_time": "2025-10-18T14:54:31Z",
         "url": "https://files.pythonhosted.org/packages/test/google_api_python_client-2.184.0-py3-none-any.whl"
       }
     ],
@@ -32,7 +32,7 @@
         "version": "2.185.0",
         "requires_python": ">=3.7",
         "yanked": false,
-        "upload_time": "2025-10-17T12:00:00",
+        "upload_time": "2025-10-27T14:54:31Z",
         "url": "https://files.pythonhosted.org/packages/test/google_api_python_client-2.185.0-py3-none-any.whl"
       }
     ]
