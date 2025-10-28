@@ -11,6 +11,7 @@ require "dependabot/service"
 require "dependabot/updater/error_handler"
 require "dependabot/updater/operations/refresh_group_update_pull_request"
 require "dependabot/updater/group_dependency_selector"
+require "dependabot/fetched_files"
 
 require "dependabot/bundler"
 
