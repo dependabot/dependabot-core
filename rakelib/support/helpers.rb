@@ -21,6 +21,7 @@ class RakeHelpers
   GEMSPECS = T.let(
     %w(
       common/dependabot-common.gemspec
+      bazel/dependabot-bazel.gemspec
       bun/dependabot-bun.gemspec
       bundler/dependabot-bundler.gemspec
       cargo/dependabot-cargo.gemspec
@@ -37,6 +38,7 @@ class RakeHelpers
       gradle/dependabot-gradle.gemspec
       helm/dependabot-helm.gemspec
       hex/dependabot-hex.gemspec
+      julia/dependabot-julia.gemspec
       maven/dependabot-maven.gemspec
       npm_and_yarn/dependabot-npm_and_yarn.gemspec
       nuget/dependabot-nuget.gemspec

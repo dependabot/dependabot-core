@@ -379,13 +379,25 @@ RSpec.describe namespace::PoetryVersionResolver do
   describe "handles SharedHelpers::HelperSubprocessFailed errors raised by version resolver" do
     subject(:poetry_error_handler) { error_handler.handle_poetry_error(exception) }
 
+    let(:exception) { Exception.new(response) }
     let(:error_handler) do
       Dependabot::Python::PoetryErrorHandler.new(
         dependencies: dependency,
         dependency_files: dependency_files
       )
     end
-    let(:exception) { Exception.new(response) }
+
+    context "with 'Cannot enrich dependency with incompatible constraints' error" do
+      let(:response) do
+        "Cannot enrich dependency with incompatible constraints: foo (>=1.0.0) and foo (<1.0.0)"
+      end
+
+      it "raises a helpful error with details" do
+        expect { poetry_error_handler }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message).to include("Incompatible version constraints for foo: >=1.0.0 vs <1.0.0")
+        end
+      end
+    end
 
     context "with incompatible constraints mentioned in requirements" do
       let(:response) { "Incompatible constraints in requirements of histolab (0.7.0):" }

@@ -132,6 +132,11 @@ docker run --rm -ti \
   -v "$(pwd)/.rubocop_todo.yml:$CODE_DIR/.rubocop_todo.yml" \
   -v "$(pwd)/.ruby-version:$CODE_DIR/.ruby-version" \
   -v "$(pwd)/bin:$CODE_DIR/bin" \
+  -v "$(pwd)/bazel/.rubocop.yml:$CODE_DIR/bazel/.rubocop.yml" \
+  -v "$(pwd)/bazel/dependabot-bazel.gemspec:$CODE_DIR/bazel/dependabot-bazel.gemspec" \
+  -v "$(pwd)/bazel/lib:$CODE_DIR/bazel/lib" \
+  -v "$(pwd)/bazel/script:$CODE_DIR/bazel/script" \
+  -v "$(pwd)/bazel/spec:$CODE_DIR/bazel/spec" \
   -v "$(pwd)/bun/.rubocop.yml:$CODE_DIR/bun/.rubocop.yml" \
   -v "$(pwd)/bun/dependabot-bun.gemspec:$CODE_DIR/bun/dependabot-bun.gemspec" \
   -v "$(pwd)/bun/helpers:$CODE_DIR/bun/helpers" \
