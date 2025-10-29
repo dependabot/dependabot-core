@@ -22,7 +22,7 @@ uuid = "ade2ca70-3891-5945-98fb-dc099432e06a"
 version = "1.11.0"
 
 [[deps.DependabotHelper]]
-deps = ["JSON", "Pkg", "PrecompileTools"]
+deps = ["JSON", "Pkg", "PrecompileTools", "TOML"]
 path = "DependabotHelper.jl"
 uuid = "e7a99c2c-d05a-4768-9b9a-24beacacea09"
 version = "0.1.0"

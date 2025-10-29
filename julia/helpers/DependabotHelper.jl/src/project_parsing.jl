@@ -39,30 +39,14 @@ function parse_project(project_path::String, manifest_path::Union{String,Nothing
             version = string(project_info.version)
             uuid = string(project_info.uuid)
 
-            # Get manifest information if available
-            manifest_info = Dict{String,Any}()
-            manifest_file_path = if !isnothing(manifest_path)
-                if !samefile(manifest_path, joinpath(project_dir, "Manifest.toml"))
-                    return Dict("error" => "Manifest file found by Julia ($(ctx.env.manifest_file)) is not the same file as the specified file: $manifest_path")
-                end
-                manifest_path
-            else
-                ctx.env.manifest_file
-            end
+            # Note: Following CompatHelper.jl's approach, we don't use Manifest.toml
+            # for version information. Dependabot should update based on [compat]
+            # constraints in Project.toml, not locked versions in Manifest.toml.
 
-            manifest_versions = Dict{String,String}()
-            if isfile(manifest_file_path)
-                manifest_result = parse_manifest(manifest_file_path)
-                if !haskey(manifest_result, "error")
-                    manifest_info = manifest_result
-                    # Extract versions from manifest for lookup
-                    for dep in manifest_result["dependencies"]
-                        manifest_versions[dep["name"]] = dep["version"]
-                    end
-                end
-            end
+            # Parse Project.toml directly to get weakdeps (Julia's Pkg may not populate this field)
+            project_toml = TOML.parsefile(project_path)
 
-            # Get dependencies and add resolved versions
+            # Get dependencies and add compat requirements
             dependencies = []
             for (dep_name, dep_uuid) in project_info.deps
                 dep_info = Dict{String,Any}(
@@ -75,7 +59,7 @@ function parse_project(project_path::String, manifest_path::Union{String,Nothing
                     compat_spec = project_info.compat[dep_name]
                     # Extract the original constraint string
                     constraint_str = if isa(compat_spec, Pkg.Types.Compat)
-                        compat_spec.str  # This should be the original constraint string
+                        compat_spec.str
                     else
                         string(compat_spec)
                     end
@@ -84,51 +68,21 @@ function parse_project(project_path::String, manifest_path::Union{String,Nothing
                     dep_info["requirement"] = "*"
                 end
 
-                # Add resolved version from manifest if available
-                if haskey(manifest_versions, dep_name)
-                    dep_info["resolved_version"] = manifest_versions[dep_name]
-                end
-
                 push!(dependencies, dep_info)
             end
 
-            # Get dev-dependencies (extras)
-            dev_dependencies = []
-            for (dep_name, dep_uuid) in project_info.extras
-                dev_dep_info = Dict{String,Any}(
-                    "name" => dep_name,
-                    "uuid" => string(dep_uuid)
-                )
-
-                # Add version constraint if available in compat
-                if haskey(project_info.compat, dep_name)
-                    compat_spec = project_info.compat[dep_name]
-                    # Extract the original constraint string
-                    constraint_str = if isa(compat_spec, Pkg.Types.Compat)
-                        compat_spec.str  # This should be the original constraint string
-                    else
-                        string(compat_spec)
-                    end
-                    dev_dep_info["requirement"] = constraint_str
-                else
-                    dev_dep_info["requirement"] = "*"
-                end
-
-                # Add resolved version from manifest if available
-                if haskey(manifest_versions, dep_name)
-                    dev_dep_info["resolved_version"] = manifest_versions[dep_name]
-                end
-
-                push!(dev_dependencies, dev_dep_info)
-            end
+            # Note: We don't process [extras] to match CompatHelper.jl behavior
+            # CompatHelper only processes [deps] and [weakdeps]
 
             # Get weak dependencies (weakdeps) - available in Julia 1.9+
+            # Read directly from TOML since Pkg may not populate project_info.weakdeps
             weak_dependencies = []
-            if isdefined(project_info, :weakdeps) && !isnothing(project_info.weakdeps)
-                for (dep_name, dep_uuid) in project_info.weakdeps
+            if haskey(project_toml, "weakdeps")
+                weakdeps_section = project_toml["weakdeps"]
+                for (dep_name, dep_uuid_str) in weakdeps_section
                     weak_dep_info = Dict{String,Any}(
                         "name" => dep_name,
-                        "uuid" => string(dep_uuid)
+                        "uuid" => dep_uuid_str
                     )
 
                     # Add version constraint if available in compat
@@ -143,11 +97,6 @@ function parse_project(project_path::String, manifest_path::Union{String,Nothing
                         weak_dep_info["requirement"] = constraint_str
                     else
                         weak_dep_info["requirement"] = "*"
-                    end
-
-                    # Add resolved version from manifest if available
-                    if haskey(manifest_versions, dep_name)
-                        weak_dep_info["resolved_version"] = manifest_versions[dep_name]
                     end
 
                     push!(weak_dependencies, weak_dep_info)
@@ -165,27 +114,14 @@ function parse_project(project_path::String, manifest_path::Union{String,Nothing
                 end
             end
 
-            # Get manifest information if available
-            manifest_info = Dict{String,Any}()
-            manifest_file_path = if !isnothing(manifest_path)
-                manifest_path
-            else
-                joinpath(project_dir, "Manifest.toml")
-            end
-
-            # No additional code needed here - everything is processed above
-
             return Dict{String,Any}(
                 "name" => name,
                 "version" => version,
                 "uuid" => uuid,
                 "julia_version" => julia_version,
                 "dependencies" => dependencies,
-                "dev_dependencies" => dev_dependencies,
                 "weak_dependencies" => weak_dependencies,
-                "manifest" => manifest_info,
-                "project_path" => ctx.env.project_file,
-                "manifest_path" => manifest_file_path
+                "project_path" => ctx.env.project_file
             )
         end
     catch ex

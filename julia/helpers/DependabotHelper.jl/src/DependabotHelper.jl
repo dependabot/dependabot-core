@@ -2,6 +2,7 @@ module DependabotHelper
 
 import JSON
 import Pkg
+import TOML
 using PrecompileTools
 
 # Include all the logical function modules

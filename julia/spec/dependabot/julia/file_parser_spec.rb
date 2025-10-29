@@ -48,13 +48,13 @@ RSpec.describe Dependabot::Julia::FileParser do
       example_dep = dependencies.find { |d| d.name == "Example" }
       expect(example_dep).to be_a(Dependabot::Dependency)
       expect(example_dep.name).to eq("Example")
-      expect(example_dep.version).to eq("0.4.1")
+      expect(example_dep.version).to be_nil # No version - use compat requirement
       expect(example_dep.package_manager).to eq("julia")
 
       requirement = example_dep.requirements.first
       expect(requirement[:requirement]).to eq("0.4")
       expect(requirement[:file]).to eq("Project.toml")
-      expect(requirement[:groups]).to eq(["runtime"])
+      expect(requirement[:groups]).to eq(["deps"])
     end
 
     context "when only Project.toml exists (no Manifest.toml)" do
@@ -85,38 +85,24 @@ RSpec.describe Dependabot::Julia::FileParser do
         )
       end
 
-      it "parses both runtime and test dependencies" do
-        expect(dependencies.length).to eq(4) # Example (runtime), FilePathsBase (test), Test (test), JSON (weak)
+      it "parses runtime and weak dependencies (matching CompatHelper.jl)" do
+        # CompatHelper.jl only processes [deps] and [weakdeps], not [extras]
+        expect(dependencies.length).to eq(2) # Example (deps), JSON (weakdeps)
 
-        # Runtime dependency
+        # deps dependency
         example_dep = dependencies.find { |d| d.name == "Example" }
         expect(example_dep).to be_a(Dependabot::Dependency)
         expect(example_dep.name).to eq("Example")
-        expect(example_dep.version).to eq("0.4.1")
-        expect(example_dep.requirements.first[:groups]).to eq(["runtime"])
+        expect(example_dep.version).to be_nil # No version - use compat requirement
+        expect(example_dep.requirements.first[:groups]).to eq(["deps"])
         expect(example_dep.requirements.first[:requirement]).to eq("0.4")
-
-        # Test dependency with compat entry
-        filepaths_dep = dependencies.find { |d| d.name == "FilePathsBase" }
-        expect(filepaths_dep).to be_a(Dependabot::Dependency)
-        expect(filepaths_dep.name).to eq("FilePathsBase")
-        expect(filepaths_dep.version).to eq("0.8.1")
-        expect(filepaths_dep.requirements.first[:groups]).to eq(["test"])
-        expect(filepaths_dep.requirements.first[:requirement]).to eq("0.6, 0.7, 0.8")
-
-        # Test dependency without compat entry (uses wildcard)
-        test_dep = dependencies.find { |d| d.name == "Test" }
-        expect(test_dep).to be_a(Dependabot::Dependency)
-        expect(test_dep.name).to eq("Test")
-        expect(test_dep.requirements.first[:groups]).to eq(["test"])
-        expect(test_dep.requirements.first[:requirement]).to eq("*")
 
         # Weak dependency with compat entry
         json_dep = dependencies.find { |d| d.name == "JSON" }
         expect(json_dep).to be_a(Dependabot::Dependency)
         expect(json_dep.name).to eq("JSON")
-        expect(json_dep.version).to eq("0.21.4")
-        expect(json_dep.requirements.first[:groups]).to eq(["weak"])
+        expect(json_dep.version).to be_nil # No version - use compat requirement
+        expect(json_dep.requirements.first[:groups]).to eq(["weakdeps"])
         expect(json_dep.requirements.first[:requirement]).to eq("0.21")
       end
     end
