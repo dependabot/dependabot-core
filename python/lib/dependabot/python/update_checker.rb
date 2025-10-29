@@ -26,6 +26,7 @@ module Dependabot
       require_relative "update_checker/pip_version_resolver"
       require_relative "update_checker/requirements_updater"
       require_relative "update_checker/latest_version_finder"
+      require_relative "update_checker/library_detector"
 
       MAIN_PYPI_INDEXES = %w(
         https://pypi.python.org/simple/
@@ -343,25 +344,8 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def library?
-        return false unless updating_pyproject?
-        return false unless library_details
-
-        return false if T.must(library_details)["name"].nil?
-
-        # Hit PyPi and check whether there are details for a library with a
-        # matching name and description
-        index_response = Dependabot::RegistryClient.get(
-          url: "https://pypi.org/pypi/#{normalised_name(T.must(library_details)['name'])}/json/"
-        )
-
-        return false unless index_response.status == 200
-
-        pypi_info = JSON.parse(index_response.body)["info"] || {}
-        pypi_info["summary"] == T.must(library_details)["description"]
-      rescue Excon::Error::Timeout, Excon::Error::Socket
-        false
-      rescue URI::InvalidURIError
-        false
+        # Delegated to helper to keep this class small
+        LibraryDetector.new(dependency_files: dependency_files).library?
       end
 
       sig { returns(T::Boolean) }
