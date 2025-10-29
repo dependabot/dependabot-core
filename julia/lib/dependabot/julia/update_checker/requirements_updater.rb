@@ -81,7 +81,9 @@ module Dependabot
         new_spec = simplified_version_spec(target_version)
 
         # Append the new spec to the existing requirement (CompatHelper KeepEntry behavior)
-        "#{requirement_string}, #{new_spec}"
+        # Detect whether the existing requirement uses spaces after commas and preserve that format
+        separator = requirement_string.include?(", ") ? ", " : ","
+        "#{requirement_string}#{separator}#{new_spec}"
       end
 
       sig { params(target_version: Dependabot::Julia::Version).returns(String) }
