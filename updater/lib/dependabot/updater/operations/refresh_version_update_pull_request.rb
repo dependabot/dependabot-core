@@ -46,6 +46,8 @@ module Dependabot
           @job = job
           @dependency_snapshot = dependency_snapshot
           @error_handler = error_handler
+          # TODO: Collect @created_pull_requests on the Job object?
+          @created_pull_requests = T.let([], T::Array[PullRequest])
           # A list of notices that will be used in PR messages and/or sent to the dependabot github alerts.
           @notices = T.let([], T::Array[Dependabot::Notice])
 
@@ -85,6 +87,9 @@ module Dependabot
 
         sig { returns(Dependabot::Updater::ErrorHandler) }
         attr_reader :error_handler
+
+        sig { returns(T::Array[PullRequest]) }
+        attr_reader :created_pull_requests
 
         # A list of notices that will be used in PR messages and/or sent to the dependabot github alerts.
         sig { returns(T::Array[Dependabot::Notice]) }
@@ -191,6 +196,8 @@ module Dependabot
           )
 
           service.create_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
+
+          created_pull_requests << PullRequest.create_from_updated_dependencies(dependency_change.updated_dependencies)
         end
 
         sig { params(dependency_change: Dependabot::DependencyChange).void }
@@ -293,7 +300,9 @@ module Dependabot
         end
         def existing_pull_request(updated_dependencies)
           new_pr = PullRequest.create_from_updated_dependencies(updated_dependencies)
-          job.existing_pull_requests.find { |pr| pr == new_pr }
+
+          job.existing_pull_requests.find { |pr| pr == new_pr } ||
+            created_pull_requests.find { |pr| pr == new_pr }
         end
       end
     end
