@@ -1,14 +1,13 @@
-const lockfileParser = require("./lockfile-parser");
-const updater = require("./updater");
-const subdependencyUpdater = require("./subdependency-updater");
-const peerDependencyChecker = require("./peer-dependency-checker");
-const conflictingDependencyParser = require("./conflicting-dependency-parser");
+import parse from "./lockfile-parser";
+import updateDependencyFiles from "./updater";
+import updateDependencyFile from "./subdependency-updater";
+import checkPeerDependencies from "./peer-dependency-checker";
+import findConflictingDependencies from "./conflicting-dependency-parser";
 
-module.exports = {
-  parseLockfile: lockfileParser.parse,
-  update: updater.updateDependencyFiles,
-  updateSubdependency: subdependencyUpdater.updateDependencyFile,
-  checkPeerDependencies: peerDependencyChecker.checkPeerDependencies,
-  findConflictingDependencies:
-    conflictingDependencyParser.findConflictingDependencies,
+export default {
+  parseLockfile: parse,
+  update: updateDependencyFiles,
+  updateSubdependency: updateDependencyFile,
+  checkPeerDependencies,
+  findConflictingDependencies,
 };
