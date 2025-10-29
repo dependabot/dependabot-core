@@ -97,10 +97,61 @@ function parse_project(project_path::String, manifest_path::Union{String,Nothing
             for (dep_name, dep_uuid) in project_info.extras
                 dev_dep_info = Dict{String,Any}(
                     "name" => dep_name,
-                    "uuid" => string(dep_uuid),
-                    "requirement" => "*"
+                    "uuid" => string(dep_uuid)
                 )
+
+                # Add version constraint if available in compat
+                if haskey(project_info.compat, dep_name)
+                    compat_spec = project_info.compat[dep_name]
+                    # Extract the original constraint string
+                    constraint_str = if isa(compat_spec, Pkg.Types.Compat)
+                        compat_spec.str  # This should be the original constraint string
+                    else
+                        string(compat_spec)
+                    end
+                    dev_dep_info["requirement"] = constraint_str
+                else
+                    dev_dep_info["requirement"] = "*"
+                end
+
+                # Add resolved version from manifest if available
+                if haskey(manifest_versions, dep_name)
+                    dev_dep_info["resolved_version"] = manifest_versions[dep_name]
+                end
+
                 push!(dev_dependencies, dev_dep_info)
+            end
+
+            # Get weak dependencies (weakdeps) - available in Julia 1.9+
+            weak_dependencies = []
+            if isdefined(project_info, :weakdeps) && !isnothing(project_info.weakdeps)
+                for (dep_name, dep_uuid) in project_info.weakdeps
+                    weak_dep_info = Dict{String,Any}(
+                        "name" => dep_name,
+                        "uuid" => string(dep_uuid)
+                    )
+
+                    # Add version constraint if available in compat
+                    if haskey(project_info.compat, dep_name)
+                        compat_spec = project_info.compat[dep_name]
+                        # Extract the original constraint string
+                        constraint_str = if isa(compat_spec, Pkg.Types.Compat)
+                            compat_spec.str
+                        else
+                            string(compat_spec)
+                        end
+                        weak_dep_info["requirement"] = constraint_str
+                    else
+                        weak_dep_info["requirement"] = "*"
+                    end
+
+                    # Add resolved version from manifest if available
+                    if haskey(manifest_versions, dep_name)
+                        weak_dep_info["resolved_version"] = manifest_versions[dep_name]
+                    end
+
+                    push!(weak_dependencies, weak_dep_info)
+                end
             end
 
             # Get Julia version requirement
@@ -131,6 +182,7 @@ function parse_project(project_path::String, manifest_path::Union{String,Nothing
                 "julia_version" => julia_version,
                 "dependencies" => dependencies,
                 "dev_dependencies" => dev_dependencies,
+                "weak_dependencies" => weak_dependencies,
                 "manifest" => manifest_info,
                 "project_path" => ctx.env.project_file,
                 "manifest_path" => manifest_file_path
