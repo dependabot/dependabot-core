@@ -832,6 +832,14 @@ RSpec.describe Dependabot::Gradle::FileParser do
             ]
           end
 
+          before do
+            Dependabot::Experiments.register(:gradle_wrapper_updater, true)
+          end
+
+          after do
+            Dependabot::Experiments.reset!
+          end
+
           its(:length) { is_expected.to eq(1) }
 
           describe "check dependency" do

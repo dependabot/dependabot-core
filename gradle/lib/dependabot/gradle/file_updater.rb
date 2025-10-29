@@ -58,6 +58,7 @@ module Dependabot
       # rubocop:disable Metrics/AbcSize
       # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/PerceivedComplexity
+      # rubocop:disable Metrics/MethodLength
       sig do
         params(buildfiles: T::Array[Dependabot::DependencyFile], dependency: Dependabot::Dependency)
           .returns(T::Array[Dependabot::DependencyFile])
@@ -102,17 +103,24 @@ module Dependabot
         end
 
         # runs native updaters (e.g. wrapper, lockfile) on relevant build files updated
-        updaters = native_updaters(files, dependency)
+        updated_files = T.let([], T::Array[Dependabot::DependencyFile])
         buildfiles_processed.each do |_, buildfile|
-          updated_files = updaters.flat_map { |updater| updater.update_files(buildfile) }
+          if Dependabot::Experiments.enabled?(:gradle_lockfile_updater)
+            lockfile_updater = LockfileUpdater.new(dependency_files: files)
+            updated_files << lockfile_updater.update_lockfiles(buildfile)
+          end
+          if Dependabot::Experiments.enabled?(:gradle_wrapper_updater)
+            wrapper_updater = WrapperUpdater.new(dependency_files: files, dependency: dependency)
+            updated_files << wrapper_updater.update_files(buildfile)
+          end
+        end
 
-          updated_files.each do |file|
-            existing_file = files.find { |f| f.name == file.name && f.directory == file.directory }
-            if existing_file.nil?
-              files << file
-            else
-              files[T.must(files.index(existing_file))] = file
-            end
+        updated_files.each do |file|
+          existing_file = files.find { |f| f.name == file.name && f.directory == file.directory }
+          if existing_file.nil?
+            files << file
+          else
+            files[T.must(files.index(existing_file))] = file
           end
         end
 
@@ -121,20 +129,7 @@ module Dependabot
       # rubocop:enable Metrics/PerceivedComplexity
       # rubocop:enable Metrics/CyclomaticComplexity
       # rubocop:enable Metrics/AbcSize
-
-      sig do
-        params(
-          files: T::Array[Dependabot::DependencyFile],
-          dependency: Dependabot::Dependency
-        ).returns(T::Array[GradleUpdaterBase])
-      end
-      def native_updaters(files, dependency)
-        updaters = T.let([], T::Array[GradleUpdaterBase])
-        updaters << LockfileUpdater.new(dependency_files: files) if Experiments.enabled?(:gradle_lockfile_updater)
-        updaters << WrapperUpdater.new(dependency_files: files, dependency: dependency) if
-          Experiments.enabled?(:gradle_wrapper_updater)
-        updaters
-      end
+      # rubocop:enable Metrics/MethodLength
 
       sig do
         params(
