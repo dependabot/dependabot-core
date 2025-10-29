@@ -262,7 +262,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
     let(:pyproject_fixture_name) { "poetry_v2_pep621.toml" }
 
     context "without a lockfile" do
-      # Note: PEP 621 dependencies from [project] section are parsed by Python helper
+      # PEP 621 dependencies from [project] section are parsed by Python helper
       # which requires Python/pyenv to be available (Docker environment).
       # This test focuses on the Poetry-specific groups which are parsed in Ruby.
       its(:length) { is_expected.to be >= 3 }
