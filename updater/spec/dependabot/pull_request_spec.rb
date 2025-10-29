@@ -1,7 +1,10 @@
 # typed: false
 # frozen_string_literal: true
 
+require "ostruct"
+
 require "spec_helper"
+require "dependabot/dependency"
 require "dependabot/pull_request"
 
 RSpec.describe Dependabot::PullRequest do
@@ -231,6 +234,71 @@ RSpec.describe Dependabot::PullRequest do
       )
 
       expect(pr1).not_to eq(pr2)
+    end
+
+    context "when comparing PRs with nil versions" do
+      it "is true when both have nil version" do
+        pr1 = described_class.new(
+          [
+            Dependabot::PullRequest::Dependency.new(
+              name: "foo",
+              version: nil
+            )
+          ]
+        )
+        pr2 = described_class.new(
+          [
+            Dependabot::PullRequest::Dependency.new(
+              name: "foo",
+              version: nil
+            )
+          ]
+        )
+
+        expect(pr1).to eq(pr2)
+      end
+
+      it "is true when comparing nil version from job definition with nil version from updated deps" do
+        # This simulates an existing PR from job definition (pending PR with nil version)
+        existing_prs = described_class.create_from_job_definition(
+          existing_pull_requests: [[{ "dependency-name" => "foo" }]]
+        )
+        existing_pr = existing_prs.first
+
+        # This simulates a new PR being created from updated dependencies with nil version
+        mock_dep = Dependabot::Dependency.new(
+          name: "foo",
+          version: nil,
+          requirements: [],
+          package_manager: "bundler"
+        )
+        new_pr = described_class.create_from_updated_dependencies([mock_dep])
+
+        expect(existing_pr).to eq(new_pr)
+      end
+
+      it "is false when one has nil version and the other has a version" do
+        pr1 = described_class.new(
+          [
+            Dependabot::PullRequest::Dependency.new(
+              name: "foo",
+              version: nil
+            )
+          ]
+        )
+        pr2 = described_class.new(
+          [
+            Dependabot::PullRequest::Dependency.new(
+              name: "foo",
+              version: "1.0.0"
+            )
+          ]
+        )
+
+        # This currently fails - it incorrectly returns true because compact removes the nil
+        # After the fix, this should correctly return false
+        expect(pr1).not_to eq(pr2)
+      end
     end
   end
 end
