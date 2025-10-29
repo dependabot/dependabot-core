@@ -25,19 +25,25 @@ module Dependabot
             ),
             T::Array[OpenStruct]
           )
-          @available_versions += versions
-                                 .select { |v| release_version?(version: v) }
-                                 .map { |v| T.let(v["version"], String) }
-                                 .uniq
-                                 .select { |v| Gradle::Version.correct?(v) }
-                                 .map { |v| Gradle::Version.new(v) }
-                                 .sort
-                                 .map { |version| { version: version, source_url: "https://services.gradle.org" } }
+          @available_versions +=
+            versions
+            .select { |v| release_version?(version: v) }
+            .uniq(&:version)
+            .map { |v| extract_version(v) }
+            .sort_by { |v| v[:version] }
+        end
+
+        sig { params(version: OpenStruct).returns(T::Hash[Symbol, T.untyped]) }
+        def self.extract_version(version)
+          { version: Gradle::Version.new(T.let(version["version"], String)),
+            released_at: Time.parse(T.let(version["buildTime"], String)),
+            source_url: "https://services.gradle.org" }
         end
 
         sig { params(version: OpenStruct).returns(T::Boolean) }
         def self.release_version?(version:)
-          T.let(version[:broken], T::Boolean) == false &&
+          Gradle::Version.correct?(T.let(version[:version], String)) &&
+            T.let(version[:broken], T::Boolean) == false &&
             T.let(version[:snapshot], T::Boolean) == false &&
             T.let(version[:rcFor], String) == "" &&
             T.let(version[:milestoneFor], String) == "" &&
