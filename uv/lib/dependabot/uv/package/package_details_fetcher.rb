@@ -385,7 +385,7 @@ module Dependabot
 
         sig { params(json_url: String).returns(Excon::Response) }
         def registry_json_response_for_dependency(json_url)
-          url = "#{json_url.chomp('/')}/#{@dependency.name}/json"
+          url = "#{json_url.chomp('/')}/#{normalised_name}/json"
           Dependabot::RegistryClient.get(
             url: url,
             headers: { "Accept" => APPLICATION_JSON }
