@@ -140,8 +140,7 @@ module Dependabot
       sorted2 = deps2.sort_by(&:name)
 
       sorted1.each_with_index do |dep1, index|
-        dep2 = sorted2[index]
-        return false unless dep2
+        dep2 = T.must(sorted2[index])
         return false unless dependencies_equal?(dep1, dep2, compare_directory: compare_directory)
       end
 
@@ -154,8 +153,9 @@ module Dependabot
       return false if compare_directory && dep1.directory != dep2.directory
       return false unless dep1.removed? == dep2.removed?
 
-      # If either dependency has a nil version, consider them equal by name only
-      # This allows pending PRs without computed versions to match new updates
+      # If either dependency has a nil version, consider them equal (after matching name/directory/removed)
+      # This allows pending PRs without computed versions to match new updates,
+      # preventing duplicate PR creation when the same dependency is processed again
       return true if dep1.version.nil? || dep2.version.nil?
 
       # Otherwise, versions must match exactly
