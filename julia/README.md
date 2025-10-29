@@ -12,6 +12,10 @@ It handles updates for packages managed through Julia's package manager and pars
 - Integration with Julia's General registry
 - Cross-platform compatibility
 
+## Behavior Alignment with CompatHelper.jl
+
+This implementation is designed to align with [CompatHelper.jl](https://github.com/JuliaRegistries/CompatHelper.jl), the main tool used for automated dependency updates by the Julia ecosystem (at the time of writing).
+
 ## Julia Documentation References
 
 For more information about Julia package management, see:
