@@ -131,11 +131,11 @@ function parse_project(project_path::String, manifest_path::Union{String,Nothing
 end
 
 """
-    parse_project(args::Dict)
+    parse_project(args::AbstractDict)
 
 Args wrapper for parse_project function
 """
-function parse_project(args::Dict)
+function parse_project(args::AbstractDict)
     return parse_project(args["project_path"], get(args, "manifest_path", nothing))
 end
 
@@ -204,11 +204,11 @@ function parse_manifest(manifest_path::String)
 end
 
 """
-    parse_manifest(args::Dict)
+    parse_manifest(args::AbstractDict)
 
 Args wrapper for parse_manifest function
 """
-function parse_manifest(args::Dict)
+function parse_manifest(args::AbstractDict)
     return parse_manifest(args["manifest_path"])
 end
 
@@ -313,10 +313,10 @@ function update_manifest(project_path::String, updates::Dict)
 end
 
 """
-    update_manifest(args::Dict)
+    update_manifest(args::AbstractDict)
 
 Args wrapper for update_manifest function
 """
-function update_manifest(args::Dict)
+function update_manifest(args::AbstractDict)
     return update_manifest(args["project_path"], args["updates"])
 end

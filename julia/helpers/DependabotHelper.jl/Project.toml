@@ -10,7 +10,7 @@ PrecompileTools = "aea7be01-6a6a-4083-8856-8a6e6704d82a"
 TOML = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
 
 [compat]
-JSON = "0.21"
+JSON = "1"
 Pkg = "1"
 PrecompileTools = "1.2.1"
 TOML = "1"

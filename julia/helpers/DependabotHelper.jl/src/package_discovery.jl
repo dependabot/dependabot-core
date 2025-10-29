@@ -42,11 +42,11 @@ function get_latest_version(package_name::String, package_uuid::String)
 end
 
 """
-    get_latest_version(args::Dict)
+    get_latest_version(args::AbstractDict)
 
 Args wrapper for get_latest_version function with UUID requirement
 """
-function get_latest_version(args::Dict)
+function get_latest_version(args::AbstractDict)
     package_name = get(args, "package_name", "")
     package_uuid = get(args, "package_uuid", "")
 
@@ -92,7 +92,7 @@ function get_package_metadata(package_name::String, package_uuid::String)
 end
 
 # Args wrapper for get_package_metadata function with optional UUID
-function get_package_metadata(args::Dict)
+function get_package_metadata(args::AbstractDict)
     package_name = get(args, "package_name", "")
     package_uuid = get(args, "package_uuid", "")
 
@@ -157,7 +157,7 @@ function fetch_package_versions(package_name::String, package_uuid::String)
 end
 
 # Args wrapper for fetch_package_versions function with UUID requirement
-function fetch_package_versions(args::Dict)
+function fetch_package_versions(args::AbstractDict)
     package_name = get(args, "package_name", "")
     package_uuid = get(args, "package_uuid", "")
 
@@ -221,7 +221,7 @@ function fetch_package_info(package_name::String, package_uuid::String)
 end
 
 # Args wrapper for fetch_package_info function with UUID requirement
-function fetch_package_info(args::Dict)
+function fetch_package_info(args::AbstractDict)
     package_name = get(args, "package_name", "")
     package_uuid = get(args, "package_uuid", "")
 
@@ -255,7 +255,7 @@ function find_package_source_url(package_name::String, package_uuid::String)
 end
 
 # Args wrapper for find_package_source_url function with UUID requirement
-function find_package_source_url(args::Dict)
+function find_package_source_url(args::AbstractDict)
     package_name = get(args, "package_name", "")
     package_uuid = get(args, "package_uuid", "")
 
@@ -416,7 +416,7 @@ function get_available_versions(package_name::String, package_uuid::String)
 end
 
 # Args wrapper for get_available_versions function with UUID requirement
-function get_available_versions(args::Dict)
+function get_available_versions(args::AbstractDict)
     package_name = get(args, "package_name", "")
     package_uuid = get(args, "package_uuid", "")
 
@@ -461,7 +461,7 @@ function get_version_release_date(package_name::String, version::String, package
 end
 
 # Args wrapper for get_version_release_date function with UUID requirement
-function get_version_release_date(args::Dict)
+function get_version_release_date(args::AbstractDict)
     package_name = get(args, "package_name", "")
     version = get(args, "version", "")
     package_uuid = get(args, "package_uuid", "")
