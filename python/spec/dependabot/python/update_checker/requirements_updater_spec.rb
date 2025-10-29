@@ -537,6 +537,19 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
 
                 its([:requirement]) { is_expected.to eq("~=5.1") }
               end
+
+              context "when 2-component version needs update to different major version" do
+                let(:pyproject_req_string) { "~=5.1" }
+                let(:latest_resolvable_version) { "6.0.0" }
+
+                its([:requirement]) { is_expected.to eq("~=6.0") }
+
+                context "with the bump_versions_if_necessary update strategy" do
+                  let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary }
+
+                  its([:requirement]) { is_expected.to eq("~=6.0") }
+                end
+              end
             end
 
             context "when a ~ requirement was specified" do
