@@ -277,7 +277,7 @@ RSpec.describe Dependabot::PullRequest do
         expect(existing_pr).to eq(new_pr)
       end
 
-      it "is false when one has nil version and the other has a version" do
+      it "is true when one has nil version and the other has a version" do
         pr1 = described_class.new(
           [
             Dependabot::PullRequest::Dependency.new(
@@ -295,8 +295,30 @@ RSpec.describe Dependabot::PullRequest do
           ]
         )
 
-        # This currently fails - it incorrectly returns true because compact removes the nil
-        # After the fix, this should correctly return false
+        # With the fix, pending PRs with nil version should match any version
+        # This prevents creating duplicate pending PRs when version is computed later
+        expect(pr1).to eq(pr2)
+      end
+
+      it "is false when both have different non-nil versions" do
+        pr1 = described_class.new(
+          [
+            Dependabot::PullRequest::Dependency.new(
+              name: "foo",
+              version: "1.0.0"
+            )
+          ]
+        )
+        pr2 = described_class.new(
+          [
+            Dependabot::PullRequest::Dependency.new(
+              name: "foo",
+              version: "2.0.0"
+            )
+          ]
+        )
+
+        # PRs with different actual versions should still be considered different
         expect(pr1).not_to eq(pr2)
       end
     end
