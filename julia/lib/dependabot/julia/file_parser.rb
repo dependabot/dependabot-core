@@ -90,9 +90,7 @@ module Dependabot
         begin
           result = registry_client.parse_project(project_path: project_path)
 
-          if result["error"]
-            raise Dependabot::DependencyFileNotParseable, result["error"]
-          end
+          raise Dependabot::DependencyFileNotParseable, result["error"] if result["error"]
 
           # Convert DependabotHelper.jl result to Dependabot::Dependency objects
           dependencies = build_dependencies_from_julia_result(result)
