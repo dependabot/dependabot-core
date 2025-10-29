@@ -128,87 +128,49 @@ module Dependabot
       sig { params(result: T::Hash[String, T.untyped]).returns(T::Array[Dependabot::Dependency]) }
       def build_dependencies_from_julia_result(result)
         dependencies = T.let([], T::Array[Dependabot::Dependency])
+
+        # Process each dependency type with its corresponding group
         parsed_deps = T.cast(result["dependencies"] || [], T::Array[T.untyped])
+        dependencies.concat(build_dependencies_from_dep_list(parsed_deps, ["runtime"]))
 
-        parsed_deps.each do |dep_info|
-          dep_hash = T.cast(dep_info, T::Hash[String, T.untyped])
-          name = T.cast(dep_hash["name"], String)
-          uuid = T.cast(dep_hash["uuid"], T.nilable(String))
-          requirement_string = T.cast(dep_hash["requirement"] || "*", String)
-          resolved_version = T.cast(dep_hash["resolved_version"], T.nilable(String))
-
-          # Skip Julia version requirement
-          next if name == "julia"
-
-          dependencies << Dependabot::Dependency.new(
-            name: name,
-            version: resolved_version,
-            requirements: [{
-              requirement: requirement_string,
-              file: T.must(project_file).name,
-              groups: ["runtime"],
-              source: nil
-            }],
-            package_manager: "julia",
-            metadata: uuid ? { julia_uuid: uuid } : {}
-          )
-        end
-
-        # Also process dev_dependencies (extras)
         parsed_dev_deps = T.cast(result["dev_dependencies"] || [], T::Array[T.untyped])
+        dependencies.concat(build_dependencies_from_dep_list(parsed_dev_deps, ["test"]))
 
-        parsed_dev_deps.each do |dep_info|
-          dep_hash = T.cast(dep_info, T::Hash[String, T.untyped])
-          name = T.cast(dep_hash["name"], String)
-          uuid = T.cast(dep_hash["uuid"], T.nilable(String))
-          requirement_string = T.cast(dep_hash["requirement"] || "*", String)
-          resolved_version = T.cast(dep_hash["resolved_version"], T.nilable(String))
-
-          # Skip Julia version requirement
-          next if name == "julia"
-
-          dependencies << Dependabot::Dependency.new(
-            name: name,
-            version: resolved_version,
-            requirements: [{
-              requirement: requirement_string,
-              file: T.must(project_file).name,
-              groups: ["test"],
-              source: nil
-            }],
-            package_manager: "julia",
-            metadata: uuid ? { julia_uuid: uuid } : {}
-          )
-        end
-
-        # Also process weak_dependencies if provided by the Julia helper
         parsed_weak_deps = T.cast(result["weak_dependencies"] || [], T::Array[T.untyped])
-
-        parsed_weak_deps.each do |dep_info|
-          dep_hash = T.cast(dep_info, T::Hash[String, T.untyped])
-          name = T.cast(dep_hash["name"], String)
-          uuid = T.cast(dep_hash["uuid"], T.nilable(String))
-          requirement_string = T.cast(dep_hash["requirement"] || "*", String)
-          resolved_version = T.cast(dep_hash["resolved_version"], T.nilable(String))
-
-          # Skip Julia version requirement
-          next if name == "julia"
-
-          dependencies << Dependabot::Dependency.new(
-            name: name,
-            version: resolved_version,
-            requirements: [{
-              requirement: requirement_string,
-              file: T.must(project_file).name,
-              groups: ["weak"],
-              source: nil
-            }],
-            package_manager: "julia",
-            metadata: uuid ? { julia_uuid: uuid } : {}
-          )
-        end
+        dependencies.concat(build_dependencies_from_dep_list(parsed_weak_deps, ["weak"]))
 
         dependencies
+      end
+
+      sig do
+        params(
+          dep_list: T::Array[T.untyped],
+          groups: T::Array[String]
+        ).returns(T::Array[Dependabot::Dependency])
+      end
+      def build_dependencies_from_dep_list(dep_list, groups)
+        dep_list.filter_map do |dep_info|
+          dep_hash = T.cast(dep_info, T::Hash[String, T.untyped])
+          name = T.cast(dep_hash["name"], String)
+          next if name == "julia" # Skip Julia version requirement
+
+          uuid = T.cast(dep_hash["uuid"], T.nilable(String))
+          requirement_string = T.cast(dep_hash["requirement"] || "*", String)
+          resolved_version = T.cast(dep_hash["resolved_version"], T.nilable(String))
+
+          Dependabot::Dependency.new(
+            name: name,
+            version: resolved_version,
+            requirements: [{
+              requirement: requirement_string,
+              file: T.must(project_file).name,
+              groups: groups,
+              source: nil
+            }],
+            package_manager: "julia",
+            metadata: uuid ? { julia_uuid: uuid } : {}
+          )
+        end
       end
 
       # Fallback method using Ruby TOML parsing
@@ -217,80 +179,50 @@ module Dependabot
         dependencies = T.let([], T::Array[Dependabot::Dependency])
 
         parsed_project = parsed_project_file
-        deps_section = T.cast(parsed_project["deps"] || {}, T::Hash[String, T.untyped])
-        extras_section = T.cast(parsed_project["extras"] || {}, T::Hash[String, T.untyped])
         compat_section = T.cast(parsed_project["compat"] || {}, T::Hash[String, T.untyped])
 
-        deps_section.each do |name, _uuid|
-          next if name == "julia" # Skip Julia version requirement
+        # Process each dependency section with its corresponding group
+        deps_section = T.cast(parsed_project["deps"] || {}, T::Hash[String, T.untyped])
+        dependencies.concat(build_dependencies_from_toml_section(deps_section, compat_section, ["runtime"]))
 
-          # Get the version requirement from compat section, default to "*" if not specified
-          requirement_string = T.cast(compat_section[name] || "*", String)
+        extras_section = T.cast(parsed_project["extras"] || {}, T::Hash[String, T.untyped])
+        dependencies.concat(build_dependencies_from_toml_section(extras_section, compat_section, ["test"]))
 
-          # Get the exact version from Manifest.toml if available
-          exact_version = version_from_manifest(name)
-
-          dependencies << Dependabot::Dependency.new(
-            name: name,
-            version: exact_version,
-            requirements: [{
-              requirement: requirement_string,
-              file: T.must(project_file).name,
-              groups: ["runtime"],
-              source: nil
-            }],
-            package_manager: "julia"
-          )
-        end
-
-        # Also process extras (test dependencies)
-        extras_section.each do |name, _uuid|
-          next if name == "julia" # Skip Julia version requirement
-
-          # Get the version requirement from compat section, default to "*" if not specified
-          requirement_string = T.cast(compat_section[name] || "*", String)
-
-          # Get the exact version from Manifest.toml if available
-          exact_version = version_from_manifest(name)
-
-          dependencies << Dependabot::Dependency.new(
-            name: name,
-            version: exact_version,
-            requirements: [{
-              requirement: requirement_string,
-              file: T.must(project_file).name,
-              groups: ["test"],
-              source: nil
-            }],
-            package_manager: "julia"
-          )
-        end
-
-        # Also process weakdeps (weak dependencies for extensions)
         weakdeps_section = T.cast(parsed_project["weakdeps"] || {}, T::Hash[String, T.untyped])
-        weakdeps_section.each do |name, _uuid|
-          next if name == "julia" # Skip Julia version requirement
-
-          # Get the version requirement from compat section, default to "*" if not specified
-          requirement_string = T.cast(compat_section[name] || "*", String)
-
-          # Get the exact version from Manifest.toml if available
-          exact_version = version_from_manifest(name)
-
-          dependencies << Dependabot::Dependency.new(
-            name: name,
-            version: exact_version,
-            requirements: [{
-              requirement: requirement_string,
-              file: T.must(project_file).name,
-              groups: ["weak"],
-              source: nil
-            }],
-            package_manager: "julia"
-          )
-        end
+        dependencies.concat(build_dependencies_from_toml_section(weakdeps_section, compat_section, ["weak"]))
 
         dependencies
+      end
+
+      sig do
+        params(
+          deps_section: T::Hash[String, T.untyped],
+          compat_section: T::Hash[String, T.untyped],
+          groups: T::Array[String]
+        ).returns(T::Array[Dependabot::Dependency])
+      end
+      def build_dependencies_from_toml_section(deps_section, compat_section, groups)
+        deps_section.filter_map do |name, _uuid|
+          next if name == "julia" # Skip Julia version requirement
+
+          # Get the version requirement from compat section, default to "*" if not specified
+          requirement_string = T.cast(compat_section[name] || "*", String)
+
+          # Get the exact version from Manifest.toml if available
+          exact_version = version_from_manifest(name)
+
+          Dependabot::Dependency.new(
+            name: name,
+            version: exact_version,
+            requirements: [{
+              requirement: requirement_string,
+              file: T.must(project_file).name,
+              groups: groups,
+              source: nil
+            }],
+            package_manager: "julia"
+          )
+        end
       end
 
       sig { params(dependency_name: String).returns(T.nilable(String)) }
