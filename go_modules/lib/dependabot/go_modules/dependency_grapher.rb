@@ -45,7 +45,7 @@ module Dependabot
         return @go_mod if defined?(@go_mod)
 
         @go_mod = T.let(
-          dependency_files.find { |f| f.name = "go.mod" },
+          dependency_files.find { |f| f.name == "go.mod" },
           T.nilable(Dependabot::DependencyFile)
         )
       end
