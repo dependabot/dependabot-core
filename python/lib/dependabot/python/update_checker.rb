@@ -181,7 +181,10 @@ module Dependabot
 
       sig { returns(Symbol) }
       def pyproject_resolver
-        return :poetry if poetry_based?
+        # Only use Poetry resolver if there's a [tool.poetry] section AND a poetry.lock file
+        # For hybrid projects with both [tool.poetry] and [project] sections but no lockfile,
+        # use the requirements resolver to handle PEP 621 dependencies
+        return :poetry if poetry_based? && poetry_lock
 
         :requirements
       end
