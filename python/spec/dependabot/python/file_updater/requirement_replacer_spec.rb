@@ -114,8 +114,13 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementReplacer do
         context "with a different SSL error that should not match" do
           let(:response) { "SSL: WRONG_VERSION_NUMBER" }
 
-          it "does not raise the dependency file not resolvable error" do
-            expect { req_replacer }.not_to raise_error(Dependabot::DependencyFileNotResolvable)
+          it "does not raise any error (debug output)" do
+            begin
+              req_replacer
+            rescue => e
+              warn "Unexpected error: #{e.class}: #{e.message}"
+              raise e
+            end
           end
         end
       end
