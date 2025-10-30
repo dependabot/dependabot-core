@@ -345,6 +345,32 @@ RSpec.describe Dependabot::Updater::Operations::RefreshVersionUpdatePullRequest 
           :check_and_update_pull_request, [dependency]
         )
       end
+
+      it "tracks created PRs to prevent duplicates" do
+        # Don't mock existing_pull_request, let it run normally
+        allow(refresh_version_update_pull_request).to receive(:existing_pull_request).and_call_original
+        allow(job).to receive(:existing_pull_requests).and_return([])
+        
+        # First call creates a PR
+        expect(refresh_version_update_pull_request).to receive(:create_pull_request).once do |dep_change|
+          # Simulate what create_pull_request does - it tracks the PR
+          refresh_version_update_pull_request.send(:created_pull_requests) << 
+            Dependabot::PullRequest.create_from_updated_dependencies(dep_change.updated_dependencies)
+        end
+
+        refresh_version_update_pull_request.send(:check_and_update_pull_request, [dependency])
+
+        # Verify the PR was tracked
+        expect(refresh_version_update_pull_request.send(:created_pull_requests)).not_to be_empty
+
+        # Now if we check existing_pull_request with the same dependencies,
+        # it should find the PR we just created
+        found_pr = refresh_version_update_pull_request.send(
+          :existing_pull_request,
+          stub_dependency_change.updated_dependencies
+        )
+        expect(found_pr).not_to be_nil
+      end
     end
   end
 end
