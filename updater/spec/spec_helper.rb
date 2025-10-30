@@ -9,10 +9,7 @@ require "webmock/rspec"
 require "yaml"
 
 # Load common spec helpers for build_tmp_repo
-def common_dir
-  @common_dir ||= Gem::Specification.find_by_name("dependabot-common").gem_dir
-end
-
+common_dir = Gem::Specification.find_by_name("dependabot-common").gem_dir
 require "#{common_dir}/spec/spec_helper.rb"
 
 # TODO: Stop rescuing StandardError in Dependabot::BaseCommand#run

@@ -55,7 +55,7 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
       Dependabot::Job,
       id: "42",
       package_manager: "bundler",
-      repo_contents_path: nil,
+      repo_contents_path: repo_contents_path,
       credentials: credentials,
       source: source,
       reject_external_code?: false,
@@ -64,6 +64,7 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
   end
 
   let(:base_commit_sha) { "fake-sha" }
+  let(:repo_contents_path) { nil }
 
   context "with a basic Gemfile project" do
     let(:directories) { [directory] }
@@ -83,10 +84,6 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
           directory: directory
         )
       ]
-    end
-
-    before do
-      allow(job).to receive(:repo_contents_path).and_return(repo_contents_path)
     end
 
     it "emits the expected payload to the Dependabot service" do
@@ -143,10 +140,6 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
           directory: directory
         )
       ]
-    end
-
-    before do
-      allow(job).to receive(:repo_contents_path).and_return(repo_contents_path)
     end
 
     it "emits the expected payload to the Dependabot service" do
@@ -236,10 +229,6 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
       ]
     end
 
-    before do
-      allow(job).to receive(:repo_contents_path).and_return(repo_contents_path)
-    end
-
     it "emits a snapshot for each directory" do
       expect(service).to receive(:create_dependency_submission).twice
 
@@ -314,10 +303,6 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
       ]
     end
 
-    before do
-      allow(job).to receive(:repo_contents_path).and_return(repo_contents_path)
-    end
-
     it "they are not mentioned in the dependency submission payload" do
       expect(service).to receive(:create_dependency_submission) do |args|
         payload = args[:dependency_submission].payload
@@ -344,10 +329,6 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
           directory: directory
         )
       ]
-    end
-
-    before do
-      allow(job).to receive(:repo_contents_path).and_return(repo_contents_path)
     end
 
     it "submits only the Gemfile" do
@@ -395,10 +376,6 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
           directory: directory
         )
       ]
-    end
-
-    before do
-      allow(job).to receive(:repo_contents_path).and_return(repo_contents_path)
     end
 
     it "generates a snapshot with metadata and an empty manifest list" do
@@ -449,10 +426,6 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
       let(:directories) { ["/"] }
       let(:branch) { nil }
       let(:repo_contents_path) { build_tmp_repo("bundler/original", path: "") }
-
-      before do
-        allow(job).to receive(:repo_contents_path).and_return(repo_contents_path)
-      end
 
       it "retrieves the default branch via Git" do
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("origin/very-esoteric-naming\n")
