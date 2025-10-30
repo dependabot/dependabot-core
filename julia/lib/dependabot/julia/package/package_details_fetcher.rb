@@ -1,4 +1,4 @@
-# typed: strong
+# typed: strict
 # frozen_string_literal: true
 
 require "time"
@@ -72,31 +72,57 @@ module Dependabot
           ).returns(T::Array[Dependabot::Package::PackageRelease])
         end
         def build_releases_for_versions(registry_client, available_versions, uuid)
-          releases = T.let([], T::Array[Dependabot::Package::PackageRelease])
+          # Use batch operation to fetch all release dates at once
+          release_dates = fetch_release_dates_batch(registry_client, available_versions, uuid)
 
-          available_versions.each do |version_string|
+          available_versions.map do |version_string|
             version = Julia::Version.new(version_string)
-            release_date = fetch_release_date_safely(registry_client, version_string, uuid)
+            release_date = release_dates[version_string]
 
-            releases << create_package_release(version, release_date)
+            create_package_release(version, release_date)
           end
-
-          releases
         end
 
         sig do
           params(
             registry_client: RegistryClient,
-            version_string: String,
+            available_versions: T::Array[String],
             uuid: T.nilable(String)
-          ).returns(T.nilable(Time))
+          ).returns(T::Hash[String, T.nilable(Time)])
         end
-        def fetch_release_date_safely(registry_client, version_string, uuid)
-          registry_client.fetch_version_release_date(dependency.name, version_string, uuid)
-        rescue StandardError => e
-          Dependabot.logger.warn(
-            "Failed to fetch release info for #{dependency.name} version #{version_string}: #{e.message}"
-          )
+        def fetch_release_dates_batch(registry_client, available_versions, uuid)
+          return {} if available_versions.empty?
+
+          packages_versions = [{
+            name: dependency.name,
+            uuid: uuid || "",
+            versions: available_versions
+          }]
+
+          result = registry_client.batch_fetch_version_release_dates(packages_versions)
+          dates_for_package = result[dependency.name] || {}
+
+          convert_dates_to_time_objects(dates_for_package)
+        end
+
+        sig do
+          params(
+            dates_hash: T::Hash[String, T.untyped]
+          ).returns(T::Hash[String, T.nilable(Time)])
+        end
+        def convert_dates_to_time_objects(dates_hash)
+          dates_hash.transform_values do |date_value|
+            convert_single_date(date_value)
+          end
+        end
+
+        sig { params(date_value: T.untyped).returns(T.nilable(Time)) }
+        def convert_single_date(date_value)
+          return nil if date_value.nil?
+          return nil if date_value.is_a?(Hash) && date_value["error"]
+
+          Time.parse(date_value.to_s)
+        rescue ArgumentError, TypeError
           nil
         end
 
