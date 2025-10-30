@@ -20,6 +20,9 @@ module Dependabot
     class FileParser < Dependabot::FileParsers::Base
       extend T::Sig
 
+      # NOTE: repo_contents_path is typed as T.nilable(String) to maintain
+      # compatibility with the base FileParser class signature. However,
+      # we validate it's not nil at runtime since it's always required in production.
       sig do
         params(
           dependency_files: T::Array[Dependabot::DependencyFile],
@@ -39,6 +42,8 @@ module Dependabot
         options: {}
       )
         super
+
+        raise ArgumentError, "repo_contents_path is required" if repo_contents_path.nil?
 
         set_go_environment_variables
       end
@@ -227,7 +232,7 @@ module Dependabot
           # means we don't need to worry about references to parent
           # directories, etc.
           T.let(
-            ReplaceStubber.new(repo_contents_path).stub_paths(manifest, go_mod&.directory),
+            ReplaceStubber.new(T.must(repo_contents_path)).stub_paths(manifest, go_mod&.directory),
             T.nilable(T::Hash[String, String])
           )
       end
