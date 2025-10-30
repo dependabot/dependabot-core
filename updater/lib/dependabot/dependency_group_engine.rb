@@ -100,7 +100,7 @@ module Dependabot
 
       validated_groups = groups.reject do |group|
         # Reject groups whose names match package manager names
-        if reserved_names.include?(group.name.downcase.tr("-", "_"))
+        if reserved_names.include?(normalize_name(group.name))
           Dependabot.logger.warn(
             "Group name '#{group.name}' matches a package ecosystem name and will be ignored. " \
             "Please use a different group name in your dependabot.yml configuration. " \
@@ -108,8 +108,7 @@ module Dependabot
           )
           true
         # Warn about groups with no meaningful rules (overly broad patterns that could match everything)
-        elsif group.rules.empty? || (!group.rules.key?("patterns") && !group.rules.key?("dependency-type") &&
-                                     !group.rules.key?("update-types"))
+        elsif !meaningful_rules?(group)
           Dependabot.logger.warn(
             "Group '#{group.name}' has no meaningful rules defined (no patterns, dependency-type, or update-types). " \
             "This group will match all dependencies, which may not be intended. " \
@@ -123,6 +122,20 @@ module Dependabot
       end
 
       validated_groups
+    end
+
+    # Normalize a group name for comparison (lowercase, underscores)
+    sig { params(name: String).returns(String) }
+    def self.normalize_name(name)
+      name.downcase.tr("-", "_")
+    end
+
+    # Check if a group has meaningful rules defined
+    sig { params(group: Dependabot::DependencyGroup).returns(T::Boolean) }
+    def self.meaningful_rules?(group)
+      return false if group.rules.empty?
+
+      group.rules.key?("patterns") || group.rules.key?("dependency-type") || group.rules.key?("update-types")
     end
 
     private
