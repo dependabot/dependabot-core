@@ -42,11 +42,11 @@ function get_latest_version(package_name::String, package_uuid::String)
 end
 
 """
-    get_latest_version(args::Dict)
+    get_latest_version(args::AbstractDict)
 
 Args wrapper for get_latest_version function with UUID requirement
 """
-function get_latest_version(args::Dict)
+function get_latest_version(args::AbstractDict)
     package_name = get(args, "package_name", "")
     package_uuid = get(args, "package_uuid", "")
 
@@ -92,7 +92,7 @@ function get_package_metadata(package_name::String, package_uuid::String)
 end
 
 # Args wrapper for get_package_metadata function with optional UUID
-function get_package_metadata(args::Dict)
+function get_package_metadata(args::AbstractDict)
     package_name = get(args, "package_name", "")
     package_uuid = get(args, "package_uuid", "")
 
@@ -157,7 +157,7 @@ function fetch_package_versions(package_name::String, package_uuid::String)
 end
 
 # Args wrapper for fetch_package_versions function with UUID requirement
-function fetch_package_versions(args::Dict)
+function fetch_package_versions(args::AbstractDict)
     package_name = get(args, "package_name", "")
     package_uuid = get(args, "package_uuid", "")
 
@@ -221,7 +221,7 @@ function fetch_package_info(package_name::String, package_uuid::String)
 end
 
 # Args wrapper for fetch_package_info function with UUID requirement
-function fetch_package_info(args::Dict)
+function fetch_package_info(args::AbstractDict)
     package_name = get(args, "package_name", "")
     package_uuid = get(args, "package_uuid", "")
 
@@ -255,7 +255,7 @@ function find_package_source_url(package_name::String, package_uuid::String)
 end
 
 # Args wrapper for find_package_source_url function with UUID requirement
-function find_package_source_url(args::Dict)
+function find_package_source_url(args::AbstractDict)
     package_name = get(args, "package_name", "")
     package_uuid = get(args, "package_uuid", "")
 
@@ -416,7 +416,7 @@ function get_available_versions(package_name::String, package_uuid::String)
 end
 
 # Args wrapper for get_available_versions function with UUID requirement
-function get_available_versions(args::Dict)
+function get_available_versions(args::AbstractDict)
     package_name = get(args, "package_name", "")
     package_uuid = get(args, "package_uuid", "")
 
@@ -451,7 +451,7 @@ function get_version_release_date(package_name::String, version::String, package
             return Dict("error" => "Version $version not found for package $package_name")
         end
 
-        # For now, return nil since Julia registries don't store release dates
+        # TODO: For now, return nil since Julia registries don't store release dates
         # In a future enhancement, this could attempt to fetch from the git repository
         return Dict("release_date" => nothing)
 
@@ -461,7 +461,7 @@ function get_version_release_date(package_name::String, version::String, package
 end
 
 # Args wrapper for get_version_release_date function with UUID requirement
-function get_version_release_date(args::Dict)
+function get_version_release_date(args::AbstractDict)
     package_name = get(args, "package_name", "")
     version = get(args, "version", "")
     package_uuid = get(args, "package_uuid", "")
@@ -501,4 +501,237 @@ function get_resolved_dependency_info()
     catch e
         return Dict("error" => "Failed to get dependency info: $(sprint(showerror, e))")
     end
+end
+
+# ============================================================================
+# BATCH OPERATIONS
+# ============================================================================
+
+"""
+    batch_get_package_info(packages::Vector{Dict{String,String}})
+
+Batch operation to get comprehensive package information for multiple packages
+in a single Julia process call. This significantly reduces the overhead of
+spawning multiple Julia processes.
+
+Expected format for packages:
+[
+    {"name" => "Tables", "uuid" => "bd369af6-aec1-5ad0-b16a-f7cc5008161c"},
+    {"name" => "DataFrames", "uuid" => "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"}
+]
+
+Returns a dictionary with package names as keys and their info as values.
+"""
+function batch_get_package_info(packages::Vector{Dict{String,String}})
+    results = Dict{String, Any}()
+
+    for pkg in packages
+        pkg_name = get(pkg, "name", "")
+        pkg_uuid = get(pkg, "uuid", "")
+
+        if isempty(pkg_name) || isempty(pkg_uuid)
+            results[pkg_name] = Dict("error" => "Missing package name or uuid")
+            continue
+        end
+
+        # Gather all information in one pass
+        pkg_info = Dict{String, Any}()
+
+        # Get available versions
+        versions_result = get_available_versions(pkg_name, pkg_uuid)
+        if haskey(versions_result, "error")
+            pkg_info["available_versions"] = Dict("error" => versions_result["error"])
+        else
+            pkg_info["available_versions"] = versions_result["versions"]
+        end
+
+        # Get latest version
+        latest_result = get_latest_version(pkg_name, pkg_uuid)
+        if haskey(latest_result, "error")
+            pkg_info["latest_version"] = Dict("error" => latest_result["error"])
+        else
+            pkg_info["latest_version"] = latest_result["version"]
+        end
+
+        # Get metadata
+        metadata_result = get_package_metadata(pkg_name, pkg_uuid)
+        if !haskey(metadata_result, "error")
+            pkg_info["metadata"] = metadata_result
+        end
+
+        results[pkg_name] = pkg_info
+    end
+
+    return results
+end
+
+# Args wrapper for batch_get_package_info
+function batch_get_package_info(args::AbstractDict)
+    packages_raw = get(args, "packages", Vector{Any}())
+
+    if isempty(packages_raw)
+        return Dict("error" => "No packages provided")
+    end
+
+    # JSON v1 parses objects as Dict{String,Any} and arrays as Vector{Any}
+    # Convert to the strongly-typed format expected by the core function
+    packages = Vector{Dict{String,String}}()
+    for pkg in packages_raw
+        # Accept any AbstractDict type (handles both Dict and JSON.Object)
+        if pkg isa AbstractDict
+            push!(packages, Dict{String,String}(
+                "name" => string(get(pkg, "name", "")),
+                "uuid" => string(get(pkg, "uuid", ""))
+            ))
+        end
+    end
+
+    if isempty(packages)
+        return Dict("error" => "No valid packages provided")
+    end
+
+    return batch_get_package_info(packages)
+end
+
+"""
+    batch_get_version_release_dates(packages_versions::Vector{Dict{String,Any}})
+
+Batch operation to get release dates for multiple versions of multiple packages
+in a single Julia process call.
+
+Expected format for packages_versions:
+[
+    {
+        "name" => "Tables",
+        "uuid" => "bd369af6-aec1-5ad0-b16a-f7cc5008161c",
+        "versions" => ["1.0.0", "1.1.0", "1.2.0"]
+    },
+    {
+        "name" => "DataFrames",
+        "uuid" => "a93c6f00-e57d-5684-b7b6-d8193f3e46c0",
+        "versions" => ["0.21.0", "0.22.0", "1.0.0"]
+    }
+]
+
+Returns a nested dictionary with package names as keys and version->date mappings.
+"""
+function batch_get_version_release_dates(packages_versions::Vector{Dict{String,Any}})
+    results = Dict{String, Any}()
+
+    for pkg_ver in packages_versions
+        pkg_name = get(pkg_ver, "name", "")
+        pkg_uuid = get(pkg_ver, "uuid", "")
+        versions = get(pkg_ver, "versions", String[])
+
+        if isempty(pkg_name) || isempty(pkg_uuid)
+            results[pkg_name] = Dict("error" => "Missing package name or uuid")
+            continue
+        end
+
+        dates = Dict{String, Any}()
+        for version in versions
+            date_result = get_version_release_date(pkg_name, version, pkg_uuid)
+            if haskey(date_result, "error")
+                # Don't fail the whole batch for individual errors
+                dates[version] = Dict("error" => date_result["error"])
+            else
+                dates[version] = date_result["release_date"]
+            end
+        end
+        results[pkg_name] = dates
+    end
+
+    return results
+end
+
+# Args wrapper for batch_get_version_release_dates
+function batch_get_version_release_dates(args::AbstractDict)
+    packages_versions_raw = get(args, "packages_versions", Vector{Any}())
+
+    if isempty(packages_versions_raw)
+        return Dict("error" => "No packages_versions provided")
+    end
+
+    # JSON v1 parses objects as Dict{String,Any} and arrays as Vector{Any}
+    # Convert to the strongly-typed format expected by the core function
+    packages_versions = Vector{Dict{String,Any}}()
+    for pkg_ver in packages_versions_raw
+        # Accept any AbstractDict type (handles both Dict and JSON.Object)
+        if pkg_ver isa AbstractDict
+            versions_raw = get(pkg_ver, "versions", Vector{Any}())
+            versions = [string(v) for v in versions_raw]
+
+            push!(packages_versions, Dict{String,Any}(
+                "name" => string(get(pkg_ver, "name", "")),
+                "uuid" => string(get(pkg_ver, "uuid", "")),
+                "versions" => versions
+            ))
+        end
+    end
+
+    if isempty(packages_versions)
+        return Dict("error" => "No valid packages_versions provided")
+    end
+
+    return batch_get_version_release_dates(packages_versions)
+end
+
+"""
+    batch_get_available_versions(packages::Vector{Dict{String,String}})
+
+Batch operation to get available versions for multiple packages in a single call.
+
+Expected format for packages:
+[
+    {"name" => "Tables", "uuid" => "bd369af6-aec1-5ad0-b16a-f7cc5008161c"},
+    {"name" => "DataFrames", "uuid" => "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"}
+]
+
+Returns a dictionary with package names as keys and version arrays as values.
+"""
+function batch_get_available_versions(packages::Vector{Dict{String,String}})
+    results = Dict{String, Any}()
+
+    for pkg in packages
+        pkg_name = get(pkg, "name", "")
+        pkg_uuid = get(pkg, "uuid", "")
+
+        if isempty(pkg_name) || isempty(pkg_uuid)
+            results[pkg_name] = Dict("error" => "Missing package name or uuid")
+            continue
+        end
+
+        versions_result = get_available_versions(pkg_name, pkg_uuid)
+        results[pkg_name] = versions_result
+    end
+
+    return results
+end
+
+# Args wrapper for batch_get_available_versions
+function batch_get_available_versions(args::AbstractDict)
+    packages_raw = get(args, "packages", Vector{Any}())
+
+    if isempty(packages_raw)
+        return Dict("error" => "No packages provided")
+    end
+
+    # JSON v1 parses objects as Dict{String,Any} and arrays as Vector{Any}
+    # Convert to the strongly-typed format expected by the core function
+    packages = Vector{Dict{String,String}}()
+    for pkg in packages_raw
+        # Accept any AbstractDict type (handles both Dict and JSON.Object)
+        if pkg isa AbstractDict
+            push!(packages, Dict{String,String}(
+                "name" => string(get(pkg, "name", "")),
+                "uuid" => string(get(pkg, "uuid", ""))
+            ))
+        end
+    end
+
+    if isempty(packages)
+        return Dict("error" => "No valid packages provided")
+    end
+
+    return batch_get_available_versions(packages)
 end
