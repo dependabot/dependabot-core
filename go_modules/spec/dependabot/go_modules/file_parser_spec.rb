@@ -31,29 +31,11 @@ RSpec.describe Dependabot::GoModules::FileParser do
   let(:files) { [go_mod] }
   let(:parser) { described_class.new(dependency_files: files, source:, repo_contents_path:) }
 
-  before do
-    # Write the go.mod file to the tmp repo contents path
-    manifest_path = File.join(repo_contents_path, directory)
-    FileUtils.mkdir_p(manifest_path)
-    File.write(File.join(manifest_path, "go.mod"), go_mod_content)
-    # Make it a git repository since Go uses SharedHelpers.with_git_configured often
-    Dir.chdir(repo_contents_path) do
-      `git init`
-      `git config user.name "rspec"`
-      `git config user.email "dependabot@github.com"`
-      `git add .`
-      `git commit -m "Initial commit"`
-    end
-  end
-
   after do
     # Reset the environment variable after each test to avoid side effects
     ENV.delete("GOENV")
     ENV.delete("GOPROXY")
     ENV.delete("GOPRIVATE")
-
-    # delete the temporary repo contents, if it is a tmp dir
-    FileUtils.remove_entry(repo_contents_path) if repo_contents_path.start_with?(Dir.tmpdir)
   end
 
   it_behaves_like "a dependency file parser"
