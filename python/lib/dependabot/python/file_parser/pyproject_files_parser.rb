@@ -94,6 +94,10 @@ module Dependabot
             # If no requirement, don't add it
             next if dep["requirement"].empty?
 
+            # Skip build-system.requires dependencies when using Poetry
+            # Poetry manages its own build system dependencies
+            next if using_poetry? && dep["requirement_type"] == "build-system.requires"
+
             dependencies <<
               Dependency.new(
                 name: normalised_name(dep["name"], dep["extras"]),
