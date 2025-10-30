@@ -82,7 +82,8 @@ module Dependabot
 
         # Append the new spec to the existing requirement (CompatHelper KeepEntry behavior)
         # Detect whether the existing requirement uses spaces after commas and preserve that format
-        separator = requirement_string.include?(", ") ? ", " : ","
+        # and default to ", " if no commas found
+        separator = requirement_string.include?(",") && !requirement_string.include?(", ") ? "," : ", "
         "#{requirement_string}#{separator}#{new_spec}"
       end
 
