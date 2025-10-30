@@ -53,8 +53,8 @@ module Dependabot
             version.placeholder?
           end
 
-          if releases.count > filtered.count
-            Dependabot.logger.info("Filtered out #{releases.count - filtered.count} placeholder versions")
+          if releases.size > filtered.size
+            Dependabot.logger.info("Filtered out #{releases.size - filtered.size} placeholder versions")
           end
 
           filtered
