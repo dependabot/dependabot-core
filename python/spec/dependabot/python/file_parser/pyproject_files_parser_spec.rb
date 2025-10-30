@@ -276,7 +276,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
           [{
             requirement: "==0.3.0",
             file: "pyproject.toml",
-            groups: [],
+            groups: ["dependencies"],
             source: nil
           }]
         )
@@ -404,11 +404,11 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
 
         it "has the correct dependencies with requirement types" do
           expect(dependencies.map(&:name)).to contain_exactly("fastapi", "pydantic")
-          
+
           fastapi = dependencies.find { |d| d.name == "fastapi" }
           expect(fastapi.version).to eq("0.115.5")
           expect(fastapi.requirements.first[:groups]).to eq(["dependencies"])
-          
+
           pydantic = dependencies.find { |d| d.name == "pydantic" }
           expect(pydantic.version).to eq("2.8.2")
           expect(pydantic.requirements.first[:groups]).to eq(["dependencies"])
