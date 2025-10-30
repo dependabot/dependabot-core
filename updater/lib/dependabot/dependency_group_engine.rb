@@ -124,13 +124,20 @@ module Dependabot
       validated_groups
     end
 
-    # Normalize a group name for comparison (lowercase, underscores)
+    # Normalize a group name for comparison with reserved names list.
+    # Converts to lowercase and replaces hyphens with underscores to ensure
+    # consistent matching regardless of naming format (e.g., "npm-and-yarn" vs "npm_and_yarn").
     sig { params(name: String).returns(String) }
     def self.normalize_name(name)
       name.downcase.tr("-", "_")
     end
 
-    # Check if a group has meaningful rules defined
+    # Check if a group has meaningful rules defined.
+    # A group is considered to have meaningful rules if it defines at least one of:
+    # - patterns: Dependency name patterns to match
+    # - dependency-type: Type of dependency (production/development)
+    # - update-types: Types of updates to include (major/minor/patch)
+    # Without these, the group would match all dependencies indiscriminately.
     sig { params(group: Dependabot::DependencyGroup).returns(T::Boolean) }
     def self.meaningful_rules?(group)
       return false if group.rules.empty?
