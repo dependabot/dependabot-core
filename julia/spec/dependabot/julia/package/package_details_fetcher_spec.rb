@@ -47,21 +47,21 @@ RSpec.describe Dependabot::Julia::Package::PackageDetailsFetcher do
         .with("Example", "7876af07-990d-54b4-ab0e-23690620f79a")
         .and_return(available_versions)
 
-      allow(registry_client).to receive(:fetch_version_release_date)
-        .with("Example", "0.5.0", "7876af07-990d-54b4-ab0e-23690620f79a")
-        .and_return(release_date1)
-
-      allow(registry_client).to receive(:fetch_version_release_date)
-        .with("Example", "0.5.1", "7876af07-990d-54b4-ab0e-23690620f79a")
-        .and_return(release_date2)
-
-      allow(registry_client).to receive(:fetch_version_release_date)
-        .with("Example", "0.5.2", "7876af07-990d-54b4-ab0e-23690620f79a")
-        .and_return(nil)
-
-      allow(registry_client).to receive(:fetch_version_release_date)
-        .with("Example", "0.5.3", "7876af07-990d-54b4-ab0e-23690620f79a")
-        .and_return(release_date2)
+      # Mock the batch operation for release dates
+      allow(registry_client).to receive(:batch_fetch_version_release_dates)
+        .with([{
+          name: "Example",
+          uuid: "7876af07-990d-54b4-ab0e-23690620f79a",
+          versions: available_versions
+        }])
+        .and_return({
+          "Example" => {
+            "0.5.0" => release_date1.to_s,
+            "0.5.1" => release_date2.to_s,
+            "0.5.2" => nil,
+            "0.5.3" => release_date2.to_s
+          }
+        })
     end
 
     it "returns an array of PackageRelease objects" do
@@ -130,25 +130,6 @@ RSpec.describe Dependabot::Julia::Package::PackageDetailsFetcher do
 
         releases = fetcher.fetch_package_releases
         expect(releases).to eq([])
-      end
-    end
-
-    context "when release date fetching fails for some versions" do
-      before do
-        allow(registry_client).to receive(:fetch_version_release_date)
-          .with("Example", "0.5.1", "7876af07-990d-54b4-ab0e-23690620f79a")
-          .and_raise(StandardError, "Date fetch error")
-      end
-
-      it "creates release without date and logs warning" do
-        expect(Dependabot.logger).to receive(:warn)
-          .with(/Failed to fetch release info for Example version 0.5.1/)
-
-        releases = fetcher.fetch_package_releases
-        release_zero_five_one = releases.find { |r| r.version.to_s == "0.5.1" }
-
-        expect(release_zero_five_one.released_at).to be_nil
-        expect(releases.length).to eq(4) # Still creates the release
       end
     end
   end

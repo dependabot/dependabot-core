@@ -19,41 +19,61 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
-        updated_files = []
+        # If no manifest file, just update Project.toml using Ruby
+        return fallback_updated_dependency_files unless project_file && manifest_file
 
         # Use DependabotHelper.jl for manifest updating
-        if project_file
-          project_path = T.let(nil, T.nilable(String))
+        updated_files_with_julia_helper
+      rescue StandardError => e
+        # Fallback to Ruby TOML manipulation if Julia helper fails
+        Dependabot.logger.warn(
+          "DependabotHelper.jl update failed with exception: #{e.message}, " \
+          "falling back to Ruby updating"
+        )
+        fallback_updated_dependency_files
+      end
 
-          begin
-            project_path = write_temp_project_file
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def updated_files_with_julia_helper
+        updated_files = []
+        project_dir = T.let(nil, T.nilable(String))
 
-            result = registry_client.update_manifest(
-              project_path: project_path,
-              updates: build_updates_hash
-            )
+        begin
+          # First, update the Project.toml using Ruby (handles compat section correctly)
+          updated_project = updated_project_content
 
-            if result["error"]
-              # Fallback to Ruby TOML manipulation
-              Dependabot.logger.warn(
-                "DependabotHelper.jl update failed: #{result['error']}, " \
-                "falling back to Ruby updating"
-              )
-              return fallback_updated_dependency_files
-            end
+          # Write both files to a temporary directory
+          project_dir = write_temp_project_directory(updated_project)
 
-            # Create updated files from DependabotHelper.jl results
-            updated_files = build_updated_files_from_result(result)
-          rescue StandardError => e
-            # Fallback to Ruby TOML manipulation if Julia helper fails
+          # Now call Julia helper to update the Manifest.toml based on the updated Project.toml
+          result = registry_client.update_manifest(
+            project_path: project_dir,
+            updates: build_updates_hash
+          )
+
+          if result["error"]
+            # Fallback to Ruby TOML manipulation
             Dependabot.logger.warn(
-              "DependabotHelper.jl update failed with exception: #{e.message}, " \
+              "DependabotHelper.jl update failed: #{result['error']}, " \
               "falling back to Ruby updating"
             )
             return fallback_updated_dependency_files
-          ensure
-            File.delete(project_path) if project_path && File.exist?(project_path)
           end
+
+          # Build updated files: use Ruby-updated Project.toml and Julia-updated Manifest.toml
+          updated_files << updated_file(
+            file: T.must(project_file),
+            content: updated_project
+          )
+
+          if result["manifest_content"] && result["manifest_content"] != T.must(manifest_file).content
+            updated_files << updated_file(
+              file: T.must(manifest_file),
+              content: result["manifest_content"]
+            )
+          end
+        ensure
+          FileUtils.rm_rf(project_dir) if project_dir && File.exist?(project_dir)
         end
 
         raise "No files changed!" if updated_files.empty?
@@ -103,28 +123,6 @@ module Dependabot
         updates
       end
 
-      sig { params(result: T::Hash[String, T.untyped]).returns(T::Array[Dependabot::DependencyFile]) }
-      def build_updated_files_from_result(result)
-        updated_files = T.let([], T::Array[Dependabot::DependencyFile])
-
-        if result["project_content"] && result["project_content"] != T.must(project_file).content
-          updated_files << updated_file(
-            file: T.must(project_file),
-            content: result["project_content"]
-          )
-        end
-
-        if manifest_file && result["manifest_content"] &&
-           result["manifest_content"] != T.must(manifest_file).content
-          updated_files << updated_file(
-            file: T.must(manifest_file),
-            content: result["manifest_content"]
-          )
-        end
-
-        updated_files
-      end
-
       # Helper methods for DependabotHelper.jl integration
 
       sig { returns(Dependabot::Julia::RegistryClient) }
@@ -137,12 +135,17 @@ module Dependabot
         )
       end
 
-      sig { returns(String) }
-      def write_temp_project_file
-        temp_file = Tempfile.new(["Project", ".toml"])
-        temp_file.write(T.must(project_file).content)
-        temp_file.close
-        T.must(temp_file.path)
+      sig { params(project_content: String).returns(String) }
+      def write_temp_project_directory(project_content)
+        temp_dir = Dir.mktmpdir("dependabot-julia-")
+
+        # Write the updated Project.toml
+        File.write(File.join(temp_dir, "Project.toml"), project_content)
+
+        # Write the existing Manifest.toml
+        File.write(File.join(temp_dir, "Manifest.toml"), T.must(manifest_file).content) if manifest_file
+
+        temp_dir
       end
 
       sig { override.void }
@@ -196,15 +199,24 @@ module Dependabot
 
       sig { params(content: String, dependency_name: String, new_requirement: String).returns(String) }
       def update_dependency_requirement_in_content(content, dependency_name, new_requirement)
-        # Pattern to match the dependency in [compat] section
-        # Handles various quote styles and spacing
-        pattern = /(^\s*#{Regexp.escape(dependency_name)}\s*=\s*)(?:"[^"]*"|'[^']*'|[^\s#\n]+)(\s*(?:\#.*)?$)/mx
+        # Extract the [compat] section to update it specifically
+        compat_section_match = content.match(/^\[compat\]\s*\n((?:(?!\[)[^\n]*\n)*?)(?=^\[|\z)/m)
 
-        if content.match?(pattern)
-          # Replace existing entry
-          content.gsub(pattern, "\\1\"#{new_requirement}\"\\2")
+        if compat_section_match
+          compat_section = T.must(compat_section_match[1])
+          # Pattern to match the dependency in the compat section
+          pattern = /^(\s*#{Regexp.escape(dependency_name)}\s*=\s*)(?:"[^"]*"|'[^']*'|[^\s#\n]+)(\s*(?:\#.*)?)$/
+
+          if compat_section.match?(pattern)
+            # Replace existing entry in compat section
+            updated_compat = compat_section.gsub(pattern, "\\1\"#{new_requirement}\"\\2")
+            content.sub(T.must(compat_section_match[0]), "[compat]\n#{updated_compat}")
+          else
+            # Add new entry to existing [compat] section
+            add_compat_entry_to_content(content, dependency_name, new_requirement)
+          end
         else
-          # Add new entry to [compat] section
+          # Add new [compat] section
           add_compat_entry_to_content(content, dependency_name, new_requirement)
         end
       end

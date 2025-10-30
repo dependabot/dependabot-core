@@ -1,5 +1,6 @@
 using Test
 using JSON
+using TOML
 using DependabotHelper
 
 @testset "DependabotHelper.jl Tests" begin
@@ -295,6 +296,89 @@ using DependabotHelper
         # Test update_manifest with non-existent file
         result = @test_nowarn DependabotHelper.update_manifest("/nonexistent/Project.toml", Dict("JSON" => "0.21.4"))
         @test haskey(result, "error")
+
+        # Test update_manifest with actual manifest update
+        # This simulates the production workflow:
+        # 1. Ruby updates Project.toml compat section
+        # 2. Julia helper updates Manifest.toml based on new compat constraints
+        mktempdir() do tmpdir
+            # Create a test project with updated compat (as Ruby would do)
+            project_path = joinpath(tmpdir, "Project.toml")
+            manifest_path = joinpath(tmpdir, "Manifest.toml")
+
+            # This is the Project.toml AFTER Ruby has updated the compat section
+            write(project_path, """
+                name = "TestProject"
+                uuid = "12345678-1234-1234-1234-123456789012"
+                version = "0.1.0"
+
+                [deps]
+                JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+
+                [compat]
+                JSON = "0.21"
+                julia = "1.10"
+                """)
+
+            # Create a simple manifest file
+            write(manifest_path, """
+                # This file is machine-generated - editing it directly is not advised
+
+                julia_version = "1.12.1"
+                manifest_format = "2.0"
+                project_hash = "72e3b6274dbcfd64d294f19fccd9d75e091f4b67"
+
+                [[deps.Dates]]
+                deps = ["Printf"]
+                uuid = "ade2ca70-3891-5945-98fb-dc099432e06a"
+                version = "1.11.0"
+
+                [[deps.JSON]]
+                deps = ["Dates", "Mmap", "Unicode"]
+                git-tree-sha1 = "565947e5338efe62a7db0aa8e5de782c623b04cd"
+                uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+                version = "0.20.1"
+
+                [[deps.Mmap]]
+                uuid = "a63ad114-7e13-5084-954f-fe012c677804"
+                version = "1.11.0"
+
+                [[deps.Printf]]
+                deps = ["Unicode"]
+                uuid = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+                version = "1.11.0"
+
+                [[deps.Unicode]]
+                uuid = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
+                version = "1.11.0"
+                """)
+
+            # Test args wrapper with JSON.Object (simulating JSON deserialization)
+            # This is the main test - ensuring JSON.Object doesn't cause MethodError
+            json_string = """{"project_path": "$tmpdir", "updates": {"JSON": "0.21.1"}}"""
+            json_args = JSON.parse(json_string)  # This creates JSON.Object types
+
+            # Verify we're testing JSON.Object handling
+            @test json_args isa JSON.Object
+            @test json_args["updates"] isa JSON.Object
+
+            result = DependabotHelper.update_manifest(json_args)
+
+            # The critical test: no MethodError on JSON.Object conversion
+            @test !haskey(result, "error")
+            @test haskey(result, "updated_manifest")
+            @test haskey(result, "manifest_content")
+
+            # Verify the manifest was updated - dependencies is an array
+            updated_manifest = result["updated_manifest"]
+            @test haskey(updated_manifest, "dependencies")
+            @test updated_manifest["dependencies"] isa Vector
+
+            # Find JSON in the dependencies array
+            json_dep = findfirst(d -> d["name"] == "JSON", updated_manifest["dependencies"])
+            @test json_dep !== nothing
+            @test updated_manifest["dependencies"][json_dep]["version"] == "0.21.1"
+        end
     end
 
     @testset "URL and Metadata Extraction Tests" begin
@@ -412,5 +496,145 @@ using DependabotHelper
             end
         end
     end
-end
 
+    @testset "Batch Operations Tests" begin
+        json_uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+        example_uuid = "7876af07-990d-54b4-ab0e-23690620f79a"
+
+        @testset "batch_get_package_info" begin
+            # Test with valid packages
+            packages = [
+                Dict{String,String}("name" => "JSON", "uuid" => json_uuid),
+                Dict{String,String}("name" => "Example", "uuid" => example_uuid)
+            ]
+
+            result = DependabotHelper.batch_get_package_info(packages)
+            @test result isa Dict
+            @test haskey(result, "JSON")
+            @test haskey(result, "Example")
+            @test haskey(result["JSON"], "available_versions")
+            @test haskey(result["JSON"], "latest_version")
+            @test result["JSON"]["available_versions"] isa Vector
+
+            # Test with empty array - returns empty Dict
+            result_empty = DependabotHelper.batch_get_package_info(Vector{Dict{String,String}}())
+            @test result_empty isa Dict
+            @test isempty(result_empty) || haskey(result_empty, "error")
+
+            # Test with invalid package
+            invalid_packages = [
+                Dict{String,String}("name" => "NonExistent12345", "uuid" => "00000000-0000-0000-0000-000000000000")
+            ]
+            result_invalid = DependabotHelper.batch_get_package_info(invalid_packages)
+            @test result_invalid isa Dict
+            @test haskey(result_invalid, "NonExistent12345")
+        end
+
+        @testset "batch_get_available_versions" begin
+            # Test with valid packages
+            packages = [
+                Dict{String,String}("name" => "JSON", "uuid" => json_uuid),
+                Dict{String,String}("name" => "Example", "uuid" => example_uuid)
+            ]
+
+            result = DependabotHelper.batch_get_available_versions(packages)
+            @test result isa Dict
+            @test haskey(result, "JSON")
+            @test haskey(result, "Example")
+            @test haskey(result["JSON"], "versions")
+            @test result["JSON"]["versions"] isa Vector
+            @test !isempty(result["JSON"]["versions"])
+
+            # Test with empty array - returns empty Dict
+            result_empty = DependabotHelper.batch_get_available_versions(Vector{Dict{String,String}}())
+            @test result_empty isa Dict
+            @test isempty(result_empty) || haskey(result_empty, "error")
+        end
+
+        @testset "batch_get_version_release_dates" begin
+            # Test with valid packages and versions
+            packages_versions = [
+                Dict{String,Any}(
+                    "name" => "JSON",
+                    "uuid" => json_uuid,
+                    "versions" => ["0.21.0", "0.21.1"]
+                ),
+                Dict{String,Any}(
+                    "name" => "Example",
+                    "uuid" => example_uuid,
+                    "versions" => ["0.5.3"]
+                )
+            ]
+
+            result = DependabotHelper.batch_get_version_release_dates(packages_versions)
+            @test result isa Dict
+            @test haskey(result, "JSON")
+            @test haskey(result, "Example")
+            @test result["JSON"] isa Dict
+            @test haskey(result["JSON"], "0.21.0")
+
+            # Test with empty array - returns empty Dict
+            result_empty = DependabotHelper.batch_get_version_release_dates(Vector{Dict{String,Any}}())
+            @test result_empty isa Dict
+            @test isempty(result_empty) || haskey(result_empty, "error")
+        end
+
+        @testset "Batch Operations Args Wrappers" begin
+            # Test batch_get_package_info through args wrapper
+            args = Dict{String,Any}(
+                "packages" => [
+                    Dict{String,Any}("name" => "JSON", "uuid" => json_uuid)
+                ]
+            )
+            result = DependabotHelper.batch_get_package_info(args)
+            @test result isa Dict
+            @test haskey(result, "JSON")
+
+            # Test batch_get_available_versions through args wrapper
+            result = DependabotHelper.batch_get_available_versions(args)
+            @test result isa Dict
+            @test haskey(result, "JSON")
+
+            # Test batch_get_version_release_dates through args wrapper
+            args_versions = Dict{String,Any}(
+                "packages_versions" => [
+                    Dict{String,Any}(
+                        "name" => "JSON",
+                        "uuid" => json_uuid,
+                        "versions" => ["0.21.0"]
+                    )
+                ]
+            )
+            result = DependabotHelper.batch_get_version_release_dates(args_versions)
+            @test result isa Dict
+            @test haskey(result, "JSON")
+        end
+
+        @testset "Batch Operations via JSON Interface" begin
+            # Test batch_get_package_info through JSON interface
+            json_input = """{"function": "batch_get_package_info", "args": {"packages": [{"name": "JSON", "uuid": "$json_uuid"}]}}"""
+            result_json = DependabotHelper.run(json_input)
+            result = JSON.parse(result_json)
+            # Check for successful result or error
+            @test !haskey(result, "error") || error("Unexpected error: $(result["error"])")
+            @test haskey(result, "result")
+            @test haskey(result["result"], "JSON")
+
+            # Test batch_get_available_versions through JSON interface
+            json_input = """{"function": "batch_get_available_versions", "args": {"packages": [{"name": "JSON", "uuid": "$json_uuid"}]}}"""
+            result_json = DependabotHelper.run(json_input)
+            result = JSON.parse(result_json)
+            @test !haskey(result, "error") || error("Unexpected error: $(result["error"])")
+            @test haskey(result, "result")
+            @test haskey(result["result"], "JSON")
+
+            # Test batch_get_version_release_dates through JSON interface
+            json_input = """{"function": "batch_get_version_release_dates", "args": {"packages_versions": [{"name": "JSON", "uuid": "$json_uuid", "versions": ["0.21.0"]}]}}"""
+            result_json = DependabotHelper.run(json_input)
+            result = JSON.parse(result_json)
+            @test !haskey(result, "error") || error("Unexpected error: $(result["error"])")
+            @test haskey(result, "result")
+            @test haskey(result["result"], "JSON")
+        end
+    end
+end
