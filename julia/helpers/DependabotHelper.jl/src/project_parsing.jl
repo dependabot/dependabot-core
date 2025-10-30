@@ -1,16 +1,23 @@
 # Project and manifest parsing functions for DependabotHelper.jl
 #
 # NOTE: Terminology clarification for Julia vs Dependabot:
-# - This module uses Julia terminology: "project file" = Project.toml, "manifest file" = Manifest.toml
+# - This module uses Julia terminology: "project file" = Project.toml/JuliaProject.toml,
+#   "manifest file" = Manifest.toml/JuliaManifest.toml
 # - Dependabot terminology: "manifest file" = Project.toml, "lockfile" = Manifest.toml
 # - Function names and documentation use Julia terminology for consistency with the ecosystem
+#
+# Julia supports multiple naming conventions for environment files:
+# - Project files: Project.toml or JuliaProject.toml
+# - Manifest files: Manifest.toml or JuliaManifest.toml (with optional version suffix like Manifest-v2.0.toml)
+# This module uses find_environment_files() to detect the actual file names in use.
 
 """
     parse_project(project_path::String, manifest_path::Union{String,Nothing}=nothing)
 
-Parse a Julia project file (Project.toml) and return comprehensive project information.
+Parse a Julia project file and return comprehensive project information.
 
 Note: In Dependabot terminology, this would be called parsing a "manifest file" or "dependency manifest".
+The function automatically detects whether the project uses Project.toml or JuliaProject.toml.
 """
 function parse_project(project_path::String, manifest_path::Union{String,Nothing}=nothing)
     try
@@ -253,28 +260,32 @@ function update_manifest(project_path::String, updates::Dict)
             return Dict("error" => "Project directory does not exist")
         end
 
-        project_file = joinpath(project_path, "Project.toml")
+        # Find the actual environment files (handles JuliaProject.toml, etc.)
+        project_file, manifest_file = find_environment_files(project_path)
+
         if !isfile(project_file)
-            return Dict("error" => "Project.toml not found in directory")
+            return Dict("error" => "Project file not found in directory")
         end
 
-        manifest_file = joinpath(project_path, "Manifest.toml")
         if !isfile(manifest_file)
-            return Dict("error" => "Manifest.toml not found in directory")
+            return Dict("error" => "Manifest file not found in directory")
         end
 
-        # NOTE: This function expects the Project.toml to already have updated [compat]
-        # constraints. The Ruby FileUpdater should update Project.toml first, then call
-        # this function to update the Manifest.toml based on the new constraints.
+        # NOTE: This function expects the project file to already have updated [compat]
+        # constraints. The Ruby FileUpdater should update the project file first, then call
+        # this function to update the manifest file based on the new constraints.
 
         # Create a temporary directory for the update operation
         mktempdir() do temp_dir
-            # Copy project files to temp directory
-            temp_project_file = joinpath(temp_dir, "Project.toml")
+            # Copy environment files to temp directory, preserving original names
+            project_file_name = basename(project_file)
+            manifest_file_name = basename(manifest_file)
+
+            temp_project_file = joinpath(temp_dir, project_file_name)
             cp(project_file, temp_project_file)
 
             # Copy manifest
-            temp_manifest_file = joinpath(temp_dir, "Manifest.toml")
+            temp_manifest_file = joinpath(temp_dir, manifest_file_name)
             cp(manifest_file, temp_manifest_file)
 
             # Activate the temporary project

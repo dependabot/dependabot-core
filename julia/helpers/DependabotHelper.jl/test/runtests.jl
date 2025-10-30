@@ -126,6 +126,38 @@ using DependabotHelper
         end
     end
 
+    @testset "Environment File Detection Tests" begin
+        # Test with a real environment that has Project.toml
+        mktempdir() do tmpdir
+            # Create a minimal Project.toml
+            project_file = joinpath(tmpdir, "Project.toml")
+            write(project_file, """
+                name = "TestProject"
+                uuid = "12345678-1234-1234-1234-123456789012"
+                version = "0.1.0"
+                """)
+
+            # Create a minimal Manifest.toml
+            manifest_file = joinpath(tmpdir, "Manifest.toml")
+            write(manifest_file, """
+                # This file is machine-generated
+                julia_version = "1.10.0"
+                manifest_format = "2.0"
+                """)
+
+            # Test find_environment_files
+            found_project, found_manifest = DependabotHelper.find_environment_files(tmpdir)
+            @test isfile(found_project)
+            @test isfile(found_manifest)
+            @test basename(found_project) == "Project.toml"
+            @test basename(found_manifest) == "Manifest.toml"
+
+            # Test helper functions
+            @test DependabotHelper.get_project_file_name(tmpdir) == "Project.toml"
+            @test DependabotHelper.get_manifest_file_name(tmpdir) == "Manifest.toml"
+        end
+    end
+
     @testset "Version Constraint Parsing Tests" begin
         # Test empty constraints (not valid in Julia compat)
         result = @test_nowarn DependabotHelper.parse_julia_version_constraint("")

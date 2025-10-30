@@ -6,8 +6,18 @@
 Check if updating a package to a target version is compatible with the project
 """
 function check_update_compatibility(project_path::String, package_name::String, target_version::String)
-    # Validate inputs first
-    project_file = joinpath(project_path, "Project.toml")
+    # Validate inputs first - find the actual environment files
+    project_file, manifest_file = try
+        find_environment_files(project_path)
+    catch e
+        return Dict(
+            "compatible" => false,
+            "package_name" => package_name,
+            "target_version" => target_version,
+            "error" => "Failed to find environment files: $(sprint(showerror, e))"
+        )
+    end
+
     if !isfile(project_file)
         return Dict(
             "compatible" => false,
@@ -20,11 +30,12 @@ function check_update_compatibility(project_path::String, package_name::String, 
     try
         # Create a temporary copy of the project for testing
         mktempdir() do temp_dir
-            # Copy project files
-            manifest_file = joinpath(project_path, "Manifest.toml")
+            # Copy environment files, preserving original names
+            project_file_name = basename(project_file)
+            manifest_file_name = basename(manifest_file)
 
-            temp_project = joinpath(temp_dir, "Project.toml")
-            temp_manifest = joinpath(temp_dir, "Manifest.toml")
+            temp_project = joinpath(temp_dir, project_file_name)
+            temp_manifest = joinpath(temp_dir, manifest_file_name)
 
             cp(project_file, temp_project)
             if isfile(manifest_file)
@@ -85,24 +96,34 @@ end
 Resolve dependencies with multiple package updates and constraints
 """
 function resolve_dependencies_with_constraints(project_path::String, target_updates::Dict)
-    # Validate inputs first
-    project_file = joinpath(project_path, "Project.toml")
+    # Validate inputs first - find the actual environment files
+    project_file, manifest_file = try
+        find_environment_files(project_path)
+    catch e
+        return Dict(
+            "success" => false,
+            "target_updates" => target_updates,
+            "error" => "Failed to find environment files: $(sprint(showerror, e))"
+        )
+    end
+
     if !isfile(project_file)
         return Dict(
             "success" => false,
             "target_updates" => target_updates,
-            "error" => "Project.toml not found at: $project_file"
+            "error" => "Project file not found at: $project_file"
         )
     end
 
     try
         # Create a temporary copy for resolution testing
         mktempdir() do temp_dir
-            # Copy project files
-            manifest_file = joinpath(project_path, "Manifest.toml")
+            # Copy environment files, preserving original names
+            project_file_name = basename(project_file)
+            manifest_file_name = basename(manifest_file)
 
-            temp_project = joinpath(temp_dir, "Project.toml")
-            temp_manifest = joinpath(temp_dir, "Manifest.toml")
+            temp_project = joinpath(temp_dir, project_file_name)
+            temp_manifest = joinpath(temp_dir, manifest_file_name)
 
             cp(project_file, temp_project)
             if isfile(manifest_file)

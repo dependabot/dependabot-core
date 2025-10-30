@@ -139,11 +139,13 @@ module Dependabot
       def write_temp_project_directory(project_content)
         temp_dir = Dir.mktmpdir("dependabot-julia-")
 
-        # Write the updated Project.toml
-        File.write(File.join(temp_dir, "Project.toml"), project_content)
+        # Write the updated project file using the original filename
+        File.write(File.join(temp_dir, T.must(project_file).name), project_content)
 
-        # Write the existing Manifest.toml
-        File.write(File.join(temp_dir, "Manifest.toml"), T.must(manifest_file).content) if manifest_file
+        # Write the existing manifest file using the original filename
+        if manifest_file
+          File.write(File.join(temp_dir, T.must(manifest_file).name), T.must(manifest_file).content)
+        end
 
         temp_dir
       end

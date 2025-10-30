@@ -74,7 +74,7 @@ module Dependabot
       sig { returns(String) }
       def write_temp_project_file
         @temp_dir ||= Dir.mktmpdir("julia_project")
-        project_path = File.join(@temp_dir, "Project.toml")
+        project_path = File.join(@temp_dir, T.must(project_file).name)
         File.write(project_path, T.must(project_file).content)
         project_path
       end
