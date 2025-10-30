@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "base64"
+require "set"
 require "sorbet-runtime"
 
 require "dependabot/file_parsers"
@@ -78,7 +79,8 @@ module Dependabot
       if job.security_updates_only?
         # Dependency names can be case-insensitive in some ecosystems (e.g., Python, Gradle, Maven, Nuget)
         # and the dependency name in the security advisory often doesn't match the case used in manifests.
-        job_dependency_names = T.must(job.dependencies).map(&:downcase)
+        # Use Set for O(1) lookup performance.
+        job_dependency_names = T.must(job.dependencies).map(&:downcase).to_set
         dependencies.select { |d| job_dependency_names.include?(d.name.downcase) }
       else
         dependencies.select { |d| job.allowed_update?(d) }
@@ -99,7 +101,8 @@ module Dependabot
       # private registry but shouldn't cause problems here as job.dependencies
       # is set either from an existing PR rebase/recreate or a security
       # advisory.
-      job_dependency_names = T.must(job.dependencies).map(&:downcase)
+      # Use Set for O(1) lookup performance.
+      job_dependency_names = T.must(job.dependencies).map(&:downcase).to_set
       dependencies.select do |dep|
         job_dependency_names.include?(dep.name.downcase)
       end
