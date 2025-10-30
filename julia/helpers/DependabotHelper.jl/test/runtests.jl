@@ -173,7 +173,7 @@ using DependabotHelper
                 found_project, found_manifest = DependabotHelper.find_environment_files(tmpdir)
                 @test isfile(found_project)
                 @test basename(found_project) == "Project.toml"
-                
+
                 # The manifest path is returned but the file doesn't exist yet
                 @test basename(found_manifest) == "Manifest.toml"
                 @test !isfile(found_manifest)  # Manifest doesn't exist yet
@@ -319,15 +319,12 @@ using DependabotHelper
         result = @test_nowarn DependabotHelper.get_available_versions("NonExistentPackage12345", "00000000-0000-0000-0000-000000000000")
         @test haskey(result, "error")
 
-        # Test get_version_release_date function
-        # First get available versions to test with a real version
+        # Test get_version_release_date function with General registry package
+        # JSON.jl is in the General registry, so it should return a real date
         versions_result = DependabotHelper.get_available_versions("JSON", json_uuid)
-        if !haskey(versions_result, "error") && !isempty(versions_result["versions"])
-            test_version = versions_result["versions"][1]
-            result = @test_nowarn DependabotHelper.get_version_release_date("JSON", test_version, json_uuid)
-            # Note: Julia registries don't store release dates, so we expect null
-            @test haskey(result, "release_date")
-        end
+        test_version = "1.2.0"
+        result = @test_nowarn DependabotHelper.get_version_release_date("JSON", test_version, json_uuid)
+        @test result["release_date"] == "2025-10-17T01:08:11"
 
         # Test get_version_release_date with non-existent package
         result = @test_nowarn DependabotHelper.get_version_release_date("NonExistentPackage12345", "1.0.0", "00000000-0000-0000-0000-000000000000")
@@ -336,6 +333,19 @@ using DependabotHelper
         # Test get_version_release_date with invalid version
         result = @test_nowarn DependabotHelper.get_version_release_date("JSON", "999.999.999", json_uuid)
         @test haskey(result, "error")
+
+        # Test helper functions for General registry
+        @testset "General Registry Helper Functions" begin
+            # Test is_package_in_general_registry with JSON (should be true)
+            @test DependabotHelper.is_package_in_general_registry("JSON", json_uuid) == true
+
+            # Test is_package_in_general_registry with non-existent package
+            @test DependabotHelper.is_package_in_general_registry("NonExistentPackage12345", "00000000-0000-0000-0000-000000000000") == false
+
+            # Test fetch_general_registry_release_date with a known version
+            release_date = DependabotHelper.fetch_general_registry_release_date("JSON", test_version)
+            @test release_date == "2025-10-17T01:08:11"
+        end
     end
 
     @testset "Manifest Functions Tests" begin

@@ -11,12 +11,14 @@ It handles updates for packages managed through Julia's package manager and pars
 - Support for standard Julia semantic versioning
 - Integration with Julia's General registry
 - Cross-platform compatibility
+- Release date tracking for packages in the General registry (enables cooldown period feature)
 
 ## Comparison to CompatHelper.jl
 
 This implementation is designed to align with [CompatHelper.jl](https://github.com/JuliaRegistries/CompatHelper.jl), the main tool used for automated dependency updates by the Julia ecosystem (at the time of writing).
 
 There are some notable differences:
+
 - **Lockfile Updates**: Dependabot updates both `Project.toml` and tries to update any `Manifest.toml` files, whereas CompatHelper.jl only updates `Project.toml`.
 
 Also, a goal of this is to integrate into github's CVE database and alerting systems for vulnerabilities in Julia packages.
@@ -35,6 +37,7 @@ For more information about Julia package management, see:
 - Custom/private registries are not currently fully supported
 - Registry authentication is not implemented
 - Full version history parsing from registries is limited
+- Release date information is only available for packages in the General registry (non-General packages will not have cooldown period enforcement)
 
 ## Files Handled
 
@@ -96,6 +99,9 @@ The Julia ecosystem implementation follows a hybrid approach where the Ruby infr
 | `LatestVersionFinder#latest_version` | `get_latest_version(package_name, package_uuid)` | Find latest available non-yanked version (requires UUID) |
 | **MetadataFinder** | | |
 | `MetadataFinder#source_url` | `find_package_source_url(package_name, package_uuid)` | Extract repository URL from package metadata (requires UUID) |
+| **PackageDetailsFetcher** | | |
+| `PackageDetailsFetcher#fetch_release_dates` | `get_version_release_date(package_name, version, package_uuid)` | Get registration date for a version (General registry only) |
+| `PackageDetailsFetcher#fetch_release_dates` | `batch_get_version_release_dates(packages_versions)` | Batch fetch registration dates (General registry only) |
 
 ### Communication Protocol
 
@@ -113,6 +119,8 @@ Ruby classes communicate with Julia functions via:
 **Yanked Version Exclusion**: The `get_latest_version` function automatically excludes yanked versions from consideration by checking the `yanked` flag in the registry's version metadata, ensuring only stable, non-retracted versions are returned.
 
 **Error Handling**: When all versions of a package are yanked, the function returns a descriptive error message rather than failing silently.
+
+**Release Date Tracking**: For packages in the General registry, release dates are fetched from the [GeneralMetadata.jl API](https://juliaregistries.github.io/GeneralMetadata.jl/). This enables Dependabot's cooldown period feature, which allows users to wait a specified number of days after a version is released before updating. Packages in other registries will not have release date information available, and cooldown periods will not apply to them.
 
 ### Julia Helper Structure
 
