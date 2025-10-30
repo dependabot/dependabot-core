@@ -38,6 +38,9 @@ module Dependabot
                  groups.select { |group| group.applies_to == "version-updates" }
                end
 
+      # Validate and filter out invalid groups
+      groups = validate_and_filter_groups(groups, job.package_manager)
+
       new(dependency_groups: groups)
     end
 
@@ -74,6 +77,52 @@ module Dependabot
       end
 
       validate_groups
+    end
+
+    # Class method to validate and filter groups before instantiation
+    sig do
+      params(
+        groups: T::Array[Dependabot::DependencyGroup],
+        package_manager: String
+      ).returns(T::Array[Dependabot::DependencyGroup])
+    end
+    def self.validate_and_filter_groups(groups, package_manager)
+      # List of known package manager names that should not be used as group names
+      # to prevent confusion with automatically generated groups
+      reserved_names = T.let(
+        %w(
+          npm_and_yarn npm yarn bundler pip maven gradle cargo composer
+          gomod go_modules terraform hex pub docker nuget mix swift bazel
+          elm submodules github_actions devcontainers
+        ),
+        T::Array[String]
+      )
+
+      validated_groups = groups.reject do |group|
+        # Reject groups whose names match package manager names
+        if reserved_names.include?(group.name.downcase.tr("-", "_"))
+          Dependabot.logger.warn(
+            "Group name '#{group.name}' matches a package ecosystem name and will be ignored. " \
+            "Please use a different group name in your dependabot.yml configuration. " \
+            "Package ecosystem names like '#{package_manager}' are reserved and cannot be used as group names."
+          )
+          true
+        # Warn about groups with no meaningful rules (overly broad patterns that could match everything)
+        elsif group.rules.empty? || (!group.rules.key?("patterns") && !group.rules.key?("dependency-type") &&
+                                     !group.rules.key?("update-types"))
+          Dependabot.logger.warn(
+            "Group '#{group.name}' has no meaningful rules defined (no patterns, dependency-type, or update-types). " \
+            "This group will match all dependencies, which may not be intended. " \
+            "Please add specific rules to your dependabot.yml configuration."
+          )
+          # Don't reject, just warn, as this might be intentional
+          false
+        else
+          false
+        end
+      end
+
+      validated_groups
     end
 
     private

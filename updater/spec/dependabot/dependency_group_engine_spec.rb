@@ -24,13 +24,15 @@ RSpec.describe Dependabot::DependencyGroupEngine do
   end
   let(:security_updates_only) { false }
   let(:dependencies) { nil }
+  let(:package_manager) { "bundler" }
   let(:job) do
     instance_double(
       Dependabot::Job,
       dependency_groups: dependency_groups_config,
       source: source,
       dependencies: dependencies,
-      security_updates_only?: security_updates_only
+      security_updates_only?: security_updates_only,
+      package_manager: package_manager
     )
   end
 
@@ -477,6 +479,152 @@ RSpec.describe Dependabot::DependencyGroupEngine do
         it "lists all dependencies as ungrouped" do
           expect(dependency_group_engine.ungrouped_dependencies).to eql(dependencies)
         end
+      end
+    end
+  end
+
+  context "when validating group names and rules" do
+    let(:job) do
+      instance_double(
+        Dependabot::Job,
+        dependency_groups: dependency_groups_config,
+        source: source,
+        dependencies: dependencies,
+        security_updates_only?: security_updates_only,
+        package_manager: "npm_and_yarn"
+      )
+    end
+
+    context "when a group name matches a package manager name" do
+      let(:dependency_groups_config) do
+        [
+          {
+            "name" => "npm_and_yarn",
+            "rules" => {
+              "patterns" => ["*"],
+              "update-types" => %w(minor patch)
+            }
+          },
+          {
+            "name" => "valid-group",
+            "rules" => {
+              "patterns" => ["dummy-pkg-*"]
+            }
+          }
+        ]
+      end
+
+      it "rejects the group with reserved name and warns" do
+        expect(Dependabot.logger).to receive(:warn).with(
+          /Group name 'npm_and_yarn' matches a package ecosystem name/
+        )
+        expect(dependency_group_engine.dependency_groups.length).to be(1)
+        expect(dependency_group_engine.dependency_groups.first.name).to eq("valid-group")
+      end
+    end
+
+    context "when a group name is a case variation of a package manager name" do
+      let(:dependency_groups_config) do
+        [
+          {
+            "name" => "Npm-And-Yarn",
+            "rules" => {
+              "patterns" => ["*"]
+            }
+          },
+          {
+            "name" => "valid-group",
+            "rules" => {
+              "patterns" => ["dummy-pkg-*"]
+            }
+          }
+        ]
+      end
+
+      it "rejects the group with reserved name" do
+        expect(Dependabot.logger).to receive(:warn).with(
+          /Group name 'Npm-And-Yarn' matches a package ecosystem name/
+        )
+        expect(dependency_group_engine.dependency_groups.length).to be(1)
+      end
+    end
+
+    context "when a group has no meaningful rules" do
+      let(:dependency_groups_config) do
+        [
+          {
+            "name" => "overly-broad-group",
+            "rules" => {}
+          },
+          {
+            "name" => "valid-group",
+            "rules" => {
+              "patterns" => ["dummy-pkg-*"]
+            }
+          }
+        ]
+      end
+
+      it "warns about the overly broad group but doesn't reject it" do
+        expect(Dependabot.logger).to receive(:warn).with(
+          /Group 'overly-broad-group' has no meaningful rules defined/
+        )
+        # The group should still be included (just warned), as it might be intentional
+        expect(dependency_group_engine.dependency_groups.length).to be(2)
+      end
+    end
+
+    context "when a group has only update-types rules" do
+      let(:dependency_groups_config) do
+        [
+          {
+            "name" => "update-types-only",
+            "rules" => {
+              "update-types" => %w(minor patch)
+            }
+          }
+        ]
+      end
+
+      it "does not warn as update-types is a meaningful rule" do
+        expect(Dependabot.logger).not_to receive(:warn)
+        expect(dependency_group_engine.dependency_groups.length).to be(1)
+      end
+    end
+
+    context "when multiple groups have reserved names" do
+      let(:dependency_groups_config) do
+        [
+          {
+            "name" => "bundler",
+            "rules" => {
+              "patterns" => ["*"]
+            }
+          },
+          {
+            "name" => "pip",
+            "rules" => {
+              "patterns" => ["*"]
+            }
+          },
+          {
+            "name" => "valid-group",
+            "rules" => {
+              "patterns" => ["dummy-pkg-*"]
+            }
+          }
+        ]
+      end
+
+      it "rejects all groups with reserved names" do
+        expect(Dependabot.logger).to receive(:warn).with(
+          /Group name 'bundler' matches a package ecosystem name/
+        )
+        expect(Dependabot.logger).to receive(:warn).with(
+          /Group name 'pip' matches a package ecosystem name/
+        )
+        expect(dependency_group_engine.dependency_groups.length).to be(1)
+        expect(dependency_group_engine.dependency_groups.first.name).to eq("valid-group")
       end
     end
   end
