@@ -48,8 +48,8 @@ RSpec.describe Dependabot::Julia::RequirementsUpdater do
       "preserves spacing format when appending" => [
         ["0.6,0.7,0.8", "0.9.0", "0.6,0.7,0.8,0.9"],
         ["0.6, 0.7, 0.8", "0.9.0", "0.6, 0.7, 0.8, 0.9"],
-        ["1.2,1.3", "1.4.0", "1.2,1.3,1.4"],
-        ["1.2, 1.3", "1.4.0", "1.2, 1.3, 1.4"]
+        ["1.2,1.3", "2.0.0", "1.2,1.3,2.0"],
+        ["1.2, 1.3", "2.0.0", "1.2, 1.3, 2.0"]
       ]
     }.each do |description, test_cases|
       context "when #{description}" do
