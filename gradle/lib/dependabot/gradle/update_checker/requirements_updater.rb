@@ -10,6 +10,7 @@ require "sorbet-runtime"
 
 require "dependabot/requirements_updater/base"
 require "dependabot/gradle/distributions"
+require "dependabot/gradle/package/distributions_fetcher"
 require "dependabot/gradle/update_checker"
 require "dependabot/gradle/version"
 require "dependabot/gradle/requirement"
@@ -138,7 +139,7 @@ module Dependabot
                 source: source.merge(url: distribution_url)
               )
             when "distributionSha256Sum"
-              checksum_url, checksum = DistributionsFinder.resolve_checksum(T.must(distribution_url)) if checksum.nil?
+              checksum_url, checksum = Gradle::Package::DistributionsFetcher.resolve_checksum(T.must(distribution_url))
               req.merge(
                 requirement: checksum,
                 source: source.merge(url: checksum_url)

@@ -6,6 +6,7 @@ module Dependabot
     module Distributions
       extend T::Sig
 
+      DISTRIBUTION_REPOSITORY_URL = "https://services.gradle.org"
       DISTRIBUTION_DEPENDENCY_TYPE = "gradle-distribution"
 
       sig { params(requirements: T::Array[T::Hash[Symbol, T.untyped]]).returns(T::Boolean) }

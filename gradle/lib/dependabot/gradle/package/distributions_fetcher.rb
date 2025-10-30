@@ -2,12 +2,13 @@
 # frozen_string_literal: true
 
 require "dependabot/gradle/version"
+require "dependabot/gradle/distributions"
 require "sorbet-runtime"
 
 module Dependabot
   module Gradle
-    class UpdateChecker
-      class DistributionsFinder
+    module Package
+      class DistributionsFetcher
         extend T::Sig
 
         @available_versions = T.let([], T::Array[T::Hash[String, T.untyped]])
@@ -28,16 +29,13 @@ module Dependabot
           @available_versions +=
             versions
             .select { |v| release_version?(version: v) }
-            .uniq(&:version)
-            .map { |v| extract_version(v) }
-            .sort_by { |v| v[:version] }
-        end
-
-        sig { params(version: OpenStruct).returns(T::Hash[Symbol, T.untyped]) }
-        def self.extract_version(version)
-          { version: Gradle::Version.new(T.let(version["version"], String)),
-            released_at: Time.parse(T.let(version["buildTime"], String)),
-            source_url: "https://services.gradle.org" }
+            .uniq { |v| v[:version] }
+            .map do |v|
+              {
+                version: v[:version],
+                build_time: v[:buildTime]
+              }
+            end
         end
 
         sig { params(version: OpenStruct).returns(T::Boolean) }
