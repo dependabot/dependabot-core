@@ -231,6 +231,14 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
       update_graph_processor.run
     end
 
+    it "emits a snapshot for each directory" do
+      expect(service).to receive(:create_dependency_submission) do |args|
+        raise "Boom"
+      end
+
+      update_graph_processor.run
+    end
+
     it "correctly snapshots the first directory" do
       expect(service).to receive(:create_dependency_submission) do |args|
         payload = args[:dependency_submission].payload
