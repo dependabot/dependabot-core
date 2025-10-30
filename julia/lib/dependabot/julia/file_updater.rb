@@ -143,9 +143,7 @@ module Dependabot
         File.write(File.join(temp_dir, T.must(project_file).name), project_content)
 
         # Write the existing manifest file using the original filename
-        if manifest_file
-          File.write(File.join(temp_dir, T.must(manifest_file).name), T.must(manifest_file).content)
-        end
+        File.write(File.join(temp_dir, T.must(manifest_file).name), T.must(manifest_file).content) if manifest_file
 
         temp_dir
       end
