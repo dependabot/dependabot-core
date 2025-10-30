@@ -15,6 +15,9 @@ module Dependabot
 
       require_relative "file_updater/go_mod_updater"
 
+      # NOTE: repo_contents_path is typed as T.nilable(String) to maintain
+      # compatibility with the base FileUpdater class signature. However,
+      # we validate it's not nil at runtime since it's always required in production.
       sig do
         override
           .params(
@@ -29,7 +32,7 @@ module Dependabot
       def initialize(dependencies:, dependency_files:, credentials:, repo_contents_path: nil, options: {})
         super
 
-        use_repo_contents_stub if repo_contents_path.nil?
+        raise ArgumentError, "repo_contents_path is required" if repo_contents_path.nil?
       end
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
@@ -77,31 +80,6 @@ module Dependabot
         raise "No go.mod!"
       end
 
-      sig { returns(String) }
-      def use_repo_contents_stub
-        @repo_contents_stub = T.let(true, T.nilable(T::Boolean))
-        @repo_contents_path = Dir.mktmpdir
-
-        Dir.chdir(@repo_contents_path) do
-          dependency_files.each do |file|
-            path = File.join(@repo_contents_path, directory, file.name)
-            path = Pathname.new(path).expand_path
-            FileUtils.mkdir_p(path.dirname)
-            File.write(path, file.content)
-          end
-
-          # Only used to create a backup git config that's reset
-          SharedHelpers.with_git_configured(credentials: []) do
-            `git config --global user.email "no-reply@github.com"`
-            `git config --global user.name "Dependabot"`
-            `git config --global init.defaultBranch "placeholder-default-branch"`
-            `git init .`
-            `git add .`
-            `git commit -m'fake repo_contents_path'`
-          end
-        end
-      end
-
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def go_mod
         @go_mod ||= T.let(get_original_file("go.mod"), T.nilable(Dependabot::DependencyFile))
@@ -147,7 +125,7 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def tidy?
-        !@repo_contents_stub
+        true
       end
 
       sig { returns(T::Boolean) }

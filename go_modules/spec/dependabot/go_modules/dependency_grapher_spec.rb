@@ -11,10 +11,13 @@ RSpec.describe Dependabot::GoModules::DependencyGrapher do
     )
   end
 
+  let(:project_name) { "graphing_dependencies" }
+  let(:repo_contents_path) { build_tmp_repo(project_name) }
+
   let(:parser) do
     Dependabot::FileParsers.for_package_manager("go_modules").new(
       dependency_files:,
-      repo_contents_path: nil,
+      repo_contents_path: repo_contents_path,
       source: source,
       credentials: [],
       reject_external_code: false
