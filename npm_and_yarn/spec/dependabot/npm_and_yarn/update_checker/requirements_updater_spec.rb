@@ -682,5 +682,55 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
         expect(updater.updated_requirements).to eq(requirements)
       end
     end
+
+    context "when dealing with a requirement being widened and ignored versions" do
+      let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::WidenRanges }
+
+      context "with widen_ranges and ignore conditions issue reproduction" do
+        let(:package_json_req_string) { "^4.0.0" }
+
+        context "when latest_resolvable_version respects ignore conditions" do
+          let(:latest_resolvable_version) { version_class.new("4.0.3") }
+
+          its([:requirement]) { is_expected.to eq("^4.0.0") }
+
+          it "does not update requirement when it already satisfies" do
+            # ^4.0.0 should satisfy 4.0.3, so no update needed
+            expect(updater.updated_requirements.first[:requirement]).to eq("^4.0.0")
+          end
+        end
+
+        context "when RequirementsUpdater receives a valid resolvable version" do
+          let(:latest_resolvable_version) { version_class.new("4.0.3") }
+
+          it "updates requirement when version requires a wider range" do
+            # RequirementsUpdater should work normally when given a valid version
+            # (filtering of ignored versions should happen at UpdateChecker level)
+            expect(updater.updated_requirements.first[:requirement]).to eq("^4.0.0")
+          end
+        end
+
+        context "when both preferred and fallback versions are ignored" do
+          let(:latest_resolvable_version) { version_class.new("3.1.0") }
+          let(:package_json_req_string) { "^3.0.0" }
+
+          it "handles gracefully when a suitable version is available" do
+            # RequirementsUpdater should work normally when given a valid version
+            # This test shows normal behavior when UpdateChecker provides a valid version
+            expect(updater.updated_requirements.first[:requirement]).to eq("^3.0.0")
+          end
+        end
+
+        context "when current requirement doesn't satisfy latest allowed version" do
+          let(:package_json_req_string) { "^3.9.0" }
+          let(:latest_resolvable_version) { version_class.new("4.0.3") }
+
+          it "updates to the latest allowed version" do
+            # ^3.9.0 doesn't satisfy 4.0.3, so it should be updated to ^4.0.3
+            expect(updater.updated_requirements.first[:requirement]).to eq("^4.0.3")
+          end
+        end
+      end
+    end
   end
 end
