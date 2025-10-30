@@ -567,10 +567,27 @@ end
 
 # Args wrapper for batch_get_package_info
 function batch_get_package_info(args::AbstractDict)
-    packages = get(args, "packages", Dict{String,String}[])
+    packages_raw = get(args, "packages", Vector{Any}())
+
+    if isempty(packages_raw)
+        return Dict("error" => "No packages provided")
+    end
+
+    # JSON v1 parses objects as Dict{String,Any} and arrays as Vector{Any}
+    # Convert to the strongly-typed format expected by the core function
+    packages = Vector{Dict{String,String}}()
+    for pkg in packages_raw
+        # Accept any AbstractDict type (handles both Dict and JSON.Object)
+        if pkg isa AbstractDict
+            push!(packages, Dict{String,String}(
+                "name" => string(get(pkg, "name", "")),
+                "uuid" => string(get(pkg, "uuid", ""))
+            ))
+        end
+    end
 
     if isempty(packages)
-        return Dict("error" => "No packages provided")
+        return Dict("error" => "No valid packages provided")
     end
 
     return batch_get_package_info(packages)
@@ -629,10 +646,31 @@ end
 
 # Args wrapper for batch_get_version_release_dates
 function batch_get_version_release_dates(args::AbstractDict)
-    packages_versions = get(args, "packages_versions", Dict{String,Any}[])
+    packages_versions_raw = get(args, "packages_versions", Vector{Any}())
+
+    if isempty(packages_versions_raw)
+        return Dict("error" => "No packages_versions provided")
+    end
+
+    # JSON v1 parses objects as Dict{String,Any} and arrays as Vector{Any}
+    # Convert to the strongly-typed format expected by the core function
+    packages_versions = Vector{Dict{String,Any}}()
+    for pkg_ver in packages_versions_raw
+        # Accept any AbstractDict type (handles both Dict and JSON.Object)
+        if pkg_ver isa AbstractDict
+            versions_raw = get(pkg_ver, "versions", Vector{Any}())
+            versions = [string(v) for v in versions_raw]
+            
+            push!(packages_versions, Dict{String,Any}(
+                "name" => string(get(pkg_ver, "name", "")),
+                "uuid" => string(get(pkg_ver, "uuid", "")),
+                "versions" => versions
+            ))
+        end
+    end
 
     if isempty(packages_versions)
-        return Dict("error" => "No packages_versions provided")
+        return Dict("error" => "No valid packages_versions provided")
     end
 
     return batch_get_version_release_dates(packages_versions)
@@ -672,10 +710,27 @@ end
 
 # Args wrapper for batch_get_available_versions
 function batch_get_available_versions(args::AbstractDict)
-    packages = get(args, "packages", Dict{String,String}[])
+    packages_raw = get(args, "packages", Vector{Any}())
+
+    if isempty(packages_raw)
+        return Dict("error" => "No packages provided")
+    end
+
+    # JSON v1 parses objects as Dict{String,Any} and arrays as Vector{Any}
+    # Convert to the strongly-typed format expected by the core function
+    packages = Vector{Dict{String,String}}()
+    for pkg in packages_raw
+        # Accept any AbstractDict type (handles both Dict and JSON.Object)
+        if pkg isa AbstractDict
+            push!(packages, Dict{String,String}(
+                "name" => string(get(pkg, "name", "")),
+                "uuid" => string(get(pkg, "uuid", ""))
+            ))
+        end
+    end
 
     if isempty(packages)
-        return Dict("error" => "No packages provided")
+        return Dict("error" => "No valid packages provided")
     end
 
     return batch_get_available_versions(packages)
