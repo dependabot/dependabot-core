@@ -156,6 +156,29 @@ using DependabotHelper
             @test DependabotHelper.get_project_file_name(tmpdir) == "Project.toml"
             @test DependabotHelper.get_manifest_file_name(tmpdir) == "Manifest.toml"
         end
+
+        # Test find_environment_files when manifest doesn't exist
+        @testset "find_environment_files without manifest" begin
+            mktempdir() do tmpdir
+                # Create only a Project.toml (no Manifest.toml)
+                project_file = joinpath(tmpdir, "Project.toml")
+                write(project_file, """
+                    name = "TestPackage"
+                    uuid = "12345678-1234-1234-1234-123456789abc"
+                    version = "1.0.0"
+                    """)
+
+                # find_environment_files should still work and return a path for manifest
+                # even if it doesn't exist yet (Pkg will create it when needed)
+                found_project, found_manifest = DependabotHelper.find_environment_files(tmpdir)
+                @test isfile(found_project)
+                @test basename(found_project) == "Project.toml"
+                
+                # The manifest path is returned but the file doesn't exist yet
+                @test basename(found_manifest) == "Manifest.toml"
+                @test !isfile(found_manifest)  # Manifest doesn't exist yet
+            end
+        end
     end
 
     @testset "Version Constraint Parsing Tests" begin
