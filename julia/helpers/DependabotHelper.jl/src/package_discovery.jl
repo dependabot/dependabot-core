@@ -1,5 +1,9 @@
 # Package discovery and metadata functions for DependabotHelper.jl
 
+# Cache for GeneralMetadata.jl API responses
+# Key: package name, Value: Dict of version => registration date
+const GENERAL_METADATA_CACHE = Dict{String, Dict{String, Any}}()
+
 """
     get_latest_version(package_name::String, package_uuid::String)
 
@@ -493,34 +497,31 @@ end
 
 Fetch the registration date for a specific version from GeneralMetadata.jl API.
 Returns an ISO 8601 datetime string or nothing if not available.
+Uses a session-level cache to avoid redundant API calls during batch operations.
 """
 function fetch_general_registry_release_date(package_name::String, version::String)
     try
-        # GeneralMetadata.jl API endpoint
-        url = "https://juliaregistries.github.io/GeneralMetadata.jl/api/$package_name/versions.json"
+        # Fetch and cache package data if not already present
+        cached_data = get!(GENERAL_METADATA_CACHE, package_name) do
+            url = "https://juliaregistries.github.io/GeneralMetadata.jl/api/$package_name/versions.json"
+            temp_file = Downloads.download(url)
+            json_content = read(temp_file, String)
+            rm(temp_file; force=true)
+            JSON.parse(json_content)
+        end
 
-        # Download and parse the JSON
-        temp_file = Downloads.download(url)
-        json_content = read(temp_file, String)
-        rm(temp_file; force=true)
-
-        json_data = JSON.parse(json_content)
-
-        # The JSON structure is a dictionary with version strings as keys:
-        # {"0.21.0": {"registered": "2019-07-16T19:58:10"}, "1.2.0": {"registered": "2025-10-17T01:08:11"}, ...}
-        if json_data isa AbstractDict && haskey(json_data, version)
-            version_info = json_data[version]
+        # Look up the version from cache
+        if cached_data isa AbstractDict && haskey(cached_data, version)
+            version_info = cached_data[version]
             if version_info isa AbstractDict && haskey(version_info, "registered")
                 return string(version_info["registered"])
             end
         end
 
-        # Version not found or no timestamp available
         return nothing
 
     catch e
         @error "fetch_general_registry_release_date: Failed to fetch from GeneralMetadata.jl" package_name=package_name version=version exception=(e, catch_backtrace())
-        # Don't fail completely, just return nothing
         return nothing
     end
 end# Args wrapper for get_version_release_date function with UUID requirement
