@@ -29,7 +29,7 @@ RSpec.describe Dependabot::GoModules::FileParser do
     )
   end
   let(:files) { [go_mod] }
-  let(:parser) { described_class.new(dependency_files: files, source: source, repo_contents_path: repo_contents_path) }
+  let(:parser) { described_class.new(dependency_files: files, source:, repo_contents_path:) }
 
   after do
     # Reset the environment variable after each test to avoid side effects
@@ -382,7 +382,6 @@ RSpec.describe Dependabot::GoModules::FileParser do
 
     context "when using a monorepo" do
       let(:project_name) { "monorepo" }
-      let(:repo_contents_path) { build_tmp_repo(project_name) }
       let(:go_mod_content) { fixture("projects", project_name, "go.mod") }
 
       it "parses root file" do
@@ -411,7 +410,6 @@ RSpec.describe Dependabot::GoModules::FileParser do
 
     context "when using a dependency without hostname" do
       let(:project_name) { "unrecognized_import" }
-      let(:repo_contents_path) { build_tmp_repo(project_name) }
       let(:go_mod_content) { fixture("projects", project_name, "go.mod") }
 
       it "parses ignores invalid dependency" do
