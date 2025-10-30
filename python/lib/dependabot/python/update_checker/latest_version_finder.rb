@@ -37,6 +37,28 @@ module Dependabot
         def cooldown_enabled?
           true
         end
+
+        protected
+
+        sig do
+          override
+            .params(releases: T::Array[Dependabot::Package::PackageRelease])
+            .returns(T::Array[Dependabot::Package::PackageRelease])
+        end
+        def apply_post_fetch_latest_versions_filter(releases)
+          # Filter out placeholder versions (0.0.0, 0.0, 0) which are commonly used
+          # as development placeholders and should not be considered valid releases
+          filtered = releases.reject do |release|
+            version = T.cast(release.version, Dependabot::Python::Version)
+            version.placeholder?
+          end
+
+          if releases.count > filtered.count
+            Dependabot.logger.info("Filtered out #{releases.count - filtered.count} placeholder versions")
+          end
+
+          filtered
+        end
       end
     end
   end

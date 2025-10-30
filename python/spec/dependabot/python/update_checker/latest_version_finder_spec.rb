@@ -135,6 +135,19 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
       it { is_expected.to eq(Gem::Version.new("2.4.0")) }
     end
 
+    context "when the PyPI response includes placeholder version 0.0.0" do
+      let(:pypi_response) do
+        fixture("pypi", "pypi_simple_response_with_placeholder.html")
+      end
+      let(:pypi_url) { "https://pypi.org/simple/example/" }
+      let(:dependency_name) { "example" }
+      let(:dependency_version) { "1.0.0" }
+
+      it "filters out 0.0.0 and returns the highest non-placeholder version" do
+        expect(latest_version).to eq(Gem::Version.new("3.0.0"))
+      end
+    end
+
     context "when the PyPI response includes multi-line links" do
       let(:pypi_response) do
         fixture("pypi", "pypi_simple_response_multiline.html")
