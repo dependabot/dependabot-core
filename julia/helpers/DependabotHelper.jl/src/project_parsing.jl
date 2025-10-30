@@ -258,18 +258,24 @@ function update_manifest(project_path::String, updates::Dict)
             return Dict("error" => "Project.toml not found in directory")
         end
 
+        manifest_file = joinpath(project_path, "Manifest.toml")
+        if !isfile(manifest_file)
+            return Dict("error" => "Manifest.toml not found in directory")
+        end
+
+        # NOTE: This function expects the Project.toml to already have updated [compat]
+        # constraints. The Ruby FileUpdater should update Project.toml first, then call
+        # this function to update the Manifest.toml based on the new constraints.
+
         # Create a temporary directory for the update operation
         mktempdir() do temp_dir
             # Copy project files to temp directory
             temp_project_file = joinpath(temp_dir, "Project.toml")
             cp(project_file, temp_project_file)
 
-            # Copy manifest if it exists
-            manifest_file = joinpath(project_path, "Manifest.toml")
+            # Copy manifest
             temp_manifest_file = joinpath(temp_dir, "Manifest.toml")
-            if isfile(manifest_file)
-                cp(manifest_file, temp_manifest_file)
-            end
+            cp(manifest_file, temp_manifest_file)
 
             # Activate the temporary project
             Pkg.activate(temp_dir) do
@@ -294,11 +300,14 @@ function update_manifest(project_path::String, updates::Dict)
                         return updated_manifest
                     end
 
+                    updated_manifest_content = read(temp_manifest_file, String)
+
                     # Copy the updated manifest back to the original location
                     cp(temp_manifest_file, manifest_file; force=true)
 
                     return Dict(
                         "result" => "success",
+                        "manifest_content" => updated_manifest_content,
                         "updated_manifest" => updated_manifest
                     )
                 else
@@ -318,5 +327,20 @@ end
 Args wrapper for update_manifest function
 """
 function update_manifest(args::AbstractDict)
-    return update_manifest(args["project_path"], args["updates"])
+    project_path = string(get(args, "project_path", ""))
+    updates_raw = get(args, "updates", Dict{String,Any}())
+
+    # Convert JSON.Object or other AbstractDict to Dict{String,Any}
+    updates = Dict{String,Any}()
+    if updates_raw isa AbstractDict
+        for (k, v) in updates_raw
+            updates[string(k)] = string(v)
+        end
+    end
+
+    if isempty(project_path) || isempty(updates)
+        return Dict("error" => "Both project_path and updates are required")
+    end
+
+    return update_manifest(project_path, updates)
 end

@@ -660,7 +660,7 @@ function batch_get_version_release_dates(args::AbstractDict)
         if pkg_ver isa AbstractDict
             versions_raw = get(pkg_ver, "versions", Vector{Any}())
             versions = [string(v) for v in versions_raw]
-            
+
             push!(packages_versions, Dict{String,Any}(
                 "name" => string(get(pkg_ver, "name", "")),
                 "uuid" => string(get(pkg_ver, "uuid", "")),
