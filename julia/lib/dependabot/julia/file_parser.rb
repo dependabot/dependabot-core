@@ -130,7 +130,8 @@ module Dependabot
           next if name == "julia" # Skip Julia version requirement
 
           uuid = T.cast(dep_hash["uuid"], T.nilable(String))
-          requirement_string = T.cast(dep_hash["requirement"] || "*", String)
+          # Note: Missing "requirement" means no compat entry (any version acceptable)
+          requirement_string = T.cast(dep_hash["requirement"], T.nilable(String))
 
           Dependabot::Dependency.new(
             name: name,

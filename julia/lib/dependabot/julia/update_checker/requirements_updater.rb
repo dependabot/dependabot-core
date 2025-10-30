@@ -53,8 +53,8 @@ module Dependabot
       def update_requirement(requirement, target_version)
         current_requirement = requirement[:requirement]
 
-        # If requirement is "*" or nil, use target version
-        new_requirement = if current_requirement.nil? || current_requirement == "*"
+        # If requirement is nil (no compat entry), use target version
+        new_requirement = if current_requirement.nil?
                             target_version.to_s
                           else
                             updated_version_requirement(current_requirement, target_version)

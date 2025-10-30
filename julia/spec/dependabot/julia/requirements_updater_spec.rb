@@ -65,14 +65,7 @@ RSpec.describe Dependabot::Julia::RequirementsUpdater do
     end
 
     context "with special cases" do
-      context "with wildcard" do
-        let(:requirement_string) { "*" }
-        let(:target_version) { "0.35.0" }
-
-        it { is_expected.to eq("0.35.0") }
-      end
-
-      context "with nil requirement" do
+      context "with nil requirement (no compat entry)" do
         let(:requirements) { [{ requirement: nil, file: "Project.toml", groups: ["dependencies"], source: nil }] }
         let(:target_version) { "0.35.0" }
 

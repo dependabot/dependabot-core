@@ -1,6 +1,5 @@
 using Test
 using JSON
-using TOML
 using DependabotHelper
 
 @testset "DependabotHelper.jl Tests" begin
@@ -128,13 +127,10 @@ using DependabotHelper
     end
 
     @testset "Version Constraint Parsing Tests" begin
-        # Test wildcard constraints
-        result = @test_nowarn DependabotHelper.parse_julia_version_constraint("*")
-        @test result["type"] == "wildcard"
-        @test haskey(result, "version_spec")
-
+        # Test empty constraints (not valid in Julia compat)
         result = @test_nowarn DependabotHelper.parse_julia_version_constraint("")
-        @test result["type"] == "wildcard"
+        @test result["type"] == "error"
+        @test haskey(result, "error")
 
         # Test caret constraints
         result = @test_nowarn DependabotHelper.parse_julia_version_constraint("^1.0")
@@ -158,9 +154,8 @@ using DependabotHelper
     end
 
     @testset "Version Satisfaction Tests" begin
-        # Test wildcard constraint satisfaction
-        @test DependabotHelper.check_version_satisfies_constraint("1.0.0", "*") == true
-        @test DependabotHelper.check_version_satisfies_constraint("2.5.1", "*") == true
+        # Test empty constraint (not valid in Julia compat)
+        @test DependabotHelper.check_version_satisfies_constraint("1.0.0", "") == false
 
         # Test caret constraint satisfaction
         @test DependabotHelper.check_version_satisfies_constraint("1.0.0", "^1.0") == true
@@ -177,10 +172,10 @@ using DependabotHelper
     end
 
     @testset "Version Constraint Expansion Tests" begin
-        # Test wildcard expansion
-        result = @test_nowarn DependabotHelper.expand_version_constraint("*")
-        @test result["type"] == "wildcard"
-        @test haskey(result, "description")
+        # Test empty constraint (not valid in Julia compat)
+        result = @test_nowarn DependabotHelper.expand_version_constraint("")
+        @test result["type"] == "error"
+        @test haskey(result, "error")
 
         # Test caret expansion
         result = @test_nowarn DependabotHelper.expand_version_constraint("^1.0")

@@ -64,9 +64,9 @@ function parse_project(project_path::String, manifest_path::Union{String,Nothing
                         string(compat_spec)
                     end
                     dep_info["requirement"] = constraint_str
-                else
-                    dep_info["requirement"] = "*"
                 end
+                # Note: If no compat entry exists, we don't add a requirement field
+                # Missing compat entry means any version is acceptable in Julia
 
                 push!(dependencies, dep_info)
             end
@@ -95,9 +95,9 @@ function parse_project(project_path::String, manifest_path::Union{String,Nothing
                             string(compat_spec)
                         end
                         weak_dep_info["requirement"] = constraint_str
-                    else
-                        weak_dep_info["requirement"] = "*"
                     end
+                    # Note: If no compat entry exists, we don't add a requirement field
+                    # Missing compat entry means any version is acceptable in Julia
 
                     push!(weak_dependencies, weak_dep_info)
                 end
