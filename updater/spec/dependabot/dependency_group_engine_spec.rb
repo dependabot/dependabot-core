@@ -480,4 +480,141 @@ RSpec.describe Dependabot::DependencyGroupEngine do
       end
     end
   end
+
+  describe "::from_job_config validation" do
+    let(:dependency_groups_config) do
+      [
+        {
+          "name" => "test-group",
+          "rules" => {
+            "dependency-type" => "production"
+          }
+        }
+      ]
+    end
+
+    context "when dependency-type is used with a supported package manager" do
+      %w[bundler composer hex maven npm_and_yarn pip uv].each do |package_manager|
+        context "with #{package_manager}" do
+          let(:job) do
+            instance_double(
+              Dependabot::Job,
+              dependency_groups: dependency_groups_config,
+              source: source,
+              dependencies: nil,
+              security_updates_only?: false,
+              package_manager: package_manager
+            )
+          end
+
+          it "does not raise an error" do
+            expect { dependency_group_engine }.not_to raise_error
+          end
+        end
+      end
+    end
+
+    context "when dependency-type is used with an unsupported package manager" do
+      %w[gradle go_modules cargo docker terraform].each do |package_manager|
+        context "with #{package_manager}" do
+          let(:job) do
+            instance_double(
+              Dependabot::Job,
+              dependency_groups: dependency_groups_config,
+              source: source,
+              dependencies: nil,
+              security_updates_only?: false,
+              package_manager: package_manager
+            )
+          end
+
+          it "raises a ConfigurationError" do
+            expect { dependency_group_engine }.to raise_error(
+              Dependabot::DependencyGroupEngine::ConfigurationError,
+              /The 'dependency-type' option is not supported for the '#{package_manager}' package manager/
+            )
+          end
+
+          it "includes the group name in the error message" do
+            expect { dependency_group_engine }.to raise_error(
+              Dependabot::DependencyGroupEngine::ConfigurationError,
+              /Affected groups: test-group/
+            )
+          end
+
+          it "lists supported package managers in the error message" do
+            expect { dependency_group_engine }.to raise_error(
+              Dependabot::DependencyGroupEngine::ConfigurationError,
+              /bundler, composer, hex, maven, npm_and_yarn, pip, uv/
+            )
+          end
+        end
+      end
+    end
+
+    context "when multiple groups use dependency-type with an unsupported package manager" do
+      let(:dependency_groups_config) do
+        [
+          {
+            "name" => "group-one",
+            "rules" => {
+              "dependency-type" => "production"
+            }
+          },
+          {
+            "name" => "group-two",
+            "rules" => {
+              "dependency-type" => "development"
+            }
+          }
+        ]
+      end
+
+      let(:job) do
+        instance_double(
+          Dependabot::Job,
+          dependency_groups: dependency_groups_config,
+          source: source,
+          dependencies: nil,
+          security_updates_only?: false,
+          package_manager: "gradle"
+        )
+      end
+
+      it "raises an error mentioning all affected groups" do
+        expect { dependency_group_engine }.to raise_error(
+          Dependabot::DependencyGroupEngine::ConfigurationError,
+          /Affected groups: group-one, group-two/
+        )
+      end
+    end
+
+    context "when groups don't use dependency-type with an unsupported package manager" do
+      let(:dependency_groups_config) do
+        [
+          {
+            "name" => "test-group",
+            "rules" => {
+              "patterns" => ["dummy-*"]
+            }
+          }
+        ]
+      end
+
+      let(:job) do
+        instance_double(
+          Dependabot::Job,
+          dependency_groups: dependency_groups_config,
+          source: source,
+          dependencies: nil,
+          security_updates_only?: false,
+          package_manager: "gradle"
+        )
+      end
+
+      it "does not raise an error" do
+        expect { dependency_group_engine }.not_to raise_error
+      end
+    end
+  end
 end
