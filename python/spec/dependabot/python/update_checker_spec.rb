@@ -705,6 +705,11 @@ RSpec.describe Dependabot::Python::UpdateChecker do
 
         let(:dependency) { requirements_dependency }
 
+        before do
+          stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
+            .to_return(status: 404)
+        end
+
         it "does not get affected by whether it's a library or not and updates using the :increase strategy" do
           expect(first_updated_requirements[:requirement]).to eq("==2.6.0")
         end
@@ -761,6 +766,11 @@ RSpec.describe Dependabot::Python::UpdateChecker do
         let(:dependency_files) { super().append(requirements_file) }
 
         let(:dependency) { requirements_dependency }
+
+        before do
+          stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
+            .to_return(status: 404)
+        end
 
         it "does not get affected by whether it's a library or not and updates using the :increase strategy" do
           expect(first_updated_requirements[:requirement]).to eq("==2.6.0")
@@ -819,9 +829,48 @@ RSpec.describe Dependabot::Python::UpdateChecker do
 
         let(:dependency) { requirements_dependency }
 
+        before do
+          stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
+            .to_return(status: 404)
+        end
+
         it "does not get affected by whether it's a library or not and updates using the :increase strategy" do
           expect(first_updated_requirements[:requirement]).to eq("==2.6.0")
         end
+      end
+    end
+
+    context "when there is a pyproject.toml file with poetry v2 PEP 621 dependencies" do
+      let(:dependency_files) { [pyproject] }
+      let(:pyproject_fixture_name) { "poetry_v2_pep621.toml" }
+
+      context "when updating a dependency in poetry group section" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "mypy",
+            version: "1.13.0",
+            requirements: [{
+              file: "pyproject.toml",
+              requirement: "^1.13.0",
+              groups: ["dev"],
+              source: nil
+            }],
+            package_manager: "pip"
+          )
+        end
+
+        let(:pypi_url) { "https://pypi.org/simple/mypy/" }
+        let(:pypi_response) do
+          fixture("pypi", "pypi_simple_response_mypy.html")
+        end
+
+        before do
+          stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
+          stub_request(:get, "https://pypi.org/pypi/example-project/json/")
+            .to_return(status: 404)
+        end
+
+        its([:requirement]) { is_expected.to eq("^1.13.0") }
       end
     end
 

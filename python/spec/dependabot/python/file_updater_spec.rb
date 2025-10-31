@@ -307,6 +307,44 @@ RSpec.describe Dependabot::Python::FileUpdater do
       end
     end
 
+    context "with a pyproject.toml using Poetry 2 PEP 621 format" do
+      let(:dependency_files) { [pyproject] }
+      let(:pyproject) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: fixture("pyproject_files", "poetry_v2_pep621.toml")
+        )
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "mypy",
+          version: "1.14.0",
+          previous_version: "1.13.0",
+          package_manager: "pip",
+          requirements: [{
+            requirement: "^1.14.0",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dev"]
+          }],
+          previous_requirements: [{
+            requirement: "^1.13.0",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dev"]
+          }]
+        )
+      end
+
+      it "delegates to PoetryFileUpdater" do
+        expect(described_class::PoetryFileUpdater)
+          .to receive(:new).and_call_original
+        expect { updated_files }.not_to(change { Dir.entries(tmp_path) })
+        updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
+      end
+    end
+
     context "with a pip-compile file" do
       let(:dependency_files) { [manifest_file, generated_file] }
       let(:manifest_file) do

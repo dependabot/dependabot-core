@@ -3,6 +3,7 @@
 
 require "json"
 require "excon"
+require "toml-rb"
 require "dependabot/registry_client"
 require "dependabot/python/name_normaliser"
 
