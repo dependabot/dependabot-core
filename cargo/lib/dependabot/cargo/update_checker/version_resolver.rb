@@ -352,7 +352,8 @@ module Dependabot
 
           dependencies = FileParser.new(
             dependency_files: original_dependency_files,
-            source: nil
+            source: nil,
+            repo_contents_path: repo_contents_path
           ).parse
 
           dependencies.each do |dep|

@@ -232,7 +232,7 @@ module Dependabot
           # means we don't need to worry about references to parent
           # directories, etc.
           T.let(
-            ReplaceStubber.new(T.must(repo_contents_path)).stub_paths(manifest, go_mod&.directory),
+            ReplaceStubber.new(repo_contents_path).stub_paths(manifest, go_mod&.directory),
             T.nilable(T::Hash[String, String])
           )
       end

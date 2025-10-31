@@ -33,9 +33,9 @@ module Dependabot
           .returns(T::Array[Dependabot::DependencyFile])
       end
       def updated_files(base_directory:, only_paths: nil)
-        return [] unless repo_contents_path && target_directory
+        return [] unless target_directory
 
-        Dir.chdir(T.must(repo_contents_path)) do
+        Dir.chdir(repo_contents_path) do
           # rubocop:disable Performance/DeletePrefix
           relative_dir = Pathname.new(base_directory).sub(%r{\A/}, "").join(T.must(target_directory))
           # rubocop:enable Performance/DeletePrefix

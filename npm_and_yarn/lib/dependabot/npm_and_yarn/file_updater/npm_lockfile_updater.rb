@@ -28,14 +28,16 @@ module Dependabot
             lockfile: Dependabot::DependencyFile,
             dependencies: T::Array[Dependabot::Dependency],
             dependency_files: T::Array[Dependabot::DependencyFile],
+            repo_contents_path: String,
             credentials: T::Array[Credential]
           )
             .void
         end
-        def initialize(lockfile:, dependencies:, dependency_files:, credentials:)
+        def initialize(lockfile:, dependencies:, dependency_files:, repo_contents_path:, credentials:)
           @lockfile = lockfile
           @dependencies = dependencies
           @dependency_files = dependency_files
+          @repo_contents_path = repo_contents_path
           @credentials = credentials
         end
 
@@ -61,6 +63,9 @@ module Dependabot
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
+
+        sig { returns(String) }
+        attr_reader :repo_contents_path
 
         sig { returns(T::Array[Credential]) }
         attr_reader :credentials
