@@ -129,12 +129,12 @@ module Dependabot
           @vendor = T.let(options.fetch(:vendor, false), T::Boolean)
         end
 
-        sig { returns(T.nilable(String)) }
+        sig { returns(String) }
         def updated_go_mod_content
           updated_files[:go_mod]
         end
 
-        sig { returns(T.nilable(String)) }
+        sig { returns(String) }
         def updated_go_sum_content
           updated_files[:go_sum]
         end
@@ -150,7 +150,7 @@ module Dependabot
         sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
 
-        sig { returns(T.nilable(String)) }
+        sig { returns(String) }
         attr_reader :repo_contents_path
 
         sig { returns(String) }

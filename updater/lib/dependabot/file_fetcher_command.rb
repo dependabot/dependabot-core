@@ -99,9 +99,9 @@ module Dependabot
       args = {
         source: job.source.clone.tap { |s| s.directory = directory_to_use },
         credentials: credentials,
+        repo_contents_path: Environment.repo_contents_path,
         options: T.unsafe(job.experiments)
       }
-      args[:repo_contents_path] = Environment.repo_contents_path if job.clone? || already_cloned?
       args[:update_config] = job.update_config
       Dependabot::FileFetchers.for_package_manager(job.package_manager).new(**args)
     end

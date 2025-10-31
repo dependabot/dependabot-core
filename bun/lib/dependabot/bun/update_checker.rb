@@ -25,7 +25,7 @@ module Dependabot
           dependency: Dependabot::Dependency,
           dependency_files: T::Array[Dependabot::DependencyFile],
           credentials: T::Array[Dependabot::Credential],
-          repo_contents_path: T.nilable(String),
+          repo_contents_path: String,
           ignored_versions: T::Array[String],
           raise_on_ignored: T::Boolean,
           security_advisories: T::Array[Dependabot::SecurityAdvisory],
@@ -315,6 +315,7 @@ module Dependabot
           dependency_files: dependency_files,
           credentials: credentials,
           source: nil
+          repo_contents_path: repo_contents_path,
         ).parse.select(&:top_level?)
 
         top_level_dependencies.to_h { |dep| [dep.name, dep] }

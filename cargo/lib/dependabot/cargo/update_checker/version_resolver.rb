@@ -68,6 +68,8 @@ module Dependabot
 
         sig { returns(T::Array[Credential]) }
         attr_reader :credentials
+        sig { returns(String) }
+        attr_reader :repo_contents_path
 
         sig { returns(T::Array[DependencyFile]) }
         attr_reader :prepared_dependency_files

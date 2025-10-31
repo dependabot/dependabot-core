@@ -49,7 +49,7 @@ module Dependabot
         sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
 
-        sig { returns(T.nilable(String)) }
+        sig { returns(String) }
         attr_reader :repo_contents_path
 
         sig { returns(PipCompileErrorHandler) }
@@ -60,7 +60,7 @@ module Dependabot
             dependency: Dependabot::Dependency,
             dependency_files: T::Array[Dependabot::DependencyFile],
             credentials: T::Array[Dependabot::Credential],
-            repo_contents_path: T.nilable(String)
+            repo_contents_path: String
           ).void
         end
         def initialize(dependency:, dependency_files:, credentials:, repo_contents_path:)
@@ -505,7 +505,7 @@ module Dependabot
           )
         end
 
-        sig { returns(T.nilable(String)) }
+        sig { returns(String) }
         def parse_updated_files
           updated_files =
             dependency_files.map do |file|
