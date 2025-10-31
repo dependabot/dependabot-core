@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "dependabot/utils"
 
 module Dependabot
   module Environment
@@ -43,9 +44,12 @@ module Dependabot
       @output_path ||= T.let(environment_variable("DEPENDABOT_OUTPUT_PATH"), T.nilable(String))
     end
 
-    sig { returns(T.nilable(String)) }
+    sig { returns(String) }
     def self.repo_contents_path
-      @repo_contents_path ||= T.let(environment_variable("DEPENDABOT_REPO_CONTENTS_PATH", nil), T.nilable(String))
+      @repo_contents_path ||= T.let(
+        environment_variable("DEPENDABOT_REPO_CONTENTS_PATH", Dependabot::Utils::BUMP_TMP_DIR_PATH),
+        T.nilable(String)
+      )
     end
 
     sig { returns(T::Boolean) }

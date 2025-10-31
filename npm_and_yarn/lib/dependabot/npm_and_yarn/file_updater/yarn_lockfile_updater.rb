@@ -543,6 +543,7 @@ module Dependabot
             NpmAndYarn::FileParser.new(
               dependency_files: [lockfile, *package_files],
               source: nil,
+              repo_contents_path: repo_contents_path,
               credentials: T.unsafe(credentials)
             ).parse
         end

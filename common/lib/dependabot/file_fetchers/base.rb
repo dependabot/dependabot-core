@@ -32,7 +32,7 @@ module Dependabot
       sig { returns(T::Array[Dependabot::Credential]) }
       attr_reader :credentials
 
-      sig { returns(T.nilable(String)) }
+      sig { returns(String) }
       attr_reader :repo_contents_path
 
       sig { returns(T::Hash[String, String]) }
@@ -99,13 +99,13 @@ module Dependabot
           .params(
             source: Dependabot::Source,
             credentials: T::Array[Dependabot::Credential],
-            repo_contents_path: T.nilable(String),
+            repo_contents_path: String,
             options: T::Hash[String, String],
             update_config: T.nilable(Dependabot::Config::UpdateConfig)
           )
           .void
       end
-      def initialize(source:, credentials:, repo_contents_path: nil, options: {}, update_config: nil)
+      def initialize(source:, credentials:, repo_contents_path:, options: {}, update_config: nil)
         @source = source
         @credentials = credentials
         @repo_contents_path = repo_contents_path
@@ -317,7 +317,7 @@ module Dependabot
         path = Pathname.new(dir).cleanpath.to_path.gsub(%r{^/*}, "")
 
         @repo_contents ||= T.let({}, T.nilable(T::Hash[String, T::Array[T.untyped]]))
-        @repo_contents[dir.to_s] ||= if repo_contents_path
+        @repo_contents[dir.to_s] ||= if cloned_repo_exists?
                                        _cloned_repo_contents(path)
                                      else
                                        _fetch_repo_contents(
@@ -328,12 +328,17 @@ module Dependabot
                                      end
       end
 
+      sig { returns(T::Boolean) }
+      def cloned_repo_exists?
+        File.directory?(File.join(repo_contents_path, ".git"))
+      end
+
       sig { returns(T.nilable(String)) }
       def cloned_commit
-        return if repo_contents_path.nil? || !File.directory?(File.join(repo_contents_path, ".git"))
+        return unless cloned_repo_exists?
 
         SharedHelpers.with_git_configured(credentials: credentials) do
-          Dir.chdir(T.must(repo_contents_path)) do
+          Dir.chdir(repo_contents_path) do
             return SharedHelpers.run_shell_command("git rev-parse HEAD", stderr_to_stdout: false).strip
           end
         end

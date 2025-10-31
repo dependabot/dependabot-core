@@ -19,7 +19,7 @@ module Dependabot
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       attr_reader :dependency_files
 
-      sig { returns(T.nilable(String)) }
+      sig { returns(String) }
       attr_reader :repo_contents_path
 
       sig { returns(T::Array[Dependabot::Credential]) }
@@ -33,11 +33,11 @@ module Dependabot
           dependencies: T::Array[Dependabot::Dependency],
           dependency_files: T::Array[Dependabot::DependencyFile],
           credentials: T::Array[Dependabot::Credential],
-          repo_contents_path: T.nilable(String),
+          repo_contents_path: String,
           options: T::Hash[Symbol, T.untyped]
         ).void
       end
-      def initialize(dependencies:, dependency_files:, credentials:, repo_contents_path: nil, options: {})
+      def initialize(dependencies:, dependency_files:, credentials:, repo_contents_path:, options: {})
         @dependencies = dependencies
         @dependency_files = dependency_files
         @repo_contents_path = repo_contents_path

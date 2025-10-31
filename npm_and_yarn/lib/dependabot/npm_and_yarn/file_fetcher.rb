@@ -736,10 +736,8 @@ module Dependabot
 
       sig { void }
       def create_yarn_cache
-        if repo_contents_path.nil?
-          Dependabot.logger.info("Repository contents path is nil")
-        elsif Dir.exist?(T.must(repo_contents_path))
-          Dir.chdir(T.must(repo_contents_path)) do
+        if Dir.exist?(repo_contents_path)
+          Dir.chdir(repo_contents_path) do
             FileUtils.mkdir_p(".yarn/cache")
           end
         else

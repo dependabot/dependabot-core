@@ -523,6 +523,7 @@ module Dependabot
           Python::FileParser.new(
             dependency_files: updated_files,
             source: nil,
+            repo_contents_path: repo_contents_path,
             credentials: credentials
           ).parse.find { |d| d.name == dependency.name }&.version
         end

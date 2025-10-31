@@ -685,6 +685,7 @@ module Dependabot
           @top_level_dependencies = Bun::FileParser.new(
             dependency_files: dependency_files,
             source: nil,
+            repo_contents_path: repo_contents_path,
             credentials: credentials
           ).parse.select(&:top_level?)
           @top_level_dependencies
