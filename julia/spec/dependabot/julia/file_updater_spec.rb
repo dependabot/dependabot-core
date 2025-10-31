@@ -165,6 +165,245 @@ RSpec.describe Dependabot::Julia::FileUpdater do
     end
   end
 
+  describe "#updated_files_with_julia_helper" do
+    subject(:updater) do
+      described_class.new(
+        dependencies: [dependency],
+        dependency_files: dependency_files,
+        credentials: [{
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }]
+      )
+    end
+
+    let(:dependency_files) { [project_file, manifest_file] }
+    let(:registry_client_double) { instance_double(Dependabot::Julia::RegistryClient) }
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "JSON",
+        version: "1.2.0",
+        previous_version: "0.21.0",
+        package_manager: "julia",
+        requirements: [{
+          requirement: "0.21, 1.2",
+          file: "Project.toml",
+          groups: ["deps"],
+          source: nil
+        }],
+        previous_requirements: [{
+          requirement: "0.21",
+          file: "Project.toml",
+          groups: ["deps"],
+          source: nil
+        }],
+        metadata: { julia_uuid: "682c06a0-de6a-54ab-a142-c8b1cf79cde6" }
+      )
+    end
+
+    before do
+      allow(Dependabot::Julia::RegistryClient).to receive(:new).and_return(registry_client_double)
+    end
+
+    context "when Julia helper successfully updates manifest" do
+      let(:updated_manifest_content) do
+        <<~TOML
+          # This file is machine-generated
+          [[deps.JSON]]
+          version = "1.2.0"
+        TOML
+      end
+
+      before do
+        allow(registry_client_double).to receive(:update_manifest).and_return(
+          {
+            "manifest_content" => updated_manifest_content,
+            "manifest_path" => "Manifest.toml"
+          }
+        )
+      end
+
+      it "returns both updated Project.toml and Manifest.toml" do
+        updated_files = updater.updated_dependency_files
+
+        expect(updated_files.length).to eq(2)
+
+        project = updated_files.find { |f| f.name == "Project.toml" }
+        manifest = updated_files.find { |f| f.name == "Manifest.toml" }
+
+        expect(project).not_to be_nil
+        expect(manifest).not_to be_nil
+        expect(manifest.content).to include('version = "1.2.0"')
+      end
+    end
+
+    context "when workspace has manifest in parent directory" do
+      let(:project_file) do
+        Dependabot::DependencyFile.new(
+          name: "Project.toml",
+          content: fixture("projects", "basic", "Project.toml"),
+          directory: "/SubPackage"
+        )
+      end
+
+      let(:manifest_file) do
+        Dependabot::DependencyFile.new(
+          name: "Manifest.toml",
+          content: fixture("projects", "basic", "Manifest.toml"),
+          directory: "/"
+        )
+      end
+
+      let(:updated_manifest_content) do
+        <<~TOML
+          # This file is machine-generated
+          [[deps.JSON]]
+          version = "1.2.0"
+        TOML
+      end
+
+      before do
+        allow(registry_client_double).to receive(:update_manifest).and_return(
+          {
+            "manifest_content" => updated_manifest_content,
+            "manifest_path" => "../Manifest.toml"
+          }
+        )
+      end
+
+      it "handles relative manifest path from workspace" do
+        updated_files = updater.updated_dependency_files
+
+        manifest = updated_files.find { |f| f.name == "../Manifest.toml" }
+        expect(manifest).not_to be_nil
+        expect(manifest.content).to include('version = "1.2.0"')
+      end
+    end
+
+    context "when manifest has version-specific name" do
+      let(:manifest_file) do
+        Dependabot::DependencyFile.new(
+          name: "Manifest-v1.12.toml",
+          content: fixture("projects", "basic", "Manifest.toml")
+        )
+      end
+
+      let(:updated_manifest_content) do
+        <<~TOML
+          # This file is machine-generated
+          [[deps.JSON]]
+          version = "1.2.0"
+        TOML
+      end
+
+      before do
+        allow(registry_client_double).to receive(:update_manifest).and_return(
+          {
+            "manifest_content" => updated_manifest_content,
+            "manifest_path" => "Manifest-v1.12.toml"
+          }
+        )
+      end
+
+      it "updates version-specific manifest correctly" do
+        updated_files = updater.updated_dependency_files
+
+        manifest = updated_files.find { |f| f.name == "Manifest-v1.12.toml" }
+        expect(manifest).not_to be_nil
+        expect(manifest.content).to include('version = "1.2.0"')
+      end
+    end
+
+    context "when Julia helper returns an error" do
+      before do
+        allow(registry_client_double).to receive(:update_manifest).and_return(
+          {
+            "error" => "Package resolution failed"
+          }
+        )
+      end
+
+      it "falls back to Ruby TOML manipulation" do
+        expect(Dependabot.logger).to receive(:warn).with(
+          /DependabotHelper\.jl update failed.*falling back to Ruby updating/
+        )
+        # Allow additional warnings from the fallback process
+        allow(Dependabot.logger).to receive(:warn)
+
+        updated_files = updater.updated_dependency_files
+
+        # Should still get updated files via fallback
+        expect(updated_files).not_to be_empty
+      end
+    end
+
+    context "when Julia helper raises an exception" do
+      before do
+        allow(registry_client_double).to receive(:update_manifest).and_raise(
+          StandardError, "Julia helper crashed"
+        )
+      end
+
+      it "catches exception and falls back" do
+        expect(Dependabot.logger).to receive(:warn).with(
+          /DependabotHelper\.jl update failed with exception.*falling back to Ruby updating/
+        )
+        # Allow additional warnings from the fallback process
+        allow(Dependabot.logger).to receive(:warn)
+
+        updated_files = updater.updated_dependency_files
+
+        # Should still get updated files via fallback
+        expect(updated_files).not_to be_empty
+      end
+    end
+  end
+
+  describe "#manifest_file_for_path" do
+    subject(:updater) do
+      described_class.new(
+        dependencies: [],
+        dependency_files: dependency_files,
+        credentials: [{
+          "type" => "git_source",
+          "host" => "github.com"
+        }]
+      )
+    end
+
+    let(:dependency_files) { [project_file, manifest_file] }
+
+    context "when manifest path matches originally fetched file" do
+      it "returns the original manifest file" do
+        result = updater.send(:manifest_file_for_path, "Manifest.toml")
+
+        expect(result).to eq(manifest_file)
+      end
+    end
+
+    context "when manifest path is different (workspace case)" do
+      it "creates new DependencyFile with correct path" do
+        result = updater.send(:manifest_file_for_path, "../Manifest.toml")
+
+        expect(result.name).to eq("../Manifest.toml")
+        expect(result.directory).to eq(project_file.directory)
+      end
+    end
+
+    context "when no manifest was originally fetched" do
+      let(:dependency_files) { [project_file] }
+
+      it "creates new DependencyFile for the path" do
+        result = updater.send(:manifest_file_for_path, "Manifest.toml")
+
+        expect(result.name).to eq("Manifest.toml")
+        expect(result.directory).to eq(project_file.directory)
+      end
+    end
+  end
+
   private
 
   def fixture(*path)
