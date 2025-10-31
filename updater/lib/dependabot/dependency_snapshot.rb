@@ -76,11 +76,15 @@ module Dependabot
     sig { returns(T::Array[Dependabot::Dependency]) }
     def allowed_dependencies
       if job.security_updates_only?
-        # Dependency names can be case-insensitive in some ecosystems (e.g., Python, Gradle, Maven, Nuget)
-        # and the dependency name in the security advisory often doesn't match the case used in manifests.
-        # Use Set for O(1) lookup performance.
-        job_dependency_names = T.must(job.dependencies).to_set(&:downcase)
-        dependencies.select { |d| job_dependency_names.include?(d.name.downcase) }
+        if case_insensitive_package_manager?
+          # Dependency names can be case-insensitive in some ecosystems (e.g., Python, Gradle, Maven, Nuget)
+          # and the dependency name in the security advisory often doesn't match the case used in manifests.
+          # Use Set for O(1) lookup performance.
+          job_dependency_names = T.must(job.dependencies).to_set(&:downcase)
+          dependencies.select { |d| job_dependency_names.include?(d.name.downcase) }
+        else
+          dependencies.select { |d| T.must(job.dependencies).include?(d.name) }
+        end
       else
         dependencies.select { |d| job.allowed_update?(d) }
       end
@@ -92,18 +96,21 @@ module Dependabot
     def job_dependencies
       return [] unless job.dependencies&.any?
 
-      # Gradle, Maven and Nuget dependency names can be case-insensitive and
-      # the dependency name in the security advisory often doesn't match what
-      # users have specified in their manifest.
-      #
-      # It's technically possibly to publish case-sensitive npm packages to a
-      # private registry but shouldn't cause problems here as job.dependencies
-      # is set either from an existing PR rebase/recreate or a security
-      # advisory.
-      # Use Set for O(1) lookup performance.
-      job_dependency_names = T.must(job.dependencies).to_set(&:downcase)
-      dependencies.select do |dep|
-        job_dependency_names.include?(dep.name.downcase)
+      if case_insensitive_package_manager?
+        # Dependency names can be case-insensitive in some ecosystems (e.g., Python, Gradle, Maven, Nuget)
+        # and the dependency name in the security advisory often doesn't match what users have specified
+        # in their manifest.
+        # Use Set for O(1) lookup performance.
+        job_dependency_names = T.must(job.dependencies).to_set(&:downcase)
+        dependencies.select do |dep|
+          job_dependency_names.include?(dep.name.downcase)
+        end
+      else
+        # For case-sensitive package managers, use exact name matching
+        job_dependency_names = T.must(job.dependencies).to_set
+        dependencies.select do |dep|
+          job_dependency_names.include?(dep.name)
+        end
       end
     end
 
@@ -316,6 +323,13 @@ module Dependabot
       @notices[@current_directory] = notices_for_current_directory
 
       parser
+    end
+
+    # Returns true if the package manager uses case-insensitive dependency names
+    sig { returns(T::Boolean) }
+    def case_insensitive_package_manager?
+      # Python, Gradle, Maven, and Nuget have case-insensitive package names
+      %w(pip gradle maven nuget).include?(job.package_manager)
     end
 
     sig { void }
