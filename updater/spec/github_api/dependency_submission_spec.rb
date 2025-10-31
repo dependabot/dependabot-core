@@ -112,12 +112,12 @@ RSpec.shared_examples "dependency_submission" do |empty|
       expect(payload[:job][:id]).to eq("9999")
     end
 
-    it "prefers to use the updater sha if available" do
+    it "affixes to use the updater sha if available" do
       allow(Dependabot::Environment).to receive(:updater_sha).and_return("totally-legit-sha")
 
       payload = dependency_submission.payload
 
-      expect(payload[:detector][:version]).to eq("totally-legit-sha")
+      expect(payload[:detector][:version]).to eq("#{Dependabot::VERSION}-totally-legit-sha")
     end
 
     it "generates git attributes correctly" do
