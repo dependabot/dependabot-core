@@ -289,6 +289,52 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
           end
         end
       end
+
+      context "when the details come from gradle distributions" do
+        before do
+          Dependabot::Experiments.register(:gradle_wrapper_updater, true)
+
+          stub_request(:get, "https://services.gradle.org/versions/all")
+            .to_return(
+              status: 200,
+              body: fixture("gradle_distributions_metadata", "versions_all.json")
+            )
+        end
+
+        after do
+          Dependabot::Experiments.reset!
+        end
+
+        describe "the last version" do
+          subject { versions.last }
+
+          let(:dependency_name) { "gradle-distribution" }
+          let(:dependency_version) { "8.5-rc-3" }
+          let(:dependency_requirements) do
+            [{
+              requirement: "8.5-rc-3",
+              file: "gradle/wrapper/gradle-wrapper.properties",
+              source: {
+                type: "gradle-distribution",
+                url: "https://services.gradle.org/distributions/gradle-8.5-rc-3-bin.zip"
+              },
+              groups: []
+            }]
+          end
+
+          its([:version]) do
+            is_expected.to eq(version_class.new("9.0.0"))
+          end
+
+          its([:released_at]) do
+            is_expected.to eq(Time.new(2025, 7, 31, 16, 35, 12))
+          end
+
+          its([:source_url]) do
+            is_expected.to eq("https://services.gradle.org")
+          end
+        end
+      end
     end
   end
 end

@@ -9,6 +9,8 @@
 require "sorbet-runtime"
 
 require "dependabot/requirements_updater/base"
+require "dependabot/gradle/distributions"
+require "dependabot/gradle/package/distributions_fetcher"
 require "dependabot/gradle/update_checker"
 require "dependabot/gradle/version"
 require "dependabot/gradle/requirement"
@@ -46,11 +48,13 @@ module Dependabot
           return unless latest_version
 
           @latest_version = T.let(version_class.new(latest_version), Version)
+          @is_distribution = T.let(Distributions.distribution_requirements?(requirements), T::Boolean)
         end
 
         sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
         def updated_requirements
           return requirements unless latest_version
+          return updated_distribution_requirements if @is_distribution
 
           # NOTE: Order is important here. The FileUpdater needs the updated
           # requirement at index `i` to correspond to the previous requirement
@@ -111,6 +115,38 @@ module Dependabot
             version_parts.join(".") + ".+"
           else
             version_parts.join(".") + "+"
+          end
+        end
+
+        sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        def updated_distribution_requirements
+          return requirements unless Experiments.enabled?(:gradle_wrapper_updater)
+
+          distribution_url = T.let(nil, T.nilable(String))
+
+          requirements.map do |req|
+            source = req[:source]
+            next req unless source
+
+            case source[:property]
+            when "distributionUrl"
+              requirement = req[:requirement]
+              version = update_exact_requirement(requirement)
+              distribution_url = source[:url].gsub(requirement, version)
+
+              req.merge(
+                requirement: version,
+                source: source.merge(url: distribution_url)
+              )
+            when "distributionSha256Sum"
+              checksum_url, checksum = Gradle::Package::DistributionsFetcher.resolve_checksum(T.must(distribution_url))
+              req.merge(
+                requirement: checksum,
+                source: source.merge(url: checksum_url)
+              )
+            else
+              next req
+            end
           end
         end
 

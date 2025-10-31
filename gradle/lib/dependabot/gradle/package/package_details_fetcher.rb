@@ -8,6 +8,7 @@ require "dependabot/gradle/file_parser/repositories_finder"
 require "dependabot/gradle/update_checker"
 require "dependabot/gradle/version"
 require "dependabot/gradle/requirement"
+require "dependabot/gradle/distributions"
 require "dependabot/maven/utils/auth_headers_finder"
 require "sorbet-runtime"
 require "dependabot/gradle/metadata_finder"
@@ -65,6 +66,7 @@ module Dependabot
             repositories.map do |repository_details|
               url = repository_details.fetch("url")
 
+              next distribution_version_details if url == Gradle::Distributions::DISTRIBUTION_REPOSITORY_URL
               next google_version_details if url == Gradle::FileParser::RepositoriesFinder::GOOGLE_MAVEN_REPO
 
               dependency_metadata(repository_details).css("versions > version")
@@ -83,7 +85,7 @@ module Dependabot
 
             package_releases << {
               version: Gradle::Version.new(version),
-              released_at: release_date_info.none? ? nil : (release_date_info[version]&.fetch(:release_date) || nil),
+              released_at: info[:released_at] || release_date_info[version]&.fetch(:release_date),
               source_url: info[:source_url]
             }
           end
@@ -136,7 +138,9 @@ module Dependabot
         def repositories
           return @repositories if @repositories
 
-          details = if plugin?
+          details = if distribution?
+                      distribution_repository_details
+                    elsif plugin?
                       plugin_repository_details + credentials_repository_details
                     else
                       dependency_repository_details + credentials_repository_details
@@ -149,6 +153,27 @@ module Dependabot
               # Reject this entry if an identical one with non-empty auth_headers exists
               details.any? { |r| r["url"] == repo["url"] && r["auth_headers"] != {} }
             end
+        end
+
+        sig { returns(T.nilable(T::Array[T::Hash[String, T.untyped]])) }
+        def distribution_version_details
+          return nil unless Experiments.enabled?(:gradle_wrapper_updater)
+
+          DistributionsFetcher.available_versions.map do |info|
+            release_date = begin
+              Time.parse(info[:build_time])
+            rescue StandardError
+              nil
+            end
+
+            {
+              version: info[:version],
+              released_at: release_date,
+              source_url: Distributions::DISTRIBUTION_REPOSITORY_URL
+            }
+          end
+        rescue StandardError
+          nil
         end
 
         sig { returns(T.nilable(T::Array[T::Hash[String, T.untyped]])) }
@@ -276,6 +301,14 @@ module Dependabot
           }] + dependency_repository_details
         end
 
+        sig { returns(T::Array[T::Hash[String, T.untyped]]) }
+        def distribution_repository_details
+          [{
+            "url" => Gradle::Distributions::DISTRIBUTION_REPOSITORY_URL,
+            "auth_headers" => {}
+          }]
+        end
+
         sig { params(comparison_version: T.untyped).returns(T::Boolean) }
         def matches_dependency_version_type?(comparison_version)
           return true unless dependency.version
@@ -334,6 +367,11 @@ module Dependabot
         sig { returns(T.nilable(T::Boolean)) }
         def kotlin_plugin?
           plugin? && dependency.requirements.any? { |r| r.fetch(:groups).include? "kotlin" }
+        end
+
+        sig { returns(T::Boolean) }
+        def distribution?
+          Distributions.distribution_requirements?(dependency.requirements)
         end
 
         sig { returns(T::Array[String]) }

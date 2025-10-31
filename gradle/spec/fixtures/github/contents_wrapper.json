@@ -1,0 +1,114 @@
+[
+  {
+    "name": ".gitignore",
+    "path": ".gitignore",
+    "sha": "2bbae59162b25b07f12c516d5b283248acbfa03a",
+    "size": 155,
+    "url": "https://api.github.com/repos/bigandroidenergies/version_catalog/contents/.gitignore?ref=main",
+    "html_url": "https://github.com/bigandroidenergies/version_catalog/blob/main/.gitignore",
+    "git_url": "https://api.github.com/repos/bigandroidenergies/version_catalog/git/blobs/2bbae59162b25b07f12c516d5b283248acbfa03a",
+    "download_url": "https://raw.githubusercontent.com/bigandroidenergies/version_catalog/main/.gitignore",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/bigandroidenergies/version_catalog/contents/.gitignore?ref=main",
+      "git": "https://api.github.com/repos/bigandroidenergies/version_catalog/git/blobs/2bbae59162b25b07f12c516d5b283248acbfa03a",
+      "html": "https://github.com/bigandroidenergies/version_catalog/blob/main/.gitignore"
+    }
+  },
+  {
+    "name": "app",
+    "path": "app",
+    "sha": "f442555d05272d716cefc7825a90dbf911447626",
+    "size": 0,
+    "url": "https://api.github.com/repos/bigandroidenergies/version_catalog/contents/app?ref=main",
+    "html_url": "https://github.com/bigandroidenergies/version_catalog/tree/main/app",
+    "git_url": "https://api.github.com/repos/bigandroidenergies/version_catalog/git/trees/f442555d05272d716cefc7825a90dbf911447626",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/bigandroidenergies/version_catalog/contents/app?ref=main",
+      "git": "https://api.github.com/repos/bigandroidenergies/version_catalog/git/trees/f442555d05272d716cefc7825a90dbf911447626",
+      "html": "https://github.com/bigandroidenergies/version_catalog/tree/main/app"
+    }
+  },
+  {
+    "name": "build.gradle",
+    "path": "build.gradle",
+    "sha": "c3d3e58d7fe6b5f698d3f24f2f7f4fa2d3fdfb82",
+    "size": 399,
+    "url": "https://api.github.com/repos/bigandroidenergies/version_catalog/contents/build.gradle?ref=main",
+    "html_url": "https://github.com/bigandroidenergies/version_catalog/blob/main/build.gradle",
+    "git_url": "https://api.github.com/repos/bigandroidenergies/version_catalog/git/blobs/c3d3e58d7fe6b5f698d3f24f2f7f4fa2d3fdfb82",
+    "download_url": "https://raw.githubusercontent.com/bigandroidenergies/version_catalog/main/build.gradle",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/bigandroidenergies/version_catalog/contents/build.gradle?ref=main",
+      "git": "https://api.github.com/repos/bigandroidenergies/version_catalog/git/blobs/c3d3e58d7fe6b5f698d3f24f2f7f4fa2d3fdfb82",
+      "html": "https://github.com/bigandroidenergies/version_catalog/blob/main/build.gradle"
+    }
+  },
+  {
+    "name": "gradle.properties",
+    "path": "gradle.properties",
+    "sha": "3c5031eb7d63f785752b1914cc8692a453d1cc63",
+    "size": 1358,
+    "url": "https://api.github.com/repos/bigandroidenergies/version_catalog/contents/gradle.properties?ref=main",
+    "html_url": "https://github.com/bigandroidenergies/version_catalog/blob/main/gradle.properties",
+    "git_url": "https://api.github.com/repos/bigandroidenergies/version_catalog/git/blobs/3c5031eb7d63f785752b1914cc8692a453d1cc63",
+    "download_url": "https://raw.githubusercontent.com/bigandroidenergies/version_catalog/main/gradle.properties",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/bigandroidenergies/version_catalog/contents/gradle.properties?ref=main",
+      "git": "https://api.github.com/repos/bigandroidenergies/version_catalog/git/blobs/3c5031eb7d63f785752b1914cc8692a453d1cc63",
+      "html": "https://github.com/bigandroidenergies/version_catalog/blob/main/gradle.properties"
+    }
+  },
+  {
+    "name": "gradle",
+    "path": "gradle",
+    "sha": "193ef2b05a8976c5ff11d575bc3f00b74dd1955e",
+    "size": 0,
+    "url": "https://api.github.com/repos/bigandroidenergies/version_catalog/contents/gradle?ref=main",
+    "html_url": "https://github.com/bigandroidenergies/version_catalog/tree/main/gradle",
+    "git_url": "https://api.github.com/repos/bigandroidenergies/version_catalog/git/trees/193ef2b05a8976c5ff11d575bc3f00b74dd1955e",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/bigandroidenergies/version_catalog/contents/gradle?ref=main",
+      "git": "https://api.github.com/repos/bigandroidenergies/version_catalog/git/trees/193ef2b05a8976c5ff11d575bc3f00b74dd1955e",
+      "html": "https://github.com/bigandroidenergies/version_catalog/tree/main/gradle"
+    }
+  },
+  {
+    "name": "gradlew",
+    "path": "gradlew",
+    "sha": "4f906e0c811fc9e230eb44819f509cd0627f2600",
+    "size": 5766,
+    "url": "https://api.github.com/repos/bigandroidenergies/version_catalog/contents/gradlew?ref=main",
+    "html_url": "https://github.com/bigandroidenergies/version_catalog/blob/main/gradlew",
+    "git_url": "https://api.github.com/repos/bigandroidenergies/version_catalog/git/blobs/4f906e0c811fc9e230eb44819f509cd0627f2600",
+    "download_url": "https://raw.githubusercontent.com/bigandroidenergies/version_catalog/main/gradlew",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/bigandroidenergies/version_catalog/contents/gradlew?ref=main",
+      "git": "https://api.github.com/repos/bigandroidenergies/version_catalog/git/blobs/4f906e0c811fc9e230eb44819f509cd0627f2600",
+      "html": "https://github.com/bigandroidenergies/version_catalog/blob/main/gradlew"
+    }
+  },
+  {
+    "name": "gradlew.bat",
+    "path": "gradlew.bat",
+    "sha": "ac1b06f93825db68fb0c0b5150917f340eaa5d02",
+    "size": 2763,
+    "url": "https://api.github.com/repos/bigandroidenergies/version_catalog/contents/gradlew.bat?ref=main",
+    "html_url": "https://github.com/bigandroidenergies/version_catalog/blob/main/gradlew.bat",
+    "git_url": "https://api.github.com/repos/bigandroidenergies/version_catalog/git/blobs/ac1b06f93825db68fb0c0b5150917f340eaa5d02",
+    "download_url": "https://raw.githubusercontent.com/bigandroidenergies/version_catalog/main/gradlew.bat",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/bigandroidenergies/version_catalog/contents/gradlew.bat?ref=main",
+      "git": "https://api.github.com/repos/bigandroidenergies/version_catalog/git/blobs/ac1b06f93825db68fb0c0b5150917f340eaa5d02",
+      "html": "https://github.com/bigandroidenergies/version_catalog/blob/main/gradlew.bat"
+    }
+  }
+]
