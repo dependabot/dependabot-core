@@ -12,7 +12,7 @@ module GithubApi
   class DependencySubmission
     extend T::Sig
 
-    SNAPSHOT_VERSION = 0
+    SNAPSHOT_VERSION = 1
     SNAPSHOT_DETECTOR_NAME = "dependabot"
     SNAPSHOT_DETECTOR_URL = "https://github.com/dependabot/dependabot-core"
 
