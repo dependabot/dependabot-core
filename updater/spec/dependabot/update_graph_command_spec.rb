@@ -120,18 +120,15 @@ RSpec.describe Dependabot::UpdateGraphCommand do
       allow(Dependabot.logger).to receive(:error)
       allow(Sentry).to receive(:capture_exception)
 
-      mock_parser = instance_double(Dependabot::FileParsers::Base)
-      allow(mock_parser).to receive(:parse).and_raise(error)
-
-      stub_const("MockParserClass", Dependabot::FileParsers::Base)
-      allow(MockParserClass).to receive(:new) { mock_parser }
-      allow(Dependabot::FileParsers).to receive(:for_package_manager).and_return(MockParserClass)
+      # Mock the UpdateGraphProcessor to raise the error instead of FileParsers
+      mock_processor = instance_double(Dependabot::UpdateGraphProcessor)
+      allow(mock_processor).to receive(:run).and_raise(error)
+      allow(Dependabot::UpdateGraphProcessor).to receive(:new).and_return(mock_processor)
     end
 
     shared_examples "a fast-failed job" do
       it "marks the job as processed without proceeding further" do
         expect(service).to receive(:mark_job_as_processed)
-        expect(GithubApi::DependencySubmission).not_to receive(:new)
 
         perform_job
       end
