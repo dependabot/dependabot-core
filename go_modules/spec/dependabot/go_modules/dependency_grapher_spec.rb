@@ -106,7 +106,7 @@ RSpec.describe Dependabot::GoModules::DependencyGrapher do
 
       # We have disabled fetching of relationships due to a problem with `go mod graph` and our handling of
       # `replace` directives causing some projects to choke on this step.
-      describe "assigns child dependencies using go mod graph", skip: "behaviour disabled temporarily" do
+      describe "assigns child dependencies using go mod graph" do
         let(:dependency_graph_expectations) do
           [
             {
