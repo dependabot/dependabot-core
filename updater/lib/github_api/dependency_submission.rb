@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "dependabot/dependency_graphers"
+require "dependabot/environment"
 
 # This class provides a data object that can be submitted to a repository's dependency submission
 # REST API.
@@ -69,7 +70,7 @@ module GithubApi
         },
         detector: {
           name: SNAPSHOT_DETECTOR_NAME,
-          version: Dependabot::VERSION,
+          version:  Dependabot::Environment.updater_sha || Dependabot::VERSION,
           url: SNAPSHOT_DETECTOR_URL
         },
         manifests: manifests
