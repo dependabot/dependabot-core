@@ -1,0 +1,76 @@
+---
+job:
+  command: version
+  allowed-updates:
+  - dependency-type: direct
+    update-type: all
+  commit-message-options:
+    prefix:
+    prefix-development:
+    include-scope:
+  credentials-metadata:
+  - type: git_source
+    host: github.com
+  debug:
+  dependencies:
+  dependency-groups: []
+  dependency-group-to-refresh:
+  existing-pull-requests: []
+  existing-group-pull-requests: []
+  experiments:
+    record-ecosystem-versions: true
+    record-update-job-unknown-error: true
+    proxy-cached: true
+    move-job-token: true
+    dependency-change-validation: true
+    enable-file-parser-python-local: true
+    npm-fallback-version-above-v6: true
+    enable-record-ecosystem-meta: true
+    enable-corepack-for-npm-and-yarn: true
+    enable-private-registry-for-corepack: true
+    enable-shared-helpers-command-timeout: true
+    enable-beta-ecosystems: true
+    enable-dependabot-setting-up-cronjob: true
+    enable-engine-version-detection: true
+    avoid-duplicate-updates-package-json: true
+    allow-refresh-for-existing-pr-dependencies: true
+    allow-refresh-group-with-all-dependencies: true
+    exclude-local-composer-packages: true
+    enable-enhanced-error-details-for-updater: true
+    gradle-lockfile-updater: true
+    enable-exclude-paths-subdirectory-manifest-files: true
+    group-membership-enforcement: true
+    deprecate-close-command: true
+    deprecate-reopen-command: true
+    deprecate-merge-command: true
+    deprecate-cancel-merge-command: true
+    deprecate-squash-merge-command: true
+  ignore-conditions: []
+  lockfile-only: false
+  max-updater-run-time: 2700
+  package-manager: julia
+  proxy-log-response-body-on-auth-failure: true
+  requirements-update-strategy:
+  reject-external-code: false
+  security-advisories: []
+  security-updates-only: false
+  source:
+    provider: github
+    repo: IanButterworth/Julia-DependabotTest
+    branch:
+    directories:
+    - "/BasicPackage.jl"
+    - "/ManifestPackage.jl"
+    - "/VersionedManifestPackage.jl"
+    - "/WorkspacePackage.jl/SubPackageA"
+    - "/WorkspacePackage.jl/SubPackageB"
+    api-endpoint: https://api.github.com/
+    hostname: github.com
+    commit:
+  updating-a-pull-request: false
+  update-subdependencies: false
+  vendor-dependencies: false
+  enable-beta-ecosystems: true
+  repo-private: false
+  multi-ecosystem-update: false
+  exclude-paths:
