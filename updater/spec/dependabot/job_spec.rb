@@ -46,7 +46,8 @@ RSpec.describe Dependabot::Job do
       security_updates_only: security_updates_only,
       dependency_groups: dependency_groups,
       repo_private: repo_private,
-      cooldown: cooldown
+      cooldown: cooldown,
+      repo_contents_path: Dependabot::Utils::BUMP_TMP_DIR_PATH
     }
   end
 
