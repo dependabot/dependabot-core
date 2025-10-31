@@ -36,7 +36,7 @@ module Dependabot
         sig { returns(T.nilable(T.any(String, Gem::Version))) }
         attr_reader :latest_allowable_version
 
-        sig { returns(T.nilable(String)) }
+        sig { returns(String) }
         attr_reader :repo_contents_path
 
         sig do
@@ -46,7 +46,7 @@ module Dependabot
             dependency_files: T::Array[Dependabot::DependencyFile],
             ignored_versions: T::Array[String],
             latest_allowable_version: T.nilable(T.any(String, Gem::Version)),
-            repo_contents_path: T.nilable(String)
+            repo_contents_path: String
           ).void
         end
         def initialize(
@@ -115,6 +115,7 @@ module Dependabot
           updated_version = Bun::FileParser.new(
             dependency_files: updated_files,
             source: nil,
+            repo_contents_path: repo_contents_path,
             credentials: credentials
           ).parse.find { |d| d.name == dependency.name }&.version
           return unless updated_version

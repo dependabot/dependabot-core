@@ -29,7 +29,7 @@ module Dependabot
             target_version: Dependabot::Version,
             requirements_update_strategy: Dependabot::RequirementsUpdateStrategy,
             options: T::Hash[Symbol, T.untyped],
-            repo_contents_path: T.nilable(String),
+            repo_contents_path: String,
             update_multiple_dependencies: T::Boolean
           ).void
         end
@@ -40,7 +40,7 @@ module Dependabot
           target_version:,
           requirements_update_strategy:,
           options:,
-          repo_contents_path: nil,
+          repo_contents_path:,
           update_multiple_dependencies: true
         )
           @dependency                   = dependency
@@ -66,7 +66,7 @@ module Dependabot
         sig { override.returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
 
-        sig { override.returns(T.nilable(String)) }
+        sig { override.returns(String) }
         attr_reader :repo_contents_path
 
         sig { override.returns(T::Array[Dependabot::Credential]) }
@@ -143,7 +143,8 @@ module Dependabot
             FileParser.new(
               dependency_files: dependency_files,
               credentials: credentials,
-              source: nil
+              source: nil,
+              repo_contents_path: repo_contents_path
             ).parse
         end
 

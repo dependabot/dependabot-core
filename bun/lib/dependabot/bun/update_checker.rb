@@ -314,8 +314,8 @@ module Dependabot
         top_level_dependencies = FileParser.new(
           dependency_files: dependency_files,
           credentials: credentials,
-          source: nil
-          repo_contents_path: repo_contents_path,
+          source: nil,
+          repo_contents_path: repo_contents_path
         ).parse.select(&:top_level?)
 
         top_level_dependencies.to_h { |dep| [dep.name, dep] }
