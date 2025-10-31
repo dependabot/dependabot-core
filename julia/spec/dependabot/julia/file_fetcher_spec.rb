@@ -42,13 +42,26 @@ RSpec.describe Dependabot::Julia::FileFetcher do
     subject(:fetched_files) { file_fetcher_instance.fetch_files }
 
     let(:registry_client) { instance_double(Dependabot::Julia::RegistryClient) }
+    let(:project_file) do
+      Dependabot::DependencyFile.new(
+        name: "Project.toml",
+        content: fixture("projects", "basic", "Project.toml")
+      )
+    end
+
+    let(:manifest_file) do
+      Dependabot::DependencyFile.new(
+        name: "Manifest.toml",
+        content: fixture("projects", "basic", "Manifest.toml")
+      )
+    end
 
     before do
-      # Enable beta ecosystems for all tests
-      allow(file_fetcher_instance).to receive(:allow_beta_ecosystems?).and_return(true)
-
-      # Mock the registry client
-      allow(file_fetcher_instance).to receive(:registry_client).and_return(registry_client)
+      # Enable beta ecosystems for all tests and mock the registry client
+      allow(file_fetcher_instance).to receive_messages(
+        allow_beta_ecosystems?: true,
+        registry_client: registry_client
+      )
 
       # Mock SharedHelpers to avoid actual repo cloning
       allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_repo_directory).and_yield("/tmp/test")
@@ -132,6 +145,7 @@ RSpec.describe Dependabot::Julia::FileFetcher do
         end.to raise_error(Dependabot::DependencyFileNotFound, /No Project\.toml or JuliaProject\.toml found/)
       end
     end
+
     context "when beta ecosystems are disabled" do
       before do
         allow(file_fetcher_instance).to receive(:allow_beta_ecosystems?).and_return(false)
@@ -140,20 +154,6 @@ RSpec.describe Dependabot::Julia::FileFetcher do
       it "returns empty array without fetching files" do
         expect(fetched_files).to eq([])
       end
-    end
-
-    let(:project_file) do
-      Dependabot::DependencyFile.new(
-        name: "Project.toml",
-        content: fixture("projects", "basic", "Project.toml")
-      )
-    end
-
-    let(:manifest_file) do
-      Dependabot::DependencyFile.new(
-        name: "Manifest.toml",
-        content: fixture("projects", "basic", "Manifest.toml")
-      )
     end
   end
 

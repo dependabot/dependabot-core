@@ -33,10 +33,10 @@ module Dependabot
 
       private
 
-      sig { params(temp_dir: String).returns(T::Array[Dependabot::DependencyFile]) }
+      sig { params(temp_dir: T.any(Pathname, String)).returns(T::Array[Dependabot::DependencyFile]) }
       def fetch_files_using_julia_helper(temp_dir)
         # Use Julia helper to identify the correct environment files
-        env_files = registry_client.find_environment_files(temp_dir)
+        env_files = registry_client.find_environment_files(temp_dir.to_s)
 
         if env_files.empty? || !env_files["project_file"]
           raise Dependabot::DependencyFileNotFound, "No Project.toml or JuliaProject.toml found."
@@ -45,14 +45,13 @@ module Dependabot
         fetched_files = []
 
         # Fetch the project file identified by Julia helper
-        project_path = env_files["project_file"]
+        project_path = T.must(env_files["project_file"])
         project_filename = File.basename(project_path)
         fetched_files << fetch_file_from_host(project_filename)
 
         # Fetch the manifest file if Julia helper found one
-        if env_files["manifest_file"] && !env_files["manifest_file"].empty?
-          manifest_path = env_files["manifest_file"]
-
+        manifest_path = env_files["manifest_file"]
+        if manifest_path && !manifest_path.empty?
           # Calculate relative path from project to manifest
           project_dir = File.dirname(project_path)
           manifest_relative = Pathname.new(manifest_path).relative_path_from(Pathname.new(project_dir)).to_s
