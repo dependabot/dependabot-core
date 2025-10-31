@@ -70,7 +70,7 @@ module GithubApi
         },
         detector: {
           name: SNAPSHOT_DETECTOR_NAME,
-          version:  Dependabot::Environment.updater_sha || Dependabot::VERSION,
+          version: detector_version,
           url: SNAPSHOT_DETECTOR_URL
         },
         manifests: manifests
@@ -98,6 +98,14 @@ module GithubApi
                        end
 
       sanitized_path.empty? ? base : "#{base}-#{sanitized_path}"
+    end
+
+    sig { returns(String) }
+    def detector_version
+      [
+        Dependabot::VERSION,
+        Dependabot::Environment.updater_sha
+      ].compact.join("-")
     end
 
     sig { returns(String) }
