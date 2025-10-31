@@ -140,7 +140,7 @@ module Dependabot
     sig { returns(String) }
     def default_branch
       SharedHelpers.with_git_configured(credentials: job.credentials) do
-        Dir.chdir(T.must(job.repo_contents_path)) do
+        Dir.chdir(job.repo_contents_path) do
           branch = SharedHelpers.run_shell_command(
             "git symbolic-ref --short refs/remotes/origin/HEAD",
             stderr_to_stdout: false

@@ -36,7 +36,7 @@ module Dependabot
       def initialize(
         dependency_files:,
         source: nil,
-        repo_contents_path: nil,
+        repo_contents_path:,
         credentials: [],
         reject_external_code: false,
         options: {}

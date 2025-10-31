@@ -34,7 +34,7 @@ module Dependabot
           )
           .void
       end
-      def initialize(source:, credentials:, repo_contents_path: nil, options: {}, update_config: nil)
+      def initialize(source:, credentials:, repo_contents_path:, options: {}, update_config: nil)
         @workflow_files = T.let([], T::Array[DependencyFile])
         super
       end

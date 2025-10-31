@@ -117,6 +117,7 @@ module Dependabot
             Maven::FileParser.new(
               dependency_files: dependency_files,
               source: nil
+          repo_contents_path: repo_contents_path,
             ).parse.select do |dep|
               dep.requirements.any? do |r|
                 next unless r.dig(:metadata, :property_name) == property_name

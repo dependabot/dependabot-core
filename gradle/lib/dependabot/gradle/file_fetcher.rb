@@ -39,7 +39,7 @@ module Dependabot
           )
           .void
       end
-      def initialize(source:, credentials:, repo_contents_path: nil, options: {}, update_config: nil)
+      def initialize(source:, credentials:, repo_contents_path:, options: {}, update_config: nil)
         super
 
         @lockfile_name = T.let(T.must(SUPPORTED_LOCK_FILE_NAMES.first), String)

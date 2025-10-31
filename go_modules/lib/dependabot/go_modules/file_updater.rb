@@ -29,7 +29,7 @@ module Dependabot
           )
           .void
       end
-      def initialize(dependencies:, dependency_files:, credentials:, repo_contents_path: nil, options: {})
+      def initialize(dependencies:, dependency_files:, credentials:, repo_contents_path:, options: {})
         super
 
         raise ArgumentError, "repo_contents_path is required" if repo_contents_path.nil?

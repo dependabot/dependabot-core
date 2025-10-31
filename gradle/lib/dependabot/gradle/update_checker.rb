@@ -221,6 +221,7 @@ module Dependabot
           Gradle::FileParser.new(
             dependency_files: dependency_files,
             source: nil
+          repo_contents_path: repo_contents_path,
           ).parse.select do |dep|
             dep.requirements.any? { |req| req.dig(:metadata, :property_name) }
           end,

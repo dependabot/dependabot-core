@@ -233,6 +233,7 @@ module Dependabot
           prepared_dependency_files: prepared_files,
           original_dependency_files: dependency_files,
           credentials: credentials
+          repo_contents_path: repo_contents_path,
         ).latest_resolvable_version
         @git_tag_resolvable = true
       rescue SharedHelpers::HelperSubprocessFailed => e
@@ -266,6 +267,7 @@ module Dependabot
           prepared_dependency_files: prepared_files,
           original_dependency_files: dependency_files,
           credentials: credentials
+          repo_contents_path: repo_contents_path,
         ).latest_resolvable_version
 
         # If the resolver returns a version higher than latest_version, cap it at latest_version
@@ -300,6 +302,7 @@ module Dependabot
           dependency: dependency,
           prepared_dependency_files: prepared_files,
           original_dependency_files: dependency_files,
+          repo_contents_path: repo_contents_path,
           credentials: credentials
         ).latest_resolvable_version
 

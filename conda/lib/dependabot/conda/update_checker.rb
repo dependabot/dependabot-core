@@ -33,7 +33,7 @@ module Dependabot
         dependency:,
         dependency_files:,
         credentials:,
-        repo_contents_path: nil,
+        repo_contents_path:,
         ignored_versions: [],
         raise_on_ignored: false,
         security_advisories: [],
