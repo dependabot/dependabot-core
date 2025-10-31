@@ -87,7 +87,7 @@ module Dependabot
           requirement: requirement[:requirement],
           version: T.must(dependency.version),
           manifest: manifest,
-          repo_contents_path: T.must(repo_contents_path),
+          repo_contents_path: repo_contents_path,
           credentials: credentials
         ).update
       end

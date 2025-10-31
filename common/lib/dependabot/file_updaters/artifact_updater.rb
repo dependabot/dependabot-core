@@ -13,9 +13,9 @@ module Dependabot
       extend T::Sig
       extend T::Helpers
 
-      # @param repo_contents_path [String, nil] the path we cloned the repository into
+      # @param repo_contents_path [String] the path we cloned the repository into
       # @param target_directory [String, nil] the path within a project directory we should inspect for changes
-      sig { params(repo_contents_path: T.nilable(String), target_directory: T.nilable(String)).void }
+      sig { params(repo_contents_path: String, target_directory: T.nilable(String)).void }
       def initialize(repo_contents_path:, target_directory:)
         @repo_contents_path = repo_contents_path
         @target_directory = target_directory
@@ -33,9 +33,9 @@ module Dependabot
           .returns(T::Array[Dependabot::DependencyFile])
       end
       def updated_files(base_directory:, only_paths: nil)
-        return [] unless repo_contents_path && target_directory
+        return [] unless target_directory
 
-        Dir.chdir(T.must(repo_contents_path)) do
+        Dir.chdir(repo_contents_path) do
           # rubocop:disable Performance/DeletePrefix
           relative_dir = Pathname.new(base_directory).sub(%r{\A/}, "").join(T.must(target_directory))
           # rubocop:enable Performance/DeletePrefix
@@ -80,7 +80,7 @@ module Dependabot
 
       TEXT_ENCODINGS = T.let(%w(us-ascii utf-8).freeze, T::Array[String])
 
-      sig { returns(T.nilable(String)) }
+      sig { returns(String) }
       attr_reader :repo_contents_path
 
       sig { returns(T.nilable(String)) }

@@ -279,7 +279,8 @@ module Dependabot
           source = Source.from_url(index_url)
           registry_fetcher = RegistryFetcher.new(
             source: T.must(source),
-            credentials: credentials
+            credentials: credentials,
+            repo_contents_path: repo_contents_path
           )
 
           {

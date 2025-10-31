@@ -658,7 +658,7 @@ RSpec.describe Dependabot::Updater do
             )
           ],
           dependency_files: default_dependency_files,
-          repo_contents_path: nil,
+          repo_contents_path: Dependabot::Utils::BUMP_TMP_DIR_PATH,
           credentials: anything,
           options: { cloning: true }
         ).and_call_original
@@ -2369,7 +2369,7 @@ RSpec.describe Dependabot::Updater do
               directory: "/"
             )
           ],
-          repo_contents_path: nil,
+          repo_contents_path: Dependabot::Utils::BUMP_TMP_DIR_PATH,
           credentials: anything,
           options: { large_hadron_collider: true }
         ).and_call_original
@@ -2745,7 +2745,7 @@ RSpec.describe Dependabot::Updater do
     security_updates_only: false,
     dependency_groups: [],
     lockfile_only: false,
-    repo_contents_path: nil,
+    repo_contents_path: Dependabot::Utils::BUMP_TMP_DIR_PATH,
     update_cooldown: nil
   )
     Dependabot::Job.new(

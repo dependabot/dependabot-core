@@ -124,10 +124,10 @@ module Dependabot
       params(
         job_id: String,
         job_definition: T::Hash[String, T.untyped],
-        repo_contents_path: T.nilable(String)
+        repo_contents_path: String
       ).returns(Job)
     end
-    def self.new_fetch_job(job_id:, job_definition:, repo_contents_path: nil)
+    def self.new_fetch_job(job_id:, job_definition:, repo_contents_path:)
       standardised = standardise_keys(job_definition["job"])
       attrs = standardised.slice(*T.unsafe(PERMITTED_KEYS))
 
@@ -138,10 +138,10 @@ module Dependabot
       params(
         job_id: String,
         job_definition: T::Hash[String, T.untyped],
-        repo_contents_path: T.nilable(String)
+        repo_contents_path: String
       ).returns(Job)
     end
-    def self.new_update_job(job_id:, job_definition:, repo_contents_path: nil)
+    def self.new_update_job(job_id:, job_definition:, repo_contents_path:)
       job_hash = standardise_keys(job_definition["job"])
       attrs = job_hash.slice(*T.unsafe(PERMITTED_KEYS))
       attrs[:credentials] = job_hash[:credentials_metadata] || []
@@ -190,7 +190,7 @@ module Dependabot
       @ignore_conditions              =  T.let(attributes.fetch(:ignore_conditions), T::Array[T.untyped])
       @package_manager                =  T.let(attributes.fetch(:package_manager), String)
       @reject_external_code           =  T.let(attributes.fetch(:reject_external_code, false), T::Boolean)
-      @repo_contents_path             =  T.let(attributes.fetch(:repo_contents_path, nil), T.nilable(String))
+      @repo_contents_path             =  T.let(attributes.fetch(:repo_contents_path), String)
 
       @requirements_update_strategy   = T.let(
         build_update_strategy(
@@ -236,13 +236,8 @@ module Dependabot
       command == "graph"
     end
 
-    # Some Core components test for a non-nil repo_contents_path as an implicit
-    # signal they should use cloning behaviour, so we present it as nil unless
-    # cloning is enabled to avoid unexpected behaviour.
-    sig { returns(T.nilable(String)) }
+    sig { returns(String) }
     def repo_contents_path
-      return nil unless clone?
-
       @repo_contents_path
     end
 

@@ -26,7 +26,7 @@ RSpec.describe Dependabot::Maven::FileFetcher do
   end
 
   let(:file_fetcher_instance) do
-    described_class.new(source: source, credentials: credentials, repo_contents_path: nil)
+    described_class.new(source: source, credentials: credentials, repo_contents_path: Dependabot::Utils::BUMP_TMP_DIR_PATH)
   end
 
   before do

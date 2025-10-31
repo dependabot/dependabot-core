@@ -33,19 +33,22 @@ module Dependabot
             dependency: Dependabot::Dependency,
             credentials: T::Array[Dependabot::Credential],
             original_dependency_files: T::Array[Dependabot::DependencyFile],
-            prepared_dependency_files: T::Array[Dependabot::DependencyFile]
+            prepared_dependency_files: T::Array[Dependabot::DependencyFile],
+            repo_contents_path: String
           ).void
         end
         def initialize(
           dependency:,
           credentials:,
           original_dependency_files:,
-          prepared_dependency_files:
+          prepared_dependency_files:,
+          repo_contents_path:
         )
           @dependency = dependency
           @prepared_dependency_files = prepared_dependency_files
           @original_dependency_files = original_dependency_files
           @credentials = credentials
+          @repo_contents_path = repo_contents_path
 
           # Initialize instance variables with proper T.let declarations
           @prepared_manifest_files = T.let(nil, T.nilable(T::Array[DependencyFile]))
@@ -68,6 +71,8 @@ module Dependabot
 
         sig { returns(T::Array[Credential]) }
         attr_reader :credentials
+        sig { returns(String) }
+        attr_reader :repo_contents_path
 
         sig { returns(T::Array[DependencyFile]) }
         attr_reader :prepared_dependency_files
@@ -352,7 +357,8 @@ module Dependabot
 
           dependencies = FileParser.new(
             dependency_files: original_dependency_files,
-            source: nil
+            source: nil,
+            repo_contents_path: repo_contents_path
           ).parse
 
           dependencies.each do |dep|

@@ -46,7 +46,7 @@ RSpec.describe Dependabot::UpdateFilesCommand do
       job_id: job_id,
       job_token: "mock_token",
       job_definition: job_definition,
-      repo_contents_path: nil
+      repo_contents_path: Dependabot::Utils::BUMP_TMP_DIR_PATH
     )
   end
 
@@ -60,7 +60,7 @@ RSpec.describe Dependabot::UpdateFilesCommand do
         .to receive(:new)
         .with(
           service: service,
-          job: an_object_having_attributes(id: job_id, repo_contents_path: nil),
+          job: an_object_having_attributes(id: job_id, repo_contents_path: Dependabot::Utils::BUMP_TMP_DIR_PATH),
           dependency_snapshot: an_object_having_attributes(base_commit_sha: base_commit_sha)
         )
         .and_return(dummy_runner)

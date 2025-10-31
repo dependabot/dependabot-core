@@ -15,7 +15,7 @@ RSpec.describe namespace::SubdependencyVersionResolver do
       credentials: credentials,
       ignored_versions: ignored_versions,
       latest_allowable_version: latest_allowable_version,
-      repo_contents_path: nil
+      repo_contents_path: Dependabot::Utils::BUMP_TMP_DIR_PATH
     )
   end
 

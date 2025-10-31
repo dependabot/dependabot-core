@@ -9,7 +9,7 @@ require "dependabot/npm_and_yarn/version"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
-  let(:repo_contents_path) { nil }
+  let(:repo_contents_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
   let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
   let(:source) { nil }
   let(:previous_requirements) do

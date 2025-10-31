@@ -26,8 +26,8 @@ module Dependabot
       sig do
         params(
           dependency_files: T::Array[Dependabot::DependencyFile],
+          repo_contents_path: String,
           source: T.nilable(Dependabot::Source),
-          repo_contents_path: T.nilable(String),
           credentials: T::Array[Dependabot::Credential],
           reject_external_code: T::Boolean,
           options: T::Hash[Symbol, T.untyped]
@@ -35,8 +35,8 @@ module Dependabot
       end
       def initialize(
         dependency_files:,
+        repo_contents_path:,
         source: nil,
-        repo_contents_path: nil,
         credentials: [],
         reject_external_code: false,
         options: {}
@@ -232,7 +232,7 @@ module Dependabot
           # means we don't need to worry about references to parent
           # directories, etc.
           T.let(
-            ReplaceStubber.new(T.must(repo_contents_path)).stub_paths(manifest, go_mod&.directory),
+            ReplaceStubber.new(repo_contents_path).stub_paths(manifest, go_mod&.directory),
             T.nilable(T::Hash[String, String])
           )
       end

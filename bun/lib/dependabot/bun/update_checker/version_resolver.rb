@@ -64,7 +64,7 @@ module Dependabot
             credentials: T::Array[Dependabot::Credential],
             latest_allowable_version: T.nilable(T.any(String, Gem::Version)),
             latest_version_finder: PackageLatestVersionFinder,
-            repo_contents_path: T.nilable(String),
+            repo_contents_path: String,
             dependency_group: T.nilable(Dependabot::DependencyGroup),
             raise_on_ignored: T::Boolean,
             update_cooldown: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
@@ -188,7 +188,7 @@ module Dependabot
         sig { returns(T.nilable(T.any(String, Gem::Version))) }
         attr_reader :latest_allowable_version
 
-        sig { returns(T.nilable(String)) }
+        sig { returns(String) }
         attr_reader :repo_contents_path
 
         sig { returns(T.nilable(Dependabot::DependencyGroup)) }
@@ -685,6 +685,7 @@ module Dependabot
           @top_level_dependencies = Bun::FileParser.new(
             dependency_files: dependency_files,
             source: nil,
+            repo_contents_path: repo_contents_path,
             credentials: credentials
           ).parse.select(&:top_level?)
           @top_level_dependencies

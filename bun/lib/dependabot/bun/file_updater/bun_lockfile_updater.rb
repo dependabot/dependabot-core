@@ -112,6 +112,7 @@ module Dependabot
             Bun::FileParser.new(
               dependency_files: [lockfile, *package_files],
               source: nil,
+              repo_contents_path: repo_contents_path,
               credentials: credentials
             ).parse
         end

@@ -22,7 +22,7 @@ module Dependabot
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       attr_reader :dependency_files
 
-      sig { returns(T.nilable(String)) }
+      sig { returns(String) }
       attr_reader :repo_contents_path
 
       sig { returns(T::Array[Dependabot::Credential]) }
@@ -54,7 +54,7 @@ module Dependabot
           dependency: Dependabot::Dependency,
           dependency_files: T::Array[Dependabot::DependencyFile],
           credentials: T::Array[Dependabot::Credential],
-          repo_contents_path: T.nilable(String),
+          repo_contents_path: String,
           ignored_versions: T::Array[String],
           raise_on_ignored: T::Boolean,
           security_advisories: T::Array[Dependabot::SecurityAdvisory],
@@ -69,7 +69,7 @@ module Dependabot
         dependency:,
         dependency_files:,
         credentials:,
-        repo_contents_path: nil,
+        repo_contents_path:,
         ignored_versions: [],
         raise_on_ignored: false,
         security_advisories: [],

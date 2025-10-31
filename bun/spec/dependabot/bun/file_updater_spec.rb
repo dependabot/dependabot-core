@@ -5,7 +5,7 @@ require "spec_helper"
 require "dependabot/bun"
 
 RSpec.describe Dependabot::Bun::FileUpdater do
-  let(:repo_contents_path) { nil }
+  let(:repo_contents_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
   let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
   let(:source) { nil }
   let(:previous_requirements) do

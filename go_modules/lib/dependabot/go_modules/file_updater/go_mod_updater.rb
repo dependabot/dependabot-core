@@ -107,7 +107,7 @@ module Dependabot
             dependencies: T::Array[Dependabot::Dependency],
             dependency_files: T::Array[Dependabot::DependencyFile],
             credentials: T::Array[Dependabot::Credential],
-            repo_contents_path: T.nilable(String),
+            repo_contents_path: String,
             directory: String,
             options: T::Hash[Symbol, T.untyped]
           ).void
@@ -129,14 +129,14 @@ module Dependabot
           @vendor = T.let(options.fetch(:vendor, false), T::Boolean)
         end
 
-        sig { returns(T.nilable(String)) }
+        sig { returns(String) }
         def updated_go_mod_content
-          updated_files[:go_mod]
+          T.must(updated_files[:go_mod])
         end
 
-        sig { returns(T.nilable(String)) }
+        sig { returns(String) }
         def updated_go_sum_content
-          updated_files[:go_sum]
+          T.must(updated_files[:go_sum])
         end
 
         private
@@ -150,7 +150,7 @@ module Dependabot
         sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
 
-        sig { returns(T.nilable(String)) }
+        sig { returns(String) }
         attr_reader :repo_contents_path
 
         sig { returns(String) }
@@ -305,7 +305,7 @@ module Dependabot
         def replace_directive_substitutions(manifest)
           @replace_directive_substitutions ||=
             T.let(
-              Dependabot::GoModules::ReplaceStubber.new(T.must(repo_contents_path))
+              Dependabot::GoModules::ReplaceStubber.new(repo_contents_path)
                                                                .stub_paths(manifest, directory),
               T.nilable(T::Hash[String, String])
             )

@@ -46,7 +46,7 @@ RSpec.describe Dependabot::UpdateGraphCommand do
       job_id: job_id,
       job_token: "mock_token",
       job_definition: job_definition,
-      repo_contents_path: nil
+      repo_contents_path: Dependabot::Utils::BUMP_TMP_DIR_PATH
     )
   end
 

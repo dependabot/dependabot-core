@@ -322,7 +322,8 @@ module Dependabot
           @original_dependency_details ||=
             Elm::FileParser.new(
               dependency_files: dependency_files,
-              source: nil
+              source: nil,
+              repo_contents_path: Dependabot::Utils::BUMP_TMP_DIR_PATH
             ).parse
         end
 

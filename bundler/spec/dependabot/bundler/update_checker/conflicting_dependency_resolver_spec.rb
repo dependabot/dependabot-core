@@ -13,7 +13,7 @@ RSpec.describe(Dependabot::Bundler::UpdateChecker::ConflictingDependencyResolver
   let(:resolver) do
     described_class.new(
       dependency_files: dependency_files,
-      repo_contents_path: nil,
+      repo_contents_path: Dependabot::Utils::BUMP_TMP_DIR_PATH,
       credentials: [{
         "type" => "git_source",
         "host" => "github.com",

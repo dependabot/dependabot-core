@@ -99,9 +99,9 @@ module Dependabot
       args = {
         source: job.source.clone.tap { |s| s.directory = directory_to_use },
         credentials: credentials,
+        repo_contents_path: Environment.repo_contents_path,
         options: T.unsafe(job.experiments)
       }
-      args[:repo_contents_path] = Environment.repo_contents_path if job.clone? || already_cloned?
       args[:update_config] = job.update_config
       Dependabot::FileFetchers.for_package_manager(job.package_manager).new(**args)
     end
@@ -142,7 +142,7 @@ module Dependabot
 
     sig { returns(T.nilable(T::Array[Dependabot::DependencyFile])) }
     def files_from_multidirectories
-      path = T.must(job.repo_contents_path)
+      path = job.repo_contents_path
       directories = Dir.chdir(path) do
         job.source.directories&.map do |dir|
           next dir unless glob?(dir)
@@ -247,7 +247,7 @@ module Dependabot
 
     sig { returns(T::Boolean) }
     def already_cloned?
-      return false unless Environment.repo_contents_path
+      # Always return true since repo_contents_path is never nil
 
       # For testing, the source repo may already be mounted.
       @already_cloned ||= T.let(

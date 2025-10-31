@@ -62,7 +62,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
       }
     )]
   end
-  let(:repo_contents_path) { nil }
+  let(:repo_contents_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
 
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }

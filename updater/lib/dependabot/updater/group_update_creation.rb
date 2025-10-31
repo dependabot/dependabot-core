@@ -507,10 +507,10 @@ module Dependabot
 
       sig { void }
       def prepare_workspace
-        return unless job.clone? && job.repo_contents_path
+        return unless job.clone?
 
         Dependabot::Workspace.setup(
-          repo_contents_path: T.must(job.repo_contents_path),
+          repo_contents_path: job.repo_contents_path,
           directory: Pathname.new(job.source.directory || "/").cleanpath
         )
       end
@@ -520,14 +520,14 @@ module Dependabot
           .returns(T.nilable(T::Array[Dependabot::Workspace::ChangeAttempt]))
       end
       def store_changes(dependency)
-        return unless job.clone? && job.repo_contents_path
+        return unless job.clone?
 
         Dependabot::Workspace.store_change(memo: "Updating #{dependency.name}")
       end
 
       sig { void }
       def cleanup_workspace
-        return unless job.clone? && job.repo_contents_path
+        return unless job.clone?
 
         Dependabot::Workspace.cleanup!
       end

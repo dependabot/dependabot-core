@@ -316,7 +316,8 @@ module Dependabot
                              ignored_versions: ignored_versions,
                              security_advisories: security_advisories,
                              raise_on_ignored: raise_on_ignored,
-                             update_cooldown: update_cooldown
+                             update_cooldown: update_cooldown,
+                             repo_contents_path: repo_contents_path
                            )
                          else
                            Dependabot::UpdateCheckers.for_package_manager("docker").new(
@@ -325,7 +326,8 @@ module Dependabot
                              credentials: credentials,
                              ignored_versions: ignored_versions,
                              security_advisories: security_advisories,
-                             raise_on_ignored: raise_on_ignored
+                             raise_on_ignored: raise_on_ignored,
+                             repo_contents_path: repo_contents_path
                            )
                          end
 

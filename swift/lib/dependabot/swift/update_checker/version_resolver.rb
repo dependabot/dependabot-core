@@ -17,7 +17,7 @@ module Dependabot
             dependency: Dependabot::Dependency,
             manifest: Dependabot::DependencyFile,
             lockfile: T.nilable(Dependabot::DependencyFile),
-            repo_contents_path: T.nilable(String),
+            repo_contents_path: String,
             credentials: T::Array[Dependabot::Credential]
           ).void
         end
@@ -44,7 +44,7 @@ module Dependabot
           updated_lockfile_content = FileUpdater::LockfileUpdater.new(
             dependency: dependency,
             manifest: manifest,
-            repo_contents_path: T.must(repo_contents_path),
+            repo_contents_path: repo_contents_path,
             credentials: credentials
           ).updated_lockfile_content
 
@@ -85,7 +85,7 @@ module Dependabot
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         attr_reader :lockfile
 
-        sig { returns(T.nilable(String)) }
+        sig { returns(String) }
         attr_reader :repo_contents_path
 
         sig { returns(T::Array[Dependabot::Credential]) }
