@@ -514,12 +514,12 @@ RSpec.describe Dependabot::DependencyGroupEngine do
         ]
       end
 
-      it "rejects the group with reserved name and warns" do
+      it "warns about the group with reserved name but doesn't reject it" do
         expect(Dependabot.logger).to receive(:warn).with(
           /Group name 'npm_and_yarn' matches a package ecosystem name/
         )
-        expect(dependency_group_engine.dependency_groups.length).to be(1)
-        expect(dependency_group_engine.dependency_groups.first.name).to eq("valid-group")
+        expect(dependency_group_engine.dependency_groups.length).to be(2)
+        expect(dependency_group_engine.dependency_groups.map(&:name)).to contain_exactly("npm_and_yarn", "valid-group")
       end
     end
 
@@ -541,11 +541,11 @@ RSpec.describe Dependabot::DependencyGroupEngine do
         ]
       end
 
-      it "rejects the group with reserved name" do
+      it "warns about the group with reserved name but doesn't reject it" do
         expect(Dependabot.logger).to receive(:warn).with(
           /Group name 'Npm-And-Yarn' matches a package ecosystem name/
         )
-        expect(dependency_group_engine.dependency_groups.length).to be(1)
+        expect(dependency_group_engine.dependency_groups.length).to be(2)
       end
     end
 
@@ -616,15 +616,19 @@ RSpec.describe Dependabot::DependencyGroupEngine do
         ]
       end
 
-      it "rejects all groups with reserved names" do
+      it "warns about all groups with reserved names but doesn't reject them" do
         expect(Dependabot.logger).to receive(:warn).with(
           /Group name 'bundler' matches a package ecosystem name/
         )
         expect(Dependabot.logger).to receive(:warn).with(
           /Group name 'pip' matches a package ecosystem name/
         )
-        expect(dependency_group_engine.dependency_groups.length).to be(1)
-        expect(dependency_group_engine.dependency_groups.first.name).to eq("valid-group")
+        expect(dependency_group_engine.dependency_groups.length).to be(3)
+        expect(dependency_group_engine.dependency_groups.map(&:name)).to contain_exactly(
+          "bundler",
+          "pip",
+          "valid-group"
+        )
       end
     end
   end

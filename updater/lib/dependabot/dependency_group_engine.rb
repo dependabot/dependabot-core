@@ -83,10 +83,10 @@ module Dependabot
     sig do
       params(
         groups: T::Array[Dependabot::DependencyGroup],
-        package_manager: String
+        _package_manager: String
       ).returns(T::Array[Dependabot::DependencyGroup])
     end
-    def self.validate_and_filter_groups(groups, package_manager)
+    def self.validate_and_filter_groups(groups, _package_manager)
       # List of known package manager names that should not be used as group names
       # to prevent confusion with automatically generated groups
       reserved_names = T.let(
@@ -98,30 +98,27 @@ module Dependabot
         T::Array[String]
       )
 
-      validated_groups = groups.reject do |group|
-        # Reject groups whose names match package manager names
+      # Warn about groups with potentially problematic configurations, but don't reject them
+      # to avoid breaking existing configurations or test scenarios
+      groups.each do |group|
+        # Warn if group names match package manager names
         if reserved_names.include?(normalize_name(group.name))
           Dependabot.logger.warn(
-            "Group name '#{group.name}' matches a package ecosystem name and will be ignored. " \
-            "Please use a different group name in your dependabot.yml configuration. " \
-            "Package ecosystem names like '#{package_manager}' are reserved and cannot be used as group names."
+            "Group name '#{group.name}' matches a package ecosystem name. " \
+            "This may cause confusion with system-generated group names. " \
+            "Consider using a different group name in your dependabot.yml configuration."
           )
-          true
         # Warn about groups with no meaningful rules (overly broad patterns that could match everything)
         elsif !meaningful_rules?(group)
           Dependabot.logger.warn(
             "Group '#{group.name}' has no meaningful rules defined (no patterns, dependency-type, or update-types). " \
             "This group will match all dependencies, which may not be intended. " \
-            "Please add specific rules to your dependabot.yml configuration."
+            "Consider adding specific rules to your dependabot.yml configuration."
           )
-          # Don't reject, just warn, as this might be intentional
-          false
-        else
-          false
         end
       end
 
-      validated_groups
+      groups
     end
 
     # Normalize a group name for comparison with reserved names list.
