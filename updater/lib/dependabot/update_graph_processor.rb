@@ -88,7 +88,7 @@ module Dependabot
 
       Dependabot.logger.info("Dependency submission payload:\n#{JSON.pretty_generate(submission.payload)}")
       service.create_dependency_submission(dependency_submission: submission)
-    rescue StandardError => e
+    rescue Dependabot::DependabotError => e
       error_handler.handle_job_error(error: e)
     end
 
