@@ -53,8 +53,8 @@ module Dependabot
       def update_requirement(requirement, target_version)
         current_requirement = requirement[:requirement]
 
-        # If requirement is "*" or nil, use target version
-        new_requirement = if current_requirement.nil? || current_requirement == "*"
+        # If requirement is nil (no compat entry), use target version
+        new_requirement = if current_requirement.nil?
                             target_version.to_s
                           else
                             updated_version_requirement(current_requirement, target_version)
@@ -82,7 +82,8 @@ module Dependabot
 
         # Append the new spec to the existing requirement (CompatHelper KeepEntry behavior)
         # Detect whether the existing requirement uses spaces after commas and preserve that format
-        separator = requirement_string.include?(", ") ? ", " : ","
+        # and default to ", " if no commas found
+        separator = requirement_string.include?(",") && !requirement_string.include?(", ") ? "," : ", "
         "#{requirement_string}#{separator}#{new_spec}"
       end
 

@@ -1,5 +1,6 @@
 module DependabotHelper
 
+import Downloads
 import JSON
 import Pkg
 import TOML

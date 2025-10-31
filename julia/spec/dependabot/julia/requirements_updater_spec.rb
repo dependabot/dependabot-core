@@ -34,16 +34,16 @@ RSpec.describe Dependabot::Julia::RequirementsUpdater do
         ["~0.34.6", "0.34.7", "~0.34.6"],
         ["1.2.3", "1.3.0", "1.2.3"]
       ],
-      "appends simplified spec when unsatisfied (defaults to no space)" => [
-        ["0.34.6", "0.35.0", "0.34.6,0.35"],
-        ["0.34.6", "1.0.0", "0.34.6,1.0"],
-        ["0.0.5", "0.0.8", "0.0.5,0.0.8"],
-        ["1.2.3", "2.0.0", "1.2.3,2.0"]
+      "appends simplified spec when unsatisfied (defaults to space after comma)" => [
+        ["0.34.6", "0.35.0", "0.34.6, 0.35"],
+        ["0.34.6", "1.0.0", "0.34.6, 1.0"],
+        ["0.0.5", "0.0.8", "0.0.5, 0.0.8"],
+        ["1.2.3", "2.0.0", "1.2.3, 2.0"]
       ],
-      "appends plain spec regardless of prefix (defaults to no space)" => [
-        ["^0.34.6", "0.35.0", "^0.34.6,0.35"],
-        ["^1.2.3", "2.0.0", "^1.2.3,2.0"],
-        ["~0.34.6", "0.35.0", "~0.34.6,0.35"]
+      "appends plain spec regardless of prefix (defaults to space after comma)" => [
+        ["^0.34.6", "0.35.0", "^0.34.6, 0.35"],
+        ["^1.2.3", "2.0.0", "^1.2.3, 2.0"],
+        ["~0.34.6", "0.35.0", "~0.34.6, 0.35"]
       ],
       "preserves spacing format when appending" => [
         ["0.6,0.7,0.8", "0.9.0", "0.6,0.7,0.8,0.9"],
@@ -65,14 +65,7 @@ RSpec.describe Dependabot::Julia::RequirementsUpdater do
     end
 
     context "with special cases" do
-      context "with wildcard" do
-        let(:requirement_string) { "*" }
-        let(:target_version) { "0.35.0" }
-
-        it { is_expected.to eq("0.35.0") }
-      end
-
-      context "with nil requirement" do
+      context "with nil requirement (no compat entry)" do
         let(:requirements) { [{ requirement: nil, file: "Project.toml", groups: ["dependencies"], source: nil }] }
         let(:target_version) { "0.35.0" }
 

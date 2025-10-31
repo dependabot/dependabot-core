@@ -94,9 +94,9 @@ RSpec.describe Dependabot::Julia::RegistryClient, :julia_helpers do
 
         expect(result).to be_a(Hash)
         expect(result["Example"]).to be_a(Hash)
-        expect(result["Example"]["0.5.3"]).to be_nil
+        expect(result["Example"]["0.5.3"]).to eq("2019-07-17T05:33:46")
         expect(result["JSON"]).to be_a(Hash)
-        expect(result["JSON"]["0.21.0"]).to be_nil
+        expect(result["JSON"]["0.21.0"]).to eq("2019-07-16T19:58:10")
       end
     end
 
