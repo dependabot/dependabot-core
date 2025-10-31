@@ -185,30 +185,46 @@ using DependabotHelper
             # Use the static workspace test structure
             workspace_root = joinpath(@__DIR__, "WorkspaceRoot")
             @test isdir(workspace_root)
-            
+
             root_project = joinpath(workspace_root, "Project.toml")
             root_manifest = joinpath(workspace_root, "Manifest.toml")
             @test isfile(root_project)
             @test isfile(root_manifest)
-            
+
             member_dir = joinpath(workspace_root, "SubPackage")
             member_project = joinpath(member_dir, "Project.toml")
             @test isdir(member_dir)
             @test isfile(member_project)
-            
+
             # Note: Workspaces work for one directory deep (this test case)
             # Julia has a bug preventing deeper nesting (e.g., packages/core/SubPackage)
             # See: https://github.com/JuliaLang/julia/pull/59849
-            
+
             # Test that find_environment_files correctly identifies the workspace manifest
             found_project, found_manifest = DependabotHelper.find_environment_files(member_dir)
             @test isfile(found_project)
             @test samefile(found_project, member_project)
             @test basename(found_project) == "Project.toml"
-            
+
             # For one-level-deep workspaces, this should work correctly
             @test isfile(found_manifest)
             @test samefile(found_manifest, root_manifest)
+        end
+
+        # Test JSON interface for find_environment_files
+        @testset "find_environment_files via JSON interface" begin
+            workspace_root = joinpath(@__DIR__, "WorkspaceRoot")
+            member_dir = joinpath(workspace_root, "SubPackage")
+
+            input = Dict("function" => "find_environment_files", "args" => Dict("directory" => member_dir))
+            result_json = DependabotHelper.run(JSON.json(input))
+            result = JSON.parse(result_json)
+
+            @test haskey(result, "result")
+            @test haskey(result["result"], "project_file")
+            @test haskey(result["result"], "manifest_file")
+            @test endswith(result["result"]["project_file"], "SubPackage/Project.toml")
+            @test endswith(result["result"]["manifest_file"], "WorkspaceRoot/Manifest.toml")
         end
     end
 

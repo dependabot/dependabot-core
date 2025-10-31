@@ -98,6 +98,11 @@ function run(input::String)
             get_latest_version_with_custom_registries(args["package_name"], args["package_uuid"], Vector{String}(args["registry_urls"]))
         elseif func_name == "get_available_versions_with_custom_registries"
             get_available_versions_with_custom_registries(args["package_name"], args["package_uuid"], Vector{String}(args["registry_urls"]))
+
+        # Environment file detection
+        elseif func_name == "find_environment_files"
+            project_file, manifest_file = find_environment_files(args["directory"])
+            Dict("project_file" => project_file, "manifest_file" => manifest_file)
         else
             Dict("error" => "Unknown function: $func_name")
         end

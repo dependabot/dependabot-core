@@ -129,6 +129,24 @@ module Dependabot
         )
       end
 
+      sig { params(directory: String).returns(T::Hash[String, String]) }
+      def find_environment_files(directory)
+        result = call_julia_helper(
+          function: "find_environment_files",
+          args: { directory: directory }
+        )
+
+        return {} if result["error"]
+
+        {
+          "project_file" => result["project_file"],
+          "manifest_file" => result["manifest_file"]
+        }
+      rescue StandardError => e
+        Dependabot.logger.warn("Failed to find environment files in #{directory}: #{e.message}")
+        {}
+      end
+
       sig do
         params(
           manifest_path: String,
