@@ -277,19 +277,21 @@ function update_manifest(project_path::String, updates::Dict)
 
         # Create a temporary directory for the update operation
         mktempdir() do temp_dir
-            # Copy environment files to temp directory, preserving original names
-            project_file_name = basename(project_file)
-            manifest_file_name = basename(manifest_file)
+            # Preserve the relative path relationship between project and manifest
+            # This handles both simple cases (same dir) and workspaces (manifest in parent)
+            project_rel = relpath(project_file, dirname(manifest_file))
 
-            temp_project_file = joinpath(temp_dir, project_file_name)
+            temp_project_file = joinpath(temp_dir, project_rel)
+            temp_manifest_file = joinpath(temp_dir, basename(manifest_file))
+
+            # Create any necessary parent directories for the project file
+            mkpath(dirname(temp_project_file))
+
             cp(project_file, temp_project_file)
-
-            # Copy manifest
-            temp_manifest_file = joinpath(temp_dir, manifest_file_name)
             cp(manifest_file, temp_manifest_file)
 
-            # Activate the temporary project
-            Pkg.activate(temp_dir) do
+            # Activate the project directory
+            Pkg.activate(dirname(temp_project_file)) do
                 with_autoprecompilation_disabled() do
                     # Process each update
                     pkg_specs = Pkg.PackageSpec[]
@@ -316,9 +318,14 @@ function update_manifest(project_path::String, updates::Dict)
                     # Copy the updated manifest back to the original location
                     cp(temp_manifest_file, manifest_file; force=true)
 
+                    # Calculate the relative path from project to manifest for Ruby
+                    # This handles workspace cases where manifest might be ../Manifest.toml
+                    manifest_relative_path = relpath(manifest_file, dirname(project_file))
+
                     return Dict(
                         "result" => "success",
                         "manifest_content" => updated_manifest_content,
+                        "manifest_path" => manifest_relative_path,
                         "updated_manifest" => updated_manifest
                     )
                 else

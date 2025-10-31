@@ -179,6 +179,37 @@ using DependabotHelper
                 @test !isfile(found_manifest)  # Manifest doesn't exist yet
             end
         end
+
+        # Test find_environment_files with workspace setup
+        @testset "find_environment_files with workspace" begin
+            # Use the static workspace test structure
+            workspace_root = joinpath(@__DIR__, "WorkspaceRoot")
+            @test isdir(workspace_root)
+            
+            root_project = joinpath(workspace_root, "Project.toml")
+            root_manifest = joinpath(workspace_root, "Manifest.toml")
+            @test isfile(root_project)
+            @test isfile(root_manifest)
+            
+            member_dir = joinpath(workspace_root, "SubPackage")
+            member_project = joinpath(member_dir, "Project.toml")
+            @test isdir(member_dir)
+            @test isfile(member_project)
+            
+            # Note: Workspaces work for one directory deep (this test case)
+            # Julia has a bug preventing deeper nesting (e.g., packages/core/SubPackage)
+            # See: https://github.com/JuliaLang/julia/pull/59849
+            
+            # Test that find_environment_files correctly identifies the workspace manifest
+            found_project, found_manifest = DependabotHelper.find_environment_files(member_dir)
+            @test isfile(found_project)
+            @test samefile(found_project, member_project)
+            @test basename(found_project) == "Project.toml"
+            
+            # For one-level-deep workspaces, this should work correctly
+            @test isfile(found_manifest)
+            @test samefile(found_manifest, root_manifest)
+        end
     end
 
     @testset "Version Constraint Parsing Tests" begin

@@ -66,9 +66,17 @@ module Dependabot
             content: updated_project
           )
 
-          if result["manifest_content"] && result["manifest_content"] != T.must(manifest_file).content
+          # Include manifest update if Julia helper provided one. The
+          # `manifest_path` from the Julia helper handles workspace cases
+          # (for example "../Manifest.toml"). Build a DependencyFile for the
+          # manifest whether or not it was originally fetched.
+          if result["manifest_content"] && result["manifest_path"]
+            manifest_path = result["manifest_path"]
+
+            chosen_manifest_file = manifest_file_for_path(manifest_path)
+
             updated_files << updated_file(
-              file: T.must(manifest_file),
+              file: chosen_manifest_file,
               content: result["manifest_content"]
             )
           end
@@ -146,6 +154,23 @@ module Dependabot
         File.write(File.join(temp_dir, T.must(manifest_file).name), T.must(manifest_file).content) if manifest_file
 
         temp_dir
+      end
+
+      sig { params(manifest_path: String).returns(Dependabot::DependencyFile) }
+      def manifest_file_for_path(manifest_path)
+        # If we originally fetched a manifest and its name matches the path
+        # returned by the Julia helper, use that file object so metadata
+        # (like directory) is preserved. Otherwise create a lightweight
+        # DependencyFile pointing at the correct relative path.
+        if manifest_file && T.must(manifest_file).name == manifest_path
+          T.must(manifest_file)
+        else
+          Dependabot::DependencyFile.new(
+            name: manifest_path,
+            content: "",
+            directory: T.must(project_file).directory
+          )
+        end
       end
 
       sig { override.void }

@@ -30,12 +30,14 @@ function check_update_compatibility(project_path::String, package_name::String, 
     try
         # Create a temporary copy of the project for testing
         mktempdir() do temp_dir
-            # Copy environment files, preserving original names
-            project_file_name = basename(project_file)
-            manifest_file_name = basename(manifest_file)
+            # Preserve the relative path relationship between project and manifest
+            project_rel = relpath(project_file, dirname(manifest_file))
 
-            temp_project = joinpath(temp_dir, project_file_name)
-            temp_manifest = joinpath(temp_dir, manifest_file_name)
+            temp_project = joinpath(temp_dir, project_rel)
+            temp_manifest = joinpath(temp_dir, basename(manifest_file))
+
+            # Create any necessary parent directories for the project file
+            mkpath(dirname(temp_project))
 
             cp(project_file, temp_project)
             if isfile(manifest_file)
@@ -43,7 +45,7 @@ function check_update_compatibility(project_path::String, package_name::String, 
             end
 
             # Test the update
-            Pkg.activate(temp_dir) do
+            Pkg.activate(dirname(temp_project)) do
                 with_autoprecompilation_disabled() do
                     try
                         # Try to add the specific version
@@ -118,12 +120,14 @@ function resolve_dependencies_with_constraints(project_path::String, target_upda
     try
         # Create a temporary copy for resolution testing
         mktempdir() do temp_dir
-            # Copy environment files, preserving original names
-            project_file_name = basename(project_file)
-            manifest_file_name = basename(manifest_file)
+            # Preserve the relative path relationship between project and manifest
+            project_rel = relpath(project_file, dirname(manifest_file))
 
-            temp_project = joinpath(temp_dir, project_file_name)
-            temp_manifest = joinpath(temp_dir, manifest_file_name)
+            temp_project = joinpath(temp_dir, project_rel)
+            temp_manifest = joinpath(temp_dir, basename(manifest_file))
+
+            # Create any necessary parent directories for the project file
+            mkpath(dirname(temp_project))
 
             cp(project_file, temp_project)
             if isfile(manifest_file)
@@ -131,7 +135,7 @@ function resolve_dependencies_with_constraints(project_path::String, target_upda
             end
 
             # Perform resolution
-            Pkg.activate(temp_dir) do
+            Pkg.activate(dirname(temp_project)) do
                 with_autoprecompilation_disabled() do
                     resolution_results = Dict{String,Any}()
 
