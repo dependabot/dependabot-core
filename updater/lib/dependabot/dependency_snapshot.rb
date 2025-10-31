@@ -2,7 +2,6 @@
 # frozen_string_literal: true
 
 require "base64"
-require "set"
 require "sorbet-runtime"
 
 require "dependabot/file_parsers"
@@ -80,7 +79,7 @@ module Dependabot
         # Dependency names can be case-insensitive in some ecosystems (e.g., Python, Gradle, Maven, Nuget)
         # and the dependency name in the security advisory often doesn't match the case used in manifests.
         # Use Set for O(1) lookup performance.
-        job_dependency_names = T.must(job.dependencies).map(&:downcase).to_set
+        job_dependency_names = T.must(job.dependencies).to_set(&:downcase)
         dependencies.select { |d| job_dependency_names.include?(d.name.downcase) }
       else
         dependencies.select { |d| job.allowed_update?(d) }
@@ -102,7 +101,7 @@ module Dependabot
       # is set either from an existing PR rebase/recreate or a security
       # advisory.
       # Use Set for O(1) lookup performance.
-      job_dependency_names = T.must(job.dependencies).map(&:downcase).to_set
+      job_dependency_names = T.must(job.dependencies).to_set(&:downcase)
       dependencies.select do |dep|
         job_dependency_names.include?(dep.name.downcase)
       end
