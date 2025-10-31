@@ -123,7 +123,7 @@ module Dependabot
           @dependencies = dependencies
           @dependency_files = dependency_files
           @credentials = credentials
-          @repo_contents_path = repo_contents_path
+          @repo_contents_path = T.let(repo_contents_path, String)
           @directory = directory
           @tidy = T.let(options.fetch(:tidy, false), T::Boolean)
           @vendor = T.let(options.fetch(:vendor, false), T::Boolean)

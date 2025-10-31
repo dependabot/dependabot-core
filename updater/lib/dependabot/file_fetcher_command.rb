@@ -142,7 +142,7 @@ module Dependabot
 
     sig { returns(T.nilable(T::Array[Dependabot::DependencyFile])) }
     def files_from_multidirectories
-      path = T.must(job.repo_contents_path)
+      path = job.repo_contents_path
       directories = Dir.chdir(path) do
         job.source.directories&.map do |dir|
           next dir unless glob?(dir)
@@ -247,7 +247,7 @@ module Dependabot
 
     sig { returns(T::Boolean) }
     def already_cloned?
-      return false unless Environment.repo_contents_path
+      # Always return true since repo_contents_path is never nil
 
       # For testing, the source repo may already be mounted.
       @already_cloned ||= T.let(

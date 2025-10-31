@@ -67,7 +67,7 @@ module Dependabot
           @dependency               = T.let(dependency, Dependabot::Dependency)
           @dependency_files         = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
           @credentials              = T.let(credentials, T::Array[Dependabot::Credential])
-          @repo_contents_path       = T.let(repo_contents_path, T.nilable(String))
+          @repo_contents_path       = T.let(repo_contents_path, String)
           @build_isolation = T.let(true, T::Boolean)
           @error_handler = T.let(PipCompileErrorHandler.new, PipCompileErrorHandler)
         end

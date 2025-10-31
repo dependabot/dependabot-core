@@ -17,7 +17,7 @@ module Dependabot
           dependency: Dependabot::Dependency,
           dependency_files: T::Array[Dependabot::DependencyFile],
           credentials: T::Array[Dependabot::Credential],
-          repo_contents_path: T.nilable(String),
+          repo_contents_path: String,
           ignored_versions: T::Array[String],
           raise_on_ignored: T::Boolean,
           security_advisories: T::Array[Dependabot::SecurityAdvisory],
@@ -230,7 +230,8 @@ module Dependabot
         @all_property_based_dependencies ||=
           Maven::FileParser.new(
             dependency_files: dependency_files,
-            source: nil
+            source: nil,
+            repo_contents_path: repo_contents_path
           ).parse.select do |dep|
             dep.requirements.any? { |req| req.dig(:metadata, :property_name) }
           end

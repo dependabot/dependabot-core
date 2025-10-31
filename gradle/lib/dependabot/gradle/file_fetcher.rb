@@ -33,7 +33,7 @@ module Dependabot
           .params(
             source: Dependabot::Source,
             credentials: T::Array[Dependabot::Credential],
-            repo_contents_path: T.nilable(String),
+            repo_contents_path: String,
             options: T::Hash[String, String],
             update_config: T.nilable(Dependabot::Config::UpdateConfig)
           )

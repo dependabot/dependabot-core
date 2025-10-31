@@ -195,8 +195,8 @@ module Dependabot
             NpmAndYarn::FileParser.new(
               dependency_files: [lockfile, *package_files, *workspace_files],
               source: nil,
-              credentials: credentials
-              repo_contents_path: repo_contents_path,
+              credentials: credentials,
+              repo_contents_path: repo_contents_path
             ).parse
         end
 
