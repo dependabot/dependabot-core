@@ -136,16 +136,3 @@ julia/helpers/DependabotHelper.jl/
 ```
 
 The `run_dependabot_helper.jl` script acts as the JSON-RPC server, receiving function calls from Ruby and dispatching them to the appropriate Julia functions.
-
-
-## Local testing
-
-To test this integration run this locally from the root of the dependabot-core repository:
-
-```bash
-docker build --no-cache -f Dockerfile.updater-core -t ghcr.io/dependabot/dependabot-updater-core .
-docker build --no-cache -f julia/Dockerfile -t ghcr.io/dependabot/dependabot-updater-julia .
-script/dependabot update -f julia/Julia-DependabotTest.yaml -o julia/results.yml
-```
-
-Then inspect `results.yml` for the update results which will include the PR contents etc.
