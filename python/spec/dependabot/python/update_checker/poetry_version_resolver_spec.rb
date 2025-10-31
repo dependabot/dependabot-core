@@ -13,7 +13,7 @@ RSpec.describe namespace::PoetryVersionResolver do
       dependency: dependency,
       dependency_files: dependency_files,
       credentials: credentials,
-      repo_contents_path: nil
+      repo_contents_path: Dependabot::Utils::BUMP_TMP_DIR_PATH
     )
   end
 

@@ -21,7 +21,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
       commit: source_commit
     )
   end
-  let(:repo_contents_path) { nil }
+  let(:repo_contents_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
   let(:child_class) do
     Class.new(described_class) do
       def self.required_files_in?(filenames)

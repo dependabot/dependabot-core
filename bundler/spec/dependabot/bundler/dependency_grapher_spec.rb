@@ -17,7 +17,7 @@ RSpec.describe "Dependabot::DependencyGraphers::Generic" do
     let(:parser) do
       Dependabot::FileParsers.for_package_manager("bundler").new(
         dependency_files:,
-        repo_contents_path: nil,
+        repo_contents_path: Dependabot::Utils::BUMP_TMP_DIR_PATH,
         source: source,
         credentials: [],
         reject_external_code: false

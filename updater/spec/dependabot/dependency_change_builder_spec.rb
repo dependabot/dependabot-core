@@ -13,7 +13,7 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
     instance_double(
       Dependabot::Job,
       package_manager: "bundler",
-      repo_contents_path: nil,
+      repo_contents_path: Dependabot::Utils::BUMP_TMP_DIR_PATH,
       credentials: [
         {
           "type" => "git_source",

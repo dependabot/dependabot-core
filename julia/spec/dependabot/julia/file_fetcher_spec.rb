@@ -21,7 +21,7 @@ RSpec.describe Dependabot::Julia::FileFetcher do
     described_class.new(
       source: source,
       credentials: credentials,
-      repo_contents_path: nil # repo_contents_path is optional for testing
+      repo_contents_path: Dependabot::Utils::BUMP_TMP_DIR_PATH # repo_contents_path is optional for testing
     )
   end
   let(:source) do

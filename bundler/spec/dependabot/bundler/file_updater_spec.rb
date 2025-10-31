@@ -13,7 +13,7 @@ require_common_spec "file_updaters/shared_examples_for_file_updaters"
 RSpec.describe Dependabot::Bundler::FileUpdater do
   include_context "when stubbing rubygems compact index"
 
-  let(:repo_contents_path) { nil }
+  let(:repo_contents_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
   let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
   let(:previous_requirements) do
     [{ file: "Gemfile", requirement: "~> 1.4.0", groups: [], source: nil }]

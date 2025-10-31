@@ -60,7 +60,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
     }]
   end
   let(:dependency_metadata) { {} }
-  let(:repo_contents_path) { nil }
+  let(:repo_contents_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
 
   describe "#latest_resolvable_version" do
     subject(:latest_resolvable_version) { resolver.latest_resolvable_version(requirement: updated_requirement) }

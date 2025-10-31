@@ -29,7 +29,7 @@ RSpec.describe Dependabot::Config::FileFetcher do
     described_class.new(
       source: source,
       credentials: credentials,
-      repo_contents_path: nil
+      repo_contents_path: Dependabot::Utils::BUMP_TMP_DIR_PATH
     )
   end
 

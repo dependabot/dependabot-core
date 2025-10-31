@@ -64,7 +64,7 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
   end
 
   let(:base_commit_sha) { "fake-sha" }
-  let(:repo_contents_path) { nil }
+  let(:repo_contents_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
 
   context "with a basic Gemfile project" do
     let(:directories) { [directory] }

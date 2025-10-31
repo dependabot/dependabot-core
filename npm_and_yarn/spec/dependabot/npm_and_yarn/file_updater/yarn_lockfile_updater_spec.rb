@@ -12,7 +12,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
       dependency_files: files,
       dependencies: dependencies,
       credentials: credentials,
-      repo_contents_path: nil
+      repo_contents_path: Dependabot::Utils::BUMP_TMP_DIR_PATH
     )
   end
   let(:dependencies) { [dependency] }

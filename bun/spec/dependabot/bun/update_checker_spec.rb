@@ -555,7 +555,7 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
             dependency_files: dependency_files,
             ignored_versions: ignored_versions,
             latest_allowable_version: Dependabot::Bun::Version.new("1.0.1"),
-            repo_contents_path: nil
+            repo_contents_path: Dependabot::Utils::BUMP_TMP_DIR_PATH
           ).and_return(dummy_version_resolver)
         expect(dummy_version_resolver)
           .to receive(:latest_resolvable_version)
@@ -620,7 +620,7 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
               dependency_files: dependency_files,
               ignored_versions: ignored_versions,
               latest_allowable_version: Dependabot::Bun::Version.new("1.0.1"),
-              repo_contents_path: nil
+              repo_contents_path: Dependabot::Utils::BUMP_TMP_DIR_PATH
             ).and_return(dummy_version_resolver)
           expect(dummy_version_resolver)
             .to receive(:latest_resolvable_version)
@@ -788,7 +788,7 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
             dependency_files: dependency_files,
             ignored_versions: ignored_versions,
             latest_allowable_version: Dependabot::Bun::Version.new("1.0.1"),
-            repo_contents_path: nil
+            repo_contents_path: Dependabot::Utils::BUMP_TMP_DIR_PATH
           ).and_return(dummy_version_resolver)
         expect(dummy_version_resolver)
           .to receive(:latest_resolvable_version)
@@ -894,7 +894,7 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
           dependency_files: dependency_files,
           latest_version_finder: described_class::PackageLatestVersionFinder,
           latest_allowable_version: updated_version,
-          repo_contents_path: nil,
+          repo_contents_path: Dependabot::Utils::BUMP_TMP_DIR_PATH,
           dependency_group: nil,
           raise_on_ignored: false,
           update_cooldown: nil
@@ -1257,7 +1257,7 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
           dependency_files: dependency_files,
           latest_version_finder: described_class::PackageLatestVersionFinder,
           latest_allowable_version: Dependabot::Bun::Version.new("1.7.0"),
-          repo_contents_path: nil,
+          repo_contents_path: Dependabot::Utils::BUMP_TMP_DIR_PATH,
           dependency_group: nil,
           raise_on_ignored: false,
           update_cooldown: nil
