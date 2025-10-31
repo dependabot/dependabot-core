@@ -1,5 +1,9 @@
 # Package discovery and metadata functions for DependabotHelper.jl
 
+# Cache for GeneralMetadata.jl API responses
+# Key: package name, Value: Dict of version => registration date
+const GENERAL_METADATA_CACHE = Dict{String, Dict{String, Any}}()
+
 """
     get_latest_version(package_name::String, package_uuid::String)
 
@@ -431,15 +435,10 @@ end
     get_version_release_date(package_name::String, version::String, package_uuid::String)
 
 Get the release date for a specific version of a package.
-Note: Julia registries don't typically store release dates, so this attempts to
-get the information from the git repository if available.
+For packages in the General registry, fetches registration dates from GeneralMetadata.jl API.
 """
 function get_version_release_date(package_name::String, version::String, package_uuid::String)
     try
-        # Julia registries don't store release dates directly
-        # We could potentially fetch this from the git repository, but for now
-        # we'll return a placeholder that indicates the limitation
-
         # First verify the package and version exist
         versions_result = get_available_versions(package_name, package_uuid)
         if haskey(versions_result, "error")
@@ -451,16 +450,81 @@ function get_version_release_date(package_name::String, version::String, package
             return Dict("error" => "Version $version not found for package $package_name")
         end
 
-        # TODO: For now, return nil since Julia registries don't store release dates
-        # In a future enhancement, this could attempt to fetch from the git repository
-        return Dict("release_date" => nothing)
+        # Check if package is in the General registry
+        in_general = is_package_in_general_registry(package_name, package_uuid)
+
+        if in_general
+            # Fetch version registration date from GeneralMetadata.jl API
+            release_date = fetch_general_registry_release_date(package_name, version)
+            return Dict("release_date" => release_date)
+        else
+            # Package not in General registry, no release date available
+            return Dict("release_date" => nothing)
+        end
 
     catch e
+        @error "get_version_release_date: Failed to fetch version release date" package_name=package_name version=version exception=(e, catch_backtrace())
         return Dict("error" => "Failed to fetch version release date: $(sprint(showerror, e))")
     end
 end
 
-# Args wrapper for get_version_release_date function with UUID requirement
+"""
+    is_package_in_general_registry(package_name::String, package_uuid::String)
+
+Check if a package is registered in the General registry.
+"""
+function is_package_in_general_registry(package_name::String, package_uuid::String)
+    try
+        for reg in Pkg.Registry.reachable_registries()
+            # Check if this is the General registry
+            if reg.name == "General"
+                for (uuid, entry) in reg.pkgs
+                    if entry.name == package_name && string(uuid) == package_uuid
+                        return true
+                    end
+                end
+            end
+        end
+        return false
+    catch e
+        @error "is_package_in_general_registry: Failed to check registry" package_name=package_name package_uuid=package_uuid exception=(e, catch_backtrace())
+        return false
+    end
+end
+
+"""
+    fetch_general_registry_release_date(package_name::String, version::String)
+
+Fetch the registration date for a specific version from GeneralMetadata.jl API.
+Returns an ISO 8601 datetime string or nothing if not available.
+Uses a session-level cache to avoid redundant API calls during batch operations.
+"""
+function fetch_general_registry_release_date(package_name::String, version::String)
+    try
+        # Fetch and cache package data if not already present
+        cached_data = get!(GENERAL_METADATA_CACHE, package_name) do
+            url = "https://juliaregistries.github.io/GeneralMetadata.jl/api/$package_name/versions.json"
+            temp_file = Downloads.download(url)
+            json_content = read(temp_file, String)
+            rm(temp_file; force=true)
+            JSON.parse(json_content)
+        end
+
+        # Look up the version from cache
+        if cached_data isa AbstractDict && haskey(cached_data, version)
+            version_info = cached_data[version]
+            if version_info isa AbstractDict && haskey(version_info, "registered")
+                return string(version_info["registered"])
+            end
+        end
+
+        return nothing
+
+    catch e
+        @error "fetch_general_registry_release_date: Failed to fetch from GeneralMetadata.jl" package_name=package_name version=version exception=(e, catch_backtrace())
+        return nothing
+    end
+end# Args wrapper for get_version_release_date function with UUID requirement
 function get_version_release_date(args::AbstractDict)
     package_name = get(args, "package_name", "")
     version = get(args, "version", "")

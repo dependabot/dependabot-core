@@ -14,8 +14,8 @@ module Dependabot
         # - Range: "1.2-1.3", ">=1.0, <2.0"
         # - Caret: "^1.2" (compatible within major version)
         # - Tilde: "~1.2.3" (compatible within minor version)
-        # - Wildcard: "*" (any version)
-        return [new(">= 0")] if requirement_string.nil? || requirement_string.empty? || requirement_string == "*"
+        # Note: Missing compat entry (nil/empty) means any version is acceptable
+        return [new(">= 0")] if requirement_string.nil? || requirement_string.empty?
 
         # Split by comma for multiple constraints
         constraints = requirement_string.split(",").map(&:strip)
