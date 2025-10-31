@@ -20,6 +20,7 @@ module Dependabot
             dependency: Dependabot::Dependency,
             dependency_files: T::Array[Dependabot::DependencyFile],
             credentials: T::Array[Dependabot::Credential],
+            repo_contents_path: String,
             target_version_details: T.nilable(T::Hash[Symbol, Dependabot::Gradle::Version]),
             ignored_versions: T::Array[String],
             raise_on_ignored: T::Boolean
@@ -29,6 +30,7 @@ module Dependabot
           dependency:,
           dependency_files:,
           credentials:,
+          repo_contents_path:,
           target_version_details:,
           ignored_versions:,
           raise_on_ignored: false
@@ -36,6 +38,7 @@ module Dependabot
           @dependency = T.let(dependency, Dependabot::Dependency)
           @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
           @credentials = T.let(credentials, T::Array[Dependabot::Credential])
+          @repo_contents_path = repo_contents_path
           @target_version = T.let(
             target_version_details&.fetch(:version),
             T.nilable(Dependabot::Gradle::Version)
@@ -99,6 +102,9 @@ module Dependabot
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
 
+        sig { returns(String) }
+        attr_reader :repo_contents_path
+
         sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
 
@@ -116,7 +122,7 @@ module Dependabot
           @dependencies_to_update ||=
             Gradle::FileParser.new(
               dependency_files: dependency_files,
-              source: nil
+              source: nil,
           repo_contents_path: repo_contents_path,
             ).parse.select do |dep|
               dep.requirements.any? do |r|

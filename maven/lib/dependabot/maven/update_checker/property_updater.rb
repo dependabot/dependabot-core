@@ -22,6 +22,7 @@ module Dependabot
             dependency_files: T::Array[Dependabot::DependencyFile],
             credentials: T::Array[Dependabot::Credential],
             ignored_versions: T::Array[String],
+            repo_contents_path: String,
             target_version_details: T.nilable(T::Hash[T.untyped, T.untyped]),
             update_cooldown: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
           ).void
@@ -31,6 +32,7 @@ module Dependabot
           dependency_files:,
           credentials:,
           ignored_versions:,
+          repo_contents_path:,
           target_version_details:,
           update_cooldown: nil
         )
@@ -38,6 +40,7 @@ module Dependabot
           @dependency_files = dependency_files
           @credentials      = credentials
           @ignored_versions = ignored_versions
+          @repo_contents_path = repo_contents_path
           @target_version   = T.let(target_version_details&.fetch(:version), T.nilable(Dependabot::Maven::Version))
           @source_url       = T.let(target_version_details&.fetch(:source_url), T.nilable(String))
           @update_cooldown = update_cooldown
@@ -96,6 +99,9 @@ module Dependabot
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
 
+        sig { returns(String) }
+        attr_reader :repo_contents_path
+
         sig { returns(T.nilable(Dependabot::Maven::Version)) }
         attr_reader :target_version
 
@@ -116,7 +122,7 @@ module Dependabot
           @dependencies_using_property ||= T.let(
             Maven::FileParser.new(
               dependency_files: dependency_files,
-              source: nil
+              source: nil,
           repo_contents_path: repo_contents_path,
             ).parse.select do |dep|
               dep.requirements.any? do |r|

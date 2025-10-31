@@ -160,6 +160,7 @@ module Dependabot
             dependency: dependency,
             dependency_files: dependency_files,
             credentials: credentials,
+            repo_contents_path: repo_contents_path,
             target_version_details: latest_version_details,
             ignored_versions: ignored_versions,
             raise_on_ignored: raise_on_ignored
@@ -220,7 +221,7 @@ module Dependabot
         @all_property_based_dependencies ||= T.let(
           Gradle::FileParser.new(
             dependency_files: dependency_files,
-            source: nil
+            source: nil,
           repo_contents_path: repo_contents_path,
           ).parse.select do |dep|
             dep.requirements.any? { |req| req.dig(:metadata, :property_name) }

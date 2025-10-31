@@ -188,6 +188,7 @@ module Dependabot
             target_version_details: latest_version_details,
             credentials: credentials,
             ignored_versions: ignored_versions,
+            repo_contents_path: repo_contents_path,
             update_cooldown: update_cooldown
           )
       end

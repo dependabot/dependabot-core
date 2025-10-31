@@ -24,7 +24,7 @@ module Dependabot
             dependencies: T::Array[Dependabot::Dependency],
             dependency_files: T::Array[Dependabot::DependencyFile],
             credentials: T::Array[Dependabot::Credential],
-            repo_contents_path: T.nilable(String),
+            repo_contents_path: String,
             options: T::Hash[Symbol, T.untyped]
           )
           .void
@@ -43,14 +43,14 @@ module Dependabot
           updated_files <<
             updated_file(
               file: T.must(go_mod),
-              content: T.must(file_updater.updated_go_mod_content)
+              content: file_updater.updated_go_mod_content
             )
 
           if go_sum && T.must(go_sum).content != file_updater.updated_go_sum_content
             updated_files <<
               updated_file(
                 file: T.must(go_sum),
-                content: T.must(file_updater.updated_go_sum_content)
+                content: file_updater.updated_go_sum_content
               )
           end
 

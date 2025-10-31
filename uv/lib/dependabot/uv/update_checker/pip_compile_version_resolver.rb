@@ -505,7 +505,7 @@ module Dependabot
           )
         end
 
-        sig { returns(String) }
+        sig { returns(T.nilable(String)) }
         def parse_updated_files
           updated_files =
             dependency_files.map do |file|

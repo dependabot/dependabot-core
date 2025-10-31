@@ -41,7 +41,11 @@ module Dependabot
         return T.must(@repo_has_subdir_for_dep[tmp_source]) if @repo_has_subdir_for_dep.key?(tmp_source)
 
         fetcher =
-          Dependabot::Maven::FileFetcher.new(source: tmp_source, credentials: credentials)
+          Dependabot::Maven::FileFetcher.new(
+            source: tmp_source,
+            credentials: credentials,
+            repo_contents_path: Dependabot::Utils::BUMP_TMP_DIR_PATH
+          )
 
         @repo_has_subdir_for_dep[tmp_source] =
           fetcher.send(:repo_contents, raise_errors: false)

@@ -20,7 +20,7 @@ module Dependabot
         params(
           dependency_files: T::Array[Dependabot::DependencyFile],
           source: Dependabot::Source,
-          repo_contents_path: T.nilable(String),
+          repo_contents_path: String,
           credentials: T::Array[Dependabot::Credential],
           reject_external_code: T::Boolean,
           options: T::Hash[Symbol, T.untyped]

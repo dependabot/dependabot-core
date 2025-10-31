@@ -20,7 +20,7 @@ module Dependabot
           params(
             dependencies: T::Array[Dependabot::Dependency],
             dependency_files: T::Array[Dependabot::DependencyFile],
-            repo_contents_path: T.nilable(String),
+            repo_contents_path: String,
             credentials: T::Array[Dependabot::Credential]
           ).void
         end
@@ -68,7 +68,7 @@ module Dependabot
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
 
-        sig { returns(T.nilable(String)) }
+        sig { returns(String) }
         attr_reader :repo_contents_path
 
         sig { returns(T::Array[Dependabot::Credential]) }

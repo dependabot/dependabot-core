@@ -232,7 +232,7 @@ module Dependabot
           dependency: dependency,
           prepared_dependency_files: prepared_files,
           original_dependency_files: dependency_files,
-          credentials: credentials
+          credentials: credentials,
           repo_contents_path: repo_contents_path,
         ).latest_resolvable_version
         @git_tag_resolvable = true
@@ -266,7 +266,7 @@ module Dependabot
           dependency: dependency,
           prepared_dependency_files: prepared_files,
           original_dependency_files: dependency_files,
-          credentials: credentials
+          credentials: credentials,
           repo_contents_path: repo_contents_path,
         ).latest_resolvable_version
 

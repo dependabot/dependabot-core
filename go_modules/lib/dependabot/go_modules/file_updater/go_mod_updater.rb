@@ -107,7 +107,7 @@ module Dependabot
             dependencies: T::Array[Dependabot::Dependency],
             dependency_files: T::Array[Dependabot::DependencyFile],
             credentials: T::Array[Dependabot::Credential],
-            repo_contents_path: T.nilable(String),
+            repo_contents_path: String,
             directory: String,
             options: T::Hash[Symbol, T.untyped]
           ).void
@@ -123,7 +123,7 @@ module Dependabot
           @dependencies = dependencies
           @dependency_files = dependency_files
           @credentials = credentials
-          @repo_contents_path = T.let(repo_contents_path, String)
+          @repo_contents_path = repo_contents_path
           @directory = directory
           @tidy = T.let(options.fetch(:tidy, false), T::Boolean)
           @vendor = T.let(options.fetch(:vendor, false), T::Boolean)
@@ -131,12 +131,12 @@ module Dependabot
 
         sig { returns(String) }
         def updated_go_mod_content
-          updated_files[:go_mod]
+          T.must(updated_files[:go_mod])
         end
 
         sig { returns(String) }
         def updated_go_sum_content
-          updated_files[:go_sum]
+          T.must(updated_files[:go_sum])
         end
 
         private
