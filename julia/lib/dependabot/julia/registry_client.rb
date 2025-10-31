@@ -269,6 +269,68 @@ module Dependabot
         []
       end
 
+      # ============================================================================
+      # BATCH OPERATIONS
+      # ============================================================================
+
+      sig { params(dependencies: T::Array[Dependabot::Dependency]).returns(T::Hash[String, T.untyped]) }
+      def batch_fetch_package_info(dependencies)
+        packages = dependencies.map do |dep|
+          {
+            name: dep.name,
+            uuid: dep.metadata[:julia_uuid] || ""
+          }
+        end
+
+        call_julia_helper(
+          function: "batch_get_package_info",
+          args: { packages: packages }
+        )
+      rescue StandardError => e
+        Dependabot.logger.error("Failed to batch fetch package info: #{e.message}")
+        {}
+      end
+
+      sig do
+        params(
+          packages_versions: T::Array[T::Hash[Symbol, T.untyped]]
+        ).returns(T::Hash[String, T::Hash[String, T.nilable(String)]])
+      end
+      def batch_fetch_version_release_dates(packages_versions)
+        result = call_julia_helper(
+          function: "batch_get_version_release_dates",
+          args: { packages_versions: packages_versions }
+        )
+
+        # Convert the result to a more Ruby-friendly format
+        result.transform_values do |dates|
+          next dates if dates.is_a?(Hash) && dates["error"]
+
+          dates.is_a?(Hash) ? dates : {}
+        end
+      rescue StandardError => e
+        Dependabot.logger.error("Failed to batch fetch version release dates: #{e.message}")
+        {}
+      end
+
+      sig { params(dependencies: T::Array[Dependabot::Dependency]).returns(T::Hash[String, T.untyped]) }
+      def batch_fetch_available_versions(dependencies)
+        packages = dependencies.map do |dep|
+          {
+            name: dep.name,
+            uuid: dep.metadata[:julia_uuid] || ""
+          }
+        end
+
+        call_julia_helper(
+          function: "batch_get_available_versions",
+          args: { packages: packages }
+        )
+      rescue StandardError => e
+        Dependabot.logger.error("Failed to batch fetch available versions: #{e.message}")
+        {}
+      end
+
       private
 
       sig { returns(T::Array[T::Hash[Symbol, String]]) }

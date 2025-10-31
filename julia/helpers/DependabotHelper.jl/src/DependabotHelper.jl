@@ -1,7 +1,9 @@
 module DependabotHelper
 
+import Downloads
 import JSON
 import Pkg
+import TOML
 using PrecompileTools
 
 # Include all the logical function modules
@@ -66,6 +68,14 @@ function run(input::String)
             find_package_source_url(args)
         elseif func_name == "extract_package_metadata_from_url"
             extract_package_metadata_from_url(args["package_name"], args["source_url"])
+
+        # Batch operations for performance optimization
+        elseif func_name == "batch_get_package_info"
+            batch_get_package_info(args)
+        elseif func_name == "batch_get_version_release_dates"
+            batch_get_version_release_dates(args)
+        elseif func_name == "batch_get_available_versions"
+            batch_get_available_versions(args)
 
         # Dependency resolution and compatibility checking
         elseif func_name == "check_update_compatibility"

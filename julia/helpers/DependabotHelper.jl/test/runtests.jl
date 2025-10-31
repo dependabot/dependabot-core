@@ -126,14 +126,66 @@ using DependabotHelper
         end
     end
 
-    @testset "Version Constraint Parsing Tests" begin
-        # Test wildcard constraints
-        result = @test_nowarn DependabotHelper.parse_julia_version_constraint("*")
-        @test result["type"] == "wildcard"
-        @test haskey(result, "version_spec")
+    @testset "Environment File Detection Tests" begin
+        # Test with a real environment that has Project.toml
+        mktempdir() do tmpdir
+            # Create a minimal Project.toml
+            project_file = joinpath(tmpdir, "Project.toml")
+            write(project_file, """
+                name = "TestProject"
+                uuid = "12345678-1234-1234-1234-123456789012"
+                version = "0.1.0"
+                """)
 
+            # Create a minimal Manifest.toml
+            manifest_file = joinpath(tmpdir, "Manifest.toml")
+            write(manifest_file, """
+                # This file is machine-generated
+                julia_version = "1.10.0"
+                manifest_format = "2.0"
+                """)
+
+            # Test find_environment_files
+            found_project, found_manifest = DependabotHelper.find_environment_files(tmpdir)
+            @test isfile(found_project)
+            @test isfile(found_manifest)
+            @test basename(found_project) == "Project.toml"
+            @test basename(found_manifest) == "Manifest.toml"
+
+            # Test helper functions
+            @test DependabotHelper.get_project_file_name(tmpdir) == "Project.toml"
+            @test DependabotHelper.get_manifest_file_name(tmpdir) == "Manifest.toml"
+        end
+
+        # Test find_environment_files when manifest doesn't exist
+        @testset "find_environment_files without manifest" begin
+            mktempdir() do tmpdir
+                # Create only a Project.toml (no Manifest.toml)
+                project_file = joinpath(tmpdir, "Project.toml")
+                write(project_file, """
+                    name = "TestPackage"
+                    uuid = "12345678-1234-1234-1234-123456789abc"
+                    version = "1.0.0"
+                    """)
+
+                # find_environment_files should still work and return a path for manifest
+                # even if it doesn't exist yet (Pkg will create it when needed)
+                found_project, found_manifest = DependabotHelper.find_environment_files(tmpdir)
+                @test isfile(found_project)
+                @test basename(found_project) == "Project.toml"
+
+                # The manifest path is returned but the file doesn't exist yet
+                @test basename(found_manifest) == "Manifest.toml"
+                @test !isfile(found_manifest)  # Manifest doesn't exist yet
+            end
+        end
+    end
+
+    @testset "Version Constraint Parsing Tests" begin
+        # Test empty constraints (not valid in Julia compat)
         result = @test_nowarn DependabotHelper.parse_julia_version_constraint("")
-        @test result["type"] == "wildcard"
+        @test result["type"] == "error"
+        @test haskey(result, "error")
 
         # Test caret constraints
         result = @test_nowarn DependabotHelper.parse_julia_version_constraint("^1.0")
@@ -157,9 +209,8 @@ using DependabotHelper
     end
 
     @testset "Version Satisfaction Tests" begin
-        # Test wildcard constraint satisfaction
-        @test DependabotHelper.check_version_satisfies_constraint("1.0.0", "*") == true
-        @test DependabotHelper.check_version_satisfies_constraint("2.5.1", "*") == true
+        # Test empty constraint (not valid in Julia compat)
+        @test DependabotHelper.check_version_satisfies_constraint("1.0.0", "") == false
 
         # Test caret constraint satisfaction
         @test DependabotHelper.check_version_satisfies_constraint("1.0.0", "^1.0") == true
@@ -176,10 +227,10 @@ using DependabotHelper
     end
 
     @testset "Version Constraint Expansion Tests" begin
-        # Test wildcard expansion
-        result = @test_nowarn DependabotHelper.expand_version_constraint("*")
-        @test result["type"] == "wildcard"
-        @test haskey(result, "description")
+        # Test empty constraint (not valid in Julia compat)
+        result = @test_nowarn DependabotHelper.expand_version_constraint("")
+        @test result["type"] == "error"
+        @test haskey(result, "error")
 
         # Test caret expansion
         result = @test_nowarn DependabotHelper.expand_version_constraint("^1.0")
@@ -268,15 +319,12 @@ using DependabotHelper
         result = @test_nowarn DependabotHelper.get_available_versions("NonExistentPackage12345", "00000000-0000-0000-0000-000000000000")
         @test haskey(result, "error")
 
-        # Test get_version_release_date function
-        # First get available versions to test with a real version
+        # Test get_version_release_date function with General registry package
+        # JSON.jl is in the General registry, so it should return a real date
         versions_result = DependabotHelper.get_available_versions("JSON", json_uuid)
-        if !haskey(versions_result, "error") && !isempty(versions_result["versions"])
-            test_version = versions_result["versions"][1]
-            result = @test_nowarn DependabotHelper.get_version_release_date("JSON", test_version, json_uuid)
-            # Note: Julia registries don't store release dates, so we expect null
-            @test haskey(result, "release_date")
-        end
+        test_version = "1.2.0"
+        result = @test_nowarn DependabotHelper.get_version_release_date("JSON", test_version, json_uuid)
+        @test result["release_date"] == "2025-10-17T01:08:11"
 
         # Test get_version_release_date with non-existent package
         result = @test_nowarn DependabotHelper.get_version_release_date("NonExistentPackage12345", "1.0.0", "00000000-0000-0000-0000-000000000000")
@@ -285,6 +333,19 @@ using DependabotHelper
         # Test get_version_release_date with invalid version
         result = @test_nowarn DependabotHelper.get_version_release_date("JSON", "999.999.999", json_uuid)
         @test haskey(result, "error")
+
+        # Test helper functions for General registry
+        @testset "General Registry Helper Functions" begin
+            # Test is_package_in_general_registry with JSON (should be true)
+            @test DependabotHelper.is_package_in_general_registry("JSON", json_uuid) == true
+
+            # Test is_package_in_general_registry with non-existent package
+            @test DependabotHelper.is_package_in_general_registry("NonExistentPackage12345", "00000000-0000-0000-0000-000000000000") == false
+
+            # Test fetch_general_registry_release_date with a known version
+            release_date = DependabotHelper.fetch_general_registry_release_date("JSON", test_version)
+            @test release_date == "2025-10-17T01:08:11"
+        end
     end
 
     @testset "Manifest Functions Tests" begin
@@ -295,6 +356,89 @@ using DependabotHelper
         # Test update_manifest with non-existent file
         result = @test_nowarn DependabotHelper.update_manifest("/nonexistent/Project.toml", Dict("JSON" => "0.21.4"))
         @test haskey(result, "error")
+
+        # Test update_manifest with actual manifest update
+        # This simulates the production workflow:
+        # 1. Ruby updates Project.toml compat section
+        # 2. Julia helper updates Manifest.toml based on new compat constraints
+        mktempdir() do tmpdir
+            # Create a test project with updated compat (as Ruby would do)
+            project_path = joinpath(tmpdir, "Project.toml")
+            manifest_path = joinpath(tmpdir, "Manifest.toml")
+
+            # This is the Project.toml AFTER Ruby has updated the compat section
+            write(project_path, """
+                name = "TestProject"
+                uuid = "12345678-1234-1234-1234-123456789012"
+                version = "0.1.0"
+
+                [deps]
+                JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+
+                [compat]
+                JSON = "0.21"
+                julia = "1.10"
+                """)
+
+            # Create a simple manifest file
+            write(manifest_path, """
+                # This file is machine-generated - editing it directly is not advised
+
+                julia_version = "1.12.1"
+                manifest_format = "2.0"
+                project_hash = "72e3b6274dbcfd64d294f19fccd9d75e091f4b67"
+
+                [[deps.Dates]]
+                deps = ["Printf"]
+                uuid = "ade2ca70-3891-5945-98fb-dc099432e06a"
+                version = "1.11.0"
+
+                [[deps.JSON]]
+                deps = ["Dates", "Mmap", "Unicode"]
+                git-tree-sha1 = "565947e5338efe62a7db0aa8e5de782c623b04cd"
+                uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+                version = "0.20.1"
+
+                [[deps.Mmap]]
+                uuid = "a63ad114-7e13-5084-954f-fe012c677804"
+                version = "1.11.0"
+
+                [[deps.Printf]]
+                deps = ["Unicode"]
+                uuid = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+                version = "1.11.0"
+
+                [[deps.Unicode]]
+                uuid = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
+                version = "1.11.0"
+                """)
+
+            # Test args wrapper with JSON.Object (simulating JSON deserialization)
+            # This is the main test - ensuring JSON.Object doesn't cause MethodError
+            json_string = """{"project_path": "$tmpdir", "updates": {"JSON": "0.21.1"}}"""
+            json_args = JSON.parse(json_string)  # This creates JSON.Object types
+
+            # Verify we're testing JSON.Object handling
+            @test json_args isa JSON.Object
+            @test json_args["updates"] isa JSON.Object
+
+            result = DependabotHelper.update_manifest(json_args)
+
+            # The critical test: no MethodError on JSON.Object conversion
+            @test !haskey(result, "error")
+            @test haskey(result, "updated_manifest")
+            @test haskey(result, "manifest_content")
+
+            # Verify the manifest was updated - dependencies is an array
+            updated_manifest = result["updated_manifest"]
+            @test haskey(updated_manifest, "dependencies")
+            @test updated_manifest["dependencies"] isa Vector
+
+            # Find JSON in the dependencies array
+            json_dep = findfirst(d -> d["name"] == "JSON", updated_manifest["dependencies"])
+            @test json_dep !== nothing
+            @test updated_manifest["dependencies"][json_dep]["version"] == "0.21.1"
+        end
     end
 
     @testset "URL and Metadata Extraction Tests" begin
@@ -412,5 +556,145 @@ using DependabotHelper
             end
         end
     end
-end
 
+    @testset "Batch Operations Tests" begin
+        json_uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+        example_uuid = "7876af07-990d-54b4-ab0e-23690620f79a"
+
+        @testset "batch_get_package_info" begin
+            # Test with valid packages
+            packages = [
+                Dict{String,String}("name" => "JSON", "uuid" => json_uuid),
+                Dict{String,String}("name" => "Example", "uuid" => example_uuid)
+            ]
+
+            result = DependabotHelper.batch_get_package_info(packages)
+            @test result isa Dict
+            @test haskey(result, "JSON")
+            @test haskey(result, "Example")
+            @test haskey(result["JSON"], "available_versions")
+            @test haskey(result["JSON"], "latest_version")
+            @test result["JSON"]["available_versions"] isa Vector
+
+            # Test with empty array - returns empty Dict
+            result_empty = DependabotHelper.batch_get_package_info(Vector{Dict{String,String}}())
+            @test result_empty isa Dict
+            @test isempty(result_empty) || haskey(result_empty, "error")
+
+            # Test with invalid package
+            invalid_packages = [
+                Dict{String,String}("name" => "NonExistent12345", "uuid" => "00000000-0000-0000-0000-000000000000")
+            ]
+            result_invalid = DependabotHelper.batch_get_package_info(invalid_packages)
+            @test result_invalid isa Dict
+            @test haskey(result_invalid, "NonExistent12345")
+        end
+
+        @testset "batch_get_available_versions" begin
+            # Test with valid packages
+            packages = [
+                Dict{String,String}("name" => "JSON", "uuid" => json_uuid),
+                Dict{String,String}("name" => "Example", "uuid" => example_uuid)
+            ]
+
+            result = DependabotHelper.batch_get_available_versions(packages)
+            @test result isa Dict
+            @test haskey(result, "JSON")
+            @test haskey(result, "Example")
+            @test haskey(result["JSON"], "versions")
+            @test result["JSON"]["versions"] isa Vector
+            @test !isempty(result["JSON"]["versions"])
+
+            # Test with empty array - returns empty Dict
+            result_empty = DependabotHelper.batch_get_available_versions(Vector{Dict{String,String}}())
+            @test result_empty isa Dict
+            @test isempty(result_empty) || haskey(result_empty, "error")
+        end
+
+        @testset "batch_get_version_release_dates" begin
+            # Test with valid packages and versions
+            packages_versions = [
+                Dict{String,Any}(
+                    "name" => "JSON",
+                    "uuid" => json_uuid,
+                    "versions" => ["0.21.0", "0.21.1"]
+                ),
+                Dict{String,Any}(
+                    "name" => "Example",
+                    "uuid" => example_uuid,
+                    "versions" => ["0.5.3"]
+                )
+            ]
+
+            result = DependabotHelper.batch_get_version_release_dates(packages_versions)
+            @test result isa Dict
+            @test haskey(result, "JSON")
+            @test haskey(result, "Example")
+            @test result["JSON"] isa Dict
+            @test haskey(result["JSON"], "0.21.0")
+
+            # Test with empty array - returns empty Dict
+            result_empty = DependabotHelper.batch_get_version_release_dates(Vector{Dict{String,Any}}())
+            @test result_empty isa Dict
+            @test isempty(result_empty) || haskey(result_empty, "error")
+        end
+
+        @testset "Batch Operations Args Wrappers" begin
+            # Test batch_get_package_info through args wrapper
+            args = Dict{String,Any}(
+                "packages" => [
+                    Dict{String,Any}("name" => "JSON", "uuid" => json_uuid)
+                ]
+            )
+            result = DependabotHelper.batch_get_package_info(args)
+            @test result isa Dict
+            @test haskey(result, "JSON")
+
+            # Test batch_get_available_versions through args wrapper
+            result = DependabotHelper.batch_get_available_versions(args)
+            @test result isa Dict
+            @test haskey(result, "JSON")
+
+            # Test batch_get_version_release_dates through args wrapper
+            args_versions = Dict{String,Any}(
+                "packages_versions" => [
+                    Dict{String,Any}(
+                        "name" => "JSON",
+                        "uuid" => json_uuid,
+                        "versions" => ["0.21.0"]
+                    )
+                ]
+            )
+            result = DependabotHelper.batch_get_version_release_dates(args_versions)
+            @test result isa Dict
+            @test haskey(result, "JSON")
+        end
+
+        @testset "Batch Operations via JSON Interface" begin
+            # Test batch_get_package_info through JSON interface
+            json_input = """{"function": "batch_get_package_info", "args": {"packages": [{"name": "JSON", "uuid": "$json_uuid"}]}}"""
+            result_json = DependabotHelper.run(json_input)
+            result = JSON.parse(result_json)
+            # Check for successful result or error
+            @test !haskey(result, "error") || error("Unexpected error: $(result["error"])")
+            @test haskey(result, "result")
+            @test haskey(result["result"], "JSON")
+
+            # Test batch_get_available_versions through JSON interface
+            json_input = """{"function": "batch_get_available_versions", "args": {"packages": [{"name": "JSON", "uuid": "$json_uuid"}]}}"""
+            result_json = DependabotHelper.run(json_input)
+            result = JSON.parse(result_json)
+            @test !haskey(result, "error") || error("Unexpected error: $(result["error"])")
+            @test haskey(result, "result")
+            @test haskey(result["result"], "JSON")
+
+            # Test batch_get_version_release_dates through JSON interface
+            json_input = """{"function": "batch_get_version_release_dates", "args": {"packages_versions": [{"name": "JSON", "uuid": "$json_uuid", "versions": ["0.21.0"]}]}}"""
+            result_json = DependabotHelper.run(json_input)
+            result = JSON.parse(result_json)
+            @test !haskey(result, "error") || error("Unexpected error: $(result["error"])")
+            @test haskey(result, "result")
+            @test haskey(result["result"], "JSON")
+        end
+    end
+end

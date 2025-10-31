@@ -10,7 +10,8 @@ require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
 RSpec.describe Dependabot::GoModules::FileParser do
   let(:directory) { "/" }
-  let(:repo_contents_path) { nil }
+  let(:project_name) { "simple" }
+  let(:repo_contents_path) { build_tmp_repo(project_name) }
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -28,7 +29,7 @@ RSpec.describe Dependabot::GoModules::FileParser do
     )
   end
   let(:files) { [go_mod] }
-  let(:parser) { described_class.new(dependency_files: files, source: source, repo_contents_path: repo_contents_path) }
+  let(:parser) { described_class.new(dependency_files: files, source:, repo_contents_path:) }
 
   after do
     # Reset the environment variable after each test to avoid side effects
@@ -41,7 +42,7 @@ RSpec.describe Dependabot::GoModules::FileParser do
 
   it "requires a go.mod to be present" do
     expect do
-      described_class.new(dependency_files: [], source: source)
+      described_class.new(dependency_files: [], source: source, repo_contents_path: repo_contents_path)
     end.to raise_error(RuntimeError)
   end
 
@@ -52,7 +53,7 @@ RSpec.describe Dependabot::GoModules::FileParser do
         content: "GOPRIVATE=github.com/dependabot-fixtures",
         directory: directory
       )
-      described_class.new(dependency_files: [go_mod, go_env], source: source)
+      described_class.new(dependency_files: [go_mod, go_env], source: source, repo_contents_path: repo_contents_path)
       expect(`go env GOPRIVATE`.strip).to eq("github.com/dependabot-fixtures")
     end
 
@@ -69,12 +70,12 @@ RSpec.describe Dependabot::GoModules::FileParser do
           }
         )
       ]
-      described_class.new(dependency_files: [go_mod], source: source, credentials: credentials)
+      described_class.new(dependency_files: [go_mod], source:, credentials:, repo_contents_path:)
       expect(`go env GOPROXY`.strip).to eq("https://proxy.example.com,direct")
     end
 
     it "does not set the GOPROXY environment variable if there are no goproxy_server credentials" do
-      described_class.new(dependency_files: [go_mod], source: source)
+      described_class.new(dependency_files: [go_mod], source: source, repo_contents_path: repo_contents_path)
       expect(`go env GOPROXY`.strip).to eq("https://proxy.golang.org,direct")
     end
 
@@ -84,7 +85,7 @@ RSpec.describe Dependabot::GoModules::FileParser do
         content: "GOPROXY=https://proxy.example.com",
         directory: directory
       )
-      described_class.new(dependency_files: [go_mod, go_env], source: source)
+      described_class.new(dependency_files: [go_mod, go_env], source: source, repo_contents_path: repo_contents_path)
       expect(`go env GOPROXY`.strip).to eq("https://proxy.example.com")
     end
 
@@ -101,6 +102,7 @@ RSpec.describe Dependabot::GoModules::FileParser do
         dependency_files: [go_mod],
         source: source,
         credentials: credentials,
+        repo_contents_path: repo_contents_path,
         options: { goprivate: "*" }
       )
       expect(`go env GOPRIVATE`.strip).to be_empty
@@ -380,7 +382,6 @@ RSpec.describe Dependabot::GoModules::FileParser do
 
     context "when using a monorepo" do
       let(:project_name) { "monorepo" }
-      let(:repo_contents_path) { build_tmp_repo(project_name) }
       let(:go_mod_content) { fixture("projects", project_name, "go.mod") }
 
       it "parses root file" do
@@ -409,7 +410,6 @@ RSpec.describe Dependabot::GoModules::FileParser do
 
     context "when using a dependency without hostname" do
       let(:project_name) { "unrecognized_import" }
-      let(:repo_contents_path) { build_tmp_repo(project_name) }
       let(:go_mod_content) { fixture("projects", project_name, "go.mod") }
 
       it "parses ignores invalid dependency" do
