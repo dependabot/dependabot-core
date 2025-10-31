@@ -55,7 +55,7 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
       Dependabot::Job,
       id: "42",
       package_manager: "bundler",
-      repo_contents_path: nil,
+      repo_contents_path: repo_contents_path,
       credentials: credentials,
       source: source,
       reject_external_code?: false,
@@ -64,10 +64,12 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
   end
 
   let(:base_commit_sha) { "fake-sha" }
+  let(:repo_contents_path) { nil }
 
   context "with a basic Gemfile project" do
     let(:directories) { [directory] }
     let(:directory) { "/" }
+    let(:repo_contents_path) { build_tmp_repo("bundler/original", path: "") }
 
     let(:dependency_files) do
       [
@@ -123,6 +125,7 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
   context "with a small sinatra app" do
     let(:directories) { [directory] }
     let(:directory) { "/" }
+    let(:repo_contents_path) { build_tmp_repo("bundler_sinatra_app/original", path: "") }
 
     let(:dependency_files) do
       [
@@ -199,6 +202,7 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
 
     let(:dir1) { "/" }
     let(:dir2) { "/subproject/" }
+    let(:repo_contents_path) { build_tmp_repo("bundler_sinatra_app/original", path: "") }
 
     let(:dependency_files) do
       [
@@ -275,6 +279,7 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
   context "with vendored files" do
     let(:directories) { [directory] }
     let(:directory) { "/" }
+    let(:repo_contents_path) { build_tmp_repo("bundler_vendored/original", path: "") }
 
     let(:dependency_files) do
       [
@@ -314,6 +319,7 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
   context "without a Gemfile.lock" do
     let(:directories) { [directory] }
     let(:directory) { "/" }
+    let(:repo_contents_path) { build_tmp_repo("bundler/original", path: "") }
 
     let(:dependency_files) do
       [
@@ -355,6 +361,7 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
   context "with a set of empty dependency files" do
     let(:directories) { [directory] }
     let(:directory) { "/" }
+    let(:repo_contents_path) { build_tmp_repo("bundler/original", path: "") }
 
     let(:dependency_files) do
       [
@@ -418,9 +425,9 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
     context "when the source does not specify a branch" do
       let(:directories) { ["/"] }
       let(:branch) { nil }
+      let(:repo_contents_path) { build_tmp_repo("bundler/original", path: "") }
 
       it "retrieves the default branch via Git" do
-        allow(job).to receive(:repo_contents_path).and_return(Dir.pwd)
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("origin/very-esoteric-naming\n")
 
         expect(service).to receive(:create_dependency_submission) do |args|
