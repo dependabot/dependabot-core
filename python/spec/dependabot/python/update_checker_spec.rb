@@ -470,7 +470,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
         let(:poetry_lock) do
           Dependabot::DependencyFile.new(
             name: "poetry.lock",
-            content: fixture("poetry_locks", "exact_requirement.lock")
+            content: fixture("poetry_locks", "exact_version.lock")
           )
         end
         let(:dependency_files) { [pyproject, poetry_lock] }
