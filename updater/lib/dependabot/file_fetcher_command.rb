@@ -133,6 +133,8 @@ module Dependabot
 
       # missing dependency files is not fatal for update_graph jobs as they need to process deletions
       if @dependency_files_for_multi_directories&.empty? && !job.update_graph?
+        # Close the PR when no dependency files are found for an update command
+        service.close_pull_request(job.dependencies || [], :dependency_removed) if job.command == "update"
         raise Dependabot::DependencyFileNotFound, job.source.directories&.join(", ")
       end
 
