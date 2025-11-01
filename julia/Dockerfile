@@ -14,8 +14,6 @@ RUN curl -fsSL https://install.julialang.org | sh -s -- -y \
     && . ~/.bashrc
 
 ENV PATH="/home/dependabot/.juliaup/bin:$PATH"
-RUN juliaup add 1.12.1
-RUN juliaup default 1.12.1
 
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
 COPY --chown=dependabot:dependabot julia/helpers /opt/julia/helpers

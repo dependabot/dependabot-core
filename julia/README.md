@@ -44,6 +44,7 @@ For more information about Julia package management, see:
 - `Project.toml` / `JuliaProject.toml` - Main project files
 - `Manifest.toml` / `JuliaManifest.toml` - Lock files
 - `Manifest-vX.Y.toml` / `JuliaManifest-vX.Y.toml` - Version-specific lock files
+- Julia workspaces are supported - manifest files can be located in parent directories as specified by the `[workspace]` section
 
 ### Terminology: Julia vs Dependabot
 
@@ -135,4 +136,3 @@ julia/helpers/DependabotHelper.jl/
 ```
 
 The `run_dependabot_helper.jl` script acts as the JSON-RPC server, receiving function calls from Ruby and dispatching them to the appropriate Julia functions.
-

@@ -21,7 +21,9 @@ Julia supports multiple naming conventions:
 - Project files: Project.toml or JuliaProject.toml
 - Manifest files: Manifest.toml or JuliaManifest.toml (with optional version suffix)
 
-This function uses Pkg.Types.Context to detect which files are actually being used.
+This function uses Pkg.Types.Context to detect which files are actually being used,
+including support for Julia workspaces where the manifest may be located in a parent
+directory specified by the [workspace] section in Project.toml.
 """
 function find_environment_files(dir::String)
     if !isdir(dir)
