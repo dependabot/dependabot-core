@@ -142,11 +142,24 @@ module Dependabot
         )
       end
 
-      sig { void }
-      def record_security_update_dependency_not_found
+      sig do
+        params(
+          expected: T.nilable(T::Array[String]),
+          available: T.nilable(T::Array[String])
+        ).void
+      end
+      def record_security_update_dependency_not_found(expected: nil, available: nil)
+        # Provide additional diagnostic context to help users understand why their
+        # security update dependency wasn't found. This is especially useful
+        # for Python where normalisation (PEP 503) can modify names.
+        details = {}
+        details["expected-dependencies"] = expected if expected&.any?
+        details["available-dependencies"] = available&.any? ? available.take(50) : nil
+        details.compact!
+
         service.record_update_job_error(
           error_type: "security_update_dependency_not_found",
-          error_details: {}
+          error_details: details
         )
       end
 

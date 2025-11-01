@@ -11,6 +11,7 @@ require "dependabot/service"
 require "dependabot/updater/error_handler"
 require "dependabot/updater/operations/refresh_group_update_pull_request"
 require "dependabot/updater/group_dependency_selector"
+require "dependabot/fetched_files"
 
 require "dependabot/bundler"
 
@@ -172,6 +173,38 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
           expect(dependency_change.dependency_group.name).to eql("everything-everywhere-all-at-once")
           expect(dependency_change.updated_dependency_files_hash).to eql(updated_bundler_files_hash)
         end
+
+        refresh_group.perform
+      end
+    end
+
+    context "when the dependencies have changed but the PR was manually modified" do
+      let(:job_definition) do
+        job_definition_fixture("bundler/version_updates/group_update_refresh_dependencies_changed_manually_modified")
+      end
+
+      let(:dependency_files) do
+        original_bundler_files
+      end
+
+      let(:json_header) { { "Content-Type" => "application/json" } }
+
+      before do
+        stub_rubygems_calls
+
+        # Stub the GitHub API call to return a PR with multiple commits (indicating manual modification)
+        stub_request(:get, "https://api.github.com/repos/dependabot/smoke-tests/pulls/123")
+          .to_return(
+            status: 200,
+            body: { number: 123, commits: 2, state: "open" }.to_json,
+            headers: json_header
+          )
+      end
+
+      it "skips the update and does not close or recreate the PR" do
+        expect(mock_service).not_to receive(:close_pull_request)
+        expect(mock_service).not_to receive(:create_pull_request)
+        expect(mock_service).not_to receive(:update_pull_request)
 
         refresh_group.perform
       end
