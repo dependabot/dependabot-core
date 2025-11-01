@@ -19,6 +19,7 @@ module Dependabot
   module GithubActions
     class FileParser < Dependabot::FileParsers::Base
       extend T::Set
+      include Dependabot::GithubActions
 
       require "dependabot/file_parsers/base/dependency_set"
 
@@ -112,9 +113,19 @@ module Dependabot
       def github_dependency(file, string, hostname)
         details = T.must(string.match(GITHUB_REPO_REFERENCE)).named_captures
         repo_name = "#{details.fetch(OWNER_KEY)}/#{details.fetch(REPO_KEY)}"
+        path = details[PATH_KEY]
         ref = details.fetch(REF_KEY)
         version = version_class.new(ref).to_s if version_class.correct?(ref)
-        name = version_class.path_based?(ref) ? string : repo_name
+
+        # For callable workflows (.github/workflows/*.yml), use the full path as the dependency name
+        # to distinguish between different workflow files in the same repository
+        name = if path && path.match?(%r{/\.github/workflows/.*\.ya?ml$})
+                 string
+               elsif version_class.path_based?(ref)
+                 string
+               else
+                 repo_name
+               end
         Dependency.new(
           name: name,
           version: version,
