@@ -124,6 +124,43 @@ RSpec.describe Dependabot::Python::Package::PackageDetailsFetcher do
       end
     end
 
+    context "when JSON response contains a malformed version string" do
+      let(:dependency_name) { "google-api-python-client" }
+      let(:json_url) { "https://pypi.org/pypi/#{dependency_name}/json" }
+      let(:registry_url) { "#{registry_base}/google-api-python-client/" }
+
+      before do
+        stub_request(:get, json_url).to_return(
+          status: 200,
+          body: fixture("releases_api", "pypi", "pypi_json_response_with_malformed_version.json")
+        )
+        stub_request(:get, registry_url).to_return(
+          status: 200,
+          body: fixture("releases_api", "simple", "simple_index.html")
+        )
+      end
+
+      it "skips the malformed version but continues processing valid versions from JSON" do
+        result = fetch
+
+        expect(result.releases).not_to be_empty
+        expect(a_request(:get, json_url)).to have_been_made.once
+        # Should NOT fall back to HTML since we can process valid versions from JSON
+        expect(a_request(:get, registry_url)).not_to have_been_made
+
+        # Should have only the valid versions (2.184.0 and 2.185.0), not the malformed one
+        version_strings = result.releases.map { |r| r.version.to_s }
+        expect(version_strings).to include("2.184.0", "2.185.0")
+        expect(version_strings).not_to include("1.0beta5prerelease")
+
+        # Verify that valid versions retain their upload_time (released_at)
+        release_version = result.releases.find { |r| r.version.to_s == "2.185.0" }
+        expect(release_version).not_to be_nil
+        expect(release_version.released_at).not_to be_nil
+        expect(release_version.released_at).to be_a(Time)
+      end
+    end
+
     context "with an optional dependency postfix" do
       it "removes optional data from dependency name" do
         expect(fetcher.send(:remove_optional, "pyvista[io]")).to eq("pyvista")
