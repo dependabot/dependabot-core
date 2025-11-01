@@ -90,24 +90,6 @@ module Dependabot
       sig do
         params(
           project_path: String,
-          package_name: String,
-          target_version: String
-        ).returns(T::Hash[String, T.untyped])
-      end
-      def check_update_compatibility(project_path, package_name, target_version)
-        call_julia_helper(
-          function: "check_update_compatibility",
-          args: {
-            project_path: project_path,
-            package_name: package_name,
-            target_version: target_version
-          }
-        )
-      end
-
-      sig do
-        params(
-          project_path: String,
           manifest_path: T.nilable(String)
         ).returns(T::Hash[String, T.untyped])
       end
@@ -175,22 +157,6 @@ module Dependabot
         call_julia_helper(
           function: "find_package_source_url",
           args: args
-        )
-      end
-
-      sig do
-        params(
-          package_name: String,
-          source_url: String
-        ).returns(T::Hash[String, T.untyped])
-      end
-      def extract_package_metadata_from_url(package_name, source_url)
-        call_julia_helper(
-          function: "extract_package_metadata_from_url",
-          args: {
-            package_name: package_name,
-            source_url: source_url
-          }
         )
       end
 
