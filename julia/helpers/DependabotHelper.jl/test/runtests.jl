@@ -180,10 +180,10 @@ using DependabotHelper
             end
         end
 
-        # Test find_environment_files with workspace setup
-        @testset "find_environment_files with workspace" begin
+        # Test find_environment_files with workspace setup - WorkspaceOne (simple single member)
+        @testset "find_environment_files with WorkspaceOne" begin
             # Use the static workspace test structure
-            workspace_root = joinpath(@__DIR__, "WorkspaceRoot")
+            workspace_root = joinpath(@__DIR__, "WorkspaceOne")
             @test isdir(workspace_root)
 
             root_project = joinpath(workspace_root, "Project.toml")
@@ -211,9 +211,50 @@ using DependabotHelper
             @test samefile(found_manifest, root_manifest)
         end
 
+        # Test find_environment_files with workspace setup - WorkspaceTwo (multiple members with potential conflicts)
+        @testset "find_environment_files with WorkspaceTwo" begin
+            # WorkspaceTwo has SubPackageA and SubPackageB, both depending on JSON 0.21
+            workspace_root = joinpath(@__DIR__, "WorkspaceTwo")
+            @test isdir(workspace_root)
+
+            root_project = joinpath(workspace_root, "Project.toml")
+            root_manifest = joinpath(workspace_root, "Manifest.toml")
+            @test isfile(root_project)
+            @test isfile(root_manifest)
+
+            # Test SubPackageA
+            member_a_dir = joinpath(workspace_root, "SubPackageA")
+            member_a_project = joinpath(member_a_dir, "Project.toml")
+            @test isdir(member_a_dir)
+            @test isfile(member_a_project)
+
+            found_project_a, found_manifest_a = DependabotHelper.find_environment_files(member_a_dir)
+            @test isfile(found_project_a)
+            @test samefile(found_project_a, member_a_project)
+            @test basename(found_project_a) == "Project.toml"
+            @test isfile(found_manifest_a)
+            @test samefile(found_manifest_a, root_manifest)
+
+            # Test SubPackageB
+            member_b_dir = joinpath(workspace_root, "SubPackageB")
+            member_b_project = joinpath(member_b_dir, "Project.toml")
+            @test isdir(member_b_dir)
+            @test isfile(member_b_project)
+
+            found_project_b, found_manifest_b = DependabotHelper.find_environment_files(member_b_dir)
+            @test isfile(found_project_b)
+            @test samefile(found_project_b, member_b_project)
+            @test basename(found_project_b) == "Project.toml"
+            @test isfile(found_manifest_b)
+            @test samefile(found_manifest_b, root_manifest)
+
+            # Both subpackages should share the same manifest
+            @test samefile(found_manifest_a, found_manifest_b)
+        end
+
         # Test JSON interface for find_environment_files
         @testset "find_environment_files via JSON interface" begin
-            workspace_root = joinpath(@__DIR__, "WorkspaceRoot")
+            workspace_root = joinpath(@__DIR__, "WorkspaceOne")
             member_dir = joinpath(workspace_root, "SubPackage")
 
             input = Dict("function" => "find_environment_files", "args" => Dict("directory" => member_dir))
@@ -224,7 +265,138 @@ using DependabotHelper
             @test haskey(result["result"], "project_file")
             @test haskey(result["result"], "manifest_file")
             @test endswith(result["result"]["project_file"], "SubPackage/Project.toml")
-            @test endswith(result["result"]["manifest_file"], "WorkspaceRoot/Manifest.toml")
+            @test endswith(result["result"]["manifest_file"], "WorkspaceOne/Manifest.toml")
+        end
+    end
+
+    @testset "Workspace Conflict Detection Tests" begin
+        # Test that WorkspaceTwo demonstrates the expected workspace behavior
+        # where multiple subpackages share a manifest but may have conflicting requirements
+        @testset "WorkspaceTwo structure verification" begin
+            workspace_root = joinpath(@__DIR__, "WorkspaceTwo")
+
+            # Verify root structure
+            @test isdir(workspace_root)
+            @test isfile(joinpath(workspace_root, "Project.toml"))
+            @test isfile(joinpath(workspace_root, "Manifest.toml"))
+
+            # Verify SubPackageA
+            subpkg_a = joinpath(workspace_root, "SubPackageA")
+            @test isdir(subpkg_a)
+            @test isfile(joinpath(subpkg_a, "Project.toml"))
+
+            # Verify SubPackageB
+            subpkg_b = joinpath(workspace_root, "SubPackageB")
+            @test isdir(subpkg_b)
+            @test isfile(joinpath(subpkg_b, "Project.toml"))
+
+            # Parse the project files to verify dependencies
+            result_a = DependabotHelper.parse_project(joinpath(subpkg_a, "Project.toml"))
+            @test !haskey(result_a, "error")
+            @test haskey(result_a, "dependencies")
+            @test isa(result_a["dependencies"], Array)
+
+            # Find JSON dependency in the array
+            json_dep_a = findfirst(d -> d["name"] == "JSON", result_a["dependencies"])
+            @test !isnothing(json_dep_a)
+            @test result_a["dependencies"][json_dep_a]["uuid"] == "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+            @test haskey(result_a["dependencies"][json_dep_a], "requirement")
+            @test result_a["dependencies"][json_dep_a]["requirement"] == "0.21"
+
+            result_b = DependabotHelper.parse_project(joinpath(subpkg_b, "Project.toml"))
+            @test !haskey(result_b, "error")
+            @test haskey(result_b, "dependencies")
+            @test isa(result_b["dependencies"], Array)
+
+            # Find JSON and Dates dependencies
+            json_dep_b = findfirst(d -> d["name"] == "JSON", result_b["dependencies"])
+            @test !isnothing(json_dep_b)
+            dates_dep_b = findfirst(d -> d["name"] == "Dates", result_b["dependencies"])
+            @test !isnothing(dates_dep_b)
+
+            # Both should have the same JSON compat requirement (0.21)
+            @test haskey(result_b["dependencies"][json_dep_b], "requirement")
+            @test result_b["dependencies"][json_dep_b]["requirement"] == "0.21"
+        end
+
+        @testset "WorkspaceTwo manifest resolution" begin
+            workspace_root = joinpath(@__DIR__, "WorkspaceTwo")
+
+            # Test that both subpackages correctly identify the shared manifest
+            subpkg_a_dir = joinpath(workspace_root, "SubPackageA")
+            subpkg_b_dir = joinpath(workspace_root, "SubPackageB")
+            root_manifest = joinpath(workspace_root, "Manifest.toml")
+
+            # Both should find the same shared manifest
+            proj_a, manifest_a = DependabotHelper.find_environment_files(subpkg_a_dir)
+            @test isfile(manifest_a)
+            @test samefile(manifest_a, root_manifest)
+
+            proj_b, manifest_b = DependabotHelper.find_environment_files(subpkg_b_dir)
+            @test isfile(manifest_b)
+            @test samefile(manifest_b, root_manifest)
+
+            # They should be the exact same file
+            @test samefile(manifest_a, manifest_b)
+        end
+
+        @testset "WorkspaceTwo update simulation" begin
+            # This test simulates what happens when trying to update one workspace member
+            # when workspace members have conflicting compat requirements
+
+            workspace_root = joinpath(@__DIR__, "WorkspaceTwo")
+
+            mktempdir() do tmpdir
+                # Copy the workspace structure to a temp dir for testing
+                tmp_workspace = joinpath(tmpdir, "WorkspaceTwo")
+                cp(workspace_root, tmp_workspace)
+
+                tmp_subpkg_a = joinpath(tmp_workspace, "SubPackageA")
+                tmp_subpkg_b = joinpath(tmp_workspace, "SubPackageB")
+
+                # Step 1: Update SubPackageA compat to allow both 0.21 and 1.x
+                subpkg_a_project = joinpath(tmp_subpkg_a, "Project.toml")
+                project_a_content = read(subpkg_a_project, String)
+                project_a_content = replace(project_a_content, "JSON = \"0.21\"" => "JSON = \"0.21, 1\"")
+                write(subpkg_a_project, project_a_content)
+
+                # Step 2: Try to update manifest to JSON 1.0.0 from SubPackageA
+                # This should FAIL because SubPackageB still only allows 0.21
+                result = DependabotHelper.update_manifest(
+                    tmp_subpkg_a,
+                    Dict{String, Any}("JSON" => "1.0.0")
+                )
+
+                # Step 3: Verify we get an "Uempty intersection between" error
+                @test isa(result, Dict)
+                @test haskey(result, "error")
+                @test occursin("empty intersection between", result["error"])
+
+                # Step 4: Update SubPackageB compat to also allow 0.21 and 1.x
+                subpkg_b_project = joinpath(tmp_subpkg_b, "Project.toml")
+                project_b_content = read(subpkg_b_project, String)
+                project_b_content = replace(project_b_content, "JSON = \"0.21\"" => "JSON = \"0.21, 1\"")
+                write(subpkg_b_project, project_b_content)
+
+                # Step 5: Try to update manifest to JSON 1.0.0 again
+                # Now this should SUCCEED because both packages allow 1.x
+                result = DependabotHelper.update_manifest(
+                    tmp_subpkg_a,
+                    Dict{String, Any}("JSON" => "1.0.0")
+                )
+
+                # Step 6: Verify the update succeeded (no "empty intersection between" error)
+                @test isa(result, Dict)
+                @test !haskey(result, "error")
+                @test haskey(result, "updated_manifest")
+                @test haskey(result, "manifest_content")
+
+                # Verify JSON is present in the dependencies
+                updated_manifest = result["updated_manifest"]
+                @test haskey(updated_manifest, "dependencies")
+                json_dep = findfirst(d -> d["name"] == "JSON", updated_manifest["dependencies"])
+                @test json_dep !== nothing
+            end
         end
     end
 

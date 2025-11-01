@@ -3,6 +3,8 @@
 
 require "toml-rb"
 require "tempfile"
+require "fileutils"
+require "pathname"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 require "dependabot/julia/registry_client"
@@ -37,93 +39,32 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
-        # If no manifest file, just update Project.toml using Ruby
-        return fallback_updated_dependency_files unless project_file && manifest_file
+        # If no project file, cannot proceed
+        raise "No Project.toml file found" unless project_file
 
         # Use DependabotHelper.jl for manifest updating
+        # This works for both standard packages and workspace packages
         updated_files_with_julia_helper
-      rescue StandardError => e
-        # Fallback to Ruby TOML manipulation if Julia helper fails
-        Dependabot.logger.warn(
-          "DependabotHelper.jl update failed with exception: #{e.message}, " \
-          "falling back to Ruby updating"
-        )
-        fallback_updated_dependency_files
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def updated_files_with_julia_helper
         updated_files = []
-        project_dir = T.let(nil, T.nilable(String))
 
-        begin
-          # First, update the Project.toml using Ruby (handles compat section correctly)
+        SharedHelpers.in_a_temporary_repo_directory(T.must(dependency_files.first).directory, repo_contents_path) do
           updated_project = updated_project_content
+          actual_manifest = find_manifest_file
 
-          # Write both files to a temporary directory
-          project_dir = write_temp_project_directory(updated_project)
+          return project_only_update(updated_project) if actual_manifest.nil?
 
-          # Now call Julia helper to update the Manifest.toml based on the updated Project.toml
-          result = registry_client.update_manifest(
-            project_path: project_dir,
-            updates: build_updates_hash
-          )
+          # Work directly in the repo directory - no need for another temp directory
+          # This ensures all workspace packages are accessible to Julia's Pkg
+          write_temporary_files(updated_project, actual_manifest)
+          result = call_julia_helper
 
-          if result["error"]
-            error_message = result["error"]
-            manifest_path = manifest_file&.name || "Manifest.toml"
+          return handle_julia_helper_error(result, actual_manifest, updated_project) if result["error"]
 
-            # Check if this is a Pkg resolver error
-            if error_message.include?("Unsatisfiable requirements")
-              # Add a notice that will be shown in the PR
-              @notices << Dependabot::Notice.new(
-                mode: Dependabot::Notice::NoticeMode::WARN,
-                type: "julia_manifest_not_updated",
-                package_manager_name: "Pkg",
-                title: "Could not update manifest #{manifest_path}",
-                description: "The Julia package manager failed to update the new dependency versions" \
-                             "in `#{manifest_path}`:\n\n```\n#{error_message}\n```",
-                show_in_pr: true,
-                show_alert: true
-              )
-
-              # Return only the updated Project.toml
-              return [updated_file(
-                file: T.must(project_file),
-                content: updated_project
-              )]
-            else
-              # For other errors, fallback to Ruby TOML manipulation
-              Dependabot.logger.warn(
-                "DependabotHelper.jl update failed: #{error_message}, " \
-                "falling back to Ruby updating"
-              )
-              return fallback_updated_dependency_files
-            end
-          end
-
-          # Build updated files: use Ruby-updated Project.toml and Julia-updated Manifest.toml
-          updated_files << updated_file(
-            file: T.must(project_file),
-            content: updated_project
-          )
-
-          # Include manifest update if Julia helper provided one. The
-          # `manifest_path` from the Julia helper handles workspace cases
-          # (for example "../Manifest.toml"). Build a DependencyFile for the
-          # manifest whether or not it was originally fetched.
-          if result["manifest_content"] && result["manifest_path"]
-            manifest_path = result["manifest_path"]
-
-            chosen_manifest_file = manifest_file_for_path(manifest_path)
-
-            updated_files << updated_file(
-              file: chosen_manifest_file,
-              content: result["manifest_content"]
-            )
-          end
-        ensure
-          FileUtils.rm_rf(project_dir) if project_dir && File.exist?(project_dir)
+          build_updated_files(updated_files, updated_project, actual_manifest, result)
         end
 
         raise "No files changed!" if updated_files.empty?
@@ -131,33 +72,106 @@ module Dependabot
         updated_files
       end
 
-      # Fallback method using Ruby TOML manipulation
-      sig { returns(T::Array[Dependabot::DependencyFile]) }
-      def fallback_updated_dependency_files
-        updated_files = []
+      sig { params(updated_project: String).returns(T::Array[Dependabot::DependencyFile]) }
+      def project_only_update(updated_project)
+        [updated_file(file: T.must(project_file), content: updated_project)]
+      end
 
-        # Update Project.toml file
-        if project_file && file_changed?(T.must(project_file))
-          updated_files << updated_file(
-            file: T.must(project_file),
-            content: updated_project_content
-          )
-        end
+      sig do
+        params(
+          updated_project: String,
+          actual_manifest: Dependabot::DependencyFile
+        ).void
+      end
+      def write_temporary_files(updated_project, actual_manifest)
+        File.write(T.must(project_file).name, updated_project)
 
-        # Update Manifest.toml file if it exists and dependencies have changed
-        if manifest_file
-          updated_manifest_content = build_updated_manifest_content
-          if updated_manifest_content != T.must(manifest_file).content
-            updated_files << updated_file(
-              file: T.must(manifest_file),
-              content: updated_manifest_content
-            )
-          end
-        end
+        # Use basename to get just the filename without any ../ prefix
+        manifest_filename = File.basename(actual_manifest.name)
+        File.write(manifest_filename, actual_manifest.content)
+      end
 
-        raise "No files changed!" if updated_files.empty?
+      sig { returns(T::Hash[String, T.untyped]) }
+      def call_julia_helper
+        registry_client.update_manifest(
+          project_path: Dir.pwd,
+          updates: build_updates_hash
+        )
+      end
 
-        updated_files
+      sig do
+        params(
+          result: T::Hash[String, T.untyped],
+          actual_manifest: Dependabot::DependencyFile,
+          updated_project: String
+        ).returns(T::Array[Dependabot::DependencyFile])
+      end
+      def handle_julia_helper_error(result, actual_manifest, updated_project)
+        error_message = result["error"]
+        manifest_path = actual_manifest.name
+
+        is_resolver_error = resolver_error?(error_message)
+        raise error_message unless is_resolver_error
+
+        add_manifest_update_notice(manifest_path, error_message)
+
+        # Return only the updated Project.toml
+        [updated_file(file: T.must(project_file), content: updated_project)]
+      end
+
+      sig { params(error_message: String).returns(T::Boolean) }
+      def resolver_error?(error_message)
+        error_message.start_with?("Pkg resolver error:") ||
+          error_message.include?("Unsatisfiable requirements") ||
+          error_message.include?("ResolverError")
+      end
+
+      sig { params(manifest_path: String, error_message: String).void }
+      def add_manifest_update_notice(manifest_path, error_message)
+        # Resolve relative paths like ../Manifest.toml to absolute paths like /WorkspacePackage.jl/Manifest.toml
+        absolute_manifest_path = if manifest_path.start_with?("../")
+                                   # For workspace packages, compute the absolute path
+                                   project_dir = T.must(project_file).directory
+                                   File.join(File.dirname(project_dir), File.basename(manifest_path))
+                                 else
+                                   # For regular packages, use the manifest path as-is
+                                   File.join(T.must(project_file).directory, manifest_path)
+                                 end
+
+        @notices << Dependabot::Notice.new(
+          mode: Dependabot::Notice::NoticeMode::WARN,
+          type: "julia_manifest_not_updated",
+          package_manager_name: "Pkg",
+          title: "Could not update manifest #{absolute_manifest_path}",
+          description: "The Julia package manager failed to update the new dependency versions " \
+                       "in `#{absolute_manifest_path}`:\n\n```\n#{error_message}\n```",
+          show_in_pr: true,
+          show_alert: true
+        )
+      end
+
+      sig do
+        params(
+          updated_files: T::Array[Dependabot::DependencyFile],
+          updated_project: String,
+          actual_manifest: Dependabot::DependencyFile,
+          result: T::Hash[String, T.untyped]
+        ).void
+      end
+      def build_updated_files(updated_files, updated_project, actual_manifest, result)
+        updated_files << updated_file(file: T.must(project_file), content: updated_project)
+
+        return unless result["manifest_content"]
+
+        updated_manifest_content = result["manifest_content"]
+        return unless updated_manifest_content != actual_manifest.content
+
+        manifest_for_update = if result["manifest_path"]
+                                manifest_file_for_path(result["manifest_path"])
+                              else
+                                actual_manifest
+                              end
+        updated_files << updated_file(file: manifest_for_update, content: updated_manifest_content)
       end
 
       private
@@ -185,34 +199,54 @@ module Dependabot
         )
       end
 
-      sig { params(project_content: String).returns(String) }
-      def write_temp_project_directory(project_content)
-        temp_dir = Dir.mktmpdir("dependabot-julia-")
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def find_manifest_file
+        # The file fetcher has already identified the correct manifest file
+        # For regular packages: manifest in same directory
+        # For workspace packages: manifest in parent directory
+        # We just need to find it in dependency_files
+        project_dir = T.must(project_file).directory
 
-        # Write the updated project file using the original filename
-        File.write(File.join(temp_dir, T.must(project_file).name), project_content)
-
-        # Write the existing manifest file using the original filename
-        File.write(File.join(temp_dir, T.must(manifest_file).name), T.must(manifest_file).content) if manifest_file
-
-        temp_dir
+        dependency_files.find do |f|
+          # Use basename to get just the filename, not the full path with ../
+          is_manifest = File.basename(f.name).match?(/^(Julia)?Manifest(?:-v[\d.]+)?\.toml$/i)
+          is_manifest && (f.directory == project_dir || project_dir.start_with?(f.directory))
+        end
       end
 
       sig { params(manifest_path: String).returns(Dependabot::DependencyFile) }
       def manifest_file_for_path(manifest_path)
-        # If we originally fetched a manifest and its name matches the path
-        # returned by the Julia helper, use that file object so metadata
-        # (like directory) is preserved. Otherwise create a lightweight
-        # DependencyFile pointing at the correct relative path.
-        if manifest_file && T.must(manifest_file).name == manifest_path
-          T.must(manifest_file)
-        else
-          Dependabot::DependencyFile.new(
-            name: manifest_path,
-            content: "",
-            directory: T.must(project_file).directory
-          )
+        # manifest_path is relative to the project directory (e.g., "Manifest.toml" or "../Manifest.toml")
+        # We need to resolve it to find the actual manifest file in dependency_files
+
+        # Build the absolute path relative to the project directory
+        project_dir = T.must(project_file).directory
+        resolved_manifest_path = File.expand_path(manifest_path, project_dir)
+
+        # Normalize by removing leading "/" to get repo-relative path
+        resolved_manifest_path = resolved_manifest_path.sub(%r{^/}, "")
+
+        # Find the matching manifest file in dependency_files
+        found_manifest = dependency_files.find do |f|
+          next unless f.name.match?(/^(Julia)?Manifest(?:-v[\d.]+)?\.toml$/i)
+
+          # Construct the full path for this file and normalize it
+          file_path = File.join(f.directory, f.name).sub(%r{^/}, "")
+          file_path == resolved_manifest_path
         end
+
+        # If we found the manifest file and the manifest_path matches its name exactly,
+        # return the original file to preserve its metadata
+        return found_manifest if found_manifest && found_manifest.name == manifest_path
+
+        # For workspace cases where manifest_path is relative (e.g., "../Manifest.toml"),
+        # we need to create a new DependencyFile with the relative path as its name,
+        # but copy the content from the found manifest if it exists
+        Dependabot::DependencyFile.new(
+          name: manifest_path,
+          content: found_manifest&.content || "",
+          directory: project_dir
+        )
       end
 
       sig { override.void }
@@ -229,41 +263,6 @@ module Dependabot
         @project_file ||= T.let(
           dependency_files.find do |f|
             f.name.match?(/^(Julia)?Project\.toml$/i)
-          end,
-          T.nilable(Dependabot::DependencyFile)
-        )
-      end
-
-      sig { returns(T.nilable(Dependabot::DependencyFile)) }
-      def manifest_file
-        @manifest_file ||= T.let(
-          begin
-            return nil unless project_file
-
-            # Use Julia's Pkg to find the manifest file (handles workspaces correctly)
-            project_dir = T.must(project_file).directory
-
-            # Build the absolute path to pass to Julia
-            # The project_file.directory is relative to the repo root
-            absolute_project_dir =
-              if repo_contents_path
-                File.join(repo_contents_path, project_dir)
-              else
-                project_dir
-              end
-
-            env_files = registry_client.find_environment_files(absolute_project_dir)
-            return nil if env_files.empty? || !env_files["manifest_file"]
-
-            manifest_path = T.let(env_files["manifest_file"], T.nilable(String))
-            return nil unless manifest_path
-
-            # Find the matching manifest file in dependency_files
-            # The manifest_path from Julia is absolute, so we need to match by name and directory
-            dependency_files.find do |f|
-              f.name.match?(/^(Julia)?Manifest(?:-v[\d.]+)?\.toml$/i) &&
-                manifest_path.end_with?(File.join(f.directory, f.name))
-            end
           end,
           T.nilable(Dependabot::DependencyFile)
         )
@@ -322,74 +321,6 @@ module Dependabot
         else
           # Add new [compat] section at the end
           content + "\n[compat]\n#{dependency_name} = \"#{requirement}\"\n"
-        end
-      end
-
-      sig { returns(String) }
-      def build_updated_manifest_content
-        return T.must(T.must(manifest_file).content) unless manifest_file
-
-        content = T.must(T.must(manifest_file).content)
-
-        dependencies.each do |dependency|
-          next unless dependency.version
-
-          content = update_dependency_version_in_manifest(content, dependency.name, T.must(dependency.version))
-        end
-
-        content
-      end
-
-      sig { params(content: String, dependency_name: String, new_version: String).returns(String) }
-      def update_dependency_version_in_manifest(content, dependency_name, new_version)
-        # Pattern to find the dependency entry and update its version
-        # Matches the [[deps.DependencyName]] section and updates the version line within it
-        dep_start = /^\[\[deps\.#{Regexp.escape(dependency_name)}\]\]\s*\n(?:.*\n)*?/
-        version_key = /^\s*version\s*=\s*/
-        old_version = /(?:"[^"]*"|'[^']*'|[^\s#\n]+)/
-        trailing = /\s*(?:\#.*)?$/
-        pattern = /(#{dep_start})(#{version_key})#{old_version}(#{trailing})/mx
-
-        if content.match?(pattern)
-          content.gsub(pattern, "\\1\\2\"#{new_version}\"\\3")
-        else
-          # If pattern doesn't match, fall back to original approach
-          Dependabot.logger.warn("Could not find manifest entry for #{dependency_name}, using fallback")
-          fallback_update_manifest_content(content, dependency_name, new_version)
-        end
-      end
-
-      sig { params(content: String, dependency_name: String, new_version: String).returns(String) }
-      def fallback_update_manifest_content(content, dependency_name, new_version)
-        # Fallback to parse-and-dump for complex cases
-        parsed_manifest = T.cast(TomlRB.parse(content), T::Hash[String, T.untyped])
-
-        deps_section = T.cast(parsed_manifest["deps"] || {}, T::Hash[String, T.untyped])
-        if deps_section[dependency_name]
-          dep_entries = deps_section[dependency_name]
-          update_dependency_entries(dep_entries, new_version)
-        end
-
-        T.cast(TomlRB.dump(parsed_manifest), String)
-      end
-
-      sig { params(dependency: Dependabot::Dependency, manifest: T::Hash[String, T.untyped]).void }
-      def update_dependency_in_manifest(dependency, manifest)
-        deps_section = T.cast(manifest["deps"] || {}, T::Hash[String, T.untyped])
-        return unless deps_section[dependency.name]
-
-        dep_entries = deps_section[dependency.name]
-        update_dependency_entries(dep_entries, dependency.version)
-      end
-
-      sig { params(dep_entries: T.untyped, version: T.nilable(String)).void }
-      def update_dependency_entries(dep_entries, version)
-        if dep_entries.is_a?(Array)
-          dep_entries.each do |dep_entry|
-            dep_entry["version"] = version if dep_entry.is_a?(Hash) && dep_entry["uuid"]
-          end
-        elsif dep_entries.is_a?(Hash) && dep_entries["uuid"]
-          dep_entries["version"] = version
         end
       end
     end
