@@ -275,67 +275,56 @@ function update_manifest(project_path::String, updates::Dict)
         # constraints. The Ruby FileUpdater should update the project file first, then call
         # this function to update the manifest file based on the new constraints.
 
-        # Create a temporary directory for the update operation
-        mktempdir() do temp_dir
-            # Preserve the relative path relationship between project and manifest
-            # This handles both simple cases (same dir) and workspaces (manifest in parent)
-            project_rel = relpath(project_file, dirname(manifest_file))
-
-            temp_project_file = joinpath(temp_dir, project_rel)
-            temp_manifest_file = joinpath(temp_dir, basename(manifest_file))
-
-            # Create any necessary parent directories for the project file
-            mkpath(dirname(temp_project_file))
-
-            cp(project_file, temp_project_file)
-            cp(manifest_file, temp_manifest_file)
-
-            # Activate the project directory
-            Pkg.activate(dirname(temp_project_file)) do
-                with_autoprecompilation_disabled() do
-                    # Process each update
-                    pkg_specs = Pkg.PackageSpec[]
-                    for (package_name, target_version) in updates
-                        push!(pkg_specs, Pkg.PackageSpec(name=package_name, version=target_version))
-                    end
-                    try
-                        # Try to add/update the packages with the specific versions
-                        Pkg.add(pkg_specs)
-                    catch e
-                        return Dict("error" => "Failed to update package(s): $(sprint(showerror, e))")
-                    end
+        # Activate the project directory and update directly
+        Pkg.activate(project_path) do
+            with_autoprecompilation_disabled() do
+                # Process each update
+                pkg_specs = Pkg.PackageSpec[]
+                for (package_name, target_version) in updates
+                    push!(pkg_specs, Pkg.PackageSpec(name=package_name, version=target_version))
                 end
-
-                # Read the updated manifest
-                if isfile(temp_manifest_file)
-                    updated_manifest = parse_manifest(temp_manifest_file)
-                    if haskey(updated_manifest, "error")
-                        return updated_manifest
-                    end
-
-                    updated_manifest_content = read(temp_manifest_file, String)
-
-                    # Copy the updated manifest back to the original location
-                    cp(temp_manifest_file, manifest_file; force=true)
-
-                    # Calculate the relative path from project to manifest for Ruby
-                    # This handles workspace cases where manifest might be ../Manifest.toml
-                    manifest_relative_path = relpath(manifest_file, dirname(project_file))
-
-                    return Dict(
-                        "result" => "success",
-                        "manifest_content" => updated_manifest_content,
-                        "manifest_path" => manifest_relative_path,
-                        "updated_manifest" => updated_manifest
-                    )
-                else
-                    return Dict("error" => "Updated manifest file not found")
-                end
+                # Try to add/update the packages with the specific versions
+                Pkg.add(pkg_specs)
             end
         end
+
+        # After Pkg.add, find where the manifest actually is
+        # For workspace packages, Pkg might have updated a different manifest location
+        actual_project_file, actual_manifest_file = find_environment_files(project_path)
+
+        # Read the updated manifest from the actual location
+        if !isfile(actual_manifest_file)
+            return Dict("error" => "Updated manifest file not found")
+        end
+
+        updated_manifest = parse_manifest(actual_manifest_file)
+        if haskey(updated_manifest, "error")
+            return updated_manifest
+        end
+
+        updated_manifest_content = read(actual_manifest_file, String)
+
+        # Calculate the relative path from project to manifest for Ruby
+        # This handles workspace cases where manifest might be ../Manifest.toml
+        manifest_relative_path = relpath(actual_manifest_file, dirname(actual_project_file))
+
+        return Dict(
+            "result" => "success",
+            "manifest_content" => updated_manifest_content,
+            "manifest_path" => manifest_relative_path,
+            "updated_manifest" => updated_manifest
+        )
     catch ex
         @error "update_manifest: Failed to update manifest" exception=(ex, catch_backtrace())
-        return Dict("error" => "Failed to update manifest: $(sprint(showerror, ex))")
+
+        # Check if this is a Pkg resolver error - these indicate version conflicts
+        error_prefix = if ex isa Pkg.Resolve.ResolverError
+            "Pkg resolver error: "
+        else
+            "Failed to update manifest: "
+        end
+
+        return Dict("error" => error_prefix * sprint(showerror, ex))
     end
 end
 

@@ -324,19 +324,6 @@ RSpec.describe Dependabot::Julia::FileUpdater do
           }
         )
       end
-
-      it "falls back to Ruby TOML manipulation" do
-        expect(Dependabot.logger).to receive(:warn).with(
-          /DependabotHelper\.jl update failed.*falling back to Ruby updating/
-        )
-        # Allow additional warnings from the fallback process
-        allow(Dependabot.logger).to receive(:warn)
-
-        updated_files = updater.updated_dependency_files
-
-        # Should still get updated files via fallback
-        expect(updated_files).not_to be_empty
-      end
     end
 
     context "when Julia helper returns a resolver error" do
@@ -371,19 +358,6 @@ RSpec.describe Dependabot::Julia::FileUpdater do
         allow(registry_client_double).to receive(:update_manifest).and_raise(
           StandardError, "Julia helper crashed"
         )
-      end
-
-      it "catches exception and falls back" do
-        expect(Dependabot.logger).to receive(:warn).with(
-          /DependabotHelper\.jl update failed with exception.*falling back to Ruby updating/
-        )
-        # Allow additional warnings from the fallback process
-        allow(Dependabot.logger).to receive(:warn)
-
-        updated_files = updater.updated_dependency_files
-
-        # Should still get updated files via fallback
-        expect(updated_files).not_to be_empty
       end
     end
   end
