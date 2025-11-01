@@ -214,7 +214,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
 
       it "has the right details" do
         expect(dependency).to be_a(Dependabot::Dependency)
-        expect(dependency.name).to eq("actions/checkout/.github/workflows/test.yml@v2.1.0")
+        expect(dependency.name).to eq("actions/checkout/.github/workflows/test.yml")
         expect(dependency.version).to eq("2.1.0")
         expect(dependency.requirements).to eq(expected_requirements)
       end
@@ -252,14 +252,18 @@ RSpec.describe Dependabot::GithubActions::FileParser do
               branch: nil
             },
             metadata: {
-              declaration_string: "dsp-testing/github-action-with-multiple-callable-workflow-10619/.github/workflows/action-one.yml@v1.0.0"
+              declaration_string: "dsp-testing/github-action-with-multiple-callable-workflow-10619" \
+                                  "/.github/workflows/action-one.yml@v1.0.0"
             }
           }]
         end
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("dsp-testing/github-action-with-multiple-callable-workflow-10619/.github/workflows/action-one.yml@v1.0.0")
+          expect(dependency.name).to eq(
+            "dsp-testing/github-action-with-multiple-callable-workflow-10619" \
+            "/.github/workflows/action-one.yml"
+          )
           expect(dependency.version).to eq("1.0.0")
           expect(dependency.requirements).to eq(expected_requirements)
         end
@@ -280,14 +284,18 @@ RSpec.describe Dependabot::GithubActions::FileParser do
               branch: nil
             },
             metadata: {
-              declaration_string: "dsp-testing/github-action-with-multiple-callable-workflow-10619/.github/workflows/action-two.yml@v1.0.0"
+              declaration_string: "dsp-testing/github-action-with-multiple-callable-workflow-10619" \
+                                  "/.github/workflows/action-two.yml@v1.0.0"
             }
           }]
         end
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("dsp-testing/github-action-with-multiple-callable-workflow-10619/.github/workflows/action-two.yml@v1.0.0")
+          expect(dependency.name).to eq(
+            "dsp-testing/github-action-with-multiple-callable-workflow-10619" \
+            "/.github/workflows/action-two.yml"
+          )
           expect(dependency.version).to eq("1.0.0")
           expect(dependency.requirements).to eq(expected_requirements)
         end
@@ -476,7 +484,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("actions/checkout/.github/workflows/test.yml@01aecccf739ca6ff86c0539fbc67a7a5007bbc81")
+          expect(dependency.name).to eq("actions/checkout/.github/workflows/test.yml")
           expect(dependency.version).to eq("2.1.0")
           expect(dependency.requirements).to eq(expected_requirements)
         end

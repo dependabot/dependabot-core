@@ -117,10 +117,10 @@ module Dependabot
         ref = details.fetch(REF_KEY)
         version = version_class.new(ref).to_s if version_class.correct?(ref)
 
-        # For callable workflows (.github/workflows/*.yml), use the full path as the dependency name
+        # For callable workflows (.github/workflows/*.yml), use the repository name + workflow path
         # to distinguish between different workflow files in the same repository
-        name = if path && path.match?(%r{/\.github/workflows/.*\.ya?ml$})
-                 string
+        name = if path&.match?(%r{/\.github/workflows/.*\.ya?ml$})
+                 "#{repo_name}#{path}"
                elsif version_class.path_based?(ref)
                  string
                else
