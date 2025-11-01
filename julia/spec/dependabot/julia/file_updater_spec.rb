@@ -339,6 +339,33 @@ RSpec.describe Dependabot::Julia::FileUpdater do
       end
     end
 
+    context "when Julia helper returns a resolver error" do
+      before do
+        allow(registry_client_double).to receive(:update_manifest).and_return(
+          {
+            "error" => "Unsatisfiable requirements detected for package JSON"
+          }
+        )
+      end
+
+      it "adds a notice and returns updated Project.toml only" do
+        updated_files = updater.updated_dependency_files
+
+        # Check that only Project.toml is updated
+        expect(updated_files.length).to eq(1)
+        expect(updated_files.first.name).to eq("Project.toml")
+
+        # Check that a notice was added
+        expect(updater.notices.length).to eq(1)
+        notice = updater.notices.first
+        expect(notice.mode).to eq(Dependabot::Notice::NoticeMode::WARN)
+        expect(notice.type).to eq("julia_manifest_not_updated")
+        expect(notice.show_in_pr).to be true
+        expect(notice.description).to include("Manifest.toml")
+        expect(notice.description).to include("Unsatisfiable requirements")
+      end
+    end
+
     context "when Julia helper raises an exception" do
       before do
         allow(registry_client_double).to receive(:update_manifest).and_raise(
