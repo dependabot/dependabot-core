@@ -286,34 +286,21 @@ module Dependabot
         if content.match?(pattern)
           content.gsub(pattern, "\\1\\2\"#{new_version}\"\\3")
         else
-          # If pattern doesn't match, fall back to original approach
+          # If pattern doesn't match, use TOML parsing as fallback
           Dependabot.logger.warn("Could not find manifest entry for #{dependency_name}, using fallback")
-          fallback_update_manifest_content(content, dependency_name, new_version)
+          parsed_manifest = T.cast(TomlRB.parse(content), T::Hash[String, T.untyped])
+
+          deps_section = T.cast(parsed_manifest["deps"] || {}, T::Hash[String, T.untyped])
+          if deps_section[dependency_name]
+            dep_entries = deps_section[dependency_name]
+            update_dependency_entries(dep_entries, new_version)
+          end
+
+          T.cast(TomlRB.dump(parsed_manifest), String)
         end
       end
 
-      sig { params(content: String, dependency_name: String, new_version: String).returns(String) }
-      def fallback_update_manifest_content(content, dependency_name, new_version)
-        # Fallback to parse-and-dump for complex cases
-        parsed_manifest = T.cast(TomlRB.parse(content), T::Hash[String, T.untyped])
 
-        deps_section = T.cast(parsed_manifest["deps"] || {}, T::Hash[String, T.untyped])
-        if deps_section[dependency_name]
-          dep_entries = deps_section[dependency_name]
-          update_dependency_entries(dep_entries, new_version)
-        end
-
-        T.cast(TomlRB.dump(parsed_manifest), String)
-      end
-
-      sig { params(dependency: Dependabot::Dependency, manifest: T::Hash[String, T.untyped]).void }
-      def update_dependency_in_manifest(dependency, manifest)
-        deps_section = T.cast(manifest["deps"] || {}, T::Hash[String, T.untyped])
-        return unless deps_section[dependency.name]
-
-        dep_entries = deps_section[dependency.name]
-        update_dependency_entries(dep_entries, dependency.version)
-      end
 
       sig { params(dep_entries: T.untyped, version: T.nilable(String)).void }
       def update_dependency_entries(dep_entries, version)
