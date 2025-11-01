@@ -22,7 +22,8 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
   let(:service) do
     instance_double(
       Dependabot::Service,
-      create_dependency_submission: nil
+      create_dependency_submission: nil,
+      record_update_job_error: nil
     )
   end
 
@@ -273,6 +274,61 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
       end
 
       update_graph_processor.run
+    end
+
+    context "when the first directory fails to process" do
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "Gemfile",
+            content: "garbage",
+            directory: dir1
+          ),
+          Dependabot::DependencyFile.new(
+            name: "Gemfile.lock",
+            content: "garbage in greater volume",
+            directory: dir1
+          ),
+          Dependabot::DependencyFile.new(
+            name: "Gemfile",
+            content: fixture("bundler/original/Gemfile"),
+            directory: dir2
+          ),
+          Dependabot::DependencyFile.new(
+            name: "Gemfile.lock",
+            content: fixture("bundler/original/Gemfile.lock"),
+            directory: dir2
+          )
+        ]
+      end
+
+      it "emits a snapshot and an error" do
+        expect(service).to receive(:create_dependency_submission).once
+        expect(service).to receive(:record_update_job_error).once
+
+        update_graph_processor.run
+      end
+
+      it "correctly snapshots the second directory" do
+        expect(service).to receive(:create_dependency_submission) do |args|
+          payload = args[:dependency_submission].payload
+
+          next unless payload[:job][:correlator] == "dependabot-bundler-subproj-Gemfile.lock"
+
+          # Check we have the simple app with 2 dependencies
+          expect(payload[:manifests].length).to eq(1)
+          lockfile = payload[:manifests].fetch("/Gemfile.lock")
+
+          expect(lockfile[:resolved].length).to eq(2)
+
+          dependency1 = lockfile[:resolved]["dummy-pkg-a"]
+          expect(dependency1[:package_url]).to eql("pkg:gem/dummy-pkg-a@2.0.0")
+          dependency2 = lockfile[:resolved]["dummy-pkg-b"]
+          expect(dependency2[:package_url]).to eql("pkg:gem/dummy-pkg-b@1.1.0")
+        end
+
+        update_graph_processor.run
+      end
     end
   end
 
