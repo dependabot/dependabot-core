@@ -16,6 +16,22 @@
     }
   },
   {
+    "name": "gradle",
+    "path": "gradle",
+    "sha": "193ef2b05a8976c5ff11d575bc3f00b74dd1955e",
+    "size": 0,
+    "url": "https://api.github.com/repos/dependabot-fixtures/gradle-with-settings/contents/gradle?ref=main",
+    "html_url": "https://github.com/dependabot-fixtures/gradle-with-settings/tree/main/gradle",
+    "git_url": "https://api.github.com/repos/dependabot-fixtures/gradle-with-settings/git/trees/193ef2b05a8976c5ff11d575bc3f00b74dd1955e",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/dependabot-fixtures/gradle-with-settings/contents/gradle?ref=main",
+      "git": "https://api.github.com/repos/dependabot-fixtures/gradle-with-settings/git/trees/193ef2b05a8976c5ff11d575bc3f00b74dd1955e",
+      "html": "https://github.com/dependabot-fixtures/gradle-with-settings/tree/main/gradle"
+    }
+  },
+  {
     "name": "build.gradle",
     "path": "build.gradle",
     "sha": "f036f9f0357a50b02a422923f0bb0c3719eaf8ae",
