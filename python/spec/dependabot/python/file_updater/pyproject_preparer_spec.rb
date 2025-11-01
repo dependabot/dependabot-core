@@ -220,5 +220,39 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
 
       it { is_expected.to include("subdirectory = \"python\"\n") }
     end
+
+    context "with Poetry 2 PEP 621 format" do
+      let(:dependencies) { [] }
+      let(:lockfile) { nil }
+      let(:pyproject_fixture_name) { "poetry_v2_pep621.toml" }
+
+      it "returns unchanged content when no lockfile" do
+        expect(freeze_top_level_dependencies_except).to eq(pyproject_content)
+      end
+
+      context "when no tool.poetry section exists" do
+        it "does not add dependency version constraints" do
+          # Should not modify [project] dependencies or add tool.poetry sections
+          expect(freeze_top_level_dependencies_except).to eq(pyproject_content)
+        end
+      end
+    end
+  end
+
+  describe "#update_python_requirement" do
+    subject(:updated_content) { preparer.update_python_requirement("4.0") }
+
+    context "with Poetry 2 PEP 621 format" do
+      let(:pyproject_fixture_name) { "poetry_v2_pep621.toml" }
+
+      it "updates requires-python when version not satisfied" do
+        expect(updated_content).to include('requires-python = "~4.0"')
+      end
+
+      it "preserves other sections" do
+        expect(updated_content).to include('[tool.poetry.group.dev.dependencies]')
+        expect(updated_content).to include('mypy = "^1.13.0"')
+      end
+    end
   end
 end

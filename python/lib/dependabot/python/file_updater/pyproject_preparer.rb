@@ -45,10 +45,18 @@ module Dependabot
         sig { params(requirement: String).returns(String) }
         def update_python_requirement(requirement)
           pyproject_object = TomlRB.parse(@pyproject_content)
+
+          # Try legacy Poetry format first
           if (python_specification = pyproject_object.dig("tool", "poetry", "dependencies", "python"))
             python_req = Python::Requirement.new(python_specification)
             unless python_req.satisfied_by?(requirement)
               pyproject_object["tool"]["poetry"]["dependencies"]["python"] = "~#{requirement}"
+            end
+          # Check Poetry 2 PEP 621 format
+          elsif (python_specification = pyproject_object.dig("project", "requires-python"))
+            python_req = Python::Requirement.new(python_specification)
+            unless python_req.satisfied_by?(requirement)
+              pyproject_object["project"]["requires-python"] = "~#{requirement}"
             end
           end
           TomlRB.dump(pyproject_object)
@@ -69,7 +77,12 @@ module Dependabot
           return pyproject_content unless lockfile
 
           pyproject_object = TomlRB.parse(pyproject_content)
-          poetry_object = pyproject_object["tool"]["poetry"]
+          poetry_object = pyproject_object.dig("tool", "poetry")
+
+          # For Poetry 2 PEP 621 projects without [tool.poetry] section,
+          # we don't need to freeze dependencies as they're managed in [project]
+          return pyproject_content unless poetry_object
+
           excluded_names = dependencies.map(&:name) + ["python"]
 
           Dependabot::Python::FileParser::PyprojectFilesParser::POETRY_DEPENDENCY_TYPES.each do |key|

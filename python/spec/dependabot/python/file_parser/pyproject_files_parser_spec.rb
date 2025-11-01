@@ -256,6 +256,41 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
     end
   end
 
+  describe "parse poetry v2 PEP 621 files" do
+    subject(:dependencies) { parser.dependency_set.dependencies }
+
+    let(:pyproject_fixture_name) { "poetry_v2_pep621.toml" }
+
+    context "without a lockfile" do
+      # PEP 621 dependencies from [project] section are parsed by Python helper
+      # which requires Python/pyenv to be available (Docker environment).
+      # This test focuses on the Poetry-specific groups which are parsed in Ruby.
+      its(:length) { is_expected.to be >= 3 }
+
+      it "parses dependencies from [tool.poetry.group] sections" do
+        expect(dependencies.map(&:name)).to include("mypy", "pre-commit", "pytest-cov")
+      end
+
+      context "with a dependency from poetry group section" do
+        subject(:dependency) { dependencies.find { |d| d.name == "mypy" } }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("mypy")
+          expect(dependency.version).to be_nil
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "^1.13.0",
+              file: "pyproject.toml",
+              groups: ["dev"],
+              source: nil
+            }]
+          )
+        end
+      end
+    end
+  end
+
   describe "parse standard python files" do
     subject(:dependencies) { parser.dependency_set.dependencies }
 
