@@ -151,11 +151,9 @@ module Dependabot
       # Exclude support files since they are not manifests, just needed for supporting the update
       update_files = file_updater.updated_dependency_files.reject(&:support_file)
 
-      # Collect notices from file updater if it supports them
-      if file_updater.respond_to?(:notices)
-        updater_notices = T.let(file_updater.public_send(:notices), T::Array[Dependabot::Notice])
-        updater_notices.each { |notice| @notices << notice }
-      end
+      # Collect notices from file updater
+      updater_notices = T.let(file_updater.notices, T::Array[Dependabot::Notice])
+      updater_notices.each { |notice| @notices << notice }
 
       update_files
     end

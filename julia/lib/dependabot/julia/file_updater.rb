@@ -20,7 +20,7 @@ module Dependabot
         [/(?:Julia)?Project\.toml$/i, /(?:Julia)?Manifest(?:-v[\d.]+)?\.toml$/i]
       end
 
-      sig { returns(T::Array[Dependabot::Notice]) }
+      sig { override.returns(T::Array[Dependabot::Notice]) }
       attr_reader :notices
 
       sig do
