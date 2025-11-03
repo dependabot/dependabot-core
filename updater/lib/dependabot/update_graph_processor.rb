@@ -136,7 +136,7 @@ module Dependabot
       grapher = Dependabot::DependencyGraphers.for_package_manager(job.package_manager).new(file_parser: parser)
       grapher.prepare!
 
-      GithubApi::DependencySubmission.new(
+      result = GithubApi::DependencySubmission.new(
         job_id: job.id.to_s,
         branch: branch,
         sha: base_commit_sha,
@@ -144,6 +144,10 @@ module Dependabot
         manifest_file: grapher.relevant_dependency_file,
         resolved_dependencies: grapher.resolved_dependencies
       )
+
+      return result unless grapher.errored_fetching_subdependencies
+
+      raise Dependabot::DependencyFileNotResolvable, "Failed to fetch subdependencies in directory #{source.directory}"
     end
 
     sig { returns(String) }

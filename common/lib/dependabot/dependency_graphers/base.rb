@@ -31,6 +31,9 @@ module Dependabot
       sig { returns(T::Boolean) }
       attr_reader :prepared
 
+      sig { returns(T::Boolean) }
+      attr_reader :errored_fetching_subdependencies
+
       sig do
         params(file_parser: Dependabot::FileParsers::Base).void
       end
