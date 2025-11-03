@@ -584,7 +584,7 @@ RSpec.describe Dependabot::SharedHelpers do
 
     credentials_helper = <<~CONFIG.chomp
       [credential]
-      	helper = !#{described_class.credential_helper_path} --file #{Dir.pwd}/git.store
+      	helper = !#{described_class.credential_helper_path} --file #{Dir.pwd}/XXXXXXXXXXXXXXXX.git.store
     CONFIG
 
     def alternatives(host)
@@ -600,8 +600,9 @@ RSpec.describe Dependabot::SharedHelpers do
 
     let(:credentials) { [] }
     let(:git_config_path) { File.expand_path("XXXXXXXXXXXXXXXX.gitconfig", tmp) }
+    let(:git_store_path) { "#{Dir.pwd}/XXXXXXXXXXXXXXXX.git.store" }
     let(:configured_git_config) { with_git_configured { `cat #{git_config_path}` } }
-    let(:configured_git_credentials) { with_git_configured { `cat #{Dir.pwd}/git.store` } }
+    let(:configured_git_credentials) { with_git_configured { `cat #{git_store_path}` } }
 
     def with_git_configured(&block)
       Dependabot::SharedHelpers.with_git_configured(credentials: credentials, &block)
@@ -623,6 +624,7 @@ RSpec.describe Dependabot::SharedHelpers do
       it "is preserved in the temporary .gitconfig" do
         RSpec::Mocks.with_temporary_scope do
           allow(FileUtils).to receive(:rm_f).with(git_config_path)
+          allow(FileUtils).to receive(:rm_f).with(git_store_path)
           expect(configured_git_config).to include("directory = /home/dependabot/dependabot-core/repo")
         end
       ensure
@@ -825,6 +827,8 @@ RSpec.describe Dependabot::SharedHelpers do
           .and_raise(Errno::ENOSPC)
         allow(FileUtils).to receive(:rm_f)
           .with(git_config_path)
+        allow(FileUtils).to receive(:rm_f)
+          .with(git_store_path)
       end
 
       specify { expect { configured_git_config }.to raise_error(Dependabot::OutOfDisk) }
