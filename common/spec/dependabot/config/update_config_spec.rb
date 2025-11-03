@@ -6,12 +6,18 @@ require "dependabot/config"
 require "dependabot/config/file"
 require "dependabot/config/update_config"
 
+# Define a concrete requirement class for dummy package manager to use in tests
+class DummyRequirement < Dependabot::Requirement
+  def self.requirements_array(requirement_string)
+    [new(requirement_string)]
+  end
+end
+
 RSpec.describe Dependabot::Config::UpdateConfig do
-  # Define a concrete requirement class for dummy package manager to use in tests
-  class DummyRequirement < Dependabot::Requirement
-    def self.requirements_array(requirement_string)
-      [new(requirement_string)]
-    end
+  # Helper to register dummy package manager classes
+  def register_dummy_package_manager
+    Dependabot::Utils.register_requirement_class("dummy", DummyRequirement)
+    Dependabot::Utils.register_version_class("dummy", Dependabot::Version)
   end
 
   describe "#ignored_versions_for" do
@@ -336,9 +342,7 @@ RSpec.describe Dependabot::Config::UpdateConfig do
 
     context "when ignore condition doesn't overlap with requirements" do
       before do
-        # Register requirement and version classes for dummy package manager
-        Dependabot::Utils.register_requirement_class("dummy", DummyRequirement)
-        Dependabot::Utils.register_version_class("dummy", Dependabot::Version)
+        register_dummy_package_manager
       end
 
       let(:dependency) do
@@ -373,9 +377,7 @@ RSpec.describe Dependabot::Config::UpdateConfig do
 
     context "when ignore condition overlaps with requirements" do
       before do
-        # Register requirement and version classes for dummy package manager
-        Dependabot::Utils.register_requirement_class("dummy", DummyRequirement)
-        Dependabot::Utils.register_version_class("dummy", Dependabot::Version)
+        register_dummy_package_manager
       end
 
       let(:dependency) do
@@ -410,9 +412,7 @@ RSpec.describe Dependabot::Config::UpdateConfig do
 
     context "when dependency has multiple requirements with different constraints" do
       before do
-        # Register requirement and version classes for dummy package manager
-        Dependabot::Utils.register_requirement_class("dummy", DummyRequirement)
-        Dependabot::Utils.register_version_class("dummy", Dependabot::Version)
+        register_dummy_package_manager
       end
 
       let(:dependency) do

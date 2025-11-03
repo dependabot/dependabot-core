@@ -105,7 +105,7 @@ module Dependabot
           rescue StandardError
             []
           end
-        end.compact
+        end
 
         return ignored_versions if dep_requirements.empty?
 
@@ -165,6 +165,9 @@ module Dependabot
       end
 
       # Checks if two requirement specifications are disjoint (have no overlapping versions)
+      # Note: This only handles upper/lower bound disjoint cases (e.g., "< 2.0" and ">= 2.0").
+      # Other disjoint cases like conflicting exact versions (e.g., "= 1.0" and "= 2.0") are not
+      # detected and will conservatively be treated as overlapping.
       sig do
         params(
           op1: String,
