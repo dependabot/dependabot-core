@@ -278,10 +278,14 @@ function update_manifest(project_path::String, updates::Dict)
         # Activate the project directory and update directly
         Pkg.activate(project_path) do
             with_autoprecompilation_disabled() do
-                # Process each update
+                # Process each update - updates is keyed by UUID
                 pkg_specs = Pkg.PackageSpec[]
-                for (package_name, target_version) in updates
-                    push!(pkg_specs, Pkg.PackageSpec(name=package_name, version=target_version))
+                for (uuid_str, update_info) in updates
+                    package_name = update_info["name"]
+                    target_version = update_info["version"]
+                    uuid_obj = Base.UUID(uuid_str)
+
+                    push!(pkg_specs, Pkg.PackageSpec(name=package_name, uuid=uuid_obj, version=target_version))
                 end
                 # Try to add/update the packages with the specific versions
                 Pkg.add(pkg_specs)
@@ -338,10 +342,17 @@ function update_manifest(args::AbstractDict)
     updates_raw = get(args, "updates", Dict{String,Any}())
 
     # Convert JSON.Object or other AbstractDict to Dict{String,Any}
+    # The updates dict is keyed by UUID, with values being dicts containing "name" and "version"
     updates = Dict{String,Any}()
     if updates_raw isa AbstractDict
-        for (k, v) in updates_raw
-            updates[string(k)] = string(v)
+        for (uuid_str, update_info) in updates_raw
+            # Convert the nested dict as well (in case it's a JSON.Object)
+            if update_info isa AbstractDict
+                updates[string(uuid_str)] = Dict{String,Any}(
+                    "name" => string(get(update_info, "name", "")),
+                    "version" => string(get(update_info, "version", ""))
+                )
+            end
         end
     end
 

@@ -185,7 +185,11 @@ module Dependabot
         dependencies.each do |dependency|
           next unless dependency.version
 
-          updates[dependency.name] = dependency.version
+          uuid = T.cast(dependency.metadata[:julia_uuid], String)
+          updates[uuid] = {
+            "name" => dependency.name,
+            "version" => dependency.version
+          }
         end
         updates
       end

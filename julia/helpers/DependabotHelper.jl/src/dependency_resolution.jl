@@ -1,11 +1,12 @@
 # Dependency resolution and compatibility checking functions for DependabotHelper.jl
 
 """
-    check_update_compatibility(project_path::String, package_name::String, target_version::String)
+    check_update_compatibility(project_path::String, package_name::String, target_version::String, package_uuid::String)
 
-Check if updating a package to a target version is compatible with the project
+Check if updating a package to a target version is compatible with the project.
+Requires UUID to uniquely identify the package and avoid name collisions across registries.
 """
-function check_update_compatibility(project_path::String, package_name::String, target_version::String)
+function check_update_compatibility(project_path::String, package_name::String, target_version::String, package_uuid::String)
     # Validate inputs first - find the actual environment files
     project_file, manifest_file = try
         find_environment_files(project_path)
@@ -48,8 +49,9 @@ function check_update_compatibility(project_path::String, package_name::String, 
             Pkg.activate(dirname(temp_project)) do
                 with_autoprecompilation_disabled() do
                     try
-                        # Try to add the specific version
-                        pkg_spec = Pkg.PackageSpec(name=package_name, version=target_version)
+                        # Create PackageSpec with UUID for unambiguous package identification
+                        uuid_obj = Base.UUID(package_uuid)
+                        pkg_spec = Pkg.PackageSpec(name=package_name, uuid=uuid_obj, version=target_version)
                         Pkg.add(pkg_spec)
 
                         # If we get here, the update is compatible
@@ -139,14 +141,20 @@ function resolve_dependencies_with_constraints(project_path::String, target_upda
                 with_autoprecompilation_disabled() do
                     resolution_results = Dict{String,Any}()
 
-                    # Apply all updates
+                    # Apply all updates - updates is keyed by UUID
                     pkg_specs = Pkg.PackageSpec[]
-                    for (package_name, target_version) in target_updates
-                        push!(pkg_specs, Pkg.PackageSpec(name=package_name, version=Pkg.Types.VersionNumber(target_version)))
+                    for (uuid_str, update_info) in target_updates
+                        package_name = update_info["name"]
+                        target_version = update_info["version"]
+                        uuid_obj = Base.UUID(uuid_str)
+
+                        push!(pkg_specs, Pkg.PackageSpec(name=package_name, uuid=uuid_obj, version=Pkg.Types.VersionNumber(target_version)))
                     end
                     try
                         Pkg.add(pkg_specs)
-                        for (package_name, target_version) in target_updates
+                        for (uuid_str, update_info) in target_updates
+                            package_name = update_info["name"]
+                            target_version = update_info["version"]
                             resolution_results[package_name] = Dict(
                                 "requested" => target_version,
                                 "status" => "added"
@@ -154,7 +162,9 @@ function resolve_dependencies_with_constraints(project_path::String, target_upda
                         end
                     catch e
                         @error "Failed to add package specifications during dependency resolution" pkg_specs exception=(e, catch_backtrace())
-                        for (package_name, target_version) in target_updates
+                        for (uuid_str, update_info) in target_updates
+                            package_name = update_info["name"]
+                            target_version = update_info["version"]
                             resolution_results[package_name] = Dict(
                                 "requested" => target_version,
                                 "status" => "failed",

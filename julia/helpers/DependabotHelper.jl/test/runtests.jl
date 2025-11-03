@@ -3,6 +3,10 @@ using JSON
 using DependabotHelper
 
 @testset "DependabotHelper.jl Tests" begin
+    # Define UUIDs once for reuse throughout all tests
+    json_uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+    example_uuid = "7876af07-990d-54b4-ab0e-23690620f79a"
+    fake_uuid = "00000000-0000-0000-0000-000000000000"
 
     # Include custom registry management tests
     include("test_registry_management.jl")
@@ -13,7 +17,6 @@ using DependabotHelper
         @test haskey(result, "error")
 
         # Test get_latest_version with a known package
-        json_uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
         result = @test_nowarn DependabotHelper.get_latest_version("JSON", json_uuid)
         @test haskey(result, "version")
 
@@ -26,7 +29,6 @@ using DependabotHelper
         @test haskey(result, "error")
 
         # Test package metadata retrieval
-        json_uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
         result = @test_nowarn DependabotHelper.get_package_metadata("JSON", json_uuid)
         @test result["name"] == "JSON"
         @test result["uuid"] == "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
@@ -44,7 +46,6 @@ using DependabotHelper
 
     @testset "JSON Interface Tests" begin
         # Test basic JSON parsing and function dispatch
-        json_uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
         test_cases = [
             """{"function": "parse_project", "args": {"project_path": "/nonexistent/Project.toml"}}""",
             """{"function": "get_latest_version", "args": {"package_name": "JSON", "package_uuid": "$json_uuid"}}""",
@@ -108,14 +109,13 @@ using DependabotHelper
 
     @testset "Integration Tests" begin
         # Test that all main functions return proper error handling
-        json_uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
         functions_to_test = [
             () -> DependabotHelper.parse_project("/nonexistent/Project.toml"),
             () -> DependabotHelper.get_latest_version("NonExistentPackage12345", "00000000-0000-0000-0000-000000000000"),
             () -> DependabotHelper.parse_project("/nonexistent/Project.toml"),
             () -> DependabotHelper.get_package_metadata("NonExistentPackage12345", "00000000-0000-0000-0000-000000000000"),
             () -> DependabotHelper.parse_manifest("/nonexistent/Manifest.toml"),
-            () -> DependabotHelper.check_update_compatibility("/nonexistent/Project.toml", "JSON", "0.21.0")
+            () -> DependabotHelper.check_update_compatibility("/nonexistent/Project.toml", "JSON", "0.21.0", json_uuid)
         ]
 
         for test_func in functions_to_test
@@ -364,7 +364,7 @@ using DependabotHelper
                 # This should FAIL because SubPackageB still only allows 0.21
                 result = DependabotHelper.update_manifest(
                     tmp_subpkg_a,
-                    Dict{String, Any}("JSON" => "1.0.0")
+                    Dict{String, Any}(json_uuid => Dict("name" => "JSON", "version" => "1.0.0"))
                 )
 
                 # Step 3: Verify we get an "Uempty intersection between" error
@@ -382,7 +382,7 @@ using DependabotHelper
                 # Now this should SUCCEED because both packages allow 1.x
                 result = DependabotHelper.update_manifest(
                     tmp_subpkg_a,
-                    Dict{String, Any}("JSON" => "1.0.0")
+                    Dict{String, Any}(json_uuid => Dict("name" => "JSON", "version" => "1.0.0"))
                 )
 
                 # Step 6: Verify the update succeeded (no "empty intersection between" error)
@@ -499,8 +499,6 @@ using DependabotHelper
 
     @testset "UUID-based Package Lookup Tests" begin
 
-        json_uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
-
         # Test find_package_source_url with both name and UUID
         result_with_uuid = @test_nowarn DependabotHelper.find_package_source_url("JSON", json_uuid)
         @test haskey(result_with_uuid, "source_url")
@@ -508,7 +506,6 @@ using DependabotHelper
         @test result_with_uuid["package_uuid"] == json_uuid
 
         # Test with mismatched UUID (should fail)
-        fake_uuid = "00000000-0000-0000-0000-000000000000"
         result_wrong_uuid = @test_nowarn DependabotHelper.find_package_source_url("JSON", fake_uuid)
         @test haskey(result_wrong_uuid, "error")
 
@@ -522,7 +519,6 @@ using DependabotHelper
     end
 
     @testset "New Package Functions Tests" begin
-        json_uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 
         # Test get_available_versions function
         result = @test_nowarn DependabotHelper.get_available_versions("JSON", json_uuid)
@@ -573,7 +569,7 @@ using DependabotHelper
         @test haskey(result, "error")
 
         # Test update_manifest with non-existent file
-        result = @test_nowarn DependabotHelper.update_manifest("/nonexistent/Project.toml", Dict("JSON" => "0.21.4"))
+        result = @test_nowarn DependabotHelper.update_manifest("/nonexistent/Project.toml", Dict(json_uuid => Dict("name" => "JSON", "version" => "0.21.4")))
         @test haskey(result, "error")
 
         # Test update_manifest with actual manifest update
@@ -634,7 +630,7 @@ using DependabotHelper
 
             # Test args wrapper with JSON.Object (simulating JSON deserialization)
             # This is the main test - ensuring JSON.Object doesn't cause MethodError
-            json_string = """{"project_path": "$tmpdir", "updates": {"JSON": "0.21.1"}}"""
+            json_string = """{"project_path": "$tmpdir", "updates": {"$json_uuid": {"name": "JSON", "version": "0.21.1"}}}"""
             json_args = JSON.parse(json_string)  # This creates JSON.Object types
 
             # Verify we're testing JSON.Object handling
@@ -661,7 +657,6 @@ using DependabotHelper
     end
 
     @testset "URL and Metadata Extraction Tests" begin
-        json_uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 
         # Test extract_package_metadata_from_url
         # This function needs a valid source URL, so we'll test error handling first
@@ -677,12 +672,11 @@ using DependabotHelper
 
     @testset "Dependency Resolution Tests" begin
         # Test resolve_dependencies_with_constraints with non-existent project
-        result = @test_nowarn DependabotHelper.resolve_dependencies_with_constraints("/nonexistent/Project.toml", Dict("JSON" => "0.21.4"))
+        result = @test_nowarn DependabotHelper.resolve_dependencies_with_constraints("/nonexistent/Project.toml", Dict(json_uuid => Dict("name" => "JSON", "version" => "0.21.4")))
         @test haskey(result, "error")
     end
 
     @testset "Args Wrapper Function Tests" begin
-        json_uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 
         # Test get_available_versions args wrapper
         result = @test_nowarn DependabotHelper.get_available_versions(Dict("package_name" => "JSON", "package_uuid" => json_uuid))
@@ -728,7 +722,6 @@ using DependabotHelper
     end
 
     @testset "JSON Interface Extended Tests" begin
-        json_uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 
         # Test all new functions through the JSON interface
         new_test_cases = [
@@ -777,8 +770,6 @@ using DependabotHelper
     end
 
     @testset "Batch Operations Tests" begin
-        json_uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
-        example_uuid = "7876af07-990d-54b4-ab0e-23690620f79a"
 
         @testset "batch_get_package_info" begin
             # Test with valid packages
