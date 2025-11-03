@@ -22,17 +22,17 @@ Bazel support for [`dependabot-core`][core-repo].
 This ecosystem is currently under development. See [NEW_ECOSYSTEMS.md](../NEW_ECOSYSTEMS.md) for implementation guidelines.
 
 #### Required Classes
-- [ ] FileFetcher
-- [ ] FileParser
-- [ ] UpdateChecker
-- [ ] FileUpdater
+- [x] FileFetcher
+- [x] FileParser
+- [x] UpdateChecker
+- [x] FileUpdater
 
 #### Optional Classes
 - [ ] MetadataFinder
-- [ ] Version
-- [ ] Requirement
+- [x] Version
+- [x] Requirement
 
 #### Supporting Infrastructure
-- [ ] Comprehensive unit tests
-- [ ] CI/CD integration
-- [ ] Documentation
+- [x] Comprehensive unit tests
+- [x] CI/CD integration
+- [x] Documentation

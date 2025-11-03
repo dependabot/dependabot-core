@@ -231,6 +231,7 @@ docker run --rm -ti \
   -v "$(pwd)/hex/spec:$CODE_DIR/hex/spec" \
   -v "$(pwd)/julia/.rubocop.yml:$CODE_DIR/julia/.rubocop.yml" \
   -v "$(pwd)/julia/dependabot-julia.gemspec:$CODE_DIR/julia/dependabot-julia.gemspec" \
+  -v "$(pwd)/julia/helpers:$CODE_DIR/julia/helpers" \
   -v "$(pwd)/julia/lib:$CODE_DIR/julia/lib" \
   -v "$(pwd)/julia/script:$CODE_DIR/julia/script" \
   -v "$(pwd)/julia/spec:$CODE_DIR/julia/spec" \

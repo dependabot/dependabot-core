@@ -447,6 +447,47 @@ RSpec.describe Dependabot::Python::UpdateChecker do
             .to eq(Gem::Version.new("2.5.0"))
         end
       end
+
+      context "when including hybrid Poetry + PEP621 dependencies without lockfile" do
+        let(:pyproject_fixture_name) { "pep621_with_poetry.toml" }
+        let(:dependency_files) { [pyproject] }
+
+        it "delegates to PipVersionResolver for PEP 621 dependencies" do
+          dummy_resolver =
+            instance_double(described_class::PipVersionResolver)
+          allow(described_class::PipVersionResolver).to receive(:new)
+            .and_return(dummy_resolver)
+          expect(dummy_resolver)
+            .to receive(:latest_resolvable_version)
+            .and_return(Gem::Version.new("2.5.0"))
+          expect(checker.latest_resolvable_version)
+            .to eq(Gem::Version.new("2.5.0"))
+        end
+      end
+
+      context "when including hybrid Poetry + PEP621 dependencies with lockfile" do
+        let(:pyproject_fixture_name) { "poetry_exact_requirement.toml" }
+        let(:poetry_lock) do
+          Dependabot::DependencyFile.new(
+            name: "poetry.lock",
+            content: fixture("poetry_locks", "exact_version.lock")
+          )
+        end
+        let(:dependency_files) { [pyproject, poetry_lock] }
+
+        it "delegates to PoetryVersionResolver when lockfile exists" do
+          dummy_resolver =
+            instance_double(described_class::PoetryVersionResolver)
+          allow(described_class::PoetryVersionResolver).to receive(:new)
+            .and_return(dummy_resolver)
+          expect(dummy_resolver)
+            .to receive(:latest_resolvable_version)
+            .with(requirement: ">=2.0.0,<=2.6.0")
+            .and_return(Gem::Version.new("2.5.0"))
+          expect(checker.latest_resolvable_version)
+            .to eq(Gem::Version.new("2.5.0"))
+        end
+      end
     end
   end
 

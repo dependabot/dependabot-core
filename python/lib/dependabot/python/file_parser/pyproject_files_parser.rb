@@ -43,11 +43,16 @@ module Dependabot
 
         sig { returns(Dependabot::FileParsers::Base::DependencySet) }
         def pyproject_dependencies
-          if using_poetry?
-            poetry_dependencies
-          else
-            pep621_pep735_dependencies
-          end
+          dependencies = Dependabot::FileParsers::Base::DependencySet.new
+
+          # Parse Poetry dependencies if [tool.poetry] section exists
+          dependencies += poetry_dependencies if using_poetry?
+
+          # Parse PEP 621/735 dependencies if those sections exist
+          # This handles hybrid projects that have both Poetry and PEP 621 sections
+          dependencies += pep621_pep735_dependencies if using_pep621? || using_pep735?
+
+          dependencies
         end
 
         sig { returns(Dependabot::FileParsers::Base::DependencySet) }
@@ -86,6 +91,10 @@ module Dependabot
             # probably blocked. Ignore it.
             # Skip if blocked by marker or missing requirement
             next if dep["markers"].include?("<") || dep["requirement"].empty?
+
+            # Skip build-system.requires dependencies when using Poetry
+            # Poetry manages its own build system dependencies
+            next if using_poetry? && dep["requirement_type"] == "build-system.requires"
 
             dependencies <<
               Dependency.new(
