@@ -709,7 +709,13 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
           directory: "/"
         )
       end
-      let(:parser) { Dependabot::Docker::FileParser.new(dependency_files: files, source: source) }
+      let(:parser) do
+        Dependabot::Docker::FileParser.new(
+          dependency_files: files,
+          source: source,
+          repo_contents_path: Dependabot::Utils::BUMP_TMP_DIR_PATH
+        )
+      end
       let(:dependency) { parser.parse.first }
       let(:tags_fixture_name) { "bar_with_v.json" }
       let(:repo_url) do

@@ -18,7 +18,11 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
   let(:github_url) { "https://api.github.com/" }
   let(:directory) { "/" }
   let(:file_fetcher_instance) do
-    described_class.new(source: source, credentials: credentials)
+    described_class.new(
+      source: source,
+      credentials: credentials,
+      repo_contents_path: Dependabot::Utils::BUMP_TMP_DIR_PATH
+    )
   end
   let(:source) do
     Dependabot::Source.new(

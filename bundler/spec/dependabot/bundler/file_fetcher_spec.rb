@@ -17,7 +17,11 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
   let(:url) { github_url + "repos/gocardless/bump/contents/" }
   let(:github_url) { "https://api.github.com/" }
   let(:file_fetcher_instance) do
-    described_class.new(source: source, credentials: credentials)
+    described_class.new(
+      source: source,
+      credentials: credentials,
+      repo_contents_path: Dependabot::Utils::BUMP_TMP_DIR_PATH
+    )
   end
   let(:directory) { "/" }
   let(:source) do

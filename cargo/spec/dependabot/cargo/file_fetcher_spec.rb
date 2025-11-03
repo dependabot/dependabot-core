@@ -17,7 +17,11 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
   end
   let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
   let(:file_fetcher_instance) do
-    described_class.new(source: source, credentials: credentials)
+    described_class.new(
+      source: source,
+      credentials: credentials,
+      repo_contents_path: Dependabot::Utils::BUMP_TMP_DIR_PATH
+    )
   end
   let(:source) do
     Dependabot::Source.new(
@@ -1005,7 +1009,11 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
 
   describe "#expand_workspaces" do
     let(:file_fetcher_instance) do
-      described_class.new(source: source, credentials: credentials)
+      described_class.new(
+      source: source,
+      credentials: credentials,
+      repo_contents_path: Dependabot::Utils::BUMP_TMP_DIR_PATH
+    )
     end
     let(:source) do
       Dependabot::Source.new(
@@ -1108,7 +1116,11 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
 
   describe "#uses_workspace_dependencies?" do
     let(:file_fetcher_instance) do
-      described_class.new(source: source, credentials: credentials)
+      described_class.new(
+      source: source,
+      credentials: credentials,
+      repo_contents_path: Dependabot::Utils::BUMP_TMP_DIR_PATH
+    )
     end
 
     context "when manifest has regular workspace dependencies" do
@@ -1211,7 +1223,11 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
 
   describe "workspace root fetching for workspace dependencies" do
     let(:file_fetcher_instance) do
-      described_class.new(source: source, credentials: credentials)
+      described_class.new(
+      source: source,
+      credentials: credentials,
+      repo_contents_path: Dependabot::Utils::BUMP_TMP_DIR_PATH
+    )
     end
 
     describe "integration with fetch_workspace_files" do
