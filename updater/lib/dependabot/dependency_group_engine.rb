@@ -38,9 +38,6 @@ module Dependabot
                  groups.select { |group| group.applies_to == "version-updates" }
                end
 
-      # Validate and filter out invalid groups
-      groups = validate_and_filter_groups(groups, job.package_manager)
-
       new(dependency_groups: groups)
     end
 
@@ -77,69 +74,6 @@ module Dependabot
       end
 
       validate_groups
-    end
-
-    # Class method to validate and filter groups before instantiation
-    sig do
-      params(
-        groups: T::Array[Dependabot::DependencyGroup],
-        _package_manager: String
-      ).returns(T::Array[Dependabot::DependencyGroup])
-    end
-    def self.validate_and_filter_groups(groups, _package_manager)
-      # List of known package manager names that should not be used as group names
-      # to prevent confusion with automatically generated groups
-      reserved_names = T.let(
-        %w(
-          npm_and_yarn npm yarn bundler pip maven gradle cargo composer
-          gomod go_modules terraform hex pub docker nuget mix swift bazel
-          elm submodules github_actions devcontainers
-        ),
-        T::Array[String]
-      )
-
-      # Warn about groups with potentially problematic configurations, but don't reject them
-      # to avoid breaking existing configurations or test scenarios
-      groups.each do |group|
-        # Warn if group names match package manager names
-        if reserved_names.include?(normalize_name(group.name))
-          Dependabot.logger.warn(
-            "Group name '#{group.name}' matches a package ecosystem name. " \
-            "This may cause confusion with system-generated group names. " \
-            "Consider using a different group name in your dependabot.yml configuration."
-          )
-        # Warn about groups with no meaningful rules (overly broad patterns that could match everything)
-        elsif !meaningful_rules?(group)
-          Dependabot.logger.warn(
-            "Group '#{group.name}' has no meaningful rules defined (no patterns, dependency-type, or update-types). " \
-            "This group will match all dependencies, which may not be intended. " \
-            "Consider adding specific rules to your dependabot.yml configuration."
-          )
-        end
-      end
-
-      groups
-    end
-
-    # Normalize a group name for comparison with reserved names list.
-    # Converts to lowercase and replaces hyphens with underscores to ensure
-    # consistent matching regardless of naming format (e.g., "npm-and-yarn" vs "npm_and_yarn").
-    sig { params(name: String).returns(String) }
-    def self.normalize_name(name)
-      name.downcase.tr("-", "_")
-    end
-
-    # Check if a group has meaningful rules defined.
-    # A group is considered to have meaningful rules if it defines at least one of:
-    # - patterns: Dependency name patterns to match
-    # - dependency-type: Type of dependency (production/development)
-    # - update-types: Types of updates to include (major/minor/patch)
-    # Without these, the group would match all dependencies indiscriminately.
-    sig { params(group: Dependabot::DependencyGroup).returns(T::Boolean) }
-    def self.meaningful_rules?(group)
-      return false if group.rules.empty?
-
-      group.rules.key?("patterns") || group.rules.key?("dependency-type") || group.rules.key?("update-types")
     end
 
     private
