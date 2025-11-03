@@ -38,6 +38,7 @@ module Dependabot
         @file_parser = file_parser
         @dependencies = T.let([], T::Array[Dependabot::Dependency])
         @prepared = T.let(false, T::Boolean)
+        @errored_fetching_subdependencies = T.let(false, T::Boolean)
       end
 
       # Each grapher must implement a heuristic to determine which dependency file should be used as the owner
@@ -65,7 +66,7 @@ module Dependabot
             package_url: build_purl(dep),
             direct: dep.top_level?,
             runtime: dep.production?,
-            dependencies: fetch_subdependencies(dep)
+            dependencies: safe_fetch_subdependencies(dep)
           )
         end
       end
@@ -78,6 +79,20 @@ module Dependabot
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def dependency_files
         file_parser.dependency_files
+      end
+
+      # try to fetch_subdependencies, but if it ever errors then return an empty array from then on
+      sig { returns(T::Array[String]) }
+      def safe_fetch_subdependencies(dependency)
+        if @errored_fetching_subdependencies
+          return []
+        end
+
+        fetch_subdependencies(dependency)
+      rescue StandardError => e
+        @errored_fetching_subdependencies = true
+        Dependabot.logger.error("Error fetching subdependencies: #{e.message}")
+        []
       end
 
       # Each grapher is expected to implement a method to look up the parents of a given dependency.
