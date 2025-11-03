@@ -67,6 +67,7 @@ Dependabot::OpenTelemetry.configure
 Dependabot::Sorbet::Runtime.silently_report_errors!
 
 # Ecosystems
+require "dependabot/bazel"
 require "dependabot/bun"
 require "dependabot/bundler"
 require "dependabot/cargo"
