@@ -84,9 +84,7 @@ module Dependabot
       # try to fetch_subdependencies, but if it ever errors then return an empty array from then on
       sig { params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
       def safe_fetch_subdependencies(dependency)
-        if @errored_fetching_subdependencies
-          return []
-        end
+        return [] if @errored_fetching_subdependencies
 
         fetch_subdependencies(dependency)
       rescue StandardError => e
