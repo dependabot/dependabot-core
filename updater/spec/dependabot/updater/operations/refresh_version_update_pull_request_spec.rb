@@ -50,7 +50,8 @@ RSpec.describe Dependabot::Updater::Operations::RefreshVersionUpdatePullRequest 
   let(:job) do
     Dependabot::Job.new_update_job(
       job_id: "1558782000",
-      job_definition:
+      job_definition:,
+      repo_contents_path: Dependabot::Utils::BUMP_TMP_DIR_PATH
     )
   end
 
