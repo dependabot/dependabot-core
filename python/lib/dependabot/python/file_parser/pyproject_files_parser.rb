@@ -84,10 +84,8 @@ module Dependabot
           parse_pep621_pep735_dependencies.each do |dep|
             # If a requirement has a `<` or `<=` marker then updating it is
             # probably blocked. Ignore it.
-            next if dep["markers"].include?("<")
-
-            # If no requirement, don't add it
-            next if dep["requirement"].empty?
+            # Skip if blocked by marker or missing requirement
+            next if dep["markers"].include?("<") || dep["requirement"].empty?
 
             dependencies <<
               Dependency.new(
