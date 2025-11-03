@@ -250,7 +250,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
       end
 
       it "preserves other sections" do
-        expect(updated_content).to include('[tool.poetry.group.dev.dependencies]')
+        expect(updated_content).to include("[tool.poetry.group.dev.dependencies]")
         expect(updated_content).to include('mypy = "^1.13.0"')
       end
     end
