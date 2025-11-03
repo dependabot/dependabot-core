@@ -123,8 +123,8 @@ module Dependabot
       sig do
         params(
           ignored_version: String,
-          dep_requirements: T::Array[Gem::Requirement],
-          requirement_class: T.class_of(Gem::Requirement)
+          dep_requirements: T::Array[Dependabot::Requirement],
+          requirement_class: T.class_of(Dependabot::Requirement)
         ).returns(T::Boolean)
       end
       def ignore_overlaps_with_requirements?(ignored_version, dep_requirements, requirement_class)
@@ -144,7 +144,7 @@ module Dependabot
 
       # Checks if two requirements have any overlapping versions
       # This is a conservative check - returns true unless we can prove they don't overlap
-      sig { params(req1: Gem::Requirement, req2: Gem::Requirement).returns(T::Boolean) }
+      sig { params(req1: Dependabot::Requirement, req2: Dependabot::Requirement).returns(T::Boolean) }
       def requirements_overlap?(req1, req2)
         req1_specs = req1.requirements
         req2_specs = req2.requirements
