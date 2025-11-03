@@ -86,9 +86,11 @@ module Dependabot
       def write_temporary_files(updated_project, actual_manifest)
         File.write(T.must(project_file).name, updated_project)
 
-        # Use basename to get just the filename without any ../ prefix
-        manifest_filename = File.basename(actual_manifest.name)
-        File.write(manifest_filename, actual_manifest.content)
+        # Preserve relative paths (e.g., ../Manifest.toml for workspace packages)
+        # so Julia's Pkg can find and update the correct shared manifest
+        manifest_path = actual_manifest.name
+        FileUtils.mkdir_p(File.dirname(manifest_path)) if manifest_path.include?("/")
+        File.write(manifest_path, actual_manifest.content)
       end
 
       sig { returns(T::Hash[String, T.untyped]) }
@@ -128,14 +130,15 @@ module Dependabot
 
       sig { params(manifest_path: String, error_message: String).void }
       def add_manifest_update_notice(manifest_path, error_message)
-        # Resolve relative paths like ../Manifest.toml to absolute paths like /WorkspacePackage.jl/Manifest.toml
-        absolute_manifest_path = if manifest_path.start_with?("../")
+        # Resolve relative paths to absolute paths for clarity in user-facing notices
+        # Use Pathname.cleanpath to handle any depth of relative paths (e.g., ../../Manifest.toml)
+        project_dir = T.must(project_file).directory
+        absolute_manifest_path = if manifest_path.start_with?("../", "./")
                                    # For workspace packages, compute the absolute path
-                                   project_dir = T.must(project_file).directory
-                                   File.join(File.dirname(project_dir), File.basename(manifest_path))
+                                   Pathname.new(File.join(project_dir, manifest_path)).cleanpath.to_s
                                  else
                                    # For regular packages, use the manifest path as-is
-                                   File.join(T.must(project_file).directory, manifest_path)
+                                   File.join(project_dir, manifest_path)
                                  end
 
         @notices << Dependabot::Notice.new(
