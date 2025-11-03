@@ -14,12 +14,6 @@ class DummyRequirement < Dependabot::Requirement
 end
 
 RSpec.describe Dependabot::Config::UpdateConfig do
-  # Helper to register dummy package manager classes
-  def register_dummy_package_manager
-    Dependabot::Utils.register_requirement_class("dummy", DummyRequirement)
-    Dependabot::Utils.register_version_class("dummy", Dependabot::Version)
-  end
-
   describe "#ignored_versions_for" do
     subject(:ignored_versions) { config.ignored_versions_for(dependency, security_updates_only: security_updates_only) }
 
@@ -341,10 +335,6 @@ RSpec.describe Dependabot::Config::UpdateConfig do
     end
 
     context "when ignore condition doesn't overlap with requirements" do
-      before do
-        register_dummy_package_manager
-      end
-
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "pandas",
@@ -369,6 +359,10 @@ RSpec.describe Dependabot::Config::UpdateConfig do
       end
 
       it "filters out the non-overlapping ignore" do
+        # Stub the requirement class resolution
+        allow(Dependabot::Utils).to receive(:requirement_class_for_package_manager)
+          .with("dummy").and_return(DummyRequirement)
+
         # The ignore ">= 2.0.0" doesn't overlap with requirement "< 2.0"
         # so it should be filtered out
         expect(ignored_versions).to eq([])
@@ -376,10 +370,6 @@ RSpec.describe Dependabot::Config::UpdateConfig do
     end
 
     context "when ignore condition overlaps with requirements" do
-      before do
-        register_dummy_package_manager
-      end
-
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "pandas",
@@ -404,6 +394,10 @@ RSpec.describe Dependabot::Config::UpdateConfig do
       end
 
       it "keeps the overlapping ignore" do
+        # Stub the requirement class resolution
+        allow(Dependabot::Utils).to receive(:requirement_class_for_package_manager)
+          .with("dummy").and_return(DummyRequirement)
+
         # The ignore ">= 2.1.0" overlaps with requirement "< 2.4"
         # (versions 2.1.0 to 2.3.x are in both ranges)
         expect(ignored_versions).to eq([">= 2.1.0"])
@@ -411,10 +405,6 @@ RSpec.describe Dependabot::Config::UpdateConfig do
     end
 
     context "when dependency has multiple requirements with different constraints" do
-      before do
-        register_dummy_package_manager
-      end
-
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "pandas",
@@ -445,6 +435,10 @@ RSpec.describe Dependabot::Config::UpdateConfig do
       end
 
       it "keeps ignore that overlaps with at least one requirement" do
+        # Stub the requirement class resolution
+        allow(Dependabot::Utils).to receive(:requirement_class_for_package_manager)
+          .with("dummy").and_return(DummyRequirement)
+
         # The ignore ">= 1.6.0" overlaps with both requirements
         # (< 2.0 allows 1.6.0-1.9.x, < 2.4 allows 1.6.0-2.3.x)
         expect(ignored_versions).to eq([">= 1.6.0"])
