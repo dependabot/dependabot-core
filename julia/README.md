@@ -12,6 +12,8 @@ It handles updates for packages managed through Julia's package manager and pars
 - Integration with Julia's General registry
 - Cross-platform compatibility
 - Release date tracking for packages in the General registry (enables cooldown period feature)
+- Julia workspace support (packages with shared manifest files)
+- User notifications when manifest updates fail due to dependency conflicts
 
 ## Comparison to CompatHelper.jl
 
@@ -20,6 +22,8 @@ This implementation is designed to align with [CompatHelper.jl](https://github.c
 There are some notable differences:
 
 - **Lockfile Updates**: Dependabot updates both `Project.toml` and tries to update any `Manifest.toml` files, whereas CompatHelper.jl only updates `Project.toml`.
+- **Workspace Support**: Dependabot handles Julia workspaces where multiple packages share a common manifest file in a parent directory.
+- **Conflict Notifications**: When manifest updates fail due to dependency conflicts (common in workspaces), Dependabot adds warning notices to pull requests explaining the issue.
 
 Also, a goal of this is to integrate into github's CVE database and alerting systems for vulnerabilities in Julia packages.
 
@@ -31,6 +35,19 @@ For more information about Julia package management, see:
 - [Pkg.jl Documentation](https://pkgdocs.julialang.org/v1/)
 - [Project.toml and Manifest.toml format](https://pkgdocs.julialang.org/v1/toml-files/)
 - [Julia semantic versioning](https://pkgdocs.julialang.org/v1/compatibility/)
+
+## Error Handling and User Notifications
+
+When manifest updates fail (common in workspace configurations with conflicting sibling dependencies), Dependabot will:
+
+1. Successfully update the `Project.toml` file with the new dependency requirements
+2. Attempt to update the corresponding manifest file using Julia's package resolver
+3. If the manifest update fails due to conflicts, add a warning notice to the pull request describing:
+   - Which manifest file could not be updated (with absolute path for clarity)
+   - The specific error message from Julia's package resolver
+   - The fact that only the `Project.toml` was updated
+
+This ensures users understand when lockfiles couldn't be updated and why, while still providing the compatibility range update in the project file.
 
 ## Current Limitations
 
@@ -44,7 +61,16 @@ For more information about Julia package management, see:
 - `Project.toml` / `JuliaProject.toml` - Main project files
 - `Manifest.toml` / `JuliaManifest.toml` - Lock files
 - `Manifest-vX.Y.toml` / `JuliaManifest-vX.Y.toml` - Version-specific lock files
-- Julia workspaces are supported - manifest files can be located in parent directories as specified by the `[workspace]` section
+
+### Julia Workspace Support
+
+Julia workspaces are fully supported. In workspace configurations:
+
+- Multiple packages can share a single manifest file located in a parent directory
+- Each package has its own `Project.toml` file in a subdirectory
+- The workspace root contains a manifest file (e.g., `Manifest.toml`) shared by all workspace packages
+- When updating workspace packages, Dependabot will attempt to update both the individual `Project.toml` and the shared manifest
+- If manifest updates fail due to conflicting requirements between workspace siblings, a warning notice is added to the pull request explaining the conflict
 
 ### Terminology: Julia vs Dependabot
 
@@ -95,7 +121,7 @@ The Julia ecosystem implementation follows a hybrid approach where the Ruby infr
 | `RegistryClient#parse_manifest` | `parse_manifest(manifest_path)` | Parse Manifest.toml files |
 | `RegistryClient#get_version_from_manifest` | `get_version_from_manifest(manifest_path, name, uuid)` | Extract specific package version from manifest (requires UUID) |
 | **FileUpdater** | | |
-| `FileUpdater#updated_dependency_files` | `update_manifest(project_path, updates)` | Update Project.toml and Manifest.toml with comprehensive change tracking |
+| `FileUpdater#updated_dependency_files` | `update_manifest(project_path, updates)` | Update Project.toml and Manifest.toml with comprehensive change tracking and error handling |
 | **UpdateChecker** | | |
 | `LatestVersionFinder#latest_version` | `get_latest_version(package_name, package_uuid)` | Find latest available non-yanked version (requires UUID) |
 | **MetadataFinder** | | |
