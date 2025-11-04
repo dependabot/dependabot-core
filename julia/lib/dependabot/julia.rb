@@ -63,6 +63,7 @@ require "dependabot/julia/update_checker"
 require "dependabot/julia/file_updater"
 require "dependabot/julia/metadata_finder"
 require "dependabot/julia/dependency"
+require "dependabot/julia/dependency_grapher"
 
 require "dependabot/pull_request_creator/labeler"
 Dependabot::PullRequestCreator::Labeler
