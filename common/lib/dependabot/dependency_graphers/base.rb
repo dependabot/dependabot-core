@@ -84,7 +84,6 @@ module Dependabot
         file_parser.dependency_files
       end
 
-      # try to fetch_subdependencies, but if it ever errors then return an empty array from then on
       sig { params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
       def safe_fetch_subdependencies(dependency)
         return [] if @errored_fetching_subdependencies
