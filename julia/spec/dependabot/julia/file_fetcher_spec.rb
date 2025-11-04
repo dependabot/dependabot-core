@@ -41,46 +41,7 @@ RSpec.describe Dependabot::Julia::FileFetcher do
   describe "#fetch_files" do
     subject(:fetched_files) { file_fetcher_instance.fetch_files }
 
-    before do
-      # Enable beta ecosystems for all tests
-      allow(file_fetcher_instance).to receive(:allow_beta_ecosystems?).and_return(true)
-    end
-
-    context "with empty repository (no files)" do
-      before do
-        allow(file_fetcher_instance).to receive(:fetch_file_if_present).and_return(nil)
-      end
-
-      it "raises an error when no Project.toml found" do
-        expect do
-          fetched_files
-        end.to raise_error(Dependabot::DependencyFileNotFound, /No Project\.toml or JuliaProject\.toml found/)
-      end
-    end
-  end
-
-  describe "#fetch_files with mocked repository" do
-    subject(:fetched_files) { file_fetcher_instance.fetch_files }
-
-    before do
-      # Enable beta ecosystems for all tests
-      allow(file_fetcher_instance).to receive(:allow_beta_ecosystems?).and_return(true)
-
-      # Mock the repository content responses
-      allow(file_fetcher_instance).to receive(:fetch_file_if_present)
-        .with("Project.toml")
-        .and_return(project_file)
-      allow(file_fetcher_instance).to receive(:fetch_file_if_present)
-        .with("JuliaProject.toml")
-        .and_return(nil)
-      allow(file_fetcher_instance).to receive(:fetch_file_if_present)
-        .with("Manifest.toml")
-        .and_return(manifest_file)
-      allow(file_fetcher_instance).to receive(:fetch_file_if_present)
-        .with("JuliaManifest.toml")
-        .and_return(nil)
-    end
-
+    let(:registry_client) { instance_double(Dependabot::Julia::RegistryClient) }
     let(:project_file) do
       Dependabot::DependencyFile.new(
         name: "Project.toml",
@@ -95,17 +56,93 @@ RSpec.describe Dependabot::Julia::FileFetcher do
       )
     end
 
-    context "when both Project.toml and Manifest.toml exist" do
+    before do
+      # Enable beta ecosystems for all tests and mock the registry client
+      allow(file_fetcher_instance).to receive_messages(
+        allow_beta_ecosystems?: true,
+        registry_client: registry_client
+      )
+
+      # Mock SharedHelpers to avoid actual repo cloning
+      allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_repo_directory).and_yield("/tmp/test")
+    end
+
+    context "when Julia helper finds Project.toml and Manifest.toml" do
+      before do
+        allow(registry_client).to receive(:find_environment_files)
+          .with("/tmp/test")
+          .and_return({
+            "project_file" => "/tmp/test/Project.toml",
+            "manifest_file" => "/tmp/test/Manifest.toml"
+          })
+
+        allow(file_fetcher_instance).to receive(:fetch_file_from_host)
+          .with("Project.toml")
+          .and_return(project_file)
+
+        allow(file_fetcher_instance).to receive(:fetch_file_if_present)
+          .with("Manifest.toml")
+          .and_return(manifest_file)
+      end
+
       it "fetches both files" do
         expect(fetched_files.map(&:name)).to contain_exactly("Project.toml", "Manifest.toml")
       end
     end
 
-    context "when only Project.toml exists" do
-      let(:manifest_file) { nil }
+    context "when Julia helper finds only Project.toml" do
+      before do
+        allow(registry_client).to receive(:find_environment_files)
+          .with("/tmp/test")
+          .and_return({
+            "project_file" => "/tmp/test/Project.toml",
+            "manifest_file" => ""
+          })
+
+        allow(file_fetcher_instance).to receive(:fetch_file_from_host)
+          .with("Project.toml")
+          .and_return(project_file)
+      end
 
       it "fetches only Project.toml" do
         expect(fetched_files.map(&:name)).to eq(["Project.toml"])
+      end
+    end
+
+    context "when Julia helper finds workspace with parent manifest" do
+      before do
+        allow(registry_client).to receive(:find_environment_files)
+          .with("/tmp/test")
+          .and_return({
+            "project_file" => "/tmp/test/SubPackage/Project.toml",
+            "manifest_file" => "/tmp/test/Manifest.toml"
+          })
+
+        allow(file_fetcher_instance).to receive(:fetch_file_from_host)
+          .with("Project.toml")
+          .and_return(project_file)
+
+        allow(file_fetcher_instance).to receive(:fetch_file_if_present)
+          .with("../Manifest.toml")
+          .and_return(manifest_file)
+      end
+
+      it "fetches project and parent manifest" do
+        expect(fetched_files.map(&:name)).to contain_exactly("Project.toml", "Manifest.toml")
+      end
+    end
+
+    context "when no Project.toml found" do
+      before do
+        allow(registry_client).to receive(:find_environment_files)
+          .with("/tmp/test")
+          .and_return({})
+      end
+
+      it "raises an error" do
+        expect do
+          fetched_files
+        end.to raise_error(Dependabot::DependencyFileNotFound, /No Project\.toml or JuliaProject\.toml found/)
       end
     end
 

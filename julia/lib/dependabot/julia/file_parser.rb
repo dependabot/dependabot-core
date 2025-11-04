@@ -1,7 +1,6 @@
 # typed: strict
 # frozen_string_literal: true
 
-require "toml-rb"
 require "tempfile"
 require "fileutils"
 require "dependabot/dependency"
