@@ -373,7 +373,13 @@ module Dependabot
           unfetchable_deps << if sdist_or_wheel?(T.must(path))
                                 e.file_path&.gsub(%r{^/}, "")
                               else
-                                "\"#{dep[:name]}\" at #{cleanpath(File.join(directory, dep[:file]))}"
+                                dep_location = cleanpath(File.join(directory, dep[:file]))
+                                attempted_file = e.file_path&.gsub(%r{^/}, "")
+                                if attempted_file&.end_with?("pyproject.toml")
+                                  "\"#{dep[:name]}\" at #{dep_location} (tried setup.py and pyproject.toml)"
+                                else
+                                  "\"#{dep[:name]}\" at #{dep_location}"
+                                end
                               end
         end
 
