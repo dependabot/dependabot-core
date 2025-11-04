@@ -136,15 +136,6 @@ module Dependabot
       grapher = Dependabot::DependencyGraphers.for_package_manager(job.package_manager).new(file_parser: parser)
       grapher.prepare!
 
-      result = GithubApi::DependencySubmission.new(
-        job_id: job.id.to_s,
-        branch: branch,
-        sha: base_commit_sha,
-        package_manager: job.package_manager,
-        manifest_file: grapher.relevant_dependency_file,
-        resolved_dependencies: grapher.resolved_dependencies
-      )
-
       if grapher.errored_fetching_subdependencies
         error_handler.handle_job_error(
           error: Dependabot::DependencyFileNotResolvable.new(
@@ -153,7 +144,14 @@ module Dependabot
         )
       end
 
-      result
+      GithubApi::DependencySubmission.new(
+        job_id: job.id.to_s,
+        branch: branch,
+        sha: base_commit_sha,
+        package_manager: job.package_manager,
+        manifest_file: grapher.relevant_dependency_file,
+        resolved_dependencies: grapher.resolved_dependencies
+      )
     end
 
     sig { returns(String) }
