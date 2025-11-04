@@ -145,9 +145,16 @@ module Dependabot
         resolved_dependencies: grapher.resolved_dependencies
       )
 
-      return result unless grapher.errored_fetching_subdependencies
+      if grapher.errored_fetching_subdependencies
+        # Instead of aborting the snapshot, record the error and still submit what we have.
+        error_handler.handle_job_error(
+          error: Dependabot::DependencyFileNotResolvable.new(
+            "Failed to fetch subdependencies in directory #{source.directory}"
+          )
+        )
+      end
 
-      raise Dependabot::DependencyFileNotResolvable, "Failed to fetch subdependencies in directory #{source.directory}"
+      result
     end
 
     sig { returns(String) }
