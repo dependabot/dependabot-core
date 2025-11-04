@@ -136,6 +136,14 @@ module Dependabot
       grapher = Dependabot::DependencyGraphers.for_package_manager(job.package_manager).new(file_parser: parser)
       grapher.prepare!
 
+      if grapher.errored_fetching_subdependencies
+        error_handler.handle_job_error(
+          error: Dependabot::DependencyFileNotResolvable.new(
+            "Failed to fetch subdependencies in directory #{source.directory}"
+          )
+        )
+      end
+
       GithubApi::DependencySubmission.new(
         job_id: job.id.to_s,
         branch: branch,
