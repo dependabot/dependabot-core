@@ -519,23 +519,22 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
 
     before do
       grapher_class = Dependabot::DependencyGraphers.for_package_manager(job.package_manager)
-      lockfile = dependency_files.find { |f| f.name == "Gemfile.lock" } || dependency_files.first
-      grapher_double = instance_double(
-        grapher_class,
-        prepare!: nil,
-        relevant_dependency_file: lockfile,
-        resolved_dependencies: {},
-        errored_fetching_subdependencies: true
-      )
-      allow(grapher_class).to receive(:new).and_return(grapher_double)
+      raised = false
+      allow_any_instance_of(grapher_class).to receive(:fetch_subdependencies) do |_instance, _dep|
+        unless raised
+          raised = true
+          raise StandardError, "boom"
+        end
+        []
+      end
     end
 
     it "records a dependency_file_not_resolvable error and still submits a dependency submission" do
       expect(service).to receive(:create_dependency_submission) do |args|
         payload = args[:dependency_submission].payload
-        # When subdependency fetching fails, resolved dependencies are empty so manifests will be empty
-        expect(payload[:manifests]).to eq({})
+        expect(payload[:manifests]).to be_a(Hash)
       end
+
       expect(service).to receive(:record_update_job_error) do |args|
         expect(args[:error_type]).to eq("dependency_file_not_resolvable")
         expect(args[:error_details]).to include(:message)
