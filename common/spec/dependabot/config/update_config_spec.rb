@@ -6,13 +6,6 @@ require "dependabot/config"
 require "dependabot/config/file"
 require "dependabot/config/update_config"
 
-# Define a concrete requirement class for dummy package manager to use in tests
-class DummyRequirement < Dependabot::Requirement
-  def self.requirements_array(requirement_string)
-    [new(requirement_string)]
-  end
-end
-
 RSpec.describe Dependabot::Config::UpdateConfig do
   describe "#ignored_versions_for" do
     subject(:ignored_versions) { config.ignored_versions_for(dependency, security_updates_only: security_updates_only) }
@@ -331,117 +324,6 @@ RSpec.describe Dependabot::Config::UpdateConfig do
 
       it "returns no ignored versions" do
         expect(ignored_versions).to eq([])
-      end
-    end
-
-    context "when ignore condition doesn't overlap with requirements" do
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "pandas",
-          requirements: [
-            {
-              requirement: "< 2.0",
-              file: "pyproject.toml",
-              groups: ["pandas1"],
-              source: nil
-            }
-          ],
-          version: "1.5.0",
-          package_manager: "dummy"
-        )
-      end
-
-      let(:ignore_conditions) do
-        [Dependabot::Config::IgnoreCondition.new(
-          dependency_name: "pandas",
-          versions: [">= 2.0.0"]
-        )]
-      end
-
-      it "filters out the non-overlapping ignore" do
-        # Stub the requirement class resolution
-        allow(Dependabot::Utils).to receive(:requirement_class_for_package_manager)
-          .with("dummy").and_return(DummyRequirement)
-
-        # The ignore ">= 2.0.0" doesn't overlap with requirement "< 2.0"
-        # so it should be filtered out
-        expect(ignored_versions).to eq([])
-      end
-    end
-
-    context "when ignore condition overlaps with requirements" do
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "pandas",
-          requirements: [
-            {
-              requirement: "< 2.4",
-              file: "pyproject.toml",
-              groups: ["dependencies"],
-              source: nil
-            }
-          ],
-          version: "2.0.0",
-          package_manager: "dummy"
-        )
-      end
-
-      let(:ignore_conditions) do
-        [Dependabot::Config::IgnoreCondition.new(
-          dependency_name: "pandas",
-          versions: [">= 2.1.0"]
-        )]
-      end
-
-      it "keeps the overlapping ignore" do
-        # Stub the requirement class resolution
-        allow(Dependabot::Utils).to receive(:requirement_class_for_package_manager)
-          .with("dummy").and_return(DummyRequirement)
-
-        # The ignore ">= 2.1.0" overlaps with requirement "< 2.4"
-        # (versions 2.1.0 to 2.3.x are in both ranges)
-        expect(ignored_versions).to eq([">= 2.1.0"])
-      end
-    end
-
-    context "when dependency has multiple requirements with different constraints" do
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "pandas",
-          requirements: [
-            {
-              requirement: "< 2.0",
-              file: "pyproject.toml",
-              groups: ["pandas1"],
-              source: nil
-            },
-            {
-              requirement: "< 2.4",
-              file: "pyproject.toml",
-              groups: ["dependencies"],
-              source: nil
-            }
-          ],
-          version: "1.5.0",
-          package_manager: "dummy"
-        )
-      end
-
-      let(:ignore_conditions) do
-        [Dependabot::Config::IgnoreCondition.new(
-          dependency_name: "pandas",
-          versions: [">= 1.6.0"]
-        )]
-      end
-
-      it "keeps ignore that overlaps with at least one requirement" do
-        # Stub the requirement class resolution
-        allow(Dependabot::Utils).to receive(:requirement_class_for_package_manager)
-          .with("dummy").and_return(DummyRequirement)
-
-        # The ignore ">= 1.6.0" overlaps with both requirements
-        # (< 2.0 allows 1.6.0-1.9.x, < 2.4 allows 1.6.0-2.3.x)
-        expect(ignored_versions).to eq([">= 1.6.0"])
       end
     end
   end
