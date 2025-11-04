@@ -42,17 +42,18 @@ module Dependabot
           dependency = extract_base_version_from_requirement(dependency)
         end
 
-        ignored = @ignore_conditions
-                  .select { |ic| self.class.wildcard_match?(T.must(normalizer).call(ic.dependency_name), dep_name) }
-                  .map { |ic| ic.ignored_versions(dependency, security_updates_only) }
-                  .flatten
-                  .compact
-                  .uniq
+        @ignore_conditions
+          .select { |ic| self.class.wildcard_match?(T.must(normalizer).call(ic.dependency_name), dep_name) }
+          .map { |ic| ic.ignored_versions(dependency, security_updates_only) }
+          .flatten
+          .compact
+          .uniq
 
         # Filter out ignore conditions that don't overlap with any of the dependency's requirements
         # This prevents ignore conditions created in one requirement context from blocking updates
         # in other requirement contexts with different constraints
-        filter_non_overlapping_ignores(ignored, dependency)
+        # TEMPORARILY DISABLED to investigate smoke test failures
+        # filter_non_overlapping_ignores(ignored, dependency)
       end
 
       sig { params(dependency: Dependency).returns(Dependency) }
