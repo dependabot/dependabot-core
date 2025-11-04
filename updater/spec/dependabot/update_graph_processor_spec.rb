@@ -518,15 +518,25 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
     end
 
     before do
-      grapher_class = Dependabot::DependencyGraphers.for_package_manager(job.package_manager)
-      raised = false
-      allow_any_instance_of(grapher_class).to receive(:fetch_subdependencies) do |_instance, _dep|
-        unless raised
-          raised = true
-          raise StandardError, "boom"
+      original_grapher_class = Dependabot::DependencyGraphers.for_package_manager(job.package_manager)
+
+      failing_grapher_class = Class.new(original_grapher_class) do
+        def initialize(file_parser:)
+          super
+          @raise_once = true
         end
-        []
+
+        def fetch_subdependencies(_dependency)
+          if @raise_once
+            @raise_once = false
+            raise StandardError, "boom"
+          end
+          []
+        end
       end
+
+      allow(Dependabot::DependencyGraphers).to receive(:for_package_manager)
+        .with(job.package_manager).and_return(failing_grapher_class)
     end
 
     it "records a dependency_file_not_resolvable error and still submits a dependency submission" do
