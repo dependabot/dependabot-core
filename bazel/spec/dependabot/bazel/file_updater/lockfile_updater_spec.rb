@@ -143,7 +143,7 @@ RSpec.describe Dependabot::Bazel::FileUpdater::LockfileUpdater do
           .to raise_error(Dependabot::DependencyFileNotResolvable, /Network error/)
       end
 
-      it "falls back to empty lockfile for other errors" do
+      it "raises error for other errors" do
         allow(lockfile_updater).to receive(:generate_lockfile_content).and_raise(
           Dependabot::SharedHelpers::HelperSubprocessFailed.new(
             message: "some other error",
@@ -151,12 +151,8 @@ RSpec.describe Dependabot::Bazel::FileUpdater::LockfileUpdater do
           )
         )
 
-        # The error handling should return an empty string, resulting in a lockfile with empty content
-        allow(lockfile_updater).to receive(:handle_bazel_error).and_return("")
-
-        updated_lockfile = lockfile_updater.updated_lockfile
-        expect(updated_lockfile).not_to be_nil
-        expect(updated_lockfile.content).to eq("")
+        expect { lockfile_updater.updated_lockfile }
+          .to raise_error(Dependabot::DependencyFileNotResolvable, /Error generating lockfile/)
       end
     end
   end

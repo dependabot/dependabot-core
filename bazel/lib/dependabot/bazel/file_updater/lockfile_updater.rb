@@ -149,8 +149,8 @@ module Dependabot
           end
 
           SharedHelpers.run_shell_command(
-            "#{bazel_command} sync --lockfile_mode=update",
-            fingerprint: "#{bazel_command} sync --lockfile_mode=update"
+            "#{bazel_command} sync --lockfile_mode=update --enable_workspace",
+            fingerprint: "#{bazel_command} sync --lockfile_mode=update --enable_workspace"
           )
 
           unless File.exist?("MODULE.bazel.lock")
@@ -197,18 +197,8 @@ module Dependabot
             raise Dependabot::DependencyFileNotResolvable,
                   "Dependency not found in Bazel Central Registry."
           else
-            Dependabot.logger.warn("Falling back to empty lockfile due to error: #{error.message}")
-            existing_lockfile = lockfile
-
-            if existing_lockfile
-              existing_lockfile.dup.tap { |f| f.content = "" }
-            else
-              Dependabot::DependencyFile.new(
-                name: "MODULE.bazel.lock",
-                content: "",
-                directory: module_file.directory
-              )
-            end
+            raise Dependabot::DependencyFileNotResolvable,
+                  "Error generating lockfile: #{error.message}"
           end
         end
 
@@ -233,8 +223,8 @@ module Dependabot
             raise Dependabot::DependencyFileNotResolvable,
                   "Dependency not found in Bazel Central Registry."
           else
-            Dependabot.logger.warn("Falling back to empty lockfile due to error: #{error.message}")
-            ""
+            raise Dependabot::DependencyFileNotResolvable,
+                  "Error generating lockfile: #{error.message}"
           end
         end
       end
