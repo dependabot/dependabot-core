@@ -496,4 +496,52 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
       end
     end
   end
+
+  context "when fetching subdependencies fails" do
+    let(:directories) { [directory] }
+    let(:directory) { "/" }
+    let(:repo_contents_path) { build_tmp_repo("bundler/original", path: "") }
+
+    let(:dependency_files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "Gemfile",
+          content: fixture("bundler/original/Gemfile"),
+          directory: directory
+        ),
+        Dependabot::DependencyFile.new(
+          name: "Gemfile.lock",
+          content: fixture("bundler/original/Gemfile.lock"),
+          directory: directory
+        )
+      ]
+    end
+
+    before do
+      grapher_class = Dependabot::DependencyGraphers.for_package_manager(job.package_manager)
+      lockfile = dependency_files.find { |f| f.name == "Gemfile.lock" } || dependency_files.first
+      grapher_double = instance_double(
+        grapher_class,
+        prepare!: nil,
+        relevant_dependency_file: lockfile,
+        resolved_dependencies: {},
+        errored_fetching_subdependencies: true
+      )
+      allow(grapher_class).to receive(:new).and_return(grapher_double)
+    end
+
+    it "records a dependency_file_not_resolvable error and still submits a dependency submission" do
+      expect(service).to receive(:create_dependency_submission) do |args|
+        payload = args[:dependency_submission].payload
+        # When subdependency fetching fails, resolved dependencies are empty so manifests will be empty
+        expect(payload[:manifests]).to eq({})
+      end
+      expect(service).to receive(:record_update_job_error) do |args|
+        expect(args[:error_type]).to eq("dependency_file_not_resolvable")
+        expect(args[:error_details]).to include(:message)
+      end
+
+      update_graph_processor.run
+    end
+  end
 end
