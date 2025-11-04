@@ -52,17 +52,9 @@ module Dependabot
       branch = job.source.branch || default_branch
 
       T.must(job.source.directories).each do |directory|
-        directory_source = create_source_for(directory)
-        directory_dependency_files = dependency_files_for(directory)
-
-        submission = if directory_dependency_files.empty?
-                       empty_submission(branch, directory_source)
-                     else
-                       create_submission(branch, directory_source, directory_dependency_files)
-                     end
-
-        Dependabot.logger.info("Dependency submission payload:\n#{JSON.pretty_generate(submission.payload)}")
-        service.create_dependency_submission(dependency_submission: submission)
+        # Each directory is processed with its own error handling so one failure will not
+        # block the overall job.
+        process_directory(branch:, directory:)
       end
     end
 
@@ -82,6 +74,23 @@ module Dependabot
 
     sig { returns(Dependabot::Updater::ErrorHandler) }
     attr_reader :error_handler
+
+    sig { params(branch: String, directory: String).void }
+    def process_directory(branch:, directory:)
+      directory_source = create_source_for(directory)
+      directory_dependency_files = dependency_files_for(directory)
+
+      submission = if directory_dependency_files.empty?
+                     empty_submission(branch, directory_source)
+                   else
+                     create_submission(branch, directory_source, directory_dependency_files)
+                   end
+
+      Dependabot.logger.info("Dependency submission payload:\n#{JSON.pretty_generate(submission.payload)}")
+      service.create_dependency_submission(dependency_submission: submission)
+    rescue Dependabot::DependabotError => e
+      error_handler.handle_job_error(error: e)
+    end
 
     sig { params(directory: String).returns(Dependabot::Source) }
     def create_source_for(directory)
@@ -126,6 +135,14 @@ module Dependabot
 
       grapher = Dependabot::DependencyGraphers.for_package_manager(job.package_manager).new(file_parser: parser)
       grapher.prepare!
+
+      if grapher.errored_fetching_subdependencies
+        error_handler.handle_job_error(
+          error: Dependabot::DependencyFileNotResolvable.new(
+            "Failed to fetch subdependencies in directory #{source.directory}"
+          )
+        )
+      end
 
       GithubApi::DependencySubmission.new(
         job_id: job.id.to_s,
