@@ -67,6 +67,50 @@ RSpec.describe Dependabot::Python::FileParser::PythonRequirementParser do
       end
     end
 
+    context "with a pyproject.toml file" do
+      let(:files) { [pyproject_file] }
+      let(:pyproject_file) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: pyproject_content
+        )
+      end
+
+      context "with PEP 621 requires-python" do
+        let(:pyproject_content) do
+          <<~TOML
+            [project]
+            name = "test-package"
+            requires-python = ">= 3.9, <3.13"
+          TOML
+        end
+
+        it { is_expected.to eq([">= 3.9, <3.13"]) }
+      end
+
+      context "with Poetry python dependency" do
+        let(:pyproject_content) do
+          <<~TOML
+            [tool.poetry.dependencies]
+            python = "^3.10"
+          TOML
+        end
+
+        it { is_expected.to eq(["^3.10"]) }
+      end
+
+      context "without python version specified" do
+        let(:pyproject_content) do
+          <<~TOML
+            [project]
+            name = "test-package"
+          TOML
+        end
+
+        it { is_expected.to eq([]) }
+      end
+    end
+
     context "with a setup.py file" do
       let(:files) { [setup_py] }
       let(:setup_py) do
