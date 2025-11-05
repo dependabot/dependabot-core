@@ -370,17 +370,7 @@ module Dependabot
           path = T.must(dep[:path])
           project_files += fetch_project_file(path)
         rescue Dependabot::DependencyFileNotFound => e
-          unfetchable_deps << if sdist_or_wheel?(T.must(path))
-                                e.file_path&.gsub(%r{^/}, "")
-                              else
-                                dep_location = cleanpath(File.join(directory, dep[:file]))
-                                attempted_file = e.file_path&.gsub(%r{^/}, "")
-                                if attempted_file&.end_with?("pyproject.toml")
-                                  "\"#{dep[:name]}\" at #{dep_location} (tried setup.py and pyproject.toml)"
-                                else
-                                  "\"#{dep[:name]}\" at #{dep_location}"
-                                end
-                              end
+          unfetchable_deps << format_path_dep_error(dep, e)
         end
 
         poetry_path_dependencies.each do |path|
@@ -536,6 +526,26 @@ module Dependabot
         end
 
         paths
+      end
+
+      sig do
+        params(
+          dep: T::Hash[Symbol, String],
+          error: Dependabot::DependencyFileNotFound
+        )
+          .returns(String)
+      end
+      def format_path_dep_error(dep, error)
+        path = T.must(dep[:path])
+        return error.file_path&.gsub(%r{^/}, "") if sdist_or_wheel?(path)
+
+        dep_location = cleanpath(File.join(directory, dep[:file]))
+        attempted_file = error.file_path&.gsub(%r{^/}, "")
+        if attempted_file&.end_with?("pyproject.toml")
+          "\"#{dep[:name]}\" at #{dep_location} (tried setup.py and pyproject.toml)"
+        else
+          "\"#{dep[:name]}\" at #{dep_location}"
+        end
       end
 
       sig { params(path: String).returns(String) }
