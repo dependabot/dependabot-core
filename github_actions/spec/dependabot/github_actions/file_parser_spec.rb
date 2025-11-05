@@ -302,6 +302,49 @@ RSpec.describe Dependabot::GithubActions::FileParser do
       end
     end
 
+    describe "with callable workflow using .yaml extension" do
+      let(:workflow_file_fixture_name) { "workflow_callable_yaml_extension.yml" }
+
+      before do
+        mock_service_pack_request("dsp-testing/github-action-with-yaml-extension")
+      end
+
+      its(:length) { is_expected.to eq(1) }
+
+      describe "the dependency with .yaml extension" do
+        subject(:dependency) { dependencies.first }
+
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow.yml",
+            source: {
+              type: "git",
+              url: "https://github.com/dsp-testing/github-action-with-yaml-extension",
+              ref: "v1.0.0",
+              branch: nil
+            },
+            metadata: {
+              declaration_string:
+                "dsp-testing/github-action-with-yaml-extension" \
+                "/.github/workflows/action-test.yaml@v1.0.0"
+            }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq(
+            "dsp-testing/github-action-with-yaml-extension" \
+            "/.github/workflows/action-test.yaml"
+          )
+          expect(dependency.version).to eq("1.0.0")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+    end
+
     describe "with composite actions" do
       let(:workflow_file_fixture_name) { "composite_action.yml" }
       let(:workflow_files) do
