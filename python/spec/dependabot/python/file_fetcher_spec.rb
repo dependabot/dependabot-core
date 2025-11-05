@@ -859,8 +859,8 @@ RSpec.describe Dependabot::Python::FileFetcher do
         expect { file_fetcher_instance.files }
           .to raise_error(
             Dependabot::PathDependenciesNotReachable,
-            'The following path based dependencies could not be retrieved: ' \
-            '"-e file:." at /requirements/base.in (tried setup.py and pyproject.toml)'
+            "The following path based dependencies could not be retrieved: " \
+            "\"-e file:.\" at /requirements/base.in (tried setup.py and pyproject.toml)"
           )
       end
     end

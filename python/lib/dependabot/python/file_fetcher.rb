@@ -537,7 +537,7 @@ module Dependabot
       end
       def format_path_dep_error(dep, error)
         path = T.must(dep[:path])
-        return error.file_path&.gsub(%r{^/}, "") if sdist_or_wheel?(path)
+        return T.must(error.file_path&.gsub(%r{^/}, "")) if sdist_or_wheel?(path)
 
         dep_location = cleanpath(File.join(directory, dep[:file]))
         attempted_file = error.file_path&.gsub(%r{^/}, "")
