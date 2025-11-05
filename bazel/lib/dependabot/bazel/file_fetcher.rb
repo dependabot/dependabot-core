@@ -82,7 +82,8 @@ module Dependabot
           files << file if file
         end
 
-        # Fetch all *.MODULE.bazel files
+        # Fetch all *.MODULE.bazel files from the repository root
+        # Note: repo_contents is cached by the base class for efficiency
         repo_contents(raise_errors: false).each do |item|
           next unless item.type == "file"
           next unless item.name.end_with?(".MODULE.bazel")
