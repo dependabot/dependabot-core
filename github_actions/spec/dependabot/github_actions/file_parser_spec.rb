@@ -228,11 +228,11 @@ RSpec.describe Dependabot::GithubActions::FileParser do
       end
     end
 
-    describe "with multiple callable workflows from the same repository" do
-      let(:workflow_file_fixture_name) { "workflow_multiple_callable_workflows.yml" }
+    describe "with multiple reusable workflows from the same repository" do
+      let(:workflow_file_fixture_name) { "workflow_multiple_reusable_workflows.yml" }
 
       before do
-        mock_service_pack_request("dsp-testing/github-action-with-multiple-callable-workflow-10619")
+        mock_service_pack_request("dsp-testing/github-action-with-multiple-reusable-workflow-10619")
       end
 
       its(:length) { is_expected.to eq(2) }
@@ -247,12 +247,12 @@ RSpec.describe Dependabot::GithubActions::FileParser do
             file: ".github/workflows/workflow.yml",
             source: {
               type: "git",
-              url: "https://github.com/dsp-testing/github-action-with-multiple-callable-workflow-10619",
+              url: "https://github.com/dsp-testing/github-action-with-multiple-reusable-workflow-10619",
               ref: "v1.0.0",
               branch: nil
             },
             metadata: {
-              declaration_string: "dsp-testing/github-action-with-multiple-callable-workflow-10619" \
+              declaration_string: "dsp-testing/github-action-with-multiple-reusable-workflow-10619" \
                                   "/.github/workflows/action-one.yml@v1.0.0"
             }
           }]
@@ -261,7 +261,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq(
-            "dsp-testing/github-action-with-multiple-callable-workflow-10619" \
+            "dsp-testing/github-action-with-multiple-reusable-workflow-10619" \
             "/.github/workflows/action-one.yml"
           )
           expect(dependency.version).to eq("1.0.0")
@@ -279,12 +279,12 @@ RSpec.describe Dependabot::GithubActions::FileParser do
             file: ".github/workflows/workflow.yml",
             source: {
               type: "git",
-              url: "https://github.com/dsp-testing/github-action-with-multiple-callable-workflow-10619",
+              url: "https://github.com/dsp-testing/github-action-with-multiple-reusable-workflow-10619",
               ref: "v1.0.0",
               branch: nil
             },
             metadata: {
-              declaration_string: "dsp-testing/github-action-with-multiple-callable-workflow-10619" \
+              declaration_string: "dsp-testing/github-action-with-multiple-reusable-workflow-10619" \
                                   "/.github/workflows/action-two.yml@v1.0.0"
             }
           }]
@@ -293,7 +293,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq(
-            "dsp-testing/github-action-with-multiple-callable-workflow-10619" \
+            "dsp-testing/github-action-with-multiple-reusable-workflow-10619" \
             "/.github/workflows/action-two.yml"
           )
           expect(dependency.version).to eq("1.0.0")
@@ -302,8 +302,8 @@ RSpec.describe Dependabot::GithubActions::FileParser do
       end
     end
 
-    describe "with callable workflow using .yaml extension" do
-      let(:workflow_file_fixture_name) { "workflow_callable_yaml_extension.yml" }
+    describe "with reusable workflow using .yaml extension" do
+      let(:workflow_file_fixture_name) { "workflow_reusable_yaml_extension.yml" }
 
       before do
         mock_service_pack_request("dsp-testing/github-action-with-yaml-extension")
