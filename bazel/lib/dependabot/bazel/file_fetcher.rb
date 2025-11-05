@@ -10,7 +10,7 @@ module Dependabot
       extend T::Sig
 
       WORKSPACE_FILES = T.let(%w(WORKSPACE WORKSPACE.bazel).freeze, T::Array[String])
-      MODULE_FILES = T.let(%w(MODULE.bazel).freeze, T::Array[String])
+      MODULE_FILE_PATTERN = T.let(/MODULE\.bazel$/, Regexp)
       CONFIG_FILES = T.let(%w(.bazelrc MODULE.bazel.lock).freeze, T::Array[String])
       SKIP_DIRECTORIES = T.let(%w(.git .bazel-* bazel-* node_modules .github).freeze, T::Array[String])
 
@@ -22,7 +22,7 @@ module Dependabot
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
         filenames.any? do |name|
-          WORKSPACE_FILES.include?(name) || MODULE_FILES.include?(name) || name.end_with?(".MODULE.bazel")
+          WORKSPACE_FILES.include?(name) || name.match?(MODULE_FILE_PATTERN)
         end
       end
 
@@ -76,18 +76,11 @@ module Dependabot
       def module_files
         files = T.let([], T::Array[DependencyFile])
 
-        # Fetch explicit MODULE.bazel files
-        MODULE_FILES.each do |filename|
-          file = fetch_file_if_present(filename)
-          files << file if file
-        end
-
-        # Fetch all *.MODULE.bazel files from the configured directory
+        # Fetch all MODULE.bazel and *.MODULE.bazel files
         # Note: repo_contents is cached by the base class for efficiency
         repo_contents(raise_errors: false).each do |item|
           next unless item.type == "file"
-          next unless item.name.end_with?(".MODULE.bazel")
-          next if MODULE_FILES.include?(item.name) # Skip if already fetched
+          next unless item.name.match?(MODULE_FILE_PATTERN)
 
           file = fetch_file_if_present(item.name)
           files << file if file
