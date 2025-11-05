@@ -82,6 +82,7 @@ RSpec.describe Dependabot::Bazel::FileUpdater do
       expect(described_class.updated_files_regex).to contain_exactly(
         /^MODULE\.bazel$/,
         %r{^(?:.*/)?MODULE\.bazel$},
+        %r{^(?:.*/)?\w+\.MODULE\.bazel$},
         /^WORKSPACE$/,
         %r{^(?:.*/)?WORKSPACE\.bazel$},
         %r{^(?:.*/)?BUILD$},

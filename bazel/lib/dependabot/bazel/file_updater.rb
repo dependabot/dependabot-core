@@ -18,6 +18,7 @@ module Dependabot
         [
           /^MODULE\.bazel$/,
           %r{^(?:.*/)?MODULE\.bazel$},
+          %r{^(?:.*/)?\w+\.MODULE\.bazel$}, # Match *.MODULE.bazel files
           /^WORKSPACE$/,
           %r{^(?:.*/)?WORKSPACE\.bazel$},
           %r{^(?:.*/)?BUILD$},
